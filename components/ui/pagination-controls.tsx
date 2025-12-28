@@ -108,19 +108,20 @@ function PagedPagination({
           } else {
             pageNum = currentPage - 2 + i
           }
+          const isActive = currentPage === pageNum
           return (
-            <Button
+            <button
               key={pageNum}
               type='button'
-              variant={currentPage === pageNum ? 'default' : 'ghost'}
-              size='xs'
-              className='size-6 p-0'
+              className={`px-2 py-1 text-sm tabular-nums underline-offset-4 transition-colors hover:underline ${
+                isActive ? 'font-medium underline' : 'text-muted-foreground'
+              }`}
               onClick={() => onPageChange(pageNum)}
               aria-label={`Page ${pageNum}`}
-              aria-current={currentPage === pageNum ? 'page' : undefined}
+              aria-current={isActive ? 'page' : undefined}
             >
               {pageNum}
-            </Button>
+            </button>
           )
         })}
       </div>

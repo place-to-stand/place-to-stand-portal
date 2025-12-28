@@ -130,7 +130,7 @@ export async function syncGmailForUser(userId: string): Promise<SyncResult> {
             toEmails: msgNorm.to.map(e => parseEmailAddress(e).email).filter(Boolean),
             ccEmails: msgNorm.cc.map(e => parseEmailAddress(e).email).filter(Boolean),
             sentAt,
-            isInbound: true, // Could determine based on user's email
+            isInbound: !(msg.labelIds || []).includes('SENT'),
             isRead: !(msg.labelIds || []).includes('UNREAD'),
             hasAttachments,
             providerMetadata: { labels: msg.labelIds || [] },

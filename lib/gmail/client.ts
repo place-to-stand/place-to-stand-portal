@@ -199,3 +199,52 @@ export function normalizeEmail(message: GmailMessage): NormalizedEmail {
   }
 }
 
+export type CidAttachmentMapping = {
+  contentId: string // e.g., "image001.png@01DC742D.48FFDB70"
+  attachmentId: string // Gmail attachment ID
+  mimeType: string
+  filename?: string
+}
+
+/**
+ * Extract CID (Content-ID) to Gmail attachment ID mapping from a message.
+ * This is used to resolve inline images referenced via cid: URLs.
+ */
+function collectCidMappings(part?: GmailBodyPart): CidAttachmentMapping[] {
+  if (!part) return []
+
+  const mappings: CidAttachmentMapping[] = []
+
+  // Check if this part has a Content-ID header (indicates inline attachment)
+  const contentId = header(part.headers, 'Content-ID')
+  const attachmentId = part.body?.attachmentId
+
+  if (contentId && attachmentId) {
+    // Content-ID is typically wrapped in angle brackets: <image001.png@xxx>
+    const cleanContentId = contentId.replace(/^<|>$/g, '')
+    mappings.push({
+      contentId: cleanContentId,
+      attachmentId,
+      mimeType: part.mimeType || 'application/octet-stream',
+      filename: part.filename || undefined,
+    })
+  }
+
+  // Recursively check child parts
+  if (part.parts) {
+    for (const child of part.parts) {
+      mappings.push(...collectCidMappings(child))
+    }
+  }
+
+  return mappings
+}
+
+/**
+ * Get the CID to attachment mapping for a Gmail message.
+ * Returns a map of content IDs to their proxy URLs.
+ */
+export function getCidAttachmentMappings(message: GmailMessage): CidAttachmentMapping[] {
+  return collectCidMappings(message.payload)
+}
+

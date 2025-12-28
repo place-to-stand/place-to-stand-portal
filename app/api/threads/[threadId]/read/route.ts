@@ -21,6 +21,7 @@ export async function POST(_req: Request, { params }: RouteParams) {
   }
 
   const { threadId } = await params
+  console.log(`[mark-read] POST /api/threads/${threadId}/read called by user ${user.id}`)
 
   try {
     // Get all unread messages in the thread that belong to this user
@@ -58,19 +59,18 @@ export async function POST(_req: Request, { params }: RouteParams) {
         )
       )
 
-    // Try to mark as read in Gmail (fire and forget, don't block on errors)
-    const gmailPromises = unreadMessages
-      .filter(m => m.externalMessageId)
-      .map(m =>
-        markGmailMessageAsRead(user.id, m.externalMessageId!).catch(err => {
-          console.error(`Failed to mark Gmail message ${m.externalMessageId} as read:`, err)
-        })
-      )
+    // Try to mark as read in Gmail
+    const messagesToSync = unreadMessages.filter(m => m.externalMessageId)
+    console.log(`[mark-read] Syncing ${messagesToSync.length} messages to Gmail for thread ${threadId}`)
 
-    // Don't await - let Gmail updates happen in background
-    Promise.all(gmailPromises).catch(() => {
-      // Ignore errors - database is already updated
-    })
+    for (const m of messagesToSync) {
+      try {
+        await markGmailMessageAsRead(user.id, m.externalMessageId!)
+        console.log(`[mark-read] Successfully marked ${m.externalMessageId} as read in Gmail`)
+      } catch (err) {
+        console.error(`[mark-read] Failed to mark Gmail message ${m.externalMessageId} as read:`, err)
+      }
+    }
 
     return NextResponse.json({ ok: true, markedCount: unreadMessages.length })
   } catch (error) {

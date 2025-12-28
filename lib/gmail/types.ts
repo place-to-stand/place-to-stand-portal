@@ -8,7 +8,7 @@ export interface GmailBodyPart {
   mimeType?: string
   filename?: string
   headers?: GmailHeader[]
-  body?: { size?: number; data?: string }
+  body?: { size?: number; data?: string; attachmentId?: string }
   parts?: GmailBodyPart[]
 }
 

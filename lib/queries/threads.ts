@@ -132,6 +132,7 @@ export type ListThreadsOptions = {
   clientId?: string
   projectId?: string
   status?: ThreadStatus
+  linkedFilter?: 'all' | 'linked' | 'unlinked'
   limit?: number
   offset?: number
 }
@@ -140,7 +141,7 @@ export async function listThreadsForUser(
   userId: string,
   options: ListThreadsOptions = {}
 ): Promise<ThreadSummary[]> {
-  const { clientId, projectId, status, limit = 50, offset = 0 } = options
+  const { clientId, projectId, status, linkedFilter, limit = 50, offset = 0 } = options
 
   const conditions = [isNull(threads.deletedAt)]
 
@@ -152,6 +153,11 @@ export async function listThreadsForUser(
   }
   if (status) {
     conditions.push(eq(threads.status, status))
+  }
+  if (linkedFilter === 'linked') {
+    conditions.push(sql`${threads.clientId} IS NOT NULL`)
+  } else if (linkedFilter === 'unlinked') {
+    conditions.push(isNull(threads.clientId))
   }
 
   // User must have at least one message in the thread OR be the creator
@@ -315,11 +321,16 @@ export async function listThreadsForClient(
 // Thread Counts
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function getThreadCountsForUser(userId: string): Promise<{
+export async function getThreadCountsForUser(
+  userId: string,
+  options: { linkedFilter?: 'all' | 'linked' | 'unlinked' } = {}
+): Promise<{
   total: number
   unread: number
   byStatus: Record<ThreadStatus, number>
 }> {
+  const { linkedFilter } = options
+
   const userThreadCondition = or(
     eq(threads.createdBy, userId),
     sql`EXISTS (
@@ -330,6 +341,14 @@ export async function getThreadCountsForUser(userId: string): Promise<{
     )`
   )
 
+  const conditions = [isNull(threads.deletedAt), userThreadCondition]
+
+  if (linkedFilter === 'linked') {
+    conditions.push(sql`${threads.clientId} IS NOT NULL`)
+  } else if (linkedFilter === 'unlinked') {
+    conditions.push(isNull(threads.clientId))
+  }
+
   const [counts] = await db
     .select({
       total: sql<number>`count(*)::int`,
@@ -338,7 +357,7 @@ export async function getThreadCountsForUser(userId: string): Promise<{
       archived: sql<number>`count(*) FILTER (WHERE ${threads.status} = 'ARCHIVED')::int`,
     })
     .from(threads)
-    .where(and(isNull(threads.deletedAt), userThreadCondition))
+    .where(and(...conditions))
 
   // Count unread (threads with unread messages)
   const [unreadResult] = await db

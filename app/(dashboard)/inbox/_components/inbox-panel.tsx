@@ -20,18 +20,18 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetTitle,
-} from '@/components/ui/sheet'
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/components/ui/use-toast'
 import { cn } from '@/lib/utils'
@@ -41,18 +41,52 @@ import { EmailIframe } from './email-iframe'
 import { ThreadLinkingPanel } from './thread-linking-panel'
 import { ThreadSuggestionsPanel } from './thread-suggestions-panel'
 
-type FilterType = 'all' | 'linked' | 'unlinked'
-
-const ROWS_PER_PAGE = 25
+type CidMapping = {
+  contentId: string
+  attachmentId: string
+  mimeType: string
+  filename?: string
+}
 
 /**
  * Sanitize email HTML for safe display in iframe
  * - Proxies external images through our API to bypass CORS/referrer issues
+ * - Replaces CID references with proxy URLs for inline attachments
  * - Removes potentially dangerous elements
  */
-function sanitizeEmailHtml(html: string): string {
+function sanitizeEmailHtml(
+  html: string,
+  options?: {
+    externalMessageId?: string | null
+    cidMappings?: CidMapping[]
+  }
+): string {
+  let result = html
+
+  // Replace CID image references with proxy URLs
+  if (options?.externalMessageId && options?.cidMappings?.length) {
+    const { externalMessageId, cidMappings } = options
+
+    // Create a map for quick lookup
+    const cidMap = new Map(cidMappings.map(m => [m.contentId, m]))
+
+    // Replace cid: references in src attributes
+    result = result.replace(
+      /<img\s+([^>]*?)src=["']cid:([^"']+)["']([^>]*)>/gi,
+      (_match, before, cid, after) => {
+        const mapping = cidMap.get(cid)
+        if (mapping) {
+          const proxiedSrc = `/api/emails/image-proxy?messageId=${encodeURIComponent(externalMessageId)}&attachmentId=${encodeURIComponent(mapping.attachmentId)}`
+          return `<img ${before}src="${proxiedSrc}" loading="lazy"${after}>`
+        }
+        // If no mapping found, hide the broken image
+        return `<img ${before}src="" style="display:none"${after}>`
+      }
+    )
+  }
+
   return (
-    html
+    result
       // Proxy external images through our API
       .replace(
         /<img\s+([^>]*?)src=["']((https?:\/\/[^"']+))["']([^>]*)>/gi,
@@ -83,6 +117,8 @@ type Suggestion = {
   matchType?: 'EXACT_EMAIL' | 'DOMAIN' | 'CONTENT' | 'CONTEXTUAL'
 }
 
+type FilterType = 'all' | 'linked' | 'unlinked'
+
 type InboxPanelProps = {
   threads: ThreadSummary[]
   syncStatus: {
@@ -93,6 +129,13 @@ type InboxPanelProps = {
   }
   clients: Client[]
   isAdmin: boolean
+  filter: FilterType
+  pagination: {
+    currentPage: number
+    totalPages: number
+    totalItems: number
+    pageSize: number
+  }
 }
 
 export function InboxPanel({
@@ -100,54 +143,40 @@ export function InboxPanel({
   syncStatus,
   clients,
   isAdmin,
+  filter,
+  pagination,
 }: InboxPanelProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
 
   const [threads, setThreads] = useState(initialThreads)
+
+  // Sync threads state when props change (e.g., on pagination/filter change)
+  useEffect(() => {
+    setThreads(initialThreads)
+  }, [initialThreads])
   const [isSyncing, setIsSyncing] = useState(false)
   const [selectedThread, setSelectedThread] = useState<ThreadSummary | null>(
     null
   )
   const [threadMessages, setThreadMessages] = useState<Message[]>([])
+  const [cidMappings, setCidMappings] = useState<Record<string, CidMapping[]>>(
+    {}
+  )
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
-  const [filter, setFilter] = useState<FilterType>('all')
   const [isLinking, setIsLinking] = useState(false)
-
-  // Initialize page from URL or default to 1
-  const initialPage = useMemo(() => {
-    const pageParam = searchParams.get('page')
-    const parsed = pageParam ? parseInt(pageParam, 10) : 1
-    return Number.isNaN(parsed) || parsed < 1 ? 1 : parsed
-  }, [searchParams])
-  const [currentPage, setCurrentPage] = useState(initialPage)
 
   // AI Suggestions state (for client matching)
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [suggestionsLoading, setSuggestionsLoading] = useState(false)
 
-  // Filter threads
-  const filteredThreads = useMemo(() => {
-    return threads.filter(thread => {
-      if (filter === 'linked') return !!thread.client
-      if (filter === 'unlinked') return !thread.client
-      return true
-    })
-  }, [threads, filter])
-
-  // Pagination
-  const totalPages = Math.ceil(filteredThreads.length / ROWS_PER_PAGE)
-  const paginatedThreads = useMemo(() => {
-    const start = (currentPage - 1) * ROWS_PER_PAGE
-    return filteredThreads.slice(start, start + ROWS_PER_PAGE)
-  }, [filteredThreads, currentPage])
-
-  // Handle page changes with URL sync
+  // Handle page changes - triggers server-side navigation
   const handlePageChange = useCallback(
     (page: number) => {
-      setCurrentPage(page)
       const params = new URLSearchParams(searchParams.toString())
+      // Remove thread param when changing pages
+      params.delete('thread')
       if (page === 1) {
         params.delete('page')
       } else {
@@ -156,18 +185,30 @@ export function InboxPanel({
       const newUrl = params.toString()
         ? `/inbox?${params.toString()}`
         : '/inbox'
-      router.push(newUrl, { scroll: false })
+      router.push(newUrl)
     },
     [router, searchParams]
   )
 
-  // Reset to page 1 when filter changes
-  useEffect(() => {
-    if (currentPage !== 1) {
-      handlePageChange(1)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter])
+  // Handle filter changes - triggers server-side navigation
+  const handleFilterChange = useCallback(
+    (newFilter: FilterType) => {
+      const params = new URLSearchParams(searchParams.toString())
+      // Reset to page 1 and remove thread when changing filter
+      params.delete('thread')
+      params.delete('page')
+      if (newFilter === 'all') {
+        params.delete('filter')
+      } else {
+        params.set('filter', newFilter)
+      }
+      const newUrl = params.toString()
+        ? `/inbox?${params.toString()}`
+        : '/inbox'
+      router.push(newUrl)
+    },
+    [router, searchParams]
+  )
 
   // Handle URL-based thread selection on mount and URL changes
   useEffect(() => {
@@ -206,6 +247,7 @@ export function InboxPanel({
       setSelectedThread(thread)
       setIsLoadingMessages(true)
       setThreadMessages([])
+      setCidMappings({})
       setSuggestions([])
 
       // Update URL with thread ID
@@ -220,6 +262,7 @@ export function InboxPanel({
         if (res.ok) {
           const data = await res.json()
           setThreadMessages(data.messages || [])
+          setCidMappings(data.cidMappings || {})
 
           // Mark as read if there are unread messages
           const hasUnread = (data.messages || []).some(
@@ -276,6 +319,7 @@ export function InboxPanel({
   const handleCloseSheet = useCallback(() => {
     setSelectedThread(null)
     setThreadMessages([])
+    setCidMappings({})
     setSuggestions([])
 
     // Remove thread from URL
@@ -359,19 +403,19 @@ export function InboxPanel({
     }
   }
 
-  // Navigate between threads
+  // Navigate between threads (within current page)
   const currentIndex = selectedThread
-    ? filteredThreads.findIndex(t => t.id === selectedThread.id)
+    ? threads.findIndex(t => t.id === selectedThread.id)
     : -1
   const canGoPrev = currentIndex > 0
-  const canGoNext = currentIndex < filteredThreads.length - 1
+  const canGoNext = currentIndex < threads.length - 1
 
   const goToPrev = () => {
-    if (canGoPrev) handleThreadClick(filteredThreads[currentIndex - 1])
+    if (canGoPrev) handleThreadClick(threads[currentIndex - 1])
   }
 
   const goToNext = () => {
-    if (canGoNext) handleThreadClick(filteredThreads[currentIndex + 1])
+    if (canGoNext) handleThreadClick(threads[currentIndex + 1])
   }
 
   return (
@@ -388,13 +432,12 @@ export function InboxPanel({
         <div className='space-y-4'>
           {/* Header Row */}
           <div className='flex flex-wrap items-center gap-4'>
-            <Select
-              value={filter}
-              onValueChange={v => setFilter(v as FilterType)}
-            >
+            <Select value={filter} onValueChange={v => handleFilterChange(v as FilterType)}>
               <SelectTrigger className='w-40'>
-                <Filter className='mr-2 h-4 w-4' />
-                <SelectValue />
+                <span className='flex items-center'>
+                  <Filter className='mr-2 h-4 w-4' />
+                  <SelectValue />
+                </span>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value='all'>All Threads</SelectItem>
@@ -409,7 +452,7 @@ export function InboxPanel({
               ) : (
                 <Circle className='h-4 w-4' />
               )}
-              <span>{filteredThreads.length} threads</span>
+              <span>{pagination.totalItems} threads</span>
               {syncStatus.unread > 0 && (
                 <Badge variant='secondary' className='text-xs'>
                   {syncStatus.unread} unread
@@ -438,13 +481,13 @@ export function InboxPanel({
                 </Button>
               )}
               {/* Top Pagination - controls only, no count */}
-              {filteredThreads.length > 0 && (
+              {pagination.totalItems > 0 && (
                 <PaginationControls
                   mode='paged'
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  totalItems={filteredThreads.length}
-                  pageSize={ROWS_PER_PAGE}
+                  currentPage={pagination.currentPage}
+                  totalPages={pagination.totalPages}
+                  totalItems={pagination.totalItems}
+                  pageSize={pagination.pageSize}
                   onPageChange={handlePageChange}
                   showCount={false}
                 />
@@ -453,22 +496,22 @@ export function InboxPanel({
           </div>
 
           {/* Thread List */}
-          {filteredThreads.length === 0 ? (
+          {threads.length === 0 ? (
             <div className='flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center'>
               <Mail className='text-muted-foreground mb-4 h-12 w-12' />
               <h3 className='text-lg font-medium'>No threads found</h3>
               <p className='text-muted-foreground mt-1 text-sm'>
                 {!syncStatus.connected
                   ? 'Connect Gmail in Settings → Integrations to get started'
-                  : filter === 'all'
-                    ? 'Click "Sync Now" to fetch your emails'
-                    : `No ${filter} threads found.`}
+                  : filter !== 'all'
+                    ? `No ${filter} threads found.`
+                    : 'Click "Sync Now" to fetch your emails'}
               </p>
             </div>
           ) : (
             <>
               <div className='overflow-hidden rounded-lg border'>
-                {paginatedThreads.map((thread, idx) => (
+                {threads.map((thread, idx) => (
                   <ThreadRow
                     key={thread.id}
                     thread={thread}
@@ -482,10 +525,10 @@ export function InboxPanel({
               {/* Bottom Pagination */}
               <PaginationControls
                 mode='paged'
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalItems={filteredThreads.length}
-                pageSize={ROWS_PER_PAGE}
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                totalItems={pagination.totalItems}
+                pageSize={pagination.pageSize}
                 onPageChange={handlePageChange}
               />
             </>
@@ -498,7 +541,7 @@ export function InboxPanel({
         open={!!selectedThread}
         onOpenChange={open => !open && handleCloseSheet()}
       >
-        <SheetContent className='flex h-full w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl lg:max-w-5xl'>
+        <SheetContent className='flex h-full w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl lg:max-w-6xl'>
           {/* Custom Header - Outside the scroll area */}
           <div className='bg-muted/50 flex-shrink-0 border-b-2 border-b-blue-500/60 px-6 pt-4 pb-3'>
             <div className='flex items-start justify-between gap-4'>
@@ -559,7 +602,11 @@ export function InboxPanel({
                 ) : (
                   <div className='space-y-6'>
                     {threadMessages.map(message => (
-                      <MessageCard key={message.id} message={message} />
+                      <MessageCard
+                        key={message.id}
+                        message={message}
+                        cidMappings={cidMappings[message.id]}
+                      />
                     ))}
                   </div>
                 )}
@@ -692,8 +739,22 @@ function ThreadRow({
   )
 }
 
-function MessageCard({ message }: { message: Message }) {
+function MessageCard({
+  message,
+  cidMappings,
+}: {
+  message: Message
+  cidMappings?: CidMapping[]
+}) {
   const [isExpanded, setIsExpanded] = useState(true)
+
+  const sanitizedHtml = useMemo(() => {
+    if (!message.bodyHtml) return null
+    return sanitizeEmailHtml(message.bodyHtml, {
+      externalMessageId: message.externalMessageId,
+      cidMappings,
+    })
+  }, [message.bodyHtml, message.externalMessageId, cidMappings])
 
   return (
     <div className='bg-card rounded-lg border'>
@@ -744,8 +805,8 @@ function MessageCard({ message }: { message: Message }) {
         <>
           <Separator />
           <div className='p-4'>
-            {message.bodyHtml ? (
-              <EmailIframe html={sanitizeEmailHtml(message.bodyHtml)} />
+            {sanitizedHtml ? (
+              <EmailIframe html={sanitizedHtml} />
             ) : message.bodyText ? (
               <pre className='text-sm whitespace-pre-wrap'>
                 {message.bodyText}

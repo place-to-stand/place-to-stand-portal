@@ -1,11 +1,11 @@
 import { serverEnv } from '@/lib/env.server'
 
-// Phase 1 scopes - Gmail read access
+// Gmail scopes - read and modify access
 export const GOOGLE_SCOPES = [
   'https://www.googleapis.com/auth/userinfo.profile',
   'https://www.googleapis.com/auth/userinfo.email',
   'https://www.googleapis.com/auth/gmail.readonly',
-  'https://www.googleapis.com/auth/gmail.labels',
+  'https://www.googleapis.com/auth/gmail.modify',
 ]
 
 export interface GoogleTokenResponse {

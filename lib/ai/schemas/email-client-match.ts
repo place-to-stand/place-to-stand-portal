@@ -13,7 +13,7 @@ export const clientMatchSchema = z.object({
     .describe('Confidence score from 0.0 to 1.0'),
   reasoning: z
     .string()
-    .max(200)
+    .max(500)
     .describe('Brief explanation of why this client was matched'),
   matchType: z
     .enum(['EXACT_EMAIL', 'DOMAIN', 'CONTENT', 'CONTEXTUAL'])
@@ -27,9 +27,9 @@ export const emailClientMatchResponseSchema = z.object({
     .describe('List of matched clients, sorted by confidence (highest first)'),
   noMatchReason: z
     .string()
-    .max(100)
+    .max(500)
     .optional()
-    .describe('If no matches found, explain why'),
+    .describe('If no matches found, briefly explain why'),
 })
 
 export type ClientMatch = z.infer<typeof clientMatchSchema>

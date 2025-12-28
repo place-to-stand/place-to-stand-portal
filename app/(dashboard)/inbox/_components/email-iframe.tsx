@@ -10,19 +10,28 @@ type EmailIframeProps = {
 /**
  * Renders email HTML content in an isolated iframe to prevent
  * email styles from leaking into the parent document.
+ *
+ * Emails are always rendered with a light background since they are
+ * designed for light mode. This ensures readability regardless of
+ * the app's theme setting.
  */
 export function EmailIframe({ html, className }: EmailIframeProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [height, setHeight] = useState(200)
 
-  // Wrap HTML with basic styling and dark mode support
+  // Wrap HTML with light-mode styling
+  // Emails are designed for light backgrounds - don't try to force dark mode
   const wrappedHtml = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light only">
   <style>
+    :root {
+      color-scheme: light only;
+    }
     *, *::before, *::after {
       box-sizing: border-box;
     }
@@ -33,19 +42,11 @@ export function EmailIframe({ html, className }: EmailIframeProps) {
       font-size: 14px;
       line-height: 1.6;
       color: #1a1a1a;
-      background: transparent;
+      background: #ffffff;
       overflow-x: hidden;
     }
-    @media (prefers-color-scheme: dark) {
-      html, body {
-        color: #e5e5e5;
-      }
-      a {
-        color: #60a5fa;
-      }
-    }
     body {
-      padding: 0;
+      padding: 16px;
     }
     img {
       max-width: 100%;
@@ -60,10 +61,6 @@ export function EmailIframe({ html, className }: EmailIframeProps) {
     }
     table {
       max-width: 100%;
-    }
-    /* Hide CID images (embedded attachments not yet supported) */
-    img[src^="cid:"] {
-      display: none;
     }
   </style>
 </head>
@@ -121,9 +118,11 @@ export function EmailIframe({ html, className }: EmailIframeProps) {
         height: `${height}px`,
         border: 'none',
         display: 'block',
+        borderRadius: '8px',
+        overflow: 'hidden',
       }}
-      sandbox="allow-same-origin"
-      title="Email content"
+      sandbox='allow-same-origin'
+      title='Email content'
     />
   )
 }
