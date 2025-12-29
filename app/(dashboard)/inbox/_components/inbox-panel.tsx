@@ -39,6 +39,7 @@ import type { ThreadSummary, Message } from '@/lib/types/messages'
 
 import { EmailIframe } from './email-iframe'
 import { ThreadLinkingPanel } from './thread-linking-panel'
+import { ThreadProjectLinkingPanel } from './thread-project-linking-panel'
 import { ThreadSuggestionsPanel } from './thread-suggestions-panel'
 
 type CidMapping = {
@@ -108,6 +109,11 @@ type Client = {
   name: string
 }
 
+type Project = {
+  id: string
+  name: string
+}
+
 type Suggestion = {
   clientId: string
   clientName: string
@@ -115,6 +121,14 @@ type Suggestion = {
   matchedContacts: string[]
   reasoning?: string
   matchType?: 'EXACT_EMAIL' | 'DOMAIN' | 'CONTENT' | 'CONTEXTUAL'
+}
+
+type ProjectSuggestion = {
+  projectId: string
+  projectName: string
+  confidence: number
+  reasoning?: string
+  matchType?: 'NAME' | 'CONTENT' | 'CONTEXTUAL'
 }
 
 type FilterType = 'all' | 'linked' | 'unlinked'
@@ -128,6 +142,7 @@ type InboxPanelProps = {
     unread: number
   }
   clients: Client[]
+  projects: Project[]
   isAdmin: boolean
   filter: FilterType
   pagination: {
@@ -142,6 +157,7 @@ export function InboxPanel({
   threads: initialThreads,
   syncStatus,
   clients,
+  projects,
   isAdmin,
   filter,
   pagination,
@@ -170,6 +186,14 @@ export function InboxPanel({
   // AI Suggestions state (for client matching)
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [suggestionsLoading, setSuggestionsLoading] = useState(false)
+
+  // AI Suggestions state (for project matching)
+  const [projectSuggestions, setProjectSuggestions] = useState<
+    ProjectSuggestion[]
+  >([])
+  const [projectSuggestionsLoading, setProjectSuggestionsLoading] =
+    useState(false)
+  const [isLinkingProject, setIsLinkingProject] = useState(false)
 
   // Handle page changes - triggers server-side navigation
   const handlePageChange = useCallback(
@@ -249,6 +273,7 @@ export function InboxPanel({
       setThreadMessages([])
       setCidMappings({})
       setSuggestions([])
+      setProjectSuggestions([])
 
       // Update URL with thread ID
       if (updateUrl) {
@@ -316,11 +341,28 @@ export function InboxPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedThread?.id, selectedThread?.client])
 
+  // Load project suggestions when thread changes and has no project
+  useEffect(() => {
+    if (!selectedThread || selectedThread.project) {
+      setProjectSuggestions([])
+      return
+    }
+
+    setProjectSuggestionsLoading(true)
+    fetch(`/api/threads/${selectedThread.id}/project-suggestions`)
+      .then(r => r.json())
+      .then(data => setProjectSuggestions(data.suggestions || []))
+      .catch(() => setProjectSuggestions([]))
+      .finally(() => setProjectSuggestionsLoading(false))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedThread?.id, selectedThread?.project])
+
   const handleCloseSheet = useCallback(() => {
     setSelectedThread(null)
     setThreadMessages([])
     setCidMappings({})
     setSuggestions([])
+    setProjectSuggestions([])
 
     // Remove thread from URL
     const params = new URLSearchParams(searchParams.toString())
@@ -403,6 +445,80 @@ export function InboxPanel({
     }
   }
 
+  const handleLinkProject = async (projectId: string) => {
+    if (!selectedThread) return
+
+    setIsLinkingProject(true)
+    try {
+      const res = await fetch(`/api/threads/${selectedThread.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId }),
+      })
+
+      if (res.ok) {
+        const project = projects.find(p => p.id === projectId)
+
+        // Update local state
+        const updatedThread: ThreadSummary = {
+          ...selectedThread,
+          project: project ? { id: project.id, name: project.name } : null,
+        }
+        setSelectedThread(updatedThread)
+        setThreads(prev =>
+          prev.map(t => (t.id === selectedThread.id ? updatedThread : t))
+        )
+        setProjectSuggestions([]) // Clear suggestions after linking
+
+        toast({ title: 'Thread linked to project' })
+      } else {
+        throw new Error('Failed to link')
+      }
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'Failed to link thread to project.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsLinkingProject(false)
+    }
+  }
+
+  const handleUnlinkProject = async () => {
+    if (!selectedThread) return
+
+    setIsLinkingProject(true)
+    try {
+      const res = await fetch(`/api/threads/${selectedThread.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId: null }),
+      })
+
+      if (res.ok) {
+        const updatedThread: ThreadSummary = {
+          ...selectedThread,
+          project: null,
+        }
+        setSelectedThread(updatedThread)
+        setThreads(prev =>
+          prev.map(t => (t.id === selectedThread.id ? updatedThread : t))
+        )
+
+        toast({ title: 'Project unlinked' })
+      }
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'Failed to unlink project.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsLinkingProject(false)
+    }
+  }
+
   // Navigate between threads (within current page)
   const currentIndex = selectedThread
     ? threads.findIndex(t => t.id === selectedThread.id)
@@ -432,7 +548,10 @@ export function InboxPanel({
         <div className='space-y-4'>
           {/* Header Row */}
           <div className='flex flex-wrap items-center gap-4'>
-            <Select value={filter} onValueChange={v => handleFilterChange(v as FilterType)}>
+            <Select
+              value={filter}
+              onValueChange={v => handleFilterChange(v as FilterType)}
+            >
               <SelectTrigger className='w-40'>
                 <span className='flex items-center'>
                   <Filter className='mr-2 h-4 w-4' />
@@ -629,6 +748,22 @@ export function InboxPanel({
                   />
                 )}
 
+                {/* Project Linking Section */}
+                {isAdmin && selectedThread && (
+                  <>
+                    <Separator />
+                    <ThreadProjectLinkingPanel
+                      thread={selectedThread}
+                      projects={projects}
+                      suggestions={projectSuggestions}
+                      suggestionsLoading={projectSuggestionsLoading}
+                      isLinking={isLinkingProject}
+                      onLinkProject={handleLinkProject}
+                      onUnlinkProject={handleUnlinkProject}
+                    />
+                  </>
+                )}
+
                 {isAdmin && selectedThread && (
                   <>
                     <Separator />
@@ -729,7 +864,7 @@ function ThreadRow({
       {thread.project && (
         <Badge
           variant='default'
-          className='flex-shrink-0 border-0 bg-violet-100 text-xs font-medium text-violet-700 hover:bg-violet-100 dark:bg-violet-900/50 dark:text-violet-300'
+          className='flex-shrink-0 border-0 bg-green-100 text-xs font-medium text-green-700 hover:bg-green-100 dark:bg-green-900/50 dark:text-green-300'
         >
           <FolderKanban className='mr-1 h-3 w-3' />
           <span className='max-w-[100px] truncate'>{thread.project.name}</span>

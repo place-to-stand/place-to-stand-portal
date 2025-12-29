@@ -3,7 +3,7 @@ import { and, eq, isNull } from 'drizzle-orm'
 import { requireUser } from '@/lib/auth/session'
 import { isAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { oauthConnections, clients } from '@/lib/db/schema'
+import { oauthConnections, clients, projects } from '@/lib/db/schema'
 import {
   listThreadsForUser,
   getThreadCountsForUser,
@@ -30,13 +30,14 @@ export default async function InboxPage({ searchParams }: Props) {
     ? (params.filter as FilterType)
     : 'all'
 
-  // Get threads, counts, sync status, and clients in parallel
+  // Get threads, counts, sync status, clients, and projects in parallel
   const [
     threadSummaries,
     threadCounts,
     messageCounts,
     [connection],
     clientsList,
+    projectsList,
   ] = await Promise.all([
     listThreadsForUser(user.id, { limit: PAGE_SIZE, offset, linkedFilter: filter }),
     getThreadCountsForUser(user.id, { linkedFilter: filter }),
@@ -57,6 +58,11 @@ export default async function InboxPage({ searchParams }: Props) {
       .from(clients)
       .where(isNull(clients.deletedAt))
       .orderBy(clients.name),
+    db
+      .select({ id: projects.id, name: projects.name })
+      .from(projects)
+      .where(isNull(projects.deletedAt))
+      .orderBy(projects.name),
   ])
 
   const syncStatus = {
@@ -73,6 +79,7 @@ export default async function InboxPage({ searchParams }: Props) {
       threads={threadSummaries}
       syncStatus={syncStatus}
       clients={clientsList}
+      projects={projectsList}
       isAdmin={isAdmin(user)}
       filter={filter}
       pagination={{
