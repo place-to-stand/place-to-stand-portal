@@ -38,4 +38,7 @@ next-env.d.ts
 # supabase
 supabase/seed.sql
 
+# claude code
+.claude/
+
 .env.local
