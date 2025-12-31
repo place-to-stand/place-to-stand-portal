@@ -47,6 +47,7 @@ export function RecentActivityOverviewWidget({
       aria-labelledby='recent-activity-overview-heading'
     >
       <Tabs
+        id='recent-activity-tabs'
         value={selectedTimeframe}
         onValueChange={handleTimeframeChange}
         className='flex h-full flex-col'
