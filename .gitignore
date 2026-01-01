@@ -45,3 +45,6 @@ client_secret_*.json
 
 # Screenshots
 Screenshot*.png
+
+# Claude Code
+.claude/settings.local.json

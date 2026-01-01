@@ -291,3 +291,84 @@ Leads are inserted with `WEBSITE` source and appear on `/leads/board` immediatel
 2. Export handler from `lib/activity/events.ts`
 3. Call handler after mutations: `await logTaskUpdated(taskId, userId, changes)`
 4. Activity appears in feeds automatically
+
+## Development Standards
+
+See `AGENTS.md` for comprehensive development practices including:
+- LLM implementation workflow (read first, clarify scope, design before code)
+- Development practices (modular architecture, SRP, DRY, git hygiene)
+- Non-functional requirements (accessibility, performance, security)
+- Observability and operations guidelines
+
+**Key guardrails from AGENTS.md:**
+- Do not edit `package.json`, lockfiles, or migrations directly
+- Always run `npm run build`, `npm run lint`, `npm run type-check` for touched surfaces
+- Prefer existing modules, utilities, and shadcn components before building new
+- Files approaching 300 lines should be split by responsibility
+
+## Review Skills
+
+Custom skills available for code quality reviews. Invoke with `/skill-name`:
+
+### Code Quality Reviews
+| Skill | Purpose | When to Use |
+|-------|---------|-------------|
+| `/security-review` | OWASP Top 10, auth/authz audit | Before merging security-sensitive changes |
+| `/performance-review` | Core Web Vitals, React patterns | After adding components or data fetching |
+| `/db-review` | Schema normalization, indexing | After schema changes or new tables |
+| `/accessibility-review` | WCAG 2.1 AA compliance | After UI changes |
+| `/refactor` | Dead code, duplication, complexity | During cleanup sprints |
+| `/bug-hunt` | Logic errors, async issues, edge cases | Investigating bugs or reviewing complex logic |
+
+### System Health Reviews
+| Skill | Purpose | When to Use |
+|-------|---------|-------------|
+| `/architecture-review` | Module boundaries, coupling, data flow | Planning features, system feels tangled |
+| `/dependency-audit` | npm security, outdated packages, licenses | Before releases, security hygiene |
+| `/observability-review` | Logging, error tracking, monitoring | After incidents, debugging is hard |
+| `/tech-debt-inventory` | Catalog and prioritize technical debt | Planning cycles, quarterly reviews |
+
+### Documentation & Release
+| Skill | Purpose | When to Use |
+|-------|---------|-------------|
+| `/test-plan` | Manual test case generation | Before releases or feature completion |
+| `/docs` | API/component documentation | After adding public interfaces |
+| `/release-checklist` | Pre-deploy verification, rollback plan | Before production deployments |
+
+**Built-in PR review** (via plugins):
+- `/review-pr` - Comprehensive PR review using multiple specialized agents
+- `/code-review` - Single-pass code review
+
+### Running Reviews
+
+```bash
+# Review staged changes
+/security-review  # then describe: "Review staged changes"
+
+# Review specific files
+/performance-review  # then describe: "Review components/dashboard/"
+
+# Review a PR
+/review-pr 123  # Reviews PR #123 using Greptile
+
+# System-level reviews
+/architecture-review  # then describe: "Review the data layer"
+/dependency-audit     # runs npm audit and analyzes results
+/release-checklist    # pre-deployment verification
+```
+
+## Subagents
+
+The following specialized agents are available via the Task tool:
+
+| Agent | Purpose |
+|-------|---------|
+| `feature-dev:code-reviewer` | Reviews for bugs, security, code quality |
+| `feature-dev:code-explorer` | Deep codebase analysis and architecture mapping |
+| `feature-dev:code-architect` | Designs feature architectures with implementation blueprints |
+| `pr-review-toolkit:code-reviewer` | Reviews against project guidelines |
+| `pr-review-toolkit:silent-failure-hunter` | Finds inadequate error handling |
+| `pr-review-toolkit:code-simplifier` | Simplifies code while preserving functionality |
+| `pr-review-toolkit:pr-test-analyzer` | Reviews test coverage quality |
+| `Explore` | Fast codebase exploration (files, patterns, architecture) |
+| `Plan` | Software architect for implementation planning |
