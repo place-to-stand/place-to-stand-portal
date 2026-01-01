@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { formatDistanceToNow, format } from 'date-fns'
 import {
@@ -151,6 +151,8 @@ type InboxPanelProps = {
     totalItems: number
     pageSize: number
   }
+  /** Pre-fetched thread for deep-linking (may not be on current page) */
+  initialSelectedThread?: ThreadSummary | null
 }
 
 export function InboxPanel({
@@ -161,6 +163,7 @@ export function InboxPanel({
   isAdmin,
   filter,
   pagination,
+  initialSelectedThread,
 }: InboxPanelProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -238,33 +241,57 @@ export function InboxPanel({
   useEffect(() => {
     const threadId = searchParams.get('thread')
     if (threadId) {
+      // First check if thread is in current page
       const thread = threads.find(t => t.id === threadId)
       if (thread && (!selectedThread || selectedThread.id !== threadId)) {
         handleThreadClick(thread, false) // Don't update URL since it's already set
+      } else if (
+        !thread &&
+        initialSelectedThread &&
+        initialSelectedThread.id === threadId &&
+        (!selectedThread || selectedThread.id !== threadId)
+      ) {
+        // Thread not on current page but pre-fetched via deep-link
+        handleThreadClick(initialSelectedThread, false)
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, threads])
+  }, [searchParams, threads, initialSelectedThread])
 
-  const handleSync = async () => {
+  const handleSync = async (silent = false) => {
     setIsSyncing(true)
     try {
       const res = await fetch('/api/integrations/gmail/sync', {
         method: 'POST',
       })
       if (res.ok) {
-        toast({
-          title: 'Sync complete',
-          description: 'Emails synced successfully.',
-        })
-        window.location.reload()
+        if (!silent) {
+          toast({
+            title: 'Sync complete',
+            description: 'Emails synced successfully.',
+          })
+        }
+        router.refresh()
       }
     } catch {
-      toast({ title: 'Sync failed', variant: 'destructive' })
+      if (!silent) {
+        toast({ title: 'Sync failed', variant: 'destructive' })
+      }
     } finally {
       setIsSyncing(false)
     }
   }
+
+  // Auto-sync on page load when Gmail is connected
+  // Use a ref to ensure this only runs once per session
+  const hasSyncedRef = useRef(false)
+  useEffect(() => {
+    if (syncStatus.connected && !hasSyncedRef.current) {
+      hasSyncedRef.current = true
+      handleSync(true) // Silent sync
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleThreadClick = useCallback(
     async (thread: ThreadSummary, updateUrl = true) => {
@@ -590,7 +617,7 @@ export function InboxPanel({
                 <Button
                   variant='outline'
                   size='sm'
-                  onClick={handleSync}
+                  onClick={() => handleSync()}
                   disabled={isSyncing}
                 >
                   <RefreshCw
@@ -598,18 +625,6 @@ export function InboxPanel({
                   />
                   {isSyncing ? 'Syncing...' : 'Sync'}
                 </Button>
-              )}
-              {/* Top Pagination - controls only, no count */}
-              {pagination.totalItems > 0 && (
-                <PaginationControls
-                  mode='paged'
-                  currentPage={pagination.currentPage}
-                  totalPages={pagination.totalPages}
-                  totalItems={pagination.totalItems}
-                  pageSize={pagination.pageSize}
-                  onPageChange={handlePageChange}
-                  showCount={false}
-                />
               )}
             </div>
           </div>
@@ -624,7 +639,9 @@ export function InboxPanel({
                   ? 'Connect Gmail in Settings → Integrations to get started'
                   : filter !== 'all'
                     ? `No ${filter} threads found.`
-                    : 'Click "Sync Now" to fetch your emails'}
+                    : isSyncing
+                      ? 'Syncing your emails...'
+                      : 'No emails synced yet.'}
               </p>
             </div>
           ) : (

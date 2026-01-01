@@ -69,6 +69,8 @@ export interface SuggestionWithContext extends Suggestion {
   project?: {
     id: string
     name: string
+    slug: string | null
+    clientSlug: string | null
   } | null
   githubRepoLink?: {
     id: string

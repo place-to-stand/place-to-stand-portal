@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { eq, and, isNull, desc, sql, or, inArray } from 'drizzle-orm'
+import { eq, and, isNull, desc, sql, inArray } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import {
   suggestions,
@@ -8,6 +8,7 @@ import {
   messages,
   threads,
   projects,
+  clients,
   tasks,
   githubRepoLinks,
 } from '@/lib/db/schema'
@@ -16,7 +17,6 @@ import { createPullRequest, branchExists, createBranch } from '@/lib/github/clie
 import type {
   SuggestionWithContext,
   SuggestionType,
-  SuggestionStatus,
   TaskSuggestedContent,
   PRSuggestedContent,
 } from '@/lib/types/suggestions'
@@ -25,18 +25,36 @@ import type {
 // Get Suggestions
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Get pending suggestions for review
- */
-export async function getPendingSuggestions(
-  options: { limit?: number; projectId?: string; type?: SuggestionType } = {}
-): Promise<SuggestionWithContext[]> {
-  const { limit = 50, projectId, type } = options
+export type SuggestionFilter = 'pending' | 'approved' | 'rejected' | 'all'
 
-  const conditions = [
-    or(eq(suggestions.status, 'PENDING'), eq(suggestions.status, 'DRAFT')),
-    isNull(suggestions.deletedAt),
-  ]
+/**
+ * Get suggestions with flexible filtering by status
+ */
+export async function getSuggestions(
+  options: {
+    limit?: number
+    projectId?: string
+    type?: SuggestionType
+    filter?: SuggestionFilter
+  } = {}
+): Promise<SuggestionWithContext[]> {
+  const { limit = 50, projectId, type, filter = 'pending' } = options
+
+  const conditions = [isNull(suggestions.deletedAt)]
+
+  // Apply status filter
+  if (filter === 'pending') {
+    conditions.push(
+      inArray(suggestions.status, ['PENDING', 'DRAFT'])
+    )
+  } else if (filter === 'approved') {
+    conditions.push(
+      inArray(suggestions.status, ['APPROVED', 'MODIFIED'])
+    )
+  } else if (filter === 'rejected') {
+    conditions.push(eq(suggestions.status, 'REJECTED'))
+  }
+  // 'all' has no status filter
 
   if (projectId) {
     conditions.push(eq(suggestions.projectId, projectId))
@@ -60,8 +78,9 @@ export async function getPendingSuggestions(
   const threadIds = [...new Set(rows.map(s => s.threadId).filter(Boolean))] as string[]
   const projectIds = [...new Set(rows.map(s => s.projectId).filter(Boolean))] as string[]
   const repoLinkIds = [...new Set(rows.map(s => s.githubRepoLinkId).filter(Boolean))] as string[]
+  const createdTaskIds = [...new Set(rows.map(s => s.createdTaskId).filter(Boolean))] as string[]
 
-  const [messageRows, threadRows, projectRows, repoLinkRows] = await Promise.all([
+  const [messageRows, threadRows, projectRows, repoLinkRows, taskRows] = await Promise.all([
     messageIds.length > 0
       ? db
           .select({
@@ -82,8 +101,16 @@ export async function getPendingSuggestions(
       : [],
     projectIds.length > 0
       ? db
-          .select({ id: projects.id, name: projects.name })
+          .select({
+            id: projects.id,
+            name: projects.name,
+            slug: projects.slug,
+            clientId: projects.clientId,
+            clientName: clients.name,
+            clientSlug: clients.slug,
+          })
           .from(projects)
+          .leftJoin(clients, eq(projects.clientId, clients.id))
           .where(inArray(projects.id, projectIds))
       : [],
     repoLinkIds.length > 0
@@ -96,12 +123,24 @@ export async function getPendingSuggestions(
           .from(githubRepoLinks)
           .where(inArray(githubRepoLinks.id, repoLinkIds))
       : [],
+    createdTaskIds.length > 0
+      ? db
+          .select({ id: tasks.id, title: tasks.title })
+          .from(tasks)
+          .where(inArray(tasks.id, createdTaskIds))
+      : [],
   ])
 
   const messageMap = new Map(messageRows.map(m => [m.id, m]))
   const threadMap = new Map(threadRows.map(t => [t.id, t]))
-  const projectMap = new Map(projectRows.map(p => [p.id, p]))
+  const projectMap = new Map(
+    projectRows.map(p => [
+      p.id,
+      { id: p.id, name: p.name, slug: p.slug, clientSlug: p.clientSlug },
+    ])
+  )
   const repoLinkMap = new Map(repoLinkRows.map(r => [r.id, r]))
+  const taskMap = new Map(taskRows.map(t => [t.id, t]))
 
   return rows.map(suggestion => ({
     ...suggestion,
@@ -109,8 +148,17 @@ export async function getPendingSuggestions(
     thread: suggestion.threadId ? threadMap.get(suggestion.threadId) ?? null : null,
     project: suggestion.projectId ? projectMap.get(suggestion.projectId) ?? null : null,
     githubRepoLink: suggestion.githubRepoLinkId ? repoLinkMap.get(suggestion.githubRepoLinkId) ?? null : null,
-    createdTask: null,
+    createdTask: suggestion.createdTaskId ? taskMap.get(suggestion.createdTaskId) ?? null : null,
   }))
+}
+
+/**
+ * Get pending suggestions for review (backwards-compatible wrapper)
+ */
+export function getPendingSuggestions(
+  options: { limit?: number; projectId?: string; type?: SuggestionType } = {}
+): Promise<SuggestionWithContext[]> {
+  return getSuggestions({ ...options, filter: 'pending' })
 }
 
 /**
@@ -153,8 +201,14 @@ export async function getSuggestionById(
       : null,
     suggestion.projectId
       ? db
-          .select({ id: projects.id, name: projects.name })
+          .select({
+            id: projects.id,
+            name: projects.name,
+            slug: projects.slug,
+            clientSlug: clients.slug,
+          })
           .from(projects)
+          .leftJoin(clients, eq(projects.clientId, clients.id))
           .where(eq(projects.id, suggestion.projectId))
           .limit(1)
           .then(rows => rows[0] ?? null)

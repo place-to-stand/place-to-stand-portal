@@ -10,6 +10,7 @@ import {
   messages,
   threads,
   projects,
+  clients,
   githubRepoLinks,
   tasks,
   users,
@@ -76,8 +77,14 @@ export async function getSuggestionWithContext(id: string): Promise<SuggestionWi
       : null,
     suggestion.projectId
       ? db
-          .select({ id: projects.id, name: projects.name })
+          .select({
+            id: projects.id,
+            name: projects.name,
+            slug: projects.slug,
+            clientSlug: clients.slug,
+          })
           .from(projects)
+          .leftJoin(clients, eq(projects.clientId, clients.id))
           .where(eq(projects.id, suggestion.projectId))
           .limit(1)
           .then(rows => rows[0] ?? null)

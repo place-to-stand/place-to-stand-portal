@@ -7,6 +7,7 @@ import { oauthConnections, clients, projects } from '@/lib/db/schema'
 import {
   listThreadsForUser,
   getThreadCountsForUser,
+  getThreadSummaryById,
 } from '@/lib/queries/threads'
 import { getMessageCountsForUser } from '@/lib/queries/messages'
 import { InboxPanel } from './_components/inbox-panel'
@@ -16,7 +17,7 @@ const PAGE_SIZE = 25
 type FilterType = 'all' | 'linked' | 'unlinked'
 
 type Props = {
-  searchParams: Promise<{ page?: string; filter?: string }>
+  searchParams: Promise<{ page?: string; filter?: string; thread?: string }>
 }
 
 export default async function InboxPage({ searchParams }: Props) {
@@ -30,6 +31,9 @@ export default async function InboxPage({ searchParams }: Props) {
     ? (params.filter as FilterType)
     : 'all'
 
+  // Parse thread param for deep-linking
+  const threadId = params.thread || null
+
   // Get threads, counts, sync status, clients, and projects in parallel
   const [
     threadSummaries,
@@ -38,6 +42,7 @@ export default async function InboxPage({ searchParams }: Props) {
     [connection],
     clientsList,
     projectsList,
+    linkedThread,
   ] = await Promise.all([
     listThreadsForUser(user.id, { limit: PAGE_SIZE, offset, linkedFilter: filter }),
     getThreadCountsForUser(user.id, { linkedFilter: filter }),
@@ -63,6 +68,8 @@ export default async function InboxPage({ searchParams }: Props) {
       .from(projects)
       .where(isNull(projects.deletedAt))
       .orderBy(projects.name),
+    // Fetch the specific thread if deep-linking (may not be on current page)
+    threadId ? getThreadSummaryById(user.id, threadId) : null,
   ])
 
   const syncStatus = {
@@ -88,6 +95,7 @@ export default async function InboxPage({ searchParams }: Props) {
         totalItems: threadCounts.total,
         pageSize: PAGE_SIZE,
       }}
+      initialSelectedThread={linkedThread}
     />
   )
 }

@@ -31,6 +31,102 @@ export async function getThreadById(user: AppUser, id: string): Promise<Thread |
   return thread
 }
 
+/**
+ * Get a single thread summary by ID with all related data for the inbox UI
+ */
+export async function getThreadSummaryById(
+  userId: string,
+  threadId: string
+): Promise<ThreadSummary | null> {
+  // Fetch the thread
+  const [thread] = await db
+    .select()
+    .from(threads)
+    .where(
+      and(
+        eq(threads.id, threadId),
+        isNull(threads.deletedAt),
+        // User must have access (creator or has messages in thread)
+        or(
+          eq(threads.createdBy, userId),
+          sql`EXISTS (
+            SELECT 1 FROM messages
+            WHERE messages.thread_id = ${threads.id}
+            AND messages.user_id = ${userId}
+            AND messages.deleted_at IS NULL
+          )`
+        )
+      )
+    )
+    .limit(1)
+
+  if (!thread) return null
+
+  // Get client and project info
+  const [clientRow, projectRow] = await Promise.all([
+    thread.clientId
+      ? db
+          .select({ id: clients.id, name: clients.name })
+          .from(clients)
+          .where(eq(clients.id, thread.clientId))
+          .limit(1)
+          .then(rows => rows[0] ?? null)
+      : null,
+    thread.projectId
+      ? db
+          .select({ id: projects.id, name: projects.name })
+          .from(projects)
+          .where(eq(projects.id, thread.projectId))
+          .limit(1)
+          .then(rows => rows[0] ?? null)
+      : null,
+  ])
+
+  // Get latest message
+  const [latestMessage] = await db
+    .select({
+      id: messages.id,
+      snippet: messages.snippet,
+      fromEmail: messages.fromEmail,
+      fromName: messages.fromName,
+      sentAt: messages.sentAt,
+      isInbound: messages.isInbound,
+      isRead: messages.isRead,
+    })
+    .from(messages)
+    .where(
+      and(
+        eq(messages.threadId, threadId),
+        isNull(messages.deletedAt)
+      )
+    )
+    .orderBy(desc(messages.sentAt))
+    .limit(1)
+
+  return {
+    id: thread.id,
+    subject: thread.subject,
+    status: thread.status as ThreadStatus,
+    source: thread.source as 'EMAIL' | 'CHAT' | 'VOICE_MEMO' | 'DOCUMENT' | 'FORM',
+    participantEmails: thread.participantEmails,
+    lastMessageAt: thread.lastMessageAt,
+    messageCount: thread.messageCount,
+    client: clientRow,
+    project: projectRow,
+    latestMessage: latestMessage
+      ? {
+          id: latestMessage.id,
+          snippet: latestMessage.snippet,
+          fromEmail: latestMessage.fromEmail,
+          fromName: latestMessage.fromName,
+          sentAt: latestMessage.sentAt,
+          isInbound: latestMessage.isInbound,
+          isRead: latestMessage.isRead,
+        }
+      : undefined,
+  }
+}
+
 export async function getThreadByExternalId(
   externalThreadId: string,
   userId: string
