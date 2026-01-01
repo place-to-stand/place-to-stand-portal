@@ -24,7 +24,7 @@ export function ClientEmailsSection({ messages, isAdmin }: Props) {
           <h2 className='text-lg font-semibold tracking-tight'>Messages</h2>
           <Badge variant='secondary'>{messages.length}</Badge>
         </div>
-        <Link href='/inbox' className='text-sm text-muted-foreground hover:underline'>
+        <Link href='/my/inbox' className='text-sm text-muted-foreground hover:underline'>
           View inbox →
         </Link>
       </div>
@@ -61,7 +61,7 @@ export function ClientEmailsSection({ messages, isAdmin }: Props) {
             ))}
             {messages.length > 10 && (
               <div className='text-center pt-2'>
-                <Link href='/inbox' className='text-sm text-muted-foreground hover:underline'>
+                <Link href='/my/inbox' className='text-sm text-muted-foreground hover:underline'>
                   +{messages.length - 10} more messages
                 </Link>
               </div>

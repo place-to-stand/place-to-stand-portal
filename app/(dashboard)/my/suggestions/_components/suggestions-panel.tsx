@@ -96,8 +96,8 @@ export function SuggestionsPanel({
       // Reset selection when changing filter
       setSelected([])
       const newUrl = params.toString()
-        ? `/suggestions?${params.toString()}`
-        : '/suggestions'
+        ? `/my/suggestions?${params.toString()}`
+        : '/my/suggestions'
       router.push(newUrl)
     },
     [router, searchParams]
@@ -490,7 +490,7 @@ function SuggestionCard({
             <div className='text-muted-foreground mt-1.5 flex flex-wrap items-center gap-2 text-xs'>
               {suggestion.threadId ? (
                 <Link
-                  href={`/inbox?thread=${suggestion.threadId}`}
+                  href={`/my/inbox?thread=${suggestion.threadId}`}
                   className='hover:text-foreground flex items-center gap-1 hover:underline'
                 >
                   <Mail className='h-3 w-3' />

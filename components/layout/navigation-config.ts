@@ -32,23 +32,23 @@ export const NAV_GROUPS: NavGroup[] = [
     roles: ['ADMIN', 'CLIENT'],
     items: [
       {
-        href: '/home',
+        href: '/my/home',
         label: 'Home',
         icon: HomeIcon,
       },
       {
-        href: '/my-tasks/board',
-        label: 'My Tasks',
+        href: '/my/tasks/board',
+        label: 'Tasks',
         icon: ListTodo,
-        matchHrefs: ['/my-tasks', '/my-tasks/calendar'],
+        matchHrefs: ['/my/tasks', '/my/tasks/calendar'],
       },
       {
-        href: '/inbox',
+        href: '/my/inbox',
         label: 'Inbox',
         icon: Mail,
       },
       {
-        href: '/suggestions',
+        href: '/my/suggestions',
         label: 'Suggestions',
         icon: Sparkles,
       },

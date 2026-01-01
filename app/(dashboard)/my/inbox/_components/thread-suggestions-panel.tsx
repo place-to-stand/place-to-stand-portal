@@ -144,7 +144,7 @@ export function ThreadSuggestionsPanel({ threadId, isAdmin }: ThreadSuggestionsP
                   className='h-7 text-xs'
                   asChild
                 >
-                  <Link href='/suggestions'>
+                  <Link href='/my/suggestions'>
                     <ExternalLink className='mr-1 h-3 w-3' />
                     View All
                   </Link>

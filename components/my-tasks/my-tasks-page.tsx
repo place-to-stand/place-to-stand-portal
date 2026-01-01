@@ -175,7 +175,7 @@ export function MyTasksPage({
       const suffix = taskId ? `/${taskId}` : ''
       const assigneeParam = searchParams.get('assignee')
       const queryString = assigneeParam ? `?assignee=${assigneeParam}` : ''
-      return `/my-tasks/${targetView}${suffix}${queryString}`
+      return `/my/tasks/${targetView}${suffix}${queryString}`
     },
     [searchParams]
   )

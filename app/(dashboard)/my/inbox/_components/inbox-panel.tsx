@@ -210,8 +210,8 @@ export function InboxPanel({
         params.set('page', String(page))
       }
       const newUrl = params.toString()
-        ? `/inbox?${params.toString()}`
-        : '/inbox'
+        ? `/my/inbox?${params.toString()}`
+        : '/my/inbox'
       router.push(newUrl)
     },
     [router, searchParams]
@@ -230,8 +230,8 @@ export function InboxPanel({
         params.set('filter', newFilter)
       }
       const newUrl = params.toString()
-        ? `/inbox?${params.toString()}`
-        : '/inbox'
+        ? `/my/inbox?${params.toString()}`
+        : '/my/inbox'
       router.push(newUrl)
     },
     [router, searchParams]
@@ -306,7 +306,7 @@ export function InboxPanel({
       if (updateUrl) {
         const params = new URLSearchParams(searchParams.toString())
         params.set('thread', thread.id)
-        router.push(`/inbox?${params.toString()}`, { scroll: false })
+        router.push(`/my/inbox?${params.toString()}`, { scroll: false })
       }
 
       try {
@@ -394,7 +394,7 @@ export function InboxPanel({
     // Remove thread from URL
     const params = new URLSearchParams(searchParams.toString())
     params.delete('thread')
-    const newUrl = params.toString() ? `/inbox?${params.toString()}` : '/inbox'
+    const newUrl = params.toString() ? `/my/inbox?${params.toString()}` : '/my/inbox'
     router.push(newUrl, { scroll: false })
   }, [router, searchParams])
 

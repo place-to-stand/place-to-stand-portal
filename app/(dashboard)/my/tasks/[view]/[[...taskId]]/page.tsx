@@ -43,7 +43,7 @@ export default async function MyTasksViewRoute({
 
   if (!isMyTasksView(viewParam)) {
     const suffix = activeTaskId ? `/${activeTaskId}` : ''
-    redirect(`/my-tasks/${DEFAULT_VIEW}${suffix}`)
+    redirect(`/my/tasks/${DEFAULT_VIEW}${suffix}`)
   }
 
   const [admins, accessibleProjects] = await Promise.all([

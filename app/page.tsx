@@ -9,5 +9,5 @@ export default async function IndexPage() {
     redirect('/sign-in')
   }
 
-  redirect('/home')
+  redirect('/my/home')
 }
