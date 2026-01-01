@@ -69,7 +69,7 @@ export const fetchClientsWithMetrics = cache(
         activeProjectCount: sql<number>`
           count(${projects.id}) filter (
             where ${projects.deletedAt} is null
-            and lower(${projects.status}) = 'active'
+            and lower(${projects.status}::text) = 'active'
           )
         `.as('active_project_count'),
       })

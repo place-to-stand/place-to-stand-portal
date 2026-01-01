@@ -3,16 +3,38 @@ import 'server-only'
 import { and, eq, inArray, isNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { messages, oauthConnections, threads } from '@/lib/db/schema'
-import { listMessages, getMessage, normalizeEmail } from '@/lib/gmail/client'
+import { messages, oauthConnections } from '@/lib/db/schema'
+import {
+  listMessages,
+  getMessage,
+  getMessageRaw,
+  getAttachment,
+  getAttachmentMetadata,
+  normalizeEmail,
+} from '@/lib/gmail/client'
 import { findOrCreateThread } from '@/lib/queries/threads'
-import { getMessageByExternalId, createMessage } from '@/lib/queries/messages'
+import {
+  getMessageByExternalId,
+  createMessage,
+  createEmailRaw,
+  createMessageAttachment,
+} from '@/lib/queries/messages'
+import { uploadEmailRaw } from '@/lib/storage/email-raw'
+import { uploadEmailAttachment } from '@/lib/storage/email-attachments'
+import { getSupabaseServerClient } from '@/lib/supabase/server'
 import type { GmailMessage } from '@/lib/gmail/types'
 
 const BATCH_SIZE = 50
 const MAX_SYNC = 500
 
 type SyncResult = { synced: number; skipped: number; errors: string[] }
+
+type SyncOptions = {
+  /** Store raw MIME content in Supabase Storage */
+  storeRawMime?: boolean
+  /** Store attachments in Supabase Storage */
+  storeAttachments?: boolean
+}
 
 /** Parse "Name <email>" or just "email" format */
 function parseEmailAddress(addr: string | null): { email: string; name: string | null } {
@@ -38,8 +60,15 @@ function getParticipantEmails(msg: GmailMessage): string[] {
 }
 
 /** Sync Gmail messages for a single user */
-export async function syncGmailForUser(userId: string): Promise<SyncResult> {
+export async function syncGmailForUser(
+  userId: string,
+  options: SyncOptions = {}
+): Promise<SyncResult> {
+  const { storeRawMime = false, storeAttachments = false } = options
   const result: SyncResult = { synced: 0, skipped: 0, errors: [] }
+
+  // Get Supabase client for storage operations
+  const supabase = storeRawMime || storeAttachments ? getSupabaseServerClient() : null
 
   // List recent messages
   const listRes = await listMessages(userId, { maxResults: MAX_SYNC })
@@ -116,7 +145,7 @@ export async function syncGmailForUser(userId: string): Promise<SyncResult> {
             ? new Date(parseInt(msg.internalDate, 10)).toISOString()
             : new Date().toISOString()
 
-          await createMessage({
+          const createdMessage = await createMessage({
             threadId: thread.id,
             userId,
             source: 'EMAIL',
@@ -135,6 +164,61 @@ export async function syncGmailForUser(userId: string): Promise<SyncResult> {
             hasAttachments,
             providerMetadata: { labels: msg.labelIds || [] },
           })
+
+          // Store raw MIME content if requested
+          if (storeRawMime && supabase) {
+            try {
+              const rawMime = await getMessageRaw(userId, msg.id)
+              const { storagePath, checksum, sizeBytes } = await uploadEmailRaw({
+                client: supabase,
+                userId,
+                messageId: msg.id,
+                rawMime,
+              })
+              await createEmailRaw({
+                messageId: createdMessage.id,
+                storagePath,
+                checksum,
+                sizeBytes,
+              })
+            } catch (rawErr) {
+              result.errors.push(`Raw MIME error for ${msg.id}: ${rawErr instanceof Error ? rawErr.message : 'unknown'}`)
+            }
+          }
+
+          // Store attachments if requested
+          if (storeAttachments && supabase && hasAttachments) {
+            try {
+              const attachmentMeta = getAttachmentMetadata(msg)
+              for (const att of attachmentMeta) {
+                try {
+                  const attachmentData = await getAttachment(userId, msg.id, att.attachmentId)
+                  const { storagePath, fileSize } = await uploadEmailAttachment({
+                    client: supabase,
+                    userId,
+                    messageId: msg.id,
+                    attachmentId: att.attachmentId,
+                    content: attachmentData,
+                    mimeType: att.mimeType,
+                    originalName: att.filename,
+                  })
+                  await createMessageAttachment({
+                    messageId: createdMessage.id,
+                    storagePath,
+                    originalName: att.filename,
+                    mimeType: att.mimeType,
+                    fileSize,
+                    contentId: att.contentId,
+                    isInline: att.isInline,
+                  })
+                } catch (attErr) {
+                  result.errors.push(`Attachment error for ${msg.id}/${att.attachmentId}: ${attErr instanceof Error ? attErr.message : 'unknown'}`)
+                }
+              }
+            } catch (metaErr) {
+              result.errors.push(`Attachment metadata error for ${msg.id}: ${metaErr instanceof Error ? metaErr.message : 'unknown'}`)
+            }
+          }
 
           result.synced++
         }

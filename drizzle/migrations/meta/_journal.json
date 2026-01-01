@@ -57,6 +57,13 @@
       "when": 1735344000000,
       "tag": "0007_unified_messaging",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1767320400000,
+      "tag": "0008_generalize_contacts",
+      "breakpoints": true
     }
   ]
 }

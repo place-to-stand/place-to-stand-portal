@@ -1,6 +1,6 @@
 ---
 name: db-review
-description: Review database schema normalization, indexing strategy, query patterns, and migration safety for PostgreSQL/Drizzle. Use when adding tables, modifying schema, reviewing migrations, or optimizing database performance.
+description: Review database schema normalization, indexing strategy, query patterns, migration safety, and column/enum usage for PostgreSQL/Drizzle. Use when adding tables, modifying schema, reviewing migrations, or auditing unused data.
 ---
 
 # Database Review
@@ -54,11 +54,74 @@ Review schema files and queries for:
 - Backwards-incompatible changes
 - Missing data migrations for schema changes
 
+### 8. No Row Level Security (RLS) - CRITICAL
+
+**This project NEVER uses RLS.** All access control is handled in the application layer.
+
+**Flag as 🔴 CRITICAL if found:**
+- `ENABLE ROW LEVEL SECURITY` in any migration
+- `CREATE POLICY` statements in migrations
+- `pgPolicy()` calls in `lib/db/schema.ts`
+- Import of `pgPolicy` from `drizzle-orm/pg-core`
+- Helper functions like `is_admin()` for RLS
+
+**Why RLS is prohibited:**
+- Application-layer access control is easier to test and debug
+- RLS creates hidden complexity and hard-to-trace permission issues
+- Supabase RLS requires `auth.uid()` which couples DB to auth provider
+- All data access flows through permission-checked functions in `lib/auth/permissions.ts`
+
+**If RLS is found:** Immediately flag and recommend removal. This is a blocking issue.
+
+### 9. Column Usage Audit
+**Goal:** Prevent storing data that isn't immediately being used. Every column should have a purpose.
+
+**Exempt columns (standard audit fields):**
+- `id` (primary key)
+- `createdAt`, `created_at`
+- `updatedAt`, `updated_at`
+- `deletedAt`, `deleted_at`
+- Foreign key columns (e.g., `userId`, `projectId`, `clientId`)
+
+**For each non-exempt column, verify it is:**
+- Used in a query (SELECT, WHERE, ORDER BY, GROUP BY) in `lib/queries/` or `lib/data/`
+- OR displayed in a UI component (check `components/` and `app/`)
+- OR used in API responses or server actions
+
+**Flags:**
+- 🔴 **UNUSED**: Column exists but no evidence of usage anywhere
+- 🟡 **WRITE-ONLY**: Column is written to but never read/displayed
+- 🟢 **ACTIVE**: Column is both written and read/displayed
+
+### 10. Enum Value Usage Audit
+**Goal:** Ensure all enum values are actively used. Unused enum values create confusion and maintenance burden.
+
+**For each PostgreSQL enum type in the schema, verify:**
+- All values are used in at least one of:
+  - Query filters (WHERE status = 'VALUE')
+  - UI rendering (status labels, colors, icons)
+  - Business logic (switch statements, conditionals)
+  - API responses or form options
+
+**Flags:**
+- 🔴 **UNUSED VALUE**: Enum value exists but has no usage
+- 🟡 **DEPRECATED**: Value exists for historical data only (document if intentional)
+- 🟢 **ACTIVE**: Value is actively used in queries and UI
+
+**Document findings for each enum:**
+```
+Enum: taskStatus
+Values: [BACKLOG, ON_DECK, IN_PROGRESS, IN_REVIEW, BLOCKED, DONE, ARCHIVED]
+Usage Analysis:
+- BACKLOG: ✅ Query filter in fetchBacklogTasks(), UI in board column
+- ON_DECK: ✅ ...
+```
+
 ## Output Format
 
 For each finding:
 ```
-[TYPE: NORMALIZATION|INDEXING|DESIGN|QUERY|MIGRATION]
+[TYPE: NORMALIZATION|INDEXING|DESIGN|QUERY|MIGRATION|RLS_VIOLATION|UNUSED_COLUMN|UNUSED_ENUM]
 Location: table/file reference
 Issue: Brief description
 Current State: What exists now
@@ -66,13 +129,32 @@ Recommendation: How to improve
 Migration Required: Yes/No
 ```
 
+For column/enum usage audit, include a summary table:
+```
+## Column Usage Summary
+
+| Table | Column | Status | Evidence |
+|-------|--------|--------|----------|
+| tasks | priority | 🟢 ACTIVE | Used in TaskCard, fetchTasks WHERE clause |
+| tasks | estimatedHours | 🔴 UNUSED | No usage found |
+| leads | budget | 🟡 WRITE-ONLY | Set in intake webhook, never displayed |
+
+## Enum Usage Summary
+
+| Enum | Value | Status | Evidence |
+|------|-------|--------|----------|
+| taskStatus | BACKLOG | 🟢 ACTIVE | Board column, query filter |
+| leadStatus | UNQUALIFIED | 🔴 UNUSED | No UI or query usage found |
+```
+
 ## Actions
 
 1. Read `lib/db/schema.ts` and `lib/db/relations.ts`
-2. Analyze recent migrations in `drizzle/migrations/`
-3. Review query patterns in `lib/queries/`
-4. Check for missing indexes using common query patterns
-5. Validate soft-delete consistency
+2. **Check for RLS violations** - search for `pgPolicy`, `ENABLE ROW LEVEL SECURITY`, `CREATE POLICY`
+3. Analyze recent migrations in `drizzle/migrations/`
+4. Review query patterns in `lib/queries/`
+5. Check for missing indexes using common query patterns
+6. Validate soft-delete consistency
 
 ## Post-Review
 

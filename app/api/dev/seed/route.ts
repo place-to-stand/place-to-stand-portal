@@ -9,7 +9,8 @@ import {
   projects,
   threads,
   messages,
-  clientContacts,
+  contacts,
+  contactClients,
 } from '@/lib/db/schema'
 import { and, eq, isNull } from 'drizzle-orm'
 
@@ -165,17 +166,37 @@ async function upsertProject(input: { slug: string; name: string; clientId: stri
 }
 
 async function upsertContact(input: { clientId: string; email: string; name?: string | null; createdBy: string }) {
-  const existing = await db
+  // Find or create contact by email
+  let [existingContact] = await db
     .select()
-    .from(clientContacts)
-    .where(and(eq(clientContacts.clientId, input.clientId), eq(clientContacts.email, input.email), isNull(clientContacts.deletedAt)))
+    .from(contacts)
+    .where(and(eq(contacts.email, input.email), isNull(contacts.deletedAt)))
     .limit(1)
-  if (existing[0]) return existing[0]
-  const [row] = await db
-    .insert(clientContacts)
-    .values({ clientId: input.clientId, email: input.email, name: input.name ?? null, createdBy: input.createdBy })
-    .returning()
-  return row
+
+  let contactId: string
+  if (existingContact) {
+    contactId = existingContact.id
+  } else {
+    const [newContact] = await db
+      .insert(contacts)
+      .values({ email: input.email, name: input.name ?? null, createdBy: input.createdBy })
+      .returning()
+    contactId = newContact.id
+    existingContact = newContact
+  }
+
+  // Check if junction already exists
+  const [existingLink] = await db
+    .select()
+    .from(contactClients)
+    .where(and(eq(contactClients.contactId, contactId), eq(contactClients.clientId, input.clientId)))
+    .limit(1)
+
+  if (!existingLink) {
+    await db.insert(contactClients).values({ contactId, clientId: input.clientId })
+  }
+
+  return existingContact
 }
 
 async function upsertThread(input: {

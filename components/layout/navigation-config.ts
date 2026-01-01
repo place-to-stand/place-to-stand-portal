@@ -63,6 +63,11 @@ export const NAV_GROUPS: NavGroup[] = [
         label: 'Leads',
         icon: Handshake,
       },
+      {
+        href: '/settings/hour-blocks',
+        label: 'Hour Blocks',
+        icon: Clock3,
+      },
     ],
   },
   {
@@ -89,11 +94,6 @@ export const NAV_GROUPS: NavGroup[] = [
         href: '/settings/users',
         label: 'Users',
         icon: Users,
-      },
-      {
-        href: '/settings/hour-blocks',
-        label: 'Hour Blocks',
-        icon: Clock3,
       },
       {
         href: '/settings/integrations',

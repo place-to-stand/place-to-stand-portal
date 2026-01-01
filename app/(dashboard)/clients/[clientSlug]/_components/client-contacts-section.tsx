@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/use-toast'
-import type { ClientContact } from '@/lib/types/client-contacts'
+import type { ContactWithClientLink } from '@/lib/types/client-contacts'
 import {
   addClientContact,
   updateClientContact,
@@ -18,7 +18,7 @@ import {
 
 type Props = {
   clientId: string
-  contacts: ClientContact[]
+  contacts: ContactWithClientLink[]
   canManage: boolean
 }
 
@@ -30,14 +30,14 @@ export function ClientContactsSection({ clientId, contacts, canManage }: Props) 
   const { toast } = useToast()
   const [isPending, startTransition] = useTransition()
   const [editing, setEditing] = useState<EditingContact | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<ClientContact | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<ContactWithClientLink | null>(null)
 
   const handleSave = () => {
     if (!editing?.email) return
 
     startTransition(async () => {
       const result = editing.id
-        ? await updateClientContact(editing.id, editing)
+        ? await updateClientContact(editing.id, clientId, editing)
         : await addClientContact({ clientId, ...editing })
 
       if (result.success) {
@@ -53,7 +53,7 @@ export function ClientContactsSection({ clientId, contacts, canManage }: Props) 
     if (!deleteTarget) return
 
     startTransition(async () => {
-      const result = await deleteClientContact(deleteTarget.id)
+      const result = await deleteClientContact(deleteTarget.id, clientId)
       if (result.success) {
         toast({ title: 'Contact removed' })
       } else {
@@ -140,7 +140,7 @@ function ContactRow({
   onEdit,
   onDelete,
 }: {
-  contact: ClientContact
+  contact: ContactWithClientLink
   canManage: boolean
   onEdit: () => void
   onDelete: () => void

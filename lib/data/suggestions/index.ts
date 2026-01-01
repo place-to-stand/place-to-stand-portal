@@ -29,6 +29,7 @@ export type SuggestionFilter = 'pending' | 'approved' | 'rejected' | 'all'
 
 /**
  * Get suggestions with flexible filtering by status
+ * Optionally scoped to a specific user's synced emails
  */
 export async function getSuggestions(
   options: {
@@ -36,11 +37,23 @@ export async function getSuggestions(
     projectId?: string
     type?: SuggestionType
     filter?: SuggestionFilter
+    userId?: string
   } = {}
 ): Promise<SuggestionWithContext[]> {
-  const { limit = 50, projectId, type, filter = 'pending' } = options
+  const { limit = 50, projectId, type, filter = 'pending', userId } = options
 
   const conditions = [isNull(suggestions.deletedAt)]
+
+  // Scope to user's threads if userId provided
+  if (userId) {
+    // Get thread IDs created by user
+    const userThreadIds = db
+      .select({ id: threads.id })
+      .from(threads)
+      .where(and(eq(threads.createdBy, userId), isNull(threads.deletedAt)))
+
+    conditions.push(inArray(suggestions.threadId, userThreadIds))
+  }
 
   // Apply status filter
   if (filter === 'pending') {
@@ -597,13 +610,27 @@ export async function rejectSuggestion(
 
 /**
  * Get suggestion counts by status
+ * Optionally scoped to a specific user's synced emails
  */
-export async function getSuggestionCounts(): Promise<{
+export async function getSuggestionCounts(options: { userId?: string } = {}): Promise<{
   pending: number
   approved: number
   rejected: number
   byType: { TASK: number; PR: number; REPLY: number }
 }> {
+  const { userId } = options
+  const conditions = [isNull(suggestions.deletedAt)]
+
+  // Scope to user's threads if userId provided
+  if (userId) {
+    const userThreadIds = db
+      .select({ id: threads.id })
+      .from(threads)
+      .where(and(eq(threads.createdBy, userId), isNull(threads.deletedAt)))
+
+    conditions.push(inArray(suggestions.threadId, userThreadIds))
+  }
+
   const results = await db
     .select({
       status: suggestions.status,
@@ -611,7 +638,7 @@ export async function getSuggestionCounts(): Promise<{
       count: sql<number>`count(*)::int`,
     })
     .from(suggestions)
-    .where(isNull(suggestions.deletedAt))
+    .where(and(...conditions))
     .groupBy(suggestions.status, suggestions.type)
 
   const counts = {

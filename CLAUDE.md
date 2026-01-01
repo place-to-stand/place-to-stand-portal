@@ -81,8 +81,8 @@ Routes use slug-based patterns: `/projects/[clientSlug]/[projectSlug]/board/[[..
 - Soft deletes via `deletedAt` timestamps on all core tables
 - `createdAt`/`updatedAt` on all records
 - PostgreSQL enums for status fields
-- Row-level security policies using `pgPolicy()`
 - Relations defined in `lib/db/relations.ts`
+- **NO Row Level Security** - access control is handled in the application layer (see below)
 
 ### Data Layer Architecture
 
@@ -105,6 +105,26 @@ Routes use slug-based patterns: `/projects/[clientSlug]/[projectSlug]/board/[[..
 - Non-admins scoped via `client_members` table
 - Personal projects only visible to creator
 - Internal projects visible to all team members
+
+**CRITICAL: No Row Level Security (RLS)**
+
+This project does NOT use PostgreSQL Row Level Security. All access control is handled in the application layer via:
+- Permission helpers in `lib/auth/permissions.ts`
+- Query functions in `lib/queries/` that enforce scoping
+- Data layer in `lib/data/` that assembles and filters results
+
+**NEVER:**
+- Add `ENABLE ROW LEVEL SECURITY` to any table
+- Create `CREATE POLICY` statements in migrations
+- Use `pgPolicy()` in Drizzle schema definitions
+- Import `pgPolicy` from `drizzle-orm/pg-core`
+- Create helper functions like `is_admin()` for RLS
+
+**Why:**
+- Application-layer access control is easier to test and debug
+- RLS policies create hidden complexity and hard-to-trace permission issues
+- Supabase RLS requires `auth.uid()` which couples DB to auth provider
+- All data access already flows through permission-checked functions
 
 ### Authentication & Permissions
 

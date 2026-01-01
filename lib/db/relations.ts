@@ -16,7 +16,9 @@ import {
   activityLogs,
   leads,
   oauthConnections,
-  clientContacts,
+  contacts,
+  contactClients,
+  contactLeads,
   threads,
   messages,
   messageAttachments,
@@ -34,7 +36,7 @@ export const clientsRelations = relations(clients, ({ one, many }) => ({
   hourBlocks: many(hourBlocks),
   clientMembers: many(clientMembers),
   projects: many(projects),
-  contacts: many(clientContacts),
+  contactClients: many(contactClients),
   threads: many(threads),
 }))
 
@@ -110,11 +112,12 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
   suggestions: many(suggestions),
 }))
 
-export const leadsRelations = relations(leads, ({ one }) => ({
+export const leadsRelations = relations(leads, ({ one, many }) => ({
   assignee: one(users, {
     fields: [leads.assigneeId],
     references: [users.id],
   }),
+  contactLeads: many(contactLeads),
 }))
 
 export const hourBlocksRelations = relations(hourBlocks, ({ one }) => ({
@@ -231,14 +234,34 @@ export const oauthConnectionsRelations = relations(
   })
 )
 
-export const clientContactsRelations = relations(clientContacts, ({ one }) => ({
+export const contactsRelations = relations(contacts, ({ one, many }) => ({
+  createdByUser: one(users, {
+    fields: [contacts.createdBy],
+    references: [users.id],
+  }),
+  contactClients: many(contactClients),
+  contactLeads: many(contactLeads),
+}))
+
+export const contactClientsRelations = relations(contactClients, ({ one }) => ({
+  contact: one(contacts, {
+    fields: [contactClients.contactId],
+    references: [contacts.id],
+  }),
   client: one(clients, {
-    fields: [clientContacts.clientId],
+    fields: [contactClients.clientId],
     references: [clients.id],
   }),
-  createdByUser: one(users, {
-    fields: [clientContacts.createdBy],
-    references: [users.id],
+}))
+
+export const contactLeadsRelations = relations(contactLeads, ({ one }) => ({
+  contact: one(contacts, {
+    fields: [contactLeads.contactId],
+    references: [contacts.id],
+  }),
+  lead: one(leads, {
+    fields: [contactLeads.leadId],
+    references: [leads.id],
   }),
 }))
 

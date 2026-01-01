@@ -4,7 +4,7 @@ import { and, eq, isNull, notInArray } from 'drizzle-orm'
 import { requireUser } from '@/lib/auth/session'
 import { isAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, clientContacts, projects, messages, threads } from '@/lib/db/schema'
+import { clients, contacts, contactClients, projects, messages, threads } from '@/lib/db/schema'
 import { toResponsePayload, NotFoundError, ForbiddenError, type HttpError } from '@/lib/errors/http'
 import { matchEmailToClients } from '@/lib/ai/email-client-matching'
 
@@ -55,15 +55,16 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ema
       return NextResponse.json({ ok: true, suggestions: [] })
     }
 
-    // Fetch contacts for each client
+    // Fetch contacts for each client via junction table
     const allContacts = await db
       .select({
-        clientId: clientContacts.clientId,
-        email: clientContacts.email,
-        name: clientContacts.name,
+        clientId: contactClients.clientId,
+        email: contacts.email,
+        name: contacts.name,
       })
-      .from(clientContacts)
-      .where(isNull(clientContacts.deletedAt))
+      .from(contactClients)
+      .innerJoin(contacts, eq(contactClients.contactId, contacts.id))
+      .where(isNull(contacts.deletedAt))
 
     // Fetch projects for each client
     const allProjects = await db

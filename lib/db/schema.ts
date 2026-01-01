@@ -3,7 +3,6 @@ import {
   index,
   foreignKey,
   unique,
-  pgPolicy,
   uuid,
   text,
   timestamp,
@@ -44,6 +43,12 @@ export const projectType = pgEnum('project_type', [
   'CLIENT',
   'PERSONAL',
   'INTERNAL',
+])
+export const projectStatus = pgEnum('project_status', [
+  'ONBOARDING',
+  'ACTIVE',
+  'ON_HOLD',
+  'COMPLETED',
 ])
 export const leadStatus = pgEnum('lead_status', [
   'NEW_OPPORTUNITIES',
@@ -92,7 +97,6 @@ export const suggestionStatus = pgEnum('suggestion_status', [
   'APPROVED',
   'REJECTED',
   'MODIFIED',
-  'EXPIRED',
   'FAILED',
 ])
 
@@ -123,27 +127,6 @@ export const users = pgTable(
       name: 'users_id_fkey',
     }).onDelete('cascade'),
     unique('users_email_key').on(table.email),
-    pgPolicy('Admins delete users', {
-      as: 'permissive',
-      for: 'delete',
-      to: ['public'],
-      using: sql`is_admin()`,
-    }),
-    pgPolicy('Admins insert users', {
-      as: 'permissive',
-      for: 'insert',
-      to: ['public'],
-    }),
-    pgPolicy('Admins update users', {
-      as: 'permissive',
-      for: 'update',
-      to: ['public'],
-    }),
-    pgPolicy('Users view accessible users', {
-      as: 'permissive',
-      for: 'select',
-      to: ['public'],
-    }),
   ]
 )
 
@@ -176,38 +159,15 @@ export const clients = pgTable(
       name: 'clients_created_by_fkey',
     }),
     unique('clients_slug_key').on(table.slug),
-    pgPolicy('Admins delete clients', {
-      as: 'permissive',
-      for: 'delete',
-      to: ['public'],
-      using: sql`is_admin()`,
-    }),
-    pgPolicy('Admins insert clients', {
-      as: 'permissive',
-      for: 'insert',
-      to: ['public'],
-    }),
-    pgPolicy('Admins update clients', {
-      as: 'permissive',
-      for: 'update',
-      to: ['public'],
-    }),
-    pgPolicy('Users view clients', {
-      as: 'permissive',
-      for: 'select',
-      to: ['public'],
-    }),
   ]
 )
 
-export const clientContacts = pgTable(
-  'client_contacts',
+export const contacts = pgTable(
+  'contacts',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
-    clientId: uuid('client_id').notNull(),
     email: text().notNull(),
     name: text(),
-    isPrimary: boolean('is_primary').default(false).notNull(),
     createdBy: uuid('created_by'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
@@ -218,44 +178,77 @@ export const clientContacts = pgTable(
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
   table => [
-    unique('client_contacts_client_email_key').on(table.clientId, table.email),
-    index('idx_client_contacts_client')
-      .using('btree', table.clientId.asc().nullsLast().op('uuid_ops'))
-      .where(sql`(deleted_at IS NULL)`),
-    index('idx_client_contacts_email')
+    unique('contacts_email_key').on(table.email),
+    index('idx_contacts_email')
       .using('btree', table.email.asc().nullsLast().op('text_ops'))
       .where(sql`(deleted_at IS NULL)`),
-    index('idx_client_contacts_email_domain')
+    index('idx_contacts_email_domain')
       .using('btree', sql`split_part(email, '@', 2)`)
       .where(sql`(deleted_at IS NULL)`),
     foreignKey({
-      columns: [table.clientId],
-      foreignColumns: [clients.id],
-      name: 'client_contacts_client_id_fkey',
-    }).onDelete('cascade'),
-    foreignKey({
       columns: [table.createdBy],
       foreignColumns: [users.id],
-      name: 'client_contacts_created_by_fkey',
+      name: 'contacts_created_by_fkey',
     }),
-    pgPolicy('Admins manage client contacts', {
-      as: 'permissive',
-      for: 'all',
-      to: ['public'],
-      using: sql`is_admin()`,
-      withCheck: sql`is_admin()`,
-    }),
-    pgPolicy('Users view client contacts for accessible clients', {
-      as: 'permissive',
-      for: 'select',
-      to: ['public'],
-      using: sql`(
-        client_id IN (
-          SELECT client_id FROM client_members
-          WHERE user_id = auth.uid() AND deleted_at IS NULL
-        )
-      )`,
-    }),
+  ]
+)
+
+export const contactClients = pgTable(
+  'contact_clients',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    contactId: uuid('contact_id').notNull(),
+    clientId: uuid('client_id').notNull(),
+    isPrimary: boolean('is_primary').default(false).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+  },
+  table => [
+    unique('contact_clients_contact_client_key').on(table.contactId, table.clientId),
+    index('idx_contact_clients_contact')
+      .using('btree', table.contactId.asc().nullsLast().op('uuid_ops')),
+    index('idx_contact_clients_client')
+      .using('btree', table.clientId.asc().nullsLast().op('uuid_ops')),
+    foreignKey({
+      columns: [table.contactId],
+      foreignColumns: [contacts.id],
+      name: 'contact_clients_contact_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.clientId],
+      foreignColumns: [clients.id],
+      name: 'contact_clients_client_id_fkey',
+    }).onDelete('cascade'),
+  ]
+)
+
+export const contactLeads = pgTable(
+  'contact_leads',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    contactId: uuid('contact_id').notNull(),
+    leadId: uuid('lead_id').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+  },
+  table => [
+    unique('contact_leads_contact_lead_key').on(table.contactId, table.leadId),
+    index('idx_contact_leads_contact')
+      .using('btree', table.contactId.asc().nullsLast().op('uuid_ops')),
+    index('idx_contact_leads_lead')
+      .using('btree', table.leadId.asc().nullsLast().op('uuid_ops')),
+    foreignKey({
+      columns: [table.contactId],
+      foreignColumns: [contacts.id],
+      name: 'contact_leads_contact_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.leadId],
+      foreignColumns: [leads.id],
+      name: 'contact_leads_lead_id_fkey',
+    }).onDelete('cascade'),
   ]
 )
 
@@ -298,27 +291,6 @@ export const clientMembers = pgTable(
       table.clientId,
       table.userId
     ),
-    pgPolicy('Admins delete client members', {
-      as: 'permissive',
-      for: 'delete',
-      to: ['public'],
-      using: sql`is_admin()`,
-    }),
-    pgPolicy('Admins insert client members', {
-      as: 'permissive',
-      for: 'insert',
-      to: ['public'],
-    }),
-    pgPolicy('Admins update client members', {
-      as: 'permissive',
-      for: 'update',
-      to: ['public'],
-    }),
-    pgPolicy('Users view client members', {
-      as: 'permissive',
-      for: 'select',
-      to: ['public'],
-    }),
   ]
 )
 
@@ -328,7 +300,7 @@ export const projects = pgTable(
     id: uuid().defaultRandom().primaryKey().notNull(),
     clientId: uuid('client_id'),
     name: text().notNull(),
-    status: text().default('active').notNull(),
+    status: projectStatus().default('ACTIVE').notNull(),
     startsOn: date('starts_on'),
     endsOn: date('ends_on'),
     createdBy: uuid('created_by'),
@@ -361,27 +333,6 @@ export const projects = pgTable(
       columns: [table.createdBy],
       foreignColumns: [users.id],
       name: 'projects_created_by_fkey',
-    }),
-    pgPolicy('Admins delete projects', {
-      as: 'permissive',
-      for: 'delete',
-      to: ['public'],
-      using: sql`is_admin()`,
-    }),
-    pgPolicy('Users create projects', {
-      as: 'permissive',
-      for: 'insert',
-      to: ['public'],
-    }),
-    pgPolicy('Users update projects', {
-      as: 'permissive',
-      for: 'update',
-      to: ['public'],
-    }),
-    pgPolicy('Users view projects', {
-      as: 'permissive',
-      for: 'select',
-      to: ['public'],
     }),
     check(
       'projects_type_client_check',
@@ -454,27 +405,6 @@ export const tasks = pgTable(
       foreignColumns: [users.id],
       name: 'tasks_updated_by_fkey',
     }),
-    pgPolicy('Users create tasks', {
-      as: 'permissive',
-      for: 'insert',
-      to: ['public'],
-      withCheck: sql`is_admin()`,
-    }),
-    pgPolicy('Users delete tasks', {
-      as: 'permissive',
-      for: 'delete',
-      to: ['public'],
-    }),
-    pgPolicy('Users update tasks', {
-      as: 'permissive',
-      for: 'update',
-      to: ['public'],
-    }),
-    pgPolicy('Users view tasks', {
-      as: 'permissive',
-      for: 'select',
-      to: ['public'],
-    }),
   ]
 )
 
@@ -511,18 +441,6 @@ export const taskAssignees = pgTable(
       name: 'task_assignees_user_id_fkey',
     }).onDelete('cascade'),
     unique('task_assignees_task_id_user_id_key').on(table.taskId, table.userId),
-    pgPolicy('Admins manage task assignees', {
-      as: 'permissive',
-      for: 'all',
-      to: ['public'],
-      using: sql`is_admin()`,
-      withCheck: sql`is_admin()`,
-    }),
-    pgPolicy('Users view task assignees', {
-      as: 'permissive',
-      for: 'select',
-      to: ['public'],
-    }),
   ]
 )
 
@@ -557,18 +475,6 @@ export const taskAssigneeMetadata = pgTable(
     primaryKey({
       name: 'task_assignee_metadata_pkey',
       columns: [table.taskId, table.userId],
-    }),
-    pgPolicy('Admins manage task assignee metadata', {
-      as: 'permissive',
-      for: 'all',
-      to: ['public'],
-      using: sql`is_admin()`,
-      withCheck: sql`is_admin()`,
-    }),
-    pgPolicy('Users view task assignee metadata', {
-      as: 'permissive',
-      for: 'select',
-      to: ['public'],
     }),
   ]
 )
@@ -605,28 +511,6 @@ export const taskComments = pgTable(
       foreignColumns: [users.id],
       name: 'task_comments_author_id_fkey',
     }).onDelete('cascade'),
-    pgPolicy('Admins manage task comments', {
-      as: 'permissive',
-      for: 'all',
-      to: ['public'],
-      using: sql`is_admin()`,
-      withCheck: sql`is_admin()`,
-    }),
-    pgPolicy('Users create task comments', {
-      as: 'permissive',
-      for: 'insert',
-      to: ['public'],
-    }),
-    pgPolicy('Users update task comments', {
-      as: 'permissive',
-      for: 'update',
-      to: ['public'],
-    }),
-    pgPolicy('Users view task comments', {
-      as: 'permissive',
-      for: 'select',
-      to: ['public'],
-    }),
   ]
 )
 
@@ -665,23 +549,6 @@ export const taskAttachments = pgTable(
       foreignColumns: [users.id],
       name: 'task_attachments_uploaded_by_fkey',
     }).onDelete('cascade'),
-    pgPolicy('Admins manage task attachments', {
-      as: 'permissive',
-      for: 'all',
-      to: ['public'],
-      using: sql`is_admin()`,
-      withCheck: sql`is_admin()`,
-    }),
-    pgPolicy('Users create task attachments', {
-      as: 'permissive',
-      for: 'insert',
-      to: ['public'],
-    }),
-    pgPolicy('Users view task attachments', {
-      as: 'permissive',
-      for: 'select',
-      to: ['public'],
-    }),
   ]
 )
 
@@ -721,27 +588,6 @@ export const hourBlocks = pgTable(
       foreignColumns: [clients.id],
       name: 'hour_blocks_client_id_fkey',
     }).onDelete('cascade'),
-    pgPolicy('Admins delete hour blocks', {
-      as: 'permissive',
-      for: 'delete',
-      to: ['public'],
-      using: sql`is_admin()`,
-    }),
-    pgPolicy('Admins insert hour blocks', {
-      as: 'permissive',
-      for: 'insert',
-      to: ['public'],
-    }),
-    pgPolicy('Admins update hour blocks', {
-      as: 'permissive',
-      for: 'update',
-      to: ['public'],
-    }),
-    pgPolicy('Users view hour blocks', {
-      as: 'permissive',
-      for: 'select',
-      to: ['public'],
-    }),
     check(
       'hour_blocks_invoice_number_format',
       sql`(invoice_number IS NULL) OR (invoice_number ~ '^[A-Za-z0-9-]+$'::text)`
@@ -785,23 +631,6 @@ export const timeLogs = pgTable(
       foreignColumns: [users.id],
       name: 'time_logs_user_id_fkey',
     }).onDelete('cascade'),
-    pgPolicy('Admins manage time logs', {
-      as: 'permissive',
-      for: 'all',
-      to: ['public'],
-      using: sql`is_admin()`,
-      withCheck: sql`is_admin()`,
-    }),
-    pgPolicy('Users update time logs', {
-      as: 'permissive',
-      for: 'update',
-      to: ['public'],
-    }),
-    pgPolicy('Users view time logs', {
-      as: 'permissive',
-      for: 'select',
-      to: ['public'],
-    }),
     check('time_logs_hours_check', sql`hours > (0)::numeric`),
   ]
 )
@@ -841,18 +670,6 @@ export const timeLogTasks = pgTable(
       foreignColumns: [tasks.id],
       name: 'time_log_tasks_task_id_fkey',
     }).onDelete('cascade'),
-    pgPolicy('Admins manage time log tasks', {
-      as: 'permissive',
-      for: 'all',
-      to: ['public'],
-      using: sql`is_admin()`,
-      withCheck: sql`is_admin()`,
-    }),
-    pgPolicy('Users view time log tasks', {
-      as: 'permissive',
-      for: 'select',
-      to: ['public'],
-    }),
     check(
       'time_log_tasks_project_match',
       sql`CHECK (time_log_task_matches_project(time_log_id, task_id))`
@@ -894,18 +711,6 @@ export const leads = pgTable(
       columns: [table.assigneeId],
       foreignColumns: [users.id],
       name: 'leads_assignee_id_fkey',
-    }),
-    pgPolicy('Admins manage leads', {
-      as: 'permissive',
-      for: 'all',
-      to: ['public'],
-      using: sql`is_admin()`,
-      withCheck: sql`is_admin()`,
-    }),
-    pgPolicy('Users view leads', {
-      as: 'permissive',
-      for: 'select',
-      to: ['public'],
     }),
   ]
 )
@@ -970,27 +775,6 @@ export const activityLogs = pgTable(
       foreignColumns: [users.id],
       name: 'activity_logs_actor_id_fkey',
     }).onDelete('cascade'),
-    pgPolicy('Admins delete activity logs', {
-      as: 'permissive',
-      for: 'delete',
-      to: ['public'],
-      using: sql`is_admin()`,
-    }),
-    pgPolicy('Admins update activity logs', {
-      as: 'permissive',
-      for: 'update',
-      to: ['public'],
-    }),
-    pgPolicy('Users insert activity logs', {
-      as: 'permissive',
-      for: 'insert',
-      to: ['public'],
-    }),
-    pgPolicy('Users view activity logs', {
-      as: 'permissive',
-      for: 'select',
-      to: ['public'],
-    }),
   ]
 )
 
@@ -1026,27 +810,6 @@ export const activityOverviewCache = pgTable(
       foreignColumns: [users.id],
       name: 'activity_overview_cache_user_id_fkey',
     }).onDelete('cascade'),
-    pgPolicy('Users can delete their cached activity overview', {
-      as: 'permissive',
-      for: 'delete',
-      to: ['public'],
-      using: sql`(( SELECT auth.uid() AS uid) = user_id)`,
-    }),
-    pgPolicy('Users can insert their cached activity overview', {
-      as: 'permissive',
-      for: 'insert',
-      to: ['public'],
-    }),
-    pgPolicy('Users can update their cached activity overview', {
-      as: 'permissive',
-      for: 'update',
-      to: ['public'],
-    }),
-    pgPolicy('Users can view their cached activity overview', {
-      as: 'permissive',
-      for: 'select',
-      to: ['public'],
-    }),
     check(
       'activity_overview_cache_timeframe_days_check',
       sql`timeframe_days = ANY (ARRAY[1, 7, 14, 28])`
@@ -1102,18 +865,6 @@ export const oauthConnections = pgTable(
       foreignColumns: [users.id],
       name: 'oauth_connections_user_id_fkey',
     }).onDelete('cascade'),
-    pgPolicy('Users manage own oauth connections', {
-      as: 'permissive',
-      for: 'all',
-      to: ['public'],
-      using: sql`user_id = auth.uid()`,
-    }),
-    pgPolicy('Admins view all oauth connections', {
-      as: 'permissive',
-      for: 'select',
-      to: ['public'],
-      using: sql`is_admin()`,
-    }),
   ]
 )
 
@@ -1171,29 +922,6 @@ export const threads = pgTable(
       columns: [table.createdBy],
       foreignColumns: [users.id],
       name: 'threads_created_by_fkey',
-    }),
-    pgPolicy('Admins manage threads', {
-      as: 'permissive',
-      for: 'all',
-      to: ['public'],
-      using: sql`is_admin()`,
-      withCheck: sql`is_admin()`,
-    }),
-    pgPolicy('Users view accessible threads', {
-      as: 'permissive',
-      for: 'select',
-      to: ['public'],
-      using: sql`(
-        client_id IN (
-          SELECT client_id FROM client_members
-          WHERE user_id = auth.uid() AND deleted_at IS NULL
-        )
-        OR project_id IN (
-          SELECT id FROM projects
-          WHERE created_by = auth.uid() AND deleted_at IS NULL
-        )
-        OR created_by = auth.uid()
-      )`,
     }),
   ]
 )
@@ -1256,19 +984,6 @@ export const messages = pgTable(
       foreignColumns: [users.id],
       name: 'messages_user_id_fkey',
     }).onDelete('cascade'),
-    pgPolicy('Users manage own messages', {
-      as: 'permissive',
-      for: 'all',
-      to: ['public'],
-      using: sql`user_id = auth.uid()`,
-      withCheck: sql`user_id = auth.uid()`,
-    }),
-    pgPolicy('Admins view all messages', {
-      as: 'permissive',
-      for: 'select',
-      to: ['public'],
-      using: sql`is_admin()`,
-    }),
   ]
 )
 
@@ -1373,25 +1088,6 @@ export const githubRepoLinks = pgTable(
       foreignColumns: [users.id],
       name: 'github_repo_links_linked_by_fkey',
     }),
-    pgPolicy('Admins manage github repo links', {
-      as: 'permissive',
-      for: 'all',
-      to: ['public'],
-      using: sql`is_admin()`,
-    }),
-    pgPolicy('Users view repo links for accessible projects', {
-      as: 'permissive',
-      for: 'select',
-      to: ['public'],
-      using: sql`(
-        project_id IN (
-          SELECT id FROM projects WHERE deleted_at IS NULL
-          AND (created_by = auth.uid() OR client_id IN (
-            SELECT client_id FROM client_members WHERE user_id = auth.uid() AND deleted_at IS NULL
-          ))
-        )
-      )`,
-    }),
   ]
 )
 
@@ -1478,33 +1174,6 @@ export const suggestions = pgTable(
       foreignColumns: [tasks.id],
       name: 'suggestions_created_task_id_fkey',
     }),
-    pgPolicy('Admins manage suggestions', {
-      as: 'permissive',
-      for: 'all',
-      to: ['public'],
-      using: sql`is_admin()`,
-      withCheck: sql`is_admin()`,
-    }),
-    pgPolicy('Users view suggestions for accessible threads', {
-      as: 'permissive',
-      for: 'select',
-      to: ['public'],
-      using: sql`(
-        thread_id IN (
-          SELECT t.id FROM threads t
-          WHERE t.deleted_at IS NULL AND (
-            t.client_id IN (
-              SELECT client_id FROM client_members
-              WHERE user_id = auth.uid() AND deleted_at IS NULL
-            )
-            OR t.created_by = auth.uid()
-          )
-        )
-        OR message_id IN (
-          SELECT id FROM messages WHERE user_id = auth.uid()
-        )
-      )`,
-    }),
   ]
 )
 
@@ -1533,25 +1202,6 @@ export const suggestionFeedback = pgTable(
       columns: [table.createdBy],
       foreignColumns: [users.id],
       name: 'suggestion_feedback_created_by_fkey',
-    }),
-    pgPolicy('Admins manage suggestion feedback', {
-      as: 'permissive',
-      for: 'all',
-      to: ['public'],
-      using: sql`is_admin()`,
-      withCheck: sql`is_admin()`,
-    }),
-    pgPolicy('Users view own suggestion feedback', {
-      as: 'permissive',
-      for: 'select',
-      to: ['public'],
-      using: sql`created_by = auth.uid()`,
-    }),
-    pgPolicy('Users create own suggestion feedback', {
-      as: 'permissive',
-      for: 'insert',
-      to: ['public'],
-      withCheck: sql`created_by = auth.uid()`,
     }),
   ]
 )

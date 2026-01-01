@@ -10,7 +10,7 @@ export type NewSuggestionFeedback = InferInsertModel<typeof suggestionFeedback>
 
 // Enum types
 export type SuggestionType = 'TASK' | 'PR' | 'REPLY'
-export type SuggestionStatus = 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'MODIFIED' | 'EXPIRED' | 'FAILED'
+export type SuggestionStatus = 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'MODIFIED' | 'FAILED'
 export type SuggestionPriority = 'HIGH' | 'MEDIUM' | 'LOW'
 
 // Polymorphic suggested content types

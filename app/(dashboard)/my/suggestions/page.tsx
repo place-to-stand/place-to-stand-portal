@@ -1,4 +1,4 @@
-import { requireRole } from '@/lib/auth/session'
+import { requireUser } from '@/lib/auth/session'
 import {
   getSuggestions,
   getSuggestionCounts,
@@ -14,7 +14,7 @@ type PageProps = {
 const VALID_FILTERS: SuggestionFilter[] = ['pending', 'approved', 'rejected', 'all']
 
 export default async function SuggestionsPage({ searchParams }: PageProps) {
-  await requireRole('ADMIN')
+  const user = await requireUser()
 
   const params = await searchParams
   const filterParam = params.filter
@@ -23,8 +23,8 @@ export default async function SuggestionsPage({ searchParams }: PageProps) {
     : 'pending'
 
   const [suggestions, counts, projects] = await Promise.all([
-    getSuggestions({ limit: 50, filter }),
-    getSuggestionCounts(),
+    getSuggestions({ limit: 50, filter, userId: user.id }),
+    getSuggestionCounts({ userId: user.id }),
     getProjectsForDropdown(),
   ])
 

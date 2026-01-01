@@ -352,6 +352,46 @@ export async function getEmailRawByMessageId(messageId: string) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Message Attachments
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type CreateMessageAttachmentInput = {
+  messageId: string
+  storagePath: string
+  originalName: string
+  mimeType: string
+  fileSize: number
+  contentId?: string | null
+  isInline?: boolean
+}
+
+export async function createMessageAttachment(input: CreateMessageAttachmentInput) {
+  const [record] = await db
+    .insert(messageAttachments)
+    .values({
+      messageId: input.messageId,
+      storagePath: input.storagePath,
+      originalName: input.originalName,
+      mimeType: input.mimeType,
+      fileSize: input.fileSize,
+      contentId: input.contentId ?? null,
+      isInline: input.isInline ?? false,
+    })
+    .returning()
+
+  return record
+}
+
+export async function getMessageAttachments(messageId: string) {
+  const records = await db
+    .select()
+    .from(messageAttachments)
+    .where(eq(messageAttachments.messageId, messageId))
+
+  return records
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Messages for Client (used by client detail page)
 // ─────────────────────────────────────────────────────────────────────────────
 

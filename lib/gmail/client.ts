@@ -116,6 +116,52 @@ export async function getMessage(
   return json
 }
 
+/**
+ * Get a message in raw MIME format.
+ * Returns the base64url-encoded raw RFC 2822 message.
+ */
+export async function getMessageRaw(
+  userId: string,
+  messageId: string,
+  options?: GmailClientOptions
+): Promise<Buffer> {
+  const { accessToken } = await getValidAccessToken(userId, options?.connectionId)
+  const url = new URL(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}`)
+  url.searchParams.set('format', 'raw')
+
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } })
+  if (!res.ok) throw new Error(`Gmail get raw failed: ${await res.text()}`)
+
+  const json = (await res.json()) as { raw: string }
+  // Gmail returns base64url-encoded data
+  const fixed = json.raw.replace(/-/g, '+').replace(/_/g, '/')
+  return Buffer.from(fixed, 'base64')
+}
+
+/**
+ * Get an attachment's binary data.
+ * Returns the attachment content as a Buffer.
+ */
+export async function getAttachment(
+  userId: string,
+  messageId: string,
+  attachmentId: string,
+  options?: GmailClientOptions
+): Promise<Buffer> {
+  const { accessToken } = await getValidAccessToken(userId, options?.connectionId)
+  const url = new URL(
+    `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}/attachments/${attachmentId}`
+  )
+
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } })
+  if (!res.ok) throw new Error(`Gmail get attachment failed: ${await res.text()}`)
+
+  const json = (await res.json()) as { data: string; size: number }
+  // Gmail returns base64url-encoded data
+  const fixed = json.data.replace(/-/g, '+').replace(/_/g, '/')
+  return Buffer.from(fixed, 'base64')
+}
+
 function header(headers: GmailBodyPart['headers'] | undefined, name: string): string | null {
   const found = headers?.find(h => h.name.toLowerCase() === name.toLowerCase())
   return found?.value ?? null
@@ -246,5 +292,61 @@ function collectCidMappings(part?: GmailBodyPart): CidAttachmentMapping[] {
  */
 export function getCidAttachmentMappings(message: GmailMessage): CidAttachmentMapping[] {
   return collectCidMappings(message.payload)
+}
+
+export type AttachmentMetadata = {
+  attachmentId: string
+  filename: string
+  mimeType: string
+  size: number
+  contentId?: string // For inline attachments
+  isInline: boolean
+}
+
+/**
+ * Collect all attachment metadata from a message's MIME structure.
+ */
+function collectAttachments(part?: GmailBodyPart): AttachmentMetadata[] {
+  if (!part) return []
+
+  const attachments: AttachmentMetadata[] = []
+
+  // Check if this part is an attachment
+  const attachmentId = part.body?.attachmentId
+  const size = part.body?.size ?? 0
+
+  if (attachmentId && size > 0) {
+    const contentId = header(part.headers, 'Content-ID')
+    const contentDisposition = header(part.headers, 'Content-Disposition') || ''
+
+    // Inline if it has a Content-ID or Content-Disposition: inline
+    const isInline = !!contentId || contentDisposition.toLowerCase().includes('inline')
+
+    attachments.push({
+      attachmentId,
+      filename: part.filename || 'unnamed',
+      mimeType: part.mimeType || 'application/octet-stream',
+      size,
+      contentId: contentId?.replace(/^<|>$/g, ''),
+      isInline,
+    })
+  }
+
+  // Recursively check child parts
+  if (part.parts) {
+    for (const child of part.parts) {
+      attachments.push(...collectAttachments(child))
+    }
+  }
+
+  return attachments
+}
+
+/**
+ * Get all attachment metadata for a Gmail message.
+ * Returns metadata for both inline and regular attachments.
+ */
+export function getAttachmentMetadata(message: GmailMessage): AttachmentMetadata[] {
+  return collectAttachments(message.payload)
 }
 

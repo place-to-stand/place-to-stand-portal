@@ -7,7 +7,7 @@ import { z } from 'zod'
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, clientContacts } from '@/lib/db/schema'
+import { clients, contacts, contactClients } from '@/lib/db/schema'
 
 const updateClientNotesSchema = z.object({
   clientId: z.string().uuid('Invalid client ID'),
@@ -62,7 +62,7 @@ export async function updateClientNotes(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Client Contacts
+// Client Contacts (using junction table approach)
 // ─────────────────────────────────────────────────────────────────────────────
 
 const contactSchema = z.object({
@@ -82,16 +82,41 @@ export async function addClientContact(input: z.infer<typeof contactSchema>): Pr
   if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message ?? 'Invalid input' }
 
   try {
-    const [contact] = await db.insert(clientContacts).values({
+    // Find existing contact by email or create new one
+    const [existingContact] = await db
+      .select({ id: contacts.id })
+      .from(contacts)
+      .where(and(eq(contacts.email, parsed.data.email), isNull(contacts.deletedAt)))
+      .limit(1)
+
+    let contactId: string
+    if (existingContact) {
+      contactId = existingContact.id
+      // Update name if provided and different
+      if (parsed.data.name) {
+        await db.update(contacts)
+          .set({ name: parsed.data.name, updatedAt: new Date().toISOString() })
+          .where(eq(contacts.id, contactId))
+      }
+    } else {
+      // Create new contact
+      const [newContact] = await db.insert(contacts).values({
+        email: parsed.data.email,
+        name: parsed.data.name,
+        createdBy: user.id,
+      }).returning({ id: contacts.id })
+      contactId = newContact.id
+    }
+
+    // Create junction record linking contact to client
+    await db.insert(contactClients).values({
+      contactId,
       clientId: parsed.data.clientId,
-      email: parsed.data.email,
-      name: parsed.data.name,
       isPrimary: parsed.data.isPrimary,
-      createdBy: user.id,
-    }).returning({ id: clientContacts.id })
+    })
 
     revalidatePath(`/clients`)
-    return { success: true, id: contact.id }
+    return { success: true, id: contactId }
   } catch (err) {
     if (err instanceof Error && err.message.includes('unique')) {
       return { success: false, error: 'This email is already added to this client' }
@@ -102,6 +127,7 @@ export async function addClientContact(input: z.infer<typeof contactSchema>): Pr
 
 export async function updateClientContact(
   contactId: string,
+  clientId: string,
   input: Omit<z.infer<typeof contactSchema>, 'clientId'>
 ): Promise<ContactActionResult> {
   const user = await requireUser()
@@ -111,27 +137,59 @@ export async function updateClientContact(
   if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message ?? 'Invalid input' }
 
   try {
-    await db.update(clientContacts)
-      .set({ ...parsed.data, updatedAt: new Date().toISOString() })
-      .where(and(eq(clientContacts.id, contactId), isNull(clientContacts.deletedAt)))
+    // Update contact details
+    await db.update(contacts)
+      .set({
+        email: parsed.data.email,
+        name: parsed.data.name,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(and(eq(contacts.id, contactId), isNull(contacts.deletedAt)))
+
+    // Update isPrimary in junction table
+    await db.update(contactClients)
+      .set({ isPrimary: parsed.data.isPrimary })
+      .where(and(
+        eq(contactClients.contactId, contactId),
+        eq(contactClients.clientId, clientId)
+      ))
 
     revalidatePath(`/clients`)
     return { success: true, id: contactId }
   } catch (err) {
     if (err instanceof Error && err.message.includes('unique')) {
-      return { success: false, error: 'This email is already added to this client' }
+      return { success: false, error: 'This email is already in use' }
     }
     return { success: false, error: 'Failed to update contact' }
   }
 }
 
-export async function deleteClientContact(contactId: string): Promise<{ success: boolean; error?: string }> {
+export async function deleteClientContact(
+  contactId: string,
+  clientId: string
+): Promise<{ success: boolean; error?: string }> {
   const user = await requireUser()
   assertAdmin(user)
 
-  await db.update(clientContacts)
-    .set({ deletedAt: new Date().toISOString() })
-    .where(eq(clientContacts.id, contactId))
+  // Delete the junction record (removes link between contact and client)
+  await db.delete(contactClients)
+    .where(and(
+      eq(contactClients.contactId, contactId),
+      eq(contactClients.clientId, clientId)
+    ))
+
+  // Soft-delete the contact if it has no other links
+  const [remainingLinks] = await db
+    .select({ count: contactClients.id })
+    .from(contactClients)
+    .where(eq(contactClients.contactId, contactId))
+    .limit(1)
+
+  if (!remainingLinks) {
+    await db.update(contacts)
+      .set({ deletedAt: new Date().toISOString() })
+      .where(eq(contacts.id, contactId))
+  }
 
   revalidatePath(`/clients`)
   return { success: true }

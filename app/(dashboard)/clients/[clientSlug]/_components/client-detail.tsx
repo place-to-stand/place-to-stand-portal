@@ -27,7 +27,7 @@ import type {
   ClientDetail as ClientDetailType,
   ClientProject,
 } from '@/lib/data/clients'
-import type { ClientContact } from '@/lib/types/client-contacts'
+import type { ContactWithClientLink } from '@/lib/types/client-contacts'
 import type { MessageForClient } from '@/lib/queries/messages'
 import { getBillingTypeLabel } from '@/lib/settings/clients/billing-types'
 import {
@@ -54,7 +54,7 @@ type HydratedClientDetail = ClientDetailType & { resolvedId: string }
 type ClientDetailProps = {
   client: HydratedClientDetail
   projects: ClientProject[]
-  contacts: ClientContact[]
+  contacts: ContactWithClientLink[]
   messages: MessageForClient[]
   canManageClients: boolean
   clientUsers: ClientUserSummary[]
@@ -75,10 +75,10 @@ export function ClientDetail({
   currentUserId,
 }: ClientDetailProps) {
   const activeProjects = projects.filter(
-    p => p.status.toLowerCase() === 'active'
+    p => p.status === 'ACTIVE'
   )
   const otherProjects = projects.filter(
-    p => p.status.toLowerCase() !== 'active'
+    p => p.status !== 'ACTIVE'
   )
 
   return (

@@ -4,7 +4,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { clientContacts, messages, threads } from '@/lib/db/schema'
+import { contacts, contactClients, messages, threads } from '@/lib/db/schema'
 import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
 import { isAdmin } from '@/lib/auth/permissions'
 
@@ -67,27 +67,32 @@ export async function matchAndLinkMessage(
 
   const addressDomains = Array.from(new Set(allAddresses.map(domain).filter(Boolean)))
 
-  // Find contacts that match any address or any domain
-  const contacts = await db
-    .select({ id: clientContacts.id, clientId: clientContacts.clientId, email: clientContacts.email })
-    .from(clientContacts)
+  // Find contacts that match any address or any domain, joined with their client links
+  const matchedContacts = await db
+    .select({
+      contactId: contacts.id,
+      clientId: contactClients.clientId,
+      email: contacts.email,
+    })
+    .from(contacts)
+    .innerJoin(contactClients, eq(contactClients.contactId, contacts.id))
     .where(
       and(
-        isNull(clientContacts.deletedAt),
+        isNull(contacts.deletedAt),
         // match exact emails OR any domain match
-        sql`${clientContacts.email} = ANY(${allAddresses}) OR split_part(${clientContacts.email}, '@', 2) = ANY(${addressDomains})`
+        sql`${contacts.email} = ANY(${allAddresses}) OR split_part(${contacts.email}, '@', 2) = ANY(${addressDomains})`
       )
     )
 
-  if (!contacts.length) {
+  if (!matchedContacts.length) {
     return { linked: false, clientId: null, confidence: null }
   }
 
   // Determine best match - prefer exact email match from sender
-  const exactFromMatch = contacts.find(c => normalize(c.email) === from)
-  const anyExactMatch = contacts.find(c => allAddresses.includes(normalize(c.email)))
+  const exactFromMatch = matchedContacts.find(c => normalize(c.email) === from)
+  const anyExactMatch = matchedContacts.find(c => allAddresses.includes(normalize(c.email)))
 
-  const bestMatch = exactFromMatch || anyExactMatch || contacts[0]
+  const bestMatch = exactFromMatch || anyExactMatch || matchedContacts[0]
   const confidence = exactFromMatch ? 'HIGH' : 'MEDIUM'
 
   // Update thread with client link
@@ -141,23 +146,28 @@ export async function matchAndLinkThread(
 
   const addressDomains = Array.from(new Set(allAddresses.map(domain).filter(Boolean)))
 
-  // Find contacts that match any address or any domain
-  const contacts = await db
-    .select({ id: clientContacts.id, clientId: clientContacts.clientId, email: clientContacts.email })
-    .from(clientContacts)
+  // Find contacts that match any address or any domain, joined with their client links
+  const matchedContacts = await db
+    .select({
+      contactId: contacts.id,
+      clientId: contactClients.clientId,
+      email: contacts.email,
+    })
+    .from(contacts)
+    .innerJoin(contactClients, eq(contactClients.contactId, contacts.id))
     .where(
       and(
-        isNull(clientContacts.deletedAt),
-        sql`${clientContacts.email} = ANY(${allAddresses}) OR split_part(${clientContacts.email}, '@', 2) = ANY(${addressDomains})`
+        isNull(contacts.deletedAt),
+        sql`${contacts.email} = ANY(${allAddresses}) OR split_part(${contacts.email}, '@', 2) = ANY(${addressDomains})`
       )
     )
 
-  if (!contacts.length) {
+  if (!matchedContacts.length) {
     return { linked: false, clientId: null, confidence: null }
   }
 
   // Use the first matching client
-  const bestMatch = contacts[0]
+  const bestMatch = matchedContacts[0]
   const isExactMatch = allAddresses.includes(normalize(bestMatch.email))
   const confidence = isExactMatch ? 'HIGH' : 'MEDIUM'
 
