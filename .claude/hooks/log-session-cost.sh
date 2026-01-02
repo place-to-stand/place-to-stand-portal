@@ -23,11 +23,12 @@ USER_NAME=$(git config user.name 2>/dev/null || whoami)
 # Get current timestamp in ISO 8601 format
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-# Extract token usage from transcript if it exists
+# Extract token usage and model from transcript if it exists
 INPUT_TOKENS=0
 OUTPUT_TOKENS=0
 CACHE_CREATION_TOKENS=0
 CACHE_READ_TOKENS=0
+MODEL="unknown"
 
 if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
   USAGE=$(cat "$TRANSCRIPT_PATH" | jq -s '
@@ -43,6 +44,9 @@ if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
   OUTPUT_TOKENS=$(echo "$USAGE" | jq -r '.output')
   CACHE_CREATION_TOKENS=$(echo "$USAGE" | jq -r '.cache_creation')
   CACHE_READ_TOKENS=$(echo "$USAGE" | jq -r '.cache_read')
+
+  # Extract model (first occurrence)
+  MODEL=$(grep -o '"model":"[^"]*"' "$TRANSCRIPT_PATH" 2>/dev/null | head -1 | sed 's/"model":"//;s/"//' || echo "unknown")
 fi
 
 # Create log entry as compact JSON (single line for JSONL format)
@@ -50,6 +54,7 @@ LOG_ENTRY=$(jq -c -n \
   --arg timestamp "$TIMESTAMP" \
   --arg session_id "$SESSION_ID" \
   --arg user "$USER_NAME" \
+  --arg model "$MODEL" \
   --arg exit_reason "$EXIT_REASON" \
   --arg transcript_path "$TRANSCRIPT_PATH" \
   --argjson input_tokens "$INPUT_TOKENS" \
@@ -60,6 +65,7 @@ LOG_ENTRY=$(jq -c -n \
     timestamp: $timestamp,
     session_id: $session_id,
     user: $user,
+    model: $model,
     exit_reason: $exit_reason,
     input_tokens: $input_tokens,
     output_tokens: $output_tokens,
