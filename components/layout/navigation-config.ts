@@ -79,8 +79,8 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Users,
       },
       {
-        href: '/settings/hour-blocks',
-        label: 'Hour Blocks',
+        href: '/settings/hours',
+        label: 'Hours',
         icon: Clock3,
       },
       {

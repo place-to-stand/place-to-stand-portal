@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 const TABS = [
   { href: "/settings/users", label: "Users" },
-  { href: "/settings/hour-blocks", label: "Hour Blocks" },
+  { href: "/settings/hours", label: "Hours" },
 ];
 
 export function SettingsNav() {

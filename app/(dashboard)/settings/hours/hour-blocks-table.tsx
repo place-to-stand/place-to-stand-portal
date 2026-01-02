@@ -14,17 +14,24 @@ import type {
 } from '@/lib/settings/hour-blocks/hour-block-form'
 import { useHourBlocksTableState } from '@/lib/settings/hour-blocks/use-hour-blocks-table-state'
 import type { PageInfo } from '@/lib/pagination/cursor'
+import type { TimeLogsAdminResult } from '@/lib/queries/time-logs/admin'
 
 import { HourBlockArchiveDialog } from './_components/hour-block-archive-dialog'
 import { HourBlocksTableSection } from './_components/hour-blocks-table-section'
+import { HoursLoggedTableSection } from './_components/hours-logged-table-section'
 import { HourBlockSheet } from './hour-block-sheet'
+
+type HoursTab = 'hour-blocks' | 'hours-logged' | 'archive' | 'activity'
 
 type Props = {
   hourBlocks: HourBlockWithClient[]
   clients: ClientRow[]
-  tab: HourBlocksTab
+  tab: HoursTab
   pageInfo: PageInfo
   totalCount: number
+  hoursLoggedData: TimeLogsAdminResult | null
+  sortBy: 'user' | 'project' | 'date' | 'hours'
+  sortDir: 'asc' | 'desc'
 }
 
 const HourBlocksActivityFeed = dynamic(
@@ -48,6 +55,9 @@ export function HourBlocksSettingsTable({
   tab,
   pageInfo,
   totalCount,
+  hoursLoggedData,
+  sortBy,
+  sortDir,
 }: Props) {
   const {
     sheetOpen,
@@ -76,7 +86,7 @@ export function HourBlocksSettingsTable({
 
   const showListViews = tab !== 'activity'
 
-  const handleTabSelect = (value: HourBlocksTab) => {
+  const handleTabSelect = (value: HoursTab) => {
     const params = new URLSearchParams(searchParams.toString())
     if (value === 'hour-blocks') {
       params.delete('tab')
@@ -85,6 +95,8 @@ export function HourBlocksSettingsTable({
     }
     params.delete('cursor')
     params.delete('dir')
+    params.delete('sortBy')
+    params.delete('sortDir')
     const query = params.toString()
     router.push(query ? `${pathname}?${query}` : pathname)
   }
@@ -92,6 +104,52 @@ export function HourBlocksSettingsTable({
   const handlePaginate = (direction: 'forward' | 'backward') => {
     const cursor =
       direction === 'forward' ? pageInfo.endCursor : pageInfo.startCursor
+
+    if (!cursor) {
+      return
+    }
+
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('cursor', cursor)
+    params.set('dir', direction)
+    const query = params.toString()
+    router.push(query ? `${pathname}?${query}` : pathname)
+  }
+
+  const handleHoursLoggedSort = (
+    column: 'user' | 'project' | 'date' | 'hours',
+  ) => {
+    const params = new URLSearchParams(searchParams.toString())
+
+    // Toggle direction if same column, otherwise use default
+    if (sortBy === column) {
+      const newDir = sortDir === 'asc' ? 'desc' : 'asc'
+      params.set('sortDir', newDir)
+    } else {
+      params.set('sortBy', column)
+      params.set(
+        'sortDir',
+        column === 'date' || column === 'hours' ? 'desc' : 'asc',
+      )
+    }
+
+    // Reset pagination when sorting changes
+    params.delete('cursor')
+    params.delete('dir')
+
+    const query = params.toString()
+    router.push(query ? `${pathname}?${query}` : pathname)
+  }
+
+  const handleHoursLoggedPaginate = (direction: 'forward' | 'backward') => {
+    if (!hoursLoggedData) {
+      return
+    }
+
+    const cursor =
+      direction === 'forward'
+        ? hoursLoggedData.pageInfo.endCursor
+        : hoursLoggedData.pageInfo.startCursor
 
     if (!cursor) {
       return
@@ -128,12 +186,13 @@ export function HourBlocksSettingsTable({
       />
       <Tabs
         value={tab}
-        onValueChange={value => handleTabSelect(value as HourBlocksTab)}
+        onValueChange={value => handleTabSelect(value as HoursTab)}
         className='space-y-6'
       >
         <div className='flex flex-wrap items-center gap-4'>
           <TabsList>
             <TabsTrigger value='hour-blocks'>Hour Blocks</TabsTrigger>
+            <TabsTrigger value='hours-logged'>Hours Logged</TabsTrigger>
             <TabsTrigger value='archive'>Archive</TabsTrigger>
             <TabsTrigger value='activity'>Activity</TabsTrigger>
           </TabsList>
@@ -177,6 +236,19 @@ export function HourBlocksSettingsTable({
                 disableAll={isPending}
               />
             </>
+          ) : null}
+        </TabsContent>
+        <TabsContent value='hours-logged' className='space-y-6'>
+          {tab === 'hours-logged' && hoursLoggedData ? (
+            <HoursLoggedTableSection
+              timeLogs={hoursLoggedData.items}
+              pageInfo={hoursLoggedData.pageInfo}
+              totalCount={hoursLoggedData.totalCount}
+              sortBy={sortBy}
+              sortDir={sortDir}
+              onSort={handleHoursLoggedSort}
+              onPaginate={handleHoursLoggedPaginate}
+            />
           ) : null}
         </TabsContent>
         <TabsContent value='archive' className='space-y-6'>
@@ -241,8 +313,6 @@ export function HourBlocksSettingsTable({
     </div>
   )
 }
-
-type HourBlocksTab = 'hour-blocks' | 'archive' | 'activity'
 
 type PaginationControlsProps = {
   hasNextPage: boolean
