@@ -16,7 +16,7 @@ import { getHourBlockWithClientById } from '@/lib/queries/hour-blocks'
 
 import { destroySchema } from './schemas'
 import type { ActionResult, DestroyInput } from './types'
-import { HOUR_BLOCKS_SETTINGS_PATH } from './helpers'
+import { HOUR_BLOCKS_PATH } from './helpers'
 
 export async function destroyHourBlock(
   input: DestroyInput
@@ -89,7 +89,7 @@ export async function destroyHourBlock(
         metadata: event.metadata,
       })
 
-      revalidatePath(HOUR_BLOCKS_SETTINGS_PATH)
+      revalidatePath(HOUR_BLOCKS_PATH)
 
       return {}
     }

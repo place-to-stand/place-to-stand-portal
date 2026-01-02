@@ -1,4 +1,4 @@
-export const HOUR_BLOCKS_SETTINGS_PATH = '/settings/hour-blocks'
+export const HOUR_BLOCKS_PATH = '/hour-blocks'
 
 export function normalizeInvoiceNumber(
   invoiceNumber: string | null | undefined,

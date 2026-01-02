@@ -1,6 +1,7 @@
 export * from './events/tasks'
 export * from './events/time-logs'
 export * from './events/clients'
+export * from './events/contacts'
 export * from './events/projects'
 export * from './events/hour-blocks'
 export * from './events/users'

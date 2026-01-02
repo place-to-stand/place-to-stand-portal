@@ -22,6 +22,7 @@ import {
 import { getLeadSourceLabel } from '@/lib/leads/constants'
 import type { LeadRecord } from '@/lib/leads/types'
 import { cn } from '@/lib/utils'
+import { formatPhoneUS } from '@/lib/utils/phone-format'
 
 type LeadCardProps = {
   lead: LeadRecord
@@ -183,7 +184,7 @@ export function LeadCardContent({ lead }: { lead: LeadRecord }) {
           <div className='text-muted-foreground flex flex-wrap items-center gap-2 text-xs'>
             <AnchorRow
               icon={Phone}
-              value={lead.contactPhone}
+              value={formatPhoneUS(lead.contactPhone)}
               href={`tel:${lead.contactPhone}`}
             />
           </div>

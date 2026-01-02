@@ -179,7 +179,7 @@ async function upsertContact(input: { clientId: string; email: string; name?: st
   } else {
     const [newContact] = await db
       .insert(contacts)
-      .values({ email: input.email, name: input.name ?? null, createdBy: input.createdBy })
+      .values({ email: input.email, name: input.name ?? input.email.split('@')[0], createdBy: input.createdBy })
       .returning()
     contactId = newContact.id
     existingContact = newContact

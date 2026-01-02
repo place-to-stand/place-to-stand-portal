@@ -21,7 +21,6 @@ type ClientsManagementTableProps = {
   clientUsers: ClientUserSummary[]
   membersByClient: Record<string, ClientUserSummary[]>
   pageInfo: PageInfo
-  totalCount: number
   mode: 'active' | 'archive'
 }
 
@@ -35,7 +34,6 @@ export function ClientsManagementTable({
   clientUsers,
   membersByClient,
   pageInfo,
-  totalCount,
   mode,
 }: ClientsManagementTableProps) {
   const router = useRouter()
@@ -140,11 +138,6 @@ export function ClientsManagementTable({
         onPrevious={() => handlePaginate('backward')}
         disableAll={isPending}
       />
-      <div className='flex w-full justify-end'>
-        <span className='text-muted-foreground text-right text-sm'>
-          Total clients: {totalCount}
-        </span>
-      </div>
       <ClientSheet
         open={sheetOpen}
         onOpenChange={handleSheetOpenChange}

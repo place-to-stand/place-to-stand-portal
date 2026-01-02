@@ -85,6 +85,7 @@ export default async function ClientDetailPage({
       id: contacts.id,
       email: contacts.email,
       name: contacts.name,
+      phone: contacts.phone,
       createdBy: contacts.createdBy,
       createdAt: contacts.createdAt,
       updatedAt: contacts.updatedAt,

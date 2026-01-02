@@ -1,49 +1,27 @@
 import type { Metadata } from 'next'
 
-import { HourBlocksSettingsTable } from './hour-blocks-table'
 import { AppShellHeader } from '@/components/layout/app-shell'
 import { requireRole } from '@/lib/auth/session'
-import {
-  listHourBlocksForSettings,
-} from '@/lib/queries/hour-blocks'
+import { listHourBlocksForSettings } from '@/lib/queries/hour-blocks'
+
+import { HourBlocksTabsNav } from '../_components/hour-blocks-tabs-nav'
+import { HourBlocksAddButton } from '../_components/hour-blocks-add-button'
+import { HourBlocksManagementTable } from '../_components/hour-blocks-management-table'
 
 export const metadata: Metadata = {
-  title: 'Hour Blocks | Settings',
+  title: 'Hour Blocks Archive | Settings',
 }
 
-type HourBlocksSettingsPageProps = {
+type HourBlocksArchivePageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 }
 
-type HourBlocksTab = 'hour-blocks' | 'archive' | 'activity'
-
-export default async function HourBlocksSettingsPage({
+export default async function HourBlocksArchivePage({
   searchParams,
-}: HourBlocksSettingsPageProps) {
+}: HourBlocksArchivePageProps) {
   const currentUser = await requireRole('ADMIN')
   const params = searchParams ? await searchParams : {}
-  const tabParamRaw = params.tab
-  const tabParam =
-    typeof tabParamRaw === 'string'
-      ? tabParamRaw
-      : Array.isArray(tabParamRaw)
-        ? tabParamRaw[0]
-        : 'hour-blocks'
 
-  const tab: HourBlocksTab =
-    tabParam === 'archive'
-      ? 'archive'
-      : tabParam === 'activity'
-        ? 'activity'
-        : 'hour-blocks'
-
-  const status = tab === 'archive' ? 'archived' : 'active'
-  const searchQuery =
-    typeof params.q === 'string'
-      ? params.q
-      : Array.isArray(params.q)
-        ? params.q[0] ?? ''
-        : ''
   const cursor =
     typeof params.cursor === 'string'
       ? params.cursor
@@ -68,8 +46,7 @@ export default async function HourBlocksSettingsPage({
 
   const { items, clients, totalCount, pageInfo } =
     await listHourBlocksForSettings(currentUser, {
-      status,
-      search: searchQuery,
+      status: 'archived',
       cursor,
       direction,
       limit: Number.isFinite(limitParam) ? limitParam : undefined,
@@ -81,18 +58,31 @@ export default async function HourBlocksSettingsPage({
         <div className='flex flex-col'>
           <h1 className='text-2xl font-semibold tracking-tight'>Hour Blocks</h1>
           <p className='text-muted-foreground text-sm'>
-            Track purchased hour blocks by client for quick allocation
-            visibility.
+            Review archived hour blocks and restore them when needed.
           </p>
         </div>
       </AppShellHeader>
-      <HourBlocksSettingsTable
-        hourBlocks={items}
-        clients={clients}
-        tab={tab}
-        pageInfo={pageInfo}
-        totalCount={totalCount}
-      />
+      <div className='space-y-4'>
+        {/* Tabs Row - Above the main container */}
+        <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+          <HourBlocksTabsNav activeTab='archive' className='flex-1 sm:flex-none' />
+          <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6'>
+            <span className='text-muted-foreground text-sm whitespace-nowrap'>
+              Total archived: {totalCount}
+            </span>
+            <HourBlocksAddButton clients={clients} />
+          </div>
+        </div>
+        {/* Main Container with Background */}
+        <section className='bg-background rounded-xl border p-6 shadow-sm'>
+          <HourBlocksManagementTable
+            hourBlocks={items}
+            clients={clients}
+            pageInfo={pageInfo}
+            mode='archive'
+          />
+        </section>
+      </div>
     </>
   )
 }

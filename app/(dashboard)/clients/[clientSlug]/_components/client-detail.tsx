@@ -74,12 +74,8 @@ export function ClientDetail({
   clientRow,
   currentUserId,
 }: ClientDetailProps) {
-  const activeProjects = projects.filter(
-    p => p.status === 'ACTIVE'
-  )
-  const otherProjects = projects.filter(
-    p => p.status !== 'ACTIVE'
-  )
+  const activeProjects = projects.filter(p => p.status === 'ACTIVE')
+  const otherProjects = projects.filter(p => p.status !== 'ACTIVE')
 
   return (
     <div className='space-y-6'>
@@ -112,7 +108,7 @@ export function ClientDetail({
           <section className='bg-card text-card-foreground overflow-hidden rounded-xl border shadow-sm'>
             <div className='bg-muted/30 flex items-center gap-3 border-b px-6 py-4'>
               <div className='bg-background flex h-8 w-8 items-center justify-center rounded-md border shadow-sm'>
-                <Building2 className='text-muted-foreground h-4 w-4' />
+                <Building2 className='h-4 w-4 text-blue-500' />
               </div>
               <h2 className='text-lg font-semibold tracking-tight'>
                 {client.name}
@@ -163,7 +159,7 @@ export function ClientDetail({
           <section className='bg-card text-card-foreground overflow-hidden rounded-xl border shadow-sm'>
             <div className='bg-muted/30 flex items-center gap-3 border-b px-6 py-4'>
               <div className='bg-background flex h-8 w-8 items-center justify-center rounded-md border shadow-sm'>
-                <FolderKanban className='text-muted-foreground h-4 w-4' />
+                <FolderKanban className='h-4 w-4 text-emerald-500' />
               </div>
               <h2 className='text-lg font-semibold tracking-tight'>Projects</h2>
               <Badge variant='secondary'>{projects.length}</Badge>

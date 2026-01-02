@@ -8,6 +8,7 @@ import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { clients, contacts, contactClients } from '@/lib/db/schema'
+import { searchContacts, type SearchContactResult } from '@/lib/queries/contacts/search-contacts'
 
 const updateClientNotesSchema = z.object({
   clientId: z.string().uuid('Invalid client ID'),
@@ -68,7 +69,7 @@ export async function updateClientNotes(
 const contactSchema = z.object({
   clientId: z.string().uuid(),
   email: z.string().email().transform(v => v.toLowerCase().trim()),
-  name: z.string().max(100).optional().transform(v => v?.trim() || null),
+  name: z.string().min(1, 'Name is required').max(100).transform(v => v.trim()),
   isPrimary: z.boolean().default(false),
 })
 
@@ -195,3 +196,46 @@ export async function deleteClientContact(
   return { success: true }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Contact Selector Actions
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function getAllContacts(): Promise<SearchContactResult[]> {
+  const user = await requireUser()
+  assertAdmin(user)
+  return searchContacts(user)
+}
+
+const linkContactSchema = z.object({
+  contactId: z.string().uuid(),
+  clientId: z.string().uuid(),
+  isPrimary: z.boolean().default(false),
+})
+
+export async function linkContactToClient(
+  input: z.infer<typeof linkContactSchema>
+): Promise<ContactActionResult> {
+  const user = await requireUser()
+  assertAdmin(user)
+
+  const parsed = linkContactSchema.safeParse(input)
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? 'Invalid input' }
+  }
+
+  try {
+    await db.insert(contactClients).values({
+      contactId: parsed.data.contactId,
+      clientId: parsed.data.clientId,
+      isPrimary: parsed.data.isPrimary,
+    })
+
+    revalidatePath(`/clients`)
+    return { success: true, id: parsed.data.contactId }
+  } catch (err) {
+    if (err instanceof Error && err.message.includes('unique')) {
+      return { success: false, error: 'This contact is already linked to this client' }
+    }
+    return { success: false, error: 'Failed to link contact' }
+  }
+}

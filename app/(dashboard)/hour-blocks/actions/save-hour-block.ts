@@ -21,7 +21,7 @@ import {
 import { hourBlockSchema } from './schemas'
 import type { ActionResult, HourBlockInput } from './types'
 import {
-  HOUR_BLOCKS_SETTINGS_PATH,
+  HOUR_BLOCKS_PATH,
   normalizeInvoiceNumber,
 } from './helpers'
 
@@ -190,7 +190,7 @@ async function performSaveHourBlock(
     }
   }
 
-  revalidatePath(HOUR_BLOCKS_SETTINGS_PATH)
+  revalidatePath(HOUR_BLOCKS_PATH)
 
   return {}
 }

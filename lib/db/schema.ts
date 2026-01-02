@@ -167,7 +167,8 @@ export const contacts = pgTable(
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
     email: text().notNull(),
-    name: text(),
+    name: text().notNull(),
+    phone: text(),
     createdBy: uuid('created_by'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)

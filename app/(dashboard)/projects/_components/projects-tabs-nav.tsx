@@ -38,9 +38,9 @@ export function ProjectsTabsNav({ activeTab, className }: ProjectsTabsNavProps) 
       onValueChange={handleValueChange}
       className={cn('w-full sm:w-auto', className)}
     >
-      <TabsList className='gap-2'>
+      <TabsList className='bg-muted/40 h-10 w-full justify-start gap-2 rounded-lg p-1 sm:w-auto'>
         {PROJECT_TABS.map(tab => (
-          <TabsTrigger key={tab.value} value={tab.value} className='px-3 py-1.5'>
+          <TabsTrigger key={tab.value} value={tab.value} className='px-3 py-1.5 text-sm'>
             {tab.label}
           </TabsTrigger>
         ))}

@@ -10,6 +10,7 @@ import {
   Plug,
   Mail,
   Sparkles,
+  Contact,
 } from 'lucide-react'
 import type { UserRole } from '@/lib/auth/session'
 
@@ -64,7 +65,7 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Handshake,
       },
       {
-        href: '/settings/hour-blocks',
+        href: '/hour-blocks',
         label: 'Hour Blocks',
         icon: Clock3,
       },
@@ -75,14 +76,19 @@ export const NAV_GROUPS: NavGroup[] = [
     roles: ['ADMIN', 'CLIENT'],
     items: [
       {
+        href: '/projects',
+        label: 'Projects',
+        icon: FolderKanban,
+      },
+      {
         href: '/clients',
         label: 'Clients',
         icon: Building2,
       },
       {
-        href: '/projects',
-        label: 'Projects',
-        icon: FolderKanban,
+        href: '/contacts',
+        label: 'Contacts',
+        icon: Contact,
       },
     ],
   },

@@ -64,6 +64,13 @@
       "when": 1767320400000,
       "tag": "0008_generalize_contacts",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1767330656908,
+      "tag": "0009_contacts_name_required_add_phone",
+      "breakpoints": true
     }
   ]
 }

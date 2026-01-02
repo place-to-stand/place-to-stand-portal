@@ -1,42 +1,28 @@
 import type { Metadata } from 'next'
 
-import { UsersSettingsTable } from './users-table'
 import { AppShellHeader } from '@/components/layout/app-shell'
 import { requireRole } from '@/lib/auth/session'
 import { listUsersForSettings } from '@/lib/queries/users'
 import type { DbUser } from '@/lib/types'
 
+import { UsersTabsNav } from './_components/users-tabs-nav'
+import { UsersAddButton } from './_components/users-add-button'
+import { UsersManagementTable } from './_components/users-management-table'
+
 export const metadata: Metadata = {
   title: 'Users | Settings',
 }
 
-type UsersSettingsPageProps = {
+type UsersPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 }
 
-type UsersTab = 'users' | 'archive' | 'activity'
-
-export default async function UsersSettingsPage({
+export default async function UsersPage({
   searchParams,
-}: UsersSettingsPageProps) {
+}: UsersPageProps) {
   const currentUser = await requireRole('ADMIN')
   const params = searchParams ? await searchParams : {}
-  const tabParamRaw = params.tab
-  const tabParam =
-    typeof tabParamRaw === 'string'
-      ? tabParamRaw
-      : Array.isArray(tabParamRaw)
-        ? tabParamRaw[0]
-        : 'users'
 
-  const tab: UsersTab =
-    tabParam === 'archive'
-      ? 'archive'
-      : tabParam === 'activity'
-        ? 'activity'
-        : 'users'
-
-  const status = tab === 'archive' ? 'archived' : 'active'
   const cursor =
     typeof params.cursor === 'string'
       ? params.cursor
@@ -61,7 +47,7 @@ export default async function UsersSettingsPage({
 
   const { items, assignments, totalCount, pageInfo } =
     await listUsersForSettings(currentUser, {
-      status,
+      status: 'active',
       cursor,
       direction,
       limit: Number.isFinite(limitParam) ? limitParam : undefined,
@@ -88,14 +74,31 @@ export default async function UsersSettingsPage({
           </p>
         </div>
       </AppShellHeader>
-      <UsersSettingsTable
-        users={users}
-        currentUserId={currentUser.id}
-        assignments={assignments}
-        tab={tab}
-        pageInfo={pageInfo}
-        totalCount={totalCount}
-      />
+      <div className='space-y-4'>
+        {/* Tabs Row - Above the main container */}
+        <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+          <UsersTabsNav activeTab='users' className='flex-1 sm:flex-none' />
+          <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6'>
+            <span className='text-muted-foreground text-sm whitespace-nowrap'>
+              Total users: {totalCount}
+            </span>
+            <UsersAddButton
+              currentUserId={currentUser.id}
+              assignments={assignments}
+            />
+          </div>
+        </div>
+        {/* Main Container with Background */}
+        <section className='bg-background rounded-xl border p-6 shadow-sm'>
+          <UsersManagementTable
+            users={users}
+            currentUserId={currentUser.id}
+            assignments={assignments}
+            pageInfo={pageInfo}
+            mode='active'
+          />
+        </section>
+      </div>
     </>
   )
 }

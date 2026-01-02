@@ -125,6 +125,21 @@ export const routes = {
   },
 
   // ============================================================================
+  // Contact Routes
+  // ============================================================================
+
+  contacts: {
+    /** Contacts list */
+    index: () => '/contacts' as const,
+
+    /** Contact archive */
+    archive: () => '/contacts/archive' as const,
+
+    /** Contact activity */
+    activity: () => '/contacts/activity' as const,
+  },
+
+  // ============================================================================
   // Leads Routes
   // ============================================================================
 
@@ -141,12 +156,16 @@ export const routes = {
     /** Users settings */
     users: () => '/settings/users' as const,
 
-    /** Hour blocks settings */
-    hourBlocks: () => '/settings/hour-blocks' as const,
-
     /** Integrations settings */
     integrations: () => '/settings/integrations' as const,
   },
+
+  // ============================================================================
+  // Hour Blocks Routes
+  // ============================================================================
+
+  /** Hour blocks management */
+  hourBlocks: () => '/hour-blocks' as const,
 
   // ============================================================================
   // Auth Routes

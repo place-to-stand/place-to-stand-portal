@@ -6,39 +6,39 @@ import { eq } from 'drizzle-orm'
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { logActivity } from '@/lib/activity/logger'
-import { hourBlockRestoredEvent } from '@/lib/activity/events'
+import { hourBlockArchivedEvent } from '@/lib/activity/events'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
 import { hourBlocks } from '@/lib/db/schema'
 import { getHourBlockWithClientById } from '@/lib/queries/hour-blocks'
 
-import { restoreSchema } from './schemas'
-import type { ActionResult, RestoreInput } from './types'
-import { HOUR_BLOCKS_SETTINGS_PATH } from './helpers'
+import { deleteSchema } from './schemas'
+import type { ActionResult, DeleteInput } from './types'
+import { HOUR_BLOCKS_PATH } from './helpers'
 
-export async function restoreHourBlock(
-  input: RestoreInput,
+export async function softDeleteHourBlock(
+  input: DeleteInput,
 ): Promise<ActionResult> {
   return trackSettingsServerInteraction(
     {
       entity: 'hour_block',
-      mode: 'restore',
+      mode: 'delete',
       targetId: input.id,
     },
-    async () => performRestoreHourBlock(input),
+    async () => performSoftDeleteHourBlock(input),
   )
 }
 
-async function performRestoreHourBlock(
-  input: RestoreInput,
+async function performSoftDeleteHourBlock(
+  input: DeleteInput,
 ): Promise<ActionResult> {
   const user = await requireUser()
   assertAdmin(user)
 
-  const parsed = restoreSchema.safeParse(input)
+  const parsed = deleteSchema.safeParse(input)
 
   if (!parsed.success) {
-    return { error: 'Invalid restore request.' }
+    return { error: 'Invalid delete request.' }
   }
 
   const hourBlockId = parsed.data.id
@@ -49,27 +49,26 @@ async function performRestoreHourBlock(
     return { error: 'Hour block not found.' }
   }
 
-  if (!existingHourBlock.deleted_at) {
-    return { error: 'Hour block is already active.' }
-  }
-
   try {
     await db
       .update(hourBlocks)
-      .set({ deletedAt: null, updatedAt: new Date().toISOString() })
+      .set({
+        deletedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
       .where(eq(hourBlocks.id, hourBlockId))
   } catch (error) {
-    console.error('Failed to restore hour block', error)
+    console.error('Failed to archive hour block', error)
 
     return {
       error:
         error instanceof Error
           ? error.message
-          : 'Unable to restore hour block.',
+          : 'Unable to archive hour block.',
     }
   }
 
-  const event = hourBlockRestoredEvent({
+  const event = hourBlockArchivedEvent({
     clientName: existingHourBlock.client?.name ?? null,
   })
 
@@ -84,7 +83,7 @@ async function performRestoreHourBlock(
     metadata: event.metadata,
   })
 
-  revalidatePath(HOUR_BLOCKS_SETTINGS_PATH)
+  revalidatePath(HOUR_BLOCKS_PATH)
 
   return {}
 }

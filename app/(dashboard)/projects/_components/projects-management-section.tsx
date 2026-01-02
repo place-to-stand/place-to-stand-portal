@@ -110,31 +110,33 @@ export function ProjectsManagementSection({
       ? 'No projects yet. Create one to begin tracking work.'
       : 'No archived projects. Archived projects appear here after deletion.'
 
-  const showAddButton = mode === 'active'
-
   return (
     <div className='space-y-4'>
-      <div className='flex flex-wrap items-center gap-4'>
+      {/* Tabs Row - Above the main container */}
+      <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
         <ProjectsTabsNav activeTab={tab} className='flex-1 sm:flex-none' />
-        {showAddButton ? (
-          <div className='ml-auto flex items-center'>
-            <DisabledFieldTooltip
+        <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6'>
+          <span className='text-muted-foreground text-sm whitespace-nowrap'>
+            Total projects: {listTotalCount}
+          </span>
+          <DisabledFieldTooltip
+            disabled={createDisabled}
+            reason={createDisabledReason}
+          >
+            <Button
+              type='button'
+              size='sm'
+              onClick={openCreate}
               disabled={createDisabled}
-              reason={createDisabledReason}
+              className='gap-2'
             >
-              <Button
-                type='button'
-                onClick={openCreate}
-                disabled={createDisabled}
-                className='gap-2'
-              >
-                <Plus className='h-4 w-4' />
-                Add project
-              </Button>
-            </DisabledFieldTooltip>
-          </div>
-        ) : null}
+              <Plus className='h-4 w-4' />
+              Add project
+            </Button>
+          </DisabledFieldTooltip>
+        </div>
       </div>
+      {/* Main Container with Background */}
       <section className='bg-background rounded-xl border p-6 shadow-sm space-y-4'>
         <ProjectLifecycleDialogs
           deleteTarget={deleteTarget}
@@ -166,11 +168,6 @@ export function ProjectsManagementSection({
           onPrevious={() => handlePaginate('backward')}
           disableAll={isPending}
         />
-        <div className='flex w-full justify-end'>
-          <span className='text-muted-foreground text-right text-sm'>
-            Showing {projects.length} of {listTotalCount}
-          </span>
-        </div>
       </section>
       <ProjectSheet
         open={sheetOpen}
