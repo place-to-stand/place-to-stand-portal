@@ -1,7 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Lightbulb, Loader2, CheckCircle2, ListTodo, GitPullRequest, ExternalLink } from 'lucide-react'
+import {
+  Sparkles,
+  Loader2,
+  CheckCircle2,
+  ListTodo,
+  GitPullRequest,
+  ExternalLink,
+} from 'lucide-react'
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
@@ -23,7 +30,10 @@ type ThreadSuggestionsPanelProps = {
   isAdmin: boolean
 }
 
-export function ThreadSuggestionsPanel({ threadId, isAdmin }: ThreadSuggestionsPanelProps) {
+export function ThreadSuggestionsPanel({
+  threadId,
+  isAdmin,
+}: ThreadSuggestionsPanelProps) {
   const { toast } = useToast()
   const [suggestions, setSuggestions] = useState<SuggestionSummary[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -49,9 +59,10 @@ export function ThreadSuggestionsPanel({ threadId, isAdmin }: ThreadSuggestionsP
   const handleApprove = async (suggestionId: string, type: 'TASK' | 'PR') => {
     setIsApproving(suggestionId)
     try {
-      const endpoint = type === 'TASK'
-        ? `/api/suggestions/${suggestionId}/approve`
-        : `/api/pr-suggestions/${suggestionId}/approve`
+      const endpoint =
+        type === 'TASK'
+          ? `/api/suggestions/${suggestionId}/approve`
+          : `/api/pr-suggestions/${suggestionId}/approve`
 
       const res = await fetch(endpoint, { method: 'POST' })
 
@@ -60,9 +71,10 @@ export function ThreadSuggestionsPanel({ threadId, isAdmin }: ThreadSuggestionsP
         setSuggestions(prev => prev.filter(s => s.id !== suggestionId))
         toast({
           title: type === 'TASK' ? 'Task created' : 'PR suggestion approved',
-          description: type === 'TASK'
-            ? 'The task has been added to the project.'
-            : 'The PR suggestion has been approved.',
+          description:
+            type === 'TASK'
+              ? 'The task has been added to the project.'
+              : 'The PR suggestion has been approved.',
         })
       } else {
         throw new Error('Failed to approve')
@@ -83,42 +95,44 @@ export function ThreadSuggestionsPanel({ threadId, isAdmin }: ThreadSuggestionsP
   return (
     <div className='space-y-4'>
       <div className='flex items-center gap-2'>
-        <Lightbulb className='h-4 w-4 text-muted-foreground' />
+        <Sparkles className='text-muted-foreground h-4 w-4' />
         <span className='text-sm font-medium'>AI Suggestions</span>
       </div>
 
       {isLoading ? (
-        <div className='flex items-center gap-2 rounded-lg border bg-muted/30 p-3'>
-          <Loader2 className='h-4 w-4 animate-spin text-muted-foreground' />
-          <span className='text-sm text-muted-foreground'>Loading suggestions...</span>
+        <div className='bg-muted/30 flex items-center gap-2 rounded-lg border p-3'>
+          <Loader2 className='text-muted-foreground h-4 w-4 animate-spin' />
+          <span className='text-muted-foreground text-sm'>
+            Loading suggestions...
+          </span>
         </div>
       ) : suggestions.length === 0 ? (
-        <p className='text-sm text-muted-foreground'>No pending suggestions.</p>
+        <p className='text-muted-foreground text-sm'>No pending suggestions.</p>
       ) : (
         <div className='space-y-2'>
           {suggestions.map(suggestion => (
             <div
               key={suggestion.id}
-              className='rounded-lg border bg-muted/30 p-3 space-y-2'
+              className='bg-muted/30 space-y-2 rounded-lg border p-3'
             >
               <div className='flex items-start justify-between gap-2'>
-                <div className='flex items-center gap-2 min-w-0'>
+                <div className='flex min-w-0 items-center gap-2'>
                   {suggestion.type === 'TASK' ? (
-                    <ListTodo className='h-4 w-4 text-blue-500 flex-shrink-0' />
+                    <ListTodo className='h-4 w-4 shrink-0 text-violet-500' />
                   ) : suggestion.type === 'PR' ? (
-                    <GitPullRequest className='h-4 w-4 text-green-500 flex-shrink-0' />
+                    <GitPullRequest className='h-4 w-4 shrink-0 text-green-500' />
                   ) : null}
-                  <span className='text-sm font-medium truncate'>
+                  <span className='truncate text-sm font-medium'>
                     {suggestion.title || 'Untitled'}
                   </span>
                 </div>
-                <Badge variant='secondary' className='text-xs flex-shrink-0'>
+                <Badge variant='secondary' className='shrink-0 text-xs'>
                   {Math.round(parseFloat(suggestion.confidence) * 100)}%
                 </Badge>
               </div>
 
               {suggestion.projectName && (
-                <p className='text-xs text-muted-foreground'>
+                <p className='text-muted-foreground text-xs'>
                   Project: {suggestion.projectName}
                 </p>
               )}
@@ -128,7 +142,12 @@ export function ThreadSuggestionsPanel({ threadId, isAdmin }: ThreadSuggestionsP
                   size='sm'
                   variant='outline'
                   className='h-7 text-xs'
-                  onClick={() => handleApprove(suggestion.id, suggestion.type as 'TASK' | 'PR')}
+                  onClick={() =>
+                    handleApprove(
+                      suggestion.id,
+                      suggestion.type as 'TASK' | 'PR'
+                    )
+                  }
                   disabled={isApproving === suggestion.id}
                 >
                   {isApproving === suggestion.id ? (

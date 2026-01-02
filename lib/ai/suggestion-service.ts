@@ -2,13 +2,22 @@ import 'server-only'
 
 import { eq, and, isNull, desc } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { suggestions, messages, threads, projects, tasks } from '@/lib/db/schema'
+import {
+  suggestions,
+  messages,
+  threads,
+  projects,
+  tasks,
+} from '@/lib/db/schema'
 import { analyzeEmailForTasks, filterByConfidence } from './email-analysis'
 import { getMessage, normalizeEmail } from '@/lib/gmail/client'
 import { markMessageAsAnalyzed } from '@/lib/queries/messages'
-import type { NewSuggestion, TaskSuggestedContent } from '@/lib/types/suggestions'
+import type {
+  NewSuggestion,
+  TaskSuggestedContent,
+} from '@/lib/types/suggestions'
 
-const MODEL_VERSION = 'gemini-2.5-flash-lite-v1'
+const MODEL_VERSION = 'gemini-3-flash'
 const MIN_CONFIDENCE = 0.5
 
 interface CreateSuggestionsResult {
@@ -55,10 +64,7 @@ export async function createSuggestionsFromMessage(
     .select({ id: suggestions.id })
     .from(suggestions)
     .where(
-      and(
-        eq(suggestions.messageId, messageId),
-        isNull(suggestions.deletedAt)
-      )
+      and(eq(suggestions.messageId, messageId), isNull(suggestions.deletedAt))
     )
     .limit(1)
 
@@ -71,7 +77,10 @@ export async function createSuggestionsFromMessage(
 
   if (!bodyText && message.message.externalMessageId) {
     try {
-      const gmailMessage = await getMessage(userId, message.message.externalMessageId)
+      const gmailMessage = await getMessage(
+        userId,
+        message.message.externalMessageId
+      )
       const normalized = normalizeEmail(gmailMessage)
       bodyText = normalized.bodyText ?? null
     } catch (err) {
@@ -101,12 +110,7 @@ export async function createSuggestionsFromMessage(
     const recent = await db
       .select({ title: tasks.title })
       .from(tasks)
-      .where(
-        and(
-          eq(tasks.projectId, projectId),
-          isNull(tasks.deletedAt)
-        )
-      )
+      .where(and(eq(tasks.projectId, projectId), isNull(tasks.deletedAt)))
       .orderBy(desc(tasks.createdAt))
       .limit(10)
     recentTasks = recent.map(t => t.title)

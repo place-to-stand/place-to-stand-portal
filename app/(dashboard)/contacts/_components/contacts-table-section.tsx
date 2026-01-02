@@ -18,6 +18,8 @@ import { cn } from '@/lib/utils'
 import { getStatusBadgeToken } from '@/lib/constants'
 import type { ContactsTableContact } from '@/lib/settings/contacts/use-contacts-table-state'
 
+import { LinkedClientsCell } from './linked-clients-cell'
+
 export type ContactsTableSectionProps = {
   contacts: ContactsTableContact[]
   mode: 'active' | 'archive'
@@ -62,8 +64,6 @@ export function ContactsTableSection({
         </TableHeader>
         <TableBody>
           {contacts.map(contact => {
-            const linkedClients = contact.metrics?.totalClients ?? 0
-
             const statusLabel = contact.deletedAt ? 'Archived' : 'Active'
             const statusTone = contact.deletedAt ? 'archived' : 'active'
 
@@ -136,7 +136,9 @@ export function ContactsTableSection({
                     <span className='text-muted-foreground/50'>—</span>
                   )}
                 </TableCell>
-                <TableCell className='text-sm'>{linkedClients}</TableCell>
+                <TableCell className='text-sm'>
+                  <LinkedClientsCell clients={contact.metrics.clients} />
+                </TableCell>
                 <TableCell>
                   <Badge
                     className={cn('text-xs', getStatusBadgeToken(statusTone))}

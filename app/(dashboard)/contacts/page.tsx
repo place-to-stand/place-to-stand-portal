@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import { AppShellHeader } from '@/components/layout/app-shell'
 import { isAdmin } from '@/lib/auth/permissions'
 import { requireUser } from '@/lib/auth/session'
-import { listContactsForSettings } from '@/lib/queries/contacts'
+import { listContactsForSettings, listAllActiveClients } from '@/lib/queries/contacts'
 
 import { ContactsTabsNav } from './_components/contacts-tabs-nav'
 import { ContactsAddButton } from './_components/contacts-add-button'
@@ -66,13 +66,16 @@ export default async function ContactsPage({ searchParams }: ContactsPageProps) 
         : undefined
   const limitParam = Number.parseInt(limitParamRaw ?? '', 10)
 
-  const { items, totalCount, pageInfo } = await listContactsForSettings(user, {
-    status: 'active',
-    search: searchQuery,
-    cursor,
-    direction,
-    limit: Number.isFinite(limitParam) ? limitParam : undefined,
-  })
+  const [{ items, totalCount, pageInfo }, allClients] = await Promise.all([
+    listContactsForSettings(user, {
+      status: 'active',
+      search: searchQuery,
+      cursor,
+      direction,
+      limit: Number.isFinite(limitParam) ? limitParam : undefined,
+    }),
+    listAllActiveClients(user),
+  ])
 
   const contactsForTable = items.map(mapContactToTableRow)
 
@@ -94,7 +97,7 @@ export default async function ContactsPage({ searchParams }: ContactsPageProps) 
             <span className='text-muted-foreground text-sm whitespace-nowrap'>
               Total contacts: {totalCount}
             </span>
-            <ContactsAddButton />
+            <ContactsAddButton allClients={allClients} />
           </div>
         </div>
         {/* Main Container with Background */}
@@ -103,6 +106,7 @@ export default async function ContactsPage({ searchParams }: ContactsPageProps) 
             contacts={contactsForTable}
             pageInfo={pageInfo}
             mode='active'
+            allClients={allClients}
           />
         </section>
       </div>

@@ -20,6 +20,11 @@ import { PhoneInput } from '@/components/ui/phone-input'
 
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 
+import {
+  ContactClientPicker,
+  type ContactClientOption,
+} from './contact-client-picker'
+
 const FEEDBACK_CLASSES =
   'border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm'
 
@@ -43,6 +48,15 @@ type ContactSheetFormProps = {
   onRequestDelete: () => void
   isSheetOpen: boolean
   historyKey: string
+  // Client picker props
+  selectedClients: ContactClientOption[]
+  availableClients: ContactClientOption[]
+  addClientButtonDisabled: boolean
+  addClientButtonDisabledReason: string | null
+  isClientPickerOpen: boolean
+  onClientPickerOpenChange: (open: boolean) => void
+  onAddClient: (client: ContactClientOption) => void
+  onRemoveClient: (client: ContactClientOption) => void
 }
 
 export function ContactSheetForm({
@@ -59,6 +73,14 @@ export function ContactSheetForm({
   onRequestDelete,
   isSheetOpen,
   historyKey,
+  selectedClients,
+  availableClients,
+  addClientButtonDisabled,
+  addClientButtonDisabledReason,
+  isClientPickerOpen,
+  onClientPickerOpenChange,
+  onAddClient,
+  onRemoveClient,
 }: ContactSheetFormProps) {
   const handleSave = useCallback(
     () => form.handleSubmit(onSubmit)(),
@@ -104,7 +126,7 @@ export function ContactSheetForm({
           name='name'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Name</FormLabel>
+              <FormLabel>Full Name</FormLabel>
               <FormControl>
                 <DisabledFieldTooltip
                   disabled={isPending}
@@ -177,6 +199,21 @@ export function ContactSheetForm({
             </FormItem>
           )}
         />
+        <div className='space-y-2'>
+          <FormLabel>Linked Clients</FormLabel>
+          <ContactClientPicker
+            selectedClients={selectedClients}
+            availableClients={availableClients}
+            addButtonDisabled={addClientButtonDisabled}
+            addButtonDisabledReason={addClientButtonDisabledReason}
+            isPickerOpen={isClientPickerOpen}
+            isPending={isPending}
+            pendingReason={pendingReason}
+            onPickerOpenChange={onClientPickerOpenChange}
+            onAddClient={onAddClient}
+            onRequestRemoval={onRemoveClient}
+          />
+        </div>
         {feedback ? <p className={FEEDBACK_CLASSES}>{feedback}</p> : null}
         <div className='border-border/40 bg-muted/95 supports-backdrop-filter:bg-muted/90 fixed right-0 bottom-0 z-50 w-full border-t shadow-lg backdrop-blur sm:max-w-lg'>
           <div className='flex w-full items-center justify-between gap-3 px-6 py-4'>

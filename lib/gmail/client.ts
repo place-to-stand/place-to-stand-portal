@@ -216,6 +216,34 @@ export async function markGmailMessageAsRead(
   }
 }
 
+/**
+ * Mark a message as unread in Gmail by adding the UNREAD label
+ */
+export async function markGmailMessageAsUnread(
+  userId: string,
+  messageId: string,
+  options?: GmailClientOptions
+): Promise<void> {
+  const { accessToken } = await getValidAccessToken(userId, options?.connectionId)
+  const url = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}/modify`
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      addLabelIds: ['UNREAD'],
+    }),
+  })
+
+  if (!res.ok) {
+    const errorText = await res.text()
+    throw new Error(`Gmail mark as unread failed: ${errorText}`)
+  }
+}
+
 export function normalizeEmail(message: GmailMessage): NormalizedEmail {
   const headers = message.payload?.headers || []
   const subject = header(headers, 'Subject')

@@ -11,7 +11,7 @@ import { generatedPRSchema, type GeneratedPR } from './schemas/pr-generation'
 
 // Vercel AI Gateway - uses AI_GATEWAY_API_KEY env var automatically
 const gateway = createGateway()
-const model = gateway('google/gemini-2.5-flash-lite')
+const model = gateway('google/gemini-3-flash')
 
 export type GeneratePRParams = PRGenerationPromptParams
 

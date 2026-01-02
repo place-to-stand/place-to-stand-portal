@@ -1,6 +1,6 @@
 'use client'
 
-import { Building2, Contact } from 'lucide-react'
+import { Contact } from 'lucide-react'
 
 import {
   Table,
@@ -11,6 +11,8 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import type { ContactsTableContact } from '@/lib/settings/contacts/use-contacts-table-state'
+
+import { LinkedClientsCell } from './linked-clients-cell'
 
 type ContactsLandingProps = {
   contacts: ContactsTableContact[]
@@ -53,13 +55,7 @@ export function ContactsLanding({ contacts }: ContactsLandingProps) {
                 {contact.name || '—'}
               </TableCell>
               <TableCell>
-                <div className='flex items-center gap-2 text-sm'>
-                  <Building2 className='text-muted-foreground h-4 w-4' />
-                  <span className='text-muted-foreground'>
-                    {contact.metrics.totalClients} client
-                    {contact.metrics.totalClients !== 1 ? 's' : ''}
-                  </span>
-                </div>
+                <LinkedClientsCell clients={contact.metrics.clients} />
               </TableCell>
             </TableRow>
           ))}

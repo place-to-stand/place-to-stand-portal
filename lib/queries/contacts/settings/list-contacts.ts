@@ -1,11 +1,11 @@
 'use server'
 
-import { and, asc, desc, eq, sql, type SQL } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, sql, type SQL } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { contacts, contactClients } from '@/lib/db/schema'
+import { clients, contacts, contactClients } from '@/lib/db/schema'
 import { type PageInfo } from '@/lib/pagination/cursor'
 
 import { contactFields, contactGroupByColumns, type SelectContact } from '../selectors'
@@ -23,6 +23,7 @@ import {
 import type {
   ContactsSettingsListItem,
   ContactsSettingsResult,
+  LinkedClient,
   ListContactsForSettingsInput,
 } from './types'
 
@@ -59,7 +60,48 @@ async function queryContactRows(
     .limit(limit + 1) as Promise<ContactMetricsResult[]>
 }
 
-function mapContactMetrics(rows: ContactMetricsResult[]): ContactsSettingsListItem[] {
+async function fetchClientDetails(
+  contactIds: string[]
+): Promise<Map<string, LinkedClient[]>> {
+  if (contactIds.length === 0) {
+    return new Map()
+  }
+
+  const rows = await db
+    .select({
+      contactId: contactClients.contactId,
+      clientId: clients.id,
+      clientName: clients.name,
+      clientSlug: clients.slug,
+    })
+    .from(contactClients)
+    .innerJoin(clients, eq(contactClients.clientId, clients.id))
+    .where(
+      and(
+        inArray(contactClients.contactId, contactIds),
+        sql`${clients.deletedAt} IS NULL`
+      )
+    )
+    .orderBy(asc(clients.name))
+
+  const result = new Map<string, LinkedClient[]>()
+  for (const row of rows) {
+    const existing = result.get(row.contactId) ?? []
+    existing.push({
+      id: row.clientId,
+      name: row.clientName,
+      slug: row.clientSlug ?? row.clientId,
+    })
+    result.set(row.contactId, existing)
+  }
+
+  return result
+}
+
+function mapContactMetrics(
+  rows: ContactMetricsResult[],
+  clientsMap: Map<string, LinkedClient[]>
+): ContactsSettingsListItem[] {
   return rows.map(row => ({
     id: row.id,
     email: row.email,
@@ -71,6 +113,7 @@ function mapContactMetrics(rows: ContactMetricsResult[]): ContactsSettingsListIt
     deletedAt: row.deletedAt,
     metrics: {
       totalClients: Number(row.totalClients ?? 0),
+      clients: clientsMap.get(row.id) ?? [],
     },
   }))
 }
@@ -142,9 +185,14 @@ export async function listContactsForSettings(
   const normalizedRows =
     direction === 'backward' ? [...slicedRows].reverse() : slicedRows
 
-  const mappedItems = mapContactMetrics(normalizedRows)
+  // Fetch client details for all contacts in parallel with total count
+  const contactIds = normalizedRows.map(row => row.id)
+  const [clientsMap, totalCount] = await Promise.all([
+    fetchClientDetails(contactIds),
+    resolveTotalCount(baseConditions),
+  ])
 
-  const totalCount = await resolveTotalCount(baseConditions)
+  const mappedItems = mapContactMetrics(normalizedRows, clientsMap)
   const pageInfo = buildPageInfo(direction, cursorPayload, mappedItems, hasExtraRecord)
 
   return {

@@ -14,6 +14,7 @@ export function mapContactToTableRow(
     deletedAt: item.deletedAt,
     metrics: {
       totalClients: item.metrics.totalClients,
+      clients: item.metrics.clients,
     },
   }
 }

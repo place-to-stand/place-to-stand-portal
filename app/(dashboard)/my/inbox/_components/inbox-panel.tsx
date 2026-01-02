@@ -10,8 +10,6 @@ import {
   Circle,
   Building2,
   FolderKanban,
-  ArrowLeft,
-  ArrowRight,
   Filter,
 } from 'lucide-react'
 
@@ -38,9 +36,11 @@ import { cn } from '@/lib/utils'
 import type { ThreadSummary, Message } from '@/lib/types/messages'
 
 import { EmailIframe } from './email-iframe'
+import { EmailToolbar } from './email-toolbar'
 import { ThreadLinkingPanel } from './thread-linking-panel'
 import { ThreadProjectLinkingPanel } from './thread-project-linking-panel'
 import { ThreadSuggestionsPanel } from './thread-suggestions-panel'
+import { ThreadContactPanel } from './thread-contact-panel'
 
 type CidMapping = {
   contentId: string
@@ -394,7 +394,9 @@ export function InboxPanel({
     // Remove thread from URL
     const params = new URLSearchParams(searchParams.toString())
     params.delete('thread')
-    const newUrl = params.toString() ? `/my/inbox?${params.toString()}` : '/my/inbox'
+    const newUrl = params.toString()
+      ? `/my/inbox?${params.toString()}`
+      : '/my/inbox'
     router.push(newUrl, { scroll: false })
   }, [router, searchParams])
 
@@ -679,7 +681,7 @@ export function InboxPanel({
       >
         <SheetContent className='flex h-full w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl lg:max-w-6xl'>
           {/* Custom Header - Outside the scroll area */}
-          <div className='bg-muted/50 flex-shrink-0 border-b-2 border-b-blue-500/60 px-6 pt-4 pb-3'>
+          <div className='bg-muted/50 flex-shrink-0 border-b-2 px-6 pt-4 pb-3'>
             <div className='flex items-start justify-between gap-4'>
               <div className='min-w-0 flex-1 pr-10'>
                 <SheetTitle className='line-clamp-2 text-lg'>
@@ -695,29 +697,6 @@ export function InboxPanel({
                     </>
                   )}
                 </SheetDescription>
-              </div>
-              {/* Navigation arrows - positioned to avoid close button */}
-              <div className='flex flex-shrink-0 items-center gap-1'>
-                <Button
-                  variant='ghost'
-                  size='icon'
-                  onClick={goToPrev}
-                  disabled={!canGoPrev}
-                  className='h-8 w-8'
-                  title='Previous thread'
-                >
-                  <ArrowLeft className='h-4 w-4' />
-                </Button>
-                <Button
-                  variant='ghost'
-                  size='icon'
-                  onClick={goToNext}
-                  disabled={!canGoNext}
-                  className='h-8 w-8'
-                  title='Next thread'
-                >
-                  <ArrowRight className='h-4 w-4' />
-                </Button>
               </div>
             </div>
           </div>
@@ -752,17 +731,66 @@ export function InboxPanel({
             {/* Right Column - Metadata & Actions */}
             <div className='bg-muted/20 w-80 flex-shrink-0 overflow-y-auto lg:w-96'>
               <div className='space-y-6 p-6'>
+                {/* Email Toolbar - Read/Unread toggle + Navigation */}
+                {selectedThread && (
+                  <EmailToolbar
+                    threadId={selectedThread.id}
+                    isRead={
+                      threadMessages.length > 0 &&
+                      threadMessages.every(m => m.isRead)
+                    }
+                    canGoPrev={canGoPrev}
+                    canGoNext={canGoNext}
+                    onToggleReadStatus={newIsRead => {
+                      // Update local thread messages state
+                      setThreadMessages(prev =>
+                        prev.map(m => ({ ...m, isRead: newIsRead }))
+                      )
+                      // Update threads list state
+                      setThreads(prev =>
+                        prev.map(t =>
+                          t.id === selectedThread.id && t.latestMessage
+                            ? {
+                                ...t,
+                                latestMessage: {
+                                  ...t.latestMessage,
+                                  isRead: newIsRead,
+                                },
+                              }
+                            : t
+                        )
+                      )
+                    }}
+                    onPrev={goToPrev}
+                    onNext={goToNext}
+                  />
+                )}
+
+                {/* Contact Detection Section */}
+                {isAdmin && selectedThread && (
+                  <>
+                    <Separator />
+                    <ThreadContactPanel
+                      threadId={selectedThread.id}
+                      participantEmails={selectedThread.participantEmails || []}
+                    />
+                  </>
+                )}
+
                 {/* Client Linking Section */}
                 {isAdmin && selectedThread && (
-                  <ThreadLinkingPanel
-                    thread={selectedThread}
-                    clients={clients}
-                    suggestions={suggestions}
-                    suggestionsLoading={suggestionsLoading}
-                    isLinking={isLinking}
-                    onLinkClient={handleLinkClient}
-                    onUnlinkClient={handleUnlinkClient}
-                  />
+                  <>
+                    <Separator />
+                    <ThreadLinkingPanel
+                      thread={selectedThread}
+                      clients={clients}
+                      suggestions={suggestions}
+                      suggestionsLoading={suggestionsLoading}
+                      isLinking={isLinking}
+                      onLinkClient={handleLinkClient}
+                      onUnlinkClient={handleUnlinkClient}
+                    />
+                  </>
                 )}
 
                 {/* Project Linking Section */}

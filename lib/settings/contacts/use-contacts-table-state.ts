@@ -9,6 +9,7 @@ import {
   restoreContact,
   softDeleteContact,
 } from '@/app/(dashboard)/contacts/actions'
+import type { LinkedClient } from '@/lib/queries/contacts'
 
 export type ContactsTab = 'contacts' | 'archive' | 'activity'
 
@@ -22,6 +23,7 @@ export type ContactsTableContact = {
   deletedAt: string | null
   metrics: {
     totalClients: number
+    clients: LinkedClient[]
   }
 }
 

@@ -11,6 +11,7 @@ import {
   type ContactsTableContact,
   useContactsTableState,
 } from '@/lib/settings/contacts/use-contacts-table-state'
+import type { ClientOption } from '@/lib/queries/contacts'
 
 import { ContactsTableSection } from './contacts-table-section'
 import { ContactsSheet } from './contacts-sheet'
@@ -19,6 +20,7 @@ type ContactsManagementTableProps = {
   contacts: ContactsTableContact[]
   pageInfo: PageInfo
   mode: 'active' | 'archive'
+  allClients?: ClientOption[]
 }
 
 const EMPTY_MESSAGES = {
@@ -30,6 +32,7 @@ export function ContactsManagementTable({
   contacts,
   pageInfo,
   mode,
+  allClients = [],
 }: ContactsManagementTableProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -138,6 +141,7 @@ export function ContactsManagementTable({
         onOpenChange={handleSheetOpenChange}
         onComplete={handleSheetComplete}
         contact={selectedContact}
+        allClients={allClients}
       />
     </div>
   )

@@ -2,8 +2,15 @@ import type { CursorDirection, PageInfo } from '@/lib/pagination/cursor'
 
 import type { SelectContact } from '../selectors'
 
+export type LinkedClient = {
+  id: string
+  name: string
+  slug: string
+}
+
 export type ContactListMetrics = {
   totalClients: number
+  clients: LinkedClient[]
 }
 
 export type ContactsSettingsListItem = SelectContact & {

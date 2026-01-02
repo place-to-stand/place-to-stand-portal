@@ -6,9 +6,9 @@ import {
   X,
   Loader2,
   Sparkles,
-  Link2,
   ChevronDown,
   ChevronUp,
+  HelpCircle,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -25,6 +25,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import type { ThreadSummary } from '@/lib/types/messages'
 
 type Client = {
@@ -82,19 +88,19 @@ export function ThreadLinkingPanel({
   }
 
   return (
-    <div className='space-y-4'>
+    <div className='space-y-3'>
       {/* Section Header */}
       <div className='flex items-center gap-2'>
-        <Link2 className='text-muted-foreground h-4 w-4' />
+        <Building2 className='text-muted-foreground h-4 w-4' />
         <span className='text-sm font-medium'>Client Association</span>
       </div>
 
       {/* Current Link Status */}
       {thread.client ? (
-        <div className='bg-muted/30 rounded-lg border p-3'>
+        <div className='bg-muted/30 rounded-lg border p-2'>
           <div className='flex items-center justify-between'>
             <div className='flex items-center gap-2'>
-              <Building2 className='text-muted-foreground h-4 w-4' />
+              <Building2 className='h-4 w-4 text-blue-500' />
               <span className='font-medium'>{thread.client.name}</span>
               <Badge variant='secondary' className='text-xs'>
                 Linked
@@ -132,49 +138,61 @@ export function ThreadLinkingPanel({
                 </span>
               </div>
             ) : suggestions.length > 0 ? (
-              <div className='space-y-2'>
-                {suggestions.map(s => (
-                  <div
-                    key={s.clientId}
-                    className='bg-muted/30 rounded-lg border p-3'
-                  >
-                    <div className='flex items-center justify-between'>
-                      <div className='flex items-center gap-2'>
-                        <Building2 className='text-muted-foreground h-4 w-4' />
-                        <span className='text-sm font-medium'>
+              <TooltipProvider delayDuration={200}>
+                <div className='space-y-2'>
+                  {suggestions.map(s => (
+                    <div
+                      key={s.clientId}
+                      className='bg-muted/30 flex items-center justify-between gap-2 rounded-lg border p-2'
+                    >
+                      <div className='flex min-w-0 items-center gap-2'>
+                        <Building2 className='text-muted-foreground h-4 w-4 shrink-0' />
+                        <span className='truncate text-sm font-medium'>
                           {s.clientName}
                         </span>
                         <Badge
                           variant={
                             s.confidence >= 0.8 ? 'default' : 'secondary'
                           }
-                          className='text-xs'
+                          className='shrink-0 text-xs'
                         >
                           {Math.round(s.confidence * 100)}%
                         </Badge>
                       </div>
-                      <Button
-                        size='sm'
-                        variant='outline'
-                        className='h-7 text-xs'
-                        onClick={() => handleLinkFromSuggestion(s.clientId)}
-                        disabled={isLinking}
-                      >
-                        {isLinking ? (
-                          <Loader2 className='h-3 w-3 animate-spin' />
-                        ) : (
-                          'Link'
+                      <div className='flex shrink-0 items-center gap-1'>
+                        <Button
+                          size='sm'
+                          variant='outline'
+                          className='h-7 text-xs'
+                          onClick={() => handleLinkFromSuggestion(s.clientId)}
+                          disabled={isLinking}
+                        >
+                          {isLinking ? (
+                            <Loader2 className='h-3 w-3 animate-spin' />
+                          ) : (
+                            'Link'
+                          )}
+                        </Button>
+                        {s.reasoning && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type='button'
+                                className='text-muted-foreground hover:text-foreground p-1 transition-colors'
+                              >
+                                <HelpCircle className='h-4 w-4' />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side='left' className='max-w-xs'>
+                              <p className='text-sm'>{s.reasoning}</p>
+                            </TooltipContent>
+                          </Tooltip>
                         )}
-                      </Button>
+                      </div>
                     </div>
-                    {s.reasoning && (
-                      <p className='text-muted-foreground mt-1.5 text-xs italic'>
-                        {s.reasoning}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </TooltipProvider>
             ) : (
               <p className='text-muted-foreground text-sm'>
                 No client matches found.

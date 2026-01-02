@@ -10,9 +10,9 @@ import {
 } from '@/lib/db/schema'
 import { getMessage, normalizeEmail } from '@/lib/gmail/client'
 import { generatePRSuggestion } from './pr-generation'
-import type { NewSuggestion, PRSuggestedContent, SuggestionWithContext } from '@/lib/types/suggestions'
+import type { PRSuggestedContent } from '@/lib/types/suggestions'
 
-const MODEL_VERSION = 'gemini-2.5-flash-lite-v1'
+const MODEL_VERSION = 'gemini-3-flash'
 
 /**
  * Sanitize email body for AI processing
@@ -21,15 +21,17 @@ const MODEL_VERSION = 'gemini-2.5-flash-lite-v1'
 function sanitizeEmailBody(body: string): string {
   if (!body) return ''
 
-  return body
-    // Remove long hex strings (often embedded binary/attachment data)
-    .replace(/[a-f0-9]{32,}/gi, '[binary data removed]')
-    // Remove base64 encoded blocks
-    .replace(/[A-Za-z0-9+/=]{100,}/g, '[encoded data removed]')
-    // Remove excessive whitespace
-    .replace(/\s{10,}/g, '\n\n')
-    // Limit length
-    .slice(0, 8000)
+  return (
+    body
+      // Remove long hex strings (often embedded binary/attachment data)
+      .replace(/[a-f0-9]{32,}/gi, '[binary data removed]')
+      // Remove base64 encoded blocks
+      .replace(/[A-Za-z0-9+/=]{100,}/g, '[encoded data removed]')
+      // Remove excessive whitespace
+      .replace(/\s{10,}/g, '\n\n')
+      // Limit length
+      .slice(0, 8000)
+  )
 }
 
 export interface PRSuggestionResult {
@@ -60,12 +62,7 @@ export async function createPRSuggestionFromMessage(
   const [message] = await db
     .select()
     .from(messages)
-    .where(
-      and(
-        eq(messages.id, messageId),
-        isNull(messages.deletedAt)
-      )
-    )
+    .where(and(eq(messages.id, messageId), isNull(messages.deletedAt)))
     .limit(1)
 
   if (!message) throw new Error('Message not found')
@@ -79,10 +76,7 @@ export async function createPRSuggestionFromMessage(
     .from(githubRepoLinks)
     .leftJoin(projects, eq(projects.id, githubRepoLinks.projectId))
     .where(
-      and(
-        eq(githubRepoLinks.id, repoLinkId),
-        isNull(githubRepoLinks.deletedAt)
-      )
+      and(eq(githubRepoLinks.id, repoLinkId), isNull(githubRepoLinks.deletedAt))
     )
     .limit(1)
 
@@ -187,10 +181,7 @@ export async function createPRSuggestionFromTaskSuggestion(
     .from(githubRepoLinks)
     .leftJoin(projects, eq(projects.id, githubRepoLinks.projectId))
     .where(
-      and(
-        eq(githubRepoLinks.id, repoLinkId),
-        isNull(githubRepoLinks.deletedAt)
-      )
+      and(eq(githubRepoLinks.id, repoLinkId), isNull(githubRepoLinks.deletedAt))
     )
     .limit(1)
 
@@ -200,15 +191,25 @@ export async function createPRSuggestionFromTaskSuggestion(
   let emailBody = taskSuggestion.message.bodyText || ''
 
   if (!emailBody && taskSuggestion.message.externalMessageId) {
-    const gmailMessage = await getMessage(userId, taskSuggestion.message.externalMessageId)
+    const gmailMessage = await getMessage(
+      userId,
+      taskSuggestion.message.externalMessageId
+    )
     const normalized = normalizeEmail(gmailMessage)
-    emailBody = sanitizeEmailBody(normalized.bodyText || taskSuggestion.message.snippet || '')
+    emailBody = sanitizeEmailBody(
+      normalized.bodyText || taskSuggestion.message.snippet || ''
+    )
   } else {
-    emailBody = sanitizeEmailBody(emailBody || taskSuggestion.message.snippet || '')
+    emailBody = sanitizeEmailBody(
+      emailBody || taskSuggestion.message.snippet || ''
+    )
   }
 
   // Get task context from suggestion
-  const taskContent = taskSuggestion.suggestion.suggestedContent as { title?: string; description?: string }
+  const taskContent = taskSuggestion.suggestion.suggestedContent as {
+    title?: string
+    description?: string
+  }
 
   // Generate suggestion with task context
   const { result } = await generatePRSuggestion({

@@ -4,10 +4,15 @@ import { useState } from 'react'
 import { Plus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import type { ClientOption } from '@/lib/queries/contacts'
 
 import { ContactsSheet } from './contacts-sheet'
 
-export function ContactsAddButton() {
+type ContactsAddButtonProps = {
+  allClients?: ClientOption[]
+}
+
+export function ContactsAddButton({ allClients = [] }: ContactsAddButtonProps) {
   const [sheetOpen, setSheetOpen] = useState(false)
 
   return (
@@ -20,6 +25,7 @@ export function ContactsAddButton() {
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         onComplete={() => setSheetOpen(false)}
+        allClients={allClients}
       />
     </>
   )
