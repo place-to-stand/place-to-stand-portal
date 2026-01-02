@@ -39,3 +39,7 @@ next-env.d.ts
 supabase/seed.sql
 
 .env.local
+
+# claude code
+.claude/settings.local.json
+.claude/session-costs.jsonl
