@@ -47,6 +47,8 @@ if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
 
   # Extract model (first occurrence)
   MODEL=$(grep -o '"model":"[^"]*"' "$TRANSCRIPT_PATH" 2>/dev/null | head -1 | sed 's/"model":"//;s/"//' || echo "unknown")
+  # If model is empty string, default to unknown
+  [ -z "$MODEL" ] && MODEL="unknown"
 fi
 
 # Create log entry as compact JSON (single line for JSONL format)
@@ -81,7 +83,7 @@ echo "$LOG_ENTRY" >> "$LOG_FILE"
 # Open a new terminal window to display session costs
 osascript -e "tell application \"Terminal\"
   activate
-  do script \"'$PROJECT_DIR/view-costs.sh' --sessions | tail -7; echo ''; '$PROJECT_DIR/view-costs.sh'; echo ''; echo 'Press any key to close...'; read -n 1\"
+  do script \"'$PROJECT_DIR/view-costs.sh' --sessions | tail -7; echo ''; '$PROJECT_DIR/view-costs.sh' --nice; sleep 2; exit\"
 end tell" &>/dev/null &
 
 exit 0

@@ -59,9 +59,9 @@ EOF
         ($pricing[model] // $pricing["unknown"]) as $p |
         ((inp / 1000000 * $p.input) + (out / 1000000 * $p.output) + (cw / 1000000 * $p.cache_write) + (cr / 1000000 * $p.cache_read)) | . * 100 | round / 100;
 
-      # Group by model
-      group_by(.model // "unknown") | map({
-        model: (.[0].model // "unknown"),
+      # Group by model (normalize empty strings to "unknown")
+      group_by(if (.model // "") == "" then "unknown" else .model end) | map({
+        model: (if (.[0].model // "") == "" then "unknown" else .[0].model end),
         sessions: length,
         input: (map(.input_tokens // 0) | add),
         output: (map(.output_tokens // 0) | add),
@@ -116,9 +116,9 @@ EOF
         ($pricing[model] // $pricing["unknown"]) as $p |
         ((inp / 1000000 * $p.input) + (out / 1000000 * $p.output) + (cw / 1000000 * $p.cache_write) + (cr / 1000000 * $p.cache_read)) | . * 100 | round / 100;
 
-      # Group by model
-      group_by(.model // "unknown") | map({
-        model: (.[0].model // "unknown"),
+      # Group by model (normalize empty strings to "unknown")
+      group_by(if (.model // "") == "" then "unknown" else .model end) | map({
+        model: (if (.[0].model // "") == "" then "unknown" else .[0].model end),
         sessions: length,
         input_tokens: (map(.input_tokens // 0) | add),
         output_tokens: (map(.output_tokens // 0) | add),
