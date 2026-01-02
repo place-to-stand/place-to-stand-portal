@@ -173,24 +173,12 @@ export async function deleteClientContact(
   assertAdmin(user)
 
   // Delete the junction record (removes link between contact and client)
+  // The contact itself remains available for linking to other clients
   await db.delete(contactClients)
     .where(and(
       eq(contactClients.contactId, contactId),
       eq(contactClients.clientId, clientId)
     ))
-
-  // Soft-delete the contact if it has no other links
-  const [remainingLinks] = await db
-    .select({ count: contactClients.id })
-    .from(contactClients)
-    .where(eq(contactClients.contactId, contactId))
-    .limit(1)
-
-  if (!remainingLinks) {
-    await db.update(contacts)
-      .set({ deletedAt: new Date().toISOString() })
-      .where(eq(contacts.id, contactId))
-  }
 
   revalidatePath(`/clients`)
   return { success: true }

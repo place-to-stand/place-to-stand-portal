@@ -1,6 +1,6 @@
 'use client'
 
-import { Archive, Contact, Pencil, RefreshCw, Trash2 } from 'lucide-react'
+import { Archive, Contact, Mail, Pencil, Phone, RefreshCw, Trash2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -54,6 +54,7 @@ export function ContactsTableSection({
           <TableRow className='bg-muted/40'>
             <TableHead>Name</TableHead>
             <TableHead>Email</TableHead>
+            <TableHead>Phone</TableHead>
             <TableHead>Linked Clients</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className='w-32 text-right'>Actions</TableHead>
@@ -114,7 +115,26 @@ export function ContactsTableSection({
                   </div>
                 </TableCell>
                 <TableCell className='text-muted-foreground text-sm'>
-                  {contact.email}
+                  <a
+                    href={`mailto:${contact.email}`}
+                    className='hover:text-foreground inline-flex items-center gap-1.5 transition'
+                  >
+                    <Mail className='h-3 w-3' />
+                    {contact.email}
+                  </a>
+                </TableCell>
+                <TableCell className='text-muted-foreground text-sm'>
+                  {contact.phone ? (
+                    <a
+                      href={`tel:${contact.phone}`}
+                      className='hover:text-foreground inline-flex items-center gap-1.5 transition'
+                    >
+                      <Phone className='h-3 w-3' />
+                      {contact.phone}
+                    </a>
+                  ) : (
+                    <span className='text-muted-foreground/50'>—</span>
+                  )}
                 </TableCell>
                 <TableCell className='text-sm'>{linkedClients}</TableCell>
                 <TableCell>
@@ -204,7 +224,7 @@ export function ContactsTableSection({
           {contacts.length === 0 ? (
             <TableRow>
               <TableCell
-                colSpan={5}
+                colSpan={6}
                 className='text-muted-foreground py-10 text-center text-sm'
               >
                 {emptyMessage}

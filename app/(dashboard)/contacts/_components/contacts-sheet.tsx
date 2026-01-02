@@ -23,11 +23,21 @@ const contactFormSchema = z.object({
 
 type ContactFormData = z.infer<typeof contactFormSchema>
 
+/** Minimal contact data needed for the sheet form */
+type ContactSheetInput = {
+  id: string
+  email: string
+  name: string
+  phone: string | null
+}
+
 type ContactsSheetProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   onComplete: () => void
-  contact?: ContactsTableContact | null
+  /** Called with the new contact ID when a contact is created (not on edit) */
+  onCreated?: (contactId: string) => void
+  contact?: ContactsTableContact | ContactSheetInput | null
 }
 
 const ARCHIVE_CONTACT_DIALOG_TITLE = 'Archive contact?'
@@ -41,6 +51,7 @@ export function ContactsSheet({
   open,
   onOpenChange,
   onComplete,
+  onCreated,
   contact,
 }: ContactsSheetProps) {
   const [isPending, startTransition] = useTransition()
@@ -132,10 +143,16 @@ export function ContactsSheet({
             ? `${data.name || data.email} has been updated.`
             : `${data.name || data.email} has been created.`,
         })
+
+        // Call onCreated with the new contact ID if this was a create operation
+        if (!isEditing && result.id && onCreated) {
+          onCreated(result.id)
+        }
+
         onComplete()
       })
     },
-    [contact?.id, isEditing, toast, onComplete]
+    [contact?.id, isEditing, toast, onComplete, onCreated]
   )
 
   const handleRequestDelete = useCallback(() => {

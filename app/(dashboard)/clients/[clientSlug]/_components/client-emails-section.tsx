@@ -1,8 +1,7 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
-import { Mail } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, Mail } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
 import { Badge } from '@/components/ui/badge'
@@ -13,56 +12,66 @@ type Props = {
   isAdmin: boolean
 }
 
-export function ClientEmailsSection({ messages, isAdmin }: Props) {
+export function ClientEmailsSection({ messages }: Props) {
   return (
-    <section className='bg-card text-card-foreground overflow-hidden rounded-xl border shadow-sm'>
-      <div className='bg-muted/30 flex items-center justify-between gap-3 border-b px-6 py-4'>
-        <div className='flex items-center gap-3'>
-          <div className='bg-background flex h-8 w-8 items-center justify-center rounded-md border shadow-sm'>
-            <Mail className='text-muted-foreground h-4 w-4' />
-          </div>
-          <h2 className='text-lg font-semibold tracking-tight'>Messages</h2>
-          <Badge variant='secondary'>{messages.length}</Badge>
+    <section className='bg-card text-card-foreground overflow-hidden rounded-lg border'>
+      <div className='flex items-center gap-3 border-b px-4 py-3'>
+        <div className='flex h-7 w-7 items-center justify-center rounded-md bg-violet-500/10'>
+          <Mail className='h-4 w-4 text-violet-500' />
         </div>
-        <Link href='/my/inbox' className='text-sm text-muted-foreground hover:underline'>
-          View inbox →
+        <h2 className='font-semibold'>Messages</h2>
+        <Badge variant='secondary' className='ml-auto'>
+          {messages.length}
+        </Badge>
+        <Link
+          href='/my/inbox'
+          className='text-muted-foreground hover:text-foreground text-xs transition'
+        >
+          View all →
         </Link>
       </div>
 
-      <div className='p-6'>
+      <div className='p-3'>
         {messages.length === 0 ? (
-          <div className='text-muted-foreground rounded-lg border border-dashed p-6 text-center text-sm'>
-            No messages linked to this client yet. Add contacts to enable auto-matching.
+          <div className='text-muted-foreground rounded-md border border-dashed px-4 py-6 text-center text-sm'>
+            No messages linked yet.
           </div>
         ) : (
-          <div className='space-y-2'>
-            {messages.slice(0, 10).map(msg => (
-              <div
-                key={msg.id}
-                className='flex items-center justify-between gap-4 py-2 px-3 rounded-md hover:bg-muted/50'
-              >
-                <div className='flex-1 min-w-0'>
-                  <div className='font-medium truncate'>
+          <div className='divide-y'>
+            {messages.slice(0, 5).map(msg => (
+              <div key={msg.id} className='group flex items-start gap-3 px-3 py-2.5'>
+                <div className='mt-0.5 shrink-0'>
+                  {msg.isInbound ? (
+                    <ArrowDownLeft className='h-3.5 w-3.5 text-emerald-500' />
+                  ) : (
+                    <ArrowUpRight className='h-3.5 w-3.5 text-blue-500' />
+                  )}
+                </div>
+                <div className='min-w-0 flex-1'>
+                  <div className='truncate text-sm font-medium'>
                     {msg.subject || '(no subject)'}
                   </div>
-                  <div className='text-sm text-muted-foreground truncate'>
-                    {msg.fromName || msg.fromEmail}
+                  <div className='text-muted-foreground mt-0.5 flex items-center gap-2 text-xs'>
+                    <span className='truncate'>
+                      {msg.fromName || msg.fromEmail}
+                    </span>
+                    <span className='shrink-0'>·</span>
+                    <span className='shrink-0'>
+                      {formatDistanceToNow(new Date(msg.sentAt), {
+                        addSuffix: true,
+                      })}
+                    </span>
                   </div>
-                </div>
-                <div className='flex items-center gap-2 shrink-0'>
-                  <Badge variant='outline' className='text-xs'>
-                    {msg.isInbound ? 'Inbound' : 'Outbound'}
-                  </Badge>
-                  <span className='text-xs text-muted-foreground'>
-                    {formatDistanceToNow(new Date(msg.sentAt), { addSuffix: true })}
-                  </span>
                 </div>
               </div>
             ))}
-            {messages.length > 10 && (
-              <div className='text-center pt-2'>
-                <Link href='/my/inbox' className='text-sm text-muted-foreground hover:underline'>
-                  +{messages.length - 10} more messages
+            {messages.length > 5 && (
+              <div className='px-3 py-2 text-center'>
+                <Link
+                  href='/my/inbox'
+                  className='text-muted-foreground hover:text-foreground text-xs transition'
+                >
+                  +{messages.length - 5} more
                 </Link>
               </div>
             )}

@@ -166,7 +166,7 @@ export async function saveContactMutation(
         metadata: event.metadata,
       })
 
-      return buildMutationResult({})
+      return buildMutationResult({ id: newContactId })
     }
   )
 }

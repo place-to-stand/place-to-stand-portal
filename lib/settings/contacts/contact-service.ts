@@ -27,4 +27,5 @@ export type DestroyContactInput = z.infer<typeof destroyContactSchema>
 
 export type ContactActionResult = {
   error?: string
+  id?: string
 }

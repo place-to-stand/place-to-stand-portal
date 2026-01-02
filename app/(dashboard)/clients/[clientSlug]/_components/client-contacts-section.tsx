@@ -1,12 +1,11 @@
 'use client'
 
 import { useCallback, useEffect, useState, useTransition } from 'react'
-import { Contact, Plus, Pencil, Trash2, Star, Loader2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Mail, Plus, Pencil, Trash2, Star, Users } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Checkbox } from '@/components/ui/checkbox'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/use-toast'
 import {
@@ -16,7 +15,6 @@ import {
 import { ContactsSheet } from '@/app/(dashboard)/contacts/_components/contacts-sheet'
 import type { ContactWithClientLink } from '@/lib/types/client-contacts'
 import {
-  updateClientContact,
   deleteClientContact,
   getAllContacts,
   linkContactToClient,
@@ -28,23 +26,16 @@ type Props = {
   canManage: boolean
 }
 
-type EditingContact = {
-  id: string
-  email: string
-  name: string
-  isPrimary: boolean
-}
-
 export function ClientContactsSection({ clientId, contacts, canManage }: Props) {
+  const router = useRouter()
   const { toast } = useToast()
   const [isPending, startTransition] = useTransition()
   const [isAddingContact, setIsAddingContact] = useState(false)
   const [isSheetOpen, setIsSheetOpen] = useState(false)
+  const [sheetMode, setSheetMode] = useState<'create' | 'edit'>('create')
+  const [editingContact, setEditingContact] = useState<ContactWithClientLink | null>(null)
   const [allContacts, setAllContacts] = useState<ContactSelectorContact[]>([])
-  const [editing, setEditing] = useState<EditingContact | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<ContactWithClientLink | null>(
-    null
-  )
+  const [deleteTarget, setDeleteTarget] = useState<ContactWithClientLink | null>(null)
 
   // Fetch all contacts when add mode opens
   useEffect(() => {
@@ -85,39 +76,51 @@ export function ClientContactsSection({ clientId, contacts, canManage }: Props) 
   )
 
   const handleCreateNew = useCallback(() => {
+    setSheetMode('create')
+    setEditingContact(null)
+    setIsSheetOpen(true)
+  }, [])
+
+  const handleEditContact = useCallback((contact: ContactWithClientLink) => {
+    setSheetMode('edit')
+    setEditingContact(contact)
     setIsSheetOpen(true)
   }, [])
 
   const handleSheetComplete = useCallback(() => {
     setIsSheetOpen(false)
-    // Refresh contacts list after creation
+    setEditingContact(null)
+    setIsAddingContact(false)
+    // Refresh contacts list after changes
     getAllContacts()
       .then(setAllContacts)
       .catch(err => console.error('Failed to refresh contacts:', err))
-  }, [])
+    router.refresh()
+  }, [router])
 
-  const handleSaveEdit = useCallback(() => {
-    if (!editing) return
-
-    startTransition(async () => {
-      const result = await updateClientContact(editing.id, clientId, {
-        email: editing.email,
-        name: editing.name,
-        isPrimary: editing.isPrimary,
-      })
-
-      if (result.success) {
-        toast({ title: 'Contact updated' })
-        setEditing(null)
-      } else {
-        toast({
-          title: 'Error',
-          description: result.error,
-          variant: 'destructive',
+  // Called when a new contact is created - auto-link to this client
+  const handleContactCreated = useCallback(
+    (contactId: string) => {
+      startTransition(async () => {
+        const result = await linkContactToClient({
+          contactId,
+          clientId,
+          isPrimary: false,
         })
-      }
-    })
-  }, [editing, clientId, toast])
+
+        if (result.success) {
+          toast({ title: 'Contact created and linked' })
+        } else {
+          toast({
+            title: 'Contact created but linking failed',
+            description: result.error,
+            variant: 'destructive',
+          })
+        }
+      })
+    },
+    [clientId, toast]
+  )
 
   const handleDelete = useCallback(() => {
     if (!deleteTarget) return
@@ -125,7 +128,7 @@ export function ClientContactsSection({ clientId, contacts, canManage }: Props) 
     startTransition(async () => {
       const result = await deleteClientContact(deleteTarget.id, clientId)
       if (result.success) {
-        toast({ title: 'Contact removed' })
+        toast({ title: 'Contact removed from client' })
       } else {
         toast({
           title: 'Error',
@@ -137,27 +140,42 @@ export function ClientContactsSection({ clientId, contacts, canManage }: Props) 
     })
   }, [deleteTarget, clientId, toast])
 
+  // Map ContactWithClientLink to the shape ContactsSheet expects
+  const sheetContact = editingContact
+    ? {
+        id: editingContact.id,
+        email: editingContact.email,
+        name: editingContact.name ?? '',
+        phone: editingContact.phone,
+      }
+    : null
+
   return (
     <>
-      <section className='bg-card text-card-foreground overflow-hidden rounded-xl border shadow-sm'>
-        <div className='bg-muted/30 flex items-center justify-between gap-3 border-b px-6 py-4'>
-          <div className='flex items-center gap-3'>
-            <div className='bg-background flex h-8 w-8 items-center justify-center rounded-md border shadow-sm'>
-              <Contact className='h-4 w-4 text-cyan-500' />
-            </div>
-            <h2 className='text-lg font-semibold tracking-tight'>Contacts</h2>
-            <Badge variant='secondary'>{contacts.length}</Badge>
+      <section className='bg-card text-card-foreground overflow-hidden rounded-lg border'>
+        <div className='flex items-center gap-3 border-b px-4 py-3'>
+          <div className='flex h-7 w-7 items-center justify-center rounded-md bg-cyan-500/10'>
+            <Users className='h-4 w-4 text-cyan-500' />
           </div>
-          {canManage && !isAddingContact && !editing && (
-            <Button size='sm' onClick={() => setIsAddingContact(true)}>
-              <Plus className='mr-1 h-4 w-4' /> Add
+          <h2 className='font-semibold'>Contacts</h2>
+          <Badge variant='secondary' className='ml-auto'>
+            {contacts.length}
+          </Badge>
+          {canManage && !isAddingContact && (
+            <Button
+              size='sm'
+              variant='ghost'
+              className='h-7 px-2'
+              onClick={() => setIsAddingContact(true)}
+            >
+              <Plus className='h-4 w-4' />
             </Button>
           )}
         </div>
 
-        <div className='p-6'>
+        <div className='p-3'>
           {isAddingContact && (
-            <div className='mb-4 flex items-center gap-2'>
+            <div className='mb-3 flex items-center gap-2'>
               <div className='flex-1'>
                 <ContactSelector
                   contacts={allContacts}
@@ -179,46 +197,28 @@ export function ClientContactsSection({ clientId, contacts, canManage }: Props) 
           )}
 
           {contacts.length === 0 && !isAddingContact ? (
-            <div className='text-muted-foreground rounded-lg border border-dashed p-6 text-center text-sm'>
-              No contacts. Add email addresses to enable automatic email linking.
+            <div className='text-muted-foreground rounded-md border border-dashed px-4 py-6 text-center text-sm'>
+              No contacts linked yet.
             </div>
           ) : (
-            <div className='space-y-2'>
-              {contacts.map(c =>
-                editing?.id === c.id ? (
-                  <ContactEditForm
-                    key={c.id}
-                    value={editing}
-                    onChange={setEditing}
-                    onSave={handleSaveEdit}
-                    onCancel={() => setEditing(null)}
-                    isPending={isPending}
-                  />
-                ) : (
-                  <ContactRow
-                    key={c.id}
-                    contact={c}
-                    canManage={canManage && !isAddingContact}
-                    onEdit={() =>
-                      setEditing({
-                        id: c.id,
-                        email: c.email,
-                        name: c.name ?? '',
-                        isPrimary: c.isPrimary,
-                      })
-                    }
-                    onDelete={() => setDeleteTarget(c)}
-                  />
-                )
-              )}
+            <div className='divide-y'>
+              {contacts.map(c => (
+                <ContactRow
+                  key={c.id}
+                  contact={c}
+                  canManage={canManage && !isAddingContact}
+                  onEdit={() => handleEditContact(c)}
+                  onDelete={() => setDeleteTarget(c)}
+                />
+              ))}
             </div>
           )}
         </div>
 
         <ConfirmDialog
           open={!!deleteTarget}
-          title='Remove contact?'
-          description={`Remove ${deleteTarget?.email}? Emails from this address will no longer auto-link to this client.`}
+          title='Remove contact from client?'
+          description={`Remove ${deleteTarget?.email} from this client? The contact will remain available for other clients.`}
           confirmLabel='Remove'
           confirmVariant='destructive'
           confirmDisabled={isPending}
@@ -227,12 +227,12 @@ export function ClientContactsSection({ clientId, contacts, canManage }: Props) 
         />
       </section>
 
-      {/* ContactSheet for creating new contacts */}
       <ContactsSheet
         open={isSheetOpen}
         onOpenChange={setIsSheetOpen}
         onComplete={handleSheetComplete}
-        contact={null}
+        onCreated={sheetMode === 'create' ? handleContactCreated : undefined}
+        contact={sheetContact}
       />
     </>
   )
@@ -250,37 +250,46 @@ function ContactRow({
   onDelete: () => void
 }) {
   return (
-    <div className='flex items-center justify-between gap-4 rounded-md px-3 py-2 hover:bg-muted/50'>
-      <div className='flex min-w-0 items-center gap-3'>
-        <span className='truncate font-medium'>{contact.email}</span>
-        {contact.name && (
-          <span className='text-muted-foreground truncate text-sm'>
-            ({contact.name})
-          </span>
-        )}
-        {contact.isPrimary && (
-          <Badge variant='outline' className='shrink-0'>
-            <Star className='mr-1 h-3 w-3 fill-current' /> Primary
-          </Badge>
-        )}
+    <div className='group flex items-start gap-3 px-3 py-2.5'>
+      <div className='min-w-0 flex-1'>
+        <div className='flex items-center gap-2'>
+          {contact.name ? (
+            <span className='truncate text-sm font-medium'>{contact.name}</span>
+          ) : (
+            <span className='text-muted-foreground truncate text-sm'>
+              No name
+            </span>
+          )}
+          {contact.isPrimary && (
+            <Star className='h-3 w-3 shrink-0 fill-amber-400 text-amber-400' />
+          )}
+        </div>
+        <a
+          href={`mailto:${contact.email}`}
+          className='text-muted-foreground hover:text-foreground mt-0.5 flex items-center gap-1.5 text-xs transition'
+          onClick={e => e.stopPropagation()}
+        >
+          <Mail className='h-3 w-3' />
+          {contact.email}
+        </a>
       </div>
       {canManage && (
-        <div className='flex shrink-0 gap-1'>
+        <div className='flex shrink-0 gap-0.5 opacity-0 transition group-hover:opacity-100'>
           <Button
             variant='ghost'
             size='icon'
-            className='h-8 w-8'
+            className='h-7 w-7'
             onClick={onEdit}
           >
-            <Pencil className='h-4 w-4' />
+            <Pencil className='h-3.5 w-3.5' />
           </Button>
           <Button
             variant='ghost'
             size='icon'
-            className='h-8 w-8'
+            className='h-7 w-7'
             onClick={onDelete}
           >
-            <Trash2 className='h-4 w-4' />
+            <Trash2 className='h-3.5 w-3.5' />
           </Button>
         </div>
       )}
@@ -288,52 +297,3 @@ function ContactRow({
   )
 }
 
-function ContactEditForm({
-  value,
-  onChange,
-  onSave,
-  onCancel,
-  isPending,
-}: {
-  value: EditingContact
-  onChange: (v: EditingContact) => void
-  onSave: () => void
-  onCancel: () => void
-  isPending: boolean
-}) {
-  return (
-    <div className='flex flex-wrap items-center gap-2 rounded-md bg-muted/30 px-3 py-2'>
-      <Input
-        type='email'
-        placeholder='email@example.com'
-        value={value.email}
-        onChange={e => onChange({ ...value, email: e.target.value })}
-        className='w-56'
-        disabled={isPending}
-      />
-      <Input
-        placeholder='Name'
-        value={value.name}
-        onChange={e => onChange({ ...value, name: e.target.value })}
-        className='w-40'
-        disabled={isPending}
-      />
-      <label className='flex cursor-pointer items-center gap-2 text-sm'>
-        <Checkbox
-          checked={value.isPrimary}
-          onCheckedChange={checked => onChange({ ...value, isPrimary: !!checked })}
-          disabled={isPending}
-        />
-        Primary
-      </label>
-      <div className='ml-auto flex gap-1'>
-        <Button size='sm' variant='ghost' onClick={onCancel} disabled={isPending}>
-          Cancel
-        </Button>
-        <Button size='sm' onClick={onSave} disabled={isPending || !value.email}>
-          {isPending ? <Loader2 className='h-4 w-4 animate-spin' /> : 'Save'}
-        </Button>
-      </div>
-    </div>
-  )
-}
