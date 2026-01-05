@@ -1,5 +1,5 @@
 import type { InferInsertModel, InferSelectModel } from 'drizzle-orm'
-import type { threads, messages, messageAttachments, emailRaw } from '@/lib/db/schema'
+import type { threads, messages } from '@/lib/db/schema'
 
 // Base types from schema
 export type Thread = InferSelectModel<typeof threads>
@@ -7,12 +7,6 @@ export type NewThread = InferInsertModel<typeof threads>
 
 export type Message = InferSelectModel<typeof messages>
 export type NewMessage = InferInsertModel<typeof messages>
-
-export type MessageAttachment = InferSelectModel<typeof messageAttachments>
-export type NewMessageAttachment = InferInsertModel<typeof messageAttachments>
-
-export type EmailRaw = InferSelectModel<typeof emailRaw>
-export type NewEmailRaw = InferInsertModel<typeof emailRaw>
 
 // Enum types
 export type MessageSource = 'EMAIL' | 'CHAT' | 'VOICE_MEMO' | 'DOCUMENT' | 'FORM'
@@ -24,10 +18,13 @@ export interface ThreadWithMessages extends Thread {
   client?: {
     id: string
     name: string
+    slug: string | null
   } | null
   project?: {
     id: string
     name: string
+    slug: string | null
+    clientSlug: string | null
   } | null
 }
 
@@ -43,10 +40,13 @@ export interface ThreadSummary {
   client?: {
     id: string
     name: string
+    slug: string | null
   } | null
   project?: {
     id: string
     name: string
+    slug: string | null
+    clientSlug: string | null
   } | null
   // Preview of latest message
   latestMessage?: {
@@ -58,15 +58,6 @@ export interface ThreadSummary {
     isInbound: boolean
     isRead: boolean
   } | null
-}
-
-// Message with attachments for detail view
-export interface MessageWithAttachments extends Message {
-  attachments: MessageAttachment[]
-  thread?: {
-    id: string
-    subject: string | null
-  }
 }
 
 // Inbox item (can be a thread or standalone message)
@@ -88,10 +79,13 @@ export interface InboxItem {
   client?: {
     id: string
     name: string
+    slug: string | null
   } | null
   project?: {
     id: string
     name: string
+    slug: string | null
+    clientSlug: string | null
   } | null
 }
 

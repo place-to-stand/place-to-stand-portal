@@ -4,7 +4,6 @@ import { eq, and, isNull, desc, sql, inArray } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import {
   suggestions,
-  suggestionFeedback,
   messages,
   threads,
   projects,
@@ -343,44 +342,11 @@ async function approveTaskSuggestion(
     throw new Error('Project is required')
   }
 
-  // Record feedback for modifications
-  const feedbackRecords: Array<{
-    suggestionId: string
-    feedbackType: string
-    originalValue: string | null
-    correctedValue: string | null
-    createdBy: string
-  }> = []
-
-  if (modifications?.title && modifications.title !== content.title) {
-    feedbackRecords.push({
-      suggestionId: suggestion.id,
-      feedbackType: 'title_changed',
-      originalValue: content.title,
-      correctedValue: modifications.title,
-      createdBy: userId,
-    })
-  }
-
-  if (modifications?.description && modifications.description !== content.description) {
-    feedbackRecords.push({
-      suggestionId: suggestion.id,
-      feedbackType: 'description_changed',
-      originalValue: content.description || null,
-      correctedValue: modifications.description,
-      createdBy: userId,
-    })
-  }
-
-  if (modifications?.projectId && modifications.projectId !== suggestion.projectId) {
-    feedbackRecords.push({
-      suggestionId: suggestion.id,
-      feedbackType: 'project_changed',
-      originalValue: suggestion.projectId || null,
-      correctedValue: modifications.projectId,
-      createdBy: userId,
-    })
-  }
+  // Track if user modified the suggestion
+  const wasModified =
+    (modifications?.title && modifications.title !== content.title) ||
+    (modifications?.description && modifications.description !== content.description) ||
+    (modifications?.projectId && modifications.projectId !== suggestion.projectId)
 
   // Create task and update suggestion in transaction
   const result = await db.transaction(async tx => {
@@ -400,7 +366,7 @@ async function approveTaskSuggestion(
     await tx
       .update(suggestions)
       .set({
-        status: feedbackRecords.length > 0 ? 'MODIFIED' : 'APPROVED',
+        status: wasModified ? 'MODIFIED' : 'APPROVED',
         reviewedBy: userId,
         reviewedAt: new Date().toISOString(),
         createdTaskId: newTask.id,
@@ -408,11 +374,7 @@ async function approveTaskSuggestion(
       })
       .where(eq(suggestions.id, suggestion.id))
 
-    if (feedbackRecords.length > 0) {
-      await tx.insert(suggestionFeedback).values(feedbackRecords)
-    }
-
-    return { task: newTask }
+    return { task: newTask, wasModified }
   })
 
   await logActivity({
@@ -426,7 +388,7 @@ async function approveTaskSuggestion(
     metadata: {
       suggestionId: suggestion.id,
       messageId: suggestion.messageId,
-      wasModified: feedbackRecords.length > 0,
+      wasModified: result.wasModified,
     },
   })
 
@@ -566,29 +528,16 @@ export async function rejectSuggestion(
     throw new Error('Suggestion already processed')
   }
 
-  await db.transaction(async tx => {
-    await tx
-      .update(suggestions)
-      .set({
-        status: 'REJECTED',
-        reviewedBy: userId,
-        reviewedAt: new Date().toISOString(),
-        reviewNotes: reason,
-        updatedAt: new Date().toISOString(),
-      })
-      .where(eq(suggestions.id, suggestionId))
-
-    if (reason) {
-      const content = suggestion.suggestedContent as TaskSuggestedContent | PRSuggestedContent
-      await tx.insert(suggestionFeedback).values({
-        suggestionId,
-        feedbackType: 'rejected',
-        originalValue: 'title' in content ? content.title : null,
-        correctedValue: reason,
-        createdBy: userId,
-      })
-    }
-  })
+  await db
+    .update(suggestions)
+    .set({
+      status: 'REJECTED',
+      reviewedBy: userId,
+      reviewedAt: new Date().toISOString(),
+      reviewNotes: reason,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(eq(suggestions.id, suggestionId))
 
   const content = suggestion.suggestedContent as TaskSuggestedContent | PRSuggestedContent
   const title = 'title' in content ? content.title : 'Untitled'

@@ -107,11 +107,14 @@ function sanitizeEmailHtml(
 type Client = {
   id: string
   name: string
+  slug: string | null
 }
 
 type Project = {
   id: string
   name: string
+  slug: string | null
+  clientSlug: string | null
 }
 
 type Suggestion = {
@@ -417,7 +420,9 @@ export function InboxPanel({
         // Update local state
         const updatedThread: ThreadSummary = {
           ...selectedThread,
-          client: client ? { id: client.id, name: client.name } : null,
+          client: client
+            ? { id: client.id, name: client.name, slug: client.slug }
+            : null,
         }
         setSelectedThread(updatedThread)
         setThreads(prev =>
@@ -491,7 +496,14 @@ export function InboxPanel({
         // Update local state
         const updatedThread: ThreadSummary = {
           ...selectedThread,
-          project: project ? { id: project.id, name: project.name } : null,
+          project: project
+            ? {
+                id: project.id,
+                name: project.name,
+                slug: project.slug,
+                clientSlug: project.clientSlug,
+              }
+            : null,
         }
         setSelectedThread(updatedThread)
         setThreads(prev =>

@@ -1,0 +1,1 @@
+ALTER TABLE "oauth_connections" ADD COLUMN "sync_state" jsonb DEFAULT '{}'::jsonb NOT NULL;

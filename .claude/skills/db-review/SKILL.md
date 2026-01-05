@@ -155,6 +155,22 @@ For column/enum usage audit, include a summary table:
 4. Review query patterns in `lib/queries/`
 5. Check for missing indexes using common query patterns
 6. Validate soft-delete consistency
+7. **Column usage audit:**
+   - Extract all column names from schema tables
+   - For each non-exempt column, search for usage in:
+     - `lib/queries/` (Drizzle query builders)
+     - `lib/data/` (data layer functions)
+     - `components/` (UI rendering)
+     - `app/` (pages, server actions, API routes)
+   - Flag columns with no evidence of read usage
+8. **Enum value audit:**
+   - Extract all PostgreSQL enum definitions from schema
+   - For each enum value, search for usage in:
+     - Query filters and conditions
+     - UI components (labels, colors, status badges)
+     - Business logic files
+     - Constants/config files (e.g., `lib/projects/task-status.ts`)
+   - Flag values with no evidence of usage
 
 ## Post-Review
 
@@ -163,3 +179,5 @@ Generate:
 - Index creation SQL statements
 - Migration plan for improvements
 - Risk assessment for proposed changes
+- **Column cleanup recommendations:** Migration SQL to drop unused columns
+- **Enum cleanup recommendations:** Migration SQL to remove unused enum values (with data migration plan if values exist in historical data)

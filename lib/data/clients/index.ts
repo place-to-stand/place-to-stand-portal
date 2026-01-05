@@ -13,6 +13,12 @@ import { db } from '@/lib/db'
 import { clients, projects, hourBlocks, timeLogs } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 
+export type ClientActiveProject = {
+  id: string
+  name: string
+  slug: string | null
+}
+
 export type ClientWithMetrics = {
   id: string
   name: string
@@ -24,6 +30,7 @@ export type ClientWithMetrics = {
   deletedAt: string | null
   projectCount: number
   activeProjectCount: number
+  activeProjects: ClientActiveProject[]
   totalHoursPurchased: number
   totalHoursUsed: number
   hoursRemaining: number
@@ -133,6 +140,37 @@ export const fetchClientsWithMetrics = cache(
       timeLogsData.map(tl => [tl.clientId, Number(tl.totalHoursUsed ?? 0)])
     )
 
+    // Fetch active projects for each client
+    const activeProjectsData = await db
+      .select({
+        id: projects.id,
+        name: projects.name,
+        slug: projects.slug,
+        clientId: projects.clientId,
+      })
+      .from(projects)
+      .where(
+        and(
+          inArray(projects.clientId, clientIds),
+          isNull(projects.deletedAt),
+          sql`lower(${projects.status}::text) = 'active'`
+        )
+      )
+      .orderBy(asc(projects.name))
+
+    // Group projects by client ID
+    const activeProjectsMap = new Map<string, ClientActiveProject[]>()
+    for (const project of activeProjectsData) {
+      if (!project.clientId) continue
+      const existing = activeProjectsMap.get(project.clientId) ?? []
+      existing.push({
+        id: project.id,
+        name: project.name,
+        slug: project.slug,
+      })
+      activeProjectsMap.set(project.clientId, existing)
+    }
+
     return rows.map(row => {
       const totalHoursPurchased = hourBlocksMap.get(row.id) ?? 0
       const totalHoursUsed = timeLogsMap.get(row.id) ?? 0
@@ -149,6 +187,7 @@ export const fetchClientsWithMetrics = cache(
         deletedAt: row.deletedAt,
         projectCount: Number(row.projectCount ?? 0),
         activeProjectCount: Number(row.activeProjectCount ?? 0),
+        activeProjects: activeProjectsMap.get(row.id) ?? [],
         totalHoursPurchased,
         totalHoursUsed,
         hoursRemaining,

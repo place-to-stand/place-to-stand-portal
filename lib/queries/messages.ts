@@ -4,10 +4,10 @@ import { and, desc, eq, isNull, inArray, sql, asc } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { messages, messageAttachments, threads, emailRaw, users } from '@/lib/db/schema'
+import { messages, threads, users } from '@/lib/db/schema'
 import { isAdmin } from '@/lib/auth/permissions'
 import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
-import type { Message, NewMessage, MessageWithAttachments, MessageSource } from '@/lib/types/messages'
+import type { Message, MessageSource } from '@/lib/types/messages'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Message CRUD
@@ -259,37 +259,6 @@ export async function getUnanalyzedMessagesForClient(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Message with Attachments
-// ─────────────────────────────────────────────────────────────────────────────
-
-export async function getMessageWithAttachments(
-  user: AppUser,
-  messageId: string
-): Promise<MessageWithAttachments | null> {
-  const message = await getMessageById(user, messageId)
-  if (!message) return null
-
-  const attachments = await db
-    .select()
-    .from(messageAttachments)
-    .where(eq(messageAttachments.messageId, messageId))
-
-  const [thread] = message.threadId
-    ? await db
-        .select({ id: threads.id, subject: threads.subject })
-        .from(threads)
-        .where(eq(threads.id, message.threadId))
-        .limit(1)
-    : [null]
-
-  return {
-    ...message,
-    attachments,
-    thread: thread ?? undefined,
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Message Counts
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -315,83 +284,6 @@ export async function getMessageCountsForUser(userId: string): Promise<{
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Email Raw Storage
-// ─────────────────────────────────────────────────────────────────────────────
-
-export type CreateEmailRawInput = {
-  messageId: string
-  rawMime?: string | null
-  storagePath?: string | null
-  checksum: string
-  sizeBytes: number
-}
-
-export async function createEmailRaw(input: CreateEmailRawInput) {
-  const [record] = await db
-    .insert(emailRaw)
-    .values({
-      messageId: input.messageId,
-      rawMime: input.rawMime ?? null,
-      storagePath: input.storagePath ?? null,
-      checksum: input.checksum,
-      sizeBytes: input.sizeBytes,
-    })
-    .returning()
-
-  return record
-}
-
-export async function getEmailRawByMessageId(messageId: string) {
-  const [record] = await db
-    .select()
-    .from(emailRaw)
-    .where(eq(emailRaw.messageId, messageId))
-    .limit(1)
-
-  return record ?? null
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Message Attachments
-// ─────────────────────────────────────────────────────────────────────────────
-
-export type CreateMessageAttachmentInput = {
-  messageId: string
-  storagePath: string
-  originalName: string
-  mimeType: string
-  fileSize: number
-  contentId?: string | null
-  isInline?: boolean
-}
-
-export async function createMessageAttachment(input: CreateMessageAttachmentInput) {
-  const [record] = await db
-    .insert(messageAttachments)
-    .values({
-      messageId: input.messageId,
-      storagePath: input.storagePath,
-      originalName: input.originalName,
-      mimeType: input.mimeType,
-      fileSize: input.fileSize,
-      contentId: input.contentId ?? null,
-      isInline: input.isInline ?? false,
-    })
-    .returning()
-
-  return record
-}
-
-export async function getMessageAttachments(messageId: string) {
-  const records = await db
-    .select()
-    .from(messageAttachments)
-    .where(eq(messageAttachments.messageId, messageId))
-
-  return records
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Messages for Client (used by client detail page)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -403,6 +295,12 @@ export type MessageForClient = {
   sentAt: string
   threadId: string
   isInbound: boolean
+  userId: string
+  user: {
+    fullName: string | null
+    avatarUrl: string | null
+    updatedAt: string | null
+  } | null
 }
 
 export async function getMessagesForClient(
@@ -420,9 +318,14 @@ export async function getMessagesForClient(
       sentAt: messages.sentAt,
       threadId: messages.threadId,
       isInbound: messages.isInbound,
+      userId: messages.userId,
+      userFullName: users.fullName,
+      userAvatarUrl: users.avatarUrl,
+      userUpdatedAt: users.updatedAt,
     })
     .from(messages)
     .innerJoin(threads, eq(threads.id, messages.threadId))
+    .leftJoin(users, eq(users.id, messages.userId))
     .where(
       and(
         eq(threads.clientId, clientId),
@@ -433,5 +336,21 @@ export async function getMessagesForClient(
     .orderBy(desc(messages.sentAt))
     .limit(limit)
 
-  return rows
+  return rows.map(row => ({
+    id: row.id,
+    subject: row.subject,
+    fromEmail: row.fromEmail,
+    fromName: row.fromName,
+    sentAt: row.sentAt,
+    threadId: row.threadId,
+    isInbound: row.isInbound,
+    userId: row.userId,
+    user: row.userFullName !== null || row.userAvatarUrl !== null
+      ? {
+          fullName: row.userFullName,
+          avatarUrl: row.userAvatarUrl,
+          updatedAt: row.userUpdatedAt,
+        }
+      : null,
+  }))
 }

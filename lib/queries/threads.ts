@@ -66,7 +66,7 @@ export async function getThreadSummaryById(
   const [clientRow, projectRow] = await Promise.all([
     thread.clientId
       ? db
-          .select({ id: clients.id, name: clients.name })
+          .select({ id: clients.id, name: clients.name, slug: clients.slug })
           .from(clients)
           .where(eq(clients.id, thread.clientId))
           .limit(1)
@@ -74,8 +74,14 @@ export async function getThreadSummaryById(
       : null,
     thread.projectId
       ? db
-          .select({ id: projects.id, name: projects.name })
+          .select({
+            id: projects.id,
+            name: projects.name,
+            slug: projects.slug,
+            clientSlug: clients.slug,
+          })
           .from(projects)
+          .leftJoin(clients, eq(projects.clientId, clients.id))
           .where(eq(projects.id, thread.projectId))
           .limit(1)
           .then(rows => rows[0] ?? null)
@@ -285,10 +291,19 @@ export async function listThreadsForUser(
 
   const [clientRows, projectRows] = await Promise.all([
     clientIds.length > 0
-      ? db.select({ id: clients.id, name: clients.name }).from(clients).where(inArray(clients.id, clientIds))
+      ? db.select({ id: clients.id, name: clients.name, slug: clients.slug }).from(clients).where(inArray(clients.id, clientIds))
       : [],
     projectIds.length > 0
-      ? db.select({ id: projects.id, name: projects.name }).from(projects).where(inArray(projects.id, projectIds))
+      ? db
+          .select({
+            id: projects.id,
+            name: projects.name,
+            slug: projects.slug,
+            clientSlug: clients.slug,
+          })
+          .from(projects)
+          .leftJoin(clients, eq(projects.clientId, clients.id))
+          .where(inArray(projects.id, projectIds))
       : [],
   ])
 
@@ -357,18 +372,28 @@ export async function listThreadsForClient(
   // Get project names
   const projectIds = [...new Set(threadRows.map(t => t.projectId).filter(Boolean))] as string[]
 
-  const projectRows = projectIds.length > 0
-    ? await db.select({ id: projects.id, name: projects.name }).from(projects).where(inArray(projects.id, projectIds))
-    : []
-
-  const projectMap = new Map(projectRows.map(p => [p.id, p]))
-
-  // Get client info
+  // Get client info first so we have the slug for project URLs
   const [client] = await db
-    .select({ id: clients.id, name: clients.name })
+    .select({ id: clients.id, name: clients.name, slug: clients.slug })
     .from(clients)
     .where(eq(clients.id, clientId))
     .limit(1)
+
+  const projectRows = projectIds.length > 0
+    ? await db
+        .select({
+          id: projects.id,
+          name: projects.name,
+          slug: projects.slug,
+        })
+        .from(projects)
+        .where(inArray(projects.id, projectIds))
+    : []
+
+  // Add clientSlug to each project row
+  const projectMap = new Map(
+    projectRows.map(p => [p.id, { ...p, clientSlug: client?.slug ?? null }])
+  )
 
   // Get latest message for each thread
   const threadIds = threadRows.map(t => t.id)

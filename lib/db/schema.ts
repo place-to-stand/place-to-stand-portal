@@ -840,6 +840,7 @@ export const oauthConnections = pgTable(
     providerEmail: text('provider_email'),
     displayName: text('display_name'),
     providerMetadata: jsonb('provider_metadata').default({}).notNull(),
+    syncState: jsonb('sync_state').default({}).notNull(), // Provider-specific sync checkpoint (e.g., Gmail historyId)
     lastSyncAt: timestamp('last_sync_at', { withTimezone: true, mode: 'string' }),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
@@ -988,55 +989,6 @@ export const messages = pgTable(
   ]
 )
 
-export const messageAttachments = pgTable(
-  'message_attachments',
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    messageId: uuid('message_id').notNull(),
-    storagePath: text('storage_path').notNull(),
-    originalName: text('original_name').notNull(),
-    mimeType: text('mime_type').notNull(),
-    fileSize: bigint('file_size', { mode: 'number' }).notNull(),
-    contentId: text('content_id'),
-    isInline: boolean('is_inline').default(false).notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
-      .notNull(),
-  },
-  table => [
-    index('idx_message_attachments_message')
-      .using('btree', table.messageId.asc().nullsLast().op('uuid_ops')),
-    foreignKey({
-      columns: [table.messageId],
-      foreignColumns: [messages.id],
-      name: 'message_attachments_message_id_fkey',
-    }).onDelete('cascade'),
-  ]
-)
-
-export const emailRaw = pgTable(
-  'email_raw',
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    messageId: uuid('message_id').notNull(),
-    rawMime: text('raw_mime'),
-    storagePath: text('storage_path'),
-    checksum: text().notNull(),
-    sizeBytes: bigint('size_bytes', { mode: 'number' }).notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
-      .notNull(),
-  },
-  table => [
-    unique('email_raw_message_key').on(table.messageId),
-    check('email_raw_has_content', sql`raw_mime IS NOT NULL OR storage_path IS NOT NULL`),
-    foreignKey({
-      columns: [table.messageId],
-      foreignColumns: [messages.id],
-      name: 'email_raw_message_id_fkey',
-    }).onDelete('cascade'),
-  ]
-)
 
 // =============================================================================
 // GITHUB INTEGRATION
@@ -1178,34 +1130,6 @@ export const suggestions = pgTable(
   ]
 )
 
-export const suggestionFeedback = pgTable(
-  'suggestion_feedback',
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    suggestionId: uuid('suggestion_id').notNull(),
-    feedbackType: text('feedback_type').notNull(),
-    originalValue: text('original_value'),
-    correctedValue: text('corrected_value'),
-    createdBy: uuid('created_by').notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
-      .notNull(),
-  },
-  table => [
-    index('idx_suggestion_feedback_suggestion')
-      .using('btree', table.suggestionId.asc().nullsLast().op('uuid_ops')),
-    foreignKey({
-      columns: [table.suggestionId],
-      foreignColumns: [suggestions.id],
-      name: 'suggestion_feedback_suggestion_id_fkey',
-    }).onDelete('cascade'),
-    foreignKey({
-      columns: [table.createdBy],
-      foreignColumns: [users.id],
-      name: 'suggestion_feedback_created_by_fkey',
-    }),
-  ]
-)
 
 // =============================================================================
 // VIEWS

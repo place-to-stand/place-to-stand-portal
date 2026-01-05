@@ -6,25 +6,21 @@ import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import {
   suggestions,
-  suggestionFeedback,
   messages,
   threads,
   projects,
   clients,
   githubRepoLinks,
   tasks,
-  users,
 } from '@/lib/db/schema'
 import { isAdmin } from '@/lib/auth/permissions'
 import { NotFoundError } from '@/lib/errors/http'
 import type {
   Suggestion,
-  NewSuggestion,
   SuggestionWithContext,
   SuggestionSummary,
   SuggestionType,
   SuggestionStatus,
-  SuggestionFeedback as SuggestionFeedbackType,
   TaskSuggestedContent,
   PRSuggestedContent,
 } from '@/lib/types/suggestions'
@@ -456,43 +452,6 @@ export async function getClientPendingSuggestionCount(clientId: string): Promise
     )
 
   return result?.count ?? 0
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Suggestion Feedback
-// ─────────────────────────────────────────────────────────────────────────────
-
-export type CreateFeedbackInput = {
-  suggestionId: string
-  feedbackType: string
-  originalValue?: string | null
-  correctedValue?: string | null
-  createdBy: string
-}
-
-export async function createSuggestionFeedback(input: CreateFeedbackInput): Promise<SuggestionFeedbackType> {
-  const [feedback] = await db
-    .insert(suggestionFeedback)
-    .values({
-      suggestionId: input.suggestionId,
-      feedbackType: input.feedbackType,
-      originalValue: input.originalValue ?? null,
-      correctedValue: input.correctedValue ?? null,
-      createdBy: input.createdBy,
-    })
-    .returning()
-
-  return feedback
-}
-
-export async function listFeedbackForSuggestion(suggestionId: string): Promise<SuggestionFeedbackType[]> {
-  const rows = await db
-    .select()
-    .from(suggestionFeedback)
-    .where(eq(suggestionFeedback.suggestionId, suggestionId))
-    .orderBy(desc(suggestionFeedback.createdAt))
-
-  return rows
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

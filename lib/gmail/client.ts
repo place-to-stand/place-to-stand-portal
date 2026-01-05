@@ -3,7 +3,14 @@ import { db } from '@/lib/db'
 import { oauthConnections } from '@/lib/db/schema'
 import { and, eq } from 'drizzle-orm'
 import { refreshAccessToken } from '@/lib/oauth/google'
-import type { GmailListResponse, GmailMessage, NormalizedEmail, GmailBodyPart } from './types'
+import type {
+  GmailListResponse,
+  GmailMessage,
+  NormalizedEmail,
+  GmailBodyPart,
+  GmailHistoryResponse,
+  GmailHistoryType,
+} from './types'
 
 type GetAccessTokenResult = { accessToken: string; expiresAt?: Date | null; connectionId: string }
 
@@ -100,6 +107,78 @@ export async function listMessages(
   if (!res.ok) throw new Error(`Gmail list failed: ${await res.text()}`)
   const json = (await res.json()) as GmailListResponse
   return json
+}
+
+/**
+ * List history records since a given historyId.
+ * Used for incremental sync to get only changes since last sync.
+ *
+ * @see https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.history/list
+ * @throws Error with status 404 if historyId is too old (requires full resync)
+ */
+export async function listHistory(
+  userId: string,
+  params: {
+    startHistoryId: string
+    maxResults?: number
+    pageToken?: string
+    historyTypes?: GmailHistoryType[]
+    labelId?: string
+  },
+  options?: GmailClientOptions
+): Promise<GmailHistoryResponse> {
+  const { accessToken } = await getValidAccessToken(userId, options?.connectionId)
+  const url = new URL('https://gmail.googleapis.com/gmail/v1/users/me/history')
+
+  url.searchParams.set('startHistoryId', params.startHistoryId)
+  if (params.maxResults) url.searchParams.set('maxResults', String(params.maxResults))
+  if (params.pageToken) url.searchParams.set('pageToken', params.pageToken)
+  if (params.labelId) url.searchParams.set('labelId', params.labelId)
+  if (params.historyTypes?.length) {
+    params.historyTypes.forEach(type => url.searchParams.append('historyTypes', type))
+  }
+
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } })
+
+  if (res.status === 404) {
+    // historyId is too old or invalid - caller should trigger full resync
+    throw new GmailHistoryExpiredError('History ID expired or invalid, full resync required')
+  }
+
+  if (!res.ok) throw new Error(`Gmail history list failed: ${await res.text()}`)
+  return (await res.json()) as GmailHistoryResponse
+}
+
+/**
+ * Custom error for expired historyId (requires full resync)
+ */
+export class GmailHistoryExpiredError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'GmailHistoryExpiredError'
+  }
+}
+
+/**
+ * Get user's Gmail profile including current historyId.
+ * Used to get initial historyId for new connections.
+ */
+export async function getProfile(
+  userId: string,
+  options?: GmailClientOptions
+): Promise<{ emailAddress: string; messagesTotal: number; threadsTotal: number; historyId: string }> {
+  const { accessToken } = await getValidAccessToken(userId, options?.connectionId)
+  const url = new URL('https://gmail.googleapis.com/gmail/v1/users/me/profile')
+
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } })
+  if (!res.ok) throw new Error(`Gmail profile failed: ${await res.text()}`)
+
+  return (await res.json()) as {
+    emailAddress: string
+    messagesTotal: number
+    threadsTotal: number
+    historyId: string
+  }
 }
 
 export async function getMessage(

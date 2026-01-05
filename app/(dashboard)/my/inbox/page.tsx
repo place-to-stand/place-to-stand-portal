@@ -59,13 +59,19 @@ export default async function InboxPage({ searchParams }: Props) {
       )
       .limit(1),
     db
-      .select({ id: clients.id, name: clients.name })
+      .select({ id: clients.id, name: clients.name, slug: clients.slug })
       .from(clients)
       .where(isNull(clients.deletedAt))
       .orderBy(clients.name),
     db
-      .select({ id: projects.id, name: projects.name })
+      .select({
+        id: projects.id,
+        name: projects.name,
+        slug: projects.slug,
+        clientSlug: clients.slug,
+      })
       .from(projects)
+      .leftJoin(clients, eq(projects.clientId, clients.id))
       .where(isNull(projects.deletedAt))
       .orderBy(projects.name),
     // Fetch the specific thread if deep-linking (may not be on current page)

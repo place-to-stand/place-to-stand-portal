@@ -1,12 +1,9 @@
 import type { InferSelectModel, InferInsertModel } from 'drizzle-orm'
-import type { suggestions, suggestionFeedback } from '@/lib/db/schema'
+import type { suggestions } from '@/lib/db/schema'
 
 // Base types from schema
 export type Suggestion = InferSelectModel<typeof suggestions>
 export type NewSuggestion = InferInsertModel<typeof suggestions>
-
-export type SuggestionFeedback = InferSelectModel<typeof suggestionFeedback>
-export type NewSuggestionFeedback = InferInsertModel<typeof suggestionFeedback>
 
 // Enum types
 export type SuggestionType = 'TASK' | 'PR' | 'REPLY'
@@ -37,20 +34,6 @@ export interface ReplySuggestedContent {
 }
 
 export type SuggestedContent = TaskSuggestedContent | PRSuggestedContent | ReplySuggestedContent
-
-// Feedback types for AI learning
-export type FeedbackType =
-  | 'title_changed'
-  | 'description_changed'
-  | 'body_changed'
-  | 'project_changed'
-  | 'due_date_changed'
-  | 'priority_changed'
-  | 'branch_changed'
-  | 'rejected_not_actionable'
-  | 'rejected_duplicate'
-  | 'rejected_irrelevant'
-  | 'rejected_wrong_project'
 
 // Suggestion with related context for UI
 export interface SuggestionWithContext extends Suggestion {

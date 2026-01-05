@@ -94,6 +94,7 @@ export function ClientDetail({
             clientRow={clientRow}
             clientUsers={clientUsers}
             clientMembers={clientMembers}
+            contacts={contacts}
           />
         </div>
       ) : null}
@@ -109,29 +110,25 @@ export function ClientDetail({
             otherProjectCount={otherProjects.length}
           />
 
-          {/* Contacts Section */}
-          <ClientContactsSection
-            clientId={client.resolvedId}
-            contacts={contacts}
-            canManage={canManageClients}
+          {/* Notes Section */}
+          <ClientNotesSection
+            clientId={client.id}
+            initialNotes={client.notes}
           />
-
-          {/* Messages Section */}
-          <ClientEmailsSection messages={messages} isAdmin={canManageClients} />
         </div>
 
         {/* Right column: Projects, Notes */}
         <div className='space-y-4'>
           {/* Projects Section */}
-          <ClientProjectsSection
-            projects={projects}
-            clientSlug={client.slug}
-          />
+          <ClientProjectsSection projects={projects} clientSlug={client.slug} />
 
-          {/* Notes Section */}
-          <ClientNotesSection
-            clientId={client.id}
-            initialNotes={client.notes}
+          {/* Contacts Section */}
+          <ClientContactsSection contacts={contacts} />
+
+          {/* Messages Section */}
+          <ClientEmailsSection
+            messages={messages}
+            currentUserId={currentUserId}
           />
         </div>
       </div>
@@ -156,7 +153,7 @@ function ClientDetailsWidget({
         <div className='flex h-7 w-7 items-center justify-center rounded-md bg-blue-500/10'>
           <Building2 className='h-4 w-4 text-blue-500' />
         </div>
-        <h2 className='font-semibold'>{client.name}</h2>
+        <h2 className='font-semibold'>Details</h2>
       </div>
       <div className='divide-y'>
         <DetailRow
@@ -176,7 +173,7 @@ function ClientDetailsWidget({
         />
         {client.slug ? (
           <div className='flex items-center gap-3 px-4 py-2.5'>
-            <span className='text-muted-foreground text-xs font-medium uppercase tracking-wide'>
+            <span className='text-muted-foreground text-xs font-medium tracking-wide uppercase'>
               Slug
             </span>
             <span className='ml-auto font-mono text-sm'>{client.slug}</span>
@@ -292,6 +289,7 @@ type ClientOverviewActionsProps = {
   clientRow: ClientRow
   clientUsers: ClientUserSummary[]
   clientMembers: Record<string, ClientUserSummary[]>
+  contacts: ContactWithClientLink[]
 }
 
 function ClientOverviewActions({
@@ -299,6 +297,7 @@ function ClientOverviewActions({
   clientRow,
   clientUsers,
   clientMembers,
+  contacts,
 }: ClientOverviewActionsProps) {
   const router = useRouter()
   const { toast } = useToast()
@@ -365,6 +364,12 @@ function ClientOverviewActions({
         client={clientRow}
         allClientUsers={clientUsers}
         clientMembers={clientMembers}
+        clientContacts={contacts.map(c => ({
+          id: c.id,
+          name: c.name,
+          email: c.email,
+          phone: c.phone,
+        }))}
       />
       <ConfirmDialog
         open={confirmOpen}

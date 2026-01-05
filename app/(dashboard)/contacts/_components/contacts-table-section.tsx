@@ -1,9 +1,16 @@
 'use client'
 
-import { Archive, Contact, Mail, Pencil, Phone, RefreshCw, Trash2 } from 'lucide-react'
+import {
+  Archive,
+  Contact,
+  Mail,
+  Pencil,
+  Phone,
+  RefreshCw,
+  Trash2,
+} from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
   Table,
@@ -14,8 +21,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
-import { cn } from '@/lib/utils'
-import { getStatusBadgeToken } from '@/lib/constants'
 import type { ContactsTableContact } from '@/lib/settings/contacts/use-contacts-table-state'
 
 import { LinkedClientsCell } from './linked-clients-cell'
@@ -58,15 +63,11 @@ export function ContactsTableSection({
             <TableHead>Email</TableHead>
             <TableHead>Phone</TableHead>
             <TableHead>Linked Clients</TableHead>
-            <TableHead>Status</TableHead>
             <TableHead className='w-32 text-right'>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {contacts.map(contact => {
-            const statusLabel = contact.deletedAt ? 'Archived' : 'Active'
-            const statusTone = contact.deletedAt ? 'archived' : 'active'
-
             const isDeleting = isPending && pendingDeleteId === contact.id
             const isRestoring = isPending && pendingRestoreId === contact.id
             const isDestroying = isPending && pendingDestroyId === contact.id
@@ -138,13 +139,6 @@ export function ContactsTableSection({
                 </TableCell>
                 <TableCell className='text-sm'>
                   <LinkedClientsCell clients={contact.metrics.clients} />
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    className={cn('text-xs', getStatusBadgeToken(statusTone))}
-                  >
-                    {statusLabel}
-                  </Badge>
                 </TableCell>
                 <TableCell className='text-right'>
                   <div className='flex justify-end gap-2'>
@@ -226,7 +220,7 @@ export function ContactsTableSection({
           {contacts.length === 0 ? (
             <TableRow>
               <TableCell
-                colSpan={6}
+                colSpan={5}
                 className='text-muted-foreground py-10 text-center text-sm'
               >
                 {emptyMessage}

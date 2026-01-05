@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import {
   Building2,
   X,
@@ -101,7 +102,16 @@ export function ThreadLinkingPanel({
           <div className='flex items-center justify-between'>
             <div className='flex items-center gap-2'>
               <Building2 className='h-4 w-4 text-blue-500' />
-              <span className='font-medium'>{thread.client.name}</span>
+              {thread.client.slug ? (
+                <Link
+                  href={`/clients/${thread.client.slug}`}
+                  className='hover:text-primary font-medium underline-offset-4 hover:underline'
+                >
+                  {thread.client.name}
+                </Link>
+              ) : (
+                <span className='font-medium'>{thread.client.name}</span>
+              )}
               <Badge variant='secondary' className='text-xs'>
                 Linked
               </Badge>

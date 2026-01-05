@@ -26,7 +26,7 @@ export function LinkedClientsCell({ clients }: LinkedClientsCellProps) {
       <HoverCardTrigger asChild>
         <button
           type='button'
-          className='text-foreground cursor-pointer border-b border-dotted border-current pb-0.5 transition hover:border-solid focus:outline-none'
+          className='text-foreground cursor-pointer border-b border-dotted border-current transition hover:border-solid focus:outline-none'
         >
           {count}
         </button>

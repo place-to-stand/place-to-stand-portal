@@ -21,11 +21,8 @@ import {
   contactLeads,
   threads,
   messages,
-  messageAttachments,
-  emailRaw,
   githubRepoLinks,
   suggestions,
-  suggestionFeedback,
 } from './schema'
 
 export const clientsRelations = relations(clients, ({ one, many }) => ({
@@ -295,30 +292,9 @@ export const messagesRelations = relations(messages, ({ one, many }) => ({
     fields: [messages.userId],
     references: [users.id],
   }),
-  attachments: many(messageAttachments),
-  emailRaw: one(emailRaw, {
-    fields: [messages.id],
-    references: [emailRaw.messageId],
-  }),
   suggestions: many(suggestions),
 }))
 
-export const messageAttachmentsRelations = relations(
-  messageAttachments,
-  ({ one }) => ({
-    message: one(messages, {
-      fields: [messageAttachments.messageId],
-      references: [messages.id],
-    }),
-  })
-)
-
-export const emailRawRelations = relations(emailRaw, ({ one }) => ({
-  message: one(messages, {
-    fields: [emailRaw.messageId],
-    references: [messages.id],
-  }),
-}))
 
 // =============================================================================
 // GITHUB INTEGRATION
@@ -347,7 +323,7 @@ export const githubRepoLinksRelations = relations(
 // UNIFIED SUGGESTIONS (Phase 5 - Polymorphic)
 // =============================================================================
 
-export const suggestionsRelations = relations(suggestions, ({ one, many }) => ({
+export const suggestionsRelations = relations(suggestions, ({ one }) => ({
   message: one(messages, {
     fields: [suggestions.messageId],
     references: [messages.id],
@@ -372,19 +348,4 @@ export const suggestionsRelations = relations(suggestions, ({ one, many }) => ({
     fields: [suggestions.createdTaskId],
     references: [tasks.id],
   }),
-  feedback: many(suggestionFeedback),
 }))
-
-export const suggestionFeedbackRelations = relations(
-  suggestionFeedback,
-  ({ one }) => ({
-    suggestion: one(suggestions, {
-      fields: [suggestionFeedback.suggestionId],
-      references: [suggestions.id],
-    }),
-    createdByUser: one(users, {
-      fields: [suggestionFeedback.createdBy],
-      references: [users.id],
-    }),
-  })
-)

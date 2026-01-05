@@ -2,7 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
-import { saveClient } from '@/app/(dashboard)/clients/actions'
+import {
+  saveClient,
+  getClientSheetContactData,
+  syncClientContacts,
+} from '@/app/(dashboard)/clients/actions'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import {
   finishSettingsInteraction,
@@ -27,6 +31,7 @@ import {
 
 import type {
   BaseFormState,
+  ClientContactOption,
   ClientMemberOption,
   ClientSheetFormStateArgs,
 } from './types'
@@ -38,6 +43,8 @@ export function useClientSheetFormState({
   client,
   clientMembers,
   allClientUsers,
+  allContacts: allContactsProp,
+  clientContacts: clientContactsProp,
   isEditing,
   isPending,
   startTransition,
@@ -50,6 +57,13 @@ export function useClientSheetFormState({
   )
   const [savedMemberIds, setSavedMemberIds] = useState<string[]>([])
   const [selectedMembers, setSelectedMembers] = useState<ClientMember[]>([])
+
+  // Contact state
+  const [isContactPickerOpen, setIsContactPickerOpen] = useState(false)
+  const [fetchedAllContacts, setFetchedAllContacts] = useState<ClientContactOption[]>([])
+  const [selectedContacts, setSelectedContacts] = useState<ClientContactOption[]>([])
+  const [initialContacts, setInitialContacts] = useState<ClientContactOption[]>([])
+  const [isLoadingContacts, setIsLoadingContacts] = useState(false)
 
   const initialMembers = useMemo(() => {
     if (!client) return [] as ClientMember[]
@@ -87,6 +101,27 @@ export function useClientSheetFormState({
     return savedMemberIds.some((id, index) => id !== currentIds[index])
   }, [savedMemberIds, selectedMembers])
 
+  // Use provided allContacts or fetched ones
+  const allContacts = allContactsProp ?? fetchedAllContacts
+
+  // Compute available contacts (all contacts minus selected ones)
+  const availableContacts = useMemo(() => {
+    const selectedIds = new Set(selectedContacts.map(c => c.id))
+    return allContacts.filter(c => !selectedIds.has(c.id))
+  }, [allContacts, selectedContacts])
+
+  // Check if contact links have changed
+  const contactsDirty = useMemo(() => {
+    const initialIds = new Set(initialContacts.map(c => c.id))
+    const selectedIds = new Set(selectedContacts.map(c => c.id))
+
+    if (initialIds.size !== selectedIds.size) return true
+    for (const id of initialIds) {
+      if (!selectedIds.has(id)) return true
+    }
+    return false
+  }, [initialContacts, selectedContacts])
+
   const addButtonDisabled = isPending || availableMembers.length === 0
   const addButtonDisabledReason = addButtonDisabled
     ? isPending
@@ -94,10 +129,19 @@ export function useClientSheetFormState({
       : NO_AVAILABLE_CLIENT_USERS_MESSAGE
     : null
 
+  const contactsAddButtonDisabled = isPending || isLoadingContacts || availableContacts.length === 0
+  const contactsAddButtonDisabledReason = contactsAddButtonDisabled
+    ? isPending
+      ? PENDING_REASON
+      : isLoadingContacts
+        ? 'Loading contacts...'
+        : 'All contacts are already linked.'
+    : null
+
   const submitDisabled = isPending
   const submitDisabledReason = submitDisabled ? PENDING_REASON : null
 
-  const hasUnsavedChanges = form.formState.isDirty || membershipDirty
+  const hasUnsavedChanges = form.formState.isDirty || membershipDirty || contactsDirty
 
   const { requestConfirmation: confirmDiscard, dialog: unsavedChangesDialog } =
     useUnsavedChangesWarning({ isDirty: hasUnsavedChanges })
@@ -118,6 +162,9 @@ export function useClientSheetFormState({
     setSelectedMembers(memberSnapshot)
     setRemovalCandidate(null)
     setIsPickerOpen(false)
+
+    // Reset contacts
+    setIsContactPickerOpen(false)
   }, [client, form, initialMembers, setFeedback])
 
   useEffect(() => {
@@ -128,7 +175,38 @@ export function useClientSheetFormState({
     startTransition(() => {
       resetFormState()
     })
-  }, [open, resetFormState, startTransition])
+
+    // Initialize contacts from props if provided
+    if (clientContactsProp) {
+      setSelectedContacts(clientContactsProp)
+      setInitialContacts(clientContactsProp)
+    } else {
+      setSelectedContacts([])
+      setInitialContacts([])
+    }
+
+    // Fetch contact data if not provided via props
+    const clientId = client?.id
+    const shouldFetch = !allContactsProp || allContactsProp.length === 0
+
+    if (shouldFetch) {
+      setIsLoadingContacts(true)
+      getClientSheetContactData(clientId)
+        .then(data => {
+          setFetchedAllContacts(data.allContacts)
+          if (clientId && data.linkedContacts.length > 0) {
+            setSelectedContacts(data.linkedContacts)
+            setInitialContacts(data.linkedContacts)
+          }
+        })
+        .catch(err => {
+          console.error('Failed to fetch contact sheet data:', err)
+        })
+        .finally(() => {
+          setIsLoadingContacts(false)
+        })
+    }
+  }, [open, resetFormState, startTransition, client?.id, allContactsProp, clientContactsProp])
 
   const handleSheetOpenChange = useCallback(
     (next: boolean) => {
@@ -192,6 +270,32 @@ export function useClientSheetFormState({
     setIsPickerOpen(false)
   }, [])
 
+  // Contact handlers
+  const handleContactPickerOpenChange = useCallback(
+    (next: boolean) => {
+      if (contactsAddButtonDisabled) {
+        setIsContactPickerOpen(false)
+        return
+      }
+      setIsContactPickerOpen(next)
+    },
+    [contactsAddButtonDisabled]
+  )
+
+  const handleAddContact = useCallback((contact: ClientContactOption) => {
+    setSelectedContacts(prev => {
+      if (prev.some(existing => existing.id === contact.id)) {
+        return prev
+      }
+      return [...prev, contact]
+    })
+    setIsContactPickerOpen(false)
+  }, [])
+
+  const handleRemoveContact = useCallback((contact: ClientContactOption) => {
+    setSelectedContacts(prev => prev.filter(c => c.id !== contact.id))
+  }, [])
+
   const handleFormSubmit = useCallback(
     (values: ClientSheetFormValues) => {
       if (isEditing && !values.slug?.trim()) {
@@ -241,6 +345,23 @@ export function useClientSheetFormState({
             return
           }
 
+          // Sync contact links if editing and contacts changed
+          // (For new clients, contacts can be linked after creation via the edit flow)
+          if (payload.id && contactsDirty) {
+            const contactIds = selectedContacts.map(c => c.id)
+            const syncResult = await syncClientContacts(payload.id, contactIds)
+
+            if (!syncResult.ok) {
+              setFeedback(syncResult.error ?? 'Failed to update contact links.')
+              toast({
+                title: 'Warning',
+                description: 'Client saved but contact links could not be updated.',
+                variant: 'destructive',
+              })
+              // Still complete since the client was saved
+            }
+          }
+
           finishSettingsInteraction(interaction, {
             status: 'success',
             targetId: payload.id ?? null,
@@ -254,6 +375,7 @@ export function useClientSheetFormState({
           })
 
           setSavedMemberIds(selectedMembers.map(member => member.id).sort())
+          setInitialContacts(selectedContacts)
           form.reset({
             name: payload.name,
             slug: payload.slug ?? '',
@@ -275,10 +397,12 @@ export function useClientSheetFormState({
     },
     [
       client?.id,
+      contactsDirty,
       form,
       isEditing,
       onComplete,
       onOpenChange,
+      selectedContacts,
       selectedMembers,
       setFeedback,
       startTransition,
@@ -311,5 +435,15 @@ export function useClientSheetFormState({
     handleCancelRemoval,
     handleConfirmRemoval,
     replaceMembers,
+    // Contacts
+    availableContacts,
+    selectedContacts,
+    isContactPickerOpen,
+    contactsAddButtonDisabled,
+    contactsAddButtonDisabledReason,
+    isLoadingContacts,
+    handleContactPickerOpenChange,
+    handleAddContact,
+    handleRemoveContact,
   }
 }

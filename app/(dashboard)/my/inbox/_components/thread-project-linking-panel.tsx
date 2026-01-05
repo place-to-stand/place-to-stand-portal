@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import {
   FolderKanban,
   X,
@@ -100,7 +101,16 @@ export function ThreadProjectLinkingPanel({
           <div className='flex items-center justify-between'>
             <div className='flex items-center gap-2'>
               <FolderKanban className='h-4 w-4 text-emerald-500' />
-              <span className='font-medium'>{thread.project.name}</span>
+              {thread.project.slug ? (
+                <Link
+                  href={`/projects/${thread.project.clientSlug ?? thread.project.id}/${thread.project.slug}/board`}
+                  className='hover:text-primary font-medium underline-offset-4 hover:underline'
+                >
+                  {thread.project.name}
+                </Link>
+              ) : (
+                <span className='font-medium'>{thread.project.name}</span>
+              )}
               <Badge variant='secondary' className='text-xs'>
                 Linked
               </Badge>

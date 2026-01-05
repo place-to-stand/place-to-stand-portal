@@ -26,14 +26,35 @@ export async function GET(request: NextRequest) {
       )
     )
 
-  const results: Array<{ userId: string; synced: number; skipped: number; error?: string }> = []
+  const results: Array<{
+    userId: string
+    synced: number
+    skipped: number
+    labelsUpdated: number
+    syncType: 'full' | 'incremental'
+    error?: string
+  }> = []
 
   for (const conn of connections) {
     try {
       const result = await syncGmailForUser(conn.userId)
-      results.push({ userId: conn.userId, synced: result.synced, skipped: result.skipped })
+      results.push({
+        userId: conn.userId,
+        synced: result.synced,
+        skipped: result.skipped,
+        labelsUpdated: result.labelsUpdated,
+        syncType: result.syncType,
+        error: result.errors.length > 0 ? result.errors.join('; ') : undefined,
+      })
     } catch (err) {
-      results.push({ userId: conn.userId, synced: 0, skipped: 0, error: err instanceof Error ? err.message : 'unknown' })
+      results.push({
+        userId: conn.userId,
+        synced: 0,
+        skipped: 0,
+        labelsUpdated: 0,
+        syncType: 'full',
+        error: err instanceof Error ? err.message : 'unknown',
+      })
     }
   }
 

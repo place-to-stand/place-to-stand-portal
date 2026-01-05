@@ -23,7 +23,7 @@ import { ContactSheetHeader } from './contact-sheet/contact-sheet-header'
 import { ContactSheetForm } from './contact-sheet/contact-sheet-form'
 
 const contactFormSchema = z.object({
-  email: z.string().email('Valid email is required'),
+  email: z.string().email({ message: 'Valid email is required' }),
   name: z.string().min(1, 'Name is required').max(160),
   phone: z.string().max(40).optional(),
 })
@@ -187,9 +187,8 @@ export function ContactsSheet({
 
   const pendingReason = 'Please wait for the current action to complete.'
 
-  // For editing: allow save if form is dirty OR client links have changed
-  // For new contacts: hasChanges is true if form is dirty or clients are selected
-  const hasChanges = form.formState.isDirty || clientsHaveChanged || selectedClients.length > 0
+  // hasChanges is true if form is dirty OR client links have changed from initial state
+  const hasChanges = form.formState.isDirty || clientsHaveChanged
 
   // Unsaved changes warning
   const { requestConfirmation, dialog: unsavedChangesDialog } =

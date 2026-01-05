@@ -200,7 +200,7 @@ export function ContactSheetForm({
           )}
         />
         <div className='space-y-2'>
-          <FormLabel>Linked Clients</FormLabel>
+          <FormLabel>Clients</FormLabel>
           <ContactClientPicker
             selectedClients={selectedClients}
             availableClients={availableClients}

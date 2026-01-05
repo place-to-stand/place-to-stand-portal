@@ -16,6 +16,13 @@ type UnsavedChangesDialog = ReturnType<
   typeof useUnsavedChangesWarning
 >['dialog']
 
+export type ClientContactOption = {
+  id: string
+  name: string | null
+  email: string
+  phone: string | null
+}
+
 export type UseClientSheetStateArgs = {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -24,6 +31,10 @@ export type UseClientSheetStateArgs = {
   client: ClientRow | null
   allClientUsers: ClientUserSummary[]
   clientMembers: Record<string, ClientUserSummary[]>
+  /** All available contacts for the contact picker (optional - will be fetched if not provided) */
+  allContacts?: ClientContactOption[]
+  /** Contacts linked to the client (optional - will be fetched if not provided) */
+  clientContacts?: ClientContactOption[]
 }
 
 export type ClientMemberOption = ClientMember
@@ -49,6 +60,16 @@ export type BaseFormState = {
   handleCancelRemoval: () => void
   handleConfirmRemoval: () => void
   replaceMembers: (members: ClientMemberOption[]) => void
+  // Contacts
+  availableContacts: ClientContactOption[]
+  selectedContacts: ClientContactOption[]
+  isContactPickerOpen: boolean
+  contactsAddButtonDisabled: boolean
+  contactsAddButtonDisabledReason: string | null
+  isLoadingContacts: boolean
+  handleContactPickerOpenChange: (open: boolean) => void
+  handleAddContact: (contact: ClientContactOption) => void
+  handleRemoveContact: (contact: ClientContactOption) => void
 }
 
 export type DeletionState = {
@@ -66,6 +87,8 @@ export type ClientSheetFormStateArgs = UseClientSheetStateArgs & {
   startTransition: TransitionStartFunction
   setFeedback: (value: string | null) => void
   toast: ToastFn
+  allContacts?: ClientContactOption[]
+  clientContacts?: ClientContactOption[]
 }
 
 export type ClientDeletionStateArgs = {
@@ -113,4 +136,14 @@ export type UseClientSheetStateReturn = {
   handleCancelDelete: () => void
   handleConfirmDelete: () => void
   replaceMembers: (members: ClientMemberOption[]) => void
+  // Contacts
+  availableContacts: ClientContactOption[]
+  selectedContacts: ClientContactOption[]
+  isContactPickerOpen: boolean
+  contactsAddButtonDisabled: boolean
+  contactsAddButtonDisabledReason: string | null
+  isLoadingContacts: boolean
+  handleContactPickerOpenChange: (open: boolean) => void
+  handleAddContact: (contact: ClientContactOption) => void
+  handleRemoveContact: (contact: ClientContactOption) => void
 }
