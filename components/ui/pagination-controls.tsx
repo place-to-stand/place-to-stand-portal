@@ -72,6 +72,63 @@ function CursorPagination({
   )
 }
 
+/**
+ * Generate pagination items with fixed width (9 slots) to prevent layout shifts.
+ * Always shows first and last page with ellipsis when needed.
+ *
+ * Examples (totalPages=20):
+ *   Page 1:   [1]  2   3   4   5   6   7  ...  20
+ *   Page 5:   1   2   3   4  [5]  6   7  ...  20
+ *   Page 6:   1  ...  4   5  [6]  7   8  ...  20
+ *   Page 10:  1  ...  8   9 [10] 11  12  ...  20
+ *   Page 16:  1  ... 14  15 [16] 17  18  19   20
+ *   Page 20:  1  ... 14  15  16  17  18  19  [20]
+ */
+function generatePaginationItems(
+  currentPage: number,
+  totalPages: number
+): Array<number | 'ellipsis'> {
+  const TOTAL_SLOTS = 9
+
+  // For small page counts, show all pages
+  if (totalPages <= TOTAL_SLOTS) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1)
+  }
+
+  // Near start: show first 7 pages, ellipsis, last
+  if (currentPage <= 5) {
+    return [1, 2, 3, 4, 5, 6, 7, 'ellipsis', totalPages]
+  }
+
+  // Near end: show first, ellipsis, last 7 pages
+  if (currentPage >= totalPages - 4) {
+    return [
+      1,
+      'ellipsis',
+      totalPages - 6,
+      totalPages - 5,
+      totalPages - 4,
+      totalPages - 3,
+      totalPages - 2,
+      totalPages - 1,
+      totalPages,
+    ]
+  }
+
+  // Middle: first, ellipsis, 5 pages centered on current, ellipsis, last
+  return [
+    1,
+    'ellipsis',
+    currentPage - 2,
+    currentPage - 1,
+    currentPage,
+    currentPage + 1,
+    currentPage + 2,
+    'ellipsis',
+    totalPages,
+  ]
+}
+
 function PagedPagination({
   currentPage,
   totalPages,
@@ -83,6 +140,8 @@ function PagedPagination({
   if (totalPages <= 1) {
     return null
   }
+
+  const paginationItems = generatePaginationItems(currentPage, totalPages)
 
   const controls = (
     <div className='flex items-center gap-1'>
@@ -97,30 +156,32 @@ function PagedPagination({
         <ChevronLeft className='size-4' />
       </Button>
       <div className='flex items-center'>
-        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-          let pageNum: number
-          if (totalPages <= 5) {
-            pageNum = i + 1
-          } else if (currentPage <= 3) {
-            pageNum = i + 1
-          } else if (currentPage >= totalPages - 2) {
-            pageNum = totalPages - 4 + i
-          } else {
-            pageNum = currentPage - 2 + i
+        {paginationItems.map((item, index) => {
+          if (item === 'ellipsis') {
+            return (
+              <span
+                key={`ellipsis-${index}`}
+                className='text-muted-foreground px-1.5 py-1 text-sm'
+                aria-hidden='true'
+              >
+                ...
+              </span>
+            )
           }
-          const isActive = currentPage === pageNum
+
+          const isActive = currentPage === item
           return (
             <button
-              key={pageNum}
+              key={item}
               type='button'
               className={`px-2 py-1 text-sm tabular-nums underline-offset-4 transition-colors hover:underline ${
                 isActive ? 'font-medium underline' : 'text-muted-foreground'
               }`}
-              onClick={() => onPageChange(pageNum)}
-              aria-label={`Page ${pageNum}`}
+              onClick={() => onPageChange(item)}
+              aria-label={`Page ${item}`}
               aria-current={isActive ? 'page' : undefined}
             >
-              {pageNum}
+              {item}
             </button>
           )
         })}
