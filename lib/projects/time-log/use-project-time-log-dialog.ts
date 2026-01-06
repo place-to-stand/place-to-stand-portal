@@ -87,6 +87,7 @@ export function useProjectTimeLogDialog(
     onOpenChange,
     projectId,
     projectName,
+    projectType,
     clientId,
     clientName,
     clientBillingType,
@@ -158,13 +159,20 @@ export function useProjectTimeLogDialog(
     resetSelection,
   } = useTimeLogTaskSelection(tasks)
 
+  // Skip overage check for internal/personal projects (no prepaid hours)
+  // and for net_30 billing type clients
+  const isNonClientProject =
+    projectType === 'INTERNAL' || projectType === 'PERSONAL'
+  const shouldEnforceOverageCheck =
+    !isNonClientProject && clientBillingType !== 'net_30'
+
   const {
     requestConfirmation,
     reset: resetOverage,
     overageDialog,
   } = useTimeLogOverage({
     clientRemainingHours,
-    enforceOverageCheck: clientBillingType !== 'net_30',
+    enforceOverageCheck: shouldEnforceOverageCheck,
   })
 
   const [showDiscardDialog, setShowDiscardDialog] = useState(false)

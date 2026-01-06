@@ -1,9 +1,10 @@
-import type { DbClient } from '@/lib/types'
+import type { DbClient, ProjectTypeValue } from '@/lib/types'
 
 import type { ProjectsBoardBurndownProps } from '../use-projects-board-view-model'
 
 type BuildBurndownArgs = {
   activeProject: {
+    type: ProjectTypeValue
     client: Pick<DbClient, 'billing_type'> | null
     burndown: {
       totalClientRemainingHours: number
@@ -24,7 +25,12 @@ export function buildProjectsBoardBurndown({
   onAddTimeLog,
   viewTimeLogsHref,
 }: BuildBurndownArgs): ProjectsBoardBurndownProps {
+  // Internal and Personal projects should use the month-to-date format
+  // since they don't have prepaid hour blocks
+  const isNonClientProject =
+    activeProject?.type === 'INTERNAL' || activeProject?.type === 'PERSONAL'
   const isNetThirtyClient =
+    isNonClientProject ||
     (activeProject?.client?.billing_type ?? 'prepaid') === 'net_30'
 
   return {
@@ -39,8 +45,7 @@ export function buildProjectsBoardBurndown({
     addTimeLogDisabledReason,
     onAddTimeLog,
     viewTimeLogsHref,
-    showClientRemainingCard:
-      (activeProject?.client?.billing_type ?? 'prepaid') !== 'net_30',
+    showClientRemainingCard: !isNetThirtyClient,
     showProjectMonthToDate: isNetThirtyClient,
   }
 }

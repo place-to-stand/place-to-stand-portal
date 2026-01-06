@@ -260,3 +260,76 @@ export async function analyzeMessagesForClient(
 
   return { processed: unanalyzed.length, created, errors }
 }
+
+/**
+ * Analyze messages for a specific thread.
+ * Only analyzes if the thread has both a client and project linked.
+ */
+export async function analyzeMessagesForThread(
+  threadId: string,
+  userId: string,
+  limit: number = 10
+): Promise<{ processed: number; created: number; errors: number; skipped?: string }> {
+  // First verify the thread exists and has both client and project
+  const [thread] = await db
+    .select({
+      id: threads.id,
+      clientId: threads.clientId,
+      projectId: threads.projectId,
+    })
+    .from(threads)
+    .where(
+      and(
+        eq(threads.id, threadId),
+        isNull(threads.deletedAt)
+      )
+    )
+    .limit(1)
+
+  if (!thread) {
+    return { processed: 0, created: 0, errors: 0, skipped: 'thread_not_found' }
+  }
+
+  if (!thread.clientId || !thread.projectId) {
+    return {
+      processed: 0,
+      created: 0,
+      errors: 0,
+      skipped: 'missing_client_or_project',
+    }
+  }
+
+  // Find unanalyzed messages in this thread
+  const unanalyzed = await db
+    .select({ id: messages.id })
+    .from(messages)
+    .where(
+      and(
+        eq(messages.threadId, threadId),
+        eq(messages.userId, userId),
+        isNull(messages.deletedAt),
+        isNull(messages.analyzedAt)
+      )
+    )
+    .orderBy(desc(messages.sentAt))
+    .limit(limit)
+
+  if (unanalyzed.length === 0) {
+    return { processed: 0, created: 0, errors: 0, skipped: 'no_unanalyzed_messages' }
+  }
+
+  let created = 0
+  let errors = 0
+
+  for (const { id } of unanalyzed) {
+    try {
+      const result = await createSuggestionsFromMessage(id, userId)
+      created += result.created
+    } catch (error) {
+      console.error(`Failed to analyze message ${id}:`, error)
+      errors++
+    }
+  }
+
+  return { processed: unanalyzed.length, created, errors }
+}

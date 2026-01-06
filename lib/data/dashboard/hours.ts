@@ -1,6 +1,16 @@
 import 'server-only'
 
-import { and, eq, gte, inArray, isNull, lte, sql, type SQL } from 'drizzle-orm'
+import {
+  and,
+  eq,
+  gte,
+  inArray,
+  isNull,
+  lte,
+  ne,
+  sql,
+  type SQL,
+} from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import {
@@ -9,7 +19,7 @@ import {
   listAccessibleProjectIds,
 } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { hourBlocks, timeLogs } from '@/lib/db/schema'
+import { hourBlocks, projects, timeLogs } from '@/lib/db/schema'
 import type { HoursSnapshot, MonthCursor } from '@/lib/dashboard/types'
 
 const HOURS_PRECISION = 2
@@ -28,17 +38,19 @@ export async function fetchHoursSnapshot(
   const { year, month } = clampedCursor
   const { startDate, endDate } = buildMonthDateRange(year, month)
 
-  const myHours = await sumHours({
+  // My hours: billable (CLIENT project) hours only
+  const myHours = await sumHoursWithProjectFilter({
     filters: [
       eq(timeLogs.userId, user.id),
       gte(timeLogs.loggedOn, startDate),
       lte(timeLogs.loggedOn, endDate),
       isNull(timeLogs.deletedAt),
     ],
+    projectType: 'CLIENT',
   })
 
   const scopedProjectIds = await resolveProjectScope(user)
-  const companyFilters = [
+  const baseFilters: SQL<unknown>[] = [
     gte(timeLogs.loggedOn, startDate),
     lte(timeLogs.loggedOn, endDate),
     isNull(timeLogs.deletedAt),
@@ -52,15 +64,26 @@ export async function fetchHoursSnapshot(
         myHours,
         companyHours: 0,
         companyHoursPrepaid: 0,
+        internalPersonalHours: 0,
         scopeLabel: 'Your accounts',
         minCursor: bounds.min,
         maxCursor: bounds.max,
       }
     }
-    companyFilters.push(inArray(timeLogs.projectId, scopedProjectIds))
+    baseFilters.push(inArray(timeLogs.projectId, scopedProjectIds))
   }
 
-  const companyHours = await sumHours({ filters: companyFilters })
+  // Company hours: billable (CLIENT project) hours only
+  const companyHours = await sumHoursWithProjectFilter({
+    filters: baseFilters,
+    projectType: 'CLIENT',
+  })
+
+  // Internal/Personal hours: non-billable project hours
+  const internalPersonalHours = await sumHoursWithProjectFilter({
+    filters: baseFilters,
+    projectType: 'NON_CLIENT',
+  })
 
   const scopedClientIds = await resolveClientScope(user)
   const { startTimestamp, endTimestamp } = buildMonthTimestampRange(year, month)
@@ -78,6 +101,7 @@ export async function fetchHoursSnapshot(
         myHours,
         companyHours,
         companyHoursPrepaid: 0,
+        internalPersonalHours,
         scopeLabel: 'Your accounts',
         minCursor: bounds.min,
         maxCursor: bounds.max,
@@ -94,6 +118,7 @@ export async function fetchHoursSnapshot(
     myHours,
     companyHours,
     companyHoursPrepaid,
+    internalPersonalHours,
     scopeLabel: Array.isArray(scopedProjectIds)
       ? 'Your accounts'
       : 'All projects',
@@ -126,10 +151,12 @@ async function resolveClientScope(user: AppUser) {
   return null
 }
 
-async function sumHours({
+async function sumHoursWithProjectFilter({
   filters,
+  projectType,
 }: {
   filters: SQL<unknown>[]
+  projectType: 'CLIENT' | 'NON_CLIENT'
 }): Promise<number> {
   const conditions = filters.filter(Boolean)
 
@@ -137,12 +164,21 @@ async function sumHours({
     return 0
   }
 
+  // Add project type filter by joining with projects table
+  const projectTypeCondition =
+    projectType === 'CLIENT'
+      ? eq(projects.type, 'CLIENT')
+      : ne(projects.type, 'CLIENT')
+
   const [row] = (await db
     .select({
       totalHours: sql<string | null>`COALESCE(SUM(${timeLogs.hours}), '0')`,
     })
     .from(timeLogs)
-    .where(and(...conditions))) as Array<{ totalHours: string | null }>
+    .innerJoin(projects, eq(timeLogs.projectId, projects.id))
+    .where(and(...conditions, projectTypeCondition, isNull(projects.deletedAt)))) as Array<{
+    totalHours: string | null
+  }>
 
   const parsed = Number(row?.totalHours ?? '0')
   const rounded = Number.isFinite(parsed)

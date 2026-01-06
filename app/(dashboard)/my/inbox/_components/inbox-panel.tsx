@@ -201,6 +201,34 @@ export function InboxPanel({
     useState(false)
   const [isLinkingProject, setIsLinkingProject] = useState(false)
 
+  // AI Task Suggestions state (auto-triggered when both client + project linked)
+  const [isAnalyzingThread, setIsAnalyzingThread] = useState(false)
+  const [suggestionRefreshKey, setSuggestionRefreshKey] = useState(0)
+
+  /**
+   * Trigger AI analysis for a thread when both client and project are linked.
+   * This allows automatic task suggestion generation without manual intervention.
+   */
+  const triggerThreadAnalysis = useCallback(
+    async (threadId: string) => {
+      setIsAnalyzingThread(true)
+      try {
+        const res = await fetch(`/api/threads/${threadId}/analyze`, {
+          method: 'POST',
+        })
+        if (res.ok) {
+          // Increment refresh key to trigger re-fetch in ThreadSuggestionsPanel
+          setSuggestionRefreshKey(prev => prev + 1)
+        }
+      } catch (err) {
+        console.error('Failed to analyze thread:', err)
+      } finally {
+        setIsAnalyzingThread(false)
+      }
+    },
+    []
+  )
+
   // Handle page changes - triggers server-side navigation
   const handlePageChange = useCallback(
     (page: number) => {
@@ -431,6 +459,11 @@ export function InboxPanel({
         setSuggestions([]) // Clear suggestions after linking
 
         toast({ title: 'Thread linked to client' })
+
+        // Auto-trigger analysis if both client and project are now linked
+        if (updatedThread.project) {
+          triggerThreadAnalysis(selectedThread.id)
+        }
       } else {
         throw new Error('Failed to link')
       }
@@ -512,6 +545,11 @@ export function InboxPanel({
         setProjectSuggestions([]) // Clear suggestions after linking
 
         toast({ title: 'Thread linked to project' })
+
+        // Auto-trigger analysis if both client and project are now linked
+        if (updatedThread.client) {
+          triggerThreadAnalysis(selectedThread.id)
+        }
       } else {
         throw new Error('Failed to link')
       }
@@ -828,6 +866,10 @@ export function InboxPanel({
                     <ThreadSuggestionsPanel
                       threadId={selectedThread.id}
                       isAdmin={isAdmin}
+                      refreshTrigger={suggestionRefreshKey}
+                      isAnalyzing={isAnalyzingThread}
+                      hasClient={!!selectedThread.client}
+                      hasProject={!!selectedThread.project}
                     />
                   </>
                 )}

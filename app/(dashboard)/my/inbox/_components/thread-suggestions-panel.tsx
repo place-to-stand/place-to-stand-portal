@@ -28,11 +28,23 @@ type SuggestionSummary = {
 type ThreadSuggestionsPanelProps = {
   threadId: string
   isAdmin: boolean
+  /** Change this value to trigger a re-fetch of suggestions */
+  refreshTrigger?: number
+  /** Whether analysis is currently running */
+  isAnalyzing?: boolean
+  /** Whether the thread has a client linked */
+  hasClient?: boolean
+  /** Whether the thread has a project linked */
+  hasProject?: boolean
 }
 
 export function ThreadSuggestionsPanel({
   threadId,
   isAdmin,
+  refreshTrigger = 0,
+  isAnalyzing = false,
+  hasClient = false,
+  hasProject = false,
 }: ThreadSuggestionsPanelProps) {
   const { toast } = useToast()
   const [suggestions, setSuggestions] = useState<SuggestionSummary[]>([])
@@ -54,7 +66,7 @@ export function ThreadSuggestionsPanel({
         console.error('Failed to load suggestions:', err)
       })
       .finally(() => setIsLoading(false))
-  }, [threadId, isAdmin])
+  }, [threadId, isAdmin, refreshTrigger])
 
   const handleApprove = async (suggestionId: string, type: 'TASK' | 'PR') => {
     setIsApproving(suggestionId)
@@ -99,7 +111,14 @@ export function ThreadSuggestionsPanel({
         <span className='text-sm font-medium'>AI Suggestions</span>
       </div>
 
-      {isLoading ? (
+      {isAnalyzing ? (
+        <div className='bg-muted/30 flex items-center gap-2 rounded-lg border p-3'>
+          <Loader2 className='text-muted-foreground h-4 w-4 animate-spin' />
+          <span className='text-muted-foreground text-sm'>
+            Analyzing emails...
+          </span>
+        </div>
+      ) : isLoading ? (
         <div className='bg-muted/30 flex items-center gap-2 rounded-lg border p-3'>
           <Loader2 className='text-muted-foreground h-4 w-4 animate-spin' />
           <span className='text-muted-foreground text-sm'>
@@ -107,7 +126,15 @@ export function ThreadSuggestionsPanel({
           </span>
         </div>
       ) : suggestions.length === 0 ? (
-        <p className='text-muted-foreground text-sm'>No pending suggestions.</p>
+        <p className='text-muted-foreground text-sm'>
+          {!hasClient && !hasProject
+            ? 'Link a client and project to generate suggestions.'
+            : !hasClient
+              ? 'Link a client to generate suggestions.'
+              : !hasProject
+                ? 'Link a project to generate suggestions.'
+                : 'No pending suggestions.'}
+        </p>
       ) : (
         <div className='space-y-2'>
           {suggestions.map(suggestion => (

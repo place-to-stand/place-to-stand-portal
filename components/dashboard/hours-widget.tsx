@@ -183,18 +183,26 @@ export function HoursWidget({ initialSnapshot, className }: HoursWidgetProps) {
         </div>
       </header>
       <div className='flex flex-1 flex-col gap-4 px-5 py-4'>
-        <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
+        <div className='grid grid-cols-2 gap-4'>
           <StatCard
-            label='My hours logged'
+            label='My billable hours'
             value={formatHours(snapshot.myHours)}
+            variant='primary'
           />
           <StatCard
-            label='Company hours logged'
+            label='My internal hours'
+            value={formatHours(snapshot.internalPersonalHours)}
+            variant='primary'
+          />
+          <StatCard
+            label='Total billable hours logged'
             value={formatHours(snapshot.companyHours)}
+            variant='muted'
           />
           <StatCard
-            label='Company hours prepaid'
+            label='Total billable hours prepaid'
             value={formatHours(snapshot.companyHoursPrepaid)}
+            variant='muted'
           />
         </div>
         {error ? <p className='text-destructive text-xs'>{error}</p> : null}
@@ -206,11 +214,17 @@ export function HoursWidget({ initialSnapshot, className }: HoursWidgetProps) {
 type StatCardProps = {
   label: string
   value: string
+  variant?: 'primary' | 'muted'
 }
 
-function StatCard({ label, value }: StatCardProps) {
+function StatCard({ label, value, variant = 'primary' }: StatCardProps) {
   return (
-    <div className='rounded-lg border px-4 py-3'>
+    <div
+      className={cn(
+        'rounded-lg border px-4 py-3',
+        variant === 'muted' && 'bg-muted/50'
+      )}
+    >
       <p className='text-muted-foreground text-xs font-medium tracking-wide uppercase'>
         {label}
       </p>
