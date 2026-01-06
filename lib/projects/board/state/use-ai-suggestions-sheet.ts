@@ -320,7 +320,9 @@ export function useAISuggestionsSheet({
   const unanalyzedCount = meta?.unanalyzedEmails ?? 0
   const hasGitHubRepos = meta?.hasGitHubRepos ?? false
   const disabled = !activeProject?.client_id
-  const disabledReason = disabled ? 'Project has no client' : null
+  const disabledReason = disabled
+    ? 'AI suggestions require a client project with linked email threads'
+    : null
 
   return {
     // Sheet state

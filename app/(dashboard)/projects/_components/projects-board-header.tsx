@@ -117,7 +117,9 @@ export function ProjectsBoardHeader({
             {aiSuggestionsDisabledReason ? (
               <TooltipProvider>
                 <Tooltip>
-                  <TooltipTrigger asChild>{aiButton}</TooltipTrigger>
+                  <TooltipTrigger asChild>
+                    <span tabIndex={0}>{aiButton}</span>
+                  </TooltipTrigger>
                   <TooltipContent>
                     <p>{aiSuggestionsDisabledReason}</p>
                   </TooltipContent>
