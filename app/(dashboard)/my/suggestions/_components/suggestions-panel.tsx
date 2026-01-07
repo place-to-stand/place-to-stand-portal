@@ -279,9 +279,22 @@ export function SuggestionsPanel({
         }),
       })
 
+      // Check response status before processing result
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Bulk action failed')
+      }
+
       const result = await response.json()
 
-      setSuggestions(prev => prev.filter(s => !selected.includes(s.id)))
+      // Only remove successfully processed items from the UI
+      const succeededIds = new Set(
+        (result.results as Array<{ id: string; success: boolean }>)
+          ?.filter(r => r.success)
+          .map(r => r.id) ?? []
+      )
+
+      setSuggestions(prev => prev.filter(s => !succeededIds.has(s.id)))
       setCounts(prev => ({
         ...prev,
         pending: prev.pending - result.succeeded,
@@ -289,11 +302,12 @@ export function SuggestionsPanel({
           prev[action === 'approve' ? 'approved' : 'rejected'] +
           result.succeeded,
       }))
-      setSelected([])
-      // Clear status selections for processed suggestions
+      // Only clear selection for succeeded items, keep failed ones selected
+      setSelected(prev => prev.filter(id => !succeededIds.has(id)))
+      // Clear status selections for successfully processed suggestions
       setSuggestionStatuses(prev => {
         const next = { ...prev }
-        for (const id of selected) {
+        for (const id of succeededIds) {
           delete next[id]
         }
         return next
@@ -305,10 +319,10 @@ export function SuggestionsPanel({
         variant: result.failed > 0 ? 'destructive' : 'default',
       })
       router.refresh()
-    } catch {
+    } catch (error) {
       toast({
         title: 'Error',
-        description: 'Bulk action failed',
+        description: error instanceof Error ? error.message : 'Bulk action failed',
         variant: 'destructive',
       })
     } finally {
