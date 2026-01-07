@@ -8,6 +8,7 @@ import {
   ListTodo,
   GitPullRequest,
   ExternalLink,
+  RefreshCw,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -36,6 +37,8 @@ type ThreadSuggestionsPanelProps = {
   hasClient?: boolean
   /** Whether the thread has a project linked */
   hasProject?: boolean
+  /** Callback to refresh/re-analyze suggestions */
+  onRefresh?: () => void
 }
 
 export function ThreadSuggestionsPanel({
@@ -45,6 +48,7 @@ export function ThreadSuggestionsPanel({
   isAnalyzing = false,
   hasClient = false,
   hasProject = false,
+  onRefresh,
 }: ThreadSuggestionsPanelProps) {
   const { toast } = useToast()
   const [suggestions, setSuggestions] = useState<SuggestionSummary[]>([])
@@ -106,9 +110,25 @@ export function ThreadSuggestionsPanel({
 
   return (
     <div className='space-y-4'>
-      <div className='flex items-center gap-2'>
-        <Sparkles className='text-muted-foreground h-4 w-4' />
-        <span className='text-sm font-medium'>AI Suggestions</span>
+      <div className='flex items-center justify-between'>
+        <div className='flex items-center gap-2'>
+          <Sparkles className='text-muted-foreground h-4 w-4' />
+          <span className='text-sm font-medium'>Suggestions</span>
+        </div>
+        {onRefresh && hasClient && hasProject && (
+          <Button
+            variant='ghost'
+            size='icon'
+            className='h-6 w-6'
+            onClick={onRefresh}
+            disabled={isAnalyzing || isLoading}
+            title='Re-analyze thread'
+          >
+            <RefreshCw
+              className={`text-muted-foreground h-3.5 w-3.5 ${isAnalyzing ? 'animate-spin' : ''}`}
+            />
+          </Button>
+        )}
       </div>
 
       {isAnalyzing ? (

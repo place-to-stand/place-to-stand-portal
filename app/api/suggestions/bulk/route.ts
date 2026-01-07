@@ -3,10 +3,14 @@ import { z } from 'zod'
 import { requireRole } from '@/lib/auth/session'
 import { approveSuggestion, rejectSuggestion } from '@/lib/data/suggestions'
 
+const taskStatusEnum = z.enum(['BACKLOG', 'ON_DECK', 'IN_PROGRESS', 'IN_REVIEW', 'BLOCKED', 'DONE'])
+
 const bulkSchema = z.object({
   action: z.enum(['approve', 'reject']),
   suggestionIds: z.array(z.string().uuid()).min(1).max(50),
   reason: z.string().max(500).optional(), // For rejections
+  // Per-suggestion status map: { suggestionId: status }
+  statuses: z.record(z.string().uuid(), taskStatusEnum).optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -22,14 +26,16 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const { action, suggestionIds, reason } = parsed.data
+  const { action, suggestionIds, reason, statuses } = parsed.data
 
   const results: Array<{ id: string; success: boolean; error?: string }> = []
 
   for (const id of suggestionIds) {
     try {
       if (action === 'approve') {
-        await approveSuggestion(id, user.id)
+        // Get per-suggestion status, defaulting to BACKLOG if not specified
+        const status = statuses?.[id] ?? 'BACKLOG'
+        await approveSuggestion(id, user.id, { status })
       } else {
         await rejectSuggestion(id, user.id, reason)
       }

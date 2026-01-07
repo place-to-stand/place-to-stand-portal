@@ -10,7 +10,7 @@ import { getProjectRepos } from '@/lib/data/github-repos'
 
 const createTaskSchema = z.object({
   suggestionId: z.string().uuid(),
-  status: z.enum(['BACKLOG', 'ON_DECK', 'IN_PROGRESS', 'IN_REVIEW', 'DONE']),
+  status: z.enum(['BACKLOG', 'ON_DECK', 'IN_PROGRESS', 'IN_REVIEW', 'BLOCKED', 'DONE']),
   title: z.string().min(1).max(200).optional(),
   description: z.string().max(2000).optional(),
   dueDate: z.string().optional(),

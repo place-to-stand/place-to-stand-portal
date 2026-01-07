@@ -5,6 +5,8 @@ import { createGateway } from '@ai-sdk/gateway'
 import {
   EMAIL_ANALYSIS_SYSTEM_PROMPT,
   buildEmailAnalysisUserPrompt,
+  buildThreadAnalysisUserPrompt,
+  type ThreadMessage,
 } from './prompts/email-to-tasks'
 import {
   emailAnalysisResultSchema,
@@ -41,6 +43,38 @@ export async function analyzeEmailForTasks(
   params: AnalyzeEmailParams
 ): Promise<AnalysisResponse> {
   const userPrompt = buildEmailAnalysisUserPrompt(params)
+
+  const { object, usage } = await generateObject({
+    model,
+    system: EMAIL_ANALYSIS_SYSTEM_PROMPT,
+    prompt: userPrompt,
+    schema: emailAnalysisResultSchema,
+  })
+
+  return {
+    result: object,
+    usage: {
+      promptTokens: usage?.inputTokens ?? 0,
+      completionTokens: usage?.outputTokens ?? 0,
+    },
+  }
+}
+
+export interface AnalyzeThreadParams {
+  messages: ThreadMessage[]
+  clientName?: string
+  projectName?: string
+  recentTasks?: string[]
+}
+
+/**
+ * Analyze an entire email thread and extract actionable tasks using AI.
+ * This analyzes all messages together to avoid duplicate suggestions.
+ */
+export async function analyzeThreadForTasks(
+  params: AnalyzeThreadParams
+): Promise<AnalysisResponse> {
+  const userPrompt = buildThreadAnalysisUserPrompt(params)
 
   const { object, usage } = await generateObject({
     model,

@@ -77,6 +77,8 @@ export async function getSuggestionWithContext(id: string): Promise<SuggestionWi
             id: projects.id,
             name: projects.name,
             slug: projects.slug,
+            clientId: projects.clientId,
+            clientName: clients.name,
             clientSlug: clients.slug,
           })
           .from(projects)

@@ -17,6 +17,7 @@ type ContactCheckResult = {
     id: string
     name: string
     email: string
+    phone: string | null
     linkedClients: Array<{
       id: string
       name: string
@@ -109,6 +110,7 @@ export async function GET(_req: Request, { params }: RouteParams) {
       id: contacts.id,
       name: contacts.name,
       email: contacts.email,
+      phone: contacts.phone,
     })
     .from(contacts)
     .where(
@@ -162,6 +164,7 @@ export async function GET(_req: Request, { params }: RouteParams) {
         id: contact.id,
         name: contact.name,
         email: contact.email,
+        phone: contact.phone,
         linkedClients,
       },
     }

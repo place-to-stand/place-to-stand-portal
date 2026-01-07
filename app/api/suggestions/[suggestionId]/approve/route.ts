@@ -12,6 +12,7 @@ const approveSchema = z.object({
   projectId: z.string().uuid().optional(),
   dueDate: z.string().optional(),
   priority: z.enum(['HIGH', 'MEDIUM', 'LOW']).optional(),
+  status: z.enum(['BACKLOG', 'ON_DECK', 'IN_PROGRESS', 'IN_REVIEW', 'BLOCKED', 'DONE']).optional(),
 })
 
 export async function POST(

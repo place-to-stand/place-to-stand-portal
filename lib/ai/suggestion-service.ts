@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { eq, and, isNull, desc } from 'drizzle-orm'
+import { eq, and, isNull, desc, inArray } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import {
   suggestions,
@@ -8,8 +8,13 @@ import {
   threads,
   projects,
   tasks,
+  clients,
 } from '@/lib/db/schema'
-import { analyzeEmailForTasks, filterByConfidence } from './email-analysis'
+import {
+  analyzeEmailForTasks,
+  analyzeThreadForTasks,
+  filterByConfidence,
+} from './email-analysis'
 import { getMessage, normalizeEmail } from '@/lib/gmail/client'
 import { markMessageAsAnalyzed } from '@/lib/queries/messages'
 import type {
@@ -264,6 +269,14 @@ export async function analyzeMessagesForClient(
 /**
  * Analyze messages for a specific thread.
  * Only analyzes if the thread has both a client and project linked.
+ *
+ * When triggered, this function:
+ * 1. Soft-deletes existing PENDING/DRAFT suggestions (clears unpushed work)
+ * 2. Resets analyzedAt on all messages (allows fresh re-analysis)
+ * 3. Analyzes ALL messages together as a thread (prevents duplicates)
+ *
+ * This ensures that when context changes (new client/project linked),
+ * suggestions are regenerated fresh without duplicates.
  */
 export async function analyzeMessagesForThread(
   threadId: string,
@@ -299,37 +312,166 @@ export async function analyzeMessagesForThread(
     }
   }
 
-  // Find unanalyzed messages in this thread
-  const unanalyzed = await db
-    .select({ id: messages.id })
+  // Clear existing unpushed suggestions - when context changes (new client/project),
+  // old suggestions may no longer be relevant. This prevents duplicates and ensures
+  // fresh analysis with the new context.
+  await db
+    .update(suggestions)
+    .set({ deletedAt: new Date().toISOString() })
+    .where(
+      and(
+        eq(suggestions.threadId, threadId),
+        inArray(suggestions.status, ['PENDING', 'DRAFT']),
+        isNull(suggestions.deletedAt)
+      )
+    )
+
+  // Reset analyzedAt on messages so they get re-analyzed with the new context
+  await db
+    .update(messages)
+    .set({ analyzedAt: null, analysisVersion: null })
+    .where(
+      and(
+        eq(messages.threadId, threadId),
+        eq(messages.userId, userId),
+        isNull(messages.deletedAt)
+      )
+    )
+
+  // Fetch all messages in the thread with their content
+  const threadMessages = await db
+    .select()
     .from(messages)
     .where(
       and(
         eq(messages.threadId, threadId),
         eq(messages.userId, userId),
-        isNull(messages.deletedAt),
-        isNull(messages.analyzedAt)
+        isNull(messages.deletedAt)
       )
     )
     .orderBy(desc(messages.sentAt))
     .limit(limit)
 
-  if (unanalyzed.length === 0) {
-    return { processed: 0, created: 0, errors: 0, skipped: 'no_unanalyzed_messages' }
+  if (threadMessages.length === 0) {
+    return { processed: 0, created: 0, errors: 0, skipped: 'no_messages' }
   }
 
-  let created = 0
-  let errors = 0
+  // Fetch message bodies from Gmail if not stored locally
+  const messagesWithBodies = await Promise.all(
+    threadMessages.map(async msg => {
+      let bodyText = msg.bodyText
 
-  for (const { id } of unanalyzed) {
-    try {
-      const result = await createSuggestionsFromMessage(id, userId)
-      created += result.created
-    } catch (error) {
-      console.error(`Failed to analyze message ${id}:`, error)
-      errors++
+      if (!bodyText && msg.externalMessageId) {
+        try {
+          const gmailMessage = await getMessage(userId, msg.externalMessageId)
+          const normalized = normalizeEmail(gmailMessage)
+          bodyText = normalized.bodyText ?? null
+        } catch (err) {
+          console.error(`Failed to fetch Gmail message ${msg.id}:`, err)
+        }
+      }
+
+      return {
+        id: msg.id,
+        subject: msg.subject || '',
+        body: bodyText || '',
+        fromEmail: msg.fromEmail,
+        fromName: msg.fromName || undefined,
+        sentAt: msg.sentAt,
+      }
+    })
+  )
+
+  // Filter out messages without body content
+  const validMessages = messagesWithBodies.filter(m => m.body.length > 0)
+
+  if (validMessages.length === 0) {
+    // Mark all as analyzed even though no content
+    for (const msg of threadMessages) {
+      await markMessageAsAnalyzed(msg.id, MODEL_VERSION)
     }
+    return { processed: threadMessages.length, created: 0, errors: 0, skipped: 'no_body_content' }
   }
 
-  return { processed: unanalyzed.length, created, errors }
+  // Get project context
+  const [project] = await db
+    .select({ name: projects.name })
+    .from(projects)
+    .where(eq(projects.id, thread.projectId))
+    .limit(1)
+
+  const recentTaskRows = await db
+    .select({ title: tasks.title })
+    .from(tasks)
+    .where(and(eq(tasks.projectId, thread.projectId), isNull(tasks.deletedAt)))
+    .orderBy(desc(tasks.createdAt))
+    .limit(10)
+
+  // Get client name
+  const [client] = await db
+    .select({ name: clients.name })
+    .from(clients)
+    .where(eq(clients.id, thread.clientId))
+    .limit(1)
+
+  // Analyze the entire thread at once
+  try {
+    const { result, usage } = await analyzeThreadForTasks({
+      messages: validMessages.map(m => ({
+        subject: m.subject,
+        body: m.body,
+        fromEmail: m.fromEmail,
+        fromName: m.fromName,
+        sentAt: m.sentAt,
+      })),
+      clientName: client?.name,
+      projectName: project?.name,
+      recentTasks: recentTaskRows.map(t => t.title),
+    })
+
+    // Mark all messages as analyzed
+    for (const msg of threadMessages) {
+      await markMessageAsAnalyzed(msg.id, MODEL_VERSION)
+    }
+
+    // If no action required, we're done
+    if (result.noActionRequired || result.tasks.length === 0) {
+      return { processed: threadMessages.length, created: 0, errors: 0 }
+    }
+
+    // Filter by confidence
+    const validTasks = filterByConfidence(result.tasks, MIN_CONFIDENCE)
+
+    if (validTasks.length === 0) {
+      return { processed: threadMessages.length, created: 0, errors: 0 }
+    }
+
+    // Create suggestions - link to the most recent message for reference
+    const mostRecentMessageId = threadMessages[0].id
+    const suggestionValues: NewSuggestion[] = validTasks.map(task => ({
+      messageId: mostRecentMessageId,
+      threadId,
+      type: 'TASK' as const,
+      status: 'PENDING' as const,
+      projectId: thread.projectId,
+      confidence: String(task.confidence),
+      reasoning: task.reasoning,
+      aiModelVersion: MODEL_VERSION,
+      promptTokens: Math.round(usage.promptTokens / validTasks.length),
+      completionTokens: Math.round(usage.completionTokens / validTasks.length),
+      suggestedContent: {
+        title: task.title,
+        description: task.description || undefined,
+        dueDate: task.dueDate || undefined,
+        priority: task.priority || undefined,
+      } satisfies TaskSuggestedContent,
+    }))
+
+    await db.insert(suggestions).values(suggestionValues)
+
+    return { processed: threadMessages.length, created: suggestionValues.length, errors: 0 }
+  } catch (error) {
+    console.error(`Failed to analyze thread ${threadId}:`, error)
+    return { processed: 0, created: 0, errors: 1 }
+  }
 }

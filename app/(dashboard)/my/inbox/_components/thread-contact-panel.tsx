@@ -6,8 +6,9 @@ import {
   UserPlus,
   Loader2,
   Building2,
-  Check,
   Pencil,
+  Phone,
+  Mail,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -21,6 +22,7 @@ type ContactCheckResult = {
     id: string
     name: string
     email: string
+    phone: string | null
     linkedClients: Array<{
       id: string
       name: string
@@ -111,7 +113,7 @@ export function ThreadContactPanel({
       id: result.contact.id,
       email: result.contact.email,
       name: result.contact.name,
-      phone: null, // Phone not returned from contacts-check API
+      phone: result.contact.phone,
     })
     setSheetOpen(true)
   }
@@ -191,9 +193,22 @@ export function ThreadContactPanel({
                   <Pencil className='h-3 w-3' />
                 </Button>
               </div>
-              <p className='text-muted-foreground mt-0.5 truncate text-xs'>
+              <a
+                href={`mailto:${r.contact!.email}`}
+                className='text-muted-foreground hover:text-foreground mt-0.5 flex items-center gap-1 truncate text-xs transition-colors'
+              >
+                <Mail className='h-3 w-3 shrink-0' />
                 {r.contact!.email}
-              </p>
+              </a>
+              {r.contact!.phone && (
+                <a
+                  href={`tel:${r.contact!.phone}`}
+                  className='text-muted-foreground hover:text-foreground mt-0.5 flex items-center gap-1 text-xs transition-colors'
+                >
+                  <Phone className='h-3 w-3 shrink-0' />
+                  {r.contact!.phone}
+                </a>
+              )}
               {r.contact!.linkedClients.length > 0 && (
                 <div className='mt-2 flex flex-wrap gap-1'>
                   {r.contact!.linkedClients.map(client => (

@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { and, eq, isNull, desc } from 'drizzle-orm'
+import { and, eq, isNull, desc, inArray, sql } from 'drizzle-orm'
 
 import { requireRole } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { projects, githubRepoLinks, suggestions, threads, messages } from '@/lib/db/schema'
 import { createSuggestionsFromMessage } from '@/lib/ai/suggestion-service'
+
+type FilterType = 'pending' | 'approved' | 'rejected'
 
 /**
  * GET /api/projects/[projectId]/ai-suggestions
@@ -47,6 +49,8 @@ export async function GET(
       meta: {
         totalEmails: 0,
         pendingSuggestions: 0,
+        approvedSuggestions: 0,
+        rejectedSuggestions: 0,
         unanalyzedEmails: 0,
         hasGitHubRepos: false,
         message: 'Project has no client. Link threads to a client first.',
@@ -54,8 +58,93 @@ export async function GET(
     })
   }
 
-  // Get pending only based on query param
-  const pendingOnly = request.nextUrl.searchParams.get('pendingOnly') === 'true'
+  // Get query params
+  const filterParam = request.nextUrl.searchParams.get('filter') as FilterType | null
+  const filter: FilterType = filterParam && ['pending', 'approved', 'rejected'].includes(filterParam)
+    ? filterParam
+    : 'pending'
+  const countOnly = request.nextUrl.searchParams.get('countOnly') === 'true'
+
+  // Helper to get status conditions based on filter
+  const getStatusCondition = (f: FilterType) => {
+    switch (f) {
+      case 'pending':
+        return inArray(suggestions.status, ['PENDING', 'DRAFT'])
+      case 'approved':
+        return inArray(suggestions.status, ['APPROVED', 'MODIFIED'])
+      case 'rejected':
+        return eq(suggestions.status, 'REJECTED')
+    }
+  }
+
+  // For countOnly, just fetch the counts without full suggestion data
+  if (countOnly) {
+    const [suggestionCounts, gitHubRepos, unanalyzedMessages] = await Promise.all([
+      db
+        .select({
+          status: suggestions.status,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(suggestions)
+        .leftJoin(threads, eq(threads.id, suggestions.threadId))
+        .where(
+          and(
+            eq(threads.clientId, project.clientId),
+            isNull(suggestions.deletedAt)
+          )
+        )
+        .groupBy(suggestions.status),
+      db
+        .select({ id: githubRepoLinks.id })
+        .from(githubRepoLinks)
+        .where(
+          and(
+            eq(githubRepoLinks.projectId, projectId),
+            isNull(githubRepoLinks.deletedAt)
+          )
+        )
+        .limit(1),
+      db
+        .select({ id: messages.id })
+        .from(messages)
+        .innerJoin(threads, eq(threads.id, messages.threadId))
+        .where(
+          and(
+            eq(threads.clientId, project.clientId),
+            eq(messages.userId, user.id),
+            isNull(messages.deletedAt),
+            isNull(messages.analyzedAt)
+          )
+        )
+        .limit(100),
+    ])
+
+    // Calculate counts by status group
+    let pendingCount = 0
+    let approvedCount = 0
+    let rejectedCount = 0
+    for (const row of suggestionCounts) {
+      if (row.status === 'PENDING' || row.status === 'DRAFT') {
+        pendingCount += row.count
+      } else if (row.status === 'APPROVED' || row.status === 'MODIFIED') {
+        approvedCount += row.count
+      } else if (row.status === 'REJECTED') {
+        rejectedCount += row.count
+      }
+    }
+
+    return NextResponse.json({
+      emails: [],
+      meta: {
+        totalEmails: 0,
+        pendingSuggestions: pendingCount,
+        approvedSuggestions: approvedCount,
+        rejectedSuggestions: rejectedCount,
+        unanalyzedEmails: unanalyzedMessages.length,
+        hasGitHubRepos: gitHubRepos.length > 0,
+      },
+    })
+  }
 
   // Get suggestions for this project's client
   const suggestionQuery = db
@@ -71,13 +160,13 @@ export async function GET(
       and(
         eq(threads.clientId, project.clientId),
         isNull(suggestions.deletedAt),
-        pendingOnly ? eq(suggestions.status, 'PENDING') : undefined
+        getStatusCondition(filter)
       )
     )
     .orderBy(desc(suggestions.createdAt))
     .limit(100)
 
-  const [suggestionRows, gitHubRepos, unanalyzedMessages] = await Promise.all([
+  const [suggestionRows, gitHubRepos, unanalyzedMessages, suggestionCounts] = await Promise.all([
     suggestionQuery,
     db
       .select({ id: githubRepoLinks.id })
@@ -103,13 +192,41 @@ export async function GET(
         )
       )
       .limit(100),
+    // Get counts for all statuses
+    db
+      .select({
+        status: suggestions.status,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(suggestions)
+      .leftJoin(threads, eq(threads.id, suggestions.threadId))
+      .where(
+        and(
+          eq(threads.clientId, project.clientId),
+          isNull(suggestions.deletedAt)
+        )
+      )
+      .groupBy(suggestions.status),
   ])
 
-  const pendingCount = suggestionRows.filter(s => s.suggestion.status === 'PENDING').length
+  // Calculate counts by status group
+  let pendingCount = 0
+  let approvedCount = 0
+  let rejectedCount = 0
+  for (const row of suggestionCounts) {
+    if (row.status === 'PENDING' || row.status === 'DRAFT') {
+      pendingCount += row.count
+    } else if (row.status === 'APPROVED' || row.status === 'MODIFIED') {
+      approvedCount += row.count
+    } else if (row.status === 'REJECTED') {
+      rejectedCount += row.count
+    }
+  }
 
   // Group suggestions by message/email (format expected by the hook)
   const emailMap = new Map<string, {
     id: string
+    threadId: string | null
     subject: string | null
     snippet: string | null
     fromEmail: string
@@ -154,6 +271,7 @@ export async function GET(
     } else {
       emailMap.set(messageId, {
         id: messageId,
+        threadId: row.thread?.id ?? null,
         subject: row.message.subject,
         snippet: row.message.snippet,
         fromEmail: row.message.fromEmail,
@@ -171,6 +289,8 @@ export async function GET(
     meta: {
       totalEmails: emails.length,
       pendingSuggestions: pendingCount,
+      approvedSuggestions: approvedCount,
+      rejectedSuggestions: rejectedCount,
       unanalyzedEmails: unanalyzedMessages.length,
       hasGitHubRepos: gitHubRepos.length > 0,
     },

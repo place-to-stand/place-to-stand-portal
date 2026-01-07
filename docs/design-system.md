@@ -13,6 +13,7 @@ Each primary object type is assigned a distinct color from the Tailwind CSS pale
 | **Project** | Emerald | `emerald` | `#10b981` |
 | **Client** | Blue | `blue` | `#3b82f6` |
 | **Contact** | Cyan | `cyan` | `#06b6d4` |
+| **Suggestion** | Fuchsia | `fuchsia` | `#d946ef` |
 
 ## Visual Application
 
@@ -50,7 +51,7 @@ When adding a new object type (e.g., "Invoice", "Ticket", "Note"), follow these 
 
 ### 1. Choose a Distinct Color
 Select a color from the Tailwind palette that is visually distinct from the existing set.
-*   *Avoid:* Violet, Amber, Emerald, Blue, Cyan.
+*   *Avoid:* Violet, Amber, Emerald, Blue, Cyan, Fuchsia.
 *   *Suggested:*
     *   **Rose** (`rose-500`) for urgent items like Tickets or Alerts.
     *   **Orange** (`orange-500`) for financial items like Invoices (distinct enough from Amber).

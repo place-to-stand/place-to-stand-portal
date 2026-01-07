@@ -20,6 +20,7 @@ import type { GmailSyncState } from '@/lib/types/sync-state'
 const BATCH_SIZE = 50
 const MAX_FULL_SYNC = 500 // Max messages to sync on initial full sync
 const MAX_HISTORY_RESULTS = 500 // Max history records per request
+const GMAIL_QUERY_FILTER = '-in:spam -in:trash' // Exclude spam and trash from sync
 
 type SyncResult = {
   synced: number
@@ -261,8 +262,8 @@ async function processLabelChanges(
 async function performFullSync(userId: string, result: SyncResult): Promise<string | undefined> {
   result.syncType = 'full'
 
-  // List recent messages
-  const listRes = await listMessages(userId, { maxResults: MAX_FULL_SYNC })
+  // List recent messages (excluding spam and trash)
+  const listRes = await listMessages(userId, { maxResults: MAX_FULL_SYNC, q: GMAIL_QUERY_FILTER })
   const messageRefs = listRes.messages || []
   if (messageRefs.length === 0) {
     // No messages, get historyId from profile

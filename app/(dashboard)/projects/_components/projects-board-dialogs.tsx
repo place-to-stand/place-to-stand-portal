@@ -123,10 +123,7 @@ export function ProjectsBoardDialogs({
       />
 
       {aiSuggestionsState && (
-        <AISuggestionsSheet
-          {...aiSuggestionsState}
-          projectName={activeProject.name}
-        />
+        <AISuggestionsSheet {...aiSuggestionsState} />
       )}
     </>
   )

@@ -870,6 +870,7 @@ export function InboxPanel({
                       isAnalyzing={isAnalyzingThread}
                       hasClient={!!selectedThread.client}
                       hasProject={!!selectedThread.project}
+                      onRefresh={() => triggerThreadAnalysis(selectedThread.id)}
                     />
                   </>
                 )}

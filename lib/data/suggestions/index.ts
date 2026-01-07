@@ -148,7 +148,14 @@ export async function getSuggestions(
   const projectMap = new Map(
     projectRows.map(p => [
       p.id,
-      { id: p.id, name: p.name, slug: p.slug, clientSlug: p.clientSlug },
+      {
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        clientId: p.clientId,
+        clientName: p.clientName,
+        clientSlug: p.clientSlug,
+      },
     ])
   )
   const repoLinkMap = new Map(repoLinkRows.map(r => [r.id, r]))
@@ -217,6 +224,8 @@ export async function getSuggestionById(
             id: projects.id,
             name: projects.name,
             slug: projects.slug,
+            clientId: projects.clientId,
+            clientName: clients.name,
             clientSlug: clients.slug,
           })
           .from(projects)
@@ -282,7 +291,7 @@ export interface ApproveTaskModifications {
   projectId?: string
   dueDate?: string
   priority?: string
-  status?: 'BACKLOG' | 'ON_DECK' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE'
+  status?: 'BACKLOG' | 'ON_DECK' | 'IN_PROGRESS' | 'IN_REVIEW' | 'BLOCKED' | 'DONE'
 }
 
 export interface ApprovePRModifications {

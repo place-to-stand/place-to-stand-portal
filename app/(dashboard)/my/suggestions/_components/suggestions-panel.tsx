@@ -1,29 +1,19 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import {
-  Inbox,
-  CheckCircle2,
-  XCircle,
-  Sparkles,
-  Mail,
-  Calendar,
-  FolderKanban,
-  Loader2,
-  Check,
-  X,
-  ExternalLink,
-} from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
+import { Inbox, CheckCircle2, XCircle, Sparkles, Check, X } from 'lucide-react'
 
 import { AppShellHeader } from '@/components/layout/app-shell'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/use-toast'
+import {
+  SuggestionCard,
+  type SuggestionCardData,
+  type TaskStatus,
+} from '@/components/suggestions/suggestion-card'
 import { cn } from '@/lib/utils'
 import type {
   SuggestionWithContext,
@@ -50,13 +40,62 @@ type SuggestionsPanelProps = {
   currentFilter: SuggestionFilter
 }
 
-// Consistent confidence colors matching the email viewer AI suggestions
-function getConfidenceColor(confidence: number): string {
-  if (confidence >= 0.8)
-    return 'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400'
-  if (confidence >= 0.6)
-    return 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400'
-  return 'bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-400'
+// Transform API suggestion to shared card format
+function toSuggestionCardData(
+  suggestion: SuggestionWithContext
+): SuggestionCardData {
+  const content = suggestion.suggestedContent as
+    | TaskSuggestedContent
+    | PRSuggestedContent
+
+  const title = 'title' in content ? content.title : 'Untitled'
+  const description =
+    'description' in content
+      ? (content.description ?? null)
+      : 'body' in content
+        ? (content.body ?? null)
+        : null
+  const priority = 'priority' in content ? (content.priority ?? null) : null
+  const dueDate = 'dueDate' in content ? (content.dueDate ?? null) : null
+
+  return {
+    id: suggestion.id,
+    type: suggestion.type as 'TASK' | 'PR' | 'REPLY',
+    title,
+    description,
+    confidence: Number(suggestion.confidence),
+    reasoning: suggestion.reasoning,
+    priority,
+    dueDate,
+    // Client info derived from project
+    client:
+      suggestion.project?.clientId && suggestion.project?.clientName
+        ? {
+            id: suggestion.project.clientId,
+            name: suggestion.project.clientName,
+            slug: suggestion.project.clientSlug,
+          }
+        : null,
+    project: suggestion.project
+      ? {
+          id: suggestion.projectId!,
+          name: suggestion.project.name,
+          slug: suggestion.project.slug,
+          clientSlug: suggestion.project.clientSlug,
+        }
+      : null,
+    emailContext: suggestion.message
+      ? {
+          threadId: suggestion.threadId,
+          subject: suggestion.message.subject,
+          fromEmail: suggestion.message.fromEmail,
+          sentAt: suggestion.message.sentAt,
+        }
+      : null,
+    createdTask: suggestion.createdTask
+      ? { id: suggestion.createdTask.id }
+      : null,
+  }
 }
 
 export function SuggestionsPanel({
@@ -72,13 +111,22 @@ export function SuggestionsPanel({
   const [counts, setCounts] = useState(initialCounts)
   const [selected, setSelected] = useState<string[]>([])
   const [processing, setProcessing] = useState(false)
+  const [processingId, setProcessingId] = useState<string | null>(null)
   const [rejectDialogOpen, setRejectDialogOpen] = useState<string | null>(null)
+  // Track status per suggestion for bulk operations (defaults to BACKLOG if not changed)
+  const [suggestionStatuses, setSuggestionStatuses] = useState<Record<string, TaskStatus>>({})
 
   // Sync state when props change (e.g., on filter change via URL)
   useEffect(() => {
     setSuggestions(initialSuggestions)
     setSelected([]) // Clear selection on filter change
+    setSuggestionStatuses({}) // Clear status selections on filter change
   }, [initialSuggestions])
+
+  // Handle status change on individual card
+  const handleStatusChange = useCallback((suggestionId: string, status: TaskStatus) => {
+    setSuggestionStatuses(prev => ({ ...prev, [suggestionId]: status }))
+  }, [])
 
   useEffect(() => {
     setCounts(initialCounts)
@@ -103,13 +151,14 @@ export function SuggestionsPanel({
     [router, searchParams]
   )
 
-  const handleQuickApprove = async (suggestionId: string) => {
+  const handleQuickApprove = async (suggestionId: string, status: TaskStatus) => {
     setProcessing(true)
+    setProcessingId(suggestionId)
     try {
       const response = await fetch(`/api/suggestions/${suggestionId}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ status }),
       })
 
       if (!response.ok) {
@@ -139,11 +188,13 @@ export function SuggestionsPanel({
       })
     } finally {
       setProcessing(false)
+      setProcessingId(null)
     }
   }
 
   const handleReject = async (suggestionId: string) => {
     setProcessing(true)
+    setProcessingId(suggestionId)
     try {
       const response = await fetch(`/api/suggestions/${suggestionId}/reject`, {
         method: 'POST',
@@ -168,7 +219,39 @@ export function SuggestionsPanel({
       })
     } finally {
       setProcessing(false)
+      setProcessingId(null)
       setRejectDialogOpen(null)
+    }
+  }
+
+  const handleUnreject = async (suggestionId: string) => {
+    setProcessing(true)
+    setProcessingId(suggestionId)
+    try {
+      const response = await fetch(`/api/suggestions/${suggestionId}/unreject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+
+      if (!response.ok) throw new Error('Failed to restore')
+
+      setSuggestions(prev => prev.filter(s => s.id !== suggestionId))
+      setCounts(prev => ({
+        ...prev,
+        pending: prev.pending + 1,
+        rejected: prev.rejected - 1,
+      }))
+      toast({ title: 'Suggestion restored to pending' })
+      router.refresh()
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'Failed to restore suggestion',
+        variant: 'destructive',
+      })
+    } finally {
+      setProcessing(false)
+      setProcessingId(null)
     }
   }
 
@@ -177,10 +260,23 @@ export function SuggestionsPanel({
 
     setProcessing(true)
     try {
+      // Build per-suggestion status map for approvals
+      // Use the card's selected status, defaulting to BACKLOG if not changed
+      const statuses: Record<string, TaskStatus> = {}
+      if (action === 'approve') {
+        for (const id of selected) {
+          statuses[id] = suggestionStatuses[id] ?? 'BACKLOG'
+        }
+      }
+
       const response = await fetch('/api/suggestions/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, suggestionIds: selected }),
+        body: JSON.stringify({
+          action,
+          suggestionIds: selected,
+          ...(action === 'approve' && { statuses }),
+        }),
       })
 
       const result = await response.json()
@@ -194,6 +290,14 @@ export function SuggestionsPanel({
           result.succeeded,
       }))
       setSelected([])
+      // Clear status selections for processed suggestions
+      setSuggestionStatuses(prev => {
+        const next = { ...prev }
+        for (const id of selected) {
+          delete next[id]
+        }
+        return next
+      })
 
       toast({
         title: result.failed > 0 ? 'Partial success' : 'Success',
@@ -231,7 +335,7 @@ export function SuggestionsPanel({
     <>
       <AppShellHeader>
         <h1 className='text-2xl font-semibold tracking-tight'>Suggestions</h1>
-        <p className='text-muted-foreground text-sm'>
+        <p className='text-sm text-muted-foreground'>
           Review AI-generated suggestions from client communications.
         </p>
       </AppShellHeader>
@@ -265,7 +369,7 @@ export function SuggestionsPanel({
         </div>
 
         {/* Main Container with Background */}
-        <section className='bg-background rounded-xl border p-6 shadow-sm'>
+        <section className='rounded-xl border bg-background p-6 shadow-sm'>
           {/* Bulk Actions Toolbar */}
           {canSelect && (
             <div className='mb-6 flex items-center justify-between'>
@@ -282,10 +386,10 @@ export function SuggestionsPanel({
                 <span className='text-sm'>Select all</span>
               </label>
 
-              {/* Right: Status + Actions */}
+              {/* Right: Selection count + Actions */}
               <div className='flex items-center gap-3'>
                 {/* Selection count */}
-                <span className='text-muted-foreground text-sm tabular-nums'>
+                <span className='text-sm tabular-nums text-muted-foreground'>
                   {selected.length} selected
                 </span>
 
@@ -328,8 +432,8 @@ export function SuggestionsPanel({
             {/* Suggestion List */}
             {suggestions.length === 0 ? (
               <div className='flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center'>
-                <Sparkles className='text-muted-foreground h-8 w-8' />
-                <p className='text-muted-foreground mt-2 text-sm'>
+                <Sparkles className='h-8 w-8 text-muted-foreground' />
+                <p className='mt-2 text-sm text-muted-foreground'>
                   {currentFilter === 'pending'
                     ? 'No pending suggestions. Suggestions are generated when emails are analyzed on project boards.'
                     : currentFilter === 'approved'
@@ -342,14 +446,20 @@ export function SuggestionsPanel({
                 {suggestions.map(suggestion => (
                   <SuggestionCard
                     key={suggestion.id}
-                    suggestion={suggestion}
+                    suggestion={toSuggestionCardData(suggestion)}
+                    isCreating={processingId === suggestion.id}
+                    onCreateTask={status => handleQuickApprove(suggestion.id, status)}
+                    onReject={() => setRejectDialogOpen(suggestion.id)}
+                    onUnreject={() => handleUnreject(suggestion.id)}
+                    showProjectLink
+                    showCheckbox={canSelect}
                     selected={selected.includes(suggestion.id)}
                     onSelect={() => toggleSelect(suggestion.id)}
-                    onQuickApprove={() => handleQuickApprove(suggestion.id)}
-                    onReject={() => setRejectDialogOpen(suggestion.id)}
                     disabled={processing}
                     showActions={currentFilter === 'pending'}
-                    showCheckbox={canSelect}
+                    showUnreject={currentFilter === 'rejected'}
+                    initialStatus={suggestionStatuses[suggestion.id]}
+                    onStatusChange={status => handleStatusChange(suggestion.id, status)}
                   />
                 ))}
               </div>
@@ -414,210 +524,5 @@ function FilterBadge({
         {count}
       </span>
     </button>
-  )
-}
-
-// Redesigned suggestion card matching email viewer AI suggestions style
-function SuggestionCard({
-  suggestion,
-  selected,
-  onSelect,
-  onQuickApprove,
-  onReject,
-  disabled,
-  showActions,
-  showCheckbox,
-}: {
-  suggestion: SuggestionWithContext
-  selected: boolean
-  onSelect: () => void
-  onQuickApprove: () => void
-  onReject: () => void
-  disabled?: boolean
-  showActions: boolean
-  showCheckbox: boolean
-}) {
-  const content = suggestion.suggestedContent as
-    | TaskSuggestedContent
-    | PRSuggestedContent
-  const title = 'title' in content ? content.title : 'Untitled'
-  const description =
-    'description' in content
-      ? content.description
-      : 'body' in content
-        ? content.body
-        : null
-
-  const confidencePercent = Math.round(Number(suggestion.confidence) * 100)
-
-  return (
-    <div
-      className={cn(
-        'bg-muted/30 rounded-lg border p-4 transition-all',
-        selected && 'ring-primary ring-2'
-      )}
-    >
-      <div className='flex items-start gap-3'>
-        {showCheckbox && (
-          <Checkbox
-            checked={selected}
-            onCheckedChange={onSelect}
-            className='mt-0.5'
-          />
-        )}
-        <div className='min-w-0 flex-1'>
-          {/* Header: Type badge + Title + Confidence */}
-          <div className='flex items-start justify-between gap-2'>
-            <div className='flex items-center gap-2'>
-              <Badge variant='outline' className='text-xs'>
-                {suggestion.type}
-              </Badge>
-              <h4 className='text-sm font-medium'>{title}</h4>
-            </div>
-            <Badge
-              variant='secondary'
-              className={cn(
-                'shrink-0',
-                getConfidenceColor(Number(suggestion.confidence))
-              )}
-            >
-              {confidencePercent}% confidence
-            </Badge>
-          </div>
-
-          {/* Email context */}
-          {suggestion.message && (
-            <div className='text-muted-foreground mt-1.5 flex flex-wrap items-center gap-2 text-xs'>
-              {suggestion.threadId ? (
-                <Link
-                  href={`/my/inbox?thread=${suggestion.threadId}`}
-                  className='hover:text-foreground flex items-center gap-1 hover:underline'
-                >
-                  <Mail className='h-3 w-3' />
-                  {suggestion.message.subject || '(no subject)'}
-                </Link>
-              ) : (
-                <span className='flex items-center gap-1'>
-                  <Mail className='h-3 w-3' />
-                  {suggestion.message.subject || '(no subject)'}
-                </span>
-              )}
-              <span className='text-muted-foreground/50'>·</span>
-              <span>{suggestion.message.fromEmail}</span>
-              {suggestion.message.sentAt && (
-                <>
-                  <span className='text-muted-foreground/50'>·</span>
-                  <span>
-                    {formatDistanceToNow(new Date(suggestion.message.sentAt))}{' '}
-                    ago
-                  </span>
-                </>
-              )}
-            </div>
-          )}
-
-          {/* Description preview */}
-          {description && (
-            <p className='text-muted-foreground mt-2 line-clamp-2 text-sm'>
-              {description}
-            </p>
-          )}
-
-          {/* Reasoning quote */}
-          {suggestion.reasoning && (
-            <p className='text-muted-foreground/80 mt-2 text-xs italic'>
-              &ldquo;{suggestion.reasoning}&rdquo;
-            </p>
-          )}
-
-          {/* Metadata badges */}
-          <div className='mt-2 flex flex-wrap items-center gap-2'>
-            {suggestion.project &&
-              (suggestion.project.slug && suggestion.project.clientSlug ? (
-                <Link
-                  href={`/projects/${suggestion.project.clientSlug}/${suggestion.project.slug}/board`}
-                >
-                  <Badge
-                    variant='outline'
-                    className='hover:bg-muted cursor-pointer text-xs'
-                  >
-                    <FolderKanban className='mr-1 h-3 w-3' />
-                    {suggestion.project.name}
-                  </Badge>
-                </Link>
-              ) : (
-                <Badge variant='outline' className='text-xs'>
-                  <FolderKanban className='mr-1 h-3 w-3' />
-                  {suggestion.project.name}
-                </Badge>
-              ))}
-            {'dueDate' in content && content.dueDate && (
-              <Badge variant='outline' className='text-xs'>
-                <Calendar className='mr-1 h-3 w-3' />
-                {content.dueDate}
-              </Badge>
-            )}
-            {'priority' in content && content.priority && (
-              <Badge
-                variant='outline'
-                className={cn(
-                  'text-xs',
-                  content.priority === 'HIGH'
-                    ? 'border-red-300 text-red-600 dark:border-red-800 dark:text-red-400'
-                    : content.priority === 'MEDIUM'
-                      ? 'border-amber-300 text-amber-600 dark:border-amber-800 dark:text-amber-400'
-                      : 'border-slate-300 text-slate-600 dark:border-slate-700 dark:text-slate-400'
-                )}
-              >
-                {content.priority}
-              </Badge>
-            )}
-          </div>
-
-          {/* Actions - matching email viewer suggestion style */}
-          {showActions && (
-            <div className='mt-3 flex items-center gap-2 border-t pt-3'>
-              <Button
-                size='sm'
-                onClick={onQuickApprove}
-                disabled={disabled || !suggestion.projectId}
-              >
-                {disabled ? (
-                  <Loader2 className='mr-1 h-4 w-4 animate-spin' />
-                ) : (
-                  <Check className='mr-1 h-4 w-4' />
-                )}
-                {suggestion.type === 'TASK' ? 'Create Task' : 'Create PR'}
-              </Button>
-              <Button
-                variant='ghost'
-                size='sm'
-                onClick={onReject}
-                disabled={disabled}
-                className='text-muted-foreground hover:text-destructive'
-              >
-                <X className='mr-1 h-4 w-4' />
-                Dismiss
-              </Button>
-            </div>
-          )}
-
-          {/* Task link for approved suggestions */}
-          {suggestion.createdTask &&
-            suggestion.project?.clientSlug &&
-            suggestion.project?.slug && (
-              <div className='mt-3 border-t pt-3'>
-                <Link
-                  href={`/projects/${suggestion.project.clientSlug}/${suggestion.project.slug}/board/${suggestion.createdTask.id}`}
-                  className='text-primary inline-flex items-center gap-1.5 text-sm font-medium hover:underline'
-                >
-                  <ExternalLink className='h-3.5 w-3.5' />
-                  View created task
-                </Link>
-              </div>
-            )}
-        </div>
-      </div>
-    </div>
   )
 }

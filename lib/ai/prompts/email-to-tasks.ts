@@ -71,3 +71,60 @@ export function buildEmailAnalysisUserPrompt(params: {
 
   return lines.join('\n')
 }
+
+export interface ThreadMessage {
+  subject: string
+  body: string
+  fromEmail: string
+  fromName?: string
+  sentAt: string
+}
+
+export function buildThreadAnalysisUserPrompt(params: {
+  messages: ThreadMessage[]
+  clientName?: string
+  projectName?: string
+  recentTasks?: string[]
+}): string {
+  const lines = [
+    '## Email Thread to Analyze',
+    '',
+    `This thread contains ${params.messages.length} message(s). Analyze the ENTIRE conversation and extract actionable tasks.`,
+    '',
+    '**Important:** Do NOT create duplicate tasks for the same request mentioned across multiple messages.',
+    '',
+  ]
+
+  // Add messages in chronological order (oldest first)
+  const sortedMessages = [...params.messages].sort(
+    (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
+  )
+
+  sortedMessages.forEach((msg, idx) => {
+    lines.push(`### Message ${idx + 1}`)
+    lines.push(`**From:** ${msg.fromName ? `${msg.fromName} <${msg.fromEmail}>` : msg.fromEmail}`)
+    lines.push(`**Date:** ${msg.sentAt}`)
+    lines.push(`**Subject:** ${msg.subject || '(no subject)'}`)
+    lines.push('')
+    lines.push('**Body:**')
+    lines.push(msg.body || '(empty)')
+    lines.push('')
+  })
+
+  if (params.clientName || params.projectName) {
+    lines.push('## Context')
+    if (params.clientName) lines.push(`**Client:** ${params.clientName}`)
+    if (params.projectName) lines.push(`**Project:** ${params.projectName}`)
+    lines.push('')
+  }
+
+  if (params.recentTasks?.length) {
+    lines.push('**Recent tasks in this project:**')
+    lines.push(...params.recentTasks.slice(0, 10).map(t => `- ${t}`))
+    lines.push('')
+  }
+
+  lines.push('Please analyze this thread and extract actionable tasks. Deduplicate any tasks that appear across multiple messages.')
+
+  return lines.join('\n')
+}
