@@ -223,31 +223,8 @@ export async function GET(
     }
   }
 
-  // Group suggestions by message/email (format expected by the hook)
-  const emailMap = new Map<string, {
-    id: string
-    threadId: string | null
-    subject: string | null
-    snippet: string | null
-    fromEmail: string
-    fromName: string | null
-    receivedAt: string | null
-    suggestions: Array<{
-      id: string
-      suggestedTitle: string
-      suggestedDescription: string | null
-      suggestedDueDate: string | null
-      suggestedPriority: string | null
-      confidence: string
-      reasoning: string | null
-      status: string
-    }>
-  }>()
-
-  for (const row of suggestionRows) {
-    if (!row.message) continue
-
-    const messageId = row.message.id
+  // Map suggestions to flat format with email context
+  const flatSuggestions = suggestionRows.map(row => {
     const content = row.suggestion.suggestedContent as {
       title?: string
       description?: string
@@ -255,39 +232,32 @@ export async function GET(
       priority?: string
     } | null
 
-    const suggestion = {
+    return {
       id: row.suggestion.id,
-      suggestedTitle: content?.title || 'Untitled',
-      suggestedDescription: content?.description || null,
-      suggestedDueDate: content?.dueDate || null,
-      suggestedPriority: content?.priority || null,
+      type: row.suggestion.type,
+      title: content?.title || 'Untitled',
+      description: content?.description || null,
+      dueDate: content?.dueDate || null,
+      priority: content?.priority || null,
       confidence: row.suggestion.confidence,
       reasoning: row.suggestion.reasoning,
       status: row.suggestion.status,
+      // Email context for display
+      emailContext: row.message
+        ? {
+            threadId: row.thread?.id ?? null,
+            subject: row.message.subject,
+            fromEmail: row.message.fromEmail,
+            sentAt: row.message.sentAt,
+          }
+        : null,
     }
-
-    if (emailMap.has(messageId)) {
-      emailMap.get(messageId)!.suggestions.push(suggestion)
-    } else {
-      emailMap.set(messageId, {
-        id: messageId,
-        threadId: row.thread?.id ?? null,
-        subject: row.message.subject,
-        snippet: row.message.snippet,
-        fromEmail: row.message.fromEmail,
-        fromName: row.message.fromName,
-        receivedAt: row.message.sentAt,
-        suggestions: [suggestion],
-      })
-    }
-  }
-
-  const emails = Array.from(emailMap.values())
+  })
 
   return NextResponse.json({
-    emails,
+    suggestions: flatSuggestions,
     meta: {
-      totalEmails: emails.length,
+      totalSuggestions: flatSuggestions.length,
       pendingSuggestions: pendingCount,
       approvedSuggestions: approvedCount,
       rejectedSuggestions: rejectedCount,

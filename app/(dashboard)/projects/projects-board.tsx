@@ -157,13 +157,7 @@ export function ProjectsBoard(props: ProjectsBoardProps) {
       <AppShellHeader>
         <div className='flex items-center justify-between'>
           <ProjectsBoardHeader {...viewModel.header} />
-          <div className='flex items-center gap-4'>
-            <AISuggestionsButton
-              onOpen={aiSuggestionsState.onOpen}
-              pendingCount={aiSuggestionsState.pendingCount}
-              disabled={aiSuggestionsState.disabled}
-              disabledReason={aiSuggestionsState.disabledReason}
-            />
+          <div className='flex items-center gap-6'>
             {viewModel.burndown.visible ? (
               <ProjectBurndownWidget
                 totalClientRemainingHours={
@@ -190,6 +184,12 @@ export function ProjectsBoard(props: ProjectsBoardProps) {
                 }
               />
             ) : null}
+            <AISuggestionsButton
+              onOpen={aiSuggestionsState.onOpen}
+              pendingCount={aiSuggestionsState.pendingCount}
+              disabled={aiSuggestionsState.disabled}
+              disabledReason={aiSuggestionsState.disabledReason}
+            />
           </div>
         </div>
       </AppShellHeader>

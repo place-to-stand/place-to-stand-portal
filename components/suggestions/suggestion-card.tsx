@@ -15,6 +15,7 @@ import {
   Mail,
   ExternalLink,
   RotateCcw,
+  Flag,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -199,17 +200,6 @@ export function SuggestionCard({
 
             {/* Right side: Priority + Confidence + Reasoning tooltip */}
             <div className='flex shrink-0 items-center gap-1.5'>
-              {suggestion.priority && (
-                <Badge
-                  variant='outline'
-                  className={cn(
-                    'text-xs uppercase',
-                    getPriorityStyle(suggestion.priority)
-                  )}
-                >
-                  {suggestion.priority}
-                </Badge>
-              )}
               <Badge
                 variant='secondary'
                 className={cn(
@@ -248,6 +238,18 @@ export function SuggestionCard({
 
           {/* Metadata badges */}
           <div className='mt-4 flex flex-wrap items-center gap-2'>
+            {suggestion.priority && (
+              <Badge
+                variant='outline'
+                className={cn(
+                  'text-xs uppercase',
+                  getPriorityStyle(suggestion.priority)
+                )}
+              >
+                <Flag className='mr-1 h-3 w-3' />
+                {suggestion.priority}
+              </Badge>
+            )}
             {/* Client badge (blue) - displayed first */}
             {showProjectLink &&
               suggestion.client &&

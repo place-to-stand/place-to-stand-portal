@@ -1,20 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import {
   Sparkles,
   Loader2,
-  CheckCircle2,
   ListTodo,
   GitPullRequest,
   ExternalLink,
   RefreshCw,
+  Building2,
 } from 'lucide-react'
 import Link from 'next/link'
+import { useQuery } from '@tanstack/react-query'
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { useToast } from '@/components/ui/use-toast'
 
 type SuggestionSummary = {
   id: string
@@ -24,6 +23,8 @@ type SuggestionSummary = {
   title?: string
   createdAt: string
   projectName?: string | null
+  projectSlug?: string | null
+  clientSlug?: string | null
 }
 
 type ThreadSuggestionsPanelProps = {
@@ -41,6 +42,17 @@ type ThreadSuggestionsPanelProps = {
   onRefresh?: () => void
 }
 
+async function fetchThreadSuggestions(
+  threadId: string
+): Promise<SuggestionSummary[]> {
+  const res = await fetch(`/api/threads/${threadId}/ai-suggestions`)
+  const data = await res.json()
+  if (data.ok) {
+    return data.suggestions || []
+  }
+  return []
+}
+
 export function ThreadSuggestionsPanel({
   threadId,
   isAdmin,
@@ -50,59 +62,44 @@ export function ThreadSuggestionsPanel({
   hasProject = false,
   onRefresh,
 }: ThreadSuggestionsPanelProps) {
-  const { toast } = useToast()
-  const [suggestions, setSuggestions] = useState<SuggestionSummary[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [isApproving, setIsApproving] = useState<string | null>(null)
+  const { data: suggestions = [], isLoading } = useQuery({
+    queryKey: ['thread-suggestions', threadId, refreshTrigger],
+    queryFn: () => fetchThreadSuggestions(threadId),
+    enabled: isAdmin,
+  })
 
-  useEffect(() => {
-    if (!isAdmin) return
+  // Get the project URL for "View in project" button
+  const getProjectUrl = (suggestion: SuggestionSummary) => {
+    if (suggestion.clientSlug && suggestion.projectSlug) {
+      return `/projects/${suggestion.clientSlug}/${suggestion.projectSlug}/board?suggestions=open`
+    }
+    return null
+  }
 
-    setIsLoading(true)
-    fetch(`/api/threads/${threadId}/ai-suggestions`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.ok) {
-          setSuggestions(data.suggestions || [])
+  // Get status badge variant and label
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'APPROVED':
+        return {
+          variant: 'default' as const,
+          label: 'Approved',
+          className: 'bg-green-500/10 text-green-600',
         }
-      })
-      .catch(err => {
-        console.error('Failed to load suggestions:', err)
-      })
-      .finally(() => setIsLoading(false))
-  }, [threadId, isAdmin, refreshTrigger])
-
-  const handleApprove = async (suggestionId: string, type: 'TASK' | 'PR') => {
-    setIsApproving(suggestionId)
-    try {
-      const endpoint =
-        type === 'TASK'
-          ? `/api/suggestions/${suggestionId}/approve`
-          : `/api/pr-suggestions/${suggestionId}/approve`
-
-      const res = await fetch(endpoint, { method: 'POST' })
-
-      if (res.ok) {
-        // Remove from list
-        setSuggestions(prev => prev.filter(s => s.id !== suggestionId))
-        toast({
-          title: type === 'TASK' ? 'Task created' : 'PR suggestion approved',
-          description:
-            type === 'TASK'
-              ? 'The task has been added to the project.'
-              : 'The PR suggestion has been approved.',
-        })
-      } else {
-        throw new Error('Failed to approve')
-      }
-    } catch {
-      toast({
-        title: 'Error',
-        description: 'Failed to approve suggestion.',
-        variant: 'destructive',
-      })
-    } finally {
-      setIsApproving(null)
+      case 'REJECTED':
+        return {
+          variant: 'default' as const,
+          label: 'Rejected',
+          className: 'bg-red-500/10 text-red-600',
+        }
+      case 'PENDING':
+      case 'DRAFT':
+      case 'MODIFIED':
+      default:
+        return {
+          variant: 'secondary' as const,
+          label: 'Pending',
+          className: '',
+        }
     }
   }
 
@@ -153,71 +150,59 @@ export function ThreadSuggestionsPanel({
               ? 'Link a client to generate suggestions.'
               : !hasProject
                 ? 'Link a project to generate suggestions.'
-                : 'No pending suggestions.'}
+                : 'No suggestions for this thread.'}
         </p>
       ) : (
         <div className='space-y-2'>
-          {suggestions.map(suggestion => (
-            <div
-              key={suggestion.id}
-              className='bg-muted/30 space-y-2 rounded-lg border p-3'
-            >
-              <div className='flex items-start justify-between gap-2'>
-                <div className='flex min-w-0 items-center gap-2'>
-                  {suggestion.type === 'TASK' ? (
-                    <ListTodo className='h-4 w-4 shrink-0 text-violet-500' />
-                  ) : suggestion.type === 'PR' ? (
-                    <GitPullRequest className='h-4 w-4 shrink-0 text-green-500' />
-                  ) : null}
-                  <span className='truncate text-sm font-medium'>
-                    {suggestion.title || 'Untitled'}
-                  </span>
+          {suggestions.map(suggestion => {
+            const statusBadge = getStatusBadge(suggestion.status)
+            const projectUrl = getProjectUrl(suggestion)
+
+            return (
+              <div
+                key={suggestion.id}
+                className='bg-muted/30 space-y-2 rounded-lg border p-3'
+              >
+                <div className='flex items-start justify-between gap-2'>
+                  <div className='flex min-w-0 items-center gap-2'>
+                    {suggestion.type === 'TASK' ? (
+                      <ListTodo className='h-4 w-4 shrink-0 text-violet-500' />
+                    ) : suggestion.type === 'PR' ? (
+                      <GitPullRequest className='h-4 w-4 shrink-0 text-green-500' />
+                    ) : null}
+                    <span className='truncate text-sm font-medium'>
+                      {suggestion.title || 'Untitled'}
+                    </span>
+                  </div>
+                  <Badge variant='secondary' className='shrink-0 text-xs'>
+                    {Math.round(parseFloat(suggestion.confidence) * 100)}%
+                  </Badge>
                 </div>
-                <Badge variant='secondary' className='shrink-0 text-xs'>
-                  {Math.round(parseFloat(suggestion.confidence) * 100)}%
-                </Badge>
-              </div>
 
-              {suggestion.projectName && (
-                <p className='text-muted-foreground text-xs'>
-                  Project: {suggestion.projectName}
-                </p>
-              )}
-
-              <div className='flex items-center gap-2 pt-1'>
-                <Button
-                  size='sm'
-                  variant='outline'
-                  className='h-7 text-xs'
-                  onClick={() =>
-                    handleApprove(
-                      suggestion.id,
-                      suggestion.type as 'TASK' | 'PR'
-                    )
-                  }
-                  disabled={isApproving === suggestion.id}
-                >
-                  {isApproving === suggestion.id ? (
-                    <Loader2 className='mr-1 h-3 w-3 animate-spin' />
-                  ) : (
-                    <CheckCircle2 className='mr-1 h-3 w-3' />
+                <div className='flex items-center gap-2 pt-1'>
+                  <Badge
+                    variant={statusBadge.variant}
+                    className={`text-xs ${statusBadge.className}`}
+                  >
+                    {statusBadge.label}
+                  </Badge>
+                  {projectUrl && (
+                    <Button
+                      size='sm'
+                      variant='ghost'
+                      className='h-7 text-xs'
+                      asChild
+                    >
+                      <Link href={projectUrl}>
+                        View in project
+                        <ExternalLink className='mb-0.25 h-3! w-3!' />
+                      </Link>
+                    </Button>
                   )}
-                  Approve
-                </Button>
-                <Button
-                  size='sm'
-                  variant='ghost'
-                  className='h-7 text-xs'
-                  asChild
-                >
-                  <Link href='/my/suggestions'>
-                    <ExternalLink className='mr-1 h-3 w-3' />
-                    View All
-                  </Link>
-                </Button>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>

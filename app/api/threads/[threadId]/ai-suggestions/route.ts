@@ -1,10 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { and, eq, isNull, or, desc } from 'drizzle-orm'
+import { and, eq, isNull, desc, inArray } from 'drizzle-orm'
 
 import { requireUser } from '@/lib/auth/session'
 import { isAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { suggestions, threads, projects } from '@/lib/db/schema'
+import { suggestions, threads, projects, clients } from '@/lib/db/schema'
 import { NotFoundError, ForbiddenError, toResponsePayload, type HttpError } from '@/lib/errors/http'
 
 type RouteParams = {
@@ -33,7 +33,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       throw new ForbiddenError('Access denied')
     }
 
-    // Get pending suggestions for this thread
+    // Get all suggestions for this thread (not filtered by status)
     const rows = await db
       .select({
         id: suggestions.id,
@@ -48,31 +48,53 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       .where(
         and(
           eq(suggestions.threadId, threadId),
-          isNull(suggestions.deletedAt),
-          or(
-            eq(suggestions.status, 'PENDING'),
-            eq(suggestions.status, 'DRAFT'),
-            eq(suggestions.status, 'MODIFIED')
-          )
+          isNull(suggestions.deletedAt)
         )
       )
       .orderBy(desc(suggestions.confidence))
 
-    // Get project names
+    // Get project info including slugs for navigation
     const projectIds = [...new Set(rows.map(s => s.projectId).filter(Boolean))] as string[]
     const projectRows = projectIds.length > 0
       ? await db
-          .select({ id: projects.id, name: projects.name })
+          .select({
+            id: projects.id,
+            name: projects.name,
+            slug: projects.slug,
+            clientId: projects.clientId,
+          })
           .from(projects)
           .where(and(
             isNull(projects.deletedAt),
-            or(...projectIds.map(id => eq(projects.id, id)))
+            inArray(projects.id, projectIds)
           ))
       : []
-    const projectMap = new Map(projectRows.map(p => [p.id, p.name]))
+
+    // Get client slugs for projects that have clients
+    const clientIds = [...new Set(projectRows.map(p => p.clientId).filter(Boolean))] as string[]
+    const clientRows = clientIds.length > 0
+      ? await db
+          .select({ id: clients.id, slug: clients.slug })
+          .from(clients)
+          .where(and(
+            isNull(clients.deletedAt),
+            inArray(clients.id, clientIds)
+          ))
+      : []
+    const clientMap = new Map(clientRows.map(c => [c.id, c.slug]))
+
+    const projectMap = new Map(projectRows.map(p => [
+      p.id,
+      {
+        name: p.name,
+        slug: p.slug,
+        clientSlug: p.clientId ? clientMap.get(p.clientId) ?? null : null,
+      },
+    ]))
 
     const formattedSuggestions = rows.map(s => {
       const content = s.suggestedContent as Record<string, unknown>
+      const projectInfo = s.projectId ? projectMap.get(s.projectId) : null
       return {
         id: s.id,
         type: s.type,
@@ -80,7 +102,9 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
         confidence: s.confidence,
         title: typeof content.title === 'string' ? content.title : undefined,
         createdAt: s.createdAt,
-        projectName: s.projectId ? projectMap.get(s.projectId) ?? null : null,
+        projectName: projectInfo?.name ?? null,
+        projectSlug: projectInfo?.slug ?? null,
+        clientSlug: projectInfo?.clientSlug ?? null,
       }
     })
 

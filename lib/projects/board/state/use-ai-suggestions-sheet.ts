@@ -4,31 +4,27 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import type { ProjectWithRelations } from '@/lib/types'
 import type { PRSuggestionWithContext } from '@/lib/types/github'
 
-// Types matching the API response
-export type EmailSuggestion = {
+// Flat suggestion type matching the API response
+export type ProjectSuggestion = {
   id: string
-  suggestedTitle: string
-  suggestedDescription: string | null
-  suggestedDueDate: string | null
-  suggestedPriority: string | null
+  type: string
+  title: string
+  description: string | null
+  dueDate: string | null
+  priority: string | null
   confidence: string
   reasoning: string | null
   status: string
-}
-
-export type EmailWithSuggestions = {
-  id: string
-  threadId: string | null
-  subject: string | null
-  snippet: string | null
-  fromEmail: string
-  fromName: string | null
-  receivedAt: string | null
-  suggestions: EmailSuggestion[]
+  emailContext: {
+    threadId: string | null
+    subject: string | null
+    fromEmail: string
+    sentAt: string | null
+  } | null
 }
 
 type SuggestionsMeta = {
-  totalEmails: number
+  totalSuggestions: number
   pendingSuggestions: number
   approvedSuggestions: number
   rejectedSuggestions: number
@@ -74,7 +70,7 @@ export function useAISuggestionsSheet({
     () => searchParams.get(SUGGESTIONS_QUERY_PARAM) === 'open'
   )
   const [filter, setFilter] = useState<SuggestionFilterType>('pending')
-  const [emails, setEmails] = useState<EmailWithSuggestions[]>([])
+  const [suggestions, setSuggestions] = useState<ProjectSuggestion[]>([])
   const [meta, setMeta] = useState<SuggestionsMeta | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingCount, setIsLoadingCount] = useState(false)
@@ -126,7 +122,7 @@ export function useAISuggestionsSheet({
         throw new Error('Failed to fetch suggestions')
       }
       const data = await res.json()
-      setEmails(data.emails || [])
+      setSuggestions(data.suggestions || [])
       setMeta(data.meta || null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
@@ -437,7 +433,7 @@ export function useAISuggestionsSheet({
     onFilterChange: handleFilterChange,
 
     // Data
-    emails,
+    suggestions,
     pendingCount,
     approvedCount,
     rejectedCount,
