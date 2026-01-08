@@ -17,6 +17,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { PhoneInput } from '@/components/ui/phone-input'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import {
@@ -363,10 +364,9 @@ export function LeadSheet({
                         <FormItem>
                           <FormLabel>Contact Phone</FormLabel>
                           <FormControl>
-                            <Input
-                              {...field}
+                            <PhoneInput
                               value={field.value ?? ''}
-                              placeholder='+1 (555) 123-4567'
+                              onChange={field.onChange}
                             />
                           </FormControl>
                           <FormMessage />

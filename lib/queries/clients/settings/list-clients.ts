@@ -68,7 +68,7 @@ async function queryClientRows(
         coalesce(sum(
           case
             when ${projects.deletedAt} is null
-              and coalesce(lower(${projects.status}), '') = ${ACTIVE_STATUS}
+              and coalesce(lower(${projects.status}::text), '') = lower(${ACTIVE_STATUS})
             then 1
             else 0
           end

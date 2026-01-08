@@ -1,0 +1,107 @@
+import { and, eq, isNull } from 'drizzle-orm'
+
+import { requireUser } from '@/lib/auth/session'
+import { isAdmin } from '@/lib/auth/permissions'
+import { db } from '@/lib/db'
+import { oauthConnections, clients, projects } from '@/lib/db/schema'
+import {
+  listThreadsForUser,
+  getThreadCountsForUser,
+  getThreadSummaryById,
+} from '@/lib/queries/threads'
+import { getMessageCountsForUser } from '@/lib/queries/messages'
+import { InboxPanel } from './_components/inbox-panel'
+
+const PAGE_SIZE = 25
+
+type FilterType = 'all' | 'linked' | 'unlinked'
+
+type Props = {
+  searchParams: Promise<{ page?: string; filter?: string; thread?: string }>
+}
+
+export default async function InboxPage({ searchParams }: Props) {
+  const user = await requireUser()
+  const params = await searchParams
+
+  // Parse page number and filter from URL
+  const currentPage = Math.max(1, parseInt(params.page || '1', 10) || 1)
+  const offset = (currentPage - 1) * PAGE_SIZE
+  const filter: FilterType = ['all', 'linked', 'unlinked'].includes(params.filter || '')
+    ? (params.filter as FilterType)
+    : 'all'
+
+  // Parse thread param for deep-linking
+  const threadId = params.thread || null
+
+  // Get threads, counts, sync status, clients, and projects in parallel
+  const [
+    threadSummaries,
+    threadCounts,
+    messageCounts,
+    [connection],
+    clientsList,
+    projectsList,
+    linkedThread,
+  ] = await Promise.all([
+    listThreadsForUser(user.id, { limit: PAGE_SIZE, offset, linkedFilter: filter }),
+    getThreadCountsForUser(user.id, { linkedFilter: filter }),
+    getMessageCountsForUser(user.id),
+    db
+      .select({ lastSyncAt: oauthConnections.lastSyncAt })
+      .from(oauthConnections)
+      .where(
+        and(
+          eq(oauthConnections.userId, user.id),
+          eq(oauthConnections.provider, 'GOOGLE'),
+          isNull(oauthConnections.deletedAt)
+        )
+      )
+      .limit(1),
+    db
+      .select({ id: clients.id, name: clients.name, slug: clients.slug })
+      .from(clients)
+      .where(isNull(clients.deletedAt))
+      .orderBy(clients.name),
+    db
+      .select({
+        id: projects.id,
+        name: projects.name,
+        slug: projects.slug,
+        clientSlug: clients.slug,
+      })
+      .from(projects)
+      .leftJoin(clients, eq(projects.clientId, clients.id))
+      .where(isNull(projects.deletedAt))
+      .orderBy(projects.name),
+    // Fetch the specific thread if deep-linking (may not be on current page)
+    threadId ? getThreadSummaryById(user.id, threadId) : null,
+  ])
+
+  const syncStatus = {
+    connected: !!connection,
+    lastSyncAt: connection?.lastSyncAt ?? null,
+    totalMessages: messageCounts.total,
+    unread: messageCounts.unread,
+  }
+
+  const totalPages = Math.ceil(threadCounts.total / PAGE_SIZE)
+
+  return (
+    <InboxPanel
+      threads={threadSummaries}
+      syncStatus={syncStatus}
+      clients={clientsList}
+      projects={projectsList}
+      isAdmin={isAdmin(user)}
+      filter={filter}
+      pagination={{
+        currentPage,
+        totalPages,
+        totalItems: threadCounts.total,
+        pageSize: PAGE_SIZE,
+      }}
+      initialSelectedThread={linkedThread}
+    />
+  )
+}

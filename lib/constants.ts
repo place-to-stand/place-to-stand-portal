@@ -1,4 +1,4 @@
-export const PROJECT_STATUS_ENUM_VALUES = ["active", "on_hold", "completed"] as const;
+export const PROJECT_STATUS_ENUM_VALUES = ["ONBOARDING", "ACTIVE", "ON_HOLD", "COMPLETED"] as const;
 
 export type ProjectStatusValue = (typeof PROJECT_STATUS_ENUM_VALUES)[number];
 
@@ -6,9 +6,10 @@ export const PROJECT_STATUS_OPTIONS: ReadonlyArray<{
   value: ProjectStatusValue;
   label: string;
 }> = [
-  { value: "active", label: "Active" },
-  { value: "on_hold", label: "On Hold" },
-  { value: "completed", label: "Completed" },
+  { value: "ONBOARDING", label: "Onboarding" },
+  { value: "ACTIVE", label: "Active" },
+  { value: "ON_HOLD", label: "On Hold" },
+  { value: "COMPLETED", label: "Completed" },
 ];
 
 export const PROJECT_STATUS_VALUES = [...PROJECT_STATUS_ENUM_VALUES];
@@ -32,25 +33,27 @@ export function getProjectStatusLabel(value: string): string {
 }
 
 export const PROJECT_STATUS_TOKENS: Record<ProjectStatusValue, string> = {
-  active:
+  ONBOARDING:
+    "border-transparent bg-blue-100 text-blue-800 dark:bg-blue-500/10 dark:text-blue-300",
+  ACTIVE:
     "border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300",
-  on_hold:
+  ON_HOLD:
     "border-transparent bg-amber-100 text-amber-800 dark:bg-amber-500/10 dark:text-amber-300",
-  completed:
+  COMPLETED:
     "border-transparent bg-slate-200 text-slate-900 dark:bg-slate-500/10 dark:text-slate-200",
 };
 
 export function getProjectStatusToken(value: string): string {
-  const normalized = value.toLowerCase();
-  if (normalized in PROJECT_STATUS_TOKENS) {
-    return PROJECT_STATUS_TOKENS[normalized as ProjectStatusValue];
+  const upperValue = value.toUpperCase();
+  if (upperValue in PROJECT_STATUS_TOKENS) {
+    return PROJECT_STATUS_TOKENS[upperValue as ProjectStatusValue];
   }
 
   return "border border-border bg-accent text-accent-foreground";
 }
 
 export const STATUS_BADGE_TOKENS = {
-  active: PROJECT_STATUS_TOKENS.active,
+  active: PROJECT_STATUS_TOKENS.ACTIVE,
   depleted:
     "border-transparent bg-amber-100 text-amber-800 dark:bg-amber-500/10 dark:text-amber-300",
   archived:
@@ -69,4 +72,3 @@ export function getStatusBadgeToken(value: string): string {
 
   return "border border-border bg-accent text-accent-foreground";
 }
-

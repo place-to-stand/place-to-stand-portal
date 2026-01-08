@@ -81,28 +81,30 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
       <AppShellHeader>
         <ClientsLandingHeader clients={clients} />
       </AppShellHeader>
-      <section className='bg-background rounded-xl border p-6 shadow-sm'>
-        <div className='space-y-6'>
-          <div className='flex flex-wrap items-center gap-4'>
-            <ClientsTabsNav
-              activeTab='clients'
-              className='flex-1 sm:flex-none'
-            />
-            {canManageClients && managementData ? (
-              <div className='ml-auto flex items-center gap-6'>
-                <span className='text-muted-foreground text-sm whitespace-nowrap'>
-                  Total clients: {managementData.totalCount}
-                </span>
-                <ClientsAddButton
-                  clientUsers={clientUsers}
-                  clientMembers={membersByClient}
-                />
-              </div>
-            ) : null}
-          </div>
-          <ClientsLanding clients={clients} />
+      <div className='space-y-4'>
+        {/* Tabs Row - Above the main container */}
+        <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+          <ClientsTabsNav
+            activeTab='clients'
+            className='flex-1 sm:flex-none'
+          />
+          {canManageClients && managementData ? (
+            <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6'>
+              <span className='text-muted-foreground text-sm whitespace-nowrap'>
+                Total clients: {managementData.totalCount}
+              </span>
+              <ClientsAddButton
+                clientUsers={clientUsers}
+                clientMembers={membersByClient}
+              />
+            </div>
+          ) : null}
         </div>
-      </section>
+        {/* Main Container with Background */}
+        <section className='bg-background rounded-xl border p-6 shadow-sm'>
+          <ClientsLanding clients={clients} />
+        </section>
+      </div>
     </>
   )
 }

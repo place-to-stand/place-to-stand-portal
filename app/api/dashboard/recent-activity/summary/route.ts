@@ -129,7 +129,7 @@ export async function POST(request: Request) {
     const expiresAtIso = new Date(now.getTime() + ONE_HOUR_MS).toISOString()
 
     const result = await streamText({
-      model: 'google/gemini-2.5-flash-lite',
+      model: 'google/gemini-3-flash',
       system: buildSystemPrompt(timeframeDays as ValidTimeframe),
       prompt: buildUserPrompt({
         timeframeDays: timeframeDays as ValidTimeframe,

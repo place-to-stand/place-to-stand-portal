@@ -8,6 +8,9 @@ import {
   ListTodo,
   Handshake,
   Plug,
+  Mail,
+  Sparkles,
+  Contact,
 } from 'lucide-react'
 import type { UserRole } from '@/lib/auth/session'
 
@@ -30,15 +33,25 @@ export const NAV_GROUPS: NavGroup[] = [
     roles: ['ADMIN', 'CLIENT'],
     items: [
       {
-        href: '/home',
+        href: '/my/home',
         label: 'Home',
         icon: HomeIcon,
       },
       {
-        href: '/my-tasks/board',
-        label: 'My Tasks',
+        href: '/my/tasks/board',
+        label: 'Tasks',
         icon: ListTodo,
-        matchHrefs: ['/my-tasks', '/my-tasks/calendar'],
+        matchHrefs: ['/my/tasks', '/my/tasks/calendar'],
+      },
+      {
+        href: '/my/inbox',
+        label: 'Inbox',
+        icon: Mail,
+      },
+      {
+        href: '/my/suggestions',
+        label: 'Suggestions',
+        icon: Sparkles,
       },
     ],
   },
@@ -51,6 +64,11 @@ export const NAV_GROUPS: NavGroup[] = [
         label: 'Leads',
         icon: Handshake,
       },
+      {
+        href: '/hour-blocks',
+        label: 'Hour Blocks',
+        icon: Clock3,
+      },
     ],
   },
   {
@@ -58,14 +76,19 @@ export const NAV_GROUPS: NavGroup[] = [
     roles: ['ADMIN', 'CLIENT'],
     items: [
       {
+        href: '/projects',
+        label: 'Projects',
+        icon: FolderKanban,
+      },
+      {
         href: '/clients',
         label: 'Clients',
         icon: Building2,
       },
       {
-        href: '/projects',
-        label: 'Projects',
-        icon: FolderKanban,
+        href: '/contacts',
+        label: 'Contacts',
+        icon: Contact,
       },
     ],
   },
@@ -77,11 +100,6 @@ export const NAV_GROUPS: NavGroup[] = [
         href: '/settings/users',
         label: 'Users',
         icon: Users,
-      },
-      {
-        href: '/settings/hour-blocks',
-        label: 'Hour Blocks',
-        icon: Clock3,
       },
       {
         href: '/settings/integrations',

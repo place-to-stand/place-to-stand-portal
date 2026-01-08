@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 
 import { clients, projects, users } from '@/lib/db/schema'
+import type { ProjectStatusValue } from '@/lib/constants'
 import type { ProjectTypeValue } from '@/lib/types'
 import type { ProjectOwnerSummary } from '@/lib/settings/projects/project-sheet-form'
 export type { ProjectOwnerSummary } from '@/lib/settings/projects/project-sheet-form'
@@ -91,7 +92,7 @@ export const projectSelection = {
 export type ProjectSelectionResult = {
   id: string
   name: string
-  status: string
+  status: ProjectStatusValue
   slug: string | null
   clientId: string | null
   type: ProjectTypeValue

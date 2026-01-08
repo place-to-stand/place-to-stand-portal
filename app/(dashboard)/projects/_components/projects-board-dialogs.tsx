@@ -8,9 +8,11 @@ import type {
 import type { UserRole } from '@/lib/auth/session'
 import type { BoardColumnId } from '@/lib/projects/board/board-constants'
 import type { TimeLogEntry } from '@/lib/projects/time-log/types'
+import type { UseAISuggestionsSheetReturn } from '@/lib/projects/board/state/use-ai-suggestions-sheet'
 
 import { TaskSheet } from '../task-sheet'
 import { ProjectTimeLogDialog } from './project-time-log/project-time-log-dialog'
+import { AISuggestionsSheet } from './ai-suggestions'
 
 type SheetState = {
   open: boolean
@@ -41,6 +43,7 @@ export type ProjectsBoardDialogsProps = {
   activeProject: ProjectWithRelations | null
   sheetState: SheetState
   timeLogState: TimeLogState
+  aiSuggestionsState?: UseAISuggestionsSheetReturn
   projects: ProjectWithRelations[]
 }
 
@@ -48,6 +51,7 @@ export function ProjectsBoardDialogs({
   activeProject,
   sheetState,
   timeLogState,
+  aiSuggestionsState,
   projects,
 }: ProjectsBoardDialogsProps) {
   if (!activeProject) {
@@ -104,6 +108,7 @@ export function ProjectsBoardDialogs({
         onOpenChange={onTimeLogOpenChange}
         projectId={activeProject.id}
         projectName={activeProject.name}
+        projectType={activeProject.type}
         clientId={activeProject.client?.id ?? null}
         clientName={activeProject.client?.name ?? null}
         clientBillingType={activeProject.client?.billing_type ?? null}
@@ -116,6 +121,10 @@ export function ProjectsBoardDialogs({
         mode={timeLogMode}
         timeLogEntry={editingEntry}
       />
+
+      {aiSuggestionsState && (
+        <AISuggestionsSheet {...aiSuggestionsState} />
+      )}
     </>
   )
 }

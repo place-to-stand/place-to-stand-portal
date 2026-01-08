@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import {
   saveHourBlock,
   softDeleteHourBlock,
-} from '@/app/(dashboard)/settings/hour-blocks/actions'
+} from '@/app/(dashboard)/hour-blocks/actions'
 import { useToast } from '@/components/ui/use-toast'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import {

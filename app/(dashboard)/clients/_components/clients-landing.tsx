@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Building2, Clock, FolderKanban } from 'lucide-react'
+import { Building2, Clock } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import {
@@ -15,6 +15,8 @@ import {
 import type { ClientWithMetrics } from '@/lib/data/clients'
 import { getBillingTypeLabel } from '@/lib/settings/clients/billing-types'
 import { cn } from '@/lib/utils'
+
+import { ActiveProjectsCell } from './active-projects-cell'
 
 type ClientsLandingProps = {
   clients: ClientWithMetrics[]
@@ -76,18 +78,12 @@ export function ClientsLanding({ clients }: ClientsLandingProps) {
                 </Badge>
               </TableCell>
               <TableCell>
-                <div className='flex items-center gap-2 text-sm'>
-                  <FolderKanban className='text-muted-foreground h-4 w-4' />
-                  <span className='text-muted-foreground'>
-                    {client.activeProjectCount} active
-                    {client.projectCount > client.activeProjectCount && (
-                      <span className='text-muted-foreground/60'>
-                        {' '}
-                        ({client.projectCount} total)
-                      </span>
-                    )}
-                  </span>
-                </div>
+                <ActiveProjectsCell
+                  projects={client.activeProjects}
+                  clientSlug={client.slug}
+                  clientId={client.id}
+                  totalProjectCount={client.projectCount}
+                />
               </TableCell>
               <TableCell>
                 {client.billingType === 'prepaid' ? (

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '🔧 Principal Engineer mode active.'"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo \"$CLAUDE_TOOL_INPUT\" | grep -qE 'git (commit|push)'; then echo '⚠️ Before committing: Ensure npm run lint and npm run type-check pass'; fi"
+          }
+        ]
+      }
+    ]
+  },
+  "customInstructions": "Follow CLAUDE.md and AGENTS.md guidelines.\n\n## Proactive Skill Application\n\nAutomatically apply skill principles WITHOUT waiting to be asked:\n\n### During Code Writing\n| When I'm writing... | Automatically apply... |\n|---------------------|------------------------|\n| Auth/permissions code (requireUser, ensureClientAccess, roles) | /security-review: Check guards, IDOR, privilege escalation |\n| API routes in app/api/ | /security-review: Input validation, auth checks + /performance-review: Caching headers |\n| React components | /accessibility-review: Semantic HTML, ARIA, keyboard + /performance-review: Server vs client, memo |\n| Database schema (lib/db/schema.ts) | /db-review: Indexes, normalization, soft deletes, relations |\n| Drizzle queries (lib/queries/) | /performance-review: N+1 patterns, parallel loading, overfetching |\n| Forms with user input | /security-review: Validation, sanitization + /accessibility-review: Labels, errors |\n\n### After Completing Work\n| When I finish... | Automatically... |\n|------------------|------------------|\n| Any code changes | Run /bug-hunt checklist mentally before suggesting commit |\n| New user-facing feature | Offer to generate /test-plan |\n| New API endpoint | Offer to generate /docs |\n| Significant refactoring | Apply /refactor principles, check for dead code |\n\n### When Asked About Releases/Deployment\n- Walk through /release-checklist items\n- Suggest /dependency-audit if not run recently\n- Verify migrations are safe\n\n### When Discussing Planning/Architecture\n- Offer /architecture-review for major feature planning\n- Offer /tech-debt-inventory during roadmap discussions\n- Offer /observability-review after incidents or when debugging is mentioned as painful\n\n### Integration Style\nDon't announce 'I'm running /security-review now' - just integrate the checks naturally. For example, when writing an API route, automatically verify: auth guards exist, inputs validated, responses follow { ok, data, error } pattern, no data exposure.\n\nRun npm run lint and npm run type-check before suggesting commits."
+}

@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm'
 import { requireRole } from '@/lib/auth/session'
 import { logActivity } from '@/lib/activity/logger'
 import { projectCreatedEvent, projectUpdatedEvent } from '@/lib/activity/events'
+import type { ProjectStatusValue } from '@/lib/constants'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
 import { projects } from '@/lib/db/schema'
@@ -155,7 +156,7 @@ export async function saveProject(
         | {
             id: string
             name: string
-            status: string
+            status: ProjectStatusValue
             type: string
             startsOn: string | null
             endsOn: string | null

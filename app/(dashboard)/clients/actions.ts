@@ -20,6 +20,11 @@ import type {
   ClientMutationContext,
   ClientMutationResult,
 } from '@/lib/settings/clients/actions'
+import {
+  getClientSheetContactData as getContactData,
+  syncClientContacts as syncContacts,
+  type ClientSheetContactData,
+} from '@/lib/queries/clients/settings/client-contacts'
 
 const CLIENT_ROUTES_TO_REVALIDATE = [
   '/clients',
@@ -63,6 +68,35 @@ async function runClientMutation<TInput>(
   const { didMutate, ...result } = mutationResult
 
   if (didMutate) {
+    for (const path of CLIENT_ROUTES_TO_REVALIDATE) {
+      revalidatePath(path)
+    }
+  }
+
+  return result
+}
+
+/**
+ * Fetches all data needed for the client sheet contact picker.
+ */
+export async function getClientSheetContactData(
+  clientId?: string
+): Promise<ClientSheetContactData> {
+  const user = await requireUser()
+  return getContactData(user, clientId)
+}
+
+/**
+ * Syncs the contact links for a client (adds new, removes unlinked).
+ */
+export async function syncClientContacts(
+  clientId: string,
+  contactIds: string[]
+): Promise<{ ok: boolean; error?: string }> {
+  const user = await requireUser()
+  const result = await syncContacts(user, clientId, contactIds)
+
+  if (result.ok) {
     for (const path of CLIENT_ROUTES_TO_REVALIDATE) {
       revalidatePath(path)
     }

@@ -8,7 +8,7 @@ import {
   destroyHourBlock,
   restoreHourBlock,
   softDeleteHourBlock,
-} from '@/app/(dashboard)/settings/hour-blocks/actions'
+} from '@/app/(dashboard)/hour-blocks/actions'
 import type {
   ClientRow,
   HourBlockWithClient,

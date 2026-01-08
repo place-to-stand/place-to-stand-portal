@@ -51,6 +51,15 @@ export function ClientSheet(props: ClientSheetProps) {
     handleRequestDelete,
     handleCancelDelete,
     handleConfirmDelete,
+    // Contacts
+    selectedContacts,
+    availableContacts,
+    isContactPickerOpen,
+    contactsAddButtonDisabled,
+    contactsAddButtonDisabledReason,
+    handleContactPickerOpenChange,
+    handleAddContact,
+    handleRemoveContact,
   } = useClientSheetState(props)
 
   return (
@@ -83,6 +92,14 @@ export function ClientSheet(props: ClientSheetProps) {
             onRequestDelete={handleRequestDelete}
             isSheetOpen={props.open}
             historyKey={props.client?.id ?? 'client:new'}
+            selectedContacts={selectedContacts}
+            availableContacts={availableContacts}
+            contactsAddButtonDisabled={contactsAddButtonDisabled}
+            contactsAddButtonDisabledReason={contactsAddButtonDisabledReason}
+            isContactPickerOpen={isContactPickerOpen}
+            onContactPickerOpenChange={handleContactPickerOpenChange}
+            onAddContact={handleAddContact}
+            onRemoveContact={handleRemoveContact}
           />
         </SheetContent>
       </Sheet>
