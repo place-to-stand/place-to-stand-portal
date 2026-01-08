@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server'
+import { z } from 'zod'
 
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { getThreadById, updateThread } from '@/lib/queries/threads'
+
+const threadIdSchema = z.string().uuid('Invalid thread ID format')
 
 export async function GET(
   request: Request,
@@ -10,6 +13,11 @@ export async function GET(
 ) {
   const user = await requireUser()
   const { threadId } = await params
+
+  const parsed = threadIdSchema.safeParse(threadId)
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid thread ID' }, { status: 400 })
+  }
 
   const thread = await getThreadById(user, threadId)
   if (!thread) {
@@ -19,6 +27,12 @@ export async function GET(
   return NextResponse.json({ ok: true, thread })
 }
 
+const patchSchema = z.object({
+  clientId: z.string().uuid().nullable().optional(),
+  projectId: z.string().uuid().nullable().optional(),
+  status: z.enum(['OPEN', 'RESOLVED', 'ARCHIVED']).optional(),
+})
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ threadId: string }> }
@@ -27,7 +41,20 @@ export async function PATCH(
   assertAdmin(user)
 
   const { threadId } = await params
+
+  const parsed = threadIdSchema.safeParse(threadId)
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid thread ID' }, { status: 400 })
+  }
+
   const body = await request.json()
+  const bodyParsed = patchSchema.safeParse(body)
+  if (!bodyParsed.success) {
+    return NextResponse.json(
+      { error: 'Invalid request body', details: bodyParsed.error.flatten() },
+      { status: 400 }
+    )
+  }
 
   const thread = await getThreadById(user, threadId)
   if (!thread) {
@@ -35,15 +62,16 @@ export async function PATCH(
   }
 
   const updates: Parameters<typeof updateThread>[1] = {}
+  const { clientId, projectId, status } = bodyParsed.data
 
-  if ('clientId' in body) {
-    updates.clientId = body.clientId || null
+  if (clientId !== undefined) {
+    updates.clientId = clientId
   }
-  if ('projectId' in body) {
-    updates.projectId = body.projectId || null
+  if (projectId !== undefined) {
+    updates.projectId = projectId
   }
-  if ('status' in body) {
-    updates.status = body.status
+  if (status !== undefined) {
+    updates.status = status
   }
 
   const updated = await updateThread(threadId, updates)

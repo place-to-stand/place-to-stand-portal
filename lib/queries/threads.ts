@@ -4,8 +4,7 @@ import { and, desc, eq, isNull, inArray, sql, or } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { threads, messages, clients, projects, users } from '@/lib/db/schema'
-import { isAdmin } from '@/lib/auth/permissions'
+import { threads, messages, clients, projects } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 import type { Thread, ThreadSummary, ThreadStatus } from '@/lib/types/messages'
 
@@ -23,10 +22,8 @@ export async function getThreadById(user: AppUser, id: string): Promise<Thread |
   if (!thread) return null
 
   // Access check: admin, owner, or member of linked client/project
-  if (!isAdmin(user) && thread.createdBy !== user.id) {
-    // For non-admins, could add client_members check here
-    // For now, rely on RLS policies
-  }
+  // TODO: For non-admins who aren't the creator, add client_members check
+  // to verify they have access to threads linked to their clients
 
   return thread
 }

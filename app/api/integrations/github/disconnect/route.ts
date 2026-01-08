@@ -45,8 +45,13 @@ export async function POST(request: Request) {
   try {
     const accessToken = decryptToken(connection.accessToken)
     await revokeToken(accessToken)
-  } catch {
-    // Continue even if revocation fails
+  } catch (error) {
+    // Log for monitoring but continue with soft delete - token will expire eventually
+    console.error('[OAuth Disconnect] Failed to revoke GitHub token:', {
+      userId: user.id,
+      connectionId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
   }
 
   // Soft delete from database

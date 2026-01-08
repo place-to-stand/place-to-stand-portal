@@ -217,6 +217,7 @@ export async function createBranch(
 
 /**
  * Check if a branch exists
+ * Returns false only for 404 (not found), rethrows other errors (auth, rate limit, network)
  */
 export async function branchExists(
   userId: string,
@@ -228,8 +229,13 @@ export async function branchExists(
   try {
     await getBranch(userId, owner, repo, branch, connectionId)
     return true
-  } catch {
-    return false
+  } catch (error) {
+    // Only treat 404 as "branch doesn't exist"
+    // Rethrow auth errors, rate limits, network errors, etc.
+    if (error instanceof Error && error.message.includes('(404)')) {
+      return false
+    }
+    throw error
   }
 }
 

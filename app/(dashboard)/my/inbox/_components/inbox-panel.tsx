@@ -1,17 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { formatDistanceToNow, format } from 'date-fns'
-import {
-  Mail,
-  RefreshCw,
-  CheckCircle,
-  Circle,
-  Building2,
-  FolderKanban,
-  Filter,
-} from 'lucide-react'
+import { Mail, RefreshCw, CheckCircle, Circle, Filter } from 'lucide-react'
 
 import { AppShellHeader } from '@/components/layout/app-shell'
 import { Badge } from '@/components/ui/badge'
@@ -34,75 +26,15 @@ import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/components/ui/use-toast'
 import { cn } from '@/lib/utils'
 import type { ThreadSummary, Message } from '@/lib/types/messages'
+import type { CidMapping } from '@/lib/email/sanitize'
 
-import { EmailIframe } from './email-iframe'
 import { EmailToolbar } from './email-toolbar'
+import { MessageCard } from './message-card'
+import { ThreadContactPanel } from './thread-contact-panel'
 import { ThreadLinkingPanel } from './thread-linking-panel'
 import { ThreadProjectLinkingPanel } from './thread-project-linking-panel'
+import { ThreadRow } from './thread-row'
 import { ThreadSuggestionsPanel } from './thread-suggestions-panel'
-import { ThreadContactPanel } from './thread-contact-panel'
-
-type CidMapping = {
-  contentId: string
-  attachmentId: string
-  mimeType: string
-  filename?: string
-}
-
-/**
- * Sanitize email HTML for safe display in iframe
- * - Proxies external images through our API to bypass CORS/referrer issues
- * - Replaces CID references with proxy URLs for inline attachments
- * - Removes potentially dangerous elements
- */
-function sanitizeEmailHtml(
-  html: string,
-  options?: {
-    externalMessageId?: string | null
-    cidMappings?: CidMapping[]
-  }
-): string {
-  let result = html
-
-  // Replace CID image references with proxy URLs
-  if (options?.externalMessageId && options?.cidMappings?.length) {
-    const { externalMessageId, cidMappings } = options
-
-    // Create a map for quick lookup
-    const cidMap = new Map(cidMappings.map(m => [m.contentId, m]))
-
-    // Replace cid: references in src attributes
-    result = result.replace(
-      /<img\s+([^>]*?)src=["']cid:([^"']+)["']([^>]*)>/gi,
-      (_match, before, cid, after) => {
-        const mapping = cidMap.get(cid)
-        if (mapping) {
-          const proxiedSrc = `/api/emails/image-proxy?messageId=${encodeURIComponent(externalMessageId)}&attachmentId=${encodeURIComponent(mapping.attachmentId)}`
-          return `<img ${before}src="${proxiedSrc}" loading="lazy"${after}>`
-        }
-        // If no mapping found, hide the broken image
-        return `<img ${before}src="" style="display:none"${after}>`
-      }
-    )
-  }
-
-  return (
-    result
-      // Proxy external images through our API
-      .replace(
-        /<img\s+([^>]*?)src=["']((https?:\/\/[^"']+))["']([^>]*)>/gi,
-        (_match, before, src, _fullSrc, after) => {
-          const proxiedSrc = `/api/emails/image-proxy?url=${encodeURIComponent(src)}`
-          return `<img ${before}src="${proxiedSrc}" loading="lazy"${after}>`
-        }
-      )
-      // Remove script tags
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      // Remove onclick and similar event handlers
-      .replace(/\s+on\w+="[^"]*"/gi, '')
-      .replace(/\s+on\w+='[^']*'/gi, '')
-  )
-}
 
 type Client = {
   id: string
@@ -219,6 +151,14 @@ export function InboxPanel({
         if (res.ok) {
           // Increment refresh key to trigger re-fetch in ThreadSuggestionsPanel
           setSuggestionRefreshKey(prev => prev + 1)
+        } else {
+          // Log non-ok responses for debugging (e.g., 400, 403, 500)
+          const errorData = await res.json().catch(() => ({}))
+          console.error('Thread analysis returned error:', {
+            status: res.status,
+            threadId,
+            error: errorData.error || res.statusText,
+          })
         }
       } catch (err) {
         console.error('Failed to analyze thread:', err)
@@ -352,9 +292,12 @@ export function InboxPanel({
             (m: Message) => !m.isRead
           )
           if (hasUnread) {
-            // Fire and forget - don't block UI
-            fetch(`/api/threads/${thread.id}/read`, { method: 'POST' }).then(
-              () => {
+            // Fire and forget - don't block UI, but handle errors
+            fetch(`/api/threads/${thread.id}/read`, { method: 'POST' })
+              .then(res => {
+                if (!res.ok) {
+                  throw new Error(`Failed to mark as read: ${res.status}`)
+                }
                 // Update local thread state to show as read
                 setThreads(prev =>
                   prev.map(t =>
@@ -370,8 +313,11 @@ export function InboxPanel({
                 setThreadMessages(prev =>
                   prev.map(m => ({ ...m, isRead: true }))
                 )
-              }
-            )
+              })
+              .catch(err => {
+                // Log error but don't disrupt UX - read status is non-critical
+                console.error('Failed to mark thread as read:', err)
+              })
           }
         }
       } catch (err) {
@@ -392,9 +338,15 @@ export function InboxPanel({
 
     setSuggestionsLoading(true)
     fetch(`/api/threads/${selectedThread.id}/suggestions`)
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error(`Suggestions fetch failed: ${r.status}`)
+        return r.json()
+      })
       .then(data => setSuggestions(data.suggestions || []))
-      .catch(() => setSuggestions([]))
+      .catch(err => {
+        console.error('Failed to load client suggestions:', err)
+        setSuggestions([])
+      })
       .finally(() => setSuggestionsLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedThread?.id, selectedThread?.client])
@@ -408,9 +360,15 @@ export function InboxPanel({
 
     setProjectSuggestionsLoading(true)
     fetch(`/api/threads/${selectedThread.id}/project-suggestions`)
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error(`Project suggestions fetch failed: ${r.status}`)
+        return r.json()
+      })
       .then(data => setProjectSuggestions(data.suggestions || []))
-      .catch(() => setProjectSuggestions([]))
+      .catch(err => {
+        console.error('Failed to load project suggestions:', err)
+        setProjectSuggestions([])
+      })
       .finally(() => setProjectSuggestionsLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedThread?.id, selectedThread?.project])
@@ -883,177 +841,3 @@ export function InboxPanel({
   )
 }
 
-function ThreadRow({
-  thread,
-  isSelected,
-  isFirst,
-  onClick,
-}: {
-  thread: ThreadSummary
-  isSelected: boolean
-  isFirst: boolean
-  onClick: () => void
-}) {
-  const latestMessage = thread.latestMessage
-  const isUnread = latestMessage && !latestMessage.isRead
-
-  return (
-    <button
-      type='button'
-      onClick={onClick}
-      className={cn(
-        'bg-muted/20 flex w-full cursor-pointer items-center gap-3 p-2.5 text-left transition-colors',
-        'hover:bg-muted/60',
-        isUnread &&
-          'bg-blue-50/50 hover:bg-blue-100/50 dark:bg-blue-950/20 dark:hover:bg-blue-950/40',
-        isSelected && 'bg-muted ring-border ring-1 ring-inset',
-        !isFirst && 'border-border/50 border-t'
-      )}
-    >
-      {/* Unread indicator */}
-      <div className='w-2 flex-shrink-0'>
-        {isUnread && <div className='h-2 w-2 rounded-full bg-blue-500' />}
-      </div>
-
-      {/* Center: Sender, count, timestamp / Subject */}
-      <div className='min-w-0 flex-1'>
-        <div className='flex items-center gap-2'>
-          <span
-            className={cn(
-              'truncate text-sm',
-              isUnread ? 'font-semibold' : 'font-medium'
-            )}
-          >
-            {latestMessage?.fromName || latestMessage?.fromEmail || 'Unknown'}
-          </span>
-          {thread.messageCount > 1 && (
-            <span className='flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-neutral-200 px-1.5 text-xs font-medium text-neutral-700 tabular-nums dark:bg-neutral-700 dark:text-neutral-200'>
-              {thread.messageCount}
-            </span>
-          )}
-          <span className='text-muted-foreground/70 flex-shrink-0 text-xs whitespace-nowrap tabular-nums'>
-            {thread.lastMessageAt
-              ? formatDistanceToNow(new Date(thread.lastMessageAt), {
-                  addSuffix: true,
-                })
-              : ''}
-          </span>
-        </div>
-        <div
-          className={cn(
-            'truncate text-sm',
-            isUnread ? 'text-foreground' : 'text-muted-foreground'
-          )}
-        >
-          {thread.subject || '(no subject)'}
-        </div>
-      </div>
-
-      {/* Right: Client badge */}
-      {thread.client && (
-        <Badge
-          variant='default'
-          className='flex-shrink-0 border-0 bg-blue-100 text-xs font-medium text-blue-700 hover:bg-blue-100 dark:bg-blue-900/50 dark:text-blue-300'
-        >
-          <Building2 className='mr-1 h-3 w-3' />
-          <span className='max-w-[100px] truncate'>{thread.client.name}</span>
-        </Badge>
-      )}
-
-      {/* Far right: Project badge */}
-      {thread.project && (
-        <Badge
-          variant='default'
-          className='flex-shrink-0 border-0 bg-green-100 text-xs font-medium text-green-700 hover:bg-green-100 dark:bg-green-900/50 dark:text-green-300'
-        >
-          <FolderKanban className='mr-1 h-3 w-3' />
-          <span className='max-w-[100px] truncate'>{thread.project.name}</span>
-        </Badge>
-      )}
-    </button>
-  )
-}
-
-function MessageCard({
-  message,
-  cidMappings,
-}: {
-  message: Message
-  cidMappings?: CidMapping[]
-}) {
-  const [isExpanded, setIsExpanded] = useState(true)
-
-  const sanitizedHtml = useMemo(() => {
-    if (!message.bodyHtml) return null
-    return sanitizeEmailHtml(message.bodyHtml, {
-      externalMessageId: message.externalMessageId,
-      cidMappings,
-    })
-  }, [message.bodyHtml, message.externalMessageId, cidMappings])
-
-  return (
-    <div className='bg-card rounded-lg border'>
-      {/* Header */}
-      <button
-        type='button'
-        onClick={() => setIsExpanded(!isExpanded)}
-        className='hover:bg-muted/50 flex w-full items-start justify-between p-4 text-left'
-      >
-        <div className='min-w-0 flex-1'>
-          <div className='flex items-center gap-2'>
-            <span className='font-medium'>
-              {message.fromName || message.fromEmail}
-            </span>
-            {message.isInbound ? (
-              <Badge variant='secondary' className='text-xs'>
-                Received
-              </Badge>
-            ) : (
-              <Badge variant='outline' className='text-xs'>
-                Sent
-              </Badge>
-            )}
-          </div>
-          {message.fromName && message.fromEmail && (
-            <div className='text-muted-foreground mt-0.5 text-xs'>
-              {message.fromEmail}
-            </div>
-          )}
-          <div className='text-muted-foreground mt-1 text-sm'>
-            To: {message.toEmails?.join(', ') || 'Unknown'}
-          </div>
-        </div>
-        <div className='text-muted-foreground text-xs'>
-          {format(new Date(message.sentAt), 'MMM d, yyyy h:mm a')}
-        </div>
-      </button>
-
-      {/* Snippet preview when collapsed */}
-      {!isExpanded && message.snippet && (
-        <div className='text-muted-foreground border-t px-4 py-2 text-sm'>
-          {message.snippet}
-        </div>
-      )}
-
-      {/* Body - Using iframe for style isolation */}
-      {isExpanded && (
-        <>
-          <Separator />
-          <div className='p-4'>
-            {sanitizedHtml ? (
-              <EmailIframe html={sanitizedHtml} />
-            ) : message.bodyText ? (
-              <pre className='text-sm whitespace-pre-wrap'>
-                {message.bodyText}
-              </pre>
-            ) : message.snippet ? (
-              <p className='text-muted-foreground text-sm'>{message.snippet}</p>
-            ) : (
-              <p className='text-muted-foreground text-sm italic'>No content</p>
-            )}
-          </div>
-        </>
-      )}
-    </div>
-  )
-}

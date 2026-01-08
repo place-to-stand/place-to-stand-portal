@@ -20,7 +20,16 @@ import type { GmailSyncState } from '@/lib/types/sync-state'
 const BATCH_SIZE = 50
 const MAX_FULL_SYNC = 500 // Max messages to sync on initial full sync
 const MAX_HISTORY_RESULTS = 500 // Max history records per request
-const GMAIL_QUERY_FILTER = '-in:spam -in:trash' // Exclude spam and trash from sync
+const GMAIL_QUERY_FILTER = '-in:spam -in:trash' // Exclude spam and trash from sync (full sync only)
+
+// Labels to exclude from sync - used in incremental sync where query filter isn't available
+const EXCLUDED_LABELS = ['SPAM', 'TRASH']
+
+/** Check if a message should be excluded based on its labels */
+function shouldExcludeMessage(labelIds: string[] | undefined): boolean {
+  if (!labelIds) return false
+  return labelIds.some(label => EXCLUDED_LABELS.includes(label))
+}
 
 type SyncResult = {
   synced: number
@@ -121,9 +130,20 @@ async function processNewMessages(
 
     if (gmailMessages.length === 0) continue
 
+    // Filter out spam and trash messages (important for incremental sync where query filter doesn't apply)
+    const filteredMessages = gmailMessages.filter(msg => {
+      if (shouldExcludeMessage(msg.labelIds)) {
+        result.skipped++
+        return false
+      }
+      return true
+    })
+
+    if (filteredMessages.length === 0) continue
+
     // Group messages by thread
     const messagesByThread = new Map<string, GmailMessage[]>()
-    for (const msg of gmailMessages) {
+    for (const msg of filteredMessages) {
       const threadId = msg.threadId || msg.id
       const existing = messagesByThread.get(threadId) || []
       existing.push(msg)

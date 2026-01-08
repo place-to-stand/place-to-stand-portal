@@ -201,9 +201,9 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
               id='projects-board-assigned-filter'
               checked={onlyAssignedToMe}
               onCheckedChange={value => onAssignedFilterChange(value === true)}
-              className='mr-2 h-4 w-4'
+              className='h-4 w-4'
             />
-            <span>Only show tasks assigned to me</span>
+            <span>Only show my tasks</span>
           </Label>
           {projectActions ? (
             <div className='flex items-center justify-end gap-2 sm:justify-start'>

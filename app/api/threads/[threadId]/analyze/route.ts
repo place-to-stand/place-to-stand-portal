@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server'
+import { z } from 'zod'
 
 import { requireRole } from '@/lib/auth/session'
 import { analyzeMessagesForThread } from '@/lib/ai/suggestion-service'
+
+const threadIdSchema = z.string().uuid('Invalid thread ID format')
 
 /**
  * POST /api/threads/[threadId]/analyze
@@ -15,6 +18,11 @@ export async function POST(
 ) {
   const user = await requireRole('ADMIN')
   const { threadId } = await params
+
+  const parsed = threadIdSchema.safeParse(threadId)
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid thread ID' }, { status: 400 })
+  }
 
   try {
     const result = await analyzeMessagesForThread(threadId, user.id)
