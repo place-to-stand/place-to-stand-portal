@@ -10,7 +10,6 @@ import {
   threads,
   projects,
   clients,
-  githubRepoLinks,
   tasks,
 } from '@/lib/db/schema'
 import { isAdmin } from '@/lib/auth/permissions'
@@ -44,7 +43,7 @@ export async function getSuggestionWithContext(id: string): Promise<SuggestionWi
   if (!suggestion) return null
 
   // Fetch related entities in parallel
-  const [messageRow, threadRow, projectRow, repoLinkRow, taskRow] = await Promise.all([
+  const [messageRow, threadRow, projectRow, taskRow] = await Promise.all([
     suggestion.messageId
       ? db
           .select({
@@ -87,18 +86,6 @@ export async function getSuggestionWithContext(id: string): Promise<SuggestionWi
           .limit(1)
           .then(rows => rows[0] ?? null)
       : null,
-    suggestion.githubRepoLinkId
-      ? db
-          .select({
-            id: githubRepoLinks.id,
-            repoFullName: githubRepoLinks.repoFullName,
-            defaultBranch: githubRepoLinks.defaultBranch,
-          })
-          .from(githubRepoLinks)
-          .where(eq(githubRepoLinks.id, suggestion.githubRepoLinkId))
-          .limit(1)
-          .then(rows => rows[0] ?? null)
-      : null,
     suggestion.createdTaskId
       ? db
           .select({ id: tasks.id, title: tasks.title })
@@ -114,7 +101,6 @@ export async function getSuggestionWithContext(id: string): Promise<SuggestionWi
     message: messageRow,
     thread: threadRow,
     project: projectRow,
-    githubRepoLink: repoLinkRow,
     createdTask: taskRow,
   }
 }
@@ -125,7 +111,6 @@ export type CreateSuggestionInput = {
   type: SuggestionType
   status?: SuggestionStatus
   projectId?: string | null
-  githubRepoLinkId?: string | null
   confidence: number
   reasoning?: string | null
   aiModelVersion?: string | null
@@ -143,7 +128,6 @@ export async function createSuggestion(input: CreateSuggestionInput): Promise<Su
       type: input.type,
       status: input.status ?? 'PENDING',
       projectId: input.projectId ?? null,
-      githubRepoLinkId: input.githubRepoLinkId ?? null,
       confidence: input.confidence.toString(),
       reasoning: input.reasoning ?? null,
       aiModelVersion: input.aiModelVersion ?? null,
@@ -161,10 +145,7 @@ export async function updateSuggestionStatus(
   status: SuggestionStatus,
   metadata?: {
     reviewedBy?: string
-    reviewNotes?: string
     createdTaskId?: string
-    createdPrNumber?: number
-    createdPrUrl?: string
     errorMessage?: string
   }
 ): Promise<Suggestion> {
@@ -177,17 +158,8 @@ export async function updateSuggestionStatus(
     updateData.reviewedBy = metadata.reviewedBy
     updateData.reviewedAt = new Date().toISOString()
   }
-  if (metadata?.reviewNotes !== undefined) {
-    updateData.reviewNotes = metadata.reviewNotes
-  }
   if (metadata?.createdTaskId) {
     updateData.createdTaskId = metadata.createdTaskId
-  }
-  if (metadata?.createdPrNumber) {
-    updateData.createdPrNumber = metadata.createdPrNumber
-  }
-  if (metadata?.createdPrUrl) {
-    updateData.createdPrUrl = metadata.createdPrUrl
   }
   if (metadata?.errorMessage !== undefined) {
     updateData.errorMessage = metadata.errorMessage

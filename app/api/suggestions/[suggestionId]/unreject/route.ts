@@ -50,7 +50,6 @@ export async function POST(
       status: 'PENDING',
       reviewedBy: null,
       reviewedAt: null,
-      reviewNotes: null,
       updatedAt: new Date().toISOString(),
     })
     .where(eq(suggestions.id, suggestionId))

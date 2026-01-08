@@ -9,15 +9,12 @@ import {
   projects,
   clients,
   tasks,
-  githubRepoLinks,
 } from '@/lib/db/schema'
 import { logActivity } from '@/lib/activity/logger'
-import { createPullRequest, branchExists, createBranch } from '@/lib/github/client'
 import type {
   SuggestionWithContext,
   SuggestionType,
   TaskSuggestedContent,
-  PRSuggestedContent,
 } from '@/lib/types/suggestions'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -89,10 +86,9 @@ export async function getSuggestions(
   const messageIds = [...new Set(rows.map(s => s.messageId).filter(Boolean))] as string[]
   const threadIds = [...new Set(rows.map(s => s.threadId).filter(Boolean))] as string[]
   const projectIds = [...new Set(rows.map(s => s.projectId).filter(Boolean))] as string[]
-  const repoLinkIds = [...new Set(rows.map(s => s.githubRepoLinkId).filter(Boolean))] as string[]
   const createdTaskIds = [...new Set(rows.map(s => s.createdTaskId).filter(Boolean))] as string[]
 
-  const [messageRows, threadRows, projectRows, repoLinkRows, taskRows] = await Promise.all([
+  const [messageRows, threadRows, projectRows, taskRows] = await Promise.all([
     messageIds.length > 0
       ? db
           .select({
@@ -125,16 +121,6 @@ export async function getSuggestions(
           .leftJoin(clients, eq(projects.clientId, clients.id))
           .where(inArray(projects.id, projectIds))
       : [],
-    repoLinkIds.length > 0
-      ? db
-          .select({
-            id: githubRepoLinks.id,
-            repoFullName: githubRepoLinks.repoFullName,
-            defaultBranch: githubRepoLinks.defaultBranch,
-          })
-          .from(githubRepoLinks)
-          .where(inArray(githubRepoLinks.id, repoLinkIds))
-      : [],
     createdTaskIds.length > 0
       ? db
           .select({ id: tasks.id, title: tasks.title })
@@ -158,7 +144,6 @@ export async function getSuggestions(
       },
     ])
   )
-  const repoLinkMap = new Map(repoLinkRows.map(r => [r.id, r]))
   const taskMap = new Map(taskRows.map(t => [t.id, t]))
 
   return rows.map(suggestion => ({
@@ -166,7 +151,6 @@ export async function getSuggestions(
     message: suggestion.messageId ? messageMap.get(suggestion.messageId) ?? null : null,
     thread: suggestion.threadId ? threadMap.get(suggestion.threadId) ?? null : null,
     project: suggestion.projectId ? projectMap.get(suggestion.projectId) ?? null : null,
-    githubRepoLink: suggestion.githubRepoLinkId ? repoLinkMap.get(suggestion.githubRepoLinkId) ?? null : null,
     createdTask: suggestion.createdTaskId ? taskMap.get(suggestion.createdTaskId) ?? null : null,
   }))
 }
@@ -195,7 +179,7 @@ export async function getSuggestionById(
   if (!suggestion) return null
 
   // Fetch related entities in parallel
-  const [messageRow, threadRow, projectRow, repoLinkRow, taskRow] = await Promise.all([
+  const [messageRow, threadRow, projectRow, taskRow] = await Promise.all([
     suggestion.messageId
       ? db
           .select({
@@ -234,21 +218,6 @@ export async function getSuggestionById(
           .limit(1)
           .then(rows => rows[0] ?? null)
       : null,
-    suggestion.githubRepoLinkId
-      ? db
-          .select({
-            id: githubRepoLinks.id,
-            repoFullName: githubRepoLinks.repoFullName,
-            defaultBranch: githubRepoLinks.defaultBranch,
-            repoOwner: githubRepoLinks.repoOwner,
-            repoName: githubRepoLinks.repoName,
-            oauthConnectionId: githubRepoLinks.oauthConnectionId,
-          })
-          .from(githubRepoLinks)
-          .where(eq(githubRepoLinks.id, suggestion.githubRepoLinkId))
-          .limit(1)
-          .then(rows => rows[0] ?? null)
-      : null,
     suggestion.createdTaskId
       ? db
           .select({ id: tasks.id, title: tasks.title })
@@ -264,20 +233,7 @@ export async function getSuggestionById(
     message: messageRow,
     thread: threadRow,
     project: projectRow,
-    githubRepoLink: repoLinkRow
-      ? {
-          id: repoLinkRow.id,
-          repoFullName: repoLinkRow.repoFullName,
-          defaultBranch: repoLinkRow.defaultBranch,
-        }
-      : null,
     createdTask: taskRow,
-    // Add extra repo info for PR suggestions
-    ...(repoLinkRow && {
-      _repoOwner: repoLinkRow.repoOwner,
-      _repoName: repoLinkRow.repoName,
-      _oauthConnectionId: repoLinkRow.oauthConnectionId,
-    }),
   }
 }
 
@@ -294,22 +250,15 @@ export interface ApproveTaskModifications {
   status?: 'BACKLOG' | 'ON_DECK' | 'IN_PROGRESS' | 'IN_REVIEW' | 'BLOCKED' | 'DONE'
 }
 
-export interface ApprovePRModifications {
-  title?: string
-  body?: string
-  branch?: string
-  baseBranch?: string
-  createNewBranch?: boolean
-}
-
 /**
- * Approve a suggestion - polymorphic handler
+ * Approve a suggestion - currently only supports TASK type
+ * PR suggestions will be redesigned in a future sprint
  */
 export async function approveSuggestion(
   suggestionId: string,
   userId: string,
-  modifications?: ApproveTaskModifications | ApprovePRModifications
-): Promise<{ taskId?: string; prNumber?: number; prUrl?: string }> {
+  modifications?: ApproveTaskModifications
+): Promise<{ taskId?: string }> {
   const suggestion = await getSuggestionById(suggestionId)
 
   if (!suggestion) {
@@ -321,11 +270,11 @@ export async function approveSuggestion(
   }
 
   if (suggestion.type === 'TASK') {
-    return approveTaskSuggestion(suggestion, userId, modifications as ApproveTaskModifications)
+    return approveTaskSuggestion(suggestion, userId, modifications)
   }
 
   if (suggestion.type === 'PR') {
-    return approvePRSuggestion(suggestion, userId, modifications as ApprovePRModifications)
+    throw new Error('PR suggestions are not currently supported. This feature will be redesigned in a future sprint.')
   }
 
   throw new Error(`Unknown suggestion type: ${suggestion.type}`)
@@ -405,121 +354,6 @@ async function approveTaskSuggestion(
 }
 
 /**
- * Approve a PR suggestion and create actual GitHub PR
- */
-async function approvePRSuggestion(
-  suggestion: SuggestionWithContext & {
-    _repoOwner?: string
-    _repoName?: string
-    _oauthConnectionId?: string
-  },
-  userId: string,
-  modifications?: ApprovePRModifications
-): Promise<{ prNumber: number; prUrl: string }> {
-  const content = suggestion.suggestedContent as PRSuggestedContent
-
-  const finalTitle = modifications?.title ?? content.title
-  const finalBody = modifications?.body ?? content.body
-  const finalBranch = modifications?.branch ?? content.branch
-  const finalBaseBranch = modifications?.baseBranch ?? content.baseBranch ?? 'main'
-
-  if (!finalBranch) {
-    throw new Error('Branch name is required')
-  }
-
-  if (!suggestion._repoOwner || !suggestion._repoName || !suggestion._oauthConnectionId) {
-    throw new Error('Missing repository information')
-  }
-
-  const repoFullName = suggestion.githubRepoLink?.repoFullName ?? 'unknown'
-
-  try {
-    // Check if branch exists
-    const exists = await branchExists(
-      userId,
-      suggestion._repoOwner,
-      suggestion._repoName,
-      finalBranch,
-      suggestion._oauthConnectionId
-    )
-
-    // Create branch if needed
-    if (!exists) {
-      if (modifications?.createNewBranch) {
-        await createBranch(
-          userId,
-          suggestion._repoOwner,
-          suggestion._repoName,
-          {
-            newBranch: finalBranch,
-            baseBranch: finalBaseBranch,
-          },
-          suggestion._oauthConnectionId
-        )
-      } else {
-        throw new Error(
-          `Branch "${finalBranch}" does not exist. Enable "Create new branch" to create it automatically.`
-        )
-      }
-    }
-
-    // Create PR on GitHub
-    const pr = await createPullRequest(
-      userId,
-      suggestion._repoOwner,
-      suggestion._repoName,
-      {
-        title: finalTitle,
-        body: finalBody,
-        head: finalBranch,
-        base: finalBaseBranch,
-      },
-      suggestion._oauthConnectionId
-    )
-
-    // Update suggestion status
-    await db
-      .update(suggestions)
-      .set({
-        status: 'APPROVED',
-        reviewedBy: userId,
-        reviewedAt: new Date().toISOString(),
-        createdPrNumber: pr.number,
-        createdPrUrl: pr.html_url,
-        updatedAt: new Date().toISOString(),
-      })
-      .where(eq(suggestions.id, suggestion.id))
-
-    await logActivity({
-      actorId: userId,
-      actorRole: 'ADMIN',
-      verb: 'PR_CREATED_FROM_SUGGESTION',
-      summary: `Created PR #${pr.number} on ${repoFullName}`,
-      targetType: 'PROJECT',
-      targetId: suggestion.id,
-      metadata: {
-        prNumber: pr.number,
-        prUrl: pr.html_url,
-        repoFullName,
-      },
-    })
-
-    return { prNumber: pr.number, prUrl: pr.html_url }
-  } catch (error) {
-    await db
-      .update(suggestions)
-      .set({
-        status: 'FAILED',
-        errorMessage: error instanceof Error ? error.message : 'Unknown error',
-        updatedAt: new Date().toISOString(),
-      })
-      .where(eq(suggestions.id, suggestion.id))
-
-    throw error
-  }
-}
-
-/**
  * Reject a suggestion
  */
 export async function rejectSuggestion(
@@ -543,20 +377,19 @@ export async function rejectSuggestion(
       status: 'REJECTED',
       reviewedBy: userId,
       reviewedAt: new Date().toISOString(),
-      reviewNotes: reason,
       updatedAt: new Date().toISOString(),
     })
     .where(eq(suggestions.id, suggestionId))
 
-  const content = suggestion.suggestedContent as TaskSuggestedContent | PRSuggestedContent
+  const content = suggestion.suggestedContent as TaskSuggestedContent
   const title = 'title' in content ? content.title : 'Untitled'
 
   await logActivity({
     actorId: userId,
     actorRole: 'ADMIN',
-    verb: suggestion.type === 'PR' ? 'PR_SUGGESTION_REJECTED' : 'TASK_SUGGESTION_REJECTED',
-    summary: `Rejected ${suggestion.type.toLowerCase()} suggestion "${title}"`,
-    targetType: suggestion.type === 'PR' ? 'PROJECT' : 'TASK',
+    verb: 'TASK_SUGGESTION_REJECTED',
+    summary: `Rejected suggestion "${title}"`,
+    targetType: 'TASK',
     targetId: suggestionId,
     metadata: { reason },
   })

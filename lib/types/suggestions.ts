@@ -57,11 +57,6 @@ export interface SuggestionWithContext extends Suggestion {
     clientName: string | null
     clientSlug: string | null
   } | null
-  githubRepoLink?: {
-    id: string
-    repoFullName: string
-    defaultBranch: string
-  } | null
   createdTask?: {
     id: string
     title: string
@@ -119,8 +114,6 @@ export interface ApproveSuggestionResult {
   suggestion: Suggestion
   // Type-specific created entities
   createdTaskId?: string
-  createdPrNumber?: number
-  createdPrUrl?: string
   error?: string
 }
 

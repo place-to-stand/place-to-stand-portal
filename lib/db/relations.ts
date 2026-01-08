@@ -336,10 +336,6 @@ export const suggestionsRelations = relations(suggestions, ({ one }) => ({
     fields: [suggestions.projectId],
     references: [projects.id],
   }),
-  githubRepoLink: one(githubRepoLinks, {
-    fields: [suggestions.githubRepoLinkId],
-    references: [githubRepoLinks.id],
-  }),
   reviewedByUser: one(users, {
     fields: [suggestions.reviewedBy],
     references: [users.id],

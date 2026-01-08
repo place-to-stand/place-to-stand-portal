@@ -60,28 +60,49 @@ export const leadStatus = pgEnum('lead_status', [
   'UNQUALIFIED',
 ])
 
+/**
+ * Lead source types.
+ * - REFERRAL: Lead came from a referral
+ * - WEBSITE: Lead came from the website contact form
+ * - EVENT: Reserved for future use (conference, meetup, etc.)
+ */
 export const leadSourceType = pgEnum('lead_source_type', [
   'REFERRAL',
   'WEBSITE',
-  'EVENT',
+  'EVENT', // Reserved: for future event-based lead capture
 ])
 
 // OAuth enums
 export const oauthProvider = pgEnum('oauth_provider', ['GOOGLE', 'GITHUB'])
+
+/**
+ * OAuth connection status values.
+ * - ACTIVE: Connection is valid and tokens are working
+ * - EXPIRED: Reserved for future use (currently tokens auto-refresh)
+ * - REVOKED: Reserved for future use (currently we soft-delete on disconnect)
+ * - PENDING_REAUTH: Reserved for future reauthorization flow
+ */
 export const oauthConnectionStatus = pgEnum('oauth_connection_status', [
   'ACTIVE',
-  'EXPIRED',
-  'REVOKED',
-  'PENDING_REAUTH',
+  'EXPIRED', // Reserved: for explicit token expiry tracking
+  'REVOKED', // Reserved: for explicit revocation tracking
+  'PENDING_REAUTH', // Reserved: for future reauth prompt flow
 ])
 
-// Messaging enums (Phase 5)
+/**
+ * Message source types for the unified messaging system.
+ * - EMAIL: Gmail/email messages (currently implemented)
+ * - CHAT: Reserved for future Slack/Discord integration
+ * - VOICE_MEMO: Reserved for future voice message support
+ * - DOCUMENT: Reserved for future document-based messages
+ * - FORM: Reserved for future form submission messages
+ */
 export const messageSource = pgEnum('message_source', [
   'EMAIL',
-  'CHAT',
-  'VOICE_MEMO',
-  'DOCUMENT',
-  'FORM',
+  'CHAT', // Reserved: for future chat integrations
+  'VOICE_MEMO', // Reserved: for future voice memo support
+  'DOCUMENT', // Reserved: for future document-based messages
+  'FORM', // Reserved: for future form submissions
 ])
 export const threadStatus = pgEnum('thread_status', [
   'OPEN',
@@ -120,14 +141,7 @@ export const users = pgTable(
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
-  table => [
-    foreignKey({
-      columns: [table.id],
-      foreignColumns: [table.id],
-      name: 'users_id_fkey',
-    }).onDelete('cascade'),
-    unique('users_email_key').on(table.email),
-  ]
+  table => [unique('users_email_key').on(table.email)]
 )
 
 export const clients = pgTable(
@@ -1057,7 +1071,6 @@ export const suggestions = pgTable(
     type: suggestionType().notNull(),
     status: suggestionStatus().default('PENDING').notNull(),
     projectId: uuid('project_id'),
-    githubRepoLinkId: uuid('github_repo_link_id'),
     confidence: numeric({ precision: 3, scale: 2 }).notNull(),
     reasoning: text(),
     aiModelVersion: text('ai_model_version'),
@@ -1066,10 +1079,7 @@ export const suggestions = pgTable(
     suggestedContent: jsonb('suggested_content').default({}).notNull(),
     reviewedBy: uuid('reviewed_by'),
     reviewedAt: timestamp('reviewed_at', { withTimezone: true, mode: 'string' }),
-    reviewNotes: text('review_notes'),
     createdTaskId: uuid('created_task_id'),
-    createdPrNumber: integer('created_pr_number'),
-    createdPrUrl: text('created_pr_url'),
     errorMessage: text('error_message'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
@@ -1081,7 +1091,6 @@ export const suggestions = pgTable(
   },
   table => [
     check('suggestions_confidence_range', sql`confidence >= 0 AND confidence <= 1`),
-    check('suggestions_pr_requires_repo', sql`type != 'PR' OR github_repo_link_id IS NOT NULL`),
     index('idx_suggestions_pending_type')
       .using('btree', table.type.asc().nullsLast(), table.status.asc().nullsLast())
       .where(sql`(deleted_at IS NULL AND status IN ('PENDING', 'DRAFT'))`),
@@ -1094,9 +1103,6 @@ export const suggestions = pgTable(
     index('idx_suggestions_project')
       .using('btree', table.projectId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL AND project_id IS NOT NULL)`),
-    index('idx_suggestions_repo')
-      .using('btree', table.githubRepoLinkId.asc().nullsLast().op('uuid_ops'))
-      .where(sql`(deleted_at IS NULL AND github_repo_link_id IS NOT NULL)`),
     foreignKey({
       columns: [table.messageId],
       foreignColumns: [messages.id],
@@ -1111,11 +1117,6 @@ export const suggestions = pgTable(
       columns: [table.projectId],
       foreignColumns: [projects.id],
       name: 'suggestions_project_id_fkey',
-    }),
-    foreignKey({
-      columns: [table.githubRepoLinkId],
-      foreignColumns: [githubRepoLinks.id],
-      name: 'suggestions_github_repo_link_id_fkey',
     }),
     foreignKey({
       columns: [table.reviewedBy],

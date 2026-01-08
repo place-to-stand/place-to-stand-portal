@@ -61,8 +61,6 @@ export async function POST(
       success: true,
       task,
       taskId: result.taskId,
-      prNumber: result.prNumber,
-      prUrl: result.prUrl,
     })
   } catch (error) {
     return NextResponse.json(

@@ -1,53 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-import { requireRole } from '@/lib/auth/session'
-import { createPRSuggestionFromMessage } from '@/lib/ai/pr-suggestion-service'
 
-const schema = z.object({
-  repoLinkId: z.string().uuid(),
-})
-
+/**
+ * POST /api/emails/[emailId]/generate-pr
+ *
+ * PR suggestions are not currently supported.
+ * This feature will be redesigned in a future sprint.
+ */
 export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ emailId: string }> }
+  _request: NextRequest,
+  _context: { params: Promise<{ emailId: string }> }
 ) {
-  const user = await requireRole('ADMIN')
-  const { emailId } = await params
-
-  const body = await request.json()
-  const result = schema.safeParse(body)
-
-  if (!result.success) {
-    return NextResponse.json(
-      { error: 'Invalid request', details: result.error.flatten() },
-      { status: 400 }
-    )
-  }
-
-  try {
-    // emailId is now messageId in the new schema
-    const suggestion = await createPRSuggestionFromMessage(
-      emailId,
-      result.data.repoLinkId,
-      user.id
-    )
-
-    return NextResponse.json({ success: true, suggestion })
-  } catch (error) {
-    console.error('PR generation error:', error)
-
-    if (error instanceof Error) {
-      if (error.message.includes('not found')) {
-        return NextResponse.json({ error: error.message }, { status: 404 })
-      }
-      if (error.message.includes('not connected')) {
-        return NextResponse.json({ error: error.message }, { status: 401 })
-      }
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to generate PR suggestion' },
-      { status: 500 }
-    )
-  }
+  return NextResponse.json(
+    { error: 'PR suggestions are not currently supported. This feature will be redesigned in a future sprint.' },
+    { status: 501 }
+  )
 }

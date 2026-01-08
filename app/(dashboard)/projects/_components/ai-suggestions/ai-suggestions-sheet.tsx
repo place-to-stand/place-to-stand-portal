@@ -171,14 +171,9 @@ export function AISuggestionsSheet({
                 onGenerate={onGeneratePR}
                 onSkip={onDismissPR}
               />
-            ) : /* PR Preview Dialog - shown after PR generation */
+            ) : /* PR Preview Dialog - PR suggestions are currently disabled */
             showPRPreview ? (
-              <PRPreviewDialog
-                suggestion={prSuggestion}
-                isApproving={isApprovingPR}
-                onApprove={onApprovePR}
-                onCancel={onDismissPR}
-              />
+              <PRPreviewDialog />
             ) : /* Normal content - email suggestions list */
             isLoading ? (
               <div className='text-muted-foreground flex flex-col items-center justify-center py-12'>
