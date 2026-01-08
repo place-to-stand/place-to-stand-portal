@@ -221,14 +221,12 @@ function AnchorRow({ icon: Icon, value, href }: AnchorRowProps) {
   return (
     <a
       href={href}
-      className='hover:text-foreground inline-flex items-center gap-1 underline-offset-4 transition hover:underline font-mono font-medium'
+      className='hover:text-foreground inline-flex min-w-0 max-w-full items-center gap-1 underline-offset-4 transition hover:underline'
       onClick={event => event.stopPropagation()}
       title={value}
     >
       <Icon className='h-3.5 w-3.5 shrink-0' aria-hidden />
-
-        {value}
-
+      <span className='truncate'>{value}</span>
     </a>
   )
 }

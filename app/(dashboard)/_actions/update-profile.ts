@@ -17,6 +17,7 @@ import {
 
 type UpdateProfileInput = {
   fullName: string;
+  email?: string | null;
   password?: string | null;
   avatarPath?: string | null;
   avatarRemoved?: boolean;
@@ -24,6 +25,7 @@ type UpdateProfileInput = {
 
 type UpdateProfileResult = {
   error?: string;
+  emailConfirmationSent?: boolean;
 };
 
 const updateProfileSchema = z.object({
@@ -32,6 +34,12 @@ const updateProfileSchema = z.object({
     .trim()
     .min(1, "Full name is required")
     .max(120, "Full name must be 120 characters or fewer"),
+  email: z
+    .string()
+    .trim()
+    .email("Please enter a valid email address")
+    .max(255, "Email must be 255 characters or fewer")
+    .optional(),
   password: z
     .string()
     .trim()
@@ -46,6 +54,7 @@ export async function updateProfile(input: UpdateProfileInput): Promise<UpdatePr
 
   const cleanedInput = {
     fullName: input.fullName?.trim() ?? "",
+    email: input.email?.trim() ? input.email.trim() : undefined,
     password: input.password?.trim() ? input.password.trim() : undefined,
     avatarPath: input.avatarPath?.trim() ? input.avatarPath.trim() : undefined,
     avatarRemoved: input.avatarRemoved ?? false,
@@ -57,7 +66,8 @@ export async function updateProfile(input: UpdateProfileInput): Promise<UpdatePr
     return { error: parsed.error.issues[0]?.message ?? "Invalid profile update payload." };
   }
 
-  const { fullName, password, avatarPath, avatarRemoved } = parsed.data;
+  const { fullName, email, password, avatarPath, avatarRemoved } = parsed.data;
+  const isEmailChange = email && email.toLowerCase() !== user.email.toLowerCase();
   const supabase = getSupabaseServerClient();
   const supabaseAdmin = getSupabaseServiceClient();
 
@@ -127,6 +137,7 @@ export async function updateProfile(input: UpdateProfileInput): Promise<UpdatePr
   const { error: authError } = await supabase.auth.updateUser({
     data: userMetadata,
     ...(password ? { password } : {}),
+    ...(isEmailChange ? { email } : {}),
   });
 
   if (authError) {
@@ -136,5 +147,5 @@ export async function updateProfile(input: UpdateProfileInput): Promise<UpdatePr
 
   revalidatePath("/settings/users");
 
-  return {};
+  return { emailConfirmationSent: Boolean(isEmailChange) };
 }
