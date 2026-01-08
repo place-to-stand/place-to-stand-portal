@@ -74,39 +74,40 @@ EXCEPTION
 END $$;--> statement-breakpoint
 
 -- Rename the constraints and indexes (Postgres keeps old names after rename)
+-- Using OTHERS to catch both undefined_object and undefined_table errors
 DO $$
 BEGIN
     ALTER INDEX "client_contacts_pkey" RENAME TO "contacts_pkey";
 EXCEPTION
-    WHEN undefined_object THEN NULL;
+    WHEN OTHERS THEN NULL;
 END $$;--> statement-breakpoint
 
 DO $$
 BEGIN
     ALTER INDEX "client_contacts_client_email_key" RENAME TO "contacts_email_key_old";
 EXCEPTION
-    WHEN undefined_object THEN NULL;
+    WHEN OTHERS THEN NULL;
 END $$;--> statement-breakpoint
 
 DO $$
 BEGIN
     ALTER INDEX "idx_client_contacts_client" RENAME TO "idx_contacts_client_old";
 EXCEPTION
-    WHEN undefined_object THEN NULL;
+    WHEN OTHERS THEN NULL;
 END $$;--> statement-breakpoint
 
 DO $$
 BEGIN
     ALTER INDEX "idx_client_contacts_email" RENAME TO "idx_contacts_email";
 EXCEPTION
-    WHEN undefined_object THEN NULL;
+    WHEN OTHERS THEN NULL;
 END $$;--> statement-breakpoint
 
 DO $$
 BEGIN
     ALTER INDEX "idx_client_contacts_email_domain" RENAME TO "idx_contacts_email_domain";
 EXCEPTION
-    WHEN undefined_object THEN NULL;
+    WHEN OTHERS THEN NULL;
 END $$;--> statement-breakpoint
 
 -- Rename foreign key constraints
@@ -114,25 +115,28 @@ DO $$
 BEGIN
     ALTER TABLE "contacts" RENAME CONSTRAINT "client_contacts_client_id_fkey" TO "contacts_client_id_fkey_old";
 EXCEPTION
-    WHEN undefined_object THEN NULL;
+    WHEN OTHERS THEN NULL;
 END $$;--> statement-breakpoint
 
 DO $$
 BEGIN
     ALTER TABLE "contacts" RENAME CONSTRAINT "client_contacts_created_by_fkey" TO "contacts_created_by_fkey";
 EXCEPTION
-    WHEN undefined_object THEN NULL;
+    WHEN OTHERS THEN NULL;
 END $$;--> statement-breakpoint
 
 -- -----------------------------------------------------------------------------
 -- Step 5: Add foreign keys for junction tables
 -- (After rename so we can reference the contacts table)
+-- Skip if contacts table doesn't exist (will be created fresh in later migration)
 -- -----------------------------------------------------------------------------
 
 DO $$
 BEGIN
-    ALTER TABLE "contact_clients" ADD CONSTRAINT "contact_clients_contact_id_fkey"
-        FOREIGN KEY ("contact_id") REFERENCES "public"."contacts"("id") ON DELETE cascade ON UPDATE no action;
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'contacts' AND table_schema = 'public') THEN
+        ALTER TABLE "contact_clients" ADD CONSTRAINT "contact_clients_contact_id_fkey"
+            FOREIGN KEY ("contact_id") REFERENCES "public"."contacts"("id") ON DELETE cascade ON UPDATE no action;
+    END IF;
 EXCEPTION
     WHEN duplicate_object THEN NULL;
 END $$;--> statement-breakpoint
@@ -147,8 +151,10 @@ END $$;--> statement-breakpoint
 
 DO $$
 BEGIN
-    ALTER TABLE "contact_leads" ADD CONSTRAINT "contact_leads_contact_id_fkey"
-        FOREIGN KEY ("contact_id") REFERENCES "public"."contacts"("id") ON DELETE cascade ON UPDATE no action;
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'contacts' AND table_schema = 'public') THEN
+        ALTER TABLE "contact_leads" ADD CONSTRAINT "contact_leads_contact_id_fkey"
+            FOREIGN KEY ("contact_id") REFERENCES "public"."contacts"("id") ON DELETE cascade ON UPDATE no action;
+    END IF;
 EXCEPTION
     WHEN duplicate_object THEN NULL;
 END $$;--> statement-breakpoint
@@ -164,33 +170,57 @@ END $$;--> statement-breakpoint
 -- -----------------------------------------------------------------------------
 -- Step 6: Drop old columns from contacts table
 -- First we must disable RLS and drop policies that depend on client_id
+-- All operations wrapped in conditionals for idempotency when contacts doesn't exist
 -- -----------------------------------------------------------------------------
 
 -- Disable RLS and drop policies on contacts BEFORE dropping client_id column
-ALTER TABLE "contacts" DISABLE ROW LEVEL SECURITY;--> statement-breakpoint
-DROP POLICY IF EXISTS "Admins manage client contacts" ON "contacts";--> statement-breakpoint
-DROP POLICY IF EXISTS "Users view client contacts for accessible clients" ON "contacts";--> statement-breakpoint
+-- All wrapped in conditional since contacts table may not exist
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'contacts' AND table_schema = 'public') THEN
+        ALTER TABLE "contacts" DISABLE ROW LEVEL SECURITY;
+        DROP POLICY IF EXISTS "Admins manage client contacts" ON "contacts";
+        DROP POLICY IF EXISTS "Users view client contacts for accessible clients" ON "contacts";
+    END IF;
+END $$;--> statement-breakpoint
 
 -- Now drop the old FK constraint
-ALTER TABLE "contacts" DROP CONSTRAINT IF EXISTS "contacts_client_id_fkey_old";--> statement-breakpoint
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'contacts' AND table_schema = 'public') THEN
+        ALTER TABLE "contacts" DROP CONSTRAINT IF EXISTS "contacts_client_id_fkey_old";
+    END IF;
+END $$;--> statement-breakpoint
 
 -- Drop the old index that referenced client_id
 DROP INDEX IF EXISTS "idx_contacts_client_old";--> statement-breakpoint
 
 -- Drop the old unique constraint (client_id, email combo no longer applies)
-ALTER TABLE "contacts" DROP CONSTRAINT IF EXISTS "contacts_email_key_old";--> statement-breakpoint
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'contacts' AND table_schema = 'public') THEN
+        ALTER TABLE "contacts" DROP CONSTRAINT IF EXISTS "contacts_email_key_old";
+    END IF;
+END $$;--> statement-breakpoint
 
 -- Add new unique constraint on just email
 DO $$
 BEGIN
-    ALTER TABLE "contacts" ADD CONSTRAINT "contacts_email_key" UNIQUE("email");
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'contacts' AND table_schema = 'public') THEN
+        ALTER TABLE "contacts" ADD CONSTRAINT "contacts_email_key" UNIQUE("email");
+    END IF;
 EXCEPTION
     WHEN duplicate_object THEN NULL;
 END $$;--> statement-breakpoint
 
 -- Drop the columns (data already migrated to junction table)
-ALTER TABLE "contacts" DROP COLUMN IF EXISTS "client_id";--> statement-breakpoint
-ALTER TABLE "contacts" DROP COLUMN IF EXISTS "is_primary";--> statement-breakpoint
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'contacts' AND table_schema = 'public') THEN
+        ALTER TABLE "contacts" DROP COLUMN IF EXISTS "client_id";
+        ALTER TABLE "contacts" DROP COLUMN IF EXISTS "is_primary";
+    END IF;
+END $$;--> statement-breakpoint
 
 -- -----------------------------------------------------------------------------
 -- Step 7: Update suggestion_status enum (remove EXPIRED)
@@ -393,31 +423,62 @@ DROP POLICY IF EXISTS "Users view task assignee metadata" ON "task_assignee_meta
 
 -- Tables from 0007_unified_messaging
 -- (contacts already handled in Step 6 above)
+-- All wrapped in conditionals since tables may not exist yet
 
-ALTER TABLE "oauth_connections" DISABLE ROW LEVEL SECURITY;--> statement-breakpoint
-DROP POLICY IF EXISTS "Users manage own oauth connections" ON "oauth_connections";--> statement-breakpoint
-DROP POLICY IF EXISTS "Admins view all oauth connections" ON "oauth_connections";--> statement-breakpoint
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'oauth_connections' AND table_schema = 'public') THEN
+        ALTER TABLE "oauth_connections" DISABLE ROW LEVEL SECURITY;
+        DROP POLICY IF EXISTS "Users manage own oauth connections" ON "oauth_connections";
+        DROP POLICY IF EXISTS "Admins view all oauth connections" ON "oauth_connections";
+    END IF;
+END $$;--> statement-breakpoint
 
-ALTER TABLE "threads" DISABLE ROW LEVEL SECURITY;--> statement-breakpoint
-DROP POLICY IF EXISTS "Admins manage threads" ON "threads";--> statement-breakpoint
-DROP POLICY IF EXISTS "Users view accessible threads" ON "threads";--> statement-breakpoint
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'threads' AND table_schema = 'public') THEN
+        ALTER TABLE "threads" DISABLE ROW LEVEL SECURITY;
+        DROP POLICY IF EXISTS "Admins manage threads" ON "threads";
+        DROP POLICY IF EXISTS "Users view accessible threads" ON "threads";
+    END IF;
+END $$;--> statement-breakpoint
 
-ALTER TABLE "messages" DISABLE ROW LEVEL SECURITY;--> statement-breakpoint
-DROP POLICY IF EXISTS "Users manage own messages" ON "messages";--> statement-breakpoint
-DROP POLICY IF EXISTS "Admins view all messages" ON "messages";--> statement-breakpoint
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'messages' AND table_schema = 'public') THEN
+        ALTER TABLE "messages" DISABLE ROW LEVEL SECURITY;
+        DROP POLICY IF EXISTS "Users manage own messages" ON "messages";
+        DROP POLICY IF EXISTS "Admins view all messages" ON "messages";
+    END IF;
+END $$;--> statement-breakpoint
 
-ALTER TABLE "github_repo_links" DISABLE ROW LEVEL SECURITY;--> statement-breakpoint
-DROP POLICY IF EXISTS "Admins manage github repo links" ON "github_repo_links";--> statement-breakpoint
-DROP POLICY IF EXISTS "Users view repo links for accessible projects" ON "github_repo_links";--> statement-breakpoint
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'github_repo_links' AND table_schema = 'public') THEN
+        ALTER TABLE "github_repo_links" DISABLE ROW LEVEL SECURITY;
+        DROP POLICY IF EXISTS "Admins manage github repo links" ON "github_repo_links";
+        DROP POLICY IF EXISTS "Users view repo links for accessible projects" ON "github_repo_links";
+    END IF;
+END $$;--> statement-breakpoint
 
-ALTER TABLE "suggestions" DISABLE ROW LEVEL SECURITY;--> statement-breakpoint
-DROP POLICY IF EXISTS "Admins manage suggestions" ON "suggestions";--> statement-breakpoint
-DROP POLICY IF EXISTS "Users view suggestions for accessible threads" ON "suggestions";--> statement-breakpoint
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'suggestions' AND table_schema = 'public') THEN
+        ALTER TABLE "suggestions" DISABLE ROW LEVEL SECURITY;
+        DROP POLICY IF EXISTS "Admins manage suggestions" ON "suggestions";
+        DROP POLICY IF EXISTS "Users view suggestions for accessible threads" ON "suggestions";
+    END IF;
+END $$;--> statement-breakpoint
 
-ALTER TABLE "suggestion_feedback" DISABLE ROW LEVEL SECURITY;--> statement-breakpoint
-DROP POLICY IF EXISTS "Admins manage suggestion feedback" ON "suggestion_feedback";--> statement-breakpoint
-DROP POLICY IF EXISTS "Users view own suggestion feedback" ON "suggestion_feedback";--> statement-breakpoint
-DROP POLICY IF EXISTS "Users create own suggestion feedback" ON "suggestion_feedback";--> statement-breakpoint
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'suggestion_feedback' AND table_schema = 'public') THEN
+        ALTER TABLE "suggestion_feedback" DISABLE ROW LEVEL SECURITY;
+        DROP POLICY IF EXISTS "Admins manage suggestion feedback" ON "suggestion_feedback";
+        DROP POLICY IF EXISTS "Users view own suggestion feedback" ON "suggestion_feedback";
+        DROP POLICY IF EXISTS "Users create own suggestion feedback" ON "suggestion_feedback";
+    END IF;
+END $$;--> statement-breakpoint
 
 -- Now that all policies are dropped, we can drop the is_admin() function and view
 DROP VIEW IF EXISTS "public"."current_user_with_role";--> statement-breakpoint

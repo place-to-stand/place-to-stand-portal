@@ -27,19 +27,25 @@ ALTER TABLE "users" DROP CONSTRAINT IF EXISTS "users_id_fkey";--> statement-brea
 -- Step 3: Remove unused PR suggestion columns from suggestions table
 -- These columns were write-only (never displayed in UI) and the PR suggestion
 -- feature will be redesigned to be task-based in a future sprint
+-- Wrapped in conditional since suggestions table may not exist
 -- -----------------------------------------------------------------------------
 
--- Drop check constraint that referenced github_repo_link_id
-ALTER TABLE "suggestions" DROP CONSTRAINT IF EXISTS "suggestions_pr_requires_repo";--> statement-breakpoint
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'suggestions' AND table_schema = 'public') THEN
+        -- Drop check constraint that referenced github_repo_link_id
+        ALTER TABLE "suggestions" DROP CONSTRAINT IF EXISTS "suggestions_pr_requires_repo";
 
--- Drop index that referenced github_repo_link_id
-DROP INDEX IF EXISTS "idx_suggestions_repo";--> statement-breakpoint
+        -- Drop foreign key constraint
+        ALTER TABLE "suggestions" DROP CONSTRAINT IF EXISTS "suggestions_github_repo_link_id_fkey";
 
--- Drop foreign key constraint
-ALTER TABLE "suggestions" DROP CONSTRAINT IF EXISTS "suggestions_github_repo_link_id_fkey";--> statement-breakpoint
+        -- Drop the columns
+        ALTER TABLE "suggestions" DROP COLUMN IF EXISTS "github_repo_link_id";
+        ALTER TABLE "suggestions" DROP COLUMN IF EXISTS "review_notes";
+        ALTER TABLE "suggestions" DROP COLUMN IF EXISTS "created_pr_number";
+        ALTER TABLE "suggestions" DROP COLUMN IF EXISTS "created_pr_url";
+    END IF;
+END $$;--> statement-breakpoint
 
--- Drop the columns
-ALTER TABLE "suggestions" DROP COLUMN IF EXISTS "github_repo_link_id";--> statement-breakpoint
-ALTER TABLE "suggestions" DROP COLUMN IF EXISTS "review_notes";--> statement-breakpoint
-ALTER TABLE "suggestions" DROP COLUMN IF EXISTS "created_pr_number";--> statement-breakpoint
-ALTER TABLE "suggestions" DROP COLUMN IF EXISTS "created_pr_url";
+-- Drop index (can be done outside conditional since DROP INDEX IF EXISTS is safe)
+DROP INDEX IF EXISTS "idx_suggestions_repo";
