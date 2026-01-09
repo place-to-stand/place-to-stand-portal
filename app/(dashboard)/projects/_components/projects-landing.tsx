@@ -3,8 +3,9 @@
 import Link from 'next/link'
 import { useMemo } from 'react'
 import type { ReactNode } from 'react'
-import { Building2, FolderKanban, Github, UserRound, Users } from 'lucide-react'
+import { Building2, FolderKanban, UserRound, Users } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { siGithub } from 'simple-icons/icons'
 
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
@@ -26,6 +27,29 @@ import {
 } from '@/lib/projects/board/board-utils'
 import type { ProjectWithRelations } from '@/lib/types'
 import { cn } from '@/lib/utils'
+
+function SimpleIcon({
+  icon,
+  className,
+  color,
+}: {
+  icon: { title: string; path: string; hex: string }
+  className?: string
+  color?: string
+}) {
+  return (
+    <svg
+      role='img'
+      viewBox='0 0 24 24'
+      className={className}
+      xmlns='http://www.w3.org/2000/svg'
+      fill={color || 'currentColor'}
+    >
+      <title>{icon.title}</title>
+      <path d={icon.path} />
+    </svg>
+  )
+}
 
 type ClientProjectSection = {
   client: { id: string; name: string; slug: string | null }
@@ -217,7 +241,7 @@ export function ProjectsLanding({
                 className='text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 transition-colors'
                 title={firstRepo.repoFullName}
               >
-                <Github className='h-4 w-4' />
+                <SimpleIcon icon={siGithub} className='h-4 w-4' />
               </a>
             ) : (
               <span className='text-muted-foreground/40'>—</span>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Plus, Github, Trash2, ExternalLink, Loader2 } from 'lucide-react'
+import { Plus, Trash2, ExternalLink, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -13,6 +13,7 @@ import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { toast } from '@/components/ui/use-toast'
 import type { GitHubRepoLink } from '@/lib/types/github'
+import { siGithub } from 'simple-icons/icons'
 
 export interface PendingRepo {
   repoFullName: string
@@ -38,6 +39,29 @@ interface RepoOption {
   value: string
   label: string
   description?: string
+}
+
+function SimpleIcon({
+  icon,
+  className,
+  color,
+}: {
+  icon: { title: string; path: string; hex: string }
+  className?: string
+  color?: string
+}) {
+  return (
+    <svg
+      role='img'
+      viewBox='0 0 24 24'
+      className={className}
+      xmlns='http://www.w3.org/2000/svg'
+      fill={color || 'currentColor'}
+    >
+      <title>{icon.title}</title>
+      <path d={icon.path} />
+    </svg>
+  )
 }
 
 export function GitHubReposSection({
@@ -133,7 +157,10 @@ export function GitHubReposSection({
             // Exclude both linked repos AND pending repos (for both create and edit modes)
             const linkedFullNames = repos.map(r => r.repoFullName)
             const pendingFullNames = pendingRepos.map(r => r.repoFullName)
-            const excludedNames = new Set([...linkedFullNames, ...pendingFullNames])
+            const excludedNames = new Set([
+              ...linkedFullNames,
+              ...pendingFullNames,
+            ])
             setAvailableRepos(
               data.repos
                 .filter(
@@ -175,7 +202,9 @@ export function GitHubReposSection({
   const handleRemovePending = () => {
     if (!pendingDeleteConfirm) return
     onPendingReposChange(
-      pendingRepos.filter(r => r.repoFullName !== pendingDeleteConfirm.repoFullName)
+      pendingRepos.filter(
+        r => r.repoFullName !== pendingDeleteConfirm.repoFullName
+      )
     )
     setPendingDeleteConfirm(null)
     toast({ title: 'Repository removed' })
@@ -198,7 +227,7 @@ export function GitHubReposSection({
       <div className='space-y-1'>
         <h3 className='text-sm font-medium'>GitHub Repositories</h3>
         <div className='rounded-lg border border-dashed p-4 text-center'>
-          <Github className='text-muted-foreground mx-auto h-6 w-6' />
+          <SimpleIcon icon={siGithub} className='h-5 w-5' />
           <p className='text-muted-foreground mt-2 text-sm'>
             Connect your GitHub account in Settings to link repositories.
           </p>
@@ -254,7 +283,7 @@ export function GitHubReposSection({
 
       {hasNoRepos ? (
         <div className='rounded-lg border border-dashed p-4 text-center'>
-          <Github className='text-muted-foreground mx-auto h-6 w-6' />
+          <SimpleIcon icon={siGithub} className='text-muted-foreground mx-auto h-6 w-6' />
           <p className='text-muted-foreground mt-2 text-sm'>
             {isCreateMode
               ? 'No repositories selected. Add repos to link when you save.'
@@ -271,7 +300,7 @@ export function GitHubReposSection({
             >
               <div className='flex min-w-0 flex-col gap-1'>
                 <div className='flex items-center gap-2 text-sm'>
-                  <Github className='text-muted-foreground h-4 w-4 shrink-0' />
+                  <SimpleIcon icon={siGithub} className='text-muted-foreground h-4 w-4 shrink-0' />
                   <a
                     href={`https://github.com/${repo.repoFullName}`}
                     target='_blank'
@@ -306,7 +335,7 @@ export function GitHubReposSection({
             >
               <div className='flex min-w-0 flex-col gap-1'>
                 <div className='flex items-center gap-2 text-sm'>
-                  <Github className='text-muted-foreground h-4 w-4 shrink-0' />
+                  <SimpleIcon icon={siGithub} className='text-muted-foreground h-4 w-4 shrink-0' />
                   <span className='truncate'>{repo.repoFullName}</span>
                 </div>
                 <div className='pl-6 text-xs text-amber-600'>Pending save</div>
@@ -331,7 +360,7 @@ export function GitHubReposSection({
             >
               <div className='flex min-w-0 flex-col gap-1'>
                 <div className='flex items-center gap-2 text-sm line-through'>
-                  <Github className='text-muted-foreground h-4 w-4 shrink-0' />
+                  <SimpleIcon icon={siGithub} className='text-muted-foreground h-4 w-4 shrink-0' />
                   <span className='truncate'>{repo.repoFullName}</span>
                 </div>
                 <div className='pl-6 text-xs text-red-600'>Pending removal</div>
