@@ -79,9 +79,14 @@ export async function fetchHoursSnapshot(
     projectType: 'CLIENT',
   })
 
-  // Internal/Personal hours: non-billable project hours
+  // Internal/Personal hours: non-billable project hours for the current user
   const internalPersonalHours = await sumHoursWithProjectFilter({
-    filters: baseFilters,
+    filters: [
+      eq(timeLogs.userId, user.id),
+      gte(timeLogs.loggedOn, startDate),
+      lte(timeLogs.loggedOn, endDate),
+      isNull(timeLogs.deletedAt),
+    ],
     projectType: 'NON_CLIENT',
   })
 
