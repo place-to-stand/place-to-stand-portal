@@ -181,6 +181,12 @@ export type ProjectBurndownSummary = {
   lastLogAt: string | null
 }
 
+export type GitHubRepoLinkSummary = {
+  id: string
+  repoFullName: string
+  defaultBranch: string
+}
+
 export type ProjectWithRelations = DbProject & {
   client: DbClient | null
   members: ProjectMemberWithUser[]
@@ -188,4 +194,5 @@ export type ProjectWithRelations = DbProject & {
   archivedTasks: TaskWithRelations[]
   acceptedTasks: TaskWithRelations[]
   burndown: ProjectBurndownSummary
+  githubRepos: GitHubRepoLinkSummary[]
 }

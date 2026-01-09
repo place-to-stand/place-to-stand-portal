@@ -33,7 +33,7 @@ export type ClientMetricsRow = {
   activeProjects: number | string | null
 }
 
-export const ACTIVE_STATUS = "active"
+export const ACTIVE_STATUS = "ACTIVE"
 
 export const clientMetricsSelect = {
   totalProjects: sql<number>`count(${clients.id})`,

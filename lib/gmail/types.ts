@@ -8,7 +8,7 @@ export interface GmailBodyPart {
   mimeType?: string
   filename?: string
   headers?: GmailHeader[]
-  body?: { size?: number; data?: string }
+  body?: { size?: number; data?: string; attachmentId?: string }
   parts?: GmailBodyPart[]
 }
 
@@ -38,5 +38,42 @@ export type NormalizedEmail = {
   date: string | null
   snippet?: string
   bodyText?: string
+  bodyHtml?: string
 }
+
+// =============================================================================
+// HISTORY API TYPES (for incremental sync)
+// =============================================================================
+
+/** Message reference with optional label IDs (used in history responses) */
+export interface GmailMessageRef {
+  id: string
+  threadId: string
+  labelIds?: string[]
+}
+
+/** Label change event in history */
+export interface GmailLabelChange {
+  message: GmailMessageRef
+  labelIds: string[]
+}
+
+/** Single history record representing changes to the mailbox */
+export interface GmailHistoryRecord {
+  id: string
+  messagesAdded?: Array<{ message: GmailMessageRef }>
+  messagesDeleted?: Array<{ message: GmailMessageRef }>
+  labelsAdded?: GmailLabelChange[]
+  labelsRemoved?: GmailLabelChange[]
+}
+
+/** Response from users.history.list API */
+export interface GmailHistoryResponse {
+  history?: GmailHistoryRecord[]
+  nextPageToken?: string
+  historyId: string
+}
+
+/** History types that can be filtered in history.list requests */
+export type GmailHistoryType = 'messageAdded' | 'messageDeleted' | 'labelAdded' | 'labelRemoved'
 

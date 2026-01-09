@@ -27,12 +27,14 @@ import {
 
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import type {
+  ClientContactOption,
   ClientMemberOption,
   UseClientSheetStateReturn,
 } from '@/lib/settings/clients/use-client-sheet-state'
 import { CLIENT_BILLING_TYPE_SELECT_OPTIONS } from '@/lib/settings/clients/billing-types'
 import type { ClientSheetFormValues } from '@/lib/settings/clients/client-sheet-schema'
 
+import { ClientContactPicker } from './client-contact-picker'
 import { ClientMemberPicker } from './client-member-picker'
 
 const FEEDBACK_CLASSES =
@@ -60,6 +62,15 @@ type ClientSheetFormProps = {
   onRequestDelete: () => void
   isSheetOpen: boolean
   historyKey: string
+  // Contacts
+  selectedContacts: ClientContactOption[]
+  availableContacts: ClientContactOption[]
+  contactsAddButtonDisabled: boolean
+  contactsAddButtonDisabledReason: string | null
+  isContactPickerOpen: boolean
+  onContactPickerOpenChange: (open: boolean) => void
+  onAddContact: (contact: ClientContactOption) => void
+  onRemoveContact: (contact: ClientContactOption) => void
 }
 
 export function ClientSheetForm({
@@ -84,6 +95,14 @@ export function ClientSheetForm({
   onRequestDelete,
   isSheetOpen,
   historyKey,
+  selectedContacts,
+  availableContacts,
+  contactsAddButtonDisabled,
+  contactsAddButtonDisabledReason,
+  isContactPickerOpen,
+  onContactPickerOpenChange,
+  onAddContact,
+  onRemoveContact,
 }: ClientSheetFormProps) {
   const handleSave = useCallback(
     () => form.handleSubmit(onSubmit)(),
@@ -227,7 +246,22 @@ export function ClientSheetForm({
           }}
         />
         <div className='space-y-2'>
-          <FormLabel>Client users</FormLabel>
+          <FormLabel>Contacts</FormLabel>
+          <ClientContactPicker
+            selectedContacts={selectedContacts}
+            availableContacts={availableContacts}
+            addButtonDisabled={contactsAddButtonDisabled}
+            addButtonDisabledReason={contactsAddButtonDisabledReason}
+            isPickerOpen={isContactPickerOpen}
+            isPending={isPending}
+            pendingReason={pendingReason}
+            onPickerOpenChange={onContactPickerOpenChange}
+            onAddContact={onAddContact}
+            onRequestRemoval={onRemoveContact}
+          />
+        </div>
+        <div className='space-y-2'>
+          <FormLabel>Users</FormLabel>
           <ClientMemberPicker
             selectedMembers={selectedMembers}
             availableMembers={availableMembers}

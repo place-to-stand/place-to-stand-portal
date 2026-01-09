@@ -5,6 +5,7 @@ import { requireRole } from '@/lib/auth/session'
 import { listClientsForSettings } from '@/lib/queries/clients'
 
 import { ClientsTabsNav } from '../_components/clients-tabs-nav'
+import { ClientsAddButton } from '../_components/clients-add-button'
 import { ClientsManagementTable } from '../_components/clients-management-table'
 import {
   normalizeClientMembersMap,
@@ -75,21 +76,31 @@ export default async function ClientsArchivePage({
           </p>
         </div>
       </AppShellHeader>
-        <div className='space-y-4'>
-          <div className='flex flex-wrap items-center gap-4'>
-            <ClientsTabsNav activeTab='archive' className='flex-1 sm:flex-none' />
-          </div>
-          <section className='bg-background rounded-xl border p-6 shadow-sm space-y-4'>
-            <ClientsManagementTable
-              clients={clientsForTable}
+      <div className='space-y-4'>
+        {/* Tabs Row - Above the main container */}
+        <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+          <ClientsTabsNav activeTab='archive' className='flex-1 sm:flex-none' />
+          <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6'>
+            <span className='text-muted-foreground text-sm whitespace-nowrap'>
+              Total archived: {totalCount}
+            </span>
+            <ClientsAddButton
               clientUsers={normalizeClientUsers(clientUsers)}
-              membersByClient={normalizeClientMembersMap(membersByClient)}
-              pageInfo={pageInfo}
-              totalCount={totalCount}
-              mode='archive'
+              clientMembers={normalizeClientMembersMap(membersByClient)}
             />
-          </section>
+          </div>
         </div>
+        {/* Main Container with Background */}
+        <section className='bg-background rounded-xl border p-6 shadow-sm space-y-4'>
+          <ClientsManagementTable
+            clients={clientsForTable}
+            clientUsers={normalizeClientUsers(clientUsers)}
+            membersByClient={normalizeClientMembersMap(membersByClient)}
+            pageInfo={pageInfo}
+            mode='archive'
+          />
+        </section>
+      </div>
     </>
   )
 }

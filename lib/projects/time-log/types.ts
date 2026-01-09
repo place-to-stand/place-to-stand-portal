@@ -3,6 +3,7 @@ import type {
   ClientBillingTypeValue,
   DbUser,
   ProjectMemberWithUser,
+  ProjectTypeValue,
   TaskWithRelations,
   TimeLogWithUser,
 } from '@/lib/types'
@@ -10,6 +11,7 @@ import type {
 export type ProjectTimeLogDialogParams = {
   projectId: string
   projectName: string
+  projectType: ProjectTypeValue
   clientId: string | null
   clientName: string | null
   clientBillingType: ClientBillingTypeValue | null

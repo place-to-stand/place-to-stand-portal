@@ -437,6 +437,7 @@ export function LeadsBoard({
                       label={column.label}
                       leads={column.leads}
                       canManage={canManage && !isPending}
+                      enableCreateButton={canManage}
                       onEditLead={onEditLead}
                       onCreateLead={handleCreateForColumn}
                       activeLeadId={activeLeadId}

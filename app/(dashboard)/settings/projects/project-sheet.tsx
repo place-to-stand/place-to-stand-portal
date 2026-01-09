@@ -45,6 +45,7 @@ export function ProjectSheet(props: Props) {
     unsavedChangesDialog,
     handleSheetOpenChange,
     handleSubmit,
+    handleReposDirtyChange,
     handleRequestDelete,
     handleCancelDelete,
     handleConfirmDelete,
@@ -85,8 +86,10 @@ export function ProjectSheet(props: Props) {
             deleteButton={deleteButton}
             onSubmit={handleSubmit}
             onRequestDelete={handleRequestDelete}
+            onReposDirtyChange={handleReposDirtyChange}
             isSheetOpen={props.open}
             historyKey={props.project?.id ?? 'project:new'}
+            projectId={props.project?.id}
           />
           {isEditing && props.project && (
             <div className='px-6 pb-6'>

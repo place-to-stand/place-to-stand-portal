@@ -139,7 +139,7 @@ export const deriveInitialStatus = (
     return project.status as ProjectStatusValue
   }
 
-  return PROJECT_STATUS_OPTIONS[0]?.value ?? 'active'
+  return PROJECT_STATUS_OPTIONS[0]?.value ?? 'ACTIVE'
 }
 
 export const buildProjectFormDefaults = (

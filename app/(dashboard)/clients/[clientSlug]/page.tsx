@@ -6,14 +6,14 @@ import { AppShellHeader } from '@/components/layout/app-shell'
 import { isAdmin } from '@/lib/auth/permissions'
 import { requireUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { clientContacts } from '@/lib/db/schema'
+import { contacts, contactClients } from '@/lib/db/schema'
 import {
   fetchClientsWithMetrics,
   fetchProjectsForClient,
   resolveClientIdentifier,
 } from '@/lib/data/clients'
 import { buildMembersByClient, listClientUsers } from '@/lib/queries/clients'
-import { getLinkedEmailsForClient } from '@/lib/queries/emails'
+import { getMessagesForClient } from '@/lib/queries/messages'
 import type { ClientRow } from '@/lib/settings/clients/client-sheet-utils'
 
 import { ClientsLandingHeader } from '../_components/clients-landing-header'
@@ -76,14 +76,32 @@ export default async function ClientDetailPage({
       ])
     : Promise.resolve(null)
 
-  const [allClients, projects, managementData, contacts, linkedEmails] = await Promise.all([
+  const [allClients, projects, managementData, clientContacts, messages] = await Promise.all([
     fetchClientsWithMetrics(user),
     fetchProjectsForClient(user, client.resolvedId),
     managementDataPromise,
-    db.select().from(clientContacts).where(
-      and(eq(clientContacts.clientId, client.resolvedId), isNull(clientContacts.deletedAt))
-    ).orderBy(desc(clientContacts.isPrimary), clientContacts.email),
-    getLinkedEmailsForClient(client.resolvedId),
+    // Fetch contacts for this client via junction table
+    db.select({
+      id: contacts.id,
+      email: contacts.email,
+      name: contacts.name,
+      phone: contacts.phone,
+      createdBy: contacts.createdBy,
+      createdAt: contacts.createdAt,
+      updatedAt: contacts.updatedAt,
+      deletedAt: contacts.deletedAt,
+      isPrimary: contactClients.isPrimary,
+    })
+      .from(contactClients)
+      .innerJoin(contacts, eq(contactClients.contactId, contacts.id))
+      .where(
+        and(
+          eq(contactClients.clientId, client.resolvedId),
+          isNull(contacts.deletedAt)
+        )
+      )
+      .orderBy(desc(contactClients.isPrimary), contacts.email),
+    getMessagesForClient(client.resolvedId),
   ])
 
   const clientUsers = managementData
@@ -105,8 +123,8 @@ export default async function ClientDetailPage({
         <ClientDetail
           client={client}
           projects={projects}
-          contacts={contacts}
-          linkedEmails={linkedEmails}
+          contacts={clientContacts}
+          messages={messages}
           canManageClients={canManageClients}
           clientUsers={clientUsers}
           clientMembers={clientMembers}

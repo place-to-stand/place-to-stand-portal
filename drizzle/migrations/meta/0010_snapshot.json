@@ -1,6 +1,6 @@
 {
-  "id": "1cb0d86b-bf53-4f9e-9c79-c86cdfb0be96",
-  "prevId": "fe6297ae-1119-4229-b4fd-15821cb7e598",
+  "id": "e18fc3c7-5da4-4943-a635-61737f90989b",
+  "prevId": "1e7960aa-1194-4178-b5b4-9d7ec883f30b",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -228,41 +228,7 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {
-        "Admins delete activity logs": {
-          "name": "Admins delete activity logs",
-          "as": "PERMISSIVE",
-          "for": "DELETE",
-          "to": [
-            "public"
-          ],
-          "using": "is_admin()"
-        },
-        "Admins update activity logs": {
-          "name": "Admins update activity logs",
-          "as": "PERMISSIVE",
-          "for": "UPDATE",
-          "to": [
-            "public"
-          ]
-        },
-        "Users insert activity logs": {
-          "name": "Users insert activity logs",
-          "as": "PERMISSIVE",
-          "for": "INSERT",
-          "to": [
-            "public"
-          ]
-        },
-        "Users view activity logs": {
-          "name": "Users view activity logs",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "public"
-          ]
-        }
-      },
+      "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -365,225 +331,13 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {
-        "Users can delete their cached activity overview": {
-          "name": "Users can delete their cached activity overview",
-          "as": "PERMISSIVE",
-          "for": "DELETE",
-          "to": [
-            "public"
-          ],
-          "using": "(( SELECT auth.uid() AS uid) = user_id)"
-        },
-        "Users can insert their cached activity overview": {
-          "name": "Users can insert their cached activity overview",
-          "as": "PERMISSIVE",
-          "for": "INSERT",
-          "to": [
-            "public"
-          ]
-        },
-        "Users can update their cached activity overview": {
-          "name": "Users can update their cached activity overview",
-          "as": "PERMISSIVE",
-          "for": "UPDATE",
-          "to": [
-            "public"
-          ]
-        },
-        "Users can view their cached activity overview": {
-          "name": "Users can view their cached activity overview",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "public"
-          ]
-        }
-      },
+      "policies": {},
       "checkConstraints": {
         "activity_overview_cache_timeframe_days_check": {
           "name": "activity_overview_cache_timeframe_days_check",
           "value": "timeframe_days = ANY (ARRAY[1, 7, 14, 28])"
         }
       },
-      "isRLSEnabled": false
-    },
-    "public.client_contacts": {
-      "name": "client_contacts",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "client_id": {
-          "name": "client_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "email": {
-          "name": "email",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "is_primary": {
-          "name": "is_primary",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "created_by": {
-          "name": "created_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "timezone('utc'::text, now())"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "timezone('utc'::text, now())"
-        },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "idx_client_contacts_client": {
-          "name": "idx_client_contacts_client",
-          "columns": [
-            {
-              "expression": "client_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last",
-              "opclass": "uuid_ops"
-            }
-          ],
-          "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_client_contacts_email": {
-          "name": "idx_client_contacts_email",
-          "columns": [
-            {
-              "expression": "email",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last",
-              "opclass": "text_ops"
-            }
-          ],
-          "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_client_contacts_email_domain": {
-          "name": "idx_client_contacts_email_domain",
-          "columns": [
-            {
-              "expression": "split_part(email, '@', 2)",
-              "asc": true,
-              "isExpression": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "client_contacts_client_id_fkey": {
-          "name": "client_contacts_client_id_fkey",
-          "tableFrom": "client_contacts",
-          "tableTo": "clients",
-          "columnsFrom": [
-            "client_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "client_contacts_created_by_fkey": {
-          "name": "client_contacts_created_by_fkey",
-          "tableFrom": "client_contacts",
-          "tableTo": "users",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "client_contacts_client_email_key": {
-          "name": "client_contacts_client_email_key",
-          "nullsNotDistinct": false,
-          "columns": [
-            "client_id",
-            "email"
-          ]
-        }
-      },
-      "policies": {
-        "Admins manage client contacts": {
-          "name": "Admins manage client contacts",
-          "as": "PERMISSIVE",
-          "for": "ALL",
-          "to": [
-            "public"
-          ],
-          "using": "is_admin()",
-          "withCheck": "is_admin()"
-        },
-        "Users view client contacts for accessible clients": {
-          "name": "Users view client contacts for accessible clients",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "public"
-          ],
-          "using": "(\n        client_id IN (\n          SELECT client_id FROM client_members\n          WHERE user_id = auth.uid() AND deleted_at IS NULL\n        )\n      )"
-        }
-      },
-      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.client_members": {
@@ -708,41 +462,7 @@
           ]
         }
       },
-      "policies": {
-        "Admins delete client members": {
-          "name": "Admins delete client members",
-          "as": "PERMISSIVE",
-          "for": "DELETE",
-          "to": [
-            "public"
-          ],
-          "using": "is_admin()"
-        },
-        "Admins insert client members": {
-          "name": "Admins insert client members",
-          "as": "PERMISSIVE",
-          "for": "INSERT",
-          "to": [
-            "public"
-          ]
-        },
-        "Admins update client members": {
-          "name": "Admins update client members",
-          "as": "PERMISSIVE",
-          "for": "UPDATE",
-          "to": [
-            "public"
-          ]
-        },
-        "Users view client members": {
-          "name": "Users view client members",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "public"
-          ]
-        }
-      },
+      "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -854,46 +574,12 @@
           ]
         }
       },
-      "policies": {
-        "Admins delete clients": {
-          "name": "Admins delete clients",
-          "as": "PERMISSIVE",
-          "for": "DELETE",
-          "to": [
-            "public"
-          ],
-          "using": "is_admin()"
-        },
-        "Admins insert clients": {
-          "name": "Admins insert clients",
-          "as": "PERMISSIVE",
-          "for": "INSERT",
-          "to": [
-            "public"
-          ]
-        },
-        "Admins update clients": {
-          "name": "Admins update clients",
-          "as": "PERMISSIVE",
-          "for": "UPDATE",
-          "to": [
-            "public"
-          ]
-        },
-        "Users view clients": {
-          "name": "Users view clients",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "public"
-          ]
-        }
-      },
+      "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.email_links": {
-      "name": "email_links",
+    "public.contact_clients": {
+      "name": "contact_clients",
       "schema": "",
       "columns": {
         "id": {
@@ -903,8 +589,8 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "email_metadata_id": {
-          "name": "email_metadata_id",
+        "contact_id": {
+          "name": "contact_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
@@ -913,36 +599,240 @@
           "name": "client_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
-        "project_id": {
-          "name": "project_id",
-          "type": "uuid",
+        "is_primary": {
+          "name": "is_primary",
+          "type": "boolean",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": false
         },
-        "source": {
-          "name": "source",
-          "type": "email_link_source",
-          "typeSchema": "public",
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "timezone('utc'::text, now())"
+        }
+      },
+      "indexes": {
+        "idx_contact_clients_contact": {
+          "name": "idx_contact_clients_contact",
+          "columns": [
+            {
+              "expression": "contact_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_contact_clients_client": {
+          "name": "idx_contact_clients_client",
+          "columns": [
+            {
+              "expression": "client_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "contact_clients_contact_id_fkey": {
+          "name": "contact_clients_contact_id_fkey",
+          "tableFrom": "contact_clients",
+          "tableTo": "contacts",
+          "columnsFrom": [
+            "contact_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "contact_clients_client_id_fkey": {
+          "name": "contact_clients_client_id_fkey",
+          "tableFrom": "contact_clients",
+          "tableTo": "clients",
+          "columnsFrom": [
+            "client_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "contact_clients_contact_client_key": {
+          "name": "contact_clients_contact_client_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "contact_id",
+            "client_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.contact_leads": {
+      "name": "contact_leads",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "contact_id": {
+          "name": "contact_id",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
-        "confidence": {
-          "name": "confidence",
-          "type": "numeric(3, 2)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "linked_by": {
-          "name": "linked_by",
+        "lead_id": {
+          "name": "lead_id",
           "type": "uuid",
           "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "timezone('utc'::text, now())"
+        }
+      },
+      "indexes": {
+        "idx_contact_leads_contact": {
+          "name": "idx_contact_leads_contact",
+          "columns": [
+            {
+              "expression": "contact_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_contact_leads_lead": {
+          "name": "idx_contact_leads_lead",
+          "columns": [
+            {
+              "expression": "lead_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "contact_leads_contact_id_fkey": {
+          "name": "contact_leads_contact_id_fkey",
+          "tableFrom": "contact_leads",
+          "tableTo": "contacts",
+          "columnsFrom": [
+            "contact_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "contact_leads_lead_id_fkey": {
+          "name": "contact_leads_lead_id_fkey",
+          "tableFrom": "contact_leads",
+          "tableTo": "leads",
+          "columnsFrom": [
+            "lead_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "contact_leads_contact_lead_key": {
+          "name": "contact_leads_contact_lead_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "contact_id",
+            "lead_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.contacts": {
+      "name": "contacts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
           "notNull": false
         },
-        "notes": {
-          "name": "notes",
-          "type": "text",
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -968,11 +858,163 @@
         }
       },
       "indexes": {
-        "idx_email_links_email": {
-          "name": "idx_email_links_email",
+        "idx_contacts_email": {
+          "name": "idx_contacts_email",
           "columns": [
             {
-              "expression": "email_metadata_id",
+              "expression": "email",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "text_ops"
+            }
+          ],
+          "isUnique": false,
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_contacts_email_domain": {
+          "name": "idx_contacts_email_domain",
+          "columns": [
+            {
+              "expression": "split_part(email, '@', 2)",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "contacts_created_by_fkey": {
+          "name": "contacts_created_by_fkey",
+          "tableFrom": "contacts",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "contacts_email_key": {
+          "name": "contacts_email_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.github_repo_links": {
+      "name": "github_repo_links",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "oauth_connection_id": {
+          "name": "oauth_connection_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "repo_owner": {
+          "name": "repo_owner",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "repo_name": {
+          "name": "repo_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "repo_full_name": {
+          "name": "repo_full_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "repo_id": {
+          "name": "repo_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "default_branch": {
+          "name": "default_branch",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'main'"
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "linked_by": {
+          "name": "linked_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "timezone('utc'::text, now())"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "timezone('utc'::text, now())"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "idx_github_repo_links_project": {
+          "name": "idx_github_repo_links_project",
+          "columns": [
+            {
+              "expression": "project_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last",
@@ -985,28 +1027,28 @@
           "method": "btree",
           "with": {}
         },
-        "idx_email_links_client": {
-          "name": "idx_email_links_client",
+        "idx_github_repo_links_repo": {
+          "name": "idx_github_repo_links_repo",
           "columns": [
             {
-              "expression": "client_id",
+              "expression": "repo_full_name",
               "isExpression": false,
               "asc": true,
               "nulls": "last",
-              "opclass": "uuid_ops"
+              "opclass": "text_ops"
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL AND client_id IS NOT NULL)",
+          "where": "(deleted_at IS NULL)",
           "concurrently": false,
           "method": "btree",
           "with": {}
         },
-        "idx_email_links_project": {
-          "name": "idx_email_links_project",
+        "idx_github_repo_links_oauth": {
+          "name": "idx_github_repo_links_oauth",
           "columns": [
             {
-              "expression": "project_id",
+              "expression": "oauth_connection_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last",
@@ -1014,42 +1056,16 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL AND project_id IS NOT NULL)",
+          "where": "(deleted_at IS NULL)",
           "concurrently": false,
           "method": "btree",
           "with": {}
         }
       },
       "foreignKeys": {
-        "email_links_email_metadata_id_fkey": {
-          "name": "email_links_email_metadata_id_fkey",
-          "tableFrom": "email_links",
-          "tableTo": "email_metadata",
-          "columnsFrom": [
-            "email_metadata_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "email_links_client_id_fkey": {
-          "name": "email_links_client_id_fkey",
-          "tableFrom": "email_links",
-          "tableTo": "clients",
-          "columnsFrom": [
-            "client_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "email_links_project_id_fkey": {
-          "name": "email_links_project_id_fkey",
-          "tableFrom": "email_links",
+        "github_repo_links_project_id_fkey": {
+          "name": "github_repo_links_project_id_fkey",
+          "tableFrom": "github_repo_links",
           "tableTo": "projects",
           "columnsFrom": [
             "project_id"
@@ -1060,9 +1076,22 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "email_links_linked_by_fkey": {
-          "name": "email_links_linked_by_fkey",
-          "tableFrom": "email_links",
+        "github_repo_links_oauth_connection_id_fkey": {
+          "name": "github_repo_links_oauth_connection_id_fkey",
+          "tableFrom": "github_repo_links",
+          "tableTo": "oauth_connections",
+          "columnsFrom": [
+            "oauth_connection_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "github_repo_links_linked_by_fkey": {
+          "name": "github_repo_links_linked_by_fkey",
+          "tableFrom": "github_repo_links",
           "tableTo": "users",
           "columnsFrom": [
             "linked_by"
@@ -1075,278 +1104,17 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {
-        "Admins manage email links": {
-          "name": "Admins manage email links",
-          "as": "PERMISSIVE",
-          "for": "ALL",
-          "to": [
-            "public"
-          ],
-          "using": "is_admin()",
-          "withCheck": "is_admin()"
-        },
-        "Users view linked emails for accessible clients": {
-          "name": "Users view linked emails for accessible clients",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "public"
-          ],
-          "using": "(\n        client_id IN (\n          SELECT client_id FROM client_members\n          WHERE user_id = auth.uid() AND deleted_at IS NULL\n        )\n        OR project_id IN (\n          SELECT id FROM projects\n          WHERE created_by = auth.uid() AND deleted_at IS NULL\n        )\n      )"
-        }
-      },
-      "checkConstraints": {
-        "email_links_client_or_project": {
-          "name": "email_links_client_or_project",
-          "value": "client_id IS NOT NULL OR project_id IS NOT NULL"
-        },
-        "email_links_confidence_range": {
-          "name": "email_links_confidence_range",
-          "value": "confidence IS NULL OR (confidence >= 0 AND confidence <= 1)"
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.email_metadata": {
-      "name": "email_metadata",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "gmail_message_id": {
-          "name": "gmail_message_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "gmail_thread_id": {
-          "name": "gmail_thread_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "subject": {
-          "name": "subject",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "snippet": {
-          "name": "snippet",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "from_email": {
-          "name": "from_email",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "from_name": {
-          "name": "from_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "to_emails": {
-          "name": "to_emails",
-          "type": "text[]",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'{}'"
-        },
-        "cc_emails": {
-          "name": "cc_emails",
-          "type": "text[]",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'{}'"
-        },
-        "received_at": {
-          "name": "received_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "is_read": {
-          "name": "is_read",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "has_attachments": {
-          "name": "has_attachments",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "labels": {
-          "name": "labels",
-          "type": "text[]",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'{}'"
-        },
-        "raw_metadata": {
-          "name": "raw_metadata",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'{}'::jsonb"
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "timezone('utc'::text, now())"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "timezone('utc'::text, now())"
-        },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "idx_email_metadata_user": {
-          "name": "idx_email_metadata_user",
-          "columns": [
-            {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last",
-              "opclass": "uuid_ops"
-            }
-          ],
-          "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_email_metadata_from_email": {
-          "name": "idx_email_metadata_from_email",
-          "columns": [
-            {
-              "expression": "from_email",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last",
-              "opclass": "text_ops"
-            }
-          ],
-          "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_email_metadata_received_at": {
-          "name": "idx_email_metadata_received_at",
-          "columns": [
-            {
-              "expression": "received_at",
-              "isExpression": false,
-              "asc": false,
-              "nulls": "first"
-            }
-          ],
-          "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_email_metadata_thread": {
-          "name": "idx_email_metadata_thread",
-          "columns": [
-            {
-              "expression": "gmail_thread_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last",
-              "opclass": "text_ops"
-            }
-          ],
-          "isUnique": false,
-          "where": "(deleted_at IS NULL AND gmail_thread_id IS NOT NULL)",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "email_metadata_user_id_fkey": {
-          "name": "email_metadata_user_id_fkey",
-          "tableFrom": "email_metadata",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "email_metadata_user_gmail_id_key": {
-          "name": "email_metadata_user_gmail_id_key",
+        "github_repo_links_project_repo_key": {
+          "name": "github_repo_links_project_repo_key",
           "nullsNotDistinct": false,
           "columns": [
-            "user_id",
-            "gmail_message_id"
+            "project_id",
+            "repo_full_name"
           ]
         }
       },
-      "policies": {
-        "Users manage own email metadata": {
-          "name": "Users manage own email metadata",
-          "as": "PERMISSIVE",
-          "for": "ALL",
-          "to": [
-            "public"
-          ],
-          "using": "user_id = auth.uid()",
-          "withCheck": "user_id = auth.uid()"
-        },
-        "Admins view all email metadata": {
-          "name": "Admins view all email metadata",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "public"
-          ],
-          "using": "is_admin()"
-        }
-      },
+      "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -1472,41 +1240,7 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {
-        "Admins delete hour blocks": {
-          "name": "Admins delete hour blocks",
-          "as": "PERMISSIVE",
-          "for": "DELETE",
-          "to": [
-            "public"
-          ],
-          "using": "is_admin()"
-        },
-        "Admins insert hour blocks": {
-          "name": "Admins insert hour blocks",
-          "as": "PERMISSIVE",
-          "for": "INSERT",
-          "to": [
-            "public"
-          ]
-        },
-        "Admins update hour blocks": {
-          "name": "Admins update hour blocks",
-          "as": "PERMISSIVE",
-          "for": "UPDATE",
-          "to": [
-            "public"
-          ]
-        },
-        "Users view hour blocks": {
-          "name": "Users view hour blocks",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "public"
-          ]
-        }
-      },
+      "policies": {},
       "checkConstraints": {
         "hour_blocks_invoice_number_format": {
           "name": "hour_blocks_invoice_number_format",
@@ -1671,26 +1405,288 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {
-        "Admins manage leads": {
-          "name": "Admins manage leads",
-          "as": "PERMISSIVE",
-          "for": "ALL",
-          "to": [
-            "public"
-          ],
-          "using": "is_admin()",
-          "withCheck": "is_admin()"
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.messages": {
+      "name": "messages",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
-        "Users view leads": {
-          "name": "Users view leads",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "public"
+        "thread_id": {
+          "name": "thread_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source": {
+          "name": "source",
+          "type": "message_source",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "external_message_id": {
+          "name": "external_message_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "subject": {
+          "name": "subject",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "body_text": {
+          "name": "body_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "body_html": {
+          "name": "body_html",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "snippet": {
+          "name": "snippet",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "from_email": {
+          "name": "from_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "from_name": {
+          "name": "from_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "to_emails": {
+          "name": "to_emails",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "cc_emails": {
+          "name": "cc_emails",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "sent_at": {
+          "name": "sent_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_inbound": {
+          "name": "is_inbound",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "is_read": {
+          "name": "is_read",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "has_attachments": {
+          "name": "has_attachments",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "analyzed_at": {
+          "name": "analyzed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "analysis_version": {
+          "name": "analysis_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "provider_metadata": {
+          "name": "provider_metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "timezone('utc'::text, now())"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "timezone('utc'::text, now())"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "idx_messages_thread": {
+          "name": "idx_messages_thread",
+          "columns": [
+            {
+              "expression": "thread_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops"
+            }
+          ],
+          "isUnique": false,
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_messages_user": {
+          "name": "idx_messages_user",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops"
+            }
+          ],
+          "isUnique": false,
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_messages_sent_at": {
+          "name": "idx_messages_sent_at",
+          "columns": [
+            {
+              "expression": "sent_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "first"
+            }
+          ],
+          "isUnique": false,
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_messages_unanalyzed": {
+          "name": "idx_messages_unanalyzed",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "(deleted_at IS NULL AND analyzed_at IS NULL)",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_messages_from_email": {
+          "name": "idx_messages_from_email",
+          "columns": [
+            {
+              "expression": "from_email",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "text_ops"
+            }
+          ],
+          "isUnique": false,
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "messages_thread_id_fkey": {
+          "name": "messages_thread_id_fkey",
+          "tableFrom": "messages",
+          "tableTo": "threads",
+          "columnsFrom": [
+            "thread_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "messages_user_id_fkey": {
+          "name": "messages_user_id_fkey",
+          "tableFrom": "messages",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "messages_user_external_key": {
+          "name": "messages_user_external_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "user_id",
+            "external_message_id"
           ]
         }
       },
+      "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -1864,26 +1860,7 @@
           ]
         }
       },
-      "policies": {
-        "Users manage own oauth connections": {
-          "name": "Users manage own oauth connections",
-          "as": "PERMISSIVE",
-          "for": "ALL",
-          "to": [
-            "public"
-          ],
-          "using": "user_id = auth.uid()"
-        },
-        "Admins view all oauth connections": {
-          "name": "Admins view all oauth connections",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "public"
-          ],
-          "using": "is_admin()"
-        }
-      },
+      "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -1912,10 +1889,11 @@
         },
         "status": {
           "name": "status",
-          "type": "text",
+          "type": "project_status",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "default": "'active'"
+          "default": "'ACTIVE'"
         },
         "starts_on": {
           "name": "starts_on",
@@ -2053,41 +2031,7 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {
-        "Admins delete projects": {
-          "name": "Admins delete projects",
-          "as": "PERMISSIVE",
-          "for": "DELETE",
-          "to": [
-            "public"
-          ],
-          "using": "is_admin()"
-        },
-        "Users create projects": {
-          "name": "Users create projects",
-          "as": "PERMISSIVE",
-          "for": "INSERT",
-          "to": [
-            "public"
-          ]
-        },
-        "Users update projects": {
-          "name": "Users update projects",
-          "as": "PERMISSIVE",
-          "for": "UPDATE",
-          "to": [
-            "public"
-          ]
-        },
-        "Users view projects": {
-          "name": "Users view projects",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "public"
-          ]
-        }
-      },
+      "policies": {},
       "checkConstraints": {
         "projects_type_client_check": {
           "name": "projects_type_client_check",
@@ -2096,8 +2040,8 @@
       },
       "isRLSEnabled": false
     },
-    "public.suggestion_feedback": {
-      "name": "suggestion_feedback",
+    "public.suggestions": {
+      "name": "suggestions",
       "schema": "",
       "columns": {
         "id": {
@@ -2107,35 +2051,123 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "task_suggestion_id": {
-          "name": "task_suggestion_id",
+        "message_id": {
+          "name": "message_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
-        "feedback_type": {
-          "name": "feedback_type",
-          "type": "text",
+        "thread_id": {
+          "name": "thread_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "type": {
+          "name": "type",
+          "type": "suggestion_type",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
-        "original_value": {
-          "name": "original_value",
+        "status": {
+          "name": "status",
+          "type": "suggestion_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'PENDING'"
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "github_repo_link_id": {
+          "name": "github_repo_link_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "confidence": {
+          "name": "confidence",
+          "type": "numeric(3, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reasoning": {
+          "name": "reasoning",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "corrected_value": {
-          "name": "corrected_value",
+        "ai_model_version": {
+          "name": "ai_model_version",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "created_by": {
-          "name": "created_by",
+        "prompt_tokens": {
+          "name": "prompt_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "completion_tokens": {
+          "name": "completion_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "suggested_content": {
+          "name": "suggested_content",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "reviewed_by": {
+          "name": "reviewed_by",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
+        },
+        "reviewed_at": {
+          "name": "reviewed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "review_notes": {
+          "name": "review_notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_task_id": {
+          "name": "created_task_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_pr_number": {
+          "name": "created_pr_number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_pr_url": {
+          "name": "created_pr_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "error_message": {
+          "name": "error_message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -2143,14 +2175,49 @@
           "primaryKey": false,
           "notNull": true,
           "default": "timezone('utc'::text, now())"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "timezone('utc'::text, now())"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
-        "idx_suggestion_feedback_suggestion": {
-          "name": "idx_suggestion_feedback_suggestion",
+        "idx_suggestions_pending_type": {
+          "name": "idx_suggestions_pending_type",
           "columns": [
             {
-              "expression": "task_suggestion_id",
+              "expression": "type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "(deleted_at IS NULL AND status IN ('PENDING', 'DRAFT'))",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_suggestions_message": {
+          "name": "idx_suggestions_message",
+          "columns": [
+            {
+              "expression": "message_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last",
@@ -2158,31 +2225,135 @@
             }
           ],
           "isUnique": false,
+          "where": "(deleted_at IS NULL AND message_id IS NOT NULL)",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_suggestions_thread": {
+          "name": "idx_suggestions_thread",
+          "columns": [
+            {
+              "expression": "thread_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops"
+            }
+          ],
+          "isUnique": false,
+          "where": "(deleted_at IS NULL AND thread_id IS NOT NULL)",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_suggestions_project": {
+          "name": "idx_suggestions_project",
+          "columns": [
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops"
+            }
+          ],
+          "isUnique": false,
+          "where": "(deleted_at IS NULL AND project_id IS NOT NULL)",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_suggestions_repo": {
+          "name": "idx_suggestions_repo",
+          "columns": [
+            {
+              "expression": "github_repo_link_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops"
+            }
+          ],
+          "isUnique": false,
+          "where": "(deleted_at IS NULL AND github_repo_link_id IS NOT NULL)",
           "concurrently": false,
           "method": "btree",
           "with": {}
         }
       },
       "foreignKeys": {
-        "suggestion_feedback_task_suggestion_id_fkey": {
-          "name": "suggestion_feedback_task_suggestion_id_fkey",
-          "tableFrom": "suggestion_feedback",
-          "tableTo": "task_suggestions",
+        "suggestions_message_id_fkey": {
+          "name": "suggestions_message_id_fkey",
+          "tableFrom": "suggestions",
+          "tableTo": "messages",
           "columnsFrom": [
-            "task_suggestion_id"
+            "message_id"
           ],
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
+          "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "suggestion_feedback_created_by_fkey": {
-          "name": "suggestion_feedback_created_by_fkey",
-          "tableFrom": "suggestion_feedback",
+        "suggestions_thread_id_fkey": {
+          "name": "suggestions_thread_id_fkey",
+          "tableFrom": "suggestions",
+          "tableTo": "threads",
+          "columnsFrom": [
+            "thread_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "suggestions_project_id_fkey": {
+          "name": "suggestions_project_id_fkey",
+          "tableFrom": "suggestions",
+          "tableTo": "projects",
+          "columnsFrom": [
+            "project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "suggestions_github_repo_link_id_fkey": {
+          "name": "suggestions_github_repo_link_id_fkey",
+          "tableFrom": "suggestions",
+          "tableTo": "github_repo_links",
+          "columnsFrom": [
+            "github_repo_link_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "suggestions_reviewed_by_fkey": {
+          "name": "suggestions_reviewed_by_fkey",
+          "tableFrom": "suggestions",
           "tableTo": "users",
           "columnsFrom": [
-            "created_by"
+            "reviewed_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "suggestions_created_task_id_fkey": {
+          "name": "suggestions_created_task_id_fkey",
+          "tableFrom": "suggestions",
+          "tableTo": "tasks",
+          "columnsFrom": [
+            "created_task_id"
           ],
           "columnsTo": [
             "id"
@@ -2193,28 +2364,17 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {
-        "Admins manage suggestion feedback": {
-          "name": "Admins manage suggestion feedback",
-          "as": "PERMISSIVE",
-          "for": "ALL",
-          "to": [
-            "public"
-          ],
-          "using": "is_admin()",
-          "withCheck": "is_admin()"
+      "policies": {},
+      "checkConstraints": {
+        "suggestions_confidence_range": {
+          "name": "suggestions_confidence_range",
+          "value": "confidence >= 0 AND confidence <= 1"
         },
-        "Users view own suggestion feedback": {
-          "name": "Users view own suggestion feedback",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "public"
-          ],
-          "using": "created_by = auth.uid()"
+        "suggestions_pr_requires_repo": {
+          "name": "suggestions_pr_requires_repo",
+          "value": "type != 'PR' OR github_repo_link_id IS NOT NULL"
         }
       },
-      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.task_assignee_metadata": {
@@ -2317,26 +2477,7 @@
         }
       },
       "uniqueConstraints": {},
-      "policies": {
-        "Admins manage task assignee metadata": {
-          "name": "Admins manage task assignee metadata",
-          "as": "PERMISSIVE",
-          "for": "ALL",
-          "to": [
-            "public"
-          ],
-          "using": "is_admin()",
-          "withCheck": "is_admin()"
-        },
-        "Users view task assignee metadata": {
-          "name": "Users view task assignee metadata",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "public"
-          ]
-        }
-      },
+      "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -2445,26 +2586,7 @@
           ]
         }
       },
-      "policies": {
-        "Admins manage task assignees": {
-          "name": "Admins manage task assignees",
-          "as": "PERMISSIVE",
-          "for": "ALL",
-          "to": [
-            "public"
-          ],
-          "using": "is_admin()",
-          "withCheck": "is_admin()"
-        },
-        "Users view task assignees": {
-          "name": "Users view task assignees",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "public"
-          ]
-        }
-      },
+      "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -2602,34 +2724,7 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {
-        "Admins manage task attachments": {
-          "name": "Admins manage task attachments",
-          "as": "PERMISSIVE",
-          "for": "ALL",
-          "to": [
-            "public"
-          ],
-          "using": "is_admin()",
-          "withCheck": "is_admin()"
-        },
-        "Users create task attachments": {
-          "name": "Users create task attachments",
-          "as": "PERMISSIVE",
-          "for": "INSERT",
-          "to": [
-            "public"
-          ]
-        },
-        "Users view task attachments": {
-          "name": "Users view task attachments",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "public"
-          ]
-        }
-      },
+      "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -2749,317 +2844,8 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {
-        "Admins manage task comments": {
-          "name": "Admins manage task comments",
-          "as": "PERMISSIVE",
-          "for": "ALL",
-          "to": [
-            "public"
-          ],
-          "using": "is_admin()",
-          "withCheck": "is_admin()"
-        },
-        "Users create task comments": {
-          "name": "Users create task comments",
-          "as": "PERMISSIVE",
-          "for": "INSERT",
-          "to": [
-            "public"
-          ]
-        },
-        "Users update task comments": {
-          "name": "Users update task comments",
-          "as": "PERMISSIVE",
-          "for": "UPDATE",
-          "to": [
-            "public"
-          ]
-        },
-        "Users view task comments": {
-          "name": "Users view task comments",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "public"
-          ]
-        }
-      },
+      "policies": {},
       "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.task_suggestions": {
-      "name": "task_suggestions",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "email_metadata_id": {
-          "name": "email_metadata_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "project_id": {
-          "name": "project_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "suggested_title": {
-          "name": "suggested_title",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "suggested_description": {
-          "name": "suggested_description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "suggested_due_date": {
-          "name": "suggested_due_date",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "suggested_priority": {
-          "name": "suggested_priority",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "suggested_assignees": {
-          "name": "suggested_assignees",
-          "type": "uuid[]",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'{}'"
-        },
-        "confidence": {
-          "name": "confidence",
-          "type": "numeric(3, 2)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "reasoning": {
-          "name": "reasoning",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "status": {
-          "name": "status",
-          "type": "suggestion_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'PENDING'"
-        },
-        "reviewed_by": {
-          "name": "reviewed_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "reviewed_at": {
-          "name": "reviewed_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "review_notes": {
-          "name": "review_notes",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_task_id": {
-          "name": "created_task_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "ai_model_version": {
-          "name": "ai_model_version",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "prompt_tokens": {
-          "name": "prompt_tokens",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "completion_tokens": {
-          "name": "completion_tokens",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "timezone('utc'::text, now())"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "timezone('utc'::text, now())"
-        },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "idx_task_suggestions_pending": {
-          "name": "idx_task_suggestions_pending",
-          "columns": [
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "where": "(deleted_at IS NULL AND status = 'PENDING')",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_task_suggestions_email": {
-          "name": "idx_task_suggestions_email",
-          "columns": [
-            {
-              "expression": "email_metadata_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last",
-              "opclass": "uuid_ops"
-            }
-          ],
-          "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_task_suggestions_project": {
-          "name": "idx_task_suggestions_project",
-          "columns": [
-            {
-              "expression": "project_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last",
-              "opclass": "uuid_ops"
-            }
-          ],
-          "isUnique": false,
-          "where": "(deleted_at IS NULL AND project_id IS NOT NULL)",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "task_suggestions_email_metadata_id_fkey": {
-          "name": "task_suggestions_email_metadata_id_fkey",
-          "tableFrom": "task_suggestions",
-          "tableTo": "email_metadata",
-          "columnsFrom": [
-            "email_metadata_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "task_suggestions_project_id_fkey": {
-          "name": "task_suggestions_project_id_fkey",
-          "tableFrom": "task_suggestions",
-          "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "task_suggestions_reviewed_by_fkey": {
-          "name": "task_suggestions_reviewed_by_fkey",
-          "tableFrom": "task_suggestions",
-          "tableTo": "users",
-          "columnsFrom": [
-            "reviewed_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "task_suggestions_created_task_id_fkey": {
-          "name": "task_suggestions_created_task_id_fkey",
-          "tableFrom": "task_suggestions",
-          "tableTo": "tasks",
-          "columnsFrom": [
-            "created_task_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {
-        "Admins manage task suggestions": {
-          "name": "Admins manage task suggestions",
-          "as": "PERMISSIVE",
-          "for": "ALL",
-          "to": [
-            "public"
-          ],
-          "using": "is_admin()",
-          "withCheck": "is_admin()"
-        },
-        "Users view own task suggestions": {
-          "name": "Users view own task suggestions",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "public"
-          ],
-          "using": "(\n        email_metadata_id IN (\n          SELECT id FROM email_metadata WHERE user_id = auth.uid()\n        )\n      )"
-        }
-      },
-      "checkConstraints": {
-        "task_suggestions_confidence_range": {
-          "name": "task_suggestions_confidence_range",
-          "value": "confidence >= 0 AND confidence <= 1"
-        }
-      },
       "isRLSEnabled": false
     },
     "public.tasks": {
@@ -3294,41 +3080,227 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {
-        "Users create tasks": {
-          "name": "Users create tasks",
-          "as": "PERMISSIVE",
-          "for": "INSERT",
-          "to": [
-            "public"
-          ],
-          "withCheck": "is_admin()"
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.threads": {
+      "name": "threads",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
-        "Users delete tasks": {
-          "name": "Users delete tasks",
-          "as": "PERMISSIVE",
-          "for": "DELETE",
-          "to": [
-            "public"
-          ]
+        "client_id": {
+          "name": "client_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
         },
-        "Users update tasks": {
-          "name": "Users update tasks",
-          "as": "PERMISSIVE",
-          "for": "UPDATE",
-          "to": [
-            "public"
-          ]
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
         },
-        "Users view tasks": {
-          "name": "Users view tasks",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "public"
-          ]
+        "subject": {
+          "name": "subject",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "thread_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'OPEN'"
+        },
+        "source": {
+          "name": "source",
+          "type": "message_source",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "external_thread_id": {
+          "name": "external_thread_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "participant_emails": {
+          "name": "participant_emails",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "last_message_at": {
+          "name": "last_message_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "message_count": {
+          "name": "message_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "timezone('utc'::text, now())"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "timezone('utc'::text, now())"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         }
       },
+      "indexes": {
+        "idx_threads_client": {
+          "name": "idx_threads_client",
+          "columns": [
+            {
+              "expression": "client_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops"
+            }
+          ],
+          "isUnique": false,
+          "where": "(deleted_at IS NULL AND client_id IS NOT NULL)",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_threads_project": {
+          "name": "idx_threads_project",
+          "columns": [
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops"
+            }
+          ],
+          "isUnique": false,
+          "where": "(deleted_at IS NULL AND project_id IS NOT NULL)",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_threads_external": {
+          "name": "idx_threads_external",
+          "columns": [
+            {
+              "expression": "external_thread_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "text_ops"
+            }
+          ],
+          "isUnique": false,
+          "where": "(deleted_at IS NULL AND external_thread_id IS NOT NULL)",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_threads_last_message": {
+          "name": "idx_threads_last_message",
+          "columns": [
+            {
+              "expression": "last_message_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "first"
+            }
+          ],
+          "isUnique": false,
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "threads_client_id_fkey": {
+          "name": "threads_client_id_fkey",
+          "tableFrom": "threads",
+          "tableTo": "clients",
+          "columnsFrom": [
+            "client_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "threads_project_id_fkey": {
+          "name": "threads_project_id_fkey",
+          "tableFrom": "threads",
+          "tableTo": "projects",
+          "columnsFrom": [
+            "project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "threads_created_by_fkey": {
+          "name": "threads_created_by_fkey",
+          "tableFrom": "threads",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -3449,26 +3421,7 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {
-        "Admins manage time log tasks": {
-          "name": "Admins manage time log tasks",
-          "as": "PERMISSIVE",
-          "for": "ALL",
-          "to": [
-            "public"
-          ],
-          "using": "is_admin()",
-          "withCheck": "is_admin()"
-        },
-        "Users view time log tasks": {
-          "name": "Users view time log tasks",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "public"
-          ]
-        }
-      },
+      "policies": {},
       "checkConstraints": {
         "time_log_tasks_project_match": {
           "name": "time_log_tasks_project_match",
@@ -3606,34 +3559,7 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {
-        "Admins manage time logs": {
-          "name": "Admins manage time logs",
-          "as": "PERMISSIVE",
-          "for": "ALL",
-          "to": [
-            "public"
-          ],
-          "using": "is_admin()",
-          "withCheck": "is_admin()"
-        },
-        "Users update time logs": {
-          "name": "Users update time logs",
-          "as": "PERMISSIVE",
-          "for": "UPDATE",
-          "to": [
-            "public"
-          ]
-        },
-        "Users view time logs": {
-          "name": "Users view time logs",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "public"
-          ]
-        }
-      },
+      "policies": {},
       "checkConstraints": {
         "time_logs_hours_check": {
           "name": "time_logs_hours_check",
@@ -3725,41 +3651,7 @@
           ]
         }
       },
-      "policies": {
-        "Admins delete users": {
-          "name": "Admins delete users",
-          "as": "PERMISSIVE",
-          "for": "DELETE",
-          "to": [
-            "public"
-          ],
-          "using": "is_admin()"
-        },
-        "Admins insert users": {
-          "name": "Admins insert users",
-          "as": "PERMISSIVE",
-          "for": "INSERT",
-          "to": [
-            "public"
-          ]
-        },
-        "Admins update users": {
-          "name": "Admins update users",
-          "as": "PERMISSIVE",
-          "for": "UPDATE",
-          "to": [
-            "public"
-          ]
-        },
-        "Users view accessible users": {
-          "name": "Users view accessible users",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "public"
-          ]
-        }
-      },
+      "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
     }
@@ -3771,15 +3663,6 @@
       "values": [
         "prepaid",
         "net_30"
-      ]
-    },
-    "public.email_link_source": {
-      "name": "email_link_source",
-      "schema": "public",
-      "values": [
-        "AUTOMATIC",
-        "MANUAL_FORWARD",
-        "MANUAL_LINK"
       ]
     },
     "public.lead_source_type": {
@@ -3804,6 +3687,17 @@
         "UNQUALIFIED"
       ]
     },
+    "public.message_source": {
+      "name": "message_source",
+      "schema": "public",
+      "values": [
+        "EMAIL",
+        "CHAT",
+        "VOICE_MEMO",
+        "DOCUMENT",
+        "FORM"
+      ]
+    },
     "public.oauth_connection_status": {
       "name": "oauth_connection_status",
       "schema": "public",
@@ -3822,6 +3716,16 @@
         "GITHUB"
       ]
     },
+    "public.project_status": {
+      "name": "project_status",
+      "schema": "public",
+      "values": [
+        "ONBOARDING",
+        "ACTIVE",
+        "ON_HOLD",
+        "COMPLETED"
+      ]
+    },
     "public.project_type": {
       "name": "project_type",
       "schema": "public",
@@ -3835,11 +3739,21 @@
       "name": "suggestion_status",
       "schema": "public",
       "values": [
+        "DRAFT",
         "PENDING",
         "APPROVED",
         "REJECTED",
         "MODIFIED",
-        "EXPIRED"
+        "FAILED"
+      ]
+    },
+    "public.suggestion_type": {
+      "name": "suggestion_type",
+      "schema": "public",
+      "values": [
+        "TASK",
+        "PR",
+        "REPLY"
       ]
     },
     "public.task_status": {
@@ -3852,6 +3766,15 @@
         "IN_REVIEW",
         "BLOCKED",
         "DONE",
+        "ARCHIVED"
+      ]
+    },
+    "public.thread_status": {
+      "name": "thread_status",
+      "schema": "public",
+      "values": [
+        "OPEN",
+        "RESOLVED",
         "ARCHIVED"
       ]
     },

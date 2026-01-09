@@ -1,9 +1,15 @@
 import { z } from 'zod'
 
+// Helper to transform "null" string literals to undefined
+const nullableString = z
+  .string()
+  .optional()
+  .transform(val => (val === 'null' || val === '' ? undefined : val))
+
 export const extractedTaskSchema = z.object({
   title: z.string().max(200).describe('Actionable task title starting with a verb'),
-  description: z.string().max(2000).optional().describe('Additional context and details'),
-  dueDate: z.string().optional().describe('Due date if mentioned (YYYY-MM-DD format)'),
+  description: nullableString.describe('Additional context and details'),
+  dueDate: nullableString.describe('Due date if mentioned (YYYY-MM-DD format)'),
   priority: z.enum(['HIGH', 'MEDIUM', 'LOW']).optional().describe('Task priority based on urgency'),
   confidence: z.number().min(0).max(1).describe('Confidence score 0-1 based on clarity of request'),
   reasoning: z.string().max(500).describe('Brief explanation of why this is a task'),

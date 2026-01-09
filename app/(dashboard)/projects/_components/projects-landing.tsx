@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useMemo } from 'react'
 import type { ReactNode } from 'react'
-import { Building2, FolderKanban, UserRound, Users } from 'lucide-react'
+import { Building2, FolderKanban, Github, UserRound, Users } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
@@ -171,6 +171,7 @@ export function ProjectsLanding({
       totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0
 
     const treeLine = options?.indent ? (options.isLast ? '└' : '├') : null
+    const firstRepo = project.githubRepos[0]
 
     return (
       <TableRow key={project.id}>
@@ -206,15 +207,33 @@ export function ProjectsLanding({
             {dateRange !== '—' ? dateRange : '—'}
           </span>
         </TableCell>
+        <TableCell className='align-middle'>
+          <div className='flex h-full items-center'>
+            {firstRepo ? (
+              <a
+                href={`https://github.com/${firstRepo.repoFullName}`}
+                target='_blank'
+                rel='noopener noreferrer'
+                className='text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 transition-colors'
+                title={firstRepo.repoFullName}
+              >
+                <Github className='h-4 w-4' />
+              </a>
+            ) : (
+              <span className='text-muted-foreground/40'>—</span>
+            )}
+          </div>
+        </TableCell>
       </TableRow>
     )
   }
 
   const tableColumnWidths = {
-    project: 'w-[40%]',
-    status: 'w-[15%]',
-    progress: 'w-[25%]',
-    dates: 'w-[20%]',
+    project: 'w-[35%]',
+    status: 'w-[12%]',
+    progress: 'w-[22%]',
+    dates: 'w-[18%]',
+    links: 'w-[13%]',
   }
 
   const renderProjectTable = (items: ProjectWithRelations[]) => (
@@ -228,6 +247,7 @@ export function ProjectsLanding({
               Progress
             </TableHead>
             <TableHead className={tableColumnWidths.dates}>Dates</TableHead>
+            <TableHead className={tableColumnWidths.links}>Links</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>{items.map(project => renderProjectRow(project))}</TableBody>
@@ -245,7 +265,7 @@ export function ProjectsLanding({
       className='border-t-muted hover:bg-transparent'
     >
       <TableCell
-        colSpan={4}
+        colSpan={5}
         className='bg-blue-100 py-3 align-middle dark:bg-blue-500/8'
       >
         <Link
@@ -275,6 +295,7 @@ export function ProjectsLanding({
                 Progress
               </TableHead>
               <TableHead className={tableColumnWidths.dates}>Dates</TableHead>
+              <TableHead className={tableColumnWidths.links}>Links</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

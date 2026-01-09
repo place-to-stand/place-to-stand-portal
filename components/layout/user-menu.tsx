@@ -53,18 +53,18 @@ export function UserMenu({ user, align = 'end' }: Props) {
   return (
     <>
       <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-        <DropdownMenuTrigger className='hover:bg-muted flex w-full items-center gap-3 rounded-md border px-3 py-2 text-sm font-medium transition'>
-          <Avatar className='h-8 w-8'>
+        <DropdownMenuTrigger className='hover:bg-muted flex w-full items-center gap-2 rounded border px-2 py-1.5 text-[13px] font-medium transition'>
+          <Avatar className='h-6 w-6'>
             {avatarSrc ? (
               <AvatarImage src={avatarSrc} alt={user.full_name ?? user.email} />
             ) : null}
-            <AvatarFallback>{initials}</AvatarFallback>
+            <AvatarFallback className='text-[10px]'>{initials}</AvatarFallback>
           </Avatar>
-          <div className='hidden flex-col text-left leading-tight sm:flex'>
-            <span className='text-sm font-medium'>
+          <div className='hidden min-w-0 flex-1 flex-col text-left leading-tight sm:flex'>
+            <span className='truncate text-[13px] font-medium'>
               {user.full_name ?? user.email}
             </span>
-            <span className='text-muted-foreground text-xs capitalize'>
+            <span className='text-muted-foreground truncate text-[11px] capitalize'>
               {user.role.toLowerCase()}
             </span>
           </div>

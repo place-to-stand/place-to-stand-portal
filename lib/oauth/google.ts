@@ -1,11 +1,11 @@
 import { serverEnv } from '@/lib/env.server'
 
-// Phase 1 scopes - Gmail read access
+// Gmail scopes - read and modify access
 export const GOOGLE_SCOPES = [
   'https://www.googleapis.com/auth/userinfo.profile',
   'https://www.googleapis.com/auth/userinfo.email',
   'https://www.googleapis.com/auth/gmail.readonly',
-  'https://www.googleapis.com/auth/gmail.labels',
+  'https://www.googleapis.com/auth/gmail.modify',
 ]
 
 export interface GoogleTokenResponse {
@@ -113,10 +113,19 @@ export async function getGoogleUserInfo(
 
 /**
  * Revoke a token (for disconnect)
+ * Logs failures for monitoring but doesn't throw - caller handles soft delete regardless
  */
 export async function revokeToken(token: string): Promise<void> {
-  await fetch(`https://oauth2.googleapis.com/revoke?token=${token}`, {
+  const response = await fetch(`https://oauth2.googleapis.com/revoke?token=${token}`, {
     method: 'POST',
   })
-  // Ignore errors - token may already be invalid
+
+  if (!response.ok) {
+    // Log for monitoring - token may already be invalid/expired
+    // Don't throw: caller will soft-delete connection regardless
+    console.warn('[Google OAuth] Token revocation failed:', {
+      status: response.status,
+      statusText: response.statusText,
+    })
+  }
 }

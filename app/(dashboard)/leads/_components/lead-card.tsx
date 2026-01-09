@@ -22,6 +22,7 @@ import {
 import { getLeadSourceLabel } from '@/lib/leads/constants'
 import type { LeadRecord } from '@/lib/leads/types'
 import { cn } from '@/lib/utils'
+import { formatPhoneUS } from '@/lib/utils/phone-format'
 
 type LeadCardProps = {
   lead: LeadRecord
@@ -183,7 +184,7 @@ export function LeadCardContent({ lead }: { lead: LeadRecord }) {
           <div className='text-muted-foreground flex flex-wrap items-center gap-2 text-xs'>
             <AnchorRow
               icon={Phone}
-              value={lead.contactPhone}
+              value={formatPhoneUS(lead.contactPhone)}
               href={`tel:${lead.contactPhone}`}
             />
           </div>
@@ -220,14 +221,12 @@ function AnchorRow({ icon: Icon, value, href }: AnchorRowProps) {
   return (
     <a
       href={href}
-      className='hover:text-foreground inline-flex items-center gap-1 underline-offset-4 transition hover:underline font-mono font-medium'
+      className='hover:text-foreground inline-flex min-w-0 max-w-full items-center gap-1 underline-offset-4 transition hover:underline'
       onClick={event => event.stopPropagation()}
       title={value}
     >
       <Icon className='h-3.5 w-3.5 shrink-0' aria-hidden />
-
-        {value}
-
+      <span className='truncate'>{value}</span>
     </a>
   )
 }

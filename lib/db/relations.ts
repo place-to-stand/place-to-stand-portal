@@ -16,13 +16,13 @@ import {
   activityLogs,
   leads,
   oauthConnections,
-  clientContacts,
-  emailMetadata,
-  emailLinks,
-  taskSuggestions,
-  suggestionFeedback,
+  contacts,
+  contactClients,
+  contactLeads,
+  threads,
+  messages,
   githubRepoLinks,
-  prSuggestions,
+  suggestions,
 } from './schema'
 
 export const clientsRelations = relations(clients, ({ one, many }) => ({
@@ -33,7 +33,8 @@ export const clientsRelations = relations(clients, ({ one, many }) => ({
   hourBlocks: many(hourBlocks),
   clientMembers: many(clientMembers),
   projects: many(projects),
-  contacts: many(clientContacts),
+  contactClients: many(contactClients),
+  threads: many(threads),
 }))
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -56,6 +57,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   }),
   activityLogs: many(activityLogs),
   oauthConnections: many(oauthConnections),
+  threads: many(threads),
+  messages: many(messages),
 }))
 
 export const taskAssigneesRelations = relations(taskAssignees, ({ one }) => ({
@@ -103,13 +106,15 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
     references: [users.id],
     relationName: 'tasks_updatedBy_users_id',
   }),
+  suggestions: many(suggestions),
 }))
 
-export const leadsRelations = relations(leads, ({ one }) => ({
+export const leadsRelations = relations(leads, ({ one, many }) => ({
   assignee: one(users, {
     fields: [leads.assigneeId],
     references: [users.id],
   }),
+  contactLeads: many(contactLeads),
 }))
 
 export const hourBlocksRelations = relations(hourBlocks, ({ one }) => ({
@@ -146,6 +151,8 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   timeLogs: many(timeLogs),
   tasks: many(tasks),
   githubRepos: many(githubRepoLinks),
+  threads: many(threads),
+  suggestions: many(suggestions),
 }))
 
 export const taskCommentsRelations = relations(taskComments, ({ one }) => ({
@@ -215,114 +222,126 @@ export const activityLogsRelations = relations(activityLogs, ({ one }) => ({
 
 export const oauthConnectionsRelations = relations(
   oauthConnections,
-  ({ one }) => ({
+  ({ one, many }) => ({
     user: one(users, {
       fields: [oauthConnections.userId],
       references: [users.id],
     }),
+    githubRepoLinks: many(githubRepoLinks),
   })
 )
 
-export const clientContactsRelations = relations(clientContacts, ({ one }) => ({
+export const contactsRelations = relations(contacts, ({ one, many }) => ({
+  createdByUser: one(users, {
+    fields: [contacts.createdBy],
+    references: [users.id],
+  }),
+  contactClients: many(contactClients),
+  contactLeads: many(contactLeads),
+}))
+
+export const contactClientsRelations = relations(contactClients, ({ one }) => ({
+  contact: one(contacts, {
+    fields: [contactClients.contactId],
+    references: [contacts.id],
+  }),
   client: one(clients, {
-    fields: [clientContacts.clientId],
+    fields: [contactClients.clientId],
     references: [clients.id],
   }),
-  createdByUser: one(users, {
-    fields: [clientContacts.createdBy],
-    references: [users.id],
+}))
+
+export const contactLeadsRelations = relations(contactLeads, ({ one }) => ({
+  contact: one(contacts, {
+    fields: [contactLeads.contactId],
+    references: [contacts.id],
+  }),
+  lead: one(leads, {
+    fields: [contactLeads.leadId],
+    references: [leads.id],
   }),
 }))
 
-export const emailMetadataRelations = relations(emailMetadata, ({ one, many }) => ({
-  user: one(users, {
-    fields: [emailMetadata.userId],
-    references: [users.id],
-  }),
-  links: many(emailLinks),
-}))
+// =============================================================================
+// THREADS & MESSAGES (Phase 5 - Unified Messaging)
+// =============================================================================
 
-export const emailLinksRelations = relations(emailLinks, ({ one }) => ({
-  email: one(emailMetadata, {
-    fields: [emailLinks.emailMetadataId],
-    references: [emailMetadata.id],
-  }),
+export const threadsRelations = relations(threads, ({ one, many }) => ({
   client: one(clients, {
-    fields: [emailLinks.clientId],
+    fields: [threads.clientId],
     references: [clients.id],
   }),
   project: one(projects, {
-    fields: [emailLinks.projectId],
+    fields: [threads.projectId],
     references: [projects.id],
   }),
-  linkedByUser: one(users, {
-    fields: [emailLinks.linkedBy],
+  createdByUser: one(users, {
+    fields: [threads.createdBy],
     references: [users.id],
   }),
+  messages: many(messages),
+  suggestions: many(suggestions),
 }))
 
-export const taskSuggestionsRelations = relations(taskSuggestions, ({ one, many }) => ({
-  email: one(emailMetadata, {
-    fields: [taskSuggestions.emailMetadataId],
-    references: [emailMetadata.id],
+export const messagesRelations = relations(messages, ({ one, many }) => ({
+  thread: one(threads, {
+    fields: [messages.threadId],
+    references: [threads.id],
+  }),
+  user: one(users, {
+    fields: [messages.userId],
+    references: [users.id],
+  }),
+  suggestions: many(suggestions),
+}))
+
+
+// =============================================================================
+// GITHUB INTEGRATION
+// =============================================================================
+
+export const githubRepoLinksRelations = relations(
+  githubRepoLinks,
+  ({ one, many }) => ({
+    project: one(projects, {
+      fields: [githubRepoLinks.projectId],
+      references: [projects.id],
+    }),
+    oauthConnection: one(oauthConnections, {
+      fields: [githubRepoLinks.oauthConnectionId],
+      references: [oauthConnections.id],
+    }),
+    linkedByUser: one(users, {
+      fields: [githubRepoLinks.linkedBy],
+      references: [users.id],
+    }),
+    suggestions: many(suggestions),
+  })
+)
+
+// =============================================================================
+// UNIFIED SUGGESTIONS (Phase 5 - Polymorphic)
+// =============================================================================
+
+export const suggestionsRelations = relations(suggestions, ({ one }) => ({
+  message: one(messages, {
+    fields: [suggestions.messageId],
+    references: [messages.id],
+  }),
+  thread: one(threads, {
+    fields: [suggestions.threadId],
+    references: [threads.id],
   }),
   project: one(projects, {
-    fields: [taskSuggestions.projectId],
+    fields: [suggestions.projectId],
     references: [projects.id],
   }),
   reviewedByUser: one(users, {
-    fields: [taskSuggestions.reviewedBy],
+    fields: [suggestions.reviewedBy],
     references: [users.id],
   }),
   createdTask: one(tasks, {
-    fields: [taskSuggestions.createdTaskId],
+    fields: [suggestions.createdTaskId],
     references: [tasks.id],
-  }),
-  feedback: many(suggestionFeedback),
-}))
-
-export const suggestionFeedbackRelations = relations(suggestionFeedback, ({ one }) => ({
-  suggestion: one(taskSuggestions, {
-    fields: [suggestionFeedback.taskSuggestionId],
-    references: [taskSuggestions.id],
-  }),
-  createdByUser: one(users, {
-    fields: [suggestionFeedback.createdBy],
-    references: [users.id],
-  }),
-}))
-
-export const githubRepoLinksRelations = relations(githubRepoLinks, ({ one, many }) => ({
-  project: one(projects, {
-    fields: [githubRepoLinks.projectId],
-    references: [projects.id],
-  }),
-  oauthConnection: one(oauthConnections, {
-    fields: [githubRepoLinks.oauthConnectionId],
-    references: [oauthConnections.id],
-  }),
-  linkedByUser: one(users, {
-    fields: [githubRepoLinks.linkedBy],
-    references: [users.id],
-  }),
-  prSuggestions: many(prSuggestions),
-}))
-
-export const prSuggestionsRelations = relations(prSuggestions, ({ one }) => ({
-  taskSuggestion: one(taskSuggestions, {
-    fields: [prSuggestions.taskSuggestionId],
-    references: [taskSuggestions.id],
-  }),
-  email: one(emailMetadata, {
-    fields: [prSuggestions.emailMetadataId],
-    references: [emailMetadata.id],
-  }),
-  repoLink: one(githubRepoLinks, {
-    fields: [prSuggestions.githubRepoLinkId],
-    references: [githubRepoLinks.id],
-  }),
-  reviewedByUser: one(users, {
-    fields: [prSuggestions.reviewedBy],
-    references: [users.id],
   }),
 }))

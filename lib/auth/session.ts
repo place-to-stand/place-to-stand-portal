@@ -2,13 +2,14 @@ import 'server-only'
 
 import { cache } from 'react'
 import { redirect } from 'next/navigation'
-import type { Session } from '@supabase/supabase-js'
+import type { Session, User } from '@supabase/supabase-js'
 import { and, eq, isNull } from 'drizzle-orm'
 
 import type { Database } from '@/lib/supabase/types'
 import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
+import { ensureUserProfile } from '@/lib/auth/profile'
 
 export type AppUser = Database['public']['Tables']['users']['Row']
 export type UserRole = Database['public']['Enums']['user_role']
@@ -32,7 +33,7 @@ export const getSession = cache(async (): Promise<Session | null> => {
 export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
   const supabase = getSupabaseServerClient()
   const {
-    data: { user },
+    data: { user: authUser },
     error,
   } = await supabase.auth.getUser()
 
@@ -45,49 +46,107 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
     return null
   }
 
-  if (!user?.id) {
+  if (!authUser?.id) {
     return null
   }
 
   try {
-    const profileRows = await db
-      .select({
-        id: users.id,
-        email: users.email,
-        fullName: users.fullName,
-        role: users.role,
-        avatarUrl: users.avatarUrl,
-        createdAt: users.createdAt,
-        updatedAt: users.updatedAt,
-        deletedAt: users.deletedAt,
-      })
-      .from(users)
-      .where(and(eq(users.id, user.id), isNull(users.deletedAt)))
-      .limit(1)
-
-    const profile = profileRows[0]
+    const profile = await fetchUserProfile(authUser.id)
 
     if (!profile) {
       return null
     }
 
-    const mappedProfile: AppUser = {
-      id: profile.id,
-      email: profile.email,
-      role: profile.role,
-      avatar_url: profile.avatarUrl ?? null,
-      full_name: profile.fullName ?? null,
-      created_at: profile.createdAt,
-      updated_at: profile.updatedAt,
-      deleted_at: profile.deletedAt ?? null,
+    // Sync profile if Supabase auth email differs from database email
+    // This handles cases where email change confirmation bypassed our /auth/confirm route
+    const authEmail = authUser.email ?? ''
+    if (authEmail && authEmail.toLowerCase() !== profile.email.toLowerCase()) {
+      await syncUserProfile(authUser, profile.email)
+      // Re-fetch to get updated email
+      const updatedProfile = await fetchUserProfileUncached(authUser.id)
+      if (updatedProfile) {
+        return mapProfileToAppUser(updatedProfile)
+      }
     }
 
-    return mappedProfile
+    return mapProfileToAppUser(profile)
   } catch (profileError) {
     console.error('Failed to load current user from Drizzle', profileError)
     return null
   }
 })
+
+type UserProfile = {
+  id: string
+  email: string
+  fullName: string | null
+  role: UserRole
+  avatarUrl: string | null
+  createdAt: string
+  updatedAt: string
+  deletedAt: string | null
+}
+
+async function fetchUserProfile(userId: string): Promise<UserProfile | null> {
+  const profileRows = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      fullName: users.fullName,
+      role: users.role,
+      avatarUrl: users.avatarUrl,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+      deletedAt: users.deletedAt,
+    })
+    .from(users)
+    .where(and(eq(users.id, userId), isNull(users.deletedAt)))
+    .limit(1)
+
+  return profileRows[0] ?? null
+}
+
+async function fetchUserProfileUncached(userId: string): Promise<UserProfile | null> {
+  // Direct query without React cache to get fresh data after sync
+  const profileRows = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      fullName: users.fullName,
+      role: users.role,
+      avatarUrl: users.avatarUrl,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+      deletedAt: users.deletedAt,
+    })
+    .from(users)
+    .where(and(eq(users.id, userId), isNull(users.deletedAt)))
+    .limit(1)
+
+  return profileRows[0] ?? null
+}
+
+function mapProfileToAppUser(profile: UserProfile): AppUser {
+  return {
+    id: profile.id,
+    email: profile.email,
+    role: profile.role,
+    avatar_url: profile.avatarUrl ?? null,
+    full_name: profile.fullName ?? null,
+    created_at: profile.createdAt,
+    updated_at: profile.updatedAt,
+    deleted_at: profile.deletedAt ?? null,
+  }
+}
+
+async function syncUserProfile(authUser: User, previousEmail: string): Promise<void> {
+  try {
+    console.log(`Syncing user profile: email changed from ${previousEmail} to ${authUser.email}`)
+    await ensureUserProfile(authUser)
+  } catch (syncError) {
+    console.error('Failed to sync user profile after email change', syncError)
+  }
+}
 
 export const requireUser = async () => {
   const user = await getCurrentUser()

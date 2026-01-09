@@ -1,117 +1,148 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Mail } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, Mail } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { EmailDetailSheet } from '@/app/(dashboard)/emails/_components/email-detail-sheet'
-import type { EmailWithLinks } from '@/lib/queries/emails'
-
-type LinkedEmail = {
-  id: string
-  subject: string | null
-  fromEmail: string
-  fromName: string | null
-  receivedAt: string
-  source: string
-}
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import type { MessageForClient } from '@/lib/queries/messages'
 
 type Props = {
-  emails: LinkedEmail[]
-  isAdmin: boolean
+  messages: MessageForClient[]
+  currentUserId: string
 }
 
-export function ClientEmailsSection({ emails, isAdmin }: Props) {
-  const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null)
-  const [selectedEmail, setSelectedEmail] = useState<EmailWithLinks | null>(null)
+export function ClientEmailsSection({ messages, currentUserId }: Props) {
+  return (
+    <section className='bg-card text-card-foreground overflow-hidden rounded-lg border'>
+      <div className='flex items-center gap-3 border-b px-4 py-3'>
+        <div className='bg-muted flex h-7 w-7 items-center justify-center rounded-md'>
+          <Mail className='text-muted-foreground h-4 w-4' />
+        </div>
+        <h2 className='font-semibold'>Messages</h2>
+        <Badge variant='secondary' className='ml-auto'>
+          {messages.length}
+        </Badge>
+      </div>
 
-  // Fetch full email data when selected
-  useEffect(() => {
-    if (!selectedEmailId) return
+      <div className='p-3'>
+        {messages.length === 0 ? (
+          <div className='text-muted-foreground rounded-md border border-dashed px-4 py-6 text-center text-sm'>
+            No messages linked yet.
+          </div>
+        ) : (
+          <TooltipProvider delayDuration={300}>
+            <div className='divide-y'>
+              {messages.slice(0, 5).map(msg => (
+                <MessageRow
+                  key={msg.id}
+                  message={msg}
+                  isOwned={msg.userId === currentUserId}
+                />
+              ))}
+              {messages.length > 5 && (
+                <div className='px-3 py-2 text-center'>
+                  <Link
+                    href='/my/inbox'
+                    className='text-muted-foreground hover:text-foreground text-xs transition'
+                  >
+                    +{messages.length - 5} more
+                  </Link>
+                </div>
+              )}
+            </div>
+          </TooltipProvider>
+        )}
+      </div>
+    </section>
+  )
+}
 
-    let cancelled = false
-    fetch(`/api/emails/${selectedEmailId}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { if (!cancelled) setSelectedEmail(data) })
-      .catch(() => { if (!cancelled) setSelectedEmail(null) })
+type MessageRowProps = {
+  message: MessageForClient
+  isOwned: boolean
+}
 
-    return () => { cancelled = true }
-  }, [selectedEmailId])
+function MessageRow({ message, isOwned }: MessageRowProps) {
+  const userDisplayName = message.user?.fullName ?? 'Unknown'
+  const userInitials = getInitials(userDisplayName)
+  const avatarSrc = message.user?.avatarUrl
+    ? `/api/storage/user-avatar/${message.userId}?v=${encodeURIComponent(message.user.updatedAt ?? '')}`
+    : null
 
-  const handleClose = () => {
-    setSelectedEmailId(null)
-    setSelectedEmail(null)
-  }
+  const content = (
+    <>
+      <div className='mt-0.5 shrink-0'>
+        {message.isInbound ? (
+          <ArrowDownLeft className='h-3.5 w-3.5 text-emerald-500' />
+        ) : (
+          <ArrowUpRight className='h-3.5 w-3.5 text-blue-500' />
+        )}
+      </div>
+      <div className='min-w-0 flex-1'>
+        <div className='truncate text-sm font-medium'>
+          {message.subject || '(no subject)'}
+        </div>
+        <div className='text-muted-foreground mt-0.5 flex items-center gap-2 text-xs'>
+          <span className='truncate'>
+            {message.fromName || message.fromEmail}
+          </span>
+          <span className='shrink-0'>·</span>
+          <span className='shrink-0'>
+            {formatDistanceToNow(new Date(message.sentAt), {
+              addSuffix: true,
+            })}
+          </span>
+        </div>
+      </div>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Avatar className='h-6 w-6 shrink-0'>
+            {avatarSrc ? (
+              <AvatarImage src={avatarSrc} alt={userDisplayName} />
+            ) : null}
+            <AvatarFallback className='text-[9px]'>
+              {userInitials}
+            </AvatarFallback>
+          </Avatar>
+        </TooltipTrigger>
+        <TooltipContent side='left'>
+          <p className='text-xs'>{userDisplayName}&apos;s inbox</p>
+        </TooltipContent>
+      </Tooltip>
+    </>
+  )
 
-  const handleUpdate = (updated: EmailWithLinks) => {
-    setSelectedEmail(updated)
+  if (isOwned) {
+    return (
+      <Link
+        href={`/my/inbox?thread=${message.threadId}`}
+        className='hover:bg-muted/50 flex items-center gap-3 px-3 py-2.5 transition'
+      >
+        {content}
+      </Link>
+    )
   }
 
   return (
-    <section className='bg-card text-card-foreground overflow-hidden rounded-xl border shadow-sm'>
-      <div className='bg-muted/30 flex items-center justify-between gap-3 border-b px-6 py-4'>
-        <div className='flex items-center gap-3'>
-          <div className='bg-background flex h-8 w-8 items-center justify-center rounded-md border shadow-sm'>
-            <Mail className='text-muted-foreground h-4 w-4' />
-          </div>
-          <h2 className='text-lg font-semibold tracking-tight'>Linked Emails</h2>
-          <Badge variant='secondary'>{emails.length}</Badge>
-        </div>
-        <Link href='/emails' className='text-sm text-muted-foreground hover:underline'>
-          View all emails →
-        </Link>
-      </div>
-
-      <div className='p-6'>
-        {emails.length === 0 ? (
-          <div className='text-muted-foreground rounded-lg border border-dashed p-6 text-center text-sm'>
-            No emails linked to this client yet. Add contacts to enable auto-matching.
-          </div>
-        ) : (
-          <div className='space-y-2'>
-            {emails.slice(0, 10).map(email => (
-              <div
-                key={email.id}
-                onClick={() => setSelectedEmailId(email.id)}
-                className='flex items-center justify-between gap-4 py-2 px-3 rounded-md hover:bg-muted/50 cursor-pointer'
-              >
-                <div className='flex-1 min-w-0'>
-                  <div className='font-medium truncate'>
-                    {email.subject || '(no subject)'}
-                  </div>
-                  <div className='text-sm text-muted-foreground truncate'>
-                    {email.fromName || email.fromEmail}
-                  </div>
-                </div>
-                <div className='flex items-center gap-2 shrink-0'>
-                  <Badge variant='outline' className='text-xs'>
-                    {email.source === 'AUTOMATIC' ? 'Auto' : 'Manual'}
-                  </Badge>
-                  <span className='text-xs text-muted-foreground'>
-                    {formatDistanceToNow(new Date(email.receivedAt), { addSuffix: true })}
-                  </span>
-                </div>
-              </div>
-            ))}
-            {emails.length > 10 && (
-              <div className='text-center pt-2'>
-                <Link href='/emails?filter=linked' className='text-sm text-muted-foreground hover:underline'>
-                  +{emails.length - 10} more emails
-                </Link>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      <EmailDetailSheet
-        email={selectedEmail}
-        onClose={handleClose}
-        onUpdate={handleUpdate}
-        isAdmin={isAdmin}
-      />
-    </section>
+    <div className='flex items-center gap-3 px-3 py-2.5 opacity-60'>
+      {content}
+    </div>
   )
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map(segment => segment[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
 }

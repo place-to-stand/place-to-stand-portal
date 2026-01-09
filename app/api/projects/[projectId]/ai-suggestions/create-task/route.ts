@@ -4,13 +4,13 @@ import { and, eq, isNull } from 'drizzle-orm'
 
 import { requireRole } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { projects } from '@/lib/db/schema'
+import { projects, tasks } from '@/lib/db/schema'
 import { approveSuggestion, rejectSuggestion } from '@/lib/data/suggestions'
 import { getProjectRepos } from '@/lib/data/github-repos'
 
 const createTaskSchema = z.object({
   suggestionId: z.string().uuid(),
-  status: z.enum(['BACKLOG', 'ON_DECK', 'IN_PROGRESS', 'IN_REVIEW', 'DONE']),
+  status: z.enum(['BACKLOG', 'ON_DECK', 'IN_PROGRESS', 'IN_REVIEW', 'BLOCKED', 'DONE']),
   title: z.string().min(1).max(200).optional(),
   description: z.string().max(2000).optional(),
   dueDate: z.string().optional(),
@@ -87,7 +87,7 @@ export async function POST(
   }
 
   try {
-    const { task } = await approveSuggestion(
+    const result = await approveSuggestion(
       parsed.data.suggestionId,
       user.id,
       {
@@ -100,17 +100,37 @@ export async function POST(
       }
     )
 
+    // The result contains taskId for TASK suggestions
+    if (!result.taskId) {
+      return NextResponse.json(
+        { error: 'Expected task creation but got different result' },
+        { status: 400 }
+      )
+    }
+
+    // Fetch the created task details
+    const [task] = await db
+      .select({
+        id: tasks.id,
+        title: tasks.title,
+        status: tasks.status,
+        projectId: tasks.projectId,
+      })
+      .from(tasks)
+      .where(eq(tasks.id, result.taskId))
+      .limit(1)
+
     // Fetch GitHub repos linked to this project for PR generation
     const githubRepos = await getProjectRepos(projectId)
 
     return NextResponse.json({
       success: true,
-      task: {
+      task: task ? {
         id: task.id,
         title: task.title,
         status: task.status,
         projectId: task.projectId,
-      },
+      } : null,
       suggestionId: parsed.data.suggestionId,
       githubRepos: githubRepos.map(r => ({
         id: r.id,

@@ -1,50 +1,122 @@
 import type { InferSelectModel, InferInsertModel } from 'drizzle-orm'
-import type { taskSuggestions, suggestionFeedback } from '@/lib/db/schema'
+import type { suggestions } from '@/lib/db/schema'
 
-export type TaskSuggestion = InferSelectModel<typeof taskSuggestions>
-export type NewTaskSuggestion = InferInsertModel<typeof taskSuggestions>
+// Base types from schema
+export type Suggestion = InferSelectModel<typeof suggestions>
+export type NewSuggestion = InferInsertModel<typeof suggestions>
 
-export type SuggestionFeedback = InferSelectModel<typeof suggestionFeedback>
-export type NewSuggestionFeedback = InferInsertModel<typeof suggestionFeedback>
-
-export type SuggestionStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'MODIFIED' | 'EXPIRED'
+// Enum types
+export type SuggestionType = 'TASK' | 'PR' | 'REPLY'
+export type SuggestionStatus = 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'MODIFIED' | 'FAILED'
 export type SuggestionPriority = 'HIGH' | 'MEDIUM' | 'LOW'
 
-// Feedback types for AI learning
-export type FeedbackType =
-  | 'title_changed'
-  | 'description_changed'
-  | 'project_changed'
-  | 'due_date_changed'
-  | 'priority_changed'
-  | 'rejected_not_actionable'
-  | 'rejected_duplicate'
-  | 'rejected_irrelevant'
+// Polymorphic suggested content types
+export interface TaskSuggestedContent {
+  title: string
+  description?: string
+  dueDate?: string
+  priority?: SuggestionPriority
+  assignees?: string[]
+}
 
-// Full suggestion with related data for UI
-export interface TaskSuggestionWithEmail extends TaskSuggestion {
-  email: {
+export interface PRSuggestedContent {
+  title: string
+  body: string
+  branch?: string
+  baseBranch?: string
+  labels?: string[]
+  assignees?: string[]
+}
+
+export interface ReplySuggestedContent {
+  subject?: string
+  body: string
+}
+
+export type SuggestedContent = TaskSuggestedContent | PRSuggestedContent | ReplySuggestedContent
+
+// Suggestion with related context for UI
+export interface SuggestionWithContext extends Suggestion {
+  message?: {
     id: string
     subject: string | null
     fromEmail: string
     fromName: string | null
-    receivedAt: string
-  }
+    sentAt: string
+  } | null
+  thread?: {
+    id: string
+    subject: string | null
+    source: string
+  } | null
+  project?: {
+    id: string
+    name: string
+    slug: string | null
+    clientId: string | null
+    clientName: string | null
+    clientSlug: string | null
+  } | null
+  createdTask?: {
+    id: string
+    title: string
+  } | null
+}
+
+// Parsed suggestion with typed content
+export interface ParsedSuggestion<T extends SuggestedContent = SuggestedContent> extends Omit<Suggestion, 'suggestedContent'> {
+  suggestedContent: T
+}
+
+export interface TaskSuggestionWithContext extends SuggestionWithContext {
+  type: 'TASK'
+  suggestedContent: TaskSuggestedContent
+}
+
+export interface PRSuggestionWithContext extends SuggestionWithContext {
+  type: 'PR'
+  suggestedContent: PRSuggestedContent
+}
+
+export interface ReplySuggestionWithContext extends SuggestionWithContext {
+  type: 'REPLY'
+  suggestedContent: ReplySuggestedContent
+}
+
+// Suggestion summary for list views
+export interface SuggestionSummary {
+  id: string
+  type: SuggestionType
+  status: SuggestionStatus
+  confidence: string
+  createdAt: string
+  // Type-specific preview fields
+  title?: string // For TASK and PR
+  body?: string // For REPLY
+  message?: {
+    subject: string | null
+    fromEmail: string
+  } | null
   project?: {
     id: string
     name: string
   } | null
 }
 
-// Minimal suggestion for list views
-export interface TaskSuggestionSummary {
-  id: string
-  suggestedTitle: string
-  confidence: string
-  status: SuggestionStatus
-  createdAt: string
-  email: {
-    subject: string | null
-    fromEmail: string
-  }
+// Approval request payload
+export interface ApproveSuggestionRequest {
+  modifications?: Partial<SuggestedContent>
 }
+
+// Approval result
+export interface ApproveSuggestionResult {
+  success: boolean
+  suggestion: Suggestion
+  // Type-specific created entities
+  createdTaskId?: string
+  error?: string
+}
+
+// Backwards compatibility aliases
+/** @deprecated Use TaskSuggestionWithContext instead */
+export type TaskSuggestionWithEmail = TaskSuggestionWithContext

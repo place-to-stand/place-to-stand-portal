@@ -18,7 +18,9 @@ export default function IntegrationsSettingsPage() {
           </p>
         </div>
       </AppShellHeader>
-      <IntegrationsPanel />
+      <section className='bg-background rounded-xl border p-6 shadow-sm'>
+        <IntegrationsPanel />
+      </section>
     </>
   )
 }

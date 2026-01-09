@@ -21,6 +21,8 @@ export const useClientSheetState = ({
   client,
   allClientUsers,
   clientMembers,
+  allContacts,
+  clientContacts,
 }: UseClientSheetStateArgs): UseClientSheetStateReturn => {
   const isEditing = Boolean(client)
   const [feedback, setFeedback] = useState<string | null>(null)
@@ -34,6 +36,8 @@ export const useClientSheetState = ({
     client,
     clientMembers,
     allClientUsers,
+    allContacts,
+    clientContacts,
     isEditing,
     isPending,
     startTransition,
@@ -90,6 +94,16 @@ export const useClientSheetState = ({
     handleCancelDelete: deletionState.handleCancelDelete,
     handleConfirmDelete: deletionState.handleConfirmDelete,
     replaceMembers: formState.replaceMembers,
+    // Contacts
+    availableContacts: formState.availableContacts,
+    selectedContacts: formState.selectedContacts,
+    isContactPickerOpen: formState.isContactPickerOpen,
+    contactsAddButtonDisabled: formState.contactsAddButtonDisabled,
+    contactsAddButtonDisabledReason: formState.contactsAddButtonDisabledReason,
+    isLoadingContacts: formState.isLoadingContacts,
+    handleContactPickerOpenChange: formState.handleContactPickerOpenChange,
+    handleAddContact: formState.handleAddContact,
+    handleRemoveContact: formState.handleRemoveContact,
   }
 }
 
@@ -97,4 +111,5 @@ export type {
   UseClientSheetStateArgs,
   UseClientSheetStateReturn,
   ClientMemberOption,
+  ClientContactOption,
 } from './types'

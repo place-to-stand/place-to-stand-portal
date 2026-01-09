@@ -9,6 +9,7 @@ const VALID_TARGET_TYPES: ActivityTargetType[] = [
   'TASK',
   'PROJECT',
   'CLIENT',
+  'CONTACT',
   'COMMENT',
   'TIME_LOG',
   'HOUR_BLOCK',

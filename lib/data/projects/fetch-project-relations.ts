@@ -1,4 +1,4 @@
-import type { DbClient } from '@/lib/types'
+import type { DbClient, GitHubRepoLinkSummary } from '@/lib/types'
 
 import type {
   ClientMembership,
@@ -28,6 +28,7 @@ import {
   mapTaskRowsToRaw,
   type TaskRow,
 } from './relations/tasks'
+import { getReposForProjects } from '@/lib/data/github-repos'
 
 export type ProjectRelationsFetchArgs = {
   projectIds: string[]
@@ -43,6 +44,7 @@ export type ProjectRelationsFetchResult = {
   archivedTasks: RawTaskWithRelations[]
   hourBlocks: RawHourBlock[]
   clientMemberships: ClientMembership[]
+  githubReposByProject: Map<string, GitHubRepoLinkSummary[]>
 }
 
 export async function fetchProjectRelations({
@@ -68,11 +70,19 @@ export async function fetchProjectRelations({
       ? loadClientMembershipRows(userId)
       : Promise.resolve([])
 
+  const githubReposPromise = getReposForProjects(projectIds)
+
   const [
     [clientRows, memberRows, hourBlockRows],
     [activeTaskRows, archivedTaskRows],
     clientMembershipRows,
-  ] = await Promise.all([clientDataPromise, taskDataPromise, clientMembershipPromise])
+    githubReposMap,
+  ] = await Promise.all([
+    clientDataPromise,
+    taskDataPromise,
+    clientMembershipPromise,
+    githubReposPromise,
+  ])
 
   const allTaskIds = [...activeTaskRows, ...archivedTaskRows].map(row => row.id)
   const assigneeRows = await loadTaskAssigneeRows(allTaskIds)
@@ -93,6 +103,19 @@ export async function fetchProjectRelations({
     assigneesByTask,
   )
 
+  // Map GitHub repos to summary format
+  const githubReposByProject = new Map<string, GitHubRepoLinkSummary[]>()
+  githubReposMap.forEach((repos, projectId) => {
+    githubReposByProject.set(
+      projectId,
+      repos.map(repo => ({
+        id: repo.id,
+        repoFullName: repo.repoFullName,
+        defaultBranch: repo.defaultBranch,
+      }))
+    )
+  })
+
   return {
     clients,
     members,
@@ -100,5 +123,6 @@ export async function fetchProjectRelations({
     archivedTasks,
     hourBlocks,
     clientMemberships,
+    githubReposByProject,
   }
 }

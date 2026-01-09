@@ -40,7 +40,9 @@ export function LeadsWorkspace({
 }: LeadsWorkspaceProps) {
   const router = useRouter()
   const [isCreatingLead, setIsCreatingLead] = useState(false)
-  const [initialStatus, setInitialStatus] = useState<LeadStatusValue | null>(null)
+  const [initialStatus, setInitialStatus] = useState<LeadStatusValue | null>(
+    null
+  )
   const [closingLeadId, setClosingLeadId] = useState<string | null>(null)
   const [isSheetClosing, setIsSheetClosing] = useState(false)
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -53,7 +55,9 @@ export function LeadsWorkspace({
     () => initialColumns.reduce((sum, column) => sum + column.leads.length, 0),
     [initialColumns]
   )
-  const activeLead = activeLeadId ? leadLookup.get(activeLeadId) ?? null : null
+  const activeLead = activeLeadId
+    ? (leadLookup.get(activeLeadId) ?? null)
+    : null
 
   const cancelPendingClose = useCallback(() => {
     if (closeTimeoutRef.current) {
@@ -72,17 +76,20 @@ export function LeadsWorkspace({
     }
   }, [])
 
-  const handleCreateLead = useCallback((status?: LeadStatusValue) => {
-    if (!canManage) {
-      return
-    }
+  const handleCreateLead = useCallback(
+    (status?: LeadStatusValue) => {
+      if (!canManage) {
+        return
+      }
 
-    cancelPendingClose()
-    setClosingLeadId(null)
-    setInitialStatus(status ?? null)
-    setIsCreatingLead(true)
-    router.push('/leads/board', { scroll: false })
-  }, [canManage, cancelPendingClose, router])
+      cancelPendingClose()
+      setClosingLeadId(null)
+      setInitialStatus(status ?? null)
+      setIsCreatingLead(true)
+      router.push('/leads/board', { scroll: false })
+    },
+    [canManage, cancelPendingClose, router]
+  )
 
   const handleEditLead = useCallback(
     (lead: LeadRecord) => {
@@ -196,6 +203,7 @@ export function LeadsWorkspace({
                 size='sm'
                 disabled={!canManage}
                 onClick={() => handleCreateLead()}
+                className='gap-2'
               >
                 <Plus className='h-4 w-4' />
                 Add lead

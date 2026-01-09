@@ -3,7 +3,7 @@ import type {
   InteractionProperties,
 } from '@/lib/perf/interaction-marks'
 
-export type SettingsEntity = 'client' | 'project' | 'hour_block' | 'user'
+export type SettingsEntity = 'client' | 'contact' | 'project' | 'hour_block' | 'user'
 
 export type SettingsMode = 'create' | 'edit' | 'delete' | 'restore' | 'destroy'
 

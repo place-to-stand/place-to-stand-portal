@@ -108,6 +108,7 @@ export function ProjectsBoardDialogs({
         onOpenChange={onTimeLogOpenChange}
         projectId={activeProject.id}
         projectName={activeProject.name}
+        projectType={activeProject.type}
         clientId={activeProject.client?.id ?? null}
         clientName={activeProject.client?.name ?? null}
         clientBillingType={activeProject.client?.billing_type ?? null}
@@ -122,10 +123,7 @@ export function ProjectsBoardDialogs({
       />
 
       {aiSuggestionsState && (
-        <AISuggestionsSheet
-          {...aiSuggestionsState}
-          projectName={activeProject.name}
-        />
+        <AISuggestionsSheet {...aiSuggestionsState} />
       )}
     </>
   )

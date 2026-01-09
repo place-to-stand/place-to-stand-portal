@@ -21,6 +21,8 @@ type LeadColumnProps = {
   label: string
   leads: LeadRecord[]
   canManage: boolean
+  /** Controls + button visibility independently from canManage (drag permission) */
+  enableCreateButton?: boolean
   onEditLead: (lead: LeadRecord) => void
   onCreateLead?: (status: LeadStatusValue) => void
   isDropTarget?: boolean
@@ -37,6 +39,7 @@ export function LeadColumn({
   label,
   leads,
   canManage,
+  enableCreateButton,
   onEditLead,
   onCreateLead,
   isDropTarget = false,
@@ -89,7 +92,7 @@ export function LeadColumn({
           </span>
         </div>
         <div className='flex items-center gap-2'>
-          {canManage && onCreateLead ? (
+          {(enableCreateButton ?? canManage) && onCreateLead ? (
             <Button
               type='button'
               size='icon'
