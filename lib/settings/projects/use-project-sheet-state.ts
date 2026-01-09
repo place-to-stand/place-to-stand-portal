@@ -56,6 +56,12 @@ export type UseProjectSheetStateArgs = {
   projectContractors?: Record<string, ContractorUserSummary[]>
 }
 
+export type PendingRepo = {
+  repoFullName: string
+}
+
+// Note: We only need the ID to unlink repos via the API
+
 export type UseProjectSheetStateReturn = {
   form: UseFormReturn<ProjectSheetFormValues>
   feedback: string | null
@@ -69,7 +75,12 @@ export type UseProjectSheetStateReturn = {
   isDeleteDialogOpen: boolean
   unsavedChangesDialog: ReturnType<typeof useUnsavedChangesWarning>['dialog']
   handleSheetOpenChange: (open: boolean) => void
-  handleSubmit: (values: ProjectSheetFormValues) => void
+  handleSubmit: (
+    values: ProjectSheetFormValues,
+    pendingRepos: PendingRepo[],
+    removedRepoIds: string[]
+  ) => void
+  handleReposDirtyChange: (isDirty: boolean) => void
   handleRequestDelete: () => void
   handleCancelDelete: () => void
   handleConfirmDelete: () => void
@@ -86,6 +97,7 @@ export function useProjectSheetState({
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isReposDirty, setIsReposDirty] = useState(false)
   const { toast } = useToast()
 
   const sortedClients = useMemo(() => sortClientsByName(clients), [clients])
@@ -104,7 +116,7 @@ export function useProjectSheetState({
     defaultValues: buildProjectFormDefaults(project),
   })
 
-  const hasUnsavedChanges = form.formState.isDirty
+  const hasUnsavedChanges = form.formState.isDirty || isReposDirty
   const projectType =
     useWatch({
       control: form.control,
@@ -121,7 +133,12 @@ export function useProjectSheetState({
     form.reset(defaults, { keepDefaultValues: false })
     form.clearErrors()
     setFeedback(null)
+    setIsReposDirty(false)
   }, [form, project])
+
+  const handleReposDirtyChange = useCallback((isDirty: boolean) => {
+    setIsReposDirty(isDirty)
+  }, [])
 
   const applyServerFieldErrors = useCallback(
     (fieldErrors?: Record<string, string[]>) => {
@@ -163,8 +180,54 @@ export function useProjectSheetState({
     [confirmDiscard, onOpenChange, resetFormState, startTransition]
   )
 
+  const linkPendingRepos = useCallback(
+    async (projectId: string, pendingRepos: PendingRepo[]) => {
+      if (pendingRepos.length === 0) return
+
+      const linkPromises = pendingRepos.map(repo =>
+        fetch(`/api/projects/${projectId}/github-repos`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ repoFullName: repo.repoFullName }),
+        })
+      )
+
+      try {
+        await Promise.all(linkPromises)
+      } catch {
+        // Log but don't fail the save - repos can be linked manually later
+        console.error('Failed to link some repositories')
+      }
+    },
+    []
+  )
+
+  const unlinkRemovedRepos = useCallback(
+    async (projectId: string, removedRepoIds: string[]) => {
+      if (removedRepoIds.length === 0) return
+
+      const unlinkPromises = removedRepoIds.map(repoId =>
+        fetch(`/api/projects/${projectId}/github-repos/${repoId}`, {
+          method: 'DELETE',
+        })
+      )
+
+      try {
+        await Promise.all(unlinkPromises)
+      } catch {
+        // Log but don't fail the save - repos can be unlinked manually later
+        console.error('Failed to unlink some repositories')
+      }
+    },
+    []
+  )
+
   const handleSubmit = useCallback(
-    (values: ProjectSheetFormValues) => {
+    (
+      values: ProjectSheetFormValues,
+      pendingRepos: PendingRepo[],
+      removedRepoIds: string[]
+    ) => {
       startTransition(async () => {
         setFeedback(null)
         form.clearErrors()
@@ -214,9 +277,22 @@ export function useProjectSheetState({
             return
           }
 
+          // Link pending repos and unlink removed repos after successful save
+          const targetProjectId = result.projectId ?? payload.id
+          if (targetProjectId) {
+            await Promise.all([
+              pendingRepos.length > 0
+                ? linkPendingRepos(targetProjectId, pendingRepos)
+                : Promise.resolve(),
+              removedRepoIds.length > 0
+                ? unlinkRemovedRepos(targetProjectId, removedRepoIds)
+                : Promise.resolve(),
+            ])
+          }
+
           finishSettingsInteraction(interaction, {
             status: 'success',
-            targetId: payload.id ?? null,
+            targetId: targetProjectId ?? null,
           })
 
           toast({
@@ -257,6 +333,8 @@ export function useProjectSheetState({
       applyServerFieldErrors,
       form,
       isEditing,
+      linkPendingRepos,
+      unlinkRemovedRepos,
       onComplete,
       onOpenChange,
       project,
@@ -384,6 +462,7 @@ export function useProjectSheetState({
     unsavedChangesDialog,
     handleSheetOpenChange,
     handleSubmit,
+    handleReposDirtyChange,
     handleRequestDelete,
     handleCancelDelete,
     handleConfirmDelete,

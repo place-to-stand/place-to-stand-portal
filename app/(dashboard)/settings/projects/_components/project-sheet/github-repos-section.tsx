@@ -1,9 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Plus, Github, Trash2, ExternalLink, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import {
   Dialog,
   DialogContent,
@@ -15,10 +14,24 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { toast } from '@/components/ui/use-toast'
 import type { GitHubRepoLink } from '@/lib/types/github'
 
+export interface PendingRepo {
+  repoFullName: string
+}
+
+export interface RemovedRepo {
+  id: string
+  repoFullName: string
+}
+
 interface GitHubReposSectionProps {
-  projectId: string
-  projectName: string
+  projectId?: string
   disabled?: boolean
+  // Controlled state from parent (for undo/redo support)
+  pendingRepos: PendingRepo[]
+  removedRepoIds: Set<string>
+  onPendingReposChange: (repos: PendingRepo[]) => void
+  onRemovedRepoIdsChange: (ids: Set<string>) => void
+  onDirtyChange?: (isDirty: boolean) => void
 }
 
 interface RepoOption {
@@ -29,8 +42,12 @@ interface RepoOption {
 
 export function GitHubReposSection({
   projectId,
-  projectName: _projectName,
   disabled = false,
+  pendingRepos,
+  removedRepoIds,
+  onPendingReposChange,
+  onRemovedRepoIdsChange,
+  onDirtyChange,
 }: GitHubReposSectionProps) {
   const [repos, setRepos] = useState<GitHubRepoLink[]>([])
   const [loading, setLoading] = useState(true)
@@ -39,11 +56,14 @@ export function GitHubReposSection({
   const [availableRepos, setAvailableRepos] = useState<RepoOption[]>([])
   const [loadingRepos, setLoadingRepos] = useState(false)
   const [selectedRepo, setSelectedRepo] = useState<string | null>(null)
-  const [linking, setLinking] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<GitHubRepoLink | null>(
     null
   )
-  const [unlinking, setUnlinking] = useState(false)
+  const [pendingDeleteConfirm, setPendingDeleteConfirm] =
+    useState<PendingRepo | null>(null)
+  const initialRepoCountRef = useRef<number | null>(null)
+
+  const isCreateMode = !projectId
 
   // Check GitHub connection status
   useEffect(() => {
@@ -57,15 +77,23 @@ export function GitHubReposSection({
       .catch(() => setIsGitHubConnected(false))
   }, [])
 
-  // Load linked repos
+  // Load linked repos (only in edit mode)
   const loadLinkedRepos = useCallback(async () => {
-    if (!projectId) return
+    if (!projectId) {
+      setLoading(false)
+      return
+    }
 
     try {
       const res = await fetch(`/api/projects/${projectId}/github-repos`)
       if (res.ok) {
         const data = await res.json()
-        setRepos(data.repos || [])
+        const loadedRepos = data.repos || []
+        setRepos(loadedRepos)
+        // Track initial count for dirty state comparison
+        if (initialRepoCountRef.current === null) {
+          initialRepoCountRef.current = loadedRepos.length
+        }
       }
     } catch {
       // Ignore errors for now
@@ -78,6 +106,22 @@ export function GitHubReposSection({
     loadLinkedRepos()
   }, [loadLinkedRepos])
 
+  // Notify parent of dirty state changes
+  useEffect(() => {
+    if (!onDirtyChange) return
+
+    // Create mode: dirty if any pending repos
+    if (isCreateMode) {
+      onDirtyChange(pendingRepos.length > 0)
+      return
+    }
+
+    // Edit mode: dirty if pending repos added or repos removed
+    const hasPending = pendingRepos.length > 0
+    const hasRemoved = removedRepoIds.size > 0
+    onDirtyChange(hasPending || hasRemoved)
+  }, [isCreateMode, onDirtyChange, pendingRepos.length, removedRepoIds.size])
+
   // Load available repos when dialog opens
   useEffect(() => {
     if (dialogOpen && isGitHubConnected) {
@@ -86,12 +130,14 @@ export function GitHubReposSection({
         .then(r => r.json())
         .then(data => {
           if (data.repos) {
+            // Exclude both linked repos AND pending repos (for both create and edit modes)
             const linkedFullNames = repos.map(r => r.repoFullName)
+            const pendingFullNames = pendingRepos.map(r => r.repoFullName)
+            const excludedNames = new Set([...linkedFullNames, ...pendingFullNames])
             setAvailableRepos(
               data.repos
                 .filter(
-                  (r: { fullName: string }) =>
-                    !linkedFullNames.includes(r.fullName)
+                  (r: { fullName: string }) => !excludedNames.has(r.fullName)
                 )
                 .map((r: { fullName: string; description?: string }) => ({
                   value: r.fullName,
@@ -110,71 +156,41 @@ export function GitHubReposSection({
         })
         .finally(() => setLoadingRepos(false))
     }
-  }, [dialogOpen, isGitHubConnected, repos])
+  }, [dialogOpen, isGitHubConnected, repos, pendingRepos])
 
-  const handleLink = async () => {
+  const handleLink = () => {
     if (!selectedRepo) return
 
-    setLinking(true)
-    try {
-      const response = await fetch(`/api/projects/${projectId}/github-repos`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ repoFullName: selectedRepo }),
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Failed to link')
-      }
-
-      const data = await response.json()
-      setRepos(prev => [...prev, data.link])
-      setDialogOpen(false)
-      setSelectedRepo(null)
-
-      toast({
-        title: 'Repository linked',
-        description: `${selectedRepo} is now linked.`,
-      })
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description:
-          error instanceof Error ? error.message : 'Failed to link repository',
-        variant: 'destructive',
-      })
-    } finally {
-      setLinking(false)
-    }
+    // Always add to pending list (for both create and edit modes)
+    // Repos get linked when the form is saved
+    onPendingReposChange([...pendingRepos, { repoFullName: selectedRepo }])
+    setDialogOpen(false)
+    setSelectedRepo(null)
+    toast({
+      title: 'Repository added',
+      description: `${selectedRepo} will be linked when you save.`,
+    })
   }
 
-  const handleUnlink = async () => {
+  const handleRemovePending = () => {
+    if (!pendingDeleteConfirm) return
+    onPendingReposChange(
+      pendingRepos.filter(r => r.repoFullName !== pendingDeleteConfirm.repoFullName)
+    )
+    setPendingDeleteConfirm(null)
+    toast({ title: 'Repository removed' })
+  }
+
+  const handleUnlink = () => {
     if (!deleteConfirm) return
 
-    setUnlinking(true)
-    try {
-      const res = await fetch(
-        `/api/projects/${projectId}/github-repos/${deleteConfirm.id}`,
-        {
-          method: 'DELETE',
-        }
-      )
-
-      if (!res.ok) throw new Error('Failed to unlink')
-
-      setRepos(prev => prev.filter(r => r.id !== deleteConfirm.id))
-      toast({ title: 'Repository unlinked' })
-    } catch {
-      toast({
-        title: 'Error',
-        description: 'Failed to unlink repository',
-        variant: 'destructive',
-      })
-    } finally {
-      setUnlinking(false)
-      setDeleteConfirm(null)
-    }
+    // Mark repo for removal on save (don't immediately delete)
+    onRemovedRepoIdsChange(new Set([...removedRepoIds, deleteConfirm.id]))
+    setDeleteConfirm(null)
+    toast({
+      title: 'Repository marked for removal',
+      description: 'Changes will be applied when you save.',
+    })
   }
 
   if (!isGitHubConnected) {
@@ -194,7 +210,7 @@ export function GitHubReposSection({
     )
   }
 
-  if (loading) {
+  if (loading && !isCreateMode) {
     return (
       <div className='space-y-1'>
         <h3 className='text-sm font-medium'>GitHub Repositories</h3>
@@ -205,6 +221,20 @@ export function GitHubReposSection({
       </div>
     )
   }
+
+  // Determine which repos to display
+  // In edit mode: show linked repos (excluding removed) + pending repos
+  // In create mode: show only pending repos
+  const displayRepos = isCreateMode
+    ? []
+    : repos.filter(r => !removedRepoIds.has(r.id))
+  const removedRepos = isCreateMode
+    ? []
+    : repos.filter(r => removedRepoIds.has(r.id))
+  const hasNoRepos =
+    displayRepos.length === 0 &&
+    pendingRepos.length === 0 &&
+    removedRepos.length === 0
 
   return (
     <div className='space-y-1'>
@@ -222,44 +252,105 @@ export function GitHubReposSection({
         </Button>
       </div>
 
-      {repos.length === 0 ? (
+      {hasNoRepos ? (
         <div className='rounded-lg border border-dashed p-4 text-center'>
           <Github className='text-muted-foreground mx-auto h-6 w-6' />
           <p className='text-muted-foreground mt-2 text-sm'>
-            No repositories linked. Link a repo to enable PR creation.
+            {isCreateMode
+              ? 'No repositories selected. Add repos to link when you save.'
+              : 'No repositories linked. Link a repo to enable PR creation.'}
           </p>
         </div>
       ) : (
         <div className='space-y-2'>
-          {repos.map(repo => (
+          {/* Linked repos (edit mode) */}
+          {displayRepos.map(repo => (
             <div
               key={repo.id}
               className='bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2'
             >
-              <div className='flex items-center gap-2 text-sm'>
-                <Github className='text-muted-foreground h-4 w-4' />
-                <a
-                  href={`https://github.com/${repo.repoFullName}`}
-                  target='_blank'
-                  rel='noopener noreferrer'
-                  className='hover:underline'
-                >
-                  {repo.repoFullName}
-                  <ExternalLink className='text-muted-foreground ml-1 inline h-3 w-3' />
-                </a>
-                <Badge variant='outline' className='text-xs'>
+              <div className='flex min-w-0 flex-col gap-1'>
+                <div className='flex items-center gap-2 text-sm'>
+                  <Github className='text-muted-foreground h-4 w-4 shrink-0' />
+                  <a
+                    href={`https://github.com/${repo.repoFullName}`}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='truncate hover:underline'
+                  >
+                    {repo.repoFullName}
+                    <ExternalLink className='text-muted-foreground ml-1 inline h-3 w-3' />
+                  </a>
+                </div>
+                <div className='text-muted-foreground pl-6 text-xs'>
                   {repo.defaultBranch}
-                </Badge>
+                </div>
               </div>
               <Button
                 type='button'
                 variant='ghost'
                 size='icon'
-                className='text-muted-foreground hover:text-destructive h-7 w-7'
+                className='text-muted-foreground hover:text-destructive h-7 w-7 shrink-0'
                 onClick={() => setDeleteConfirm(repo)}
                 disabled={disabled}
               >
                 <Trash2 className='h-4 w-4' />
+              </Button>
+            </div>
+          ))}
+          {/* Pending repos (both modes) */}
+          {pendingRepos.map(repo => (
+            <div
+              key={`pending-${repo.repoFullName}`}
+              className='bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2'
+            >
+              <div className='flex min-w-0 flex-col gap-1'>
+                <div className='flex items-center gap-2 text-sm'>
+                  <Github className='text-muted-foreground h-4 w-4 shrink-0' />
+                  <span className='truncate'>{repo.repoFullName}</span>
+                </div>
+                <div className='pl-6 text-xs text-amber-600'>Pending save</div>
+              </div>
+              <Button
+                type='button'
+                variant='ghost'
+                size='icon'
+                className='text-muted-foreground hover:text-destructive h-7 w-7 shrink-0'
+                onClick={() => setPendingDeleteConfirm(repo)}
+                disabled={disabled}
+              >
+                <Trash2 className='h-4 w-4' />
+              </Button>
+            </div>
+          ))}
+          {/* Removed repos (edit mode) */}
+          {removedRepos.map(repo => (
+            <div
+              key={`removed-${repo.id}`}
+              className='bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2 opacity-60'
+            >
+              <div className='flex min-w-0 flex-col gap-1'>
+                <div className='flex items-center gap-2 text-sm line-through'>
+                  <Github className='text-muted-foreground h-4 w-4 shrink-0' />
+                  <span className='truncate'>{repo.repoFullName}</span>
+                </div>
+                <div className='pl-6 text-xs text-red-600'>Pending removal</div>
+              </div>
+              <Button
+                type='button'
+                variant='ghost'
+                size='icon'
+                className='text-muted-foreground h-7 w-7 shrink-0'
+                onClick={() => {
+                  const next = new Set(removedRepoIds)
+                  next.delete(repo.id)
+                  onRemovedRepoIdsChange(next)
+                }}
+                disabled={disabled}
+                aria-label='Undo removal'
+                title='Undo removal'
+              >
+                <span className='text-xs'>Undo</span>
               </Button>
             </div>
           ))}
@@ -270,7 +361,7 @@ export function GitHubReposSection({
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Link GitHub Repository</DialogTitle>
+            <DialogTitle>Add GitHub Repository</DialogTitle>
           </DialogHeader>
           <div className='space-y-4 pt-4'>
             {loadingRepos ? (
@@ -291,27 +382,32 @@ export function GitHubReposSection({
               <Button variant='outline' onClick={() => setDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleLink} disabled={!selectedRepo || linking}>
-                {linking ? (
-                  <>
-                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                    Linking...
-                  </>
-                ) : (
-                  'Link Repository'
-                )}
+              <Button onClick={handleLink} disabled={!selectedRepo}>
+                Add Repository
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Unlink Confirmation */}
+      {/* Remove Pending Confirmation (create mode) */}
+      <ConfirmDialog
+        open={!!pendingDeleteConfirm}
+        title='Remove repository?'
+        description={`Remove ${pendingDeleteConfirm?.repoFullName} from the list?`}
+        confirmLabel='Remove'
+        cancelLabel='Cancel'
+        confirmVariant='destructive'
+        onConfirm={handleRemovePending}
+        onCancel={() => setPendingDeleteConfirm(null)}
+      />
+
+      {/* Unlink Confirmation (edit mode) */}
       <ConfirmDialog
         open={!!deleteConfirm}
-        title='Unlink repository?'
-        description={`Are you sure you want to unlink ${deleteConfirm?.repoFullName}? This will also remove any pending PR suggestions for this repository.`}
-        confirmLabel={unlinking ? 'Unlinking...' : 'Unlink'}
+        title='Remove repository?'
+        description={`Remove ${deleteConfirm?.repoFullName}? The change will be applied when you save.`}
+        confirmLabel='Remove'
         cancelLabel='Cancel'
         confirmVariant='destructive'
         onConfirm={handleUnlink}

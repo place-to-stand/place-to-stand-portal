@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type React from 'react'
 import { Archive, Redo2, Undo2 } from 'lucide-react'
 import { useWatch, type UseFormReturn } from 'react-hook-form'
@@ -35,7 +35,10 @@ import type {
 } from '@/lib/settings/projects/project-sheet-ui-state'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import type { ProjectSheetFieldState } from './project-sheet-field-state'
-import { GitHubReposSection } from './github-repos-section'
+import {
+  GitHubReposSection,
+  type PendingRepo,
+} from './github-repos-section'
 
 export type ProjectSheetFormProps = {
   form: UseFormReturn<ProjectSheetFormValues>
@@ -46,12 +49,16 @@ export type ProjectSheetFormProps = {
   clientOptions: ClientOption[]
   submitButton: SubmitButtonState
   deleteButton: DeleteButtonState
-  onSubmit: (values: ProjectSheetFormValues) => void
+  onSubmit: (
+    values: ProjectSheetFormValues,
+    pendingRepos: PendingRepo[],
+    removedRepoIds: string[]
+  ) => void
   onRequestDelete: () => void
+  onReposDirtyChange: (isDirty: boolean) => void
   isSheetOpen: boolean
   historyKey: string
   projectId?: string
-  projectName?: string
 }
 
 export function ProjectSheetForm(props: ProjectSheetFormProps) {
@@ -65,24 +72,85 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
     deleteButton,
     onSubmit,
     onRequestDelete,
+    onReposDirtyChange,
     isSheetOpen,
     historyKey,
     projectId,
-    projectName,
   } = props
 
+  // Track repos in state for undo/redo integration
+  const [pendingRepos, setPendingRepos] = useState<PendingRepo[]>([])
+  const [removedRepoIds, setRemovedRepoIds] = useState<Set<string>>(new Set())
+
+  // Refs for accessing current state in submit handler
+  const pendingReposRef = useRef<PendingRepo[]>([])
+  const removedRepoIdsRef = useRef<Set<string>>(new Set())
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    pendingReposRef.current = pendingRepos
+  }, [pendingRepos])
+
+  useEffect(() => {
+    removedRepoIdsRef.current = removedRepoIds
+  }, [removedRepoIds])
+
+  const handlePendingReposChange = useCallback((repos: PendingRepo[]) => {
+    setPendingRepos(repos)
+  }, [])
+
+  const handleRemovedRepoIdsChange = useCallback((ids: Set<string>) => {
+    setRemovedRepoIds(ids)
+  }, [])
+
   const handleSave = useCallback(
-    () => form.handleSubmit(onSubmit)(),
+    (e?: React.BaseSyntheticEvent) => {
+      e?.preventDefault()
+      // Convert removedRepoIds Set to array for submission
+      const removedRepoIdsArray = Array.from(removedRepoIdsRef.current)
+      form.handleSubmit(values =>
+        onSubmit(values, pendingReposRef.current, removedRepoIdsArray)
+      )(e)
+    },
     [form, onSubmit]
   )
 
-  const { undo, redo, canUndo, canRedo } = useSheetFormControls({
+  // External state for undo/redo (repos)
+  // IMPORTANT: getExternalState must be stable (no state dependencies) because the
+  // history hook's main effect depends on it. If it changes, the effect re-runs
+  // and resets history. We use refs to access current state instead.
+  type ReposExternalState = {
+    pendingRepos: PendingRepo[]
+    removedRepoIds: string[]
+  }
+
+  const getExternalState = useCallback((): ReposExternalState => ({
+    pendingRepos: pendingReposRef.current,
+    removedRepoIds: Array.from(removedRepoIdsRef.current),
+  }), [])
+
+  const applyExternalState = useCallback((state: unknown) => {
+    const reposState = state as ReposExternalState | undefined
+    if (reposState) {
+      setPendingRepos(reposState.pendingRepos)
+      setRemovedRepoIds(new Set(reposState.removedRepoIds))
+    }
+  }, [])
+
+  const { undo, redo, canUndo, canRedo, notifyExternalChange } = useSheetFormControls({
     form,
     isActive: isSheetOpen,
     canSave: !submitButton.disabled,
     onSave: handleSave,
     historyKey,
+    getExternalState,
+    applyExternalState,
   })
+
+  // Notify undo/redo system when repos change
+  useEffect(() => {
+    notifyExternalChange()
+  }, [pendingRepos, removedRepoIds, notifyExternalChange])
 
   const firstFieldRef = useRef<HTMLInputElement>(null)
   const projectType =
@@ -114,7 +182,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(onSubmit)}
+        onSubmit={handleSave}
         className='flex flex-1 flex-col gap-5 px-6 pb-32'
       >
         <FormField
@@ -327,9 +395,14 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
           />
         </div>
 
-        {isEditing && projectId && projectName ? (
-          <GitHubReposSection projectId={projectId} projectName={projectName} />
-        ) : null}
+        <GitHubReposSection
+          projectId={projectId}
+          pendingRepos={pendingRepos}
+          removedRepoIds={removedRepoIds}
+          onPendingReposChange={handlePendingReposChange}
+          onRemovedRepoIdsChange={handleRemovedRepoIdsChange}
+          onDirtyChange={onReposDirtyChange}
+        />
 
         {feedback ? (
           <p className='border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm'>

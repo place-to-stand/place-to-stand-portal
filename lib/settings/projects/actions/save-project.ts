@@ -137,7 +137,7 @@ export async function saveProject(
           metadata: event.metadata,
         })
 
-        return {}
+        return { projectId: insertedId }
       }
 
       const slugToUpdate = normalizedProvidedSlug

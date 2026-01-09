@@ -87,6 +87,7 @@ export type DestroyProjectInput = z.infer<typeof destroyProjectSchema>
 export type ProjectActionResult = {
   error?: string
   fieldErrors?: Record<string, string[]>
+  projectId?: string
 }
 
 export function toProjectSlug(input: string): string {
