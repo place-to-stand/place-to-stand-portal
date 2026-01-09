@@ -40,14 +40,20 @@ export function GitHubReposSection({
   const [loadingRepos, setLoadingRepos] = useState(false)
   const [selectedRepo, setSelectedRepo] = useState<string | null>(null)
   const [linking, setLinking] = useState(false)
-  const [deleteConfirm, setDeleteConfirm] = useState<GitHubRepoLink | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<GitHubRepoLink | null>(
+    null
+  )
   const [unlinking, setUnlinking] = useState(false)
 
   // Check GitHub connection status
   useEffect(() => {
     fetch('/api/integrations/github/status')
       .then(r => r.json())
-      .then(data => setIsGitHubConnected(data.connected || (data.accounts && data.accounts.length > 0)))
+      .then(data =>
+        setIsGitHubConnected(
+          data.connected || (data.accounts && data.accounts.length > 0)
+        )
+      )
       .catch(() => setIsGitHubConnected(false))
   }, [])
 
@@ -83,7 +89,10 @@ export function GitHubReposSection({
             const linkedFullNames = repos.map(r => r.repoFullName)
             setAvailableRepos(
               data.repos
-                .filter((r: { fullName: string }) => !linkedFullNames.includes(r.fullName))
+                .filter(
+                  (r: { fullName: string }) =>
+                    !linkedFullNames.includes(r.fullName)
+                )
                 .map((r: { fullName: string; description?: string }) => ({
                   value: r.fullName,
                   label: r.fullName,
@@ -124,11 +133,15 @@ export function GitHubReposSection({
       setDialogOpen(false)
       setSelectedRepo(null)
 
-      toast({ title: 'Repository linked', description: `${selectedRepo} is now linked.` })
+      toast({
+        title: 'Repository linked',
+        description: `${selectedRepo} is now linked.`,
+      })
     } catch (error) {
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to link repository',
+        description:
+          error instanceof Error ? error.message : 'Failed to link repository',
         variant: 'destructive',
       })
     } finally {
@@ -141,9 +154,12 @@ export function GitHubReposSection({
 
     setUnlinking(true)
     try {
-      const res = await fetch(`/api/projects/${projectId}/github-repos/${deleteConfirm.id}`, {
-        method: 'DELETE',
-      })
+      const res = await fetch(
+        `/api/projects/${projectId}/github-repos/${deleteConfirm.id}`,
+        {
+          method: 'DELETE',
+        }
+      )
 
       if (!res.ok) throw new Error('Failed to unlink')
 
@@ -163,11 +179,11 @@ export function GitHubReposSection({
 
   if (!isGitHubConnected) {
     return (
-      <div className='space-y-2'>
-        <label className='text-sm font-medium'>GitHub Repositories</label>
+      <div className='space-y-1'>
+        <h3 className='text-sm font-medium'>GitHub Repositories</h3>
         <div className='rounded-lg border border-dashed p-4 text-center'>
-          <Github className='mx-auto h-6 w-6 text-muted-foreground' />
-          <p className='mt-2 text-sm text-muted-foreground'>
+          <Github className='text-muted-foreground mx-auto h-6 w-6' />
+          <p className='text-muted-foreground mt-2 text-sm'>
             Connect your GitHub account in Settings to link repositories.
           </p>
           <Button variant='outline' size='sm' className='mt-3' asChild>
@@ -180,9 +196,9 @@ export function GitHubReposSection({
 
   if (loading) {
     return (
-      <div className='space-y-2'>
-        <label className='text-sm font-medium'>GitHub Repositories</label>
-        <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+      <div className='space-y-1'>
+        <h3 className='text-sm font-medium'>GitHub Repositories</h3>
+        <div className='text-muted-foreground flex items-center gap-2 text-sm'>
           <Loader2 className='h-4 w-4 animate-spin' />
           Loading linked repos...
         </div>
@@ -191,25 +207,25 @@ export function GitHubReposSection({
   }
 
   return (
-    <div className='space-y-3'>
-      <div className='flex items-center justify-between'>
-        <label className='text-sm font-medium'>GitHub Repositories</label>
+    <div className='space-y-1'>
+      <div className='flex items-center justify-between gap-3'>
+        <h3 className='text-sm font-medium'>GitHub Repositories</h3>
         <Button
           type='button'
-          variant='outline'
-          size='sm'
+          variant='ghost'
+          size='xs'
           onClick={() => setDialogOpen(true)}
           disabled={disabled}
+          aria-label='Link repository'
         >
-          <Plus className='mr-1 h-3 w-3' />
-          Link Repo
+          <Plus className='h-4 w-4' />
         </Button>
       </div>
 
       {repos.length === 0 ? (
         <div className='rounded-lg border border-dashed p-4 text-center'>
-          <Github className='mx-auto h-6 w-6 text-muted-foreground' />
-          <p className='mt-2 text-sm text-muted-foreground'>
+          <Github className='text-muted-foreground mx-auto h-6 w-6' />
+          <p className='text-muted-foreground mt-2 text-sm'>
             No repositories linked. Link a repo to enable PR creation.
           </p>
         </div>
@@ -221,7 +237,7 @@ export function GitHubReposSection({
               className='bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2'
             >
               <div className='flex items-center gap-2 text-sm'>
-                <Github className='h-4 w-4 text-muted-foreground' />
+                <Github className='text-muted-foreground h-4 w-4' />
                 <a
                   href={`https://github.com/${repo.repoFullName}`}
                   target='_blank'
@@ -229,7 +245,7 @@ export function GitHubReposSection({
                   className='hover:underline'
                 >
                   {repo.repoFullName}
-                  <ExternalLink className='ml-1 inline h-3 w-3 text-muted-foreground' />
+                  <ExternalLink className='text-muted-foreground ml-1 inline h-3 w-3' />
                 </a>
                 <Badge variant='outline' className='text-xs'>
                   {repo.defaultBranch}
@@ -239,7 +255,7 @@ export function GitHubReposSection({
                 type='button'
                 variant='ghost'
                 size='icon'
-                className='h-7 w-7 text-muted-foreground hover:text-destructive'
+                className='text-muted-foreground hover:text-destructive h-7 w-7'
                 onClick={() => setDeleteConfirm(repo)}
                 disabled={disabled}
               >
@@ -249,9 +265,6 @@ export function GitHubReposSection({
           ))}
         </div>
       )}
-      <p className='text-xs text-muted-foreground'>
-        Linked repositories can be used for PR suggestions.
-      </p>
 
       {/* Link Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -261,7 +274,7 @@ export function GitHubReposSection({
           </DialogHeader>
           <div className='space-y-4 pt-4'>
             {loadingRepos ? (
-              <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+              <div className='text-muted-foreground flex items-center gap-2 text-sm'>
                 <Loader2 className='h-4 w-4 animate-spin' />
                 Loading repositories...
               </div>

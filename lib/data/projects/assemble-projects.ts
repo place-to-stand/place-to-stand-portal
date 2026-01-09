@@ -2,6 +2,7 @@ import type { UserRole } from '@/lib/auth/session'
 import type {
   DbClient,
   DbProject,
+  GitHubRepoLinkSummary,
   ProjectMemberWithUser,
   ProjectWithRelations,
   TaskWithRelations,
@@ -74,6 +75,7 @@ export function assembleProjectsWithRelations({
       timeLogTotalsByProject,
       timeLogTotalsByClient
     ),
+    githubRepos: relations.githubReposByProject.get(project.id) ?? [],
   }))
 }
 

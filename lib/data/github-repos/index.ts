@@ -1,4 +1,4 @@
-import { eq, and, isNull } from 'drizzle-orm'
+import { eq, and, isNull, inArray } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { githubRepoLinks } from '@/lib/db/schema'
 import { logActivity } from '@/lib/activity/logger'
@@ -17,6 +17,37 @@ export async function getProjectRepos(projectId: string): Promise<GitHubRepoLink
         isNull(githubRepoLinks.deletedAt)
       )
     )
+}
+
+/**
+ * Get repos linked to multiple projects (batch fetch)
+ */
+export async function getReposForProjects(
+  projectIds: string[]
+): Promise<Map<string, GitHubRepoLink[]>> {
+  if (projectIds.length === 0) {
+    return new Map()
+  }
+
+  const rows = await db
+    .select()
+    .from(githubRepoLinks)
+    .where(
+      and(
+        inArray(githubRepoLinks.projectId, projectIds),
+        isNull(githubRepoLinks.deletedAt)
+      )
+    )
+
+  const reposByProject = new Map<string, GitHubRepoLink[]>()
+
+  rows.forEach(row => {
+    const existing = reposByProject.get(row.projectId) ?? []
+    existing.push(row)
+    reposByProject.set(row.projectId, existing)
+  })
+
+  return reposByProject
 }
 
 /**

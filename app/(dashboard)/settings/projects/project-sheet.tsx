@@ -19,7 +19,6 @@ import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
 import { ProjectSheetForm } from './_components/project-sheet/project-sheet-form'
 import { ProjectSheetDialogs } from './_components/project-sheet/project-sheet-dialogs'
 import { createProjectSheetFieldState } from './_components/project-sheet/project-sheet-field-state'
-import { GitHubReposSection } from './_components/project-sheet/github-repos-section'
 
 type Props = {
   open: boolean
@@ -87,15 +86,9 @@ export function ProjectSheet(props: Props) {
             onRequestDelete={handleRequestDelete}
             isSheetOpen={props.open}
             historyKey={props.project?.id ?? 'project:new'}
+            projectId={props.project?.id}
+            projectName={props.project?.name}
           />
-          {isEditing && props.project && (
-            <div className='px-6 pb-6'>
-              <GitHubReposSection
-                projectId={props.project.id}
-                projectName={props.project.name}
-              />
-            </div>
-          )}
         </SheetContent>
       </Sheet>
       <ProjectSheetDialogs

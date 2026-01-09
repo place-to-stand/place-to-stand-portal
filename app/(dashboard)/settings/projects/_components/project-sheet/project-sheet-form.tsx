@@ -35,6 +35,7 @@ import type {
 } from '@/lib/settings/projects/project-sheet-ui-state'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import type { ProjectSheetFieldState } from './project-sheet-field-state'
+import { GitHubReposSection } from './github-repos-section'
 
 export type ProjectSheetFormProps = {
   form: UseFormReturn<ProjectSheetFormValues>
@@ -49,6 +50,8 @@ export type ProjectSheetFormProps = {
   onRequestDelete: () => void
   isSheetOpen: boolean
   historyKey: string
+  projectId?: string
+  projectName?: string
 }
 
 export function ProjectSheetForm(props: ProjectSheetFormProps) {
@@ -64,6 +67,8 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
     onRequestDelete,
     isSheetOpen,
     historyKey,
+    projectId,
+    projectName,
   } = props
 
   const handleSave = useCallback(
@@ -321,6 +326,10 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
             )}
           />
         </div>
+
+        {isEditing && projectId && projectName ? (
+          <GitHubReposSection projectId={projectId} projectName={projectName} />
+        ) : null}
 
         {feedback ? (
           <p className='border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm'>
