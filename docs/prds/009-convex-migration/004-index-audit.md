@@ -110,118 +110,118 @@ This document maps all existing Supabase/Drizzle queries to required Convex inde
 
 ## Schema Index Verification
 
-After completing the audit above, verify all required indexes exist in `convex/schema.ts`:
+All required indexes have been verified in `convex/schema.ts`:
 
 ### users
-- [ ] `by_email` - `["email"]`
-- [ ] `by_authId` - `["authId"]`
-- [ ] `by_deleted` - `["deletedAt"]`
-- [ ] `by_supabaseId` - `["_supabaseId"]`
+- [x] `by_email` - `["email"]`
+- [x] `by_authId` - `["authId"]`
+- [x] `by_deleted` - `["deletedAt"]`
+- [x] `by_supabaseId` - `["supabaseId"]`
 
 ### clients
-- [ ] `by_slug` - `["slug"]`
-- [ ] `by_deleted` - `["deletedAt"]`
-- [ ] `by_supabaseId` - `["_supabaseId"]`
+- [x] `by_slug` - `["slug"]`
+- [x] `by_deleted` - `["deletedAt"]`
+- [x] `by_supabaseId` - `["supabaseId"]`
 
 ### clientMembers
-- [ ] `by_client` - `["clientId"]`
-- [ ] `by_user` - `["userId"]`
-- [ ] `by_client_user` - `["clientId", "userId"]`
-- [ ] `by_supabaseId` - `["_supabaseId"]`
+- [x] `by_client` - `["clientId"]`
+- [x] `by_user` - `["userId"]`
+- [x] `by_client_user` - `["clientId", "userId"]`
+- [x] `by_supabaseId` - `["supabaseId"]`
 
 ### projects
-- [ ] `by_client` - `["clientId"]`
-- [ ] `by_slug` - `["slug"]`
-- [ ] `by_type` - `["type"]`
-- [ ] `by_status` - `["status"]`
-- [ ] `by_createdBy` - `["createdById"]`
-- [ ] `by_deleted` - `["deletedAt"]`
-- [ ] `by_client_deleted` - `["clientId", "deletedAt"]`
-- [ ] `by_supabaseId` - `["_supabaseId"]`
+- [x] `by_client` - `["clientId"]`
+- [x] `by_slug` - `["slug"]`
+- [x] `by_type` - `["type"]`
+- [x] `by_status` - `["status"]`
+- [x] `by_createdBy` - `["createdById"]`
+- [x] `by_deleted` - `["deletedAt"]`
+- [x] `by_client_deleted` - `["clientId", "deletedAt"]`
+- [x] `by_supabaseId` - `["supabaseId"]`
 
 ### tasks
-- [ ] `by_project` - `["projectId"]`
-- [ ] `by_project_status` - `["projectId", "status"]`
-- [ ] `by_project_status_rank` - `["projectId", "status", "rank"]`
-- [ ] `by_dueDate` - `["dueDate"]`
-- [ ] `by_deleted` - `["deletedAt"]`
-- [ ] `by_supabaseId` - `["_supabaseId"]`
+- [x] `by_project` - `["projectId"]`
+- [x] `by_project_status` - `["projectId", "status"]`
+- [x] `by_project_status_rank` - `["projectId", "status", "rank"]`
+- [x] `by_dueDate` - `["dueDate"]`
+- [x] `by_deleted` - `["deletedAt"]`
+- [x] `by_supabaseId` - `["supabaseId"]`
 
 ### taskAssignees
-- [ ] `by_task` - `["taskId"]`
-- [ ] `by_user` - `["userId"]`
-- [ ] `by_task_user` - `["taskId", "userId"]`
-- [ ] `by_user_deleted` - `["userId", "deletedAt"]`
-- [ ] `by_supabaseId` - `["_supabaseId"]`
+- [x] `by_task` - `["taskId"]`
+- [x] `by_user` - `["userId"]`
+- [x] `by_task_user` - `["taskId", "userId"]`
+- [x] `by_user_deleted` - `["userId", "deletedAt"]`
+- [x] `by_supabaseId` - `["supabaseId"]`
 
 ### taskComments
-- [ ] `by_task` - `["taskId"]`
-- [ ] `by_author` - `["authorId"]`
-- [ ] `by_parent` - `["parentId"]`
-- [ ] `by_task_deleted` - `["taskId", "deletedAt"]`
-- [ ] `by_supabaseId` - `["_supabaseId"]`
+- [x] `by_task` - `["taskId"]`
+- [x] `by_author` - `["authorId"]`
+- [x] `by_parent` - `["parentId"]`
+- [x] `by_task_deleted` - `["taskId", "deletedAt"]`
+- [x] `by_supabaseId` - `["supabaseId"]`
 
 ### taskAttachments
-- [ ] `by_task` - `["taskId"]`
-- [ ] `by_uploadedBy` - `["uploadedById"]`
-- [ ] `by_storageId` - `["storageId"]`
-- [ ] `by_supabaseId` - `["_supabaseId"]`
+- [x] `by_task` - `["taskId"]`
+- [x] `by_uploadedBy` - `["uploadedById"]`
+- [x] `by_storageId` - `["storageId"]`
+- [x] `by_supabaseId` - `["supabaseId"]`
 
 ### timeLogs
-- [ ] `by_project` - `["projectId"]`
-- [ ] `by_user` - `["userId"]`
-- [ ] `by_date` - `["date"]`
-- [ ] `by_project_date` - `["projectId", "date"]`
-- [ ] `by_user_date` - `["userId", "date"]`
-- [ ] `by_deleted` - `["deletedAt"]`
-- [ ] `by_supabaseId` - `["_supabaseId"]`
+- [x] `by_project` - `["projectId"]`
+- [x] `by_user` - `["userId"]`
+- [x] `by_date` - `["date"]`
+- [x] `by_project_date` - `["projectId", "date"]`
+- [x] `by_user_date` - `["userId", "date"]`
+- [x] `by_deleted` - `["deletedAt"]`
+- [x] `by_supabaseId` - `["supabaseId"]`
 
 ### hourBlocks
-- [ ] `by_client` - `["clientId"]`
-- [ ] `by_active` - `["isActive"]`
-- [ ] `by_client_active` - `["clientId", "isActive"]`
-- [ ] `by_supabaseId` - `["_supabaseId"]`
+- [x] `by_client` - `["clientId"]`
+- [x] `by_active` - `["isActive"]`
+- [x] `by_client_active` - `["clientId", "isActive"]`
+- [x] `by_supabaseId` - `["supabaseId"]`
 
 ### leads
-- [ ] `by_status` - `["status"]`
-- [ ] `by_email` - `["email"]`
-- [ ] `by_assignedTo` - `["assignedToId"]`
-- [ ] `by_deleted` - `["deletedAt"]`
-- [ ] `by_supabaseId` - `["_supabaseId"]`
+- [x] `by_status` - `["status"]`
+- [x] `by_email` - `["email"]`
+- [x] `by_assignedTo` - `["assignedToId"]`
+- [x] `by_deleted` - `["deletedAt"]`
+- [x] `by_supabaseId` - `["supabaseId"]`
 
 ### contacts
-- [ ] `by_email` - `["email"]`
-- [ ] `by_company` - `["company"]`
-- [ ] `by_deleted` - `["deletedAt"]`
-- [ ] `by_supabaseId` - `["_supabaseId"]`
+- [x] `by_email` - `["email"]`
+- [x] `by_company` - `["company"]`
+- [x] `by_deleted` - `["deletedAt"]`
+- [x] `by_supabaseId` - `["supabaseId"]`
 
 ### activityLogs
-- [ ] `by_actor` - `["actorId"]`
-- [ ] `by_entityType` - `["entityType"]`
-- [ ] `by_entityId` - `["entityId"]`
-- [ ] `by_eventType` - `["eventType"]`
-- [ ] `by_createdAt` - `["createdAt"]`
-- [ ] `by_supabaseId` - `["_supabaseId"]`
+- [x] `by_actor` - `["actorId"]`
+- [x] `by_entityType` - `["entityType"]`
+- [x] `by_entityId` - `["entityId"]`
+- [x] `by_eventType` - `["eventType"]`
+- [x] `by_createdAt` - `["createdAt"]`
+- [x] `by_supabaseId` - `["supabaseId"]`
 
 ### threads
-- [ ] `by_status` - `["status"]`
-- [ ] `by_providerId` - `["providerId"]`
-- [ ] `by_supabaseId` - `["_supabaseId"]`
+- [x] `by_status` - `["status"]`
+- [x] `by_providerId` - `["providerId"]`
+- [x] `by_supabaseId` - `["supabaseId"]`
 
 ### messages
-- [ ] `by_thread` - `["threadId"]`
-- [ ] `by_source` - `["source"]`
-- [ ] `by_sentAt` - `["sentAt"]`
-- [ ] `by_providerId` - `["providerId"]`
-- [ ] `by_supabaseId` - `["_supabaseId"]`
+- [x] `by_thread` - `["threadId"]`
+- [x] `by_source` - `["source"]`
+- [x] `by_sentAt` - `["sentAt"]`
+- [x] `by_providerId` - `["providerId"]`
+- [x] `by_supabaseId` - `["supabaseId"]`
 
 ### suggestions
-- [ ] `by_message` - `["messageId"]`
-- [ ] `by_task` - `["taskId"]`
-- [ ] `by_type` - `["type"]`
-- [ ] `by_status` - `["status"]`
-- [ ] `by_type_status` - `["type", "status"]`
-- [ ] `by_supabaseId` - `["_supabaseId"]`
+- [x] `by_message` - `["messageId"]`
+- [x] `by_task` - `["taskId"]`
+- [x] `by_type` - `["type"]`
+- [x] `by_status` - `["status"]`
+- [x] `by_type_status` - `["type", "status"]`
+- [x] `by_supabaseId` - `["supabaseId"]`
 
 ---
 

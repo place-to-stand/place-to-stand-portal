@@ -28,55 +28,57 @@ Quick reference for tracking migration progress.
 ## Phase 1: Setup & Foundation
 
 ### Environment Setup
-- [ ] Install Convex: `npm install convex @convex-dev/auth`
-- [ ] Initialize project: `npx convex init`
-- [ ] Set up Convex dashboard project
-- [ ] Configure environment variables
-- [ ] Verify `npx convex dev` works
+- [x] Install Convex: `npm install convex @convex-dev/auth`
+- [x] Initialize project: `npx convex init`
+- [x] Set up Convex dashboard project
+- [x] Configure environment variables
+- [x] Verify `npx convex dev` works
 
 ### Schema Definition
-- [ ] Create `convex/schema.ts`
-- [ ] Define all 11 enum validators
-- [ ] Define all 26 document tables
-- [ ] Add indexes for query patterns
-- [ ] Add `_supabaseId` migration fields
-- [ ] Validate schema compiles
+- [x] Create `convex/schema.ts`
+- [x] Define all 11 enum validators
+- [x] Define all 26 document tables
+- [x] Add indexes for query patterns
+- [x] Add `supabaseId` migration fields (renamed from `_supabaseId` - underscore reserved)
+- [x] Validate schema compiles
 
 ### Migration Scripts
-- [ ] Create `scripts/migrate/export-supabase.ts`
-- [ ] Create `scripts/migrate/transform-data.ts`
-- [ ] Create `scripts/migrate/import-convex.ts`
-- [ ] Create `scripts/migrate/validate-migration.ts`
-- [ ] Test export from dev Supabase
-- [ ] Test import to dev Convex
+- [x] Create `scripts/migrate/export-supabase.ts`
+- [x] Create `scripts/migrate/transform-data.ts` (scaffold - 5 tables implemented)
+- [x] Create `scripts/migrate/import-convex.ts` (scaffold - needs Convex mutations)
+- [x] Create `scripts/migrate/validate-migration.ts`
+- [x] Test export from dev Supabase (5,205 records exported)
+
+> **Note:** Transform script needs remaining table transformers added per-domain. Import script needs Convex mutations created. These are completed as part of each domain's migration phase.
 
 ### Project Structure
-- [ ] Create `convex/lib/permissions.ts`
-- [ ] Create `convex/lib/validators.ts`
-- [ ] Create `convex/lib/softDelete.ts`
-- [ ] Create `convex/lib/time.ts` (timestamp helpers)
-- [ ] Create `convex/lib/encryption.ts` (port from lib/oauth/encryption.ts)
-- [ ] Create `convex/lib/validators/date.ts` (ISO date validation)
-- [ ] Create `convex/lib/validators/activity-metadata.ts` (typed metadata)
-- [ ] Create `lib/feature-flags.ts` with dependency validation
+- [x] Create `convex/lib/permissions.ts`
+- [x] Create `convex/lib/validators.ts`
+- [x] Create `convex/lib/softDelete.ts`
+- [x] Create `convex/lib/time.ts` (timestamp helpers)
+- [x] Create `convex/lib/encryption.ts` (port from lib/oauth/encryption.ts)
+- [x] Create `convex/lib/validators/date.ts` (ISO date validation)
+- [x] Create `convex/lib/validators/activityMetadata.ts` (typed metadata)
+- [x] Create `lib/feature-flags.ts` with dependency validation
 
 ### Index Audit (Complete Before Phase 2)
-- [ ] Create `docs/prds/009-convex-migration/004-index-audit.md`
-- [ ] Audit all 47 query files in `lib/queries/`
-- [ ] Map each query to required Convex index
-- [ ] Verify schema has all necessary indexes
-- [ ] Document any missing indexes
+- [x] Create `docs/prds/009-convex-migration/004-index-audit.md`
+- [x] Audit all 47 query files in `lib/queries/`
+- [x] Map each query to required Convex index
+- [x] Verify schema has all necessary indexes
+- [x] Document any missing indexes (none found)
 
 ### Observability Setup
-- [ ] Create `lib/posthog/migration-events.ts`
-- [ ] Create `lib/posthog/error-tracking.ts`
-- [ ] Set up PostHog migration dashboard
-- [ ] Add `migrationRuns` table to schema
-- [ ] Add `activityArchives` table to schema
+- [x] Create `lib/posthog/migration-events.ts`
+- [x] Create `lib/posthog/error-tracking.ts`
+- [x] Add `migrationRuns` table to schema
+- [x] Add `activityArchives` table to schema
+
+> **Note:** PostHog migration dashboard setup moved to Phase 2 (after events are ingested)
 
 ### Adapter Interface
-- [ ] Create `lib/data/adapters/types.ts` with interface definitions
-- [ ] Create adapter interfaces for each domain (clients, projects, tasks, etc.)
+- [x] Create `lib/data/adapters/types.ts` with interface definitions
+- [x] Create adapter interfaces for each domain (clients, projects, tasks, etc.)
 
 ---
 
@@ -142,6 +144,13 @@ Quick reference for tracking migration progress.
 - [ ] Update `app/api/storage/user-avatar/[userId]/route.ts` for Convex
 - [ ] Verify permission checks work with Convex
 - [ ] Test file proxy functionality
+
+### Observability (deferred from Phase 1)
+- [ ] Set up PostHog migration dashboard (now that events are being ingested)
+  - `migration_data_source_hit` by source (convex vs supabase)
+  - `migration_dual_read_mismatch` count
+  - `convex_error` count by function
+  - `migration_phase_update` timeline
 
 ### Testing
 - [ ] Test Google OAuth sign-in
@@ -426,7 +435,7 @@ Quick reference for tracking migration progress.
 - [ ] Update CI/CD pipelines
 
 ### Remove Migration Artifacts
-- [ ] Remove `_supabaseId` indexes from schema (optional, or leave for debugging)
+- [ ] Remove `supabaseId` indexes from schema (optional, or leave for debugging)
 - [ ] Remove PostHog migration tracking events (optional)
 - [ ] Archive migration scripts to separate folder
 
