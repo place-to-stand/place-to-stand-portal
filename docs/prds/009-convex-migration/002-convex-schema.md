@@ -803,6 +803,69 @@ export default defineSchema({
     .index("by_supabaseId", ["_supabaseId"]),
 
   // ----------------------------------------------------------
+  // MIGRATION & OBSERVABILITY
+  // ----------------------------------------------------------
+
+  /**
+   * Migration runs - Audit trail for data migrations
+   * - Tracks who ran what, when, and the results
+   */
+  migrationRuns: defineTable({
+    // What was migrated
+    phase: v.string(), // "phase-1", "phase-2", "phase-3a", etc.
+    table: v.optional(v.string()), // "users", "clients", etc.
+
+    // Execution details
+    startedAt: v.number(),
+    completedAt: v.optional(v.number()),
+    status: v.union(
+      v.literal("running"),
+      v.literal("completed"),
+      v.literal("failed"),
+      v.literal("rolled_back")
+    ),
+
+    // Results
+    recordsProcessed: v.number(),
+    recordsSkipped: v.number(),
+    errors: v.array(v.object({
+      recordId: v.string(),
+      error: v.string(),
+    })),
+
+    // Who ran it
+    runBy: v.string(), // email or "system"
+    environment: v.string(), // "development", "staging", "production"
+
+    // Notes
+    notes: v.optional(v.string()),
+  })
+    .index("by_phase", ["phase"])
+    .index("by_status", ["status"])
+    .index("by_startedAt", ["startedAt"]),
+
+  /**
+   * Activity archives - Compressed old activity logs
+   * - Stores batches of archived logs in file storage
+   */
+  activityArchives: defineTable({
+    // File reference
+    storageId: v.id("_storage"),
+
+    // Archive metadata
+    logCount: v.number(),
+    oldestLog: v.number(), // Timestamp of oldest log in archive
+    newestLog: v.number(), // Timestamp of newest log in archive
+    archivedAt: v.number(),
+
+    // Compression info
+    compressedSize: v.optional(v.number()),
+    originalSize: v.optional(v.number()),
+  })
+    .index("by_archivedAt", ["archivedAt"])
+    .index("by_oldestLog", ["oldestLog"]),
+
+  // ----------------------------------------------------------
   // FUTURE: CHAT (Real-time enabled)
   // ----------------------------------------------------------
   // These tables will be added when building chat features
@@ -814,6 +877,160 @@ export default defineSchema({
   // chatReactions: defineTable({ ... })
 });
 ```
+
+## Typed Metadata Validators
+
+**Decision:** Use typed validators instead of `v.any()` for metadata fields.
+
+```typescript
+// convex/lib/validators/activity-metadata.ts
+
+// Task events
+const taskCreatedMetadata = v.object({
+  type: v.literal("task.created"),
+  taskId: v.id("tasks"),
+  title: v.string(),
+});
+
+const taskUpdatedMetadata = v.object({
+  type: v.literal("task.updated"),
+  taskId: v.id("tasks"),
+  changes: v.array(v.object({
+    field: v.string(),
+    from: v.optional(v.any()), // Allow any for old/new values
+    to: v.optional(v.any()),
+  })),
+});
+
+const taskStatusChangedMetadata = v.object({
+  type: v.literal("task.status_changed"),
+  taskId: v.id("tasks"),
+  from: taskStatusValidator,
+  to: taskStatusValidator,
+});
+
+const taskAssignedMetadata = v.object({
+  type: v.literal("task.assigned"),
+  taskId: v.id("tasks"),
+  assigneeId: v.id("users"),
+});
+
+const taskUnassignedMetadata = v.object({
+  type: v.literal("task.unassigned"),
+  taskId: v.id("tasks"),
+  assigneeId: v.id("users"),
+});
+
+// Project events
+const projectCreatedMetadata = v.object({
+  type: v.literal("project.created"),
+  projectId: v.id("projects"),
+  name: v.string(),
+});
+
+const projectUpdatedMetadata = v.object({
+  type: v.literal("project.updated"),
+  projectId: v.id("projects"),
+  changes: v.array(v.object({
+    field: v.string(),
+    from: v.optional(v.any()),
+    to: v.optional(v.any()),
+  })),
+});
+
+const projectArchivedMetadata = v.object({
+  type: v.literal("project.archived"),
+  projectId: v.id("projects"),
+});
+
+// Client events
+const clientCreatedMetadata = v.object({
+  type: v.literal("client.created"),
+  clientId: v.id("clients"),
+  name: v.string(),
+});
+
+const clientUpdatedMetadata = v.object({
+  type: v.literal("client.updated"),
+  clientId: v.id("clients"),
+  changes: v.array(v.object({
+    field: v.string(),
+    from: v.optional(v.any()),
+    to: v.optional(v.any()),
+  })),
+});
+
+// Time log events
+const timeLogCreatedMetadata = v.object({
+  type: v.literal("timelog.created"),
+  timeLogId: v.id("timeLogs"),
+  hours: v.number(),
+  projectId: v.id("projects"),
+});
+
+const timeLogUpdatedMetadata = v.object({
+  type: v.literal("timelog.updated"),
+  timeLogId: v.id("timeLogs"),
+  changes: v.array(v.object({
+    field: v.string(),
+    from: v.optional(v.any()),
+    to: v.optional(v.any()),
+  })),
+});
+
+// User events
+const userCreatedMetadata = v.object({
+  type: v.literal("user.created"),
+  userId: v.id("users"),
+  email: v.string(),
+});
+
+const userUpdatedMetadata = v.object({
+  type: v.literal("user.updated"),
+  userId: v.id("users"),
+  changes: v.array(v.object({
+    field: v.string(),
+    from: v.optional(v.any()),
+    to: v.optional(v.any()),
+  })),
+});
+
+// Combined validator for activityLogs.metadata
+export const activityMetadataValidator = v.union(
+  // Task events
+  taskCreatedMetadata,
+  taskUpdatedMetadata,
+  taskStatusChangedMetadata,
+  taskAssignedMetadata,
+  taskUnassignedMetadata,
+  // Project events
+  projectCreatedMetadata,
+  projectUpdatedMetadata,
+  projectArchivedMetadata,
+  // Client events
+  clientCreatedMetadata,
+  clientUpdatedMetadata,
+  // Time log events
+  timeLogCreatedMetadata,
+  timeLogUpdatedMetadata,
+  // User events
+  userCreatedMetadata,
+  userUpdatedMetadata
+);
+
+// Updated activityLogs table definition
+activityLogs: defineTable({
+  actorId: v.optional(v.id("users")),
+  eventType: v.string(),
+  entityType: v.string(),
+  entityId: v.string(),
+  metadata: v.optional(activityMetadataValidator), // Typed!
+  createdAt: v.number(),
+  _supabaseId: v.optional(v.string()),
+})
+```
+
+---
 
 ## Index Strategy
 

@@ -6,10 +6,22 @@ Quick reference for tracking migration progress.
 
 | Decision | Choice |
 |----------|--------|
+| Current Auth | Email/Password via Supabase |
+| Target Auth | Convex Auth + Google OAuth (NEW) |
 | Auth Provider | Convex Auth + Google OAuth |
 | Migration Style | Feature-by-feature |
 | Dual Database | Yes, during transition |
-| Feature Flags | Per-feature toggles |
+| Feature Flags | Per-feature toggles with strict dependency enforcement |
+| Session Transition | Force re-login with email-based account matching |
+| OAuth Tokens | Same encryption key, port encryption functions |
+| File Storage | Proxy routes for sensitive files |
+| Real-time Scope | Subscribe at project level |
+| Activity Retention | Archive after 1 year |
+| Cascade Deletes | Block if children exist |
+| Query Pattern | Convex hooks (phase out TanStack Query) |
+| Server Actions | Keep, call Convex mutations internally |
+| Logging | PostHog events for migration observability |
+| Performance | Manual benchmark testing |
 
 ---
 
@@ -42,23 +54,55 @@ Quick reference for tracking migration progress.
 - [ ] Create `convex/lib/permissions.ts`
 - [ ] Create `convex/lib/validators.ts`
 - [ ] Create `convex/lib/softDelete.ts`
-- [ ] Create `lib/feature-flags.ts`
+- [ ] Create `convex/lib/time.ts` (timestamp helpers)
+- [ ] Create `convex/lib/encryption.ts` (port from lib/oauth/encryption.ts)
+- [ ] Create `convex/lib/validators/date.ts` (ISO date validation)
+- [ ] Create `convex/lib/validators/activity-metadata.ts` (typed metadata)
+- [ ] Create `lib/feature-flags.ts` with dependency validation
+
+### Index Audit (Complete Before Phase 2)
+- [ ] Create `docs/prds/009-convex-migration/004-index-audit.md`
+- [ ] Audit all 47 query files in `lib/queries/`
+- [ ] Map each query to required Convex index
+- [ ] Verify schema has all necessary indexes
+- [ ] Document any missing indexes
+
+### Observability Setup
+- [ ] Create `lib/posthog/migration-events.ts`
+- [ ] Create `lib/posthog/error-tracking.ts`
+- [ ] Set up PostHog migration dashboard
+- [ ] Add `migrationRuns` table to schema
+- [ ] Add `activityArchives` table to schema
+
+### Adapter Interface
+- [ ] Create `lib/data/adapters/types.ts` with interface definitions
+- [ ] Create adapter interfaces for each domain (clients, projects, tasks, etc.)
 
 ---
 
 ## Phase 2: Auth Migration
+
+**Note:** This phase introduces Google OAuth as a NEW authentication method. Users currently use email/password via Supabase and will transition to Google sign-in.
+
+### Pre-Migration Communication
+- [ ] Draft user communication about auth change (email/password → Google sign-in)
+- [ ] Notify users of upcoming change
+- [ ] Document what users need to do (sign in with Google using same email)
 
 ### Convex Auth Setup
 - [ ] Create `convex/auth.ts`
 - [ ] Create `convex/auth.config.ts`
 - [ ] Configure Google OAuth provider
 - [ ] Set Google Client ID/Secret in Convex
+- [ ] Implement email-based account matching callback
+- [ ] Set `OAUTH_TOKEN_ENCRYPTION_KEY` in Convex env vars
 
 ### User Migration
 - [ ] Export users from Supabase
 - [ ] Import users to Convex
 - [ ] Create ID mapping file
 - [ ] Verify user count matches
+- [ ] Verify roles preserved correctly
 
 ### Auth Components
 - [ ] Create `<ConvexAuthProvider>`
@@ -85,6 +129,20 @@ Quick reference for tracking migration progress.
 - [ ] Migrate task attachment files
 - [ ] Update upload routes
 
+### Permission Parity Validation
+- [ ] Create `scripts/migrate/validate-permissions.ts`
+- [ ] Add test cases for admin access
+- [ ] Add test cases for client user access
+- [ ] Add test cases for project access (CLIENT/PERSONAL/INTERNAL)
+- [ ] Add test cases for task access
+- [ ] Run validation before enabling feature flags
+
+### Storage Proxy Routes
+- [ ] Update `app/api/storage/task-attachment/[attachmentId]/route.ts` for Convex
+- [ ] Update `app/api/storage/user-avatar/[userId]/route.ts` for Convex
+- [ ] Verify permission checks work with Convex
+- [ ] Test file proxy functionality
+
 ### Testing
 - [ ] Test Google OAuth sign-in
 - [ ] Test session persistence
@@ -92,6 +150,11 @@ Quick reference for tracking migration progress.
 - [ ] Test protected routes
 - [ ] Test file uploads
 - [ ] Test file retrieval
+- [ ] Test permission parity (run validation script)
+
+### Performance Benchmark (Before/After)
+- [ ] Sign-in time: ___ms (before) → ___ms (after)
+- [ ] Page load with auth check: ___ms (before) → ___ms (after)
 
 ### Rollback Ready
 - [ ] Feature flag `USE_CONVEX_AUTH` working
@@ -109,7 +172,8 @@ Quick reference for tracking migration progress.
 - [ ] Implement `getBySlug` query
 - [ ] Implement `create` mutation
 - [ ] Implement `update` mutation
-- [ ] Implement `archive` mutation
+- [ ] Implement `archive` mutation (with child check - block if has projects)
+- [ ] Add uniqueness check in `clientMembers.create`
 
 ### Data Migration
 - [ ] Export clients from Supabase
@@ -117,12 +181,20 @@ Quick reference for tracking migration progress.
 - [ ] Export client_members from Supabase
 - [ ] Import to Convex
 - [ ] Validate relationships
+- [ ] Record migration in `migrationRuns` table
+
+### Adapter Implementation
+- [ ] Create `lib/data/adapters/clients-supabase.ts`
+- [ ] Create `lib/data/adapters/clients-convex.ts`
+- [ ] Both implement `ClientsAdapter` interface
+- [ ] Update `lib/data/clients/` to use adapter
 
 ### Dual-Read Layer
 - [ ] Update `lib/data/clients/` to use Convex
-- [ ] Feature flag `USE_CONVEX_CLIENTS`
+- [ ] Feature flag `USE_CONVEX_CLIENTS` (requires AUTH enabled)
 - [ ] Test with flag enabled
 - [ ] Test with flag disabled
+- [ ] Add PostHog tracking for data source hits
 
 ### Testing
 - [ ] Client list loads correctly
@@ -132,6 +204,10 @@ Quick reference for tracking migration progress.
 - [ ] Client archiving works
 - [ ] Non-admin sees only their clients
 - [ ] Admin sees all clients
+- [ ] Permission parity validation passes
+
+### Performance Benchmark
+- [ ] Client list load time: ___ms (before) → ___ms (after)
 
 ---
 
@@ -144,16 +220,23 @@ Quick reference for tracking migration progress.
 - [ ] Implement `getBySlug` query
 - [ ] Implement `create` mutation
 - [ ] Implement `update` mutation
-- [ ] Implement `archive` mutation
+- [ ] Implement `archive` mutation (with child check - block if has active tasks)
 
 ### Data Migration
 - [ ] Export projects from Supabase
 - [ ] Import to Convex
 - [ ] Validate client relationships
+- [ ] Record migration in `migrationRuns` table
+
+### Adapter Implementation
+- [ ] Create `lib/data/adapters/projects-supabase.ts`
+- [ ] Create `lib/data/adapters/projects-convex.ts`
+- [ ] Both implement `ProjectsAdapter` interface
 
 ### Dual-Read Layer
 - [ ] Update `lib/data/projects/` to use Convex
-- [ ] Feature flag `USE_CONVEX_PROJECTS`
+- [ ] Feature flag `USE_CONVEX_PROJECTS` (requires AUTH + CLIENTS enabled)
+- [ ] Add PostHog tracking for data source hits
 
 ### Testing
 - [ ] PROJECT type filtering works
@@ -161,6 +244,11 @@ Quick reference for tracking migration progress.
 - [ ] INTERNAL projects visible to all
 - [ ] CLIENT projects respect membership
 - [ ] Slug-based routing works
+- [ ] Archive blocked if active tasks exist
+
+### Performance Benchmark
+- [ ] Projects list load: ___ms (before) → ___ms (after)
+- [ ] Project board load: ___ms (before) → ___ms (after)
 
 ---
 
@@ -169,23 +257,31 @@ Quick reference for tracking migration progress.
 ### Convex Functions
 - [ ] Create `convex/tasks/queries.ts`
 - [ ] Create `convex/tasks/mutations.ts`
-- [ ] Implement `listByProject` query
+- [ ] Implement `listByProject` query (with project-level subscription)
+- [ ] Implement `listByProjectPaginated` query (for large projects)
 - [ ] Implement `getById` query
 - [ ] Implement `create` mutation
 - [ ] Implement `update` mutation
 - [ ] Implement `updateStatus` mutation
 - [ ] Implement `reorder` mutation
+- [ ] Add uniqueness check in `taskAssignees.create`
 
 ### Related Tables
 - [ ] Migrate task_assignees
 - [ ] Migrate task_assignee_metadata
 - [ ] Migrate task_comments
 - [ ] Migrate task_attachments
+- [ ] Record migration in `migrationRuns` table
 
-### Real-time (New!)
-- [ ] Add subscription for board updates
-- [ ] Implement optimistic updates
-- [ ] Test live collaboration
+### Real-time Subscriptions (New!)
+- [ ] Use `useQuery(api.tasks.listByProject, { projectId })` for board
+- [ ] Verify real-time updates work across browser tabs
+- [ ] Test live collaboration (multiple users)
+- [ ] Implement optimistic updates for drag-drop
+
+### Pagination
+- [ ] Implement `usePaginatedQuery` for task lists
+- [ ] Add "Load more" for lists exceeding 50 items
 
 ### Testing
 - [ ] Kanban board renders
@@ -195,6 +291,12 @@ Quick reference for tracking migration progress.
 - [ ] Task editing works
 - [ ] Comments work
 - [ ] Attachments work
+- [ ] Real-time updates work
+- [ ] Pagination works
+
+### Performance Benchmark
+- [ ] Kanban board initial load: ___ms (before) → ___ms (after)
+- [ ] Task drag-drop: ___ms (before) → ___ms (after)
 
 ---
 
@@ -223,12 +325,32 @@ Quick reference for tracking migration progress.
 
 ## Phase 4A: Activity System
 
+### Convex Functions
 - [ ] Create `convex/activity/mutations.ts`
 - [ ] Create `convex/activity/queries.ts`
+- [ ] Implement typed metadata validators
+- [ ] Port activity event handlers from `lib/activity/events/`
+
+### Data Migration
 - [ ] Migrate activity_logs
 - [ ] Migrate activity_overview_cache
-- [ ] Update event handlers
-- [ ] Test activity feeds
+- [ ] Record migration in `migrationRuns` table
+
+### Scheduled Functions (Cron)
+- [ ] Create `convex/crons.ts`
+- [ ] Implement `archiveOldLogs` internal mutation
+- [ ] Schedule monthly archival job (1st of month, 3am UTC)
+- [ ] Test archival to `activityArchives` table
+
+### Cache Recomputation
+- [ ] Implement cache refresh logic
+- [ ] Update cache computation for 1/7/14/28 day windows
+
+### Testing
+- [ ] Activity feeds display correctly
+- [ ] Event handlers log to Convex
+- [ ] Archival job runs successfully
+- [ ] Archived logs retrievable from file storage
 
 ---
 
@@ -282,6 +404,13 @@ Quick reference for tracking migration progress.
 - [ ] Delete `lib/db/` directory (Drizzle)
 - [ ] Delete `drizzle/` migrations folder
 - [ ] Remove Supabase type definitions
+- [ ] Delete adapter Supabase implementations (`*-supabase.ts`)
+- [ ] Remove adapter branching logic
+
+### Remove TanStack Query (if fully migrated)
+- [ ] Verify all data fetching uses Convex hooks
+- [ ] Remove `@tanstack/react-query` if unused for other purposes
+- [ ] Remove `ReactQueryProvider` from providers
 
 ### Remove Dependencies
 - [ ] `npm uninstall @supabase/supabase-js`
@@ -296,16 +425,23 @@ Quick reference for tracking migration progress.
 - [ ] Remove `SUPABASE_SERVICE_ROLE_KEY`
 - [ ] Update CI/CD pipelines
 
+### Remove Migration Artifacts
+- [ ] Remove `_supabaseId` indexes from schema (optional, or leave for debugging)
+- [ ] Remove PostHog migration tracking events (optional)
+- [ ] Archive migration scripts to separate folder
+
 ### Final Validation
 - [ ] Full regression test
-- [ ] Performance benchmark
+- [ ] Performance benchmark comparison
 - [ ] Security review
 - [ ] Monitor production for 1 week
+- [ ] Verify no Supabase API calls in logs
 
 ### Archive
 - [ ] Export final Supabase data backup
 - [ ] Archive migration scripts
 - [ ] Document migration lessons learned
+- [ ] Review `migrationRuns` table for issues
 - [ ] Disable Supabase project
 
 ---
@@ -326,7 +462,37 @@ export const CONVEX_FLAGS = {
   LEADS: process.env.NEXT_PUBLIC_USE_CONVEX_LEADS === 'true',
   MESSAGING: process.env.NEXT_PUBLIC_USE_CONVEX_MESSAGING === 'true',
 };
+
+// STRICT ENFORCEMENT: Flag dependencies
+const FLAG_DEPENDENCIES = {
+  AUTH: [],                              // No dependencies
+  STORAGE: ['AUTH'],                     // Requires AUTH
+  CLIENTS: ['AUTH'],                     // Requires AUTH
+  PROJECTS: ['AUTH', 'CLIENTS'],         // Requires AUTH + CLIENTS
+  TASKS: ['AUTH', 'PROJECTS'],           // Requires AUTH + PROJECTS
+  TIME_LOGS: ['AUTH', 'PROJECTS', 'TASKS'], // Requires AUTH + PROJECTS + TASKS
+  ACTIVITY: ['AUTH'],                    // Requires AUTH
+  HOUR_BLOCKS: ['AUTH', 'CLIENTS'],      // Requires AUTH + CLIENTS
+  LEADS: ['AUTH'],                       // Requires AUTH
+  MESSAGING: ['AUTH'],                   // Requires AUTH
+};
+
+// Call at app startup - throws if dependencies not met
+validateFeatureFlags();
 ```
+
+### Recommended Enable Order
+
+1. `AUTH` (Phase 2)
+2. `STORAGE` (Phase 2)
+3. `CLIENTS` (Phase 3A)
+4. `PROJECTS` (Phase 3B)
+5. `TASKS` (Phase 3C)
+6. `TIME_LOGS` (Phase 3D)
+7. `ACTIVITY` (Phase 4A)
+8. `HOUR_BLOCKS` (Phase 4B)
+9. `LEADS` (Phase 4C)
+10. `MESSAGING` (Phase 4E)
 
 ---
 

@@ -32,6 +32,7 @@ This document outlines a **feature-by-feature migration** from Supabase (Postgre
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
 | **Auth Provider** | Convex Auth + Google OAuth | Native integration, simpler than external providers |
+| **Auth Method** | Google OAuth (NEW) | Currently email/password; adding Google sign-in as new feature |
 | **Migration Style** | Feature-by-feature | Lowest risk, allows validation at each step |
 | **Dual-write Period** | Yes, during transition | Enables rollback and gradual cutover |
 | **Data Sync** | One-time migration per feature | Simpler than continuous sync; test with prod data copy |
@@ -76,14 +77,14 @@ This document outlines a **feature-by-feature migration** from Supabase (Postgre
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    CURRENT AUTH FLOW (Supabase)                 │
+│              CURRENT AUTH FLOW (Supabase - Email/Password)      │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│  1. User clicks "Sign in with Google"                          │
-│     └──► Supabase Auth initiates OAuth                         │
+│  1. User enters email and password                             │
+│     └──► signInWithPassword() called via Server Action         │
 │                                                                 │
-│  2. Google redirects to callback                               │
-│     └──► Supabase validates & creates session                  │
+│  2. Supabase validates credentials                             │
+│     └──► Returns session or error                              │
 │                                                                 │
 │  3. Session stored in HTTP-only cookies                        │
 │     └──► getSession() retrieves from cookies                   │
@@ -95,6 +96,10 @@ This document outlines a **feature-by-feature migration** from Supabase (Postgre
 │     └──► ADMIN or CLIENT (default: CLIENT)                     │
 │                                                                 │
 │  Files: lib/auth/session.ts, lib/auth/profile.ts               │
+│         app/(auth)/sign-in/sign-in-form.tsx                    │
+│                                                                 │
+│  NOTE: Google OAuth is NOT currently implemented.              │
+│        This migration will ADD Google sign-in as a new feature.│
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -223,10 +228,10 @@ defineSchema({
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    TARGET AUTH FLOW (Convex)                    │
+│             TARGET AUTH FLOW (Convex + Google OAuth)            │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│  1. User clicks "Sign in with Google"                          │
+│  1. User clicks "Sign in with Google" (NEW feature!)           │
 │     └──► Convex Auth initiates OAuth via signIn()              │
 │                                                                 │
 │  2. Google redirects to Convex callback                        │
@@ -235,13 +240,17 @@ defineSchema({
 │  3. Session managed by Convex (automatic)                      │
 │     └──► useConvexAuth() hook provides state                   │
 │                                                                 │
-│  4. User document in Convex                                    │
-│     └──► Created automatically on first auth                   │
+│  4. User matched by email or created                           │
+│     └──► Existing users linked by email address                │
+│     └──► New users get user document created                   │
 │                                                                 │
-│  5. Role stored in user document                               │
+│  5. Role preserved from existing user record                   │
 │     └──► Checked in queries/mutations via ctx.auth             │
 │                                                                 │
 │  Files: convex/auth.ts, convex/auth.config.ts                  │
+│                                                                 │
+│  TRANSITION: Users move from email/password to Google OAuth.   │
+│  First Google sign-in matches existing account by email.       │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -344,7 +353,9 @@ defineSchema({
 
 ### Phase 2: Auth Migration
 
-**Objective:** Replace Supabase Auth with Convex Auth + Google OAuth
+**Objective:** Replace Supabase Auth (email/password) with Convex Auth + Google OAuth
+
+**Important:** This phase introduces Google OAuth as a **new** authentication method. The portal currently uses email/password authentication via Supabase. Users will transition to Google sign-in, with existing accounts matched by email address.
 
 **Tasks:**
 
@@ -915,6 +926,403 @@ export const CONVEX_FLAGS = {
 
 ---
 
+## Security Considerations
+
+### OAuth Token Migration
+
+**Decision:** Use the same encryption key in Convex.
+
+The existing `lib/oauth/encryption.ts` uses AES-256-GCM with `OAUTH_TOKEN_ENCRYPTION_KEY` from environment variables. This encryption is portable to Convex.
+
+**Implementation:**
+1. Add `OAUTH_TOKEN_ENCRYPTION_KEY` to Convex environment variables (same value)
+2. Port `lib/oauth/encryption.ts` to `convex/lib/encryption.ts`
+3. Migrate `oauth_connections` table - encrypted tokens work as-is (no re-encryption needed)
+
+```typescript
+// convex/lib/encryption.ts - Port from lib/oauth/encryption.ts
+import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
+
+const ALGORITHM = 'aes-256-gcm';
+
+function getEncryptionKey(): Buffer {
+  const key = process.env.OAUTH_TOKEN_ENCRYPTION_KEY;
+  if (!key) throw new Error('OAUTH_TOKEN_ENCRYPTION_KEY required');
+  return Buffer.from(key, 'base64');
+}
+
+export function encryptToken(token: string): string { /* same implementation */ }
+export function decryptToken(encryptedToken: string): string { /* same implementation */ }
+```
+
+### Session Transition Strategy
+
+**Decision:** Force re-login with email-based account matching.
+
+**Context:** Users currently sign in with email/password via Supabase. After migration, they will sign in with Google OAuth via Convex Auth. This is an auth **method change**, not just an auth **provider change**.
+
+When Convex Auth is enabled:
+1. All existing Supabase sessions are invalidated
+2. Users must sign in fresh with Google via Convex Auth
+3. Existing accounts are matched by the email address associated with their Google account
+4. User's role and all associated data are preserved
+5. Users should be notified of this change prior to the migration
+
+```typescript
+// convex/auth.ts - Match existing users by email
+export const { auth, signIn, signOut } = convexAuth({
+  providers: [Google],
+  callbacks: {
+    async createOrUpdateUser(ctx, args) {
+      const existingUser = await ctx.db
+        .query("users")
+        .withIndex("by_email", q => q.eq("email", args.profile.email))
+        .first();
+
+      if (existingUser) {
+        await ctx.db.patch(existingUser._id, {
+          authId: args.userId,
+          updatedAt: Date.now()
+        });
+        return existingUser._id;
+      }
+
+      // New user (shouldn't happen during migration)
+      return ctx.db.insert("users", { /* ... */ });
+    },
+  },
+});
+```
+
+### Permission Parity Validation
+
+**Decision:** Create automated parity tests.
+
+Before enabling each feature flag, run permission validation:
+
+```typescript
+// scripts/migrate/validate-permissions.ts
+interface PermissionTestCase {
+  userId: string;
+  description: string;
+  check: () => Promise<{ supabase: string[]; convex: string[] }>;
+}
+
+const testCases: PermissionTestCase[] = [
+  {
+    userId: "admin-user-id",
+    description: "Admin sees all clients",
+    check: async () => ({
+      supabase: await supabaseListAccessibleClientIds(adminUserId),
+      convex: await convexListAccessibleClientIds(adminUserId),
+    }),
+  },
+  // Add test cases for each permission type
+];
+
+async function validatePermissions() {
+  for (const test of testCases) {
+    const result = await test.check();
+    const match = JSON.stringify(result.supabase.sort()) ===
+                  JSON.stringify(result.convex.sort());
+    console.log(match ? '✓' : '✗', test.description);
+  }
+}
+```
+
+### File Storage Security
+
+**Decision:** Use proxy routes for sensitive files.
+
+Convex storage URLs are permanent (not signed/expiring). For sensitive attachments, keep the current API route pattern:
+
+```typescript
+// app/api/storage/task-attachment/[attachmentId]/route.ts
+export async function GET(req: Request, { params }) {
+  const user = await getCurrentUser();
+  if (!user) return new Response("Unauthorized", { status: 401 });
+
+  const attachment = await convex.query(api.taskAttachments.getById, {
+    attachmentId: params.attachmentId,
+  });
+
+  if (!attachment) return new Response("Not found", { status: 404 });
+
+  const hasAccess = await convex.query(api.permissions.canAccessTask, {
+    userId: user.id,
+    taskId: attachment.taskId,
+  });
+
+  if (!hasAccess) return new Response("Forbidden", { status: 403 });
+
+  // Proxy the file (hides Convex URL)
+  const url = await convex.query(api.storage.getUrl, { storageId: attachment.storageId });
+  const file = await fetch(url);
+  return new Response(file.body, {
+    headers: { "Content-Type": attachment.mimeType },
+  });
+}
+```
+
+---
+
+## Architecture Decisions
+
+### Dual-Read Adapter Interface
+
+**Decision:** Create formal adapter interface.
+
+```typescript
+// lib/data/adapters/types.ts
+export interface ClientsAdapter {
+  list(userId: string): Promise<Client[]>;
+  getById(id: string): Promise<Client | null>;
+  getBySlug(slug: string): Promise<Client | null>;
+  create(data: CreateClientInput): Promise<Client>;
+  update(id: string, data: UpdateClientInput): Promise<Client>;
+  archive(id: string): Promise<void>;
+}
+
+// lib/data/adapters/clients-supabase.ts
+export const supabaseClientsAdapter: ClientsAdapter = { /* ... */ };
+
+// lib/data/adapters/clients-convex.ts
+export const convexClientsAdapter: ClientsAdapter = { /* ... */ };
+
+// lib/data/adapters/index.ts
+export function getClientsAdapter(): ClientsAdapter {
+  return CONVEX_FLAGS.CLIENTS ? convexClientsAdapter : supabaseClientsAdapter;
+}
+```
+
+### Server Actions Pattern
+
+**Decision:** Server Actions call Convex mutations internally.
+
+```typescript
+// app/(dashboard)/projects/_actions/create-project.ts
+"use server";
+
+export async function createProject(formData: FormData) {
+  const user = await requireUser();
+  const parsed = createProjectSchema.safeParse({ /* ... */ });
+
+  if (!parsed.success) return { error: parsed.error.flatten() };
+
+  const project = await convex.mutation(api.projects.create, {
+    ...parsed.data,
+    createdById: user.id,
+  });
+
+  revalidatePath("/projects");
+  return { data: project };
+}
+```
+
+### Query Pattern
+
+**Decision:** Use Convex hooks directly, phase out TanStack Query.
+
+```typescript
+// Before (TanStack Query)
+const { data: tasks } = useQuery({
+  queryKey: ["tasks", projectId],
+  queryFn: () => fetchTasks(projectId),
+});
+
+// After (Convex hooks) - Real-time, auto-updates
+const tasks = useQuery(api.tasks.listByProject, { projectId });
+```
+
+### Feature Flag Dependencies
+
+**Decision:** Strict enforcement of flag dependencies.
+
+```typescript
+// lib/feature-flags.ts
+export const CONVEX_FLAGS = {
+  AUTH: process.env.NEXT_PUBLIC_USE_CONVEX_AUTH === "true",
+  STORAGE: process.env.NEXT_PUBLIC_USE_CONVEX_STORAGE === "true",
+  CLIENTS: process.env.NEXT_PUBLIC_USE_CONVEX_CLIENTS === "true",
+  PROJECTS: process.env.NEXT_PUBLIC_USE_CONVEX_PROJECTS === "true",
+  TASKS: process.env.NEXT_PUBLIC_USE_CONVEX_TASKS === "true",
+  TIME_LOGS: process.env.NEXT_PUBLIC_USE_CONVEX_TIME_LOGS === "true",
+  ACTIVITY: process.env.NEXT_PUBLIC_USE_CONVEX_ACTIVITY === "true",
+  HOUR_BLOCKS: process.env.NEXT_PUBLIC_USE_CONVEX_HOUR_BLOCKS === "true",
+  LEADS: process.env.NEXT_PUBLIC_USE_CONVEX_LEADS === "true",
+  MESSAGING: process.env.NEXT_PUBLIC_USE_CONVEX_MESSAGING === "true",
+} as const;
+
+const FLAG_DEPENDENCIES: Record<keyof typeof CONVEX_FLAGS, (keyof typeof CONVEX_FLAGS)[]> = {
+  AUTH: [],
+  STORAGE: ["AUTH"],
+  CLIENTS: ["AUTH"],
+  PROJECTS: ["AUTH", "CLIENTS"],
+  TASKS: ["AUTH", "PROJECTS"],
+  TIME_LOGS: ["AUTH", "PROJECTS", "TASKS"],
+  ACTIVITY: ["AUTH"],
+  HOUR_BLOCKS: ["AUTH", "CLIENTS"],
+  LEADS: ["AUTH"],
+  MESSAGING: ["AUTH"],
+};
+
+export function validateFeatureFlags() {
+  const errors: string[] = [];
+  for (const [flag, deps] of Object.entries(FLAG_DEPENDENCIES)) {
+    if (CONVEX_FLAGS[flag as keyof typeof CONVEX_FLAGS]) {
+      for (const dep of deps) {
+        if (!CONVEX_FLAGS[dep]) {
+          errors.push(`${flag} requires ${dep} to be enabled`);
+        }
+      }
+    }
+  }
+  if (errors.length > 0) {
+    throw new Error(`Feature flag dependency errors:\n${errors.join("\n")}`);
+  }
+}
+```
+
+---
+
+## Database Design Decisions
+
+### Junction Table Uniqueness
+
+**Decision:** Mutation-level validation.
+
+```typescript
+// convex/clientMembers/mutations.ts
+export const create = mutation({
+  args: { clientId: v.id("clients"), userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("clientMembers")
+      .withIndex("by_client_user", q =>
+        q.eq("clientId", args.clientId).eq("userId", args.userId)
+      )
+      .first();
+
+    if (existing) {
+      throw new ConvexError("User is already a member of this client");
+    }
+
+    return ctx.db.insert("clientMembers", { /* ... */ });
+  },
+});
+```
+
+### Cascade Delete Handling
+
+**Decision:** Block deletion if children exist.
+
+```typescript
+// convex/projects/mutations.ts
+export const archive = mutation({
+  args: { projectId: v.id("projects") },
+  handler: async (ctx, args) => {
+    const activeTasks = await ctx.db
+      .query("tasks")
+      .withIndex("by_project", q => q.eq("projectId", args.projectId))
+      .filter(q => q.eq(q.field("deletedAt"), undefined))
+      .first();
+
+    if (activeTasks) {
+      throw new ConvexError("Cannot archive project with active tasks.");
+    }
+
+    await ctx.db.patch(args.projectId, {
+      deletedAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+  },
+});
+```
+
+### Timestamp Convention
+
+**Decision:** All timestamps are UTC milliseconds since epoch.
+
+```typescript
+// convex/lib/time.ts
+export function toTimestamp(date: Date): number { return date.getTime(); }
+export function fromTimestamp(ts: number): Date { return new Date(ts); }
+export function now(): number { return Date.now(); }
+```
+
+### Date String Validation
+
+**Decision:** Full format and validity validation.
+
+```typescript
+// convex/lib/validators/date.ts
+export function isValidIsoDate(dateStr: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+}
+```
+
+---
+
+## Performance Decisions
+
+### Real-time Subscription Scope
+
+**Decision:** Subscribe at project level.
+
+```typescript
+function ProjectBoard({ projectId }: { projectId: Id<"projects"> }) {
+  const tasks = useQuery(api.tasks.listByProject, { projectId });
+  return <KanbanBoard tasks={tasks} />;
+}
+```
+
+### Activity Log Retention
+
+**Decision:** Archive logs older than 1 year.
+
+```typescript
+// convex/crons.ts
+crons.monthly(
+  "archive-old-activity-logs",
+  { day: 1, hourUTC: 3, minuteUTC: 0 },
+  internal.activity.archiveOldLogs
+);
+```
+
+### Pagination Strategy
+
+**Decision:** Use Convex cursor-based pagination.
+
+```typescript
+// convex/tasks/queries.ts
+export const listByProjectPaginated = query({
+  args: { projectId: v.id("projects"), paginationOpts: paginationOptsValidator },
+  handler: async (ctx, args) => {
+    return ctx.db.query("tasks")
+      .withIndex("by_project", q => q.eq("projectId", args.projectId))
+      .paginate(args.paginationOpts);
+  },
+});
+
+// Component
+const { results, status, loadMore } = usePaginatedQuery(
+  api.tasks.listByProjectPaginated,
+  { projectId },
+  { initialNumItems: 50 }
+);
+```
+
+### Soft Delete Indexing
+
+**Decision:** Keep simple indexes, optimize later if needed.
+
+Use separate `by_deleted` index with post-index filtering. Add compound indexes if performance issues arise.
+
+---
+
 ## Risk Assessment
 
 ### High Risk Items
@@ -940,6 +1348,142 @@ export const CONVEX_FLAGS = {
 |------|--------|------------|
 | Learning curve | Development speed | Team training, documentation |
 | Convex limitations | Feature constraints | Research edge cases early |
+
+---
+
+## Observability Strategy
+
+### Logging via PostHog
+
+**Decision:** Extend PostHog events for migration observability.
+
+```typescript
+// lib/posthog/migration-events.ts
+import { posthog } from "./client";
+
+export function trackDataSourceHit(
+  source: "supabase" | "convex",
+  domain: string,
+  operation: "read" | "write"
+) {
+  posthog.capture("migration_data_source_hit", {
+    source,
+    domain,
+    operation,
+    timestamp: Date.now(),
+  });
+}
+
+export function trackDualReadMismatch(
+  domain: string,
+  mismatchType: "count" | "data" | "missing",
+  details: Record<string, unknown>
+) {
+  posthog.capture("migration_dual_read_mismatch", {
+    domain,
+    mismatchType,
+    details,
+    timestamp: Date.now(),
+    $set: { has_migration_issues: true },
+  });
+}
+
+export function trackMigrationPhase(
+  phase: string,
+  status: "started" | "completed" | "failed",
+  details?: Record<string, unknown>
+) {
+  posthog.capture("migration_phase_update", {
+    phase,
+    status,
+    details,
+    timestamp: Date.now(),
+  });
+}
+```
+
+### Error Tracking
+
+**Decision:** Capture Convex errors in PostHog.
+
+```typescript
+// lib/posthog/error-tracking.ts
+export function trackConvexError(
+  error: Error,
+  context: { function: string; source: "query" | "mutation" | "action" }
+) {
+  posthog.capture("convex_error", {
+    error_message: error.message,
+    error_name: error.name,
+    error_stack: error.stack,
+    convex_function: context.function,
+    convex_source: context.source,
+    timestamp: Date.now(),
+    $set: { has_convex_errors: true },
+  });
+}
+```
+
+### Migration Dashboard (PostHog)
+
+Create a PostHog dashboard with:
+1. **Data Source Distribution** - Pie chart of reads by source
+2. **Mismatch Alerts** - Table of recent dual-read mismatches
+3. **Phase Progress** - Timeline of migration phases
+4. **Error Rate** - Line chart of Convex errors over time
+5. **Feature Flag Status** - Which flags are enabled
+
+### Performance Benchmarks
+
+**Decision:** Manual testing with documented benchmarks.
+
+```markdown
+## Performance Benchmark Checklist
+
+### Phase 2 (Auth)
+- [ ] Sign-in time: ___ms (before) → ___ms (after)
+- [ ] Page load with auth check: ___ms (before) → ___ms (after)
+
+### Phase 3A (Clients)
+- [ ] Client list load time: ___ms (before) → ___ms (after)
+
+### Phase 3B (Projects)
+- [ ] Projects list load: ___ms (before) → ___ms (after)
+- [ ] Project board load: ___ms (before) → ___ms (after)
+
+### Phase 3C (Tasks)
+- [ ] Kanban board initial load: ___ms (before) → ___ms (after)
+- [ ] Task drag-drop: ___ms (before) → ___ms (after)
+```
+
+### Migration Audit Trail
+
+**Decision:** Track all migration runs in Convex table.
+
+```typescript
+// convex/schema.ts - Add migrationRuns table
+migrationRuns: defineTable({
+  phase: v.string(),
+  table: v.optional(v.string()),
+  startedAt: v.number(),
+  completedAt: v.optional(v.number()),
+  status: v.union(
+    v.literal("running"),
+    v.literal("completed"),
+    v.literal("failed"),
+    v.literal("rolled_back")
+  ),
+  recordsProcessed: v.number(),
+  recordsSkipped: v.number(),
+  errors: v.array(v.object({ recordId: v.string(), error: v.string() })),
+  runBy: v.string(),
+  environment: v.string(),
+  notes: v.optional(v.string()),
+})
+  .index("by_phase", ["phase"])
+  .index("by_status", ["status"])
+  .index("by_startedAt", ["startedAt"]),
+```
 
 ---
 
@@ -1082,8 +1626,8 @@ v.union(
 
 | Current Route | Action | Migration Notes |
 |---------------|--------|-----------------|
-| POST /api/auth/google | OAuth init | → Convex Auth |
-| GET /api/auth/callback/google | OAuth callback | → Convex Auth |
+| N/A (email/password form) | Auth init | → Convex Auth + Google OAuth (NEW) |
+| N/A (Supabase handles) | Auth callback | → Convex Auth handles (NEW) |
 | POST /api/uploads/user-avatar | File upload | → Convex storage mutation |
 | POST /api/uploads/task-attachment | File upload | → Convex storage mutation |
 | GET /api/storage/* | File retrieval | → Convex storage URL |
