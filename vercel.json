@@ -8,5 +8,15 @@
       "source": "/relay-HVAq/(.*)",
       "destination": "https://us.i.posthog.com/$1"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/gmail-sync",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/email-scheduled",
+      "schedule": "*/5 * * * *"
+    }
   ]
 }

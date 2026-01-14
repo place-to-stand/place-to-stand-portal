@@ -1,9 +1,9 @@
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull, sql } from 'drizzle-orm'
 
 import { requireUser } from '@/lib/auth/session'
 import { isAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { oauthConnections, clients, projects } from '@/lib/db/schema'
+import { oauthConnections, clients, projects, emailDrafts } from '@/lib/db/schema'
 import {
   listThreadsForUser,
   getThreadCountsForUser,
@@ -12,9 +12,36 @@ import {
 import { getMessageCountsForUser } from '@/lib/queries/messages'
 import { InboxPanel } from './_components/inbox-panel'
 
+async function getDraftCounts(userId: string) {
+  const result = await db
+    .select({
+      drafts: sql<number>`count(*) filter (where status in ('COMPOSING', 'READY') and scheduled_at is null)`,
+      scheduled: sql<number>`count(*) filter (where status = 'READY' and scheduled_at is not null)`,
+      sent: sql<number>`count(*) filter (where status = 'SENT')`,
+    })
+    .from(emailDrafts)
+    .where(and(eq(emailDrafts.userId, userId), isNull(emailDrafts.deletedAt)))
+
+  return {
+    drafts: Number(result[0]?.drafts ?? 0),
+    scheduled: Number(result[0]?.scheduled ?? 0),
+    sent: Number(result[0]?.sent ?? 0),
+  }
+}
+
+async function getLinkedUnlinkedCounts(userId: string) {
+  // Get counts for linked/unlinked threads (for sidebar)
+  const linkedResult = await getThreadCountsForUser(userId, { linkedFilter: 'linked' })
+  const unlinkedResult = await getThreadCountsForUser(userId, { linkedFilter: 'unlinked' })
+  return {
+    linked: linkedResult.total,
+    unlinked: unlinkedResult.total,
+  }
+}
+
 const PAGE_SIZE = 25
 
-type FilterType = 'all' | 'linked' | 'unlinked'
+type FilterType = 'all' | 'linked' | 'unlinked' | 'sent'
 
 type Props = {
   searchParams: Promise<{ page?: string; filter?: string; thread?: string }>
@@ -27,26 +54,37 @@ export default async function InboxPage({ searchParams }: Props) {
   // Parse page number and filter from URL
   const currentPage = Math.max(1, parseInt(params.page || '1', 10) || 1)
   const offset = (currentPage - 1) * PAGE_SIZE
-  const filter: FilterType = ['all', 'linked', 'unlinked'].includes(params.filter || '')
+  const filter: FilterType = ['all', 'linked', 'unlinked', 'sent'].includes(params.filter || '')
     ? (params.filter as FilterType)
     : 'all'
 
   // Parse thread param for deep-linking
   const threadId = params.thread || null
 
-  // Get threads, counts, sync status, clients, and projects in parallel
+  // Determine query options based on filter
+  const isSentFilter = filter === 'sent'
+  const linkedFilter = isSentFilter ? undefined : (filter === 'all' ? undefined : filter)
+  const sentFilter = isSentFilter ? 'sent' : undefined
+
+  // Get threads, counts, sync status, clients, projects, and draft counts in parallel
   const [
     threadSummaries,
     threadCounts,
     messageCounts,
+    draftCounts,
+    linkedUnlinkedCounts,
+    sentCount,
     [connection],
     clientsList,
     projectsList,
     linkedThread,
   ] = await Promise.all([
-    listThreadsForUser(user.id, { limit: PAGE_SIZE, offset, linkedFilter: filter }),
-    getThreadCountsForUser(user.id, { linkedFilter: filter }),
+    listThreadsForUser(user.id, { limit: PAGE_SIZE, offset, linkedFilter, sentFilter }),
+    getThreadCountsForUser(user.id, { linkedFilter, sentFilter }),
     getMessageCountsForUser(user.id),
+    getDraftCounts(user.id),
+    getLinkedUnlinkedCounts(user.id),
+    getThreadCountsForUser(user.id, { sentFilter: 'sent' }),
     db
       .select({ lastSyncAt: oauthConnections.lastSyncAt })
       .from(oauthConnections)
@@ -87,6 +125,16 @@ export default async function InboxPage({ searchParams }: Props) {
 
   const totalPages = Math.ceil(threadCounts.total / PAGE_SIZE)
 
+  const sidebarCounts = {
+    inbox: threadCounts.total,
+    unread: messageCounts.unread,
+    drafts: draftCounts.drafts,
+    sent: sentCount.total,
+    scheduled: draftCounts.scheduled,
+    linked: linkedUnlinkedCounts.linked,
+    unlinked: linkedUnlinkedCounts.unlinked,
+  }
+
   return (
     <InboxPanel
       threads={threadSummaries}
@@ -95,6 +143,7 @@ export default async function InboxPage({ searchParams }: Props) {
       projects={projectsList}
       isAdmin={isAdmin(user)}
       filter={filter}
+      sidebarCounts={sidebarCounts}
       pagination={{
         currentPage,
         totalPages,

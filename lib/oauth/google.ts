@@ -1,12 +1,29 @@
 import { serverEnv } from '@/lib/env.server'
 
-// Gmail scopes - read and modify access
+// Gmail scopes - full access for read, modify, compose, send, and settings
 export const GOOGLE_SCOPES = [
   'https://www.googleapis.com/auth/userinfo.profile',
   'https://www.googleapis.com/auth/userinfo.email',
   'https://www.googleapis.com/auth/gmail.readonly',
   'https://www.googleapis.com/auth/gmail.modify',
+  'https://www.googleapis.com/auth/gmail.send',
+  'https://www.googleapis.com/auth/gmail.compose',
+  'https://www.googleapis.com/auth/gmail.settings.basic', // For reading/updating signatures
 ]
+
+// Scopes required for sending emails (used to check if re-auth needed)
+export const GMAIL_SEND_SCOPES = [
+  'https://www.googleapis.com/auth/gmail.send',
+  'https://www.googleapis.com/auth/gmail.compose',
+]
+
+/**
+ * Check if a connection has the required scopes for sending emails.
+ * Returns true if all send scopes are present.
+ */
+export function hasComposeScopes(grantedScopes: string[]): boolean {
+  return GMAIL_SEND_SCOPES.every((scope) => grantedScopes.includes(scope))
+}
 
 export interface GoogleTokenResponse {
   access_token: string

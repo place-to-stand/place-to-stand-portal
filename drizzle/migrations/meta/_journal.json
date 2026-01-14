@@ -85,6 +85,13 @@
       "when": 1767643861529,
       "tag": "0011_add_oauth_sync_state",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1768354985959,
+      "tag": "0012_email_drafts",
+      "breakpoints": true
     }
   ]
 }

@@ -3,12 +3,27 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { formatDistanceToNow, format } from 'date-fns'
-import { Mail, RefreshCw, CheckCircle, Circle, Filter } from 'lucide-react'
+import {
+  Mail,
+  RefreshCw,
+  CheckCircle,
+  Circle,
+  Filter,
+  PenSquare,
+  FileEdit,
+  Clock,
+  FolderKanban,
+} from 'lucide-react'
 
 import { AppShellHeader } from '@/components/layout/app-shell'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { PaginationControls } from '@/components/ui/pagination-controls'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import {
   Select,
   SelectContent,
@@ -35,6 +50,9 @@ import { ThreadLinkingPanel } from './thread-linking-panel'
 import { ThreadProjectLinkingPanel } from './thread-project-linking-panel'
 import { ThreadRow } from './thread-row'
 import { ThreadSuggestionsPanel } from './thread-suggestions-panel'
+import { ComposePanel, type ComposeContext } from './compose-panel'
+import { DraftsList } from './drafts-list'
+import { InboxSidebar, type InboxView } from './inbox-sidebar'
 
 type Client = {
   id: string
@@ -66,7 +84,7 @@ type ProjectSuggestion = {
   matchType?: 'NAME' | 'CONTENT' | 'CONTEXTUAL'
 }
 
-type FilterType = 'all' | 'linked' | 'unlinked'
+type FilterType = 'all' | 'linked' | 'unlinked' | 'sent'
 
 type InboxPanelProps = {
   threads: ThreadSummary[]
@@ -80,6 +98,15 @@ type InboxPanelProps = {
   projects: Project[]
   isAdmin: boolean
   filter: FilterType
+  sidebarCounts: {
+    inbox: number
+    unread: number
+    drafts: number
+    sent: number
+    scheduled: number
+    linked: number
+    unlinked: number
+  }
   pagination: {
     currentPage: number
     totalPages: number
@@ -97,6 +124,7 @@ export function InboxPanel({
   projects,
   isAdmin,
   filter,
+  sidebarCounts,
   pagination,
   initialSelectedThread,
 }: InboxPanelProps) {
@@ -105,6 +133,15 @@ export function InboxPanel({
   const { toast } = useToast()
 
   const [threads, setThreads] = useState(initialThreads)
+
+  // Current sidebar view
+  const [currentView, setCurrentView] = useState<InboxView>(() => {
+    // Initialize from filter param
+    if (filter === 'linked') return 'linked'
+    if (filter === 'unlinked') return 'unlinked'
+    if (filter === 'sent') return 'sent'
+    return 'inbox'
+  })
 
   // Sync threads state when props change (e.g., on pagination/filter change)
   useEffect(() => {
@@ -136,6 +173,22 @@ export function InboxPanel({
   // AI Task Suggestions state (auto-triggered when both client + project linked)
   const [isAnalyzingThread, setIsAnalyzingThread] = useState(false)
   const [suggestionRefreshKey, setSuggestionRefreshKey] = useState(0)
+
+  // Compose panel state (for replies within thread detail)
+  const [composeContext, setComposeContext] = useState<ComposeContext | null>(null)
+
+  // Standalone compose sheet state (for new emails)
+  const [isComposeOpen, setIsComposeOpen] = useState(false)
+
+  // Drafts popover state
+  const [isDraftsOpen, setIsDraftsOpen] = useState(false)
+
+  // Handler for resuming a draft
+  const handleResumeDraft = useCallback((draftContext: ComposeContext) => {
+    setIsDraftsOpen(false)
+    setComposeContext(draftContext)
+    setIsComposeOpen(true)
+  }, [])
 
   /**
    * Trigger AI analysis for a thread when both client and project are linked.
@@ -206,6 +259,30 @@ export function InboxPanel({
       router.push(newUrl)
     },
     [router, searchParams]
+  )
+
+  // Handle sidebar view changes
+  const handleViewChange = useCallback(
+    (view: InboxView) => {
+      setCurrentView(view)
+      // Map views to filter params for server-side navigation
+      if (view === 'inbox') {
+        handleFilterChange('all')
+      } else if (view === 'linked') {
+        handleFilterChange('linked')
+      } else if (view === 'unlinked') {
+        handleFilterChange('unlinked')
+      } else if (view === 'sent') {
+        handleFilterChange('sent')
+      } else if (view === 'drafts') {
+        // For now, drafts uses client-side state - stays on current page
+        // Could navigate to a dedicated drafts route in the future
+      } else if (view === 'scheduled') {
+        // Scheduled emails - client-side for now
+      }
+      // by-client and by-project would need their own routes
+    },
+    [handleFilterChange]
   )
 
   // Handle URL-based thread selection on mount and URL changes
@@ -379,6 +456,7 @@ export function InboxPanel({
     setCidMappings({})
     setSuggestions([])
     setProjectSuggestions([])
+    setComposeContext(null)
 
     // Remove thread from URL
     const params = new URLSearchParams(searchParams.toString())
@@ -388,6 +466,60 @@ export function InboxPanel({
       : '/my/inbox'
     router.push(newUrl, { scroll: false })
   }, [router, searchParams])
+
+  const handleReply = useCallback(
+    (message: Message, mode: 'reply' | 'reply_all' | 'forward') => {
+      if (!selectedThread) return
+
+      // Build recipient list based on mode
+      let toEmails: string[] = []
+      let ccEmails: string[] = []
+
+      if (mode === 'reply') {
+        // Reply to sender only
+        toEmails = message.fromEmail ? [message.fromEmail] : []
+      } else if (mode === 'reply_all') {
+        // Reply to sender + all recipients (excluding self)
+        toEmails = message.fromEmail ? [message.fromEmail] : []
+        const allRecipients = [
+          ...(message.toEmails || []),
+          ...(message.ccEmails || []),
+        ]
+        ccEmails = allRecipients.filter(
+          email => email !== message.fromEmail && !toEmails.includes(email)
+        )
+      }
+      // Forward mode: leave recipients empty for user to fill
+
+      // Build subject
+      let subject = message.subject || selectedThread.subject || ''
+      if (mode === 'forward') {
+        if (!subject.toLowerCase().startsWith('fwd:')) {
+          subject = `Fwd: ${subject}`
+        }
+      } else {
+        if (!subject.toLowerCase().startsWith('re:')) {
+          subject = `Re: ${subject}`
+        }
+      }
+
+      // Build quoted body
+      const quotedBody = message.bodyText || message.snippet || ''
+
+      setComposeContext({
+        mode,
+        threadId: selectedThread.id,
+        inReplyToMessageId: message.externalMessageId || undefined,
+        to: toEmails,
+        cc: ccEmails,
+        subject,
+        quotedBody,
+        clientId: selectedThread.client?.id,
+        projectId: selectedThread.project?.id,
+      })
+    },
+    [selectedThread]
+  )
 
   const handleLinkClient = async (clientId: string) => {
     if (!selectedThread) return
@@ -580,107 +712,166 @@ export function InboxPanel({
         </p>
       </AppShellHeader>
 
-      {/* Main Container with Background */}
-      <section className='bg-background rounded-xl border p-6 shadow-sm'>
-        <div className='space-y-4'>
-          {/* Header Row */}
-          <div className='flex flex-wrap items-center gap-4'>
-            <Select
-              value={filter}
-              onValueChange={v => handleFilterChange(v as FilterType)}
-            >
-              <SelectTrigger className='w-40'>
-                <span className='flex items-center'>
-                  <Filter className='mr-2 h-4 w-4' />
-                  <SelectValue />
-                </span>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='all'>All Threads</SelectItem>
-                <SelectItem value='linked'>Linked</SelectItem>
-                <SelectItem value='unlinked'>Unlinked</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <div className='text-muted-foreground flex items-center gap-2 text-sm'>
-              {syncStatus.connected ? (
-                <CheckCircle className='h-4 w-4 text-green-500' />
-              ) : (
-                <Circle className='h-4 w-4' />
-              )}
-              <span>{pagination.totalItems} threads</span>
-              {syncStatus.unread > 0 && (
-                <Badge variant='secondary' className='text-xs'>
-                  {syncStatus.unread} unread
-                </Badge>
-              )}
-            </div>
-
-            <div className='ml-auto flex items-center gap-4'>
-              {syncStatus.lastSyncAt && (
-                <span className='text-muted-foreground text-xs'>
-                  Last sync{' '}
-                  {formatDistanceToNow(new Date(syncStatus.lastSyncAt))} ago
-                </span>
-              )}
-              {syncStatus.connected && (
-                <Button
-                  variant='outline'
-                  size='sm'
-                  onClick={() => handleSync()}
-                  disabled={isSyncing}
-                >
-                  <RefreshCw
-                    className={cn('mr-2 h-4 w-4', isSyncing && 'animate-spin')}
-                  />
-                  {isSyncing ? 'Syncing...' : 'Sync'}
-                </Button>
-              )}
-            </div>
+      {/* Two-column layout with sidebar */}
+      <div className='flex gap-6'>
+        {/* Left Sidebar */}
+        <aside className='bg-background hidden w-56 flex-shrink-0 rounded-xl border shadow-sm md:block'>
+          <div className='p-2'>
+            {/* Compose button at top of sidebar */}
+            {syncStatus.connected && (
+              <Button
+                className='mb-2 w-full'
+                onClick={() => setIsComposeOpen(true)}
+              >
+                <PenSquare className='mr-2 h-4 w-4' />
+                Compose
+              </Button>
+            )}
           </div>
+          <InboxSidebar
+            currentView={currentView}
+            onViewChange={handleViewChange}
+            counts={sidebarCounts}
+          />
+        </aside>
 
-          {/* Thread List */}
-          {threads.length === 0 ? (
-            <div className='flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center'>
-              <Mail className='text-muted-foreground mb-4 h-12 w-12' />
-              <h3 className='text-lg font-medium'>No threads found</h3>
-              <p className='text-muted-foreground mt-1 text-sm'>
-                {!syncStatus.connected
-                  ? 'Connect Gmail in Settings → Integrations to get started'
-                  : filter !== 'all'
-                    ? `No ${filter} threads found.`
-                    : isSyncing
-                      ? 'Syncing your emails...'
-                      : 'No emails synced yet.'}
-              </p>
-            </div>
-          ) : (
-            <>
-              <div className='overflow-hidden rounded-lg border'>
-                {threads.map((thread, idx) => (
-                  <ThreadRow
-                    key={thread.id}
-                    thread={thread}
-                    isSelected={selectedThread?.id === thread.id}
-                    isFirst={idx === 0}
-                    onClick={() => handleThreadClick(thread)}
-                  />
-                ))}
+        {/* Main Content */}
+        <section className='bg-background min-w-0 flex-1 rounded-xl border p-6 shadow-sm'>
+          <div className='space-y-4'>
+            {/* Header Row */}
+            <div className='flex flex-wrap items-center gap-4'>
+              {/* Mobile-only filter dropdown */}
+              <Select
+                value={filter}
+                onValueChange={v => handleFilterChange(v as FilterType)}
+              >
+                <SelectTrigger className='w-40 md:hidden'>
+                  <span className='flex items-center'>
+                    <Filter className='mr-2 h-4 w-4' />
+                    <SelectValue />
+                  </span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value='all'>All Threads</SelectItem>
+                  <SelectItem value='linked'>Linked</SelectItem>
+                  <SelectItem value='unlinked'>Unlinked</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <div className='text-muted-foreground flex items-center gap-2 text-sm'>
+                {syncStatus.connected ? (
+                  <CheckCircle className='h-4 w-4 text-green-500' />
+                ) : (
+                  <Circle className='h-4 w-4' />
+                )}
+                <span>{pagination.totalItems} threads</span>
+                {syncStatus.unread > 0 && (
+                  <Badge variant='secondary' className='text-xs'>
+                    {syncStatus.unread} unread
+                  </Badge>
+                )}
               </div>
 
-              {/* Bottom Pagination */}
-              <PaginationControls
-                mode='paged'
-                currentPage={pagination.currentPage}
-                totalPages={pagination.totalPages}
-                totalItems={pagination.totalItems}
-                pageSize={pagination.pageSize}
-                onPageChange={handlePageChange}
-              />
-            </>
-          )}
-        </div>
-      </section>
+              <div className='ml-auto flex items-center gap-4'>
+                {syncStatus.lastSyncAt && (
+                  <span className='text-muted-foreground text-xs'>
+                    Last sync{' '}
+                    {formatDistanceToNow(new Date(syncStatus.lastSyncAt))} ago
+                  </span>
+                )}
+                {syncStatus.connected && (
+                  <>
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={() => handleSync()}
+                      disabled={isSyncing}
+                    >
+                      <RefreshCw
+                        className={cn('mr-2 h-4 w-4', isSyncing && 'animate-spin')}
+                      />
+                      {isSyncing ? 'Syncing...' : 'Sync'}
+                    </Button>
+                    {/* Mobile-only compose button */}
+                    <Button
+                      size='sm'
+                      className='md:hidden'
+                      onClick={() => setIsComposeOpen(true)}
+                    >
+                      <PenSquare className='mr-2 h-4 w-4' />
+                      Compose
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Thread List or Drafts View */}
+            {currentView === 'drafts' ? (
+              <div className='rounded-lg border p-4'>
+                <h3 className='mb-4 font-medium'>Drafts</h3>
+                <DraftsList onResumeDraft={handleResumeDraft} />
+              </div>
+            ) : currentView === 'scheduled' ? (
+              <div className='flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center'>
+                <Clock className='text-muted-foreground mb-4 h-12 w-12' />
+                <h3 className='text-lg font-medium'>Scheduled Emails</h3>
+                <p className='text-muted-foreground mt-1 text-sm'>
+                  {sidebarCounts.scheduled > 0
+                    ? `${sidebarCounts.scheduled} email${sidebarCounts.scheduled > 1 ? 's' : ''} scheduled to send.`
+                    : 'No scheduled emails.'}
+                </p>
+              </div>
+            ) : currentView === 'by-client' || currentView === 'by-project' ? (
+              <div className='flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center'>
+                <FolderKanban className='text-muted-foreground mb-4 h-12 w-12' />
+                <h3 className='text-lg font-medium'>Coming Soon</h3>
+                <p className='text-muted-foreground mt-1 text-sm'>
+                  Browse by {currentView === 'by-client' ? 'client' : 'project'} is coming soon.
+                </p>
+              </div>
+            ) : threads.length === 0 ? (
+              <div className='flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center'>
+                <Mail className='text-muted-foreground mb-4 h-12 w-12' />
+                <h3 className='text-lg font-medium'>No threads found</h3>
+                <p className='text-muted-foreground mt-1 text-sm'>
+                  {!syncStatus.connected
+                    ? 'Connect Gmail in Settings → Integrations to get started'
+                    : filter !== 'all'
+                      ? `No ${filter} threads found.`
+                      : isSyncing
+                        ? 'Syncing your emails...'
+                        : 'No emails synced yet.'}
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className='overflow-hidden rounded-lg border'>
+                  {threads.map((thread, idx) => (
+                    <ThreadRow
+                      key={thread.id}
+                      thread={thread}
+                      isSelected={selectedThread?.id === thread.id}
+                      isFirst={idx === 0}
+                      onClick={() => handleThreadClick(thread)}
+                    />
+                  ))}
+                </div>
+
+                {/* Bottom Pagination */}
+                <PaginationControls
+                  mode='paged'
+                  currentPage={pagination.currentPage}
+                  totalPages={pagination.totalPages}
+                  totalItems={pagination.totalItems}
+                  pageSize={pagination.pageSize}
+                  onPageChange={handlePageChange}
+                />
+              </>
+            )}
+          </div>
+        </section>
+      </div>
 
       {/* Thread Detail Sheet - Two Column Layout (rendered via portal) */}
       <Sheet
@@ -729,6 +920,7 @@ export function InboxPanel({
                         key={message.id}
                         message={message}
                         cidMappings={cidMappings[message.id]}
+                        onReply={mode => handleReply(message, mode)}
                       />
                     ))}
                   </div>
@@ -834,7 +1026,64 @@ export function InboxPanel({
                 )}
               </div>
             </div>
+
+            {/* Compose Panel - slides in from right */}
+            {composeContext && (
+              <div className='w-96 flex-shrink-0 border-l'>
+                <ComposePanel
+                  context={composeContext}
+                  onClose={() => setComposeContext(null)}
+                  onSent={() => {
+                    setComposeContext(null)
+                    // Refresh messages after sending
+                    if (selectedThread) {
+                      fetch(`/api/threads/${selectedThread.id}/messages`)
+                        .then(r => r.json())
+                        .then(data => {
+                          setThreadMessages(data.messages || [])
+                          setCidMappings(data.cidMappings || {})
+                        })
+                        .catch(console.error)
+                    }
+                  }}
+                />
+              </div>
+            )}
           </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Standalone Compose Sheet (for new emails and resumed drafts) */}
+      <Sheet
+        open={isComposeOpen}
+        onOpenChange={open => {
+          setIsComposeOpen(open)
+          if (!open) setComposeContext(null)
+        }}
+      >
+        <SheetContent className='flex h-full w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-lg'>
+          <SheetTitle className='sr-only'>
+            {composeContext?.draftId ? 'Edit Draft' : 'Compose New Email'}
+          </SheetTitle>
+          <SheetDescription className='sr-only'>
+            {composeContext?.draftId
+              ? 'Continue editing your draft'
+              : 'Write and send a new email'}
+          </SheetDescription>
+          <ComposePanel
+            context={composeContext || { mode: 'new' }}
+            onClose={() => {
+              setIsComposeOpen(false)
+              setComposeContext(null)
+            }}
+            onSent={() => {
+              setIsComposeOpen(false)
+              setComposeContext(null)
+              // Trigger a sync to fetch the sent message
+              handleSync(true)
+            }}
+            hideCloseButton
+          />
         </SheetContent>
       </Sheet>
     </>
