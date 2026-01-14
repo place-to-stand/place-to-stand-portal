@@ -457,3 +457,512 @@ export function getAttachmentMetadata(message: GmailMessage): AttachmentMetadata
   return collectAttachments(message.payload)
 }
 
+// =============================================================================
+// SEND EMAIL FUNCTIONS
+// =============================================================================
+
+export interface SendEmailAttachment {
+  filename: string
+  mimeType: string
+  content: Buffer
+}
+
+export interface SendEmailParams {
+  to: string[]
+  cc?: string[]
+  bcc?: string[]
+  subject: string
+  bodyHtml?: string
+  bodyText?: string
+  attachments?: SendEmailAttachment[]
+  /** For replies: the Gmail thread ID to keep message in same thread */
+  threadId?: string
+  /** For replies: Message-ID header of the email being replied to */
+  inReplyTo?: string
+  /** For replies: References header chain */
+  references?: string[]
+}
+
+export interface SendEmailResult {
+  id: string
+  threadId: string
+  labelIds: string[]
+}
+
+/**
+ * Build an RFC 2822 MIME message for sending via Gmail.
+ * Handles multipart/mixed for attachments and multipart/alternative for HTML+text.
+ */
+export function buildMimeMessage(
+  from: string,
+  params: SendEmailParams
+): string {
+  const boundary = `----=_Part_${Date.now()}_${Math.random().toString(36).slice(2)}`
+  const altBoundary = `----=_Alt_${Date.now()}_${Math.random().toString(36).slice(2)}`
+
+  const lines: string[] = []
+
+  // Headers
+  lines.push(`From: ${from}`)
+  lines.push(`To: ${params.to.join(', ')}`)
+  if (params.cc?.length) lines.push(`Cc: ${params.cc.join(', ')}`)
+  if (params.bcc?.length) lines.push(`Bcc: ${params.bcc.join(', ')}`)
+  lines.push(`Subject: =?UTF-8?B?${Buffer.from(params.subject).toString('base64')}?=`)
+  lines.push(`MIME-Version: 1.0`)
+
+  // Threading headers for replies
+  if (params.inReplyTo) {
+    lines.push(`In-Reply-To: ${params.inReplyTo}`)
+  }
+  if (params.references?.length) {
+    lines.push(`References: ${params.references.join(' ')}`)
+  }
+
+  const hasAttachments = params.attachments && params.attachments.length > 0
+  const hasHtml = !!params.bodyHtml
+  const hasText = !!params.bodyText
+
+  if (hasAttachments) {
+    // multipart/mixed for attachments
+    lines.push(`Content-Type: multipart/mixed; boundary="${boundary}"`)
+    lines.push('')
+    lines.push(`--${boundary}`)
+
+    if (hasHtml && hasText) {
+      // multipart/alternative for HTML + text
+      lines.push(`Content-Type: multipart/alternative; boundary="${altBoundary}"`)
+      lines.push('')
+      lines.push(`--${altBoundary}`)
+      lines.push('Content-Type: text/plain; charset="UTF-8"')
+      lines.push('Content-Transfer-Encoding: base64')
+      lines.push('')
+      lines.push(Buffer.from(params.bodyText || '').toString('base64'))
+      lines.push(`--${altBoundary}`)
+      lines.push('Content-Type: text/html; charset="UTF-8"')
+      lines.push('Content-Transfer-Encoding: base64')
+      lines.push('')
+      lines.push(Buffer.from(params.bodyHtml || '').toString('base64'))
+      lines.push(`--${altBoundary}--`)
+    } else if (hasHtml) {
+      lines.push('Content-Type: text/html; charset="UTF-8"')
+      lines.push('Content-Transfer-Encoding: base64')
+      lines.push('')
+      lines.push(Buffer.from(params.bodyHtml || '').toString('base64'))
+    } else {
+      lines.push('Content-Type: text/plain; charset="UTF-8"')
+      lines.push('Content-Transfer-Encoding: base64')
+      lines.push('')
+      lines.push(Buffer.from(params.bodyText || '').toString('base64'))
+    }
+
+    // Add attachments
+    for (const att of params.attachments!) {
+      lines.push(`--${boundary}`)
+      lines.push(`Content-Type: ${att.mimeType}; name="${att.filename}"`)
+      lines.push('Content-Transfer-Encoding: base64')
+      lines.push(`Content-Disposition: attachment; filename="${att.filename}"`)
+      lines.push('')
+      lines.push(att.content.toString('base64'))
+    }
+    lines.push(`--${boundary}--`)
+  } else if (hasHtml && hasText) {
+    // multipart/alternative for HTML + text (no attachments)
+    lines.push(`Content-Type: multipart/alternative; boundary="${altBoundary}"`)
+    lines.push('')
+    lines.push(`--${altBoundary}`)
+    lines.push('Content-Type: text/plain; charset="UTF-8"')
+    lines.push('Content-Transfer-Encoding: base64')
+    lines.push('')
+    lines.push(Buffer.from(params.bodyText!).toString('base64'))
+    lines.push(`--${altBoundary}`)
+    lines.push('Content-Type: text/html; charset="UTF-8"')
+    lines.push('Content-Transfer-Encoding: base64')
+    lines.push('')
+    lines.push(Buffer.from(params.bodyHtml!).toString('base64'))
+    lines.push(`--${altBoundary}--`)
+  } else if (hasHtml) {
+    lines.push('Content-Type: text/html; charset="UTF-8"')
+    lines.push('Content-Transfer-Encoding: base64')
+    lines.push('')
+    lines.push(Buffer.from(params.bodyHtml!).toString('base64'))
+  } else {
+    lines.push('Content-Type: text/plain; charset="UTF-8"')
+    lines.push('Content-Transfer-Encoding: base64')
+    lines.push('')
+    lines.push(Buffer.from(params.bodyText || '').toString('base64'))
+  }
+
+  return lines.join('\r\n')
+}
+
+/**
+ * Send an email via Gmail API.
+ * Returns the sent message ID and thread ID.
+ */
+export async function sendEmail(
+  userId: string,
+  params: SendEmailParams,
+  options?: GmailClientOptions
+): Promise<SendEmailResult> {
+  const { accessToken, connectionId } = await getValidAccessToken(userId, options?.connectionId)
+
+  // Get sender email from connection
+  const conn = await getGoogleConnection(userId, connectionId)
+  if (!conn?.providerEmail) {
+    throw new Error('Cannot send email: no sender email found for connection')
+  }
+
+  const mimeMessage = buildMimeMessage(conn.providerEmail, params)
+
+  // Base64url encode the message
+  const encodedMessage = Buffer.from(mimeMessage)
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '')
+
+  const body: { raw: string; threadId?: string } = { raw: encodedMessage }
+  if (params.threadId) {
+    body.threadId = params.threadId
+  }
+
+  const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  })
+
+  if (!res.ok) {
+    const errorText = await res.text()
+    throw new Error(`Gmail send failed: ${errorText}`)
+  }
+
+  const result = (await res.json()) as SendEmailResult
+  return result
+}
+
+// =============================================================================
+// GMAIL DRAFT FUNCTIONS
+// =============================================================================
+
+export interface GmailDraft {
+  id: string
+  message: {
+    id: string
+    threadId: string
+  }
+}
+
+export interface GmailDraftListResponse {
+  drafts?: GmailDraft[]
+  nextPageToken?: string
+  resultSizeEstimate?: number
+}
+
+/**
+ * List drafts in the user's Gmail account.
+ */
+export async function listDrafts(
+  userId: string,
+  params?: { maxResults?: number; pageToken?: string },
+  options?: GmailClientOptions
+): Promise<GmailDraftListResponse> {
+  const { accessToken } = await getValidAccessToken(userId, options?.connectionId)
+
+  const searchParams = new URLSearchParams()
+  if (params?.maxResults) searchParams.set('maxResults', String(params.maxResults))
+  if (params?.pageToken) searchParams.set('pageToken', params.pageToken)
+
+  const url = `https://gmail.googleapis.com/gmail/v1/users/me/drafts?${searchParams.toString()}`
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+
+  if (!res.ok) {
+    const errorText = await res.text()
+    throw new Error(`Failed to list drafts: ${errorText}`)
+  }
+
+  return res.json()
+}
+
+/**
+ * Get a specific draft by ID.
+ */
+export async function getDraft(
+  userId: string,
+  draftId: string,
+  options?: GmailClientOptions
+): Promise<{ id: string; message: GmailMessage }> {
+  const { accessToken } = await getValidAccessToken(userId, options?.connectionId)
+
+  const res = await fetch(
+    `https://gmail.googleapis.com/gmail/v1/users/me/drafts/${draftId}?format=full`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  )
+
+  if (!res.ok) {
+    const errorText = await res.text()
+    throw new Error(`Failed to get draft: ${errorText}`)
+  }
+
+  return res.json()
+}
+
+/**
+ * Create a new draft in Gmail.
+ */
+export async function createGmailDraft(
+  userId: string,
+  params: SendEmailParams,
+  options?: GmailClientOptions
+): Promise<GmailDraft> {
+  const { accessToken, connectionId } = await getValidAccessToken(userId, options?.connectionId)
+
+  // Get sender email from connection
+  const conn = await getGoogleConnection(userId, connectionId)
+  if (!conn?.providerEmail) {
+    throw new Error('Cannot create draft: no sender email found for connection')
+  }
+
+  const mimeMessage = buildMimeMessage(conn.providerEmail, params)
+
+  // Base64url encode the message
+  const encodedMessage = Buffer.from(mimeMessage)
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '')
+
+  const body: { message: { raw: string; threadId?: string } } = {
+    message: { raw: encodedMessage },
+  }
+  if (params.threadId) {
+    body.message.threadId = params.threadId
+  }
+
+  const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  })
+
+  if (!res.ok) {
+    const errorText = await res.text()
+    throw new Error(`Failed to create draft: ${errorText}`)
+  }
+
+  return res.json()
+}
+
+/**
+ * Update an existing draft in Gmail.
+ */
+export async function updateGmailDraft(
+  userId: string,
+  draftId: string,
+  params: SendEmailParams,
+  options?: GmailClientOptions
+): Promise<GmailDraft> {
+  const { accessToken, connectionId } = await getValidAccessToken(userId, options?.connectionId)
+
+  // Get sender email from connection
+  const conn = await getGoogleConnection(userId, connectionId)
+  if (!conn?.providerEmail) {
+    throw new Error('Cannot update draft: no sender email found for connection')
+  }
+
+  const mimeMessage = buildMimeMessage(conn.providerEmail, params)
+
+  // Base64url encode the message
+  const encodedMessage = Buffer.from(mimeMessage)
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '')
+
+  const body: { message: { raw: string; threadId?: string } } = {
+    message: { raw: encodedMessage },
+  }
+  if (params.threadId) {
+    body.message.threadId = params.threadId
+  }
+
+  const res = await fetch(
+    `https://gmail.googleapis.com/gmail/v1/users/me/drafts/${draftId}`,
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    }
+  )
+
+  if (!res.ok) {
+    const errorText = await res.text()
+    throw new Error(`Failed to update draft: ${errorText}`)
+  }
+
+  return res.json()
+}
+
+/**
+ * Delete a draft from Gmail.
+ */
+export async function deleteGmailDraft(
+  userId: string,
+  draftId: string,
+  options?: GmailClientOptions
+): Promise<void> {
+  const { accessToken } = await getValidAccessToken(userId, options?.connectionId)
+
+  const res = await fetch(
+    `https://gmail.googleapis.com/gmail/v1/users/me/drafts/${draftId}`,
+    {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }
+  )
+
+  if (!res.ok) {
+    const errorText = await res.text()
+    throw new Error(`Failed to delete draft: ${errorText}`)
+  }
+}
+
+/**
+ * Send a draft (moves it from drafts to sent).
+ */
+export async function sendGmailDraft(
+  userId: string,
+  draftId: string,
+  options?: GmailClientOptions
+): Promise<SendEmailResult> {
+  const { accessToken } = await getValidAccessToken(userId, options?.connectionId)
+
+  const res = await fetch(
+    'https://gmail.googleapis.com/gmail/v1/users/me/drafts/send',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ id: draftId }),
+    }
+  )
+
+  if (!res.ok) {
+    const errorText = await res.text()
+    throw new Error(`Failed to send draft: ${errorText}`)
+  }
+
+  return res.json()
+}
+
+// =============================================================================
+// GMAIL SIGNATURE FUNCTIONS
+// =============================================================================
+
+export interface GmailSendAsSettings {
+  sendAsEmail: string
+  displayName: string
+  replyToAddress?: string
+  signature?: string
+  isPrimary?: boolean
+  treatAsAlias?: boolean
+  verificationStatus?: 'accepted' | 'pending'
+  isDefault?: boolean
+}
+
+export interface GmailSendAsListResponse {
+  sendAs: GmailSendAsSettings[]
+}
+
+/**
+ * Get all send-as addresses and their signatures for the user.
+ * This fetches the user's email aliases and signatures from Gmail settings.
+ */
+export async function getSendAsSettings(
+  userId: string,
+  options?: GmailClientOptions
+): Promise<GmailSendAsSettings[]> {
+  const { accessToken } = await getValidAccessToken(userId, options?.connectionId)
+
+  const res = await fetch(
+    'https://gmail.googleapis.com/gmail/v1/users/me/settings/sendAs',
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  )
+
+  if (!res.ok) {
+    const errorText = await res.text()
+    throw new Error(`Failed to get send-as settings: ${errorText}`)
+  }
+
+  const data = (await res.json()) as GmailSendAsListResponse
+  return data.sendAs || []
+}
+
+/**
+ * Get signature for a specific send-as email address.
+ */
+export async function getSignature(
+  userId: string,
+  sendAsEmail: string,
+  options?: GmailClientOptions
+): Promise<GmailSendAsSettings> {
+  const { accessToken } = await getValidAccessToken(userId, options?.connectionId)
+
+  const res = await fetch(
+    `https://gmail.googleapis.com/gmail/v1/users/me/settings/sendAs/${encodeURIComponent(sendAsEmail)}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  )
+
+  if (!res.ok) {
+    const errorText = await res.text()
+    throw new Error(`Failed to get signature: ${errorText}`)
+  }
+
+  return res.json()
+}
+
+/**
+ * Update signature for a specific send-as email address.
+ * Note: This requires the gmail.settings.basic scope.
+ */
+export async function updateSignature(
+  userId: string,
+  sendAsEmail: string,
+  signature: string,
+  options?: GmailClientOptions
+): Promise<GmailSendAsSettings> {
+  const { accessToken } = await getValidAccessToken(userId, options?.connectionId)
+
+  const res = await fetch(
+    `https://gmail.googleapis.com/gmail/v1/users/me/settings/sendAs/${encodeURIComponent(sendAsEmail)}`,
+    {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ signature }),
+    }
+  )
+
+  if (!res.ok) {
+    const errorText = await res.text()
+    throw new Error(`Failed to update signature: ${errorText}`)
+  }
+
+  return res.json()
+}
+

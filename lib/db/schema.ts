@@ -121,6 +121,15 @@ export const suggestionStatus = pgEnum('suggestion_status', [
   'FAILED',
 ])
 
+// Email draft status
+export const draftStatus = pgEnum('draft_status', [
+  'COMPOSING', // User is actively editing
+  'READY', // Draft is ready but not sent (for scheduled emails)
+  'SENDING', // Currently being sent
+  'SENT', // Successfully sent
+  'FAILED', // Send failed
+])
+
 // =============================================================================
 // CORE TABLES
 // =============================================================================
@@ -1131,6 +1140,91 @@ export const suggestions = pgTable(
   ]
 )
 
+
+// =============================================================================
+// EMAIL DRAFTS (Compose, Reply, Forward, Scheduled Send)
+// =============================================================================
+
+export const emailDrafts = pgTable(
+  'email_drafts',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    userId: uuid('user_id').notNull(),
+    connectionId: uuid('connection_id').notNull(), // Which Gmail account to send from
+    threadId: uuid('thread_id'), // Links to existing thread (for replies)
+    gmailDraftId: text('gmail_draft_id'), // If synced to Gmail drafts
+
+    // Compose type
+    composeType: text('compose_type').notNull(), // 'new', 'reply', 'reply_all', 'forward'
+    inReplyToMessageId: text('in_reply_to_message_id'), // Gmail message ID being replied to
+
+    // Email fields
+    toEmails: text('to_emails').array().default([]).notNull(),
+    ccEmails: text('cc_emails').array().default([]).notNull(),
+    bccEmails: text('bcc_emails').array().default([]).notNull(),
+    subject: text(),
+    bodyHtml: text('body_html'),
+    bodyText: text('body_text'),
+
+    // Attachments stored in Supabase Storage
+    attachments: jsonb().default([]).notNull(), // [{storageKey, filename, mimeType, size}]
+
+    // Portal linking (pre-associate with entities before sending)
+    clientId: uuid('client_id'),
+    projectId: uuid('project_id'),
+
+    status: draftStatus().default('COMPOSING').notNull(),
+
+    // Scheduled send (null = send immediately when ready)
+    scheduledAt: timestamp('scheduled_at', { withTimezone: true, mode: 'string' }),
+    sentAt: timestamp('sent_at', { withTimezone: true, mode: 'string' }),
+    sendError: text('send_error'),
+
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    index('idx_email_drafts_user')
+      .using('btree', table.userId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_email_drafts_connection')
+      .using('btree', table.connectionId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_email_drafts_scheduled')
+      .using('btree', table.scheduledAt.asc().nullsLast())
+      .where(sql`(deleted_at IS NULL AND status = 'READY' AND scheduled_at IS NOT NULL)`),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [users.id],
+      name: 'email_drafts_user_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.connectionId],
+      foreignColumns: [oauthConnections.id],
+      name: 'email_drafts_connection_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.threadId],
+      foreignColumns: [threads.id],
+      name: 'email_drafts_thread_id_fkey',
+    }),
+    foreignKey({
+      columns: [table.clientId],
+      foreignColumns: [clients.id],
+      name: 'email_drafts_client_id_fkey',
+    }),
+    foreignKey({
+      columns: [table.projectId],
+      foreignColumns: [projects.id],
+      name: 'email_drafts_project_id_fkey',
+    }),
+  ]
+)
 
 // =============================================================================
 // VIEWS

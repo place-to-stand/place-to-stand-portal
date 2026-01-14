@@ -20,7 +20,8 @@ import type { GmailSyncState } from '@/lib/types/sync-state'
 const BATCH_SIZE = 50
 const MAX_FULL_SYNC = 500 // Max messages to sync on initial full sync
 const MAX_HISTORY_RESULTS = 500 // Max history records per request
-const GMAIL_QUERY_FILTER = '-in:spam -in:trash' // Exclude spam and trash from sync (full sync only)
+// Include both INBOX and SENT, exclude spam and trash
+const GMAIL_QUERY_FILTER = '(in:inbox OR in:sent) -in:spam -in:trash'
 
 // Labels to exclude from sync - used in incremental sync where query filter isn't available
 const EXCLUDED_LABELS = ['SPAM', 'TRASH']

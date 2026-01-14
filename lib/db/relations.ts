@@ -23,6 +23,7 @@ import {
   messages,
   githubRepoLinks,
   suggestions,
+  emailDrafts,
 } from './schema'
 
 export const clientsRelations = relations(clients, ({ one, many }) => ({
@@ -35,6 +36,7 @@ export const clientsRelations = relations(clients, ({ one, many }) => ({
   projects: many(projects),
   contactClients: many(contactClients),
   threads: many(threads),
+  emailDrafts: many(emailDrafts),
 }))
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -59,6 +61,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   oauthConnections: many(oauthConnections),
   threads: many(threads),
   messages: many(messages),
+  emailDrafts: many(emailDrafts),
 }))
 
 export const taskAssigneesRelations = relations(taskAssignees, ({ one }) => ({
@@ -153,6 +156,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   githubRepos: many(githubRepoLinks),
   threads: many(threads),
   suggestions: many(suggestions),
+  emailDrafts: many(emailDrafts),
 }))
 
 export const taskCommentsRelations = relations(taskComments, ({ one }) => ({
@@ -228,6 +232,7 @@ export const oauthConnectionsRelations = relations(
       references: [users.id],
     }),
     githubRepoLinks: many(githubRepoLinks),
+    emailDrafts: many(emailDrafts),
   })
 )
 
@@ -281,6 +286,7 @@ export const threadsRelations = relations(threads, ({ one, many }) => ({
   }),
   messages: many(messages),
   suggestions: many(suggestions),
+  emailDrafts: many(emailDrafts),
 }))
 
 export const messagesRelations = relations(messages, ({ one, many }) => ({
@@ -343,5 +349,32 @@ export const suggestionsRelations = relations(suggestions, ({ one }) => ({
   createdTask: one(tasks, {
     fields: [suggestions.createdTaskId],
     references: [tasks.id],
+  }),
+}))
+
+// =============================================================================
+// EMAIL DRAFTS (Compose, Reply, Forward, Scheduled Send)
+// =============================================================================
+
+export const emailDraftsRelations = relations(emailDrafts, ({ one }) => ({
+  user: one(users, {
+    fields: [emailDrafts.userId],
+    references: [users.id],
+  }),
+  connection: one(oauthConnections, {
+    fields: [emailDrafts.connectionId],
+    references: [oauthConnections.id],
+  }),
+  thread: one(threads, {
+    fields: [emailDrafts.threadId],
+    references: [threads.id],
+  }),
+  client: one(clients, {
+    fields: [emailDrafts.clientId],
+    references: [clients.id],
+  }),
+  project: one(projects, {
+    fields: [emailDrafts.projectId],
+    references: [projects.id],
   }),
 }))

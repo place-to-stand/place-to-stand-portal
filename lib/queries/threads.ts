@@ -232,6 +232,8 @@ export type ListThreadsOptions = {
   projectId?: string
   status?: ThreadStatus
   linkedFilter?: 'all' | 'linked' | 'unlinked'
+  /** Filter threads by message direction: 'sent' = only outbound messages */
+  sentFilter?: 'sent'
   limit?: number
   offset?: number
 }
@@ -240,7 +242,7 @@ export async function listThreadsForUser(
   userId: string,
   options: ListThreadsOptions = {}
 ): Promise<ThreadSummary[]> {
-  const { clientId, projectId, status, linkedFilter, limit = 50, offset = 0 } = options
+  const { clientId, projectId, status, linkedFilter, sentFilter, limit = 50, offset = 0 } = options
 
   const conditions = [isNull(threads.deletedAt)]
 
@@ -257,6 +259,19 @@ export async function listThreadsForUser(
     conditions.push(sql`${threads.clientId} IS NOT NULL`)
   } else if (linkedFilter === 'unlinked') {
     conditions.push(isNull(threads.clientId))
+  }
+
+  // Filter for sent (outbound) messages only
+  if (sentFilter === 'sent') {
+    conditions.push(
+      sql`EXISTS (
+        SELECT 1 FROM messages
+        WHERE messages.thread_id = ${threads.id}
+        AND messages.user_id = ${userId}
+        AND messages.is_inbound = false
+        AND messages.deleted_at IS NULL
+      )`
+    )
   }
 
   // User must have at least one message in the thread OR be the creator
@@ -441,13 +456,13 @@ export async function listThreadsForClient(
 
 export async function getThreadCountsForUser(
   userId: string,
-  options: { linkedFilter?: 'all' | 'linked' | 'unlinked' } = {}
+  options: { linkedFilter?: 'all' | 'linked' | 'unlinked'; sentFilter?: 'sent' } = {}
 ): Promise<{
   total: number
   unread: number
   byStatus: Record<ThreadStatus, number>
 }> {
-  const { linkedFilter } = options
+  const { linkedFilter, sentFilter } = options
 
   const userThreadCondition = or(
     eq(threads.createdBy, userId),
@@ -465,6 +480,19 @@ export async function getThreadCountsForUser(
     conditions.push(sql`${threads.clientId} IS NOT NULL`)
   } else if (linkedFilter === 'unlinked') {
     conditions.push(isNull(threads.clientId))
+  }
+
+  // Filter for sent (outbound) messages only
+  if (sentFilter === 'sent') {
+    conditions.push(
+      sql`EXISTS (
+        SELECT 1 FROM messages
+        WHERE messages.thread_id = ${threads.id}
+        AND messages.user_id = ${userId}
+        AND messages.is_inbound = false
+        AND messages.deleted_at IS NULL
+      )`
+    )
   }
 
   const [counts] = await db
