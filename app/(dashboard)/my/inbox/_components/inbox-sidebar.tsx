@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import {
   Inbox,
   FileEdit,
@@ -18,7 +18,6 @@ type View = 'inbox' | 'drafts' | 'sent' | 'scheduled' | 'by-client' | 'by-projec
 
 interface InboxSidebarProps {
   currentView: View
-  onViewChange: (view: View) => void
   counts: {
     inbox: number
     unread: number
@@ -34,25 +33,26 @@ const navItems: Array<{
   view: View
   label: string
   icon: typeof Inbox
+  href: string
   showCount?: 'unread' | 'total'
   section?: string
 }> = [
-  { view: 'inbox', label: 'Inbox', icon: Inbox, showCount: 'unread' },
-  { view: 'drafts', label: 'Drafts', icon: FileEdit, showCount: 'total' },
-  { view: 'sent', label: 'Sent', icon: Send },
-  { view: 'scheduled', label: 'Scheduled', icon: Clock, showCount: 'total' },
-  { view: 'linked', label: 'Linked', icon: LinkIcon, showCount: 'total', section: 'Portal Views' },
-  { view: 'unlinked', label: 'Unlinked', icon: Unlink, showCount: 'total' },
-  { view: 'by-client', label: 'By Client', icon: Users, section: 'Browse' },
-  { view: 'by-project', label: 'By Project', icon: FolderKanban },
+  { view: 'inbox', label: 'Inbox', icon: Inbox, href: '/my/inbox', showCount: 'unread' },
+  { view: 'drafts', label: 'Drafts', icon: FileEdit, href: '/my/inbox?view=drafts', showCount: 'total' },
+  { view: 'sent', label: 'Sent', icon: Send, href: '/my/inbox?view=sent' },
+  { view: 'scheduled', label: 'Scheduled', icon: Clock, href: '/my/inbox?view=scheduled', showCount: 'total' },
+  { view: 'linked', label: 'Linked', icon: LinkIcon, href: '/my/inbox?view=linked', showCount: 'total', section: 'Portal Views' },
+  { view: 'unlinked', label: 'Unlinked', icon: Unlink, href: '/my/inbox?view=unlinked', showCount: 'total' },
+  { view: 'by-client', label: 'By Client', icon: Users, href: '/my/inbox?view=by-client', section: 'Browse' },
+  { view: 'by-project', label: 'By Project', icon: FolderKanban, href: '/my/inbox?view=by-project' },
 ]
 
-export function InboxSidebar({ currentView, onViewChange, counts }: InboxSidebarProps) {
+export function InboxSidebar({ currentView, counts }: InboxSidebarProps) {
   let currentSection: string | undefined
 
   return (
     <nav className='flex flex-col gap-1 p-3'>
-      {navItems.map((item, idx) => {
+      {navItems.map(item => {
         const showSectionHeader = item.section && item.section !== currentSection
         if (item.section) currentSection = item.section
 
@@ -76,9 +76,8 @@ export function InboxSidebar({ currentView, onViewChange, counts }: InboxSidebar
                 {item.section}
               </div>
             )}
-            <button
-              type='button'
-              onClick={() => onViewChange(item.view)}
+            <Link
+              href={item.href}
               className={cn(
                 'flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                 currentView === item.view
@@ -102,7 +101,7 @@ export function InboxSidebar({ currentView, onViewChange, counts }: InboxSidebar
                   {count}
                 </span>
               )}
-            </button>
+            </Link>
           </div>
         )
       })}

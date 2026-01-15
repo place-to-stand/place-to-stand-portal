@@ -10,20 +10,17 @@ import {
   Circle,
   Filter,
   PenSquare,
-  FileEdit,
   Clock,
   FolderKanban,
+  Search,
+  X,
 } from 'lucide-react'
 
 import { AppShellHeader } from '@/components/layout/app-shell'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { PaginationControls } from '@/components/ui/pagination-controls'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
 import {
   Select,
   SelectContent,
@@ -43,7 +40,9 @@ import { cn } from '@/lib/utils'
 import type { ThreadSummary, Message } from '@/lib/types/messages'
 import type { CidMapping } from '@/lib/email/sanitize'
 
+import { AttachmentViewer, type AttachmentMetadata } from './attachment-viewer'
 import { EmailToolbar } from './email-toolbar'
+import { GmailReconnectBanner } from './gmail-reconnect-banner'
 import { MessageCard } from './message-card'
 import { ThreadContactPanel } from './thread-contact-panel'
 import { ThreadLinkingPanel } from './thread-linking-panel'
@@ -84,7 +83,9 @@ type ProjectSuggestion = {
   matchType?: 'NAME' | 'CONTENT' | 'CONTEXTUAL'
 }
 
-type FilterType = 'all' | 'linked' | 'unlinked' | 'sent'
+type ViewType = 'inbox' | 'sent' | 'drafts' | 'scheduled' | 'linked' | 'unlinked'
+
+type ConnectionStatus = 'ACTIVE' | 'EXPIRED' | 'REVOKED' | 'PENDING_REAUTH'
 
 type InboxPanelProps = {
   threads: ThreadSummary[]
@@ -93,11 +94,14 @@ type InboxPanelProps = {
     lastSyncAt: string | null
     totalMessages: number
     unread: number
+    connectionStatus: ConnectionStatus | null
+    connectionError: string | null
   }
   clients: Client[]
   projects: Project[]
   isAdmin: boolean
-  filter: FilterType
+  view: ViewType
+  searchQuery: string
   sidebarCounts: {
     inbox: number
     unread: number
@@ -123,7 +127,8 @@ export function InboxPanel({
   clients,
   projects,
   isAdmin,
-  filter,
+  view,
+  searchQuery,
   sidebarCounts,
   pagination,
   initialSelectedThread,
@@ -134,14 +139,8 @@ export function InboxPanel({
 
   const [threads, setThreads] = useState(initialThreads)
 
-  // Current sidebar view
-  const [currentView, setCurrentView] = useState<InboxView>(() => {
-    // Initialize from filter param
-    if (filter === 'linked') return 'linked'
-    if (filter === 'unlinked') return 'unlinked'
-    if (filter === 'sent') return 'sent'
-    return 'inbox'
-  })
+  // Current sidebar view - derived directly from URL via view prop
+  const currentView: InboxView = view as InboxView
 
   // Sync threads state when props change (e.g., on pagination/filter change)
   useEffect(() => {
@@ -155,6 +154,15 @@ export function InboxPanel({
   const [cidMappings, setCidMappings] = useState<Record<string, CidMapping[]>>(
     {}
   )
+  const [attachmentsMap, setAttachmentsMap] = useState<Record<string, AttachmentMetadata[]>>(
+    {}
+  )
+
+  // Attachment viewer state
+  const [viewingAttachment, setViewingAttachment] = useState<{
+    attachment: AttachmentMetadata
+    externalMessageId: string
+  } | null>(null)
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
   const [isLinking, setIsLinking] = useState(false)
 
@@ -180,12 +188,12 @@ export function InboxPanel({
   // Standalone compose sheet state (for new emails)
   const [isComposeOpen, setIsComposeOpen] = useState(false)
 
-  // Drafts popover state
-  const [isDraftsOpen, setIsDraftsOpen] = useState(false)
+  // Search input state (controlled, synced with URL)
+  const [searchInput, setSearchInput] = useState(searchQuery)
+  const [isSearching, setIsSearching] = useState(false)
 
   // Handler for resuming a draft
   const handleResumeDraft = useCallback((draftContext: ComposeContext) => {
-    setIsDraftsOpen(false)
     setComposeContext(draftContext)
     setIsComposeOpen(true)
   }, [])
@@ -241,17 +249,29 @@ export function InboxPanel({
     [router, searchParams]
   )
 
-  // Handle filter changes - triggers server-side navigation
-  const handleFilterChange = useCallback(
-    (newFilter: FilterType) => {
+  // Handle mobile view changes - triggers server-side navigation
+  const handleMobileViewChange = useCallback(
+    (newView: string) => {
+      if (newView === 'inbox') {
+        router.push('/my/inbox')
+      } else {
+        router.push(`/my/inbox?view=${newView}`)
+      }
+    },
+    [router]
+  )
+
+  // Handle search submission
+  const handleSearch = useCallback(
+    (query: string) => {
       const params = new URLSearchParams(searchParams.toString())
-      // Reset to page 1 and remove thread when changing filter
+      // Reset to page 1 and remove thread when searching
       params.delete('thread')
       params.delete('page')
-      if (newFilter === 'all') {
-        params.delete('filter')
+      if (query.trim()) {
+        params.set('q', query.trim())
       } else {
-        params.set('filter', newFilter)
+        params.delete('q')
       }
       const newUrl = params.toString()
         ? `/my/inbox?${params.toString()}`
@@ -261,29 +281,28 @@ export function InboxPanel({
     [router, searchParams]
   )
 
-  // Handle sidebar view changes
-  const handleViewChange = useCallback(
-    (view: InboxView) => {
-      setCurrentView(view)
-      // Map views to filter params for server-side navigation
-      if (view === 'inbox') {
-        handleFilterChange('all')
-      } else if (view === 'linked') {
-        handleFilterChange('linked')
-      } else if (view === 'unlinked') {
-        handleFilterChange('unlinked')
-      } else if (view === 'sent') {
-        handleFilterChange('sent')
-      } else if (view === 'drafts') {
-        // For now, drafts uses client-side state - stays on current page
-        // Could navigate to a dedicated drafts route in the future
-      } else if (view === 'scheduled') {
-        // Scheduled emails - client-side for now
-      }
-      // by-client and by-project would need their own routes
-    },
-    [handleFilterChange]
-  )
+  // Clear search
+  const handleClearSearch = useCallback(() => {
+    setSearchInput('')
+    handleSearch('')
+  }, [handleSearch])
+
+  // Debounced live search - triggers after 300ms of no typing
+  useEffect(() => {
+    // Don't trigger on initial mount or if search hasn't changed
+    if (searchInput === searchQuery) return
+
+    setIsSearching(true)
+    const timer = setTimeout(() => {
+      handleSearch(searchInput)
+      setIsSearching(false)
+    }, 300)
+
+    return () => {
+      clearTimeout(timer)
+      setIsSearching(false)
+    }
+  }, [searchInput, searchQuery, handleSearch])
 
   // Handle URL-based thread selection on mount and URL changes
   useEffect(() => {
@@ -347,6 +366,7 @@ export function InboxPanel({
       setIsLoadingMessages(true)
       setThreadMessages([])
       setCidMappings({})
+      setAttachmentsMap({})
       setSuggestions([])
       setProjectSuggestions([])
 
@@ -363,6 +383,7 @@ export function InboxPanel({
           const data = await res.json()
           setThreadMessages(data.messages || [])
           setCidMappings(data.cidMappings || {})
+          setAttachmentsMap(data.attachments || {})
 
           // Mark as read if there are unread messages
           const hasUnread = (data.messages || []).some(
@@ -454,6 +475,8 @@ export function InboxPanel({
     setSelectedThread(null)
     setThreadMessages([])
     setCidMappings({})
+    setAttachmentsMap({})
+    setViewingAttachment(null)
     setSuggestions([])
     setProjectSuggestions([])
     setComposeContext(null)
@@ -730,7 +753,6 @@ export function InboxPanel({
           </div>
           <InboxSidebar
             currentView={currentView}
-            onViewChange={handleViewChange}
             counts={sidebarCounts}
           />
         </aside>
@@ -738,12 +760,21 @@ export function InboxPanel({
         {/* Main Content */}
         <section className='bg-background min-w-0 flex-1 rounded-xl border p-6 shadow-sm'>
           <div className='space-y-4'>
+            {/* Reconnect Banner - shown when connection needs reauth */}
+            {syncStatus.connectionStatus &&
+              syncStatus.connectionStatus !== 'ACTIVE' && (
+                <GmailReconnectBanner
+                  status={syncStatus.connectionStatus}
+                  errorMessage={syncStatus.connectionError}
+                />
+              )}
+
             {/* Header Row */}
             <div className='flex flex-wrap items-center gap-4'>
-              {/* Mobile-only filter dropdown */}
+              {/* Mobile-only view dropdown */}
               <Select
-                value={filter}
-                onValueChange={v => handleFilterChange(v as FilterType)}
+                value={currentView}
+                onValueChange={handleMobileViewChange}
               >
                 <SelectTrigger className='w-40 md:hidden'>
                   <span className='flex items-center'>
@@ -752,11 +783,61 @@ export function InboxPanel({
                   </span>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value='all'>All Threads</SelectItem>
+                  <SelectItem value='inbox'>Inbox</SelectItem>
+                  <SelectItem value='sent'>Sent</SelectItem>
+                  <SelectItem value='drafts'>Drafts</SelectItem>
                   <SelectItem value='linked'>Linked</SelectItem>
                   <SelectItem value='unlinked'>Unlinked</SelectItem>
                 </SelectContent>
               </Select>
+
+              {/* Search Input */}
+              <div className='relative w-64'>
+                {isSearching ? (
+                  <RefreshCw className='text-muted-foreground pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin' />
+                ) : (
+                  <Search className='text-muted-foreground pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2' />
+                )}
+                <Input
+                  type='search'
+                  placeholder='Search emails...'
+                  value={searchInput}
+                  onChange={e => setSearchInput(e.target.value)}
+                  className='h-9 pl-10 pr-9'
+                />
+                {searchInput && (
+                  <button
+                    type='button'
+                    onClick={handleClearSearch}
+                    className='text-muted-foreground hover:text-foreground absolute right-3 top-1/2 -translate-y-1/2'
+                  >
+                    <X className='h-4 w-4' />
+                    <span className='sr-only'>Clear search</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Quick Search Filters */}
+              {!searchQuery && syncStatus.connected && (
+                <div className='hidden items-center gap-1.5 lg:flex'>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    className='h-7 text-xs'
+                    onClick={() => setSearchInput('has:attachment')}
+                  >
+                    Has attachment
+                  </Button>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    className='h-7 text-xs'
+                    onClick={() => setSearchInput('is:unread')}
+                  >
+                    Unread
+                  </Button>
+                </div>
+              )}
 
               <div className='text-muted-foreground flex items-center gap-2 text-sm'>
                 {syncStatus.connected ? (
@@ -837,8 +918,8 @@ export function InboxPanel({
                 <p className='text-muted-foreground mt-1 text-sm'>
                   {!syncStatus.connected
                     ? 'Connect Gmail in Settings → Integrations to get started'
-                    : filter !== 'all'
-                      ? `No ${filter} threads found.`
+                    : currentView !== 'inbox'
+                      ? `No ${currentView} threads found.`
                       : isSyncing
                         ? 'Syncing your emails...'
                         : 'No emails synced yet.'}
@@ -914,13 +995,23 @@ export function InboxPanel({
                     No messages found
                   </div>
                 ) : (
-                  <div className='space-y-6'>
-                    {threadMessages.map(message => (
+                  <div className='divide-y overflow-hidden rounded-lg border'>
+                    {threadMessages.map((message, index) => (
                       <MessageCard
                         key={message.id}
                         message={message}
                         cidMappings={cidMappings[message.id]}
+                        attachments={attachmentsMap[message.id]}
+                        defaultExpanded={index === threadMessages.length - 1}
                         onReply={mode => handleReply(message, mode)}
+                        onViewAttachment={attachment => {
+                          if (message.externalMessageId) {
+                            setViewingAttachment({
+                              attachment,
+                              externalMessageId: message.externalMessageId,
+                            })
+                          }
+                        }}
                       />
                     ))}
                   </div>
@@ -931,7 +1022,7 @@ export function InboxPanel({
             {/* Right Column - Metadata & Actions */}
             <div className='bg-muted/20 w-80 flex-shrink-0 overflow-y-auto lg:w-96'>
               <div className='space-y-6 p-6'>
-                {/* Email Toolbar - Read/Unread toggle + Navigation */}
+                {/* Email Toolbar - Reply actions, Read/Unread toggle, Navigation */}
                 {selectedThread && (
                   <EmailToolbar
                     threadId={selectedThread.id}
@@ -941,6 +1032,11 @@ export function InboxPanel({
                     }
                     canGoPrev={canGoPrev}
                     canGoNext={canGoNext}
+                    showReplyAll={
+                      threadMessages.length > 0 &&
+                      (((threadMessages[threadMessages.length - 1]?.toEmails?.length ?? 0) > 1) ||
+                        ((threadMessages[threadMessages.length - 1]?.ccEmails?.length ?? 0) > 0))
+                    }
                     onToggleReadStatus={newIsRead => {
                       // Update local thread messages state
                       setThreadMessages(prev =>
@@ -963,6 +1059,13 @@ export function InboxPanel({
                     }}
                     onPrev={goToPrev}
                     onNext={goToNext}
+                    onReply={mode => {
+                      // Reply to the latest message in the thread
+                      const latestMessage = threadMessages[threadMessages.length - 1]
+                      if (latestMessage) {
+                        handleReply(latestMessage, mode)
+                      }
+                    }}
                   />
                 )}
 
@@ -1086,6 +1189,13 @@ export function InboxPanel({
           />
         </SheetContent>
       </Sheet>
+
+      {/* Attachment Viewer */}
+      <AttachmentViewer
+        attachment={viewingAttachment?.attachment ?? null}
+        externalMessageId={viewingAttachment?.externalMessageId ?? null}
+        onClose={() => setViewingAttachment(null)}
+      />
     </>
   )
 }

@@ -12,6 +12,20 @@ import type {
   GmailHistoryType,
 } from './types'
 
+/**
+ * Error thrown when OAuth token refresh fails and user needs to reconnect
+ */
+export class OAuthReconnectRequiredError extends Error {
+  constructor(
+    message: string,
+    public readonly connectionId: string,
+    public readonly provider: string = 'GOOGLE'
+  ) {
+    super(message)
+    this.name = 'OAuthReconnectRequiredError'
+  }
+}
+
 type GetAccessTokenResult = { accessToken: string; expiresAt?: Date | null; connectionId: string }
 
 interface GmailClientOptions {
@@ -68,6 +82,15 @@ export async function getValidAccessToken(
   const conn = await getGoogleConnection(userId, connectionId)
   if (!conn) throw new Error('Google account not connected')
 
+  // Check if connection is already marked as needing reauth
+  if (conn.status === 'EXPIRED' || conn.status === 'REVOKED' || conn.status === 'PENDING_REAUTH') {
+    throw new OAuthReconnectRequiredError(
+      'Gmail connection needs to be reconnected',
+      conn.id,
+      'GOOGLE'
+    )
+  }
+
   const now = Date.now()
   const exp = conn.accessTokenExpiresAt ? new Date(conn.accessTokenExpiresAt).getTime() : undefined
   const needsRefresh = !!exp && exp - now < 5 * 60 * 1000 // under 5 minutes left
@@ -77,19 +100,56 @@ export async function getValidAccessToken(
   }
 
   if (!conn.refreshToken) {
-    return { accessToken: decryptToken(conn.accessToken), expiresAt: exp ? new Date(exp) : null, connectionId: conn.id }
+    // No refresh token - mark as needing reauth and throw
+    await markConnectionNeedsReauth(conn.id, 'No refresh token available')
+    throw new OAuthReconnectRequiredError(
+      'Gmail connection expired and cannot be refreshed',
+      conn.id,
+      'GOOGLE'
+    )
   }
 
-  const refreshed = await refreshAccessToken(decryptToken(conn.refreshToken))
-  const newExpiresAt = new Date(Date.now() + refreshed.expires_in * 1000).toISOString()
-  const newEncryptedAccess = encryptToken(refreshed.access_token)
+  try {
+    const refreshed = await refreshAccessToken(decryptToken(conn.refreshToken))
+    const newExpiresAt = new Date(Date.now() + refreshed.expires_in * 1000).toISOString()
+    const newEncryptedAccess = encryptToken(refreshed.access_token)
+
+    await db
+      .update(oauthConnections)
+      .set({ accessToken: newEncryptedAccess, accessTokenExpiresAt: newExpiresAt, updatedAt: new Date().toISOString() })
+      .where(eq(oauthConnections.id, conn.id))
+
+    return { accessToken: refreshed.access_token, expiresAt: new Date(newExpiresAt), connectionId: conn.id }
+  } catch (error) {
+    // Token refresh failed - mark connection as needing reauth
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    await markConnectionNeedsReauth(conn.id, errorMessage)
+    throw new OAuthReconnectRequiredError(
+      `Gmail token refresh failed: ${errorMessage}`,
+      conn.id,
+      'GOOGLE'
+    )
+  }
+}
+
+/**
+ * Mark a connection as needing re-authentication
+ */
+async function markConnectionNeedsReauth(connectionId: string, reason: string): Promise<void> {
+  const syncState = {
+    lastError: reason,
+    lastErrorAt: new Date().toISOString(),
+    needsReauth: true,
+  }
 
   await db
     .update(oauthConnections)
-    .set({ accessToken: newEncryptedAccess, accessTokenExpiresAt: newExpiresAt, updatedAt: new Date().toISOString() })
-    .where(eq(oauthConnections.id, conn.id))
-
-  return { accessToken: refreshed.access_token, expiresAt: new Date(newExpiresAt), connectionId: conn.id }
+    .set({
+      status: 'PENDING_REAUTH',
+      syncState,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(eq(oauthConnections.id, connectionId))
 }
 
 export async function listMessages(
