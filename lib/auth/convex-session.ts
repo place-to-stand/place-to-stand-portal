@@ -30,11 +30,7 @@ export const getConvexCurrentUser = cache(
     try {
       const token = await convexAuthNextjsToken();
 
-      // Debug: Log whether we have a token
-      console.log("[Convex Auth] Token present:", !!token);
-
       if (!token) {
-        console.log("[Convex Auth] No token available - user not authenticated");
         return null;
       }
 
@@ -44,11 +40,10 @@ export const getConvexCurrentUser = cache(
         { token }
       );
 
-      console.log("[Convex Auth] User fetched:", user?._id ?? "null");
       return user;
     } catch (error) {
       // Auth errors are expected for unauthenticated users
-      console.error("[Convex Auth] Failed to get user:", error);
+      console.error("Failed to get Convex user:", error);
       return null;
     }
   }

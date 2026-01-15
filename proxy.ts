@@ -45,21 +45,16 @@ const isPublicRoute = createRouteMatcher([
  * 3. Redirects unauthenticated users to sign-in
  */
 const convexAuthHandler = convexAuthNextjsMiddleware(async (request) => {
-  const pathname = request.nextUrl.pathname
-
   // Allow public routes without authentication
   if (isPublicRoute(request)) {
-    console.log(`[Convex Middleware] ${pathname} - Public route, allowing`)
     return NextResponse.next()
   }
 
   // Check if user is authenticated
   const isAuthenticated = await isAuthenticatedNextjs()
-  console.log(`[Convex Middleware] ${pathname} - isAuthenticated:`, isAuthenticated)
 
   // Redirect to sign-in if not authenticated
   if (!isAuthenticated) {
-    console.log(`[Convex Middleware] ${pathname} - Redirecting to sign-in`)
     const redirectUrl = new URL('/sign-in', request.url)
     redirectUrl.searchParams.set(
       'redirect',
@@ -69,7 +64,6 @@ const convexAuthHandler = convexAuthNextjsMiddleware(async (request) => {
   }
 
   // User is authenticated, allow the request
-  console.log(`[Convex Middleware] ${pathname} - Authenticated, allowing`)
   return NextResponse.next()
 })
 
@@ -125,11 +119,6 @@ export async function proxy(req: NextRequest, event: any) {
   // When Convex Auth is enabled, use Convex Auth middleware
   // This handles /api/auth requests and cookie management without custom redirects
   if (USE_CONVEX_AUTH) {
-    // Debug: Log all cookies on each request
-    const cookies = req.cookies.getAll()
-    const authCookies = cookies.filter(c => c.name.includes('auth') || c.name.includes('convex'))
-    console.log(`[Proxy] ${pathname} - Auth cookies:`, authCookies.map(c => `${c.name}=${c.value.substring(0, 20)}...`))
-
     return convexAuthHandler(req, event)
   }
 

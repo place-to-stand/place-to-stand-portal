@@ -45,9 +45,6 @@ function safeTimestampToISO(timestamp: number | undefined | null): string {
  * always use `_id` (the Convex ID).
  */
 async function mapConvexUserToAppUser(convexUser: ConvexUserDoc): Promise<AppUser> {
-  // Debug logging to understand the user document structure
-  console.log('[Convex Auth] Mapping user document:', JSON.stringify(convexUser, null, 2))
-
   // Ensure required fields exist with fallbacks
   const email = convexUser.email ?? 'unknown@example.com'
   const role = (convexUser.role as UserRole) ?? 'CLIENT'
