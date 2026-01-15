@@ -64,7 +64,8 @@ export default async function InboxPage({ searchParams }: Props) {
   // Determine query options based on filter
   const isSentFilter = filter === 'sent'
   const linkedFilter = isSentFilter ? undefined : (filter === 'all' ? undefined : filter)
-  const sentFilter = isSentFilter ? 'sent' : undefined
+  // Use 'inbox' filter for default view to exclude sent-only threads, 'sent' for sent view
+  const sentFilter = isSentFilter ? 'sent' : 'inbox'
 
   // Get threads, counts, sync status, clients, projects, and draft counts in parallel
   const [
