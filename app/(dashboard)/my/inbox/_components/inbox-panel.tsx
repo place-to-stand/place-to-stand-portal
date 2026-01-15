@@ -139,7 +139,7 @@ export function InboxPanel({
 
   const [threads, setThreads] = useState(initialThreads)
 
-  // Current sidebar view
+  // Current sidebar view - derive from filter prop
   const [currentView, setCurrentView] = useState<InboxView>(() => {
     // Initialize from filter param
     if (filter === 'linked') return 'linked'
@@ -147,6 +147,14 @@ export function InboxPanel({
     if (filter === 'sent') return 'sent'
     return 'inbox'
   })
+
+  // Sync currentView state when filter prop changes (e.g., after navigation)
+  useEffect(() => {
+    if (filter === 'linked') setCurrentView('linked')
+    else if (filter === 'unlinked') setCurrentView('unlinked')
+    else if (filter === 'sent') setCurrentView('sent')
+    else setCurrentView('inbox')
+  }, [filter])
 
   // Sync threads state when props change (e.g., on pagination/filter change)
   useEffect(() => {
@@ -275,28 +283,31 @@ export function InboxPanel({
     [router, searchParams]
   )
 
-  // Handle sidebar view changes
+  // Handle sidebar view changes - clears search and resets to fresh view
   const handleViewChange = useCallback(
     (view: InboxView) => {
       setCurrentView(view)
+      // Clear search input when switching views
+      setSearchInput('')
+
       // Map views to filter params for server-side navigation
+      // Note: We navigate directly here (not via handleFilterChange) to clear search query
       if (view === 'inbox') {
-        handleFilterChange('all')
+        router.push('/my/inbox')
       } else if (view === 'linked') {
-        handleFilterChange('linked')
+        router.push('/my/inbox?filter=linked')
       } else if (view === 'unlinked') {
-        handleFilterChange('unlinked')
+        router.push('/my/inbox?filter=unlinked')
       } else if (view === 'sent') {
-        handleFilterChange('sent')
+        router.push('/my/inbox?filter=sent')
       } else if (view === 'drafts') {
-        // For now, drafts uses client-side state - stays on current page
-        // Could navigate to a dedicated drafts route in the future
+        // Drafts uses client-side state - stays on current page
       } else if (view === 'scheduled') {
         // Scheduled emails - client-side for now
       }
       // by-client and by-project would need their own routes
     },
-    [handleFilterChange]
+    [router]
   )
 
   // Handle search submission
@@ -1058,7 +1069,7 @@ export function InboxPanel({
             {/* Right Column - Metadata & Actions */}
             <div className='bg-muted/20 w-80 flex-shrink-0 overflow-y-auto lg:w-96'>
               <div className='space-y-6 p-6'>
-                {/* Email Toolbar - Read/Unread toggle + Navigation */}
+                {/* Email Toolbar - Reply actions, Read/Unread toggle, Navigation */}
                 {selectedThread && (
                   <EmailToolbar
                     threadId={selectedThread.id}
@@ -1068,6 +1079,11 @@ export function InboxPanel({
                     }
                     canGoPrev={canGoPrev}
                     canGoNext={canGoNext}
+                    showReplyAll={
+                      threadMessages.length > 0 &&
+                      (((threadMessages[threadMessages.length - 1]?.toEmails?.length ?? 0) > 1) ||
+                        ((threadMessages[threadMessages.length - 1]?.ccEmails?.length ?? 0) > 0))
+                    }
                     onToggleReadStatus={newIsRead => {
                       // Update local thread messages state
                       setThreadMessages(prev =>
@@ -1090,6 +1106,13 @@ export function InboxPanel({
                     }}
                     onPrev={goToPrev}
                     onNext={goToNext}
+                    onReply={mode => {
+                      // Reply to the latest message in the thread
+                      const latestMessage = threadMessages[threadMessages.length - 1]
+                      if (latestMessage) {
+                        handleReply(latestMessage, mode)
+                      }
+                    }}
                   />
                 )}
 

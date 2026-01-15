@@ -6,6 +6,16 @@ import { X, Send, Paperclip, Loader2, Check, Cloud, Clock, ChevronDown, FileIcon
 
 import { Button } from '@/components/ui/button'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -103,6 +113,9 @@ export function ComposePanel({
     (context.cc?.length ?? 0) > 0 || context.mode === 'new'
   )
 
+  // Undo send state (5 second countdown)
+  const [undoCountdown, setUndoCountdown] = useState<number | null>(null)
+
   // Scheduled send state
   const [scheduledAt, setScheduledAt] = useState<Date | null>(null)
   const [showSchedulePicker, setShowSchedulePicker] = useState(false)
@@ -122,9 +135,22 @@ export function ComposePanel({
   // Auto-save state
   const [draftId, setDraftId] = useState<string | null>(context.draftId || null)
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isCreatingDraftRef = useRef(false)
   const pendingSaveRef = useRef(false) // Track if save is needed after creation completes
+
+  // Discard confirmation state
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
+
+  // Track last saved content to detect unsaved changes
+  const lastSavedContentRef = useRef<{
+    toEmails: string[]
+    ccEmails: string[]
+    bccEmails: string[]
+    subject: string
+    body: string
+  } | null>(null)
 
   // Cleanup on unmount
   useEffect(() => {
@@ -426,6 +452,9 @@ export function ComposePanel({
           const newDraftId = data.draft.id
           setDraftId(newDraftId)
           setSaveStatus('saved')
+          setLastSavedAt(new Date())
+          // Track saved content for unsaved changes detection
+          lastSavedContentRef.current = { toEmails, ccEmails, bccEmails, subject, body }
 
           // Check if we need to save again with updated content
           isCreatingDraftRef.current = false
@@ -457,6 +486,9 @@ export function ComposePanel({
 
         if (res.ok) {
           setSaveStatus('saved')
+          setLastSavedAt(new Date())
+          // Track saved content for unsaved changes detection
+          lastSavedContentRef.current = { toEmails, ccEmails, bccEmails, subject, body }
         } else {
           setSaveStatus('error')
         }
@@ -478,6 +510,35 @@ export function ComposePanel({
     connectionId,
   ])
 
+  // Check if there are unsaved changes
+  const hasUnsavedChanges = useCallback(() => {
+    // No content = no unsaved changes
+    const hasContent = toEmails.length > 0 || subject.trim() || body.trim()
+    if (!hasContent) return false
+
+    // Never saved = has unsaved changes if there's content
+    if (!lastSavedContentRef.current) return hasContent
+
+    // Compare current content to last saved
+    const saved = lastSavedContentRef.current
+    return (
+      JSON.stringify(toEmails) !== JSON.stringify(saved.toEmails) ||
+      JSON.stringify(ccEmails) !== JSON.stringify(saved.ccEmails) ||
+      JSON.stringify(bccEmails) !== JSON.stringify(saved.bccEmails) ||
+      subject !== saved.subject ||
+      body !== saved.body
+    )
+  }, [toEmails, ccEmails, bccEmails, subject, body])
+
+  // Handle close attempt - check for unsaved changes first
+  const handleCloseAttempt = useCallback(() => {
+    if (hasUnsavedChanges()) {
+      setShowDiscardConfirm(true)
+    } else {
+      onClose()
+    }
+  }, [hasUnsavedChanges, onClose])
+
   // Debounced auto-save trigger
   const triggerAutoSave = useCallback(() => {
     if (!enableAutoSave) return
@@ -495,6 +556,107 @@ export function ComposePanel({
   useEffect(() => {
     triggerAutoSave()
   }, [toEmails, ccEmails, bccEmails, subject, body, triggerAutoSave])
+
+  // Cancel undo countdown
+  const handleUndoSend = useCallback(() => {
+    setUndoCountdown(null)
+    setIsSending(false)
+    toast({
+      title: 'Send cancelled',
+      description: 'Your email was not sent.',
+    })
+  }, [toast])
+
+  // Actually perform the send (called after undo countdown or for scheduled sends)
+  const performSend = useCallback(async () => {
+    // Clear any pending auto-save
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current)
+    }
+
+    try {
+      // If we have a draft, send via draft endpoint (marks as sent)
+      // Otherwise send directly
+      const endpoint = draftId
+        ? `/api/integrations/gmail/drafts/${draftId}/send`
+        : '/api/integrations/gmail/send'
+
+      const payload = draftId
+        ? {} // Draft endpoint uses stored data
+        : {
+            connectionId,
+            to: toEmails,
+            cc: ccEmails,
+            bcc: bccEmails,
+            subject: subject.trim(),
+            bodyText: body,
+            bodyHtml: `<div style="font-family: sans-serif; white-space: pre-wrap;">${escapeHtml(body)}</div>`,
+            threadId: context.threadId,
+            inReplyToMessageId: context.inReplyToMessageId,
+            clientId: context.clientId,
+            projectId: context.projectId,
+            draftId,
+          }
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Failed to send email')
+      }
+
+      toast({
+        title: 'Email sent',
+        description: 'Your email has been sent successfully.',
+      })
+
+      onSent?.()
+      onClose()
+    } catch (err) {
+      toast({
+        title: 'Failed to send',
+        description: err instanceof Error ? err.message : 'Please try again.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsSending(false)
+    }
+  }, [
+    toEmails,
+    ccEmails,
+    bccEmails,
+    subject,
+    body,
+    context,
+    connectionId,
+    draftId,
+    toast,
+    onSent,
+    onClose,
+  ])
+
+  // Undo send countdown effect - must be after performSend is defined
+  useEffect(() => {
+    if (undoCountdown === null) return
+
+    if (undoCountdown <= 0) {
+      // Countdown finished, actually send
+      setUndoCountdown(null)
+      performSend()
+      return
+    }
+
+    // Decrement countdown every second
+    const timer = setTimeout(() => {
+      setUndoCountdown(prev => (prev !== null ? prev - 1 : null))
+    }, 1000)
+
+    return () => clearTimeout(timer)
+  }, [undoCountdown, performSend])
 
   const handleSend = useCallback(async () => {
     if (toEmails.length === 0) {
@@ -522,9 +684,9 @@ export function ComposePanel({
       clearTimeout(saveTimeoutRef.current)
     }
 
-    try {
-      // If scheduling, save draft with READY status and scheduledAt
-      if (scheduledAt) {
+    // If scheduling, handle immediately (no undo for scheduled sends)
+    if (scheduledAt) {
+      try {
         // Ensure we have a draft to schedule
         let currentDraftId = draftId
         if (!currentDraftId) {
@@ -585,59 +747,20 @@ export function ComposePanel({
 
         onSent?.()
         onClose()
-        return
+      } catch (err) {
+        toast({
+          title: 'Failed to schedule',
+          description: err instanceof Error ? err.message : 'Please try again.',
+          variant: 'destructive',
+        })
+      } finally {
+        setIsSending(false)
       }
-
-      // If we have a draft, send via draft endpoint (marks as sent)
-      // Otherwise send directly
-      const endpoint = draftId
-        ? `/api/integrations/gmail/drafts/${draftId}/send`
-        : '/api/integrations/gmail/send'
-
-      const payload = draftId
-        ? {} // Draft endpoint uses stored data
-        : {
-            connectionId,
-            to: toEmails,
-            cc: ccEmails,
-            bcc: bccEmails,
-            subject: subject.trim(),
-            bodyText: body,
-            bodyHtml: `<div style="font-family: sans-serif; white-space: pre-wrap;">${escapeHtml(body)}</div>`,
-            threadId: context.threadId,
-            inReplyToMessageId: context.inReplyToMessageId,
-            clientId: context.clientId,
-            projectId: context.projectId,
-            draftId,
-          }
-
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        throw new Error(data.error || 'Failed to send email')
-      }
-
-      toast({
-        title: 'Email sent',
-        description: 'Your email has been sent successfully.',
-      })
-
-      onSent?.()
-      onClose()
-    } catch (err) {
-      toast({
-        title: 'Failed to send',
-        description: err instanceof Error ? err.message : 'Please try again.',
-        variant: 'destructive',
-      })
-    } finally {
-      setIsSending(false)
+      return
     }
+
+    // For immediate sends, start 5-second undo countdown
+    setUndoCountdown(5)
   }, [
     toEmails,
     ccEmails,
@@ -684,10 +807,10 @@ export function ComposePanel({
                   Saving...
                 </>
               )}
-              {saveStatus === 'saved' && (
+              {saveStatus === 'saved' && lastSavedAt && (
                 <>
                   <Check className='h-3 w-3' />
-                  Saved
+                  Saved at {format(lastSavedAt, 'h:mm a')}
                 </>
               )}
               {saveStatus === 'error' && 'Save failed'}
@@ -695,7 +818,7 @@ export function ComposePanel({
           )}
         </div>
         {!hideCloseButton && (
-          <Button variant='ghost' size='icon' onClick={onClose}>
+          <Button variant='ghost' size='icon' onClick={handleCloseAttempt}>
             <X className='h-4 w-4' />
           </Button>
         )}
@@ -914,30 +1037,42 @@ export function ComposePanel({
 
           {/* Send / Schedule buttons */}
           <div className='flex'>
-            <Button
-              onClick={handleSend}
-              disabled={isSending}
-              className={cn(scheduledAt ? 'rounded-r-none' : '')}
-            >
-              {isSending ? (
-                <>
-                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                  {scheduledAt ? 'Scheduling...' : 'Sending...'}
-                </>
-              ) : scheduledAt ? (
-                <>
-                  <Clock className='mr-2 h-4 w-4' />
-                  Schedule
-                </>
-              ) : (
-                <>
-                  <Send className='mr-2 h-4 w-4' />
-                  Send
-                </>
-              )}
-            </Button>
+            {undoCountdown !== null ? (
+              // Show undo button during countdown
+              <Button
+                variant='destructive'
+                onClick={handleUndoSend}
+                className='gap-2'
+              >
+                <span className='tabular-nums'>Sending in {undoCountdown}s</span>
+                <span className='font-semibold'>Undo</span>
+              </Button>
+            ) : (
+              <Button
+                onClick={handleSend}
+                disabled={isSending}
+                className={cn(scheduledAt ? 'rounded-r-none' : '')}
+              >
+                {isSending ? (
+                  <>
+                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                    {scheduledAt ? 'Scheduling...' : 'Sending...'}
+                  </>
+                ) : scheduledAt ? (
+                  <>
+                    <Clock className='mr-2 h-4 w-4' />
+                    Schedule
+                  </>
+                ) : (
+                  <>
+                    <Send className='mr-2 h-4 w-4' />
+                    Send
+                  </>
+                )}
+              </Button>
+            )}
 
-            {!scheduledAt && (
+            {!scheduledAt && undoCountdown === null && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -1029,6 +1164,32 @@ export function ComposePanel({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Discard Unsaved Changes Confirmation */}
+      <AlertDialog open={showDiscardConfirm} onOpenChange={setShowDiscardConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {draftId
+                ? 'You have unsaved changes since your last save. Are you sure you want to close without saving?'
+                : 'Your draft hasn\'t been saved yet. Are you sure you want to discard it?'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep editing</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowDiscardConfirm(false)
+                onClose()
+              }}
+              className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
+            >
+              Discard
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
