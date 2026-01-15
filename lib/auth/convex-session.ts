@@ -28,15 +28,27 @@ export type ConvexUserRole = "ADMIN" | "CLIENT";
 export const getConvexCurrentUser = cache(
   async (): Promise<ConvexAppUser | null> => {
     try {
+      const token = await convexAuthNextjsToken();
+
+      // Debug: Log whether we have a token
+      console.log("[Convex Auth] Token present:", !!token);
+
+      if (!token) {
+        console.log("[Convex Auth] No token available - user not authenticated");
+        return null;
+      }
+
       const user = await fetchQuery(
         api.users.queries.me,
         {},
-        { token: await convexAuthNextjsToken() }
+        { token }
       );
+
+      console.log("[Convex Auth] User fetched:", user?._id ?? "null");
       return user;
     } catch (error) {
       // Auth errors are expected for unauthenticated users
-      console.error("Failed to get Convex user:", error);
+      console.error("[Convex Auth] Failed to get user:", error);
       return null;
     }
   }
