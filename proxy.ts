@@ -3,7 +3,6 @@ import { createServerClient } from '@supabase/ssr'
 import {
   convexAuthNextjsMiddleware,
   createRouteMatcher,
-  isAuthenticatedNextjs,
   nextjsMiddlewareRedirect,
 } from '@convex-dev/auth/nextjs/server'
 
@@ -44,23 +43,18 @@ const isPublicRoute = createRouteMatcher([
  * 2. Manages auth cookies for all routes
  * 3. Redirects unauthenticated users to sign-in
  */
-const convexAuthHandler = convexAuthNextjsMiddleware(async (request) => {
+const convexAuthHandler = convexAuthNextjsMiddleware((request, { convexAuth }) => {
   // Allow public routes without authentication
   if (isPublicRoute(request)) {
     return NextResponse.next()
   }
 
-  // Check if user is authenticated
-  const isAuthenticated = await isAuthenticatedNextjs()
-
-  // Redirect to sign-in if not authenticated
-  if (!isAuthenticated) {
-    const redirectUrl = new URL('/sign-in', request.url)
-    redirectUrl.searchParams.set(
-      'redirect',
-      request.nextUrl.pathname + request.nextUrl.search
-    )
-    return nextjsMiddlewareRedirect(request, redirectUrl.pathname + redirectUrl.search)
+  // Check if user is authenticated using the context from convexAuthNextjsMiddleware
+  if (!convexAuth.isAuthenticated()) {
+    // Build redirect URL - encode the return path properly
+    const returnPath = request.nextUrl.pathname + request.nextUrl.search
+    const signInUrl = `/sign-in?redirect=${encodeURIComponent(returnPath)}`
+    return nextjsMiddlewareRedirect(request, signInUrl)
   }
 
   // User is authenticated, allow the request
