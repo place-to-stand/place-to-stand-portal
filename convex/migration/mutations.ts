@@ -26,6 +26,11 @@ async function verifyMigrationKey(migrationKey: string): Promise<void> {
 /**
  * Import a user record
  * Field names match Supabase schema exactly for 1:1 migration
+ *
+ * Delta sync behavior:
+ * - If record doesn't exist: insert it
+ * - If record exists and source updatedAt > existing updatedAt: update it
+ * - If record exists and source updatedAt <= existing updatedAt: skip (return existing ID)
  */
 export const importUser = mutation({
   args: {
@@ -49,6 +54,17 @@ export const importUser = mutation({
       .first();
 
     if (existing) {
+      // Delta sync: update if source is newer
+      if (args.updatedAt > existing.updatedAt) {
+        await ctx.db.patch(existing._id, {
+          email: args.email.toLowerCase(),
+          fullName: args.fullName,
+          avatarUrl: args.avatarUrl,
+          role: args.role as "ADMIN" | "CLIENT",
+          updatedAt: args.updatedAt,
+          deletedAt: args.deletedAt,
+        });
+      }
       return existing._id;
     }
 
@@ -68,6 +84,8 @@ export const importUser = mutation({
 /**
  * Import a client record
  * Field names match Supabase schema exactly for 1:1 migration
+ *
+ * Delta sync behavior: updates if source updatedAt > existing updatedAt
  */
 export const importClient = mutation({
   args: {
@@ -90,10 +108,6 @@ export const importClient = mutation({
       .withIndex("by_supabaseId", (q) => q.eq("supabaseId", args.supabaseId))
       .first();
 
-    if (existing) {
-      return existing._id;
-    }
-
     // Resolve createdBy foreign key if provided
     let createdBy = undefined;
     if (args.createdBySupabaseId) {
@@ -102,6 +116,22 @@ export const importClient = mutation({
         .withIndex("by_supabaseId", (q) => q.eq("supabaseId", args.createdBySupabaseId))
         .first();
       createdBy = user?._id;
+    }
+
+    if (existing) {
+      // Delta sync: update if source is newer
+      if (args.updatedAt > existing.updatedAt) {
+        await ctx.db.patch(existing._id, {
+          name: args.name,
+          slug: args.slug,
+          billingType: args.billingType as "prepaid" | "net_30",
+          notes: args.notes,
+          createdBy,
+          updatedAt: args.updatedAt,
+          deletedAt: args.deletedAt,
+        });
+      }
+      return existing._id;
     }
 
     return await ctx.db.insert("clients", {
@@ -170,6 +200,8 @@ export const importClientMember = mutation({
 /**
  * Import a project record
  * Field names match Supabase schema exactly for 1:1 migration
+ *
+ * Delta sync behavior: updates if source updatedAt > existing updatedAt
  */
 export const importProject = mutation({
   args: {
@@ -195,10 +227,6 @@ export const importProject = mutation({
       .withIndex("by_supabaseId", (q) => q.eq("supabaseId", args.supabaseId))
       .first();
 
-    if (existing) {
-      return existing._id;
-    }
-
     // Resolve foreign keys
     let clientId = undefined;
     if (args.clientSupabaseId) {
@@ -216,6 +244,25 @@ export const importProject = mutation({
         .withIndex("by_supabaseId", (q) => q.eq("supabaseId", args.createdBySupabaseId))
         .first();
       createdBy = user?._id;
+    }
+
+    if (existing) {
+      // Delta sync: update if source is newer
+      if (args.updatedAt > existing.updatedAt) {
+        await ctx.db.patch(existing._id, {
+          name: args.name,
+          slug: args.slug,
+          type: args.type as "CLIENT" | "PERSONAL" | "INTERNAL",
+          status: args.status as "ONBOARDING" | "ACTIVE" | "ON_HOLD" | "COMPLETED",
+          startsOn: args.startsOn,
+          endsOn: args.endsOn,
+          clientId,
+          createdBy,
+          updatedAt: args.updatedAt,
+          deletedAt: args.deletedAt,
+        });
+      }
+      return existing._id;
     }
 
     return await ctx.db.insert("projects", {
@@ -238,6 +285,8 @@ export const importProject = mutation({
 /**
  * Import a task record
  * Field names match Supabase schema exactly for 1:1 migration
+ *
+ * Delta sync behavior: updates if source updatedAt > existing updatedAt
  */
 export const importTask = mutation({
   args: {
@@ -263,10 +312,6 @@ export const importTask = mutation({
       .query("tasks")
       .withIndex("by_supabaseId", (q) => q.eq("supabaseId", args.supabaseId))
       .first();
-
-    if (existing) {
-      return existing._id;
-    }
 
     // Resolve project
     const project = await ctx.db
@@ -296,6 +341,26 @@ export const importTask = mutation({
         .withIndex("by_supabaseId", (q) => q.eq("supabaseId", args.updatedBySupabaseId))
         .first();
       updatedBy = user?._id;
+    }
+
+    if (existing) {
+      // Delta sync: update if source is newer
+      if (args.updatedAt > existing.updatedAt) {
+        await ctx.db.patch(existing._id, {
+          title: args.title,
+          description: args.description,
+          status: args.status as "BACKLOG" | "ON_DECK" | "IN_PROGRESS" | "IN_REVIEW" | "BLOCKED" | "DONE" | "ARCHIVED",
+          rank: args.rank,
+          projectId: project._id,
+          dueOn: args.dueOn,
+          createdBy,
+          updatedBy,
+          acceptedAt: args.acceptedAt,
+          updatedAt: args.updatedAt,
+          deletedAt: args.deletedAt,
+        });
+      }
+      return existing._id;
     }
 
     return await ctx.db.insert("tasks", {

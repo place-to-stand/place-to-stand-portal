@@ -23,6 +23,83 @@ Quick reference for tracking migration progress.
 | Logging | PostHog events for migration observability |
 | Performance | Manual benchmark testing |
 | **Schema Integrity** | **1:1 field mapping - see 006-schema-mapping.md** |
+| **Live Migration** | Supabase remains source of truth; delta syncs before cutover |
+
+---
+
+## Live Migration Strategy
+
+**Context:** The team continues using the portal daily during migration. Supabase is the active source of truth for all data except users (which are now authenticated via Convex).
+
+### Source of Truth by Phase
+
+| Phase | Supabase (Active) | Convex (Migrated) |
+|-------|-------------------|-------------------|
+| Phase 2 (Auth) | clients, projects, tasks, time_logs, etc. | users (auth only) |
+| Phase 3A | projects, tasks, time_logs, etc. | users, clients, clientMembers |
+| Phase 3B | tasks, time_logs, etc. | users, clients, projects |
+| ... | ... | ... |
+| Phase 5 (Complete) | — | All tables |
+
+### Delta Sync Strategy
+
+Since data changes continuously in Supabase, each phase requires a **delta sync** before enabling the feature flag:
+
+1. **Initial Import** (done once per table)
+   - Run full export → transform → import
+   - Records get `supabaseId` for deduplication
+
+2. **Delta Sync** (before enabling each phase's flag)
+   ```bash
+   # Re-export from Supabase (gets latest data)
+   npx tsx scripts/migrate/export-supabase.ts
+
+   # Transform (handles new + updated records)
+   npx tsx scripts/migrate/transform-data.ts
+
+   # Import (idempotent - skips existing supabaseIds, updates if needed)
+   npx tsx scripts/migrate/import-convex.ts
+   ```
+
+3. **Import Script Behavior** (implemented in `convex/migration/mutations.ts`)
+   - Records with matching `supabaseId` where source `updatedAt` > existing: **updated**
+   - Records with matching `supabaseId` where source `updatedAt` <= existing: **skipped**
+   - New records (no matching `supabaseId`): **inserted**
+
+### Handling New Tables
+
+The team may add new features (and tables) before migration completes. At Phase 5:
+
+1. **Discovery Checklist**
+   - [ ] Compare current Supabase schema to `006-schema-mapping.md`
+   - [ ] List any new tables added since migration started
+   - [ ] For each new table:
+     - [ ] Add to Convex schema (`convex/schema.ts`)
+     - [ ] Add transformer in `transform-data.ts`
+     - [ ] Add import mutation in `convex/migration/mutations.ts`
+     - [ ] Update `006-schema-mapping.md`
+
+2. **Schema Diff Command**
+   ```bash
+   # Pull current Supabase schema
+   npm run db:pull -- --out=drizzle/schema-current.ts
+
+   # Compare to documented schema
+   diff lib/db/schema.ts drizzle/schema-current.ts
+   ```
+
+### Final Cutover Checklist
+
+Before disabling Supabase entirely (end of Phase 5):
+
+- [ ] Run final delta sync for ALL tables
+- [ ] Verify record counts match between databases
+- [ ] Verify all feature flags are enabled (`true`)
+- [ ] Run full regression test
+- [ ] Monitor for 1 week with both databases
+- [ ] Disable Supabase writes (read-only mode)
+- [ ] Monitor for another week
+- [ ] Archive Supabase data and disable project
 
 ---
 
@@ -129,7 +206,7 @@ Every migration phase that involves data import MUST follow this process:
 
 **Note:** This phase introduces Google OAuth as a NEW authentication method. Users currently use email/password via Supabase and will transition to Google sign-in.
 
-> **✅ Phase 2 Status: READY FOR SHIP**
+> **✅ Phase 2 Status: COMPLETE - SHIPPED**
 >
 > All infrastructure is in place:
 > - Convex Auth configured with Google OAuth
@@ -137,11 +214,8 @@ Every migration phase that involves data import MUST follow this process:
 > - Permission system ported and validated (8/8 tests passed)
 > - Feature flag enabled (`NEXT_PUBLIC_USE_CONVEX_AUTH=true`)
 > - Build passes, type-check clean
->
-> **Remaining before ship:**
-> 1. Manual testing of OAuth flow (sign-in, session persistence, sign-out)
-> 2. Pre-migration user communication (optional - can be done post-deploy)
-> 3. Storage file migration (deferred to Phase 4F)
+> - Manual testing passed (sign-in, session, sign-out, rollback)
+> - Production deployment configured and verified
 
 ### Pre-Migration Communication
 - [ ] Draft user communication about auth change (email/password → Google sign-in)
@@ -212,12 +286,13 @@ Every migration phase that involves data import MUST follow this process:
   - `migration_phase_update` timeline
 
 ### Testing
-> **Status:** Auth flag is enabled. Manual testing required to verify full flow.
+> **Status:** ✅ Manual testing completed successfully.
 
-- [ ] Test Google OAuth sign-in (manual: visit /sign-in and click "Continue with Google")
-- [ ] Test session persistence (manual: refresh page, verify still logged in)
-- [ ] Test sign-out (manual: click sign out, verify redirected to /sign-in)
-- [ ] Test protected routes (manual: access dashboard routes while authenticated)
+- [x] Test Google OAuth sign-in (manual: visit /sign-in and click "Continue with Google")
+- [x] Test session persistence (manual: refresh page, verify still logged in)
+- [x] Test sign-out (manual: click sign out, verify redirected to /sign-in)
+- [x] Test protected routes (manual: access dashboard routes while authenticated)
+- [x] Test feature flag rollback (toggle back to Supabase, verify still works)
 - [ ] Test file uploads (deferred to Phase 4F - storage migration)
 - [ ] Test file retrieval (deferred to Phase 4F - storage migration)
 - [x] Test permission parity (run validation script) - 8/8 passed
