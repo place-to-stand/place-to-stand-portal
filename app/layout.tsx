@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 
 import { AppProviders } from '@/components/providers/app-providers'
+import { ConvexAuthServerProvider } from '@/components/providers/convex-auth-server-provider'
 import { SupabaseListener } from '@/components/providers/supabase-listener'
 import { cn } from '@/lib/utils'
 import { getSession } from '@/lib/auth/session'
@@ -63,10 +64,12 @@ export default async function RootLayout({
           geistMono.variable
         )}
       >
-        <AppProviders>
-          <SupabaseListener initialSession={initialSession} />
-          {children}
-        </AppProviders>
+        <ConvexAuthServerProvider>
+          <AppProviders>
+            <SupabaseListener initialSession={initialSession} />
+            {children}
+          </AppProviders>
+        </ConvexAuthServerProvider>
       </body>
     </html>
   )

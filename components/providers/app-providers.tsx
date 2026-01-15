@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/toaster";
 
+import { ConvexProvider } from "./convex-provider";
 import { ReactQueryProvider } from "./react-query-provider";
 import { PostHogProvider } from "./posthog-provider";
 import { ThemeProvider } from "./theme-provider";
@@ -14,13 +15,15 @@ type Props = {
 
 export function AppProviders({ children }: Props) {
   return (
-    <PostHogProvider>
-      <ThemeProvider>
-        <ReactQueryProvider>
-          {children}
-          <Toaster />
-        </ReactQueryProvider>
-      </ThemeProvider>
-    </PostHogProvider>
+    <ConvexProvider>
+      <PostHogProvider>
+        <ThemeProvider>
+          <ReactQueryProvider>
+            {children}
+            <Toaster />
+          </ReactQueryProvider>
+        </ThemeProvider>
+      </PostHogProvider>
+    </ConvexProvider>
   );
 }

@@ -48,3 +48,8 @@ Screenshot*.png
 
 # Claude Code
 .claude/settings.local.json
+
+# Migration data (contains PII - emails, names, etc.)
+scripts/migrate/data/
+scripts/migrate/data-transformed/
+scripts/migrate/validation/
