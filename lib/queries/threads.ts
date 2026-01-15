@@ -234,6 +234,8 @@ export type ListThreadsOptions = {
   linkedFilter?: 'all' | 'linked' | 'unlinked'
   /** Filter threads by message direction: 'sent' = outbound, 'inbox' = inbound only */
   sentFilter?: 'sent' | 'inbox'
+  /** Search threads by subject or message content (case-insensitive) */
+  search?: string
   limit?: number
   offset?: number
 }
@@ -242,9 +244,56 @@ export async function listThreadsForUser(
   userId: string,
   options: ListThreadsOptions = {}
 ): Promise<ThreadSummary[]> {
-  const { clientId, projectId, status, linkedFilter, sentFilter, limit = 50, offset = 0 } = options
+  const { clientId, projectId, status, linkedFilter, sentFilter, search, limit = 50, offset = 0 } = options
 
   const conditions = [isNull(threads.deletedAt)]
+
+  // Search filter - supports operators and text search
+  if (search && search.trim()) {
+    const searchTerm = search.trim().toLowerCase()
+
+    // Handle special search operators
+    if (searchTerm === 'has:attachment') {
+      conditions.push(
+        sql`EXISTS (
+          SELECT 1 FROM messages
+          WHERE messages.thread_id = ${threads.id}
+          AND messages.user_id = ${userId}
+          AND messages.deleted_at IS NULL
+          AND messages.has_attachments = true
+        )`
+      )
+    } else if (searchTerm === 'is:unread') {
+      conditions.push(
+        sql`EXISTS (
+          SELECT 1 FROM messages
+          WHERE messages.thread_id = ${threads.id}
+          AND messages.user_id = ${userId}
+          AND messages.deleted_at IS NULL
+          AND messages.is_read = false
+        )`
+      )
+    } else {
+      // Regular text search - matches subject or message content
+      const searchPattern = `%${search.trim()}%`
+      conditions.push(
+        or(
+          sql`${threads.subject} ILIKE ${searchPattern}`,
+          sql`EXISTS (
+            SELECT 1 FROM messages
+            WHERE messages.thread_id = ${threads.id}
+            AND messages.user_id = ${userId}
+            AND messages.deleted_at IS NULL
+            AND (
+              messages.snippet ILIKE ${searchPattern}
+              OR messages.from_email ILIKE ${searchPattern}
+              OR messages.from_name ILIKE ${searchPattern}
+            )
+          )`
+        )!
+      )
+    }
+  }
 
   if (clientId) {
     conditions.push(eq(threads.clientId, clientId))
@@ -468,13 +517,13 @@ export async function listThreadsForClient(
 
 export async function getThreadCountsForUser(
   userId: string,
-  options: { linkedFilter?: 'all' | 'linked' | 'unlinked'; sentFilter?: 'sent' | 'inbox' } = {}
+  options: { linkedFilter?: 'all' | 'linked' | 'unlinked'; sentFilter?: 'sent' | 'inbox'; search?: string } = {}
 ): Promise<{
   total: number
   unread: number
   byStatus: Record<ThreadStatus, number>
 }> {
-  const { linkedFilter, sentFilter } = options
+  const { linkedFilter, sentFilter, search } = options
 
   const userThreadCondition = or(
     eq(threads.createdBy, userId),
@@ -487,6 +536,51 @@ export async function getThreadCountsForUser(
   )
 
   const conditions = [isNull(threads.deletedAt), userThreadCondition]
+
+  // Search filter - supports operators and text search
+  if (search && search.trim()) {
+    const searchTerm = search.trim().toLowerCase()
+
+    if (searchTerm === 'has:attachment') {
+      conditions.push(
+        sql`EXISTS (
+          SELECT 1 FROM messages
+          WHERE messages.thread_id = ${threads.id}
+          AND messages.user_id = ${userId}
+          AND messages.deleted_at IS NULL
+          AND messages.has_attachments = true
+        )`
+      )
+    } else if (searchTerm === 'is:unread') {
+      conditions.push(
+        sql`EXISTS (
+          SELECT 1 FROM messages
+          WHERE messages.thread_id = ${threads.id}
+          AND messages.user_id = ${userId}
+          AND messages.deleted_at IS NULL
+          AND messages.is_read = false
+        )`
+      )
+    } else {
+      const searchPattern = `%${search.trim()}%`
+      conditions.push(
+        or(
+          sql`${threads.subject} ILIKE ${searchPattern}`,
+          sql`EXISTS (
+            SELECT 1 FROM messages
+            WHERE messages.thread_id = ${threads.id}
+            AND messages.user_id = ${userId}
+            AND messages.deleted_at IS NULL
+            AND (
+              messages.snippet ILIKE ${searchPattern}
+              OR messages.from_email ILIKE ${searchPattern}
+              OR messages.from_name ILIKE ${searchPattern}
+            )
+          )`
+        )!
+      )
+    }
+  }
 
   if (linkedFilter === 'linked') {
     conditions.push(sql`${threads.clientId} IS NOT NULL`)

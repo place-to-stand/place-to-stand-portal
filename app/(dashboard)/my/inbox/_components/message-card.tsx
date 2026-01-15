@@ -10,15 +10,24 @@ import { Separator } from '@/components/ui/separator'
 import type { Message } from '@/lib/types/messages'
 import { sanitizeEmailHtml, type CidMapping } from '@/lib/email/sanitize'
 
+import { AttachmentList, type AttachmentMetadata } from './attachment-viewer'
 import { EmailIframe } from './email-iframe'
 
 type MessageCardProps = {
   message: Message
   cidMappings?: CidMapping[]
+  attachments?: AttachmentMetadata[]
   onReply?: (mode: 'reply' | 'reply_all' | 'forward') => void
+  onViewAttachment?: (attachment: AttachmentMetadata) => void
 }
 
-export function MessageCard({ message, cidMappings, onReply }: MessageCardProps) {
+export function MessageCard({
+  message,
+  cidMappings,
+  attachments,
+  onReply,
+  onViewAttachment,
+}: MessageCardProps) {
   const [isExpanded, setIsExpanded] = useState(true)
 
   const sanitizedHtml = useMemo(() => {
@@ -88,6 +97,14 @@ export function MessageCard({ message, cidMappings, onReply }: MessageCardProps)
               <p className='text-muted-foreground text-sm'>{message.snippet}</p>
             ) : (
               <p className='text-muted-foreground text-sm italic'>No content</p>
+            )}
+
+            {/* Attachments */}
+            {attachments && attachments.length > 0 && onViewAttachment && (
+              <AttachmentList
+                attachments={attachments}
+                onViewAttachment={onViewAttachment}
+              />
             )}
           </div>
 
