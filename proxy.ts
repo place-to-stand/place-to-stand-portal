@@ -1,9 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
-import {
-  convexAuthNextjsMiddleware,
-  isAuthenticatedNextjs,
-} from '@convex-dev/auth/nextjs/server'
+import { convexAuthNextjsMiddleware } from '@convex-dev/auth/nextjs/server'
 
 import type { Database } from '@/lib/supabase/types'
 
@@ -22,34 +19,10 @@ const PUBLIC_PATHS = new Set([
 const FORCE_RESET_PATH = '/force-reset-password'
 
 /**
- * Convex Auth middleware handler
- * Handles /api/auth requests and auth state
+ * Convex Auth middleware - handles /api/auth without custom redirect logic
+ * This proxies auth requests to Convex and manages cookies
  */
-const convexAuthHandler = convexAuthNextjsMiddleware(
-  async (request, { convexAuth }) => {
-    const pathname = request.nextUrl.pathname
-    const isPublic = [...PUBLIC_PATHS].some(path => pathname.startsWith(path))
-    const isAuthenticated = await convexAuth.isAuthenticated()
-
-    // Redirect unauthenticated users to sign-in
-    if (!isAuthenticated && !isPublic) {
-      const redirectUrl = request.nextUrl.clone()
-      redirectUrl.pathname = '/sign-in'
-      redirectUrl.searchParams.set(
-        'redirect',
-        request.nextUrl.pathname + request.nextUrl.search
-      )
-      return NextResponse.redirect(redirectUrl)
-    }
-
-    // Redirect authenticated users away from sign-in
-    if (isAuthenticated && pathname === '/sign-in') {
-      return NextResponse.redirect(new URL('/', request.url))
-    }
-
-    return NextResponse.next()
-  }
-)
+const convexAuthHandler = convexAuthNextjsMiddleware()
 
 /**
  * Check authentication using Supabase Auth
@@ -100,9 +73,9 @@ async function checkSupabaseAuth(req: NextRequest): Promise<{
 export async function proxy(req: NextRequest, event: any) {
   const pathname = req.nextUrl.pathname
 
-  // Use Convex Auth or Supabase Auth based on feature flag
+  // When Convex Auth is enabled, use Convex Auth middleware
+  // This handles /api/auth requests and cookie management without custom redirects
   if (USE_CONVEX_AUTH) {
-    // Delegate to Convex Auth middleware (handles /api/auth and auth state)
     return convexAuthHandler(req, event)
   }
 

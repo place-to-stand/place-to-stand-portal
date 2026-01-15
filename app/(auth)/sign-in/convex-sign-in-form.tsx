@@ -21,9 +21,20 @@ export function ConvexSignInForm({ redirectTo }: Props) {
 
     try {
       console.log("Starting Google sign in...");
-      await signIn("google", {
+      console.log("redirectTo:", redirectTo || "/");
+      const result = await signIn("google", {
         redirectTo: redirectTo || "/",
       });
+      console.log("Sign in result:", result);
+
+      // If already signed in or sign-in completed, redirect manually
+      if (result && !result.signingIn) {
+        const destination = redirectTo || "/";
+        console.log("Redirecting to:", destination);
+        window.location.href = destination;
+        return;
+      }
+
       console.log("Sign in initiated successfully");
     } catch (err) {
       console.error("Sign in error:", err);

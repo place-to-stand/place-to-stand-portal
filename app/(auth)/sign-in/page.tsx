@@ -16,10 +16,13 @@ export const metadata: Metadata = {
 };
 
 export default async function SignInPage({ searchParams }: PageProps) {
-  const user = await getCurrentUser();
-
-  if (user) {
-    redirect("/");
+  // Skip auth check when Convex Auth is enabled - proxy middleware handles redirects
+  // This prevents redirect loops from auth errors during the sign-in flow
+  if (!CONVEX_FLAGS.AUTH) {
+    const user = await getCurrentUser();
+    if (user) {
+      redirect("/");
+    }
   }
 
   const resolvedSearchParams = searchParams ? await searchParams : undefined;

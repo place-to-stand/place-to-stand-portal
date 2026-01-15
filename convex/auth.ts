@@ -17,7 +17,7 @@ import Google from "@auth/core/providers/google";
  */
 const DEFAULT_USER_ROLE = "CLIENT" as const;
 
-export const { auth, signIn, signOut, store } = convexAuth({
+export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [Google],
 
   callbacks: {

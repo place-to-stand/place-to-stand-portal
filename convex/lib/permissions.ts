@@ -393,6 +393,9 @@ export async function ensureTaskAssigneeAccess(
 /**
  * Get current user from Convex Auth context
  * Returns null if not authenticated
+ *
+ * Convex Auth identity.subject format: "{applicationID}|{sessionId}"
+ * The session document contains the actual userId pointing to the user.
  */
 export async function getCurrentUser(ctx: Ctx): Promise<ConvexUser | null> {
   const identity = await ctx.auth.getUserIdentity();
@@ -400,13 +403,40 @@ export async function getCurrentUser(ctx: Ctx): Promise<ConvexUser | null> {
     return null;
   }
 
-  // Look up user by auth ID
-  const user = await ctx.db
-    .query("users")
-    .withIndex("by_authId", (q) => q.eq("authId", identity.subject))
-    .first();
+  // identity.subject format: "convex|<sessionId>"
+  // Extract the session ID after the pipe character
+  const subject = identity.subject;
+  const pipeIndex = subject.indexOf("|");
 
-  return user;
+  if (pipeIndex === -1) {
+    console.error("Unexpected identity.subject format:", subject);
+    return null;
+  }
+
+  const sessionId = subject.substring(pipeIndex + 1);
+
+  try {
+    // First, fetch the session to get the actual userId
+    const session = await ctx.db.get(sessionId as Id<"authSessions">);
+
+    if (!session) {
+      console.error("Session not found:", sessionId);
+      return null;
+    }
+
+    // Now fetch the actual user using the userId from the session
+    const user = await ctx.db.get(session.userId);
+
+    // Ensure user exists and isn't soft-deleted
+    if (!user || user.deletedAt !== undefined) {
+      return null;
+    }
+
+    return user;
+  } catch (error) {
+    console.error("Failed to get user from session:", sessionId, error);
+    return null;
+  }
 }
 
 /**

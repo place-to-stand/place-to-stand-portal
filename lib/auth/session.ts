@@ -20,35 +20,70 @@ export type UserRole = Database['public']['Enums']['user_role']
 // ============================================================
 
 /**
+ * Safely convert a timestamp to ISO string
+ * Returns current time if the timestamp is invalid
+ */
+function safeTimestampToISO(timestamp: number | undefined | null): string {
+  if (timestamp === undefined || timestamp === null || !Number.isFinite(timestamp)) {
+    return new Date().toISOString()
+  }
+  try {
+    return new Date(timestamp).toISOString()
+  } catch {
+    return new Date().toISOString()
+  }
+}
+
+/**
  * Maps a Convex user to the AppUser type for compatibility
+ *
+ * IMPORTANT: During the migration period, we use `supabaseId` as the `id` field
+ * when available. This ensures PostgreSQL queries (via Drizzle) continue to work
+ * with the existing UUID-based foreign keys in the database.
+ *
+ * Once the full migration to Convex is complete, this can be simplified to
+ * always use `_id` (the Convex ID).
  */
 async function mapConvexUserToAppUser(convexUser: ConvexUserDoc): Promise<AppUser> {
+  // Debug logging to understand the user document structure
+  console.log('[Convex Auth] Mapping user document:', JSON.stringify(convexUser, null, 2))
+
+  // Ensure required fields exist with fallbacks
+  const email = convexUser.email ?? 'unknown@example.com'
+  const role = (convexUser.role as UserRole) ?? 'CLIENT'
+
+  // Use supabaseId for PostgreSQL compatibility, fall back to Convex _id for new users
+  const id = convexUser.supabaseId ?? convexUser._id
+
   return {
-    id: convexUser._id,
-    email: convexUser.email,
-    role: convexUser.role as UserRole,
-    avatar_url: null, // Convex uses avatarStorageId, handle separately
-    full_name: convexUser.name ?? null,
-    created_at: new Date(convexUser.createdAt).toISOString(),
-    updated_at: new Date(convexUser.updatedAt).toISOString(),
+    id,
+    email,
+    role,
+    avatar_url: convexUser.avatarUrl ?? null,
+    full_name: convexUser.fullName ?? null,
+    created_at: safeTimestampToISO(convexUser.createdAt),
+    updated_at: safeTimestampToISO(convexUser.updatedAt),
     deleted_at: convexUser.deletedAt
-      ? new Date(convexUser.deletedAt).toISOString()
+      ? safeTimestampToISO(convexUser.deletedAt)
       : null,
   }
 }
 
 /**
  * Convex user document type (minimal for mapping)
+ * Field names match the Convex schema (convex/schema.ts)
  */
 type ConvexUserDoc = {
   _id: string
   email: string
-  name?: string
+  fullName?: string // Matches Convex schema field name
   role: string
-  avatarStorageId?: string
+  avatarUrl?: string // Matches Convex schema field name
   createdAt: number
   updatedAt: number
   deletedAt?: number
+  // Migration field - Supabase UUID for backward compatibility with PostgreSQL queries
+  supabaseId?: string
 }
 
 /**
