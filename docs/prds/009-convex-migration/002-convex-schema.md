@@ -116,7 +116,7 @@ export default defineSchema({
    * Users table
    * - Stores user accounts with roles
    * - Soft deletes via deletedAt
-   * - Email is unique (enforced at application layer)
+   * - Email is unique (enforced via mutations that check by_email index before insert)
    */
   users: defineTable({
     // Auth linkage (from Convex Auth)
@@ -581,7 +581,8 @@ export default defineSchema({
 
   /**
    * OAuth connections - External service tokens
-   * - Tokens are encrypted at rest
+   * - Tokens are encrypted at rest using AES-256-GCM
+   * - See 001-migration-plan.md "Encrypted Token Migration" section for implementation details
    */
   oauthConnections: defineTable({
     userId: v.id("users"),
@@ -658,8 +659,8 @@ export default defineSchema({
     entityType: v.string(), // e.g., "task", "project"
     entityId: v.string(), // ID of the affected entity
 
-    // Event data
-    metadata: v.optional(v.any()), // Flexible event-specific data
+    // Event data (v.any for migration; see Typed Metadata Validators section for post-migration typing)
+    metadata: v.optional(v.any()),
 
     // Timestamps
     createdAt: v.number(),
@@ -687,8 +688,8 @@ export default defineSchema({
     // Time window
     windowDays: v.number(), // 1, 7, 14, 28
 
-    // Cached data
-    data: v.any(), // Pre-computed summary
+    // Cached data (v.any for flexible JSONB migration; type after migration)
+    data: v.any(),
 
     // Cache metadata
     computedAt: v.number(),
@@ -750,7 +751,7 @@ export default defineSchema({
 
     // External provider info
     providerId: v.optional(v.string()), // e.g., Gmail message ID
-    providerMetadata: v.optional(v.any()),
+    providerMetadata: v.optional(v.any()), // Provider-specific data; type per provider post-migration
 
     // Timestamps
     sentAt: v.optional(v.number()),
@@ -781,7 +782,7 @@ export default defineSchema({
     // Suggestion content
     title: v.optional(v.string()),
     content: v.optional(v.string()),
-    metadata: v.optional(v.any()), // Type-specific data
+    metadata: v.optional(v.any()), // Type-specific data; type per suggestion type post-migration
 
     // Review
     reviewedById: v.optional(v.id("users")),
@@ -879,6 +880,8 @@ export default defineSchema({
 ```
 
 ## Typed Metadata Validators
+
+> **Note:** The schema above uses `v.any()` for JSONB fields during migration for compatibility with existing Supabase data. For new code and post-migration cleanup, use the typed validators below instead.
 
 **Decision:** Use typed validators instead of `v.any()` for metadata fields.
 

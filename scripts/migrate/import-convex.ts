@@ -61,10 +61,19 @@ for (const table of IMPORT_ORDER) {
 
 interface ImportResult {
   table: string;
-  success: number;
+  inserted: number;
+  updated: number;
   skipped: number;
   failed: number;
   errors: Array<{ record: unknown; error: string }>;
+}
+
+/**
+ * Result type from Convex import mutations
+ */
+interface ConvexImportResult {
+  id: string;
+  operation: "inserted" | "updated" | "skipped";
 }
 
 /**
@@ -147,7 +156,8 @@ async function importUsers(
 ): Promise<ImportResult> {
   const result: ImportResult = {
     table: "users",
-    success: 0,
+    inserted: 0,
+    updated: 0,
     skipped: 0,
     failed: 0,
     errors: [],
@@ -155,7 +165,7 @@ async function importUsers(
 
   for (const record of records) {
     try {
-      const convexId = await client.mutation(api.migration.mutations.importUser, {
+      const { id, operation } = await client.mutation(api.migration.mutations.importUser, {
         migrationKey,
         email: record.email,
         fullName: nullToUndefined(record.fullName),
@@ -165,18 +175,14 @@ async function importUsers(
         createdAt: record.createdAt,
         updatedAt: record.updatedAt,
         deletedAt: nullToUndefined(record.deletedAt),
-      });
+      }) as ConvexImportResult;
 
-      convexIdMaps.users.set(record.supabaseId, convexId);
-      result.success++;
+      convexIdMaps.users.set(record.supabaseId, id);
+      result[operation]++;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      if (errorMessage.includes("already imported") || errorMessage.includes("existing")) {
-        result.skipped++;
-      } else {
-        result.failed++;
-        result.errors.push({ record, error: errorMessage });
-      }
+      result.failed++;
+      result.errors.push({ record, error: errorMessage });
     }
   }
 
@@ -190,7 +196,8 @@ async function importClients(
 ): Promise<ImportResult> {
   const result: ImportResult = {
     table: "clients",
-    success: 0,
+    inserted: 0,
+    updated: 0,
     skipped: 0,
     failed: 0,
     errors: [],
@@ -198,7 +205,7 @@ async function importClients(
 
   for (const record of records) {
     try {
-      const convexId = await client.mutation(api.migration.mutations.importClient, {
+      const { id, operation } = await client.mutation(api.migration.mutations.importClient, {
         migrationKey,
         name: record.name,
         slug: nullToUndefined(record.slug),
@@ -209,18 +216,14 @@ async function importClients(
         createdAt: record.createdAt,
         updatedAt: record.updatedAt,
         deletedAt: nullToUndefined(record.deletedAt),
-      });
+      }) as ConvexImportResult;
 
-      convexIdMaps.clients.set(record.supabaseId, convexId);
-      result.success++;
+      convexIdMaps.clients.set(record.supabaseId, id);
+      result[operation]++;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      if (errorMessage.includes("already imported") || errorMessage.includes("existing")) {
-        result.skipped++;
-      } else {
-        result.failed++;
-        result.errors.push({ record, error: errorMessage });
-      }
+      result.failed++;
+      result.errors.push({ record, error: errorMessage });
     }
   }
 
@@ -234,7 +237,8 @@ async function importClientMembers(
 ): Promise<ImportResult> {
   const result: ImportResult = {
     table: "clientMembers",
-    success: 0,
+    inserted: 0,
+    updated: 0,
     skipped: 0,
     failed: 0,
     errors: [],
@@ -252,25 +256,21 @@ async function importClientMembers(
     }
 
     try {
-      const convexId = await client.mutation(api.migration.mutations.importClientMember, {
+      const { id, operation } = await client.mutation(api.migration.mutations.importClientMember, {
         migrationKey,
         clientSupabaseId: record._supabaseClientId,
         userSupabaseId: record._supabaseUserId,
         supabaseId: record.supabaseId,
         createdAt: record.createdAt,
         updatedAt: record.updatedAt,
-      });
+      }) as ConvexImportResult;
 
-      convexIdMaps.clientMembers.set(record.supabaseId, convexId);
-      result.success++;
+      convexIdMaps.clientMembers.set(record.supabaseId, id);
+      result[operation]++;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      if (errorMessage.includes("already imported") || errorMessage.includes("existing")) {
-        result.skipped++;
-      } else {
-        result.failed++;
-        result.errors.push({ record, error: errorMessage });
-      }
+      result.failed++;
+      result.errors.push({ record, error: errorMessage });
     }
   }
 
@@ -284,7 +284,8 @@ async function importProjects(
 ): Promise<ImportResult> {
   const result: ImportResult = {
     table: "projects",
-    success: 0,
+    inserted: 0,
+    updated: 0,
     skipped: 0,
     failed: 0,
     errors: [],
@@ -292,7 +293,7 @@ async function importProjects(
 
   for (const record of records) {
     try {
-      const convexId = await client.mutation(api.migration.mutations.importProject, {
+      const { id, operation } = await client.mutation(api.migration.mutations.importProject, {
         migrationKey,
         name: record.name,
         slug: nullToUndefined(record.slug),
@@ -306,18 +307,14 @@ async function importProjects(
         createdAt: record.createdAt,
         updatedAt: record.updatedAt,
         deletedAt: nullToUndefined(record.deletedAt),
-      });
+      }) as ConvexImportResult;
 
-      convexIdMaps.projects.set(record.supabaseId, convexId);
-      result.success++;
+      convexIdMaps.projects.set(record.supabaseId, id);
+      result[operation]++;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      if (errorMessage.includes("already imported") || errorMessage.includes("existing")) {
-        result.skipped++;
-      } else {
-        result.failed++;
-        result.errors.push({ record, error: errorMessage });
-      }
+      result.failed++;
+      result.errors.push({ record, error: errorMessage });
     }
   }
 
@@ -331,7 +328,8 @@ async function importTasks(
 ): Promise<ImportResult> {
   const result: ImportResult = {
     table: "tasks",
-    success: 0,
+    inserted: 0,
+    updated: 0,
     skipped: 0,
     failed: 0,
     errors: [],
@@ -349,7 +347,7 @@ async function importTasks(
     }
 
     try {
-      const convexId = await client.mutation(api.migration.mutations.importTask, {
+      const { id, operation } = await client.mutation(api.migration.mutations.importTask, {
         migrationKey,
         title: record.title,
         description: nullToUndefined(record.description),
@@ -364,18 +362,14 @@ async function importTasks(
         createdAt: record.createdAt,
         updatedAt: record.updatedAt,
         deletedAt: nullToUndefined(record.deletedAt),
-      });
+      }) as ConvexImportResult;
 
-      convexIdMaps.tasks.set(record.supabaseId, convexId);
-      result.success++;
+      convexIdMaps.tasks.set(record.supabaseId, id);
+      result[operation]++;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      if (errorMessage.includes("already imported") || errorMessage.includes("existing")) {
-        result.skipped++;
-      } else {
-        result.failed++;
-        result.errors.push({ record, error: errorMessage });
-      }
+      result.failed++;
+      result.errors.push({ record, error: errorMessage });
     }
   }
 
@@ -457,7 +451,7 @@ async function main() {
 
       importResults.push(result);
       console.log(
-        `   ✅ Success: ${result.success}, Skipped: ${result.skipped}, Failed: ${result.failed}`
+        `   ✅ Inserted: ${result.inserted}, Updated: ${result.updated}, Skipped: ${result.skipped}, Failed: ${result.failed}`
       );
 
       if (result.errors.length > 0) {
@@ -477,7 +471,8 @@ async function main() {
         {
           importedAt: new Date().toISOString(),
           results: importResults,
-          totalSuccess: importResults.reduce((a, r) => a + r.success, 0),
+          totalInserted: importResults.reduce((a, r) => a + r.inserted, 0),
+          totalUpdated: importResults.reduce((a, r) => a + r.updated, 0),
           totalSkipped: importResults.reduce((a, r) => a + r.skipped, 0),
           totalFailed: importResults.reduce((a, r) => a + r.failed, 0),
         },
@@ -496,7 +491,10 @@ async function main() {
 
     console.log("\n✅ Import complete!");
     console.log(
-      `   Total success: ${importResults.reduce((a, r) => a + r.success, 0)}`
+      `   Total inserted: ${importResults.reduce((a, r) => a + r.inserted, 0)}`
+    );
+    console.log(
+      `   Total updated: ${importResults.reduce((a, r) => a + r.updated, 0)}`
     );
     console.log(
       `   Total skipped: ${importResults.reduce((a, r) => a + r.skipped, 0)}`

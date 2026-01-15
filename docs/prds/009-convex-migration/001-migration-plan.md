@@ -46,7 +46,7 @@ This document outlines a **feature-by-feature migration** from Supabase (Postgre
 | Component | Count | Files Affected |
 |-----------|-------|----------------|
 | Database Tables | 26 | `lib/db/schema.ts` |
-| Enums | 11 | `lib/db/schema.ts` |
+| Enums | 13 | `lib/db/schema.ts` |
 | Query Files | 47 | `lib/queries/` |
 | Data Layer Files | 17 | `lib/data/` |
 | API Routes | 74 | `app/api/` |
@@ -308,7 +308,7 @@ defineSchema({
 
 3. **Define Convex Schema**
    - Translate all 26 tables to Convex document types
-   - Define validators for all 11 enum types
+   - Define validators for all 13 enum types
    - Set up indexes for common query patterns
    - Create schema.ts with full type definitions
 

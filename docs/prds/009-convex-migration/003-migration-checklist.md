@@ -156,7 +156,7 @@ Every migration phase that involves data import MUST follow this process:
 
 ### Schema Definition
 - [x] Create `convex/schema.ts`
-- [x] Define all 11 enum validators
+- [x] Define all 13 enum validators
 - [x] Define all 26 document tables
 - [x] Add indexes for query patterns
 - [x] Add `supabaseId` migration fields (renamed from `_supabaseId` - underscore reserved)
@@ -477,8 +477,8 @@ Every migration phase that involves data import MUST follow this process:
 - [ ] Port activity event handlers from `lib/activity/events/`
 
 ### Data Migration
-- [ ] Migrate activity_logs
-- [ ] Migrate activity_overview_cache
+- [ ] Migrate activity_logs → activityLogs
+- [ ] Migrate activity_overview_cache → activityCache
 - [ ] Record migration in `migrationRuns` table
 
 ### Scheduled Functions (Cron)
