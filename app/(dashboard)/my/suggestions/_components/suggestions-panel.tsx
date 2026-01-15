@@ -36,7 +36,6 @@ type SuggestionCounts = {
 type SuggestionsPanelProps = {
   initialSuggestions: SuggestionWithContext[]
   initialCounts: SuggestionCounts
-  projects: Array<{ id: string; name: string }>
   currentFilter: SuggestionFilter
 }
 
@@ -101,7 +100,6 @@ function toSuggestionCardData(
 export function SuggestionsPanel({
   initialSuggestions,
   initialCounts,
-  projects: _projects, // Reserved for future project filter dropdown
   currentFilter,
 }: SuggestionsPanelProps) {
   const router = useRouter()

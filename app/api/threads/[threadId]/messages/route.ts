@@ -5,12 +5,6 @@ import { listMessagesForThread } from '@/lib/queries/messages'
 import { getThreadById } from '@/lib/queries/threads'
 import { getMessage, getCidAttachmentMappings, type CidAttachmentMapping } from '@/lib/gmail/client'
 
-type MessageWithCidMappings = {
-  id: string
-  externalMessageId: string | null
-  cidMappings: CidAttachmentMapping[]
-}
-
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ threadId: string }> }
