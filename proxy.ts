@@ -43,23 +43,28 @@ const isPublicRoute = createRouteMatcher([
  * 2. Manages auth cookies for all routes
  * 3. Redirects unauthenticated users to sign-in
  */
-const convexAuthHandler = convexAuthNextjsMiddleware((request, { convexAuth }) => {
-  // Allow public routes without authentication
-  if (isPublicRoute(request)) {
+const convexAuthHandler = convexAuthNextjsMiddleware(
+  (request, { convexAuth }) => {
+    // Allow public routes without authentication
+    if (isPublicRoute(request)) {
+      return NextResponse.next()
+    }
+
+    // Check if user is authenticated using the context from convexAuthNextjsMiddleware
+    if (!convexAuth.isAuthenticated()) {
+      // Build redirect URL - encode the return path properly
+      const returnPath = request.nextUrl.pathname + request.nextUrl.search
+      const signInUrl = `/sign-in?redirect=${encodeURIComponent(returnPath)}`
+      return nextjsMiddlewareRedirect(request, signInUrl)
+    }
+
+    // User is authenticated, allow the request
     return NextResponse.next()
+  },
+  {
+    verbose: true,
   }
-
-  // Check if user is authenticated using the context from convexAuthNextjsMiddleware
-  if (!convexAuth.isAuthenticated()) {
-    // Build redirect URL - encode the return path properly
-    const returnPath = request.nextUrl.pathname + request.nextUrl.search
-    const signInUrl = `/sign-in?redirect=${encodeURIComponent(returnPath)}`
-    return nextjsMiddlewareRedirect(request, signInUrl)
-  }
-
-  // User is authenticated, allow the request
-  return NextResponse.next()
-})
+)
 
 /**
  * Check authentication using Supabase Auth
