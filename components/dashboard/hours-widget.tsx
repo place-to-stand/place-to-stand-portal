@@ -40,22 +40,12 @@ export function HoursWidget({ initialSnapshot, className }: HoursWidgetProps) {
 
   const canGoPrev = useMemo(
     () => compareMonthCursor(snapshot, snapshot.minCursor) > 0,
-    [
-      snapshot.month,
-      snapshot.year,
-      snapshot.minCursor.month,
-      snapshot.minCursor.year,
-    ]
+    [snapshot]
   )
 
   const canGoNext = useMemo(
     () => compareMonthCursor(snapshot, snapshot.maxCursor) < 0,
-    [
-      snapshot.month,
-      snapshot.year,
-      snapshot.maxCursor.month,
-      snapshot.maxCursor.year,
-    ]
+    [snapshot]
   )
 
   const prevDisabled = isLoading || !canGoPrev

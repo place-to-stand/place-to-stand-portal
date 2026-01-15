@@ -177,6 +177,8 @@ export function useClientSheetFormState({
     })
 
     // Initialize contacts from props if provided
+    // Intentional: Sync contact state with props when sheet opens
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (clientContactsProp) {
       setSelectedContacts(clientContactsProp)
       setInitialContacts(clientContactsProp)
@@ -184,6 +186,7 @@ export function useClientSheetFormState({
       setSelectedContacts([])
       setInitialContacts([])
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     // Fetch contact data if not provided via props
     const clientId = client?.id

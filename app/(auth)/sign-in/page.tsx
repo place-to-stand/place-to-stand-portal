@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/auth/session";
+import { CONVEX_FLAGS } from "@/lib/feature-flags";
 
+import { ConvexSignInForm } from "./convex-sign-in-form";
 import { SignInForm } from "./sign-in-form";
 
 type PageProps = {
@@ -14,10 +16,13 @@ export const metadata: Metadata = {
 };
 
 export default async function SignInPage({ searchParams }: PageProps) {
-  const user = await getCurrentUser();
-
-  if (user) {
-    redirect("/");
+  // Skip auth check when Convex Auth is enabled - proxy middleware handles redirects
+  // This prevents redirect loops from auth errors during the sign-in flow
+  if (!CONVEX_FLAGS.AUTH) {
+    const user = await getCurrentUser();
+    if (user) {
+      redirect("/");
+    }
   }
 
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
@@ -29,10 +34,16 @@ export default async function SignInPage({ searchParams }: PageProps) {
         <div className="text-center">
           <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Sign in with your work email to manage your projects.
+            {CONVEX_FLAGS.AUTH
+              ? "Sign in with Google to manage your projects."
+              : "Sign in with your work email to manage your projects."}
           </p>
         </div>
-        <SignInForm redirectTo={redirectTo} />
+        {CONVEX_FLAGS.AUTH ? (
+          <ConvexSignInForm redirectTo={redirectTo} />
+        ) : (
+          <SignInForm redirectTo={redirectTo} />
+        )}
       </div>
     </div>
   );

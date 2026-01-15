@@ -2,7 +2,6 @@ import { requireUser } from '@/lib/auth/session'
 import {
   getSuggestions,
   getSuggestionCounts,
-  getProjectsForDropdown,
   type SuggestionFilter,
 } from '@/lib/data/suggestions'
 import { SuggestionsPanel } from './_components/suggestions-panel'
@@ -22,17 +21,15 @@ export default async function SuggestionsPage({ searchParams }: PageProps) {
     ? (filterParam as SuggestionFilter)
     : 'pending'
 
-  const [suggestions, counts, projects] = await Promise.all([
+  const [suggestions, counts] = await Promise.all([
     getSuggestions({ limit: 50, filter, userId: user.id }),
     getSuggestionCounts({ userId: user.id }),
-    getProjectsForDropdown(),
   ])
 
   return (
     <SuggestionsPanel
       initialSuggestions={suggestions}
       initialCounts={counts}
-      projects={projects}
       currentFilter={filter}
     />
   )

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { CONVEX_FLAGS } from "@/lib/feature-flags";
 
 type SessionTokens = {
   access_token: string;
@@ -13,10 +14,22 @@ interface Props {
   initialSession: SessionTokens | null;
 }
 
+/**
+ * Supabase Auth session listener
+ *
+ * Handles session refresh and visibility change events for Supabase Auth.
+ * This component is disabled when Convex Auth is enabled via feature flag.
+ */
 export function SupabaseListener({ initialSession }: Props) {
-  const supabase = getSupabaseBrowserClient();
+  // When Convex Auth is enabled, skip Supabase initialization entirely
+  // to avoid creating unnecessary Supabase client connections
+  const isConvexAuth = CONVEX_FLAGS.AUTH;
+  const supabase = isConvexAuth ? null : getSupabaseBrowserClient();
 
+  // Subscribe to auth state changes (Supabase only)
   useEffect(() => {
+    if (isConvexAuth || !supabase) return;
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, currentSession) => {
@@ -39,12 +52,11 @@ export function SupabaseListener({ initialSession }: Props) {
     return () => {
       subscription.unsubscribe();
     };
-  }, [supabase]);
+  }, [supabase, isConvexAuth]);
 
+  // Refresh session on mount (Supabase only)
   useEffect(() => {
-    if (!initialSession) {
-      return;
-    }
+    if (isConvexAuth || !supabase || !initialSession) return;
 
     // Immediately refresh the session to avoid negative timeout warnings
     // when the token has expired while the app was idle
@@ -59,10 +71,13 @@ export function SupabaseListener({ initialSession }: Props) {
         });
       }
     });
-  }, [initialSession, supabase]);
+  }, [initialSession, supabase, isConvexAuth]);
 
-  // Refresh session when page becomes visible (e.g., after computer sleep/wake)
+  // Refresh session when page becomes visible (Supabase only)
+  // This handles computer sleep/wake scenarios
   useEffect(() => {
+    if (isConvexAuth || !supabase) return;
+
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         // Verify and refresh session when page becomes visible
@@ -84,7 +99,7 @@ export function SupabaseListener({ initialSession }: Props) {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [supabase]);
+  }, [supabase, isConvexAuth]);
 
   return null;
 }

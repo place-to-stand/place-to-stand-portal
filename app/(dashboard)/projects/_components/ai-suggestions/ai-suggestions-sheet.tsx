@@ -57,10 +57,8 @@ export function AISuggestionsSheet({
   // PR generation props
   createdTaskInfo,
   isGeneratingPR,
-  isApprovingPR,
   prSuggestion,
   onGeneratePR,
-  onApprovePR,
   onDismissPR,
 }: AISuggestionsSheetProps) {
   const hasSuggestions = suggestions.length > 0
