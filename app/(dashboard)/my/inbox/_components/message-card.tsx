@@ -104,7 +104,7 @@ export function MessageCard({ message, cidMappings, onReply }: MessageCardProps)
                   <Reply className='mr-2 h-4 w-4' />
                   Reply
                 </Button>
-                {(message.toEmails?.length ?? 0) + (message.ccEmails?.length ?? 0) > 1 && (
+                {((message.toEmails?.length ?? 0) > 1 || (message.ccEmails?.length ?? 0) > 0) && (
                   <Button
                     variant='outline'
                     size='sm'

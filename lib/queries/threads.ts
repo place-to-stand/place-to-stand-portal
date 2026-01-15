@@ -232,8 +232,8 @@ export type ListThreadsOptions = {
   projectId?: string
   status?: ThreadStatus
   linkedFilter?: 'all' | 'linked' | 'unlinked'
-  /** Filter threads by message direction: 'sent' = only outbound messages */
-  sentFilter?: 'sent'
+  /** Filter threads by message direction: 'sent' = outbound, 'inbox' = inbound only */
+  sentFilter?: 'sent' | 'inbox'
   limit?: number
   offset?: number
 }
@@ -261,14 +261,26 @@ export async function listThreadsForUser(
     conditions.push(isNull(threads.clientId))
   }
 
-  // Filter for sent (outbound) messages only
+  // Filter by message direction
   if (sentFilter === 'sent') {
+    // Show threads with outbound messages
     conditions.push(
       sql`EXISTS (
         SELECT 1 FROM messages
         WHERE messages.thread_id = ${threads.id}
         AND messages.user_id = ${userId}
         AND messages.is_inbound = false
+        AND messages.deleted_at IS NULL
+      )`
+    )
+  } else if (sentFilter === 'inbox') {
+    // Show only threads with at least one inbound message (exclude sent-only threads)
+    conditions.push(
+      sql`EXISTS (
+        SELECT 1 FROM messages
+        WHERE messages.thread_id = ${threads.id}
+        AND messages.user_id = ${userId}
+        AND messages.is_inbound = true
         AND messages.deleted_at IS NULL
       )`
     )
@@ -456,7 +468,7 @@ export async function listThreadsForClient(
 
 export async function getThreadCountsForUser(
   userId: string,
-  options: { linkedFilter?: 'all' | 'linked' | 'unlinked'; sentFilter?: 'sent' } = {}
+  options: { linkedFilter?: 'all' | 'linked' | 'unlinked'; sentFilter?: 'sent' | 'inbox' } = {}
 ): Promise<{
   total: number
   unread: number
@@ -482,14 +494,26 @@ export async function getThreadCountsForUser(
     conditions.push(isNull(threads.clientId))
   }
 
-  // Filter for sent (outbound) messages only
+  // Filter by message direction
   if (sentFilter === 'sent') {
+    // Show threads with outbound messages
     conditions.push(
       sql`EXISTS (
         SELECT 1 FROM messages
         WHERE messages.thread_id = ${threads.id}
         AND messages.user_id = ${userId}
         AND messages.is_inbound = false
+        AND messages.deleted_at IS NULL
+      )`
+    )
+  } else if (sentFilter === 'inbox') {
+    // Show only threads with at least one inbound message (exclude sent-only threads)
+    conditions.push(
+      sql`EXISTS (
+        SELECT 1 FROM messages
+        WHERE messages.thread_id = ${threads.id}
+        AND messages.user_id = ${userId}
+        AND messages.is_inbound = true
         AND messages.deleted_at IS NULL
       )`
     )
