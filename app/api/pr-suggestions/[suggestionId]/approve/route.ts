@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 
 /**
  * POST /api/pr-suggestions/[suggestionId]/approve
@@ -6,10 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
  * PR suggestions are not currently supported.
  * This feature will be redesigned in a future sprint.
  */
-export async function POST(
-  _request: NextRequest,
-  _context: { params: Promise<{ suggestionId: string }> }
-) {
+export async function POST() {
   return NextResponse.json(
     { error: 'PR suggestions are not currently supported. This feature will be redesigned in a future sprint.' },
     { status: 501 }

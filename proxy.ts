@@ -107,7 +107,7 @@ async function checkSupabaseAuth(req: NextRequest): Promise<{
   }
 }
 
-export async function proxy(req: NextRequest, event: any) {
+export async function proxy(req: NextRequest, event: Parameters<typeof convexAuthHandler>[1]) {
   const pathname = req.nextUrl.pathname
 
   // When Convex Auth is enabled, use Convex Auth middleware

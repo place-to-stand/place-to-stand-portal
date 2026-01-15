@@ -107,7 +107,8 @@ export function ContactsSheet({
 
     const contactId = contact?.id
 
-    // Reset form
+    // Reset form - intentional setState during effect to sync UI with prop changes
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFeedback(null)
     form.reset({
       email: contact?.email ?? '',
