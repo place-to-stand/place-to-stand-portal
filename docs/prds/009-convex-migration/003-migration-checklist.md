@@ -22,6 +22,49 @@ Quick reference for tracking migration progress.
 | Server Actions | Keep, call Convex mutations internally |
 | Logging | PostHog events for migration observability |
 | Performance | Manual benchmark testing |
+| **Schema Integrity** | **1:1 field mapping - see 006-schema-mapping.md** |
+
+---
+
+## MANDATORY: Pre-Phase Data Integrity Checklist
+
+**CRITICAL: Complete ALL items before starting any data migration phase.**
+
+Every migration phase that involves data import MUST follow this process:
+
+### 1. Schema Verification
+- [ ] Read `006-schema-mapping.md` for tables in scope
+- [ ] Run `npx tsx scripts/migrate/validate-schema.ts` - must pass
+- [ ] Verify no ad-hoc schema changes were made since last phase
+
+### 2. Data Export (if re-exporting)
+- [ ] Run `npx tsx scripts/migrate/export-supabase.ts`
+- [ ] Verify record counts match expectations
+- [ ] Spot-check exported JSON for field names
+
+### 3. Transform Validation
+- [ ] Verify transformer uses exact field names from schema mapping
+- [ ] Run `npx tsx scripts/migrate/transform-data.ts`
+- [ ] Verify transformed output matches Convex import args exactly
+
+### 4. Import Mutation Review
+- [ ] Verify mutation args match transformer output 1:1
+- [ ] Verify mutation handler uses exact schema field names
+- [ ] Deploy to Convex: `npx convex dev --once` or `npx convex deploy`
+
+### 5. Test Import
+- [ ] Import to dev environment first
+- [ ] Verify record counts: success + skipped + failed = total
+- [ ] Check `_import-summary.json` for errors
+- [ ] Validate data in Convex dashboard
+
+### 6. Production Migration
+- [ ] Create backup of current Convex data (if any)
+- [ ] Run import script
+- [ ] Verify counts match dev
+- [ ] Smoke test affected features
+
+**If any step fails, STOP and fix before proceeding.**
 
 ---
 
@@ -92,56 +135,58 @@ Quick reference for tracking migration progress.
 - [ ] Document what users need to do (sign in with Google using same email)
 
 ### Convex Auth Setup
-- [ ] Create `convex/auth.ts`
-- [ ] Create `convex/auth.config.ts`
-- [ ] Configure Google OAuth provider
-- [ ] Set Google Client ID/Secret in Convex
-- [ ] Implement email-based account matching callback
+- [x] Create `convex/auth.ts`
+- [x] Create `convex/http.ts` (OAuth callback routes)
+- [x] Configure Google OAuth provider (uses @auth/core)
+- [ ] Set Google Client ID/Secret in Convex dashboard
+- [x] Implement email-based account matching callback
 - [ ] Set `OAUTH_TOKEN_ENCRYPTION_KEY` in Convex env vars
 
 ### User Migration
-- [ ] Export users from Supabase
-- [ ] Import users to Convex
-- [ ] Create ID mapping file
+- [ ] Export users from Supabase (using existing scripts)
+- [x] Create `convex/users/mutations.ts` with import functions
+- [x] Create `convex/users/queries.ts` for user fetching
+- [ ] Run import script to migrate users
 - [ ] Verify user count matches
 - [ ] Verify roles preserved correctly
 
 ### Auth Components
-- [ ] Create `<ConvexAuthProvider>`
-- [ ] Create `<SignInButton>`
-- [ ] Create `<SignOutButton>`
-- [ ] Create `useConvexUser()` hook
+- [x] Create `<ConvexProvider>` (components/providers/convex-provider.tsx)
+- [x] Create `<GoogleSignInButton>` (components/auth/google-sign-in-button.tsx)
+- [x] Create `<SignOutButton>` (components/auth/sign-out-button.tsx)
+- [x] Create `useConvexUser()` hook (hooks/use-convex-user.ts)
 
 ### Compatibility Layer
-- [ ] Create `lib/auth/convex-session.ts`
-- [ ] Implement `getCurrentUser()` wrapper
-- [ ] Implement `requireUser()` wrapper
-- [ ] Implement `requireRole()` wrapper
+- [x] Create `lib/auth/convex-session.ts`
+- [x] Implement `getConvexCurrentUser()` wrapper
+- [x] Implement `requireConvexUser()` wrapper
+- [x] Implement `requireConvexRole()` wrapper
+- [x] Update `lib/auth/session.ts` with feature flag branching
 
-### Permission System
-- [ ] Port `isAdmin()` to Convex
-- [ ] Port `assertAdmin()` to Convex
-- [ ] Port `ensureClientAccess()` to Convex
-- [ ] Port `listAccessibleClientIds()` to Convex
+### Permission System (Already ported in Phase 1)
+- [x] Port `isAdmin()` to Convex (convex/lib/permissions.ts)
+- [x] Port `assertAdmin()` to Convex
+- [x] Port `ensureClientAccess()` to Convex
+- [x] Port `listAccessibleClientIds()` to Convex
 
 ### Storage Migration
-- [ ] Create `convex/storage/avatars.ts`
-- [ ] Create `convex/storage/attachments.ts`
-- [ ] Migrate avatar files
-- [ ] Migrate task attachment files
-- [ ] Update upload routes
+- [x] Create `convex/storage/avatars.ts`
+- [x] Create `convex/storage/attachments.ts`
+- [ ] Migrate avatar files (run after auth enabled)
+- [ ] Migrate task attachment files (run after auth enabled)
+- [ ] Update upload routes (client-side components)
 
 ### Permission Parity Validation
-- [ ] Create `scripts/migrate/validate-permissions.ts`
-- [ ] Add test cases for admin access
-- [ ] Add test cases for client user access
-- [ ] Add test cases for project access (CLIENT/PERSONAL/INTERNAL)
-- [ ] Add test cases for task access
+- [x] Create `scripts/migrate/validate-permissions.ts`
+- [x] Add test cases for admin access
+- [x] Add test cases for client user access
+- [x] Add test cases for project access (CLIENT/PERSONAL/INTERNAL)
+- [x] Add test cases for task access
 - [ ] Run validation before enabling feature flags
 
 ### Storage Proxy Routes
-- [ ] Update `app/api/storage/task-attachment/[attachmentId]/route.ts` for Convex
-- [ ] Update `app/api/storage/user-avatar/[userId]/route.ts` for Convex
+- [x] Update `app/api/storage/task-attachment/[attachmentId]/route.ts` for Convex
+- [x] Update `app/api/storage/user-avatar/[userId]/route.ts` for Convex
 - [ ] Verify permission checks work with Convex
 - [ ] Test file proxy functionality
 
@@ -402,6 +447,43 @@ Quick reference for tracking migration progress.
 - [ ] Migrate messages
 - [ ] Migrate suggestions
 - [ ] Test email workflows
+
+---
+
+## Phase 4F: File Storage Migration
+
+**See `007-file-storage-migration.md` for detailed plan.**
+
+Migrate all files from Supabase Storage to Convex Storage.
+
+### Schema Update
+- [ ] Add `avatarStorageId` field to users table
+- [ ] Add `storageId` field to taskAttachments table
+- [ ] Deploy schema changes
+
+### Update Upload Functions
+- [ ] Update avatar upload to use Convex storage
+- [ ] Update attachment upload to use Convex storage
+- [ ] Update client-side upload components
+- [ ] Test new uploads work with Convex
+
+### Migrate Existing Files
+- [ ] Create `scripts/migrate/migrate-files.ts`
+- [ ] Count files to migrate (run Supabase queries)
+- [ ] Migrate user avatars to Convex Storage
+- [ ] Migrate task attachments to Convex Storage
+- [ ] Verify all files accessible via Convex
+
+### Update Read Functions
+- [ ] Update `getAvatarUrl` to prefer Convex storageId
+- [ ] Update `getAttachmentUrl` to prefer Convex storageId
+- [ ] Update/remove Supabase proxy routes
+- [ ] Test all file access paths
+
+### Cleanup (After Verification)
+- [ ] Remove `avatarUrl` field (string path) from users
+- [ ] Remove `storagePath` field from taskAttachments
+- [ ] Delete Supabase Storage buckets
 
 ---
 

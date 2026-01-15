@@ -108,6 +108,78 @@ export const migrationRunStatusValidator = v.union(
 
 export default defineSchema({
   // ----------------------------------------------------------
+  // CONVEX AUTH TABLES
+  // Required by @convex-dev/auth for authentication
+  // Schema matches authTables from @convex-dev/auth/server
+  // ----------------------------------------------------------
+
+  /**
+   * Auth sessions - Active user sessions
+   */
+  authSessions: defineTable({
+    userId: v.id("users"),
+    expirationTime: v.number(),
+  }).index("userId", ["userId"]),
+
+  /**
+   * Auth accounts - OAuth provider accounts linked to users
+   */
+  authAccounts: defineTable({
+    userId: v.id("users"),
+    provider: v.string(),
+    providerAccountId: v.string(),
+    secret: v.optional(v.string()),
+    emailVerified: v.optional(v.string()),
+    phoneVerified: v.optional(v.string()),
+  })
+    .index("userIdAndProvider", ["userId", "provider"])
+    .index("providerAndAccountId", ["provider", "providerAccountId"]),
+
+  /**
+   * Auth refresh tokens - Token refresh management
+   */
+  authRefreshTokens: defineTable({
+    sessionId: v.id("authSessions"),
+    expirationTime: v.number(),
+    firstUsedTime: v.optional(v.number()),
+    parentRefreshTokenId: v.optional(v.id("authRefreshTokens")),
+  })
+    .index("sessionId", ["sessionId"])
+    .index("sessionIdAndParentRefreshTokenId", ["sessionId", "parentRefreshTokenId"]),
+
+  /**
+   * Auth verification codes - OTP, magic links, OAuth codes
+   */
+  authVerificationCodes: defineTable({
+    accountId: v.id("authAccounts"),
+    provider: v.string(),
+    code: v.string(),
+    expirationTime: v.number(),
+    verifier: v.optional(v.string()),
+    emailVerified: v.optional(v.string()),
+    phoneVerified: v.optional(v.string()),
+  })
+    .index("accountId", ["accountId"])
+    .index("code", ["code"]),
+
+  /**
+   * Auth verifiers - PKCE verifiers for OAuth
+   */
+  authVerifiers: defineTable({
+    sessionId: v.optional(v.id("authSessions")),
+    signature: v.optional(v.string()),
+  }).index("signature", ["signature"]),
+
+  /**
+   * Auth rate limits - Rate limiting for OTP and password sign-in
+   */
+  authRateLimits: defineTable({
+    identifier: v.string(),
+    lastAttemptTime: v.number(),
+    attemptsLeft: v.number(),
+  }).index("identifier", ["identifier"]),
+
+  // ----------------------------------------------------------
   // CORE DOMAIN
   // ----------------------------------------------------------
 
@@ -116,15 +188,16 @@ export default defineSchema({
    * - Stores user accounts with roles
    * - Soft deletes via deletedAt
    * - Email is unique (enforced at application layer)
+   * - Field names match Supabase schema exactly for 1:1 migration
    */
   users: defineTable({
     // Auth linkage (from Convex Auth)
     authId: v.optional(v.string()),
 
-    // Profile fields
+    // Profile fields (matching Supabase: full_name column)
     email: v.string(),
-    name: v.optional(v.string()),
-    avatarStorageId: v.optional(v.id("_storage")),
+    fullName: v.optional(v.string()), // Matches Supabase full_name
+    avatarUrl: v.optional(v.string()), // Matches Supabase avatar_url (storage path)
 
     // Role & access
     role: userRoleValidator,
@@ -148,15 +221,16 @@ export default defineSchema({
    * Clients table
    * - Client organizations
    * - Billing type determines invoicing
+   * - Field names match Supabase schema exactly for 1:1 migration
    */
   clients: defineTable({
     name: v.string(),
-    slug: v.string(),
+    slug: v.optional(v.string()), // Matches Supabase (nullable)
     billingType: clientBillingTypeValidator,
 
-    // Optional fields
-    website: v.optional(v.string()),
+    // Optional fields (matching Supabase exactly)
     notes: v.optional(v.string()),
+    createdBy: v.optional(v.id("users")), // Matches Supabase created_by
 
     // Soft delete
     deletedAt: v.optional(v.number()),
@@ -198,20 +272,24 @@ export default defineSchema({
    * - CLIENT: linked to client, uses client's billing
    * - PERSONAL: individual user, only creator sees
    * - INTERNAL: team projects, all users see
+   * - Field names match Supabase schema exactly for 1:1 migration
    */
   projects: defineTable({
     name: v.string(),
-    slug: v.string(),
-    description: v.optional(v.string()),
+    slug: v.optional(v.string()), // Matches Supabase (nullable)
 
     type: projectTypeValidator,
     status: projectStatusValidator,
 
+    // Date range (matching Supabase starts_on, ends_on)
+    startsOn: v.optional(v.string()), // ISO date string
+    endsOn: v.optional(v.string()), // ISO date string
+
     // CLIENT projects link to a client
     clientId: v.optional(v.id("clients")),
 
-    // Creator (owner for PERSONAL projects)
-    createdById: v.id("users"),
+    // Creator (owner for PERSONAL projects) - matches Supabase created_by
+    createdBy: v.optional(v.id("users")),
 
     // Soft delete
     deletedAt: v.optional(v.number()),
@@ -227,7 +305,7 @@ export default defineSchema({
     .index("by_slug", ["slug"])
     .index("by_type", ["type"])
     .index("by_status", ["status"])
-    .index("by_createdBy", ["createdById"])
+    .index("by_createdBy", ["createdBy"])
     .index("by_deleted", ["deletedAt"])
     .index("by_client_deleted", ["clientId", "deletedAt"])
     .index("by_supabaseId", ["supabaseId"]),
@@ -236,6 +314,7 @@ export default defineSchema({
    * Tasks table
    * - Kanban board items with status workflow
    * - rank field for ordering within status column
+   * - Field names match Supabase schema exactly for 1:1 migration
    */
   tasks: defineTable({
     title: v.string(),
@@ -246,13 +325,13 @@ export default defineSchema({
 
     projectId: v.id("projects"),
 
-    // Scheduling
-    dueDate: v.optional(v.number()),
-    startDate: v.optional(v.number()),
+    // Scheduling (matching Supabase due_on - stored as ISO date string)
+    dueOn: v.optional(v.string()), // Matches Supabase due_on
 
-    // Priority/metadata
-    priority: v.optional(v.number()),
-    estimate: v.optional(v.number()),
+    // Audit fields (matching Supabase)
+    createdBy: v.optional(v.id("users")), // Matches Supabase created_by
+    updatedBy: v.optional(v.id("users")), // Matches Supabase updated_by
+    acceptedAt: v.optional(v.number()), // Matches Supabase accepted_at
 
     // Soft delete
     deletedAt: v.optional(v.number()),
@@ -267,7 +346,7 @@ export default defineSchema({
     .index("by_project", ["projectId"])
     .index("by_project_status", ["projectId", "status"])
     .index("by_project_status_rank", ["projectId", "status", "rank"])
-    .index("by_dueDate", ["dueDate"])
+    .index("by_dueOn", ["dueOn"])
     .index("by_deleted", ["deletedAt"])
     .index("by_supabaseId", ["supabaseId"]),
 
@@ -317,16 +396,13 @@ export default defineSchema({
 
   /**
    * Task comments - Discussion threads on tasks
-   * - parentId enables threading (replies)
+   * - Field names match Supabase schema exactly for 1:1 migration
    */
   taskComments: defineTable({
     taskId: v.id("tasks"),
     authorId: v.id("users"),
 
-    content: v.string(),
-
-    // Threading support
-    parentId: v.optional(v.id("taskComments")),
+    body: v.string(), // Matches Supabase body (not content)
 
     // Soft delete
     deletedAt: v.optional(v.number()),
@@ -340,25 +416,22 @@ export default defineSchema({
   })
     .index("by_task", ["taskId"])
     .index("by_author", ["authorId"])
-    .index("by_parent", ["parentId"])
     .index("by_task_deleted", ["taskId", "deletedAt"])
     .index("by_supabaseId", ["supabaseId"]),
 
   /**
    * Task attachments - File references for tasks
-   * - storageId links to Convex file storage
+   * - Field names match Supabase schema exactly for 1:1 migration
    */
   taskAttachments: defineTable({
     taskId: v.id("tasks"),
-    uploadedById: v.id("users"),
+    uploadedBy: v.id("users"), // Matches Supabase uploaded_by
 
-    // File info
-    fileName: v.string(),
+    // File info (matching Supabase)
+    storagePath: v.string(), // Matches Supabase storage_path
+    originalName: v.string(), // Matches Supabase original_name
     mimeType: v.string(),
     fileSize: v.number(),
-
-    // Convex storage reference
-    storageId: v.id("_storage"),
 
     // Soft delete
     deletedAt: v.optional(v.number()),
@@ -371,8 +444,7 @@ export default defineSchema({
     supabaseId: v.optional(v.string()),
   })
     .index("by_task", ["taskId"])
-    .index("by_uploadedBy", ["uploadedById"])
-    .index("by_storageId", ["storageId"])
+    .index("by_uploadedBy", ["uploadedBy"])
     .index("by_supabaseId", ["supabaseId"]),
 
   // ----------------------------------------------------------
@@ -382,18 +454,16 @@ export default defineSchema({
   /**
    * Time logs - Time entries for projects
    * - Can be associated with multiple tasks via timeLogTasks
+   * - Field names match Supabase schema exactly for 1:1 migration
    */
   timeLogs: defineTable({
     projectId: v.id("projects"),
     userId: v.id("users"),
 
-    // Time entry
-    date: v.string(),
-    hours: v.number(),
-    description: v.optional(v.string()),
-
-    // Billing
-    billable: v.boolean(),
+    // Time entry (matching Supabase)
+    loggedOn: v.string(), // Matches Supabase logged_on (ISO date string)
+    hours: v.number(), // Stored as number, Supabase uses numeric
+    note: v.optional(v.string()), // Matches Supabase note (not description)
 
     // Soft delete
     deletedAt: v.optional(v.number()),
@@ -407,9 +477,9 @@ export default defineSchema({
   })
     .index("by_project", ["projectId"])
     .index("by_user", ["userId"])
-    .index("by_date", ["date"])
-    .index("by_project_date", ["projectId", "date"])
-    .index("by_user_date", ["userId", "date"])
+    .index("by_loggedOn", ["loggedOn"])
+    .index("by_project_loggedOn", ["projectId", "loggedOn"])
+    .index("by_user_loggedOn", ["userId", "loggedOn"])
     .index("by_deleted", ["deletedAt"])
     .index("by_supabaseId", ["supabaseId"]),
 
@@ -435,23 +505,17 @@ export default defineSchema({
   /**
    * Hour blocks - Prepaid hour contracts
    * - Linked to clients for burn-down tracking
+   * - Field names match Supabase schema exactly for 1:1 migration
    */
   hourBlocks: defineTable({
     clientId: v.id("clients"),
 
-    // Hours
-    totalHours: v.number(),
-    usedHours: v.number(),
+    // Hours (matching Supabase)
+    hoursPurchased: v.number(), // Matches Supabase hours_purchased (decimal)
+    invoiceNumber: v.optional(v.string()), // Matches Supabase invoice_number
 
-    // Contract period
-    startDate: v.string(),
-    endDate: v.optional(v.string()),
-
-    // Status
-    isActive: v.boolean(),
-
-    // Notes
-    notes: v.optional(v.string()),
+    // Creator
+    createdBy: v.optional(v.id("users")), // Matches Supabase created_by
 
     // Soft delete
     deletedAt: v.optional(v.number()),
@@ -464,8 +528,6 @@ export default defineSchema({
     supabaseId: v.optional(v.string()),
   })
     .index("by_client", ["clientId"])
-    .index("by_active", ["isActive"])
-    .index("by_client_active", ["clientId", "isActive"])
     .index("by_supabaseId", ["supabaseId"]),
 
   // ----------------------------------------------------------
@@ -475,24 +537,30 @@ export default defineSchema({
   /**
    * Leads - Sales pipeline
    * - Kanban board with status workflow
+   * - Field names match Supabase schema exactly for 1:1 migration
    */
   leads: defineTable({
-    name: v.string(),
-    email: v.optional(v.string()),
-    company: v.optional(v.string()),
-    website: v.optional(v.string()),
-    phone: v.optional(v.string()),
+    // Contact info (matching Supabase field names)
+    contactName: v.string(), // Matches Supabase contact_name
+    contactEmail: v.optional(v.string()), // Matches Supabase contact_email
+    contactPhone: v.optional(v.string()), // Matches Supabase contact_phone
+
+    // Company info
+    companyName: v.optional(v.string()), // Matches Supabase company_name
+    companyWebsite: v.optional(v.string()), // Matches Supabase company_website
 
     status: leadStatusValidator,
-    source: leadSourceTypeValidator,
+    sourceType: v.optional(leadSourceTypeValidator), // Matches Supabase source_type (nullable)
     sourceDetail: v.optional(v.string()),
 
-    // Opportunity details
-    estimatedValue: v.optional(v.number()),
-    notes: v.optional(v.string()),
+    // Notes (stored as any to match Supabase jsonb)
+    notes: v.any(), // Matches Supabase notes (jsonb)
+
+    // Ordering
+    rank: v.string(), // Matches Supabase rank
 
     // Assignment
-    assignedToId: v.optional(v.id("users")),
+    assigneeId: v.optional(v.id("users")), // Matches Supabase assignee_id
 
     // Soft delete
     deletedAt: v.optional(v.number()),
@@ -505,23 +573,23 @@ export default defineSchema({
     supabaseId: v.optional(v.string()),
   })
     .index("by_status", ["status"])
-    .index("by_email", ["email"])
-    .index("by_assignedTo", ["assignedToId"])
+    .index("by_contactEmail", ["contactEmail"])
+    .index("by_assignee", ["assigneeId"])
     .index("by_deleted", ["deletedAt"])
     .index("by_supabaseId", ["supabaseId"]),
 
   /**
    * Contacts - Contact management
+   * - Field names match Supabase schema exactly for 1:1 migration
    */
   contacts: defineTable({
-    firstName: v.optional(v.string()),
-    lastName: v.optional(v.string()),
-    email: v.optional(v.string()),
-    phone: v.optional(v.string()),
-    company: v.optional(v.string()),
-    title: v.optional(v.string()),
+    // Contact info (matching Supabase)
+    email: v.string(), // Matches Supabase (required, unique)
+    name: v.string(), // Matches Supabase name
+    phone: v.optional(v.string()), // Matches Supabase phone
 
-    notes: v.optional(v.string()),
+    // Creator
+    createdBy: v.optional(v.id("users")), // Matches Supabase created_by
 
     // Soft delete
     deletedAt: v.optional(v.number()),
@@ -534,20 +602,20 @@ export default defineSchema({
     supabaseId: v.optional(v.string()),
   })
     .index("by_email", ["email"])
-    .index("by_company", ["company"])
     .index("by_deleted", ["deletedAt"])
     .index("by_supabaseId", ["supabaseId"]),
 
   /**
    * Contact-Client relationships
+   * - Field names match Supabase schema exactly for 1:1 migration
    */
   contactClients: defineTable({
     contactId: v.id("contacts"),
     clientId: v.id("clients"),
+    isPrimary: v.boolean(), // Matches Supabase is_primary
 
     // Timestamps
     createdAt: v.number(),
-    updatedAt: v.number(),
 
     // Migration tracking
     supabaseId: v.optional(v.string()),
@@ -558,14 +626,14 @@ export default defineSchema({
 
   /**
    * Contact-Lead relationships
+   * - Field names match Supabase schema exactly for 1:1 migration
    */
   contactLeads: defineTable({
     contactId: v.id("contacts"),
     leadId: v.id("leads"),
 
-    // Timestamps
+    // Timestamps (Supabase only has createdAt)
     createdAt: v.number(),
-    updatedAt: v.number(),
 
     // Migration tracking
     supabaseId: v.optional(v.string()),

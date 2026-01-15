@@ -138,7 +138,7 @@ export async function ensureClientAccessByProjectId(
 
   // PERSONAL projects: only creator or admin
   if (project.type === PROJECT_TYPE.PERSONAL) {
-    if (!isAdmin(user) && project.createdById !== user._id) {
+    if (!isAdmin(user) && project.createdBy !== user._id) {
       throw new ForbiddenError("Insufficient permissions to access project");
     }
     return;
@@ -301,7 +301,7 @@ export async function listAccessibleProjectIds(
   // Get user's PERSONAL projects
   const personalProjects = await ctx.db
     .query("projects")
-    .withIndex("by_createdBy", (q) => q.eq("createdById", user._id))
+    .withIndex("by_createdBy", (q) => q.eq("createdBy", user._id))
     .filter((q) =>
       q.and(
         q.eq(q.field("type"), PROJECT_TYPE.PERSONAL),

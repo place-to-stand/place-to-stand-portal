@@ -1,7 +1,14 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import {
+  convexAuthNextjsMiddleware,
+  isAuthenticatedNextjs,
+} from '@convex-dev/auth/nextjs/server'
 
 import type { Database } from '@/lib/supabase/types'
+
+// Feature flag check (read directly from env since this runs in edge runtime)
+const USE_CONVEX_AUTH = process.env.NEXT_PUBLIC_USE_CONVEX_AUTH === 'true'
 
 const PUBLIC_PATHS = new Set([
   '/sign-in',
@@ -9,10 +16,49 @@ const PUBLIC_PATHS = new Set([
   '/forgot-password',
   '/reset-password',
   '/api/integrations/leads-intake',
+  '/auth/callback', // Convex Auth callback
+  '/api/auth', // Convex Auth API route
 ])
 const FORCE_RESET_PATH = '/force-reset-password'
 
-export async function proxy(req: NextRequest) {
+/**
+ * Convex Auth middleware handler
+ * Handles /api/auth requests and auth state
+ */
+const convexAuthHandler = convexAuthNextjsMiddleware(
+  async (request, { convexAuth }) => {
+    const pathname = request.nextUrl.pathname
+    const isPublic = [...PUBLIC_PATHS].some(path => pathname.startsWith(path))
+    const isAuthenticated = await convexAuth.isAuthenticated()
+
+    // Redirect unauthenticated users to sign-in
+    if (!isAuthenticated && !isPublic) {
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = '/sign-in'
+      redirectUrl.searchParams.set(
+        'redirect',
+        request.nextUrl.pathname + request.nextUrl.search
+      )
+      return NextResponse.redirect(redirectUrl)
+    }
+
+    // Redirect authenticated users away from sign-in
+    if (isAuthenticated && pathname === '/sign-in') {
+      return NextResponse.redirect(new URL('/', request.url))
+    }
+
+    return NextResponse.next()
+  }
+)
+
+/**
+ * Check authentication using Supabase Auth
+ */
+async function checkSupabaseAuth(req: NextRequest): Promise<{
+  isAuthenticated: boolean
+  mustResetPassword: boolean
+  response: NextResponse
+}> {
   const res = NextResponse.next()
 
   const supabase = createServerClient<Database>(
@@ -44,9 +90,26 @@ export async function proxy(req: NextRequest) {
     console.error('Failed to resolve Supabase user in middleware', userError)
   }
 
+  return {
+    isAuthenticated: Boolean(user),
+    mustResetPassword: Boolean(user?.user_metadata?.must_reset_password),
+    response: res,
+  }
+}
+
+export async function proxy(req: NextRequest, event: any) {
   const pathname = req.nextUrl.pathname
+
+  // Use Convex Auth or Supabase Auth based on feature flag
+  if (USE_CONVEX_AUTH) {
+    // Delegate to Convex Auth middleware (handles /api/auth and auth state)
+    return convexAuthHandler(req, event)
+  }
+
+  // Supabase Auth flow (existing behavior)
   const isPublic = [...PUBLIC_PATHS].some(path => pathname.startsWith(path))
-  const isAuthenticated = Boolean(user)
+  const { isAuthenticated, mustResetPassword, response } =
+    await checkSupabaseAuth(req)
 
   if (!isAuthenticated && !isPublic) {
     const redirectUrl = req.nextUrl.clone()
@@ -58,8 +121,6 @@ export async function proxy(req: NextRequest) {
 
     return NextResponse.redirect(redirectUrl)
   }
-
-  const mustResetPassword = Boolean(user?.user_metadata?.must_reset_password)
 
   if (
     isAuthenticated &&
@@ -80,7 +141,7 @@ export async function proxy(req: NextRequest) {
     return NextResponse.redirect(new URL('/', req.url))
   }
 
-  return res
+  return response
 }
 
 export const config = {

@@ -10,9 +10,55 @@ import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { ensureUserProfile } from '@/lib/auth/profile'
+import { CONVEX_FLAGS } from '@/lib/feature-flags'
 
 export type AppUser = Database['public']['Tables']['users']['Row']
 export type UserRole = Database['public']['Enums']['user_role']
+
+// ============================================================
+// CONVEX AUTH INTEGRATION
+// ============================================================
+
+/**
+ * Maps a Convex user to the AppUser type for compatibility
+ */
+async function mapConvexUserToAppUser(convexUser: ConvexUserDoc): Promise<AppUser> {
+  return {
+    id: convexUser._id,
+    email: convexUser.email,
+    role: convexUser.role as UserRole,
+    avatar_url: null, // Convex uses avatarStorageId, handle separately
+    full_name: convexUser.name ?? null,
+    created_at: new Date(convexUser.createdAt).toISOString(),
+    updated_at: new Date(convexUser.updatedAt).toISOString(),
+    deleted_at: convexUser.deletedAt
+      ? new Date(convexUser.deletedAt).toISOString()
+      : null,
+  }
+}
+
+/**
+ * Convex user document type (minimal for mapping)
+ */
+type ConvexUserDoc = {
+  _id: string
+  email: string
+  name?: string
+  role: string
+  avatarStorageId?: string
+  createdAt: number
+  updatedAt: number
+  deletedAt?: number
+}
+
+/**
+ * Lazy import for Convex session to avoid loading when not needed
+ */
+async function getConvexSession() {
+  const { getConvexCurrentUser, requireConvexUser, requireConvexRole } =
+    await import('@/lib/auth/convex-session')
+  return { getConvexCurrentUser, requireConvexUser, requireConvexRole }
+}
 
 export const getSession = cache(async (): Promise<Session | null> => {
   const supabase = getSupabaseServerClient()
@@ -31,6 +77,22 @@ export const getSession = cache(async (): Promise<Session | null> => {
 })
 
 export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
+  // Use Convex Auth if enabled
+  if (CONVEX_FLAGS.AUTH) {
+    try {
+      const { getConvexCurrentUser } = await getConvexSession()
+      const convexUser = await getConvexCurrentUser()
+      if (!convexUser) {
+        return null
+      }
+      return mapConvexUserToAppUser(convexUser as unknown as ConvexUserDoc)
+    } catch (error) {
+      console.error('Failed to get Convex user', error)
+      return null
+    }
+  }
+
+  // Supabase Auth (default)
   const supabase = getSupabaseServerClient()
   const {
     data: { user: authUser },
