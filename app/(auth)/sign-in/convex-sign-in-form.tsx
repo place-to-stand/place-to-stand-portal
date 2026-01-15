@@ -20,22 +20,22 @@ export function ConvexSignInForm({ redirectTo }: Props) {
     setError(null);
 
     try {
-      console.log("Starting Google sign in...");
-      console.log("redirectTo:", redirectTo || "/");
       const result = await signIn("google", {
         redirectTo: redirectTo || "/",
       });
-      console.log("Sign in result:", result);
 
-      // If already signed in or sign-in completed, redirect manually
-      if (result && !result.signingIn) {
-        const destination = redirectTo || "/";
-        console.log("Redirecting to:", destination);
-        window.location.href = destination;
+      // If sign-in completed and we have a redirect URL, follow it to set cookies
+      if (result && !result.signingIn && result.redirect) {
+        // The redirect URL from Convex completes the auth flow and sets session cookies
+        window.location.href = result.redirect.toString();
         return;
       }
 
-      console.log("Sign in initiated successfully");
+      // If somehow we get here without a redirect, fall back to destination
+      if (result && !result.signingIn) {
+        window.location.href = redirectTo || "/";
+        return;
+      }
     } catch (err) {
       console.error("Sign in error:", err);
       const errorMessage = err instanceof Error ? err.message : String(err);

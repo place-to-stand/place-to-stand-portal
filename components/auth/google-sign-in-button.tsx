@@ -26,9 +26,22 @@ export function GoogleSignInButton({ redirectTo, className }: Props) {
   const handleSignIn = async () => {
     setIsLoading(true);
     try {
-      await signIn("google", {
+      const result = await signIn("google", {
         redirectTo: redirectTo || "/",
       });
+
+      // If sign-in completed and we have a redirect URL, follow it to set cookies
+      if (result && !result.signingIn && result.redirect) {
+        // The redirect URL from Convex completes the auth flow and sets session cookies
+        window.location.href = result.redirect.toString();
+        return;
+      }
+
+      // If somehow we get here without a redirect, fall back to destination
+      if (result && !result.signingIn) {
+        window.location.href = redirectTo || "/";
+        return;
+      }
     } catch (error) {
       console.error("Sign-in failed:", error);
       setIsLoading(false);
