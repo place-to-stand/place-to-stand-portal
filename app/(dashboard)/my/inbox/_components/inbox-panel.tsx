@@ -83,7 +83,7 @@ type ProjectSuggestion = {
   matchType?: 'NAME' | 'CONTENT' | 'CONTEXTUAL'
 }
 
-type FilterType = 'all' | 'linked' | 'unlinked' | 'sent'
+type ViewType = 'inbox' | 'sent' | 'drafts' | 'scheduled' | 'linked' | 'unlinked'
 
 type ConnectionStatus = 'ACTIVE' | 'EXPIRED' | 'REVOKED' | 'PENDING_REAUTH'
 
@@ -100,7 +100,7 @@ type InboxPanelProps = {
   clients: Client[]
   projects: Project[]
   isAdmin: boolean
-  filter: FilterType
+  view: ViewType
   searchQuery: string
   sidebarCounts: {
     inbox: number
@@ -127,7 +127,7 @@ export function InboxPanel({
   clients,
   projects,
   isAdmin,
-  filter,
+  view,
   searchQuery,
   sidebarCounts,
   pagination,
@@ -139,22 +139,8 @@ export function InboxPanel({
 
   const [threads, setThreads] = useState(initialThreads)
 
-  // Current sidebar view - derive from filter prop
-  const [currentView, setCurrentView] = useState<InboxView>(() => {
-    // Initialize from filter param
-    if (filter === 'linked') return 'linked'
-    if (filter === 'unlinked') return 'unlinked'
-    if (filter === 'sent') return 'sent'
-    return 'inbox'
-  })
-
-  // Sync currentView state when filter prop changes (e.g., after navigation)
-  useEffect(() => {
-    if (filter === 'linked') setCurrentView('linked')
-    else if (filter === 'unlinked') setCurrentView('unlinked')
-    else if (filter === 'sent') setCurrentView('sent')
-    else setCurrentView('inbox')
-  }, [filter])
+  // Current sidebar view - derived directly from URL via view prop
+  const currentView: InboxView = view as InboxView
 
   // Sync threads state when props change (e.g., on pagination/filter change)
   useEffect(() => {
@@ -263,49 +249,14 @@ export function InboxPanel({
     [router, searchParams]
   )
 
-  // Handle filter changes - triggers server-side navigation
-  const handleFilterChange = useCallback(
-    (newFilter: FilterType) => {
-      const params = new URLSearchParams(searchParams.toString())
-      // Reset to page 1 and remove thread when changing filter
-      params.delete('thread')
-      params.delete('page')
-      if (newFilter === 'all') {
-        params.delete('filter')
-      } else {
-        params.set('filter', newFilter)
-      }
-      const newUrl = params.toString()
-        ? `/my/inbox?${params.toString()}`
-        : '/my/inbox'
-      router.push(newUrl)
-    },
-    [router, searchParams]
-  )
-
-  // Handle sidebar view changes - clears search and resets to fresh view
-  const handleViewChange = useCallback(
-    (view: InboxView) => {
-      setCurrentView(view)
-      // Clear search input when switching views
-      setSearchInput('')
-
-      // Map views to filter params for server-side navigation
-      // Note: We navigate directly here (not via handleFilterChange) to clear search query
-      if (view === 'inbox') {
+  // Handle mobile view changes - triggers server-side navigation
+  const handleMobileViewChange = useCallback(
+    (newView: string) => {
+      if (newView === 'inbox') {
         router.push('/my/inbox')
-      } else if (view === 'linked') {
-        router.push('/my/inbox?filter=linked')
-      } else if (view === 'unlinked') {
-        router.push('/my/inbox?filter=unlinked')
-      } else if (view === 'sent') {
-        router.push('/my/inbox?filter=sent')
-      } else if (view === 'drafts') {
-        // Drafts uses client-side state - stays on current page
-      } else if (view === 'scheduled') {
-        // Scheduled emails - client-side for now
+      } else {
+        router.push(`/my/inbox?view=${newView}`)
       }
-      // by-client and by-project would need their own routes
     },
     [router]
   )
@@ -802,7 +753,6 @@ export function InboxPanel({
           </div>
           <InboxSidebar
             currentView={currentView}
-            onViewChange={handleViewChange}
             counts={sidebarCounts}
           />
         </aside>
@@ -821,10 +771,10 @@ export function InboxPanel({
 
             {/* Header Row */}
             <div className='flex flex-wrap items-center gap-4'>
-              {/* Mobile-only filter dropdown */}
+              {/* Mobile-only view dropdown */}
               <Select
-                value={filter}
-                onValueChange={v => handleFilterChange(v as FilterType)}
+                value={currentView}
+                onValueChange={handleMobileViewChange}
               >
                 <SelectTrigger className='w-40 md:hidden'>
                   <span className='flex items-center'>
@@ -833,7 +783,9 @@ export function InboxPanel({
                   </span>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value='all'>All Threads</SelectItem>
+                  <SelectItem value='inbox'>Inbox</SelectItem>
+                  <SelectItem value='sent'>Sent</SelectItem>
+                  <SelectItem value='drafts'>Drafts</SelectItem>
                   <SelectItem value='linked'>Linked</SelectItem>
                   <SelectItem value='unlinked'>Unlinked</SelectItem>
                 </SelectContent>
@@ -966,8 +918,8 @@ export function InboxPanel({
                 <p className='text-muted-foreground mt-1 text-sm'>
                   {!syncStatus.connected
                     ? 'Connect Gmail in Settings → Integrations to get started'
-                    : filter !== 'all'
-                      ? `No ${filter} threads found.`
+                    : currentView !== 'inbox'
+                      ? `No ${currentView} threads found.`
                       : isSyncing
                         ? 'Syncing your emails...'
                         : 'No emails synced yet.'}
@@ -1043,13 +995,14 @@ export function InboxPanel({
                     No messages found
                   </div>
                 ) : (
-                  <div className='space-y-6'>
-                    {threadMessages.map(message => (
+                  <div className='divide-y overflow-hidden rounded-lg border'>
+                    {threadMessages.map((message, index) => (
                       <MessageCard
                         key={message.id}
                         message={message}
                         cidMappings={cidMappings[message.id]}
                         attachments={attachmentsMap[message.id]}
+                        defaultExpanded={index === threadMessages.length - 1}
                         onReply={mode => handleReply(message, mode)}
                         onViewAttachment={attachment => {
                           if (message.externalMessageId) {

@@ -42,20 +42,30 @@ async function getLinkedUnlinkedCounts(userId: string) {
 const PAGE_SIZE = 25
 
 type FilterType = 'all' | 'linked' | 'unlinked' | 'sent'
+type ViewType = 'inbox' | 'sent' | 'drafts' | 'scheduled' | 'linked' | 'unlinked'
 
 type Props = {
-  searchParams: Promise<{ page?: string; filter?: string; thread?: string; q?: string }>
+  searchParams: Promise<{ page?: string; filter?: string; view?: string; thread?: string; q?: string }>
 }
 
 export default async function InboxPage({ searchParams }: Props) {
   const user = await requireUser()
   const params = await searchParams
 
-  // Parse page number, filter, and search from URL
+  // Parse page number, view, and search from URL
   const currentPage = Math.max(1, parseInt(params.page || '1', 10) || 1)
   const offset = (currentPage - 1) * PAGE_SIZE
-  const filter: FilterType = ['all', 'linked', 'unlinked', 'sent'].includes(params.filter || '')
-    ? (params.filter as FilterType)
+
+  // Parse view param (new URL-based routing)
+  const validViews: ViewType[] = ['inbox', 'sent', 'drafts', 'scheduled', 'linked', 'unlinked']
+  const view: ViewType = validViews.includes(params.view as ViewType)
+    ? (params.view as ViewType)
+    : 'inbox'
+
+  // Map view to filter for backwards compatibility with thread queries
+  const filter: FilterType = view === 'linked' ? 'linked'
+    : view === 'unlinked' ? 'unlinked'
+    : view === 'sent' ? 'sent'
     : 'all'
   const searchQuery = params.q?.trim() || undefined
 
@@ -153,7 +163,7 @@ export default async function InboxPage({ searchParams }: Props) {
       clients={clientsList}
       projects={projectsList}
       isAdmin={isAdmin(user)}
-      filter={filter}
+      view={view}
       searchQuery={searchQuery ?? ''}
       sidebarCounts={sidebarCounts}
       pagination={{

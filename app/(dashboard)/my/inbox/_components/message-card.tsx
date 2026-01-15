@@ -1,17 +1,32 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { format } from 'date-fns'
-import { Reply, ReplyAll, Forward } from 'lucide-react'
+import { format, formatDistanceToNow } from 'date-fns'
+import { Reply, ReplyAll, Forward, ChevronDown } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import type { Message } from '@/lib/types/messages'
 import { sanitizeEmailHtml, type CidMapping } from '@/lib/email/sanitize'
+import { cn } from '@/lib/utils'
 
 import { AttachmentList, type AttachmentMetadata } from './attachment-viewer'
 import { EmailIframe } from './email-iframe'
+
+/** Three-dot ellipsis icon component */
+function ThreeDots({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox='0 0 24 24'
+      fill='currentColor'
+      className={className}
+    >
+      <circle cx='5' cy='12' r='2' />
+      <circle cx='12' cy='12' r='2' />
+      <circle cx='19' cy='12' r='2' />
+    </svg>
+  )
+}
 
 type MessageCardProps = {
   message: Message
@@ -19,6 +34,8 @@ type MessageCardProps = {
   attachments?: AttachmentMetadata[]
   onReply?: (mode: 'reply' | 'reply_all' | 'forward') => void
   onViewAttachment?: (attachment: AttachmentMetadata) => void
+  /** Whether message should be expanded by default. Defaults to false. */
+  defaultExpanded?: boolean
 }
 
 export function MessageCard({
@@ -27,8 +44,40 @@ export function MessageCard({
   attachments,
   onReply,
   onViewAttachment,
+  defaultExpanded = false,
 }: MessageCardProps) {
-  const [isExpanded, setIsExpanded] = useState(true)
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded)
+  const [showQuoted, setShowQuoted] = useState(false)
+
+  // Split content into main body and quoted content
+  const { mainContent, quotedContent, hasQuoted } = useMemo(() => {
+    const text = message.bodyText || message.snippet || ''
+    // Common patterns for quoted content
+    const quotePatterns = [
+      /^On .+wrote:$/m,  // "On Jan 10, 2026, at 2:42 PM, John wrote:"
+      /^-+\s*Original Message\s*-+$/im,  // "--- Original Message ---"
+      /^>{1,}/m,  // Lines starting with >
+      /^From:\s+.+$/m,  // "From: someone@email.com"
+    ]
+
+    let splitIndex = -1
+    for (const pattern of quotePatterns) {
+      const match = text.search(pattern)
+      if (match !== -1 && (splitIndex === -1 || match < splitIndex)) {
+        splitIndex = match
+      }
+    }
+
+    if (splitIndex > 0) {
+      return {
+        mainContent: text.slice(0, splitIndex).trim(),
+        quotedContent: text.slice(splitIndex).trim(),
+        hasQuoted: true,
+      }
+    }
+
+    return { mainContent: text, quotedContent: '', hasQuoted: false }
+  }, [message.bodyText, message.snippet])
 
   const sanitizedHtml = useMemo(() => {
     if (!message.bodyHtml) return null
@@ -38,110 +87,157 @@ export function MessageCard({
     })
   }, [message.bodyHtml, message.externalMessageId, cidMappings])
 
-  return (
-    <div className='bg-card rounded-lg border'>
-      {/* Header */}
+  // Format recipients for display
+  const recipientDisplay = useMemo(() => {
+    const recipients = message.toEmails || []
+    if (recipients.length === 0) return 'Unknown'
+    if (recipients.length === 1) return recipients[0].split('@')[0]
+    return `${recipients[0].split('@')[0]} +${recipients.length - 1}`
+  }, [message.toEmails])
+
+  // Gmail-style collapsed view (for older messages in thread)
+  if (!isExpanded) {
+    return (
       <button
         type='button'
-        onClick={() => setIsExpanded(!isExpanded)}
-        className='hover:bg-muted/50 flex w-full items-start justify-between p-4 text-left'
+        onClick={() => setIsExpanded(true)}
+        className='hover:bg-muted/30 flex w-full items-center gap-4 px-4 py-3 text-left transition-colors'
       >
+        {/* Three dots in gray oval - Gmail style */}
+        <div className='bg-muted/80 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full'>
+          <ThreeDots className='text-muted-foreground h-4 w-4' />
+        </div>
+
+        {/* Sender name - fixed width like Gmail */}
+        <span className='w-36 flex-shrink-0 truncate text-sm font-semibold'>
+          {message.fromName || message.fromEmail?.split('@')[0] || 'Unknown'}
+        </span>
+
+        {/* Snippet preview - fills remaining space */}
+        <span className='text-muted-foreground min-w-0 flex-1 truncate text-sm'>
+          {message.snippet || '(no preview)'}
+        </span>
+
+        {/* Relative date */}
+        <span className='text-muted-foreground flex-shrink-0 text-xs'>
+          {formatDistanceToNow(new Date(message.sentAt), { addSuffix: false })}
+        </span>
+      </button>
+    )
+  }
+
+  // Expanded view (Gmail-style 2-line header)
+  return (
+    <div className='bg-card'>
+      {/* Header - Gmail style 2 lines */}
+      <div className='flex w-full items-start gap-3 p-4'>
+        {/* Avatar */}
+        <div className={cn(
+          'flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-sm font-medium text-white',
+          message.isInbound ? 'bg-blue-500' : 'bg-emerald-500'
+        )}>
+          {(message.fromName || message.fromEmail || 'U')[0].toUpperCase()}
+        </div>
+
         <div className='min-w-0 flex-1'>
-          <div className='flex items-center gap-2'>
-            <span className='font-medium'>
-              {message.fromName || message.fromEmail}
+          {/* Line 1: Name <email> */}
+          <div className='flex items-baseline gap-2'>
+            <span className='font-semibold'>
+              {message.fromName || message.fromEmail?.split('@')[0] || 'Unknown'}
             </span>
-            {message.isInbound ? (
-              <Badge variant='secondary' className='text-xs'>
-                Received
-              </Badge>
-            ) : (
-              <Badge variant='outline' className='text-xs'>
-                Sent
-              </Badge>
+            {message.fromEmail && (
+              <span className='text-muted-foreground truncate text-xs'>
+                &lt;{message.fromEmail}&gt;
+              </span>
             )}
           </div>
-          {message.fromName && message.fromEmail && (
-            <div className='text-muted-foreground mt-0.5 text-xs'>
-              {message.fromEmail}
-            </div>
-          )}
-          <div className='text-muted-foreground mt-1 text-sm'>
-            To: {message.toEmails?.join(', ') || 'Unknown'}
+
+          {/* Line 2: to Recipients */}
+          <div className='text-muted-foreground mt-0.5 flex items-center gap-1 text-xs'>
+            <span>to {recipientDisplay}</span>
+            <ChevronDown className='h-3 w-3' />
           </div>
         </div>
-        <div className='text-muted-foreground text-xs'>
-          {format(new Date(message.sentAt), 'MMM d, yyyy h:mm a')}
-        </div>
-      </button>
 
-      {/* Snippet preview when collapsed */}
-      {!isExpanded && message.snippet && (
-        <div className='text-muted-foreground border-t px-4 py-2 text-sm'>
-          {message.snippet}
+        {/* Date - right aligned */}
+        <div className='text-muted-foreground flex-shrink-0 text-xs'>
+          {format(new Date(message.sentAt), 'MMM d, yyyy, h:mm a')}
         </div>
-      )}
+      </div>
 
-      {/* Body - Using iframe for style isolation */}
-      {isExpanded && (
+      {/* Body */}
+      <div className='px-4 pb-4 pl-[68px]'>
+        {sanitizedHtml ? (
+          <EmailIframe html={sanitizedHtml} />
+        ) : message.bodyText ? (
+          <div className='text-sm'>
+            <pre className='whitespace-pre-wrap font-sans'>{mainContent}</pre>
+
+            {/* Gmail-style "..." button for quoted content */}
+            {hasQuoted && !showQuoted && (
+              <button
+                type='button'
+                onClick={() => setShowQuoted(true)}
+                className='bg-muted hover:bg-muted/80 mt-3 inline-flex items-center justify-center rounded-md px-2 py-1 transition-colors'
+              >
+                <ThreeDots className='text-muted-foreground h-4 w-4' />
+              </button>
+            )}
+
+            {/* Quoted content - shown when expanded */}
+            {hasQuoted && showQuoted && (
+              <div className='text-muted-foreground mt-3 border-l-2 pl-3'>
+                <pre className='whitespace-pre-wrap font-sans'>{quotedContent}</pre>
+              </div>
+            )}
+          </div>
+        ) : message.snippet ? (
+          <p className='text-muted-foreground text-sm'>{message.snippet}</p>
+        ) : (
+          <p className='text-muted-foreground text-sm italic'>No content</p>
+        )}
+
+        {/* Attachments */}
+        {attachments && attachments.length > 0 && onViewAttachment && (
+          <AttachmentList
+            attachments={attachments}
+            onViewAttachment={onViewAttachment}
+          />
+        )}
+      </div>
+
+      {/* Reply Actions */}
+      {onReply && (
         <>
           <Separator />
-          <div className='p-4'>
-            {sanitizedHtml ? (
-              <EmailIframe html={sanitizedHtml} />
-            ) : message.bodyText ? (
-              <pre className='text-sm whitespace-pre-wrap'>
-                {message.bodyText}
-              </pre>
-            ) : message.snippet ? (
-              <p className='text-muted-foreground text-sm'>{message.snippet}</p>
-            ) : (
-              <p className='text-muted-foreground text-sm italic'>No content</p>
+          <div className='flex items-center gap-2 p-3 pl-[68px]'>
+            <Button
+              variant='outline'
+              size='sm'
+              onClick={() => onReply('reply')}
+            >
+              <Reply className='mr-2 h-4 w-4' />
+              Reply
+            </Button>
+            {((message.toEmails?.length ?? 0) > 1 || (message.ccEmails?.length ?? 0) > 0) && (
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={() => onReply('reply_all')}
+              >
+                <ReplyAll className='mr-2 h-4 w-4' />
+                Reply All
+              </Button>
             )}
-
-            {/* Attachments */}
-            {attachments && attachments.length > 0 && onViewAttachment && (
-              <AttachmentList
-                attachments={attachments}
-                onViewAttachment={onViewAttachment}
-              />
-            )}
+            <Button
+              variant='outline'
+              size='sm'
+              onClick={() => onReply('forward')}
+            >
+              <Forward className='mr-2 h-4 w-4' />
+              Forward
+            </Button>
           </div>
-
-          {/* Reply Actions */}
-          {onReply && (
-            <>
-              <Separator />
-              <div className='flex items-center gap-2 p-3'>
-                <Button
-                  variant='outline'
-                  size='sm'
-                  onClick={() => onReply('reply')}
-                >
-                  <Reply className='mr-2 h-4 w-4' />
-                  Reply
-                </Button>
-                {((message.toEmails?.length ?? 0) > 1 || (message.ccEmails?.length ?? 0) > 0) && (
-                  <Button
-                    variant='outline'
-                    size='sm'
-                    onClick={() => onReply('reply_all')}
-                  >
-                    <ReplyAll className='mr-2 h-4 w-4' />
-                    Reply All
-                  </Button>
-                )}
-                <Button
-                  variant='outline'
-                  size='sm'
-                  onClick={() => onReply('forward')}
-                >
-                  <Forward className='mr-2 h-4 w-4' />
-                  Forward
-                </Button>
-              </div>
-            </>
-          )}
         </>
       )}
     </div>
