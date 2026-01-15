@@ -48,6 +48,7 @@ export function MessageCard({
 }: MessageCardProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded)
   const [showQuoted, setShowQuoted] = useState(false)
+  const [showRecipients, setShowRecipients] = useState(false)
 
   // Split content into main body and quoted content
   const { mainContent, quotedContent, hasQuoted } = useMemo(() => {
@@ -152,11 +153,56 @@ export function MessageCard({
             )}
           </div>
 
-          {/* Line 2: to Recipients */}
-          <div className='text-muted-foreground mt-0.5 flex items-center gap-1 text-xs'>
+          {/* Line 2: to Recipients - clickable to expand */}
+          <button
+            type='button'
+            onClick={(e) => {
+              e.stopPropagation()
+              setShowRecipients(!showRecipients)
+            }}
+            className='text-muted-foreground hover:text-foreground mt-0.5 flex items-center gap-1 text-xs transition-colors'
+          >
             <span>to {recipientDisplay}</span>
-            <ChevronDown className='h-3 w-3' />
-          </div>
+            <ChevronDown className={cn('h-3 w-3 transition-transform', showRecipients && 'rotate-180')} />
+          </button>
+
+          {/* Expanded recipients panel */}
+          {showRecipients && (
+            <div className='bg-muted/50 mt-2 rounded-md p-3 text-xs'>
+              <div className='space-y-1.5'>
+                <div className='flex'>
+                  <span className='text-muted-foreground w-12 flex-shrink-0'>From:</span>
+                  <span className='min-w-0 flex-1'>
+                    {message.fromName ? `${message.fromName} <${message.fromEmail}>` : message.fromEmail}
+                  </span>
+                </div>
+                {message.toEmails && message.toEmails.length > 0 && (
+                  <div className='flex'>
+                    <span className='text-muted-foreground w-12 flex-shrink-0'>To:</span>
+                    <span className='min-w-0 flex-1'>{message.toEmails.join(', ')}</span>
+                  </div>
+                )}
+                {message.ccEmails && message.ccEmails.length > 0 && (
+                  <div className='flex'>
+                    <span className='text-muted-foreground w-12 flex-shrink-0'>Cc:</span>
+                    <span className='min-w-0 flex-1'>{message.ccEmails.join(', ')}</span>
+                  </div>
+                )}
+                <div className='flex'>
+                  <span className='text-muted-foreground w-12 flex-shrink-0'>Date:</span>
+                  <span className='min-w-0 flex-1'>
+                    {format(new Date(message.sentAt), 'EEEE, MMMM d, yyyy \'at\' h:mm a')}
+                  </span>
+                </div>
+                {message.subject && (
+                  <div className='flex'>
+                    <span className='text-muted-foreground w-12 flex-shrink-0'>Subject:</span>
+                    <span className='min-w-0 flex-1'>{message.subject}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Date - right aligned */}
