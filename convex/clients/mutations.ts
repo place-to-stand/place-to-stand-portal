@@ -32,14 +32,15 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const user = await requireRole(ctx, "ADMIN");
 
-    // Check slug uniqueness if provided
+    // Check slug uniqueness if provided (exclude archived clients)
     if (args.slug) {
       const existingSlug = await ctx.db
         .query("clients")
         .withIndex("by_slug", (q) => q.eq("slug", args.slug))
         .first();
 
-      if (existingSlug) {
+      // Only block if the existing client is not archived
+      if (existingSlug && existingSlug.deletedAt === undefined) {
         throw new Error("A client with this slug already exists");
       }
     }
@@ -92,14 +93,15 @@ export const update = mutation({
       throw new NotFoundError("Client not found");
     }
 
-    // Check slug uniqueness if changing
+    // Check slug uniqueness if changing (exclude archived clients)
     if (args.slug !== undefined && args.slug !== client.slug) {
       const existingSlug = await ctx.db
         .query("clients")
         .withIndex("by_slug", (q) => q.eq("slug", args.slug))
         .first();
 
-      if (existingSlug && existingSlug._id !== client._id) {
+      // Only block if the existing client is not archived and is a different client
+      if (existingSlug && existingSlug._id !== client._id && existingSlug.deletedAt === undefined) {
         throw new Error("A client with this slug already exists");
       }
     }
@@ -265,7 +267,14 @@ export const addMember = mutation({
       .first();
 
     if (existingMembership) {
-      // Already a member - this is fine during dual-write, just return success
+      // Check if it's a soft-deleted membership that needs restoring
+      if (existingMembership.deletedAt !== undefined) {
+        await ctx.db.patch(existingMembership._id, {
+          deletedAt: undefined,
+          updatedAt: Date.now(),
+        });
+      }
+      // Already a member (active or just restored) - return success
       return existingMembership._id;
     }
 
@@ -329,13 +338,16 @@ export const removeMember = mutation({
       )
       .first();
 
-    if (!membership) {
-      // No membership to remove - this is fine during dual-write
+    if (!membership || membership.deletedAt !== undefined) {
+      // No active membership to remove - this is fine during dual-write
       return { success: true };
     }
 
-    // Hard delete the membership (junction tables typically don't soft delete)
-    await ctx.db.delete(membership._id);
+    // Soft delete the membership to match Supabase behavior
+    await ctx.db.patch(membership._id, {
+      deletedAt: Date.now(),
+      updatedAt: Date.now(),
+    });
 
     return { success: true };
   },

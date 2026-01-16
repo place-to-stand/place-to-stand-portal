@@ -149,13 +149,18 @@ async function fetchHourMetricsFromSupabase(
  * Fetch all accessible clients for the current user
  */
 export async function fetchClientsFromConvex() {
-  const clients = await fetchQuery(
-    api.clients.queries.list,
-    {},
-    { token: await convexAuthNextjsToken() }
-  )
+  try {
+    const clients = await fetchQuery(
+      api.clients.queries.list,
+      {},
+      { token: await convexAuthNextjsToken() }
+    )
 
-  return clients.map(mapConvexClientToClientDetail)
+    return clients.map(mapConvexClientToClientDetail)
+  } catch (error) {
+    console.error('Failed to fetch clients from Convex:', error)
+    throw new Error('Failed to fetch clients', { cause: error })
+  }
 }
 
 /**
@@ -165,26 +170,31 @@ export async function fetchClientsFromConvex() {
  * (since hour blocks haven't been migrated to Convex yet).
  */
 export async function fetchClientsWithMetricsFromConvex() {
-  const clients = await fetchQuery(
-    api.clients.queries.listWithProjectCounts,
-    {},
-    { token: await convexAuthNextjsToken() }
-  )
+  try {
+    const clients = await fetchQuery(
+      api.clients.queries.listWithProjectCounts,
+      {},
+      { token: await convexAuthNextjsToken() }
+    )
 
-  // Get Supabase IDs for hour metrics lookup
-  const clientIds = clients
-    .map((c) => c.supabaseId)
-    .filter((id): id is string => id !== undefined)
+    // Get Supabase IDs for hour metrics lookup
+    const clientIds = clients
+      .map((c) => c.supabaseId)
+      .filter((id): id is string => id !== undefined)
 
-  // Fetch hour metrics from Supabase
-  const hourMetricsMap = await fetchHourMetricsFromSupabase(clientIds)
+    // Fetch hour metrics from Supabase
+    const hourMetricsMap = await fetchHourMetricsFromSupabase(clientIds)
 
-  return clients.map((client) => {
-    const hourMetrics = client.supabaseId
-      ? hourMetricsMap.get(client.supabaseId)
-      : undefined
-    return mapConvexClientWithMetrics(client, hourMetrics)
-  })
+    return clients.map((client) => {
+      const hourMetrics = client.supabaseId
+        ? hourMetricsMap.get(client.supabaseId)
+        : undefined
+      return mapConvexClientWithMetrics(client, hourMetrics)
+    })
+  } catch (error) {
+    console.error('Failed to fetch clients with metrics from Convex:', error)
+    throw new Error('Failed to fetch clients with metrics', { cause: error })
+  }
 }
 
 /**
@@ -193,85 +203,105 @@ export async function fetchClientsWithMetricsFromConvex() {
  * Fetches client data from Convex, then enriches with hour metrics from Supabase.
  */
 export async function fetchArchivedClientsWithMetricsFromConvex() {
-  const clients = await fetchQuery(
-    api.clients.queries.listArchivedWithProjectCounts,
-    {},
-    { token: await convexAuthNextjsToken() }
-  )
+  try {
+    const clients = await fetchQuery(
+      api.clients.queries.listArchivedWithProjectCounts,
+      {},
+      { token: await convexAuthNextjsToken() }
+    )
 
-  // Get Supabase IDs for hour metrics lookup
-  const clientIds = clients
-    .map((c) => c.supabaseId)
-    .filter((id): id is string => id !== undefined)
+    // Get Supabase IDs for hour metrics lookup
+    const clientIds = clients
+      .map((c) => c.supabaseId)
+      .filter((id): id is string => id !== undefined)
 
-  // Fetch hour metrics from Supabase
-  const hourMetricsMap = await fetchHourMetricsFromSupabase(clientIds)
+    // Fetch hour metrics from Supabase
+    const hourMetricsMap = await fetchHourMetricsFromSupabase(clientIds)
 
-  return clients.map((client) => {
-    const hourMetrics = client.supabaseId
-      ? hourMetricsMap.get(client.supabaseId)
-      : undefined
-    return mapConvexClientWithMetrics(client, hourMetrics)
-  })
+    return clients.map((client) => {
+      const hourMetrics = client.supabaseId
+        ? hourMetricsMap.get(client.supabaseId)
+        : undefined
+      return mapConvexClientWithMetrics(client, hourMetrics)
+    })
+  } catch (error) {
+    console.error('Failed to fetch archived clients from Convex:', error)
+    throw new Error('Failed to fetch archived clients', { cause: error })
+  }
 }
 
 /**
  * Fetch a client by ID
  */
 export async function fetchClientByIdFromConvex(clientId: string) {
-  // Convert string ID to Convex ID type
-  // During migration, clientId might be a Supabase UUID
-  // Convex queries handle supabaseId lookup internally
-  const client = await fetchQuery(
-    api.clients.queries.getById,
-    { clientId: clientId as Id<'clients'> },
-    { token: await convexAuthNextjsToken() }
-  )
+  try {
+    // Convert string ID to Convex ID type
+    // During migration, clientId might be a Supabase UUID
+    // Convex queries handle supabaseId lookup internally
+    const client = await fetchQuery(
+      api.clients.queries.getById,
+      { clientId: clientId as Id<'clients'> },
+      { token: await convexAuthNextjsToken() }
+    )
 
-  if (!client) {
-    return null
+    if (!client) {
+      return null
+    }
+
+    return mapConvexClientToClientDetail(client)
+  } catch (error) {
+    console.error(`Failed to fetch client ${clientId} from Convex:`, error)
+    throw new Error(`Failed to fetch client ${clientId}`, { cause: error })
   }
-
-  return mapConvexClientToClientDetail(client)
 }
 
 /**
  * Fetch a client by slug
  */
 export async function fetchClientBySlugFromConvex(slug: string) {
-  const client = await fetchQuery(
-    api.clients.queries.getBySlug,
-    { slug },
-    { token: await convexAuthNextjsToken() }
-  )
+  try {
+    const client = await fetchQuery(
+      api.clients.queries.getBySlug,
+      { slug },
+      { token: await convexAuthNextjsToken() }
+    )
 
-  if (!client) {
-    return null
+    if (!client) {
+      return null
+    }
+
+    return mapConvexClientToClientDetail(client)
+  } catch (error) {
+    console.error(`Failed to fetch client by slug "${slug}" from Convex:`, error)
+    throw new Error(`Failed to fetch client by slug "${slug}"`, { cause: error })
   }
-
-  return mapConvexClientToClientDetail(client)
 }
 
 /**
  * Fetch members of a client
  */
 export async function fetchClientMembersFromConvex(clientId: string) {
-  const members = await fetchQuery(
-    api.clients.queries.getMembers,
-    { clientId: clientId as Id<'clients'> },
-    { token: await convexAuthNextjsToken() }
-  )
+  try {
+    const members = await fetchQuery(
+      api.clients.queries.getMembers,
+      { clientId: clientId as Id<'clients'> },
+      { token: await convexAuthNextjsToken() }
+    )
 
-  return members.map((user) => ({
-    id: user.supabaseId ?? user._id,
-    email: user.email,
-    fullName: user.fullName ?? null,
-    role: user.role,
-    avatarUrl: user.avatarUrl ?? null,
-    createdAt: new Date(user.createdAt).toISOString(),
-    updatedAt: new Date(user.updatedAt).toISOString(),
-    deletedAt: user.deletedAt ? new Date(user.deletedAt).toISOString() : null,
-  }))
+    return members.map((user) => ({
+      id: user.supabaseId ?? user._id,
+      email: user.email,
+      fullName: user.fullName ?? null,
+      role: user.role,
+      avatarUrl: user.avatarUrl ?? null,
+      createdAt: new Date(user.createdAt).toISOString(),
+      updatedAt: new Date(user.updatedAt).toISOString(),
+      deletedAt: user.deletedAt ? new Date(user.deletedAt).toISOString() : null,
+    }))
+  } catch (error) {
+    console.error(`Failed to fetch members for client ${clientId} from Convex:`, error)
+    throw new Error(`Failed to fetch client members for ${clientId}`, { cause: error })
+  }
 }
 
 // ============================================================

@@ -214,11 +214,13 @@ export const getMembers = query({
     // Check access
     await ensureClientAccess(ctx, user, args.clientId);
 
-    // Get memberships
-    const memberships = await ctx.db
+    // Get active memberships (filter out soft-deleted)
+    const allMemberships = await ctx.db
       .query("clientMembers")
       .withIndex("by_client", (q) => q.eq("clientId", args.clientId))
       .collect();
+
+    const memberships = allMemberships.filter((m) => m.deletedAt === undefined);
 
     // Fetch user details
     const members = await Promise.all(
