@@ -775,6 +775,10 @@ export function InboxPanel({
           <InboxSidebar
             currentView={currentView}
             counts={sidebarCounts}
+            preservedParams={{
+              thread: searchParams.get('thread'),
+              q: searchParams.get('q'),
+            }}
           />
         </aside>
 
@@ -838,22 +842,34 @@ export function InboxPanel({
                 )}
               </div>
 
-              {/* Quick Search Filters */}
-              {!searchQuery && syncStatus.connected && (
+              {/* Quick Search Filters - Toggle buttons */}
+              {syncStatus.connected && (
                 <div className='hidden items-center gap-1.5 lg:flex'>
                   <Button
-                    variant='outline'
+                    variant={searchInput.includes('has:attachment') ? 'default' : 'outline'}
                     size='sm'
                     className='h-7 text-xs'
-                    onClick={() => setSearchInput('has:attachment')}
+                    onClick={() => {
+                      if (searchInput.includes('has:attachment')) {
+                        setSearchInput(searchInput.replace(/\s*has:attachment\s*/g, ' ').trim())
+                      } else {
+                        setSearchInput((searchInput + ' has:attachment').trim())
+                      }
+                    }}
                   >
                     Has attachment
                   </Button>
                   <Button
-                    variant='outline'
+                    variant={searchInput.includes('is:unread') ? 'default' : 'outline'}
                     size='sm'
                     className='h-7 text-xs'
-                    onClick={() => setSearchInput('is:unread')}
+                    onClick={() => {
+                      if (searchInput.includes('is:unread')) {
+                        setSearchInput(searchInput.replace(/\s*is:unread\s*/g, ' ').trim())
+                      } else {
+                        setSearchInput((searchInput + ' is:unread').trim())
+                      }
+                    }}
                   >
                     Unread
                   </Button>
@@ -910,10 +926,7 @@ export function InboxPanel({
 
             {/* Thread List or Drafts View */}
             {currentView === 'drafts' ? (
-              <div className='rounded-lg border p-4'>
-                <h3 className='mb-4 font-medium'>Drafts</h3>
-                <DraftsList onResumeDraft={handleResumeDraft} />
-              </div>
+              <DraftsList onResumeDraft={handleResumeDraft} />
             ) : currentView === 'scheduled' ? (
               <div className='flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center'>
                 <Clock className='text-muted-foreground mb-4 h-12 w-12' />
