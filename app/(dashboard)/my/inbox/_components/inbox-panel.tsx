@@ -552,6 +552,19 @@ export function InboxPanel({
     [selectedThread]
   )
 
+  // Auto-scroll to inline compose when it opens
+  useEffect(() => {
+    if (composeContext && selectedThread) {
+      // Use setTimeout to allow React to render the compose panel first
+      setTimeout(() => {
+        const composeEl = document.getElementById('inline-compose')
+        if (composeEl) {
+          composeEl.scrollIntoView({ behavior: 'smooth', block: 'end' })
+        }
+      }, 100)
+    }
+  }, [composeContext, selectedThread])
+
   const handleLinkClient = async (clientId: string) => {
     if (!selectedThread) return
 
@@ -1024,14 +1037,35 @@ export function InboxPanel({
                     ))}
                   </div>
                 )}
+
+                {/* Inline Compose - Gmail style, appears at bottom of thread */}
+                {composeContext && selectedThread && (
+                  <div className='mt-4' id='inline-compose'>
+                    <ComposePanel
+                      context={composeContext}
+                      onClose={() => setComposeContext(null)}
+                      onSent={() => {
+                        setComposeContext(null)
+                        // Refresh messages after sending
+                        if (selectedThread) {
+                          fetch(`/api/threads/${selectedThread.id}/messages`)
+                            .then(r => r.json())
+                            .then(data => {
+                              setThreadMessages(data.messages || [])
+                              setCidMappings(data.cidMappings || {})
+                            })
+                            .catch(console.error)
+                        }
+                      }}
+                      inline
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Right Column - Metadata & Actions (hidden when composing a reply to reduce visual clutter) */}
-            <div className={cn(
-              'bg-muted/20 w-80 flex-shrink-0 overflow-y-auto lg:w-96',
-              composeContext && selectedThread && 'hidden'
-            )}>
+            {/* Right Column - Metadata & Actions */}
+            <div className='bg-muted/20 w-80 flex-shrink-0 overflow-y-auto lg:w-96'>
               <div className='space-y-6 p-6'>
                 {/* Email Toolbar - Reply actions, Read/Unread toggle, Navigation */}
                 {selectedThread && (
@@ -1141,28 +1175,6 @@ export function InboxPanel({
               </div>
             </div>
 
-            {/* Compose Panel - slides in from right */}
-            {composeContext && (
-              <div className='w-96 flex-shrink-0 border-l'>
-                <ComposePanel
-                  context={composeContext}
-                  onClose={() => setComposeContext(null)}
-                  onSent={() => {
-                    setComposeContext(null)
-                    // Refresh messages after sending
-                    if (selectedThread) {
-                      fetch(`/api/threads/${selectedThread.id}/messages`)
-                        .then(r => r.json())
-                        .then(data => {
-                          setThreadMessages(data.messages || [])
-                          setCidMappings(data.cidMappings || {})
-                        })
-                        .catch(console.error)
-                    }
-                  }}
-                />
-              </div>
-            )}
           </div>
         </SheetContent>
       </Sheet>

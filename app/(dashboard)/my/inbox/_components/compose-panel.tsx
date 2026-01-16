@@ -87,6 +87,8 @@ interface ComposePanelProps {
   hideCloseButton?: boolean
   /** Enable auto-save to drafts */
   enableAutoSave?: boolean
+  /** Render in compact inline mode (Gmail-style, within thread) */
+  inline?: boolean
 }
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
@@ -98,6 +100,7 @@ export function ComposePanel({
   onSent,
   hideCloseButton = false,
   enableAutoSave = true,
+  inline = false,
 }: ComposePanelProps) {
   const { toast } = useToast()
 
@@ -786,9 +789,17 @@ export function ComposePanel({
           : 'New Email'
 
   return (
-    <div className='bg-background flex h-full flex-col border-l'>
+    <div className={cn(
+      'bg-background flex flex-col',
+      inline
+        ? 'rounded-lg border shadow-sm'  // Inline: card-like appearance within thread
+        : 'h-full border-l'              // Panel: full height with left border
+    )}>
       {/* Header */}
-      <div className='flex items-center justify-between border-b px-4 py-3'>
+      <div className={cn(
+        'flex items-center justify-between border-b',
+        inline ? 'px-4 py-2' : 'px-4 py-3'
+      )}>
         <div className='flex items-center gap-2'>
           <h3 className='font-semibold'>{modeLabel}</h3>
           {/* Save status indicator */}
@@ -825,7 +836,10 @@ export function ComposePanel({
       </div>
 
       {/* Form */}
-      <div className='flex-1 space-y-4 overflow-y-auto p-4'>
+      <div className={cn(
+        'space-y-4',
+        inline ? 'p-4' : 'flex-1 overflow-y-auto p-4'
+      )}>
         {/* To */}
         <div className='space-y-1.5'>
           <div className='flex items-center justify-between'>
@@ -894,7 +908,10 @@ export function ComposePanel({
             value={body}
             onChange={e => setBody(e.target.value)}
             placeholder='Write your message...'
-            className='min-h-[200px] resize-none'
+            className={cn(
+              'resize-none',
+              inline ? 'min-h-[120px]' : 'min-h-[200px]'
+            )}
             disabled={isSending}
           />
         </div>
@@ -933,7 +950,10 @@ export function ComposePanel({
       </div>
 
       {/* Footer */}
-      <div className='flex items-center justify-between border-t px-4 py-3'>
+      <div className={cn(
+        'flex items-center justify-between border-t',
+        inline ? 'px-4 py-2' : 'px-4 py-3'
+      )}>
         <div className='flex items-center gap-2'>
           {/* Hidden file input */}
           <input
