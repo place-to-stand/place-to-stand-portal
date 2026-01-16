@@ -157,15 +157,9 @@ export const importUser = mutation({
           updatedAt: args.updatedAt,
           deletedAt: args.deletedAt,
         });
-        console.log(
-          `[importUser] Updated ${args.email}: source updatedAt ${args.updatedAt} > existing ${existing.updatedAt}`
-        );
         return { id: existing._id, operation: "updated" };
       }
 
-      console.log(
-        `[importUser] Skipped ${args.email}: source updatedAt ${args.updatedAt} <= existing ${existing.updatedAt}`
-      );
       return { id: existing._id, operation: "skipped" };
     }
 
@@ -180,7 +174,6 @@ export const importUser = mutation({
       deletedAt: args.deletedAt,
     });
 
-    console.log(`[importUser] Inserted ${args.email}`);
     return { id, operation: "inserted" };
   },
 });
@@ -212,10 +205,13 @@ export const importClient = mutation({
 
     if (existing) {
       // Check if update is needed before resolving FKs (optimization)
-      if (args.updatedAt <= existing.updatedAt) {
-        console.log(
-          `[importClient] Skipped ${args.name}: source updatedAt ${args.updatedAt} <= existing ${existing.updatedAt}`
-        );
+      // Force update if deletedAt differs (for archive/restore sync)
+      const deletedAtDiffers =
+        (args.deletedAt === undefined && existing.deletedAt !== undefined) ||
+        (args.deletedAt !== undefined && existing.deletedAt === undefined) ||
+        (args.deletedAt !== undefined && existing.deletedAt !== undefined && args.deletedAt !== existing.deletedAt);
+
+      if (args.updatedAt <= existing.updatedAt && !deletedAtDiffers) {
         return { id: existing._id, operation: "skipped" };
       }
 
@@ -232,9 +228,6 @@ export const importClient = mutation({
         deletedAt: args.deletedAt,
       });
 
-      console.log(
-        `[importClient] Updated ${args.name}: source updatedAt ${args.updatedAt} > existing ${existing.updatedAt}`
-      );
       return { id: existing._id, operation: "updated" };
     }
 
@@ -253,7 +246,6 @@ export const importClient = mutation({
       deletedAt: args.deletedAt,
     });
 
-    console.log(`[importClient] Inserted ${args.name}`);
     return { id, operation: "inserted" };
   },
 });
@@ -272,6 +264,7 @@ export const importClientMember = mutation({
     supabaseId: v.string(),
     createdAt: v.number(),
     updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
   },
   handler: async (ctx, args): Promise<ImportResult> => {
     await verifyMigrationKey(args.migrationKey);
@@ -284,9 +277,6 @@ export const importClientMember = mutation({
     if (existing) {
       // Delta sync for junction table - check if update needed
       if (args.updatedAt <= existing.updatedAt) {
-        console.log(
-          `[importClientMember] Skipped ${args.supabaseId}: source updatedAt ${args.updatedAt} <= existing ${existing.updatedAt}`
-        );
         return { id: existing._id, operation: "skipped" };
       }
 
@@ -311,11 +301,9 @@ export const importClientMember = mutation({
         clientId: client._id,
         userId: user._id,
         updatedAt: args.updatedAt,
+        deletedAt: args.deletedAt,
       });
 
-      console.log(
-        `[importClientMember] Updated ${args.supabaseId}: source updatedAt ${args.updatedAt} > existing ${existing.updatedAt}`
-      );
       return { id: existing._id, operation: "updated" };
     }
 
@@ -342,9 +330,9 @@ export const importClientMember = mutation({
       supabaseId: args.supabaseId,
       createdAt: args.createdAt,
       updatedAt: args.updatedAt,
+      deletedAt: args.deletedAt,
     });
 
-    console.log(`[importClientMember] Inserted client member ${args.supabaseId}`);
     return { id, operation: "inserted" };
   },
 });
@@ -380,9 +368,6 @@ export const importProject = mutation({
     if (existing) {
       // Check if update is needed before resolving FKs (optimization)
       if (args.updatedAt <= existing.updatedAt) {
-        console.log(
-          `[importProject] Skipped ${args.name}: source updatedAt ${args.updatedAt} <= existing ${existing.updatedAt}`
-        );
         return { id: existing._id, operation: "skipped" };
       }
 
@@ -403,9 +388,6 @@ export const importProject = mutation({
         deletedAt: args.deletedAt,
       });
 
-      console.log(
-        `[importProject] Updated ${args.name}: source updatedAt ${args.updatedAt} > existing ${existing.updatedAt}`
-      );
       return { id: existing._id, operation: "updated" };
     }
 
@@ -428,7 +410,6 @@ export const importProject = mutation({
       deletedAt: args.deletedAt,
     });
 
-    console.log(`[importProject] Inserted ${args.name}`);
     return { id, operation: "inserted" };
   },
 });
@@ -475,9 +456,6 @@ export const importTask = mutation({
     if (existing) {
       // Check if update is needed before resolving optional FKs
       if (args.updatedAt <= existing.updatedAt) {
-        console.log(
-          `[importTask] Skipped "${args.title}": source updatedAt ${args.updatedAt} <= existing ${existing.updatedAt}`
-        );
         return { id: existing._id, operation: "skipped" };
       }
 
@@ -499,9 +477,6 @@ export const importTask = mutation({
         deletedAt: args.deletedAt,
       });
 
-      console.log(
-        `[importTask] Updated "${args.title}": source updatedAt ${args.updatedAt} > existing ${existing.updatedAt}`
-      );
       return { id: existing._id, operation: "updated" };
     }
 
@@ -525,7 +500,6 @@ export const importTask = mutation({
       deletedAt: args.deletedAt,
     });
 
-    console.log(`[importTask] Inserted "${args.title}"`);
     return { id, operation: "inserted" };
   },
 });

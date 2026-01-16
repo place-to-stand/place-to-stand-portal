@@ -60,9 +60,9 @@ All migration scripts, Convex functions, and transformers MUST reference this do
 | `client_id` | `clientId` | Id<"clients"> | FK resolved |
 | `user_id` | `userId` | Id<"users"> | FK resolved |
 | `created_at` | `createdAt` | number | Timestamp (ms) |
-| `deleted_at` | - | - | **Supabase has this, Convex schema missing!** |
+| `deleted_at` | `deletedAt` | number? | ✓ Added - soft delete support |
 
-**ACTION REQUIRED**: Add `deletedAt` to Convex `clientMembers` table.
+~~**ACTION REQUIRED**: Add `deletedAt` to Convex `clientMembers` table.~~ **DONE** (Phase 3A)
 
 ---
 

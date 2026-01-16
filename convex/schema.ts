@@ -250,10 +250,14 @@ export default defineSchema({
    * Client members - User to Client membership
    * - Determines data access for non-admin users
    * - Single membership per user per client
+   * - Soft delete to preserve membership history
    */
   clientMembers: defineTable({
     clientId: v.id("clients"),
     userId: v.id("users"),
+
+    // Soft delete (matches Supabase deleted_at)
+    deletedAt: v.optional(v.number()),
 
     // Timestamps
     createdAt: v.number(),
@@ -265,6 +269,7 @@ export default defineSchema({
     .index("by_client", ["clientId"])
     .index("by_user", ["userId"])
     .index("by_client_user", ["clientId", "userId"])
+    .index("by_deleted", ["deletedAt"])
     .index("by_supabaseId", ["supabaseId"]),
 
   /**
