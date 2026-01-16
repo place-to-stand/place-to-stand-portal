@@ -1027,8 +1027,11 @@ export function InboxPanel({
               </div>
             </div>
 
-            {/* Right Column - Metadata & Actions */}
-            <div className='bg-muted/20 w-80 flex-shrink-0 overflow-y-auto lg:w-96'>
+            {/* Right Column - Metadata & Actions (hidden when composing a reply to reduce visual clutter) */}
+            <div className={cn(
+              'bg-muted/20 w-80 flex-shrink-0 overflow-y-auto lg:w-96',
+              composeContext && selectedThread && 'hidden'
+            )}>
               <div className='space-y-6 p-6'>
                 {/* Email Toolbar - Reply actions, Read/Unread toggle, Navigation */}
                 {selectedThread && (
