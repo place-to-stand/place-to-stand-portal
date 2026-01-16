@@ -304,6 +304,31 @@ export async function fetchClientMembersFromConvex(clientId: string) {
   }
 }
 
+/**
+ * Fetch multiple clients by their IDs
+ *
+ * Used by fetchClientsByIds for batch lookups.
+ * Returns clients the user has access to.
+ */
+export async function fetchClientsByIdsFromConvex(clientIds: string[]) {
+  if (clientIds.length === 0) {
+    return []
+  }
+
+  try {
+    const clients = await fetchQuery(
+      api.clients.queries.getByIds,
+      { clientIds },
+      { token: await convexAuthNextjsToken() }
+    )
+
+    return clients.map(mapConvexClientToClientDetail)
+  } catch (error) {
+    console.error('Failed to fetch clients by IDs from Convex:', error)
+    throw new Error('Failed to fetch clients by IDs', { cause: error })
+  }
+}
+
 // ============================================================
 // MUTATIONS
 // ============================================================

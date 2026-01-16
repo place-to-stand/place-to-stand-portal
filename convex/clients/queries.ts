@@ -11,6 +11,7 @@
 
 import { query } from "../_generated/server";
 import { v } from "convex/values";
+import type { Id, Doc } from "../_generated/dataModel";
 import {
   requireUser,
   isAdmin,
@@ -234,6 +235,73 @@ export const getMembers = query({
     );
 
     return members.filter((m) => m !== null);
+  },
+});
+
+/**
+ * Get multiple clients by their IDs
+ *
+ * Accepts an array of client IDs (Convex IDs or Supabase UUIDs).
+ * Returns clients the user has access to.
+ * Used by fetchClientsByIds for batch lookups.
+ */
+export const getByIds = query({
+  args: {
+    clientIds: v.array(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+
+    if (args.clientIds.length === 0) {
+      return [];
+    }
+
+    const results: Doc<"clients">[] = [];
+
+    for (const clientId of args.clientIds) {
+      // Try direct lookup first (only if it looks like a Convex ID)
+      let client: Doc<"clients"> | null = null;
+
+      try {
+        const directLookup = await ctx.db.get(clientId as Id<"clients">);
+        // Verify it's actually a client by checking for expected fields
+        if (directLookup && "billingType" in directLookup) {
+          client = directLookup as Doc<"clients">;
+        }
+      } catch {
+        // Invalid ID format, try supabaseId lookup
+      }
+
+      // Fall back to supabaseId lookup
+      if (!client) {
+        client = await ctx.db
+          .query("clients")
+          .withIndex("by_supabaseId", (q) => q.eq("supabaseId", clientId))
+          .first();
+      }
+
+      if (!client || client.deletedAt !== undefined) {
+        continue;
+      }
+
+      // Check access for non-admins
+      if (!isAdmin(user)) {
+        const membership = await ctx.db
+          .query("clientMembers")
+          .withIndex("by_client_user", (q) =>
+            q.eq("clientId", client!._id).eq("userId", user._id)
+          )
+          .first();
+
+        if (!membership || membership.deletedAt !== undefined) {
+          continue;
+        }
+      }
+
+      results.push(client);
+    }
+
+    return results;
   },
 });
 

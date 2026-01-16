@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm'
 import { requireRole } from '@/lib/auth/session'
 import { logActivity } from '@/lib/activity/logger'
 import { projectArchivedEvent } from '@/lib/activity/events'
+import { CONVEX_FLAGS } from '@/lib/feature-flags'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
 import { projects } from '@/lib/db/schema'
@@ -72,6 +73,22 @@ export async function softDeleteProject(
           .update(projects)
           .set({ deletedAt: new Date().toISOString() })
           .where(eq(projects.id, projectId))
+
+        // Dual-write to Convex if enabled
+        if (CONVEX_FLAGS.PROJECTS) {
+          try {
+            const { archiveProjectInConvex } = await import(
+              '@/lib/data/projects/convex'
+            )
+            await archiveProjectInConvex(projectId)
+          } catch (convexError) {
+            // Log but don't fail - Supabase is source of truth during migration
+            console.error(
+              'Failed to archive project in Convex (non-fatal)',
+              convexError
+            )
+          }
+        }
       } catch (error) {
         console.error('Failed to archive project', error)
         return {

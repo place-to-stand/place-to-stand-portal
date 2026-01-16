@@ -19,9 +19,7 @@ import { ConvexClient } from "convex/browser";
 import * as fs from "fs";
 import * as path from "path";
 import * as schema from "../../lib/db/schema";
-
-// Import the API - uncomment after generating Convex functions
-// import { api } from "../../convex/_generated/api";
+import { api } from "../../convex/_generated/api";
 
 // ============================================================
 // CONFIGURATION
@@ -97,20 +95,19 @@ async function validateTable(
       result.supabaseCount = supabaseRecords.length;
     }
 
-    // Get Convex count
-    // TODO: Implement Convex count query
-    // result.convexCount = await convexClient.query(api.migration.countRecords, {
-    //   table: tableName,
-    // });
-
-    // For now, simulate
-    result.convexCount = result.supabaseCount;
+    // Get Convex count using the countRecords query
+    try {
+      const convexCounts = await convexClient.query(api.migration.queries.countRecords, {
+        table: tableName as "users" | "clients" | "clientMembers" | "projects" | "tasks" | "taskAssignees" | "taskComments" | "taskAttachments" | "timeLogs" | "hourBlocks" | "leads" | "contacts",
+      });
+      result.convexCount = convexCounts.total;
+    } catch (convexError) {
+      console.warn(`  ⚠️ Could not query Convex for ${tableName}:`, convexError);
+      // Table might not be migrated yet - mark as 0
+      result.convexCount = 0;
+    }
 
     result.countMatch = result.supabaseCount === result.convexCount;
-
-    // TODO: Add sample record checks
-    // TODO: Add foreign key validation
-
     result.passed = result.countMatch;
   } catch (error) {
     console.error(`Error validating ${tableName}:`, error);

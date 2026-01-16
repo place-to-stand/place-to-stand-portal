@@ -16,7 +16,8 @@
 
 import { mutation, MutationCtx } from "../_generated/server";
 import { v } from "convex/values";
-import { Id } from "../_generated/dataModel";
+import type { Id } from "../_generated/dataModel";
+import { migrationRunStatusValidator } from "../schema";
 
 // ============================================================
 // TYPES
@@ -501,5 +502,98 @@ export const importTask = mutation({
     });
 
     return { id, operation: "inserted" };
+  },
+});
+
+// ============================================================
+// MIGRATION RUN TRACKING
+// ============================================================
+
+/**
+ * Record a migration run
+ *
+ * Call this after running a migration to record the results.
+ * Used by the import script to track migration history.
+ */
+export const recordMigration = mutation({
+  args: {
+    migrationKey: v.string(),
+    phase: v.string(),
+    table: v.optional(v.string()),
+    status: migrationRunStatusValidator,
+    recordsProcessed: v.number(),
+    recordsSkipped: v.number(),
+    errors: v.array(
+      v.object({
+        recordId: v.string(),
+        error: v.string(),
+      })
+    ),
+    runBy: v.string(),
+    environment: v.string(),
+    notes: v.optional(v.string()),
+    startedAt: v.number(),
+    completedAt: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    await verifyMigrationKey(args.migrationKey);
+
+    const id = await ctx.db.insert("migrationRuns", {
+      phase: args.phase,
+      table: args.table,
+      status: args.status,
+      recordsProcessed: args.recordsProcessed,
+      recordsSkipped: args.recordsSkipped,
+      errors: args.errors,
+      runBy: args.runBy,
+      environment: args.environment,
+      notes: args.notes,
+      startedAt: args.startedAt,
+      completedAt: args.completedAt,
+    });
+
+    return { id };
+  },
+});
+
+/**
+ * Update a migration run status
+ *
+ * Call this to update the status of a running migration.
+ */
+export const updateMigrationRun = mutation({
+  args: {
+    migrationKey: v.string(),
+    id: v.string(),
+    status: migrationRunStatusValidator,
+    recordsProcessed: v.optional(v.number()),
+    recordsSkipped: v.optional(v.number()),
+    errors: v.optional(
+      v.array(
+        v.object({
+          recordId: v.string(),
+          error: v.string(),
+        })
+      )
+    ),
+    completedAt: v.optional(v.number()),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await verifyMigrationKey(args.migrationKey);
+
+    const updates: Record<string, unknown> = {
+      status: args.status,
+    };
+
+    if (args.recordsProcessed !== undefined) updates.recordsProcessed = args.recordsProcessed;
+    if (args.recordsSkipped !== undefined) updates.recordsSkipped = args.recordsSkipped;
+    if (args.errors !== undefined) updates.errors = args.errors;
+    if (args.completedAt !== undefined) updates.completedAt = args.completedAt;
+    if (args.notes !== undefined) updates.notes = args.notes;
+
+    await ctx.db.patch(args.id as Id<"migrationRuns">, updates);
+
+    return { success: true };
   },
 });
