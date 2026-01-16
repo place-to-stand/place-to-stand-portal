@@ -95,7 +95,7 @@ export function assertIsSelf(
 /**
  * Ensure user has access to a client
  * - Admins: always have access
- * - Others: must be a member of the client
+ * - Others: must be an active (non-deleted) member of the client
  */
 export async function ensureClientAccess(
   ctx: Ctx,
@@ -113,7 +113,8 @@ export async function ensureClientAccess(
     )
     .first();
 
-  if (!membership) {
+  // Check membership exists and is not soft-deleted
+  if (!membership || membership.deletedAt !== undefined) {
     throw new ForbiddenError("Insufficient permissions to access client");
   }
 }
@@ -243,7 +244,7 @@ export async function ensureClientAccessByTaskAttachmentId(
 /**
  * Get all client IDs user can access
  * - Admins: all non-deleted clients
- * - Others: clients they're members of
+ * - Others: clients they're active (non-deleted) members of
  */
 export async function listAccessibleClientIds(
   ctx: Ctx,
@@ -261,6 +262,7 @@ export async function listAccessibleClientIds(
   const memberships = await ctx.db
     .query("clientMembers")
     .withIndex("by_user", (q) => q.eq("userId", user._id))
+    .filter((q) => q.eq(q.field("deletedAt"), undefined))
     .collect();
 
   return memberships.map((m) => m.clientId);

@@ -9,8 +9,12 @@ export type ClientMutationResult = ClientActionResult & {
   didMutate: boolean
 }
 
+type MutationResultInput = ClientActionResult & {
+  clientId?: string
+}
+
 export function buildMutationResult(
-  result: ClientActionResult
+  result: MutationResultInput
 ): ClientMutationResult {
   return {
     ...result,

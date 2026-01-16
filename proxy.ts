@@ -60,9 +60,6 @@ const convexAuthHandler = convexAuthNextjsMiddleware(
 
     // User is authenticated, allow the request
     return NextResponse.next()
-  },
-  {
-    verbose: true,
   }
 )
 

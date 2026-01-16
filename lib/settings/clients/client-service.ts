@@ -44,6 +44,7 @@ export type DestroyClientInput = z.infer<typeof destroyClientSchema>
 
 export type ClientActionResult = {
   error?: string
+  clientId?: string // Returned on successful create
 }
 
 export type ClientSlugOptions = {

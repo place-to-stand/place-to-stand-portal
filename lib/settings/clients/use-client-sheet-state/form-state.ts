@@ -348,11 +348,12 @@ export function useClientSheetFormState({
             return
           }
 
-          // Sync contact links if editing and contacts changed
-          // (For new clients, contacts can be linked after creation via the edit flow)
-          if (payload.id && contactsDirty) {
+          // Sync contact links if contacts changed
+          // For new clients, use the returned clientId; for existing, use payload.id
+          const clientIdForContacts = payload.id ?? result.clientId
+          if (clientIdForContacts && contactsDirty) {
             const contactIds = selectedContacts.map(c => c.id)
-            const syncResult = await syncClientContacts(payload.id, contactIds)
+            const syncResult = await syncClientContacts(clientIdForContacts, contactIds)
 
             if (!syncResult.ok) {
               setFeedback(syncResult.error ?? 'Failed to update contact links.')
@@ -367,7 +368,7 @@ export function useClientSheetFormState({
 
           finishSettingsInteraction(interaction, {
             status: 'success',
-            targetId: payload.id ?? null,
+            targetId: payload.id ?? result.clientId ?? null,
           })
 
           toast({
