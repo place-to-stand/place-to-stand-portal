@@ -6,6 +6,7 @@ import { requireRole } from '@/lib/auth/session'
 import { logActivity } from '@/lib/activity/logger'
 import { projectCreatedEvent, projectUpdatedEvent } from '@/lib/activity/events'
 import type { ProjectStatusValue } from '@/lib/constants'
+import { CONVEX_FLAGS } from '@/lib/feature-flags'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
 import { projects } from '@/lib/db/schema'
@@ -120,6 +121,49 @@ export async function saveProject(
           }
         }
 
+        // Dual-write to Convex if enabled
+        if (CONVEX_FLAGS.PROJECTS) {
+          try {
+            const { createProjectInConvex } = await import(
+              '@/lib/data/projects/convex'
+            )
+            await createProjectInConvex({
+              name: trimmedName,
+              slug: slugCandidate,
+              type: projectType,
+              status,
+              clientId: normalizedClientId,
+              startsOn: startsOn ?? null,
+              endsOn: endsOn ?? null,
+              supabaseId: insertedId,
+            })
+
+            // Validate dual-write consistency
+            const { validateProjectDualWrite } = await import(
+              '@/lib/data/dual-write-validator'
+            )
+            await validateProjectDualWrite(
+              {
+                id: insertedId,
+                name: trimmedName,
+                slug: slugCandidate,
+                type: projectType,
+                status,
+                startsOn: startsOn ?? null,
+                endsOn: endsOn ?? null,
+                deletedAt: null,
+              },
+              insertedId
+            )
+          } catch (convexError) {
+            // Log but don't fail - Supabase is source of truth during migration
+            console.error(
+              'Failed to sync project to Convex (non-fatal)',
+              convexError
+            )
+          }
+        }
+
         const event = projectCreatedEvent({
           name: trimmedName,
           status,
@@ -204,6 +248,48 @@ export async function saveProject(
             slug: slugToUpdate,
           })
           .where(eq(projects.id, id))
+
+        // Dual-write to Convex if enabled
+        if (CONVEX_FLAGS.PROJECTS) {
+          try {
+            const { updateProjectInConvex } = await import(
+              '@/lib/data/projects/convex'
+            )
+            await updateProjectInConvex(id, {
+              name: trimmedName,
+              slug: slugToUpdate,
+              type: projectType,
+              status,
+              clientId: normalizedClientId,
+              startsOn: startsOn ?? null,
+              endsOn: endsOn ?? null,
+            })
+
+            // Validate dual-write consistency
+            const { validateProjectDualWrite } = await import(
+              '@/lib/data/dual-write-validator'
+            )
+            await validateProjectDualWrite(
+              {
+                id,
+                name: trimmedName,
+                slug: slugToUpdate,
+                type: projectType,
+                status,
+                startsOn: startsOn ?? null,
+                endsOn: endsOn ?? null,
+                deletedAt: null,
+              },
+              id
+            )
+          } catch (convexError) {
+            // Log but don't fail - Supabase is source of truth during migration
+            console.error(
+              'Failed to sync project update to Convex (non-fatal)',
+              convexError
+            )
+          }
+        }
       } catch (error) {
         console.error('Failed to update project', error)
         return {

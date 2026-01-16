@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm'
 import { requireRole } from '@/lib/auth/session'
 import { logActivity } from '@/lib/activity/logger'
 import { projectRestoredEvent } from '@/lib/activity/events'
+import { CONVEX_FLAGS } from '@/lib/feature-flags'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
 import { projects } from '@/lib/db/schema'
@@ -81,6 +82,22 @@ export async function restoreProject(
           .update(projects)
           .set({ deletedAt: null })
           .where(eq(projects.id, projectId))
+
+        // Dual-write to Convex if enabled
+        if (CONVEX_FLAGS.PROJECTS) {
+          try {
+            const { restoreProjectInConvex } = await import(
+              '@/lib/data/projects/convex'
+            )
+            await restoreProjectInConvex(projectId)
+          } catch (convexError) {
+            // Log but don't fail - Supabase is source of truth during migration
+            console.error(
+              'Failed to restore project in Convex (non-fatal)',
+              convexError
+            )
+          }
+        }
       } catch (error) {
         console.error('Failed to restore project', error)
         return {

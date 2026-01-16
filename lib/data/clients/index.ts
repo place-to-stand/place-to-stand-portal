@@ -315,6 +315,19 @@ export type ClientProject = {
 
 export const fetchProjectsForClient = cache(
   async (user: AppUser, clientId: string): Promise<ClientProject[]> => {
+    // Use Convex if enabled
+    if (CONVEX_FLAGS.PROJECTS) {
+      try {
+        const { fetchProjectsForClientFromConvex } = await import('../projects/convex')
+        // Note: Convex already handles access control internally
+        return fetchProjectsForClientFromConvex(clientId)
+      } catch (error) {
+        console.error('Failed to fetch projects for client from Convex:', error)
+        // Fall through to Supabase
+      }
+    }
+
+    // Supabase fallback
     await ensureClientAccess(user, clientId)
 
     const rows = await db
@@ -380,6 +393,18 @@ export async function fetchClientsByIds(
     return []
   }
 
+  // Use Convex if enabled
+  if (CONVEX_FLAGS.CLIENTS) {
+    try {
+      const { fetchClientsByIdsFromConvex } = await getConvexClients()
+      return fetchClientsByIdsFromConvex(clientIds)
+    } catch (error) {
+      console.error('Failed to fetch clients by IDs from Convex:', error)
+      // Fall through to Supabase
+    }
+  }
+
+  // Supabase fallback
   const rows = await db
     .select({
       id: clients.id,

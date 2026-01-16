@@ -21,6 +21,8 @@ import type * as lib_validators_activityMetadata from "../lib/validators/activit
 import type * as lib_validators_date from "../lib/validators/date.js";
 import type * as migration_mutations from "../migration/mutations.js";
 import type * as migration_queries from "../migration/queries.js";
+import type * as projects_mutations from "../projects/mutations.js";
+import type * as projects_queries from "../projects/queries.js";
 import type * as storage_attachments from "../storage/attachments.js";
 import type * as storage_avatars from "../storage/avatars.js";
 import type * as users_mutations from "../users/mutations.js";
@@ -46,6 +48,8 @@ declare const fullApi: ApiFromModules<{
   "lib/validators/date": typeof lib_validators_date;
   "migration/mutations": typeof migration_mutations;
   "migration/queries": typeof migration_queries;
+  "projects/mutations": typeof projects_mutations;
+  "projects/queries": typeof projects_queries;
   "storage/attachments": typeof storage_attachments;
   "storage/avatars": typeof storage_avatars;
   "users/mutations": typeof users_mutations;
