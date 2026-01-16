@@ -799,7 +799,7 @@ export function InboxPanel({
                   <Search className='text-muted-foreground pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2' />
                 )}
                 <Input
-                  type='search'
+                  type='text'
                   placeholder='Search emails...'
                   value={searchInput}
                   onChange={e => setSearchInput(e.target.value)}
