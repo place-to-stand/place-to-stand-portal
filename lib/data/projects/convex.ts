@@ -51,7 +51,9 @@ function mapConvexProjectToDetail(project: Doc<'projects'>): ProjectDetailFromCo
     slug: project.slug ?? null,
     type: project.type,
     status: project.status,
-    clientId: project.clientId ? (project.supabaseId ?? project.clientId) : null,
+    // Note: This returns the Convex clientId as-is. Callers that need Supabase UUIDs
+    // for downstream queries should resolve client IDs separately (see fetchAllProjectsFromConvex).
+    clientId: project.clientId ?? null,
     startsOn: project.startsOn ?? null,
     endsOn: project.endsOn ?? null,
     createdBy: project.createdBy ? project.createdBy : null,
