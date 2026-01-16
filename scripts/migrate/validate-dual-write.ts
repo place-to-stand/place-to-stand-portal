@@ -258,7 +258,7 @@ async function syncClientsToConvex(
         createdBySupabaseId: client.createdBy ?? undefined,
         supabaseId: client.id,
         createdAt: new Date(client.createdAt).getTime(),
-        updatedAt: new Date(client.updatedAt).getTime() + 1, // Force update by adding 1ms
+        updatedAt: new Date(client.updatedAt).getTime(),
         deletedAt: client.deletedAt ? new Date(client.deletedAt).getTime() : undefined,
       })
       console.log(`   ✅ Synced: ${client.name}`)
