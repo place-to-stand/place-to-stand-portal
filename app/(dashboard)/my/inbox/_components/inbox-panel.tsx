@@ -295,14 +295,22 @@ export function InboxPanel({
     setIsSearching(true)
     const timer = setTimeout(() => {
       handleSearch(searchInput)
-      setIsSearching(false)
+      // Don't set isSearching false here - router.push is async
+      // The effect below will clear it when navigation completes
     }, 300)
 
     return () => {
       clearTimeout(timer)
-      setIsSearching(false)
+      // Don't clear isSearching here - if user is still typing, we stay in searching state
     }
   }, [searchInput, searchQuery, handleSearch])
+
+  // Clear searching state when URL search query updates to match input (navigation complete)
+  useEffect(() => {
+    if (searchInput === searchQuery) {
+      setIsSearching(false)
+    }
+  }, [searchQuery, searchInput])
 
   // Handle URL-based thread selection on mount and URL changes
   useEffect(() => {
