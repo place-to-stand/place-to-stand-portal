@@ -38,22 +38,8 @@ export const listAllClients = query({
 export const listAllProjects = query({
   args: {},
   handler: async (ctx) => {
-    const projects = await ctx.db.query("projects").collect();
-
-    return projects.map((p) => ({
-      _id: p._id,
-      supabaseId: p.supabaseId,
-      clientId: p.clientId,
-      name: p.name,
-      slug: p.slug,
-      type: p.type,
-      status: p.status,
-      startsOn: p.startsOn,
-      endsOn: p.endsOn,
-      deletedAt: p.deletedAt,
-      createdAt: p.createdAt,
-      updatedAt: p.updatedAt,
-    }));
+    // Return raw documents to debug createdBy issue
+    return await ctx.db.query("projects").collect();
   },
 });
 
@@ -230,3 +216,4 @@ export const getLatestMigrationRun = query({
     return run;
   },
 });
+

@@ -150,3 +150,32 @@ export const listByClient = query({
     return users.filter((u) => u !== null);
   },
 });
+
+/**
+ * Get multiple users by their IDs
+ *
+ * Used for batch lookups (e.g., resolving createdBy IDs to supabaseIds).
+ * Returns only non-deleted users. Requires authentication.
+ */
+export const getByIds = query({
+  args: { userIds: v.array(v.id("users")) },
+  handler: async (ctx, args) => {
+    await requireUser(ctx);
+
+    if (args.userIds.length === 0) {
+      return [];
+    }
+
+    const users = await Promise.all(
+      args.userIds.map(async (userId) => {
+        const user = await ctx.db.get(userId);
+        if (user && user.deletedAt === undefined) {
+          return user;
+        }
+        return null;
+      })
+    );
+
+    return users.filter((u) => u !== null);
+  },
+});

@@ -307,8 +307,9 @@ export async function fetchProjectsForClientFromConvex(clientId: string) {
  * Used by fetchBaseProjects to get project data from Convex.
  * Returns projects in the format expected by the assembly functions.
  *
- * IMPORTANT: This function resolves Convex client IDs to Supabase UUIDs
- * for compatibility with downstream Supabase queries (e.g., hour blocks, time logs).
+ * IMPORTANT: This function resolves Convex IDs to Supabase UUIDs
+ * for compatibility with downstream Supabase queries (e.g., hour blocks, time logs)
+ * and for user ID comparisons (e.g., filtering PERSONAL projects by created_by).
  */
 export async function fetchAllProjectsFromConvex() {
   try {
@@ -324,6 +325,15 @@ export async function fetchAllProjectsFromConvex() {
         projects
           .map((p) => p.clientId)
           .filter((id): id is Id<'clients'> => id !== undefined && id !== null)
+      )
+    )
+
+    // Collect unique createdBy user IDs (Convex IDs) that need to be resolved to Supabase UUIDs
+    const convexUserIds = Array.from(
+      new Set(
+        projects
+          .map((p) => p.createdBy)
+          .filter((id): id is Id<'users'> => id !== undefined && id !== null)
       )
     )
 
@@ -344,6 +354,23 @@ export async function fetchAllProjectsFromConvex() {
       }
     }
 
+    // Build a map from Convex user ID to Supabase UUID
+    const userIdMap = new Map<string, string>()
+
+    if (convexUserIds.length > 0) {
+      // Fetch users to get their supabaseIds
+      const users = await fetchQuery(
+        api.users.queries.getByIds,
+        { userIds: convexUserIds },
+        { token: await convexAuthNextjsToken() }
+      )
+
+      // Map Convex _id to supabaseId (or fall back to _id if no supabaseId)
+      for (const user of users) {
+        userIdMap.set(user._id, user.supabaseId ?? user._id)
+      }
+    }
+
     // Map to DbProject format for compatibility with existing assembly code
     return projects.map((project) => ({
       id: project.supabaseId ?? project._id,
@@ -358,7 +385,8 @@ export async function fetchAllProjectsFromConvex() {
       created_at: new Date(project.createdAt).toISOString(),
       updated_at: new Date(project.updatedAt).toISOString(),
       deleted_at: project.deletedAt ? new Date(project.deletedAt).toISOString() : null,
-      created_by: project.createdBy ?? null,
+      // Resolve createdBy Convex ID to Supabase UUID for user comparison compatibility
+      created_by: project.createdBy ? (userIdMap.get(project.createdBy) ?? null) : null,
     }))
   } catch (error) {
     console.error('Failed to fetch all projects from Convex:', error)
