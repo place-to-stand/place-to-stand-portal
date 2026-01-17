@@ -45,7 +45,7 @@ export function GmailReconnectBanner({ status, errorMessage }: GmailReconnectBan
           asChild
         >
           <a href='/settings/integrations'>
-            <ExternalLink className='mr-2 h-4 w-4' />
+            <ExternalLink className='h-4 w-4' />
             Reconnect Gmail
           </a>
         </Button>

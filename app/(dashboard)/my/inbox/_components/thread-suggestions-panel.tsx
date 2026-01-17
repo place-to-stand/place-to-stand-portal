@@ -113,7 +113,7 @@ export function ThreadSuggestionsPanel({
         </div>
         {onRefresh && hasClient && hasProject && (
           <Button
-            variant='ghost'
+            variant='outline'
             size='icon-sm'
             onClick={onRefresh}
             disabled={isAnalyzing || isLoading}

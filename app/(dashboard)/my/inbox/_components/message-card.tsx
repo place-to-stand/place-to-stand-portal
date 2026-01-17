@@ -262,7 +262,7 @@ export function MessageCard({
               size='sm'
               onClick={() => onReply('reply')}
             >
-              <Reply className='mr-2 h-4 w-4' />
+              <Reply className='h-4 w-4' />
               Reply
             </Button>
             {((message.toEmails?.length ?? 0) > 1 || (message.ccEmails?.length ?? 0) > 0) && (
@@ -271,7 +271,7 @@ export function MessageCard({
                 size='sm'
                 onClick={() => onReply('reply_all')}
               >
-                <ReplyAll className='mr-2 h-4 w-4' />
+                <ReplyAll className='h-4 w-4' />
                 Reply All
               </Button>
             )}
@@ -280,7 +280,7 @@ export function MessageCard({
               size='sm'
               onClick={() => onReply('forward')}
             >
-              <Forward className='mr-2 h-4 w-4' />
+              <Forward className='h-4 w-4' />
               Forward
             </Button>
           </div>

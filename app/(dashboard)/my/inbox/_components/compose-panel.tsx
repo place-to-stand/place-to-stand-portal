@@ -405,7 +405,7 @@ export function ComposePanel({
               Cancel
             </Button>
             <Button onClick={handleCustomScheduleConfirm} disabled={!customScheduleDate}>
-              <Clock className='mr-2 h-4 w-4' />
+              <Clock className='h-4 w-4' />
               Set Schedule
             </Button>
           </DialogFooter>

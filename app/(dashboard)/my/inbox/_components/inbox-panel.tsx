@@ -418,7 +418,7 @@ export function InboxPanel({
                 className='mb-2 w-full'
                 onClick={() => setIsComposeOpen(true)}
               >
-                <PenSquare className='mr-2 h-4 w-4' />
+                <PenSquare className='h-4 w-4' />
                 Compose
               </Button>
             )}

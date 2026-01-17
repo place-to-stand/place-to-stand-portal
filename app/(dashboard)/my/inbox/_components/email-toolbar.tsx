@@ -68,7 +68,7 @@ export function EmailToolbar({
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
-            variant='ghost'
+            variant='outline'
             size='icon-sm'
             onClick={() => onReply('reply')}
           >
@@ -82,7 +82,7 @@ export function EmailToolbar({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant='ghost'
+              variant='outline'
               size='icon-sm'
               onClick={() => onReply('reply_all')}
             >
@@ -96,7 +96,7 @@ export function EmailToolbar({
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
-            variant='ghost'
+            variant='outline'
             size='icon-sm'
             onClick={() => onReply('forward')}
           >
@@ -113,7 +113,7 @@ export function EmailToolbar({
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
-            variant='ghost'
+            variant='outline'
             size='icon-sm'
             onClick={handleToggleRead}
             disabled={isTogglingRead}
