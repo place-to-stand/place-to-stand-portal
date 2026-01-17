@@ -185,9 +185,8 @@ export function ThreadContactPanel({
                   <span className='text-sm font-medium'>{r.contact!.name}</span>
                 </div>
                 <Button
-                  size='sm'
+                  size='icon-sm'
                   variant='ghost'
-                  className='h-7 w-7 p-0'
                   onClick={() => handleOpenEditSheet(r)}
                 >
                   <Pencil className='h-3 w-3' />

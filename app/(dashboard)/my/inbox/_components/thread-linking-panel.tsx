@@ -118,8 +118,7 @@ export function ThreadLinkingPanel({
             </div>
             <Button
               variant='ghost'
-              size='icon'
-              className='h-7 w-7'
+              size='icon-sm'
               onClick={onUnlinkClient}
               disabled={isLinking}
             >

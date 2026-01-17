@@ -5,6 +5,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { FileEdit, Trash2, RefreshCw, Mail } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import {
   Dialog,
   DialogContent,
@@ -117,44 +118,58 @@ export function DraftsList({ onResumeDraft }: DraftsListProps) {
 
   return (
     <>
-      <div className='divide-y'>
-        {drafts.map(draft => (
-          <div
+      <div className='overflow-hidden rounded-lg border'>
+        {drafts.map((draft, idx) => (
+          <button
             key={draft.id}
-            className='hover:bg-muted/50 flex items-start justify-between gap-3 p-3'
+            type='button'
+            onClick={() => handleResume(draft)}
+            className={cn(
+              'bg-muted/20 flex w-full cursor-pointer items-center gap-3 p-2.5 text-left transition-colors',
+              'hover:bg-muted/60',
+              idx > 0 && 'border-border/50 border-t'
+            )}
           >
-            <button
-              type='button'
-              onClick={() => handleResume(draft)}
-              className='min-w-0 flex-1 text-left'
-            >
+            {/* Icon column - matches unread indicator width */}
+            <div className='w-2 flex-shrink-0'>
+              <FileEdit className='text-muted-foreground h-4 w-4' />
+            </div>
+
+            {/* Center: Recipients, timestamp / Subject */}
+            <div className='min-w-0 flex-1'>
               <div className='flex items-center gap-2'>
-                <FileEdit className='text-muted-foreground h-4 w-4 flex-shrink-0' />
-                <span className='truncate font-medium'>
-                  {draft.subject || '(no subject)'}
+                <span className='truncate text-sm font-medium'>
+                  {draft.toEmails.length > 0
+                    ? `To: ${draft.toEmails.join(', ')}`
+                    : '(no recipients)'}
+                </span>
+                <span className='text-muted-foreground/70 flex-shrink-0 text-xs whitespace-nowrap tabular-nums'>
+                  {formatDistanceToNow(new Date(draft.updatedAt), {
+                    addSuffix: true,
+                  })}
                 </span>
               </div>
-              <div className='text-muted-foreground mt-1 truncate text-xs'>
-                To: {draft.toEmails.join(', ') || '(no recipients)'}
-              </div>
-              <div className='text-muted-foreground mt-1 text-xs'>
-                {formatDistanceToNow(new Date(draft.updatedAt))} ago
+              <div className='text-muted-foreground truncate text-sm'>
+                {draft.subject || '(no subject)'}
                 {draft.scheduledAt && (
-                  <span className='ml-2 text-amber-600'>
-                    Scheduled
-                  </span>
+                  <span className='ml-2 text-amber-600'>· Scheduled</span>
                 )}
               </div>
-            </button>
+            </div>
+
+            {/* Delete button */}
             <Button
               variant='ghost'
               size='icon'
               className='text-muted-foreground hover:text-destructive h-8 w-8 flex-shrink-0'
-              onClick={() => setDeleteId(draft.id)}
+              onClick={e => {
+                e.stopPropagation()
+                setDeleteId(draft.id)
+              }}
             >
               <Trash2 className='h-4 w-4' />
             </Button>
-          </div>
+          </button>
         ))}
       </div>
 

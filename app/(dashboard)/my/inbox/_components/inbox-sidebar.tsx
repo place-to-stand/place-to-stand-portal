@@ -27,6 +27,11 @@ interface InboxSidebarProps {
     linked: number
     unlinked: number
   }
+  /** Query params to preserve across view changes */
+  preservedParams?: {
+    thread?: string | null
+    q?: string | null
+  }
 }
 
 const navItems: Array<{
@@ -47,8 +52,20 @@ const navItems: Array<{
   { view: 'by-project', label: 'By Project', icon: FolderKanban, href: '/my/inbox?view=by-project' },
 ]
 
-export function InboxSidebar({ currentView, counts }: InboxSidebarProps) {
+export function InboxSidebar({ currentView, counts, preservedParams }: InboxSidebarProps) {
   let currentSection: string | undefined
+
+  // Build URL that preserves thread and search params across view changes
+  const buildViewUrl = (view: View): string => {
+    const params = new URLSearchParams()
+    // Preserve thread param (selected thread is independent of view)
+    if (preservedParams?.thread) params.set('thread', preservedParams.thread)
+    // Preserve search query
+    if (preservedParams?.q) params.set('q', preservedParams.q)
+    // Set view (omit for inbox default)
+    if (view !== 'inbox') params.set('view', view)
+    return params.toString() ? `/my/inbox?${params.toString()}` : '/my/inbox'
+  }
 
   return (
     <nav className='flex flex-col gap-1 p-3'>
@@ -77,7 +94,7 @@ export function InboxSidebar({ currentView, counts }: InboxSidebarProps) {
               </div>
             )}
             <Link
-              href={item.href}
+              href={buildViewUrl(item.view)}
               className={cn(
                 'flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                 currentView === item.view

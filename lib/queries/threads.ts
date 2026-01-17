@@ -248,12 +248,12 @@ export async function listThreadsForUser(
 
   const conditions = [isNull(threads.deletedAt)]
 
-  // Search filter - supports operators and text search
+  // Search filter - supports operators and text search (can be combined)
   if (search && search.trim()) {
-    const searchTerm = search.trim().toLowerCase()
+    let remainingSearch = search.trim()
 
-    // Handle special search operators
-    if (searchTerm === 'has:attachment') {
+    // Handle has:attachment operator
+    if (remainingSearch.toLowerCase().includes('has:attachment')) {
       conditions.push(
         sql`EXISTS (
           SELECT 1 FROM messages
@@ -263,7 +263,11 @@ export async function listThreadsForUser(
           AND messages.has_attachments = true
         )`
       )
-    } else if (searchTerm === 'is:unread') {
+      remainingSearch = remainingSearch.replace(/has:attachment/gi, '').trim()
+    }
+
+    // Handle is:unread operator
+    if (remainingSearch.toLowerCase().includes('is:unread')) {
       conditions.push(
         sql`EXISTS (
           SELECT 1 FROM messages
@@ -273,9 +277,12 @@ export async function listThreadsForUser(
           AND messages.is_read = false
         )`
       )
-    } else {
-      // Regular text search - matches subject or message content
-      const searchPattern = `%${search.trim()}%`
+      remainingSearch = remainingSearch.replace(/is:unread/gi, '').trim()
+    }
+
+    // If there's remaining text after removing operators, do text search
+    if (remainingSearch) {
+      const searchPattern = `%${remainingSearch}%`
       conditions.push(
         or(
           sql`${threads.subject} ILIKE ${searchPattern}`,
@@ -537,11 +544,12 @@ export async function getThreadCountsForUser(
 
   const conditions = [isNull(threads.deletedAt), userThreadCondition]
 
-  // Search filter - supports operators and text search
+  // Search filter - supports operators and text search (can be combined)
   if (search && search.trim()) {
-    const searchTerm = search.trim().toLowerCase()
+    let remainingSearch = search.trim()
 
-    if (searchTerm === 'has:attachment') {
+    // Handle has:attachment operator
+    if (remainingSearch.toLowerCase().includes('has:attachment')) {
       conditions.push(
         sql`EXISTS (
           SELECT 1 FROM messages
@@ -551,7 +559,11 @@ export async function getThreadCountsForUser(
           AND messages.has_attachments = true
         )`
       )
-    } else if (searchTerm === 'is:unread') {
+      remainingSearch = remainingSearch.replace(/has:attachment/gi, '').trim()
+    }
+
+    // Handle is:unread operator
+    if (remainingSearch.toLowerCase().includes('is:unread')) {
       conditions.push(
         sql`EXISTS (
           SELECT 1 FROM messages
@@ -561,8 +573,12 @@ export async function getThreadCountsForUser(
           AND messages.is_read = false
         )`
       )
-    } else {
-      const searchPattern = `%${search.trim()}%`
+      remainingSearch = remainingSearch.replace(/is:unread/gi, '').trim()
+    }
+
+    // If there's remaining text after removing operators, do text search
+    if (remainingSearch) {
+      const searchPattern = `%${remainingSearch}%`
       conditions.push(
         or(
           sql`${threads.subject} ILIKE ${searchPattern}`,
