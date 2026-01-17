@@ -166,50 +166,51 @@ export function ComposeFooter({
         )}
 
         {/* Send / Schedule buttons */}
-        <div className='flex'>
-          {undoCountdown !== null ? (
-            // Show undo button during countdown
-            <Button
-              variant='destructive'
-              onClick={handleUndoSend}
-              className='gap-2'
-            >
-              <span className='tabular-nums'>Sending in {undoCountdown}s</span>
-              <span className='font-semibold'>Undo</span>
-            </Button>
-          ) : (
+        {undoCountdown !== null ? (
+          // Show undo button during countdown
+          <Button
+            variant='destructive'
+            onClick={handleUndoSend}
+            className='gap-2 px-4'
+          >
+            <span className='tabular-nums'>Sending in {undoCountdown}s</span>
+            <span className='font-semibold'>Undo</span>
+          </Button>
+        ) : scheduledAt ? (
+          // Schedule button (no dropdown when scheduled)
+          <Button
+            onClick={handleSend}
+            disabled={isSending}
+            className='gap-2 px-4'
+          >
+            {isSending ? (
+              <Loader2 className='h-4 w-4 animate-spin' />
+            ) : (
+              <Clock className='h-4 w-4' />
+            )}
+            {isSending ? 'Scheduling...' : 'Schedule'}
+          </Button>
+        ) : (
+          // Send button with dropdown - unified button group
+          <div className='inline-flex rounded-md shadow-sm'>
             <Button
               onClick={handleSend}
               disabled={isSending}
-              className={cn(scheduledAt ? 'rounded-r-none' : '')}
+              className='gap-2 rounded-r-none border-r-0 px-4'
             >
               {isSending ? (
-                <>
-                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                  {scheduledAt ? 'Scheduling...' : 'Sending...'}
-                </>
-              ) : scheduledAt ? (
-                <>
-                  <Clock className='mr-2 h-4 w-4' />
-                  Schedule
-                </>
+                <Loader2 className='h-4 w-4 animate-spin' />
               ) : (
-                <>
-                  <Send className='mr-2 h-4 w-4' />
-                  Send
-                </>
+                <Send className='h-4 w-4' />
               )}
+              {isSending ? 'Sending...' : 'Send'}
             </Button>
-          )}
-
-          {!scheduledAt && undoCountdown === null && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant='default'
-                  size='icon'
-                  className='rounded-l-none border-l'
                   disabled={isSending}
+                  className='rounded-l-none border-l border-l-primary-foreground/20 px-2'
                 >
                   <ChevronDown className='h-4 w-4' />
                 </Button>
@@ -257,8 +258,8 @@ export function ComposeFooter({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   )
