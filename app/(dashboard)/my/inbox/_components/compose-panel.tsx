@@ -346,12 +346,12 @@ export function ComposePanel({
                   </span>
                   <Button
                     variant='ghost'
-                    size='sm'
-                    className='h-6 w-6 flex-shrink-0 p-0'
+                    size='icon-sm'
+                    className='flex-shrink-0'
                     onClick={() => handleRemoveAttachment(attachment.storageKey)}
                     disabled={isSending}
                   >
-                    <Trash2 className='h-3 w-3' />
+                    <Trash2 className='h-4 w-4' />
                   </Button>
                 </div>
               ))}

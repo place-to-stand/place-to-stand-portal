@@ -115,8 +115,7 @@ export function InboxToolbar({
         <div className='hidden items-center gap-1.5 lg:flex'>
           <Button
             variant={searchInput.includes('has:attachment') ? 'default' : 'outline'}
-            size='sm'
-            className='h-7 text-xs'
+            size='xs'
             onClick={() => {
               if (searchInput.includes('has:attachment')) {
                 onSearchInputChange(searchInput.replace(/\s*has:attachment\s*/g, ' ').trim())
@@ -129,8 +128,7 @@ export function InboxToolbar({
           </Button>
           <Button
             variant={searchInput.includes('is:unread') ? 'default' : 'outline'}
-            size='sm'
-            className='h-7 text-xs'
+            size='xs'
             onClick={() => {
               if (searchInput.includes('is:unread')) {
                 onSearchInputChange(searchInput.replace(/\s*is:unread\s*/g, ' ').trim())
@@ -174,7 +172,7 @@ export function InboxToolbar({
               disabled={isSyncing}
             >
               <RefreshCw
-                className={cn('mr-2 h-4 w-4', isSyncing && 'animate-spin')}
+                className={cn('h-4 w-4', isSyncing && 'animate-spin')}
               />
               {isSyncing ? 'Syncing...' : 'Sync'}
             </Button>
@@ -184,7 +182,7 @@ export function InboxToolbar({
               className='md:hidden'
               onClick={onCompose}
             >
-              <PenSquare className='mr-2 h-4 w-4' />
+              <PenSquare className='h-4 w-4' />
               Compose
             </Button>
           </>

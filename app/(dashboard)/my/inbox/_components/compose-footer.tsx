@@ -86,12 +86,12 @@ export function ComposeFooter({
         >
           {isUploadingAttachment ? (
             <>
-              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+              <Loader2 className='h-4 w-4 animate-spin' />
               Uploading...
             </>
           ) : (
             <>
-              <Paperclip className='mr-2 h-4 w-4' />
+              <Paperclip className='h-4 w-4' />
               Attach
             </>
           )}
@@ -107,12 +107,12 @@ export function ComposeFooter({
                 disabled={isSending || isLoadingSignatures}
               >
                 {isLoadingSignatures ? (
-                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                  <Loader2 className='h-4 w-4 animate-spin' />
                 ) : (
-                  <Signature className='mr-2 h-4 w-4' />
+                  <Signature className='h-4 w-4' />
                 )}
                 Signature
-                <ChevronDown className='ml-2 h-3 w-3' />
+                <ChevronDown className='h-3 w-3' />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align='start'>
@@ -148,19 +148,18 @@ export function ComposeFooter({
       <div className='flex items-center gap-2'>
         {/* Scheduled time indicator */}
         {scheduledAt && (
-          <div className='flex items-center gap-1 text-sm'>
+          <div className='flex items-center gap-1.5 text-sm'>
             <Clock className='text-muted-foreground h-4 w-4' />
             <span className='text-muted-foreground'>
               {format(scheduledAt, 'MMM d, h:mm a')}
             </span>
             <Button
               variant='ghost'
-              size='sm'
-              className='h-6 px-2'
+              size='icon-sm'
               onClick={() => setScheduledAt(null)}
               disabled={isSending}
             >
-              <X className='h-3 w-3' />
+              <X className='h-4 w-4' />
             </Button>
           </div>
         )}
@@ -169,9 +168,8 @@ export function ComposeFooter({
         {undoCountdown !== null ? (
           // Show undo button during countdown
           <Button
-            variant='destructive'
+            variant='secondary'
             onClick={handleUndoSend}
-            className='gap-2 px-4'
           >
             <span className='tabular-nums'>Sending in {undoCountdown}s</span>
             <span className='font-semibold'>Undo</span>
@@ -181,7 +179,6 @@ export function ComposeFooter({
           <Button
             onClick={handleSend}
             disabled={isSending}
-            className='gap-2 px-4'
           >
             {isSending ? (
               <Loader2 className='h-4 w-4 animate-spin' />
@@ -192,11 +189,11 @@ export function ComposeFooter({
           </Button>
         ) : (
           // Send button with dropdown - unified button group
-          <div className='inline-flex rounded-md shadow-sm'>
+          <div className='inline-flex'>
             <Button
               onClick={handleSend}
               disabled={isSending}
-              className='gap-2 rounded-r-none border-r-0 px-4'
+              className='rounded-r-none'
             >
               {isSending ? (
                 <Loader2 className='h-4 w-4 animate-spin' />
@@ -209,8 +206,9 @@ export function ComposeFooter({
               <DropdownMenuTrigger asChild>
                 <Button
                   variant='default'
+                  size='icon'
                   disabled={isSending}
-                  className='rounded-l-none border-l border-l-primary-foreground/20 px-2'
+                  className='rounded-l-none border-l border-l-primary-foreground/20'
                 >
                   <ChevronDown className='h-4 w-4' />
                 </Button>

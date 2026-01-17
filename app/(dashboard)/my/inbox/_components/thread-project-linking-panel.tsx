@@ -117,8 +117,7 @@ export function ThreadProjectLinkingPanel({
             </div>
             <Button
               variant='ghost'
-              size='icon'
-              className='h-7 w-7'
+              size='icon-sm'
               onClick={onUnlinkProject}
               disabled={isLinking}
             >

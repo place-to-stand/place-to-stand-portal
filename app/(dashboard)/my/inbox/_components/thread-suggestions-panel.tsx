@@ -114,8 +114,7 @@ export function ThreadSuggestionsPanel({
         {onRefresh && hasClient && hasProject && (
           <Button
             variant='ghost'
-            size='icon'
-            className='h-6 w-6'
+            size='icon-sm'
             onClick={onRefresh}
             disabled={isAnalyzing || isLoading}
             title='Re-analyze thread'

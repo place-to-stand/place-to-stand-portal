@@ -69,9 +69,8 @@ export function EmailToolbar({
         <TooltipTrigger asChild>
           <Button
             variant='ghost'
-            size='icon'
+            size='icon-sm'
             onClick={() => onReply('reply')}
-            className='h-8 w-8'
           >
             <Reply className='h-4 w-4' />
           </Button>
@@ -84,9 +83,8 @@ export function EmailToolbar({
           <TooltipTrigger asChild>
             <Button
               variant='ghost'
-              size='icon'
+              size='icon-sm'
               onClick={() => onReply('reply_all')}
-              className='h-8 w-8'
             >
               <ReplyAll className='h-4 w-4' />
             </Button>
@@ -99,9 +97,8 @@ export function EmailToolbar({
         <TooltipTrigger asChild>
           <Button
             variant='ghost'
-            size='icon'
+            size='icon-sm'
             onClick={() => onReply('forward')}
-            className='h-8 w-8'
           >
             <Forward className='h-4 w-4' />
           </Button>
@@ -117,10 +114,9 @@ export function EmailToolbar({
         <TooltipTrigger asChild>
           <Button
             variant='ghost'
-            size='icon'
+            size='icon-sm'
             onClick={handleToggleRead}
             disabled={isTogglingRead}
-            className='h-8 w-8'
           >
             {isTogglingRead ? (
               <Loader2 className='h-4 w-4 animate-spin' />
@@ -142,10 +138,9 @@ export function EmailToolbar({
         <TooltipTrigger asChild>
           <Button
             variant='ghost'
-            size='icon'
+            size='icon-sm'
             onClick={onPrev}
             disabled={!canGoPrev}
-            className='h-8 w-8'
           >
             <ArrowLeft className='h-4 w-4' />
           </Button>
@@ -158,10 +153,9 @@ export function EmailToolbar({
         <TooltipTrigger asChild>
           <Button
             variant='ghost'
-            size='icon'
+            size='icon-sm'
             onClick={onNext}
             disabled={!canGoNext}
-            className='h-8 w-8'
           >
             <ArrowRight className='h-4 w-4' />
           </Button>
