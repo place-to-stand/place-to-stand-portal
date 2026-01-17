@@ -2,56 +2,37 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { formatDistanceToNow, format } from 'date-fns'
 import {
-  Mail,
-  RefreshCw,
-  CheckCircle,
-  Circle,
-  Filter,
-  PenSquare,
   Clock,
   FolderKanban,
-  Search,
-  X,
+  Mail,
+  PenSquare,
 } from 'lucide-react'
 
 import { AppShellHeader } from '@/components/layout/app-shell'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { PaginationControls } from '@/components/ui/pagination-controls'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetTitle,
 } from '@/components/ui/sheet'
-import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/components/ui/use-toast'
-import { cn } from '@/lib/utils'
 import type { ThreadSummary, Message } from '@/lib/types/messages'
-import type { CidMapping } from '@/lib/email/sanitize'
 
 import { AttachmentViewer, type AttachmentMetadata } from './attachment-viewer'
-import { EmailToolbar } from './email-toolbar'
 import { GmailReconnectBanner } from './gmail-reconnect-banner'
-import { MessageCard } from './message-card'
-import { ThreadContactPanel } from './thread-contact-panel'
-import { ThreadLinkingPanel } from './thread-linking-panel'
-import { ThreadProjectLinkingPanel } from './thread-project-linking-panel'
 import { ThreadRow } from './thread-row'
-import { ThreadSuggestionsPanel } from './thread-suggestions-panel'
 import { ComposePanel, type ComposeContext } from './compose-panel'
 import { DraftsList } from './drafts-list'
 import { InboxSidebar, type InboxView } from './inbox-sidebar'
+import { InboxToolbar } from './inbox-toolbar'
+import { useInboxSearch } from './hooks/use-inbox-search'
+import { useThreadSelection } from './hooks/use-thread-selection'
+import { useThreadSuggestions } from './hooks/use-thread-suggestions'
+import { useThreadLinking } from './hooks/use-thread-linking'
+import { ThreadDetailSheet } from './thread-detail-sheet'
 
 type Client = {
   id: string
@@ -64,23 +45,6 @@ type Project = {
   name: string
   slug: string | null
   clientSlug: string | null
-}
-
-type Suggestion = {
-  clientId: string
-  clientName: string
-  confidence: number
-  matchedContacts: string[]
-  reasoning?: string
-  matchType?: 'EXACT_EMAIL' | 'DOMAIN' | 'CONTENT' | 'CONTEXTUAL'
-}
-
-type ProjectSuggestion = {
-  projectId: string
-  projectName: string
-  confidence: number
-  reasoning?: string
-  matchType?: 'NAME' | 'CONTENT' | 'CONTEXTUAL'
 }
 
 type ViewType = 'inbox' | 'sent' | 'drafts' | 'scheduled' | 'linked' | 'unlinked'
@@ -146,37 +110,46 @@ export function InboxPanel({
   useEffect(() => {
     setThreads(initialThreads)
   }, [initialThreads])
+
+  // Thread selection hook - manages selected thread, messages, and URL sync
+  const {
+    selectedThread,
+    setSelectedThread,
+    threadMessages,
+    setThreadMessages,
+    cidMappings,
+    attachmentsMap,
+    isLoadingMessages,
+    handleThreadClick,
+    handleCloseSheet,
+    refreshMessages,
+  } = useThreadSelection({
+    threads,
+    initialSelectedThread,
+    searchParams,
+    router,
+    setThreads,
+  })
+
+  // Search hook - manages search input, debouncing, and URL sync
+  const {
+    searchInput,
+    setSearchInput,
+    isSearching,
+    handleClearSearch,
+  } = useInboxSearch({
+    searchQuery,
+    searchParams,
+    router,
+  })
+
   const [isSyncing, setIsSyncing] = useState(false)
-  const [selectedThread, setSelectedThread] = useState<ThreadSummary | null>(
-    null
-  )
-  const [threadMessages, setThreadMessages] = useState<Message[]>([])
-  const [cidMappings, setCidMappings] = useState<Record<string, CidMapping[]>>(
-    {}
-  )
-  const [attachmentsMap, setAttachmentsMap] = useState<Record<string, AttachmentMetadata[]>>(
-    {}
-  )
 
   // Attachment viewer state
   const [viewingAttachment, setViewingAttachment] = useState<{
     attachment: AttachmentMetadata
     externalMessageId: string
   } | null>(null)
-  const [isLoadingMessages, setIsLoadingMessages] = useState(false)
-  const [isLinking, setIsLinking] = useState(false)
-
-  // AI Suggestions state (for client matching)
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([])
-  const [suggestionsLoading, setSuggestionsLoading] = useState(false)
-
-  // AI Suggestions state (for project matching)
-  const [projectSuggestions, setProjectSuggestions] = useState<
-    ProjectSuggestion[]
-  >([])
-  const [projectSuggestionsLoading, setProjectSuggestionsLoading] =
-    useState(false)
-  const [isLinkingProject, setIsLinkingProject] = useState(false)
 
   // AI Task Suggestions state (auto-triggered when both client + project linked)
   const [isAnalyzingThread, setIsAnalyzingThread] = useState(false)
@@ -187,16 +160,6 @@ export function InboxPanel({
 
   // Standalone compose sheet state (for new emails)
   const [isComposeOpen, setIsComposeOpen] = useState(false)
-
-  // Search input state (controlled, synced with URL)
-  const [searchInput, setSearchInput] = useState(searchQuery)
-  const [isSearching, setIsSearching] = useState(false)
-
-  // Handler for resuming a draft
-  const handleResumeDraft = useCallback((draftContext: ComposeContext) => {
-    setComposeContext(draftContext)
-    setIsComposeOpen(true)
-  }, [])
 
   /**
    * Trigger AI analysis for a thread when both client and project are linked.
@@ -230,6 +193,44 @@ export function InboxPanel({
     []
   )
 
+  // Suggestions hook - manages client and project suggestions
+  const {
+    suggestions,
+    suggestionsLoading,
+    projectSuggestions,
+    projectSuggestionsLoading,
+    clearSuggestions,
+    clearProjectSuggestions,
+  } = useThreadSuggestions({
+    selectedThread,
+  })
+
+  // Linking hook - manages client and project linking
+  const {
+    isLinking,
+    isLinkingProject,
+    handleLinkClient,
+    handleUnlinkClient,
+    handleLinkProject,
+    handleUnlinkProject,
+  } = useThreadLinking({
+    selectedThread,
+    setSelectedThread,
+    setThreads,
+    clients,
+    projects,
+    onLinkComplete: triggerThreadAnalysis,
+    onClientLinked: clearSuggestions,
+    onProjectLinked: clearProjectSuggestions,
+    toast,
+  })
+
+  // Handler for resuming a draft
+  const handleResumeDraft = useCallback((draftContext: ComposeContext) => {
+    setComposeContext(draftContext)
+    setIsComposeOpen(true)
+  }, [])
+
   // Handle page changes - triggers server-side navigation
   const handlePageChange = useCallback(
     (page: number) => {
@@ -260,78 +261,6 @@ export function InboxPanel({
     },
     [router]
   )
-
-  // Handle search submission
-  const handleSearch = useCallback(
-    (query: string) => {
-      const params = new URLSearchParams(searchParams.toString())
-      // Reset to page 1 and remove thread when searching
-      params.delete('thread')
-      params.delete('page')
-      if (query.trim()) {
-        params.set('q', query.trim())
-      } else {
-        params.delete('q')
-      }
-      const newUrl = params.toString()
-        ? `/my/inbox?${params.toString()}`
-        : '/my/inbox'
-      router.push(newUrl)
-    },
-    [router, searchParams]
-  )
-
-  // Clear search
-  const handleClearSearch = useCallback(() => {
-    setSearchInput('')
-    handleSearch('')
-  }, [handleSearch])
-
-  // Debounced live search - triggers after 300ms of no typing
-  useEffect(() => {
-    // Don't trigger on initial mount or if search hasn't changed
-    if (searchInput === searchQuery) return
-
-    setIsSearching(true)
-    const timer = setTimeout(() => {
-      handleSearch(searchInput)
-      // Don't set isSearching false here - router.push is async
-      // The effect below will clear it when navigation completes
-    }, 300)
-
-    return () => {
-      clearTimeout(timer)
-      // Don't clear isSearching here - if user is still typing, we stay in searching state
-    }
-  }, [searchInput, searchQuery, handleSearch])
-
-  // Clear searching state when URL search query updates to match input (navigation complete)
-  useEffect(() => {
-    if (searchInput === searchQuery) {
-      setIsSearching(false)
-    }
-  }, [searchQuery, searchInput])
-
-  // Handle URL-based thread selection on mount and URL changes
-  useEffect(() => {
-    const threadId = searchParams.get('thread')
-    if (threadId) {
-      // First check if thread is in current page
-      const thread = threads.find(t => t.id === threadId)
-      if (thread && (!selectedThread || selectedThread.id !== threadId)) {
-        handleThreadClick(thread, false) // Don't update URL since it's already set
-      } else if (
-        !thread &&
-        initialSelectedThread &&
-        initialSelectedThread.id === threadId &&
-        (!selectedThread || selectedThread.id !== threadId)
-      ) {
-        // Thread not on current page but pre-fetched via deep-link
-        handleThreadClick(initialSelectedThread, false)
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, threads, initialSelectedThread])
 
   const handleSync = async (silent = false) => {
     setIsSyncing(true)
@@ -368,135 +297,24 @@ export function InboxPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const handleThreadClick = useCallback(
+  // Wrapper that clears suggestions when selecting a new thread
+  const onThreadClick = useCallback(
     async (thread: ThreadSummary, updateUrl = true) => {
-      setSelectedThread(thread)
-      setIsLoadingMessages(true)
-      setThreadMessages([])
-      setCidMappings({})
-      setAttachmentsMap({})
-      setSuggestions([])
-      setProjectSuggestions([])
-
-      // Update URL with thread ID
-      if (updateUrl) {
-        const params = new URLSearchParams(searchParams.toString())
-        params.set('thread', thread.id)
-        router.push(`/my/inbox?${params.toString()}`, { scroll: false })
-      }
-
-      try {
-        const res = await fetch(`/api/threads/${thread.id}/messages`)
-        if (res.ok) {
-          const data = await res.json()
-          setThreadMessages(data.messages || [])
-          setCidMappings(data.cidMappings || {})
-          setAttachmentsMap(data.attachments || {})
-
-          // Mark as read if there are unread messages
-          const hasUnread = (data.messages || []).some(
-            (m: Message) => !m.isRead
-          )
-          if (hasUnread) {
-            // Fire and forget - don't block UI, but handle errors
-            fetch(`/api/threads/${thread.id}/read`, { method: 'POST' })
-              .then(res => {
-                if (!res.ok) {
-                  throw new Error(`Failed to mark as read: ${res.status}`)
-                }
-                // Update local thread state to show as read
-                setThreads(prev =>
-                  prev.map(t =>
-                    t.id === thread.id && t.latestMessage
-                      ? {
-                          ...t,
-                          latestMessage: { ...t.latestMessage, isRead: true },
-                        }
-                      : t
-                  )
-                )
-                // Also update messages state
-                setThreadMessages(prev =>
-                  prev.map(m => ({ ...m, isRead: true }))
-                )
-              })
-              .catch(err => {
-                // Log error but don't disrupt UX - read status is non-critical
-                console.error('Failed to mark thread as read:', err)
-              })
-          }
-        }
-      } catch (err) {
-        console.error('Failed to load messages:', err)
-      } finally {
-        setIsLoadingMessages(false)
-      }
+      clearSuggestions()
+      clearProjectSuggestions()
+      await handleThreadClick(thread, updateUrl)
     },
-    [router, searchParams]
+    [handleThreadClick, clearSuggestions, clearProjectSuggestions]
   )
 
-  // Load AI suggestions when thread changes and has no client
-  useEffect(() => {
-    if (!selectedThread || selectedThread.client) {
-      setSuggestions([])
-      return
-    }
-
-    setSuggestionsLoading(true)
-    fetch(`/api/threads/${selectedThread.id}/suggestions`)
-      .then(r => {
-        if (!r.ok) throw new Error(`Suggestions fetch failed: ${r.status}`)
-        return r.json()
-      })
-      .then(data => setSuggestions(data.suggestions || []))
-      .catch(err => {
-        console.error('Failed to load client suggestions:', err)
-        setSuggestions([])
-      })
-      .finally(() => setSuggestionsLoading(false))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedThread?.id, selectedThread?.client])
-
-  // Load project suggestions when thread changes and has no project
-  useEffect(() => {
-    if (!selectedThread || selectedThread.project) {
-      setProjectSuggestions([])
-      return
-    }
-
-    setProjectSuggestionsLoading(true)
-    fetch(`/api/threads/${selectedThread.id}/project-suggestions`)
-      .then(r => {
-        if (!r.ok) throw new Error(`Project suggestions fetch failed: ${r.status}`)
-        return r.json()
-      })
-      .then(data => setProjectSuggestions(data.suggestions || []))
-      .catch(err => {
-        console.error('Failed to load project suggestions:', err)
-        setProjectSuggestions([])
-      })
-      .finally(() => setProjectSuggestionsLoading(false))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedThread?.id, selectedThread?.project])
-
-  const handleCloseSheet = useCallback(() => {
-    setSelectedThread(null)
-    setThreadMessages([])
-    setCidMappings({})
-    setAttachmentsMap({})
+  // Wrapper that clears local state when closing the sheet
+  const onCloseSheet = useCallback(() => {
     setViewingAttachment(null)
-    setSuggestions([])
-    setProjectSuggestions([])
+    clearSuggestions()
+    clearProjectSuggestions()
     setComposeContext(null)
-
-    // Remove thread from URL
-    const params = new URLSearchParams(searchParams.toString())
-    params.delete('thread')
-    const newUrl = params.toString()
-      ? `/my/inbox?${params.toString()}`
-      : '/my/inbox'
-    router.push(newUrl, { scroll: false })
-  }, [router, searchParams])
+    handleCloseSheet()
+  }, [handleCloseSheet, clearSuggestions, clearProjectSuggestions])
 
   const handleReply = useCallback(
     (message: Message, mode: 'reply' | 'reply_all' | 'forward') => {
@@ -565,173 +383,6 @@ export function InboxPanel({
     }
   }, [composeContext, selectedThread])
 
-  const handleLinkClient = async (clientId: string) => {
-    if (!selectedThread) return
-
-    setIsLinking(true)
-    try {
-      const res = await fetch(`/api/threads/${selectedThread.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId }),
-      })
-
-      if (res.ok) {
-        const client = clients.find(c => c.id === clientId)
-
-        // Update local state
-        const updatedThread: ThreadSummary = {
-          ...selectedThread,
-          client: client
-            ? { id: client.id, name: client.name, slug: client.slug }
-            : null,
-        }
-        setSelectedThread(updatedThread)
-        setThreads(prev =>
-          prev.map(t => (t.id === selectedThread.id ? updatedThread : t))
-        )
-        setSuggestions([]) // Clear suggestions after linking
-
-        toast({ title: 'Thread linked to client' })
-
-        // Auto-trigger analysis if both client and project are now linked
-        if (updatedThread.project) {
-          triggerThreadAnalysis(selectedThread.id)
-        }
-      } else {
-        throw new Error('Failed to link')
-      }
-    } catch {
-      toast({
-        title: 'Error',
-        description: 'Failed to link thread.',
-        variant: 'destructive',
-      })
-    } finally {
-      setIsLinking(false)
-    }
-  }
-
-  const handleUnlinkClient = async () => {
-    if (!selectedThread) return
-
-    setIsLinking(true)
-    try {
-      const res = await fetch(`/api/threads/${selectedThread.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId: null }),
-      })
-
-      if (res.ok) {
-        const updatedThread: ThreadSummary = {
-          ...selectedThread,
-          client: null,
-        }
-        setSelectedThread(updatedThread)
-        setThreads(prev =>
-          prev.map(t => (t.id === selectedThread.id ? updatedThread : t))
-        )
-
-        toast({ title: 'Client unlinked' })
-      }
-    } catch {
-      toast({
-        title: 'Error',
-        description: 'Failed to unlink.',
-        variant: 'destructive',
-      })
-    } finally {
-      setIsLinking(false)
-    }
-  }
-
-  const handleLinkProject = async (projectId: string) => {
-    if (!selectedThread) return
-
-    setIsLinkingProject(true)
-    try {
-      const res = await fetch(`/api/threads/${selectedThread.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId }),
-      })
-
-      if (res.ok) {
-        const project = projects.find(p => p.id === projectId)
-
-        // Update local state
-        const updatedThread: ThreadSummary = {
-          ...selectedThread,
-          project: project
-            ? {
-                id: project.id,
-                name: project.name,
-                slug: project.slug,
-                clientSlug: project.clientSlug,
-              }
-            : null,
-        }
-        setSelectedThread(updatedThread)
-        setThreads(prev =>
-          prev.map(t => (t.id === selectedThread.id ? updatedThread : t))
-        )
-        setProjectSuggestions([]) // Clear suggestions after linking
-
-        toast({ title: 'Thread linked to project' })
-
-        // Auto-trigger analysis if both client and project are now linked
-        if (updatedThread.client) {
-          triggerThreadAnalysis(selectedThread.id)
-        }
-      } else {
-        throw new Error('Failed to link')
-      }
-    } catch {
-      toast({
-        title: 'Error',
-        description: 'Failed to link thread to project.',
-        variant: 'destructive',
-      })
-    } finally {
-      setIsLinkingProject(false)
-    }
-  }
-
-  const handleUnlinkProject = async () => {
-    if (!selectedThread) return
-
-    setIsLinkingProject(true)
-    try {
-      const res = await fetch(`/api/threads/${selectedThread.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId: null }),
-      })
-
-      if (res.ok) {
-        const updatedThread: ThreadSummary = {
-          ...selectedThread,
-          project: null,
-        }
-        setSelectedThread(updatedThread)
-        setThreads(prev =>
-          prev.map(t => (t.id === selectedThread.id ? updatedThread : t))
-        )
-
-        toast({ title: 'Project unlinked' })
-      }
-    } catch {
-      toast({
-        title: 'Error',
-        description: 'Failed to unlink project.',
-        variant: 'destructive',
-      })
-    } finally {
-      setIsLinkingProject(false)
-    }
-  }
-
   // Navigate between threads (within current page)
   const currentIndex = selectedThread
     ? threads.findIndex(t => t.id === selectedThread.id)
@@ -740,11 +391,11 @@ export function InboxPanel({
   const canGoNext = currentIndex < threads.length - 1
 
   const goToPrev = () => {
-    if (canGoPrev) handleThreadClick(threads[currentIndex - 1])
+    if (canGoPrev) onThreadClick(threads[currentIndex - 1])
   }
 
   const goToNext = () => {
-    if (canGoNext) handleThreadClick(threads[currentIndex + 1])
+    if (canGoNext) onThreadClick(threads[currentIndex + 1])
   }
 
   return (
@@ -795,134 +446,19 @@ export function InboxPanel({
               )}
 
             {/* Header Row */}
-            <div className='flex flex-wrap items-center gap-4'>
-              {/* Mobile-only view dropdown */}
-              <Select
-                value={currentView}
-                onValueChange={handleMobileViewChange}
-              >
-                <SelectTrigger className='w-40 md:hidden'>
-                  <span className='flex items-center'>
-                    <Filter className='mr-2 h-4 w-4' />
-                    <SelectValue />
-                  </span>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='inbox'>Inbox</SelectItem>
-                  <SelectItem value='sent'>Sent</SelectItem>
-                  <SelectItem value='drafts'>Drafts</SelectItem>
-                  <SelectItem value='linked'>Linked</SelectItem>
-                  <SelectItem value='unlinked'>Unlinked</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Search Input */}
-              <div className='relative w-64'>
-                {isSearching ? (
-                  <RefreshCw className='text-muted-foreground pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin' />
-                ) : (
-                  <Search className='text-muted-foreground pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2' />
-                )}
-                <Input
-                  type='text'
-                  placeholder='Search emails...'
-                  value={searchInput}
-                  onChange={e => setSearchInput(e.target.value)}
-                  className='h-9 pl-10 pr-9'
-                />
-                {searchInput && (
-                  <button
-                    type='button'
-                    onClick={handleClearSearch}
-                    className='text-muted-foreground hover:text-foreground absolute right-3 top-1/2 -translate-y-1/2'
-                  >
-                    <X className='h-4 w-4' />
-                    <span className='sr-only'>Clear search</span>
-                  </button>
-                )}
-              </div>
-
-              {/* Quick Search Filters - Toggle buttons */}
-              {syncStatus.connected && (
-                <div className='hidden items-center gap-1.5 lg:flex'>
-                  <Button
-                    variant={searchInput.includes('has:attachment') ? 'default' : 'outline'}
-                    size='sm'
-                    className='h-7 text-xs'
-                    onClick={() => {
-                      if (searchInput.includes('has:attachment')) {
-                        setSearchInput(searchInput.replace(/\s*has:attachment\s*/g, ' ').trim())
-                      } else {
-                        setSearchInput((searchInput + ' has:attachment').trim())
-                      }
-                    }}
-                  >
-                    Has attachment
-                  </Button>
-                  <Button
-                    variant={searchInput.includes('is:unread') ? 'default' : 'outline'}
-                    size='sm'
-                    className='h-7 text-xs'
-                    onClick={() => {
-                      if (searchInput.includes('is:unread')) {
-                        setSearchInput(searchInput.replace(/\s*is:unread\s*/g, ' ').trim())
-                      } else {
-                        setSearchInput((searchInput + ' is:unread').trim())
-                      }
-                    }}
-                  >
-                    Unread
-                  </Button>
-                </div>
-              )}
-
-              <div className='text-muted-foreground flex items-center gap-2 text-sm'>
-                {syncStatus.connected ? (
-                  <CheckCircle className='h-4 w-4 text-green-500' />
-                ) : (
-                  <Circle className='h-4 w-4' />
-                )}
-                <span>{pagination.totalItems} threads</span>
-                {syncStatus.unread > 0 && (
-                  <Badge variant='secondary' className='text-xs'>
-                    {syncStatus.unread} unread
-                  </Badge>
-                )}
-              </div>
-
-              <div className='ml-auto flex items-center gap-4'>
-                {syncStatus.lastSyncAt && (
-                  <span className='text-muted-foreground text-xs'>
-                    Last sync{' '}
-                    {formatDistanceToNow(new Date(syncStatus.lastSyncAt))} ago
-                  </span>
-                )}
-                {syncStatus.connected && (
-                  <>
-                    <Button
-                      variant='outline'
-                      size='sm'
-                      onClick={() => handleSync()}
-                      disabled={isSyncing}
-                    >
-                      <RefreshCw
-                        className={cn('mr-2 h-4 w-4', isSyncing && 'animate-spin')}
-                      />
-                      {isSyncing ? 'Syncing...' : 'Sync'}
-                    </Button>
-                    {/* Mobile-only compose button */}
-                    <Button
-                      size='sm'
-                      className='md:hidden'
-                      onClick={() => setIsComposeOpen(true)}
-                    >
-                      <PenSquare className='mr-2 h-4 w-4' />
-                      Compose
-                    </Button>
-                  </>
-                )}
-              </div>
-            </div>
+            <InboxToolbar
+              currentView={currentView}
+              onViewChange={handleMobileViewChange}
+              searchInput={searchInput}
+              onSearchInputChange={setSearchInput}
+              isSearching={isSearching}
+              onClearSearch={handleClearSearch}
+              syncStatus={syncStatus}
+              pagination={pagination}
+              isSyncing={isSyncing}
+              onSync={handleSync}
+              onCompose={() => setIsComposeOpen(true)}
+            />
 
             {/* Thread List or Drafts View */}
             {currentView === 'drafts' ? (
@@ -968,7 +504,7 @@ export function InboxPanel({
                       thread={thread}
                       isSelected={selectedThread?.id === thread.id}
                       isFirst={idx === 0}
-                      onClick={() => handleThreadClick(thread)}
+                      onClick={() => onThreadClick(thread)}
                     />
                   ))}
                 </div>
@@ -988,209 +524,42 @@ export function InboxPanel({
         </section>
       </div>
 
-      {/* Thread Detail Sheet - Two Column Layout (rendered via portal) */}
-      <Sheet
-        open={!!selectedThread}
-        onOpenChange={open => !open && handleCloseSheet()}
-      >
-        <SheetContent className='flex h-full w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl lg:max-w-6xl'>
-          {/* Custom Header - Outside the scroll area */}
-          <div className='bg-muted/50 flex-shrink-0 border-b-2 px-6 pt-4 pb-3'>
-            <div className='flex items-start justify-between gap-4'>
-              <div className='min-w-0 flex-1 pr-10'>
-                <SheetTitle className='line-clamp-2 text-lg'>
-                  {selectedThread?.subject || '(no subject)'}
-                </SheetTitle>
-                <SheetDescription className='mt-1'>
-                  {selectedThread?.messageCount} message
-                  {selectedThread?.messageCount !== 1 && 's'}
-                  {selectedThread?.lastMessageAt && (
-                    <>
-                      {' '}
-                      · {format(new Date(selectedThread.lastMessageAt), 'PPp')}
-                    </>
-                  )}
-                </SheetDescription>
-              </div>
-            </div>
-          </div>
-
-          {/* Two Column Content */}
-          <div className='flex min-h-0 flex-1'>
-            {/* Left Column - Email Messages */}
-            <div className='flex-1 overflow-y-auto border-r'>
-              <div className='p-6'>
-                {isLoadingMessages ? (
-                  <div className='flex items-center justify-center py-12'>
-                    <RefreshCw className='text-muted-foreground h-6 w-6 animate-spin' />
-                  </div>
-                ) : threadMessages.length === 0 ? (
-                  <div className='text-muted-foreground flex items-center justify-center py-12'>
-                    No messages found
-                  </div>
-                ) : (
-                  <div className='divide-y overflow-hidden rounded-lg border'>
-                    {threadMessages.map((message, index) => (
-                      <MessageCard
-                        key={message.id}
-                        message={message}
-                        cidMappings={cidMappings[message.id]}
-                        attachments={attachmentsMap[message.id]}
-                        defaultExpanded={index === threadMessages.length - 1}
-                        onReply={mode => handleReply(message, mode)}
-                        onViewAttachment={attachment => {
-                          if (message.externalMessageId) {
-                            setViewingAttachment({
-                              attachment,
-                              externalMessageId: message.externalMessageId,
-                            })
-                          }
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-
-                {/* Inline Compose - Gmail style, appears at bottom of thread */}
-                {composeContext && selectedThread && (
-                  <div className='mt-4' id='inline-compose'>
-                    <ComposePanel
-                      context={composeContext}
-                      onClose={() => setComposeContext(null)}
-                      onSent={() => {
-                        setComposeContext(null)
-                        // Refresh messages after sending
-                        if (selectedThread) {
-                          fetch(`/api/threads/${selectedThread.id}/messages`)
-                            .then(r => r.json())
-                            .then(data => {
-                              setThreadMessages(data.messages || [])
-                              setCidMappings(data.cidMappings || {})
-                            })
-                            .catch(console.error)
-                        }
-                      }}
-                      inline
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Right Column - Metadata & Actions */}
-            <div className='bg-muted/20 w-80 flex-shrink-0 overflow-y-auto lg:w-96'>
-              <div className='space-y-6 p-6'>
-                {/* Email Toolbar - Reply actions, Read/Unread toggle, Navigation */}
-                {selectedThread && (
-                  <EmailToolbar
-                    threadId={selectedThread.id}
-                    isRead={
-                      threadMessages.length > 0 &&
-                      threadMessages.every(m => m.isRead)
-                    }
-                    canGoPrev={canGoPrev}
-                    canGoNext={canGoNext}
-                    showReplyAll={
-                      threadMessages.length > 0 &&
-                      (((threadMessages[threadMessages.length - 1]?.toEmails?.length ?? 0) > 1) ||
-                        ((threadMessages[threadMessages.length - 1]?.ccEmails?.length ?? 0) > 0))
-                    }
-                    onToggleReadStatus={newIsRead => {
-                      // Update local thread messages state
-                      setThreadMessages(prev =>
-                        prev.map(m => ({ ...m, isRead: newIsRead }))
-                      )
-                      // Update threads list state
-                      setThreads(prev =>
-                        prev.map(t =>
-                          t.id === selectedThread.id && t.latestMessage
-                            ? {
-                                ...t,
-                                latestMessage: {
-                                  ...t.latestMessage,
-                                  isRead: newIsRead,
-                                },
-                              }
-                            : t
-                        )
-                      )
-                    }}
-                    onPrev={goToPrev}
-                    onNext={goToNext}
-                    onReply={mode => {
-                      // Reply to the latest message in the thread
-                      const latestMessage = threadMessages[threadMessages.length - 1]
-                      if (latestMessage) {
-                        handleReply(latestMessage, mode)
-                      }
-                    }}
-                  />
-                )}
-
-                {/* Contact Detection Section */}
-                {isAdmin && selectedThread && (
-                  <>
-                    <Separator />
-                    <ThreadContactPanel
-                      threadId={selectedThread.id}
-                      participantEmails={selectedThread.participantEmails || []}
-                    />
-                  </>
-                )}
-
-                {/* Client Linking Section */}
-                {isAdmin && selectedThread && (
-                  <>
-                    <Separator />
-                    <ThreadLinkingPanel
-                      thread={selectedThread}
-                      clients={clients}
-                      suggestions={suggestions}
-                      suggestionsLoading={suggestionsLoading}
-                      isLinking={isLinking}
-                      onLinkClient={handleLinkClient}
-                      onUnlinkClient={handleUnlinkClient}
-                    />
-                  </>
-                )}
-
-                {/* Project Linking Section */}
-                {isAdmin && selectedThread && (
-                  <>
-                    <Separator />
-                    <ThreadProjectLinkingPanel
-                      thread={selectedThread}
-                      projects={projects}
-                      suggestions={projectSuggestions}
-                      suggestionsLoading={projectSuggestionsLoading}
-                      isLinking={isLinkingProject}
-                      onLinkProject={handleLinkProject}
-                      onUnlinkProject={handleUnlinkProject}
-                    />
-                  </>
-                )}
-
-                {isAdmin && selectedThread && (
-                  <>
-                    <Separator />
-                    {/* AI Task/PR Suggestions */}
-                    <ThreadSuggestionsPanel
-                      threadId={selectedThread.id}
-                      isAdmin={isAdmin}
-                      refreshTrigger={suggestionRefreshKey}
-                      isAnalyzing={isAnalyzingThread}
-                      hasClient={!!selectedThread.client}
-                      hasProject={!!selectedThread.project}
-                      onRefresh={() => triggerThreadAnalysis(selectedThread.id)}
-                    />
-                  </>
-                )}
-              </div>
-            </div>
-
-          </div>
-        </SheetContent>
-      </Sheet>
+      {/* Thread Detail Sheet */}
+      <ThreadDetailSheet
+        selectedThread={selectedThread}
+        threadMessages={threadMessages}
+        cidMappings={cidMappings}
+        attachmentsMap={attachmentsMap}
+        isLoadingMessages={isLoadingMessages}
+        isAdmin={isAdmin}
+        clients={clients}
+        projects={projects}
+        suggestions={suggestions}
+        projectSuggestions={projectSuggestions}
+        suggestionsLoading={suggestionsLoading}
+        projectSuggestionsLoading={projectSuggestionsLoading}
+        isAnalyzingThread={isAnalyzingThread}
+        suggestionRefreshKey={suggestionRefreshKey}
+        isLinking={isLinking}
+        isLinkingProject={isLinkingProject}
+        onLinkClient={handleLinkClient}
+        onUnlinkClient={handleUnlinkClient}
+        onLinkProject={handleLinkProject}
+        onUnlinkProject={handleUnlinkProject}
+        onRefreshSuggestions={() => triggerThreadAnalysis(selectedThread?.id || '')}
+        canGoPrev={canGoPrev}
+        canGoNext={canGoNext}
+        onPrev={goToPrev}
+        onNext={goToNext}
+        composeContext={composeContext}
+        setComposeContext={setComposeContext}
+        onReply={handleReply}
+        onRefreshMessages={refreshMessages}
+        setThreadMessages={setThreadMessages}
+        setThreads={setThreads}
+        setViewingAttachment={setViewingAttachment}
+        onClose={onCloseSheet}
+      />
 
       {/* Standalone Compose Sheet (for new emails and resumed drafts) */}
       <Sheet
