@@ -168,7 +168,6 @@ export function ComposeFooter({
         {undoCountdown !== null ? (
           // Show undo button during countdown
           <Button
-            variant='secondary'
             onClick={handleUndoSend}
           >
             <span className='tabular-nums'>Sending in {undoCountdown}s</span>
@@ -205,10 +204,9 @@ export function ComposeFooter({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
-                  variant='default'
                   size='icon'
                   disabled={isSending}
-                  className='rounded-l-none border-l border-l-primary-foreground/20'
+                  className='rounded-l-none'
                 >
                   <ChevronDown className='h-4 w-4' />
                 </Button>
