@@ -14,6 +14,7 @@ import {
   type LeadSourceTypeValue,
   type LeadStatusValue,
 } from '@/lib/leads/constants'
+import { PRIORITY_TIERS, type PriorityTier } from '@/lib/leads/intelligence-types'
 import { serializeLeadNotes } from '@/lib/leads/notes'
 import { resolveNextLeadRank } from '@/lib/leads/rank'
 import { normalizeRank } from '@/lib/rank'
@@ -39,6 +40,7 @@ const saveLeadSchema = z.object({
   companyName: z.string().trim().max(160).optional().nullable(),
   companyWebsite: z.string().trim().max(255).optional().nullable(),
   notes: z.string().optional().nullable(),
+  priorityTier: z.enum(PRIORITY_TIERS).optional().nullable(),
 })
 
 const moveLeadSchema = z.object({
@@ -100,6 +102,7 @@ export async function saveLead(input: SaveLeadInput): Promise<LeadActionResult> 
         companyName: normalized.companyName,
         companyWebsite: normalized.companyWebsite,
         notes: serializeLeadNotes(normalized.notes),
+        priorityTier: normalized.priorityTier,
         rank,
         createdAt: timestamp,
         updatedAt: timestamp,
@@ -130,16 +133,17 @@ export async function saveLead(input: SaveLeadInput): Promise<LeadActionResult> 
       await db
         .update(leads)
         .set({
-        contactName: normalized.contactName,
+          contactName: normalized.contactName,
           status: normalized.status,
-        sourceType: normalized.sourceType,
-        sourceDetail: normalized.sourceDetail,
-        assigneeId: normalized.assigneeId,
+          sourceType: normalized.sourceType,
+          sourceDetail: normalized.sourceDetail,
+          assigneeId: normalized.assigneeId,
           contactEmail: normalized.contactEmail,
           contactPhone: normalized.contactPhone,
-        companyName: normalized.companyName,
-        companyWebsite: normalized.companyWebsite,
+          companyName: normalized.companyName,
+          companyWebsite: normalized.companyWebsite,
           notes: serializeLeadNotes(normalized.notes),
+          priorityTier: normalized.priorityTier,
           rank,
           updatedAt: timestamp,
         })
@@ -251,16 +255,17 @@ function normalizeLeadPayload(
   payload: SaveLeadInput
 ): {
   id?: string
-    contactName: string
+  contactName: string
   status: LeadStatusValue
-    sourceType: LeadSourceTypeValue | null
-    sourceDetail: string | null
-    assigneeId: string | null
+  sourceType: LeadSourceTypeValue | null
+  sourceDetail: string | null
+  assigneeId: string | null
   contactEmail: string | null
   contactPhone: string | null
-    companyName: string | null
-    companyWebsite: string | null
+  companyName: string | null
+  companyWebsite: string | null
   notes: string | null
+  priorityTier: PriorityTier | null
 } {
   return {
     id: payload.id,
@@ -274,6 +279,7 @@ function normalizeLeadPayload(
     companyName: normalizeOptionalString(payload.companyName, 160),
     companyWebsite: normalizeOptionalString(payload.companyWebsite, 255),
     notes: (payload.notes ?? '').trim() || null,
+    priorityTier: payload.priorityTier ?? null,
   }
 }
 

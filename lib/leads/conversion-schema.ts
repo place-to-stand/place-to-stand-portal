@@ -5,8 +5,12 @@ export const leadConversionSchema = z.object({
   clientName: z.string().min(1).max(255).optional(),
   clientSlug: z.string().max(100).optional(),
   billingType: z.enum(['prepaid', 'net_30']),
-  copyNotesToClient: z.boolean().default(true),
+  copyNotesToClient: z.boolean(),
   memberIds: z.array(z.string().uuid()).optional(),
 })
 
-export type LeadConversionFormValues = z.infer<typeof leadConversionSchema>
+/** Form input type (before validation) */
+export type LeadConversionFormValues = z.input<typeof leadConversionSchema>
+
+/** Validated output type (after parsing) */
+export type LeadConversionData = z.output<typeof leadConversionSchema>

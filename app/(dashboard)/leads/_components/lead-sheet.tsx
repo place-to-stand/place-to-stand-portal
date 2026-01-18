@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   Sheet,
   SheetContent,
@@ -36,6 +37,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { useToast } from '@/components/ui/use-toast'
+import { UserPlus, CheckCircle } from 'lucide-react'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import { cn } from '@/lib/utils'
@@ -50,8 +52,14 @@ import {
   type LeadStatusValue,
 } from '@/lib/leads/constants'
 import type { LeadAssigneeOption, LeadRecord } from '@/lib/leads/types'
+import {
+  PRIORITY_TIERS,
+  type PriorityTier,
+} from '@/lib/leads/intelligence-types'
 
 import { archiveLead, saveLead } from '../actions'
+import { ConvertLeadDialog } from './convert-lead-dialog'
+import { PriorityBadge, ScoreBadge } from './priority-badge'
 
 const formSchema = z.object({
   contactName: z.string().trim().min(1, 'Contact name is required').max(160),
@@ -72,6 +80,7 @@ const formSchema = z.object({
   status: z.enum(LEAD_STATUS_VALUES),
   assigneeId: z.string().uuid().optional().nullable(),
   notes: z.string().optional(),
+  priorityTier: z.enum(PRIORITY_TIERS).optional().nullable(),
 })
 
 type LeadFormValues = z.infer<typeof formSchema>
@@ -97,7 +106,12 @@ export function LeadSheet({
   const [isSaving, startSaveTransition] = useTransition()
   const [isArchiving, startArchiveTransition] = useTransition()
   const [isArchiveDialogOpen, setArchiveDialogOpen] = useState(false)
+  const [isConvertDialogOpen, setConvertDialogOpen] = useState(false)
   const { toast } = useToast()
+
+  // Check if lead can be converted
+  const canConvert = lead?.status === 'CLOSED_WON' && !lead?.convertedToClientId
+  const isConverted = Boolean(lead?.convertedToClientId)
 
   const defaultValues = useMemo<LeadFormValues>(
     () => ({
@@ -111,6 +125,7 @@ export function LeadSheet({
       status: lead?.status ?? initialStatus ?? 'NEW_OPPORTUNITIES',
       assigneeId: lead?.assigneeId ?? null,
       notes: lead?.notesHtml ?? '',
+      priorityTier: lead?.priorityTier ?? null,
     }),
     [lead, initialStatus]
   )
@@ -204,6 +219,7 @@ export function LeadSheet({
           status: values.status,
           assigneeId: values.assigneeId ?? null,
           notes: values.notes ?? '',
+          priorityTier: values.priorityTier ?? null,
         })
 
         setArchiveDialogOpen(false)
@@ -315,6 +331,43 @@ export function LeadSheet({
                   : 'Capture lead context, assignees, and next steps to keep deals moving.'}
               </SheetDescription>
             </SheetHeader>
+
+            {/* Score & Conversion Panel - only shown when editing */}
+            {isEditing && lead && (lead.overallScore !== null || canConvert || isConverted) && (
+              <div className='mx-6 flex items-center justify-between rounded-lg border bg-muted/30 px-4 py-3'>
+                <div className='flex items-center gap-3'>
+                  {lead.overallScore !== null && (
+                    <div className='flex items-center gap-2'>
+                      <span className='text-sm text-muted-foreground'>Score:</span>
+                      <ScoreBadge score={lead.overallScore} />
+                    </div>
+                  )}
+                  {lead.priorityTier && (
+                    <PriorityBadge tier={lead.priorityTier} showTooltip />
+                  )}
+                </div>
+                <div className='flex items-center gap-2'>
+                  {isConverted && (
+                    <Badge variant='outline' className='gap-1 bg-green-500/10 text-green-600 border-green-500/20'>
+                      <CheckCircle className='h-3 w-3' />
+                      Converted
+                    </Badge>
+                  )}
+                  {canConvert && (
+                    <Button
+                      type='button'
+                      variant='outline'
+                      size='sm'
+                      onClick={() => setConvertDialogOpen(true)}
+                    >
+                      <UserPlus className='mr-2 h-4 w-4' />
+                      Convert to Client
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+
             <Form {...form}>
               <form
                 className='flex flex-1 flex-col gap-6 px-6 pb-4'
@@ -515,27 +568,71 @@ export function LeadSheet({
                       )
                     }}
                   />
-                  <FormField
-                    control={form.control}
-                    name='assigneeId'
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Assignee</FormLabel>
-                        <FormControl>
-                          <SearchableCombobox
-                            items={assigneeItems}
-                            value={field.value ?? ''}
-                            onChange={value =>
-                              field.onChange(value.length ? value : null)
+                  <div className='grid gap-4 sm:grid-cols-2'>
+                    <FormField
+                      control={form.control}
+                      name='priorityTier'
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Priority</FormLabel>
+                          <Select
+                            value={field.value ?? 'none'}
+                            onValueChange={(value) =>
+                              field.onChange(value === 'none' ? null : value as PriorityTier)
                             }
-                            placeholder='Assign teammate'
-                            searchPlaceholder='Search teammates'
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder='Set priority'>
+                                  {field.value ? (
+                                    <PriorityBadge tier={field.value} />
+                                  ) : (
+                                    <span className='text-muted-foreground'>Not set</span>
+                                  )}
+                                </SelectValue>
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value='none'>
+                                <span className='text-muted-foreground'>Not set</span>
+                              </SelectItem>
+                              <SelectItem value='hot'>
+                                <PriorityBadge tier='hot' />
+                              </SelectItem>
+                              <SelectItem value='warm'>
+                                <PriorityBadge tier='warm' />
+                              </SelectItem>
+                              <SelectItem value='cold'>
+                                <PriorityBadge tier='cold' />
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name='assigneeId'
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Assignee</FormLabel>
+                          <FormControl>
+                            <SearchableCombobox
+                              items={assigneeItems}
+                              value={field.value ?? ''}
+                              onChange={value =>
+                                field.onChange(value.length ? value : null)
+                              }
+                              placeholder='Assign teammate'
+                              searchPlaceholder='Search teammates'
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                   <FormField
                     control={form.control}
                     name='notes'
@@ -591,6 +688,14 @@ export function LeadSheet({
         }}
         onConfirm={handleArchive}
       />
+      {lead && (
+        <ConvertLeadDialog
+          lead={lead}
+          open={isConvertDialogOpen}
+          onOpenChange={setConvertDialogOpen}
+          onSuccess={onSuccess}
+        />
+      )}
       {unsavedChangesDialog}
     </>
   )
