@@ -181,6 +181,101 @@ CLOSED_WON → Conversion wizard → Client + Project created → Threads migrat
 
 ---
 
+## Development Standards & Quality Assurance
+
+We have comprehensive development standards documented to ensure code quality, security, and maintainability. Full details in [Development Standards](./06-development-standards.md).
+
+### Code Standards
+
+| Standard | Requirement |
+|----------|-------------|
+| **File size** | 300 lines max per file |
+| **Function size** | 50 lines max per function |
+| **Type safety** | Strict TypeScript, no `any` types |
+| **Validation** | Zod schemas for all external inputs |
+| **Server-only** | Mark with `'server-only'` to prevent client leaks |
+
+### Security Standards (OWASP Top 10)
+
+| Area | Implementation |
+|------|----------------|
+| **Injection prevention** | Parameterized queries (Drizzle), Zod validation |
+| **Authentication** | `requireUser()` guards on all protected endpoints |
+| **Authorization** | Permission helpers (`ensureClientAccess`, `assertAdmin`) |
+| **Input validation** | Zod schemas with constraints on all API inputs |
+| **Secrets** | Environment variables only, never in code or logs |
+| **Rate limiting** | Applied to AI operations and external API calls |
+
+### Database Standards
+
+| Rule | Rationale |
+|------|-----------|
+| **NO Row Level Security** | Application-layer access control only (easier to test/debug) |
+| **Soft deletes only** | `deletedAt` timestamps, never hard delete core entities |
+| **Index foreign keys** | All FK columns indexed for query performance |
+| **Partial indexes** | Filter on `deleted_at IS NULL` for active record queries |
+| **Test locally first** | All migrations tested on local Supabase before production |
+
+### Design System
+
+| Element | Standard |
+|---------|----------|
+| **Object colors** | Task=Violet, Lead=Amber, Project=Emerald, Client=Blue, AI=Rose |
+| **Button variants** | `default` (primary), `outline` (secondary), `ghost` (navigation), `destructive` (danger) |
+| **Card pattern** | 4px left border in identity color, hover states with `/50` opacity |
+| **Spacing** | `p-4`/`p-6` for content, `space-y-4`/`space-y-6` between sections |
+
+### Component Architecture
+
+| Pattern | Usage |
+|---------|-------|
+| **Server Components** | Default for data fetching, direct DB access |
+| **Client Components** | Only for interactivity (useState, onClick, etc.) |
+| **Two-layer data** | `lib/queries/` (low-level) → `lib/data/` (business logic + permissions) |
+| **Hook extraction** | Extract when component logic exceeds ~100 lines |
+
+### Performance Standards
+
+| Area | Requirement |
+|------|-------------|
+| **Data fetching** | Parallel with `Promise.all()`, no sequential waterfalls |
+| **N+1 prevention** | Use Drizzle relations, batch fetches |
+| **Long lists** | Virtualization for lists > 50 items |
+| **Bundle size** | Tree-shakeable imports, dynamic imports for heavy components |
+
+### Accessibility (WCAG 2.1 AA)
+
+| Requirement | Implementation |
+|-------------|----------------|
+| **Keyboard navigation** | All interactive elements keyboard accessible |
+| **ARIA labels** | Required on all icon-only buttons |
+| **Form accessibility** | Labels linked to inputs, error messages accessible |
+| **Color contrast** | 4.5:1 minimum for text, never color-only indicators |
+
+### Observability
+
+| Area | Implementation |
+|------|----------------|
+| **Activity logging** | All significant actions logged via `lib/activity/events` |
+| **Structured logging** | Contextual objects, not string concatenation |
+| **PostHog analytics** | Feature flags, event tracking with consistent naming |
+| **Error tracking** | Errors captured with full context |
+
+### Pre-PR Checklist
+
+Every pull request must pass:
+
+- [ ] `npm run build` - Production build succeeds
+- [ ] `npm run lint` - No linting errors
+- [ ] `npm run type-check` - No TypeScript errors
+- [ ] File sizes under 300 lines
+- [ ] Permission checks on all data access
+- [ ] No hardcoded secrets
+- [ ] Loading and empty states implemented
+- [ ] Icon-only buttons have aria-labels
+
+---
+
 ## Decision Points for CTO
 
 1. **Approve minimal schema approach?**
