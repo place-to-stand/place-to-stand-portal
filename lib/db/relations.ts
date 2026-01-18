@@ -117,7 +117,13 @@ export const leadsRelations = relations(leads, ({ one, many }) => ({
     fields: [leads.assigneeId],
     references: [users.id],
   }),
+  convertedToClient: one(clients, {
+    fields: [leads.convertedToClientId],
+    references: [clients.id],
+  }),
   contactLeads: many(contactLeads),
+  threads: many(threads),
+  suggestions: many(suggestions),
 }))
 
 export const hourBlocksRelations = relations(hourBlocks, ({ one }) => ({
@@ -280,6 +286,10 @@ export const threadsRelations = relations(threads, ({ one, many }) => ({
     fields: [threads.projectId],
     references: [projects.id],
   }),
+  lead: one(leads, {
+    fields: [threads.leadId],
+    references: [leads.id],
+  }),
   createdByUser: one(users, {
     fields: [threads.createdBy],
     references: [users.id],
@@ -337,6 +347,10 @@ export const suggestionsRelations = relations(suggestions, ({ one }) => ({
   thread: one(threads, {
     fields: [suggestions.threadId],
     references: [threads.id],
+  }),
+  lead: one(leads, {
+    fields: [suggestions.leadId],
+    references: [leads.id],
   }),
   project: one(projects, {
     fields: [suggestions.projectId],

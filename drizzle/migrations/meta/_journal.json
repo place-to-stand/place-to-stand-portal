@@ -92,6 +92,13 @@
       "when": 1768354985959,
       "tag": "0012_email_drafts",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1768773918726,
+      "tag": "0013_lead_intelligence_crm",
+      "breakpoints": true
     }
   ]
 }

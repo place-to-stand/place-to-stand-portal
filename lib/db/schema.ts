@@ -716,6 +716,26 @@ export const leads = pgTable(
     companyWebsite: text('company_website'),
     notes: jsonb('notes').default({}).notNull(),
     rank: text().default('zzzzzzzz').notNull(),
+
+    // AI Scoring
+    overallScore: numeric('overall_score', { precision: 3, scale: 2 }),
+    priorityTier: text('priority_tier'), // 'hot' | 'warm' | 'cold'
+    signals: jsonb('signals').default([]),
+    lastScoredAt: timestamp('last_scored_at', { withTimezone: true, mode: 'string' }),
+
+    // Activity Tracking
+    lastContactAt: timestamp('last_contact_at', { withTimezone: true, mode: 'string' }),
+    awaitingReply: boolean('awaiting_reply').default(false),
+
+    // Predictions
+    predictedCloseProbability: numeric('predicted_close_probability', { precision: 3, scale: 2 }),
+    estimatedValue: numeric('estimated_value', { precision: 12, scale: 2 }),
+    expectedCloseDate: date('expected_close_date'),
+
+    // Conversion
+    convertedAt: timestamp('converted_at', { withTimezone: true, mode: 'string' }),
+    convertedToClientId: uuid('converted_to_client_id'),
+
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
       .notNull(),
@@ -731,10 +751,18 @@ export const leads = pgTable(
     index('idx_leads_assignee')
       .using('btree', table.assigneeId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
+    index('idx_leads_priority')
+      .using('btree', table.priorityTier.asc().nullsLast(), table.overallScore.desc().nullsFirst())
+      .where(sql`(deleted_at IS NULL)`),
     foreignKey({
       columns: [table.assigneeId],
       foreignColumns: [users.id],
       name: 'leads_assignee_id_fkey',
+    }),
+    foreignKey({
+      columns: [table.convertedToClientId],
+      foreignColumns: [clients.id],
+      name: 'leads_converted_to_client_id_fkey',
     }),
   ]
 )
@@ -903,6 +931,7 @@ export const threads = pgTable(
     id: uuid().defaultRandom().primaryKey().notNull(),
     clientId: uuid('client_id'),
     projectId: uuid('project_id'),
+    leadId: uuid('lead_id'),
     subject: text(),
     status: threadStatus().default('OPEN').notNull(),
     source: messageSource().notNull(),
@@ -927,6 +956,9 @@ export const threads = pgTable(
     index('idx_threads_project')
       .using('btree', table.projectId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL AND project_id IS NOT NULL)`),
+    index('idx_threads_lead')
+      .using('btree', table.leadId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND lead_id IS NOT NULL)`),
     index('idx_threads_external')
       .using('btree', table.externalThreadId.asc().nullsLast().op('text_ops'))
       .where(sql`(deleted_at IS NULL AND external_thread_id IS NOT NULL)`),
@@ -942,6 +974,11 @@ export const threads = pgTable(
       columns: [table.projectId],
       foreignColumns: [projects.id],
       name: 'threads_project_id_fkey',
+    }),
+    foreignKey({
+      columns: [table.leadId],
+      foreignColumns: [leads.id],
+      name: 'threads_lead_id_fkey',
     }),
     foreignKey({
       columns: [table.createdBy],
@@ -1077,6 +1114,7 @@ export const suggestions = pgTable(
     id: uuid().defaultRandom().primaryKey().notNull(),
     messageId: uuid('message_id'),
     threadId: uuid('thread_id'),
+    leadId: uuid('lead_id'),
     type: suggestionType().notNull(),
     status: suggestionStatus().default('PENDING').notNull(),
     projectId: uuid('project_id'),
@@ -1112,6 +1150,9 @@ export const suggestions = pgTable(
     index('idx_suggestions_project')
       .using('btree', table.projectId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL AND project_id IS NOT NULL)`),
+    index('idx_suggestions_lead')
+      .using('btree', table.leadId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND lead_id IS NOT NULL)`),
     foreignKey({
       columns: [table.messageId],
       foreignColumns: [messages.id],
@@ -1122,6 +1163,11 @@ export const suggestions = pgTable(
       foreignColumns: [threads.id],
       name: 'suggestions_thread_id_fkey',
     }),
+    foreignKey({
+      columns: [table.leadId],
+      foreignColumns: [leads.id],
+      name: 'suggestions_lead_id_fkey',
+    }).onDelete('set null'),
     foreignKey({
       columns: [table.projectId],
       foreignColumns: [projects.id],
