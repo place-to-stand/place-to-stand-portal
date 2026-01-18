@@ -101,3 +101,74 @@ Ensure any links inside the card match the standard interaction style:
   View Details
 </Link>
 ```
+
+---
+
+## Button Standards
+
+### Variant Usage
+
+Buttons follow a consistent variant pattern throughout the application:
+
+| Variant | Use Case | Dark Mode Appearance |
+|---------|----------|----------------------|
+| `default` (no variant) | Primary actions: Add, Create, Send, Compose, Download | White background, dark text |
+| `outline` | Secondary actions: Sync, Cancel, Close, Attach, Filter | Dark background with border |
+| `ghost` | Navigation, Remove/X buttons, inline toolbar actions | Transparent |
+| `destructive` | Delete, Remove permanently, dangerous actions | Red background |
+
+### Examples
+
+```tsx
+// Primary action - use default (omit variant prop)
+<Button onClick={handleCreate}>
+  <Plus className='h-4 w-4' />
+  Add project
+</Button>
+
+// Secondary action - use outline
+<Button variant='outline' onClick={handleSync}>
+  <RefreshCw className='h-4 w-4' />
+  Sync
+</Button>
+
+// Navigation/Remove - use ghost
+<Button variant='ghost' size='icon-sm' onClick={handleClose}>
+  <X className='h-4 w-4' />
+</Button>
+
+// Destructive - use destructive
+<Button variant='destructive' onClick={handleDelete}>
+  <Trash2 className='h-4 w-4' />
+  Delete
+</Button>
+```
+
+### Size Usage
+
+| Size | Use Case |
+|------|----------|
+| `default` | Standard buttons in forms and dialogs |
+| `sm` | Compact contexts, toolbar buttons |
+| `xs` | Toggle filters, chips, inline badges |
+| `icon` | Icon-only buttons (9x9 = 36px) |
+| `icon-sm` | Icon-only toolbar buttons (8x8 = 32px) |
+| `icon-lg` | Large icon buttons (10x10 = 40px) |
+
+### Icon Spacing
+
+The Button component has built-in `gap-2` for icon spacing. **Do not add `mr-2` or `ml-2` to icons inside buttons.**
+
+```tsx
+// Correct - gap-2 handles spacing
+<Button>
+  <Plus className='h-4 w-4' />
+  Add task
+</Button>
+
+// Incorrect - don't add margins
+<Button>
+  <Plus className='mr-2 h-4 w-4' />  {/* Don't do this */}
+  Add task
+</Button>
+```

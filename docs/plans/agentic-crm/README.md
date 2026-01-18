@@ -11,6 +11,7 @@ This folder contains the comprehensive planning documents for transforming the P
 | [Experimental Features](./03-experimental-features.md) | Advanced/experimental features: multi-agent systems, predictive intelligence, client-facing AI, etc. |
 | [Schema Extensions](./04-schema-extensions.md) | Database schema additions for agentic capabilities |
 | [Implementation Roadmap](./05-implementation-roadmap.md) | Prioritized implementation phases and dependencies |
+| [Development Standards](./06-development-standards.md) | **Code, design, and pattern standards for implementation** |
 
 ## Key Principles
 
