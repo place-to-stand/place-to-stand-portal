@@ -1,4 +1,5 @@
 import type { LeadSourceTypeValue, LeadStatusValue } from './constants'
+import type { LeadSignal, PriorityTier } from './intelligence-types'
 
 export type LeadRecord = {
   id: string
@@ -18,6 +19,25 @@ export type LeadRecord = {
   rank: string
   createdAt: string
   updatedAt: string
+
+  // AI Scoring
+  overallScore: number | null
+  priorityTier: PriorityTier | null
+  signals: LeadSignal[]
+  lastScoredAt: string | null
+
+  // Activity Tracking
+  lastContactAt: string | null
+  awaitingReply: boolean
+
+  // Predictions
+  predictedCloseProbability: number | null
+  estimatedValue: number | null
+  expectedCloseDate: string | null
+
+  // Conversion
+  convertedAt: string | null
+  convertedToClientId: string | null
 }
 
 export type LeadBoardColumnData = {

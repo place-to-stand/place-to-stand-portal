@@ -12,6 +12,7 @@ import {
   LEAD_BOARD_COLUMNS,
   type LeadStatusValue,
 } from '@/lib/leads/constants'
+import type { LeadSignal, PriorityTier } from '@/lib/leads/intelligence-types'
 import type {
   LeadAssigneeOption,
   LeadBoardColumnData,
@@ -65,6 +66,21 @@ export const fetchLeadsBoard = cache(
         rank: row.rank,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
+        // AI Scoring
+        overallScore: row.overallScore ? Number(row.overallScore) : null,
+        priorityTier: (row.priorityTier as PriorityTier) ?? null,
+        signals: (row.signals as LeadSignal[]) ?? [],
+        lastScoredAt: row.lastScoredAt ?? null,
+        // Activity Tracking
+        lastContactAt: row.lastContactAt ?? null,
+        awaitingReply: row.awaitingReply ?? false,
+        // Predictions
+        predictedCloseProbability: row.predictedCloseProbability ? Number(row.predictedCloseProbability) : null,
+        estimatedValue: row.estimatedValue ? Number(row.estimatedValue) : null,
+        expectedCloseDate: row.expectedCloseDate ?? null,
+        // Conversion
+        convertedAt: row.convertedAt ?? null,
+        convertedToClientId: row.convertedToClientId ?? null,
       })
     })
 
@@ -103,23 +119,38 @@ export const fetchLeadById = cache(
     const lead = rows[0]
 
     return {
-    id: lead.id,
-    contactName: lead.contactName,
-    status: lead.status as LeadStatusValue,
-    sourceType: (lead.sourceType as LeadRecord['sourceType']) ?? null,
-    sourceDetail: lead.sourceDetail ?? null,
-    assigneeId: lead.assigneeId ?? null,
-    assigneeName: lead.assigneeName ?? null,
-    assigneeEmail: lead.assigneeEmail ?? null,
-    assigneeAvatarUrl: lead.assigneeAvatarUrl ?? null,
-    contactEmail: lead.contactEmail ?? null,
-    contactPhone: lead.contactPhone ?? null,
-    companyName: lead.companyName ?? null,
-    companyWebsite: lead.companyWebsite ?? null,
-    notesHtml: extractLeadNotes(lead.notes),
-    rank: lead.rank,
-    createdAt: lead.createdAt,
-    updatedAt: lead.updatedAt,
+      id: lead.id,
+      contactName: lead.contactName,
+      status: lead.status as LeadStatusValue,
+      sourceType: (lead.sourceType as LeadRecord['sourceType']) ?? null,
+      sourceDetail: lead.sourceDetail ?? null,
+      assigneeId: lead.assigneeId ?? null,
+      assigneeName: lead.assigneeName ?? null,
+      assigneeEmail: lead.assigneeEmail ?? null,
+      assigneeAvatarUrl: lead.assigneeAvatarUrl ?? null,
+      contactEmail: lead.contactEmail ?? null,
+      contactPhone: lead.contactPhone ?? null,
+      companyName: lead.companyName ?? null,
+      companyWebsite: lead.companyWebsite ?? null,
+      notesHtml: extractLeadNotes(lead.notes),
+      rank: lead.rank,
+      createdAt: lead.createdAt,
+      updatedAt: lead.updatedAt,
+      // AI Scoring
+      overallScore: lead.overallScore ? Number(lead.overallScore) : null,
+      priorityTier: (lead.priorityTier as PriorityTier) ?? null,
+      signals: (lead.signals as LeadSignal[]) ?? [],
+      lastScoredAt: lead.lastScoredAt ?? null,
+      // Activity Tracking
+      lastContactAt: lead.lastContactAt ?? null,
+      awaitingReply: lead.awaitingReply ?? false,
+      // Predictions
+      predictedCloseProbability: lead.predictedCloseProbability ? Number(lead.predictedCloseProbability) : null,
+      estimatedValue: lead.estimatedValue ? Number(lead.estimatedValue) : null,
+      expectedCloseDate: lead.expectedCloseDate ?? null,
+      // Conversion
+      convertedAt: lead.convertedAt ?? null,
+      convertedToClientId: lead.convertedToClientId ?? null,
     }
   }
 )
@@ -160,6 +191,21 @@ async function selectLeadRows({
     rank: includeRank ? leads.rank : sql<string>`'zzzzzzzz'`,
     createdAt: leads.createdAt,
     updatedAt: leads.updatedAt,
+    // AI Scoring
+    overallScore: leads.overallScore,
+    priorityTier: leads.priorityTier,
+    signals: leads.signals,
+    lastScoredAt: leads.lastScoredAt,
+    // Activity Tracking
+    lastContactAt: leads.lastContactAt,
+    awaitingReply: leads.awaitingReply,
+    // Predictions
+    predictedCloseProbability: leads.predictedCloseProbability,
+    estimatedValue: leads.estimatedValue,
+    expectedCloseDate: leads.expectedCloseDate,
+    // Conversion
+    convertedAt: leads.convertedAt,
+    convertedToClientId: leads.convertedToClientId,
   }
 
   return db
