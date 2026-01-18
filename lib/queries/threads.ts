@@ -188,7 +188,7 @@ export async function createThread(input: CreateThreadInput): Promise<Thread> {
 
 export async function updateThread(
   id: string,
-  updates: Partial<Pick<Thread, 'clientId' | 'projectId' | 'subject' | 'status' | 'participantEmails' | 'lastMessageAt' | 'messageCount' | 'metadata'>>
+  updates: Partial<Pick<Thread, 'clientId' | 'projectId' | 'leadId' | 'subject' | 'status' | 'participantEmails' | 'lastMessageAt' | 'messageCount' | 'metadata'>>
 ): Promise<Thread> {
   const [updated] = await db
     .update(threads)
