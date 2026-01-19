@@ -8,7 +8,6 @@ import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { clients, contacts, contactClients } from '@/lib/db/schema'
-import { CONVEX_FLAGS } from '@/lib/feature-flags'
 import { searchContacts, type SearchContactResult } from '@/lib/queries/contacts/search-contacts'
 
 const updateClientNotesSchema = z.object({
@@ -42,7 +41,6 @@ export async function updateClientNotes(
   const normalizedNotes = notes?.trim() || null
 
   try {
-    // Always write to Supabase (source of truth during migration)
     await db
       .update(clients)
       .set({
@@ -50,44 +48,6 @@ export async function updateClientNotes(
         updatedAt: new Date().toISOString(),
       })
       .where(eq(clients.id, clientId))
-
-    // Also write to Convex if enabled (dual-write)
-    if (CONVEX_FLAGS.CLIENTS) {
-      try {
-        const { updateClientInConvex } = await import('@/lib/data/clients/convex')
-        // Pass empty string instead of undefined to actually clear notes
-        // (undefined means "don't update" in our Convex mutation)
-        await updateClientInConvex(clientId, {
-          notes: normalizedNotes ?? '',
-        })
-
-        // Validate dual-write consistency
-        // Fetches the updated client from Supabase to compare with Convex
-        const [updatedClient] = await db
-          .select()
-          .from(clients)
-          .where(eq(clients.id, clientId))
-          .limit(1)
-
-        if (updatedClient) {
-          const { validateClientDualWrite } = await import('@/lib/data/dual-write-validator')
-          await validateClientDualWrite(
-            {
-              id: updatedClient.id,
-              name: updatedClient.name,
-              slug: updatedClient.slug,
-              billingType: updatedClient.billingType,
-              notes: updatedClient.notes,
-              deletedAt: updatedClient.deletedAt ? new Date(updatedClient.deletedAt) : null,
-            },
-            clientId
-          )
-        }
-      } catch (convexError) {
-        // Log but don't fail - Supabase is source of truth during migration
-        console.error('Failed to sync notes to Convex (non-fatal)', convexError)
-      }
-    }
 
     revalidatePath(`/clients`)
     revalidatePath(`/clients/${clientId}`)

@@ -6,7 +6,6 @@ import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { clients, projects } from '@/lib/db/schema'
-import { CONVEX_FLAGS } from '@/lib/feature-flags'
 import { type PageInfo } from '@/lib/pagination/cursor'
 
 import {
@@ -137,80 +136,6 @@ function buildPageInfo(
   }
 }
 
-/**
- * Fetch clients for settings from Convex
- *
- * Note: This is a simplified implementation that doesn't support pagination
- * or cursor-based navigation. It fetches all matching clients at once.
- * This is acceptable for the settings/archive pages which typically have
- * a small number of clients.
- */
-async function listClientsForSettingsFromConvex(
-  _user: AppUser,
-  status: StatusFilter,
-  searchQuery: string,
-): Promise<ClientsSettingsResult> {
-  // Lazy import to avoid loading Convex when not needed
-  const {
-    fetchClientsWithMetricsFromConvex,
-    fetchArchivedClientsWithMetricsFromConvex,
-  } = await import('@/lib/data/clients/convex')
-
-  // Fetch from the appropriate Convex query based on status
-  const convexClients = status === 'archived'
-    ? await fetchArchivedClientsWithMetricsFromConvex()
-    : await fetchClientsWithMetricsFromConvex()
-
-  // Filter by search query if provided
-  let filteredClients = convexClients
-  if (searchQuery) {
-    const lowerSearch = searchQuery.toLowerCase()
-    filteredClients = convexClients.filter(
-      (c) =>
-        c.name.toLowerCase().includes(lowerSearch) ||
-        c.slug?.toLowerCase().includes(lowerSearch)
-    )
-  }
-
-  // Map to settings list item format
-  const items: ClientsSettingsListItem[] = filteredClients.map((client) => ({
-    id: client.id,
-    name: client.name,
-    slug: client.slug,
-    notes: client.notes,
-    billingType: client.billingType,
-    createdBy: null, // Not available from Convex query yet
-    createdAt: client.createdAt,
-    updatedAt: client.updatedAt,
-    deletedAt: client.deletedAt,
-    metrics: {
-      totalProjects: client.projectCount,
-      activeProjects: client.activeProjectCount,
-    },
-  }))
-
-  const clientIds = items.map((item) => item.id)
-
-  // Fetch members and users from Supabase (these aren't migrated to Convex yet)
-  const [membersByClient, clientUsers] = await Promise.all([
-    buildMembersByClient(clientIds),
-    listClientUsers(),
-  ])
-
-  return {
-    items,
-    membersByClient,
-    clientUsers,
-    totalCount: items.length,
-    pageInfo: {
-      hasPreviousPage: false,
-      hasNextPage: false,
-      startCursor: encodeClientCursor(items[0] ? { name: items[0].name ?? '', id: items[0].id } : null),
-      endCursor: encodeClientCursor(items[items.length - 1] ? { name: items[items.length - 1].name ?? '', id: items[items.length - 1].id } : null),
-    },
-  }
-}
-
 export async function listClientsForSettings(
   user: AppUser,
   input: ListClientsForSettingsInput = {},
@@ -220,17 +145,6 @@ export async function listClientsForSettings(
   const normalizedStatus = normalizeStatus(input.status)
   const searchQuery = input.search?.trim() ?? ''
 
-  // Use Convex if enabled
-  if (CONVEX_FLAGS.CLIENTS) {
-    try {
-      return await listClientsForSettingsFromConvex(user, normalizedStatus, searchQuery)
-    } catch (error) {
-      console.error('Failed to fetch clients from Convex for settings', error)
-      // Fall through to Supabase on error during migration
-    }
-  }
-
-  // Supabase (default)
   const direction = resolveClientDirection(input.direction)
   const limit = resolvePaginationLimit(input.limit)
 
