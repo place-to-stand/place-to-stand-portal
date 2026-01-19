@@ -10,87 +10,9 @@ import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { ensureUserProfile } from '@/lib/auth/profile'
-import { CONVEX_FLAGS } from '@/lib/feature-flags'
 
 export type AppUser = Database['public']['Tables']['users']['Row']
 export type UserRole = Database['public']['Enums']['user_role']
-
-// ============================================================
-// CONVEX AUTH INTEGRATION
-// ============================================================
-
-/**
- * Safely convert a timestamp to ISO string
- * Returns current time if the timestamp is invalid
- */
-function safeTimestampToISO(timestamp: number | undefined | null): string {
-  if (timestamp === undefined || timestamp === null || !Number.isFinite(timestamp)) {
-    return new Date().toISOString()
-  }
-  try {
-    return new Date(timestamp).toISOString()
-  } catch {
-    return new Date().toISOString()
-  }
-}
-
-/**
- * Maps a Convex user to the AppUser type for compatibility
- *
- * IMPORTANT: During the migration period, we use `supabaseId` as the `id` field
- * when available. This ensures PostgreSQL queries (via Drizzle) continue to work
- * with the existing UUID-based foreign keys in the database.
- *
- * Once the full migration to Convex is complete, this can be simplified to
- * always use `_id` (the Convex ID).
- */
-async function mapConvexUserToAppUser(convexUser: ConvexUserDoc): Promise<AppUser> {
-  // Ensure required fields exist with fallbacks
-  const email = convexUser.email ?? 'unknown@example.com'
-  const role = (convexUser.role as UserRole) ?? 'CLIENT'
-
-  // Use supabaseId for PostgreSQL compatibility, fall back to Convex _id for new users
-  const id = convexUser.supabaseId ?? convexUser._id
-
-  return {
-    id,
-    email,
-    role,
-    avatar_url: convexUser.avatarUrl ?? null,
-    full_name: convexUser.fullName ?? null,
-    created_at: safeTimestampToISO(convexUser.createdAt),
-    updated_at: safeTimestampToISO(convexUser.updatedAt),
-    deleted_at: convexUser.deletedAt
-      ? safeTimestampToISO(convexUser.deletedAt)
-      : null,
-  }
-}
-
-/**
- * Convex user document type (minimal for mapping)
- * Field names match the Convex schema (convex/schema.ts)
- */
-type ConvexUserDoc = {
-  _id: string
-  email: string
-  fullName?: string // Matches Convex schema field name
-  role: string
-  avatarUrl?: string // Matches Convex schema field name
-  createdAt: number
-  updatedAt: number
-  deletedAt?: number
-  // Migration field - Supabase UUID for backward compatibility with PostgreSQL queries
-  supabaseId?: string
-}
-
-/**
- * Lazy import for Convex session to avoid loading when not needed
- */
-async function getConvexSession() {
-  const { getConvexCurrentUser, requireConvexUser, requireConvexRole } =
-    await import('@/lib/auth/convex-session')
-  return { getConvexCurrentUser, requireConvexUser, requireConvexRole }
-}
 
 export const getSession = cache(async (): Promise<Session | null> => {
   const supabase = getSupabaseServerClient()
@@ -109,22 +31,6 @@ export const getSession = cache(async (): Promise<Session | null> => {
 })
 
 export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
-  // Use Convex Auth if enabled
-  if (CONVEX_FLAGS.AUTH) {
-    try {
-      const { getConvexCurrentUser } = await getConvexSession()
-      const convexUser = await getConvexCurrentUser()
-      if (!convexUser) {
-        return null
-      }
-      return mapConvexUserToAppUser(convexUser as unknown as ConvexUserDoc)
-    } catch (error) {
-      console.error('Failed to get Convex user', error)
-      return null
-    }
-  }
-
-  // Supabase Auth (default)
   const supabase = getSupabaseServerClient()
   const {
     data: { user: authUser },

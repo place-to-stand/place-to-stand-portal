@@ -12,19 +12,6 @@ import {
 import { db } from '@/lib/db'
 import { clients, projects, hourBlocks, timeLogs } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
-import { CONVEX_FLAGS } from '@/lib/feature-flags'
-
-// ============================================================
-// CONVEX INTEGRATION (lazy loaded)
-// ============================================================
-
-/**
- * Lazy import for Convex client functions to avoid loading when not needed
- */
-async function getConvexClients() {
-  const convexModule = await import('./convex')
-  return convexModule
-}
 
 export type ClientActiveProject = {
   id: string
@@ -62,18 +49,6 @@ export type ClientDetail = {
 
 export const fetchClientsWithMetrics = cache(
   async (user: AppUser): Promise<ClientWithMetrics[]> => {
-    // Use Convex if enabled
-    if (CONVEX_FLAGS.CLIENTS) {
-      try {
-        const { fetchClientsWithMetricsFromConvex } = await getConvexClients()
-        return fetchClientsWithMetricsFromConvex()
-      } catch (error) {
-        console.error('Failed to fetch clients from Convex', error)
-        // Fall through to Supabase on error during migration
-      }
-    }
-
-    // Supabase (default)
     const baseConditions = [isNull(clients.deletedAt)]
 
     if (!isAdmin(user)) {
@@ -223,24 +198,6 @@ export const fetchClientsWithMetrics = cache(
 
 export const fetchClientById = cache(
   async (user: AppUser, clientId: string): Promise<ClientDetail> => {
-    // Use Convex if enabled
-    if (CONVEX_FLAGS.CLIENTS) {
-      try {
-        const { fetchClientByIdFromConvex } = await getConvexClients()
-        const client = await fetchClientByIdFromConvex(clientId)
-        if (!client) {
-          throw new NotFoundError('Client not found')
-        }
-        return client
-      } catch (error) {
-        // Re-throw NotFoundError, handle others
-        if (error instanceof NotFoundError) throw error
-        console.error('Failed to fetch client from Convex', error)
-        // Fall through to Supabase on error during migration
-      }
-    }
-
-    // Supabase (default)
     await ensureClientAccess(user, clientId)
 
     const rows = await db
@@ -268,24 +225,6 @@ export const fetchClientById = cache(
 
 export const fetchClientBySlug = cache(
   async (user: AppUser, slug: string): Promise<ClientDetail> => {
-    // Use Convex if enabled
-    if (CONVEX_FLAGS.CLIENTS) {
-      try {
-        const { fetchClientBySlugFromConvex } = await getConvexClients()
-        const client = await fetchClientBySlugFromConvex(slug)
-        if (!client) {
-          throw new NotFoundError('Client not found')
-        }
-        return client
-      } catch (error) {
-        // Re-throw NotFoundError, handle others
-        if (error instanceof NotFoundError) throw error
-        console.error('Failed to fetch client by slug from Convex', error)
-        // Fall through to Supabase on error during migration
-      }
-    }
-
-    // Supabase (default) - First, find the client by slug
     const clientRow = await db
       .select({ id: clients.id })
       .from(clients)
@@ -315,19 +254,6 @@ export type ClientProject = {
 
 export const fetchProjectsForClient = cache(
   async (user: AppUser, clientId: string): Promise<ClientProject[]> => {
-    // Use Convex if enabled
-    if (CONVEX_FLAGS.PROJECTS) {
-      try {
-        const { fetchProjectsForClientFromConvex } = await import('../projects/convex')
-        // Note: Convex already handles access control internally
-        return fetchProjectsForClientFromConvex(clientId)
-      } catch (error) {
-        console.error('Failed to fetch projects for client from Convex:', error)
-        // Fall through to Supabase
-      }
-    }
-
-    // Supabase fallback
     await ensureClientAccess(user, clientId)
 
     const rows = await db
@@ -393,18 +319,6 @@ export async function fetchClientsByIds(
     return []
   }
 
-  // Use Convex if enabled
-  if (CONVEX_FLAGS.CLIENTS) {
-    try {
-      const { fetchClientsByIdsFromConvex } = await getConvexClients()
-      return fetchClientsByIdsFromConvex(clientIds)
-    } catch (error) {
-      console.error('Failed to fetch clients by IDs from Convex:', error)
-      // Fall through to Supabase
-    }
-  }
-
-  // Supabase fallback
   const rows = await db
     .select({
       id: clients.id,
