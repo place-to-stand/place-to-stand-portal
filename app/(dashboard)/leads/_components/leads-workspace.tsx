@@ -180,6 +180,7 @@ export function LeadsWorkspace({
           lead={sheetLead}
           initialStatus={initialStatus}
           assignees={assignees}
+          canManage={canManage}
           onSuccess={handleSheetSuccess}
         />
       ) : null}

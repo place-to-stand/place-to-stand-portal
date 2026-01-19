@@ -59,6 +59,7 @@ import {
 
 import { archiveLead, saveLead } from '../actions'
 import { ConvertLeadDialog } from './convert-lead-dialog'
+import { LeadSuggestionsPanel } from './lead-suggestions-panel'
 import { PriorityBadge, ScoreBadge } from './priority-badge'
 
 const formSchema = z.object({
@@ -91,6 +92,7 @@ type LeadSheetProps = {
   lead: LeadRecord | null
   initialStatus?: LeadStatusValue | null
   assignees: LeadAssigneeOption[]
+  canManage?: boolean
   onSuccess: () => void
 }
 
@@ -100,6 +102,7 @@ export function LeadSheet({
   lead,
   initialStatus,
   assignees,
+  canManage = false,
   onSuccess,
 }: LeadSheetProps) {
   const isEditing = Boolean(lead)
@@ -654,6 +657,16 @@ export function LeadSheet({
                       </FormItem>
                     )}
                   />
+
+                  {/* AI Suggestions */}
+                  {isEditing && lead && canManage && (
+                    <div className='rounded-lg border bg-muted/30 p-4'>
+                      <LeadSuggestionsPanel
+                        leadId={lead.id}
+                        isAdmin={canManage}
+                      />
+                    </div>
+                  )}
                 </div>
                 <TaskSheetFormFooter
                   saveLabel={saveLabel}
