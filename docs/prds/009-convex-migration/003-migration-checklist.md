@@ -432,9 +432,11 @@ export async function syncClientMembers(
 #### Phase 3C: Tasks
 
 ```
-☐ taskAssignees dual-write in task create/update
-☐ taskAssigneeMetadata dual-write for sort order
-☐ Validation for assignee sync
+✓ taskAssignees dual-write in task create/update
+✓ taskAssigneeMetadata dual-write for sort order
+✓ taskComments dual-write for comments
+✓ taskAttachments dual-write for attachments
+☐ Validation for assignee sync (inline validation)
 ```
 
 #### Phase 3D: Time Logs
@@ -837,33 +839,58 @@ Every migration phase that involves data import MUST follow this process:
 ## Phase 3C: Tasks
 
 ### Convex Functions
-- [ ] Create `convex/tasks/queries.ts`
-- [ ] Create `convex/tasks/mutations.ts`
-- [ ] Implement `listByProject` query (with project-level subscription)
-- [ ] Implement `listByProjectPaginated` query (for large projects)
-- [ ] Implement `getById` query
-- [ ] Implement `create` mutation
-- [ ] Implement `update` mutation
-- [ ] Implement `updateStatus` mutation
-- [ ] Implement `reorder` mutation
-- [ ] Add uniqueness check in `taskAssignees.create`
+- [x] Create `convex/tasks/queries.ts`
+- [x] Create `convex/tasks/mutations.ts`
+- [x] Implement `listByProject` query (with project-level subscription)
+- [x] Implement `listByProjectPaginated` query (for large projects)
+- [x] Implement `getById` query
+- [x] Implement `create` mutation
+- [x] Implement `update` mutation
+- [x] Implement `updateStatus` mutation
+- [x] Implement `reorder` mutation
+- [x] Add uniqueness check in `taskAssignees.create`
+
+### Data Layer
+- [x] Create `lib/data/tasks/convex.ts` with type mappings
+- [x] Implement query wrappers for all task queries
+- [x] Implement mutation wrappers for all task operations
+- [x] Implement assignee mutation wrappers
+- [x] Implement comment mutation wrappers
+- [x] Implement attachment mutation wrappers
+
+### Dual-Write Integration
+- [x] Add dual-write to `save-task.ts` (create/update)
+- [x] Add dual-write to `change-task-status.ts`
+- [x] Add dual-write to `remove-task.ts` (archive)
+- [x] Add dual-write to `restore-task.ts`
+- [x] Add dual-write to `accept-task.ts`
+- [x] Add dual-write to `destroy-task.ts`
 
 ### Related Tables
-- [ ] Migrate task_assignees
-- [ ] Migrate task_assignee_metadata
-- [ ] Migrate task_comments
-- [ ] Migrate task_attachments
+- [x] Migrate task_assignees (Convex mutations + data layer)
+- [x] Migrate task_assignee_metadata (Convex mutations + data layer)
+- [x] Migrate task_comments (Convex mutations + data layer)
+- [x] Migrate task_attachments (Convex mutations + data layer)
 - [ ] Record migration in `migrationRuns` table
+- [ ] Add import functions to `import-convex.ts` for task-related tables
 
-### Real-time Subscriptions (New!)
-- [ ] Use `useQuery(api.tasks.listByProject, { projectId })` for board
-- [ ] Verify real-time updates work across browser tabs
-- [ ] Test live collaboration (multiple users)
-- [ ] Implement optimistic updates for drag-drop
+### Real-time Subscriptions (Deferred to Phase 5)
+> **Note:** Real-time subscriptions are deferred to Phase 5 when ALL Convex reads are converted.
+> Currently, all Convex reads (clients, projects, tasks) use server-side `fetchQuery` which
+> provides one-time fetches. Converting to client-side `useQuery` hooks for real-time updates
+> should be done across all entities at once for consistency.
+
+- [ ] _(Phase 5)_ Migrate board to use `useQuery(api.tasks.listByProject, { projectId })`
+- [ ] _(Phase 5)_ Migrate client/project lists to use `useQuery` hooks
+- [ ] _(Phase 5)_ Verify real-time updates work across browser tabs
+- [ ] _(Phase 5)_ Test live collaboration (multiple users editing same project)
+- [ ] _(Phase 5)_ Implement optimistic updates for drag-drop operations
+- [ ] _(Phase 5)_ Update My Tasks view to use real-time subscriptions
+- [ ] _(Phase 5)_ Update task detail sheet to use real-time subscriptions
 
 ### Pagination
-- [ ] Implement `usePaginatedQuery` for task lists
-- [ ] Add "Load more" for lists exceeding 50 items
+- [x] Implement `listByProjectPaginated` query with `paginationOptsValidator`
+- [ ] Add "Load more" UI for lists exceeding 50 items
 
 ### Testing
 - [ ] Kanban board renders
@@ -1025,6 +1052,21 @@ Migrate all files from Supabase Storage to Convex Storage.
 - [ ] Remove Supabase type definitions
 - [ ] Delete adapter Supabase implementations (`*-supabase.ts`)
 - [ ] Remove adapter branching logic
+
+### Real-time Subscriptions (Convert All Reads)
+> **Important:** Convert ALL Convex reads from server-side `fetchQuery` to client-side `useQuery`
+> hooks to enable real-time updates. This should be done across all entities at once.
+
+- [ ] Audit all `fetchQuery` calls in `lib/data/*/convex.ts` files
+- [ ] Convert client list/detail views to use `useQuery` hooks
+- [ ] Convert project list/detail views to use `useQuery` hooks
+- [ ] Convert task board to use `useQuery` hooks
+- [ ] Convert My Tasks view to use `useQuery` hooks
+- [ ] Convert task detail sheet to use `useQuery` hooks
+- [ ] Implement optimistic updates for mutations (drag-drop, status changes)
+- [ ] Verify real-time updates work across browser tabs
+- [ ] Test live collaboration scenarios (multiple users)
+- [ ] Performance test with real-time subscriptions enabled
 
 ### Remove TanStack Query (if fully migrated)
 - [ ] Verify all data fetching uses Convex hooks

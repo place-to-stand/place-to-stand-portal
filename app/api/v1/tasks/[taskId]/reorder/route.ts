@@ -11,6 +11,7 @@ import { ensureClientAccessByTaskId } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { projects, tasks } from '@/lib/db/schema'
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
+import { CONVEX_FLAGS } from '@/lib/feature-flags'
 import { revalidateProjectTaskViews } from '@/app/(dashboard)/projects/actions/shared'
 import { statusSchema } from '@/app/(dashboard)/projects/actions/shared-schemas'
 
@@ -146,6 +147,18 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       { error: 'Unable to update task ordering.' },
       { status: 500 }
     )
+  }
+
+  // Dual-write to Convex (best-effort)
+  if (CONVEX_FLAGS.TASKS) {
+    try {
+      const { updateTaskStatusInConvex } = await import('@/lib/data/tasks/convex')
+      // updateTaskStatusInConvex handles both status changes and rank-only updates
+      const newStatus = statusChanged ? parsedPayload.status! : task.status
+      await updateTaskStatusInConvex(taskId, newStatus, parsedPayload.rank)
+    } catch (convexError) {
+      console.error('[DUAL-WRITE] Failed to sync task reorder to Convex (non-fatal):', convexError)
+    }
   }
 
   if (statusChanged) {

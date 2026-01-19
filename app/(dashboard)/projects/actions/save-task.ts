@@ -19,11 +19,58 @@ import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'
 import { ensureTaskAttachmentBucket } from '@/lib/storage/task-attachments'
 import { resolveNextTaskRank } from './task-rank'
+import { CONVEX_FLAGS } from '@/lib/feature-flags'
 
 import { revalidateProjectTaskViews } from './shared'
 import { baseTaskSchema, type BaseTaskInput } from './shared-schemas'
 import type { ActionResult } from './action-types'
 import { syncAssignees, syncAttachments } from './task-helpers'
+
+/**
+ * Sync task to Convex (best-effort, non-blocking)
+ * Part of dual-write strategy during Phase 3C migration
+ */
+async function syncTaskToConvex(
+  operation: 'create' | 'update',
+  taskId: string,
+  data: {
+    projectId: string
+    title: string
+    description?: string | null
+    status: string
+    dueOn?: string | null
+    assigneeIds: string[]
+  }
+): Promise<void> {
+  if (!CONVEX_FLAGS.TASKS) return
+
+  try {
+    if (operation === 'create') {
+      const { createTaskInConvex } = await import('@/lib/data/tasks/convex')
+      await createTaskInConvex({
+        projectId: data.projectId,
+        title: data.title,
+        description: data.description,
+        status: data.status as 'BACKLOG' | 'ON_DECK' | 'IN_PROGRESS' | 'IN_REVIEW' | 'BLOCKED' | 'DONE' | 'ARCHIVED',
+        dueOn: data.dueOn,
+        assigneeIds: data.assigneeIds,
+        supabaseId: taskId, // Link to Supabase record
+      })
+    } else {
+      const { updateTaskInConvex } = await import('@/lib/data/tasks/convex')
+      await updateTaskInConvex(taskId, {
+        title: data.title,
+        description: data.description,
+        status: data.status as 'BACKLOG' | 'ON_DECK' | 'IN_PROGRESS' | 'IN_REVIEW' | 'BLOCKED' | 'DONE' | 'ARCHIVED',
+        dueOn: data.dueOn,
+        assigneeIds: data.assigneeIds,
+      })
+    }
+  } catch (convexError) {
+    // Log but DON'T fail - Supabase is source of truth
+    console.error(`[DUAL-WRITE] Failed to sync task to Convex (${operation}, non-fatal):`, convexError)
+  }
+}
 
 export async function saveTask(input: BaseTaskInput): Promise<ActionResult> {
   const user = await requireUser()
@@ -118,6 +165,14 @@ export async function saveTask(input: BaseTaskInput): Promise<ActionResult> {
 
     try {
       await syncAssignees(insertedId, normalizedAssigneeIds)
+    } catch (assigneeError) {
+      console.error('[SAVE-TASK] Failed to sync assignees:', assigneeError)
+      console.error('[SAVE-TASK] Task ID:', insertedId, 'Assignee IDs:', normalizedAssigneeIds)
+      const errorMessage = assigneeError instanceof Error ? assigneeError.message : String(assigneeError)
+      return { error: `Task saved but assignees failed: ${errorMessage}` }
+    }
+
+    try {
       await syncAttachments({
         storage,
         taskId: insertedId,
@@ -125,10 +180,21 @@ export async function saveTask(input: BaseTaskInput): Promise<ActionResult> {
         actorRole: user.role,
         attachmentsInput: attachments,
       })
-    } catch (assigneeError) {
-      console.error('Failed to sync task assignees', assigneeError)
-      return { error: 'Task saved but assignees could not be updated.' }
+    } catch (attachmentError) {
+      console.error('[SAVE-TASK] Failed to sync attachments:', attachmentError)
+      const errorMessage = attachmentError instanceof Error ? attachmentError.message : String(attachmentError)
+      return { error: `Task saved but attachments failed: ${errorMessage}` }
     }
+
+    // Dual-write to Convex (best-effort)
+    await syncTaskToConvex('create', insertedId, {
+      projectId,
+      title,
+      description: description ?? undefined,
+      status,
+      dueOn,
+      assigneeIds: normalizedAssigneeIds,
+    })
 
     const event = taskCreatedEvent({
       title,
@@ -239,6 +305,14 @@ export async function saveTask(input: BaseTaskInput): Promise<ActionResult> {
 
     try {
       await syncAssignees(id, normalizedAssigneeIds)
+    } catch (assigneeError) {
+      console.error('[SAVE-TASK] Failed to sync assignees:', assigneeError)
+      console.error('[SAVE-TASK] Task ID:', id, 'Assignee IDs:', normalizedAssigneeIds)
+      const errorMessage = assigneeError instanceof Error ? assigneeError.message : String(assigneeError)
+      return { error: `Task saved but assignees failed: ${errorMessage}` }
+    }
+
+    try {
       await syncAttachments({
         storage,
         taskId: id,
@@ -246,10 +320,21 @@ export async function saveTask(input: BaseTaskInput): Promise<ActionResult> {
         actorRole: user.role,
         attachmentsInput: attachments,
       })
-    } catch (assigneeError) {
-      console.error('Failed to sync task assignees', assigneeError)
-      return { error: 'Task saved but assignees could not be updated.' }
+    } catch (attachmentError) {
+      console.error('[SAVE-TASK] Failed to sync attachments:', attachmentError)
+      const errorMessage = attachmentError instanceof Error ? attachmentError.message : String(attachmentError)
+      return { error: `Task saved but attachments failed: ${errorMessage}` }
     }
+
+    // Dual-write to Convex (best-effort)
+    await syncTaskToConvex('update', id, {
+      projectId: existingTask.projectId,
+      title,
+      description: description ?? undefined,
+      status,
+      dueOn,
+      assigneeIds: normalizedAssigneeIds,
+    })
 
     const changedFields: string[] = []
     const previousDetails: Record<string, unknown> = {}

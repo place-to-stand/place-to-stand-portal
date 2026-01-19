@@ -3,6 +3,7 @@ import { z } from 'zod'
 
 import { getCurrentUser } from '@/lib/auth/session'
 import { HttpError } from '@/lib/errors/http'
+import { CONVEX_FLAGS } from '@/lib/feature-flags'
 import {
   createTaskComment,
   listTaskComments,
@@ -89,6 +90,16 @@ export async function POST(request: NextRequest, context: RouteContext) {
       taskId: parsedParams.data.taskId,
       body: payload.body,
     })
+
+    // Dual-write to Convex (best-effort)
+    if (CONVEX_FLAGS.TASKS) {
+      try {
+        const { addTaskCommentInConvex } = await import('@/lib/data/tasks/convex')
+        await addTaskCommentInConvex(parsedParams.data.taskId, payload.body, commentId)
+      } catch (convexError) {
+        console.error('[DUAL-WRITE] Failed to sync comment to Convex (non-fatal):', convexError)
+      }
+    }
 
     return NextResponse.json({ commentId }, { status: 201 })
   } catch (error) {

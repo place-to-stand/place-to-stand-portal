@@ -47,15 +47,22 @@ const navItems: Array<{
   { view: 'by-project', label: 'By Project', icon: FolderKanban, href: '/my/inbox?view=by-project' },
 ]
 
-export function InboxSidebar({ currentView, counts }: InboxSidebarProps) {
-  let currentSection: string | undefined
+// Pre-compute which items should show section headers
+const itemsWithSectionHeaders = navItems.map((item, index) => {
+  const previousSection = navItems
+    .slice(0, index)
+    .reverse()
+    .find(prev => prev.section)?.section
+  return {
+    ...item,
+    showSectionHeader: item.section !== undefined && item.section !== previousSection,
+  }
+})
 
+export function InboxSidebar({ currentView, counts }: InboxSidebarProps) {
   return (
     <nav className='flex flex-col gap-1 p-3'>
-      {navItems.map(item => {
-        const showSectionHeader = item.section && item.section !== currentSection
-        if (item.section) currentSection = item.section
-
+      {itemsWithSectionHeaders.map(item => {
         const count =
           item.view === 'inbox' && item.showCount === 'unread'
             ? counts.unread
@@ -71,7 +78,7 @@ export function InboxSidebar({ currentView, counts }: InboxSidebarProps) {
 
         return (
           <div key={item.view}>
-            {showSectionHeader && (
+            {item.showSectionHeader && (
               <div className='text-muted-foreground mt-4 mb-2 px-3 text-xs font-medium uppercase tracking-wider'>
                 {item.section}
               </div>

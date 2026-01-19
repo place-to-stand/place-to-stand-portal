@@ -11,7 +11,17 @@ import {
   taskComments,
   tasks,
 } from '@/lib/db/schema'
+import { CONVEX_FLAGS } from '@/lib/feature-flags'
 import type { RawTaskWithRelations } from '@/lib/data/projects/types'
+
+// ============================================================
+// CONVEX INTEGRATION (lazy loaded)
+// ============================================================
+
+async function getConvexTasks() {
+  const convexModule = await import('@/lib/data/tasks/convex')
+  return convexModule
+}
 
 type TaskWithRelationsSelection = {
   id: string
@@ -50,6 +60,18 @@ export async function listProjectTasksWithRelations(
 ): Promise<RawTaskWithRelations[]> {
   await ensureClientAccessByProjectId(user, projectId)
 
+  // Use Convex if enabled
+  if (CONVEX_FLAGS.TASKS) {
+    try {
+      const { fetchRawTasksFromConvex } = await getConvexTasks()
+      return await fetchRawTasksFromConvex(projectId, options)
+    } catch (error) {
+      console.error('Failed to fetch tasks from Convex, falling back to Supabase:', error)
+      // Fall through to Supabase on error during migration
+    }
+  }
+
+  // Supabase (default)
   const whereClause = options.includeArchived
     ? eq(tasks.projectId, projectId)
     : and(eq(tasks.projectId, projectId), isNull(tasks.deletedAt))
@@ -137,6 +159,76 @@ export async function listProjectTaskCollectionsWithRelations(
   user: AppUser,
   projectId: string
 ): Promise<ProjectTaskCollections> {
+  await ensureClientAccessByProjectId(user, projectId)
+
+  // Use Convex if enabled (more efficient single query)
+  if (CONVEX_FLAGS.TASKS) {
+    try {
+      const { fetchTaskCollectionsFromConvex } = await getConvexTasks()
+      const collections = await fetchTaskCollectionsFromConvex(projectId)
+      return {
+        active: collections.active.map(task => ({
+          id: task.id,
+          project_id: task.project_id,
+          title: task.title ?? '',
+          description: task.description,
+          status: task.status ?? 'BACKLOG',
+          rank: task.rank,
+          accepted_at: task.accepted_at,
+          due_on: task.due_on,
+          created_by: task.created_by,
+          updated_by: task.updated_by,
+          created_at: task.created_at,
+          updated_at: task.updated_at,
+          deleted_at: task.deleted_at,
+          assignees: task.assignees,
+          comment_count: 0, // Will be populated separately if needed
+          attachment_count: 0,
+        })),
+        accepted: collections.accepted.map(task => ({
+          id: task.id,
+          project_id: task.project_id,
+          title: task.title ?? '',
+          description: task.description,
+          status: task.status ?? 'BACKLOG',
+          rank: task.rank,
+          accepted_at: task.accepted_at,
+          due_on: task.due_on,
+          created_by: task.created_by,
+          updated_by: task.updated_by,
+          created_at: task.created_at,
+          updated_at: task.updated_at,
+          deleted_at: task.deleted_at,
+          assignees: task.assignees,
+          comment_count: 0,
+          attachment_count: 0,
+        })),
+        archived: collections.archived.map(task => ({
+          id: task.id,
+          project_id: task.project_id,
+          title: task.title ?? '',
+          description: task.description,
+          status: task.status ?? 'BACKLOG',
+          rank: task.rank,
+          accepted_at: task.accepted_at,
+          due_on: task.due_on,
+          created_by: task.created_by,
+          updated_by: task.updated_by,
+          created_at: task.created_at,
+          updated_at: task.updated_at,
+          deleted_at: task.deleted_at,
+          assignees: task.assignees,
+          comment_count: 0,
+          attachment_count: 0,
+        })),
+      }
+    } catch (error) {
+      console.error('Failed to fetch task collections from Convex, falling back to Supabase:', error)
+      // Fall through to Supabase on error during migration
+    }
+  }
+
+  // Supabase (default)
   const rows = await listProjectTasksWithRelations(user, projectId, {
     includeArchived: true,
   })

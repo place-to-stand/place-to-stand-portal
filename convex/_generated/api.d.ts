@@ -25,6 +25,8 @@ import type * as projects_mutations from "../projects/mutations.js";
 import type * as projects_queries from "../projects/queries.js";
 import type * as storage_attachments from "../storage/attachments.js";
 import type * as storage_avatars from "../storage/avatars.js";
+import type * as tasks_mutations from "../tasks/mutations.js";
+import type * as tasks_queries from "../tasks/queries.js";
 import type * as users_mutations from "../users/mutations.js";
 import type * as users_queries from "../users/queries.js";
 
@@ -52,6 +54,8 @@ declare const fullApi: ApiFromModules<{
   "projects/queries": typeof projects_queries;
   "storage/attachments": typeof storage_attachments;
   "storage/avatars": typeof storage_avatars;
+  "tasks/mutations": typeof tasks_mutations;
+  "tasks/queries": typeof tasks_queries;
   "users/mutations": typeof users_mutations;
   "users/queries": typeof users_queries;
 }>;

@@ -13,6 +13,7 @@ import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'
 import { deleteAttachmentObject } from '@/lib/storage/task-attachments'
 import type { Json } from '@/lib/types/json'
+import { CONVEX_FLAGS } from '@/lib/feature-flags'
 
 import { revalidateProjectTaskViews } from './shared'
 import type { ActionResult } from './action-types'
@@ -72,6 +73,16 @@ export async function removeTask(input: {
     .update(tasks)
     .set({ deletedAt: timestamp })
     .where(eq(tasks.id, taskId))
+
+  // Dual-write to Convex (best-effort)
+  if (CONVEX_FLAGS.TASKS) {
+    try {
+      const { archiveTaskInConvex } = await import('@/lib/data/tasks/convex')
+      await archiveTaskInConvex(taskId)
+    } catch (convexError) {
+      console.error('[DUAL-WRITE] Failed to archive task in Convex (non-fatal):', convexError)
+    }
+  }
 
   const attachmentRows = await db
     .select({

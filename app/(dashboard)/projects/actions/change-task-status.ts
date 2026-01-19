@@ -10,6 +10,7 @@ import { ensureClientAccessByTaskId } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { projects, tasks } from '@/lib/db/schema'
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
+import { CONVEX_FLAGS } from '@/lib/feature-flags'
 
 import { revalidateProjectTaskViews } from './shared'
 import { statusSchema, TASK_STATUSES } from './shared-schemas'
@@ -92,6 +93,16 @@ export async function changeTaskStatus(input: {
         updatedAt: new Date().toISOString(),
       })
       .where(eq(tasks.id, taskId))
+
+    // Dual-write to Convex (best-effort)
+    if (CONVEX_FLAGS.TASKS) {
+      try {
+        const { updateTaskStatusInConvex } = await import('@/lib/data/tasks/convex')
+        await updateTaskStatusInConvex(taskId, status, nextRank)
+      } catch (convexError) {
+        console.error('[DUAL-WRITE] Failed to sync task status to Convex (non-fatal):', convexError)
+      }
+    }
 
     const event = taskStatusChangedEvent({
       title: task.title ?? 'Task',

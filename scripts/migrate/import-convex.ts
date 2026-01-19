@@ -40,6 +40,10 @@ const IMPORT_ORDER = [
   "clientMembers",
   "projects",
   "tasks",
+  "taskAssignees",
+  "taskAssigneeMetadata",
+  "taskComments",
+  "taskAttachments",
 ] as const;
 
 type TableName = (typeof IMPORT_ORDER)[number];
@@ -135,6 +139,47 @@ interface TransformedTask {
   _supabaseCreatedById?: string | null;
   _supabaseUpdatedById?: string | null;
   acceptedAt?: number | null;
+  supabaseId: string;
+  createdAt: number;
+  updatedAt: number;
+  deletedAt?: number | null;
+}
+
+interface TransformedTaskAssignee {
+  _supabaseTaskId?: string | null;
+  _supabaseUserId?: string | null;
+  supabaseId: string;
+  createdAt: number;
+  updatedAt: number;
+  deletedAt?: number | null;
+}
+
+interface TransformedTaskAssigneeMetadata {
+  _supabaseTaskId?: string | null;
+  _supabaseAssigneeId?: string | null; // References users.id in current schema
+  sortOrder: number;
+  supabaseId: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+interface TransformedTaskComment {
+  _supabaseTaskId?: string | null;
+  _supabaseAuthorId?: string | null;
+  body: string;
+  supabaseId: string;
+  createdAt: number;
+  updatedAt: number;
+  deletedAt?: number | null;
+}
+
+interface TransformedTaskAttachment {
+  _supabaseTaskId?: string | null;
+  storagePath: string;
+  originalName: string;
+  mimeType: string;
+  fileSize: number;
+  _supabaseUploadedById?: string | null;
   supabaseId: string;
   createdAt: number;
   updatedAt: number;
@@ -376,6 +421,200 @@ async function importTasks(
   return result;
 }
 
+async function importTaskAssignees(
+  client: ConvexClient,
+  migrationKey: string,
+  records: TransformedTaskAssignee[]
+): Promise<ImportResult> {
+  const result: ImportResult = {
+    table: "taskAssignees",
+    inserted: 0,
+    updated: 0,
+    skipped: 0,
+    failed: 0,
+    errors: [],
+  };
+
+  for (const record of records) {
+    if (!record._supabaseTaskId || !record._supabaseUserId) {
+      result.skipped++;
+      result.errors.push({
+        record: { supabaseId: record.supabaseId },
+        error: "Skipped: missing task or user reference",
+      });
+      continue;
+    }
+
+    try {
+      const { id, operation } = await client.mutation(api.migration.mutations.importTaskAssignee, {
+        migrationKey,
+        taskSupabaseId: record._supabaseTaskId,
+        userSupabaseId: record._supabaseUserId,
+        supabaseId: record.supabaseId,
+        createdAt: record.createdAt,
+        updatedAt: record.updatedAt,
+        deletedAt: nullToUndefined(record.deletedAt),
+      }) as ConvexImportResult;
+
+      convexIdMaps.taskAssignees.set(record.supabaseId, id);
+      result[operation]++;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      result.failed++;
+      result.errors.push({ record, error: errorMessage });
+    }
+  }
+
+  return result;
+}
+
+async function importTaskAssigneeMetadata(
+  client: ConvexClient,
+  migrationKey: string,
+  records: TransformedTaskAssigneeMetadata[]
+): Promise<ImportResult> {
+  const result: ImportResult = {
+    table: "taskAssigneeMetadata",
+    inserted: 0,
+    updated: 0,
+    skipped: 0,
+    failed: 0,
+    errors: [],
+  };
+
+  for (const record of records) {
+    // _supabaseAssigneeId references users.id (not task_assignees.id) in current schema
+    if (!record._supabaseTaskId || !record._supabaseAssigneeId) {
+      result.skipped++;
+      result.errors.push({
+        record: { supabaseId: record.supabaseId },
+        error: "Skipped: missing task or user reference",
+      });
+      continue;
+    }
+
+    try {
+      const { id, operation } = await client.mutation(api.migration.mutations.importTaskAssigneeMetadata, {
+        migrationKey,
+        taskSupabaseId: record._supabaseTaskId,
+        userSupabaseId: record._supabaseAssigneeId, // This is actually the user's supabase ID
+        sortOrder: record.sortOrder,
+        supabaseId: record.supabaseId,
+        createdAt: record.createdAt,
+        updatedAt: record.updatedAt,
+      }) as ConvexImportResult;
+
+      convexIdMaps.taskAssigneeMetadata.set(record.supabaseId, id);
+      result[operation]++;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      result.failed++;
+      result.errors.push({ record, error: errorMessage });
+    }
+  }
+
+  return result;
+}
+
+async function importTaskComments(
+  client: ConvexClient,
+  migrationKey: string,
+  records: TransformedTaskComment[]
+): Promise<ImportResult> {
+  const result: ImportResult = {
+    table: "taskComments",
+    inserted: 0,
+    updated: 0,
+    skipped: 0,
+    failed: 0,
+    errors: [],
+  };
+
+  for (const record of records) {
+    if (!record._supabaseTaskId || !record._supabaseAuthorId) {
+      result.skipped++;
+      result.errors.push({
+        record: { supabaseId: record.supabaseId },
+        error: "Skipped: missing task or author reference",
+      });
+      continue;
+    }
+
+    try {
+      const { id, operation } = await client.mutation(api.migration.mutations.importTaskComment, {
+        migrationKey,
+        taskSupabaseId: record._supabaseTaskId,
+        authorSupabaseId: record._supabaseAuthorId,
+        body: record.body,
+        supabaseId: record.supabaseId,
+        createdAt: record.createdAt,
+        updatedAt: record.updatedAt,
+        deletedAt: nullToUndefined(record.deletedAt),
+      }) as ConvexImportResult;
+
+      convexIdMaps.taskComments.set(record.supabaseId, id);
+      result[operation]++;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      result.failed++;
+      result.errors.push({ record, error: errorMessage });
+    }
+  }
+
+  return result;
+}
+
+async function importTaskAttachments(
+  client: ConvexClient,
+  migrationKey: string,
+  records: TransformedTaskAttachment[]
+): Promise<ImportResult> {
+  const result: ImportResult = {
+    table: "taskAttachments",
+    inserted: 0,
+    updated: 0,
+    skipped: 0,
+    failed: 0,
+    errors: [],
+  };
+
+  for (const record of records) {
+    if (!record._supabaseTaskId || !record._supabaseUploadedById) {
+      result.skipped++;
+      result.errors.push({
+        record: { supabaseId: record.supabaseId, originalName: record.originalName },
+        error: "Skipped: missing task or uploadedBy reference",
+      });
+      continue;
+    }
+
+    try {
+      const { id, operation } = await client.mutation(api.migration.mutations.importTaskAttachment, {
+        migrationKey,
+        taskSupabaseId: record._supabaseTaskId,
+        storagePath: record.storagePath,
+        originalName: record.originalName,
+        mimeType: record.mimeType,
+        fileSize: record.fileSize,
+        uploadedBySupabaseId: record._supabaseUploadedById,
+        supabaseId: record.supabaseId,
+        createdAt: record.createdAt,
+        updatedAt: record.updatedAt,
+        deletedAt: nullToUndefined(record.deletedAt),
+      }) as ConvexImportResult;
+
+      convexIdMaps.taskAttachments.set(record.supabaseId, id);
+      result[operation]++;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      result.failed++;
+      result.errors.push({ record, error: errorMessage });
+    }
+  }
+
+  return result;
+}
+
 // ============================================================
 // MAIN
 // ============================================================
@@ -443,6 +682,18 @@ async function main() {
           break;
         case "tasks":
           result = await importTasks(client, migrationKey, records);
+          break;
+        case "taskAssignees":
+          result = await importTaskAssignees(client, migrationKey, records);
+          break;
+        case "taskAssigneeMetadata":
+          result = await importTaskAssigneeMetadata(client, migrationKey, records);
+          break;
+        case "taskComments":
+          result = await importTaskComments(client, migrationKey, records);
+          break;
+        case "taskAttachments":
+          result = await importTaskAttachments(client, migrationKey, records);
           break;
         default:
           console.log(`   ⏭️  No import function for ${tableName}`);

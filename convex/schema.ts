@@ -382,10 +382,17 @@ export default defineSchema({
   /**
    * Task assignee metadata - Custom sort order per task
    * - Preserves display order of assignees
+   * - Field names match Supabase schema exactly for 1:1 migration
+   *
+   * Note: userId is the canonical field (matches Supabase).
+   * assigneeId is deprecated and will be removed after migration cleanup.
    */
   taskAssigneeMetadata: defineTable({
     taskId: v.id("tasks"),
-    assigneeId: v.id("taskAssignees"),
+    // New field matching Supabase (references users.id directly)
+    userId: v.optional(v.id("users")),
+    // Deprecated: old field that referenced taskAssignees._id
+    assigneeId: v.optional(v.id("taskAssignees")),
     sortOrder: v.number(),
 
     // Timestamps
@@ -396,7 +403,9 @@ export default defineSchema({
     supabaseId: v.optional(v.string()),
   })
     .index("by_task", ["taskId"])
-    .index("by_assignee", ["assigneeId"])
+    .index("by_user", ["userId"])
+    .index("by_task_user", ["taskId", "userId"])
+    .index("by_assignee", ["assigneeId"]) // Deprecated: keep for backward compat
     .index("by_supabaseId", ["supabaseId"]),
 
   /**

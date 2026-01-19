@@ -10,6 +10,7 @@ import { ensureClientAccessByTaskId } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { projects, tasks } from '@/lib/db/schema'
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
+import { CONVEX_FLAGS } from '@/lib/feature-flags'
 
 import { revalidateProjectTaskViews } from './shared'
 import type { ActionResult } from './action-types'
@@ -82,6 +83,16 @@ export async function unacceptTask(input: {
     .update(tasks)
     .set({ acceptedAt: null })
     .where(eq(tasks.id, taskId))
+
+  // Dual-write to Convex (best-effort)
+  if (CONVEX_FLAGS.TASKS) {
+    try {
+      const { unacceptTaskInConvex } = await import('@/lib/data/tasks/convex')
+      await unacceptTaskInConvex(taskId)
+    } catch (convexError) {
+      console.error('[DUAL-WRITE] Failed to sync task unaccept to Convex (non-fatal):', convexError)
+    }
+  }
 
   const event = taskAcceptanceRevertedEvent({ title: task.title ?? 'Task' })
 

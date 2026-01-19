@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { and, eq, inArray, isNull } from 'drizzle-orm'
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import {
@@ -33,12 +33,13 @@ export async function syncAssignees(taskId: string, assigneeIds: string[]) {
       assigneeIds.map(userId => ({
         taskId,
         userId,
-        deletedAt: null,
+        // Don't pass deletedAt - let it default to NULL in the database
       }))
     )
     .onConflictDoUpdate({
       target: [taskAssignees.taskId, taskAssignees.userId],
-      set: { deletedAt: null },
+      // Use SQL NULL explicitly for string-mode timestamp fields
+      set: { deletedAt: sql`NULL` },
     })
 }
 

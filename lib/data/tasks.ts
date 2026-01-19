@@ -25,6 +25,16 @@ import {
   taskAssignees as taskAssigneesTable,
   tasks as tasksTable,
 } from '@/lib/db/schema'
+import { CONVEX_FLAGS } from '@/lib/feature-flags'
+
+// ============================================================
+// CONVEX INTEGRATION (lazy loaded)
+// ============================================================
+
+async function getConvexTasks() {
+  const convexModule = await import('./tasks/convex')
+  return convexModule
+}
 
 export type AssignedTaskSummary = {
   id: string
@@ -81,6 +91,56 @@ async function loadAssignedTaskSummaries({
   limit = DEFAULT_LIMIT,
   includeCompletedStatuses = true,
 }: FetchAssignedTasksSummaryOptions): Promise<AssignedTaskSummaryResult> {
+  // Use Convex if enabled
+  if (CONVEX_FLAGS.TASKS) {
+    try {
+      const { fetchMyTasksFromConvex } = await getConvexTasks()
+      const convexTasks = await fetchMyTasksFromConvex({
+        includeCompleted: includeCompletedStatuses,
+      })
+
+      // Map Convex results to expected format
+      const items: AssignedTaskSummary[] = convexTasks.map(task => ({
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        status: task.status,
+        dueOn: task.due_on,
+        updatedAt: task.updated_at,
+        sortOrder: task.sort_order,
+        project: {
+          id: task.project.id,
+          name: task.project.name,
+          slug: task.project.slug,
+          type: task.project.type as ProjectTypeValue,
+          createdBy: null, // Not returned from Convex currently
+        },
+        client: null, // Not returned from Convex currently
+      }))
+
+      // Apply limit if specified
+      const normalizedLimit =
+        typeof limit === 'number' && Number.isFinite(limit)
+          ? Math.max(1, limit)
+          : limit === null
+            ? null
+            : DEFAULT_LIMIT
+
+      const limitedItems = normalizedLimit !== null
+        ? items.slice(0, normalizedLimit)
+        : items
+
+      return {
+        items: limitedItems,
+        totalCount: items.length,
+      }
+    } catch (error) {
+      console.error('Failed to fetch my tasks from Convex, falling back to Supabase:', error)
+      // Fall through to Supabase on error during migration
+    }
+  }
+
+  // Supabase (default)
   const shouldScopeToUser = role !== 'ADMIN'
 
   const normalizedLimit =

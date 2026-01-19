@@ -10,6 +10,7 @@ import { ensureClientAccessByTaskId } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { projects, tasks } from '@/lib/db/schema'
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
+import { CONVEX_FLAGS } from '@/lib/feature-flags'
 
 import { revalidateProjectTaskViews } from './shared'
 import type { ActionResult } from './action-types'
@@ -78,6 +79,16 @@ export async function destroyTask(input: {
   }
 
   await db.delete(tasks).where(eq(tasks.id, taskId))
+
+  // Dual-write to Convex (best-effort)
+  if (CONVEX_FLAGS.TASKS) {
+    try {
+      const { destroyTaskInConvex } = await import('@/lib/data/tasks/convex')
+      await destroyTaskInConvex(taskId)
+    } catch (convexError) {
+      console.error('[DUAL-WRITE] Failed to destroy task in Convex (non-fatal):', convexError)
+    }
+  }
 
   const event = taskDeletedEvent({ title: task.title ?? 'Task' })
 

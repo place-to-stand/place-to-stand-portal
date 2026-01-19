@@ -505,6 +505,286 @@ export const importTask = mutation({
   },
 });
 
+/**
+ * Import a task assignee record
+ */
+export const importTaskAssignee = mutation({
+  args: {
+    migrationKey: v.string(),
+    taskSupabaseId: v.string(),
+    userSupabaseId: v.string(),
+    supabaseId: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  },
+  handler: async (ctx, args): Promise<ImportResult> => {
+    await verifyMigrationKey(args.migrationKey);
+
+    const existing = await ctx.db
+      .query("taskAssignees")
+      .withIndex("by_supabaseId", (q) => q.eq("supabaseId", args.supabaseId))
+      .first();
+
+    // Resolve foreign keys
+    const task = await ctx.db
+      .query("tasks")
+      .withIndex("by_supabaseId", (q) => q.eq("supabaseId", args.taskSupabaseId))
+      .first();
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_supabaseId", (q) => q.eq("supabaseId", args.userSupabaseId))
+      .first();
+
+    if (!task || !user) {
+      throw new Error(
+        `[importTaskAssignee] Missing foreign key: task=${!!task}, user=${!!user}`
+      );
+    }
+
+    if (existing) {
+      if (args.updatedAt <= existing.updatedAt) {
+        return { id: existing._id, operation: "skipped" };
+      }
+
+      await ctx.db.patch(existing._id, {
+        taskId: task._id,
+        userId: user._id,
+        updatedAt: args.updatedAt,
+        deletedAt: args.deletedAt,
+      });
+
+      return { id: existing._id, operation: "updated" };
+    }
+
+    const id = await ctx.db.insert("taskAssignees", {
+      taskId: task._id,
+      userId: user._id,
+      supabaseId: args.supabaseId,
+      createdAt: args.createdAt,
+      updatedAt: args.updatedAt,
+      deletedAt: args.deletedAt,
+    });
+
+    return { id, operation: "inserted" };
+  },
+});
+
+/**
+ * Import a task assignee metadata record
+ * Note: This links taskId + userId for sort order tracking
+ */
+export const importTaskAssigneeMetadata = mutation({
+  args: {
+    migrationKey: v.string(),
+    taskSupabaseId: v.string(),
+    userSupabaseId: v.string(),
+    sortOrder: v.number(),
+    supabaseId: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  },
+  handler: async (ctx, args): Promise<ImportResult> => {
+    await verifyMigrationKey(args.migrationKey);
+
+    const existing = await ctx.db
+      .query("taskAssigneeMetadata")
+      .withIndex("by_supabaseId", (q) => q.eq("supabaseId", args.supabaseId))
+      .first();
+
+    // Resolve foreign keys
+    const task = await ctx.db
+      .query("tasks")
+      .withIndex("by_supabaseId", (q) => q.eq("supabaseId", args.taskSupabaseId))
+      .first();
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_supabaseId", (q) => q.eq("supabaseId", args.userSupabaseId))
+      .first();
+
+    if (!task || !user) {
+      throw new Error(
+        `[importTaskAssigneeMetadata] Missing foreign key: task=${!!task}, user=${!!user}`
+      );
+    }
+
+    if (existing) {
+      if (args.updatedAt <= existing.updatedAt) {
+        return { id: existing._id, operation: "skipped" };
+      }
+
+      await ctx.db.patch(existing._id, {
+        taskId: task._id,
+        userId: user._id,
+        sortOrder: args.sortOrder,
+        updatedAt: args.updatedAt,
+      });
+
+      return { id: existing._id, operation: "updated" };
+    }
+
+    const id = await ctx.db.insert("taskAssigneeMetadata", {
+      taskId: task._id,
+      userId: user._id,
+      sortOrder: args.sortOrder,
+      supabaseId: args.supabaseId,
+      createdAt: args.createdAt,
+      updatedAt: args.updatedAt,
+    });
+
+    return { id, operation: "inserted" };
+  },
+});
+
+/**
+ * Import a task comment record
+ */
+export const importTaskComment = mutation({
+  args: {
+    migrationKey: v.string(),
+    taskSupabaseId: v.string(),
+    authorSupabaseId: v.string(),
+    body: v.string(),
+    supabaseId: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  },
+  handler: async (ctx, args): Promise<ImportResult> => {
+    await verifyMigrationKey(args.migrationKey);
+
+    const existing = await ctx.db
+      .query("taskComments")
+      .withIndex("by_supabaseId", (q) => q.eq("supabaseId", args.supabaseId))
+      .first();
+
+    // Resolve foreign keys
+    const task = await ctx.db
+      .query("tasks")
+      .withIndex("by_supabaseId", (q) => q.eq("supabaseId", args.taskSupabaseId))
+      .first();
+
+    const author = await ctx.db
+      .query("users")
+      .withIndex("by_supabaseId", (q) => q.eq("supabaseId", args.authorSupabaseId))
+      .first();
+
+    if (!task || !author) {
+      throw new Error(
+        `[importTaskComment] Missing foreign key: task=${!!task}, author=${!!author}`
+      );
+    }
+
+    if (existing) {
+      if (args.updatedAt <= existing.updatedAt) {
+        return { id: existing._id, operation: "skipped" };
+      }
+
+      await ctx.db.patch(existing._id, {
+        taskId: task._id,
+        authorId: author._id,
+        body: args.body,
+        updatedAt: args.updatedAt,
+        deletedAt: args.deletedAt,
+      });
+
+      return { id: existing._id, operation: "updated" };
+    }
+
+    const id = await ctx.db.insert("taskComments", {
+      taskId: task._id,
+      authorId: author._id,
+      body: args.body,
+      supabaseId: args.supabaseId,
+      createdAt: args.createdAt,
+      updatedAt: args.updatedAt,
+      deletedAt: args.deletedAt,
+    });
+
+    return { id, operation: "inserted" };
+  },
+});
+
+/**
+ * Import a task attachment record
+ */
+export const importTaskAttachment = mutation({
+  args: {
+    migrationKey: v.string(),
+    taskSupabaseId: v.string(),
+    storagePath: v.string(),
+    originalName: v.string(),
+    mimeType: v.string(),
+    fileSize: v.number(),
+    uploadedBySupabaseId: v.string(),
+    supabaseId: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  },
+  handler: async (ctx, args): Promise<ImportResult> => {
+    await verifyMigrationKey(args.migrationKey);
+
+    const existing = await ctx.db
+      .query("taskAttachments")
+      .withIndex("by_supabaseId", (q) => q.eq("supabaseId", args.supabaseId))
+      .first();
+
+    // Resolve foreign keys
+    const task = await ctx.db
+      .query("tasks")
+      .withIndex("by_supabaseId", (q) => q.eq("supabaseId", args.taskSupabaseId))
+      .first();
+
+    const uploadedBy = await ctx.db
+      .query("users")
+      .withIndex("by_supabaseId", (q) => q.eq("supabaseId", args.uploadedBySupabaseId))
+      .first();
+
+    if (!task || !uploadedBy) {
+      throw new Error(
+        `[importTaskAttachment] Missing foreign key: task=${!!task}, uploadedBy=${!!uploadedBy}`
+      );
+    }
+
+    if (existing) {
+      if (args.updatedAt <= existing.updatedAt) {
+        return { id: existing._id, operation: "skipped" };
+      }
+
+      await ctx.db.patch(existing._id, {
+        taskId: task._id,
+        storagePath: args.storagePath,
+        originalName: args.originalName,
+        mimeType: args.mimeType,
+        fileSize: args.fileSize,
+        uploadedBy: uploadedBy._id,
+        updatedAt: args.updatedAt,
+        deletedAt: args.deletedAt,
+      });
+
+      return { id: existing._id, operation: "updated" };
+    }
+
+    const id = await ctx.db.insert("taskAttachments", {
+      taskId: task._id,
+      storagePath: args.storagePath,
+      originalName: args.originalName,
+      mimeType: args.mimeType,
+      fileSize: args.fileSize,
+      uploadedBy: uploadedBy._id,
+      supabaseId: args.supabaseId,
+      createdAt: args.createdAt,
+      updatedAt: args.updatedAt,
+      deletedAt: args.deletedAt,
+    });
+
+    return { id, operation: "inserted" };
+  },
+});
+
 // ============================================================
 // MIGRATION RUN TRACKING
 // ============================================================

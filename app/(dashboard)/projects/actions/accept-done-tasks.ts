@@ -10,6 +10,7 @@ import { ensureClientAccessByProjectId } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { projects, tasks } from '@/lib/db/schema'
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
+import { CONVEX_FLAGS } from '@/lib/feature-flags'
 
 import { revalidateProjectTaskViews } from './shared'
 import type { ActionResult } from './action-types'
@@ -105,6 +106,18 @@ export async function acceptDoneTasks(input: {
         isNull(tasks.acceptedAt)
       )
     )
+
+  // Dual-write to Convex (best-effort)
+  if (CONVEX_FLAGS.TASKS) {
+    try {
+      const { acceptTaskInConvex } = await import('@/lib/data/tasks/convex')
+      await Promise.all(
+        tasksToAccept.map(task => acceptTaskInConvex(task.id))
+      )
+    } catch (convexError) {
+      console.error('[DUAL-WRITE] Failed to sync bulk accept to Convex (non-fatal):', convexError)
+    }
+  }
 
   const event = tasksAcceptedEvent({
     count: tasksToAccept.length,

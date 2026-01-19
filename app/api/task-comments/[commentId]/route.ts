@@ -3,6 +3,7 @@ import { z } from 'zod'
 
 import { getCurrentUser } from '@/lib/auth/session'
 import { HttpError } from '@/lib/errors/http'
+import { CONVEX_FLAGS } from '@/lib/feature-flags'
 import {
   softDeleteTaskComment,
   updateTaskComment,
@@ -54,6 +55,16 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       body: payload.body,
     })
 
+    // Dual-write to Convex (best-effort)
+    if (CONVEX_FLAGS.TASKS) {
+      try {
+        const { updateTaskCommentInConvex } = await import('@/lib/data/tasks/convex')
+        await updateTaskCommentInConvex(parsedParams.data.commentId, payload.body)
+      } catch (convexError) {
+        console.error('[DUAL-WRITE] Failed to sync comment update to Convex (non-fatal):', convexError)
+      }
+    }
+
     return new NextResponse(null, { status: 204 })
   } catch (error) {
     if (error instanceof HttpError) {
@@ -83,6 +94,17 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
 
   try {
     await softDeleteTaskComment(user, parsedParams.data.commentId)
+
+    // Dual-write to Convex (best-effort)
+    if (CONVEX_FLAGS.TASKS) {
+      try {
+        const { deleteTaskCommentInConvex } = await import('@/lib/data/tasks/convex')
+        await deleteTaskCommentInConvex(parsedParams.data.commentId)
+      } catch (convexError) {
+        console.error('[DUAL-WRITE] Failed to sync comment deletion to Convex (non-fatal):', convexError)
+      }
+    }
+
     return new NextResponse(null, { status: 204 })
   } catch (error) {
     if (error instanceof HttpError) {

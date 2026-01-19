@@ -83,12 +83,12 @@ const transformers: Record<string, TransformFn> = {
 
   /**
    * Client Members transform
-   * Supabase: id, clientId, userId, createdAt, deletedAt
-   * Convex:   supabaseId, clientId, userId, createdAt, updatedAt
+   * Supabase: id (bigint), clientId, userId, createdAt, deletedAt
+   * Convex:   supabaseId (string), clientId, userId, createdAt, updatedAt
    */
   clientMembers: (records) =>
     records.map((r) => ({
-      supabaseId: r.id,
+      supabaseId: String(r.id), // Convert bigint to string
       _supabaseClientId: r.clientId, // FK for resolution
       _supabaseUserId: r.userId, // FK for resolution
       createdAt: toTimestamp(r.createdAt as string) ?? Date.now(),
@@ -137,6 +137,72 @@ const transformers: Record<string, TransformFn> = {
       updatedAt: toTimestamp(r.updatedAt as string) ?? Date.now(),
       deletedAt: toTimestamp(r.deletedAt as string),
     })),
+
+  /**
+   * Task Assignees transform
+   * Supabase: id (bigint), taskId, userId, createdAt, updatedAt, deletedAt
+   * Convex:   supabaseId (string), taskId, userId, createdAt, updatedAt, deletedAt
+   */
+  taskAssignees: (records) =>
+    records.map((r) => ({
+      supabaseId: String(r.id), // Convert bigint to string
+      _supabaseTaskId: r.taskId, // FK for resolution
+      _supabaseUserId: r.userId, // FK for resolution
+      createdAt: toTimestamp(r.createdAt as string) ?? Date.now(),
+      updatedAt: toTimestamp(r.updatedAt as string) ?? Date.now(),
+      deletedAt: toTimestamp(r.deletedAt as string),
+    })),
+
+  /**
+   * Task Assignee Metadata transform
+   * Supabase: taskId, userId, sortOrder, createdAt, updatedAt (composite PK, no id)
+   * Convex:   supabaseId (generated), taskId, userId, sortOrder, createdAt, updatedAt
+   */
+  taskAssigneeMetadata: (records) =>
+    records.map((r) => ({
+      // Generate a supabaseId from the composite key since there's no id column
+      supabaseId: `${r.taskId}_${r.userId}`,
+      _supabaseTaskId: r.taskId, // FK for resolution
+      _supabaseAssigneeId: r.userId, // FK for resolution (references users.id)
+      sortOrder: r.sortOrder ?? 0,
+      createdAt: toTimestamp(r.createdAt as string) ?? Date.now(),
+      updatedAt: toTimestamp(r.updatedAt as string) ?? Date.now(),
+    })),
+
+  /**
+   * Task Comments transform
+   * Supabase: id, taskId, authorId, body, createdAt, updatedAt, deletedAt
+   * Convex:   supabaseId, taskId, authorId, body, createdAt, updatedAt, deletedAt
+   */
+  taskComments: (records) =>
+    records.map((r) => ({
+      supabaseId: r.id,
+      _supabaseTaskId: r.taskId, // FK for resolution
+      _supabaseAuthorId: r.authorId, // FK for resolution
+      body: r.body,
+      createdAt: toTimestamp(r.createdAt as string) ?? Date.now(),
+      updatedAt: toTimestamp(r.updatedAt as string) ?? Date.now(),
+      deletedAt: toTimestamp(r.deletedAt as string),
+    })),
+
+  /**
+   * Task Attachments transform
+   * Supabase: id, taskId, storagePath, originalName, mimeType, fileSize, uploadedBy, createdAt, updatedAt, deletedAt
+   * Convex:   supabaseId, taskId, storagePath, originalName, mimeType, fileSize, uploadedBy, createdAt, updatedAt, deletedAt
+   */
+  taskAttachments: (records) =>
+    records.map((r) => ({
+      supabaseId: r.id,
+      _supabaseTaskId: r.taskId, // FK for resolution
+      storagePath: r.storagePath,
+      originalName: r.originalName,
+      mimeType: r.mimeType,
+      fileSize: r.fileSize,
+      _supabaseUploadedById: r.uploadedBy, // FK for resolution
+      createdAt: toTimestamp(r.createdAt as string) ?? Date.now(),
+      updatedAt: toTimestamp(r.updatedAt as string) ?? Date.now(),
+      deletedAt: toTimestamp(r.deletedAt as string),
+    })),
 };
 
 // ============================================================
@@ -161,7 +227,17 @@ async function main() {
   const transformSummary: Record<string, { input: number; output: number }> = {};
 
   // Process tables in dependency order
-  const tables = ["users", "clients", "clientMembers", "projects", "tasks"];
+  const tables = [
+    "users",
+    "clients",
+    "clientMembers",
+    "projects",
+    "tasks",
+    "taskAssignees",
+    "taskAssigneeMetadata",
+    "taskComments",
+    "taskAttachments",
+  ];
 
   for (const tableName of tables) {
     const inputPath = path.join(INPUT_DIR, `${tableName}.json`);
