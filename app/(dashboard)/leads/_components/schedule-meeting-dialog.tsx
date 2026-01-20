@@ -1,0 +1,307 @@
+'use client'
+
+import { useCallback, useEffect, useState, useTransition } from 'react'
+import { format, addHours, startOfHour } from 'date-fns'
+import { Calendar, Clock, Video, Users } from 'lucide-react'
+
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { useToast } from '@/components/ui/use-toast'
+import type { LeadRecord, GoogleMeetingRef } from '@/lib/leads/types'
+
+import { scheduleMeeting } from '../_actions'
+
+type ScheduleMeetingDialogProps = {
+  lead: LeadRecord
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onSuccess?: (meeting: GoogleMeetingRef) => void
+  /** Pre-filled title from AI suggestion */
+  initialTitle?: string
+}
+
+export function ScheduleMeetingDialog({
+  lead,
+  open,
+  onOpenChange,
+  onSuccess,
+  initialTitle,
+}: ScheduleMeetingDialogProps) {
+  const { toast } = useToast()
+  const [isScheduling, startScheduleTransition] = useTransition()
+
+  // Form fields
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [startDateTime, setStartDateTime] = useState('')
+  const [endDateTime, setEndDateTime] = useState('')
+  const [addMeetLink, setAddMeetLink] = useState(true)
+  const [additionalAttendees, setAdditionalAttendees] = useState('')
+
+  // Reset form when dialog opens
+  useEffect(() => {
+    if (open) {
+      // Default title includes lead name
+      const defaultTitle = initialTitle ?? `Meeting with ${lead.contactName}`
+      setTitle(defaultTitle)
+      setDescription('')
+      setAddMeetLink(true)
+      setAdditionalAttendees('')
+
+      // Default to next hour, 30 min meeting
+      const nextHour = startOfHour(addHours(new Date(), 1))
+      const endTime = addHours(nextHour, 0.5) // 30 min default
+
+      setStartDateTime(formatDateTimeLocal(nextHour))
+      setEndDateTime(formatDateTimeLocal(endTime))
+    }
+  }, [open, lead.contactName, initialTitle])
+
+  // Update end time when start time changes (keep duration)
+  const handleStartTimeChange = useCallback(
+    (newStart: string) => {
+      setStartDateTime(newStart)
+
+      // If we have a valid end time, maintain the duration
+      if (startDateTime && endDateTime) {
+        const prevStart = new Date(startDateTime)
+        const prevEnd = new Date(endDateTime)
+        const duration = prevEnd.getTime() - prevStart.getTime()
+
+        const newStartDate = new Date(newStart)
+        const newEndDate = new Date(newStartDate.getTime() + duration)
+        setEndDateTime(formatDateTimeLocal(newEndDate))
+      }
+    },
+    [startDateTime, endDateTime]
+  )
+
+  const handleSchedule = useCallback(() => {
+    if (!title.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Missing title',
+        description: 'Please enter a meeting title.',
+      })
+      return
+    }
+
+    if (!startDateTime || !endDateTime) {
+      toast({
+        variant: 'destructive',
+        title: 'Missing time',
+        description: 'Please select start and end times.',
+      })
+      return
+    }
+
+    const start = new Date(startDateTime)
+    const end = new Date(endDateTime)
+
+    if (end <= start) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid time range',
+        description: 'End time must be after start time.',
+      })
+      return
+    }
+
+    // Parse additional attendees
+    const extraEmails = additionalAttendees
+      .split(/[,;\s]+/)
+      .map(e => e.trim())
+      .filter(e => e.length > 0 && e.includes('@'))
+
+    startScheduleTransition(async () => {
+      const result = await scheduleMeeting({
+        leadId: lead.id,
+        title: title.trim(),
+        description: description.trim() || undefined,
+        startDateTime: start.toISOString(),
+        endDateTime: end.toISOString(),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        attendeeEmails: extraEmails.length > 0 ? extraEmails : undefined,
+        addMeetLink,
+      })
+
+      if (!result.success) {
+        toast({
+          variant: 'destructive',
+          title: 'Unable to schedule meeting',
+          description: result.error ?? 'Please try again.',
+        })
+        return
+      }
+
+      const meetingTime = `${format(start, 'PPp')} - ${format(end, 'p')}`
+      toast({
+        title: 'Meeting scheduled',
+        description: result.meeting?.meetLink
+          ? `${meetingTime}. Google Meet link created.`
+          : meetingTime,
+      })
+
+      onOpenChange(false)
+      if (result.meeting) {
+        onSuccess?.(result.meeting)
+      }
+    })
+  }, [
+    lead.id,
+    title,
+    description,
+    startDateTime,
+    endDateTime,
+    addMeetLink,
+    additionalAttendees,
+    toast,
+    onOpenChange,
+    onSuccess,
+  ])
+
+  const canSchedule = title.trim() && startDateTime && endDateTime && !isScheduling
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Schedule Meeting
+          </DialogTitle>
+          <DialogDescription>
+            Create a calendar event with {lead.contactName}
+            {lead.contactEmail && ` (${lead.contactEmail})`}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex flex-col gap-4 py-4">
+          {/* Title */}
+          <div className="space-y-2">
+            <Label htmlFor="meeting-title">Title</Label>
+            <Input
+              id="meeting-title"
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              placeholder="Meeting title"
+            />
+          </div>
+
+          {/* Date/Time */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="start-time" className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                Start
+              </Label>
+              <Input
+                id="start-time"
+                type="datetime-local"
+                value={startDateTime}
+                onChange={e => handleStartTimeChange(e.target.value)}
+                min={new Date().toISOString().slice(0, 16)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="end-time">End</Label>
+              <Input
+                id="end-time"
+                type="datetime-local"
+                value={endDateTime}
+                onChange={e => setEndDateTime(e.target.value)}
+                min={startDateTime}
+              />
+            </div>
+          </div>
+
+          {/* Google Meet toggle */}
+          <div className="flex items-center gap-3 rounded-lg border p-3">
+            <Checkbox
+              id="add-meet"
+              checked={addMeetLink}
+              onCheckedChange={checked => setAddMeetLink(checked === true)}
+            />
+            <div className="flex items-center gap-2">
+              <Video className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <Label htmlFor="add-meet" className="text-sm font-medium cursor-pointer">
+                  Add Google Meet
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Include video conference link
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="space-y-2">
+            <Label htmlFor="description">Description (optional)</Label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              placeholder="Meeting agenda or notes..."
+              rows={3}
+            />
+          </div>
+
+          {/* Additional Attendees */}
+          <div className="space-y-2">
+            <Label htmlFor="attendees" className="flex items-center gap-1">
+              <Users className="h-3 w-3" />
+              Additional Attendees (optional)
+            </Label>
+            <Input
+              id="attendees"
+              value={additionalAttendees}
+              onChange={e => setAdditionalAttendees(e.target.value)}
+              placeholder="email1@example.com, email2@example.com"
+            />
+            <p className="text-xs text-muted-foreground">
+              {lead.contactEmail
+                ? `${lead.contactEmail} will be invited automatically`
+                : 'Add email addresses separated by commas'}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 border-t pt-4">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isScheduling}
+          >
+            Cancel
+          </Button>
+          <Button onClick={handleSchedule} disabled={!canSchedule}>
+            {isScheduling ? (
+              'Scheduling...'
+            ) : (
+              <>
+                <Calendar className="mr-2 h-4 w-4" />
+                Schedule Meeting
+              </>
+            )}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function formatDateTimeLocal(date: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}

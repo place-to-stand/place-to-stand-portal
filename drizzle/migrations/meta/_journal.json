@@ -113,6 +113,13 @@
       "when": 1768861915177,
       "tag": "0015_email_templates_and_drafts_extension",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1768871967641,
+      "tag": "0016_lead_google_integrations",
+      "breakpoints": true
     }
   ]
 }

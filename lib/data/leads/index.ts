@@ -15,6 +15,8 @@ import {
 } from '@/lib/leads/constants'
 import type { LeadSignal, PriorityTier } from '@/lib/leads/intelligence-types'
 import type {
+  GoogleMeetingRef,
+  GoogleProposalRef,
   LeadAssigneeOption,
   LeadBoardColumnData,
   LeadRecord,
@@ -83,6 +85,9 @@ export const fetchLeadsBoard = cache(
         // Conversion
         convertedAt: row.convertedAt ?? null,
         convertedToClientId: row.convertedToClientId ?? null,
+        // Google Integrations
+        googleMeetings: (row.googleMeetings as GoogleMeetingRef[]) ?? [],
+        googleProposals: (row.googleProposals as GoogleProposalRef[]) ?? [],
       })
     })
 
@@ -154,6 +159,9 @@ export const fetchLeadById = cache(
       // Conversion
       convertedAt: lead.convertedAt ?? null,
       convertedToClientId: lead.convertedToClientId ?? null,
+      // Google Integrations
+      googleMeetings: (lead.googleMeetings as GoogleMeetingRef[]) ?? [],
+      googleProposals: (lead.googleProposals as GoogleProposalRef[]) ?? [],
     }
   }
 )
@@ -209,6 +217,9 @@ async function selectLeadRows({
     // Conversion
     convertedAt: leads.convertedAt,
     convertedToClientId: leads.convertedToClientId,
+    // Google Integrations
+    googleMeetings: leads.googleMeetings,
+    googleProposals: leads.googleProposals,
   }
 
   return db

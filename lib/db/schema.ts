@@ -744,6 +744,12 @@ export const leads = pgTable(
     convertedAt: timestamp('converted_at', { withTimezone: true, mode: 'string' }),
     convertedToClientId: uuid('converted_to_client_id'),
 
+    // Google Calendar Meetings (references to Google Calendar events)
+    googleMeetings: jsonb('google_meetings').default([]).notNull(),
+
+    // Google Docs Proposals (references to Google Docs documents)
+    googleProposals: jsonb('google_proposals').default([]).notNull(),
+
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
       .notNull(),

@@ -37,7 +37,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { useToast } from '@/components/ui/use-toast'
-import { UserPlus, CheckCircle, Mail } from 'lucide-react'
+import { UserPlus, CheckCircle, Mail, Calendar, FileText } from 'lucide-react'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import { cn } from '@/lib/utils'
@@ -59,8 +59,12 @@ import {
 
 import { archiveLead, saveLead } from '../actions'
 import { ConvertLeadDialog } from './convert-lead-dialog'
+import { CreateProposalDialog } from './create-proposal-dialog'
+import { LeadMeetingsSection } from './lead-meetings-section'
+import { LeadProposalsSection } from './lead-proposals-section'
 import { LeadSuggestionsPanel } from './lead-suggestions-panel'
 import { PriorityBadge, ScoreBadge } from './priority-badge'
+import { ScheduleMeetingDialog } from './schedule-meeting-dialog'
 import { SendEmailDialog } from './send-email-dialog'
 
 const formSchema = z.object({
@@ -114,6 +118,10 @@ export function LeadSheet({
   const [isArchiveDialogOpen, setArchiveDialogOpen] = useState(false)
   const [isConvertDialogOpen, setConvertDialogOpen] = useState(false)
   const [isEmailDialogOpen, setEmailDialogOpen] = useState(false)
+  // AI-triggered dialogs
+  const [isMeetingDialogOpen, setMeetingDialogOpen] = useState(false)
+  const [meetingInitialTitle, setMeetingInitialTitle] = useState<string | undefined>()
+  const [isProposalDialogOpen, setProposalDialogOpen] = useState(false)
   const { toast } = useToast()
 
   // Check if lead can be converted
@@ -679,7 +687,32 @@ export function LeadSheet({
                       <LeadSuggestionsPanel
                         leadId={lead.id}
                         isAdmin={canManage}
+                        onScheduleCall={(initialTitle) => {
+                          setMeetingInitialTitle(initialTitle)
+                          setMeetingDialogOpen(true)
+                        }}
+                        onSendProposal={() => setProposalDialogOpen(true)}
                       />
+                    </div>
+                  )}
+
+                  {/* Meetings & Proposals - only shown when editing */}
+                  {isEditing && lead && (
+                    <div className='grid gap-4 sm:grid-cols-2'>
+                      <div className='rounded-lg border bg-muted/30 p-4'>
+                        <LeadMeetingsSection
+                          lead={lead}
+                          canManage={canManage}
+                          onSuccess={onSuccess}
+                        />
+                      </div>
+                      <div className='rounded-lg border bg-muted/30 p-4'>
+                        <LeadProposalsSection
+                          lead={lead}
+                          canManage={canManage}
+                          onSuccess={onSuccess}
+                        />
+                      </div>
                     </div>
                   )}
                 </div>
@@ -731,6 +764,31 @@ export function LeadSheet({
           open={isEmailDialogOpen}
           onOpenChange={setEmailDialogOpen}
           onSuccess={onSuccess}
+        />
+      )}
+      {/* AI-triggered dialogs */}
+      {lead && (
+        <ScheduleMeetingDialog
+          lead={lead}
+          open={isMeetingDialogOpen}
+          onOpenChange={setMeetingDialogOpen}
+          initialTitle={meetingInitialTitle}
+          onSuccess={() => {
+            setMeetingDialogOpen(false)
+            setMeetingInitialTitle(undefined)
+            onSuccess()
+          }}
+        />
+      )}
+      {lead && (
+        <CreateProposalDialog
+          lead={lead}
+          open={isProposalDialogOpen}
+          onOpenChange={setProposalDialogOpen}
+          onSuccess={() => {
+            setProposalDialogOpen(false)
+            onSuccess()
+          }}
         />
       )}
       {unsavedChangesDialog}

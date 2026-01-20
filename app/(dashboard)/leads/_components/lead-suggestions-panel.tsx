@@ -22,6 +22,10 @@ import type { LeadActionType } from '@/lib/types/suggestions'
 type LeadSuggestionsPanelProps = {
   leadId: string
   isAdmin: boolean
+  /** Called when a SCHEDULE_CALL suggestion is approved */
+  onScheduleCall?: (initialTitle?: string) => void
+  /** Called when a SEND_PROPOSAL suggestion is approved */
+  onSendProposal?: () => void
 }
 
 async function fetchLeadSuggestions(leadId: string): Promise<SuggestionForLead[]> {
@@ -83,6 +87,8 @@ const PRIORITY_BADGES: Record<string, { className: string; label: string }> = {
 export function LeadSuggestionsPanel({
   leadId,
   isAdmin,
+  onScheduleCall,
+  onSendProposal,
 }: LeadSuggestionsPanelProps) {
   const queryClient = useQueryClient()
 
@@ -222,7 +228,15 @@ export function LeadSuggestionsPanel({
                         size='icon-sm'
                         variant='ghost'
                         className='h-7 w-7 text-green-600 hover:bg-green-500/10 hover:text-green-600'
-                        onClick={() => approveMutation.mutate(suggestion.id)}
+                        onClick={() => {
+                          approveMutation.mutate(suggestion.id)
+                          // Open dialog for actionable suggestions
+                          if (actionType === 'SCHEDULE_CALL' && onScheduleCall) {
+                            onScheduleCall(content.title)
+                          } else if (actionType === 'SEND_PROPOSAL' && onSendProposal) {
+                            onSendProposal()
+                          }
+                        }}
                         disabled={approveMutation.isPending || rejectMutation.isPending}
                         title='Approve'
                       >
