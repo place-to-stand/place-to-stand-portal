@@ -187,7 +187,7 @@ export function LeadsWorkspace({
           onSuccess={handleSheetSuccess}
         />
       ) : null}
-      <Tabs value='board' className='flex min-h-0 flex-1 flex-col gap-3'>
+      <Tabs id='leads-tabs' value='board' className='flex min-h-0 flex-1 flex-col gap-3'>
         <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
           <TabsList className='bg-muted/40 h-10 w-full justify-start gap-2 rounded-lg p-1 sm:w-auto'>
             <TabsTrigger value='board' className='px-3 py-1.5 text-sm'>

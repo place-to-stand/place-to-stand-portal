@@ -5,6 +5,21 @@ const nextConfig: NextConfig = {
   cacheComponents: false,
   reactCompiler: true,
   reactStrictMode: true,
+  async rewrites() {
+    // PostHog reverse proxy to avoid ad blockers
+    // The relay path must match the api_host in instrumentation-client.ts
+    const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com'
+    return [
+      {
+        source: '/relay-HVAq/static/:path*',
+        destination: `${posthogHost}/static/:path*`,
+      },
+      {
+        source: '/relay-HVAq/:path*',
+        destination: `${posthogHost}/:path*`,
+      },
+    ]
+  },
 }
 
 const shouldUploadSourceMaps =
