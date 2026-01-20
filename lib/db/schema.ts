@@ -130,6 +130,14 @@ export const draftStatus = pgEnum('draft_status', [
   'FAILED', // Send failed
 ])
 
+// Email template categories
+export const emailTemplateCategory = pgEnum('email_template_category', [
+  'FOLLOW_UP',
+  'PROPOSAL',
+  'MEETING',
+  'INTRODUCTION',
+])
+
 // =============================================================================
 // CORE TABLES
 // =============================================================================
@@ -754,6 +762,9 @@ export const leads = pgTable(
     index('idx_leads_priority')
       .using('btree', table.priorityTier.asc().nullsLast(), table.overallScore.desc().nullsFirst())
       .where(sql`(deleted_at IS NULL)`),
+    uniqueIndex('idx_leads_contact_email_unique')
+      .using('btree', table.contactEmail.asc().nullsLast().op('text_ops'))
+      .where(sql`(deleted_at IS NULL AND contact_email IS NOT NULL)`),
     foreignKey({
       columns: [table.assigneeId],
       foreignColumns: [users.id],
@@ -1196,9 +1207,13 @@ export const emailDrafts = pgTable(
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
     userId: uuid('user_id').notNull(),
-    connectionId: uuid('connection_id').notNull(), // Which Gmail account to send from
+    connectionId: uuid('connection_id'), // Which Gmail account to send from (null when sendVia='resend')
     threadId: uuid('thread_id'), // Links to existing thread (for replies)
+    leadId: uuid('lead_id'), // Links to lead (for lead outreach)
     gmailDraftId: text('gmail_draft_id'), // If synced to Gmail drafts
+
+    // Send method: 'gmail' uses OAuth connection, 'resend' uses Resend API
+    sendVia: text('send_via').default('gmail').notNull(),
 
     // Compose type
     composeType: text('compose_type').notNull(), // 'new', 'reply', 'reply_all', 'forward'
@@ -1253,11 +1268,16 @@ export const emailDrafts = pgTable(
       columns: [table.connectionId],
       foreignColumns: [oauthConnections.id],
       name: 'email_drafts_connection_id_fkey',
-    }).onDelete('cascade'),
+    }).onDelete('set null'),
     foreignKey({
       columns: [table.threadId],
       foreignColumns: [threads.id],
       name: 'email_drafts_thread_id_fkey',
+    }),
+    foreignKey({
+      columns: [table.leadId],
+      foreignColumns: [leads.id],
+      name: 'email_drafts_lead_id_fkey',
     }),
     foreignKey({
       columns: [table.clientId],
@@ -1268,6 +1288,44 @@ export const emailDrafts = pgTable(
       columns: [table.projectId],
       foreignColumns: [projects.id],
       name: 'email_drafts_project_id_fkey',
+    }),
+  ]
+)
+
+// =============================================================================
+// EMAIL TEMPLATES
+// =============================================================================
+
+export const emailTemplates = pgTable(
+  'email_templates',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    name: text().notNull(),
+    category: emailTemplateCategory().notNull(),
+    subject: text().notNull(),
+    bodyHtml: text('body_html').notNull(),
+    bodyText: text('body_text'),
+    isDefault: boolean('is_default').default(false).notNull(),
+    createdBy: uuid('created_by'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    index('idx_email_templates_category')
+      .using('btree', table.category.asc().nullsLast())
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_email_templates_default')
+      .using('btree', table.category.asc().nullsLast())
+      .where(sql`(deleted_at IS NULL AND is_default = true)`),
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [users.id],
+      name: 'email_templates_created_by_fkey',
     }),
   ]
 )

@@ -13,8 +13,9 @@ import {
   type LeadActionsResult,
 } from './schemas/lead-actions'
 
+// Vercel AI Gateway - uses AI_GATEWAY_API_KEY env var automatically
 const gateway = createGateway()
-const model = gateway('anthropic/claude-sonnet')
+const model = gateway('google/gemini-3-flash')
 
 export interface SuggestActionsParams extends LeadActionsPromptParams {}
 

@@ -37,7 +37,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { useToast } from '@/components/ui/use-toast'
-import { UserPlus, CheckCircle } from 'lucide-react'
+import { UserPlus, CheckCircle, Mail } from 'lucide-react'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import { cn } from '@/lib/utils'
@@ -61,6 +61,7 @@ import { archiveLead, saveLead } from '../actions'
 import { ConvertLeadDialog } from './convert-lead-dialog'
 import { LeadSuggestionsPanel } from './lead-suggestions-panel'
 import { PriorityBadge, ScoreBadge } from './priority-badge'
+import { SendEmailDialog } from './send-email-dialog'
 
 const formSchema = z.object({
   contactName: z.string().trim().min(1, 'Contact name is required').max(160),
@@ -93,6 +94,7 @@ type LeadSheetProps = {
   initialStatus?: LeadStatusValue | null
   assignees: LeadAssigneeOption[]
   canManage?: boolean
+  senderName?: string
   onSuccess: () => void
 }
 
@@ -103,6 +105,7 @@ export function LeadSheet({
   initialStatus,
   assignees,
   canManage = false,
+  senderName = '',
   onSuccess,
 }: LeadSheetProps) {
   const isEditing = Boolean(lead)
@@ -110,6 +113,7 @@ export function LeadSheet({
   const [isArchiving, startArchiveTransition] = useTransition()
   const [isArchiveDialogOpen, setArchiveDialogOpen] = useState(false)
   const [isConvertDialogOpen, setConvertDialogOpen] = useState(false)
+  const [isEmailDialogOpen, setEmailDialogOpen] = useState(false)
   const { toast } = useToast()
 
   // Check if lead can be converted
@@ -355,6 +359,17 @@ export function LeadSheet({
                       <CheckCircle className='h-3 w-3' />
                       Converted
                     </Badge>
+                  )}
+                  {lead.contactEmail && canManage && (
+                    <Button
+                      type='button'
+                      variant='outline'
+                      size='sm'
+                      onClick={() => setEmailDialogOpen(true)}
+                    >
+                      <Mail className='mr-2 h-4 w-4' />
+                      Send Email
+                    </Button>
                   )}
                   {canConvert && (
                     <Button
@@ -706,6 +721,15 @@ export function LeadSheet({
           lead={lead}
           open={isConvertDialogOpen}
           onOpenChange={setConvertDialogOpen}
+          onSuccess={onSuccess}
+        />
+      )}
+      {lead && lead.contactEmail && senderName && (
+        <SendEmailDialog
+          lead={lead}
+          senderName={senderName}
+          open={isEmailDialogOpen}
+          onOpenChange={setEmailDialogOpen}
           onSuccess={onSuccess}
         />
       )}

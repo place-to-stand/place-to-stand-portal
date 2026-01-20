@@ -66,7 +66,7 @@ export async function POST(_request: Request, { params }: RouteParams) {
     let inReplyTo: string | undefined
     let references: string[] | undefined
 
-    if (draft.inReplyToMessageId) {
+    if (draft.inReplyToMessageId && draft.connectionId) {
       const originalMessage = await getMessage(user.id, draft.inReplyToMessageId, {
         connectionId: draft.connectionId,
       })
@@ -130,7 +130,7 @@ export async function POST(_request: Request, { params }: RouteParams) {
         references,
         attachments: attachments.length > 0 ? attachments : undefined,
       },
-      { connectionId: draft.connectionId }
+      { connectionId: draft.connectionId ?? undefined }
     )
 
     // Mark draft as sent

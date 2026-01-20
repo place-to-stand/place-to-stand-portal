@@ -4,6 +4,7 @@ import { cache } from 'react'
 import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
+import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { leads, users } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
@@ -21,8 +22,9 @@ import type {
 import { fetchAdminUsers } from '@/lib/data/users'
 
 export const fetchLeadsBoard = cache(
-  async (_user: AppUser): Promise<LeadBoardColumnData[]> => {
-    void _user
+  async (user: AppUser): Promise<LeadBoardColumnData[]> => {
+    // Leads are admin-only - enforce at data layer for defense in depth
+    assertAdmin(user)
     let rows: LeadRow[]
 
     try {
@@ -92,8 +94,9 @@ export const fetchLeadsBoard = cache(
 )
 
 export const fetchLeadById = cache(
-  async (_user: AppUser, leadId: string): Promise<LeadRecord> => {
-    void _user
+  async (user: AppUser, leadId: string): Promise<LeadRecord> => {
+    // Leads are admin-only - enforce at data layer for defense in depth
+    assertAdmin(user)
     let rows: LeadRow[]
 
     try {

@@ -24,6 +24,7 @@ import {
   githubRepoLinks,
   suggestions,
   emailDrafts,
+  emailTemplates,
 } from './schema'
 
 export const clientsRelations = relations(clients, ({ one, many }) => ({
@@ -62,6 +63,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   threads: many(threads),
   messages: many(messages),
   emailDrafts: many(emailDrafts),
+  emailTemplates: many(emailTemplates),
 }))
 
 export const taskAssigneesRelations = relations(taskAssignees, ({ one }) => ({
@@ -124,6 +126,7 @@ export const leadsRelations = relations(leads, ({ one, many }) => ({
   contactLeads: many(contactLeads),
   threads: many(threads),
   suggestions: many(suggestions),
+  emailDrafts: many(emailDrafts),
 }))
 
 export const hourBlocksRelations = relations(hourBlocks, ({ one }) => ({
@@ -383,6 +386,10 @@ export const emailDraftsRelations = relations(emailDrafts, ({ one }) => ({
     fields: [emailDrafts.threadId],
     references: [threads.id],
   }),
+  lead: one(leads, {
+    fields: [emailDrafts.leadId],
+    references: [leads.id],
+  }),
   client: one(clients, {
     fields: [emailDrafts.clientId],
     references: [clients.id],
@@ -390,5 +397,16 @@ export const emailDraftsRelations = relations(emailDrafts, ({ one }) => ({
   project: one(projects, {
     fields: [emailDrafts.projectId],
     references: [projects.id],
+  }),
+}))
+
+// =============================================================================
+// EMAIL TEMPLATES
+// =============================================================================
+
+export const emailTemplatesRelations = relations(emailTemplates, ({ one }) => ({
+  createdByUser: one(users, {
+    fields: [emailTemplates.createdBy],
+    references: [users.id],
   }),
 }))

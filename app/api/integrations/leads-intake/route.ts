@@ -1,3 +1,5 @@
+import { timingSafeEqual } from 'crypto'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
@@ -45,7 +47,14 @@ export async function POST(request: NextRequest) {
 
   const providedToken = providedAuth.slice('Bearer '.length).trim()
 
-  if (providedToken !== configuredToken) {
+  // Use constant-time comparison to prevent timing attacks
+  const providedBuffer = Buffer.from(providedToken)
+  const configuredBuffer = Buffer.from(configuredToken)
+  const tokensMatch =
+    providedBuffer.length === configuredBuffer.length &&
+    timingSafeEqual(providedBuffer, configuredBuffer)
+
+  if (!tokensMatch) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

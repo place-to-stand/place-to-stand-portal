@@ -123,6 +123,7 @@ export function LeadSuggestionsPanel({
           <span className='text-sm font-medium'>Suggested Actions</span>
         </div>
         <Button
+          type='button'
           variant='outline'
           size='icon-sm'
           onClick={() => generateMutation.mutate()}
@@ -155,6 +156,7 @@ export function LeadSuggestionsPanel({
             No suggestions yet.
           </p>
           <Button
+            type='button'
             variant='outline'
             size='sm'
             onClick={() => generateMutation.mutate()}
@@ -216,6 +218,7 @@ export function LeadSuggestionsPanel({
                   {isPending && (
                     <div className='flex items-center gap-1'>
                       <Button
+                        type='button'
                         size='icon-sm'
                         variant='ghost'
                         className='h-7 w-7 text-green-600 hover:bg-green-500/10 hover:text-green-600'
@@ -226,6 +229,7 @@ export function LeadSuggestionsPanel({
                         <Check className='h-4 w-4' />
                       </Button>
                       <Button
+                        type='button'
                         size='icon-sm'
                         variant='ghost'
                         className='h-7 w-7 text-red-600 hover:bg-red-500/10 hover:text-red-600'
