@@ -120,6 +120,20 @@
       "when": 1768871967641,
       "tag": "0016_lead_google_integrations",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1768952328371,
+      "tag": "0017_add_lead_id_to_tasks",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1769019359222,
+      "tag": "0018_add_meetings_proposals_tables",
+      "breakpoints": true
     }
   ]
 }

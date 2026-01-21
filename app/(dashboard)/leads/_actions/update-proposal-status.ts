@@ -8,7 +8,11 @@ import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { leads } from '@/lib/db/schema'
 import { shareDocument } from '@/lib/google/docs'
-import type { GoogleProposalRef, GoogleProposalStatus } from '@/lib/leads/types'
+import {
+  fetchProposalById,
+  updateProposal,
+  type ProposalStatus,
+} from '@/lib/queries/proposals'
 
 import { revalidateLeadsPath } from './utils'
 import type { LeadActionResult } from './types'
@@ -44,41 +48,44 @@ export async function updateProposalStatus(
 
   const { leadId, proposalId, status, sendToEmail, grantEditAccess } = parsed.data
 
-  // Fetch the lead
-  const leadRows = await db
-    .select({
-      id: leads.id,
-      contactEmail: leads.contactEmail,
-      googleProposals: leads.googleProposals,
-    })
-    .from(leads)
-    .where(and(eq(leads.id, leadId), isNull(leads.deletedAt)))
-    .limit(1)
+  // Fetch the proposal from the proposals table
+  const proposal = await fetchProposalById(proposalId)
 
-  const lead = leadRows[0]
-
-  if (!lead) {
-    return { success: false, error: 'Lead not found.' }
-  }
-
-  const proposals = (lead.googleProposals as GoogleProposalRef[]) ?? []
-  const proposalIndex = proposals.findIndex(p => p.id === proposalId)
-
-  if (proposalIndex === -1) {
+  if (!proposal) {
     return { success: false, error: 'Proposal not found.' }
   }
 
-  const proposal = proposals[proposalIndex]
-  const now = new Date().toISOString()
+  // Verify the proposal belongs to this lead
+  if (proposal.leadId !== leadId) {
+    return { success: false, error: 'Proposal does not belong to this lead.' }
+  }
+
+  // For SENT status, we need to get the lead's email if not provided
+  let targetEmail = sendToEmail
+
+  if (status === 'SENT' && !targetEmail) {
+    const leadRows = await db
+      .select({ contactEmail: leads.contactEmail })
+      .from(leads)
+      .where(and(eq(leads.id, leadId), isNull(leads.deletedAt)))
+      .limit(1)
+
+    targetEmail = leadRows[0]?.contactEmail ?? undefined
+  }
 
   // Handle SENT status - share the document
   if (status === 'SENT') {
-    const targetEmail = sendToEmail ?? lead.contactEmail
-
     if (!targetEmail) {
       return {
         success: false,
         error: 'No email address available. Provide an email or add one to the lead.',
+      }
+    }
+
+    if (!proposal.docId) {
+      return {
+        success: false,
+        error: 'Proposal has no associated document.',
       }
     }
 
@@ -102,31 +109,32 @@ export async function updateProposalStatus(
     }
 
     // Update proposal with sent info
-    proposal.status = 'SENT'
-    proposal.sentAt = now
-    proposal.sentToEmail = targetEmail
+    const now = new Date().toISOString()
+    try {
+      await updateProposal(proposalId, {
+        status: 'SENT' as ProposalStatus,
+        sentAt: now,
+        sentToEmail: targetEmail,
+      })
+    } catch (error) {
+      console.error('Failed to update proposal status', error)
+      return {
+        success: false,
+        error: 'Failed to update proposal status.',
+      }
+    }
   } else {
     // Just update the status
-    proposal.status = status as GoogleProposalStatus
-  }
-
-  // Update the proposals array
-  const updatedProposals = [...proposals]
-  updatedProposals[proposalIndex] = proposal
-
-  try {
-    await db
-      .update(leads)
-      .set({
-        googleProposals: updatedProposals,
-        updatedAt: now,
+    try {
+      await updateProposal(proposalId, {
+        status: status as ProposalStatus,
       })
-      .where(eq(leads.id, leadId))
-  } catch (error) {
-    console.error('Failed to update proposal status', error)
-    return {
-      success: false,
-      error: 'Failed to update proposal status.',
+    } catch (error) {
+      console.error('Failed to update proposal status', error)
+      return {
+        success: false,
+        error: 'Failed to update proposal status.',
+      }
     }
   }
 

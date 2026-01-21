@@ -1,14 +1,26 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { format, isPast, isFuture } from 'date-fns'
 import { Calendar, Video, Clock, ExternalLink, Plus, Users } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import type { GoogleMeetingRef, LeadRecord } from '@/lib/leads/types'
+import { Skeleton } from '@/components/ui/skeleton'
+import type { LeadRecord } from '@/lib/leads/types'
 
 import { ScheduleMeetingDialog } from './schedule-meeting-dialog'
+
+type Meeting = {
+  id: string
+  title: string
+  status: string
+  startsAt: string
+  endsAt: string
+  meetLink: string | null
+  attendeeEmails: string[]
+  createdAt: string
+}
 
 type LeadMeetingsSectionProps = {
   lead: LeadRecord
@@ -22,8 +34,32 @@ export function LeadMeetingsSection({
   onSuccess,
 }: LeadMeetingsSectionProps) {
   const [isDialogOpen, setDialogOpen] = useState(false)
+  const [meetings, setMeetings] = useState<Meeting[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  const meetings = lead.googleMeetings ?? []
+  const fetchMeetings = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/leads/${lead.id}/meetings`)
+      if (response.ok) {
+        const data = await response.json()
+        setMeetings(data.meetings ?? [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch lead meetings:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [lead.id])
+
+  useEffect(() => {
+    fetchMeetings()
+  }, [fetchMeetings])
+
+  const handleMeetingSuccess = useCallback(() => {
+    setDialogOpen(false)
+    fetchMeetings()
+    onSuccess?.()
+  }, [fetchMeetings, onSuccess])
 
   // Sort meetings: upcoming first, then past
   const sortedMeetings = [...meetings].sort((a, b) => {
@@ -68,7 +104,12 @@ export function LeadMeetingsSection({
         )}
       </div>
 
-      {meetings.length === 0 ? (
+      {isLoading ? (
+        <div className="space-y-2">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+        </div>
+      ) : meetings.length === 0 ? (
         <p className="text-sm text-muted-foreground">No meetings scheduled yet.</p>
       ) : (
         <div className="space-y-2">
@@ -104,10 +145,7 @@ export function LeadMeetingsSection({
         lead={lead}
         open={isDialogOpen}
         onOpenChange={setDialogOpen}
-        onSuccess={() => {
-          setDialogOpen(false)
-          onSuccess?.()
-        }}
+        onSuccess={handleMeetingSuccess}
       />
     </div>
   )
@@ -117,7 +155,7 @@ function MeetingCard({
   meeting,
   isPast = false,
 }: {
-  meeting: GoogleMeetingRef
+  meeting: Meeting
   isPast?: boolean
 }) {
   const startDate = new Date(meeting.startsAt)

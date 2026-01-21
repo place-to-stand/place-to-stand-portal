@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useCallback } from 'react'
+import { useState, useEffect, useCallback, useTransition } from 'react'
 import { format } from 'date-fns'
 import {
   FileText,
@@ -15,6 +15,7 @@ import {
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,10 +23,23 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useToast } from '@/components/ui/use-toast'
-import type { GoogleProposalRef, GoogleProposalStatus, LeadRecord } from '@/lib/leads/types'
+import type { LeadRecord } from '@/lib/leads/types'
 
 import { CreateProposalDialog } from './create-proposal-dialog'
 import { updateProposalStatus } from '../_actions'
+
+type ProposalStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED'
+
+type Proposal = {
+  id: string
+  title: string
+  docUrl: string | null
+  docId: string | null
+  status: ProposalStatus
+  sentAt: string | null
+  sentToEmail: string | null
+  createdAt: string
+}
 
 type LeadProposalsSectionProps = {
   lead: LeadRecord
@@ -34,7 +48,7 @@ type LeadProposalsSectionProps = {
 }
 
 const STATUS_CONFIG: Record<
-  GoogleProposalStatus,
+  ProposalStatus,
   { label: string; icon: typeof FileText; className: string }
 > = {
   DRAFT: {
@@ -70,8 +84,37 @@ export function LeadProposalsSection({
   onSuccess,
 }: LeadProposalsSectionProps) {
   const [isDialogOpen, setDialogOpen] = useState(false)
+  const [proposals, setProposals] = useState<Proposal[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  const proposals = lead.googleProposals ?? []
+  const fetchProposals = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/leads/${lead.id}/proposals`)
+      if (response.ok) {
+        const data = await response.json()
+        setProposals(data.proposals ?? [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch lead proposals:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [lead.id])
+
+  useEffect(() => {
+    fetchProposals()
+  }, [fetchProposals])
+
+  const handleProposalSuccess = useCallback(() => {
+    setDialogOpen(false)
+    fetchProposals()
+    onSuccess?.()
+  }, [fetchProposals, onSuccess])
+
+  const handleProposalUpdate = useCallback(() => {
+    fetchProposals()
+    onSuccess?.()
+  }, [fetchProposals, onSuccess])
 
   // Sort proposals: most recent first
   const sortedProposals = [...proposals].sort(
@@ -103,7 +146,12 @@ export function LeadProposalsSection({
         )}
       </div>
 
-      {proposals.length === 0 ? (
+      {isLoading ? (
+        <div className="space-y-2">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+        </div>
+      ) : proposals.length === 0 ? (
         <p className="text-sm text-muted-foreground">No proposals created yet.</p>
       ) : (
         <div className="space-y-2">
@@ -113,7 +161,7 @@ export function LeadProposalsSection({
               proposal={proposal}
               lead={lead}
               canManage={canManage}
-              onUpdate={onSuccess}
+              onUpdate={handleProposalUpdate}
             />
           ))}
         </div>
@@ -123,10 +171,7 @@ export function LeadProposalsSection({
         lead={lead}
         open={isDialogOpen}
         onOpenChange={setDialogOpen}
-        onSuccess={() => {
-          setDialogOpen(false)
-          onSuccess?.()
-        }}
+        onSuccess={handleProposalSuccess}
       />
     </div>
   )
@@ -138,7 +183,7 @@ function ProposalCard({
   canManage,
   onUpdate,
 }: {
-  proposal: GoogleProposalRef
+  proposal: Proposal
   lead: LeadRecord
   canManage: boolean
   onUpdate?: () => void
@@ -150,7 +195,7 @@ function ProposalCard({
   const StatusIcon = statusConfig.icon
 
   const handleStatusChange = useCallback(
-    (newStatus: GoogleProposalStatus) => {
+    (newStatus: ProposalStatus) => {
       startUpdateTransition(async () => {
         const result = await updateProposalStatus({
           leadId: lead.id,
@@ -208,16 +253,18 @@ function ProposalCard({
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          <a
-            href={proposal.docUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1 rounded-md bg-blue-500/10 px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-500/20"
-          >
-            <FileText className="h-3 w-3" />
-            Open
-            <ExternalLink className="h-2.5 w-2.5" />
-          </a>
+          {proposal.docUrl && (
+            <a
+              href={proposal.docUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 rounded-md bg-blue-500/10 px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-500/20"
+            >
+              <FileText className="h-3 w-3" />
+              Open
+              <ExternalLink className="h-2.5 w-2.5" />
+            </a>
+          )}
           {canManage && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

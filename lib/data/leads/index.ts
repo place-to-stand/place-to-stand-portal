@@ -242,5 +242,92 @@ function isMissingRankColumnError(error: unknown) {
   )
 }
 
+/**
+ * Find a lead by contact email address.
+ * Used for auto-linking incoming emails to leads.
+ * Returns null if no lead found with that email.
+ */
+export async function getLeadByContactEmail(email: string): Promise<{
+  id: string
+  contactName: string
+  contactEmail: string
+  lastScoredAt: string | null
+  lastContactAt: string | null
+} | null> {
+  const normalizedEmail = email.toLowerCase().trim()
+
+  const [lead] = await db
+    .select({
+      id: leads.id,
+      contactName: leads.contactName,
+      contactEmail: leads.contactEmail,
+      lastScoredAt: leads.lastScoredAt,
+      lastContactAt: leads.lastContactAt,
+    })
+    .from(leads)
+    .where(
+      and(
+        eq(sql`lower(${leads.contactEmail})`, normalizedEmail),
+        isNull(leads.deletedAt)
+      )
+    )
+    .limit(1)
+
+  if (!lead || !lead.contactEmail) {
+    return null
+  }
+
+  return {
+    id: lead.id,
+    contactName: lead.contactName,
+    contactEmail: lead.contactEmail,
+    lastScoredAt: lead.lastScoredAt,
+    lastContactAt: lead.lastContactAt,
+  }
+}
+
+/**
+ * Update a lead's scoring fields after AI scoring.
+ */
+export async function updateLeadScoring(
+  leadId: string,
+  scoring: {
+    overallScore: number
+    priorityTier: string
+    signals: unknown[]
+  }
+): Promise<void> {
+  const timestamp = new Date().toISOString()
+
+  await db
+    .update(leads)
+    .set({
+      overallScore: scoring.overallScore.toFixed(2),
+      priorityTier: scoring.priorityTier,
+      signals: scoring.signals,
+      lastScoredAt: timestamp,
+      updatedAt: timestamp,
+    })
+    .where(eq(leads.id, leadId))
+}
+
+/**
+ * Update a lead's last contact timestamp.
+ */
+export async function updateLeadLastContact(
+  leadId: string,
+  contactAt: string
+): Promise<void> {
+  const timestamp = new Date().toISOString()
+
+  await db
+    .update(leads)
+    .set({
+      lastContactAt: contactAt,
+      updatedAt: timestamp,
+    })
+    .where(eq(leads.id, leadId))
+}
+
 type LeadRowPromise = ReturnType<typeof selectLeadRows>
 type LeadRow = LeadRowPromise extends Promise<Array<infer T>> ? T : never

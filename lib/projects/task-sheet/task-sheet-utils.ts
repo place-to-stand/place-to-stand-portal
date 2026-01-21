@@ -35,6 +35,7 @@ type CreateDefaultValuesArgs = {
   defaultDueOn: string | null
   defaultProjectId: string | null
   defaultAssigneeId: string | null
+  defaultLeadId: string | null
 }
 
 type BuildProjectItemsArgs = {
@@ -227,6 +228,7 @@ export const createDefaultValues = ({
   defaultDueOn,
   defaultProjectId,
   defaultAssigneeId,
+  defaultLeadId,
 }: CreateDefaultValuesArgs): TaskSheetFormValues => ({
   title: task?.title ?? '',
   description: task?.description ?? null,
@@ -234,6 +236,7 @@ export const createDefaultValues = ({
   dueOn: toDateInputValue(task?.due_on ?? defaultDueOn ?? null),
   projectId: task?.project_id ?? defaultProjectId ?? '',
   assigneeId: currentAssigneeId ?? defaultAssigneeId ?? null,
+  leadId: task?.lead_id ?? defaultLeadId ?? null,
 })
 
 export const getDisabledReason = (

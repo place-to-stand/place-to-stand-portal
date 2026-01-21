@@ -17,7 +17,7 @@ import {
 const gateway = createGateway()
 const model = gateway('google/gemini-3-flash')
 
-export interface ScoreLeadParams extends LeadScoringPromptParams {}
+export type ScoreLeadParams = LeadScoringPromptParams
 
 export interface ScoreLeadResponse {
   result: LeadScoringResult

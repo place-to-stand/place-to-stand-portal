@@ -2,7 +2,6 @@
 
 import { and, eq, isNull } from 'drizzle-orm'
 import { z } from 'zod'
-import { randomUUID } from 'crypto'
 
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
@@ -10,12 +9,14 @@ import { db } from '@/lib/db'
 import { leads, users } from '@/lib/db/schema'
 import {
   copyDocument,
-  shareDocument,
   replaceTextInDocument,
   getDocUrl,
   extractDocIdFromUrl,
 } from '@/lib/google/docs'
-import type { GoogleProposalRef } from '@/lib/leads/types'
+import {
+  createProposal as createProposalRecord,
+  type Proposal,
+} from '@/lib/queries/proposals'
 
 import { revalidateLeadsPath } from './utils'
 import type { LeadActionResult } from './types'
@@ -35,7 +36,7 @@ const createProposalSchema = z.object({
 export type CreateProposalInput = z.infer<typeof createProposalSchema>
 
 export type CreateProposalResult = LeadActionResult & {
-  proposal?: GoogleProposalRef
+  proposal?: Proposal
 }
 
 export async function createProposal(
@@ -73,7 +74,6 @@ export async function createProposal(
       contactName: leads.contactName,
       contactEmail: leads.contactEmail,
       companyName: leads.companyName,
-      googleProposals: leads.googleProposals,
     })
     .from(leads)
     .where(and(eq(leads.id, leadId), isNull(leads.deletedAt)))
@@ -162,36 +162,26 @@ export async function createProposal(
     // Continue - doc was created, variables just weren't replaced
   }
 
-  // Build the proposal reference
-  const proposalRef: GoogleProposalRef = {
-    id: randomUUID(),
-    docId: newDoc.id,
-    docUrl: getDocUrl(newDoc.id),
-    templateDocId,
-    title,
-    status: 'DRAFT',
-    sentAt: null,
-    sentToEmail: null,
-    createdAt: now.toISOString(),
-    createdBy: user.id,
-  }
-
-  // Update lead with new proposal
-  const existingProposals = (lead.googleProposals as GoogleProposalRef[]) ?? []
+  // Build and save the proposal record
+  let proposal: Proposal
 
   try {
-    await db
-      .update(leads)
-      .set({
-        googleProposals: [...existingProposals, proposalRef],
-        updatedAt: now.toISOString(),
-      })
-      .where(eq(leads.id, leadId))
+    proposal = await createProposalRecord({
+      leadId,
+      title,
+      docUrl: getDocUrl(newDoc.id),
+      docId: newDoc.id,
+      templateDocId,
+      status: 'DRAFT',
+      estimatedValue: estimatedValue !== undefined ? String(estimatedValue) : null,
+      expirationDate: expirationDate ?? null,
+      createdBy: user.id,
+    })
   } catch (error) {
-    console.error('Failed to save proposal to lead', error)
+    console.error('Failed to save proposal to database', error)
     return {
       success: false,
-      error: 'Proposal was created but failed to save to lead.',
+      error: 'Proposal was created but failed to save to database.',
     }
   }
 
@@ -199,6 +189,6 @@ export async function createProposal(
 
   return {
     success: true,
-    proposal: proposalRef,
+    proposal,
   }
 }

@@ -1,7 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useState, useTransition } from 'react'
-import { FileText, DollarSign, CalendarDays } from 'lucide-react'
+import { useCallback, useState, useTransition } from 'react'
+import { FileText, DollarSign, CalendarDays, Loader2 } from 'lucide-react'
 import { addDays, format } from 'date-fns'
 
 import { Button } from '@/components/ui/button'
@@ -9,13 +9,15 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ui/use-toast'
-import type { LeadRecord, GoogleProposalRef } from '@/lib/leads/types'
+import type { LeadRecord } from '@/lib/leads/types'
+import type { Proposal } from '@/lib/queries/proposals'
 
 import { createProposal } from '../_actions'
 
@@ -23,36 +25,60 @@ type CreateProposalDialogProps = {
   lead: LeadRecord
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSuccess?: (proposal: GoogleProposalRef) => void
+  onSuccess?: (proposal: Proposal) => void
 }
 
+// Use key-based remounting to reset form state when dialog opens
 export function CreateProposalDialog({
   lead,
   open,
   onOpenChange,
   onSuccess,
 }: CreateProposalDialogProps) {
+  // Key changes when dialog opens to remount form and reset state
+  const [formKey, setFormKey] = useState(0)
+
+  const handleOpenChange = useCallback(
+    (nextOpen: boolean) => {
+      if (nextOpen) {
+        setFormKey(k => k + 1)
+      }
+      onOpenChange(nextOpen)
+    },
+    [onOpenChange]
+  )
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <CreateProposalDialogContent
+        key={formKey}
+        lead={lead}
+        onOpenChange={onOpenChange}
+        onSuccess={onSuccess}
+      />
+    </Dialog>
+  )
+}
+
+function CreateProposalDialogContent({
+  lead,
+  onOpenChange,
+  onSuccess,
+}: Omit<CreateProposalDialogProps, 'open'>) {
   const { toast } = useToast()
   const [isCreating, startCreateTransition] = useTransition()
 
-  // Form fields
+  // Form fields with defaults computed once on mount
   const [templateDocUrl, setTemplateDocUrl] = useState('')
-  const [title, setTitle] = useState('')
-  const [estimatedValue, setEstimatedValue] = useState('')
-  const [expirationDate, setExpirationDate] = useState('')
-
-  // Reset form when dialog opens
-  useEffect(() => {
-    if (open) {
-      setTemplateDocUrl('')
-      // Default title includes company/contact name
-      const defaultTitle = `Proposal for ${lead.companyName || lead.contactName}`
-      setTitle(defaultTitle)
-      setEstimatedValue(lead.estimatedValue?.toString() ?? '')
-      // Default expiration: 30 days from now
-      setExpirationDate(format(addDays(new Date(), 30), 'yyyy-MM-dd'))
-    }
-  }, [open, lead.contactName, lead.companyName, lead.estimatedValue])
+  const [title, setTitle] = useState(
+    () => `Proposal for ${lead.companyName || lead.contactName}`
+  )
+  const [estimatedValue, setEstimatedValue] = useState(
+    () => lead.estimatedValue?.toString() ?? ''
+  )
+  const [expirationDate, setExpirationDate] = useState(
+    () => format(addDays(new Date(), 30), 'yyyy-MM-dd')
+  )
 
   const handleCreate = useCallback(() => {
     if (!templateDocUrl.trim()) {
@@ -119,8 +145,7 @@ export function CreateProposalDialog({
   const canCreate = templateDocUrl.trim() && title.trim() && !isCreating
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+    <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
@@ -218,7 +243,7 @@ export function CreateProposalDialog({
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 border-t pt-4">
+        <DialogFooter>
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
@@ -228,7 +253,10 @@ export function CreateProposalDialog({
           </Button>
           <Button onClick={handleCreate} disabled={!canCreate}>
             {isCreating ? (
-              'Creating...'
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creating...
+              </>
             ) : (
               <>
                 <FileText className="mr-2 h-4 w-4" />
@@ -236,8 +264,7 @@ export function CreateProposalDialog({
               </>
             )}
           </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogFooter>
+    </DialogContent>
   )
 }

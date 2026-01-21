@@ -5,4 +5,6 @@ export { createLeadEmail, type CreateLeadEmailInput, type CreateLeadEmailResult 
 export { scheduleMeeting, type ScheduleMeetingInput, type ScheduleMeetingResult } from './schedule-meeting'
 export { createProposal, type CreateProposalInput, type CreateProposalResult } from './create-proposal'
 export { updateProposalStatus, type UpdateProposalStatusInput } from './update-proposal-status'
+export { createLeadTask, type CreateLeadTaskInput, type CreateLeadTaskResult } from './create-lead-task'
+export { rescoreLead, type RescoreLeadInput, type RescoreLeadResult } from './rescore-lead'
 export { type LeadActionResult } from './types'

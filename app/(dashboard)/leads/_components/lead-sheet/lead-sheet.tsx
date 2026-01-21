@@ -17,13 +17,11 @@ import { useToast } from '@/components/ui/use-toast'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 
-import { archiveLead, saveLead } from '../../actions'
-import { LeadMeetingsSection } from '../lead-meetings-section'
-import { LeadProposalsSection } from '../lead-proposals-section'
-import { LeadSuggestionsPanel } from '../lead-suggestions-panel'
+import { archiveLead, saveLead, rescoreLead } from '../../actions'
 import { LeadSheetDialogs } from './lead-sheet-dialogs'
 import { LeadSheetFormFields } from './lead-sheet-form-fields'
 import { LeadSheetHeader } from './lead-sheet-header'
+import { LeadSheetRightColumn } from './lead-sheet-right-column'
 import { leadFormSchema, type LeadFormValues, type LeadSheetProps } from './types'
 
 export function LeadSheet({
@@ -39,6 +37,7 @@ export function LeadSheet({
   const isEditing = Boolean(lead)
   const [isSaving, startSaveTransition] = useTransition()
   const [isArchiving, startArchiveTransition] = useTransition()
+  const [isRescoring, startRescoreTransition] = useTransition()
   const [isArchiveDialogOpen, setArchiveDialogOpen] = useState(false)
   const [isConvertDialogOpen, setConvertDialogOpen] = useState(false)
   const [isEmailDialogOpen, setEmailDialogOpen] = useState(false)
@@ -200,6 +199,35 @@ export function LeadSheet({
     })
   }, [lead, onOpenChange, onSuccess, toast])
 
+  const handleRescore = useCallback(() => {
+    if (!lead) return
+
+    startRescoreTransition(async () => {
+      const result = await rescoreLead({ leadId: lead.id })
+
+      if (!result.success) {
+        toast({
+          variant: 'destructive',
+          title: 'Unable to rescore lead',
+          description: result.error ?? 'Please try again.',
+        })
+        return
+      }
+
+      toast({
+        title: 'Lead rescored',
+        description: 'The lead has been analyzed and rescored.',
+      })
+
+      onSuccess()
+    })
+  }, [lead, onSuccess, toast])
+
+  const handleScheduleMeeting = useCallback((initialTitle?: string) => {
+    setMeetingInitialTitle(initialTitle)
+    setMeetingDialogOpen(true)
+  }, [])
+
   const {
     requestConfirmation: requestCloseConfirmation,
     dialog: unsavedChangesDialog,
@@ -230,9 +258,10 @@ export function LeadSheet({
   return (
     <>
       <Sheet open={open} onOpenChange={handleSheetOpenChange}>
-        <SheetContent className='flex w-full flex-col gap-6 overflow-y-auto pb-24 sm:max-w-[676px]'>
-          <div className='flex flex-col gap-6'>
-            <SheetHeader className='border-b-2 border-b-amber-500/60 px-6 pt-4'>
+        <SheetContent className='flex h-full w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl lg:max-w-6xl'>
+          {/* Header */}
+          <div className='flex-shrink-0 border-b-2 border-b-amber-500/60 px-6 pt-4 pb-3'>
+            <SheetHeader>
               <SheetTitle>{isEditing ? 'Edit lead' : 'New lead'}</SheetTitle>
               <SheetDescription>
                 {isEditing
@@ -242,77 +271,73 @@ export function LeadSheet({
             </SheetHeader>
 
             {isEditing && lead && (
-              <LeadSheetHeader
-                lead={lead}
-                canManage={canManage}
-                canConvert={canConvert}
-                isConverted={isConverted}
-                onSendEmail={() => setEmailDialogOpen(true)}
-                onConvertToClient={() => setConvertDialogOpen(true)}
-              />
+              <div className='mt-3'>
+                <LeadSheetHeader
+                  lead={lead}
+                  canManage={canManage}
+                  canConvert={canConvert}
+                  isConverted={isConverted}
+                  onSendEmail={() => setEmailDialogOpen(true)}
+                  onConvertToClient={() => setConvertDialogOpen(true)}
+                />
+              </div>
             )}
-
-            <Form {...form}>
-              <form
-                className='flex flex-1 flex-col gap-6 px-6 pb-4'
-                onSubmit={form.handleSubmit(handleFormSubmit)}
-              >
-                <LeadSheetFormFields
-                  control={form.control}
-                  assignees={assignees}
-                  selectedSourceType={selectedSourceType}
-                />
-
-                {isEditing && lead && canManage && (
-                  <div className='rounded-lg border bg-muted/30 p-4'>
-                    <LeadSuggestionsPanel
-                      leadId={lead.id}
-                      isAdmin={canManage}
-                      onScheduleCall={(initialTitle) => {
-                        setMeetingInitialTitle(initialTitle)
-                        setMeetingDialogOpen(true)
-                      }}
-                      onSendProposal={() => setProposalDialogOpen(true)}
-                    />
-                  </div>
-                )}
-
-                {isEditing && lead && (
-                  <div className='grid gap-4 sm:grid-cols-2'>
-                    <div className='rounded-lg border bg-muted/30 p-4'>
-                      <LeadMeetingsSection
-                        lead={lead}
-                        canManage={canManage}
-                        onSuccess={onSuccess}
-                      />
-                    </div>
-                    <div className='rounded-lg border bg-muted/30 p-4'>
-                      <LeadProposalsSection
-                        lead={lead}
-                        canManage={canManage}
-                        onSuccess={onSuccess}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <TaskSheetFormFooter
-                  saveLabel={saveLabel}
-                  submitDisabled={submitDisabled}
-                  submitDisabledReason={submitDisabledReason}
-                  undo={undo}
-                  redo={redo}
-                  canUndo={canUndo}
-                  canRedo={canRedo}
-                  isEditing={isEditing}
-                  deleteDisabled={submitDisabled}
-                  deleteDisabledReason={archiveDisabledReason}
-                  onRequestDelete={() => setArchiveDialogOpen(true)}
-                  deleteAriaLabel='Archive lead'
-                />
-              </form>
-            </Form>
           </div>
+
+          {/* Two Column Layout */}
+          <Form {...form}>
+            <form
+              className='flex min-h-0 flex-1'
+              onSubmit={form.handleSubmit(handleFormSubmit)}
+            >
+              {/* Left Column - Form Fields */}
+              <div className='flex flex-1 flex-col overflow-hidden border-r'>
+                <div className='flex-1 overflow-y-auto p-6'>
+                  <LeadSheetFormFields
+                    control={form.control}
+                    assignees={assignees}
+                    selectedSourceType={selectedSourceType}
+                  />
+                </div>
+
+                {/* Footer - Fixed at bottom of left column */}
+                <div className='flex-shrink-0 border-t bg-background px-6 py-4'>
+                  <TaskSheetFormFooter
+                    saveLabel={saveLabel}
+                    submitDisabled={submitDisabled}
+                    submitDisabledReason={submitDisabledReason}
+                    undo={undo}
+                    redo={redo}
+                    canUndo={canUndo}
+                    canRedo={canRedo}
+                    isEditing={isEditing}
+                    deleteDisabled={submitDisabled}
+                    deleteDisabledReason={archiveDisabledReason}
+                    onRequestDelete={() => setArchiveDialogOpen(true)}
+                    deleteAriaLabel='Archive lead'
+                  />
+                </div>
+              </div>
+
+              {/* Right Column - Actions & Panels (only for editing) */}
+              {isEditing && lead && (
+                <LeadSheetRightColumn
+                  lead={lead}
+                  assignees={assignees}
+                  canManage={canManage}
+                  canConvert={canConvert}
+                  isConverted={isConverted}
+                  onSendEmail={() => setEmailDialogOpen(true)}
+                  onScheduleMeeting={handleScheduleMeeting}
+                  onCreateProposal={() => setProposalDialogOpen(true)}
+                  onConvertToClient={() => setConvertDialogOpen(true)}
+                  onRescore={handleRescore}
+                  isRescoring={isRescoring}
+                  onSuccess={onSuccess}
+                />
+              )}
+            </form>
+          </Form>
         </SheetContent>
       </Sheet>
       <LeadSheetDialogs

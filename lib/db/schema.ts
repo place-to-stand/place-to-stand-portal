@@ -138,6 +138,23 @@ export const emailTemplateCategory = pgEnum('email_template_category', [
   'INTRODUCTION',
 ])
 
+// Meeting status
+export const meetingStatus = pgEnum('meeting_status', [
+  'SCHEDULED',
+  'COMPLETED',
+  'CANCELLED',
+  'NO_SHOW',
+])
+
+// Proposal status
+export const proposalStatus = pgEnum('proposal_status', [
+  'DRAFT',
+  'SENT',
+  'VIEWED',
+  'ACCEPTED',
+  'REJECTED',
+])
+
 // =============================================================================
 // CORE TABLES
 // =============================================================================
@@ -384,6 +401,7 @@ export const tasks = pgTable(
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
     projectId: uuid('project_id').notNull(),
+    leadId: uuid('lead_id'),
     title: text().notNull(),
     description: text(),
     status: taskStatus().default('BACKLOG').notNull(),
@@ -422,11 +440,19 @@ export const tasks = pgTable(
     index('idx_tasks_updated_by')
       .using('btree', table.updatedBy.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
+    index('idx_tasks_lead')
+      .using('btree', table.leadId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND lead_id IS NOT NULL)`),
     foreignKey({
       columns: [table.projectId],
       foreignColumns: [projects.id],
       name: 'tasks_project_id_fkey',
     }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.leadId],
+      foreignColumns: [leads.id],
+      name: 'tasks_lead_id_fkey',
+    }).onDelete('set null'),
     foreignKey({
       columns: [table.createdBy],
       foreignColumns: [users.id],
@@ -1332,6 +1358,123 @@ export const emailTemplates = pgTable(
       columns: [table.createdBy],
       foreignColumns: [users.id],
       name: 'email_templates_created_by_fkey',
+    }),
+  ]
+)
+
+// =============================================================================
+// MEETINGS (Lead & Client meetings with Google Calendar integration)
+// =============================================================================
+
+export const meetings = pgTable(
+  'meetings',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    leadId: uuid('lead_id'),
+    clientId: uuid('client_id'),
+    title: text().notNull(),
+    description: text(),
+    status: meetingStatus().default('SCHEDULED').notNull(),
+    startsAt: timestamp('starts_at', { withTimezone: true, mode: 'string' }).notNull(),
+    endsAt: timestamp('ends_at', { withTimezone: true, mode: 'string' }).notNull(),
+    meetLink: text('meet_link'),
+    calendarEventId: text('calendar_event_id'),
+    attendeeEmails: text('attendee_emails').array().default([]).notNull(),
+    createdBy: uuid('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    index('idx_meetings_lead')
+      .using('btree', table.leadId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND lead_id IS NOT NULL)`),
+    index('idx_meetings_client')
+      .using('btree', table.clientId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND client_id IS NOT NULL)`),
+    index('idx_meetings_starts_at')
+      .using('btree', table.startsAt.asc().nullsLast())
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_meetings_calendar_event')
+      .using('btree', table.calendarEventId.asc().nullsLast().op('text_ops'))
+      .where(sql`(deleted_at IS NULL AND calendar_event_id IS NOT NULL)`),
+    foreignKey({
+      columns: [table.leadId],
+      foreignColumns: [leads.id],
+      name: 'meetings_lead_id_fkey',
+    }).onDelete('set null'),
+    foreignKey({
+      columns: [table.clientId],
+      foreignColumns: [clients.id],
+      name: 'meetings_client_id_fkey',
+    }).onDelete('set null'),
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [users.id],
+      name: 'meetings_created_by_fkey',
+    }),
+  ]
+)
+
+// =============================================================================
+// PROPOSALS (Lead & Client proposals with Google Docs integration)
+// =============================================================================
+
+export const proposals = pgTable(
+  'proposals',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    leadId: uuid('lead_id'),
+    clientId: uuid('client_id'),
+    title: text().notNull(),
+    docUrl: text('doc_url'),
+    docId: text('doc_id'),
+    templateDocId: text('template_doc_id'),
+    status: proposalStatus().default('DRAFT').notNull(),
+    estimatedValue: numeric('estimated_value', { precision: 12, scale: 2 }),
+    expirationDate: date('expiration_date'),
+    sentAt: timestamp('sent_at', { withTimezone: true, mode: 'string' }),
+    sentToEmail: text('sent_to_email'),
+    createdBy: uuid('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    index('idx_proposals_lead')
+      .using('btree', table.leadId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND lead_id IS NOT NULL)`),
+    index('idx_proposals_client')
+      .using('btree', table.clientId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND client_id IS NOT NULL)`),
+    index('idx_proposals_status')
+      .using('btree', table.status.asc().nullsLast())
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_proposals_doc_id')
+      .using('btree', table.docId.asc().nullsLast().op('text_ops'))
+      .where(sql`(deleted_at IS NULL AND doc_id IS NOT NULL)`),
+    foreignKey({
+      columns: [table.leadId],
+      foreignColumns: [leads.id],
+      name: 'proposals_lead_id_fkey',
+    }).onDelete('set null'),
+    foreignKey({
+      columns: [table.clientId],
+      foreignColumns: [clients.id],
+      name: 'proposals_client_id_fkey',
+    }).onDelete('set null'),
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [users.id],
+      name: 'proposals_created_by_fkey',
     }),
   ]
 )

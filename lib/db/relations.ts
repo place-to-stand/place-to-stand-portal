@@ -25,6 +25,8 @@ import {
   suggestions,
   emailDrafts,
   emailTemplates,
+  meetings,
+  proposals,
 } from './schema'
 
 export const clientsRelations = relations(clients, ({ one, many }) => ({
@@ -38,6 +40,8 @@ export const clientsRelations = relations(clients, ({ one, many }) => ({
   contactClients: many(contactClients),
   threads: many(threads),
   emailDrafts: many(emailDrafts),
+  meetings: many(meetings),
+  proposals: many(proposals),
 }))
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -64,6 +68,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   messages: many(messages),
   emailDrafts: many(emailDrafts),
   emailTemplates: many(emailTemplates),
+  meetings: many(meetings),
+  proposals: many(proposals),
 }))
 
 export const taskAssigneesRelations = relations(taskAssignees, ({ one }) => ({
@@ -101,6 +107,10 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
     fields: [tasks.projectId],
     references: [projects.id],
   }),
+  lead: one(leads, {
+    fields: [tasks.leadId],
+    references: [leads.id],
+  }),
   user_createdBy: one(users, {
     fields: [tasks.createdBy],
     references: [users.id],
@@ -127,6 +137,9 @@ export const leadsRelations = relations(leads, ({ one, many }) => ({
   threads: many(threads),
   suggestions: many(suggestions),
   emailDrafts: many(emailDrafts),
+  tasks: many(tasks),
+  meetings: many(meetings),
+  proposals: many(proposals),
 }))
 
 export const hourBlocksRelations = relations(hourBlocks, ({ one }) => ({
@@ -407,6 +420,44 @@ export const emailDraftsRelations = relations(emailDrafts, ({ one }) => ({
 export const emailTemplatesRelations = relations(emailTemplates, ({ one }) => ({
   createdByUser: one(users, {
     fields: [emailTemplates.createdBy],
+    references: [users.id],
+  }),
+}))
+
+// =============================================================================
+// MEETINGS (Lead & Client meetings)
+// =============================================================================
+
+export const meetingsRelations = relations(meetings, ({ one }) => ({
+  lead: one(leads, {
+    fields: [meetings.leadId],
+    references: [leads.id],
+  }),
+  client: one(clients, {
+    fields: [meetings.clientId],
+    references: [clients.id],
+  }),
+  createdByUser: one(users, {
+    fields: [meetings.createdBy],
+    references: [users.id],
+  }),
+}))
+
+// =============================================================================
+// PROPOSALS (Lead & Client proposals)
+// =============================================================================
+
+export const proposalsRelations = relations(proposals, ({ one }) => ({
+  lead: one(leads, {
+    fields: [proposals.leadId],
+    references: [leads.id],
+  }),
+  client: one(clients, {
+    fields: [proposals.clientId],
+    references: [clients.id],
+  }),
+  createdByUser: one(users, {
+    fields: [proposals.createdBy],
     references: [users.id],
   }),
 }))

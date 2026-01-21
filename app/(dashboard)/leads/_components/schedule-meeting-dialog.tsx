@@ -1,8 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useState, useTransition } from 'react'
+import { useCallback, useState, useTransition } from 'react'
 import { format, addHours, startOfHour } from 'date-fns'
-import { Calendar, Clock, Video, Users } from 'lucide-react'
+import { Calendar, Clock, Loader2, Video, Users } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -10,6 +10,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -17,7 +18,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/use-toast'
-import type { LeadRecord, GoogleMeetingRef } from '@/lib/leads/types'
+import type { LeadRecord } from '@/lib/leads/types'
+import type { Meeting } from '@/lib/queries/meetings'
 
 import { scheduleMeeting } from '../_actions'
 
@@ -25,11 +27,12 @@ type ScheduleMeetingDialogProps = {
   lead: LeadRecord
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSuccess?: (meeting: GoogleMeetingRef) => void
+  onSuccess?: (meeting: Meeting) => void
   /** Pre-filled title from AI suggestion */
   initialTitle?: string
 }
 
+// Use key-based remounting to reset form state when dialog opens
 export function ScheduleMeetingDialog({
   lead,
   open,
@@ -37,35 +40,57 @@ export function ScheduleMeetingDialog({
   onSuccess,
   initialTitle,
 }: ScheduleMeetingDialogProps) {
+  // Key changes when dialog opens to remount form and reset state
+  const [formKey, setFormKey] = useState(0)
+
+  const handleOpenChange = useCallback(
+    (nextOpen: boolean) => {
+      if (nextOpen) {
+        setFormKey(k => k + 1)
+      }
+      onOpenChange(nextOpen)
+    },
+    [onOpenChange]
+  )
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <ScheduleMeetingDialogContent
+        key={formKey}
+        lead={lead}
+        onOpenChange={onOpenChange}
+        onSuccess={onSuccess}
+        initialTitle={initialTitle}
+      />
+    </Dialog>
+  )
+}
+
+function ScheduleMeetingDialogContent({
+  lead,
+  onOpenChange,
+  onSuccess,
+  initialTitle,
+}: Omit<ScheduleMeetingDialogProps, 'open'>) {
   const { toast } = useToast()
   const [isScheduling, startScheduleTransition] = useTransition()
 
-  // Form fields
-  const [title, setTitle] = useState('')
+  // Form fields with defaults computed once on mount
+  const [title, setTitle] = useState(
+    () => initialTitle ?? `Meeting with ${lead.contactName}`
+  )
   const [description, setDescription] = useState('')
-  const [startDateTime, setStartDateTime] = useState('')
-  const [endDateTime, setEndDateTime] = useState('')
+  const [startDateTime, setStartDateTime] = useState(() => {
+    const nextHour = startOfHour(addHours(new Date(), 1))
+    return formatDateTimeLocal(nextHour)
+  })
+  const [endDateTime, setEndDateTime] = useState(() => {
+    const nextHour = startOfHour(addHours(new Date(), 1))
+    const endTime = addHours(nextHour, 0.5) // 30 min default
+    return formatDateTimeLocal(endTime)
+  })
   const [addMeetLink, setAddMeetLink] = useState(true)
   const [additionalAttendees, setAdditionalAttendees] = useState('')
-
-  // Reset form when dialog opens
-  useEffect(() => {
-    if (open) {
-      // Default title includes lead name
-      const defaultTitle = initialTitle ?? `Meeting with ${lead.contactName}`
-      setTitle(defaultTitle)
-      setDescription('')
-      setAddMeetLink(true)
-      setAdditionalAttendees('')
-
-      // Default to next hour, 30 min meeting
-      const nextHour = startOfHour(addHours(new Date(), 1))
-      const endTime = addHours(nextHour, 0.5) // 30 min default
-
-      setStartDateTime(formatDateTimeLocal(nextHour))
-      setEndDateTime(formatDateTimeLocal(endTime))
-    }
-  }, [open, lead.contactName, initialTitle])
 
   // Update end time when start time changes (keep duration)
   const handleStartTimeChange = useCallback(
@@ -173,8 +198,7 @@ export function ScheduleMeetingDialog({
   const canSchedule = title.trim() && startDateTime && endDateTime && !isScheduling
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+    <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
@@ -277,7 +301,7 @@ export function ScheduleMeetingDialog({
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 border-t pt-4">
+        <DialogFooter>
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
@@ -287,7 +311,10 @@ export function ScheduleMeetingDialog({
           </Button>
           <Button onClick={handleSchedule} disabled={!canSchedule}>
             {isScheduling ? (
-              'Scheduling...'
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Scheduling...
+              </>
             ) : (
               <>
                 <Calendar className="mr-2 h-4 w-4" />
@@ -295,9 +322,8 @@ export function ScheduleMeetingDialog({
               </>
             )}
           </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogFooter>
+    </DialogContent>
   )
 }
 

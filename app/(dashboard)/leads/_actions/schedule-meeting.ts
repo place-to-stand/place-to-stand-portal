@@ -2,7 +2,6 @@
 
 import { and, eq, isNull } from 'drizzle-orm'
 import { z } from 'zod'
-import { randomUUID } from 'crypto'
 
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
@@ -13,7 +12,7 @@ import {
   extractMeetLink,
   type CalendarEvent,
 } from '@/lib/google/calendar'
-import type { GoogleMeetingRef } from '@/lib/leads/types'
+import { createMeeting, type Meeting } from '@/lib/queries/meetings'
 
 import { revalidateLeadsPath } from './utils'
 import type { LeadActionResult } from './types'
@@ -32,7 +31,7 @@ const scheduleMeetingSchema = z.object({
 export type ScheduleMeetingInput = z.infer<typeof scheduleMeetingSchema>
 
 export type ScheduleMeetingResult = LeadActionResult & {
-  meeting?: GoogleMeetingRef
+  meeting?: Meeting
 }
 
 export async function scheduleMeeting(
@@ -65,12 +64,11 @@ export async function scheduleMeeting(
     }
   }
 
-  // Fetch the lead to get existing meetings
+  // Fetch the lead to verify it exists and get contact email
   const existingLeads = await db
     .select({
       id: leads.id,
       contactEmail: leads.contactEmail,
-      googleMeetings: leads.googleMeetings,
     })
     .from(leads)
     .where(and(eq(leads.id, leadId), isNull(leads.deletedAt)))
@@ -112,39 +110,29 @@ export async function scheduleMeeting(
     }
   }
 
-  // Build the meeting reference
+  // Build and save the meeting record
   const meetLink = extractMeetLink(calendarEvent)
-  const now = new Date().toISOString()
 
-  const meetingRef: GoogleMeetingRef = {
-    id: randomUUID(),
-    eventId: calendarEvent.id,
-    meetLink,
-    title: calendarEvent.summary,
-    startsAt: startDateTime,
-    endsAt: endDateTime,
-    attendeeEmails: allAttendees,
-    createdAt: now,
-    createdBy: user.id,
-  }
-
-  // Update lead with new meeting
-  const existingMeetings = (lead.googleMeetings as GoogleMeetingRef[]) ?? []
+  let meeting: Meeting
 
   try {
-    await db
-      .update(leads)
-      .set({
-        googleMeetings: [...existingMeetings, meetingRef],
-        updatedAt: now,
-      })
-      .where(eq(leads.id, leadId))
+    meeting = await createMeeting({
+      leadId,
+      title: calendarEvent.summary,
+      description: description ?? null,
+      startsAt: startDateTime,
+      endsAt: endDateTime,
+      meetLink,
+      calendarEventId: calendarEvent.id,
+      attendeeEmails: allAttendees,
+      createdBy: user.id,
+    })
   } catch (error) {
-    console.error('Failed to save meeting to lead', error)
-    // Note: Calendar event was created, we just failed to save reference
+    console.error('Failed to save meeting to database', error)
+    // Note: Calendar event was created, we just failed to save to database
     return {
       success: false,
-      error: 'Meeting was created in Google Calendar but failed to save to lead.',
+      error: 'Meeting was created in Google Calendar but failed to save to database.',
     }
   }
 
@@ -152,6 +140,6 @@ export async function scheduleMeeting(
 
   return {
     success: true,
-    meeting: meetingRef,
+    meeting,
   }
 }

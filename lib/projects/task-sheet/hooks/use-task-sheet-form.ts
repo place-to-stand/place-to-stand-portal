@@ -19,6 +19,7 @@ export type UseTaskSheetFormArgs = {
   defaultDueOn: string | null
   defaultProjectId: string | null
   defaultAssigneeId: string | null
+  defaultLeadId: string | null
 }
 
 export type UseTaskSheetFormReturn = {
@@ -34,6 +35,7 @@ export const useTaskSheetForm = ({
   defaultDueOn,
   defaultProjectId,
   defaultAssigneeId,
+  defaultLeadId,
 }: UseTaskSheetFormArgs): UseTaskSheetFormReturn => {
   const currentAssigneeId = task?.assignees[0]?.user_id ?? null
 
@@ -46,6 +48,7 @@ export const useTaskSheetForm = ({
         defaultDueOn,
         defaultProjectId,
         defaultAssigneeId,
+        defaultLeadId,
       }),
     [
       task,
@@ -54,6 +57,7 @@ export const useTaskSheetForm = ({
       defaultDueOn,
       defaultProjectId,
       defaultAssigneeId,
+      defaultLeadId,
     ]
   )
 

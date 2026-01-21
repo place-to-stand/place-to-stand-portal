@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useState, useTransition } from 'react'
 import { format, addHours } from 'date-fns'
-import { Mail, Clock, Send, ChevronDown } from 'lucide-react'
+import { Mail, Clock, Loader2, Send, ChevronDown } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -345,13 +346,16 @@ export function SendEmailDialog({
           </Collapsible>
         </div>
 
-        <div className="flex justify-end gap-2 border-t pt-4">
+        <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSending}>
             Cancel
           </Button>
           <Button onClick={handleSend} disabled={!canSend}>
             {isSending ? (
-              'Sending...'
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {scheduleMode === 'later' ? 'Scheduling...' : 'Sending...'}
+              </>
             ) : scheduleMode === 'later' ? (
               <>
                 <Clock className="mr-2 h-4 w-4" />
@@ -364,7 +368,7 @@ export function SendEmailDialog({
               </>
             )}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
