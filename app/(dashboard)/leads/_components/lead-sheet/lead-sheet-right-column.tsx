@@ -80,7 +80,6 @@ export function LeadSheetRightColumn({
         <Separator />
         <LeadMeetingsSection
           lead={lead}
-          canManage={canManage}
           onSuccess={onSuccess}
         />
 

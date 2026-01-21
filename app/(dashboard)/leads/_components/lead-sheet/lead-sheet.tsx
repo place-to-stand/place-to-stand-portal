@@ -274,10 +274,8 @@ export function LeadSheet({
               <div className='mt-3'>
                 <LeadSheetHeader
                   lead={lead}
-                  canManage={canManage}
                   canConvert={canConvert}
                   isConverted={isConverted}
-                  onSendEmail={() => setEmailDialogOpen(true)}
                   onConvertToClient={() => setConvertDialogOpen(true)}
                 />
               </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { CheckCircle, Mail, UserPlus } from 'lucide-react'
+import { CheckCircle, UserPlus } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -10,19 +10,15 @@ import { PriorityBadge, ScoreBadge } from '../priority-badge'
 
 type LeadSheetHeaderProps = {
   lead: LeadRecord
-  canManage: boolean
   canConvert: boolean
   isConverted: boolean
-  onSendEmail: () => void
   onConvertToClient: () => void
 }
 
 export function LeadSheetHeader({
   lead,
-  canManage,
   canConvert,
   isConverted,
-  onSendEmail,
   onConvertToClient,
 }: LeadSheetHeaderProps) {
   const showHeader = lead.overallScore !== null || canConvert || isConverted
@@ -48,17 +44,6 @@ export function LeadSheetHeader({
             <CheckCircle className='h-3 w-3' />
             Converted
           </Badge>
-        )}
-        {lead.contactEmail && canManage && (
-          <Button
-            type='button'
-            variant='outline'
-            size='sm'
-            onClick={onSendEmail}
-          >
-            <Mail className='mr-2 h-4 w-4' />
-            Send Email
-          </Button>
         )}
         {canConvert && (
           <Button

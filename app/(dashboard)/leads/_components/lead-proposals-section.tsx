@@ -5,7 +5,6 @@ import { format } from 'date-fns'
 import {
   FileText,
   ExternalLink,
-  Plus,
   Send,
   Eye,
   CheckCircle,
@@ -13,8 +12,8 @@ import {
   Clock,
 } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   DropdownMenu,
@@ -123,26 +122,13 @@ export function LeadProposalsSection({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <FileText className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Proposals</span>
-          {proposals.length > 0 && (
-            <Badge variant="secondary" className="text-xs">
-              {proposals.length}
-            </Badge>
-          )}
-        </div>
-        {canManage && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setDialogOpen(true)}
-          >
-            <Plus className="mr-1 h-3 w-3" />
-            Create
-          </Button>
+      <div className="flex items-center gap-2">
+        <FileText className="h-4 w-4 text-muted-foreground" />
+        <span className="text-sm font-medium">Proposals</span>
+        {proposals.length > 0 && (
+          <Badge variant="secondary" className="text-xs">
+            {proposals.length}
+          </Badge>
         )}
       </div>
 

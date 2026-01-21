@@ -2,9 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { format, isPast, isFuture } from 'date-fns'
-import { Calendar, Video, Clock, ExternalLink, Plus, Users } from 'lucide-react'
+import { Calendar, Video, Clock, ExternalLink, Users } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { LeadRecord } from '@/lib/leads/types'
@@ -24,13 +23,11 @@ type Meeting = {
 
 type LeadMeetingsSectionProps = {
   lead: LeadRecord
-  canManage: boolean
   onSuccess?: () => void
 }
 
 export function LeadMeetingsSection({
   lead,
-  canManage,
   onSuccess,
 }: LeadMeetingsSectionProps) {
   const [isDialogOpen, setDialogOpen] = useState(false)
@@ -81,26 +78,13 @@ export function LeadMeetingsSection({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Meetings</span>
-          {meetings.length > 0 && (
-            <Badge variant="secondary" className="text-xs">
-              {meetings.length}
-            </Badge>
-          )}
-        </div>
-        {canManage && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setDialogOpen(true)}
-          >
-            <Plus className="mr-1 h-3 w-3" />
-            Schedule
-          </Button>
+      <div className="flex items-center gap-2">
+        <Calendar className="h-4 w-4 text-muted-foreground" />
+        <span className="text-sm font-medium">Meetings</span>
+        {meetings.length > 0 && (
+          <Badge variant="secondary" className="text-xs">
+            {meetings.length}
+          </Badge>
         )}
       </div>
 
