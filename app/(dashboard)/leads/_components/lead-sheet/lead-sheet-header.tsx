@@ -26,7 +26,7 @@ export function LeadSheetHeader({
   if (!showHeader) return null
 
   return (
-    <div className='mx-6 flex items-center justify-between rounded-lg border bg-muted/30 px-4 py-3'>
+    <div className='flex items-center justify-between py-2'>
       <div className='flex items-center gap-3'>
         {lead.overallScore !== null && (
           <div className='flex items-center gap-2'>

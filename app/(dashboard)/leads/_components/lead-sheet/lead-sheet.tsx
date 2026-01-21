@@ -263,7 +263,7 @@ export function LeadSheet({
         <SheetContent className='flex h-full w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl lg:max-w-6xl'>
           {/* Header */}
           <div className='flex-shrink-0 border-b-2 border-b-amber-500/60 px-6 pt-4 pb-3'>
-            <SheetHeader>
+            <SheetHeader className='bg-transparent p-0'>
               <SheetTitle>{isEditing ? 'Edit lead' : 'New lead'}</SheetTitle>
               <SheetDescription>
                 {isEditing
@@ -273,14 +273,12 @@ export function LeadSheet({
             </SheetHeader>
 
             {isEditing && lead && (
-              <div className='mt-3'>
-                <LeadSheetHeader
-                  lead={lead}
-                  canConvert={canConvert}
-                  isConverted={isConverted}
-                  onConvertToClient={() => setConvertDialogOpen(true)}
-                />
-              </div>
+              <LeadSheetHeader
+                lead={lead}
+                canConvert={canConvert}
+                isConverted={isConverted}
+                onConvertToClient={() => setConvertDialogOpen(true)}
+              />
             )}
           </div>
 
