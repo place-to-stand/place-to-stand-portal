@@ -6,16 +6,15 @@ import { Calendar, Clock, Loader2, Video, Users } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/use-toast'
 import type { LeadRecord } from '@/lib/leads/types'
@@ -54,19 +53,19 @@ export function ScheduleMeetingDialog({
   )
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <ScheduleMeetingDialogContent
+    <Sheet open={open} onOpenChange={handleOpenChange}>
+      <ScheduleMeetingSheetContent
         key={formKey}
         lead={lead}
         onOpenChange={onOpenChange}
         onSuccess={onSuccess}
         initialTitle={initialTitle}
       />
-    </Dialog>
+    </Sheet>
   )
 }
 
-function ScheduleMeetingDialogContent({
+function ScheduleMeetingSheetContent({
   lead,
   onOpenChange,
   onSuccess,
@@ -198,19 +197,19 @@ function ScheduleMeetingDialogContent({
   const canSchedule = title.trim() && startDateTime && endDateTime && !isScheduling
 
   return (
-    <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Schedule Meeting
-          </DialogTitle>
-          <DialogDescription>
-            Create a calendar event with {lead.contactName}
-            {lead.contactEmail && ` (${lead.contactEmail})`}
-          </DialogDescription>
-        </DialogHeader>
+    <SheetContent side="right" className="flex w-full flex-col sm:max-w-md">
+      <SheetHeader className="bg-transparent p-0 px-6 pt-6">
+        <SheetTitle className="flex items-center gap-2">
+          <Calendar className="h-5 w-5" />
+          Schedule Meeting
+        </SheetTitle>
+        <SheetDescription>
+          Create a calendar event with {lead.contactName}
+          {lead.contactEmail && ` (${lead.contactEmail})`}
+        </SheetDescription>
+      </SheetHeader>
 
-        <div className="flex flex-col gap-4 py-4">
+      <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-6 py-4">
           {/* Title */}
           <div className="space-y-2">
             <Label htmlFor="meeting-title">Title</Label>
@@ -299,31 +298,31 @@ function ScheduleMeetingDialogContent({
                 : 'Add email addresses separated by commas'}
             </p>
           </div>
-        </div>
+      </div>
 
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isScheduling}
-          >
-            Cancel
-          </Button>
-          <Button onClick={handleSchedule} disabled={!canSchedule}>
-            {isScheduling ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Scheduling...
-              </>
-            ) : (
-              <>
-                <Calendar className="mr-2 h-4 w-4" />
-                Schedule Meeting
-              </>
-            )}
-          </Button>
-        </DialogFooter>
-    </DialogContent>
+      <div className="flex items-center justify-end gap-2 border-t px-6 py-4">
+        <Button
+          variant="outline"
+          onClick={() => onOpenChange(false)}
+          disabled={isScheduling}
+        >
+          Cancel
+        </Button>
+        <Button onClick={handleSchedule} disabled={!canSchedule}>
+          {isScheduling ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Scheduling...
+            </>
+          ) : (
+            <>
+              <Calendar className="mr-2 h-4 w-4" />
+              Schedule Meeting
+            </>
+          )}
+        </Button>
+      </div>
+    </SheetContent>
   )
 }
 

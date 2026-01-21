@@ -5,16 +5,15 @@ import { FileText, DollarSign, CalendarDays, Loader2 } from 'lucide-react'
 import { addDays, format } from 'date-fns'
 
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { useToast } from '@/components/ui/use-toast'
 import type { LeadRecord } from '@/lib/leads/types'
 import type { Proposal } from '@/lib/queries/proposals'
@@ -49,18 +48,18 @@ export function CreateProposalDialog({
   )
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <CreateProposalDialogContent
+    <Sheet open={open} onOpenChange={handleOpenChange}>
+      <CreateProposalSheetContent
         key={formKey}
         lead={lead}
         onOpenChange={onOpenChange}
         onSuccess={onSuccess}
       />
-    </Dialog>
+    </Sheet>
   )
 }
 
-function CreateProposalDialogContent({
+function CreateProposalSheetContent({
   lead,
   onOpenChange,
   onSuccess,
@@ -145,19 +144,19 @@ function CreateProposalDialogContent({
   const canCreate = templateDocUrl.trim() && title.trim() && !isCreating
 
   return (
-    <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Create Proposal
-          </DialogTitle>
-          <DialogDescription>
-            Create a new proposal document for {lead.contactName}
-            {lead.companyName && ` at ${lead.companyName}`}
-          </DialogDescription>
-        </DialogHeader>
+    <SheetContent side="right" className="flex w-full flex-col sm:max-w-md">
+      <SheetHeader className="bg-transparent p-0 px-6 pt-6">
+        <SheetTitle className="flex items-center gap-2">
+          <FileText className="h-5 w-5" />
+          Create Proposal
+        </SheetTitle>
+        <SheetDescription>
+          Create a new proposal document for {lead.contactName}
+          {lead.companyName && ` at ${lead.companyName}`}
+        </SheetDescription>
+      </SheetHeader>
 
-        <div className="flex flex-col gap-4 py-4">
+      <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-6 py-4">
           {/* Template URL */}
           <div className="space-y-2">
             <Label htmlFor="template-url">Template Document URL</Label>
@@ -241,30 +240,30 @@ function CreateProposalDialogContent({
               <code>{'{{proposed_value}}'}</code>
             </div>
           </div>
-        </div>
+      </div>
 
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isCreating}
-          >
-            Cancel
-          </Button>
-          <Button onClick={handleCreate} disabled={!canCreate}>
-            {isCreating ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              <>
-                <FileText className="mr-2 h-4 w-4" />
-                Create Proposal
-              </>
-            )}
-          </Button>
-        </DialogFooter>
-    </DialogContent>
+      <div className="flex items-center justify-end gap-2 border-t px-6 py-4">
+        <Button
+          variant="outline"
+          onClick={() => onOpenChange(false)}
+          disabled={isCreating}
+        >
+          Cancel
+        </Button>
+        <Button onClick={handleCreate} disabled={!canCreate}>
+          {isCreating ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating...
+            </>
+          ) : (
+            <>
+              <FileText className="mr-2 h-4 w-4" />
+              Create Proposal
+            </>
+          )}
+        </Button>
+      </div>
+    </SheetContent>
   )
 }
