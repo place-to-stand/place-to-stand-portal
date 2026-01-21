@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, useWatch } from 'react-hook-form'
+import { Archive, Redo2, Undo2 } from 'lucide-react'
 
-import { TaskSheetFormFooter } from '@/app/(dashboard)/projects/_components/task-sheet/form/task-sheet-form-footer'
+import { Button } from '@/components/ui/button'
+import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Form } from '@/components/ui/form'
 import {
   Sheet,
@@ -298,22 +300,65 @@ export function LeadSheet({
                   />
                 </div>
 
-                {/* Footer - Fixed at bottom of left column */}
-                <div className='flex-shrink-0 border-t bg-background px-6 py-4'>
-                  <TaskSheetFormFooter
-                    saveLabel={saveLabel}
-                    submitDisabled={submitDisabled}
-                    submitDisabledReason={submitDisabledReason}
-                    undo={undo}
-                    redo={redo}
-                    canUndo={canUndo}
-                    canRedo={canRedo}
-                    isEditing={isEditing}
-                    deleteDisabled={submitDisabled}
-                    deleteDisabledReason={archiveDisabledReason}
-                    onRequestDelete={() => setArchiveDialogOpen(true)}
-                    deleteAriaLabel='Archive lead'
-                  />
+                {/* Footer - Attached to left column */}
+                <div className='flex-shrink-0 border-t bg-muted/50 px-6 py-4'>
+                  <div className='flex w-full items-center justify-between gap-3'>
+                    <div className='flex items-center gap-2'>
+                      <DisabledFieldTooltip
+                        disabled={submitDisabled}
+                        reason={submitDisabledReason}
+                      >
+                        <Button
+                          type='submit'
+                          disabled={submitDisabled}
+                          aria-label={`${saveLabel} (⌘S / Ctrl+S)`}
+                          title={`${saveLabel} (⌘S / Ctrl+S)`}
+                        >
+                          {saveLabel}
+                        </Button>
+                      </DisabledFieldTooltip>
+                      <Button
+                        type='button'
+                        variant='outline'
+                        size='icon'
+                        onClick={undo}
+                        disabled={!canUndo}
+                        aria-label='Undo (⌘Z / Ctrl+Z)'
+                        title='Undo (⌘Z / Ctrl+Z)'
+                      >
+                        <Undo2 className='h-4 w-4' />
+                      </Button>
+                      <Button
+                        type='button'
+                        variant='outline'
+                        size='icon'
+                        onClick={redo}
+                        disabled={!canRedo}
+                        aria-label='Redo (⇧⌘Z / Ctrl+Shift+Z)'
+                        title='Redo (⇧⌘Z / Ctrl+Shift+Z)'
+                      >
+                        <Redo2 className='h-4 w-4' />
+                      </Button>
+                    </div>
+                    {isEditing && (
+                      <DisabledFieldTooltip
+                        disabled={submitDisabled}
+                        reason={archiveDisabledReason}
+                      >
+                        <Button
+                          type='button'
+                          variant='destructive'
+                          onClick={() => setArchiveDialogOpen(true)}
+                          disabled={submitDisabled}
+                          aria-label='Archive lead'
+                          title='Archive lead'
+                          size='icon'
+                        >
+                          <Archive className='h-4 w-4' />
+                        </Button>
+                      </DisabledFieldTooltip>
+                    )}
+                  </div>
                 </div>
               </div>
 
