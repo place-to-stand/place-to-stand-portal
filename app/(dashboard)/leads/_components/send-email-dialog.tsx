@@ -5,14 +5,6 @@ import { format, addHours } from 'date-fns'
 import { Mail, Clock, Loader2, Send, ChevronDown } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
@@ -23,6 +15,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import {
   Collapsible,
   CollapsibleContent,
@@ -196,19 +195,19 @@ export function SendEmailDialog({
   const canSend = toEmail && subject && bodyHtml && !isSending
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-[700px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="flex w-full flex-col sm:max-w-xl">
+        <SheetHeader className="bg-transparent p-0 px-6 pt-6">
+          <SheetTitle className="flex items-center gap-2">
             <Mail className="h-5 w-5" />
             Send Email to {lead.contactName}
-          </DialogTitle>
-          <DialogDescription>
+          </SheetTitle>
+          <SheetDescription>
             Select a template or compose your message directly.
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
-        <div className="flex flex-1 flex-col gap-4 overflow-y-auto py-4">
+        <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-6 py-4">
           {/* Template Selection */}
           <div className="space-y-2">
             <Label>Template</Label>
@@ -346,7 +345,7 @@ export function SendEmailDialog({
           </Collapsible>
         </div>
 
-        <DialogFooter>
+        <div className="flex items-center justify-end gap-2 border-t px-6 py-4">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSending}>
             Cancel
           </Button>
@@ -368,8 +367,8 @@ export function SendEmailDialog({
               </>
             )}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </SheetContent>
+    </Sheet>
   )
 }
