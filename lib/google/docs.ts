@@ -42,6 +42,15 @@ export interface ShareDocumentParams {
   emailMessage?: string
 }
 
+export interface ShareWithDomainParams {
+  /** Document ID to share */
+  docId: string
+  /** Domain to share with (e.g., "placetostandagency.com") */
+  domain: string
+  /** Permission role */
+  role: 'reader' | 'writer' | 'commenter'
+}
+
 export interface ReplaceTextParams {
   /** Document ID */
   docId: string
@@ -155,6 +164,46 @@ export async function shareDocument(
   if (!res.ok) {
     const errorText = await res.text()
     throw new Error(`Failed to share document: ${errorText}`)
+  }
+}
+
+/**
+ * Share a document with everyone in a Google Workspace domain.
+ * Requires the document owner to be in the same domain.
+ */
+export async function shareWithDomain(
+  userId: string,
+  params: ShareWithDomainParams,
+  options?: { connectionId?: string }
+): Promise<void> {
+  const { accessToken } = await getValidAccessToken(userId, options?.connectionId)
+
+  const url = new URL(`${DRIVE_API_BASE}/files/${encodeURIComponent(params.docId)}/permissions`)
+  url.searchParams.set('sendNotificationEmail', 'false')
+
+  const requestBody = {
+    type: 'domain',
+    role: params.role,
+    domain: params.domain,
+  }
+
+  console.log(`[Drive] Sharing doc ${params.docId} with domain ${params.domain}`)
+
+  const res = await fetch(url.toString(), {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(requestBody),
+  })
+
+  if (!res.ok) {
+    const errorText = await res.text()
+    // Don't throw on sharing errors - the transcript is still useful even if sharing fails
+    console.error(`[Drive] Failed to share with domain: ${errorText}`)
+  } else {
+    console.log(`[Drive] Successfully shared with domain ${params.domain}`)
   }
 }
 

@@ -4,7 +4,7 @@ export const LEAD_ACTIONS_SYSTEM_PROMPT = `You are an expert sales assistant tha
 
 ## Your Role
 
-Analyze the lead's current state, email history, and signals to suggest the most impactful next actions. Focus on actions that will:
+Analyze the lead's current state, email history, meeting transcripts, and signals to suggest the most impactful next actions. Pay special attention to meeting transcripts as they contain valuable context about the lead's needs, concerns, and timeline. Focus on actions that will:
 1. Move the lead forward in the pipeline
 2. Re-engage stalled leads
 3. Capitalize on high-intent signals
@@ -52,7 +52,9 @@ Analyze the lead's current state, email history, and signals to suggest the most
 2. Consider the lead's current status and history
 3. Don't suggest redundant or conflicting actions
 4. Focus on 1-3 high-impact actions rather than many low-value ones
-5. If lead is cold or unqualified, suggest minimal actions`
+5. If lead is cold or unqualified, suggest minimal actions
+6. Use meeting transcript context to reference specific topics, concerns, or follow-ups discussed
+7. If a meeting mentioned next steps or action items, prioritize those in your suggestions`
 
 export interface LeadForActions {
   contactName: string
@@ -68,22 +70,43 @@ export interface LeadForActions {
   priorityTier?: string | null
 }
 
+export interface MessageForActions {
+  fromEmail: string
+  fromName: string | null
+  sentAt: string
+  isInbound: boolean
+  snippet: string | null
+  bodyPreview: string | null
+}
+
 export interface ThreadForActions {
   id: string
   subject: string | null
   messageCount: number
   lastMessageAt: string
   hasUnread?: boolean
+  /** Recent messages in the thread (most recent first) */
+  messages?: MessageForActions[]
+}
+
+export interface MeetingForActions {
+  id: string
+  title: string
+  startsAt: string
+  status: string
+  /** Transcript or Gemini Notes content */
+  transcriptText: string | null
 }
 
 export interface LeadActionsPromptParams {
   lead: LeadForActions
   threads?: ThreadForActions[]
+  meetings?: MeetingForActions[]
   signals?: LeadSignal[]
 }
 
 export function buildLeadActionsPrompt(params: LeadActionsPromptParams): string {
-  const { lead, threads = [], signals = [] } = params
+  const { lead, threads = [], meetings = [], signals = [] } = params
 
   const now = new Date()
   const createdDate = new Date(lead.createdAt)
@@ -116,13 +139,68 @@ ${lead.notes || 'No notes available.'}
 
   let threadsSection = ''
   if (threads.length > 0) {
-    const threadList = threads
-      .map(t => `- "${t.subject || '(No subject)'}" - ${t.messageCount} messages, last: ${t.lastMessageAt}${t.hasUnread ? ' (UNREAD)' : ''}`)
-      .join('\n')
+    const threadDetails = threads.map(t => {
+      let detail = `### Thread: "${t.subject || '(No subject)'}"
+- Messages: ${t.messageCount}
+- Last activity: ${t.lastMessageAt}${t.hasUnread ? ' (UNREAD)' : ''}`
+
+      if (t.messages && t.messages.length > 0) {
+        const messageList = t.messages
+          .slice(0, 5) // Limit to 5 most recent messages per thread
+          .map(m => {
+            const sender = m.isInbound
+              ? `${m.fromName || m.fromEmail} (lead)`
+              : 'You (sent)'
+            const content = m.bodyPreview || m.snippet || '(empty)'
+            // Truncate long messages
+            const truncated = content.length > 500 ? content.slice(0, 500) + '...' : content
+            return `**${sender}** (${m.sentAt}):\n${truncated}`
+          })
+          .join('\n\n')
+
+        detail += `\n\n#### Recent Messages:\n${messageList}`
+      }
+
+      return detail
+    }).join('\n\n---\n\n')
 
     threadsSection = `
-## Linked Email Threads (${threads.length})
-${threadList}
+## Email Conversation History (${threads.length} thread${threads.length > 1 ? 's' : ''})
+
+${threadDetails}
+`.trim()
+  }
+
+  let meetingsSection = ''
+  if (meetings.length > 0) {
+    const meetingDetails = meetings.map(m => {
+      const meetingDate = new Date(m.startsAt)
+      const dateStr = meetingDate.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })
+
+      let detail = `### Meeting: "${m.title}"
+- Date: ${dateStr}
+- Status: ${m.status}`
+
+      if (m.transcriptText) {
+        // Truncate very long transcripts
+        const truncated = m.transcriptText.length > 3000
+          ? m.transcriptText.slice(0, 3000) + '\n\n... (transcript truncated)'
+          : m.transcriptText
+        detail += `\n\n#### Transcript/Notes:\n${truncated}`
+      }
+
+      return detail
+    }).join('\n\n---\n\n')
+
+    meetingsSection = `
+## Meeting History (${meetings.length} meeting${meetings.length > 1 ? 's' : ''})
+
+${meetingDetails}
 `.trim()
   }
 
@@ -142,6 +220,8 @@ ${signalList}
 ${leadInfo}
 
 ${threadsSection}
+
+${meetingsSection}
 
 ${signalsSection}
 

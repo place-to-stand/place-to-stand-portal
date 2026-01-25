@@ -118,7 +118,8 @@ async function processNewMessages(
 
     // Fetch messages in parallel within batch
     const fetches = await Promise.allSettled(batch.map(id => getMessage(userId, id)))
-    for (const f of fetches) {
+    for (let idx = 0; idx < fetches.length; idx++) {
+      const f = fetches[idx]
       if (f.status === 'fulfilled') {
         gmailMessages.push(f.value)
         // Track the highest historyId we see
@@ -128,11 +129,16 @@ async function processNewMessages(
           }
         }
       } else {
-        result.errors.push(f.reason?.message || 'fetch error')
+        const errorMsg = f.reason?.message || 'fetch error'
+        console.error(`[Gmail Sync] Failed to fetch message ${batch[idx]}: ${errorMsg}`)
+        result.errors.push(errorMsg)
       }
     }
 
-    if (gmailMessages.length === 0) continue
+    if (gmailMessages.length === 0) {
+      console.warn(`[Gmail Sync] Batch of ${batch.length} messages all failed to fetch`)
+      continue
+    }
 
     // Filter out spam and trash messages (important for incremental sync where query filter doesn't apply)
     const filteredMessages = gmailMessages.filter(msg => {
@@ -439,6 +445,14 @@ export async function syncGmailForUser(userId: string): Promise<SyncResult> {
       newHistoryId = await performFullSync(userId, result)
     }
 
+    // Check for total failure: if we attempted to sync messages but got zero
+    // and there were errors, that indicates a systematic failure (e.g., auth issue)
+    if (result.synced === 0 && result.errors.length > 0 && result.skipped === 0) {
+      const firstError = result.errors[0]
+      console.error(`[Gmail Sync] Total sync failure - all message fetches failed: ${firstError}`)
+      throw new Error(`Gmail sync failed: ${firstError}`)
+    }
+
     // Update sync state with new historyId
     if (newHistoryId) {
       await updateSyncState(connectionId, {
@@ -446,10 +460,20 @@ export async function syncGmailForUser(userId: string): Promise<SyncResult> {
         fullSyncCompleted: true,
         lastSyncedAt: new Date().toISOString(),
         lastSyncCount: result.synced,
+        lastError: result.errors.length > 0 ? result.errors[0] : null,
       })
     }
   } catch (err) {
-    result.errors.push(err instanceof Error ? err.message : 'sync error')
+    const errorMessage = err instanceof Error ? err.message : 'sync error'
+    result.errors.push(errorMessage)
+
+    // Persist the error to sync state so it's visible in the UI
+    await updateSyncState(connectionId, {
+      ...syncState,
+      lastSyncedAt: new Date().toISOString(),
+      lastSyncCount: 0,
+      lastError: errorMessage,
+    })
   }
 
   return result

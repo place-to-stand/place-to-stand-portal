@@ -146,6 +146,16 @@ export const meetingStatus = pgEnum('meeting_status', [
   'NO_SHOW',
 ])
 
+// Transcript status for Meet recordings
+export const transcriptStatus = pgEnum('transcript_status', [
+  'PENDING', // Meeting scheduled, no transcript yet
+  'PROCESSING', // Meeting ended, transcript being generated
+  'AVAILABLE', // Transcript ready to fetch
+  'FETCHED', // Transcript downloaded and stored
+  'NOT_RECORDED', // Meeting had no transcript enabled
+  'FAILED', // Failed to retrieve transcript
+])
+
 // Proposal status
 export const proposalStatus = pgEnum('proposal_status', [
   'DRAFT',
@@ -1379,6 +1389,13 @@ export const meetings = pgTable(
     endsAt: timestamp('ends_at', { withTimezone: true, mode: 'string' }).notNull(),
     meetLink: text('meet_link'),
     calendarEventId: text('calendar_event_id'),
+    // Google Meet conference data for transcript retrieval
+    conferenceId: text('conference_id'), // From conferenceData.conferenceId
+    conferenceRecordId: text('conference_record_id'), // Meet API conferenceRecords/{id}
+    transcriptFileId: text('transcript_file_id'), // Google Drive file ID
+    transcriptText: text('transcript_text'), // Stored transcript content
+    transcriptStatus: transcriptStatus('transcript_status').default('PENDING'),
+    transcriptFetchedAt: timestamp('transcript_fetched_at', { withTimezone: true, mode: 'string' }),
     attendeeEmails: text('attendee_emails').array().default([]).notNull(),
     createdBy: uuid('created_by').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
@@ -1402,6 +1419,12 @@ export const meetings = pgTable(
     index('idx_meetings_calendar_event')
       .using('btree', table.calendarEventId.asc().nullsLast().op('text_ops'))
       .where(sql`(deleted_at IS NULL AND calendar_event_id IS NOT NULL)`),
+    index('idx_meetings_conference')
+      .using('btree', table.conferenceId.asc().nullsLast().op('text_ops'))
+      .where(sql`(deleted_at IS NULL AND conference_id IS NOT NULL)`),
+    index('idx_meetings_transcript_pending')
+      .using('btree', table.transcriptStatus.asc().nullsLast())
+      .where(sql`(deleted_at IS NULL AND transcript_status IN ('PENDING', 'PROCESSING', 'AVAILABLE'))`),
     foreignKey({
       columns: [table.leadId],
       foreignColumns: [leads.id],
@@ -1439,6 +1462,8 @@ export const proposals = pgTable(
     expirationDate: date('expiration_date'),
     sentAt: timestamp('sent_at', { withTimezone: true, mode: 'string' }),
     sentToEmail: text('sent_to_email'),
+    // Structured content for proposals built from scratch
+    content: jsonb('content').default({}).notNull(),
     createdBy: uuid('created_by').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)

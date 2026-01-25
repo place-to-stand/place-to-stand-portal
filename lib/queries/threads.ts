@@ -4,7 +4,7 @@ import { and, desc, eq, isNull, inArray, sql, or } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { threads, messages, clients, projects } from '@/lib/db/schema'
+import { threads, messages, clients, projects, leads } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 import type { Thread, ThreadSummary, ThreadStatus } from '@/lib/types/messages'
 
@@ -111,7 +111,7 @@ export async function getThreadSummaryById(
     subject: thread.subject,
     status: thread.status as ThreadStatus,
     source: thread.source as 'EMAIL' | 'CHAT' | 'VOICE_MEMO' | 'DOCUMENT' | 'FORM',
-    participantEmails: thread.participantEmails,
+    participantEmails: thread.participantEmails ?? [],
     lastMessageAt: thread.lastMessageAt,
     messageCount: thread.messageCount,
     client: clientRow,
@@ -132,22 +132,19 @@ export async function getThreadSummaryById(
 
 export async function getThreadByExternalId(
   externalThreadId: string,
-  userId: string
+  _userId: string
 ): Promise<Thread | null> {
+  // Find thread by external ID only - don't require messages to exist.
+  // This prevents orphan thread creation when sync fails partway through:
+  // if a thread is created but messages fail to sync, subsequent syncs
+  // should find and reuse the existing thread, not create duplicates.
   const [thread] = await db
     .select()
     .from(threads)
     .where(
       and(
         eq(threads.externalThreadId, externalThreadId),
-        isNull(threads.deletedAt),
-        // Threads are linked via messages, find threads where user has messages
-        sql`EXISTS (
-          SELECT 1 FROM messages
-          WHERE messages.thread_id = ${threads.id}
-          AND messages.user_id = ${userId}
-          AND messages.deleted_at IS NULL
-        )`
+        isNull(threads.deletedAt)
       )
     )
     .limit(1)
@@ -424,7 +421,7 @@ export async function listThreadsForUser(
     subject: thread.subject,
     status: thread.status as ThreadStatus,
     source: thread.source as 'EMAIL' | 'CHAT' | 'VOICE_MEMO' | 'DOCUMENT' | 'FORM',
-    participantEmails: thread.participantEmails,
+    participantEmails: thread.participantEmails ?? [],
     lastMessageAt: thread.lastMessageAt,
     messageCount: thread.messageCount,
     client: thread.clientId ? clientMap.get(thread.clientId) ?? null : null,
@@ -509,10 +506,116 @@ export async function listThreadsForClient(
     subject: thread.subject,
     status: thread.status as ThreadStatus,
     source: thread.source as 'EMAIL' | 'CHAT' | 'VOICE_MEMO' | 'DOCUMENT' | 'FORM',
-    participantEmails: thread.participantEmails,
+    participantEmails: thread.participantEmails ?? [],
     lastMessageAt: thread.lastMessageAt,
     messageCount: thread.messageCount,
     client: client ?? null,
+    project: thread.projectId ? projectMap.get(thread.projectId) ?? null : null,
+    latestMessage: latestMessageMap.get(thread.id) ?? null,
+  }))
+}
+
+export async function listThreadsForLead(
+  leadId: string,
+  options: { limit?: number; offset?: number } = {}
+): Promise<ThreadSummary[]> {
+  const { limit = 50, offset = 0 } = options
+
+  // Get the lead's contact email for matching
+  const [lead] = await db
+    .select({ contactEmail: leads.contactEmail })
+    .from(leads)
+    .where(eq(leads.id, leadId))
+    .limit(1)
+
+  const contactEmail = lead?.contactEmail?.toLowerCase().trim()
+
+  // Find threads that are either:
+  // 1. Explicitly linked to this lead via lead_id
+  // 2. Have the lead's contact email in participant_emails
+  const threadRows = await db
+    .select()
+    .from(threads)
+    .where(
+      and(
+        isNull(threads.deletedAt),
+        contactEmail
+          ? or(
+              eq(threads.leadId, leadId),
+              sql`lower(${contactEmail}) = ANY(${threads.participantEmails})`
+            )
+          : eq(threads.leadId, leadId)
+      )
+    )
+    .orderBy(desc(threads.lastMessageAt))
+    .limit(limit)
+    .offset(offset)
+
+  if (threadRows.length === 0) return []
+
+  // Get client and project info if linked
+  const clientIds = [...new Set(threadRows.map(t => t.clientId).filter(Boolean))] as string[]
+  const projectIds = [...new Set(threadRows.map(t => t.projectId).filter(Boolean))] as string[]
+
+  const [clientRows, projectRows] = await Promise.all([
+    clientIds.length > 0
+      ? db.select({ id: clients.id, name: clients.name, slug: clients.slug }).from(clients).where(inArray(clients.id, clientIds))
+      : [],
+    projectIds.length > 0
+      ? db
+          .select({
+            id: projects.id,
+            name: projects.name,
+            slug: projects.slug,
+            clientSlug: clients.slug,
+          })
+          .from(projects)
+          .leftJoin(clients, eq(projects.clientId, clients.id))
+          .where(inArray(projects.id, projectIds))
+      : [],
+  ])
+
+  const clientMap = new Map(clientRows.map(c => [c.id, c]))
+  const projectMap = new Map(projectRows.map(p => [p.id, p]))
+
+  // Get latest message for each thread
+  const threadIds = threadRows.map(t => t.id)
+  const latestMessages = await db
+    .select({
+      threadId: messages.threadId,
+      id: messages.id,
+      snippet: messages.snippet,
+      fromEmail: messages.fromEmail,
+      fromName: messages.fromName,
+      sentAt: messages.sentAt,
+      isInbound: messages.isInbound,
+      isRead: messages.isRead,
+    })
+    .from(messages)
+    .where(
+      and(
+        inArray(messages.threadId, threadIds),
+        isNull(messages.deletedAt),
+        sql`${messages.sentAt} = (
+          SELECT MAX(m2.sent_at)
+          FROM messages m2
+          WHERE m2.thread_id = ${messages.threadId}
+          AND m2.deleted_at IS NULL
+        )`
+      )
+    )
+
+  const latestMessageMap = new Map(latestMessages.map(m => [m.threadId, m]))
+
+  return threadRows.map(thread => ({
+    id: thread.id,
+    subject: thread.subject,
+    status: thread.status as ThreadStatus,
+    source: thread.source as 'EMAIL' | 'CHAT' | 'VOICE_MEMO' | 'DOCUMENT' | 'FORM',
+    participantEmails: thread.participantEmails ?? [],
+    lastMessageAt: thread.lastMessageAt,
+    messageCount: thread.messageCount,
+    client: thread.clientId ? clientMap.get(thread.clientId) ?? null : null,
     project: thread.projectId ? projectMap.get(thread.projectId) ?? null : null,
     latestMessage: latestMessageMap.get(thread.id) ?? null,
   }))

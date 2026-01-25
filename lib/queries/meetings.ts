@@ -1,9 +1,10 @@
-import { and, desc, eq, isNull } from 'drizzle-orm'
+import { and, desc, eq, isNull, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { meetings, users } from '@/lib/db/schema'
 
 export type MeetingStatus = 'SCHEDULED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW'
+export type TranscriptStatus = 'PENDING' | 'PROCESSING' | 'AVAILABLE' | 'FETCHED' | 'NOT_RECORDED' | 'FAILED'
 
 export type Meeting = {
   id: string
@@ -16,6 +17,13 @@ export type Meeting = {
   endsAt: string
   meetLink: string | null
   calendarEventId: string | null
+  // Transcript fields
+  conferenceId: string | null
+  conferenceRecordId: string | null
+  transcriptFileId: string | null
+  transcriptText: string | null
+  transcriptStatus: TranscriptStatus | null
+  transcriptFetchedAt: string | null
   attendeeEmails: string[]
   createdBy: string
   createdAt: string
@@ -49,6 +57,12 @@ export async function fetchMeetingsByLeadId(
       endsAt: meetings.endsAt,
       meetLink: meetings.meetLink,
       calendarEventId: meetings.calendarEventId,
+      conferenceId: meetings.conferenceId,
+      conferenceRecordId: meetings.conferenceRecordId,
+      transcriptFileId: meetings.transcriptFileId,
+      transcriptText: meetings.transcriptText,
+      transcriptStatus: meetings.transcriptStatus,
+      transcriptFetchedAt: meetings.transcriptFetchedAt,
       attendeeEmails: meetings.attendeeEmails,
       createdBy: meetings.createdBy,
       createdAt: meetings.createdAt,
@@ -74,6 +88,12 @@ export async function fetchMeetingsByLeadId(
     endsAt: row.endsAt,
     meetLink: row.meetLink,
     calendarEventId: row.calendarEventId,
+    conferenceId: row.conferenceId,
+    conferenceRecordId: row.conferenceRecordId,
+    transcriptFileId: row.transcriptFileId,
+    transcriptText: row.transcriptText,
+    transcriptStatus: row.transcriptStatus,
+    transcriptFetchedAt: row.transcriptFetchedAt,
     attendeeEmails: row.attendeeEmails,
     createdBy: row.createdBy,
     createdAt: row.createdAt,
@@ -107,6 +127,12 @@ export async function fetchMeetingById(
       endsAt: meetings.endsAt,
       meetLink: meetings.meetLink,
       calendarEventId: meetings.calendarEventId,
+      conferenceId: meetings.conferenceId,
+      conferenceRecordId: meetings.conferenceRecordId,
+      transcriptFileId: meetings.transcriptFileId,
+      transcriptText: meetings.transcriptText,
+      transcriptStatus: meetings.transcriptStatus,
+      transcriptFetchedAt: meetings.transcriptFetchedAt,
       attendeeEmails: meetings.attendeeEmails,
       createdBy: meetings.createdBy,
       createdAt: meetings.createdAt,
@@ -129,6 +155,7 @@ export type CreateMeetingInput = {
   endsAt: string
   meetLink?: string | null
   calendarEventId?: string | null
+  conferenceId?: string | null
   attendeeEmails?: string[]
   createdBy: string
 }
@@ -153,6 +180,8 @@ export async function createMeeting(
       endsAt: input.endsAt,
       meetLink: input.meetLink ?? null,
       calendarEventId: input.calendarEventId ?? null,
+      conferenceId: input.conferenceId ?? null,
+      transcriptStatus: 'PENDING',
       attendeeEmails: input.attendeeEmails ?? [],
       createdBy: input.createdBy,
       createdAt: timestamp,
@@ -171,6 +200,12 @@ export async function createMeeting(
     endsAt: inserted.endsAt,
     meetLink: inserted.meetLink,
     calendarEventId: inserted.calendarEventId,
+    conferenceId: inserted.conferenceId,
+    conferenceRecordId: inserted.conferenceRecordId,
+    transcriptFileId: inserted.transcriptFileId,
+    transcriptText: inserted.transcriptText,
+    transcriptStatus: inserted.transcriptStatus,
+    transcriptFetchedAt: inserted.transcriptFetchedAt,
     attendeeEmails: inserted.attendeeEmails,
     createdBy: inserted.createdBy,
     createdAt: inserted.createdAt,
@@ -186,6 +221,12 @@ export type UpdateMeetingInput = {
   endsAt?: string
   meetLink?: string | null
   calendarEventId?: string | null
+  conferenceId?: string | null
+  conferenceRecordId?: string | null
+  transcriptFileId?: string | null
+  transcriptText?: string | null
+  transcriptStatus?: TranscriptStatus | null
+  transcriptFetchedAt?: string | null
   attendeeEmails?: string[]
 }
 
@@ -222,6 +263,12 @@ export async function updateMeeting(
     endsAt: updated.endsAt,
     meetLink: updated.meetLink,
     calendarEventId: updated.calendarEventId,
+    conferenceId: updated.conferenceId,
+    conferenceRecordId: updated.conferenceRecordId,
+    transcriptFileId: updated.transcriptFileId,
+    transcriptText: updated.transcriptText,
+    transcriptStatus: updated.transcriptStatus,
+    transcriptFetchedAt: updated.transcriptFetchedAt,
     attendeeEmails: updated.attendeeEmails,
     createdBy: updated.createdBy,
     createdAt: updated.createdAt,
@@ -262,6 +309,12 @@ export async function findMeetingByCalendarEventId(
       endsAt: meetings.endsAt,
       meetLink: meetings.meetLink,
       calendarEventId: meetings.calendarEventId,
+      conferenceId: meetings.conferenceId,
+      conferenceRecordId: meetings.conferenceRecordId,
+      transcriptFileId: meetings.transcriptFileId,
+      transcriptText: meetings.transcriptText,
+      transcriptStatus: meetings.transcriptStatus,
+      transcriptFetchedAt: meetings.transcriptFetchedAt,
       attendeeEmails: meetings.attendeeEmails,
       createdBy: meetings.createdBy,
       createdAt: meetings.createdAt,
@@ -274,4 +327,49 @@ export async function findMeetingByCalendarEventId(
     .limit(1)
 
   return row ?? null
+}
+
+/**
+ * Fetch meetings that need transcript syncing.
+ * Returns meetings that have ended and have PENDING or PROCESSING transcript status.
+ */
+export async function fetchMeetingsNeedingTranscriptSync(): Promise<Meeting[]> {
+  const now = new Date().toISOString()
+
+  const rows = await db
+    .select({
+      id: meetings.id,
+      leadId: meetings.leadId,
+      clientId: meetings.clientId,
+      title: meetings.title,
+      description: meetings.description,
+      status: meetings.status,
+      startsAt: meetings.startsAt,
+      endsAt: meetings.endsAt,
+      meetLink: meetings.meetLink,
+      calendarEventId: meetings.calendarEventId,
+      conferenceId: meetings.conferenceId,
+      conferenceRecordId: meetings.conferenceRecordId,
+      transcriptFileId: meetings.transcriptFileId,
+      transcriptText: meetings.transcriptText,
+      transcriptStatus: meetings.transcriptStatus,
+      transcriptFetchedAt: meetings.transcriptFetchedAt,
+      attendeeEmails: meetings.attendeeEmails,
+      createdBy: meetings.createdBy,
+      createdAt: meetings.createdAt,
+      updatedAt: meetings.updatedAt,
+    })
+    .from(meetings)
+    .where(
+      and(
+        isNull(meetings.deletedAt),
+        sql`${meetings.endsAt} < ${now}`,
+        sql`${meetings.transcriptStatus} IN ('PENDING', 'PROCESSING', 'AVAILABLE')`,
+        sql`${meetings.conferenceId} IS NOT NULL`
+      )
+    )
+    .orderBy(meetings.endsAt)
+    .limit(50) // Process in batches
+
+  return rows
 }
