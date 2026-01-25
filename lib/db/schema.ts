@@ -761,8 +761,8 @@ export const leads = pgTable(
     notes: jsonb('notes').default({}).notNull(),
     rank: text().default('zzzzzzzz').notNull(),
 
-    // AI Scoring
-    overallScore: numeric('overall_score', { precision: 3, scale: 2 }),
+    // AI Scoring (0-100 scale)
+    overallScore: numeric('overall_score', { precision: 5, scale: 2 }),
     priorityTier: text('priority_tier'), // 'hot' | 'warm' | 'cold'
     signals: jsonb('signals').default([]),
     lastScoredAt: timestamp('last_scored_at', { withTimezone: true, mode: 'string' }),

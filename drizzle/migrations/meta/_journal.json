@@ -148,6 +148,13 @@
       "when": 1769264937347,
       "tag": "0020_add_meeting_transcript_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1769366666578,
+      "tag": "0021_fix_overall_score_precision",
+      "breakpoints": true
     }
   ]
 }
