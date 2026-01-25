@@ -24,7 +24,6 @@ import {
 import { useToast } from '@/components/ui/use-toast'
 import type { LeadRecord } from '@/lib/leads/types'
 
-import { CreateProposalDialog } from './create-proposal-dialog'
 import { updateProposalStatus } from '../_actions'
 
 type ProposalStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED'
@@ -82,7 +81,6 @@ export function LeadProposalsSection({
   canManage,
   onSuccess,
 }: LeadProposalsSectionProps) {
-  const [isDialogOpen, setDialogOpen] = useState(false)
   const [proposals, setProposals] = useState<Proposal[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -103,12 +101,6 @@ export function LeadProposalsSection({
   useEffect(() => {
     fetchProposals()
   }, [fetchProposals])
-
-  const handleProposalSuccess = useCallback(() => {
-    setDialogOpen(false)
-    fetchProposals()
-    onSuccess?.()
-  }, [fetchProposals, onSuccess])
 
   const handleProposalUpdate = useCallback(() => {
     fetchProposals()
@@ -153,12 +145,6 @@ export function LeadProposalsSection({
         </div>
       )}
 
-      <CreateProposalDialog
-        lead={lead}
-        open={isDialogOpen}
-        onOpenChange={setDialogOpen}
-        onSuccess={handleProposalSuccess}
-      />
     </div>
   )
 }

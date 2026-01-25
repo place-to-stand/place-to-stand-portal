@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, sql, ne } from 'drizzle-orm'
+import { and, desc, eq, isNull, sql, or, isNotNull } from 'drizzle-orm'
 import { NextRequest, NextResponse } from 'next/server'
 
 import { getCurrentUser } from '@/lib/auth/session'
@@ -44,7 +44,11 @@ export async function GET(
         eq(meetings.leadId, leadId),
         isNull(meetings.deletedAt),
         // Include meetings with transcripts OR meetings that might have them
-        sql`${meetings.conferenceId} IS NOT NULL`
+        or(
+          isNotNull(meetings.conferenceId),
+          isNotNull(meetings.transcriptText),
+          isNotNull(meetings.transcriptFileId)
+        )
       )
     )
     .orderBy(desc(meetings.startsAt))
