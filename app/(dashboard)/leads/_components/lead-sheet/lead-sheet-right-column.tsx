@@ -17,7 +17,8 @@ type LeadSheetRightColumnProps = {
   isConverted: boolean
   onSendEmail: () => void
   onScheduleMeeting: (initialTitle?: string) => void
-  onCreateProposal: () => void
+  onBuildProposal: () => void
+  onCopyProposalTemplate: () => void
   onConvertToClient: () => void
   onRescore?: () => void
   isRescoring?: boolean
@@ -32,7 +33,8 @@ export function LeadSheetRightColumn({
   isConverted,
   onSendEmail,
   onScheduleMeeting,
-  onCreateProposal,
+  onBuildProposal,
+  onCopyProposalTemplate,
   onConvertToClient,
   onRescore,
   isRescoring = false,
@@ -48,7 +50,8 @@ export function LeadSheetRightColumn({
           isConverted={isConverted}
           onSendEmail={onSendEmail}
           onScheduleMeeting={() => onScheduleMeeting()}
-          onCreateProposal={onCreateProposal}
+          onBuildProposal={onBuildProposal}
+          onCopyProposalTemplate={onCopyProposalTemplate}
           onConvertToClient={onConvertToClient}
           onRescore={onRescore}
           isRescoring={isRescoring}
@@ -62,7 +65,7 @@ export function LeadSheetRightColumn({
               leadId={lead.id}
               isAdmin={canManage}
               onScheduleCall={onScheduleMeeting}
-              onSendProposal={onCreateProposal}
+              onSendProposal={onBuildProposal}
             />
           </>
         )}

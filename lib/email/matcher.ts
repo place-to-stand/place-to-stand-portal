@@ -262,6 +262,7 @@ export async function matchThreadToLead(
   if (!normalizedEmails.length) return null
 
   // Find lead with any matching contact email
+  // Use IN clause with properly joined parameters for PostgreSQL compatibility
   const [lead] = await db
     .select({
       id: leads.id,
@@ -271,7 +272,7 @@ export async function matchThreadToLead(
     .from(leads)
     .where(
       and(
-        sql`lower(${leads.contactEmail}) = ANY(${normalizedEmails})`,
+        sql`lower(${leads.contactEmail}) IN (${sql.join(normalizedEmails.map(e => sql`${e}`), sql`, `)})`,
         isNull(leads.deletedAt)
       )
     )

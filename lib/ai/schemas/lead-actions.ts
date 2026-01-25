@@ -17,7 +17,7 @@ export const suggestedActionSchema = z.object({
     .max(1)
     .describe('Confidence score from 0-1'),
   title: z.string().describe('Short action title'),
-  reasoning: z.string().max(300).describe('Why this action is recommended'),
+  reasoning: z.string().max(500).describe('Why this action is recommended'),
   suggestedContent: z
     .object({
       body: z.string().optional().describe('Draft message body for REPLY actions'),
@@ -35,7 +35,7 @@ export const leadActionsResultSchema = z.object({
     .describe('Prioritized list of suggested actions'),
   summary: z
     .string()
-    .max(200)
+    .max(500)
     .describe('Brief summary of the lead situation'),
   shouldFollowUp: z
     .boolean()

@@ -2,6 +2,7 @@ import { and, desc, eq, isNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { proposals, users } from '@/lib/db/schema'
+import type { ProposalContent } from '@/lib/proposals/types'
 
 export type ProposalStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED'
 
@@ -18,6 +19,7 @@ export type Proposal = {
   expirationDate: string | null
   sentAt: string | null
   sentToEmail: string | null
+  content: ProposalContent | Record<string, never>
   createdBy: string
   createdAt: string
   updatedAt: string
@@ -52,6 +54,7 @@ export async function fetchProposalsByLeadId(
       expirationDate: proposals.expirationDate,
       sentAt: proposals.sentAt,
       sentToEmail: proposals.sentToEmail,
+      content: proposals.content,
       createdBy: proposals.createdBy,
       createdAt: proposals.createdAt,
       updatedAt: proposals.updatedAt,
@@ -78,6 +81,7 @@ export async function fetchProposalsByLeadId(
     expirationDate: row.expirationDate,
     sentAt: row.sentAt,
     sentToEmail: row.sentToEmail,
+    content: row.content as ProposalContent | Record<string, never>,
     createdBy: row.createdBy,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -112,6 +116,7 @@ export async function fetchProposalById(
       expirationDate: proposals.expirationDate,
       sentAt: proposals.sentAt,
       sentToEmail: proposals.sentToEmail,
+      content: proposals.content,
       createdBy: proposals.createdBy,
       createdAt: proposals.createdAt,
       updatedAt: proposals.updatedAt,
@@ -120,7 +125,12 @@ export async function fetchProposalById(
     .where(and(eq(proposals.id, proposalId), isNull(proposals.deletedAt)))
     .limit(1)
 
-  return row ?? null
+  if (!row) return null
+
+  return {
+    ...row,
+    content: row.content as ProposalContent | Record<string, never>,
+  }
 }
 
 export type CreateProposalInput = {
@@ -135,6 +145,7 @@ export type CreateProposalInput = {
   expirationDate?: string | null
   sentAt?: string | null
   sentToEmail?: string | null
+  content?: ProposalContent | Record<string, never>
   createdBy: string
 }
 
@@ -160,6 +171,7 @@ export async function createProposal(
       expirationDate: input.expirationDate ?? null,
       sentAt: input.sentAt ?? null,
       sentToEmail: input.sentToEmail ?? null,
+      content: input.content ?? {},
       createdBy: input.createdBy,
       createdAt: timestamp,
       updatedAt: timestamp,
@@ -179,6 +191,7 @@ export async function createProposal(
     expirationDate: inserted.expirationDate,
     sentAt: inserted.sentAt,
     sentToEmail: inserted.sentToEmail,
+    content: inserted.content as ProposalContent | Record<string, never>,
     createdBy: inserted.createdBy,
     createdAt: inserted.createdAt,
     updatedAt: inserted.updatedAt,
@@ -194,6 +207,7 @@ export type UpdateProposalInput = {
   expirationDate?: string | null
   sentAt?: string | null
   sentToEmail?: string | null
+  content?: ProposalContent | Record<string, never>
 }
 
 /**
@@ -231,6 +245,7 @@ export async function updateProposal(
     expirationDate: updated.expirationDate,
     sentAt: updated.sentAt,
     sentToEmail: updated.sentToEmail,
+    content: updated.content as ProposalContent | Record<string, never>,
     createdBy: updated.createdBy,
     createdAt: updated.createdAt,
     updatedAt: updated.updatedAt,
@@ -272,6 +287,7 @@ export async function findProposalByDocId(
       expirationDate: proposals.expirationDate,
       sentAt: proposals.sentAt,
       sentToEmail: proposals.sentToEmail,
+      content: proposals.content,
       createdBy: proposals.createdBy,
       createdAt: proposals.createdAt,
       updatedAt: proposals.updatedAt,
@@ -280,5 +296,10 @@ export async function findProposalByDocId(
     .where(and(eq(proposals.docId, docId), isNull(proposals.deletedAt)))
     .limit(1)
 
-  return row ?? null
+  if (!row) return null
+
+  return {
+    ...row,
+    content: row.content as ProposalContent | Record<string, never>,
+  }
 }

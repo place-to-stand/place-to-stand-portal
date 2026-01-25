@@ -21,7 +21,7 @@ export function LeadSheetHeader({
   isConverted,
   onConvertToClient,
 }: LeadSheetHeaderProps) {
-  const showHeader = lead.overallScore !== null || canConvert || isConverted
+  const showHeader = lead.overallScore !== null || lead.priorityTier !== null || canConvert || isConverted
 
   if (!showHeader) return null
 

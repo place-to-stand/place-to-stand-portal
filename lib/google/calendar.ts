@@ -27,6 +27,7 @@ export interface CalendarEvent {
   }
   attendees?: CalendarAttendee[]
   conferenceData?: {
+    conferenceId?: string // Meet space ID for transcript retrieval
     entryPoints?: Array<{
       entryPointType: string
       uri: string
@@ -340,4 +341,12 @@ export function extractMeetLink(event: CalendarEvent): string | null {
   }
 
   return null
+}
+
+/**
+ * Extract Google Meet conference ID from a calendar event.
+ * This ID is used to query the Meet API for transcripts and recordings.
+ */
+export function extractConferenceId(event: CalendarEvent): string | null {
+  return event.conferenceData?.conferenceId ?? null
 }

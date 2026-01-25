@@ -5,6 +5,7 @@ import type { ReactNode } from 'react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import type { LeadRecord } from '@/lib/leads/types'
 
+import { BuildProposalDialog } from '../build-proposal-dialog'
 import { ConvertLeadDialog } from '../convert-lead-dialog'
 import { CreateProposalDialog } from '../create-proposal-dialog'
 import { ScheduleMeetingDialog } from '../schedule-meeting-dialog'
@@ -29,9 +30,12 @@ type LeadSheetDialogsProps = {
   meetingInitialTitle?: string
   onMeetingOpenChange: (open: boolean) => void
   onMeetingSuccess: () => void
-  // Proposal dialog (AI-triggered)
-  isProposalDialogOpen: boolean
-  onProposalOpenChange: (open: boolean) => void
+  // Build proposal dialog (from scratch)
+  isBuildProposalDialogOpen: boolean
+  onBuildProposalOpenChange: (open: boolean) => void
+  // Copy template dialog (from Google Docs template)
+  isCopyTemplateDialogOpen: boolean
+  onCopyTemplateOpenChange: (open: boolean) => void
   onProposalSuccess: () => void
   // General success callback
   onSuccess: () => void
@@ -54,8 +58,10 @@ export function LeadSheetDialogs({
   meetingInitialTitle,
   onMeetingOpenChange,
   onMeetingSuccess,
-  isProposalDialogOpen,
-  onProposalOpenChange,
+  isBuildProposalDialogOpen,
+  onBuildProposalOpenChange,
+  isCopyTemplateDialogOpen,
+  onCopyTemplateOpenChange,
   onProposalSuccess,
   onSuccess,
   unsavedChangesDialog,
@@ -99,10 +105,18 @@ export function LeadSheetDialogs({
         />
       )}
       {lead && (
+        <BuildProposalDialog
+          lead={lead}
+          open={isBuildProposalDialogOpen}
+          onOpenChange={onBuildProposalOpenChange}
+          onSuccess={onProposalSuccess}
+        />
+      )}
+      {lead && (
         <CreateProposalDialog
           lead={lead}
-          open={isProposalDialogOpen}
-          onOpenChange={onProposalOpenChange}
+          open={isCopyTemplateDialogOpen}
+          onOpenChange={onCopyTemplateOpenChange}
           onSuccess={onProposalSuccess}
         />
       )}

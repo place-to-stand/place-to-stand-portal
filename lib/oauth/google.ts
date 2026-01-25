@@ -1,6 +1,6 @@
 import { serverEnv } from '@/lib/env.server'
 
-// Google scopes - Gmail, Calendar, Drive/Docs, and Sheets
+// Google scopes - Gmail, Calendar, Meet, Drive/Docs, and Sheets
 export const GOOGLE_SCOPES = [
   // User info
   'https://www.googleapis.com/auth/userinfo.profile',
@@ -14,8 +14,11 @@ export const GOOGLE_SCOPES = [
   // Calendar - create events with Meet links
   'https://www.googleapis.com/auth/calendar',
   'https://www.googleapis.com/auth/calendar.events',
-  // Drive/Docs - copy templates and create proposals
-  'https://www.googleapis.com/auth/drive.file',
+  // Meet - access conference records, transcripts, and recordings
+  'https://www.googleapis.com/auth/meetings.space.readonly',
+  'https://www.googleapis.com/auth/meetings.space.created',
+  // Drive - full access for autonomous document creation and transcript retrieval
+  'https://www.googleapis.com/auth/drive',
   'https://www.googleapis.com/auth/documents',
   // Sheets - for reporting and data export
   'https://www.googleapis.com/auth/spreadsheets',
@@ -35,8 +38,14 @@ export const GOOGLE_CALENDAR_SCOPES = [
 
 // Scopes required for Drive/Docs proposal functionality
 export const GOOGLE_DOCS_SCOPES = [
-  'https://www.googleapis.com/auth/drive.file',
+  'https://www.googleapis.com/auth/drive',
   'https://www.googleapis.com/auth/documents',
+]
+
+// Scopes required for Meet functionality (transcripts, recordings)
+export const GOOGLE_MEET_SCOPES = [
+  'https://www.googleapis.com/auth/meetings.space.readonly',
+  'https://www.googleapis.com/auth/meetings.space.created',
 ]
 
 // Scopes required for Sheets functionality
@@ -66,6 +75,14 @@ export function hasCalendarScopes(grantedScopes: string[]): boolean {
  */
 export function hasDocsScopes(grantedScopes: string[]): boolean {
   return GOOGLE_DOCS_SCOPES.every((scope) => grantedScopes.includes(scope))
+}
+
+/**
+ * Check if a connection has the required scopes for Meet (transcripts/recordings).
+ * Returns true if all meet scopes are present.
+ */
+export function hasMeetScopes(grantedScopes: string[]): boolean {
+  return GOOGLE_MEET_SCOPES.every((scope) => grantedScopes.includes(scope))
 }
 
 /**

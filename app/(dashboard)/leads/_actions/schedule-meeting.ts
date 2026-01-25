@@ -10,6 +10,7 @@ import { leads } from '@/lib/db/schema'
 import {
   createCalendarEvent,
   extractMeetLink,
+  extractConferenceId,
   type CalendarEvent,
 } from '@/lib/google/calendar'
 import { createMeeting, type Meeting } from '@/lib/queries/meetings'
@@ -112,6 +113,7 @@ export async function scheduleMeeting(
 
   // Build and save the meeting record
   const meetLink = extractMeetLink(calendarEvent)
+  const conferenceId = extractConferenceId(calendarEvent)
 
   let meeting: Meeting
 
@@ -124,6 +126,7 @@ export async function scheduleMeeting(
       endsAt: endDateTime,
       meetLink,
       calendarEventId: calendarEvent.id,
+      conferenceId,
       attendeeEmails: allAttendees,
       createdBy: user.id,
     })

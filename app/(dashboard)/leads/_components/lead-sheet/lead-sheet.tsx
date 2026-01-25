@@ -45,7 +45,8 @@ export function LeadSheet({
   const [isEmailDialogOpen, setEmailDialogOpen] = useState(false)
   const [isMeetingDialogOpen, setMeetingDialogOpen] = useState(false)
   const [meetingInitialTitle, setMeetingInitialTitle] = useState<string | undefined>()
-  const [isProposalDialogOpen, setProposalDialogOpen] = useState(false)
+  const [isBuildProposalDialogOpen, setBuildProposalDialogOpen] = useState(false)
+  const [isCopyTemplateDialogOpen, setCopyTemplateDialogOpen] = useState(false)
   const { toast } = useToast()
 
   const canConvert = lead?.status === 'CLOSED_WON' && !lead?.convertedToClientId
@@ -295,6 +296,7 @@ export function LeadSheet({
                     control={form.control}
                     assignees={assignees}
                     selectedSourceType={selectedSourceType}
+                    leadId={lead?.id}
                   />
                 </div>
 
@@ -370,7 +372,8 @@ export function LeadSheet({
                   isConverted={isConverted}
                   onSendEmail={() => setEmailDialogOpen(true)}
                   onScheduleMeeting={handleScheduleMeeting}
-                  onCreateProposal={() => setProposalDialogOpen(true)}
+                  onBuildProposal={() => setBuildProposalDialogOpen(true)}
+                  onCopyProposalTemplate={() => setCopyTemplateDialogOpen(true)}
                   onConvertToClient={() => setConvertDialogOpen(true)}
                   onRescore={handleRescore}
                   isRescoring={isRescoring}
@@ -404,10 +407,13 @@ export function LeadSheet({
           setMeetingInitialTitle(undefined)
           onSuccess()
         }}
-        isProposalDialogOpen={isProposalDialogOpen}
-        onProposalOpenChange={setProposalDialogOpen}
+        isBuildProposalDialogOpen={isBuildProposalDialogOpen}
+        onBuildProposalOpenChange={setBuildProposalDialogOpen}
+        isCopyTemplateDialogOpen={isCopyTemplateDialogOpen}
+        onCopyTemplateOpenChange={setCopyTemplateDialogOpen}
         onProposalSuccess={() => {
-          setProposalDialogOpen(false)
+          setBuildProposalDialogOpen(false)
+          setCopyTemplateDialogOpen(false)
           onSuccess()
         }}
         onSuccess={onSuccess}

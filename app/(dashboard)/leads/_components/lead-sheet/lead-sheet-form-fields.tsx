@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import type { Control } from 'react-hook-form'
+import { FileText, Mail, StickyNote } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import {
@@ -23,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 import {
   LEAD_SOURCE_LABELS,
@@ -37,18 +39,22 @@ import type { LeadAssigneeOption } from '@/lib/leads/types'
 import type { PriorityTier } from '@/lib/leads/intelligence-types'
 
 import { PriorityBadge } from '../priority-badge'
+import { LeadEmailThreads } from './lead-email-threads'
+import { LeadMeetingTranscripts } from './lead-meeting-transcripts'
 import type { LeadFormValues } from './types'
 
 type LeadSheetFormFieldsProps = {
   control: Control<LeadFormValues>
   assignees: LeadAssigneeOption[]
   selectedSourceType: LeadSourceTypeValue | null | undefined
+  leadId?: string
 }
 
 export function LeadSheetFormFields({
   control,
   assignees,
   selectedSourceType,
+  leadId,
 }: LeadSheetFormFieldsProps) {
   const assigneeItems = useMemo(
     () => [
@@ -339,27 +345,54 @@ export function LeadSheetFormFields({
           )}
         />
       </div>
-      <FormField
-        control={control}
-        name='notes'
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Notes</FormLabel>
-            <FormControl>
-              <RichTextEditor
-                id='lead-notes'
-                value={field.value ?? ''}
-                onChange={field.onChange}
-                contentMinHeightClassName='[&_.ProseMirror]:min-h-[180px]'
-              />
-            </FormControl>
-            <FormDescription>
-              Capture context, meeting notes, or next steps.
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      <Tabs defaultValue='notes' className='mt-2'>
+        <TabsList className='grid w-full grid-cols-3'>
+          <TabsTrigger value='notes' className='gap-1.5'>
+            <StickyNote className='h-3.5 w-3.5' />
+            Notes
+          </TabsTrigger>
+          <TabsTrigger value='emails' className='gap-1.5'>
+            <Mail className='h-3.5 w-3.5' />
+            Emails
+          </TabsTrigger>
+          <TabsTrigger value='transcripts' className='gap-1.5'>
+            <FileText className='h-3.5 w-3.5' />
+            Transcripts
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value='notes' className='mt-3'>
+          <FormField
+            control={control}
+            name='notes'
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <RichTextEditor
+                    id='lead-notes'
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    contentMinHeightClassName='[&_.ProseMirror]:min-h-[180px]'
+                  />
+                </FormControl>
+                <FormDescription>
+                  Capture context, meeting notes, or next steps.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </TabsContent>
+        <TabsContent value='emails' className='mt-3'>
+          <div className='-mx-3 rounded-md border'>
+            <LeadEmailThreads leadId={leadId} />
+          </div>
+        </TabsContent>
+        <TabsContent value='transcripts' className='mt-3'>
+          <div className='-mx-3 rounded-md border'>
+            <LeadMeetingTranscripts leadId={leadId} />
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
