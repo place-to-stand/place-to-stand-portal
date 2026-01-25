@@ -74,6 +74,9 @@ export interface ProposalContent {
   risks: ProposalRisk[]
   includeDefaultRisks?: boolean
 
+  // Terms and conditions
+  includeFullTerms?: boolean
+
   // Rates and engagement
   rates: ProposalRates
 
@@ -108,6 +111,9 @@ export interface BuildProposalFromScratchInput {
   // Risks (optional - uses defaults if not provided)
   includeDefaultRisks?: boolean
   customRisks?: ProposalRisk[]
+
+  // Terms and conditions
+  includeFullTerms?: boolean
 
   // Rates (optional - uses defaults)
   hourlyRate?: number

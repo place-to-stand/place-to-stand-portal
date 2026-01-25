@@ -49,6 +49,9 @@ const buildProposalSchema = z.object({
   includeDefaultRisks: z.boolean().default(true),
   customRisks: z.array(riskSchema).optional(),
 
+  // Terms
+  includeFullTerms: z.boolean().default(false),
+
   // Rates
   hourlyRate: z.number().min(0).default(200),
   initialCommitmentDescription: z.string().min(1, 'Initial commitment description is required'),

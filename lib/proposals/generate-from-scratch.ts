@@ -126,6 +126,7 @@ function buildProposalContent(input: BuildProposalFromScratchInput): ProposalCon
     phases: normalizePhases(input.phases),
     risks,
     includeDefaultRisks: input.includeDefaultRisks,
+    includeFullTerms: input.includeFullTerms,
     rates: {
       hourlyRate: input.hourlyRate ?? DEFAULT_HOURLY_RATE,
       initialCommitmentDescription: input.initialCommitmentDescription,

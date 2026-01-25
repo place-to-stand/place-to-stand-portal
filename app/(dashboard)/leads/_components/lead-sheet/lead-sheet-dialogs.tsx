@@ -5,9 +5,9 @@ import type { ReactNode } from 'react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import type { LeadRecord } from '@/lib/leads/types'
 
-import { BuildProposalDialog } from '../build-proposal-dialog'
 import { ConvertLeadDialog } from '../convert-lead-dialog'
 import { CreateProposalDialog } from '../create-proposal-dialog'
+import { ProposalBuilderSheet } from '../proposal-builder/proposal-builder-sheet'
 import { ScheduleMeetingDialog } from '../schedule-meeting-dialog'
 import { SendEmailDialog } from '../send-email-dialog'
 
@@ -105,7 +105,7 @@ export function LeadSheetDialogs({
         />
       )}
       {lead && (
-        <BuildProposalDialog
+        <ProposalBuilderSheet
           lead={lead}
           open={isBuildProposalDialogOpen}
           onOpenChange={onBuildProposalOpenChange}

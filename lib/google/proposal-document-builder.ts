@@ -8,6 +8,7 @@ import {
   SCOPE_OF_WORK_INTRO,
   RISKS_INTRO,
   NEXT_STEPS_TEXT,
+  FULL_TERMS_AND_CONDITIONS,
 } from '@/lib/proposals/constants'
 
 import {
@@ -271,7 +272,19 @@ function buildDocumentRequests(content: ProposalContent): DocumentRequest[] {
   // ==========================================================================
 
   addText('TERMS AND CONDITIONS\n', STYLES.sectionHeader)
-  addText('Standard terms and conditions apply. Full terms available upon request.\n\n')
+
+  if (content.includeFullTerms) {
+    // Include full terms and conditions
+    for (const section of FULL_TERMS_AND_CONDITIONS) {
+      // Section title (bold)
+      textParts.push(`${section.title}\n`)
+      addStyledSpan(`${section.title}\n`, STYLES.label)
+      // Section content
+      addText(`${section.content}\n\n`)
+    }
+  } else {
+    addText('Standard terms and conditions apply. Full terms available upon request.\n\n')
+  }
 
   // ==========================================================================
   // 10. SIGNATURES
