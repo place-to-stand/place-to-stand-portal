@@ -1,10 +1,15 @@
 'use client'
 
 import type { UseFormReturn } from 'react-hook-form'
-import { Loader2, FileText } from 'lucide-react'
+import { Loader2, FileText, Sparkles } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 import type { ProposalFormValues } from '../proposal-builder'
 import { ClientSection } from './client-section'
@@ -16,21 +21,62 @@ import { RatesSection } from './rates-section'
 type EditorPanelProps = {
   form: UseFormReturn<ProposalFormValues>
   isBuilding: boolean
+  isGenerating: boolean
   onCancel: () => void
   onBuild: () => void
+  onGenerateDraft: () => void
 }
 
 export function EditorPanel({
   form,
   isBuilding,
+  isGenerating,
   onCancel,
   onBuild,
+  onGenerateDraft,
 }: EditorPanelProps) {
   return (
     <div className="flex min-w-0 flex-1 flex-col border-r">
       {/* Scrollable form content */}
       <ScrollArea className="flex-1">
         <div className="space-y-6 p-6">
+          {/* Header with Generate Draft button */}
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold">Proposal Editor</h2>
+              <p className="text-sm text-muted-foreground">
+                Fill in the details or let AI generate a draft
+              </p>
+            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={onGenerateDraft}
+                  disabled={isGenerating || isBuilding}
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4" />
+                      Generate Draft
+                    </>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p>Use AI to generate a proposal draft from lead context</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+
           {/* Proposal Title */}
           <div className="space-y-2">
             <label

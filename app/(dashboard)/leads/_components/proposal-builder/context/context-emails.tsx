@@ -18,10 +18,18 @@ import {
 
 type EmailThread = {
   id: string
-  subject: string
-  lastMessageAt: string
+  subject: string | null
+  lastMessageAt: string | null
   messageCount: number
-  snippet: string
+  participantEmails: string[]
+  latestMessage?: {
+    id: string
+    snippet: string | null
+    fromEmail: string | null
+    fromName: string | null
+    sentAt: string | null
+    isInbound: boolean
+  } | null
 }
 
 type ContextEmailsProps = {
@@ -38,7 +46,7 @@ export function ContextEmails({ leadId, onInsert }: ContextEmailsProps) {
   useEffect(() => {
     async function fetchEmailThreads() {
       try {
-        const response = await fetch(`/api/leads/${leadId}/emails`)
+        const response = await fetch(`/api/leads/${leadId}/threads`)
         if (!response.ok) {
           throw new Error('Failed to fetch emails')
         }
@@ -104,12 +112,16 @@ export function ContextEmails({ leadId, onInsert }: ContextEmailsProps) {
                     {thread.subject || '(No subject)'}
                   </p>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>
-                      {formatDistanceToNow(new Date(thread.lastMessageAt), {
-                        addSuffix: true,
-                      })}
-                    </span>
-                    <span className="text-muted-foreground/50">·</span>
+                    {thread.lastMessageAt && (
+                      <>
+                        <span>
+                          {formatDistanceToNow(new Date(thread.lastMessageAt), {
+                            addSuffix: true,
+                          })}
+                        </span>
+                        <span className="text-muted-foreground/50">·</span>
+                      </>
+                    )}
                     <span>{thread.messageCount} messages</span>
                   </div>
                 </div>
@@ -118,10 +130,17 @@ export function ContextEmails({ leadId, onInsert }: ContextEmailsProps) {
             <CollapsibleContent>
               <div className="border-t px-3 py-2">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="text-xs leading-relaxed text-muted-foreground flex-1">
-                    {thread.snippet}
-                  </p>
-                  {onInsert && thread.snippet && (
+                  <div className="flex-1 min-w-0">
+                    {thread.latestMessage?.fromName && (
+                      <p className="text-xs font-medium mb-1">
+                        {thread.latestMessage.fromName}
+                      </p>
+                    )}
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      {thread.latestMessage?.snippet || '(No preview available)'}
+                    </p>
+                  </div>
+                  {onInsert && thread.latestMessage?.snippet && (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
@@ -131,7 +150,7 @@ export function ContextEmails({ leadId, onInsert }: ContextEmailsProps) {
                           className="h-6 px-2 text-xs flex-shrink-0"
                           onClick={(e) => {
                             e.stopPropagation()
-                            onInsert(thread.snippet, `Email: ${thread.subject || 'No subject'}`)
+                            onInsert(thread.latestMessage!.snippet!, `Email: ${thread.subject || 'No subject'}`)
                           }}
                         >
                           <Plus className="mr-1 h-3 w-3" />

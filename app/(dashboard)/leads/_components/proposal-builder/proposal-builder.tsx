@@ -7,6 +7,7 @@ import { addDays, format } from 'date-fns'
 import { z } from 'zod'
 
 import { Form } from '@/components/ui/form'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { useToast } from '@/components/ui/use-toast'
 import type { LeadRecord } from '@/lib/leads/types'
 import {
@@ -25,6 +26,29 @@ import { buildProposalFromScratch } from '../../_actions'
 import { ContextPanel } from './context/context-panel'
 import { EditorPanel } from './editor/editor-panel'
 import { PreviewPanel } from './preview/preview-panel'
+
+// Type for the AI draft response
+type ProposalDraftResponse = {
+  draft: {
+    projectOverviewText: string
+    phases: Array<{
+      title: string
+      purpose: string
+      deliverables: string[]
+    }>
+    suggestedInitialCommitment: string
+    estimatedScopingHours: string
+    customRisks?: Array<{ title: string; description: string }>
+    estimatedValue?: number
+    confidence: number
+    notes?: string
+  }
+  context: {
+    hasNotes: boolean
+    transcriptCount: number
+    emailCount: number
+  }
+}
 
 // =============================================================================
 // Form Schema
@@ -101,6 +125,7 @@ export function ProposalBuilder({
 }: ProposalBuilderProps) {
   const { toast } = useToast()
   const [isBuilding, startBuildTransition] = useTransition()
+  const [isGenerating, setIsGenerating] = useState(false)
   const [documentSettings, setDocumentSettings] = useState<DocumentSettings>(
     DEFAULT_DOCUMENT_SETTINGS
   )
@@ -251,6 +276,92 @@ export function ProposalBuilder({
     [form, toast]
   )
 
+  // Handle AI draft generation
+  const handleGenerateDraft = useCallback(async () => {
+    setIsGenerating(true)
+
+    try {
+      const response = await fetch(`/api/leads/${lead.id}/proposal/generate-draft`, {
+        method: 'POST',
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to generate draft')
+      }
+
+      const data: ProposalDraftResponse = await response.json()
+      const { draft, context } = data
+
+      // Update form with generated content
+      // Convert plain text to HTML for the rich text editor
+      const overviewHtml = draft.projectOverviewText
+        .split('\n\n')
+        .map(p => `<p>${p.replace(/\n/g, '<br />')}</p>`)
+        .join('')
+      form.setValue('projectOverviewText', overviewHtml, { shouldDirty: true })
+
+      // Update phases
+      const newPhases = draft.phases.map((p, i) => ({
+        index: i + 1,
+        title: p.title,
+        purpose: p.purpose,
+        deliverables: p.deliverables.length > 0 ? p.deliverables : [''],
+        isOpen: i === 0,
+      }))
+      form.setValue('phases', newPhases, { shouldDirty: true })
+
+      // Update rates
+      form.setValue('initialCommitmentDescription', draft.suggestedInitialCommitment, {
+        shouldDirty: true,
+      })
+      form.setValue('estimatedScopingHours', draft.estimatedScopingHours, {
+        shouldDirty: true,
+      })
+
+      // Add custom risks if any
+      if (draft.customRisks && draft.customRisks.length > 0) {
+        const currentRisks = form.getValues('risks')
+        const newRisks = [
+          ...currentRisks,
+          ...draft.customRisks.map(r => ({
+            title: r.title,
+            description: r.description,
+          })),
+        ]
+        form.setValue('risks', newRisks, { shouldDirty: true })
+      }
+
+      // Update estimated value if provided
+      if (draft.estimatedValue) {
+        form.setValue('estimatedValue', draft.estimatedValue, { shouldDirty: true })
+      }
+
+      // Build context message
+      const contextParts = []
+      if (context.hasNotes) contextParts.push('notes')
+      if (context.transcriptCount > 0)
+        contextParts.push(`${context.transcriptCount} transcript${context.transcriptCount > 1 ? 's' : ''}`)
+      if (context.emailCount > 0)
+        contextParts.push(`${context.emailCount} email${context.emailCount > 1 ? 's' : ''}`)
+
+      const contextStr = contextParts.length > 0 ? contextParts.join(', ') : 'minimal context'
+
+      toast({
+        title: 'Draft generated',
+        description: `Created from ${contextStr}. Confidence: ${Math.round(draft.confidence * 100)}%${draft.notes ? `. ${draft.notes}` : ''}`,
+      })
+    } catch (error) {
+      console.error('Failed to generate draft:', error)
+      toast({
+        variant: 'destructive',
+        title: 'Generation failed',
+        description: 'Could not generate draft. Please try again.',
+      })
+    } finally {
+      setIsGenerating(false)
+    }
+  }, [lead.id, form, toast])
+
   // Merge form values with defaults for preview (handle undefined gracefully)
   const previewContent = useMemo(
     () => ({
@@ -297,26 +408,30 @@ export function ProposalBuilder({
   )
 
   return (
-    <Form {...form}>
-      <form className="flex min-h-0 flex-1 overflow-hidden">
-        {/* Left Column - Context Panel */}
-        <ContextPanel lead={lead} onInsert={handleContextInsert} />
+    <TooltipProvider delayDuration={300}>
+      <Form {...form}>
+        <form className="flex min-h-0 flex-1 overflow-hidden">
+          {/* Left Column - Context Panel */}
+          <ContextPanel lead={lead} onInsert={handleContextInsert} />
 
-        {/* Middle Column - Editor Panel */}
-        <EditorPanel
-          form={form}
-          isBuilding={isBuilding}
-          onCancel={onClose}
-          onBuild={handleBuildProposal}
-        />
+          {/* Middle Column - Editor Panel */}
+          <EditorPanel
+            form={form}
+            isBuilding={isBuilding}
+            isGenerating={isGenerating}
+            onCancel={onClose}
+            onBuild={handleBuildProposal}
+            onGenerateDraft={handleGenerateDraft}
+          />
 
-        {/* Right Column - Live Preview */}
-        <PreviewPanel
-          content={previewContent}
-          documentSettings={documentSettings}
-          onDocumentSettingsChange={setDocumentSettings}
-        />
-      </form>
-    </Form>
+          {/* Right Column - Live Preview */}
+          <PreviewPanel
+            content={previewContent}
+            documentSettings={documentSettings}
+            onDocumentSettingsChange={setDocumentSettings}
+          />
+        </form>
+      </Form>
+    </TooltipProvider>
   )
 }

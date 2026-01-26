@@ -16,12 +16,15 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 
-type Transcript = {
+type Meeting = {
   id: string
   title: string
-  meetingDate: string
-  summary: string | null
-  content: string
+  startsAt: string
+  endsAt: string | null
+  transcriptStatus: string | null
+  transcriptText: string | null
+  transcriptFetchedAt: string | null
+  conferenceId: string | null
 }
 
 type ContextTranscriptsProps = {
@@ -30,20 +33,20 @@ type ContextTranscriptsProps = {
 }
 
 export function ContextTranscripts({ leadId, onInsert }: ContextTranscriptsProps) {
-  const [transcripts, setTranscripts] = useState<Transcript[]>([])
+  const [meetings, setMeetings] = useState<Meeting[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
   useEffect(() => {
-    async function fetchTranscripts() {
+    async function fetchMeetings() {
       try {
         const response = await fetch(`/api/leads/${leadId}/transcripts`)
         if (!response.ok) {
-          throw new Error('Failed to fetch transcripts')
+          throw new Error('Failed to fetch meetings')
         }
         const data = await response.json()
-        setTranscripts(data.transcripts ?? [])
+        setMeetings(data.meetings ?? [])
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load')
       } finally {
@@ -51,7 +54,7 @@ export function ContextTranscripts({ leadId, onInsert }: ContextTranscriptsProps
       }
     }
 
-    fetchTranscripts()
+    fetchMeetings()
   }, [leadId])
 
   if (isLoading) {
@@ -70,7 +73,7 @@ export function ContextTranscripts({ leadId, onInsert }: ContextTranscriptsProps
     )
   }
 
-  if (transcripts.length === 0) {
+  if (meetings.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
         <Video className="mb-2 h-8 w-8 opacity-50" />
@@ -82,11 +85,11 @@ export function ContextTranscripts({ leadId, onInsert }: ContextTranscriptsProps
 
   return (
     <div className="space-y-2">
-      {transcripts.map(transcript => (
+      {meetings.map(meeting => (
         <Collapsible
-          key={transcript.id}
-          open={expandedId === transcript.id}
-          onOpenChange={open => setExpandedId(open ? transcript.id : null)}
+          key={meeting.id}
+          open={expandedId === meeting.id}
+          onOpenChange={open => setExpandedId(open ? meeting.id : null)}
         >
           <div className="rounded-lg border bg-background">
             <CollapsibleTrigger asChild>
@@ -94,57 +97,36 @@ export function ContextTranscripts({ leadId, onInsert }: ContextTranscriptsProps
                 variant="ghost"
                 className="w-full justify-start gap-2 px-3 py-2 h-auto text-left"
               >
-                {expandedId === transcript.id ? (
+                {expandedId === meeting.id ? (
                   <ChevronDown className="h-3 w-3 flex-shrink-0" />
                 ) : (
                   <ChevronRight className="h-3 w-3 flex-shrink-0" />
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-xs font-medium">
-                    {transcript.title}
+                    {meeting.title}
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(transcript.meetingDate), {
-                      addSuffix: true,
-                    })}
-                  </p>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>
+                      {formatDistanceToNow(new Date(meeting.startsAt), {
+                        addSuffix: true,
+                      })}
+                    </span>
+                    {meeting.transcriptStatus && (
+                      <>
+                        <span className="text-muted-foreground/50">·</span>
+                        <span className={meeting.transcriptStatus === 'FETCHED' ? 'text-emerald-600' : ''}>
+                          {meeting.transcriptStatus === 'FETCHED' ? 'Has transcript' : meeting.transcriptStatus}
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent>
               <div className="border-t px-3 py-2">
-                {transcript.summary ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-medium text-muted-foreground">
-                        Summary
-                      </p>
-                      {onInsert && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 px-2 text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                onInsert(transcript.summary!, `Meeting: ${transcript.title}`)
-                              }}
-                            >
-                              <Plus className="mr-1 h-3 w-3" />
-                              Insert
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Insert into Project Overview</TooltipContent>
-                        </Tooltip>
-                      )}
-                    </div>
-                    <p className="text-xs leading-relaxed">
-                      {transcript.summary}
-                    </p>
-                  </div>
-                ) : transcript.content ? (
+                {meeting.transcriptText ? (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <p className="text-xs font-medium text-muted-foreground">
@@ -160,7 +142,7 @@ export function ContextTranscripts({ leadId, onInsert }: ContextTranscriptsProps
                               className="h-6 px-2 text-xs"
                               onClick={(e) => {
                                 e.stopPropagation()
-                                onInsert(transcript.content, `Meeting: ${transcript.title}`)
+                                onInsert(meeting.transcriptText!, `Meeting: ${meeting.title}`)
                               }}
                             >
                               <Plus className="mr-1 h-3 w-3" />
@@ -171,13 +153,17 @@ export function ContextTranscripts({ leadId, onInsert }: ContextTranscriptsProps
                         </Tooltip>
                       )}
                     </div>
-                    <p className="text-xs leading-relaxed line-clamp-6">
-                      {transcript.content}
+                    <p className="text-xs leading-relaxed line-clamp-6 whitespace-pre-wrap">
+                      {meeting.transcriptText}
                     </p>
                   </div>
                 ) : (
                   <p className="text-xs text-muted-foreground italic">
-                    No content available
+                    {meeting.transcriptStatus === 'PENDING'
+                      ? 'Transcript is being processed...'
+                      : meeting.transcriptStatus === 'NOT_FOUND'
+                      ? 'No transcript available for this meeting'
+                      : 'No transcript content'}
                   </p>
                 )}
               </div>
