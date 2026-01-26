@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Video, Loader2, ChevronDown, ChevronRight } from 'lucide-react'
+import { Video, Loader2, ChevronDown, ChevronRight, Plus } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
 import { Button } from '@/components/ui/button'
@@ -10,6 +10,11 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 type Transcript = {
   id: string
@@ -21,9 +26,10 @@ type Transcript = {
 
 type ContextTranscriptsProps = {
   leadId: string
+  onInsert?: (text: string, source: string) => void
 }
 
-export function ContextTranscripts({ leadId }: ContextTranscriptsProps) {
+export function ContextTranscripts({ leadId, onInsert }: ContextTranscriptsProps) {
   const [transcripts, setTranscripts] = useState<Transcript[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -109,16 +115,69 @@ export function ContextTranscripts({ leadId }: ContextTranscriptsProps) {
               <div className="border-t px-3 py-2">
                 {transcript.summary ? (
                   <div className="space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground">
-                      Summary
-                    </p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Summary
+                      </p>
+                      {onInsert && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-2 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onInsert(transcript.summary!, `Meeting: ${transcript.title}`)
+                              }}
+                            >
+                              <Plus className="mr-1 h-3 w-3" />
+                              Insert
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Insert into Project Overview</TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
                     <p className="text-xs leading-relaxed">
                       {transcript.summary}
                     </p>
                   </div>
+                ) : transcript.content ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Transcript
+                      </p>
+                      {onInsert && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-2 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onInsert(transcript.content, `Meeting: ${transcript.title}`)
+                              }}
+                            >
+                              <Plus className="mr-1 h-3 w-3" />
+                              Insert
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Insert into Project Overview</TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
+                    <p className="text-xs leading-relaxed line-clamp-6">
+                      {transcript.content}
+                    </p>
+                  </div>
                 ) : (
                   <p className="text-xs text-muted-foreground italic">
-                    No summary available
+                    No content available
                   </p>
                 )}
               </div>

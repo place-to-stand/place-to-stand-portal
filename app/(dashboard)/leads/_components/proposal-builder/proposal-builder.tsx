@@ -229,6 +229,28 @@ export function ProposalBuilder({
     })()
   }, [form, lead.id, toast, onSuccess, documentSettings])
 
+  // Handle inserting content from context panel into project overview
+  const handleContextInsert = useCallback(
+    (text: string, source: string) => {
+      const currentValue = form.getValues('projectOverviewText')
+
+      // Build the new content with source attribution
+      const attribution = `<p><em>From ${source}:</em></p>`
+      const insertedText = `<p>${text.replace(/\n/g, '</p><p>')}</p>`
+      const separator = currentValue && currentValue !== '<p></p>' ? '<p></p>' : ''
+
+      const newValue = currentValue + separator + attribution + insertedText
+
+      form.setValue('projectOverviewText', newValue, { shouldDirty: true })
+
+      toast({
+        title: 'Content inserted',
+        description: `Added content from "${source}" to Project Overview.`,
+      })
+    },
+    [form, toast]
+  )
+
   // Merge form values with defaults for preview (handle undefined gracefully)
   const previewContent = useMemo(
     () => ({
@@ -278,7 +300,7 @@ export function ProposalBuilder({
     <Form {...form}>
       <form className="flex min-h-0 flex-1 overflow-hidden">
         {/* Left Column - Context Panel */}
-        <ContextPanel lead={lead} />
+        <ContextPanel lead={lead} onInsert={handleContextInsert} />
 
         {/* Middle Column - Editor Panel */}
         <EditorPanel

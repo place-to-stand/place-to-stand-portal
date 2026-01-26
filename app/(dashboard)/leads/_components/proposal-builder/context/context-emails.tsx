@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Mail, Loader2, ChevronDown, ChevronRight } from 'lucide-react'
+import { Mail, Loader2, ChevronDown, ChevronRight, Plus } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
 import { Button } from '@/components/ui/button'
@@ -10,6 +10,11 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 type EmailThread = {
   id: string
@@ -21,9 +26,10 @@ type EmailThread = {
 
 type ContextEmailsProps = {
   leadId: string
+  onInsert?: (text: string, source: string) => void
 }
 
-export function ContextEmails({ leadId }: ContextEmailsProps) {
+export function ContextEmails({ leadId, onInsert }: ContextEmailsProps) {
   const [threads, setThreads] = useState<EmailThread[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -111,9 +117,31 @@ export function ContextEmails({ leadId }: ContextEmailsProps) {
             </CollapsibleTrigger>
             <CollapsibleContent>
               <div className="border-t px-3 py-2">
-                <p className="text-xs leading-relaxed text-muted-foreground">
-                  {thread.snippet}
-                </p>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-xs leading-relaxed text-muted-foreground flex-1">
+                    {thread.snippet}
+                  </p>
+                  {onInsert && thread.snippet && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-xs flex-shrink-0"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onInsert(thread.snippet, `Email: ${thread.subject || 'No subject'}`)
+                          }}
+                        >
+                          <Plus className="mr-1 h-3 w-3" />
+                          Insert
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Insert into Project Overview</TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
               </div>
             </CollapsibleContent>
           </div>

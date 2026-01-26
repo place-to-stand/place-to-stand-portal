@@ -5,6 +5,7 @@ import { Building2, Mail, Phone, Globe, FileText, MessageSquare, Video } from 'l
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import type { LeadRecord } from '@/lib/leads/types'
 
 import { ContextNotes } from './context-notes'
@@ -13,11 +14,13 @@ import { ContextEmails } from './context-emails'
 
 type ContextPanelProps = {
   lead: LeadRecord
+  onInsert?: (text: string, source: string) => void
 }
 
-export function ContextPanel({ lead }: ContextPanelProps) {
+export function ContextPanel({ lead, onInsert }: ContextPanelProps) {
   return (
-    <div className="flex w-[280px] flex-shrink-0 flex-col border-r bg-muted/30">
+    <TooltipProvider delayDuration={300}>
+      <div className="flex w-[280px] flex-shrink-0 flex-col border-r bg-muted/30">
       {/* Lead Info Header */}
       <div className="flex-shrink-0 space-y-3 p-4">
         <div className="space-y-1">
@@ -88,7 +91,7 @@ export function ContextPanel({ lead }: ContextPanelProps) {
           <TabsContent value="notes" className="m-0 h-full">
             <ScrollArea className="h-full">
               <div className="p-4">
-                <ContextNotes notesHtml={lead.notesHtml} />
+                <ContextNotes notesHtml={lead.notesHtml} onInsert={onInsert} />
               </div>
             </ScrollArea>
           </TabsContent>
@@ -96,7 +99,7 @@ export function ContextPanel({ lead }: ContextPanelProps) {
           <TabsContent value="transcripts" className="m-0 h-full">
             <ScrollArea className="h-full">
               <div className="p-4">
-                <ContextTranscripts leadId={lead.id} />
+                <ContextTranscripts leadId={lead.id} onInsert={onInsert} />
               </div>
             </ScrollArea>
           </TabsContent>
@@ -104,12 +107,13 @@ export function ContextPanel({ lead }: ContextPanelProps) {
           <TabsContent value="emails" className="m-0 h-full">
             <ScrollArea className="h-full">
               <div className="p-4">
-                <ContextEmails leadId={lead.id} />
+                <ContextEmails leadId={lead.id} onInsert={onInsert} />
               </div>
             </ScrollArea>
           </TabsContent>
         </div>
       </Tabs>
-    </div>
+      </div>
+    </TooltipProvider>
   )
 }
