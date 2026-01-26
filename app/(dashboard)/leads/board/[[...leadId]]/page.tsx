@@ -39,6 +39,7 @@ export default async function LeadsBoardPage({ params }: PageProps) {
       assignees={assignees}
       canManage={user.role === 'ADMIN'}
       activeLeadId={activeLeadId}
+      senderName={user.full_name ?? user.email ?? ''}
     />
   )
 }

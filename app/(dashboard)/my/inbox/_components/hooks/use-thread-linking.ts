@@ -16,25 +16,35 @@ type Project = {
   clientSlug: string | null
 }
 
+type Lead = {
+  id: string
+  contactName: string
+}
+
 interface UseThreadLinkingOptions {
   selectedThread: ThreadSummary | null
   setSelectedThread: Dispatch<SetStateAction<ThreadSummary | null>>
   setThreads: Dispatch<SetStateAction<ThreadSummary[]>>
   clients: Client[]
   projects: Project[]
+  leads?: Lead[]
   onLinkComplete?: (threadId: string) => void
   onClientLinked?: () => void
   onProjectLinked?: () => void
+  onLeadLinked?: () => void
   toast: (options: { title: string; description?: string; variant?: 'default' | 'destructive' }) => void
 }
 
 interface UseThreadLinkingReturn {
   isLinking: boolean
   isLinkingProject: boolean
+  isLinkingLead: boolean
   handleLinkClient: (clientId: string) => Promise<void>
   handleUnlinkClient: () => Promise<void>
   handleLinkProject: (projectId: string) => Promise<void>
   handleUnlinkProject: () => Promise<void>
+  handleLinkLead: (leadId: string) => Promise<void>
+  handleUnlinkLead: () => Promise<void>
 }
 
 export function useThreadLinking({
@@ -43,13 +53,16 @@ export function useThreadLinking({
   setThreads,
   clients,
   projects,
+  leads = [],
   onLinkComplete,
   onClientLinked,
   onProjectLinked,
+  onLeadLinked,
   toast,
 }: UseThreadLinkingOptions): UseThreadLinkingReturn {
   const [isLinking, setIsLinking] = useState(false)
   const [isLinkingProject, setIsLinkingProject] = useState(false)
+  const [isLinkingLead, setIsLinkingLead] = useState(false)
 
   const handleLinkClient = useCallback(
     async (clientId: string) => {
@@ -224,12 +237,94 @@ export function useThreadLinking({
     }
   }, [selectedThread, setSelectedThread, setThreads, toast])
 
+  const handleLinkLead = useCallback(
+    async (leadId: string) => {
+      if (!selectedThread) return
+
+      setIsLinkingLead(true)
+      try {
+        const res = await fetch(`/api/threads/${selectedThread.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leadId }),
+        })
+
+        if (res.ok) {
+          const lead = leads.find(l => l.id === leadId)
+
+          // Update local state
+          const updatedThread: ThreadSummary = {
+            ...selectedThread,
+            lead: lead
+              ? { id: lead.id, contactName: lead.contactName }
+              : null,
+          }
+          setSelectedThread(updatedThread)
+          setThreads(prev =>
+            prev.map(t => (t.id === selectedThread.id ? updatedThread : t))
+          )
+          onLeadLinked?.()
+
+          toast({ title: 'Thread linked to lead' })
+        } else {
+          throw new Error('Failed to link')
+        }
+      } catch {
+        toast({
+          title: 'Error',
+          description: 'Failed to link thread to lead.',
+          variant: 'destructive',
+        })
+      } finally {
+        setIsLinkingLead(false)
+      }
+    },
+    [selectedThread, leads, setSelectedThread, setThreads, onLeadLinked, toast]
+  )
+
+  const handleUnlinkLead = useCallback(async () => {
+    if (!selectedThread) return
+
+    setIsLinkingLead(true)
+    try {
+      const res = await fetch(`/api/threads/${selectedThread.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadId: null }),
+      })
+
+      if (res.ok) {
+        const updatedThread: ThreadSummary = {
+          ...selectedThread,
+          lead: null,
+        }
+        setSelectedThread(updatedThread)
+        setThreads(prev =>
+          prev.map(t => (t.id === selectedThread.id ? updatedThread : t))
+        )
+
+        toast({ title: 'Lead unlinked' })
+      }
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'Failed to unlink lead.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsLinkingLead(false)
+    }
+  }, [selectedThread, setSelectedThread, setThreads, toast])
+
   return {
     isLinking,
     isLinkingProject,
+    isLinkingLead,
     handleLinkClient,
     handleUnlinkClient,
     handleLinkProject,
     handleUnlinkProject,
+    handleLinkLead,
+    handleUnlinkLead,
   }
 }

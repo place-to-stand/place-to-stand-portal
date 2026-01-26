@@ -10,11 +10,12 @@ import {
   FolderKanban,
   LinkIcon,
   Unlink,
+  FileText,
 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
-type View = 'inbox' | 'drafts' | 'sent' | 'scheduled' | 'by-client' | 'by-project' | 'linked' | 'unlinked'
+type View = 'inbox' | 'drafts' | 'sent' | 'scheduled' | 'by-client' | 'by-project' | 'linked' | 'unlinked' | 'templates'
 
 interface InboxSidebarProps {
   currentView: View
@@ -41,6 +42,7 @@ const navItems: Array<{
   href: string
   showCount?: 'unread' | 'total'
   section?: string
+  isExternal?: boolean
 }> = [
   { view: 'inbox', label: 'Inbox', icon: Inbox, href: '/my/inbox', showCount: 'unread' },
   { view: 'drafts', label: 'Drafts', icon: FileEdit, href: '/my/inbox?view=drafts', showCount: 'total' },
@@ -50,11 +52,10 @@ const navItems: Array<{
   { view: 'unlinked', label: 'Unlinked', icon: Unlink, href: '/my/inbox?view=unlinked', showCount: 'total' },
   { view: 'by-client', label: 'By Client', icon: Users, href: '/my/inbox?view=by-client', section: 'Browse' },
   { view: 'by-project', label: 'By Project', icon: FolderKanban, href: '/my/inbox?view=by-project' },
+  { view: 'templates', label: 'Templates', icon: FileText, href: '/settings/email-templates', isExternal: true },
 ]
 
 export function InboxSidebar({ currentView, counts, preservedParams }: InboxSidebarProps) {
-  let currentSection: string | undefined
-
   // Build URL that preserves thread and search params across view changes
   const buildViewUrl = (view: View): string => {
     const params = new URLSearchParams()
@@ -69,9 +70,11 @@ export function InboxSidebar({ currentView, counts, preservedParams }: InboxSide
 
   return (
     <nav className='flex flex-col gap-1 p-3'>
-      {navItems.map(item => {
-        const showSectionHeader = item.section && item.section !== currentSection
-        if (item.section) currentSection = item.section
+      {navItems.map((item, index) => {
+        // Compare with previous item to determine if section header should show
+        // This avoids mutating a variable during render (React Compiler compliance)
+        const prevItem = index > 0 ? navItems[index - 1] : null
+        const showSectionHeader = item.section && item.section !== prevItem?.section
 
         const count =
           item.view === 'inbox' && item.showCount === 'unread'
@@ -94,7 +97,7 @@ export function InboxSidebar({ currentView, counts, preservedParams }: InboxSide
               </div>
             )}
             <Link
-              href={buildViewUrl(item.view)}
+              href={item.isExternal ? item.href : buildViewUrl(item.view)}
               className={cn(
                 'flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                 currentView === item.view

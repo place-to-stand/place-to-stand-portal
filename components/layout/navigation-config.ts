@@ -11,6 +11,7 @@ import {
   Mail,
   Sparkles,
   Contact,
+  FileText,
 } from 'lucide-react'
 import type { UserRole } from '@/lib/auth/session'
 
@@ -105,6 +106,11 @@ export const NAV_GROUPS: NavGroup[] = [
         href: '/settings/integrations',
         label: 'Integrations',
         icon: Plug,
+      },
+      {
+        href: '/settings/email-templates',
+        label: 'Email Templates',
+        icon: FileText,
       },
     ],
   },

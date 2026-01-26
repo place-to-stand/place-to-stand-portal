@@ -71,5 +71,24 @@ export async function getTaskById(
   return result[0]
 }
 
+/**
+ * Get tasks linked to a specific lead.
+ * Admin-only operation (leads are admin-only).
+ */
+export async function listTasksForLead(
+  user: AppUser,
+  leadId: string,
+): Promise<SelectTask[]> {
+  if (!isAdmin(user)) {
+    return []
+  }
+
+  return db
+    .select(taskFields)
+    .from(tasks)
+    .where(and(eq(tasks.leadId, leadId), isNull(tasks.deletedAt)))
+    .orderBy(asc(tasks.createdAt))
+}
+
 export type { SelectTask } from './common'
 

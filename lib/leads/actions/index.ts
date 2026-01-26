@@ -1,3 +1,2 @@
-export { saveLead } from './save-lead'
-export { updateLeadStatus } from './update-lead-status'
-export { deleteLead } from './delete-lead'
+export { convertLeadToClient } from './convert-lead'
+export { generateLeadSuggestions } from './generate-suggestions'

@@ -22,6 +22,8 @@ export type GmailSyncState = {
   lastSyncedAt?: string
   /** Number of messages synced in last operation */
   lastSyncCount?: number
+  /** Error message from last sync attempt (null if successful) */
+  lastError?: string | null
 }
 
 /**
@@ -49,8 +51,8 @@ export type ProviderSyncState = GmailSyncState | GitHubSyncState | Record<string
 export function isGmailSyncState(state: unknown): state is GmailSyncState {
   if (!state || typeof state !== 'object') return false
   const s = state as Record<string, unknown>
-  // Gmail state has historyId or fullSyncCompleted
-  return 'historyId' in s || 'fullSyncCompleted' in s || Object.keys(s).length === 0
+  // Gmail state has historyId, fullSyncCompleted, or lastError
+  return 'historyId' in s || 'fullSyncCompleted' in s || 'lastError' in s || Object.keys(s).length === 0
 }
 
 /**

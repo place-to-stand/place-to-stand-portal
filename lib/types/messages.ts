@@ -26,6 +26,10 @@ export interface ThreadWithMessages extends Thread {
     slug: string | null
     clientSlug: string | null
   } | null
+  lead?: {
+    id: string
+    contactName: string
+  } | null
 }
 
 // Thread summary for list views
@@ -47,6 +51,10 @@ export interface ThreadSummary {
     name: string
     slug: string | null
     clientSlug: string | null
+  } | null
+  lead?: {
+    id: string
+    contactName: string
   } | null
   // Preview of latest message
   latestMessage?: {

@@ -33,7 +33,24 @@ export interface ReplySuggestedContent {
   body: string
 }
 
-export type SuggestedContent = TaskSuggestedContent | PRSuggestedContent | ReplySuggestedContent
+// Lead-specific action suggestions
+export type LeadActionType =
+  | 'FOLLOW_UP'       // Follow up with lead (creates task)
+  | 'REPLY'           // Draft a reply to lead
+  | 'SCHEDULE_CALL'   // Schedule a call (creates task)
+  | 'SEND_PROPOSAL'   // Send a proposal
+  | 'ADVANCE_STATUS'  // Recommend status change
+
+export interface LeadActionSuggestedContent {
+  actionType: LeadActionType
+  title: string
+  body?: string
+  suggestedStatus?: string     // For ADVANCE_STATUS
+  suggestedDueDate?: string    // For time-sensitive actions
+  reasoning: string            // Why this action is recommended
+}
+
+export type SuggestedContent = TaskSuggestedContent | PRSuggestedContent | ReplySuggestedContent | LeadActionSuggestedContent
 
 // Suggestion with related context for UI
 export interface SuggestionWithContext extends Suggestion {
@@ -56,6 +73,12 @@ export interface SuggestionWithContext extends Suggestion {
     clientId: string | null
     clientName: string | null
     clientSlug: string | null
+  } | null
+  lead?: {
+    id: string
+    contactName: string
+    companyName: string | null
+    status: string
   } | null
   createdTask?: {
     id: string
@@ -100,6 +123,10 @@ export interface SuggestionSummary {
   project?: {
     id: string
     name: string
+  } | null
+  lead?: {
+    id: string
+    contactName: string
   } | null
 }
 

@@ -2,7 +2,6 @@ import 'server-only'
 
 import { and, desc, eq, isNull, inArray, sql, or } from 'drizzle-orm'
 
-import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import {
   suggestions,
@@ -12,7 +11,6 @@ import {
   clients,
   tasks,
 } from '@/lib/db/schema'
-import { isAdmin } from '@/lib/auth/permissions'
 import { NotFoundError } from '@/lib/errors/http'
 import type {
   Suggestion,
@@ -22,6 +20,7 @@ import type {
   SuggestionStatus,
   TaskSuggestedContent,
   PRSuggestedContent,
+  LeadActionSuggestedContent,
 } from '@/lib/types/suggestions'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -108,6 +107,7 @@ export async function getSuggestionWithContext(id: string): Promise<SuggestionWi
 export type CreateSuggestionInput = {
   messageId?: string | null
   threadId?: string | null
+  leadId?: string | null
   type: SuggestionType
   status?: SuggestionStatus
   projectId?: string | null
@@ -116,7 +116,7 @@ export type CreateSuggestionInput = {
   aiModelVersion?: string | null
   promptTokens?: number | null
   completionTokens?: number | null
-  suggestedContent: TaskSuggestedContent | PRSuggestedContent
+  suggestedContent: TaskSuggestedContent | PRSuggestedContent | LeadActionSuggestedContent
 }
 
 export async function createSuggestion(input: CreateSuggestionInput): Promise<Suggestion> {
@@ -125,6 +125,7 @@ export async function createSuggestion(input: CreateSuggestionInput): Promise<Su
     .values({
       messageId: input.messageId ?? null,
       threadId: input.threadId ?? null,
+      leadId: input.leadId ?? null,
       type: input.type,
       status: input.status ?? 'PENDING',
       projectId: input.projectId ?? null,
@@ -203,6 +204,7 @@ export type ListSuggestionsOptions = {
   projectId?: string
   threadId?: string
   messageId?: string
+  leadId?: string
   limit?: number
   offset?: number
 }
@@ -210,7 +212,7 @@ export type ListSuggestionsOptions = {
 export async function listPendingSuggestions(
   options: ListSuggestionsOptions = {}
 ): Promise<SuggestionSummary[]> {
-  const { type, projectId, threadId, messageId, limit = 50, offset = 0 } = options
+  const { type, projectId, threadId, messageId, leadId, limit = 50, offset = 0 } = options
 
   const conditions = [
     isNull(suggestions.deletedAt),
@@ -228,6 +230,9 @@ export async function listPendingSuggestions(
   }
   if (messageId) {
     conditions.push(eq(suggestions.messageId, messageId))
+  }
+  if (leadId) {
+    conditions.push(eq(suggestions.leadId, leadId))
   }
 
   const rows = await db
@@ -506,6 +511,146 @@ export async function getSuggestionsForProject(
       body: typeof rawContent.body === 'string' && !rawContent.title ? rawContent.body : undefined,
       message: suggestion.messageId ? messageMap.get(suggestion.messageId) ?? null : null,
       project: null,
+      suggestedContent: content,
+      reasoning: suggestion.reasoning,
+    }
+  })
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Lead Suggestions
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function listSuggestionsForLead(
+  leadId: string,
+  options: { includeResolved?: boolean } = {}
+): Promise<SuggestionSummary[]> {
+  const { includeResolved = false } = options
+
+  const conditions = [
+    eq(suggestions.leadId, leadId),
+    isNull(suggestions.deletedAt),
+  ]
+
+  if (!includeResolved) {
+    conditions.push(
+      or(
+        eq(suggestions.status, 'PENDING'),
+        eq(suggestions.status, 'DRAFT'),
+        eq(suggestions.status, 'MODIFIED')
+      )!
+    )
+  }
+
+  const rows = await db
+    .select()
+    .from(suggestions)
+    .where(and(...conditions))
+    .orderBy(desc(suggestions.confidence))
+
+  return rows.map(suggestion => {
+    const content = suggestion.suggestedContent as Record<string, unknown>
+    return {
+      id: suggestion.id,
+      type: suggestion.type as SuggestionType,
+      status: suggestion.status as SuggestionStatus,
+      confidence: suggestion.confidence,
+      createdAt: suggestion.createdAt,
+      title: typeof content.title === 'string' ? content.title : undefined,
+      body: typeof content.body === 'string' && !content.title ? content.body : undefined,
+      message: null,
+      project: null,
+      lead: null,
+    }
+  })
+}
+
+export async function getLeadPendingSuggestionCount(leadId: string): Promise<number> {
+  const [result] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(suggestions)
+    .where(
+      and(
+        eq(suggestions.leadId, leadId),
+        isNull(suggestions.deletedAt),
+        or(eq(suggestions.status, 'PENDING'), eq(suggestions.status, 'DRAFT'))
+      )
+    )
+
+  return result?.count ?? 0
+}
+
+export interface SuggestionForLead extends SuggestionSummary {
+  thread: {
+    id: string
+    subject: string | null
+  } | null
+  suggestedContent: TaskSuggestedContent | PRSuggestedContent | LeadActionSuggestedContent
+  reasoning: string | null
+}
+
+export async function getSuggestionsForLead(
+  leadId: string,
+  options: { pendingOnly?: boolean; type?: SuggestionType; limit?: number } = {}
+): Promise<SuggestionForLead[]> {
+  const { pendingOnly = true, type, limit = 50 } = options
+
+  const conditions = [
+    eq(suggestions.leadId, leadId),
+    isNull(suggestions.deletedAt),
+  ]
+
+  if (pendingOnly) {
+    conditions.push(
+      or(
+        eq(suggestions.status, 'PENDING'),
+        eq(suggestions.status, 'DRAFT'),
+        eq(suggestions.status, 'MODIFIED')
+      )!
+    )
+  }
+
+  if (type) {
+    conditions.push(eq(suggestions.type, type))
+  }
+
+  const rows = await db
+    .select()
+    .from(suggestions)
+    .where(and(...conditions))
+    .orderBy(desc(suggestions.confidence), desc(suggestions.createdAt))
+    .limit(limit)
+
+  if (rows.length === 0) return []
+
+  // Get thread info for suggestions with threadId
+  const threadIds = [...new Set(rows.map(s => s.threadId).filter(Boolean))] as string[]
+  const threadRows = threadIds.length > 0
+    ? await db
+        .select({
+          id: threads.id,
+          subject: threads.subject,
+        })
+        .from(threads)
+        .where(inArray(threads.id, threadIds))
+    : []
+  const threadMap = new Map(threadRows.map(t => [t.id, t]))
+
+  return rows.map(suggestion => {
+    const content = suggestion.suggestedContent as TaskSuggestedContent | PRSuggestedContent | LeadActionSuggestedContent
+    const rawContent = suggestion.suggestedContent as Record<string, unknown>
+    return {
+      id: suggestion.id,
+      type: suggestion.type as SuggestionType,
+      status: suggestion.status as SuggestionStatus,
+      confidence: suggestion.confidence,
+      createdAt: suggestion.createdAt,
+      title: typeof rawContent.title === 'string' ? rawContent.title : undefined,
+      body: typeof rawContent.body === 'string' && !rawContent.title ? rawContent.body : undefined,
+      message: null,
+      project: null,
+      lead: null,
+      thread: suggestion.threadId ? threadMap.get(suggestion.threadId) ?? null : null,
       suggestedContent: content,
       reasoning: suggestion.reasoning,
     }
