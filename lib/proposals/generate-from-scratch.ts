@@ -11,6 +11,7 @@ import {
   DEFAULT_PROPOSAL_VALIDITY_DAYS,
   DEFAULT_RISKS,
 } from './constants'
+import { DEFAULT_DOCUMENT_SETTINGS, type DocumentSettings } from './document-styles'
 import type {
   ProposalContent,
   ProposalPhase,
@@ -49,12 +50,18 @@ export async function generateProposalFromScratch({
   // Build the full content object with defaults
   const content = buildProposalContent(input)
 
+  // Build document settings with defaults
+  const documentSettings: DocumentSettings = {
+    ...DEFAULT_DOCUMENT_SETTINGS,
+    ...input.documentSettings,
+  }
+
   // Create the Google Doc
   const { docId, docUrl } = await buildProposalDocument(
     userId,
     content,
     input.title,
-    { connectionId }
+    { connectionId, documentSettings }
   )
 
   // Calculate expiration date for the proposal record

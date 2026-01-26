@@ -10,6 +10,11 @@ import {
   NEXT_STEPS_TEXT,
   FULL_TERMS_AND_CONDITIONS,
 } from '@/lib/proposals/constants'
+import {
+  DEFAULT_DOCUMENT_SETTINGS,
+  SECTION_SPACING_OPTIONS,
+  type DocumentSettings,
+} from '@/lib/proposals/document-styles'
 
 import {
   createBlankDocument,
@@ -19,55 +24,68 @@ import {
 } from './docs-builder'
 
 // =============================================================================
-// Style Constants
+// Dynamic Style Generator
 // =============================================================================
 
-const STYLES = {
-  // Logo text
-  logoMain: {
-    bold: true,
-    fontSize: { magnitude: 28, unit: 'PT' as const },
-    weightedFontFamily: { fontFamily: 'Arial' },
-  },
-  logoSubtitle: {
-    bold: false,
-    fontSize: { magnitude: 11, unit: 'PT' as const },
-    weightedFontFamily: { fontFamily: 'Arial' },
-  },
-  // Section headers (ALL CAPS)
-  sectionHeader: {
-    bold: true,
-    fontSize: { magnitude: 14, unit: 'PT' as const },
-    weightedFontFamily: { fontFamily: 'Arial' },
-  },
-  // Phase titles
-  phaseTitle: {
-    bold: true,
-    fontSize: { magnitude: 12, unit: 'PT' as const },
-    weightedFontFamily: { fontFamily: 'Arial' },
-  },
-  // Labels (bold inline text)
-  label: {
-    bold: true,
-  },
-  // Client company in header
-  clientCompanyHeader: {
-    bold: true,
-    fontSize: { magnitude: 20, unit: 'PT' as const },
-    weightedFontFamily: { fontFamily: 'Arial' },
-  },
-  // "Proposal for" text
-  proposalForText: {
-    fontSize: { magnitude: 11, unit: 'PT' as const },
-    weightedFontFamily: { fontFamily: 'Arial' },
-  },
-  // Signature section headers
-  signatureHeader: {
-    bold: true,
-    fontSize: { magnitude: 11, unit: 'PT' as const },
-    weightedFontFamily: { fontFamily: 'Arial' },
-  },
-} as const
+function createDocumentStyles(settings: DocumentSettings = DEFAULT_DOCUMENT_SETTINGS) {
+  const bodySize = settings.bodyFontSize
+  const fontFamily = settings.fontFamily
+
+  return {
+    // Logo text
+    logoMain: {
+      bold: true,
+      fontSize: { magnitude: bodySize + 17, unit: 'PT' as const },
+      weightedFontFamily: { fontFamily },
+    },
+    logoSubtitle: {
+      bold: false,
+      fontSize: { magnitude: bodySize, unit: 'PT' as const },
+      weightedFontFamily: { fontFamily },
+    },
+    // Section headers (ALL CAPS)
+    sectionHeader: {
+      bold: true,
+      fontSize: { magnitude: bodySize + 3, unit: 'PT' as const },
+      weightedFontFamily: { fontFamily },
+    },
+    // Phase titles
+    phaseTitle: {
+      bold: true,
+      fontSize: { magnitude: bodySize + 1, unit: 'PT' as const },
+      weightedFontFamily: { fontFamily },
+    },
+    // Labels (bold inline text)
+    label: {
+      bold: true,
+    },
+    // Client company in header
+    clientCompanyHeader: {
+      bold: true,
+      fontSize: { magnitude: bodySize + 9, unit: 'PT' as const },
+      weightedFontFamily: { fontFamily },
+    },
+    // "Proposal for" text
+    proposalForText: {
+      fontSize: { magnitude: bodySize, unit: 'PT' as const },
+      weightedFontFamily: { fontFamily },
+    },
+    // Signature section headers
+    signatureHeader: {
+      bold: true,
+      fontSize: { magnitude: bodySize, unit: 'PT' as const },
+      weightedFontFamily: { fontFamily },
+    },
+    // Body text (for applying to paragraphs)
+    body: {
+      fontSize: { magnitude: bodySize, unit: 'PT' as const },
+      weightedFontFamily: { fontFamily },
+    },
+  }
+}
+
+// Default styles for backward compatibility
+const STYLES = createDocumentStyles()
 
 // =============================================================================
 // Main Builder Function
@@ -81,13 +99,14 @@ export async function buildProposalDocument(
   userId: string,
   content: ProposalContent,
   title: string,
-  options?: { connectionId?: string }
+  options?: { connectionId?: string; documentSettings?: DocumentSettings }
 ): Promise<{ docId: string; docUrl: string }> {
   // Create blank document
   const { docId, docUrl } = await createBlankDocument(userId, title, options)
 
-  // Build all content and styling requests
-  const requests = buildDocumentRequests(content)
+  // Build all content and styling requests with user's document settings
+  const settings = options?.documentSettings ?? DEFAULT_DOCUMENT_SETTINGS
+  const requests = buildDocumentRequests(content, settings)
 
   // Apply all requests in a single batch
   await batchUpdateDocument(userId, docId, requests, options)
@@ -105,22 +124,54 @@ interface StyleRange {
   style: TextStyle
 }
 
+interface ParagraphRange {
+  start: number
+  end: number
+  alignment: 'START' | 'CENTER' | 'END' | 'JUSTIFIED'
+  lineSpacing?: number
+}
+
+// Map text alignment to Google Docs alignment values
+function mapAlignment(alignment: string): 'START' | 'CENTER' | 'END' | 'JUSTIFIED' {
+  switch (alignment) {
+    case 'center': return 'CENTER'
+    case 'right': return 'END'
+    case 'justified': return 'JUSTIFIED'
+    default: return 'START'
+  }
+}
+
 /**
  * Build all requests for the proposal document.
  * Two-pass approach: insert all text first, then apply styling.
  */
-function buildDocumentRequests(content: ProposalContent): DocumentRequest[] {
+function buildDocumentRequests(content: ProposalContent, settings: DocumentSettings): DocumentRequest[] {
+  const STYLES = createDocumentStyles(settings)
   const textParts: string[] = []
   const styleRanges: StyleRange[] = []
+  const paragraphRanges: ParagraphRange[] = []
   let pos = 1 // Google Docs starts at index 1
 
+  // Track paragraph boundaries for alignment
+  const headerAlignment = mapAlignment(settings.headerAlignment)
+  const bodyAlignment = mapAlignment(settings.bodyAlignment)
+
   // Helper to add text and optionally track style
-  const addText = (text: string, style?: TextStyle) => {
+  const addText = (text: string, style?: TextStyle, isHeader = false) => {
     const start = pos
     textParts.push(text)
     pos += text.length
     if (style) {
       styleRanges.push({ start, end: pos, style })
+    }
+    // Track paragraph for alignment if it ends with newline
+    if (text.endsWith('\n')) {
+      paragraphRanges.push({
+        start,
+        end: pos,
+        alignment: isHeader ? headerAlignment : bodyAlignment,
+        lineSpacing: settings.lineSpacing * 100, // Google Docs uses percentage (150 = 1.5)
+      })
     }
     return { start, end: pos }
   }
@@ -137,19 +188,19 @@ function buildDocumentRequests(content: ProposalContent): DocumentRequest[] {
   // ==========================================================================
 
   // Logo: "PLACE TO STAND"
-  addText('PLACE TO STAND\n', STYLES.logoMain)
+  addText('PLACE TO STAND\n', STYLES.logoMain, true)
 
   // Logo subtitle: "AGENCY"
-  addText('AGENCY\n', STYLES.logoSubtitle)
+  addText('AGENCY\n', STYLES.logoSubtitle, true)
 
   // Horizontal divider
   addText('\n' + '─'.repeat(60) + '\n\n')
 
   // "Proposal for" label
-  addText('Proposal for\n', STYLES.proposalForText)
+  addText('Proposal for\n', STYLES.proposalForText, true)
 
   // Client company name (large)
-  addText(`${content.client.companyName}\n\n`, STYLES.clientCompanyHeader)
+  addText(`${content.client.companyName}\n\n`, STYLES.clientCompanyHeader, true)
 
   // ==========================================================================
   // 2. CLIENT / VENDOR INFO SECTION
@@ -181,14 +232,14 @@ function buildDocumentRequests(content: ProposalContent): DocumentRequest[] {
   // 3. PROJECT OVERVIEW
   // ==========================================================================
 
-  addText('PROJECT OVERVIEW\n', STYLES.sectionHeader)
+  addText('PROJECT OVERVIEW\n', STYLES.sectionHeader, true)
   addText(`${content.projectOverviewText}\n\n`)
 
   // ==========================================================================
   // 4. SCOPE OF WORK
   // ==========================================================================
 
-  addText('SCOPE OF WORK\n', STYLES.sectionHeader)
+  addText('SCOPE OF WORK\n', STYLES.sectionHeader, true)
   addText(`${SCOPE_OF_WORK_INTRO}\n\n`)
 
   // Phases
@@ -216,7 +267,7 @@ function buildDocumentRequests(content: ProposalContent): DocumentRequest[] {
   // 5. POTENTIAL RISKS
   // ==========================================================================
 
-  addText('POTENTIAL RISKS\n', STYLES.sectionHeader)
+  addText('POTENTIAL RISKS\n', STYLES.sectionHeader, true)
   addText(`${RISKS_INTRO}\n\n`)
 
   for (const risk of content.risks) {
@@ -235,7 +286,7 @@ function buildDocumentRequests(content: ProposalContent): DocumentRequest[] {
   // 6. RATES & INITIAL ENGAGEMENT
   // ==========================================================================
 
-  addText('RATES & INITIAL ENGAGEMENT\n', STYLES.sectionHeader)
+  addText('RATES & INITIAL ENGAGEMENT\n', STYLES.sectionHeader, true)
 
   // Rate
   textParts.push('Rate: ')
@@ -256,7 +307,7 @@ function buildDocumentRequests(content: ProposalContent): DocumentRequest[] {
   // 7. START DATE
   // ==========================================================================
 
-  addText('START DATE\n', STYLES.sectionHeader)
+  addText('START DATE\n', STYLES.sectionHeader, true)
   const validUntil = format(new Date(content.proposalValidUntil), 'MMMM d, yyyy')
   addText(`This proposal is valid until ${validUntil}. If this proposal is accepted and signed before expiration, the partnership can be kicked off within ${content.kickoffDays} business days.\n\n`)
 
@@ -264,14 +315,14 @@ function buildDocumentRequests(content: ProposalContent): DocumentRequest[] {
   // 8. NEXT STEPS
   // ==========================================================================
 
-  addText('NEXT STEPS\n', STYLES.sectionHeader)
+  addText('NEXT STEPS\n', STYLES.sectionHeader, true)
   addText(`${NEXT_STEPS_TEXT}\n\n`)
 
   // ==========================================================================
   // 9. TERMS AND CONDITIONS
   // ==========================================================================
 
-  addText('TERMS AND CONDITIONS\n', STYLES.sectionHeader)
+  addText('TERMS AND CONDITIONS\n', STYLES.sectionHeader, true)
 
   if (content.includeFullTerms) {
     // Include full terms and conditions
@@ -290,7 +341,7 @@ function buildDocumentRequests(content: ProposalContent): DocumentRequest[] {
   // 10. SIGNATURES
   // ==========================================================================
 
-  addText('SIGNATURES\n\n', STYLES.sectionHeader)
+  addText('SIGNATURES\n\n', STYLES.sectionHeader, true)
 
   // Client signature block
   addText('CLIENT\n', STYLES.signatureHeader)
@@ -330,6 +381,20 @@ function buildDocumentRequests(content: ProposalContent): DocumentRequest[] {
         range: { startIndex: range.start, endIndex: range.end },
         textStyle: range.style,
         fields,
+      },
+    })
+  }
+
+  // 3. Apply paragraph styling (alignment, line spacing)
+  for (const para of paragraphRanges) {
+    requests.push({
+      updateParagraphStyle: {
+        range: { startIndex: para.start, endIndex: para.end },
+        paragraphStyle: {
+          alignment: para.alignment,
+          lineSpacing: para.lineSpacing,
+        },
+        fields: 'alignment,lineSpacing',
       },
     })
   }

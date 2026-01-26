@@ -1,15 +1,8 @@
 'use client'
 
-import { Mail, Calendar, FileText, RefreshCw, UserPlus, Hammer, Copy, ChevronDown } from 'lucide-react'
+import { Mail, Calendar, FileText, RefreshCw, UserPlus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu'
 
 type LeadActionsPanelProps = {
   canManage: boolean
@@ -18,7 +11,6 @@ type LeadActionsPanelProps = {
   onSendEmail: () => void
   onScheduleMeeting: () => void
   onBuildProposal: () => void
-  onCopyProposalTemplate: () => void
   onConvertToClient: () => void
   onRescore?: () => void
   isRescoring?: boolean
@@ -31,7 +23,6 @@ export function LeadActionsPanel({
   onSendEmail,
   onScheduleMeeting,
   onBuildProposal,
-  onCopyProposalTemplate,
   onConvertToClient,
   onRescore,
   isRescoring = false,
@@ -62,31 +53,16 @@ export function LeadActionsPanel({
           <Calendar className='h-4 w-4 text-green-500' />
           <span className='text-xs'>Schedule</span>
         </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              className='h-auto justify-start gap-2 py-2'
-            >
-              <FileText className='h-4 w-4 text-amber-500' />
-              <span className='text-xs'>Proposal</span>
-              <ChevronDown className='ml-auto h-3 w-3 opacity-50' />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align='start' className='w-48'>
-            <DropdownMenuItem onClick={onBuildProposal}>
-              <Hammer className='mr-2 h-4 w-4' />
-              Build from Scratch
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={onCopyProposalTemplate}>
-              <Copy className='mr-2 h-4 w-4' />
-              Copy from Template
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Button
+          type='button'
+          variant='outline'
+          size='sm'
+          className='h-auto justify-start gap-2 py-2'
+          onClick={onBuildProposal}
+        >
+          <FileText className='h-4 w-4 text-amber-500' />
+          <span className='text-xs'>Proposal</span>
+        </Button>
         {onRescore && (
           <Button
             type='button'

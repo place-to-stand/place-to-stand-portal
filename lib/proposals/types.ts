@@ -126,6 +126,16 @@ export interface BuildProposalFromScratchInput {
 
   // Estimated value for the proposal record
   estimatedValue?: number
+
+  // Document formatting settings
+  documentSettings?: {
+    fontFamily: 'Arial' | 'Times New Roman' | 'Georgia' | 'Garamond' | 'Calibri'
+    bodyFontSize: 10 | 11 | 12
+    lineSpacing: 1.0 | 1.15 | 1.5 | 2.0
+    sectionSpacing: 'compact' | 'normal' | 'relaxed'
+    headerAlignment: 'left' | 'center' | 'right' | 'justified'
+    bodyAlignment: 'left' | 'center' | 'right' | 'justified'
+  }
 }
 
 /**

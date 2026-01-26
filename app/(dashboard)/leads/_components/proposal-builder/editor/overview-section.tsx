@@ -16,7 +16,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
 
 import type { ProposalFormValues } from '../proposal-builder'
 
@@ -45,15 +45,17 @@ export function OverviewSection({ form }: OverviewSectionProps) {
                 <FormItem>
                   <FormLabel>Project Overview *</FormLabel>
                   <FormControl>
-                    <Textarea
+                    <RichTextEditor
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
                       placeholder="Describe the client's needs and project goals..."
-                      className="min-h-[120px] resize-y"
-                      {...field}
+                      contentMinHeightClassName="[&_.ProseMirror]:min-h-[120px]"
                     />
                   </FormControl>
                   <p className="text-xs text-muted-foreground">
-                    A paragraph describing what the client needs and what this
-                    project will accomplish.
+                    Use formatting to structure the project description. Bold,
+                    italics, and lists are supported.
                   </p>
                   <FormMessage />
                 </FormItem>

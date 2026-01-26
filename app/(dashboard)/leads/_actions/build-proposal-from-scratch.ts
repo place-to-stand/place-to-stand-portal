@@ -63,6 +63,16 @@ const buildProposalSchema = z.object({
 
   // Estimated value
   estimatedValue: z.number().min(0).optional(),
+
+  // Document formatting settings
+  documentSettings: z.object({
+    fontFamily: z.enum(['Arial', 'Times New Roman', 'Georgia', 'Garamond', 'Calibri']).default('Arial'),
+    bodyFontSize: z.union([z.literal(10), z.literal(11), z.literal(12)]).default(11),
+    lineSpacing: z.union([z.literal(1.0), z.literal(1.15), z.literal(1.5), z.literal(2.0)]).default(1.5),
+    sectionSpacing: z.enum(['compact', 'normal', 'relaxed']).default('normal'),
+    headerAlignment: z.enum(['left', 'center', 'right', 'justified']).default('left'),
+    bodyAlignment: z.enum(['left', 'center', 'right', 'justified']).default('left'),
+  }).optional(),
 })
 
 export type BuildProposalFromScratchInput = z.infer<typeof buildProposalSchema>

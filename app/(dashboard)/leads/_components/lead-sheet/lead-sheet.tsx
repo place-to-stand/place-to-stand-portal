@@ -46,7 +46,6 @@ export function LeadSheet({
   const [isMeetingDialogOpen, setMeetingDialogOpen] = useState(false)
   const [meetingInitialTitle, setMeetingInitialTitle] = useState<string | undefined>()
   const [isBuildProposalDialogOpen, setBuildProposalDialogOpen] = useState(false)
-  const [isCopyTemplateDialogOpen, setCopyTemplateDialogOpen] = useState(false)
   const { toast } = useToast()
 
   const canConvert = lead?.status === 'CLOSED_WON' && !lead?.convertedToClientId
@@ -373,7 +372,6 @@ export function LeadSheet({
                   onSendEmail={() => setEmailDialogOpen(true)}
                   onScheduleMeeting={handleScheduleMeeting}
                   onBuildProposal={() => setBuildProposalDialogOpen(true)}
-                  onCopyProposalTemplate={() => setCopyTemplateDialogOpen(true)}
                   onConvertToClient={() => setConvertDialogOpen(true)}
                   onRescore={handleRescore}
                   isRescoring={isRescoring}
@@ -409,11 +407,8 @@ export function LeadSheet({
         }}
         isBuildProposalDialogOpen={isBuildProposalDialogOpen}
         onBuildProposalOpenChange={setBuildProposalDialogOpen}
-        isCopyTemplateDialogOpen={isCopyTemplateDialogOpen}
-        onCopyTemplateOpenChange={setCopyTemplateDialogOpen}
         onProposalSuccess={() => {
           setBuildProposalDialogOpen(false)
-          setCopyTemplateDialogOpen(false)
           onSuccess()
         }}
         onSuccess={onSuccess}

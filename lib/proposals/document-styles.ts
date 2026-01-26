@@ -5,7 +5,73 @@
  */
 
 // =============================================================================
-// Font Configuration
+// Document Settings Type (user-configurable)
+// =============================================================================
+
+export type TextAlignment = 'left' | 'center' | 'right' | 'justified'
+
+export type DocumentSettings = {
+  fontFamily: 'Arial' | 'Times New Roman' | 'Georgia' | 'Garamond' | 'Calibri'
+  bodyFontSize: 10 | 11 | 12
+  lineSpacing: 1.0 | 1.15 | 1.5 | 2.0
+  sectionSpacing: 'compact' | 'normal' | 'relaxed'
+  headerAlignment: TextAlignment
+  bodyAlignment: TextAlignment
+}
+
+export const DEFAULT_DOCUMENT_SETTINGS: DocumentSettings = {
+  fontFamily: 'Arial',
+  bodyFontSize: 11,
+  lineSpacing: 1.5,
+  sectionSpacing: 'normal',
+  headerAlignment: 'left',
+  bodyAlignment: 'left',
+}
+
+export const TEXT_ALIGNMENT_OPTIONS: Array<{ value: TextAlignment; label: string; icon: string }> = [
+  { value: 'left', label: 'Left', icon: 'AlignLeft' },
+  { value: 'center', label: 'Center', icon: 'AlignCenter' },
+  { value: 'right', label: 'Right', icon: 'AlignRight' },
+  { value: 'justified', label: 'Justified', icon: 'AlignJustify' },
+]
+
+export const FONT_FAMILY_OPTIONS: Array<{ value: DocumentSettings['fontFamily']; label: string; css: string }> = [
+  { value: 'Arial', label: 'Arial', css: 'Arial, sans-serif' },
+  { value: 'Times New Roman', label: 'Times New Roman', css: '"Times New Roman", Times, serif' },
+  { value: 'Georgia', label: 'Georgia', css: 'Georgia, serif' },
+  { value: 'Garamond', label: 'Garamond', css: 'Garamond, serif' },
+  { value: 'Calibri', label: 'Calibri', css: 'Calibri, sans-serif' },
+]
+
+export const SECTION_SPACING_OPTIONS: Record<DocumentSettings['sectionSpacing'], { gap: number; paragraphGap: number }> = {
+  compact: { gap: 24, paragraphGap: 12 },
+  normal: { gap: 32, paragraphGap: 16 },
+  relaxed: { gap: 40, paragraphGap: 20 },
+}
+
+/**
+ * Generate dynamic styles based on document settings
+ */
+export function getDocumentStyles(settings: DocumentSettings) {
+  const fontOption = FONT_FAMILY_OPTIONS.find(f => f.value === settings.fontFamily) ?? FONT_FAMILY_OPTIONS[0]
+  const spacingOption = SECTION_SPACING_OPTIONS[settings.sectionSpacing]
+
+  return {
+    fontFamily: fontOption.css,
+    bodySize: `${settings.bodyFontSize}pt`,
+    lineHeight: settings.lineSpacing,
+    sectionGap: spacingOption.gap,
+    paragraphGap: spacingOption.paragraphGap,
+    // Scaled sizes based on body font
+    headerSize: `${settings.bodyFontSize + 3}pt`,
+    phaseSize: `${settings.bodyFontSize + 1}pt`,
+    logoSize: `${settings.bodyFontSize + 17}pt`,
+    clientHeaderSize: `${settings.bodyFontSize + 9}pt`,
+  }
+}
+
+// =============================================================================
+// Font Configuration (defaults)
 // =============================================================================
 
 export const DOCUMENT_FONTS = {

@@ -18,7 +18,6 @@ type LeadSheetRightColumnProps = {
   onSendEmail: () => void
   onScheduleMeeting: (initialTitle?: string) => void
   onBuildProposal: () => void
-  onCopyProposalTemplate: () => void
   onConvertToClient: () => void
   onRescore?: () => void
   isRescoring?: boolean
@@ -34,7 +33,6 @@ export function LeadSheetRightColumn({
   onSendEmail,
   onScheduleMeeting,
   onBuildProposal,
-  onCopyProposalTemplate,
   onConvertToClient,
   onRescore,
   isRescoring = false,
@@ -51,7 +49,6 @@ export function LeadSheetRightColumn({
           onSendEmail={onSendEmail}
           onScheduleMeeting={() => onScheduleMeeting()}
           onBuildProposal={onBuildProposal}
-          onCopyProposalTemplate={onCopyProposalTemplate}
           onConvertToClient={onConvertToClient}
           onRescore={onRescore}
           isRescoring={isRescoring}

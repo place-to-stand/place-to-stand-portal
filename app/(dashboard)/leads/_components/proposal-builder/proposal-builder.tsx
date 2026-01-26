@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useTransition } from 'react'
+import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { addDays, format } from 'date-fns'
@@ -12,7 +12,13 @@ import type { LeadRecord } from '@/lib/leads/types'
 import {
   DEFAULT_HOURLY_RATE,
   DEFAULT_KICKOFF_DAYS,
+  DEFAULT_RISKS,
 } from '@/lib/proposals/constants'
+import {
+  DEFAULT_DOCUMENT_SETTINGS,
+  type DocumentSettings,
+} from '@/lib/proposals/document-styles'
+import { htmlToPlainText } from '@/lib/proposals/html-to-text'
 import type { ProposalPhase, ProposalRisk } from '@/lib/proposals/types'
 
 import { buildProposalFromScratch } from '../../_actions'
@@ -53,9 +59,8 @@ export const proposalFormSchema = z.object({
   projectOverviewText: z.string().min(1, 'Project overview is required'),
   phases: z.array(phaseSchema).min(1, 'At least one phase is required'),
 
-  // Risks
-  includeDefaultRisks: z.boolean(),
-  customRisks: z.array(riskSchema).optional(),
+  // Risks - editable array, starts with defaults
+  risks: z.array(riskSchema),
 
   // Terms
   includeFullTerms: z.boolean(),
@@ -96,6 +101,9 @@ export function ProposalBuilder({
 }: ProposalBuilderProps) {
   const { toast } = useToast()
   const [isBuilding, startBuildTransition] = useTransition()
+  const [documentSettings, setDocumentSettings] = useState<DocumentSettings>(
+    DEFAULT_DOCUMENT_SETTINGS
+  )
 
   // Default form values
   const defaultValues = useMemo<ProposalFormValues>(
@@ -117,8 +125,7 @@ export function ProposalBuilder({
           isOpen: true,
         },
       ],
-      includeDefaultRisks: true,
-      customRisks: [],
+      risks: DEFAULT_RISKS.map(r => ({ title: r.title, description: r.description })),
       includeFullTerms: false,
       hourlyRate: DEFAULT_HOURLY_RATE,
       initialCommitmentDescription: '',
@@ -171,7 +178,8 @@ export function ProposalBuilder({
           clientContact2Name: values.clientContact2Name?.trim() || undefined,
           clientContact2Email: values.clientContact2Email?.trim() || undefined,
           clientSignatoryName: values.clientSignatoryName?.trim() || undefined,
-          projectOverviewText: values.projectOverviewText.trim(),
+          // Convert HTML from rich text editor to plain text for Google Docs
+          projectOverviewText: htmlToPlainText(values.projectOverviewText),
           phases: validPhases.map(
             (p, i): ProposalPhase => ({
               index: i + 1,
@@ -182,8 +190,10 @@ export function ProposalBuilder({
                 .map(d => d.trim()),
             })
           ),
-          includeDefaultRisks: values.includeDefaultRisks,
-          customRisks: values.customRisks?.filter(
+          // Pass all risks as customRisks with includeDefaultRisks: false
+          // since user has full control over the risks array
+          includeDefaultRisks: false,
+          customRisks: values.risks.filter(
             (r): r is ProposalRisk => Boolean(r.title.trim() && r.description.trim())
           ),
           includeFullTerms: values.includeFullTerms,
@@ -196,6 +206,8 @@ export function ProposalBuilder({
             : undefined,
           kickoffDays: values.kickoffDays,
           estimatedValue: values.estimatedValue,
+          // Pass document formatting settings
+          documentSettings,
         })
 
         if (!result.success) {
@@ -215,7 +227,7 @@ export function ProposalBuilder({
         onSuccess()
       })
     })()
-  }, [form, lead.id, toast, onSuccess])
+  }, [form, lead.id, toast, onSuccess, documentSettings])
 
   // Merge form values with defaults for preview (handle undefined gracefully)
   const previewContent = useMemo(
@@ -241,9 +253,9 @@ export function ProposalBuilder({
           deliverables: (p.deliverables ?? []).filter(d => d.trim()),
         })
       ),
-      risks: [],
-      includeDefaultRisks:
-        formValues.includeDefaultRisks ?? defaultValues.includeDefaultRisks,
+      risks: (formValues.risks ?? defaultValues.risks)
+        .filter(r => r.title?.trim() || r.description?.trim())
+        .map(r => ({ title: r.title ?? '', description: r.description ?? '' })),
       includeFullTerms:
         formValues.includeFullTerms ?? defaultValues.includeFullTerms,
       rates: {
@@ -277,7 +289,11 @@ export function ProposalBuilder({
         />
 
         {/* Right Column - Live Preview */}
-        <PreviewPanel content={previewContent} />
+        <PreviewPanel
+          content={previewContent}
+          documentSettings={documentSettings}
+          onDocumentSettingsChange={setDocumentSettings}
+        />
       </form>
     </Form>
   )
