@@ -1,6 +1,6 @@
 'use server'
 
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { requireRole } from '@/lib/auth/session'
@@ -61,7 +61,7 @@ export async function updateProjectStatus(
             clientId: projects.clientId,
           })
           .from(projects)
-          .where(eq(projects.id, projectId))
+          .where(and(eq(projects.id, projectId), isNull(projects.deletedAt)))
           .limit(1)
 
         existingProject = rows[0]
@@ -71,7 +71,7 @@ export async function updateProjectStatus(
       }
 
       if (!existingProject) {
-        return { error: 'Project not found.' }
+        return { error: 'Project not found or has been archived.' }
       }
 
       if (existingProject.status === status) {
@@ -82,7 +82,7 @@ export async function updateProjectStatus(
         await db
           .update(projects)
           .set({ status })
-          .where(eq(projects.id, projectId))
+          .where(and(eq(projects.id, projectId), isNull(projects.deletedAt)))
       } catch (error) {
         console.error('Failed to update project status', error)
         return {

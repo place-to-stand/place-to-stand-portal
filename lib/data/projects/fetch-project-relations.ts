@@ -1,4 +1,4 @@
-import { inArray } from 'drizzle-orm'
+import { and, inArray, isNull } from 'drizzle-orm'
 
 import type { DbClient, GitHubRepoLinkSummary, ProjectOwner } from '@/lib/types'
 import { db } from '@/lib/db'
@@ -65,7 +65,7 @@ async function loadOwners(ownerIds: string[]): Promise<ProjectOwner[]> {
       avatar_url: users.avatarUrl,
     })
     .from(users)
-    .where(inArray(users.id, ownerIds))
+    .where(and(inArray(users.id, ownerIds), isNull(users.deletedAt)))
 
   return rows.map(row => ({
     id: row.id,

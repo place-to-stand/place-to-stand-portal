@@ -13,10 +13,10 @@ import Image from 'next/image'
 import PTSLogoBlackTransparent from '../../public/pts-logo-black-transparent.png'
 import PTSLogoWhiteTransparent from '../../public/pts-logo-white-transparent.png'
 import { Separator } from '../ui/separator'
-
-const isDev = process.env.NODE_ENV === 'development'
 import { useTheme } from '@/components/providers/theme-provider'
 import { NAV_GROUPS } from './navigation-config'
+
+const isDev = process.env.NODE_ENV === 'development'
 
 type Props = {
   user: AppUser
