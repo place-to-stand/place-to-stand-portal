@@ -67,7 +67,7 @@
     "drizzle-orm": "^0.45.1",
     "lodash.throttle": "^4.1.1",
     "lucide-react": "^0.563.0",
-    "next": "^16.1.4",
+    "next": "^16.1.5",
     "postgres": "^3.4.8",
     "posthog-js": "^1.335.2",
     "posthog-node": "^5.24.2",
