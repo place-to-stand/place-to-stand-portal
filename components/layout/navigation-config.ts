@@ -11,6 +11,7 @@ import {
   Mail,
   Sparkles,
   Contact,
+  FileText,
 } from 'lucide-react'
 import type { UserRole } from '@/lib/auth/session'
 
@@ -89,6 +90,18 @@ export const NAV_GROUPS: NavGroup[] = [
         href: '/contacts',
         label: 'Contacts',
         icon: Contact,
+      },
+    ],
+  },
+  {
+    title: 'Reports',
+    roles: ['ADMIN'],
+    items: [
+      {
+        href: '/reports/monthly-close',
+        label: 'Monthly Close',
+        icon: FileText,
+        matchHrefs: ['/reports'],
       },
     ],
   },

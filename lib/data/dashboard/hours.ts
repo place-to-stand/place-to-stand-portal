@@ -278,7 +278,7 @@ async function resolveSnapshotBounds(): Promise<{
 
 async function fetchEarliestTimeLogCursor(): Promise<MonthCursor | null> {
   const [row] = await db
-    .select({ earliestDate: sql<string | null>`MIN(${timeLogs.createdAt})` })
+    .select({ earliestDate: sql<string | null>`MIN(${timeLogs.loggedOn})` })
     .from(timeLogs)
     .where(isNull(timeLogs.deletedAt))
     .limit(1)
