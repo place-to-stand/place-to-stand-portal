@@ -1,8 +1,6 @@
 "use client"
 
-import ReactMarkdown from "react-markdown"
-import remarkGfm from "remark-gfm"
-
+import { MetricCard, MetricCardSkeleton } from "./metric-card"
 import type { SummaryState } from "./use-recent-activity-summary"
 
 type SummaryContentProps = {
@@ -18,62 +16,50 @@ export function SummaryContent({ state }: SummaryContentProps) {
     )
   }
 
-  if (
-    state.status === "loading" ||
-    (state.status === "streaming" && !state.text)
-  ) {
+  if (state.status === "loading") {
     return <LoadingState />
   }
 
-  if (!state.text.trim()) {
+  if (!state.metrics) {
     return (
       <div className="text-muted-foreground text-sm">
-        No updates to share just yet. As soon as activity is captured, you’ll see
+        No updates to share just yet. As soon as activity is captured, you&apos;ll see
         a recap here.
       </div>
     )
   }
 
   return (
-    <div className="prose prose-sm text-foreground dark:prose-invert max-w-none">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={{
-          ul: (props) => (
-            <ul {...props} className="mt-2 list-disc pl-4 text-sm leading-6" />
-          ),
-          ol: (props) => (
-            <ol
-              {...props}
-              className="mt-2 list-decimal pl-4 text-sm leading-6"
-            />
-          ),
-          p: (props) => <p {...props} className="text-sm leading-6" />,
-          h3: (props) => (
-            <h3
-              {...props}
-              className="text-foreground text-xs font-semibold tracking-wide uppercase not-first:mt-3"
-            />
-          ),
-          strong: (props) => (
-            <strong {...props} className="text-foreground font-semibold" />
-          ),
-        }}
-      >
-        {state.text}
-      </ReactMarkdown>
+    <div className="space-y-4">
+      <div className="grid grid-cols-4 gap-3">
+        <MetricCard value={state.metrics.tasksDone} label="tasks accepted" />
+        <MetricCard value={state.metrics.newLeads} label="new leads" />
+        <MetricCard value={state.metrics.activeProjects} label="active projects" />
+        <MetricCard
+          value={state.metrics.blockedTasks}
+          label="tasks blocked"
+          variant="warning"
+        />
+      </div>
+      {state.highlight && (
+        <p className="text-muted-foreground text-sm leading-relaxed">
+          &ldquo;{state.highlight}&rdquo;
+        </p>
+      )}
     </div>
   )
 }
 
 function LoadingState() {
   return (
-    <div className="space-y-3">
-      <div className="bg-muted h-3 w-4/5 animate-pulse rounded-full" />
-      <div className="bg-muted h-3 w-full animate-pulse rounded-full" />
-      <div className="bg-muted h-3 w-11/12 animate-pulse rounded-full" />
-      <div className="bg-muted h-3 w-10/12 animate-pulse rounded-full" />
+    <div className="space-y-4">
+      <div className="grid grid-cols-4 gap-3">
+        <MetricCardSkeleton />
+        <MetricCardSkeleton />
+        <MetricCardSkeleton />
+        <MetricCardSkeleton />
+      </div>
+      <div className="bg-muted h-4 w-4/5 animate-pulse rounded" />
     </div>
   )
 }
-
