@@ -15,6 +15,7 @@ import {
   type ProjectWithClient,
 } from '@/lib/settings/projects/use-project-sheet-state'
 import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
+import { buildOwnerOptions, type AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
 
 import { ProjectSheetForm } from './_components/project-sheet/project-sheet-form'
 import { ProjectSheetDialogs } from './_components/project-sheet/project-sheet-dialogs'
@@ -26,6 +27,7 @@ type Props = {
   onComplete: () => void
   project: ProjectWithClient | null
   clients: ClientRow[]
+  adminUsers?: AdminUserForOwner[]
   contractorDirectory?: ContractorUserSummary[]
   projectContractors?: Record<string, ContractorUserSummary[]>
 }
@@ -60,6 +62,11 @@ export function ProjectSheet(props: Props) {
     [clientOptions, isPending, requiresClientSelection]
   )
 
+  const ownerOptions = useMemo(
+    () => buildOwnerOptions(props.adminUsers ?? []),
+    [props.adminUsers]
+  )
+
   return (
     <>
       <Sheet open={props.open} onOpenChange={handleSheetOpenChange}>
@@ -81,6 +88,7 @@ export function ProjectSheet(props: Props) {
             isPending={isPending}
             feedback={feedback}
             clientOptions={clientOptions}
+            ownerOptions={ownerOptions}
             submitButton={submitButton}
             deleteButton={deleteButton}
             onSubmit={handleSubmit}

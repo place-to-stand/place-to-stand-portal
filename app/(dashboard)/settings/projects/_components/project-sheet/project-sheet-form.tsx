@@ -31,6 +31,7 @@ import type { ProjectSheetFormValues } from '@/lib/settings/projects/use-project
 import type {
   ClientOption,
   DeleteButtonState,
+  OwnerOption,
   SubmitButtonState,
 } from '@/lib/settings/projects/project-sheet-ui-state'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
@@ -47,6 +48,7 @@ export type ProjectSheetFormProps = {
   isPending: boolean
   feedback: string | null
   clientOptions: ClientOption[]
+  ownerOptions: OwnerOption[]
   submitButton: SubmitButtonState
   deleteButton: DeleteButtonState
   onSubmit: (
@@ -68,6 +70,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
     isEditing,
     feedback,
     clientOptions,
+    ownerOptions,
     submitButton,
     deleteButton,
     onSubmit,
@@ -341,6 +344,36 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                   ))}
                 </SelectContent>
               </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name='ownerId'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Account Owner (optional)</FormLabel>
+              <FormControl>
+                <DisabledFieldTooltip
+                  disabled={fieldState.owner.disabled}
+                  reason={fieldState.owner.reason}
+                >
+                  <SearchableCombobox
+                    name={field.name}
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    items={ownerOptions}
+                    searchPlaceholder='Search team members...'
+                    emptyMessage='No team members found.'
+                    disabled={fieldState.owner.disabled}
+                  />
+                </DisabledFieldTooltip>
+              </FormControl>
+              <FormDescription>
+                Assign an admin user responsible for this account.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}

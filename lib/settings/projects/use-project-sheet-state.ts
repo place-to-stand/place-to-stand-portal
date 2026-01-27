@@ -310,6 +310,7 @@ export function useProjectSheetState({
             startsOn: payload.startsOn ?? '',
             endsOn: payload.endsOn ?? '',
             slug: payload.slug ?? '',
+            ownerId: payload.ownerId ?? '',
           })
 
           onOpenChange(false)

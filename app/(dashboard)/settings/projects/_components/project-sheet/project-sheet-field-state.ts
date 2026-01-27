@@ -13,6 +13,7 @@ export type ProjectSheetFieldState = {
   status: DisabledFieldState
   date: DisabledFieldState
   client: DisabledFieldState
+  owner: DisabledFieldState
 }
 
 const PROJECT_SHEET_CLIENT_TYPE_REASON =
@@ -60,5 +61,6 @@ export function createProjectSheetFieldState(args: {
     status: sharedPendingState,
     date: sharedPendingState,
     client: clientField,
+    owner: sharedPendingState,
   }
 }

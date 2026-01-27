@@ -22,6 +22,7 @@ import type {
   ProjectWithClient,
 } from '@/lib/settings/projects/project-sheet-form'
 import { sortClientsByName } from '@/lib/settings/projects/project-sheet-form'
+import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
 import type { ContractorUserSummary } from '@/components/settings/projects/table/types'
 import type { ProjectWithRelations } from '@/lib/types'
 import { ViewLogger } from '@/components/activity/view-logger'
@@ -37,7 +38,11 @@ import {
   type ProjectsBoardProps,
 } from './_hooks/use-projects-board-view-model'
 
-export function ProjectsBoard(props: ProjectsBoardProps) {
+type ProjectsBoardComponentProps = ProjectsBoardProps & {
+  adminUsers?: AdminUserForOwner[]
+}
+
+export function ProjectsBoard(props: ProjectsBoardComponentProps) {
   const viewModel = useProjectsBoardViewModel(props)
   const router = useRouter()
   const { toast } = useToast()
@@ -218,6 +223,7 @@ export function ProjectsBoard(props: ProjectsBoardProps) {
         onComplete={handleSheetComplete}
         project={selectedProject}
         clients={sortedClients}
+        adminUsers={props.adminUsers ?? []}
         contractorDirectory={[]}
         projectContractors={projectContractors}
       />
@@ -322,6 +328,7 @@ function mapRelationsToSheetProject(
     client_id: project.client_id,
     type: project.type,
     created_by: project.created_by,
+    owner_id: project.owner_id,
     starts_on: project.starts_on,
     ends_on: project.ends_on,
     created_at: project.created_at,
@@ -334,9 +341,9 @@ function mapRelationsToSheetProject(
           deleted_at: project.client.deleted_at,
         }
       : null,
-    owner: project.created_by
+    owner: project.owner_id
       ? {
-          id: project.created_by,
+          id: project.owner_id,
           fullName: null,
           email: null,
         }

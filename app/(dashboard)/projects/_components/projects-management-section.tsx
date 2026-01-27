@@ -14,6 +14,7 @@ import type {
   ProjectWithClient,
 } from '@/lib/settings/projects/project-sheet-form'
 import { sortClientsByName } from '@/lib/settings/projects/project-sheet-form'
+import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
 
 import { ProjectSheet } from '@/app/(dashboard)/settings/projects/project-sheet'
 import { ProjectLifecycleDialogs } from '@/components/settings/projects/table/project-lifecycle-dialogs'
@@ -31,6 +32,7 @@ type ProjectsManagementSectionProps = {
   mode: 'active' | 'archive'
   projects: ProjectWithClient[]
   clients: ClientRow[]
+  adminUsers: AdminUserForOwner[]
   contractorUsers: ContractorUserSummary[]
   membersByProject: Record<string, ContractorUserSummary[]>
   pageInfo: PageInfo
@@ -42,6 +44,7 @@ export function ProjectsManagementSection({
   mode,
   projects,
   clients,
+  adminUsers,
   contractorUsers,
   membersByProject,
   pageInfo,
@@ -175,6 +178,7 @@ export function ProjectsManagementSection({
         onComplete={handleSheetComplete}
         project={selectedProject}
         clients={sortedClients}
+        adminUsers={adminUsers}
         contractorDirectory={contractorUsers}
         projectContractors={membersByProject}
       />

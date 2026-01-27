@@ -18,6 +18,28 @@ export type ClientOption = {
   keywords: string[]
 }
 
+export type OwnerOption = {
+  value: string
+  label: string
+  keywords: string[]
+  avatarUrl: string | null
+}
+
+export type AdminUserForOwner = {
+  id: string
+  full_name: string | null
+  email: string
+  avatar_url: string | null
+}
+
+export const buildOwnerOptions = (admins: AdminUserForOwner[]): OwnerOption[] =>
+  admins.map(admin => ({
+    value: admin.id,
+    label: admin.full_name ?? admin.email,
+    keywords: [admin.full_name ?? '', admin.email].filter(Boolean),
+    avatarUrl: admin.avatar_url,
+  }))
+
 export const PROJECT_SHEET_MISSING_CLIENT_REASON =
   'Add a client before creating a project.'
 

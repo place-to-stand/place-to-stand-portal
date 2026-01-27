@@ -1,4 +1,8 @@
-import type { DbClient, GitHubRepoLinkSummary } from '@/lib/types'
+import { inArray } from 'drizzle-orm'
+
+import type { DbClient, GitHubRepoLinkSummary, ProjectOwner } from '@/lib/types'
+import { db } from '@/lib/db'
+import { users } from '@/lib/db/schema'
 
 import type {
   ClientMembership,
@@ -33,12 +37,14 @@ import { getReposForProjects } from '@/lib/data/github-repos'
 export type ProjectRelationsFetchArgs = {
   projectIds: string[]
   clientIds: string[]
+  ownerIds: string[]
   shouldScopeToUser: boolean
   userId?: string
 }
 
 export type ProjectRelationsFetchResult = {
   clients: DbClient[]
+  owners: ProjectOwner[]
   members: MemberWithUser[]
   tasks: RawTaskWithRelations[]
   archivedTasks: RawTaskWithRelations[]
@@ -47,9 +53,31 @@ export type ProjectRelationsFetchResult = {
   githubReposByProject: Map<string, GitHubRepoLinkSummary[]>
 }
 
+async function loadOwners(ownerIds: string[]): Promise<ProjectOwner[]> {
+  if (ownerIds.length === 0) {
+    return []
+  }
+
+  const rows = await db
+    .select({
+      id: users.id,
+      full_name: users.fullName,
+      avatar_url: users.avatarUrl,
+    })
+    .from(users)
+    .where(inArray(users.id, ownerIds))
+
+  return rows.map(row => ({
+    id: row.id,
+    full_name: row.full_name,
+    avatar_url: row.avatar_url,
+  }))
+}
+
 export async function fetchProjectRelations({
   projectIds,
   clientIds,
+  ownerIds,
   shouldScopeToUser,
   userId,
 }: ProjectRelationsFetchArgs): Promise<ProjectRelationsFetchResult> {
@@ -71,17 +99,20 @@ export async function fetchProjectRelations({
       : Promise.resolve([])
 
   const githubReposPromise = getReposForProjects(projectIds)
+  const ownersPromise = loadOwners(ownerIds)
 
   const [
     [clientRows, memberRows, hourBlockRows],
     [activeTaskRows, archivedTaskRows],
     clientMembershipRows,
     githubReposMap,
+    owners,
   ] = await Promise.all([
     clientDataPromise,
     taskDataPromise,
     clientMembershipPromise,
     githubReposPromise,
+    ownersPromise,
   ])
 
   const allTaskIds = [...activeTaskRows, ...archivedTaskRows].map(row => row.id)
@@ -118,6 +149,7 @@ export async function fetchProjectRelations({
 
   return {
     clients,
+    owners,
     members,
     tasks,
     archivedTasks,

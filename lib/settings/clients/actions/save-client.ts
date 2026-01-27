@@ -24,7 +24,7 @@ export async function saveClientMutation(
     })
   }
 
-  const { id, name, slug, notes, memberIds, billingType } = parsed.data
+  const { id, name, slug, notes, memberIds, billingType, website, referredBy } = parsed.data
   const normalizedMemberIds = Array.from(new Set(memberIds ?? [])).filter(
     Boolean
   )
@@ -36,6 +36,7 @@ export async function saveClientMutation(
   }
 
   const cleanedNotes = notes?.trim() ? notes.trim() : null
+  const cleanedWebsite = website?.trim() ? website.trim() : null
   const providedSlug = slug?.trim() || null
   const mode = id ? 'edit' : 'create'
 
@@ -54,6 +55,8 @@ export async function saveClientMutation(
           name: trimmedName,
           providedSlug,
           billingType,
+          website: cleanedWebsite,
+          referredBy: referredBy ?? null,
           notes: cleanedNotes,
           memberIds: normalizedMemberIds,
         })
@@ -64,6 +67,8 @@ export async function saveClientMutation(
         name: trimmedName,
         providedSlug,
         billingType,
+        website: cleanedWebsite,
+        referredBy: referredBy ?? null,
         notes: cleanedNotes,
         memberIds: normalizedMemberIds,
       })

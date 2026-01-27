@@ -41,6 +41,8 @@ export type ClientDetail = {
   name: string
   slug: string | null
   notes: string | null
+  website: string | null
+  referredBy: string | null
   billingType: 'prepaid' | 'net_30'
   createdAt: string
   updatedAt: string
@@ -76,7 +78,7 @@ export const fetchClientsWithMetrics = cache(
         activeProjectCount: sql<number>`
           count(${projects.id}) filter (
             where ${projects.deletedAt} is null
-            and lower(${projects.status}::text) = 'active'
+            and lower(${projects.status}::text) in ('active', 'onboarding')
           )
         `.as('active_project_count'),
       })
@@ -140,7 +142,7 @@ export const fetchClientsWithMetrics = cache(
       timeLogsData.map(tl => [tl.clientId, Number(tl.totalHoursUsed ?? 0)])
     )
 
-    // Fetch active projects for each client
+    // Fetch active projects for each client (includes ONBOARDING)
     const activeProjectsData = await db
       .select({
         id: projects.id,
@@ -153,7 +155,7 @@ export const fetchClientsWithMetrics = cache(
         and(
           inArray(projects.clientId, clientIds),
           isNull(projects.deletedAt),
-          sql`lower(${projects.status}::text) = 'active'`
+          sql`lower(${projects.status}::text) in ('active', 'onboarding')`
         )
       )
       .orderBy(asc(projects.name))
@@ -206,6 +208,8 @@ export const fetchClientById = cache(
         name: clients.name,
         slug: clients.slug,
         notes: clients.notes,
+        website: clients.website,
+        referredBy: clients.referredBy,
         billingType: clients.billingType,
         createdAt: clients.createdAt,
         updatedAt: clients.updatedAt,
@@ -325,6 +329,8 @@ export async function fetchClientsByIds(
       name: clients.name,
       slug: clients.slug,
       notes: clients.notes,
+      website: clients.website,
+      referredBy: clients.referredBy,
       billingType: clients.billingType,
       createdAt: clients.createdAt,
       updatedAt: clients.updatedAt,

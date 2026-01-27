@@ -104,6 +104,15 @@ export const useClientSheetState = ({
     handleContactPickerOpenChange: formState.handleContactPickerOpenChange,
     handleAddContact: formState.handleAddContact,
     handleRemoveContact: formState.handleRemoveContact,
+    // Referral
+    selectedReferral: formState.selectedReferral,
+    availableReferralContacts: formState.availableReferralContacts,
+    isReferralPickerOpen: formState.isReferralPickerOpen,
+    referralPickerDisabled: formState.referralPickerDisabled,
+    referralPickerDisabledReason: formState.referralPickerDisabledReason,
+    handleReferralPickerOpenChange: formState.handleReferralPickerOpenChange,
+    handleSelectReferral: formState.handleSelectReferral,
+    handleClearReferral: formState.handleClearReferral,
   }
 }
 
@@ -112,4 +121,5 @@ export type {
   UseClientSheetStateReturn,
   ClientMemberOption,
   ClientContactOption,
+  ReferralContactOption,
 } from './types'

@@ -14,6 +14,8 @@ export function mapClientToTableRow(client: ClientsSettingsListItem): ClientsTab
     name: client.name,
     slug: client.slug,
     notes: client.notes,
+    website: client.website,
+    referred_by: client.referredBy,
     billing_type: client.billingType,
     created_by: client.createdBy,
     created_at: client.createdAt,

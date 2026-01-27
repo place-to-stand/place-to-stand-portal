@@ -38,7 +38,7 @@ export async function saveProject(
     return { error: message, fieldErrors }
   }
 
-  const { id, name, clientId, projectType, status, startsOn, endsOn, slug } =
+  const { id, name, clientId, projectType, status, startsOn, endsOn, slug, ownerId } =
     parsed.data
 
   const trimmedName = name.trim()
@@ -89,6 +89,7 @@ export async function saveProject(
                 endsOn: endsOn ?? null,
                 createdBy: user.id,
                 slug: slugCandidate,
+                ownerId: ownerId ?? null,
               })
               .returning({ id: projects.id })
 
@@ -162,6 +163,7 @@ export async function saveProject(
             endsOn: string | null
             slug: string | null
             clientId: string | null
+            ownerId: string | null
           }
         | undefined
 
@@ -176,6 +178,7 @@ export async function saveProject(
             slug: projects.slug,
             clientId: projects.clientId,
             type: projects.type,
+            ownerId: projects.ownerId,
           })
           .from(projects)
           .where(eq(projects.id, id))
@@ -202,6 +205,7 @@ export async function saveProject(
             startsOn: startsOn ?? null,
             endsOn: endsOn ?? null,
             slug: slugToUpdate,
+            ownerId: ownerId ?? null,
           })
           .where(eq(projects.id, id))
       } catch (error) {
@@ -259,6 +263,15 @@ export async function saveProject(
         changedFields.push('slug')
         previousDetails.slug = previousSlug
         nextDetails.slug = nextSlug
+      }
+
+      const previousOwnerId = existingProject.ownerId ?? null
+      const nextOwnerId = ownerId ?? null
+
+      if (previousOwnerId !== nextOwnerId) {
+        changedFields.push('owner')
+        previousDetails.ownerId = previousOwnerId
+        nextDetails.ownerId = nextOwnerId
       }
 
       if (changedFields.length > 0) {

@@ -7,8 +7,15 @@ import { Building2, FolderKanban, UserRound, Users } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { siGithub } from 'simple-icons/icons'
 
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import {
   Table,
   TableBody,
@@ -27,6 +34,13 @@ import {
 } from '@/lib/projects/board/board-utils'
 import type { ProjectWithRelations } from '@/lib/types'
 import { cn } from '@/lib/utils'
+
+function getInitials(name: string | null): string {
+  if (!name) return '?'
+  const parts = name.trim().split(/\s+/)
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase()
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
+}
 
 function SimpleIcon({
   icon,
@@ -232,6 +246,32 @@ export function ProjectsLanding({
           </span>
         </TableCell>
         <TableCell className='align-middle'>
+          {project.owner ? (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Avatar className='h-7 w-7'>
+                    {project.owner.avatar_url && (
+                      <AvatarImage
+                        src={`/api/storage/user-avatar/${project.owner.id}`}
+                        alt={project.owner.full_name ?? 'Owner'}
+                      />
+                    )}
+                    <AvatarFallback className='text-xs'>
+                      {getInitials(project.owner.full_name)}
+                    </AvatarFallback>
+                  </Avatar>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{project.owner.full_name ?? 'Unknown'}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            <span className='text-muted-foreground/40'>—</span>
+          )}
+        </TableCell>
+        <TableCell className='align-middle'>
           <div className='flex h-full items-center'>
             {firstRepo ? (
               <a
@@ -253,11 +293,12 @@ export function ProjectsLanding({
   }
 
   const tableColumnWidths = {
-    project: 'w-[35%]',
-    status: 'w-[12%]',
-    progress: 'w-[22%]',
-    dates: 'w-[18%]',
-    links: 'w-[13%]',
+    project: 'w-[30%]',
+    status: 'w-[11%]',
+    progress: 'w-[20%]',
+    dates: 'w-[16%]',
+    owner: 'w-[11%]',
+    links: 'w-[12%]',
   }
 
   const renderProjectTable = (items: ProjectWithRelations[]) => (
@@ -271,6 +312,7 @@ export function ProjectsLanding({
               Progress
             </TableHead>
             <TableHead className={tableColumnWidths.dates}>Dates</TableHead>
+            <TableHead className={tableColumnWidths.owner}>Owner</TableHead>
             <TableHead className={tableColumnWidths.links}>Links</TableHead>
           </TableRow>
         </TableHeader>
@@ -289,7 +331,7 @@ export function ProjectsLanding({
       className='border-t-muted hover:bg-transparent'
     >
       <TableCell
-        colSpan={5}
+        colSpan={6}
         className='bg-blue-100 py-3 align-middle dark:bg-blue-500/8'
       >
         <Link
@@ -319,6 +361,7 @@ export function ProjectsLanding({
                 Progress
               </TableHead>
               <TableHead className={tableColumnWidths.dates}>Dates</TableHead>
+              <TableHead className={tableColumnWidths.owner}>Owner</TableHead>
               <TableHead className={tableColumnWidths.links}>Links</TableHead>
             </TableRow>
           </TableHeader>

@@ -52,6 +52,7 @@ export const fetchProjectsWithRelations = cache(
     const relations = await fetchProjectRelations({
       projectIds: baseProjects.projectIds,
       clientIds: baseProjects.clientIds,
+      ownerIds: baseProjects.ownerIds,
       shouldScopeToUser,
       userId: options.forUserId,
     })
@@ -82,6 +83,7 @@ export async function fetchProjectsWithRelationsByIds(
   const relations = await fetchProjectRelations({
     projectIds: baseProjects.projectIds,
     clientIds: baseProjects.clientIds,
+    ownerIds: baseProjects.ownerIds,
     shouldScopeToUser: false,
   })
 

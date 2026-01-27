@@ -11,6 +11,7 @@ import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { useToast } from '@/components/ui/use-toast'
 import { sortClientsByName } from '@/lib/settings/projects/project-sheet-form'
 import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
+import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
 import type { ProjectWithRelations } from '@/lib/types'
 
 import { ProjectsLanding } from './projects-landing'
@@ -20,6 +21,7 @@ export type ProjectsLandingAdminSectionProps = {
   projects: ProjectWithRelations[]
   landingClients: Array<{ id: string; name: string; slug: string | null }>
   clients: ClientRow[]
+  adminUsers: AdminUserForOwner[]
   currentUserId: string
   totalProjectCount: number
 }
@@ -28,6 +30,7 @@ export function ProjectsLandingAdminSection({
   projects,
   landingClients,
   clients,
+  adminUsers,
   currentUserId,
   totalProjectCount,
 }: ProjectsLandingAdminSectionProps) {
@@ -98,6 +101,7 @@ export function ProjectsLandingAdminSection({
         onComplete={handleSheetComplete}
         project={selectedProject}
         clients={sortedClients}
+        adminUsers={adminUsers}
         contractorDirectory={[]}
         projectContractors={{}}
       />

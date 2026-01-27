@@ -60,6 +60,15 @@ export function ClientSheet(props: ClientSheetProps) {
     handleContactPickerOpenChange,
     handleAddContact,
     handleRemoveContact,
+    // Referral
+    selectedReferral,
+    availableReferralContacts,
+    isReferralPickerOpen,
+    referralPickerDisabled,
+    referralPickerDisabledReason,
+    handleReferralPickerOpenChange,
+    handleSelectReferral,
+    handleClearReferral,
   } = useClientSheetState(props)
 
   return (
@@ -100,6 +109,14 @@ export function ClientSheet(props: ClientSheetProps) {
             onContactPickerOpenChange={handleContactPickerOpenChange}
             onAddContact={handleAddContact}
             onRemoveContact={handleRemoveContact}
+            selectedReferral={selectedReferral}
+            availableReferralContacts={availableReferralContacts}
+            referralPickerDisabled={referralPickerDisabled}
+            referralPickerDisabledReason={referralPickerDisabledReason}
+            isReferralPickerOpen={isReferralPickerOpen}
+            onReferralPickerOpenChange={handleReferralPickerOpenChange}
+            onSelectReferral={handleSelectReferral}
+            onClearReferral={handleClearReferral}
           />
         </SheetContent>
       </Sheet>
