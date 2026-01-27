@@ -13,6 +13,8 @@ import Image from 'next/image'
 import PTSLogoBlackTransparent from '../../public/pts-logo-black-transparent.png'
 import PTSLogoWhiteTransparent from '../../public/pts-logo-white-transparent.png'
 import { Separator } from '../ui/separator'
+
+const isDev = process.env.NODE_ENV === 'development'
 import { useTheme } from '@/components/providers/theme-provider'
 import { NAV_GROUPS } from './navigation-config'
 
@@ -51,7 +53,14 @@ export function Sidebar({ user }: Props) {
               />
             </Link>
           </div>
-          <Separator className='w-full' />
+          {isDev ? (
+            <div className='bg-amber-500 text-amber-950 flex items-center justify-center gap-1.5 rounded px-2 py-1 text-[10px] font-semibold'>
+              <span className='inline-flex h-1.5 w-1.5 animate-pulse rounded-full bg-amber-950/60' />
+              Development
+            </div>
+          ) : (
+            <Separator className='w-full' />
+          )}
           <nav className='space-y-6'>
             {NAV_GROUPS.filter(group => group.roles.includes(role)).map(
               (group, index) => (
