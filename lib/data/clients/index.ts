@@ -10,7 +10,7 @@ import {
   ensureClientAccess,
 } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, projects, hourBlocks, timeLogs } from '@/lib/db/schema'
+import { clients, contacts, projects, hourBlocks, timeLogs } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 
 export type ClientActiveProject = {
@@ -24,7 +24,10 @@ export type ClientWithMetrics = {
   name: string
   slug: string | null
   notes: string | null
+  website: string | null
   billingType: 'prepaid' | 'net_30'
+  referredBy: string | null
+  referrerName: string | null
   createdAt: string
   updatedAt: string
   deletedAt: string | null
@@ -68,7 +71,10 @@ export const fetchClientsWithMetrics = cache(
         name: clients.name,
         slug: clients.slug,
         notes: clients.notes,
+        website: clients.website,
         billingType: clients.billingType,
+        referredBy: clients.referredBy,
+        referrerName: contacts.name,
         createdAt: clients.createdAt,
         updatedAt: clients.updatedAt,
         deletedAt: clients.deletedAt,
@@ -84,13 +90,17 @@ export const fetchClientsWithMetrics = cache(
       })
       .from(clients)
       .leftJoin(projects, eq(projects.clientId, clients.id))
+      .leftJoin(contacts, eq(clients.referredBy, contacts.id))
       .where(and(...baseConditions))
       .groupBy(
         clients.id,
         clients.name,
         clients.slug,
         clients.notes,
+        clients.website,
         clients.billingType,
+        clients.referredBy,
+        contacts.name,
         clients.createdAt,
         clients.updatedAt,
         clients.deletedAt
@@ -183,7 +193,10 @@ export const fetchClientsWithMetrics = cache(
         name: row.name,
         slug: row.slug,
         notes: row.notes,
+        website: row.website,
         billingType: row.billingType,
+        referredBy: row.referredBy,
+        referrerName: row.referrerName,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
         deletedAt: row.deletedAt,

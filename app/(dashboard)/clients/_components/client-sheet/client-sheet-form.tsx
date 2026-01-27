@@ -5,6 +5,7 @@ import type React from 'react'
 import { Archive, Redo2, Undo2 } from 'lucide-react'
 import type { UseFormReturn } from 'react-hook-form'
 
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
@@ -33,6 +34,7 @@ import type {
   UseClientSheetStateReturn,
 } from '@/lib/settings/clients/use-client-sheet-state'
 import { CLIENT_BILLING_TYPE_SELECT_OPTIONS } from '@/lib/settings/clients/billing-types'
+import { cn } from '@/lib/utils'
 import type { ClientSheetFormValues } from '@/lib/settings/clients/client-sheet-schema'
 
 import { ClientContactPicker } from './client-contact-picker'
@@ -242,14 +244,29 @@ export function ClientSheetForm({
                       reason={isPending ? pendingReason : null}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder='Select billing type' />
+                        <SelectValue placeholder='Select billing type'>
+                          <Badge
+                            variant='outline'
+                            className={cn(
+                              'text-xs',
+                              selectedBillingType.badgeClassName
+                            )}
+                          >
+                            {selectedBillingType.label}
+                          </Badge>
+                        </SelectValue>
                       </SelectTrigger>
                     </DisabledFieldTooltip>
                   </FormControl>
                   <SelectContent align='start'>
                     {CLIENT_BILLING_TYPE_SELECT_OPTIONS.map(option => (
                       <SelectItem key={option.value} value={option.value}>
-                        {option.label}
+                        <Badge
+                          variant='outline'
+                          className={cn('text-xs', option.badgeClassName)}
+                        >
+                          {option.label}
+                        </Badge>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -288,7 +305,7 @@ export function ClientSheetForm({
           )}
         />
         <div className='space-y-2'>
-          <FormLabel>Referral Source (optional)</FormLabel>
+          <FormLabel>Referred By (optional)</FormLabel>
           <ClientReferralPicker
             selectedReferral={selectedReferral}
             availableContacts={availableReferralContacts}
