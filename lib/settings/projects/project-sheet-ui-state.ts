@@ -1,3 +1,6 @@
+import type React from 'react'
+import { User } from 'lucide-react'
+
 import type { ClientRow, ProjectWithClient } from './project-sheet-form'
 import { PROJECT_SHEET_PENDING_REASON } from './project-sheet-contractors'
 
@@ -24,6 +27,7 @@ export type OwnerOption = {
   keywords: string[]
   avatarUrl: string | null
   userId: string
+  icon?: React.ComponentType<{ className?: string }>
 }
 
 export type AdminUserForOwner = {
@@ -39,6 +43,7 @@ export const UNASSIGNED_OWNER_OPTION: OwnerOption = {
   keywords: ['unassigned', 'none', 'no owner'],
   avatarUrl: null,
   userId: '',
+  icon: User,
 }
 
 export const buildOwnerOptions = (admins: AdminUserForOwner[]): OwnerOption[] => [
