@@ -24,11 +24,6 @@ export type ReferralContactOption = {
   email: string
 }
 
-const selectedContainerClass =
-  'bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2'
-
-const iconButtonClass = 'text-muted-foreground hover:text-destructive'
-
 export type ClientReferralPickerProps = {
   selectedReferral: ReferralContactOption | null
   availableContacts: ReferralContactOption[]
@@ -56,6 +51,49 @@ export function ClientReferralPicker({
 }: ClientReferralPickerProps) {
   const hasNoAvailableContacts = availableContacts.length === 0 && !selectedReferral
 
+  // When a referral is selected, show it inline with clear button
+  if (selectedReferral) {
+    return (
+      <div className='space-y-2'>
+        <div className='bg-muted/40 flex items-center gap-3 rounded-md border px-3 py-2'>
+          <LinkIcon className='text-muted-foreground h-4 w-4 shrink-0' />
+          <div className='flex min-w-0 flex-1 flex-col text-sm leading-tight'>
+            {selectedReferral.name ? (
+              <>
+                <span className='truncate font-medium'>{selectedReferral.name}</span>
+                <span className='text-muted-foreground truncate text-xs'>
+                  {selectedReferral.email}
+                </span>
+              </>
+            ) : (
+              <span className='truncate font-medium'>{selectedReferral.email}</span>
+            )}
+          </div>
+          <DisabledFieldTooltip
+            disabled={isPending || disabled}
+            reason={isPending ? pendingReason : disabledReason}
+          >
+            <Button
+              type='button'
+              variant='ghost'
+              size='icon'
+              className='text-muted-foreground hover:text-destructive h-8 w-8 shrink-0'
+              onClick={onClear}
+              disabled={isPending || disabled}
+              aria-label={`Clear referral source ${selectedReferral.name ?? selectedReferral.email}`}
+            >
+              <X className='h-4 w-4' />
+            </Button>
+          </DisabledFieldTooltip>
+        </div>
+        <p className='text-muted-foreground text-xs'>
+          Track who referred this client for commission payouts.
+        </p>
+      </div>
+    )
+  }
+
+  // When no referral is selected, show the dropdown picker
   return (
     <div className='space-y-2'>
       <Popover open={isPickerOpen} onOpenChange={onPickerOpenChange}>
@@ -73,9 +111,7 @@ export function ClientReferralPicker({
               >
                 <span className='flex items-center gap-2'>
                   <LinkIcon className='h-4 w-4' />
-                  {selectedReferral
-                    ? 'Change referral source'
-                    : 'Select referral source'}
+                  Select referral source
                 </span>
                 <ChevronsUpDown className='h-4 w-4 opacity-50' />
               </Button>
@@ -121,42 +157,6 @@ export function ClientReferralPicker({
       <p className='text-muted-foreground text-xs'>
         Track who referred this client for commission payouts.
       </p>
-      {selectedReferral ? (
-        <div className={selectedContainerClass}>
-          <div className='flex flex-col text-sm leading-tight'>
-            {selectedReferral.name ? (
-              <>
-                <span className='font-medium'>{selectedReferral.name}</span>
-                <span className='text-muted-foreground text-xs'>
-                  {selectedReferral.email}
-                </span>
-              </>
-            ) : (
-              <span className='font-medium'>{selectedReferral.email}</span>
-            )}
-          </div>
-          <DisabledFieldTooltip
-            disabled={isPending}
-            reason={isPending ? pendingReason : null}
-          >
-            <Button
-              type='button'
-              variant='ghost'
-              size='icon'
-              className={iconButtonClass}
-              onClick={onClear}
-              disabled={isPending}
-              aria-label={`Clear referral source ${selectedReferral.name ?? selectedReferral.email}`}
-            >
-              <X className='h-4 w-4' />
-            </Button>
-          </DisabledFieldTooltip>
-        </div>
-      ) : (
-        <p className='text-muted-foreground text-sm'>
-          No referral source set.
-        </p>
-      )}
     </div>
   )
 }

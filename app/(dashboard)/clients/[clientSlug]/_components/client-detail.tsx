@@ -9,6 +9,7 @@ import {
   CreditCard,
   FolderKanban,
   Globe,
+  LinkIcon,
   Pencil,
   UserPlus,
 } from 'lucide-react'
@@ -201,7 +202,7 @@ function ClientDetailsWidget({
         {referralContact ? (
           <div className='flex items-center gap-3 px-4 py-2.5'>
             <UserPlus className='text-muted-foreground h-4 w-4' />
-            <span className='text-muted-foreground text-sm'>Referral</span>
+            <span className='text-muted-foreground text-sm'>Referred By</span>
             <span className='ml-auto text-sm font-medium'>
               {referralContact.name ?? referralContact.email}
             </span>
@@ -209,9 +210,8 @@ function ClientDetailsWidget({
         ) : null}
         {client.slug ? (
           <div className='flex items-center gap-3 px-4 py-2.5'>
-            <span className='text-muted-foreground text-xs font-medium tracking-wide uppercase'>
-              Slug
-            </span>
+            <LinkIcon className='text-muted-foreground h-4 w-4' />
+            <span className='text-muted-foreground text-sm'>Slug</span>
             <span className='ml-auto font-mono text-sm'>{client.slug}</span>
           </div>
         ) : null}
