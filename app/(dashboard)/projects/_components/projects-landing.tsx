@@ -1,14 +1,21 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo } from 'react'
+import { useCallback, useMemo, useTransition } from 'react'
 import type { ReactNode } from 'react'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Building2, FolderKanban, UserRound, Users } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { siGithub } from 'simple-icons/icons'
 
-import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import {
   Table,
   TableBody,
@@ -17,7 +24,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { getProjectStatusLabel, getProjectStatusToken } from '@/lib/constants'
+import { useToast } from '@/components/ui/use-toast'
+import {
+  ProjectStatusFilter,
+  DEFAULT_STATUS_FILTER,
+} from '@/components/projects/project-status-filter'
+import { ProjectStatusCell } from '@/components/projects/project-status-cell'
+import type { ProjectStatusValue } from '@/lib/constants'
 import { formatProjectDateRange } from '@/lib/settings/projects/project-formatters'
 import { buildBoardPath } from '@/lib/projects/board/board-utils'
 import {
@@ -25,8 +38,16 @@ import {
   createProjectsByClientLookup,
   createClientSlugLookup,
 } from '@/lib/projects/board/board-utils'
+import { updateProjectStatus } from '@/lib/settings/projects/actions/update-project-status'
 import type { ProjectWithRelations } from '@/lib/types'
 import { cn } from '@/lib/utils'
+
+function getInitials(name: string | null): string {
+  if (!name) return '?'
+  const parts = name.trim().split(/\s+/)
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase()
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
+}
 
 function SimpleIcon({
   icon,
@@ -60,6 +81,7 @@ type ProjectsLandingProps = {
   projects: ProjectWithRelations[]
   clients: Array<{ id: string; name: string; slug: string | null }>
   currentUserId: string
+  isAdmin: boolean
 }
 
 type SectionConfig = {
@@ -74,13 +96,119 @@ export function ProjectsLanding({
   projects,
   clients,
   currentUserId,
+  isAdmin,
 }: ProjectsLandingProps) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const { toast } = useToast()
+  const [, startTransition] = useTransition()
+
+  // Parse status filter from URL params
+  const selectedStatuses = useMemo<ProjectStatusValue[]>(() => {
+    const statusParam = searchParams.get('status')
+    // No param = use default, 'none' = explicitly cleared
+    if (!statusParam) {
+      return DEFAULT_STATUS_FILTER
+    }
+    if (statusParam === 'none') {
+      return []
+    }
+    const statuses = statusParam
+      .split(',')
+      .filter(Boolean) as ProjectStatusValue[]
+    return statuses.length > 0 ? statuses : DEFAULT_STATUS_FILTER
+  }, [searchParams])
+
+  // Handle filter change - update URL
+  const handleStatusFilterChange = useCallback(
+    (statuses: ProjectStatusValue[]) => {
+      const params = new URLSearchParams(searchParams.toString())
+      const hasInteracted = searchParams.has('status')
+
+      // Check if this matches the default
+      const isDefault =
+        statuses.length === DEFAULT_STATUS_FILTER.length &&
+        DEFAULT_STATUS_FILTER.every(s => statuses.includes(s))
+
+      if (statuses.length === 0) {
+        // Use 'none' to represent explicitly cleared state
+        params.set('status', 'none')
+      } else if (isDefault && !hasInteracted) {
+        // Only omit from URL if user hasn't interacted yet (clean landing)
+        params.delete('status')
+      } else {
+        // Always include in URL once user has started interacting
+        params.set('status', statuses.join(','))
+      }
+
+      const queryString = params.toString()
+      const newUrl = queryString ? `${pathname}?${queryString}` : pathname
+
+      startTransition(() => {
+        router.push(newUrl, { scroll: false })
+      })
+    },
+    [pathname, router, searchParams]
+  )
+
+  // Handle status change for a project
+  const handleProjectStatusChange = useCallback(
+    async (projectId: string, status: ProjectStatusValue) => {
+      const result = await updateProjectStatus({ projectId, status })
+
+      if (result.error) {
+        toast({
+          title: 'Failed to update status',
+          description: result.error,
+          variant: 'destructive',
+        })
+        throw new Error(result.error)
+      }
+
+      router.refresh()
+    },
+    [router, toast]
+  )
+
+  // Filter projects by selected statuses
+  const filteredProjects = useMemo(() => {
+    // When no statuses selected, show no projects
+    if (selectedStatuses.length === 0) {
+      return []
+    }
+    return projects.filter(p =>
+      selectedStatuses.includes(p.status as ProjectStatusValue)
+    )
+  }, [projects, selectedStatuses])
+
+  // Track unfiltered counts for empty state messaging
+  const unfilteredCounts = useMemo(() => {
+    let clientCount = 0
+    let internalCount = 0
+    let personalCount = 0
+
+    projects.forEach(project => {
+      if (project.type === 'INTERNAL') {
+        internalCount++
+      } else if (project.type === 'PERSONAL') {
+        if (project.created_by === currentUserId) {
+          personalCount++
+        }
+      } else if (project.client_id && project.client) {
+        clientCount++
+      }
+    })
+
+    return { clientCount, internalCount, personalCount }
+  }, [projects, currentUserId])
+
   const { clientSections, internalProjects, personalProjects } = useMemo(() => {
     const clientMap = new Map<string, ClientProjectSection>()
     const internal: ProjectWithRelations[] = []
     const personal: ProjectWithRelations[] = []
 
-    projects.forEach(project => {
+    filteredProjects.forEach(project => {
       if (project.type === 'INTERNAL') {
         internal.push(project)
         return
@@ -128,7 +256,7 @@ export function ProjectsLanding({
       internalProjects: internal,
       personalProjects: personal,
     }
-  }, [projects, currentUserId])
+  }, [filteredProjects, currentUserId])
 
   const projectLookup = useMemo(() => createProjectLookup(projects), [projects])
   const projectsByClientId = useMemo(
@@ -153,14 +281,9 @@ export function ProjectsLanding({
     return path ?? '#'
   }
 
-  const clientProjectCount = clientSections.reduce(
-    (total, section) => total + section.projects.length,
-    0
-  )
-  const totalProjects =
-    clientProjectCount + internalProjects.length + personalProjects.length
+  const hasAnyProjects = projects.length > 0
 
-  if (totalProjects === 0) {
+  if (!hasAnyProjects) {
     return (
       <div className='grid h-full w-full place-items-center rounded-xl border border-dashed p-12 text-center'>
         <div className='space-y-2'>
@@ -184,8 +307,6 @@ export function ProjectsLanding({
     options?: { indent?: boolean; isLast?: boolean }
   ) => {
     const href = getProjectHref(project)
-    const statusLabel = getProjectStatusLabel(project.status)
-    const statusToken = getProjectStatusToken(project.status)
     const dateRange = formatProjectDateRange(project.starts_on, project.ends_on)
 
     const activeTasks = project.tasks.filter(task => task.status !== 'ARCHIVED')
@@ -216,7 +337,12 @@ export function ProjectsLanding({
           </div>
         </TableCell>
         <TableCell>
-          <Badge className={cn('text-xs', statusToken)}>{statusLabel}</Badge>
+          <ProjectStatusCell
+            projectId={project.id}
+            status={project.status}
+            onStatusChange={handleProjectStatusChange}
+            disabled={!isAdmin}
+          />
         </TableCell>
         <TableCell>
           <div className='flex items-center gap-3'>
@@ -230,6 +356,32 @@ export function ProjectsLanding({
           <span className='text-muted-foreground text-sm'>
             {dateRange !== '—' ? dateRange : '—'}
           </span>
+        </TableCell>
+        <TableCell className='align-middle'>
+          {project.owner ? (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Avatar className='h-7 w-7'>
+                    {project.owner.avatar_url && (
+                      <AvatarImage
+                        src={`/api/storage/user-avatar/${project.owner.id}`}
+                        alt={project.owner.full_name ?? 'Owner'}
+                      />
+                    )}
+                    <AvatarFallback className='text-xs'>
+                      {getInitials(project.owner.full_name)}
+                    </AvatarFallback>
+                  </Avatar>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{project.owner.full_name ?? 'Unknown'}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            <span className='text-muted-foreground/40'>—</span>
+          )}
         </TableCell>
         <TableCell className='align-middle'>
           <div className='flex h-full items-center'>
@@ -253,11 +405,12 @@ export function ProjectsLanding({
   }
 
   const tableColumnWidths = {
-    project: 'w-[35%]',
-    status: 'w-[12%]',
-    progress: 'w-[22%]',
-    dates: 'w-[18%]',
-    links: 'w-[13%]',
+    project: 'w-[30%]',
+    status: 'w-[11%]',
+    progress: 'w-[20%]',
+    dates: 'w-[16%]',
+    owner: 'w-[11%]',
+    links: 'w-[12%]',
   }
 
   const renderProjectTable = (items: ProjectWithRelations[]) => (
@@ -271,6 +424,7 @@ export function ProjectsLanding({
               Progress
             </TableHead>
             <TableHead className={tableColumnWidths.dates}>Dates</TableHead>
+            <TableHead className={tableColumnWidths.owner}>Owner</TableHead>
             <TableHead className={tableColumnWidths.links}>Links</TableHead>
           </TableRow>
         </TableHeader>
@@ -289,7 +443,7 @@ export function ProjectsLanding({
       className='border-t-muted hover:bg-transparent'
     >
       <TableCell
-        colSpan={5}
+        colSpan={6}
         className='bg-blue-100 py-3 align-middle dark:bg-blue-500/8'
       >
         <Link
@@ -319,6 +473,7 @@ export function ProjectsLanding({
                 Progress
               </TableHead>
               <TableHead className={tableColumnWidths.dates}>Dates</TableHead>
+              <TableHead className={tableColumnWidths.owner}>Owner</TableHead>
               <TableHead className={tableColumnWidths.links}>Links</TableHead>
             </TableRow>
           </TableHeader>
@@ -337,9 +492,25 @@ export function ProjectsLanding({
       </div>
     ) : (
       renderSectionEmptyState(
-        'Client projects will appear here once they are created.'
+        unfilteredCounts.clientCount > 0
+          ? 'No client projects match the selected status filter.'
+          : 'Client projects will appear here once they are created.'
       )
     )
+
+  const getInternalEmptyMessage = () => {
+    if (unfilteredCounts.internalCount > 0) {
+      return 'No internal projects match the selected status filter.'
+    }
+    return 'There are no internal projects yet.'
+  }
+
+  const getPersonalEmptyMessage = () => {
+    if (unfilteredCounts.personalCount > 0) {
+      return 'No personal projects match the selected status filter.'
+    }
+    return 'You have not created any personal projects yet.'
+  }
 
   const sectionConfigs: (SectionConfig & { className?: string })[] = [
     {
@@ -350,7 +521,7 @@ export function ProjectsLanding({
       content:
         internalProjects.length > 0
           ? renderProjectTable(internalProjects)
-          : renderSectionEmptyState('There are no internal projects yet.'),
+          : renderSectionEmptyState(getInternalEmptyMessage()),
     },
     {
       key: 'personal',
@@ -360,15 +531,19 @@ export function ProjectsLanding({
       content:
         personalProjects.length > 0
           ? renderProjectTable(personalProjects)
-          : renderSectionEmptyState(
-              'You have not created any personal projects yet.'
-            ),
+          : renderSectionEmptyState(getPersonalEmptyMessage()),
     },
   ]
 
   return (
     <div className='space-y-12'>
-      <div>{clientSectionContent}</div>
+      <div className='space-y-6'>
+        <ProjectStatusFilter
+          selectedStatuses={selectedStatuses}
+          onSelectionChange={handleStatusFilterChange}
+        />
+        {clientSectionContent}
+      </div>
       {sectionConfigs.map(
         ({ key, title, icon: Icon, count, content, className }) => (
           <div key={key} className={cn('space-y-4', className)}>

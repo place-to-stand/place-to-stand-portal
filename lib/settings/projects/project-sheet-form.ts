@@ -77,6 +77,11 @@ export const projectSheetFormSchema = z
       .regex(/^[a-z0-9-]+$/, 'Lowercase letters, numbers, and dashes only')
       .or(z.literal(''))
       .optional(),
+    ownerId: z
+      .string()
+      .uuid()
+      .or(z.literal(''))
+      .optional(),
   })
   .superRefine((data, ctx) => {
     if (data.startsOn && data.endsOn) {
@@ -127,6 +132,7 @@ export const PROJECT_FORM_FIELDS: Array<keyof ProjectSheetFormValues> = [
   'startsOn',
   'endsOn',
   'slug',
+  'ownerId',
 ]
 
 export const deriveInitialStatus = (
@@ -152,6 +158,7 @@ export const buildProjectFormDefaults = (
   startsOn: project?.starts_on ? project.starts_on.slice(0, 10) : '',
   endsOn: project?.ends_on ? project.ends_on.slice(0, 10) : '',
   slug: project?.slug ?? '',
+  ownerId: project?.owner_id ?? '',
 })
 
 export type ProjectSavePayload = {
@@ -163,6 +170,7 @@ export type ProjectSavePayload = {
   startsOn: string | null
   endsOn: string | null
   slug: string | null
+  ownerId: string | null
 }
 
 type CreatePayloadArgs = {
@@ -179,6 +187,7 @@ export const createProjectSavePayload = ({
   const trimmedClientId = values.clientId?.trim() ?? ''
   const normalizedClientId =
     values.projectType === 'CLIENT' && trimmedClientId ? trimmedClientId : null
+  const trimmedOwnerId = values.ownerId?.trim() ?? ''
 
   return {
     id: project?.id,
@@ -189,6 +198,7 @@ export const createProjectSavePayload = ({
     startsOn: values.startsOn ? values.startsOn : null,
     endsOn: values.endsOn ? values.endsOn : null,
     slug: isEditing ? (values.slug?.trim() ? values.slug.trim() : null) : null,
+    ownerId: trimmedOwnerId ? trimmedOwnerId : null,
   }
 }
 

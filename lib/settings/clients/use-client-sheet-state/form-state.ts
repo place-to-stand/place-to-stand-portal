@@ -34,6 +34,7 @@ import type {
   ClientContactOption,
   ClientMemberOption,
   ClientSheetFormStateArgs,
+  ReferralContactOption,
 } from './types'
 
 export function useClientSheetFormState({
@@ -65,6 +66,11 @@ export function useClientSheetFormState({
   const [initialContacts, setInitialContacts] = useState<ClientContactOption[]>([])
   const [isLoadingContacts, setIsLoadingContacts] = useState(false)
 
+  // Referral state
+  const [isReferralPickerOpen, setIsReferralPickerOpen] = useState(false)
+  const [selectedReferral, setSelectedReferral] = useState<ReferralContactOption | null>(null)
+  const [initialReferralId, setInitialReferralId] = useState<string | null>(null)
+
   const initialMembers = useMemo(() => {
     if (!client) return [] as ClientMember[]
     const members = clientMembers[client.id] ?? []
@@ -82,6 +88,7 @@ export function useClientSheetFormState({
       name: client?.name ?? '',
       slug: client?.slug ?? '',
       billingType: client?.billing_type ?? 'prepaid',
+      website: client?.website ?? '',
       notes: client?.notes ?? '',
     },
   })
@@ -122,6 +129,19 @@ export function useClientSheetFormState({
     return false
   }, [initialContacts, selectedContacts])
 
+  // Compute available contacts for referral (excludes currently selected)
+  const availableReferralContacts = useMemo<ReferralContactOption[]>(() => {
+    return allContacts
+      .filter(c => c.id !== selectedReferral?.id)
+      .map(c => ({ id: c.id, name: c.name, email: c.email }))
+  }, [allContacts, selectedReferral])
+
+  // Check if referral has changed
+  const referralDirty = useMemo(() => {
+    const currentId = selectedReferral?.id ?? null
+    return currentId !== initialReferralId
+  }, [selectedReferral, initialReferralId])
+
   const addButtonDisabled = isPending || availableMembers.length === 0
   const addButtonDisabledReason = addButtonDisabled
     ? isPending
@@ -138,10 +158,17 @@ export function useClientSheetFormState({
         : 'All contacts are already linked.'
     : null
 
+  const referralPickerDisabled = isPending || isLoadingContacts
+  const referralPickerDisabledReason = referralPickerDisabled
+    ? isPending
+      ? PENDING_REASON
+      : 'Loading contacts...'
+    : null
+
   const submitDisabled = isPending
   const submitDisabledReason = submitDisabled ? PENDING_REASON : null
 
-  const hasUnsavedChanges = form.formState.isDirty || membershipDirty || contactsDirty
+  const hasUnsavedChanges = form.formState.isDirty || membershipDirty || contactsDirty || referralDirty
 
   const { requestConfirmation: confirmDiscard, dialog: unsavedChangesDialog } =
     useUnsavedChangesWarning({ isDirty: hasUnsavedChanges })
@@ -151,6 +178,7 @@ export function useClientSheetFormState({
       name: client?.name ?? '',
       slug: client?.slug ?? '',
       billingType: client?.billing_type ?? 'prepaid',
+      website: client?.website ?? '',
       notes: client?.notes ?? '',
     }
 
@@ -165,6 +193,9 @@ export function useClientSheetFormState({
 
     // Reset contacts
     setIsContactPickerOpen(false)
+
+    // Reset referral
+    setIsReferralPickerOpen(false)
   }, [client, form, initialMembers, setFeedback])
 
   useEffect(() => {
@@ -190,7 +221,11 @@ export function useClientSheetFormState({
 
     // Fetch contact data if not provided via props
     const clientId = client?.id
+    const clientReferredBy = client?.referred_by ?? null
     const shouldFetch = !allContactsProp || allContactsProp.length === 0
+
+    // Initialize referral from client
+    setInitialReferralId(clientReferredBy)
 
     if (shouldFetch) {
       setIsLoadingContacts(true)
@@ -201,6 +236,19 @@ export function useClientSheetFormState({
             setSelectedContacts(data.linkedContacts)
             setInitialContacts(data.linkedContacts)
           }
+          // Set referral from fetched contacts if client has referred_by
+          if (clientReferredBy) {
+            const referralContact = data.allContacts.find(c => c.id === clientReferredBy)
+            if (referralContact) {
+              setSelectedReferral({
+                id: referralContact.id,
+                name: referralContact.name,
+                email: referralContact.email,
+              })
+            }
+          } else {
+            setSelectedReferral(null)
+          }
         })
         .catch(err => {
           console.error('Failed to fetch contact sheet data:', err)
@@ -208,8 +256,22 @@ export function useClientSheetFormState({
         .finally(() => {
           setIsLoadingContacts(false)
         })
+    } else if (allContactsProp && clientReferredBy) {
+      // Use provided contacts to find referral
+      const referralContact = allContactsProp.find(c => c.id === clientReferredBy)
+      if (referralContact) {
+        setSelectedReferral({
+          id: referralContact.id,
+          name: referralContact.name,
+          email: referralContact.email,
+        })
+      } else {
+        setSelectedReferral(null)
+      }
+    } else {
+      setSelectedReferral(null)
     }
-  }, [open, resetFormState, startTransition, client?.id, allContactsProp, clientContactsProp])
+  }, [open, resetFormState, startTransition, client?.id, client?.referred_by, allContactsProp, clientContactsProp])
 
   const handleSheetOpenChange = useCallback(
     (next: boolean) => {
@@ -299,6 +361,27 @@ export function useClientSheetFormState({
     setSelectedContacts(prev => prev.filter(c => c.id !== contact.id))
   }, [])
 
+  // Referral handlers
+  const handleReferralPickerOpenChange = useCallback(
+    (next: boolean) => {
+      if (referralPickerDisabled) {
+        setIsReferralPickerOpen(false)
+        return
+      }
+      setIsReferralPickerOpen(next)
+    },
+    [referralPickerDisabled]
+  )
+
+  const handleSelectReferral = useCallback((contact: ReferralContactOption) => {
+    setSelectedReferral(contact)
+    setIsReferralPickerOpen(false)
+  }, [])
+
+  const handleClearReferral = useCallback(() => {
+    setSelectedReferral(null)
+  }, [])
+
   const handleFormSubmit = useCallback(
     (values: ClientSheetFormValues) => {
       if (isEditing && !values.slug?.trim()) {
@@ -318,6 +401,8 @@ export function useClientSheetFormState({
               : null
             : null,
           billingType: values.billingType,
+          website: values.website?.trim() ? values.website.trim() : null,
+          referredBy: selectedReferral?.id ?? null,
           notes: values.notes?.trim() ? values.notes.trim() : null,
           memberIds: selectedMembers.map(member => member.id),
         } satisfies Parameters<typeof saveClient>[0]
@@ -380,10 +465,12 @@ export function useClientSheetFormState({
 
           setSavedMemberIds(selectedMembers.map(member => member.id).sort())
           setInitialContacts(selectedContacts)
+          setInitialReferralId(selectedReferral?.id ?? null)
           form.reset({
             name: payload.name,
             slug: payload.slug ?? '',
             billingType: payload.billingType,
+            website: payload.website ?? '',
             notes: payload.notes ?? '',
           })
 
@@ -408,6 +495,7 @@ export function useClientSheetFormState({
       onOpenChange,
       selectedContacts,
       selectedMembers,
+      selectedReferral,
       setFeedback,
       startTransition,
       toast,
@@ -449,5 +537,14 @@ export function useClientSheetFormState({
     handleContactPickerOpenChange,
     handleAddContact,
     handleRemoveContact,
+    // Referral
+    selectedReferral,
+    availableReferralContacts,
+    isReferralPickerOpen,
+    referralPickerDisabled,
+    referralPickerDisabledReason,
+    handleReferralPickerOpenChange,
+    handleSelectReferral,
+    handleClearReferral,
   }
 }

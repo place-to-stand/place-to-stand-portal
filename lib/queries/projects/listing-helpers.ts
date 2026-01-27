@@ -22,6 +22,7 @@ export const projectFields = {
   endsOn: projects.endsOn,
   slug: projects.slug,
   createdBy: projects.createdBy,
+  ownerId: projects.ownerId,
   createdAt: projects.createdAt,
   updatedAt: projects.updatedAt,
   deletedAt: projects.deletedAt,
@@ -61,6 +62,7 @@ export const projectGroupByColumns = [
   projects.clientId,
   projects.type,
   projects.createdBy,
+  projects.ownerId,
   projects.startsOn,
   projects.endsOn,
   projects.createdAt,
@@ -82,6 +84,7 @@ export const projectSelection = {
   clientId: projects.clientId,
   type: projects.type,
   createdBy: projects.createdBy,
+  ownerId: projects.ownerId,
   startsOn: projects.startsOn,
   endsOn: projects.endsOn,
   createdAt: projects.createdAt,
@@ -97,6 +100,7 @@ export type ProjectSelectionResult = {
   clientId: string | null
   type: ProjectTypeValue
   createdBy: string | null
+  ownerId: string | null
   startsOn: string | null
   endsOn: string | null
   createdAt: string

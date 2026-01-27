@@ -103,6 +103,7 @@ export type ProjectsBoardTabsSectionProps = {
 
 type ProjectsBoardTabsSectionComponentProps = ProjectsBoardTabsSectionProps & {
   projectActions: ProjectsBoardTabsProps['projectActions']
+  onProjectStatusChange: ProjectsBoardTabsProps['onProjectStatusChange']
 }
 
 export function ProjectsBoardTabsSection({
@@ -117,6 +118,7 @@ export function ProjectsBoardTabsSection({
   drop,
   timeLogs,
   projectActions,
+  onProjectStatusChange,
 }: ProjectsBoardTabsSectionComponentProps) {
   return (
     <ProjectsBoardTabs
@@ -131,6 +133,7 @@ export function ProjectsBoardTabsSection({
       {...drop}
       {...timeLogs}
       projectActions={projectActions}
+      onProjectStatusChange={onProjectStatusChange}
     />
   )
 }

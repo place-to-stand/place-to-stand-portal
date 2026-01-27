@@ -20,6 +20,8 @@ type CreateClientPayload = {
   name: string
   providedSlug: string | null
   billingType: ClientBillingTypeValue
+  website: string | null
+  referredBy: string | null
   notes: string | null
   memberIds: string[]
 }
@@ -32,7 +34,7 @@ export async function createClient(
 ): Promise<ClientMutationResult> {
   const { user } = context
   assertAdmin(user)
-  const { name, providedSlug, billingType, notes, memberIds } = payload
+  const { name, providedSlug, billingType, website, referredBy, notes, memberIds } = payload
 
   const baseSlug = providedSlug
     ? toClientSlug(providedSlug)
@@ -48,6 +50,8 @@ export async function createClient(
           name,
           slug: slugCandidate,
           billingType,
+          website,
+          referredBy,
           notes,
           createdBy: user.id,
         })

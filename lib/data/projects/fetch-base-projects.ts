@@ -8,6 +8,7 @@ export type BaseProjectFetchResult = {
   projects: DbProject[]
   projectIds: string[]
   clientIds: string[]
+  ownerIds: string[]
   projectClientLookup: Map<string, string | null>
 }
 
@@ -34,6 +35,7 @@ export async function fetchBaseProjects(
       updatedAt: projects.updatedAt,
       deletedAt: projects.deletedAt,
       createdBy: projects.createdBy,
+      ownerId: projects.ownerId,
     })
     .from(projects)
     .where(and(...conditions))
@@ -52,6 +54,7 @@ export async function fetchBaseProjects(
     updated_at: row.updatedAt,
     deleted_at: row.deletedAt,
     created_by: row.createdBy ?? null,
+    owner_id: row.ownerId ?? null,
   }))
 
   const projectIds = normalizedProjects.map(project => project.id)
@@ -60,6 +63,13 @@ export async function fetchBaseProjects(
       normalizedProjects
         .map(project => project.client_id)
         .filter((clientId): clientId is string => Boolean(clientId))
+    )
+  )
+  const ownerIds = Array.from(
+    new Set(
+      normalizedProjects
+        .map(project => project.owner_id)
+        .filter((ownerId): ownerId is string => Boolean(ownerId))
     )
   )
 
@@ -72,6 +82,7 @@ export async function fetchBaseProjects(
     projects: normalizedProjects,
     projectIds,
     clientIds,
+    ownerIds,
     projectClientLookup,
   }
 }

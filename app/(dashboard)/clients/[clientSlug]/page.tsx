@@ -76,7 +76,25 @@ export default async function ClientDetailPage({
       ])
     : Promise.resolve(null)
 
-  const [allClients, projects, managementData, clientContacts, messages] = await Promise.all([
+  // Build referral contact query if client has a referredBy
+  const referralContactPromise = client.referredBy
+    ? db.select({
+        id: contacts.id,
+        name: contacts.name,
+        email: contacts.email,
+      })
+        .from(contacts)
+        .where(
+          and(
+            eq(contacts.id, client.referredBy),
+            isNull(contacts.deletedAt)
+          )
+        )
+        .limit(1)
+        .then(rows => rows[0] ?? null)
+    : Promise.resolve(null)
+
+  const [allClients, projects, managementData, clientContacts, messages, referralContact] = await Promise.all([
     fetchClientsWithMetrics(user),
     fetchProjectsForClient(user, client.resolvedId),
     managementDataPromise,
@@ -102,6 +120,7 @@ export default async function ClientDetailPage({
       )
       .orderBy(desc(contactClients.isPrimary), contacts.email),
     getMessagesForClient(client.resolvedId),
+    referralContactPromise,
   ])
 
   const clientUsers = managementData
@@ -130,6 +149,7 @@ export default async function ClientDetailPage({
           clientMembers={clientMembers}
           clientRow={mapClientDetailToRow(client)}
           currentUserId={user.id}
+          referralContact={referralContact}
         />
       </div>
     </>
@@ -144,6 +164,8 @@ function mapClientDetailToRow(
     name: client.name,
     slug: client.slug,
     notes: client.notes,
+    website: client.website,
+    referred_by: client.referredBy,
     billing_type: client.billingType,
     created_by: null,
     created_at: client.createdAt,

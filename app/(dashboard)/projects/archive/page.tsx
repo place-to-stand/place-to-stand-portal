@@ -4,6 +4,7 @@ import { AppShellHeader } from '@/components/layout/app-shell'
 import { ProjectsManagementSection } from '../_components/projects-management-section'
 import { mapProjectToTableRow } from '../_lib/map-project-to-table-row'
 import { parseProjectsSearchParams } from '../_lib/parse-projects-search-params'
+import { fetchAdminUsers } from '@/lib/data/users'
 import { requireRole } from '@/lib/auth/session'
 import {
   listProjectsForSettings,
@@ -13,6 +14,7 @@ import type {
   ClientRow,
   ProjectWithClient,
 } from '@/lib/settings/projects/project-sheet-form'
+import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
 
 export const metadata: Metadata = {
   title: 'Project Archive | Place to Stand Portal',
@@ -29,15 +31,23 @@ export default async function ProjectsArchivePage({
   const params = searchParams ? await searchParams : {}
   const { searchQuery, cursor, direction, limit } = parseProjectsSearchParams(params)
 
-  const archivePromise: Promise<ProjectsSettingsResult> = listProjectsForSettings(admin, {
-    status: 'archived',
-    search: searchQuery ?? '',
-    cursor,
-    direction,
-    limit,
-  })
+  const [archiveResult, adminUsersResult] = await Promise.all([
+    listProjectsForSettings(admin, {
+      status: 'archived',
+      search: searchQuery ?? '',
+      cursor,
+      direction,
+      limit,
+    }),
+    fetchAdminUsers(),
+  ])
 
-  const archiveResult = await archivePromise
+  const adminUsers: AdminUserForOwner[] = adminUsersResult.map(admin => ({
+    id: admin.id,
+    full_name: admin.full_name,
+    email: admin.email,
+    avatar_url: admin.avatar_url,
+  }))
 
   const clientRows: ClientRow[] = archiveResult.clients.map(client => ({
     id: client.id,
@@ -64,6 +74,7 @@ export default async function ProjectsArchivePage({
           mode='archive'
           projects={hydratedProjects}
           clients={clientRows}
+          adminUsers={adminUsers}
           contractorUsers={[]}
           membersByProject={{}}
           pageInfo={archiveResult.pageInfo}

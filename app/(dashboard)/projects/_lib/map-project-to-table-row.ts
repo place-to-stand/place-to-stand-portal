@@ -12,6 +12,7 @@ export function mapProjectToTableRow(
     client_id: project.clientId,
     type: project.type,
     created_by: project.createdBy,
+    owner_id: project.ownerId,
     starts_on: project.startsOn,
     ends_on: project.endsOn,
     created_at: project.createdAt,

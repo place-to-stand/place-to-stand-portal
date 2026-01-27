@@ -33,6 +33,12 @@ export const projectSchema = z
       .or(z.literal(''))
       .nullish()
       .transform(value => (value ? value : null)),
+    ownerId: z
+      .string()
+      .uuid()
+      .or(z.literal(''))
+      .nullish()
+      .transform(value => (value ? value : null)),
   })
   .superRefine((data, ctx) => {
     if (data.startsOn && data.endsOn) {

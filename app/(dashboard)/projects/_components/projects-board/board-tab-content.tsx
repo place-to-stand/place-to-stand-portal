@@ -30,6 +30,7 @@ import type { RenderAssigneeFn } from '../../../../../lib/projects/board/board-s
 export type ProjectsBoardActiveProject = {
   id: string
   name: string
+  status: string
   client: { id: string | null; name: string | null } | null
   burndown: {
     totalClientRemainingHours: number

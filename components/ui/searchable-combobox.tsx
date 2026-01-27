@@ -233,7 +233,11 @@ export const SearchableCombobox = React.forwardRef<
                     </AvatarFallback>
                   </Avatar>
                 ) : selectedItem?.icon ? (
-                  <selectedItem.icon className='text-muted-foreground h-5 w-5 shrink-0' />
+                  <Avatar className='h-5 w-5 shrink-0'>
+                    <AvatarFallback className='bg-muted'>
+                      <selectedItem.icon className='text-muted-foreground h-3 w-3' />
+                    </AvatarFallback>
+                  </Avatar>
                 ) : null}
                 <span
                   className={cn(
@@ -305,7 +309,11 @@ export const SearchableCombobox = React.forwardRef<
                                 </AvatarFallback>
                               </Avatar>
                             ) : item.icon ? (
-                              <item.icon className='text-muted-foreground mr-2 h-5 w-5' />
+                              <Avatar className='mr-2 h-5 w-5'>
+                                <AvatarFallback className='bg-muted'>
+                                  <item.icon className='text-muted-foreground h-3 w-3' />
+                                </AvatarFallback>
+                              </Avatar>
                             ) : null}
                             <div className={itemWrapperClasses}>
                               <span className='font-medium'>{item.label}</span>
@@ -357,7 +365,11 @@ export const SearchableCombobox = React.forwardRef<
                               </AvatarFallback>
                             </Avatar>
                           ) : item.icon ? (
-                            <item.icon className='text-muted-foreground mr-2 h-5 w-5' />
+                            <Avatar className='mr-2 h-5 w-5'>
+                              <AvatarFallback className='bg-muted'>
+                                <item.icon className='text-muted-foreground h-3 w-3' />
+                              </AvatarFallback>
+                            </Avatar>
                           ) : null}
                           <div className={itemWrapperClasses}>
                             <span className='font-medium'>{item.label}</span>

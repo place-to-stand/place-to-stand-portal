@@ -7,6 +7,8 @@ import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Label } from '@/components/ui/label'
 import { TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { startBoardTabInteraction } from '@/lib/projects/board/board-tab-interaction'
+import { ProjectStatusCell } from '@/components/projects/project-status-cell'
+import type { ProjectStatusValue } from '@/lib/constants'
 
 import type { ProjectActionControls } from './projects-board-tabs'
 
@@ -32,6 +34,12 @@ export type ProjectsBoardTabsHeaderProps = {
   onlyAssignedToMe: boolean
   onAssignedFilterChange: (checked: boolean) => void
   projectActions: ProjectActionControls
+  activeProjectId: string | null
+  activeProjectStatus: string | null
+  onProjectStatusChange: (
+    projectId: string,
+    status: ProjectStatusValue
+  ) => Promise<void>
 }
 
 export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
@@ -51,6 +59,9 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
     onlyAssignedToMe,
     onAssignedFilterChange,
     projectActions,
+    activeProjectId,
+    activeProjectStatus,
+    onProjectStatusChange,
   } = props
 
   return (
@@ -192,7 +203,7 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
         </TabsTrigger>
       </TabsList>
       {initialTab === 'board' || initialTab === 'calendar' ? (
-        <div className='flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3'>
+        <div className='flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-2'>
           <Label
             htmlFor='projects-board-assigned-filter'
             className='text-muted-foreground bg-background/80 flex w-full cursor-pointer justify-end rounded-md border p-2 sm:w-auto'
@@ -206,7 +217,16 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
             <span>Only show my tasks</span>
           </Label>
           {projectActions ? (
-            <div className='flex items-center justify-end gap-2 sm:justify-start'>
+            <>
+              {activeProjectId && activeProjectStatus ? (
+                <ProjectStatusCell
+                  projectId={activeProjectId}
+                  status={activeProjectStatus}
+                  onStatusChange={onProjectStatusChange}
+                  disabled={!projectActions.canEdit}
+                  variant='standalone'
+                />
+              ) : null}
               <DisabledFieldTooltip
                 disabled={!projectActions.canEdit}
                 reason={projectActions.editDisabledReason}
@@ -222,7 +242,7 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
                   Edit project
                 </Button>
               </DisabledFieldTooltip>
-            </div>
+            </>
           ) : null}
         </div>
       ) : null}

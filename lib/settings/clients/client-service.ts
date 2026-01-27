@@ -22,11 +22,18 @@ export const clientSchema = z.object({
     .nullish()
     .transform(value => (value ? value : null)),
   billingType: z.enum(CLIENT_BILLING_TYPE_VALUES).default('prepaid'),
+  website: z
+    .string()
+    .url('Please enter a valid URL')
+    .or(z.literal(''))
+    .nullish()
+    .transform(value => (value ? value : null)),
   notes: z
     .string()
     .nullish()
     .transform(value => (value ? value : null)),
   memberIds: z.array(z.string().uuid()).optional(),
+  referredBy: z.string().uuid().nullish().transform(value => value ?? null),
 })
 
 const clientIdentifierSchema = {
