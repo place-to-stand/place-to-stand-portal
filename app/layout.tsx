@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
+import { Analytics } from '@vercel/analytics/react'
 
 import { AppProviders } from '@/components/providers/app-providers'
 import { SupabaseListener } from '@/components/providers/supabase-listener'
@@ -67,6 +68,7 @@ export default async function RootLayout({
           <SupabaseListener initialSession={initialSession} />
           {children}
         </AppProviders>
+        <Analytics />
       </body>
     </html>
   )
