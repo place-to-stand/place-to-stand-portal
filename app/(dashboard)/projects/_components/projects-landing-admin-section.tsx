@@ -93,6 +93,7 @@ export function ProjectsLandingAdminSection({
           projects={projects}
           clients={landingClients}
           currentUserId={currentUserId}
+          isAdmin={true}
         />
       </section>
       <ProjectSheet

@@ -30,7 +30,7 @@ export default async function ProjectsPage() {
   const visibleProjectCount = countVisibleProjects(projects, user.id)
 
   if (!isAdmin(user)) {
-    return renderProjectLanding({ user, projects, landingClients })
+    return renderProjectLanding({ user, projects, landingClients, userIsAdmin: false })
   }
 
   const [managementResult, adminUsersResult]: [ProjectsSettingsResult, Awaited<ReturnType<typeof fetchAdminUsers>>] =
@@ -82,10 +82,12 @@ function renderProjectLanding({
   user,
   projects,
   landingClients,
+  userIsAdmin,
 }: {
   user: Awaited<ReturnType<typeof requireUser>>
   projects: ProjectWithRelations[]
   landingClients: LandingClient[]
+  userIsAdmin: boolean
 }) {
   const sortableProjects = [...projects]
 
@@ -103,6 +105,7 @@ function renderProjectLanding({
           projects={sortableProjects}
           clients={landingClients}
           currentUserId={user.id}
+          isAdmin={userIsAdmin}
         />
       </div>
     </>

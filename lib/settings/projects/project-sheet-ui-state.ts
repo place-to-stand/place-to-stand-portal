@@ -23,6 +23,7 @@ export type OwnerOption = {
   label: string
   keywords: string[]
   avatarUrl: string | null
+  userId: string
 }
 
 export type AdminUserForOwner = {
@@ -32,13 +33,24 @@ export type AdminUserForOwner = {
   avatar_url: string | null
 }
 
-export const buildOwnerOptions = (admins: AdminUserForOwner[]): OwnerOption[] =>
-  admins.map(admin => ({
+export const UNASSIGNED_OWNER_OPTION: OwnerOption = {
+  value: '',
+  label: 'Unassigned',
+  keywords: ['unassigned', 'none', 'no owner'],
+  avatarUrl: null,
+  userId: '',
+}
+
+export const buildOwnerOptions = (admins: AdminUserForOwner[]): OwnerOption[] => [
+  UNASSIGNED_OWNER_OPTION,
+  ...admins.map(admin => ({
     value: admin.id,
     label: admin.full_name ?? admin.email,
     keywords: [admin.full_name ?? '', admin.email].filter(Boolean),
     avatarUrl: admin.avatar_url,
-  }))
+    userId: admin.id,
+  })),
+]
 
 export const PROJECT_SHEET_MISSING_CLIENT_REASON =
   'Add a client before creating a project.'

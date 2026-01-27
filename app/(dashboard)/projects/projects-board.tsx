@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sparkles } from 'lucide-react'
 
@@ -28,6 +28,8 @@ import type { ProjectWithRelations } from '@/lib/types'
 import { ViewLogger } from '@/components/activity/view-logger'
 import { ActivityVerbs } from '@/lib/activity/types'
 import { useAISuggestionsSheet } from '@/lib/projects/board/state/use-ai-suggestions-sheet'
+import { updateProjectStatus } from '@/lib/settings/projects/actions/update-project-status'
+import type { ProjectStatusValue } from '@/lib/constants'
 import { ProjectsBoardEmpty } from './_components/projects-board-empty'
 import { ProjectsBoardHeader } from './_components/projects-board-header'
 import { ProjectBurndownWidget } from './_components/project-burndown-widget'
@@ -108,6 +110,24 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
     }
     requestDelete(activeProjectForSheet)
   }
+
+  const handleProjectStatusChange = useCallback(
+    async (projectId: string, status: ProjectStatusValue) => {
+      const result = await updateProjectStatus({ projectId, status })
+
+      if (result.error) {
+        toast({
+          title: 'Failed to update status',
+          description: result.error,
+          variant: 'destructive',
+        })
+        throw new Error(result.error)
+      }
+
+      router.refresh()
+    },
+    [router, toast]
+  )
 
   const projectActions =
     activeProjectForSheet && props.currentUserRole === 'ADMIN'
@@ -202,6 +222,7 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
         <ProjectsBoardTabsSection
           {...viewModel.tabs}
           projectActions={projectActions}
+          onProjectStatusChange={handleProjectStatusChange}
         />
         <ProjectsBoardDialogs
           {...viewModel.dialogs}

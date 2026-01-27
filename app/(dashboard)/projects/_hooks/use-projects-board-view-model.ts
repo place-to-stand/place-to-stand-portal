@@ -105,6 +105,7 @@ export function useProjectsBoardViewModel({
     return {
       id: boardState.activeProject.id,
       name: boardState.activeProject.name,
+      status: boardState.activeProject.status,
       client: {
         id: boardState.activeProject.client?.id ?? null,
         name: boardState.activeProject.client?.name ?? null,
