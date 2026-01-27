@@ -6,10 +6,7 @@ import { mapProjectToTableRow } from '../_lib/map-project-to-table-row'
 import { parseProjectsSearchParams } from '../_lib/parse-projects-search-params'
 import { fetchAdminUsers } from '@/lib/data/users'
 import { requireRole } from '@/lib/auth/session'
-import {
-  listProjectsForSettings,
-  type ProjectsSettingsResult,
-} from '@/lib/queries/projects'
+import { listProjectsForSettings } from '@/lib/queries/projects'
 import type {
   ClientRow,
   ProjectWithClient,

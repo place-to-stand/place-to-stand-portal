@@ -2,7 +2,6 @@ import 'server-only'
 
 import { and, desc, eq, isNull, inArray, sql, or } from 'drizzle-orm'
 
-import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import {
   suggestions,
@@ -12,7 +11,6 @@ import {
   clients,
   tasks,
 } from '@/lib/db/schema'
-import { isAdmin } from '@/lib/auth/permissions'
 import { NotFoundError } from '@/lib/errors/http'
 import type {
   Suggestion,

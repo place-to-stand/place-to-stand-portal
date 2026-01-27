@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, desc, eq, isNull, inArray, sql, asc } from 'drizzle-orm'
+import { and, desc, eq, isNull, sql, asc } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'

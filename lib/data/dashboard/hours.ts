@@ -19,7 +19,7 @@ import {
   listAccessibleProjectIds,
 } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { hourBlocks, projects, timeLogs } from '@/lib/db/schema'
+import { clients, hourBlocks, projects, timeLogs } from '@/lib/db/schema'
 import type { HoursSnapshot, MonthCursor } from '@/lib/dashboard/types'
 
 const HOURS_PRECISION = 2
@@ -204,12 +204,14 @@ async function sumPrepaidHours({
     return 0
   }
 
+  // Join with clients to exclude soft-deleted clients
   const [row] = (await db
     .select({
       totalHours: sql<string | null>`COALESCE(SUM(${hourBlocks.hoursPurchased}), '0')`,
     })
     .from(hourBlocks)
-    .where(and(...conditions))) as Array<{ totalHours: string | null }>
+    .innerJoin(clients, eq(hourBlocks.clientId, clients.id))
+    .where(and(...conditions, isNull(clients.deletedAt)))) as Array<{ totalHours: string | null }>
 
   const parsed = Number(row?.totalHours ?? '0')
   const rounded = Number.isFinite(parsed)

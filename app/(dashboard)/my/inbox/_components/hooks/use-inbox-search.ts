@@ -57,7 +57,8 @@ export function useInboxSearch({
     // Don't trigger on initial mount or if search hasn't changed
     if (searchInput === searchQuery) return
 
-    setIsSearching(true)
+    // Use queueMicrotask to avoid synchronous setState in effect body
+    queueMicrotask(() => setIsSearching(true))
     const timer = setTimeout(() => {
       handleSearch(searchInput)
       // Don't set isSearching false here - router.push is async
@@ -73,7 +74,8 @@ export function useInboxSearch({
   // Clear searching state when URL search query updates to match input (navigation complete)
   useEffect(() => {
     if (searchInput === searchQuery) {
-      setIsSearching(false)
+      // Use queueMicrotask to avoid synchronous setState in effect body
+      queueMicrotask(() => setIsSearching(false))
     }
   }, [searchQuery, searchInput])
 

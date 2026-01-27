@@ -2,7 +2,6 @@ import type { UserRole } from '@/lib/auth/session'
 import type {
   DbClient,
   DbProject,
-  GitHubRepoLinkSummary,
   ProjectMemberWithUser,
   ProjectOwner,
   ProjectWithRelations,

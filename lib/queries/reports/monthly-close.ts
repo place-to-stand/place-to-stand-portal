@@ -88,7 +88,7 @@ export async function fetchReferralCommissions(
   endDate: string
 ): Promise<ReferralQueryRow[]> {
   // For hour_blocks, we need to filter by created_at in the given month
-  // Convert timestamp to date in LA timezone for accurate month boundaries
+  // Convert timestamp to UTC date for accurate month boundaries
   const rows = await db
     .select({
       referrerId: contacts.id,
@@ -106,9 +106,9 @@ export async function fetchReferralCommissions(
         isNull(hourBlocks.deletedAt),
         isNull(clients.deletedAt),
         isNull(contacts.deletedAt),
-        // Convert timestamp to date in LA timezone for month filtering
-        sql`DATE(${hourBlocks.createdAt} AT TIME ZONE 'America/Los_Angeles') >= ${startDate}`,
-        sql`DATE(${hourBlocks.createdAt} AT TIME ZONE 'America/Los_Angeles') <= ${endDate}`
+        // Convert timestamp to UTC date for month filtering
+        sql`DATE(${hourBlocks.createdAt} AT TIME ZONE 'UTC') >= ${startDate}`,
+        sql`DATE(${hourBlocks.createdAt} AT TIME ZONE 'UTC') <= ${endDate}`
       )
     )
     .groupBy(contacts.id, contacts.name, clients.id, clients.name)
@@ -137,9 +137,9 @@ export async function fetchPrepaidBilling(
         eq(clients.billingType, 'prepaid'),
         isNull(hourBlocks.deletedAt),
         isNull(clients.deletedAt),
-        // Convert timestamp to date in LA timezone for month filtering
-        sql`DATE(${hourBlocks.createdAt} AT TIME ZONE 'America/Los_Angeles') >= ${startDate}`,
-        sql`DATE(${hourBlocks.createdAt} AT TIME ZONE 'America/Los_Angeles') <= ${endDate}`
+        // Convert timestamp to UTC date for month filtering
+        sql`DATE(${hourBlocks.createdAt} AT TIME ZONE 'UTC') >= ${startDate}`,
+        sql`DATE(${hourBlocks.createdAt} AT TIME ZONE 'UTC') <= ${endDate}`
       )
     )
     .groupBy(clients.id, clients.name)
@@ -202,10 +202,10 @@ export async function fetchReportDateBounds(): Promise<{
     .where(isNull(timeLogs.deletedAt))
     .limit(1)
 
-  // Find earliest hour block date (using LA timezone)
+  // Find earliest hour block date (using UTC)
   const [hourBlockRow] = await db
     .select({
-      earliestDate: sql<string | null>`MIN(DATE(${hourBlocks.createdAt} AT TIME ZONE 'America/Los_Angeles'))`,
+      earliestDate: sql<string | null>`MIN(DATE(${hourBlocks.createdAt} AT TIME ZONE 'UTC'))`,
     })
     .from(hourBlocks)
     .where(isNull(hourBlocks.deletedAt))

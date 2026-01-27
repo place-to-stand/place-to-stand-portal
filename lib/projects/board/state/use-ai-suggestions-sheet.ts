@@ -59,7 +59,6 @@ const SUGGESTIONS_QUERY_PARAM = 'suggestions'
 
 export function useAISuggestionsSheet({
   activeProject,
-  currentUserId: _currentUserId,
 }: UseAISuggestionsSheetArgs) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -73,7 +72,6 @@ export function useAISuggestionsSheet({
   const [suggestions, setSuggestions] = useState<ProjectSuggestion[]>([])
   const [meta, setMeta] = useState<SuggestionsMeta | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [isLoadingCount, setIsLoadingCount] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isCreatingTask, setIsCreatingTask] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -88,8 +86,6 @@ export function useAISuggestionsSheet({
   const fetchCount = useCallback(async () => {
     if (!activeProject?.id) return
 
-    setIsLoadingCount(true)
-
     try {
       const res = await fetch(
         `/api/projects/${activeProject.id}/ai-suggestions?countOnly=true`
@@ -101,8 +97,6 @@ export function useAISuggestionsSheet({
       setMeta(data.meta || null)
     } catch {
       // Silently fail for count - it's not critical
-    } finally {
-      setIsLoadingCount(false)
     }
   }, [activeProject?.id])
 
