@@ -38,7 +38,7 @@ export function EditorPanel({
   return (
     <div className="flex min-w-0 flex-1 flex-col border-r">
       {/* Scrollable form content */}
-      <ScrollArea className="flex-1">
+      <ScrollArea className="min-h-0 flex-1">
         <div className="space-y-6 p-6">
           {/* Header with Generate Draft button */}
           <div className="flex items-center justify-between">

@@ -39,7 +39,7 @@ export const proposalDraftSchema = z.object({
       })
     )
     .optional()
-    .describe('Project-specific risks beyond the standard defaults'),
+    .describe('2-4 project-specific risks tailored to this engagement. These replace generic defaults when provided.'),
   estimatedValue: z
     .number()
     .optional()

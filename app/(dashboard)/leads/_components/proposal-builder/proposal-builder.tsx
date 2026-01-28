@@ -318,17 +318,16 @@ export function ProposalBuilder({
         shouldDirty: true,
       })
 
-      // Add custom risks if any
+      // Replace defaults with AI-generated risks if provided
       if (draft.customRisks && draft.customRisks.length > 0) {
-        const currentRisks = form.getValues('risks')
-        const newRisks = [
-          ...currentRisks,
-          ...draft.customRisks.map(r => ({
+        form.setValue(
+          'risks',
+          draft.customRisks.map(r => ({
             title: r.title,
             description: r.description,
           })),
-        ]
-        form.setValue('risks', newRisks, { shouldDirty: true })
+          { shouldDirty: true }
+        )
       }
 
       // Update estimated value if provided

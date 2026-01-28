@@ -31,12 +31,21 @@ A proposal typically includes:
 - Focus on value and outcomes, not just activities
 - Keep paragraphs concise
 
+## Risk Assessment
+
+Generate 2-4 project-specific risks based on the context. Consider:
+- Technical complexity and integration challenges specific to this project
+- Dependencies on client systems, data, or third-party services mentioned
+- Timeline or resource constraints discussed
+- Any concerns raised in conversations
+
+Make risks specific to what you know about this project. Avoid generic boilerplate.
+
 ## Important Notes
 
 - If limited context is available, keep the proposal minimal and flag it
 - Don't fabricate specific details not present in the context
-- If budget or timeline is discussed, factor it into the phases
-- Identify project-specific risks if any are apparent from context`
+- If budget or timeline is discussed, factor it into the phases`
 
 export interface ProposalDraftInput {
   leadName: string
@@ -115,7 +124,7 @@ Based on the above context, generate a professional proposal draft. Include:
 1. A compelling project overview that captures the client's needs and our proposed approach
 2. Appropriate phases with clear purposes and specific deliverables
 3. Reasonable initial commitment and scoping hour estimates
-4. Any project-specific risks if apparent from the context
+4. 2-4 project-specific risks tailored to this engagement (be specific, avoid generic boilerplate)
 
 If context is limited, keep the proposal minimal and note your confidence level.`
 

@@ -46,14 +46,14 @@ export const VENDOR_INFO = {
 
 export const DEFAULT_RISKS: ProposalRisk[] = [
   {
-    title: 'Integration Complexity',
+    title: 'Scope Evolution',
     description:
-      'Integrating the new platform with client-specific third-party systems (e.g., HRIS, PowerBI data feeds) is a critical step, and unforeseen compatibility issues may require custom work, potentially impacting the timeline and cost.',
+      'As discovery progresses, requirements may evolve based on technical findings or stakeholder feedback. Any significant scope changes will be documented in an updated SOW before proceeding.',
   },
   {
-    title: 'Ongoing Maintenance',
+    title: 'Third-Party Dependencies',
     description:
-      'Custom software solutions involving third-party providers will require ongoing maintenance and compatibility updates, billed at the standard hourly rate, to ensure long-term reliability against future system changes.',
+      'Custom software solutions involving external services or APIs will require ongoing maintenance and compatibility updates, billed at the standard hourly rate, to ensure long-term reliability.',
   },
   {
     title: '"As Is" Service',
