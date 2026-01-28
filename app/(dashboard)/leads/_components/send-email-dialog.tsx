@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, useTransition } from 'react'
 import { format, addHours } from 'date-fns'
-import { Mail, Clock, Loader2, Send, ChevronDown } from 'lucide-react'
+import { Mail, Clock, Loader2, Send, ChevronDown, Sparkles } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -62,6 +62,7 @@ export function SendEmailDialog({
   const [templates, setTemplates] = useState<EmailTemplateRecord[]>([])
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(false)
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null)
+  const [isGenerating, setIsGenerating] = useState(false)
 
   // Email fields
   const [toEmail, setToEmail] = useState(lead.contactEmail ?? '')
@@ -114,19 +115,67 @@ export function SendEmailDialog({
     }
   }, [open, lead.contactEmail])
 
-  // Apply selected template
+  // Apply selected template — generate AI draft using full lead context
   const handleTemplateSelect = useCallback(
-    (templateId: string) => {
+    async (templateId: string) => {
       setSelectedTemplateId(templateId)
 
       const template = templates.find(t => t.id === templateId)
       if (!template) return
 
-      // Interpolate template with lead data
+      // Immediately show interpolated template as placeholder
       setSubject(interpolate(template.subject, templateContext))
       setBodyHtml(interpolate(template.bodyHtml, templateContext))
+
+      // Generate AI-personalized draft
+      setIsGenerating(true)
+      try {
+        const response = await fetch(
+          `/api/leads/${lead.id}/email/generate-draft`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              templateName: template.name,
+              templateCategory: template.category,
+              templateSubject: template.subject,
+              templateBody: template.bodyHtml,
+            }),
+          }
+        )
+
+        if (!response.ok) throw new Error('Failed to generate draft')
+
+        const data = await response.json()
+        const { draft } = data
+
+        // Replace with AI-generated content
+        setSubject(draft.subject)
+        // Convert plain text body to HTML for the rich text editor
+        const htmlBody = draft.body
+          .split('\n\n')
+          .map((p: string) => `<p>${p.replace(/\n/g, '<br />')}</p>`)
+          .join('')
+        setBodyHtml(htmlBody)
+
+        if (draft.notes) {
+          toast({
+            title: 'Draft generated',
+            description: draft.notes,
+          })
+        }
+      } catch {
+        // AI generation failed — keep the interpolated template as fallback
+        toast({
+          variant: 'destructive',
+          title: 'AI draft unavailable',
+          description: 'Using template with basic personalization instead.',
+        })
+      } finally {
+        setIsGenerating(false)
+      }
     },
-    [templates, templateContext]
+    [templates, templateContext, lead.id, toast]
   )
 
   const handleSend = useCallback(() => {
@@ -192,7 +241,7 @@ export function SendEmailDialog({
     {} as Record<string, EmailTemplateRecord[]>
   )
 
-  const canSend = toEmail && subject && bodyHtml && !isSending
+  const canSend = toEmail && subject && bodyHtml && !isSending && !isGenerating
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -275,7 +324,15 @@ export function SendEmailDialog({
 
           {/* Body */}
           <div className="space-y-2">
-            <Label>Message</Label>
+            <div className="flex items-center justify-between">
+              <Label>Message</Label>
+              {isGenerating && (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Sparkles className="h-3 w-3 animate-pulse text-amber-500" />
+                  Generating personalized draft...
+                </div>
+              )}
+            </div>
             <RichTextEditor
               id="email-body"
               value={bodyHtml}
