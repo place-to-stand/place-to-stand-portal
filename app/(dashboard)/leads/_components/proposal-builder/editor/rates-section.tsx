@@ -37,6 +37,39 @@ export function RatesSection({ form }: RatesSectionProps) {
         </CollapsibleTrigger>
         <CollapsibleContent>
           <div className="space-y-4 border-t p-4">
+            {/* Initial Commitment & Scoping Hours */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="initialCommitmentDescription"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Initial Commitment *</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="e.g., 10-hour minimum retainer"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="estimatedScopingHours"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estimated Scoping Hours *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., 8-12 hours" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             {/* Hourly Rate & Kickoff Days */}
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField

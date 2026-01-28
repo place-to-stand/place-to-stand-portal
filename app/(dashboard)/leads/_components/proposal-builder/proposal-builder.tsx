@@ -6,6 +6,17 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { addDays, format } from 'date-fns'
 import { z } from 'zod'
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Form } from '@/components/ui/form'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useToast } from '@/components/ui/use-toast'
@@ -117,6 +128,15 @@ type ProposalBuilderProps = {
 // Component
 // =============================================================================
 
+// Type for existing proposal info
+type ExistingProposal = {
+  id: string
+  title: string
+  status: string
+  createdAt: string
+  docUrl: string | null
+}
+
 export function ProposalBuilder({
   lead,
   onDirtyChange,
@@ -129,6 +149,25 @@ export function ProposalBuilder({
   const [documentSettings, setDocumentSettings] = useState<DocumentSettings>(
     DEFAULT_DOCUMENT_SETTINGS
   )
+  const [existingProposals, setExistingProposals] = useState<ExistingProposal[]>([])
+  const [showDuplicateWarning, setShowDuplicateWarning] = useState(false)
+  const [pendingBuildValues, setPendingBuildValues] = useState<ProposalFormValues | null>(null)
+
+  // Fetch existing proposals on mount
+  useEffect(() => {
+    async function fetchExistingProposals() {
+      try {
+        const res = await fetch(`/api/leads/${lead.id}/proposals`)
+        if (res.ok) {
+          const data = await res.json()
+          setExistingProposals(data.proposals ?? [])
+        }
+      } catch {
+        // Silently fail - we'll just not show the warning
+      }
+    }
+    fetchExistingProposals()
+  }, [lead.id])
 
   // Default form values
   const defaultValues = useMemo<ProposalFormValues>(
@@ -177,21 +216,12 @@ export function ProposalBuilder({
     onDirtyChange(form.formState.isDirty)
   }, [form.formState.isDirty, onDirtyChange])
 
-  // Build proposal handler
-  const handleBuildProposal = useCallback(() => {
-    form.handleSubmit(values => {
-      // Validate phases have content
+  // Actual build logic (called after validation and confirmation)
+  const executeBuild = useCallback(
+    (values: ProposalFormValues) => {
       const validPhases = values.phases.filter(
         p => p.title.trim() && p.purpose.trim()
       )
-      if (validPhases.length === 0) {
-        toast({
-          variant: 'destructive',
-          title: 'Missing phases',
-          description: 'At least one complete phase is required.',
-        })
-        return
-      }
 
       startBuildTransition(async () => {
         const result = await buildProposalFromScratch({
@@ -251,8 +281,46 @@ export function ProposalBuilder({
 
         onSuccess()
       })
+    },
+    [lead.id, toast, onSuccess, documentSettings]
+  )
+
+  // Handle confirmation of duplicate proposal
+  const handleConfirmDuplicate = useCallback(() => {
+    setShowDuplicateWarning(false)
+    if (pendingBuildValues) {
+      executeBuild(pendingBuildValues)
+      setPendingBuildValues(null)
+    }
+  }, [executeBuild, pendingBuildValues])
+
+  // Build proposal handler - validates and checks for existing proposals
+  const handleBuildProposal = useCallback(() => {
+    form.handleSubmit(values => {
+      // Validate phases have content
+      const validPhases = values.phases.filter(
+        p => p.title.trim() && p.purpose.trim()
+      )
+      if (validPhases.length === 0) {
+        toast({
+          variant: 'destructive',
+          title: 'Missing phases',
+          description: 'At least one complete phase is required.',
+        })
+        return
+      }
+
+      // Check for existing proposals
+      if (existingProposals.length > 0) {
+        setPendingBuildValues(values)
+        setShowDuplicateWarning(true)
+        return
+      }
+
+      // No existing proposals, build directly
+      executeBuild(values)
     })()
-  }, [form, lead.id, toast, onSuccess, documentSettings])
+  }, [form, toast, existingProposals, executeBuild])
 
   // Handle inserting content from context panel into project overview
   const handleContextInsert = useCallback(
@@ -407,30 +475,55 @@ export function ProposalBuilder({
   )
 
   return (
-    <TooltipProvider delayDuration={300}>
-      <Form {...form}>
-        <form className="flex min-h-0 flex-1 overflow-hidden">
-          {/* Left Column - Context Panel */}
-          <ContextPanel lead={lead} onInsert={handleContextInsert} />
+    <>
+      <TooltipProvider delayDuration={300}>
+        <Form {...form}>
+          <form className="flex min-h-0 flex-1 overflow-hidden">
+            {/* Left Column - Context Panel */}
+            <ContextPanel lead={lead} onInsert={handleContextInsert} />
 
-          {/* Middle Column - Editor Panel */}
-          <EditorPanel
-            form={form}
-            isBuilding={isBuilding}
-            isGenerating={isGenerating}
-            onCancel={onClose}
-            onBuild={handleBuildProposal}
-            onGenerateDraft={handleGenerateDraft}
-          />
+            {/* Middle Column - Editor Panel */}
+            <EditorPanel
+              form={form}
+              isBuilding={isBuilding}
+              isGenerating={isGenerating}
+              onCancel={onClose}
+              onBuild={handleBuildProposal}
+              onGenerateDraft={handleGenerateDraft}
+              existingProposalCount={existingProposals.length}
+            />
 
-          {/* Right Column - Live Preview */}
-          <PreviewPanel
-            content={previewContent}
-            documentSettings={documentSettings}
-            onDocumentSettingsChange={setDocumentSettings}
-          />
-        </form>
-      </Form>
-    </TooltipProvider>
+            {/* Right Column - Live Preview */}
+            <PreviewPanel
+              content={previewContent}
+              documentSettings={documentSettings}
+              onDocumentSettingsChange={setDocumentSettings}
+            />
+          </form>
+        </Form>
+      </TooltipProvider>
+
+      {/* Duplicate proposal warning dialog */}
+      <AlertDialog open={showDuplicateWarning} onOpenChange={setShowDuplicateWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Proposal already exists</AlertDialogTitle>
+            <AlertDialogDescription>
+              This lead already has {existingProposals.length} proposal
+              {existingProposals.length > 1 ? 's' : ''}. Creating a new one will
+              not replace the existing proposal{existingProposals.length > 1 ? 's' : ''}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingBuildValues(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDuplicate}>
+              Create New Proposal
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }

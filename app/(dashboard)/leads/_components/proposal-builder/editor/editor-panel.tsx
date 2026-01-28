@@ -1,8 +1,9 @@
 'use client'
 
 import type { UseFormReturn } from 'react-hook-form'
-import { Loader2, FileText, Sparkles } from 'lucide-react'
+import { AlertTriangle, Loader2, FileText, Sparkles } from 'lucide-react'
 
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
@@ -25,6 +26,7 @@ type EditorPanelProps = {
   onCancel: () => void
   onBuild: () => void
   onGenerateDraft: () => void
+  existingProposalCount?: number
 }
 
 export function EditorPanel({
@@ -34,6 +36,7 @@ export function EditorPanel({
   onCancel,
   onBuild,
   onGenerateDraft,
+  existingProposalCount = 0,
 }: EditorPanelProps) {
   return (
     <div className="flex min-w-0 flex-1 flex-col border-r">
@@ -76,6 +79,18 @@ export function EditorPanel({
               </TooltipContent>
             </Tooltip>
           </div>
+
+          {/* Existing proposal warning */}
+          {existingProposalCount > 0 && (
+            <Alert variant="default" className="border-amber-500/50 bg-amber-500/10">
+              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              <AlertDescription className="text-amber-700 dark:text-amber-400">
+                This lead already has {existingProposalCount} proposal
+                {existingProposalCount > 1 ? 's' : ''}. Building will create an
+                additional proposal.
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Proposal Title */}
           <div className="space-y-2">

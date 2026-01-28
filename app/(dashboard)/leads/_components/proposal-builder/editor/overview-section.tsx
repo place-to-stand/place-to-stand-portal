@@ -62,38 +62,6 @@ export function OverviewSection({ form }: OverviewSectionProps) {
               )}
             />
 
-            {/* Initial Commitment */}
-            <FormField
-              control={form.control}
-              name="initialCommitmentDescription"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Initial Commitment *</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="e.g., 10-hour minimum retainer"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Estimated Scoping Hours */}
-            <FormField
-              control={form.control}
-              name="estimatedScopingHours"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Estimated Scoping Hours *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., 8-12 hours" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </div>
         </CollapsibleContent>
       </div>
