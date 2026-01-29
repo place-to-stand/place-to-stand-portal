@@ -34,6 +34,10 @@ export const clientsRelations = relations(clients, ({ one, many }) => ({
     fields: [clients.createdBy],
     references: [users.id],
   }),
+  referredByContact: one(contacts, {
+    fields: [clients.referredBy],
+    references: [contacts.id],
+  }),
   hourBlocks: many(hourBlocks),
   clientMembers: many(clientMembers),
   projects: many(projects),
@@ -51,6 +55,9 @@ export const usersRelations = relations(users, ({ many }) => ({
   hourBlocks: many(hourBlocks),
   clientMembers: many(clientMembers),
   projects: many(projects),
+  projectsOwned: many(projects, {
+    relationName: 'projects_owner_users_id',
+  }),
   taskComments: many(taskComments),
   timeLogs: many(timeLogs),
   taskAttachments: many(taskAttachments),
@@ -173,6 +180,11 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
     fields: [projects.createdBy],
     references: [users.id],
   }),
+  owner: one(users, {
+    fields: [projects.ownerId],
+    references: [users.id],
+    relationName: 'projects_owner_users_id',
+  }),
   timeLogs: many(timeLogs),
   tasks: many(tasks),
   githubRepos: many(githubRepoLinks),
@@ -265,6 +277,7 @@ export const contactsRelations = relations(contacts, ({ one, many }) => ({
   }),
   contactClients: many(contactClients),
   contactLeads: many(contactLeads),
+  clientsReferredBy: many(clients),
 }))
 
 export const contactClientsRelations = relations(contactClients, ({ one }) => ({

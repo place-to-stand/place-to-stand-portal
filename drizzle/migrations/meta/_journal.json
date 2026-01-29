@@ -155,6 +155,13 @@
       "when": 1769366666578,
       "tag": "0021_fix_overall_score_precision",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1769442921745,
+      "tag": "0022_client_project_enhancements",
+      "breakpoints": true
     }
   ]
 }

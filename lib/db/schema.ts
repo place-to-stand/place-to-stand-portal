@@ -198,6 +198,8 @@ export const clients = pgTable(
     billingType: clientBillingType('billing_type')
       .default('prepaid')
       .notNull(),
+    website: text(),
+    referredBy: uuid('referred_by'),
     createdBy: uuid('created_by'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
@@ -211,11 +213,16 @@ export const clients = pgTable(
     index('idx_clients_created_by')
       .using('btree', table.createdBy.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
+    index('idx_clients_referred_by')
+      .using('btree', table.referredBy.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND referred_by IS NOT NULL)`),
     foreignKey({
       columns: [table.createdBy],
       foreignColumns: [users.id],
       name: 'clients_created_by_fkey',
     }),
+    // Note: FK constraint for referredBy -> contacts.id added in migration
+    // to avoid forward reference (contacts table defined later in this file)
     unique('clients_slug_key').on(table.slug),
   ]
 )
@@ -363,6 +370,7 @@ export const projects = pgTable(
     startsOn: date('starts_on'),
     endsOn: date('ends_on'),
     createdBy: uuid('created_by'),
+    ownerId: uuid('owner_id'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
       .notNull(),
@@ -380,6 +388,9 @@ export const projects = pgTable(
     index('idx_projects_created_by')
       .using('btree', table.createdBy.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
+    index('idx_projects_owner')
+      .using('btree', table.ownerId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND owner_id IS NOT NULL)`),
     uniqueIndex('idx_projects_slug')
       .using('btree', table.slug.asc().nullsLast().op('text_ops'))
       .where(sql`(slug IS NOT NULL)`),
@@ -392,6 +403,11 @@ export const projects = pgTable(
       columns: [table.createdBy],
       foreignColumns: [users.id],
       name: 'projects_created_by_fkey',
+    }),
+    foreignKey({
+      columns: [table.ownerId],
+      foreignColumns: [users.id],
+      name: 'projects_owner_id_fkey',
     }),
     check(
       'projects_type_client_check',

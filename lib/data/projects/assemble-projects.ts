@@ -2,8 +2,8 @@ import type { UserRole } from '@/lib/auth/session'
 import type {
   DbClient,
   DbProject,
-  GitHubRepoLinkSummary,
   ProjectMemberWithUser,
+  ProjectOwner,
   ProjectWithRelations,
   TaskWithRelations,
 } from '@/lib/types'
@@ -37,6 +37,7 @@ export function assembleProjectsWithRelations({
   timeLogSummaries,
 }: AssembleProjectsArgs): ProjectWithRelations[] {
   const clientLookup = buildClientLookup(relations.clients)
+  const ownerLookup = buildOwnerLookup(relations.owners)
   const membersByProject = organizeMembers(
     relations.members,
     projectClientLookup
@@ -65,6 +66,9 @@ export function assembleProjectsWithRelations({
     client: project.client_id
       ? (clientLookup.get(project.client_id) ?? null)
       : null,
+    owner: project.owner_id
+      ? (ownerLookup.get(project.owner_id) ?? null)
+      : null,
     members: membersByProject.get(project.id) ?? [],
     tasks: activeTasksByProject.get(project.id) ?? [],
     archivedTasks: archivedTasksByProject.get(project.id) ?? [],
@@ -88,6 +92,17 @@ function buildClientLookup(clients: DbClient[]): Map<string, DbClient> {
     clientLookup.set(client.id, client)
   })
   return clientLookup
+}
+
+function buildOwnerLookup(owners: ProjectOwner[]): Map<string, ProjectOwner> {
+  const ownerLookup = new Map<string, ProjectOwner>()
+  owners.forEach(owner => {
+    if (!owner?.id) {
+      return
+    }
+    ownerLookup.set(owner.id, owner)
+  })
+  return ownerLookup
 }
 
 function organizeMembers(

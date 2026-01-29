@@ -12,16 +12,19 @@ import {
   type TimeframeValue,
 } from "./constants"
 
-export type SummaryStatus =
-  | "idle"
-  | "loading"
-  | "streaming"
-  | "success"
-  | "error"
+export type SummaryStatus = "idle" | "loading" | "success" | "error"
+
+export type ActivityMetrics = {
+  tasksDone: number
+  newLeads: number
+  activeProjects: number
+  blockedTasks: number
+}
 
 export type SummaryState = {
   status: SummaryStatus
-  text: string
+  metrics: ActivityMetrics | null
+  highlight: string
   error: string | null
 }
 
@@ -51,7 +54,8 @@ export function useRecentActivitySummary(
   const [refreshKey, setRefreshKey] = useState(0)
   const [state, setState] = useState<SummaryState>({
     status: "idle",
-    text: "",
+    metrics: null,
+    highlight: "",
     error: null,
   })
   const [cacheMeta, setCacheMeta] = useState<CacheMeta>(null)
@@ -122,15 +126,12 @@ export function useRecentActivitySummary(
     controllerRef.current?.abort()
     controllerRef.current = controller
 
-    setState({ status: "loading", text: "", error: null })
+    setState({ status: "loading", metrics: null, highlight: "", error: null })
     setCacheMeta(null)
 
     const shouldForceRefresh = refreshKey !== lastRefreshKeyRef.current
     lastRefreshKeyRef.current = refreshKey
     pendingMetaRef.current = { forceRefresh: shouldForceRefresh }
-
-    let isStreaming = false
-    let didFail = false
 
     async function loadSummary() {
       try {
@@ -163,44 +164,19 @@ export function useRecentActivitySummary(
           expiresAt: response.headers.get("x-activity-overview-expires-at"),
         })
 
-        if (!response.body) {
-          const fallbackText = await response.text()
-          setState({ status: "success", text: fallbackText, error: null })
-          finishInteraction("success", {
-            cacheStatus: responseCacheStatus,
-            streaming: false,
-            forceRefresh: shouldForceRefresh,
-          })
-          return
+        const data = (await response.json()) as {
+          metrics: ActivityMetrics
+          highlight: string
         }
 
-        const reader = response.body.getReader()
-        const decoder = new TextDecoder()
-        let accumulated = ""
-
-        while (true) {
-          const { done, value } = await reader.read()
-
-          if (done) {
-            break
-          }
-
-          const chunk = decoder.decode(value, { stream: true })
-
-          if (!chunk) {
-            continue
-          }
-
-          isStreaming = true
-          accumulated += chunk
-          setState({ status: "streaming", text: accumulated, error: null })
-        }
-
-        accumulated += decoder.decode()
-        setState({ status: "success", text: accumulated, error: null })
+        setState({
+          status: "success",
+          metrics: data.metrics,
+          highlight: data.highlight,
+          error: null,
+        })
         finishInteraction("success", {
           cacheStatus: responseCacheStatus,
-          streaming: isStreaming,
           forceRefresh: shouldForceRefresh,
         })
       } catch (error) {
@@ -209,23 +185,19 @@ export function useRecentActivitySummary(
           return
         }
 
-        didFail = true
         const message =
           error instanceof Error
             ? error.message
             : "Something went wrong while summarizing activity."
-        setState({ status: "error", text: "", error: message })
+        setState({
+          status: "error",
+          metrics: null,
+          highlight: "",
+          error: message,
+        })
         finishInteraction("error", {
           errorMessage: message,
         })
-      } finally {
-        if (!isStreaming && !didFail) {
-          setState((current) =>
-            current.status === "loading"
-              ? { ...current, status: "success" }
-              : current
-          )
-        }
       }
     }
 
@@ -264,8 +236,6 @@ export function useRecentActivitySummary(
     switch (state.status) {
       case "loading":
         return "Loading"
-      case "streaming":
-        return "Streaming"
       case "error":
         return "Error"
       case "success":
@@ -291,7 +261,7 @@ export function useRecentActivitySummary(
     return `${freshness} · updated ${formatter.format(cachedDate)}`
   }, [cacheMeta, state.status])
 
-  const isBusy = state.status === "loading" || state.status === "streaming"
+  const isBusy = state.status === "loading"
 
   return {
     state,

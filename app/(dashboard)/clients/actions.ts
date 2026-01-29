@@ -32,6 +32,19 @@ const CLIENT_ROUTES_TO_REVALIDATE = [
   '/clients/activity',
 ]
 
+/**
+ * Revalidates client-related paths after mutations.
+ * Uses layout-level revalidation to cover all client pages including dynamic detail pages.
+ */
+function revalidateClientPaths() {
+  // Revalidate the layout to cover all client pages including /clients/[clientSlug]
+  revalidatePath('/clients', 'layout')
+  // Also revalidate specific static routes for good measure
+  for (const path of CLIENT_ROUTES_TO_REVALIDATE) {
+    revalidatePath(path)
+  }
+}
+
 export async function saveClient(
   input: ClientInput
 ): Promise<ClientActionResult> {
@@ -68,9 +81,7 @@ async function runClientMutation<TInput>(
   const { didMutate, ...result } = mutationResult
 
   if (didMutate) {
-    for (const path of CLIENT_ROUTES_TO_REVALIDATE) {
-      revalidatePath(path)
-    }
+    revalidateClientPaths()
   }
 
   return result
@@ -97,9 +108,7 @@ export async function syncClientContacts(
   const result = await syncContacts(user, clientId, contactIds)
 
   if (result.ok) {
-    for (const path of CLIENT_ROUTES_TO_REVALIDATE) {
-      revalidatePath(path)
-    }
+    revalidateClientPaths()
   }
 
   return result

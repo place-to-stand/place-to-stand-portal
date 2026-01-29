@@ -39,14 +39,6 @@ import { useSendFlow } from './hooks/use-send-flow'
 import { useSignatures } from './hooks/use-signatures'
 import { useScheduleSend } from './hooks/use-schedule-send'
 
-/** Attachment metadata (matches server type) */
-interface AttachmentMetadata {
-  storageKey: string
-  filename: string
-  mimeType: string
-  size: number
-}
-
 export type ComposeMode = 'reply' | 'reply_all' | 'forward' | 'new'
 
 export interface ComposeContext {
@@ -82,8 +74,6 @@ interface ComposePanelProps {
   /** Render in compact inline mode (Gmail-style, within thread) */
   inline?: boolean
 }
-
-type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
 export function ComposePanel({
   context,
@@ -137,7 +127,6 @@ export function ComposePanel({
   // Draft auto-save hook
   const {
     draftId,
-    setDraftId,
     saveStatus,
     lastSavedAt,
     saveDraft,
@@ -213,7 +202,7 @@ export function ComposePanel({
     }
 
     loadDraft()
-  }, [context.draftId])
+  }, [context.draftId, setAttachments])
 
   // Handle close attempt - check for unsaved changes first
   const handleCloseAttempt = useCallback(() => {

@@ -25,20 +25,24 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
-import { PROJECT_STATUS_OPTIONS } from '@/lib/constants'
+import { Badge } from '@/components/ui/badge'
+import {
+  PROJECT_STATUS_OPTIONS,
+  getProjectStatusLabel,
+  getProjectStatusToken,
+} from '@/lib/constants'
+import { cn } from '@/lib/utils'
 import { PROJECT_TYPE_OPTIONS } from '@/lib/settings/projects/project-sheet-form'
 import type { ProjectSheetFormValues } from '@/lib/settings/projects/use-project-sheet-state'
 import type {
   ClientOption,
   DeleteButtonState,
+  OwnerOption,
   SubmitButtonState,
 } from '@/lib/settings/projects/project-sheet-ui-state'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import type { ProjectSheetFieldState } from './project-sheet-field-state'
-import {
-  GitHubReposSection,
-  type PendingRepo,
-} from './github-repos-section'
+import { GitHubReposSection, type PendingRepo } from './github-repos-section'
 
 export type ProjectSheetFormProps = {
   form: UseFormReturn<ProjectSheetFormValues>
@@ -47,6 +51,7 @@ export type ProjectSheetFormProps = {
   isPending: boolean
   feedback: string | null
   clientOptions: ClientOption[]
+  ownerOptions: OwnerOption[]
   submitButton: SubmitButtonState
   deleteButton: DeleteButtonState
   onSubmit: (
@@ -68,6 +73,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
     isEditing,
     feedback,
     clientOptions,
+    ownerOptions,
     submitButton,
     deleteButton,
     onSubmit,
@@ -124,10 +130,13 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
     removedRepoIds: string[]
   }
 
-  const getExternalState = useCallback((): ReposExternalState => ({
-    pendingRepos: pendingReposRef.current,
-    removedRepoIds: Array.from(removedRepoIdsRef.current),
-  }), [])
+  const getExternalState = useCallback(
+    (): ReposExternalState => ({
+      pendingRepos: pendingReposRef.current,
+      removedRepoIds: Array.from(removedRepoIdsRef.current),
+    }),
+    []
+  )
 
   const applyExternalState = useCallback((state: unknown) => {
     const reposState = state as ReposExternalState | undefined
@@ -137,15 +146,16 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
     }
   }, [])
 
-  const { undo, redo, canUndo, canRedo, notifyExternalChange } = useSheetFormControls({
-    form,
-    isActive: isSheetOpen,
-    canSave: !submitButton.disabled,
-    onSave: handleSave,
-    historyKey,
-    getExternalState,
-    applyExternalState,
-  })
+  const { undo, redo, canUndo, canRedo, notifyExternalChange } =
+    useSheetFormControls({
+      form,
+      isActive: isSheetOpen,
+      canSave: !submitButton.disabled,
+      onSave: handleSave,
+      historyKey,
+      getExternalState,
+      applyExternalState,
+    })
 
   // Notify undo/redo system when repos change
   useEffect(() => {
@@ -315,32 +325,79 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
         <FormField
           control={form.control}
           name='status'
+          render={({ field }) => {
+            const selectedLabel = field.value
+              ? getProjectStatusLabel(field.value)
+              : null
+            const selectedToken = field.value
+              ? getProjectStatusToken(field.value)
+              : null
+
+            return (
+              <FormItem>
+                <FormLabel>Status</FormLabel>
+                <Select
+                  value={field.value ?? ''}
+                  onValueChange={field.onChange}
+                  disabled={fieldState.status.disabled}
+                >
+                  <FormControl>
+                    <DisabledFieldTooltip
+                      disabled={fieldState.status.disabled}
+                      reason={fieldState.status.reason}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder='Select status'>
+                          {selectedLabel && selectedToken ? (
+                            <Badge className={cn('text-xs', selectedToken)}>
+                              {selectedLabel}
+                            </Badge>
+                          ) : null}
+                        </SelectValue>
+                      </SelectTrigger>
+                    </DisabledFieldTooltip>
+                  </FormControl>
+                  <SelectContent align='start'>
+                    {PROJECT_STATUS_OPTIONS.map(status => {
+                      const statusToken = getProjectStatusToken(status.value)
+                      return (
+                        <SelectItem key={status.value} value={status.value}>
+                          <Badge className={cn('text-xs', statusToken)}>
+                            {status.label}
+                          </Badge>
+                        </SelectItem>
+                      )
+                    })}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )
+          }}
+        />
+        <FormField
+          control={form.control}
+          name='ownerId'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Status</FormLabel>
-              <Select
-                value={field.value ?? ''}
-                onValueChange={field.onChange}
-                disabled={fieldState.status.disabled}
-              >
-                <FormControl>
-                  <DisabledFieldTooltip
-                    disabled={fieldState.status.disabled}
-                    reason={fieldState.status.reason}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder='Select status' />
-                    </SelectTrigger>
-                  </DisabledFieldTooltip>
-                </FormControl>
-                <SelectContent align='start'>
-                  {PROJECT_STATUS_OPTIONS.map(status => (
-                    <SelectItem key={status.value} value={status.value}>
-                      {status.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FormLabel>Project Owner</FormLabel>
+              <FormControl>
+                <DisabledFieldTooltip
+                  disabled={fieldState.owner.disabled}
+                  reason={fieldState.owner.reason}
+                >
+                  <SearchableCombobox
+                    name={field.name}
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    items={ownerOptions}
+                    searchPlaceholder='Search team members...'
+                    emptyMessage='No team members found.'
+                    disabled={fieldState.owner.disabled}
+                  />
+                </DisabledFieldTooltip>
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}

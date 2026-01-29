@@ -23,6 +23,12 @@ export type ClientContactOption = {
   phone: string | null
 }
 
+export type ReferralContactOption = {
+  id: string
+  name: string | null
+  email: string
+}
+
 export type UseClientSheetStateArgs = {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -70,6 +76,15 @@ export type BaseFormState = {
   handleContactPickerOpenChange: (open: boolean) => void
   handleAddContact: (contact: ClientContactOption) => void
   handleRemoveContact: (contact: ClientContactOption) => void
+  // Referral
+  selectedReferral: ReferralContactOption | null
+  availableReferralContacts: ReferralContactOption[]
+  isReferralPickerOpen: boolean
+  referralPickerDisabled: boolean
+  referralPickerDisabledReason: string | null
+  handleReferralPickerOpenChange: (open: boolean) => void
+  handleSelectReferral: (contact: ReferralContactOption) => void
+  handleClearReferral: () => void
 }
 
 export type DeletionState = {
@@ -146,4 +161,13 @@ export type UseClientSheetStateReturn = {
   handleContactPickerOpenChange: (open: boolean) => void
   handleAddContact: (contact: ClientContactOption) => void
   handleRemoveContact: (contact: ClientContactOption) => void
+  // Referral
+  selectedReferral: ReferralContactOption | null
+  availableReferralContacts: ReferralContactOption[]
+  isReferralPickerOpen: boolean
+  referralPickerDisabled: boolean
+  referralPickerDisabledReason: string | null
+  handleReferralPickerOpenChange: (open: boolean) => void
+  handleSelectReferral: (contact: ReferralContactOption) => void
+  handleClearReferral: () => void
 }

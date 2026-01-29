@@ -8,6 +8,7 @@ import type { BoardColumnId } from '@/lib/projects/board/board-constants'
 import { completeBoardTabInteraction } from '@/lib/projects/board/board-tab-interaction'
 import type { UserRole } from '@/lib/auth/session'
 import type { TimeLogEntry } from '@/lib/projects/time-log/types'
+import type { ProjectStatusValue } from '@/lib/constants'
 
 import { BoardTabContent } from './board-tab-content'
 import { CalendarTabContent } from './calendar-tab-content'
@@ -98,6 +99,10 @@ export type ProjectsBoardTabsProps = {
   canLogTime: boolean
   onEditTimeLogEntry: (entry: TimeLogEntry) => void
   projectActions: ProjectActionControls
+  onProjectStatusChange: (
+    projectId: string,
+    status: ProjectStatusValue
+  ) => Promise<void>
 }
 
 export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
@@ -165,6 +170,7 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
     canLogTime,
     onEditTimeLogEntry,
     projectActions,
+    onProjectStatusChange,
   } = props
 
   useEffect(() => {
@@ -189,6 +195,9 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
         onlyAssignedToMe={onlyAssignedToMe}
         onAssignedFilterChange={onAssignedFilterChange}
         projectActions={projectActions}
+        activeProjectId={activeProject?.id ?? null}
+        activeProjectStatus={activeProject?.status ?? null}
+        onProjectStatusChange={onProjectStatusChange}
       />
       <BoardTabContent
         isActive={initialTab === 'board'}

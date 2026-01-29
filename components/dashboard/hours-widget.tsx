@@ -173,24 +173,19 @@ export function HoursWidget({ initialSnapshot, className }: HoursWidgetProps) {
         </div>
       </header>
       <div className='flex flex-1 flex-col gap-4 px-5 py-4'>
-        <div className='grid grid-cols-2 gap-4'>
+        <div className='grid grid-cols-3 gap-4'>
           <StatCard
-            label='My billable hours logged'
+            label='My billable hours'
             value={formatHours(snapshot.myHours)}
             variant='primary'
           />
           <StatCard
-            label='My internal hours logged'
-            value={formatHours(snapshot.internalPersonalHours)}
-            variant='primary'
-          />
-          <StatCard
-            label='Total billable hours logged'
+            label='Total billable hours'
             value={formatHours(snapshot.companyHours)}
             variant='muted'
           />
           <StatCard
-            label='Total billable hours prepaid'
+            label='Hours prepaid'
             value={formatHours(snapshot.companyHoursPrepaid)}
             variant='muted'
           />

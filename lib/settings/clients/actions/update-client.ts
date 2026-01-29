@@ -24,6 +24,8 @@ type UpdateClientPayload = {
   name: string
   providedSlug: string | null
   billingType: ClientBillingTypeValue
+  website: string | null
+  referredBy: string | null
   notes: string | null
   memberIds: string[]
 }
@@ -42,7 +44,7 @@ export async function updateClient(
 ): Promise<ClientMutationResult> {
   const { user } = context
   assertAdmin(user)
-  const { id, name, providedSlug, billingType, notes, memberIds } = payload
+  const { id, name, providedSlug, billingType, website, referredBy, notes, memberIds } = payload
 
   const slugToUpdate = providedSlug ? toClientSlug(providedSlug) : null
 
@@ -106,7 +108,7 @@ export async function updateClient(
   try {
     await db
       .update(clients)
-      .set({ name, slug: slugToUpdate, billingType, notes })
+      .set({ name, slug: slugToUpdate, billingType, website, referredBy, notes })
       .where(eq(clients.id, id))
   } catch (error) {
     console.error('Failed to update client', error)

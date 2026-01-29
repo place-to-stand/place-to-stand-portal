@@ -56,6 +56,8 @@ export async function convertLeadToClient(
       name: resolvedName,
       providedSlug: clientSlug || null,
       billingType,
+      website: lead.companyWebsite || null,
+      referredBy: null,
       notes: resolvedNotes,
       memberIds: memberIds || [],
     }

@@ -20,6 +20,8 @@ export type DbClient = {
   name: string
   slug: string | null
   notes: string | null
+  website: string | null
+  referred_by: string | null
   billing_type: ClientBillingTypeValue
   created_by: string | null
   created_at: string
@@ -44,6 +46,7 @@ export type DbProject = {
   starts_on: string | null
   ends_on: string | null
   created_by: string | null
+  owner_id: string | null
   created_at: string
   updated_at: string
   deleted_at: string | null
@@ -187,8 +190,15 @@ export type GitHubRepoLinkSummary = {
   defaultBranch: string
 }
 
+export type ProjectOwner = {
+  id: string
+  full_name: string | null
+  avatar_url: string | null
+}
+
 export type ProjectWithRelations = DbProject & {
   client: DbClient | null
+  owner: ProjectOwner | null
   members: ProjectMemberWithUser[]
   tasks: TaskWithRelations[]
   archivedTasks: TaskWithRelations[]

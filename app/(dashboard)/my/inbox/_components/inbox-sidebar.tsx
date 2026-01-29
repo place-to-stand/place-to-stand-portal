@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import Link from 'next/link'
 import {
   Inbox,
@@ -56,6 +57,17 @@ const navItems: Array<{
 ]
 
 export function InboxSidebar({ currentView, counts, preservedParams }: InboxSidebarProps) {
+  // Pre-compute which items should show section headers using reduce to avoid reassignment
+  const itemsWithSectionFlags = useMemo(() => {
+    const result: Array<typeof navItems[number] & { showSectionHeader: boolean }> = []
+    navItems.reduce((lastSection: string | undefined, item) => {
+      const showSectionHeader = item.section && item.section !== lastSection
+      result.push({ ...item, showSectionHeader: !!showSectionHeader })
+      return item.section ?? lastSection
+    }, undefined)
+    return result
+  }, [])
+
   // Build URL that preserves thread and search params across view changes
   const buildViewUrl = (view: View): string => {
     const params = new URLSearchParams()
@@ -70,12 +82,7 @@ export function InboxSidebar({ currentView, counts, preservedParams }: InboxSide
 
   return (
     <nav className='flex flex-col gap-1 p-3'>
-      {navItems.map((item, index) => {
-        // Compare with previous item to determine if section header should show
-        // This avoids mutating a variable during render (React Compiler compliance)
-        const prevItem = index > 0 ? navItems[index - 1] : null
-        const showSectionHeader = item.section && item.section !== prevItem?.section
-
+      {itemsWithSectionFlags.map(item => {
         const count =
           item.view === 'inbox' && item.showCount === 'unread'
             ? counts.unread
@@ -91,7 +98,7 @@ export function InboxSidebar({ currentView, counts, preservedParams }: InboxSide
 
         return (
           <div key={item.view}>
-            {showSectionHeader && (
+            {item.showSectionHeader && (
               <div className='text-muted-foreground mt-4 mb-2 px-3 text-xs font-medium uppercase tracking-wider'>
                 {item.section}
               </div>

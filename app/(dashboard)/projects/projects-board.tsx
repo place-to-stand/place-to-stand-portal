@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sparkles } from 'lucide-react'
 
@@ -22,11 +22,14 @@ import type {
   ProjectWithClient,
 } from '@/lib/settings/projects/project-sheet-form'
 import { sortClientsByName } from '@/lib/settings/projects/project-sheet-form'
+import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
 import type { ContractorUserSummary } from '@/components/settings/projects/table/types'
 import type { ProjectWithRelations } from '@/lib/types'
 import { ViewLogger } from '@/components/activity/view-logger'
 import { ActivityVerbs } from '@/lib/activity/types'
 import { useAISuggestionsSheet } from '@/lib/projects/board/state/use-ai-suggestions-sheet'
+import { updateProjectStatus } from '@/lib/settings/projects/actions/update-project-status'
+import type { ProjectStatusValue } from '@/lib/constants'
 import { ProjectsBoardEmpty } from './_components/projects-board-empty'
 import { ProjectsBoardHeader } from './_components/projects-board-header'
 import { ProjectBurndownWidget } from './_components/project-burndown-widget'
@@ -37,7 +40,11 @@ import {
   type ProjectsBoardProps,
 } from './_hooks/use-projects-board-view-model'
 
-export function ProjectsBoard(props: ProjectsBoardProps) {
+type ProjectsBoardComponentProps = ProjectsBoardProps & {
+  adminUsers?: AdminUserForOwner[]
+}
+
+export function ProjectsBoard(props: ProjectsBoardComponentProps) {
   const viewModel = useProjectsBoardViewModel(props)
   const router = useRouter()
   const { toast } = useToast()
@@ -103,6 +110,24 @@ export function ProjectsBoard(props: ProjectsBoardProps) {
     }
     requestDelete(activeProjectForSheet)
   }
+
+  const handleProjectStatusChange = useCallback(
+    async (projectId: string, status: ProjectStatusValue) => {
+      const result = await updateProjectStatus({ projectId, status })
+
+      if (result.error) {
+        toast({
+          title: 'Failed to update status',
+          description: result.error,
+          variant: 'destructive',
+        })
+        throw new Error(result.error)
+      }
+
+      router.refresh()
+    },
+    [router, toast]
+  )
 
   const projectActions =
     activeProjectForSheet && props.currentUserRole === 'ADMIN'
@@ -197,6 +222,7 @@ export function ProjectsBoard(props: ProjectsBoardProps) {
         <ProjectsBoardTabsSection
           {...viewModel.tabs}
           projectActions={projectActions}
+          onProjectStatusChange={handleProjectStatusChange}
         />
         <ProjectsBoardDialogs
           {...viewModel.dialogs}
@@ -218,6 +244,7 @@ export function ProjectsBoard(props: ProjectsBoardProps) {
         onComplete={handleSheetComplete}
         project={selectedProject}
         clients={sortedClients}
+        adminUsers={props.adminUsers ?? []}
         contractorDirectory={[]}
         projectContractors={projectContractors}
       />
@@ -322,6 +349,7 @@ function mapRelationsToSheetProject(
     client_id: project.client_id,
     type: project.type,
     created_by: project.created_by,
+    owner_id: project.owner_id,
     starts_on: project.starts_on,
     ends_on: project.ends_on,
     created_at: project.created_at,
@@ -334,9 +362,9 @@ function mapRelationsToSheetProject(
           deleted_at: project.client.deleted_at,
         }
       : null,
-    owner: project.created_by
+    owner: project.owner_id
       ? {
-          id: project.created_by,
+          id: project.owner_id,
           fullName: null,
           email: null,
         }

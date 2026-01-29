@@ -8,7 +8,10 @@ import {
   Calendar,
   CreditCard,
   FolderKanban,
+  Globe,
+  LinkIcon,
   Pencil,
+  UserPlus,
 } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -48,6 +51,12 @@ import { ClientNotesSection } from './client-notes-section'
 
 type HydratedClientDetail = ClientDetailType & { resolvedId: string }
 
+export type ReferralContactInfo = {
+  id: string
+  name: string | null
+  email: string
+} | null
+
 type ClientDetailProps = {
   client: HydratedClientDetail
   projects: ClientProject[]
@@ -58,6 +67,7 @@ type ClientDetailProps = {
   clientMembers: Record<string, ClientUserSummary[]>
   clientRow: ClientRow
   currentUserId: string
+  referralContact: ReferralContactInfo
 }
 
 export function ClientDetail({
@@ -70,6 +80,7 @@ export function ClientDetail({
   clientMembers,
   clientRow,
   currentUserId,
+  referralContact,
 }: ClientDetailProps) {
   const activeProjects = projects.filter(p => p.status === 'ACTIVE')
   const otherProjects = projects.filter(p => p.status !== 'ACTIVE')
@@ -108,6 +119,7 @@ export function ClientDetail({
             client={client}
             activeProjectCount={activeProjects.length}
             otherProjectCount={otherProjects.length}
+            referralContact={referralContact}
           />
 
           {/* Notes Section */}
@@ -140,12 +152,14 @@ type ClientDetailsWidgetProps = {
   client: HydratedClientDetail
   activeProjectCount: number
   otherProjectCount: number
+  referralContact: ReferralContactInfo
 }
 
 function ClientDetailsWidget({
   client,
   activeProjectCount,
   otherProjectCount,
+  referralContact,
 }: ClientDetailsWidgetProps) {
   return (
     <section className='bg-card text-card-foreground overflow-hidden rounded-lg border'>
@@ -171,11 +185,33 @@ function ClientDetailsWidget({
           label='Created'
           value={format(new Date(client.createdAt), 'MMM d, yyyy')}
         />
+        {client.website ? (
+          <div className='flex items-center gap-3 px-4 py-2.5'>
+            <Globe className='text-muted-foreground h-4 w-4' />
+            <span className='text-muted-foreground text-sm'>Website</span>
+            <a
+              href={client.website}
+              target='_blank'
+              rel='noopener noreferrer'
+              className='ml-auto text-sm font-medium text-blue-600 hover:underline dark:text-blue-400'
+            >
+              {new URL(client.website).hostname}
+            </a>
+          </div>
+        ) : null}
+        {referralContact ? (
+          <div className='flex items-center gap-3 px-4 py-2.5'>
+            <UserPlus className='text-muted-foreground h-4 w-4' />
+            <span className='text-muted-foreground text-sm'>Referred By</span>
+            <span className='ml-auto text-sm font-medium'>
+              {referralContact.name ?? referralContact.email}
+            </span>
+          </div>
+        ) : null}
         {client.slug ? (
           <div className='flex items-center gap-3 px-4 py-2.5'>
-            <span className='text-muted-foreground text-xs font-medium tracking-wide uppercase'>
-              Slug
-            </span>
+            <LinkIcon className='text-muted-foreground h-4 w-4' />
+            <span className='text-muted-foreground text-sm'>Slug</span>
             <span className='ml-auto font-mono text-sm'>{client.slug}</span>
           </div>
         ) : null}

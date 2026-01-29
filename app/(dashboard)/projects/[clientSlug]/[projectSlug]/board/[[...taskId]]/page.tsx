@@ -6,6 +6,7 @@ import { fetchProjectsWithRelations } from '@/lib/data/projects'
 import { fetchAdminUsers } from '@/lib/data/users'
 import { requireUser } from '@/lib/auth/session'
 import { getProjectClientSegment } from '@/lib/projects/board/board-utils'
+import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
 
 export const metadata: Metadata = {
   title: 'Projects | Place to Stand Portal',
@@ -49,6 +50,13 @@ export default async function ProjectBoardRoute({ params }: PageProps) {
     clients.map(client => [client.id, client.slug ?? null])
   )
 
+  const adminUsers: AdminUserForOwner[] = admins.map(admin => ({
+    id: admin.id,
+    full_name: admin.full_name,
+    email: admin.email,
+    avatar_url: admin.avatar_url,
+  }))
+
   const project = projects.find(item => item.slug === projectSlug)
 
   if (!project) {
@@ -81,6 +89,7 @@ export default async function ProjectBoardRoute({ params }: PageProps) {
       currentUserId={user.id}
       currentUserRole={user.role}
       admins={admins}
+      adminUsers={adminUsers}
       activeClientId={activeClientId}
       activeProjectId={activeProjectId}
       activeTaskId={activeTaskId}

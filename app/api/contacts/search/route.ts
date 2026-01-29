@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { sql, or, ilike, isNull } from 'drizzle-orm'
+import { sql } from 'drizzle-orm'
 
 import { requireUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'

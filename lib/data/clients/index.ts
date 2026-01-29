@@ -10,7 +10,7 @@ import {
   ensureClientAccess,
 } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, projects, hourBlocks, timeLogs } from '@/lib/db/schema'
+import { clients, contacts, projects, hourBlocks, timeLogs } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 
 export type ClientActiveProject = {
@@ -24,7 +24,10 @@ export type ClientWithMetrics = {
   name: string
   slug: string | null
   notes: string | null
+  website: string | null
   billingType: 'prepaid' | 'net_30'
+  referredBy: string | null
+  referrerName: string | null
   createdAt: string
   updatedAt: string
   deletedAt: string | null
@@ -41,6 +44,8 @@ export type ClientDetail = {
   name: string
   slug: string | null
   notes: string | null
+  website: string | null
+  referredBy: string | null
   billingType: 'prepaid' | 'net_30'
   createdAt: string
   updatedAt: string
@@ -66,7 +71,10 @@ export const fetchClientsWithMetrics = cache(
         name: clients.name,
         slug: clients.slug,
         notes: clients.notes,
+        website: clients.website,
         billingType: clients.billingType,
+        referredBy: clients.referredBy,
+        referrerName: contacts.name,
         createdAt: clients.createdAt,
         updatedAt: clients.updatedAt,
         deletedAt: clients.deletedAt,
@@ -76,19 +84,23 @@ export const fetchClientsWithMetrics = cache(
         activeProjectCount: sql<number>`
           count(${projects.id}) filter (
             where ${projects.deletedAt} is null
-            and lower(${projects.status}::text) = 'active'
+            and lower(${projects.status}::text) in ('active', 'onboarding')
           )
         `.as('active_project_count'),
       })
       .from(clients)
       .leftJoin(projects, eq(projects.clientId, clients.id))
+      .leftJoin(contacts, eq(clients.referredBy, contacts.id))
       .where(and(...baseConditions))
       .groupBy(
         clients.id,
         clients.name,
         clients.slug,
         clients.notes,
+        clients.website,
         clients.billingType,
+        clients.referredBy,
+        contacts.name,
         clients.createdAt,
         clients.updatedAt,
         clients.deletedAt
@@ -140,7 +152,7 @@ export const fetchClientsWithMetrics = cache(
       timeLogsData.map(tl => [tl.clientId, Number(tl.totalHoursUsed ?? 0)])
     )
 
-    // Fetch active projects for each client
+    // Fetch active projects for each client (includes ONBOARDING)
     const activeProjectsData = await db
       .select({
         id: projects.id,
@@ -153,7 +165,7 @@ export const fetchClientsWithMetrics = cache(
         and(
           inArray(projects.clientId, clientIds),
           isNull(projects.deletedAt),
-          sql`lower(${projects.status}::text) = 'active'`
+          sql`lower(${projects.status}::text) in ('active', 'onboarding')`
         )
       )
       .orderBy(asc(projects.name))
@@ -181,7 +193,10 @@ export const fetchClientsWithMetrics = cache(
         name: row.name,
         slug: row.slug,
         notes: row.notes,
+        website: row.website,
         billingType: row.billingType,
+        referredBy: row.referredBy,
+        referrerName: row.referrerName,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
         deletedAt: row.deletedAt,
@@ -206,6 +221,8 @@ export const fetchClientById = cache(
         name: clients.name,
         slug: clients.slug,
         notes: clients.notes,
+        website: clients.website,
+        referredBy: clients.referredBy,
         billingType: clients.billingType,
         createdAt: clients.createdAt,
         updatedAt: clients.updatedAt,
@@ -325,6 +342,8 @@ export async function fetchClientsByIds(
       name: clients.name,
       slug: clients.slug,
       notes: clients.notes,
+      website: clients.website,
+      referredBy: clients.referredBy,
       billingType: clients.billingType,
       createdAt: clients.createdAt,
       updatedAt: clients.updatedAt,

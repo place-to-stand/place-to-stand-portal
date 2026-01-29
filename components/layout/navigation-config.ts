@@ -94,6 +94,18 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    title: 'Reports',
+    roles: ['ADMIN'],
+    items: [
+      {
+        href: '/reports/monthly-close',
+        label: 'Monthly Close',
+        icon: FileText,
+        matchHrefs: ['/reports'],
+      },
+    ],
+  },
+  {
     title: 'Settings',
     roles: ['ADMIN'],
     items: [

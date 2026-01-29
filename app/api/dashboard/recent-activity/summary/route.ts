@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { streamText } from 'ai'
-import { and, inArray, isNull } from 'drizzle-orm'
+import { generateText } from 'ai'
+import { and, count, eq, gte, inArray, isNull } from 'drizzle-orm'
 
 import type { ActivityLogWithActor } from '@/lib/activity/types'
 import type { Json } from '@/lib/types/json'
@@ -16,15 +16,12 @@ import {
   listAccessibleProjectIds,
 } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, projects } from '@/lib/db/schema'
+import { clients, leads, projects, tasks } from '@/lib/db/schema'
 
 const VALID_TIMEFRAMES = [1, 7, 14, 28] as const
 const ONE_HOUR_MS = 60 * 60 * 1000
 const MAX_LOG_LINES_IN_PROMPT = 200
-const SUMMARY_CHARACTER_LIMIT = 1200
-const ADDITIONAL_HIGHLIGHTS_HEADING = '### Additional Highlights'
-const MAX_OVERFLOW_BULLET_LENGTH = 160
-const MAX_OVERFLOW_BULLETS = 4
+const HIGHLIGHT_CHARACTER_LIMIT = 400
 
 type ValidTimeframe = (typeof VALID_TIMEFRAMES)[number]
 
@@ -34,6 +31,18 @@ type CacheHeaders = {
   status: CacheStatus
   cachedAt: string
   expiresAt: string
+}
+
+type ActivityMetrics = {
+  tasksDone: number
+  newLeads: number
+  activeProjects: number
+  blockedTasks: number
+}
+
+type ActivityOverviewResponse = {
+  metrics: ActivityMetrics
+  highlight: string
 }
 
 const requestSchema = z.object({
@@ -93,7 +102,8 @@ export async function POST(request: Request) {
       cache &&
       new Date(cache.expires_at).getTime() > now.getTime()
     ) {
-      return streamFromString(cache.summary, {
+      const cachedResponse = parseCachedResponse(cache.summary)
+      return jsonResponse(cachedResponse, {
         status: 'hit',
         cachedAt: cache.cached_at,
         expiresAt: cache.expires_at,
@@ -106,9 +116,20 @@ export async function POST(request: Request) {
       limit: MAX_LOG_LINES_IN_PROMPT,
     })
 
+    const expiresAtIso = new Date(now.getTime() + ONE_HOUR_MS).toISOString()
+
+    const [metrics, context] = await Promise.all([
+      computeMetrics(logs, since),
+      buildActivityContext(user, logs),
+    ])
+
     if (!logs.length) {
-      const summary = buildNoActivitySummary(timeframeDays as ValidTimeframe)
-      const expiresAtIso = new Date(now.getTime() + ONE_HOUR_MS).toISOString()
+      const response: ActivityOverviewResponse = {
+        metrics,
+        highlight: buildNoActivityHighlight(timeframeDays as ValidTimeframe),
+      }
+
+      const summary = JSON.stringify(response)
 
       await upsertActivityOverviewCache({
         userId: user.id,
@@ -118,48 +139,47 @@ export async function POST(request: Request) {
         expiresAt: expiresAtIso,
       })
 
-      return streamFromString(summary, {
+      return jsonResponse(response, {
         status: 'miss',
         cachedAt: nowIso,
         expiresAt: expiresAtIso,
       })
     }
 
-    const context = await buildActivityContext(user, logs)
-    const expiresAtIso = new Date(now.getTime() + ONE_HOUR_MS).toISOString()
-
-    const result = await streamText({
-      model: 'google/gemini-3-flash',
-      system: buildSystemPrompt(timeframeDays as ValidTimeframe),
-      prompt: buildUserPrompt({
-        timeframeDays: timeframeDays as ValidTimeframe,
-        logs,
-        now,
-        context,
-      }),
-    })
-
-    let completion = ''
+    let highlight = ''
     try {
-      for await (const delta of result.textStream) {
-        completion += delta
-      }
-    } catch (streamError) {
-      console.error('Failed to collect activity overview stream', streamError)
+      const result = await generateText({
+        model: 'google/gemini-3-flash',
+        system: buildSystemPrompt(timeframeDays as ValidTimeframe),
+        prompt: buildUserPrompt({
+          timeframeDays: timeframeDays as ValidTimeframe,
+          logs,
+          now,
+          context,
+          metrics,
+        }),
+      })
+      highlight = result.text.trim()
+    } catch (aiError) {
+      console.error('Failed to generate activity highlight', aiError)
     }
 
-    const fallbackSummary = buildFallbackSummary(logs, timeframeDays, context)
-    const baseSummary = completion.trim() || fallbackSummary
-    const summary = enforceSummaryCharacterLimit(
-      baseSummary,
-      SUMMARY_CHARACTER_LIMIT
-    )
+    if (!highlight) {
+      highlight = buildFallbackHighlight(logs, timeframeDays, metrics)
+    }
+
+    highlight = enforceHighlightCharacterLimit(highlight, HIGHLIGHT_CHARACTER_LIMIT)
+
+    const response: ActivityOverviewResponse = {
+      metrics,
+      highlight,
+    }
 
     try {
       await upsertActivityOverviewCache({
         userId: user.id,
         timeframeDays,
-        summary,
+        summary: JSON.stringify(response),
         cachedAt: new Date().toISOString(),
         expiresAt: expiresAtIso,
       })
@@ -167,7 +187,7 @@ export async function POST(request: Request) {
       console.error('Failed to cache activity overview summary', cacheError)
     }
 
-    return streamFromString(summary, {
+    return jsonResponse(response, {
       status: 'miss',
       cachedAt: nowIso,
       expiresAt: expiresAtIso,
@@ -181,16 +201,11 @@ export async function POST(request: Request) {
     )
   }
 }
-function streamFromString(text: string, headers: CacheHeaders) {
-  const encoder = new TextEncoder()
-  const stream = new ReadableStream<Uint8Array>({
-    start(controller) {
-      controller.enqueue(encoder.encode(text))
-      controller.close()
-    },
-  })
-
-  return new Response(stream, {
+function jsonResponse(
+  data: ActivityOverviewResponse,
+  headers: CacheHeaders
+): Response {
+  return NextResponse.json(data, {
     headers: buildCacheHeaders(headers),
   })
 }
@@ -202,23 +217,104 @@ function buildCacheHeaders({
 }: CacheHeaders): HeadersInit {
   return {
     'cache-control': 'no-store',
-    'content-type': 'text/plain; charset=utf-8',
     'x-activity-overview-cache': status,
     'x-activity-overview-cached-at': cachedAt,
     'x-activity-overview-expires-at': expiresAt,
   }
 }
 
+function parseCachedResponse(summary: string): ActivityOverviewResponse {
+  try {
+    const parsed = JSON.parse(summary) as unknown
+    if (
+      parsed &&
+      typeof parsed === 'object' &&
+      'metrics' in parsed &&
+      'highlight' in parsed
+    ) {
+      return parsed as ActivityOverviewResponse
+    }
+  } catch {
+    // Fall through to default
+  }
+  return {
+    metrics: { tasksDone: 0, newLeads: 0, activeProjects: 0, blockedTasks: 0 },
+    highlight: 'No recent activity to report.',
+  }
+}
+
+async function computeMetrics(
+  logs: ActivityLogWithActor[],
+  since: Date
+): Promise<ActivityMetrics> {
+  const activeProjects = countActiveProjects(logs)
+
+  const [tasksDone, newLeads, blockedTasks] = await Promise.all([
+    countTasksDone(since),
+    countNewLeads(since),
+    countBlockedTasks(),
+  ])
+
+  return {
+    tasksDone,
+    newLeads,
+    activeProjects,
+    blockedTasks,
+  }
+}
+
+async function countTasksDone(since: Date): Promise<number> {
+  const result = await db
+    .select({ count: count() })
+    .from(tasks)
+    .where(
+      and(
+        isNull(tasks.deletedAt),
+        gte(tasks.acceptedAt, since.toISOString())
+      )
+    )
+
+  return result[0]?.count ?? 0
+}
+
+function countActiveProjects(logs: ActivityLogWithActor[]): number {
+  const projectIds = new Set<string>()
+  for (const log of logs) {
+    if (log.target_project_id) {
+      projectIds.add(log.target_project_id)
+    }
+  }
+  return projectIds.size
+}
+
+async function countNewLeads(since: Date): Promise<number> {
+  const result = await db
+    .select({ count: count() })
+    .from(leads)
+    .where(and(isNull(leads.deletedAt), gte(leads.createdAt, since.toISOString())))
+
+  return result[0]?.count ?? 0
+}
+
+async function countBlockedTasks(): Promise<number> {
+  const result = await db
+    .select({ count: count() })
+    .from(tasks)
+    .where(and(isNull(tasks.deletedAt), eq(tasks.status, 'BLOCKED')))
+
+  return result[0]?.count ?? 0
+}
+
 function buildSystemPrompt(timeframe: ValidTimeframe): string {
   return [
-    'You are the Place to Stand chief of staff drafting a high-signal executive briefing for an extremely busy CEO.',
-    `Summarize the most important activity from the last ${timeframe} days using concise markdown sections. Keep it short and to the point.`,
-    'Group updates by client and project using level-three markdown headings in the exact format "### {Client Name} - {Project Name}".',
-    'Always include a "### Place To Stand - General" section first when there are organization-wide updates or uncategorized activity.',
-    'If only one of client/project is known, label the missing dimension as "General". When nothing fits, use the heading "### Place To Stand - General".',
-    'Under each heading include up to three bullet points that capture the latest movement, progress, blockers, or decisions. Skip filler, avoid repeating the same idea, and never speculate.',
-    'Do not fabricate project or client names—only reference what the activity feed supports.',
-    'If there is no activity, output a single heading "### Place To Stand - General" followed by the bullet "- No recent updates logged."',
+    "You're a chief of staff writing a brief narrative CEO briefing.",
+    `Based on the last ${timeframe} day${timeframe === 1 ? '' : 's'} of activity, write 2-3 casual sentences (max 400 characters total) that tell a story about what's happening in the business.`,
+    'Start with the most important headline, then add context or a secondary development.',
+    'Focus on what matters: progress made, deals or leads, blockers requiring attention, or notable momentum.',
+    'Be specific—mention actual project names or clients when they appear in the activity.',
+    'Write conversationally, as if updating a busy executive over coffee.',
+    'No markdown, no bullets, no headers—just flowing prose.',
+    'Example: "Made solid progress on the Acme dashboard redesign, knocking out 5 tasks this week. Meanwhile, 2 new leads came in from the website—worth following up on. One blocker on the API integration is waiting on client feedback."',
   ].join(' ')
 }
 
@@ -227,221 +323,78 @@ function buildUserPrompt({
   logs,
   now,
   context,
+  metrics,
 }: {
   timeframeDays: ValidTimeframe
   logs: ActivityLogWithActor[]
   now: Date
   context: ActivityContext
+  metrics: ActivityMetrics
 }): string {
   const timeframeLabel = timeframeDaysLabel(timeframeDays)
   const formattedLogs = logs
+    .slice(0, 50)
     .map(log => formatActivityLog(log, context))
     .join('\n')
 
   return [
-    `Today is ${now.toISOString()}. Summarize company activity for ${timeframeLabel}.`,
-    'Each line below is a JSON object describing a recorded activity. Treat them as factual notes.',
-    'Group updates so that each heading captures a single client/project pair and is formatted "### {Client Name} - {Project Name}".',
-    'Place any uncategorized or cross-company updates in "### Place To Stand - General" and list that heading first when it exists.',
-    'If only one dimension is known, label the missing half as "General". When nothing fits, place the update under "Place To Stand - General".',
-    'Combine multiple logs for the same project into a single heading that reflects the latest movement.',
-    'Respond using markdown with the required headings and bullet lists only—no additional prose or sections.',
+    `Today is ${now.toISOString()}. Write a brief narrative summary for ${timeframeLabel}.`,
     '',
-    'Activity log (JSON lines):',
+    'Current metrics:',
+    `- Tasks accepted: ${metrics.tasksDone}`,
+    `- New leads: ${metrics.newLeads}`,
+    `- Active projects: ${metrics.activeProjects}`,
+    `- Blocked tasks: ${metrics.blockedTasks}`,
+    '',
+    'Recent activity (JSON lines):',
     formattedLogs,
-  ]
-    .filter(Boolean)
-    .join('\n')
-}
-
-function buildNoActivitySummary(timeframeDays: ValidTimeframe): string {
-  return [
-    `### ${COMPANY_GENERAL_HEADING}`,
-    `- No recent updates logged during the ${timeframeDaysLabel(timeframeDays)}.`,
-    '- Operations remain steady while we await new activity.',
+    '',
+    'Write 2-3 sentences (max 400 chars) that tell the story of what happened. Start with the headline, add context.',
   ].join('\n')
 }
 
-function buildFallbackSummary(
+function buildNoActivityHighlight(timeframeDays: ValidTimeframe): string {
+  const label = timeframeDaysLabel(timeframeDays)
+  return `No activity logged during the ${label}. Things are quiet on the operations front—a good time to plan ahead or check in with the team.`
+}
+
+function buildFallbackHighlight(
   logs: ActivityLogWithActor[],
   timeframeDays: number,
-  context: ActivityContext
+  metrics: ActivityMetrics
 ): string {
-  const grouped = groupLogsByProject(logs, context)
+  const dayLabel = timeframeDays === 1 ? 'day' : 'days'
+  const sentences: string[] = []
 
-  if (!grouped.length) {
-    return [
-      `### ${COMPANY_GENERAL_HEADING}`,
-      `- Logged ${logs.length} updates over the ${timeframeDaysLabel(timeframeDays as ValidTimeframe)}.`,
-    ].join('\n')
+  if (metrics.tasksDone > 0) {
+    const taskWord = metrics.tasksDone === 1 ? 'task was' : 'tasks were'
+    sentences.push(`${metrics.tasksDone} ${taskWord} accepted over the past ${timeframeDays} ${dayLabel}.`)
   }
 
-  const sections: string[] = []
-
-  for (const group of grouped) {
-    sections.push(`### ${group.heading}`)
-    sections.push(...group.bullets)
+  if (metrics.newLeads > 0) {
+    const leadWord = metrics.newLeads === 1 ? 'lead' : 'leads'
+    const verb = metrics.newLeads === 1 ? 'came' : 'came'
+    sentences.push(`${metrics.newLeads} new ${leadWord} ${verb} in—worth a look.`)
   }
 
-  return sections.join('\n')
+  if (metrics.blockedTasks > 0) {
+    const blockedWord = metrics.blockedTasks === 1 ? 'task is' : 'tasks are'
+    sentences.push(`${metrics.blockedTasks} ${blockedWord} currently blocked and may need attention.`)
+  }
+
+  if (sentences.length === 0) {
+    return `${logs.length} updates logged over the past ${timeframeDays} ${dayLabel}. Activity is ticking along steadily.`
+  }
+
+  return sentences.join(' ')
 }
 
-type SummarySection = {
-  heading: string
-  body: string[]
-}
-
-function enforceSummaryCharacterLimit(summary: string, limit: number): string {
-  const trimmed = summary.trim()
-
-  if (!trimmed || trimmed.length <= limit) {
+function enforceHighlightCharacterLimit(text: string, limit: number): string {
+  const trimmed = text.trim()
+  if (trimmed.length <= limit) {
     return trimmed
   }
-
-  const sections = parseSummarySections(trimmed)
-  if (!sections.length) {
-    return truncateWithEllipsis(trimmed, limit)
-  }
-
-  const kept: SummarySection[] = []
-  const overflow: SummarySection[] = []
-  let currentLength = 0
-
-  for (const section of sections) {
-    const sectionString = sectionToString(section)
-    if (!sectionString.trim()) {
-      continue
-    }
-
-    const spacer = kept.length ? 1 : 0
-    if (currentLength + sectionString.length + spacer <= limit) {
-      kept.push(section)
-      currentLength += sectionString.length + spacer
-    } else {
-      overflow.push(section)
-    }
-  }
-
-  if (overflow.length) {
-    const overflowSection = buildAdditionalHighlightsSection(overflow)
-    if (overflowSection) {
-      kept.push(overflowSection)
-    }
-  }
-
-  const output = formatSummarySections(kept)
-  if (output.length <= limit) {
-    return output
-  }
-
-  return truncateWithEllipsis(output, limit)
-}
-
-function parseSummarySections(summary: string): SummarySection[] {
-  const lines = summary.split(/\r?\n/)
-  const sections: SummarySection[] = []
-  let current: SummarySection | null = null
-
-  for (const rawLine of lines) {
-    const line = rawLine.trimEnd()
-    if (line.startsWith('### ')) {
-      if (current) {
-        sections.push(current)
-      }
-      current = { heading: line.trim(), body: [] }
-      continue
-    }
-
-    if (!current) {
-      current = {
-        heading: `### ${COMPANY_GENERAL_HEADING}`,
-        body: [],
-      }
-    }
-
-    if (line || current.body.length) {
-      current.body.push(line)
-    }
-  }
-
-  if (current) {
-    sections.push(current)
-  }
-
-  return sections
-}
-
-function sectionToString(section: SummarySection): string {
-  const filteredBody = section.body.filter(line => line.trim().length)
-  if (!filteredBody.length) {
-    return section.heading
-  }
-
-  return [section.heading, ...filteredBody].join('\n')
-}
-
-function formatSummarySections(sections: SummarySection[]): string {
-  return sections.map(sectionToString).filter(Boolean).join('\n')
-}
-
-function buildAdditionalHighlightsSection(
-  sections: SummarySection[]
-): SummarySection | null {
-  if (!sections.length) {
-    return null
-  }
-
-  const bullets: string[] = []
-  const limitedSections = sections.slice(0, MAX_OVERFLOW_BULLETS)
-
-  for (const section of limitedSections) {
-    const headingLabel = section.heading.replace(/^###\s*/, '').trim()
-    const primaryLine =
-      section.body.find(line => line.trim().startsWith('-')) ??
-      section.body.find(line => line.trim().length > 0) ??
-      ''
-    const cleanedLine = primaryLine.replace(/^-+\s*/, '').trim()
-    const bulletContent = cleanedLine
-      ? `${headingLabel}: ${cleanedLine}`
-      : `${headingLabel}: Updates in progress.`
-    const normalized = truncateWithEllipsis(
-      bulletContent,
-      MAX_OVERFLOW_BULLET_LENGTH
-    )
-    bullets.push(`- ${normalized}`)
-  }
-
-  if (!bullets.length) {
-    return null
-  }
-
-  if (sections.length > bullets.length) {
-    const remaining = sections.length - bullets.length
-    bullets.push(
-      `- ${remaining} more update${remaining === 1 ? '' : 's'} captured across other projects.`
-    )
-  }
-
-  return {
-    heading: ADDITIONAL_HIGHLIGHTS_HEADING,
-    body: bullets,
-  }
-}
-
-function truncateWithEllipsis(text: string, limit: number): string {
-  if (limit <= 0) {
-    return ''
-  }
-
-  if (text.length <= limit) {
-    return text
-  }
-
-  if (limit <= 1) {
-    return '…'
-  }
-
-  return text.slice(0, limit - 1).trimEnd() + '…'
+  return trimmed.slice(0, limit - 1).trimEnd() + '…'
 }
 
 function timeframeDaysLabel(timeframe: ValidTimeframe): string {
@@ -492,7 +445,6 @@ const TARGET_LABELS: Record<string, string> = {
 const DEFAULT_PROJECT_LABEL = 'General'
 const DEFAULT_CLIENT_LABEL = 'General'
 const COMPANY_GENERAL_CLIENT_LABEL = 'Place To Stand'
-const COMPANY_GENERAL_HEADING = `${COMPANY_GENERAL_CLIENT_LABEL} - ${DEFAULT_PROJECT_LABEL}`
 
 function formatActivityLog(
   log: ActivityLogWithActor,
@@ -653,66 +605,6 @@ async function resolveAllowedClients(
   return clientIds.filter(id => accessibleSet.has(id))
 }
 
-const MAX_FALLBACK_PROJECTS = 6
-const MAX_FALLBACK_BULLETS_PER_PROJECT = 3
-
-function groupLogsByProject(
-  logs: ActivityLogWithActor[],
-  context: ActivityContext
-) {
-  if (!logs.length) {
-    return []
-  }
-
-  const orderedLogs = [...logs].reverse()
-  const groups = new Map<
-    string,
-    { heading: string; bullets: string[]; order: number }
-  >()
-  let orderCounter = 0
-
-  for (const log of orderedLogs) {
-    const { project, client } = resolveProjectClientLabels(log, context)
-    const heading = buildHeading(client, project)
-
-    let group = groups.get(heading)
-
-    if (!group) {
-      if (groups.size >= MAX_FALLBACK_PROJECTS) {
-        continue
-      }
-
-      group = { heading, bullets: [], order: orderCounter++ }
-      groups.set(heading, group)
-    }
-
-    if (group.bullets.length >= MAX_FALLBACK_BULLETS_PER_PROJECT) {
-      continue
-    }
-
-    const summary = log.summary.trim()
-
-    if (summary) {
-      group.bullets.push(`- ${summary}`)
-    }
-  }
-
-  return Array.from(groups.values()).sort((a, b) => {
-    const aIsGeneral = a.heading === COMPANY_GENERAL_HEADING
-    const bIsGeneral = b.heading === COMPANY_GENERAL_HEADING
-
-    if (aIsGeneral && !bIsGeneral) {
-      return -1
-    }
-
-    if (!aIsGeneral && bIsGeneral) {
-      return 1
-    }
-
-    return a.order - b.order
-  })
-}
-
 function resolveProjectClientLabels(
   log: ActivityLogWithActor,
   context: ActivityContext
@@ -758,10 +650,6 @@ function resolveProjectClientLabels(
   }
 
   return { project: projectName, client: clientName }
-}
-
-function buildHeading(client: string, project: string): string {
-  return `${client} - ${project}`
 }
 
 function selectFirstNonEmpty(

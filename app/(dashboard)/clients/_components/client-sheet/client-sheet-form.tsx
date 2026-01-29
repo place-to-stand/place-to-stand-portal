@@ -5,6 +5,7 @@ import type React from 'react'
 import { Archive, Redo2, Undo2 } from 'lucide-react'
 import type { UseFormReturn } from 'react-hook-form'
 
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
@@ -29,13 +30,16 @@ import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import type {
   ClientContactOption,
   ClientMemberOption,
+  ReferralContactOption,
   UseClientSheetStateReturn,
 } from '@/lib/settings/clients/use-client-sheet-state'
 import { CLIENT_BILLING_TYPE_SELECT_OPTIONS } from '@/lib/settings/clients/billing-types'
+import { cn } from '@/lib/utils'
 import type { ClientSheetFormValues } from '@/lib/settings/clients/client-sheet-schema'
 
 import { ClientContactPicker } from './client-contact-picker'
 import { ClientMemberPicker } from './client-member-picker'
+import { ClientReferralPicker } from './client-referral-picker'
 
 const FEEDBACK_CLASSES =
   'border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm'
@@ -71,6 +75,15 @@ type ClientSheetFormProps = {
   onContactPickerOpenChange: (open: boolean) => void
   onAddContact: (contact: ClientContactOption) => void
   onRemoveContact: (contact: ClientContactOption) => void
+  // Referral
+  selectedReferral: ReferralContactOption | null
+  availableReferralContacts: ReferralContactOption[]
+  referralPickerDisabled: boolean
+  referralPickerDisabledReason: string | null
+  isReferralPickerOpen: boolean
+  onReferralPickerOpenChange: (open: boolean) => void
+  onSelectReferral: (contact: ReferralContactOption) => void
+  onClearReferral: () => void
 }
 
 export function ClientSheetForm({
@@ -103,6 +116,14 @@ export function ClientSheetForm({
   onContactPickerOpenChange,
   onAddContact,
   onRemoveContact,
+  selectedReferral,
+  availableReferralContacts,
+  referralPickerDisabled,
+  referralPickerDisabledReason,
+  isReferralPickerOpen,
+  onReferralPickerOpenChange,
+  onSelectReferral,
+  onClearReferral,
 }: ClientSheetFormProps) {
   const handleSave = useCallback(
     () => form.handleSubmit(onSubmit)(),
@@ -223,14 +244,29 @@ export function ClientSheetForm({
                       reason={isPending ? pendingReason : null}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder='Select billing type' />
+                        <SelectValue placeholder='Select billing type'>
+                          <Badge
+                            variant='outline'
+                            className={cn(
+                              'text-xs',
+                              selectedBillingType.badgeClassName
+                            )}
+                          >
+                            {selectedBillingType.label}
+                          </Badge>
+                        </SelectValue>
                       </SelectTrigger>
                     </DisabledFieldTooltip>
                   </FormControl>
                   <SelectContent align='start'>
                     {CLIENT_BILLING_TYPE_SELECT_OPTIONS.map(option => (
                       <SelectItem key={option.value} value={option.value}>
-                        {option.label}
+                        <Badge
+                          variant='outline'
+                          className={cn('text-xs', option.badgeClassName)}
+                        >
+                          {option.label}
+                        </Badge>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -245,6 +281,44 @@ export function ClientSheetForm({
             )
           }}
         />
+        <FormField
+          control={form.control}
+          name='website'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Website (optional)</FormLabel>
+              <FormControl>
+                <DisabledFieldTooltip
+                  disabled={isPending}
+                  reason={isPending ? pendingReason : null}
+                >
+                  <Input
+                    {...field}
+                    value={field.value ?? ''}
+                    placeholder='https://example.com'
+                    disabled={isPending}
+                  />
+                </DisabledFieldTooltip>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className='space-y-2'>
+          <FormLabel>Referred By (optional)</FormLabel>
+          <ClientReferralPicker
+            selectedReferral={selectedReferral}
+            availableContacts={availableReferralContacts}
+            disabled={referralPickerDisabled}
+            disabledReason={referralPickerDisabledReason}
+            isPickerOpen={isReferralPickerOpen}
+            isPending={isPending}
+            pendingReason={pendingReason}
+            onPickerOpenChange={onReferralPickerOpenChange}
+            onSelect={onSelectReferral}
+            onClear={onClearReferral}
+          />
+        </div>
         <div className='space-y-2'>
           <FormLabel>Contacts</FormLabel>
           <ClientContactPicker

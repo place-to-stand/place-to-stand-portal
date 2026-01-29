@@ -1,6 +1,6 @@
 'use server'
 
-import { asc, eq, and, sql, inArray, isNull } from 'drizzle-orm'
+import { asc, eq, and, inArray, isNull } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'

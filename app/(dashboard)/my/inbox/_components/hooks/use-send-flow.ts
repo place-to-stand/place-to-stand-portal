@@ -208,7 +208,7 @@ export function useSendFlow({
 
     // For immediate sends, start 5-second undo countdown
     setUndoCountdown(5)
-  }, [toEmails, ccEmails, bccEmails, subject, body, scheduledAt, draftId, context, connectionId, clearSaveTimeout, saveDraft, toast, onSent, onClose])
+  }, [toEmails, ccEmails, bccEmails, subject, body, scheduledAt, draftId, clearSaveTimeout, saveDraft, toast, onSent, onClose])
 
   return {
     isSending,

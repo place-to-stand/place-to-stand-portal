@@ -99,25 +99,6 @@ const getMemberDisplayName = (
   return member?.user.email ?? admin?.email ?? 'Unknown collaborator'
 }
 
-const buildDescription = (
-  member: Member | undefined,
-  admin: DbUser | undefined
-) => {
-  const descriptionParts: string[] = []
-  const userRole = member?.user.role ?? admin?.role ?? null
-  const roleLabel = tidyRole(userRole)
-  if (roleLabel) {
-    descriptionParts.push(roleLabel)
-  }
-
-  const email = member?.user.email ?? admin?.email
-  if (email) {
-    descriptionParts.push(email)
-  }
-
-  return descriptionParts.join(' • ')
-}
-
 export const buildAssigneeItems = ({
   admins,
   members,
@@ -144,7 +125,6 @@ export const buildAssigneeItems = ({
     eligibleItems.push({
       value: admin.id,
       label,
-      description: `${admin.email}`,
       keywords: [admin.email, 'admin'],
       userId: admin.id,
       avatarUrl: admin.avatar_url,
@@ -163,13 +143,10 @@ export const buildAssigneeItems = ({
     }
 
     const label = user.full_name?.trim() || user.email
-    const descriptionParts = [tidyRole(user.role)]
-    descriptionParts.push(user.email)
 
     eligibleItems.push({
       value: member.user_id,
       label,
-      description: descriptionParts.join(' • '),
       keywords: [user.email, 'admin'].filter((keyword): keyword is string =>
         Boolean(keyword)
       ),
@@ -188,7 +165,6 @@ export const buildAssigneeItems = ({
     fallbackItems.push({
       value: currentAssigneeId,
       label: getMemberDisplayName(currentMember, currentAdmin),
-      description: buildDescription(currentMember, currentAdmin),
       keywords: [
         currentMember?.user.email ?? currentAdmin?.email ?? 'unavailable',
       ],
@@ -206,7 +182,6 @@ export const buildAssigneeItems = ({
     {
       value: UNASSIGNED_ASSIGNEE_VALUE,
       label: 'Unassigned',
-      description: 'No collaborator assigned yet.',
       keywords: ['unassigned'],
       icon: User,
     },

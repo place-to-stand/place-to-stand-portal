@@ -1,3 +1,6 @@
+import type React from 'react'
+import { User } from 'lucide-react'
+
 import type { ClientRow, ProjectWithClient } from './project-sheet-form'
 import { PROJECT_SHEET_PENDING_REASON } from './project-sheet-contractors'
 
@@ -17,6 +20,42 @@ export type ClientOption = {
   label: string
   keywords: string[]
 }
+
+export type OwnerOption = {
+  value: string
+  label: string
+  keywords: string[]
+  avatarUrl: string | null
+  userId: string
+  icon?: React.ComponentType<{ className?: string }>
+}
+
+export type AdminUserForOwner = {
+  id: string
+  full_name: string | null
+  email: string
+  avatar_url: string | null
+}
+
+export const UNASSIGNED_OWNER_OPTION: OwnerOption = {
+  value: '',
+  label: 'Unassigned',
+  keywords: ['unassigned', 'none', 'no owner'],
+  avatarUrl: null,
+  userId: '',
+  icon: User,
+}
+
+export const buildOwnerOptions = (admins: AdminUserForOwner[]): OwnerOption[] => [
+  UNASSIGNED_OWNER_OPTION,
+  ...admins.map(admin => ({
+    value: admin.id,
+    label: admin.full_name ?? admin.email,
+    keywords: [admin.full_name ?? '', admin.email].filter(Boolean),
+    avatarUrl: admin.avatar_url,
+    userId: admin.id,
+  })),
+]
 
 export const PROJECT_SHEET_MISSING_CLIENT_REASON =
   'Add a client before creating a project.'

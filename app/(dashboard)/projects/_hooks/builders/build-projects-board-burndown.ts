@@ -34,7 +34,7 @@ export function buildProjectsBoardBurndown({
     (activeProject?.client?.billing_type ?? 'prepaid') === 'net_30'
 
   return {
-    visible: Boolean(activeProject),
+    visible: activeProject !== null && activeProject.type === 'CLIENT',
     totalClientRemainingHours:
       activeProject?.burndown.totalClientRemainingHours ?? 0,
     totalProjectLoggedHours:
