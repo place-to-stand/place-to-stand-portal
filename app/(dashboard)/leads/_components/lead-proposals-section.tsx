@@ -10,6 +10,7 @@ import {
   CheckCircle,
   XCircle,
   Clock,
+  Link2,
 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
@@ -25,6 +26,7 @@ import { useToast } from '@/components/ui/use-toast'
 import type { LeadRecord } from '@/lib/leads/types'
 
 import { updateProposalStatus } from '../_actions'
+import { ShareProposalDialog } from './share-proposal-dialog'
 
 type ProposalStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED'
 
@@ -37,6 +39,9 @@ type Proposal = {
   sentAt: string | null
   sentToEmail: string | null
   createdAt: string
+  shareToken: string | null
+  shareEnabled: boolean | null
+  viewedCount: number | null
 }
 
 type LeadProposalsSectionProps = {
@@ -162,6 +167,7 @@ function ProposalCard({
 }) {
   const { toast } = useToast()
   const [isUpdating, startUpdateTransition] = useTransition()
+  const [shareDialogOpen, setShareDialogOpen] = useState(false)
 
   const statusConfig = STATUS_CONFIG[proposal.status]
   const StatusIcon = statusConfig.icon
@@ -203,6 +209,7 @@ function ProposalCard({
   )
 
   return (
+    <>
     <div className="rounded-lg border bg-muted/30 p-3">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
@@ -225,6 +232,16 @@ function ProposalCard({
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1">
+          {canManage && (
+            <button
+              type="button"
+              onClick={() => setShareDialogOpen(true)}
+              className="flex items-center gap-1 rounded-md bg-violet-500/10 px-2 py-1 text-xs font-medium text-violet-600 hover:bg-violet-500/20"
+            >
+              <Link2 className="h-3 w-3" />
+              Share
+            </button>
+          )}
           {proposal.docUrl && (
             <a
               href={proposal.docUrl}
@@ -293,5 +310,18 @@ function ProposalCard({
         </div>
       </div>
     </div>
+    {canManage && (
+      <ShareProposalDialog
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        proposalId={proposal.id}
+        proposalTitle={proposal.title}
+        shareToken={proposal.shareToken}
+        shareEnabled={proposal.shareEnabled}
+        viewedCount={proposal.viewedCount}
+        onUpdate={onUpdate}
+      />
+    )}
+    </>
   )
 }

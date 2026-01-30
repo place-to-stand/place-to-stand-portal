@@ -79,7 +79,6 @@ export type BuildProposalFromScratchInput = z.infer<typeof buildProposalSchema>
 
 export type BuildProposalFromScratchResult = LeadActionResult & {
   proposal?: Proposal
-  docUrl?: string
 }
 
 // =============================================================================
@@ -134,7 +133,6 @@ export async function buildProposalFromScratch(
     return {
       success: true,
       proposal: result.proposal,
-      docUrl: result.docUrl,
     }
   } catch (error) {
     console.error('Failed to build proposal from scratch:', error)

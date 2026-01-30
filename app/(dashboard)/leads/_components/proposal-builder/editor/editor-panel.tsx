@@ -1,7 +1,7 @@
 'use client'
 
 import type { UseFormReturn } from 'react-hook-form'
-import { AlertTriangle, Loader2, FileText, Sparkles } from 'lucide-react'
+import { AlertTriangle, Loader2, FileText, Sparkles, PanelRightOpen, PanelRightClose } from 'lucide-react'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -27,6 +27,8 @@ type EditorPanelProps = {
   onBuild: () => void
   onGenerateDraft: () => void
   existingProposalCount?: number
+  showPreview?: boolean
+  onTogglePreview?: () => void
 }
 
 export function EditorPanel({
@@ -37,6 +39,8 @@ export function EditorPanel({
   onBuild,
   onGenerateDraft,
   existingProposalCount = 0,
+  showPreview = false,
+  onTogglePreview,
 }: EditorPanelProps) {
   return (
     <div className="flex min-w-0 flex-1 flex-col border-r">
@@ -51,33 +55,58 @@ export function EditorPanel({
                 Fill in the details or let AI generate a draft
               </p>
             </div>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  onClick={onGenerateDraft}
-                  disabled={isGenerating || isBuilding}
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4" />
-                      Generate Draft
-                    </>
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                <p>Use AI to generate a proposal draft from lead context</p>
-              </TooltipContent>
-            </Tooltip>
+            <div className="flex items-center gap-2">
+              {onTogglePreview && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={onTogglePreview}
+                    >
+                      {showPreview ? (
+                        <PanelRightClose className="h-4 w-4" />
+                      ) : (
+                        <PanelRightOpen className="h-4 w-4" />
+                      )}
+                      {showPreview ? 'Hide' : 'Doc'} Preview
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>Toggle Google Docs preview panel</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={onGenerateDraft}
+                    disabled={isGenerating || isBuilding}
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4" />
+                        Generate Draft
+                      </>
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p>Use AI to generate a proposal draft from lead context</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
 
           {/* Existing proposal warning */}
@@ -133,10 +162,10 @@ export function EditorPanel({
       {/* Footer Actions */}
       <div className="flex-shrink-0 border-t bg-muted/50 px-6 py-4">
         <div className="flex items-center justify-between">
-          <Button variant="outline" onClick={onCancel} disabled={isBuilding}>
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isBuilding}>
             Cancel
           </Button>
-          <Button onClick={onBuild} disabled={isBuilding}>
+          <Button type="button" onClick={onBuild} disabled={isBuilding}>
             {isBuilding ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

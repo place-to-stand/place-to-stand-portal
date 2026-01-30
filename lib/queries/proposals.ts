@@ -1,7 +1,7 @@
-import { and, desc, eq, isNull } from 'drizzle-orm'
+import { and, desc, eq, isNull, isNotNull, sql, inArray } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { proposals, users } from '@/lib/db/schema'
+import { proposals, users, leads, clients } from '@/lib/db/schema'
 import type { ProposalContent } from '@/lib/proposals/types'
 
 export type ProposalStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED'
@@ -23,6 +23,14 @@ export type Proposal = {
   createdBy: string
   createdAt: string
   updatedAt: string
+  shareToken: string | null
+  sharePasswordHash: string | null
+  shareEnabled: boolean | null
+  viewedAt: string | null
+  viewedCount: number | null
+  acceptedAt: string | null
+  rejectedAt: string | null
+  clientComment: string | null
 }
 
 export type ProposalWithCreator = Proposal & {
@@ -55,6 +63,14 @@ export async function fetchProposalsByLeadId(
       sentAt: proposals.sentAt,
       sentToEmail: proposals.sentToEmail,
       content: proposals.content,
+      shareToken: proposals.shareToken,
+      sharePasswordHash: proposals.sharePasswordHash,
+      shareEnabled: proposals.shareEnabled,
+      viewedAt: proposals.viewedAt,
+      viewedCount: proposals.viewedCount,
+      acceptedAt: proposals.acceptedAt,
+      rejectedAt: proposals.rejectedAt,
+      clientComment: proposals.clientComment,
       createdBy: proposals.createdBy,
       createdAt: proposals.createdAt,
       updatedAt: proposals.updatedAt,
@@ -82,6 +98,14 @@ export async function fetchProposalsByLeadId(
     sentAt: row.sentAt,
     sentToEmail: row.sentToEmail,
     content: row.content as ProposalContent | Record<string, never>,
+    shareToken: row.shareToken,
+    sharePasswordHash: row.sharePasswordHash,
+    shareEnabled: row.shareEnabled,
+    viewedAt: row.viewedAt,
+    viewedCount: row.viewedCount,
+    acceptedAt: row.acceptedAt,
+    rejectedAt: row.rejectedAt,
+    clientComment: row.clientComment,
     createdBy: row.createdBy,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -117,6 +141,14 @@ export async function fetchProposalById(
       sentAt: proposals.sentAt,
       sentToEmail: proposals.sentToEmail,
       content: proposals.content,
+      shareToken: proposals.shareToken,
+      sharePasswordHash: proposals.sharePasswordHash,
+      shareEnabled: proposals.shareEnabled,
+      viewedAt: proposals.viewedAt,
+      viewedCount: proposals.viewedCount,
+      acceptedAt: proposals.acceptedAt,
+      rejectedAt: proposals.rejectedAt,
+      clientComment: proposals.clientComment,
       createdBy: proposals.createdBy,
       createdAt: proposals.createdAt,
       updatedAt: proposals.updatedAt,
@@ -192,6 +224,14 @@ export async function createProposal(
     sentAt: inserted.sentAt,
     sentToEmail: inserted.sentToEmail,
     content: inserted.content as ProposalContent | Record<string, never>,
+    shareToken: inserted.shareToken,
+    sharePasswordHash: inserted.sharePasswordHash,
+    shareEnabled: inserted.shareEnabled,
+    viewedAt: inserted.viewedAt,
+    viewedCount: inserted.viewedCount,
+    acceptedAt: inserted.acceptedAt,
+    rejectedAt: inserted.rejectedAt,
+    clientComment: inserted.clientComment,
     createdBy: inserted.createdBy,
     createdAt: inserted.createdAt,
     updatedAt: inserted.updatedAt,
@@ -208,6 +248,14 @@ export type UpdateProposalInput = {
   sentAt?: string | null
   sentToEmail?: string | null
   content?: ProposalContent | Record<string, never>
+  shareToken?: string | null
+  sharePasswordHash?: string | null
+  shareEnabled?: boolean
+  viewedAt?: string | null
+  viewedCount?: number
+  acceptedAt?: string | null
+  rejectedAt?: string | null
+  clientComment?: string | null
 }
 
 /**
@@ -246,6 +294,14 @@ export async function updateProposal(
     sentAt: updated.sentAt,
     sentToEmail: updated.sentToEmail,
     content: updated.content as ProposalContent | Record<string, never>,
+    shareToken: updated.shareToken,
+    sharePasswordHash: updated.sharePasswordHash,
+    shareEnabled: updated.shareEnabled,
+    viewedAt: updated.viewedAt,
+    viewedCount: updated.viewedCount,
+    acceptedAt: updated.acceptedAt,
+    rejectedAt: updated.rejectedAt,
+    clientComment: updated.clientComment,
     createdBy: updated.createdBy,
     createdAt: updated.createdAt,
     updatedAt: updated.updatedAt,
@@ -288,6 +344,14 @@ export async function findProposalByDocId(
       sentAt: proposals.sentAt,
       sentToEmail: proposals.sentToEmail,
       content: proposals.content,
+      shareToken: proposals.shareToken,
+      sharePasswordHash: proposals.sharePasswordHash,
+      shareEnabled: proposals.shareEnabled,
+      viewedAt: proposals.viewedAt,
+      viewedCount: proposals.viewedCount,
+      acceptedAt: proposals.acceptedAt,
+      rejectedAt: proposals.rejectedAt,
+      clientComment: proposals.clientComment,
       createdBy: proposals.createdBy,
       createdAt: proposals.createdAt,
       updatedAt: proposals.updatedAt,
@@ -302,4 +366,152 @@ export async function findProposalByDocId(
     ...row,
     content: row.content as ProposalContent | Record<string, never>,
   }
+}
+
+// =============================================================================
+// Sharing queries
+// =============================================================================
+
+/**
+ * Fetch a proposal by its public share token.
+ * Only returns if sharing is enabled and not soft-deleted.
+ */
+export async function fetchProposalByShareToken(
+  token: string
+): Promise<Proposal | null> {
+  const [row] = await db
+    .select()
+    .from(proposals)
+    .where(
+      and(
+        eq(proposals.shareToken, token),
+        eq(proposals.shareEnabled, true),
+        isNull(proposals.deletedAt)
+      )
+    )
+    .limit(1)
+
+  if (!row) return null
+
+  return {
+    ...row,
+    content: row.content as ProposalContent | Record<string, never>,
+  }
+}
+
+/**
+ * Record a view on a shared proposal. Increments count and sets viewed_at.
+ * Also updates status to VIEWED if currently SENT.
+ */
+export async function recordProposalView(proposalId: string): Promise<void> {
+  const now = new Date().toISOString()
+
+  await db
+    .update(proposals)
+    .set({
+      viewedAt: now,
+      viewedCount: sql`COALESCE(${proposals.viewedCount}, 0) + 1`,
+      updatedAt: now,
+    })
+    .where(eq(proposals.id, proposalId))
+
+  // Upgrade status from SENT → VIEWED
+  await db
+    .update(proposals)
+    .set({ status: 'VIEWED', updatedAt: now })
+    .where(and(eq(proposals.id, proposalId), eq(proposals.status, 'SENT')))
+}
+
+/**
+ * Record a client's accept/reject response on a shared proposal.
+ */
+export async function recordProposalResponse(
+  proposalId: string,
+  action: 'ACCEPTED' | 'REJECTED',
+  comment?: string | null
+): Promise<Proposal | null> {
+  const now = new Date().toISOString()
+
+  const [updated] = await db
+    .update(proposals)
+    .set({
+      status: action,
+      ...(action === 'ACCEPTED' ? { acceptedAt: now } : { rejectedAt: now }),
+      clientComment: comment ?? null,
+      updatedAt: now,
+    })
+    .where(and(eq(proposals.id, proposalId), isNull(proposals.deletedAt)))
+    .returning()
+
+  if (!updated) return null
+
+  return {
+    ...updated,
+    content: updated.content as ProposalContent | Record<string, never>,
+  }
+}
+
+// =============================================================================
+// Dashboard queries
+// =============================================================================
+
+export type ProposalWithRelations = Proposal & {
+  leadName: string | null
+  clientName: string | null
+  creatorName: string | null
+}
+
+/**
+ * Fetch all proposals for the dashboard with lead/client/creator names.
+ */
+export async function fetchAllProposals(
+  statusFilter?: ProposalStatus[]
+): Promise<ProposalWithRelations[]> {
+  const conditions = [isNull(proposals.deletedAt)]
+
+  if (statusFilter && statusFilter.length > 0) {
+    conditions.push(inArray(proposals.status, statusFilter))
+  }
+
+  const rows = await db
+    .select({
+      id: proposals.id,
+      leadId: proposals.leadId,
+      clientId: proposals.clientId,
+      title: proposals.title,
+      docUrl: proposals.docUrl,
+      docId: proposals.docId,
+      templateDocId: proposals.templateDocId,
+      status: proposals.status,
+      estimatedValue: proposals.estimatedValue,
+      expirationDate: proposals.expirationDate,
+      sentAt: proposals.sentAt,
+      sentToEmail: proposals.sentToEmail,
+      content: proposals.content,
+      shareToken: proposals.shareToken,
+      sharePasswordHash: proposals.sharePasswordHash,
+      shareEnabled: proposals.shareEnabled,
+      viewedAt: proposals.viewedAt,
+      viewedCount: proposals.viewedCount,
+      acceptedAt: proposals.acceptedAt,
+      rejectedAt: proposals.rejectedAt,
+      clientComment: proposals.clientComment,
+      createdBy: proposals.createdBy,
+      createdAt: proposals.createdAt,
+      updatedAt: proposals.updatedAt,
+      leadName: leads.contactName,
+      clientName: clients.name,
+      creatorName: users.fullName,
+    })
+    .from(proposals)
+    .leftJoin(leads, eq(proposals.leadId, leads.id))
+    .leftJoin(clients, eq(proposals.clientId, clients.id))
+    .leftJoin(users, eq(proposals.createdBy, users.id))
+    .where(and(...conditions))
+    .orderBy(desc(proposals.createdAt))
+
+  return rows.map(row => ({
+    ...row,
+    content: row.content as ProposalContent | Record<string, never>,
+  }))
 }

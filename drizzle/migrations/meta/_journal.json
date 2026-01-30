@@ -162,6 +162,13 @@
       "when": 1769442921745,
       "tag": "0022_client_project_enhancements",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1769794491290,
+      "tag": "0023_proposal_sharing",
+      "breakpoints": true
     }
   ]
 }

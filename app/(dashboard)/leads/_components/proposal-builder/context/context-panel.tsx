@@ -20,7 +20,7 @@ type ContextPanelProps = {
 export function ContextPanel({ lead, onInsert }: ContextPanelProps) {
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="flex w-[280px] flex-shrink-0 flex-col border-r bg-muted/30">
+      <div className="flex w-[380px] flex-shrink-0 flex-col border-r bg-muted/30">
       {/* Lead Info Header */}
       <div className="flex-shrink-0 space-y-3 p-4">
         <div className="space-y-1">

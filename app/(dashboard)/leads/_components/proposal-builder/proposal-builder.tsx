@@ -150,6 +150,7 @@ export function ProposalBuilder({
     DEFAULT_DOCUMENT_SETTINGS
   )
   const [existingProposals, setExistingProposals] = useState<ExistingProposal[]>([])
+  const [showPreview, setShowPreview] = useState(false)
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false)
   const [pendingBuildValues, setPendingBuildValues] = useState<ProposalFormValues | null>(null)
 
@@ -190,7 +191,7 @@ export function ProposalBuilder({
         },
       ],
       risks: DEFAULT_RISKS.map(r => ({ title: r.title, description: r.description })),
-      includeFullTerms: false,
+      includeFullTerms: true,
       hourlyRate: DEFAULT_HOURLY_RATE,
       initialCommitmentDescription: '',
       estimatedScopingHours: '',
@@ -276,7 +277,7 @@ export function ProposalBuilder({
 
         toast({
           title: 'Proposal created',
-          description: 'Document ready in Google Docs.',
+          description: 'Your proposal is ready to share.',
         })
 
         onSuccess()
@@ -482,7 +483,7 @@ export function ProposalBuilder({
             {/* Left Column - Context Panel */}
             <ContextPanel lead={lead} onInsert={handleContextInsert} />
 
-            {/* Middle Column - Editor Panel */}
+            {/* Right Column - Editor Panel */}
             <EditorPanel
               form={form}
               isBuilding={isBuilding}
@@ -491,14 +492,18 @@ export function ProposalBuilder({
               onBuild={handleBuildProposal}
               onGenerateDraft={handleGenerateDraft}
               existingProposalCount={existingProposals.length}
+              showPreview={showPreview}
+              onTogglePreview={() => setShowPreview(prev => !prev)}
             />
 
-            {/* Right Column - Live Preview */}
-            <PreviewPanel
-              content={previewContent}
-              documentSettings={documentSettings}
-              onDocumentSettingsChange={setDocumentSettings}
-            />
+            {/* Collapsible Preview Panel */}
+            {showPreview && (
+              <PreviewPanel
+                content={previewContent}
+                documentSettings={documentSettings}
+                onDocumentSettingsChange={setDocumentSettings}
+              />
+            )}
           </form>
         </Form>
       </TooltipProvider>

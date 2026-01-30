@@ -18,6 +18,7 @@ import {
   integer,
   primaryKey,
   boolean,
+  varchar,
 } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
 
@@ -1480,6 +1481,15 @@ export const proposals = pgTable(
     sentToEmail: text('sent_to_email'),
     // Structured content for proposals built from scratch
     content: jsonb('content').default({}).notNull(),
+    // Sharing fields
+    shareToken: varchar('share_token', { length: 64 }).unique(),
+    sharePasswordHash: varchar('share_password_hash', { length: 255 }),
+    shareEnabled: boolean('share_enabled').default(false),
+    viewedAt: timestamp('viewed_at', { withTimezone: true, mode: 'string' }),
+    viewedCount: integer('viewed_count').default(0),
+    acceptedAt: timestamp('accepted_at', { withTimezone: true, mode: 'string' }),
+    rejectedAt: timestamp('rejected_at', { withTimezone: true, mode: 'string' }),
+    clientComment: text('client_comment'),
     createdBy: uuid('created_by').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
@@ -1502,6 +1512,9 @@ export const proposals = pgTable(
     index('idx_proposals_doc_id')
       .using('btree', table.docId.asc().nullsLast().op('text_ops'))
       .where(sql`(deleted_at IS NULL AND doc_id IS NOT NULL)`),
+    index('idx_proposals_share_token')
+      .using('btree', table.shareToken.asc().nullsLast())
+      .where(sql`(deleted_at IS NULL AND share_token IS NOT NULL AND share_enabled = true)`),
     foreignKey({
       columns: [table.leadId],
       foreignColumns: [leads.id],

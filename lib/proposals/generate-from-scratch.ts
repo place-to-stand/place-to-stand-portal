@@ -2,7 +2,6 @@ import 'server-only'
 
 import { addDays, format } from 'date-fns'
 
-import { buildProposalDocument } from '@/lib/google/proposal-document-builder'
 import { createProposal, type Proposal } from '@/lib/queries/proposals'
 
 import {
@@ -11,7 +10,6 @@ import {
   DEFAULT_PROPOSAL_VALIDITY_DAYS,
   DEFAULT_RISKS,
 } from './constants'
-import { DEFAULT_DOCUMENT_SETTINGS, type DocumentSettings } from './document-styles'
 import type {
   ProposalContent,
   ProposalPhase,
@@ -26,56 +24,34 @@ import type {
 export interface GenerateProposalFromScratchParams {
   userId: string
   input: BuildProposalFromScratchInput
-  connectionId?: string
 }
 
 export interface GenerateProposalFromScratchResult {
   proposal: Proposal
-  docId: string
-  docUrl: string
 }
 
 /**
  * Generate a complete proposal from scratch.
  *
  * 1. Merges input with defaults
- * 2. Builds the Google Doc
- * 3. Saves the proposal record with content JSONB
+ * 2. Saves the proposal record with content JSONB
  */
 export async function generateProposalFromScratch({
   userId,
   input,
-  connectionId,
 }: GenerateProposalFromScratchParams): Promise<GenerateProposalFromScratchResult> {
-  // Build the full content object with defaults
   const content = buildProposalContent(input)
 
-  // Build document settings with defaults
-  const documentSettings: DocumentSettings = {
-    ...DEFAULT_DOCUMENT_SETTINGS,
-    ...input.documentSettings,
-  }
-
-  // Create the Google Doc
-  const { docId, docUrl } = await buildProposalDocument(
-    userId,
-    content,
-    input.title,
-    { connectionId, documentSettings }
-  )
-
-  // Calculate expiration date for the proposal record
   const expirationDate = input.proposalValidUntil
     ? format(new Date(input.proposalValidUntil), 'yyyy-MM-dd')
     : format(addDays(new Date(), DEFAULT_PROPOSAL_VALIDITY_DAYS), 'yyyy-MM-dd')
 
-  // Save to database
   const proposal = await createProposal({
     leadId: input.leadId,
     title: input.title,
-    docUrl,
-    docId,
-    templateDocId: null, // No template used - built from scratch
+    docUrl: null,
+    docId: null,
+    templateDocId: null,
     status: 'DRAFT',
     estimatedValue: input.estimatedValue !== undefined ? String(input.estimatedValue) : null,
     expirationDate,
@@ -83,11 +59,7 @@ export async function generateProposalFromScratch({
     createdBy: userId,
   })
 
-  return {
-    proposal,
-    docId,
-    docUrl,
-  }
+  return { proposal }
 }
 
 // =============================================================================
