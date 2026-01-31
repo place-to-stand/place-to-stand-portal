@@ -169,6 +169,13 @@
       "when": 1769794491290,
       "tag": "0023_proposal_sharing",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1769878174054,
+      "tag": "0024_proposal_signature_fields",
+      "breakpoints": true
     }
   ]
 }

@@ -31,6 +31,11 @@ export type Proposal = {
   acceptedAt: string | null
   rejectedAt: string | null
   clientComment: string | null
+  signerName: string | null
+  signerEmail: string | null
+  signatureData: string | null
+  signerIpAddress: string | null
+  signatureConsent: boolean | null
 }
 
 export type ProposalWithCreator = Proposal & {
@@ -71,6 +76,11 @@ export async function fetchProposalsByLeadId(
       acceptedAt: proposals.acceptedAt,
       rejectedAt: proposals.rejectedAt,
       clientComment: proposals.clientComment,
+      signerName: proposals.signerName,
+      signerEmail: proposals.signerEmail,
+      signatureData: proposals.signatureData,
+      signerIpAddress: proposals.signerIpAddress,
+      signatureConsent: proposals.signatureConsent,
       createdBy: proposals.createdBy,
       createdAt: proposals.createdAt,
       updatedAt: proposals.updatedAt,
@@ -106,6 +116,11 @@ export async function fetchProposalsByLeadId(
     acceptedAt: row.acceptedAt,
     rejectedAt: row.rejectedAt,
     clientComment: row.clientComment,
+    signerName: row.signerName,
+    signerEmail: row.signerEmail,
+    signatureData: row.signatureData,
+    signerIpAddress: row.signerIpAddress,
+    signatureConsent: row.signatureConsent,
     createdBy: row.createdBy,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -149,6 +164,11 @@ export async function fetchProposalById(
       acceptedAt: proposals.acceptedAt,
       rejectedAt: proposals.rejectedAt,
       clientComment: proposals.clientComment,
+      signerName: proposals.signerName,
+      signerEmail: proposals.signerEmail,
+      signatureData: proposals.signatureData,
+      signerIpAddress: proposals.signerIpAddress,
+      signatureConsent: proposals.signatureConsent,
       createdBy: proposals.createdBy,
       createdAt: proposals.createdAt,
       updatedAt: proposals.updatedAt,
@@ -232,6 +252,11 @@ export async function createProposal(
     acceptedAt: inserted.acceptedAt,
     rejectedAt: inserted.rejectedAt,
     clientComment: inserted.clientComment,
+    signerName: inserted.signerName,
+    signerEmail: inserted.signerEmail,
+    signatureData: inserted.signatureData,
+    signerIpAddress: inserted.signerIpAddress,
+    signatureConsent: inserted.signatureConsent,
     createdBy: inserted.createdBy,
     createdAt: inserted.createdAt,
     updatedAt: inserted.updatedAt,
@@ -302,6 +327,11 @@ export async function updateProposal(
     acceptedAt: updated.acceptedAt,
     rejectedAt: updated.rejectedAt,
     clientComment: updated.clientComment,
+    signerName: updated.signerName,
+    signerEmail: updated.signerEmail,
+    signatureData: updated.signatureData,
+    signerIpAddress: updated.signerIpAddress,
+    signatureConsent: updated.signatureConsent,
     createdBy: updated.createdBy,
     createdAt: updated.createdAt,
     updatedAt: updated.updatedAt,
@@ -352,6 +382,11 @@ export async function findProposalByDocId(
       acceptedAt: proposals.acceptedAt,
       rejectedAt: proposals.rejectedAt,
       clientComment: proposals.clientComment,
+      signerName: proposals.signerName,
+      signerEmail: proposals.signerEmail,
+      signatureData: proposals.signatureData,
+      signerIpAddress: proposals.signerIpAddress,
+      signatureConsent: proposals.signatureConsent,
       createdBy: proposals.createdBy,
       createdAt: proposals.createdAt,
       updatedAt: proposals.updatedAt,
@@ -425,10 +460,19 @@ export async function recordProposalView(proposalId: string): Promise<void> {
 /**
  * Record a client's accept/reject response on a shared proposal.
  */
+export type SignatureData = {
+  signerName: string
+  signerEmail: string
+  signatureData: string
+  signerIpAddress: string
+  signatureConsent: boolean
+}
+
 export async function recordProposalResponse(
   proposalId: string,
   action: 'ACCEPTED' | 'REJECTED',
-  comment?: string | null
+  comment?: string | null,
+  signature?: SignatureData | null
 ): Promise<Proposal | null> {
   const now = new Date().toISOString()
 
@@ -438,9 +482,25 @@ export async function recordProposalResponse(
       status: action,
       ...(action === 'ACCEPTED' ? { acceptedAt: now } : { rejectedAt: now }),
       clientComment: comment ?? null,
+      ...(signature
+        ? {
+            signerName: signature.signerName,
+            signerEmail: signature.signerEmail,
+            signatureData: signature.signatureData,
+            signerIpAddress: signature.signerIpAddress,
+            signatureConsent: signature.signatureConsent,
+          }
+        : {}),
       updatedAt: now,
     })
-    .where(and(eq(proposals.id, proposalId), isNull(proposals.deletedAt)))
+    .where(
+      and(
+        eq(proposals.id, proposalId),
+        isNull(proposals.deletedAt),
+        isNull(proposals.acceptedAt),
+        isNull(proposals.rejectedAt)
+      )
+    )
     .returning()
 
   if (!updated) return null
@@ -496,6 +556,11 @@ export async function fetchAllProposals(
       acceptedAt: proposals.acceptedAt,
       rejectedAt: proposals.rejectedAt,
       clientComment: proposals.clientComment,
+      signerName: proposals.signerName,
+      signerEmail: proposals.signerEmail,
+      signatureData: proposals.signatureData,
+      signerIpAddress: proposals.signerIpAddress,
+      signatureConsent: proposals.signatureConsent,
       createdBy: proposals.createdBy,
       createdAt: proposals.createdAt,
       updatedAt: proposals.updatedAt,

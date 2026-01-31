@@ -13,6 +13,7 @@ import {
   type Proposal,
   type ProposalStatus,
   type ProposalWithRelations,
+  type SignatureData,
 } from '@/lib/queries/proposals'
 
 // =============================================================================
@@ -118,7 +119,8 @@ export async function viewSharedProposal(token: string): Promise<Proposal | null
 export async function respondToProposal(
   token: string,
   action: 'ACCEPTED' | 'REJECTED',
-  comment?: string | null
+  comment?: string | null,
+  signature?: SignatureData | null
 ): Promise<Proposal | null> {
   const proposal = await fetchProposalByShareToken(token)
   if (!proposal) return null
@@ -126,7 +128,7 @@ export async function respondToProposal(
   // Don't allow changing a response once set
   if (proposal.acceptedAt || proposal.rejectedAt) return null
 
-  return recordProposalResponse(proposal.id, action, comment)
+  return recordProposalResponse(proposal.id, action, comment, signature)
 }
 
 // =============================================================================

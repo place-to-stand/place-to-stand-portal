@@ -1490,6 +1490,12 @@ export const proposals = pgTable(
     acceptedAt: timestamp('accepted_at', { withTimezone: true, mode: 'string' }),
     rejectedAt: timestamp('rejected_at', { withTimezone: true, mode: 'string' }),
     clientComment: text('client_comment'),
+    // Signature fields (captured on acceptance)
+    signerName: text('signer_name'),
+    signerEmail: text('signer_email'),
+    signatureData: text('signature_data'),
+    signerIpAddress: text('signer_ip_address'),
+    signatureConsent: boolean('signature_consent'),
     createdBy: uuid('created_by').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
