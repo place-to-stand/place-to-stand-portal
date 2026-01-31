@@ -37,6 +37,7 @@ export type LeadSheetProps = {
   onOpenChange: (open: boolean) => void
   lead: LeadRecord | null
   initialStatus?: LeadStatusValue | null
+  initialAction?: string | null
   assignees: LeadAssigneeOption[]
   canManage?: boolean
   senderName?: string

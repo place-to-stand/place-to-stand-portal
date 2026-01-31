@@ -30,6 +30,7 @@ type LeadsWorkspaceProps = {
   assignees: LeadAssigneeOption[]
   canManage: boolean
   activeLeadId: string | null
+  activeAction?: string | null
   senderName?: string
 }
 
@@ -38,6 +39,7 @@ export function LeadsWorkspace({
   assignees,
   canManage,
   activeLeadId,
+  activeAction = null,
   senderName,
 }: LeadsWorkspaceProps) {
   const router = useRouter()
@@ -184,6 +186,7 @@ export function LeadsWorkspace({
           assignees={assignees}
           canManage={canManage}
           senderName={senderName}
+          initialAction={activeAction}
           onSuccess={handleSheetSuccess}
         />
       ) : null}

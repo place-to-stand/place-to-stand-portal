@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, useWatch } from 'react-hook-form'
 import { Archive, Redo2, Undo2 } from 'lucide-react'
@@ -31,11 +32,13 @@ export function LeadSheet({
   onOpenChange,
   lead,
   initialStatus,
+  initialAction = null,
   assignees,
   canManage = false,
   senderName = '',
   onSuccess,
 }: LeadSheetProps) {
+  const router = useRouter()
   const isEditing = Boolean(lead)
   const [isSaving, startSaveTransition] = useTransition()
   const [isArchiving, startArchiveTransition] = useTransition()
@@ -47,6 +50,43 @@ export function LeadSheet({
   const [meetingInitialTitle, setMeetingInitialTitle] = useState<string | undefined>()
   const [isBuildProposalDialogOpen, setBuildProposalDialogOpen] = useState(false)
   const { toast } = useToast()
+
+  // Track whether we've already consumed the initial action to avoid re-opening on re-renders
+  const consumedActionRef = useRef<string | null>(null)
+
+  // Open the matching dialog when initialAction is set (e.g. deep link)
+  useEffect(() => {
+    if (!initialAction || !lead || consumedActionRef.current === initialAction) return
+    consumedActionRef.current = initialAction
+
+    switch (initialAction) {
+      case 'proposals/new':
+        setBuildProposalDialogOpen(true)
+        break
+      case 'email':
+        setEmailDialogOpen(true)
+        break
+      case 'meeting':
+        setMeetingDialogOpen(true)
+        break
+      case 'convert':
+        setConvertDialogOpen(true)
+        break
+    }
+  }, [initialAction, lead])
+
+  const pushActionUrl = useCallback(
+    (action: string) => {
+      if (!lead) return
+      router.push(`/leads/board/${lead.id}/${action}`, { scroll: false })
+    },
+    [lead, router]
+  )
+
+  const pushLeadUrl = useCallback(() => {
+    if (!lead) return
+    router.push(`/leads/board/${lead.id}`, { scroll: false })
+  }, [lead, router])
 
   const canConvert = lead?.status === 'CLOSED_WON' && !lead?.convertedToClientId
   const isConverted = Boolean(lead?.convertedToClientId)
@@ -277,7 +317,10 @@ export function LeadSheet({
                 lead={lead}
                 canConvert={canConvert}
                 isConverted={isConverted}
-                onConvertToClient={() => setConvertDialogOpen(true)}
+                onConvertToClient={() => {
+                  setConvertDialogOpen(true)
+                  pushActionUrl('convert')
+                }}
               />
             )}
           </div>
@@ -369,10 +412,22 @@ export function LeadSheet({
                   canManage={canManage}
                   canConvert={canConvert}
                   isConverted={isConverted}
-                  onSendEmail={() => setEmailDialogOpen(true)}
-                  onScheduleMeeting={handleScheduleMeeting}
-                  onBuildProposal={() => setBuildProposalDialogOpen(true)}
-                  onConvertToClient={() => setConvertDialogOpen(true)}
+                  onSendEmail={() => {
+                    setEmailDialogOpen(true)
+                    pushActionUrl('email')
+                  }}
+                  onScheduleMeeting={(title?: string) => {
+                    handleScheduleMeeting(title)
+                    pushActionUrl('meeting')
+                  }}
+                  onBuildProposal={() => {
+                    setBuildProposalDialogOpen(true)
+                    pushActionUrl('proposals/new')
+                  }}
+                  onConvertToClient={() => {
+                    setConvertDialogOpen(true)
+                    pushActionUrl('convert')
+                  }}
                   onRescore={handleRescore}
                   isRescoring={isRescoring}
                   onSuccess={onSuccess}
@@ -394,21 +449,35 @@ export function LeadSheet({
         }}
         onArchiveConfirm={handleArchive}
         isConvertDialogOpen={isConvertDialogOpen}
-        onConvertOpenChange={setConvertDialogOpen}
+        onConvertOpenChange={(next: boolean) => {
+          setConvertDialogOpen(next)
+          if (!next) pushLeadUrl()
+        }}
         isEmailDialogOpen={isEmailDialogOpen}
-        onEmailOpenChange={setEmailDialogOpen}
+        onEmailOpenChange={(next: boolean) => {
+          setEmailDialogOpen(next)
+          if (!next) pushLeadUrl()
+        }}
         isMeetingDialogOpen={isMeetingDialogOpen}
         meetingInitialTitle={meetingInitialTitle}
-        onMeetingOpenChange={setMeetingDialogOpen}
+        onMeetingOpenChange={(next: boolean) => {
+          setMeetingDialogOpen(next)
+          if (!next) pushLeadUrl()
+        }}
         onMeetingSuccess={() => {
           setMeetingDialogOpen(false)
           setMeetingInitialTitle(undefined)
+          pushLeadUrl()
           onSuccess()
         }}
         isBuildProposalDialogOpen={isBuildProposalDialogOpen}
-        onBuildProposalOpenChange={setBuildProposalDialogOpen}
+        onBuildProposalOpenChange={(next: boolean) => {
+          setBuildProposalDialogOpen(next)
+          if (!next) pushLeadUrl()
+        }}
         onProposalSuccess={() => {
           setBuildProposalDialogOpen(false)
+          pushLeadUrl()
           onSuccess()
         }}
         onSuccess={onSuccess}
