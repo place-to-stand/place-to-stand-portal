@@ -47,6 +47,11 @@ type Project = {
   clientSlug: string | null
 }
 
+type Lead = {
+  id: string
+  contactName: string
+}
+
 type ViewType = 'inbox' | 'sent' | 'drafts' | 'scheduled' | 'linked' | 'unlinked'
 
 type ConnectionStatus = 'ACTIVE' | 'EXPIRED' | 'REVOKED' | 'PENDING_REAUTH'
@@ -63,6 +68,7 @@ type InboxPanelProps = {
   }
   clients: Client[]
   projects: Project[]
+  leads: Lead[]
   isAdmin: boolean
   view: ViewType
   searchQuery: string
@@ -90,6 +96,7 @@ export function InboxPanel({
   syncStatus,
   clients,
   projects,
+  leads,
   isAdmin,
   view,
   searchQuery,
@@ -205,20 +212,24 @@ export function InboxPanel({
     selectedThread,
   })
 
-  // Linking hook - manages client and project linking
+  // Linking hook - manages client, project, and lead linking
   const {
     isLinking,
     isLinkingProject,
+    isLinkingLead,
     handleLinkClient,
     handleUnlinkClient,
     handleLinkProject,
     handleUnlinkProject,
+    handleLinkLead,
+    handleUnlinkLead,
   } = useThreadLinking({
     selectedThread,
     setSelectedThread,
     setThreads,
     clients,
     projects,
+    leads,
     onLinkComplete: triggerThreadAnalysis,
     onClientLinked: clearSuggestions,
     onProjectLinked: clearProjectSuggestions,
@@ -534,6 +545,7 @@ export function InboxPanel({
         isAdmin={isAdmin}
         clients={clients}
         projects={projects}
+        leads={leads}
         suggestions={suggestions}
         projectSuggestions={projectSuggestions}
         suggestionsLoading={suggestionsLoading}
@@ -542,10 +554,13 @@ export function InboxPanel({
         suggestionRefreshKey={suggestionRefreshKey}
         isLinking={isLinking}
         isLinkingProject={isLinkingProject}
+        isLinkingLead={isLinkingLead}
         onLinkClient={handleLinkClient}
         onUnlinkClient={handleUnlinkClient}
         onLinkProject={handleLinkProject}
         onUnlinkProject={handleUnlinkProject}
+        onLinkLead={handleLinkLead}
+        onUnlinkLead={handleUnlinkLead}
         onRefreshSuggestions={() => triggerThreadAnalysis(selectedThread?.id || '')}
         canGoPrev={canGoPrev}
         canGoNext={canGoNext}

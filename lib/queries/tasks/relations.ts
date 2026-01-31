@@ -16,6 +16,7 @@ import type { RawTaskWithRelations } from '@/lib/data/projects/types'
 type TaskWithRelationsSelection = {
   id: string
   projectId: string
+  leadId: string | null
   title: string
   description: string | null
   status: RawTaskWithRelations['status']
@@ -58,6 +59,7 @@ export async function listProjectTasksWithRelations(
     .select({
       id: tasks.id,
       projectId: tasks.projectId,
+      leadId: tasks.leadId,
       title: tasks.title,
       description: tasks.description,
       status: tasks.status,
@@ -116,6 +118,7 @@ export async function listProjectTasksWithRelations(
   return taskRows.map(row => ({
     id: row.id,
     project_id: row.projectId,
+    lead_id: row.leadId,
     title: row.title ?? '',
     description: row.description,
     status: row.status ?? 'BACKLOG',

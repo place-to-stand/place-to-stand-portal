@@ -18,6 +18,7 @@ import { AttachmentMetadata } from './attachment-viewer'
 import { EmailToolbar } from './email-toolbar'
 import { MessageCard } from './message-card'
 import { ThreadContactPanel } from './thread-contact-panel'
+import { ThreadLeadPanel } from './thread-lead-panel'
 import { ThreadLinkingPanel } from './thread-linking-panel'
 import { ThreadProjectLinkingPanel } from './thread-project-linking-panel'
 import { ThreadSuggestionsPanel } from './thread-suggestions-panel'
@@ -37,6 +38,11 @@ type Project = {
   clientSlug: string | null
 }
 
+type Lead = {
+  id: string
+  contactName: string
+}
+
 interface ThreadDetailSheetProps {
   selectedThread: ThreadSummary | null
   threadMessages: Message[]
@@ -46,6 +52,7 @@ interface ThreadDetailSheetProps {
   isAdmin: boolean
   clients: Client[]
   projects: Project[]
+  leads: Lead[]
   // Suggestions
   suggestions: Suggestion[]
   projectSuggestions: ProjectSuggestion[]
@@ -56,10 +63,13 @@ interface ThreadDetailSheetProps {
   // Linking
   isLinking: boolean
   isLinkingProject: boolean
+  isLinkingLead: boolean
   onLinkClient: (clientId: string) => void
   onUnlinkClient: () => void
   onLinkProject: (projectId: string) => void
   onUnlinkProject: () => void
+  onLinkLead: (leadId: string) => void
+  onUnlinkLead: () => void
   onRefreshSuggestions: () => void
   // Navigation
   canGoPrev: boolean
@@ -91,6 +101,7 @@ export function ThreadDetailSheet({
   isAdmin,
   clients,
   projects,
+  leads,
   suggestions,
   projectSuggestions,
   suggestionsLoading,
@@ -99,10 +110,13 @@ export function ThreadDetailSheet({
   suggestionRefreshKey,
   isLinking,
   isLinkingProject,
+  isLinkingLead,
   onLinkClient,
   onUnlinkClient,
   onLinkProject,
   onUnlinkProject,
+  onLinkLead,
+  onUnlinkLead,
   onRefreshSuggestions,
   canGoPrev,
   canGoNext,
@@ -257,6 +271,21 @@ export function ThreadDetailSheet({
                   <ThreadContactPanel
                     threadId={selectedThread.id}
                     participantEmails={selectedThread.participantEmails || []}
+                  />
+                </>
+              )}
+
+              {/* Lead Linking Section */}
+              {isAdmin && selectedThread && (
+                <>
+                  <Separator />
+                  <ThreadLeadPanel
+                    thread={selectedThread}
+                    threadMessages={threadMessages}
+                    leads={leads}
+                    isLinking={isLinkingLead}
+                    onLinkLead={onLinkLead}
+                    onUnlinkLead={onUnlinkLead}
                   />
                 </>
               )}

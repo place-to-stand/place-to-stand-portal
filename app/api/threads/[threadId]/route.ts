@@ -30,6 +30,7 @@ export async function GET(
 const patchSchema = z.object({
   clientId: z.string().uuid().nullable().optional(),
   projectId: z.string().uuid().nullable().optional(),
+  leadId: z.string().uuid().nullable().optional(),
   status: z.enum(['OPEN', 'RESOLVED', 'ARCHIVED']).optional(),
 })
 
@@ -62,13 +63,16 @@ export async function PATCH(
   }
 
   const updates: Parameters<typeof updateThread>[1] = {}
-  const { clientId, projectId, status } = bodyParsed.data
+  const { clientId, projectId, leadId, status } = bodyParsed.data
 
   if (clientId !== undefined) {
     updates.clientId = clientId
   }
   if (projectId !== undefined) {
     updates.projectId = projectId
+  }
+  if (leadId !== undefined) {
+    updates.leadId = leadId
   }
   if (status !== undefined) {
     updates.status = status

@@ -30,6 +30,8 @@ type LeadsWorkspaceProps = {
   assignees: LeadAssigneeOption[]
   canManage: boolean
   activeLeadId: string | null
+  activeAction?: string | null
+  senderName?: string
 }
 
 export function LeadsWorkspace({
@@ -37,6 +39,8 @@ export function LeadsWorkspace({
   assignees,
   canManage,
   activeLeadId,
+  activeAction = null,
+  senderName,
 }: LeadsWorkspaceProps) {
   const router = useRouter()
   const [isCreatingLead, setIsCreatingLead] = useState(false)
@@ -180,10 +184,13 @@ export function LeadsWorkspace({
           lead={sheetLead}
           initialStatus={initialStatus}
           assignees={assignees}
+          canManage={canManage}
+          senderName={senderName}
+          initialAction={activeAction}
           onSuccess={handleSheetSuccess}
         />
       ) : null}
-      <Tabs value='board' className='flex min-h-0 flex-1 flex-col gap-3'>
+      <Tabs id='leads-tabs' value='board' className='flex min-h-0 flex-1 flex-col gap-3'>
         <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
           <TabsList className='bg-muted/40 h-10 w-full justify-start gap-2 rounded-lg p-1 sm:w-auto'>
             <TabsTrigger value='board' className='px-3 py-1.5 text-sm'>

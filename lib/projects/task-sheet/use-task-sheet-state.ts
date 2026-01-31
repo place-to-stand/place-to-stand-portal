@@ -58,6 +58,7 @@ export type UseTaskSheetStateArgs = {
   projectSelectionProjects?: ProjectWithRelations[]
   defaultProjectId: string | null
   defaultAssigneeId: string | null
+  defaultLeadId: string | null
   currentUserId: string
 }
 
@@ -106,6 +107,7 @@ export const useTaskSheetState = ({
   projectSelectionProjects,
   defaultProjectId,
   defaultAssigneeId,
+  defaultLeadId,
   currentUserId,
 }: UseTaskSheetStateArgs): UseTaskSheetStateReturn => {
   const router = useRouter()
@@ -129,6 +131,7 @@ export const useTaskSheetState = ({
     defaultDueOn,
     defaultProjectId,
     defaultAssigneeId,
+    defaultLeadId,
   })
   const {
     attachmentItems,
@@ -225,6 +228,7 @@ export const useTaskSheetState = ({
         const result = await saveTask({
           id: task?.id,
           projectId: values.projectId,
+          leadId: values.leadId ?? null,
           title: values.title.trim(),
           description: normalizedDescription,
           status: values.status,

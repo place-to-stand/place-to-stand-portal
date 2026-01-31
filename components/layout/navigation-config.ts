@@ -12,6 +12,7 @@ import {
   Sparkles,
   Contact,
   FileText,
+  ScrollText,
 } from 'lucide-react'
 import type { UserRole } from '@/lib/auth/session'
 
@@ -66,6 +67,11 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Handshake,
       },
       {
+        href: '/proposals',
+        label: 'Proposals',
+        icon: ScrollText,
+      },
+      {
         href: '/hour-blocks',
         label: 'Hour Blocks',
         icon: Clock3,
@@ -118,6 +124,11 @@ export const NAV_GROUPS: NavGroup[] = [
         href: '/settings/integrations',
         label: 'Integrations',
         icon: Plug,
+      },
+      {
+        href: '/settings/email-templates',
+        label: 'Email Templates',
+        icon: FileText,
       },
     ],
   },

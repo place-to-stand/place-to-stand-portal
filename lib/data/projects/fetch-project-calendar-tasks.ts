@@ -12,6 +12,7 @@ import type { DbTask, TaskWithRelations } from '@/lib/types'
 type TaskRow = {
   id: string
   projectId: string
+  leadId: string | null
   title: string
   description: string | null
   status: DbTask['status']
@@ -46,6 +47,7 @@ export async function fetchProjectCalendarTasks({
     .select({
       id: tasksTable.id,
       projectId: tasksTable.projectId,
+      leadId: tasksTable.leadId,
       title: tasksTable.title,
       description: tasksTable.description,
       status: tasksTable.status,
@@ -97,6 +99,7 @@ export async function fetchProjectCalendarTasks({
   const rawTasks: RawTaskWithRelations[] = taskRows.map(row => ({
     id: row.id,
     project_id: row.projectId,
+    lead_id: row.leadId,
     title: row.title,
     description: row.description,
     status: row.status,

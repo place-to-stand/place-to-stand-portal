@@ -27,6 +27,7 @@ export const attachmentsSchema = z.object({
 export const baseTaskSchema = z.object({
   id: z.string().uuid().optional(),
   projectId: z.string().uuid(),
+  leadId: z.string().uuid().optional().nullable(),
   title: z.string().min(1),
   description: z.string().optional().nullable(),
   status: statusSchema.default('BACKLOG'),
