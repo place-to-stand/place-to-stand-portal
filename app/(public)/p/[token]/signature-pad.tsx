@@ -14,18 +14,13 @@ type SignaturePadProps = {
 
 type Mode = 'draw' | 'type'
 
-const FONT_FAMILIES = [
-  { label: 'Script', value: "'Dancing Script', cursive" },
-  { label: 'Elegant', value: "'Great Vibes', cursive" },
-  { label: 'Casual', value: "'Caveat', cursive" },
-]
+const SIGNATURE_FONT = "'Dancing Script', cursive"
 
 const GOOGLE_FONTS_URL =
-  'https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Dancing+Script:wght@400;700&family=Great+Vibes&display=swap'
+  'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&display=swap'
 
 export function SignaturePad({ onChange, typedName = '' }: SignaturePadProps) {
   const [mode, setMode] = useState<Mode>('type')
-  const [selectedFont, setSelectedFont] = useState(0)
 
   // Ensure Google Fonts are loaded
   useEffect(() => {
@@ -85,9 +80,7 @@ export function SignaturePad({ onChange, typedName = '' }: SignaturePadProps) {
       {mode === 'type' ? (
         <TypedSignature
           name={typedName}
-          fontFamily={FONT_FAMILIES[selectedFont].value}
-          selectedFont={selectedFont}
-          onFontChange={setSelectedFont}
+          fontFamily={SIGNATURE_FONT}
           onChange={onChange}
         />
       ) : (
@@ -104,16 +97,12 @@ export function SignaturePad({ onChange, typedName = '' }: SignaturePadProps) {
 type TypedSignatureProps = {
   name: string
   fontFamily: string
-  selectedFont: number
-  onFontChange: (index: number) => void
   onChange: (dataUrl: string | null) => void
 }
 
 function TypedSignature({
   name,
   fontFamily,
-  selectedFont,
-  onFontChange,
   onChange,
 }: TypedSignatureProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -160,46 +149,24 @@ function TypedSignature({
   }, [name, fontFamily, onChange])
 
   return (
-    <div className="space-y-3">
-      {/* Preview */}
-      <div className="relative flex h-40 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/30 bg-white">
-        {name.trim() ? (
-          <span
-            className="select-none text-4xl text-black sm:text-5xl"
-            style={{ fontFamily }}
-          >
-            {name.trim()}
-          </span>
-        ) : (
-          <span className="text-sm text-muted-foreground/50">
-            Type your name above to preview
-          </span>
-        )}
-        {/* Hidden canvas for PNG export */}
-        <canvas
-          ref={canvasRef}
-          className="pointer-events-none absolute inset-0 h-full w-full opacity-0"
-        />
-      </div>
-
-      {/* Font picker */}
-      <div className="flex gap-2">
-        {FONT_FAMILIES.map((font, i) => (
-          <button
-            key={font.label}
-            type="button"
-            onClick={() => onFontChange(i)}
-            className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
-              selectedFont === i
-                ? 'border-primary bg-primary/5 text-primary'
-                : 'border-border text-muted-foreground hover:border-primary/50'
-            }`}
-            style={{ fontFamily: font.value }}
-          >
-            {font.label}
-          </button>
-        ))}
-      </div>
+    <div className="relative flex h-40 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/30 bg-white">
+      {name.trim() ? (
+        <span
+          className="select-none text-4xl text-black sm:text-5xl"
+          style={{ fontFamily }}
+        >
+          {name.trim()}
+        </span>
+      ) : (
+        <span className="text-sm text-muted-foreground/50">
+          Type your name above to preview
+        </span>
+      )}
+      {/* Hidden canvas for PNG export */}
+      <canvas
+        ref={canvasRef}
+        className="pointer-events-none absolute inset-0 h-full w-full opacity-0"
+      />
     </div>
   )
 }

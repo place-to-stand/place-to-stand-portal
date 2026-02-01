@@ -1,16 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { format } from 'date-fns'
+import { format, formatDistanceToNow } from 'date-fns'
 import {
   FileText,
-  ExternalLink,
   Eye,
   Send,
   CheckCircle,
   XCircle,
-  Clock,
-  Link2,
+  PenLine,
 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
@@ -29,9 +27,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import type { ProposalWithRelations } from '@/lib/queries/proposals'
 
-import { ShareProposalDialog } from '../../leads/_components/share-proposal-dialog'
+import { ProposalDetailSheet } from './proposal-detail-sheet'
 
 type ProposalStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED'
 
@@ -66,16 +70,78 @@ const STATUS_CONFIG: Record<
   },
 }
 
-type ProposalsTableProps = {
-  proposals: ProposalWithRelations[]
+function getStatusDisplay(proposal: ProposalWithRelations) {
+  const config = STATUS_CONFIG[proposal.status]
+  const StatusIcon = config.icon
+
+  if (proposal.status === 'ACCEPTED' && proposal.countersignedAt) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-700 border-emerald-500/20">
+          <CheckCircle className="mr-1 h-3 w-3" />
+          Fully Executed
+        </Badge>
+      </div>
+    )
+  }
+
+  if (proposal.status === 'ACCEPTED' && !proposal.countersignedAt) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <Badge variant="outline" className={`text-xs ${config.className}`}>
+          <StatusIcon className="mr-1 h-3 w-3" />
+          {config.label}
+        </Badge>
+        <Badge variant="outline" className="text-xs bg-orange-500/10 text-orange-600 border-orange-500/20">
+          <PenLine className="mr-1 h-3 w-3" />
+          Awaiting Countersign
+        </Badge>
+      </div>
+    )
+  }
+
+  return (
+    <Badge variant="outline" className={`text-xs ${config.className}`}>
+      <StatusIcon className="mr-1 h-3 w-3" />
+      {config.label}
+    </Badge>
+  )
 }
 
-export function ProposalsTable({ proposals }: ProposalsTableProps) {
+function getViewsDisplay(proposal: ProposalWithRelations) {
+  const count = proposal.viewedCount ?? 0
+  if (count === 0) return <span className="text-muted-foreground">—</span>
+
+  const lastViewed = proposal.viewedAt
+    ? formatDistanceToNow(new Date(proposal.viewedAt), { addSuffix: true })
+    : null
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="cursor-default">
+            {count}
+          </span>
+        </TooltipTrigger>
+        {lastViewed && (
+          <TooltipContent>
+            <p>Last viewed {lastViewed}</p>
+          </TooltipContent>
+        )}
+      </Tooltip>
+    </TooltipProvider>
+  )
+}
+
+type ProposalsTableProps = {
+  proposals: ProposalWithRelations[]
+  senderName: string
+}
+
+export function ProposalsTable({ proposals, senderName }: ProposalsTableProps) {
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
-  const [shareDialog, setShareDialog] = useState<{
-    open: boolean
-    proposal: ProposalWithRelations | null
-  }>({ open: false, proposal: null })
+  const [selectedProposal, setSelectedProposal] = useState<ProposalWithRelations | null>(null)
 
   const filtered =
     statusFilter === 'ALL'
@@ -113,89 +179,59 @@ export function ProposalsTable({ proposals }: ProposalsTableProps) {
               <TableHead className="text-right">Value</TableHead>
               <TableHead>Sent</TableHead>
               <TableHead className="text-right">Views</TableHead>
-              <TableHead className="w-[80px]" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                   No proposals found.
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map(proposal => {
-                const statusConfig = STATUS_CONFIG[proposal.status]
-                const StatusIcon = statusConfig.icon
-                return (
-                  <TableRow key={proposal.id}>
-                    <TableCell className="max-w-[200px] truncate font-medium">
-                      {proposal.title}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {proposal.leadName ?? proposal.clientName ?? '—'}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={`text-xs ${statusConfig.className}`}>
-                        <StatusIcon className="mr-1 h-3 w-3" />
-                        {statusConfig.label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {proposal.estimatedValue
-                        ? `$${parseFloat(proposal.estimatedValue).toLocaleString()}`
-                        : '—'}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {proposal.sentAt
-                        ? format(new Date(proposal.sentAt), 'MMM d, yyyy')
-                        : '—'}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {proposal.viewedCount ?? 0}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => setShareDialog({ open: true, proposal })}
-                          className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-                          title="Share"
-                        >
-                          <Link2 className="h-4 w-4" />
-                        </button>
-                        {proposal.docUrl && (
-                          <a
-                            href={proposal.docUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-                            title="Open document"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </a>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )
-              })
+              filtered.map(proposal => (
+                <TableRow
+                  key={proposal.id}
+                  className="cursor-pointer"
+                  onClick={() => setSelectedProposal(proposal)}
+                >
+                  <TableCell className="max-w-[200px] truncate font-medium">
+                    {proposal.title}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {proposal.leadName ?? proposal.clientName ?? '—'}
+                  </TableCell>
+                  <TableCell>
+                    {getStatusDisplay(proposal)}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {proposal.estimatedValue
+                      ? `$${parseFloat(proposal.estimatedValue).toLocaleString()}`
+                      : '—'}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {proposal.sentAt
+                      ? format(new Date(proposal.sentAt), 'MMM d, yyyy')
+                      : '—'}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {getViewsDisplay(proposal)}
+                  </TableCell>
+                </TableRow>
+              ))
             )}
           </TableBody>
         </Table>
       </div>
 
-      {shareDialog.proposal && (
-        <ShareProposalDialog
-          open={shareDialog.open}
-          onOpenChange={open => setShareDialog(prev => ({ ...prev, open }))}
-          proposalId={shareDialog.proposal.id}
-          proposalTitle={shareDialog.proposal.title}
-          shareToken={shareDialog.proposal.shareToken}
-          shareEnabled={shareDialog.proposal.shareEnabled}
-          viewedCount={shareDialog.proposal.viewedCount}
-        />
-      )}
+      <ProposalDetailSheet
+        proposal={selectedProposal}
+        senderName={senderName}
+        open={!!selectedProposal}
+        onOpenChange={open => {
+          if (!open) setSelectedProposal(null)
+        }}
+      />
     </>
   )
 }

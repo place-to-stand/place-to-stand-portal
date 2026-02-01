@@ -48,6 +48,8 @@ type SendEmailDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess?: () => void
+  initialSubject?: string
+  initialBodyHtml?: string
 }
 
 export function SendEmailDialog({
@@ -56,6 +58,8 @@ export function SendEmailDialog({
   open,
   onOpenChange,
   onSuccess,
+  initialSubject,
+  initialBodyHtml,
 }: SendEmailDialogProps) {
   const { toast } = useToast()
   const [isSending, startSendTransition] = useTransition()
@@ -106,14 +110,14 @@ export function SendEmailDialog({
   useEffect(() => {
     if (open) {
       setToEmail(lead.contactEmail ?? '')
-      setSubject('')
-      setBodyHtml('')
+      setSubject(initialSubject ?? '')
+      setBodyHtml(initialBodyHtml ?? '')
       setSelectedTemplateId(null)
       setScheduleMode('now')
       setScheduledAt('')
       setShowScheduleOptions(false)
     }
-  }, [open, lead.contactEmail])
+  }, [open, lead.contactEmail, initialSubject, initialBodyHtml])
 
   // Apply selected template — generate AI draft using full lead context
   const handleTemplateSelect = useCallback(

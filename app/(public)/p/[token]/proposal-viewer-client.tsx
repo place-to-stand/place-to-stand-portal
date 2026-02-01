@@ -98,6 +98,9 @@ export function ProposalViewerClient({
         signatoryName={proposalData.signatoryName}
         contactEmail={proposalData.contactEmail}
         signatureDataUrl={proposalData.signatureDataUrl}
+        proposalTitle={proposalData.title}
+        estimatedValue={proposalData.estimatedValue}
+        expirationDate={proposalData.expirationDate}
       />
     </>
   )

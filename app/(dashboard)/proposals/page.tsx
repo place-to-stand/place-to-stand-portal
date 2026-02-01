@@ -16,6 +16,7 @@ export default async function ProposalsPage() {
   assertAdmin(user)
 
   const proposals = await fetchAllProposals()
+  const senderName = user.full_name ?? user.email ?? 'Team'
 
   return (
     <div className="space-y-6">
@@ -25,7 +26,7 @@ export default async function ProposalsPage() {
       </div>
 
       <ProposalsPipelineSummary proposals={proposals} />
-      <ProposalsTable proposals={proposals} />
+      <ProposalsTable proposals={proposals} senderName={senderName} />
     </div>
   )
 }

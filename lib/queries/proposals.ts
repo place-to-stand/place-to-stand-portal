@@ -36,6 +36,15 @@ export type Proposal = {
   signatureData: string | null
   signerIpAddress: string | null
   signatureConsent: boolean | null
+  contentHashAtSigning: string | null
+  countersignToken: string | null
+  countersignerName: string | null
+  countersignerEmail: string | null
+  countersignatureData: string | null
+  countersignerIpAddress: string | null
+  countersignatureConsent: boolean | null
+  countersignedAt: string | null
+  executedPdfPath: string | null
 }
 
 export type ProposalWithCreator = Proposal & {
@@ -81,6 +90,15 @@ export async function fetchProposalsByLeadId(
       signatureData: proposals.signatureData,
       signerIpAddress: proposals.signerIpAddress,
       signatureConsent: proposals.signatureConsent,
+      contentHashAtSigning: proposals.contentHashAtSigning,
+      countersignToken: proposals.countersignToken,
+      countersignerName: proposals.countersignerName,
+      countersignerEmail: proposals.countersignerEmail,
+      countersignatureData: proposals.countersignatureData,
+      countersignerIpAddress: proposals.countersignerIpAddress,
+      countersignatureConsent: proposals.countersignatureConsent,
+      countersignedAt: proposals.countersignedAt,
+      executedPdfPath: proposals.executedPdfPath,
       createdBy: proposals.createdBy,
       createdAt: proposals.createdAt,
       updatedAt: proposals.updatedAt,
@@ -121,6 +139,15 @@ export async function fetchProposalsByLeadId(
     signatureData: row.signatureData,
     signerIpAddress: row.signerIpAddress,
     signatureConsent: row.signatureConsent,
+    contentHashAtSigning: row.contentHashAtSigning,
+    countersignToken: row.countersignToken,
+    countersignerName: row.countersignerName,
+    countersignerEmail: row.countersignerEmail,
+    countersignatureData: row.countersignatureData,
+    countersignerIpAddress: row.countersignerIpAddress,
+    countersignatureConsent: row.countersignatureConsent,
+    countersignedAt: row.countersignedAt,
+    executedPdfPath: row.executedPdfPath,
     createdBy: row.createdBy,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -169,6 +196,15 @@ export async function fetchProposalById(
       signatureData: proposals.signatureData,
       signerIpAddress: proposals.signerIpAddress,
       signatureConsent: proposals.signatureConsent,
+      contentHashAtSigning: proposals.contentHashAtSigning,
+      countersignToken: proposals.countersignToken,
+      countersignerName: proposals.countersignerName,
+      countersignerEmail: proposals.countersignerEmail,
+      countersignatureData: proposals.countersignatureData,
+      countersignerIpAddress: proposals.countersignerIpAddress,
+      countersignatureConsent: proposals.countersignatureConsent,
+      countersignedAt: proposals.countersignedAt,
+      executedPdfPath: proposals.executedPdfPath,
       createdBy: proposals.createdBy,
       createdAt: proposals.createdAt,
       updatedAt: proposals.updatedAt,
@@ -257,6 +293,15 @@ export async function createProposal(
     signatureData: inserted.signatureData,
     signerIpAddress: inserted.signerIpAddress,
     signatureConsent: inserted.signatureConsent,
+    contentHashAtSigning: inserted.contentHashAtSigning,
+    countersignToken: inserted.countersignToken,
+    countersignerName: inserted.countersignerName,
+    countersignerEmail: inserted.countersignerEmail,
+    countersignatureData: inserted.countersignatureData,
+    countersignerIpAddress: inserted.countersignerIpAddress,
+    countersignatureConsent: inserted.countersignatureConsent,
+    countersignedAt: inserted.countersignedAt,
+    executedPdfPath: inserted.executedPdfPath,
     createdBy: inserted.createdBy,
     createdAt: inserted.createdAt,
     updatedAt: inserted.updatedAt,
@@ -281,6 +326,9 @@ export type UpdateProposalInput = {
   acceptedAt?: string | null
   rejectedAt?: string | null
   clientComment?: string | null
+  contentHashAtSigning?: string | null
+  countersignToken?: string | null
+  executedPdfPath?: string | null
 }
 
 /**
@@ -332,6 +380,15 @@ export async function updateProposal(
     signatureData: updated.signatureData,
     signerIpAddress: updated.signerIpAddress,
     signatureConsent: updated.signatureConsent,
+    contentHashAtSigning: updated.contentHashAtSigning,
+    countersignToken: updated.countersignToken,
+    countersignerName: updated.countersignerName,
+    countersignerEmail: updated.countersignerEmail,
+    countersignatureData: updated.countersignatureData,
+    countersignerIpAddress: updated.countersignerIpAddress,
+    countersignatureConsent: updated.countersignatureConsent,
+    countersignedAt: updated.countersignedAt,
+    executedPdfPath: updated.executedPdfPath,
     createdBy: updated.createdBy,
     createdAt: updated.createdAt,
     updatedAt: updated.updatedAt,
@@ -387,6 +444,15 @@ export async function findProposalByDocId(
       signatureData: proposals.signatureData,
       signerIpAddress: proposals.signerIpAddress,
       signatureConsent: proposals.signatureConsent,
+      contentHashAtSigning: proposals.contentHashAtSigning,
+      countersignToken: proposals.countersignToken,
+      countersignerName: proposals.countersignerName,
+      countersignerEmail: proposals.countersignerEmail,
+      countersignatureData: proposals.countersignatureData,
+      countersignerIpAddress: proposals.countersignerIpAddress,
+      countersignatureConsent: proposals.countersignatureConsent,
+      countersignedAt: proposals.countersignedAt,
+      executedPdfPath: proposals.executedPdfPath,
       createdBy: proposals.createdBy,
       createdAt: proposals.createdAt,
       updatedAt: proposals.updatedAt,
@@ -438,8 +504,17 @@ export async function fetchProposalByShareToken(
  * Record a view on a shared proposal. Increments count and sets viewed_at.
  * Also updates status to VIEWED if currently SENT.
  */
-export async function recordProposalView(proposalId: string): Promise<void> {
+export async function recordProposalView(proposalId: string): Promise<number> {
   const now = new Date().toISOString()
+
+  // Get current count before incrementing
+  const [current] = await db
+    .select({ viewedCount: proposals.viewedCount })
+    .from(proposals)
+    .where(eq(proposals.id, proposalId))
+    .limit(1)
+
+  const previousCount = current?.viewedCount ?? 0
 
   await db
     .update(proposals)
@@ -455,6 +530,8 @@ export async function recordProposalView(proposalId: string): Promise<void> {
     .update(proposals)
     .set({ status: 'VIEWED', updatedAt: now })
     .where(and(eq(proposals.id, proposalId), eq(proposals.status, 'SENT')))
+
+  return previousCount
 }
 
 /**
@@ -561,6 +638,15 @@ export async function fetchAllProposals(
       signatureData: proposals.signatureData,
       signerIpAddress: proposals.signerIpAddress,
       signatureConsent: proposals.signatureConsent,
+      contentHashAtSigning: proposals.contentHashAtSigning,
+      countersignToken: proposals.countersignToken,
+      countersignerName: proposals.countersignerName,
+      countersignerEmail: proposals.countersignerEmail,
+      countersignatureData: proposals.countersignatureData,
+      countersignerIpAddress: proposals.countersignerIpAddress,
+      countersignatureConsent: proposals.countersignatureConsent,
+      countersignedAt: proposals.countersignedAt,
+      executedPdfPath: proposals.executedPdfPath,
       createdBy: proposals.createdBy,
       createdAt: proposals.createdAt,
       updatedAt: proposals.updatedAt,
@@ -579,4 +665,79 @@ export async function fetchAllProposals(
     ...row,
     content: row.content as ProposalContent | Record<string, never>,
   }))
+}
+
+// =============================================================================
+// Countersign queries
+// =============================================================================
+
+/**
+ * Fetch a proposal by its countersign token.
+ */
+export async function fetchProposalByCountersignToken(
+  token: string
+): Promise<Proposal | null> {
+  const [row] = await db
+    .select()
+    .from(proposals)
+    .where(
+      and(
+        eq(proposals.countersignToken, token),
+        isNull(proposals.deletedAt)
+      )
+    )
+    .limit(1)
+
+  if (!row) return null
+
+  return {
+    ...row,
+    content: row.content as ProposalContent | Record<string, never>,
+  }
+}
+
+export type CountersignatureData = {
+  countersignerName: string
+  countersignerEmail: string
+  countersignatureData: string
+  countersignerIpAddress: string
+  countersignatureConsent: boolean
+}
+
+/**
+ * Record a countersignature on an accepted proposal.
+ */
+export async function recordCountersignature(
+  proposalId: string,
+  data: CountersignatureData
+): Promise<Proposal | null> {
+  const now = new Date().toISOString()
+
+  const [updated] = await db
+    .update(proposals)
+    .set({
+      countersignerName: data.countersignerName,
+      countersignerEmail: data.countersignerEmail,
+      countersignatureData: data.countersignatureData,
+      countersignerIpAddress: data.countersignerIpAddress,
+      countersignatureConsent: data.countersignatureConsent,
+      countersignedAt: now,
+      updatedAt: now,
+    })
+    .where(
+      and(
+        eq(proposals.id, proposalId),
+        eq(proposals.status, 'ACCEPTED'),
+        isNull(proposals.countersignedAt),
+        isNull(proposals.deletedAt)
+      )
+    )
+    .returning()
+
+  if (!updated) return null
+
+  return {
+    ...updated,
+    content: updated.content as ProposalContent | Record<string, never>,
+  }
 }

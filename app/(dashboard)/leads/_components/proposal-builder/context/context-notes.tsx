@@ -8,6 +8,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { sanitizeEditorHtml } from '@/components/ui/rich-text-editor/utils'
 
 type ContextNotesProps = {
   notesHtml: string
@@ -70,7 +71,7 @@ export function ContextNotes({ notesHtml, onInsert }: ContextNotesProps) {
       )}
       <div
         className="prose prose-sm dark:prose-invert max-w-none text-sm"
-        dangerouslySetInnerHTML={{ __html: notesHtml }}
+        dangerouslySetInnerHTML={{ __html: sanitizeEditorHtml(notesHtml) }}
       />
     </div>
   )

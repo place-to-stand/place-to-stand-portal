@@ -13,6 +13,7 @@ type LeadSheetRightColumnProps = {
   lead: LeadRecord
   assignees: LeadAssigneeOption[]
   canManage: boolean
+  senderName?: string
   canConvert: boolean
   isConverted: boolean
   onSendEmail: () => void
@@ -28,6 +29,7 @@ export function LeadSheetRightColumn({
   lead,
   assignees,
   canManage,
+  senderName = '',
   canConvert,
   isConverted,
   onSendEmail,
@@ -88,6 +90,7 @@ export function LeadSheetRightColumn({
         <LeadProposalsSection
           lead={lead}
           canManage={canManage}
+          senderName={senderName}
           onSuccess={onSuccess}
         />
       </div>

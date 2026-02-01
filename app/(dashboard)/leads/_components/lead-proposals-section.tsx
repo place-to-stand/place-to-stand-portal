@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useTransition } from 'react'
 import { format } from 'date-fns'
+import Link from 'next/link'
 import {
   FileText,
   ExternalLink,
@@ -11,6 +12,10 @@ import {
   XCircle,
   Clock,
   Link2,
+  Mail,
+  PenLine,
+  ArrowUpRight,
+  Trash2,
 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
@@ -20,13 +25,15 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useToast } from '@/components/ui/use-toast'
 import type { LeadRecord } from '@/lib/leads/types'
 
-import { updateProposalStatus } from '../_actions'
+import { updateProposalStatus, prepareProposalSend, deleteProposalAction } from '../_actions'
 import { ShareProposalDialog } from './share-proposal-dialog'
+import { SendEmailDialog } from './send-email-dialog'
 
 type ProposalStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED'
 
@@ -42,11 +49,13 @@ type Proposal = {
   shareToken: string | null
   shareEnabled: boolean | null
   viewedCount: number | null
+  countersignedAt: string | null
 }
 
 type LeadProposalsSectionProps = {
   lead: LeadRecord
   canManage: boolean
+  senderName?: string
   onSuccess?: () => void
 }
 
@@ -84,6 +93,7 @@ const STATUS_CONFIG: Record<
 export function LeadProposalsSection({
   lead,
   canManage,
+  senderName = '',
   onSuccess,
 }: LeadProposalsSectionProps) {
   const [proposals, setProposals] = useState<Proposal[]>([])
@@ -144,6 +154,7 @@ export function LeadProposalsSection({
               proposal={proposal}
               lead={lead}
               canManage={canManage}
+              senderName={senderName}
               onUpdate={handleProposalUpdate}
             />
           ))}
@@ -158,16 +169,46 @@ function ProposalCard({
   proposal,
   lead,
   canManage,
+  senderName = '',
   onUpdate,
 }: {
   proposal: Proposal
   lead: LeadRecord
   canManage: boolean
+  senderName?: string
   onUpdate?: () => void
 }) {
   const { toast } = useToast()
   const [isUpdating, startUpdateTransition] = useTransition()
   const [shareDialogOpen, setShareDialogOpen] = useState(false)
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false)
+  const [emailInitialSubject, setEmailInitialSubject] = useState('')
+  const [emailInitialBody, setEmailInitialBody] = useState('')
+
+  const handleSendViaEmail = useCallback(async () => {
+    startUpdateTransition(async () => {
+      const result = await prepareProposalSend({ proposalId: proposal.id })
+      if (!result.success) {
+        toast({
+          variant: 'destructive',
+          title: 'Unable to prepare proposal',
+          description: result.error ?? 'Please try again.',
+        })
+        return
+      }
+
+      setEmailInitialSubject(`Proposal: ${proposal.title}`)
+      setEmailInitialBody(
+        `<p>Hi ${lead.contactName?.split(' ')[0] ?? 'there'},</p>` +
+        `<p>Please find our proposal linked below for your review:</p>` +
+        `<p><a href="${result.shareUrl}">${result.shareUrl}</a></p>` +
+        `<p>Feel free to reach out with any questions.</p>` +
+        `<p>Best regards</p>`
+      )
+      setEmailDialogOpen(true)
+      onUpdate?.()
+    })
+  }, [proposal.id, proposal.title, lead.contactName, toast, onUpdate])
 
   const statusConfig = STATUS_CONFIG[proposal.status]
   const StatusIcon = statusConfig.icon
@@ -208,6 +249,24 @@ function ProposalCard({
     [lead.id, lead.contactEmail, proposal.id, toast, onUpdate]
   )
 
+  const handleDelete = useCallback(() => {
+    if (!confirm('Delete this proposal? This cannot be undone.')) return
+
+    startUpdateTransition(async () => {
+      const result = await deleteProposalAction({ proposalId: proposal.id })
+      if (!result.success) {
+        toast({
+          variant: 'destructive',
+          title: 'Unable to delete proposal',
+          description: result.error ?? 'Please try again.',
+        })
+        return
+      }
+      toast({ title: 'Proposal deleted' })
+      onUpdate?.()
+    })
+  }, [proposal.id, toast, onUpdate])
+
   return (
     <>
     <div className="rounded-lg border bg-muted/30 p-3">
@@ -215,10 +274,23 @@ function ProposalCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <p className="truncate text-sm font-medium">{proposal.title}</p>
-            <Badge variant="outline" className={`text-xs ${statusConfig.className}`}>
-              <StatusIcon className="mr-1 h-3 w-3" />
-              {statusConfig.label}
-            </Badge>
+            {proposal.status === 'ACCEPTED' && proposal.countersignedAt ? (
+              <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-700 border-emerald-500/20">
+                <CheckCircle className="mr-1 h-3 w-3" />
+                Fully Executed
+              </Badge>
+            ) : (
+              <Badge variant="outline" className={`text-xs ${statusConfig.className}`}>
+                <StatusIcon className="mr-1 h-3 w-3" />
+                {statusConfig.label}
+              </Badge>
+            )}
+            {proposal.status === 'ACCEPTED' && !proposal.countersignedAt && (
+              <Badge variant="outline" className="text-xs bg-orange-500/10 text-orange-600 border-orange-500/20">
+                <PenLine className="mr-1 h-3 w-3" />
+                Countersign
+              </Badge>
+            )}
           </div>
           <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
             <Clock className="h-3 w-3" />
@@ -229,6 +301,14 @@ function ProposalCard({
                 <span>Sent {format(new Date(proposal.sentAt), 'MMM d')}</span>
               </>
             )}
+            <span>·</span>
+            <Link
+              href="/proposals"
+              className="inline-flex items-center gap-0.5 text-violet-600 hover:underline"
+            >
+              View in Proposals
+              <ArrowUpRight className="h-3 w-3" />
+            </Link>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1">
@@ -280,10 +360,16 @@ function ProposalCard({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                {lead.contactEmail && senderName && (
+                  <DropdownMenuItem onClick={handleSendViaEmail}>
+                    <Mail className="mr-2 h-4 w-4" />
+                    Send via Email
+                  </DropdownMenuItem>
+                )}
                 {proposal.status === 'DRAFT' && lead.contactEmail && (
                   <DropdownMenuItem onClick={() => handleStatusChange('SENT')}>
                     <Send className="mr-2 h-4 w-4" />
-                    Send to Lead
+                    Mark as Sent
                   </DropdownMenuItem>
                 )}
                 {proposal.status === 'SENT' && (
@@ -304,6 +390,14 @@ function ProposalCard({
                     </DropdownMenuItem>
                   </>
                 )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={handleDelete}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}
@@ -320,6 +414,17 @@ function ProposalCard({
         shareEnabled={proposal.shareEnabled}
         viewedCount={proposal.viewedCount}
         onUpdate={onUpdate}
+      />
+    )}
+    {canManage && lead.contactEmail && senderName && (
+      <SendEmailDialog
+        lead={lead}
+        senderName={senderName}
+        open={emailDialogOpen}
+        onOpenChange={setEmailDialogOpen}
+        onSuccess={onUpdate}
+        initialSubject={emailInitialSubject}
+        initialBodyHtml={emailInitialBody}
       />
     )}
     </>

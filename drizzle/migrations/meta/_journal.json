@@ -176,6 +176,20 @@
       "when": 1769878174054,
       "tag": "0024_proposal_signature_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1769883547230,
+      "tag": "0025_proposal_countersign_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1769953294788,
+      "tag": "0026_proposal_executed_pdf",
+      "breakpoints": true
     }
   ]
 }

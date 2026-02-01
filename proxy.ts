@@ -9,6 +9,7 @@ const PUBLIC_PATHS = new Set([
   '/forgot-password',
   '/reset-password',
   '/api/integrations/leads-intake',
+  '/api/cron/',
 ])
 const FORCE_RESET_PATH = '/force-reset-password'
 

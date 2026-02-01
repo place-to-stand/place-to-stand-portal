@@ -16,7 +16,11 @@ export const ensureUrlProtocol = (value: string) => {
 
   const hasProtocol = /^[a-zA-Z][\w+.-]*:/.test(trimmed)
   if (hasProtocol) {
-    return trimmed
+    // Only allow safe protocols — reject javascript:, data:, vbscript:, etc.
+    if (/^(https?|mailto|tel):/i.test(trimmed)) {
+      return trimmed
+    }
+    return ''
   }
 
   return `https://${trimmed}`
@@ -111,7 +115,8 @@ const sanitizeNode = (node: Node) => {
 
 export const sanitizeEditorHtml = (content: string) => {
   if (typeof window === 'undefined' || typeof DOMParser === 'undefined') {
-    return content
+    // Strip all tags as a safe fallback when DOMParser is unavailable (SSR)
+    return content.replace(/<[^>]*>/g, '')
   }
 
   try {

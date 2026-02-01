@@ -410,6 +410,7 @@ export function LeadSheet({
                   lead={lead}
                   assignees={assignees}
                   canManage={canManage}
+                  senderName={senderName}
                   canConvert={canConvert}
                   isConverted={isConverted}
                   onSendEmail={() => {

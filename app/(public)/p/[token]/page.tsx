@@ -1,4 +1,6 @@
 import { notFound } from 'next/navigation'
+import { cookies } from 'next/headers'
+import { createHmac } from 'crypto'
 import type { Metadata } from 'next'
 
 import { fetchProposalByShareToken, recordProposalView } from '@/lib/queries/proposals'
@@ -6,6 +8,13 @@ import type { ProposalContent } from '@/lib/proposals/types'
 import { ProposalDocument } from '@/components/proposal-viewer/proposal-document'
 
 import { ProposalViewerClient } from './proposal-viewer-client'
+import { ProposalActions } from './proposal-actions'
+
+function verifyTokenSignature(token: string, cookieValue: string): boolean {
+  const secret = process.env.COOKIE_SECRET ?? process.env.SUPABASE_SERVICE_ROLE_KEY ?? 'fallback-dev-secret'
+  const expected = createHmac('sha256', secret).update(token).digest('hex')
+  return cookieValue === expected
+}
 
 type Props = {
   params: Promise<{ token: string }>
@@ -30,11 +39,25 @@ export default async function PublicProposalPage({ params }: Props) {
   }
 
   const hasPassword = Boolean(proposal.sharePasswordHash)
+
+  // If password-protected, check the verification cookie SERVER-SIDE.
+  // Never send proposal content to the client until verified.
+  if (hasPassword) {
+    const cookieStore = await cookies()
+    const verified = cookieStore.get(`proposal_verified_${token}`)
+    if (!verified?.value || !verifyTokenSignature(token, verified.value)) {
+      // Only send the title — no content, no metadata
+      return <ProposalViewerClient token={token} title={proposal.title} needsPassword />
+    }
+  }
+
   const content = proposal.content as ProposalContent | Record<string, never>
   const hasContent = 'client' in content && 'phases' in content
 
-  // Record view (fire-and-forget)
-  recordProposalView(proposal.id).catch(() => {})
+  // Record view only after password verification passes (fire-and-forget)
+  recordProposalView(proposal.id).catch((err) => {
+    console.error('[proposal-view] Failed to record view for proposal', proposal.id, err)
+  })
 
   if (!hasContent) {
     return (
@@ -47,22 +70,6 @@ export default async function PublicProposalPage({ params }: Props) {
     )
   }
 
-  if (hasPassword) {
-    return (
-      <ProposalViewerClient
-        token={token}
-        title={proposal.title}
-        content={content as ProposalContent}
-        estimatedValue={proposal.estimatedValue}
-        expirationDate={proposal.expirationDate}
-        status={proposal.status}
-        acceptedAt={proposal.acceptedAt}
-        rejectedAt={proposal.rejectedAt}
-        clientComment={proposal.clientComment}
-      />
-    )
-  }
-
   return (
     <>
       <ProposalDocument
@@ -70,27 +77,30 @@ export default async function PublicProposalPage({ params }: Props) {
         content={content as ProposalContent}
         estimatedValue={proposal.estimatedValue}
         expirationDate={proposal.expirationDate}
+        signature={proposal.acceptedAt ? {
+          signerName: proposal.signerName,
+          signerEmail: proposal.signerEmail,
+          signatureData: proposal.signatureData,
+          acceptedAt: proposal.acceptedAt,
+          countersignerName: proposal.countersignerName,
+          countersignerEmail: proposal.countersignerEmail,
+          countersignatureData: proposal.countersignatureData,
+          countersignedAt: proposal.countersignedAt,
+        } : undefined}
       />
-      <ProposalActionsWrapper
+      <ProposalActions
         token={token}
         status={proposal.status}
         acceptedAt={proposal.acceptedAt}
         rejectedAt={proposal.rejectedAt}
         clientComment={proposal.clientComment}
+        signatoryName={(content as ProposalContent).client?.signatoryName ?? (content as ProposalContent).client?.contactName ?? null}
+        contactEmail={(content as ProposalContent).client?.contactEmail ?? null}
+        signatureDataUrl={proposal.signatureData ?? null}
+        proposalTitle={proposal.title}
+        estimatedValue={proposal.estimatedValue}
+        expirationDate={proposal.expirationDate}
       />
     </>
   )
-}
-
-// Thin wrapper to import client component
-import { ProposalActions } from './proposal-actions'
-
-function ProposalActionsWrapper(props: {
-  token: string
-  status: string
-  acceptedAt: string | null
-  rejectedAt: string | null
-  clientComment: string | null
-}) {
-  return <ProposalActions {...props} />
 }

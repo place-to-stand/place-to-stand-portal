@@ -8,4 +8,6 @@ export { buildProposalFromScratch, type BuildProposalFromScratchInput, type Buil
 export { updateProposalStatus, type UpdateProposalStatusInput } from './update-proposal-status'
 export { createLeadTask, type CreateLeadTaskInput, type CreateLeadTaskResult } from './create-lead-task'
 export { rescoreLead, type RescoreLeadInput, type RescoreLeadResult } from './rescore-lead'
+export { prepareProposalSend, type PrepareProposalSendInput, type PrepareProposalSendResult } from './prepare-proposal-send'
+export { deleteProposalAction, type DeleteProposalInput, type DeleteProposalResult } from './delete-proposal'
 export { type LeadActionResult } from './types'

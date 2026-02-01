@@ -1496,6 +1496,16 @@ export const proposals = pgTable(
     signatureData: text('signature_data'),
     signerIpAddress: text('signer_ip_address'),
     signatureConsent: boolean('signature_consent'),
+    contentHashAtSigning: varchar('content_hash_at_signing', { length: 64 }),
+    // Countersign fields
+    countersignToken: varchar('countersign_token', { length: 64 }).unique(),
+    countersignerName: text('countersigner_name'),
+    countersignerEmail: text('countersigner_email'),
+    countersignatureData: text('countersignature_data'),
+    countersignerIpAddress: text('countersigner_ip_address'),
+    countersignatureConsent: boolean('countersignature_consent'),
+    countersignedAt: timestamp('countersigned_at', { withTimezone: true, mode: 'string' }),
+    executedPdfPath: text('executed_pdf_path'),
     createdBy: uuid('created_by').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
@@ -1521,6 +1531,9 @@ export const proposals = pgTable(
     index('idx_proposals_share_token')
       .using('btree', table.shareToken.asc().nullsLast())
       .where(sql`(deleted_at IS NULL AND share_token IS NOT NULL AND share_enabled = true)`),
+    index('idx_proposals_countersign_token')
+      .using('btree', table.countersignToken.asc().nullsLast())
+      .where(sql`(deleted_at IS NULL AND countersign_token IS NOT NULL)`),
     foreignKey({
       columns: [table.leadId],
       foreignColumns: [leads.id],

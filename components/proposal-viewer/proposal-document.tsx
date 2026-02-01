@@ -3,22 +3,24 @@ import {
   VENDOR_INFO,
   SCOPE_OF_WORK_INTRO,
   RISKS_INTRO,
-  NEXT_STEPS_TEXT,
   FULL_TERMS_AND_CONDITIONS,
   DEFAULT_RISKS,
 } from '@/lib/proposals/constants'
+import { SignatureBlock, type SignatureBlockProps } from './signature-block'
 
 type ProposalDocumentProps = {
   title: string
   content: ProposalContent
   estimatedValue?: string | null
   expirationDate?: string | null
+  signature?: SignatureBlockProps
 }
 
 export function ProposalDocument({
   title,
   content,
   expirationDate,
+  signature,
 }: ProposalDocumentProps) {
   const {
     client,
@@ -151,14 +153,6 @@ export function ProposalDocument({
         </div>
       </section>
 
-      {/* Next Steps */}
-      <section className="space-y-3">
-        <h2 className="text-xl font-semibold">Next Steps</h2>
-        <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
-          {NEXT_STEPS_TEXT}
-        </p>
-      </section>
-
       {/* Terms & Conditions — always shown */}
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">Terms & Conditions</h2>
@@ -173,6 +167,9 @@ export function ProposalDocument({
           </div>
         ))}
       </section>
+
+      {/* Signature Block — only shown when signature data is passed */}
+      {signature && <SignatureBlock {...signature} />}
     </article>
   )
 }
