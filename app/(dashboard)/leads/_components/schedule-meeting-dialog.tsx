@@ -197,7 +197,7 @@ function ScheduleMeetingSheetContent({
   const canSchedule = title.trim() && startDateTime && endDateTime && !isScheduling
 
   return (
-    <SheetContent side="right" className="flex w-full flex-col sm:max-w-md">
+    <SheetContent side="right" showOverlay={false} className="flex w-full flex-col sm:max-w-md">
       <SheetHeader className="bg-transparent p-0 px-6 pt-6">
         <SheetTitle className="flex items-center gap-2">
           <Calendar className="h-5 w-5" />

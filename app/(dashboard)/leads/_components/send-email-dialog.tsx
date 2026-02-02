@@ -249,7 +249,7 @@ export function SendEmailDialog({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="flex w-full flex-col sm:max-w-xl">
+      <SheetContent side="right" showOverlay={false} className="flex w-full flex-col sm:max-w-xl">
         <SheetHeader className="bg-transparent p-0 px-6 pt-6">
           <SheetTitle className="flex items-center gap-2">
             <Mail className="h-5 w-5" />

@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, useWatch } from 'react-hook-form'
 import { Archive, Redo2, Undo2 } from 'lucide-react'
@@ -38,7 +37,6 @@ export function LeadSheet({
   senderName = '',
   onSuccess,
 }: LeadSheetProps) {
-  const router = useRouter()
   const isEditing = Boolean(lead)
   const [isSaving, startSaveTransition] = useTransition()
   const [isArchiving, startArchiveTransition] = useTransition()
@@ -78,15 +76,15 @@ export function LeadSheet({
   const pushActionUrl = useCallback(
     (action: string) => {
       if (!lead) return
-      router.push(`/leads/board/${lead.id}/${action}`, { scroll: false })
+      window.history.replaceState(null, '', `/leads/board/${lead.id}/${action}`)
     },
-    [lead, router]
+    [lead]
   )
 
   const pushLeadUrl = useCallback(() => {
     if (!lead) return
-    router.push(`/leads/board/${lead.id}`, { scroll: false })
-  }, [lead, router])
+    window.history.replaceState(null, '', `/leads/board/${lead.id}`)
+  }, [lead])
 
   const canConvert = lead?.status === 'CLOSED_WON' && !lead?.convertedToClientId
   const isConverted = Boolean(lead?.convertedToClientId)
