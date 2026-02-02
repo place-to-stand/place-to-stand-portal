@@ -26,6 +26,12 @@ export const leadFormSchema = z.object({
   sourceDetail: z.string().trim().max(160).optional().nullable(),
   status: z.enum(LEAD_STATUS_VALUES),
   assigneeId: z.string().uuid().optional().nullable(),
+  estimatedValue: z
+    .string()
+    .trim()
+    .transform(val => (val === '' ? null : val))
+    .optional()
+    .nullable(),
   notes: z.string().optional(),
   priorityTier: z.enum(PRIORITY_TIERS).optional().nullable(),
 })

@@ -40,6 +40,7 @@ const saveLeadSchema = z.object({
   contactPhone: z.string().trim().max(40).optional().nullable(),
   companyName: z.string().trim().max(160).optional().nullable(),
   companyWebsite: z.string().trim().max(255).optional().nullable(),
+  estimatedValue: z.string().trim().optional().nullable(),
   notes: z.string().optional().nullable(),
   priorityTier: z.enum(PRIORITY_TIERS).optional().nullable(),
 })
@@ -86,6 +87,7 @@ export async function saveLead(input: SaveLeadInput): Promise<LeadActionResult> 
         companyName: normalized.companyName,
         companyWebsite: normalized.companyWebsite,
         notes: serializeLeadNotes(normalized.notes),
+        estimatedValue: normalized.estimatedValue,
         priorityTier: normalized.priorityTier,
         rank,
         currentStageEnteredAt: timestamp,
@@ -137,6 +139,7 @@ export async function saveLead(input: SaveLeadInput): Promise<LeadActionResult> 
         companyName: normalized.companyName,
         companyWebsite: normalized.companyWebsite,
         notes: serializeLeadNotes(normalized.notes),
+        estimatedValue: normalized.estimatedValue,
         priorityTier: normalized.priorityTier,
         rank,
         updatedAt: timestamp,
@@ -194,9 +197,13 @@ function normalizeLeadPayload(
   contactPhone: string | null
   companyName: string | null
   companyWebsite: string | null
+  estimatedValue: string | null
   notes: string | null
   priorityTier: PriorityTier | null
 } {
+  const rawValue = payload.estimatedValue?.trim()
+  const estimatedValue = rawValue && rawValue.length > 0 ? rawValue : null
+
   return {
     id: payload.id,
     contactName: payload.contactName.trim(),
@@ -208,6 +215,7 @@ function normalizeLeadPayload(
     contactPhone: normalizeOptionalString(payload.contactPhone, 40),
     companyName: normalizeOptionalString(payload.companyName, 160),
     companyWebsite: normalizeOptionalString(payload.companyWebsite, 255),
+    estimatedValue,
     notes: (payload.notes ?? '').trim() || null,
     priorityTier: payload.priorityTier ?? null,
   }

@@ -280,6 +280,26 @@ export function LeadSheetFormFields({
           )
         }}
       />
+      <FormField
+        control={control}
+        name='estimatedValue'
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Estimated Value</FormLabel>
+            <FormControl>
+              <Input
+                {...field}
+                value={field.value ?? ''}
+                type='number'
+                min='0'
+                step='0.01'
+                placeholder='10000'
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
       <div className='grid gap-4 sm:grid-cols-2'>
         <FormField
           control={control}

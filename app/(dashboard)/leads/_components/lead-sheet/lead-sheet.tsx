@@ -102,6 +102,7 @@ export function LeadSheet({
       sourceDetail: lead?.sourceDetail ?? '',
       status: lead?.status ?? initialStatus ?? 'NEW_OPPORTUNITIES',
       assigneeId: lead?.assigneeId ?? null,
+      estimatedValue: lead?.estimatedValue != null ? String(lead.estimatedValue) : '',
       notes: lead?.notesHtml ?? '',
       priorityTier: lead?.priorityTier ?? null,
     }),
