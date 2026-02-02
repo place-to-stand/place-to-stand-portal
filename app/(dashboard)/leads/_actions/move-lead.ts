@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { leads } from '@/lib/db/schema'
+import { leads, leadStageHistory } from '@/lib/db/schema'
 import { LEAD_STATUS_VALUES } from '@/lib/leads/constants'
 import { normalizeRank } from '@/lib/rank'
 
@@ -47,18 +47,66 @@ export async function moveLead(input: MoveLeadInput): Promise<LeadActionResult> 
   }
 
   try {
-    const updated = await db
-      .update(leads)
-      .set({
-        status: parsed.data.targetStatus,
-        rank: normalizedRank,
-        updatedAt: new Date().toISOString(),
-      })
+    // Fetch current status before update
+    const currentRows = await db
+      .select({ status: leads.status })
+      .from(leads)
       .where(and(eq(leads.id, parsed.data.leadId), isNull(leads.deletedAt)))
-      .returning({ id: leads.id })
+      .limit(1)
 
-    if (!updated.length) {
+    const current = currentRows[0]
+    if (!current) {
       return { success: false, error: 'Lead not found.' }
+    }
+
+    const now = new Date().toISOString()
+    const statusChanged = current.status !== parsed.data.targetStatus
+
+    const setPayload: Record<string, unknown> = {
+      status: parsed.data.targetStatus,
+      rank: normalizedRank,
+      updatedAt: now,
+    }
+
+    if (statusChanged) {
+      setPayload.currentStageEnteredAt = now
+
+      if (
+        parsed.data.targetStatus === 'CLOSED_WON' ||
+        parsed.data.targetStatus === 'CLOSED_LOST' ||
+        parsed.data.targetStatus === 'UNQUALIFIED'
+      ) {
+        setPayload.resolvedAt = now
+      }
+
+      if (parsed.data.targetStatus === 'CLOSED_WON') {
+        // Only set convertedAt if not already set
+        const fullLead = await db
+          .select({ convertedAt: leads.convertedAt })
+          .from(leads)
+          .where(eq(leads.id, parsed.data.leadId))
+          .limit(1)
+
+        if (fullLead[0] && !fullLead[0].convertedAt) {
+          setPayload.convertedAt = now
+        }
+      }
+    }
+
+    await db
+      .update(leads)
+      .set(setPayload)
+      .where(and(eq(leads.id, parsed.data.leadId), isNull(leads.deletedAt)))
+
+    // Record stage history if status changed
+    if (statusChanged) {
+      await db.insert(leadStageHistory).values({
+        leadId: parsed.data.leadId,
+        fromStatus: current.status,
+        toStatus: parsed.data.targetStatus,
+        changedAt: now,
+        changedBy: user.id,
+      })
     }
   } catch (error) {
     console.error('Failed to reorder lead', error)

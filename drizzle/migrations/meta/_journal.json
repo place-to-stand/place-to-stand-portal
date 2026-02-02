@@ -190,6 +190,13 @@
       "when": 1769953294788,
       "tag": "0026_proposal_executed_pdf",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1769998314938,
+      "tag": "0027_pipeline_stage_history",
+      "breakpoints": true
     }
   ]
 }

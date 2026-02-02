@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { leads } from '@/lib/db/schema'
+import { leads, leadStageHistory } from '@/lib/db/schema'
 import {
   LEAD_SOURCE_TYPES,
   LEAD_STATUS_VALUES,
@@ -75,7 +75,7 @@ export async function saveLead(input: SaveLeadInput): Promise<LeadActionResult> 
     if (!normalized.id) {
       const rank = await resolveNextLeadRank(normalized.status)
 
-      await db.insert(leads).values({
+      const inserted = await db.insert(leads).values({
         contactName: normalized.contactName,
         status: normalized.status,
         sourceType: normalized.sourceType,
@@ -88,9 +88,20 @@ export async function saveLead(input: SaveLeadInput): Promise<LeadActionResult> 
         notes: serializeLeadNotes(normalized.notes),
         priorityTier: normalized.priorityTier,
         rank,
+        currentStageEnteredAt: timestamp,
         createdAt: timestamp,
         updatedAt: timestamp,
-      })
+      }).returning({ id: leads.id })
+
+      if (inserted[0]) {
+        await db.insert(leadStageHistory).values({
+          leadId: inserted[0].id,
+          fromStatus: null,
+          toStatus: normalized.status,
+          changedAt: timestamp,
+          changedBy: user.id,
+        })
+      }
     } else {
       const existingRows = await db
         .select({
@@ -109,29 +120,54 @@ export async function saveLead(input: SaveLeadInput): Promise<LeadActionResult> 
       }
 
       let rank = existing.rank
+      const statusChanged = existing.status !== normalized.status
 
-      if (existing.status !== normalized.status) {
+      if (statusChanged) {
         rank = await resolveNextLeadRank(normalized.status)
+      }
+
+      const setPayload: Record<string, unknown> = {
+        contactName: normalized.contactName,
+        status: normalized.status,
+        sourceType: normalized.sourceType,
+        sourceDetail: normalized.sourceDetail,
+        assigneeId: normalized.assigneeId,
+        contactEmail: normalized.contactEmail,
+        contactPhone: normalized.contactPhone,
+        companyName: normalized.companyName,
+        companyWebsite: normalized.companyWebsite,
+        notes: serializeLeadNotes(normalized.notes),
+        priorityTier: normalized.priorityTier,
+        rank,
+        updatedAt: timestamp,
+      }
+
+      if (statusChanged) {
+        setPayload.currentStageEnteredAt = timestamp
+
+        if (
+          normalized.status === 'CLOSED_WON' ||
+          normalized.status === 'CLOSED_LOST' ||
+          normalized.status === 'UNQUALIFIED'
+        ) {
+          setPayload.resolvedAt = timestamp
+        }
       }
 
       await db
         .update(leads)
-        .set({
-          contactName: normalized.contactName,
-          status: normalized.status,
-          sourceType: normalized.sourceType,
-          sourceDetail: normalized.sourceDetail,
-          assigneeId: normalized.assigneeId,
-          contactEmail: normalized.contactEmail,
-          contactPhone: normalized.contactPhone,
-          companyName: normalized.companyName,
-          companyWebsite: normalized.companyWebsite,
-          notes: serializeLeadNotes(normalized.notes),
-          priorityTier: normalized.priorityTier,
-          rank,
-          updatedAt: timestamp,
-        })
+        .set(setPayload)
         .where(eq(leads.id, normalized.id))
+
+      if (statusChanged) {
+        await db.insert(leadStageHistory).values({
+          leadId: normalized.id,
+          fromStatus: existing.status,
+          toStatus: normalized.status,
+          changedAt: timestamp,
+          changedBy: user.id,
+        })
+      }
     }
   } catch (error) {
     console.error('Failed to save lead', error)

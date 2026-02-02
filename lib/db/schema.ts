@@ -166,6 +166,16 @@ export const proposalStatus = pgEnum('proposal_status', [
   'REJECTED',
 ])
 
+// Lead loss reason
+export const leadLossReason = pgEnum('lead_loss_reason', [
+  'BUDGET',
+  'TIMING',
+  'COMPETITOR',
+  'FIT',
+  'GHOSTED',
+  'OTHER',
+])
+
 // =============================================================================
 // CORE TABLES
 // =============================================================================
@@ -793,6 +803,12 @@ export const leads = pgTable(
     estimatedValue: numeric('estimated_value', { precision: 12, scale: 2 }),
     expectedCloseDate: date('expected_close_date'),
 
+    // Pipeline tracking
+    resolvedAt: timestamp('resolved_at', { withTimezone: true, mode: 'string' }),
+    lossReason: leadLossReason('loss_reason'),
+    lossNotes: text('loss_notes'),
+    currentStageEnteredAt: timestamp('current_stage_entered_at', { withTimezone: true, mode: 'string' }),
+
     // Conversion
     convertedAt: timestamp('converted_at', { withTimezone: true, mode: 'string' }),
     convertedToClientId: uuid('converted_to_client_id'),
@@ -833,6 +849,36 @@ export const leads = pgTable(
       columns: [table.convertedToClientId],
       foreignColumns: [clients.id],
       name: 'leads_converted_to_client_id_fkey',
+    }),
+  ]
+)
+
+export const leadStageHistory = pgTable(
+  'lead_stage_history',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    leadId: uuid('lead_id').notNull(),
+    fromStatus: leadStatus('from_status'),
+    toStatus: leadStatus('to_status').notNull(),
+    changedAt: timestamp('changed_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    changedBy: uuid('changed_by'),
+  },
+  table => [
+    index('idx_lead_stage_history_lead')
+      .using('btree', table.leadId.asc().nullsLast().op('uuid_ops')),
+    index('idx_lead_stage_history_changed_at')
+      .using('btree', table.changedAt.asc().nullsLast()),
+    foreignKey({
+      columns: [table.leadId],
+      foreignColumns: [leads.id],
+      name: 'lead_stage_history_lead_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.changedBy],
+      foreignColumns: [users.id],
+      name: 'lead_stage_history_changed_by_fkey',
     }),
   ]
 )

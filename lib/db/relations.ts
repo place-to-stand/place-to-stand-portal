@@ -27,6 +27,7 @@ import {
   emailTemplates,
   meetings,
   proposals,
+  leadStageHistory,
 } from './schema'
 
 export const clientsRelations = relations(clients, ({ one, many }) => ({
@@ -77,6 +78,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   emailTemplates: many(emailTemplates),
   meetings: many(meetings),
   proposals: many(proposals),
+  leadStageHistory: many(leadStageHistory),
 }))
 
 export const taskAssigneesRelations = relations(taskAssignees, ({ one }) => ({
@@ -147,7 +149,22 @@ export const leadsRelations = relations(leads, ({ one, many }) => ({
   tasks: many(tasks),
   meetings: many(meetings),
   proposals: many(proposals),
+  stageHistory: many(leadStageHistory),
 }))
+
+export const leadStageHistoryRelations = relations(
+  leadStageHistory,
+  ({ one }) => ({
+    lead: one(leads, {
+      fields: [leadStageHistory.leadId],
+      references: [leads.id],
+    }),
+    changedByUser: one(users, {
+      fields: [leadStageHistory.changedBy],
+      references: [users.id],
+    }),
+  })
+)
 
 export const hourBlocksRelations = relations(hourBlocks, ({ one }) => ({
   user: one(users, {
