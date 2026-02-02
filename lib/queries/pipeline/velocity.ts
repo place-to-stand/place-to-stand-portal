@@ -3,7 +3,8 @@ import 'server-only'
 import { and, gte, isNull, isNotNull, lte, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { leads, leadStageHistory } from '@/lib/db/schema'
+import { leads } from '@/lib/db/schema'
+import type { LeadStatusValue } from '@/lib/leads/constants'
 
 export async function fetchVelocityMetrics(start: string, end: string) {
   // Average days to close (from creation to resolvedAt)
@@ -23,30 +24,23 @@ export async function fetchVelocityMetrics(start: string, end: string) {
       )
     )
 
-  // Time-in-stage breakdown per status
-  const timeInStage = await db
-    .select({
-      toStatus: leadStageHistory.toStatus,
-      avgDays: sql<string>`avg(
+  // Time-in-stage breakdown per status (use raw SQL for window function in subquery)
+  const timeInStageRows = await db.execute(sql`
+    SELECT to_status, avg(days_in_stage) AS avg_days
+    FROM (
+      SELECT
+        to_status,
         EXTRACT(EPOCH FROM (
           COALESCE(
-            LEAD(${leadStageHistory.changedAt}) OVER (
-              PARTITION BY ${leadStageHistory.leadId}
-              ORDER BY ${leadStageHistory.changedAt}
-            ),
+            LEAD(changed_at) OVER (PARTITION BY lead_id ORDER BY changed_at),
             NOW()
-          ) - ${leadStageHistory.changedAt}::timestamptz
-        )) / 86400
-      )`,
-    })
-    .from(leadStageHistory)
-    .where(
-      and(
-        gte(leadStageHistory.changedAt, start),
-        lte(leadStageHistory.changedAt, end)
-      )
-    )
-    .groupBy(leadStageHistory.toStatus)
+          ) - changed_at
+        )) / 86400 AS days_in_stage
+      FROM lead_stage_history
+      WHERE changed_at >= ${start} AND changed_at <= ${end}
+    ) sub
+    GROUP BY to_status
+  `)
 
   // Aging leads: open leads sorted by days since currentStageEnteredAt
   const agingLeads = await db
@@ -73,9 +67,9 @@ export async function fetchVelocityMetrics(start: string, end: string) {
 
   return {
     avgDaysToClose: Number(avgDaysToClose[0]?.avgDays ?? 0),
-    timeInStage: timeInStage.map(row => ({
-      status: row.toStatus,
-      avgDays: Number(row.avgDays ?? 0),
+    timeInStage: (timeInStageRows as unknown as Array<{ to_status: string; avg_days: string }>).map(row => ({
+      status: row.to_status as LeadStatusValue,
+      avgDays: Number(row.avg_days ?? 0),
     })),
     agingLeads: agingLeads.map(row => ({
       id: row.id,
