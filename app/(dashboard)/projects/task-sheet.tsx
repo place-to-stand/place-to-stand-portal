@@ -34,6 +34,7 @@ type TaskSheetProps = {
   projectSelectionProjects?: ProjectWithRelations[]
   defaultProjectId: string | null
   defaultAssigneeId: string | null
+  defaultLeadId?: string | null
 }
 
 export function TaskSheet(props: TaskSheetProps) {
@@ -80,6 +81,7 @@ export function TaskSheet(props: TaskSheetProps) {
     projectSelectionProjects: props.projectSelectionProjects,
     defaultProjectId: props.defaultProjectId,
     defaultAssigneeId: props.defaultAssigneeId,
+    defaultLeadId: props.defaultLeadId ?? null,
     currentUserId: props.currentUserId,
   })
 

@@ -4,7 +4,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { contacts, contactClients, messages, threads } from '@/lib/db/schema'
+import { contacts, contactClients, leads, messages, threads } from '@/lib/db/schema'
 import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
 import { isAdmin } from '@/lib/auth/permissions'
 
@@ -198,4 +198,110 @@ export async function matchAndLinkEmail(
   const result = await matchAndLinkMessage(user, messageId)
   // Return empty array since we no longer create link records
   return { createdLinkIds: result.linked && result.clientId ? [result.clientId] : [] }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Lead Matching
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type LeadMatchResult = {
+  leadId: string
+  contactName: string
+  contactEmail: string
+  confidence: 'HIGH' | 'MEDIUM'
+}
+
+/**
+ * Match a message sender to a lead by contact email.
+ * Returns null if no matching lead found.
+ */
+export async function matchMessageToLead(
+  fromEmail: string
+): Promise<LeadMatchResult | null> {
+  const normalizedEmail = normalize(fromEmail)
+  if (!normalizedEmail) return null
+
+  // Find lead with matching contact email
+  const [lead] = await db
+    .select({
+      id: leads.id,
+      contactName: leads.contactName,
+      contactEmail: leads.contactEmail,
+    })
+    .from(leads)
+    .where(
+      and(
+        sql`lower(${leads.contactEmail}) = ${normalizedEmail}`,
+        isNull(leads.deletedAt)
+      )
+    )
+    .limit(1)
+
+  if (!lead || !lead.contactEmail) {
+    return null
+  }
+
+  return {
+    leadId: lead.id,
+    contactName: lead.contactName,
+    contactEmail: lead.contactEmail,
+    confidence: 'HIGH', // Exact email match
+  }
+}
+
+/**
+ * Match a thread to a lead by checking all participant emails.
+ * Returns null if no matching lead found.
+ */
+export async function matchThreadToLead(
+  participantEmails: string[]
+): Promise<LeadMatchResult | null> {
+  if (!participantEmails.length) return null
+
+  const normalizedEmails = participantEmails.map(normalize).filter(Boolean)
+  if (!normalizedEmails.length) return null
+
+  // Find lead with any matching contact email
+  // Use IN clause with properly joined parameters for PostgreSQL compatibility
+  const [lead] = await db
+    .select({
+      id: leads.id,
+      contactName: leads.contactName,
+      contactEmail: leads.contactEmail,
+    })
+    .from(leads)
+    .where(
+      and(
+        sql`lower(${leads.contactEmail}) IN (${sql.join(normalizedEmails.map(e => sql`${e}`), sql`, `)})`,
+        isNull(leads.deletedAt)
+      )
+    )
+    .limit(1)
+
+  if (!lead || !lead.contactEmail) {
+    return null
+  }
+
+  return {
+    leadId: lead.id,
+    contactName: lead.contactName,
+    contactEmail: lead.contactEmail,
+    confidence: 'HIGH', // Exact email match
+  }
+}
+
+/**
+ * Update thread with lead link.
+ */
+export async function linkThreadToLead(
+  threadId: string,
+  leadId: string
+): Promise<void> {
+  await db
+    .update(threads)
+    .set({
+      leadId,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(eq(threads.id, threadId))
 }

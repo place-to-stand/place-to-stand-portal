@@ -56,6 +56,7 @@ export type DbProject = {
 export type DbTask = {
   id: string
   project_id: string
+  lead_id: string | null
   title: string
   description: string | null
   status: TaskStatusValue
@@ -136,7 +137,6 @@ export type ProjectMemberWithUser = {
 }
 
 export type TaskWithRelations = DbTask & {
-  rank: string
   assignees: { user_id: string }[]
   commentCount: number
   attachmentCount: number

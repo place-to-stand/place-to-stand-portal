@@ -1,14 +1,27 @@
 import { serverEnv } from '@/lib/env.server'
 
-// Gmail scopes - full access for read, modify, compose, send, and settings
+// Google scopes - Gmail, Calendar, Meet, Drive/Docs, and Sheets
 export const GOOGLE_SCOPES = [
+  // User info
   'https://www.googleapis.com/auth/userinfo.profile',
   'https://www.googleapis.com/auth/userinfo.email',
+  // Gmail - read, modify, compose, send, and settings
   'https://www.googleapis.com/auth/gmail.readonly',
   'https://www.googleapis.com/auth/gmail.modify',
   'https://www.googleapis.com/auth/gmail.send',
   'https://www.googleapis.com/auth/gmail.compose',
   'https://www.googleapis.com/auth/gmail.settings.basic', // For reading/updating signatures
+  // Calendar - create events with Meet links
+  'https://www.googleapis.com/auth/calendar',
+  'https://www.googleapis.com/auth/calendar.events',
+  // Meet - access conference records, transcripts, and recordings
+  'https://www.googleapis.com/auth/meetings.space.readonly',
+  'https://www.googleapis.com/auth/meetings.space.created',
+  // Drive - full access for autonomous document creation and transcript retrieval
+  'https://www.googleapis.com/auth/drive',
+  'https://www.googleapis.com/auth/documents',
+  // Sheets - for reporting and data export
+  'https://www.googleapis.com/auth/spreadsheets',
 ]
 
 // Scopes required for sending emails (used to check if re-auth needed)
@@ -17,12 +30,67 @@ export const GMAIL_SEND_SCOPES = [
   'https://www.googleapis.com/auth/gmail.compose',
 ]
 
+// Scopes required for Calendar/Meet functionality
+export const GOOGLE_CALENDAR_SCOPES = [
+  'https://www.googleapis.com/auth/calendar',
+  'https://www.googleapis.com/auth/calendar.events',
+]
+
+// Scopes required for Drive/Docs proposal functionality
+export const GOOGLE_DOCS_SCOPES = [
+  'https://www.googleapis.com/auth/drive',
+  'https://www.googleapis.com/auth/documents',
+]
+
+// Scopes required for Meet functionality (transcripts, recordings)
+export const GOOGLE_MEET_SCOPES = [
+  'https://www.googleapis.com/auth/meetings.space.readonly',
+  'https://www.googleapis.com/auth/meetings.space.created',
+]
+
+// Scopes required for Sheets functionality
+export const GOOGLE_SHEETS_SCOPES = [
+  'https://www.googleapis.com/auth/spreadsheets',
+]
+
 /**
  * Check if a connection has the required scopes for sending emails.
  * Returns true if all send scopes are present.
  */
 export function hasComposeScopes(grantedScopes: string[]): boolean {
   return GMAIL_SEND_SCOPES.every((scope) => grantedScopes.includes(scope))
+}
+
+/**
+ * Check if a connection has the required scopes for Calendar/Meet.
+ * Returns true if all calendar scopes are present.
+ */
+export function hasCalendarScopes(grantedScopes: string[]): boolean {
+  return GOOGLE_CALENDAR_SCOPES.every((scope) => grantedScopes.includes(scope))
+}
+
+/**
+ * Check if a connection has the required scopes for Drive/Docs.
+ * Returns true if all docs scopes are present.
+ */
+export function hasDocsScopes(grantedScopes: string[]): boolean {
+  return GOOGLE_DOCS_SCOPES.every((scope) => grantedScopes.includes(scope))
+}
+
+/**
+ * Check if a connection has the required scopes for Meet (transcripts/recordings).
+ * Returns true if all meet scopes are present.
+ */
+export function hasMeetScopes(grantedScopes: string[]): boolean {
+  return GOOGLE_MEET_SCOPES.every((scope) => grantedScopes.includes(scope))
+}
+
+/**
+ * Check if a connection has the required scopes for Sheets.
+ * Returns true if all sheets scopes are present.
+ */
+export function hasSheetsScopes(grantedScopes: string[]): boolean {
+  return GOOGLE_SHEETS_SCOPES.every((scope) => grantedScopes.includes(scope))
 }
 
 export interface GoogleTokenResponse {

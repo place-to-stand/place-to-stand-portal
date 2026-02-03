@@ -5,6 +5,7 @@ export type SelectTask = typeof tasks.$inferSelect
 export const taskFields = {
   id: tasks.id,
   projectId: tasks.projectId,
+  leadId: tasks.leadId,
   title: tasks.title,
   description: tasks.description,
   status: tasks.status,

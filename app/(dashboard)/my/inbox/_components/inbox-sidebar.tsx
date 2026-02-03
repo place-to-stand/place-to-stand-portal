@@ -11,11 +11,12 @@ import {
   FolderKanban,
   LinkIcon,
   Unlink,
+  FileText,
 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
-type View = 'inbox' | 'drafts' | 'sent' | 'scheduled' | 'by-client' | 'by-project' | 'linked' | 'unlinked'
+type View = 'inbox' | 'drafts' | 'sent' | 'scheduled' | 'by-client' | 'by-project' | 'linked' | 'unlinked' | 'templates'
 
 interface InboxSidebarProps {
   currentView: View
@@ -42,6 +43,7 @@ const navItems: Array<{
   href: string
   showCount?: 'unread' | 'total'
   section?: string
+  isExternal?: boolean
 }> = [
   { view: 'inbox', label: 'Inbox', icon: Inbox, href: '/my/inbox', showCount: 'unread' },
   { view: 'drafts', label: 'Drafts', icon: FileEdit, href: '/my/inbox?view=drafts', showCount: 'total' },
@@ -51,6 +53,7 @@ const navItems: Array<{
   { view: 'unlinked', label: 'Unlinked', icon: Unlink, href: '/my/inbox?view=unlinked', showCount: 'total' },
   { view: 'by-client', label: 'By Client', icon: Users, href: '/my/inbox?view=by-client', section: 'Browse' },
   { view: 'by-project', label: 'By Project', icon: FolderKanban, href: '/my/inbox?view=by-project' },
+  { view: 'templates', label: 'Templates', icon: FileText, href: '/settings/email-templates', isExternal: true },
 ]
 
 export function InboxSidebar({ currentView, counts, preservedParams }: InboxSidebarProps) {
@@ -101,7 +104,7 @@ export function InboxSidebar({ currentView, counts, preservedParams }: InboxSide
               </div>
             )}
             <Link
-              href={buildViewUrl(item.view)}
+              href={item.isExternal ? item.href : buildViewUrl(item.view)}
               className={cn(
                 'flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                 currentView === item.view

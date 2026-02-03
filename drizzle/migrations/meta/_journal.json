@@ -96,8 +96,106 @@
     {
       "idx": 13,
       "version": "7",
+      "when": 1768773918726,
+      "tag": "0013_lead_intelligence_crm",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1768861451855,
+      "tag": "0014_leads_unique_email",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1768861915177,
+      "tag": "0015_email_templates_and_drafts_extension",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1768871967641,
+      "tag": "0016_lead_google_integrations",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1768952328371,
+      "tag": "0017_add_lead_id_to_tasks",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1769019359222,
+      "tag": "0018_add_meetings_proposals_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1769193285845,
+      "tag": "0019_add_proposal_content",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1769264937347,
+      "tag": "0020_add_meeting_transcript_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1769366666578,
+      "tag": "0021_fix_overall_score_precision",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
       "when": 1769442921745,
-      "tag": "0013_client_project_enhancements",
+      "tag": "0022_client_project_enhancements",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1769794491290,
+      "tag": "0023_proposal_sharing",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1769878174054,
+      "tag": "0024_proposal_signature_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1769883547230,
+      "tag": "0025_proposal_countersign_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1769953294788,
+      "tag": "0026_proposal_executed_pdf",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1769998314938,
+      "tag": "0027_pipeline_stage_history",
       "breakpoints": true
     }
   ]

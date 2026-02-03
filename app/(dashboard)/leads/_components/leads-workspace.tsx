@@ -12,7 +12,6 @@ import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 
 import { AppShellHeader } from '@/components/layout/app-shell'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import type { LeadAssigneeOption, LeadBoardColumnData } from '@/lib/leads/types'
@@ -20,6 +19,7 @@ import type { LeadRecord } from '@/lib/leads/types'
 import type { LeadStatusValue } from '@/lib/leads/constants'
 
 import { LeadsHeader } from './leads-header'
+import { LeadsTabsNav } from './leads-tabs-nav'
 import { LeadsBoard } from './leads-board'
 import { LeadSheet } from './lead-sheet'
 
@@ -30,6 +30,8 @@ type LeadsWorkspaceProps = {
   assignees: LeadAssigneeOption[]
   canManage: boolean
   activeLeadId: string | null
+  activeAction?: string | null
+  senderName?: string
 }
 
 export function LeadsWorkspace({
@@ -37,6 +39,8 @@ export function LeadsWorkspace({
   assignees,
   canManage,
   activeLeadId,
+  activeAction = null,
+  senderName,
 }: LeadsWorkspaceProps) {
   const router = useRouter()
   const [isCreatingLead, setIsCreatingLead] = useState(false)
@@ -180,16 +184,15 @@ export function LeadsWorkspace({
           lead={sheetLead}
           initialStatus={initialStatus}
           assignees={assignees}
+          canManage={canManage}
+          senderName={senderName}
+          initialAction={activeAction}
           onSuccess={handleSheetSuccess}
         />
       ) : null}
-      <Tabs value='board' className='flex min-h-0 flex-1 flex-col gap-3'>
+      <div className='flex min-h-0 flex-1 flex-col gap-3'>
         <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-          <TabsList className='bg-muted/40 h-10 w-full justify-start gap-2 rounded-lg p-1 sm:w-auto'>
-            <TabsTrigger value='board' className='px-3 py-1.5 text-sm'>
-              Board
-            </TabsTrigger>
-          </TabsList>
+          <LeadsTabsNav activeTab='board' />
           <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6'>
             <span className='text-muted-foreground text-sm'>
               Total leads: {totalLeads}
@@ -211,10 +214,7 @@ export function LeadsWorkspace({
             </DisabledFieldTooltip>
           </div>
         </div>
-        <TabsContent
-          value='board'
-          className='mt-0 flex min-h-0 flex-1 flex-col gap-4 focus-visible:outline-none sm:gap-6'
-        >
+        <div className='flex min-h-0 flex-1 flex-col gap-4 sm:gap-6'>
           <LeadsBoard
             initialColumns={initialColumns}
             canManage={canManage}
@@ -222,8 +222,8 @@ export function LeadsWorkspace({
             onCreateLead={handleCreateLead}
             activeLeadId={boardActiveLeadId}
           />
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
     </div>
   )
 }

@@ -18,6 +18,7 @@ import {
   integer,
   primaryKey,
   boolean,
+  varchar,
 } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
 
@@ -128,6 +129,51 @@ export const draftStatus = pgEnum('draft_status', [
   'SENDING', // Currently being sent
   'SENT', // Successfully sent
   'FAILED', // Send failed
+])
+
+// Email template categories
+export const emailTemplateCategory = pgEnum('email_template_category', [
+  'FOLLOW_UP',
+  'PROPOSAL',
+  'MEETING',
+  'INTRODUCTION',
+])
+
+// Meeting status
+export const meetingStatus = pgEnum('meeting_status', [
+  'SCHEDULED',
+  'COMPLETED',
+  'CANCELLED',
+  'NO_SHOW',
+])
+
+// Transcript status for Meet recordings
+export const transcriptStatus = pgEnum('transcript_status', [
+  'PENDING', // Meeting scheduled, no transcript yet
+  'PROCESSING', // Meeting ended, transcript being generated
+  'AVAILABLE', // Transcript ready to fetch
+  'FETCHED', // Transcript downloaded and stored
+  'NOT_RECORDED', // Meeting had no transcript enabled
+  'FAILED', // Failed to retrieve transcript
+])
+
+// Proposal status
+export const proposalStatus = pgEnum('proposal_status', [
+  'DRAFT',
+  'SENT',
+  'VIEWED',
+  'ACCEPTED',
+  'REJECTED',
+])
+
+// Lead loss reason
+export const leadLossReason = pgEnum('lead_loss_reason', [
+  'BUDGET',
+  'TIMING',
+  'COMPETITOR',
+  'FIT',
+  'GHOSTED',
+  'OTHER',
 ])
 
 // =============================================================================
@@ -392,6 +438,7 @@ export const tasks = pgTable(
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
     projectId: uuid('project_id').notNull(),
+    leadId: uuid('lead_id'),
     title: text().notNull(),
     description: text(),
     status: taskStatus().default('BACKLOG').notNull(),
@@ -430,11 +477,19 @@ export const tasks = pgTable(
     index('idx_tasks_updated_by')
       .using('btree', table.updatedBy.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
+    index('idx_tasks_lead')
+      .using('btree', table.leadId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND lead_id IS NOT NULL)`),
     foreignKey({
       columns: [table.projectId],
       foreignColumns: [projects.id],
       name: 'tasks_project_id_fkey',
     }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.leadId],
+      foreignColumns: [leads.id],
+      name: 'tasks_lead_id_fkey',
+    }).onDelete('set null'),
     foreignKey({
       columns: [table.createdBy],
       foreignColumns: [users.id],
@@ -732,6 +787,38 @@ export const leads = pgTable(
     companyWebsite: text('company_website'),
     notes: jsonb('notes').default({}).notNull(),
     rank: text().default('zzzzzzzz').notNull(),
+
+    // AI Scoring (0-100 scale)
+    overallScore: numeric('overall_score', { precision: 5, scale: 2 }),
+    priorityTier: text('priority_tier'), // 'hot' | 'warm' | 'cold'
+    signals: jsonb('signals').default([]),
+    lastScoredAt: timestamp('last_scored_at', { withTimezone: true, mode: 'string' }),
+
+    // Activity Tracking
+    lastContactAt: timestamp('last_contact_at', { withTimezone: true, mode: 'string' }),
+    awaitingReply: boolean('awaiting_reply').default(false),
+
+    // Predictions
+    predictedCloseProbability: numeric('predicted_close_probability', { precision: 3, scale: 2 }),
+    estimatedValue: numeric('estimated_value', { precision: 12, scale: 2 }),
+    expectedCloseDate: date('expected_close_date'),
+
+    // Pipeline tracking
+    resolvedAt: timestamp('resolved_at', { withTimezone: true, mode: 'string' }),
+    lossReason: leadLossReason('loss_reason'),
+    lossNotes: text('loss_notes'),
+    currentStageEnteredAt: timestamp('current_stage_entered_at', { withTimezone: true, mode: 'string' }),
+
+    // Conversion
+    convertedAt: timestamp('converted_at', { withTimezone: true, mode: 'string' }),
+    convertedToClientId: uuid('converted_to_client_id'),
+
+    // Google Calendar Meetings (references to Google Calendar events)
+    googleMeetings: jsonb('google_meetings').default([]).notNull(),
+
+    // Google Docs Proposals (references to Google Docs documents)
+    googleProposals: jsonb('google_proposals').default([]).notNull(),
+
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
       .notNull(),
@@ -747,10 +834,51 @@ export const leads = pgTable(
     index('idx_leads_assignee')
       .using('btree', table.assigneeId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
+    index('idx_leads_priority')
+      .using('btree', table.priorityTier.asc().nullsLast(), table.overallScore.desc().nullsFirst())
+      .where(sql`(deleted_at IS NULL)`),
+    uniqueIndex('idx_leads_contact_email_unique')
+      .using('btree', table.contactEmail.asc().nullsLast().op('text_ops'))
+      .where(sql`(deleted_at IS NULL AND contact_email IS NOT NULL)`),
     foreignKey({
       columns: [table.assigneeId],
       foreignColumns: [users.id],
       name: 'leads_assignee_id_fkey',
+    }),
+    foreignKey({
+      columns: [table.convertedToClientId],
+      foreignColumns: [clients.id],
+      name: 'leads_converted_to_client_id_fkey',
+    }),
+  ]
+)
+
+export const leadStageHistory = pgTable(
+  'lead_stage_history',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    leadId: uuid('lead_id').notNull(),
+    fromStatus: leadStatus('from_status'),
+    toStatus: leadStatus('to_status').notNull(),
+    changedAt: timestamp('changed_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    changedBy: uuid('changed_by'),
+  },
+  table => [
+    index('idx_lead_stage_history_lead')
+      .using('btree', table.leadId.asc().nullsLast().op('uuid_ops')),
+    index('idx_lead_stage_history_changed_at')
+      .using('btree', table.changedAt.asc().nullsLast()),
+    foreignKey({
+      columns: [table.leadId],
+      foreignColumns: [leads.id],
+      name: 'lead_stage_history_lead_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.changedBy],
+      foreignColumns: [users.id],
+      name: 'lead_stage_history_changed_by_fkey',
     }),
   ]
 )
@@ -919,6 +1047,7 @@ export const threads = pgTable(
     id: uuid().defaultRandom().primaryKey().notNull(),
     clientId: uuid('client_id'),
     projectId: uuid('project_id'),
+    leadId: uuid('lead_id'),
     subject: text(),
     status: threadStatus().default('OPEN').notNull(),
     source: messageSource().notNull(),
@@ -943,6 +1072,9 @@ export const threads = pgTable(
     index('idx_threads_project')
       .using('btree', table.projectId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL AND project_id IS NOT NULL)`),
+    index('idx_threads_lead')
+      .using('btree', table.leadId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND lead_id IS NOT NULL)`),
     index('idx_threads_external')
       .using('btree', table.externalThreadId.asc().nullsLast().op('text_ops'))
       .where(sql`(deleted_at IS NULL AND external_thread_id IS NOT NULL)`),
@@ -958,6 +1090,11 @@ export const threads = pgTable(
       columns: [table.projectId],
       foreignColumns: [projects.id],
       name: 'threads_project_id_fkey',
+    }),
+    foreignKey({
+      columns: [table.leadId],
+      foreignColumns: [leads.id],
+      name: 'threads_lead_id_fkey',
     }),
     foreignKey({
       columns: [table.createdBy],
@@ -1093,6 +1230,7 @@ export const suggestions = pgTable(
     id: uuid().defaultRandom().primaryKey().notNull(),
     messageId: uuid('message_id'),
     threadId: uuid('thread_id'),
+    leadId: uuid('lead_id'),
     type: suggestionType().notNull(),
     status: suggestionStatus().default('PENDING').notNull(),
     projectId: uuid('project_id'),
@@ -1128,6 +1266,9 @@ export const suggestions = pgTable(
     index('idx_suggestions_project')
       .using('btree', table.projectId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL AND project_id IS NOT NULL)`),
+    index('idx_suggestions_lead')
+      .using('btree', table.leadId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND lead_id IS NOT NULL)`),
     foreignKey({
       columns: [table.messageId],
       foreignColumns: [messages.id],
@@ -1138,6 +1279,11 @@ export const suggestions = pgTable(
       foreignColumns: [threads.id],
       name: 'suggestions_thread_id_fkey',
     }),
+    foreignKey({
+      columns: [table.leadId],
+      foreignColumns: [leads.id],
+      name: 'suggestions_lead_id_fkey',
+    }).onDelete('set null'),
     foreignKey({
       columns: [table.projectId],
       foreignColumns: [projects.id],
@@ -1166,9 +1312,13 @@ export const emailDrafts = pgTable(
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
     userId: uuid('user_id').notNull(),
-    connectionId: uuid('connection_id').notNull(), // Which Gmail account to send from
+    connectionId: uuid('connection_id'), // Which Gmail account to send from (null when sendVia='resend')
     threadId: uuid('thread_id'), // Links to existing thread (for replies)
+    leadId: uuid('lead_id'), // Links to lead (for lead outreach)
     gmailDraftId: text('gmail_draft_id'), // If synced to Gmail drafts
+
+    // Send method: 'gmail' uses OAuth connection, 'resend' uses Resend API
+    sendVia: text('send_via').default('gmail').notNull(),
 
     // Compose type
     composeType: text('compose_type').notNull(), // 'new', 'reply', 'reply_all', 'forward'
@@ -1223,11 +1373,16 @@ export const emailDrafts = pgTable(
       columns: [table.connectionId],
       foreignColumns: [oauthConnections.id],
       name: 'email_drafts_connection_id_fkey',
-    }).onDelete('cascade'),
+    }).onDelete('set null'),
     foreignKey({
       columns: [table.threadId],
       foreignColumns: [threads.id],
       name: 'email_drafts_thread_id_fkey',
+    }),
+    foreignKey({
+      columns: [table.leadId],
+      foreignColumns: [leads.id],
+      name: 'email_drafts_lead_id_fkey',
     }),
     foreignKey({
       columns: [table.clientId],
@@ -1238,6 +1393,207 @@ export const emailDrafts = pgTable(
       columns: [table.projectId],
       foreignColumns: [projects.id],
       name: 'email_drafts_project_id_fkey',
+    }),
+  ]
+)
+
+// =============================================================================
+// EMAIL TEMPLATES
+// =============================================================================
+
+export const emailTemplates = pgTable(
+  'email_templates',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    name: text().notNull(),
+    category: emailTemplateCategory().notNull(),
+    subject: text().notNull(),
+    bodyHtml: text('body_html').notNull(),
+    bodyText: text('body_text'),
+    isDefault: boolean('is_default').default(false).notNull(),
+    createdBy: uuid('created_by'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    index('idx_email_templates_category')
+      .using('btree', table.category.asc().nullsLast())
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_email_templates_default')
+      .using('btree', table.category.asc().nullsLast())
+      .where(sql`(deleted_at IS NULL AND is_default = true)`),
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [users.id],
+      name: 'email_templates_created_by_fkey',
+    }),
+  ]
+)
+
+// =============================================================================
+// MEETINGS (Lead & Client meetings with Google Calendar integration)
+// =============================================================================
+
+export const meetings = pgTable(
+  'meetings',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    leadId: uuid('lead_id'),
+    clientId: uuid('client_id'),
+    title: text().notNull(),
+    description: text(),
+    status: meetingStatus().default('SCHEDULED').notNull(),
+    startsAt: timestamp('starts_at', { withTimezone: true, mode: 'string' }).notNull(),
+    endsAt: timestamp('ends_at', { withTimezone: true, mode: 'string' }).notNull(),
+    meetLink: text('meet_link'),
+    calendarEventId: text('calendar_event_id'),
+    // Google Meet conference data for transcript retrieval
+    conferenceId: text('conference_id'), // From conferenceData.conferenceId
+    conferenceRecordId: text('conference_record_id'), // Meet API conferenceRecords/{id}
+    transcriptFileId: text('transcript_file_id'), // Google Drive file ID
+    transcriptText: text('transcript_text'), // Stored transcript content
+    transcriptStatus: transcriptStatus('transcript_status').default('PENDING'),
+    transcriptFetchedAt: timestamp('transcript_fetched_at', { withTimezone: true, mode: 'string' }),
+    attendeeEmails: text('attendee_emails').array().default([]).notNull(),
+    createdBy: uuid('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    index('idx_meetings_lead')
+      .using('btree', table.leadId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND lead_id IS NOT NULL)`),
+    index('idx_meetings_client')
+      .using('btree', table.clientId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND client_id IS NOT NULL)`),
+    index('idx_meetings_starts_at')
+      .using('btree', table.startsAt.asc().nullsLast())
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_meetings_calendar_event')
+      .using('btree', table.calendarEventId.asc().nullsLast().op('text_ops'))
+      .where(sql`(deleted_at IS NULL AND calendar_event_id IS NOT NULL)`),
+    index('idx_meetings_conference')
+      .using('btree', table.conferenceId.asc().nullsLast().op('text_ops'))
+      .where(sql`(deleted_at IS NULL AND conference_id IS NOT NULL)`),
+    index('idx_meetings_transcript_pending')
+      .using('btree', table.transcriptStatus.asc().nullsLast())
+      .where(sql`(deleted_at IS NULL AND transcript_status IN ('PENDING', 'PROCESSING', 'AVAILABLE'))`),
+    foreignKey({
+      columns: [table.leadId],
+      foreignColumns: [leads.id],
+      name: 'meetings_lead_id_fkey',
+    }).onDelete('set null'),
+    foreignKey({
+      columns: [table.clientId],
+      foreignColumns: [clients.id],
+      name: 'meetings_client_id_fkey',
+    }).onDelete('set null'),
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [users.id],
+      name: 'meetings_created_by_fkey',
+    }),
+  ]
+)
+
+// =============================================================================
+// PROPOSALS (Lead & Client proposals with Google Docs integration)
+// =============================================================================
+
+export const proposals = pgTable(
+  'proposals',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    leadId: uuid('lead_id'),
+    clientId: uuid('client_id'),
+    title: text().notNull(),
+    docUrl: text('doc_url'),
+    docId: text('doc_id'),
+    templateDocId: text('template_doc_id'),
+    status: proposalStatus().default('DRAFT').notNull(),
+    estimatedValue: numeric('estimated_value', { precision: 12, scale: 2 }),
+    expirationDate: date('expiration_date'),
+    sentAt: timestamp('sent_at', { withTimezone: true, mode: 'string' }),
+    sentToEmail: text('sent_to_email'),
+    // Structured content for proposals built from scratch
+    content: jsonb('content').default({}).notNull(),
+    // Sharing fields
+    shareToken: varchar('share_token', { length: 64 }).unique(),
+    sharePasswordHash: varchar('share_password_hash', { length: 255 }),
+    shareEnabled: boolean('share_enabled').default(false),
+    viewedAt: timestamp('viewed_at', { withTimezone: true, mode: 'string' }),
+    viewedCount: integer('viewed_count').default(0),
+    acceptedAt: timestamp('accepted_at', { withTimezone: true, mode: 'string' }),
+    rejectedAt: timestamp('rejected_at', { withTimezone: true, mode: 'string' }),
+    clientComment: text('client_comment'),
+    // Signature fields (captured on acceptance)
+    signerName: text('signer_name'),
+    signerEmail: text('signer_email'),
+    signatureData: text('signature_data'),
+    signerIpAddress: text('signer_ip_address'),
+    signatureConsent: boolean('signature_consent'),
+    contentHashAtSigning: varchar('content_hash_at_signing', { length: 64 }),
+    // Countersign fields
+    countersignToken: varchar('countersign_token', { length: 64 }).unique(),
+    countersignerName: text('countersigner_name'),
+    countersignerEmail: text('countersigner_email'),
+    countersignatureData: text('countersignature_data'),
+    countersignerIpAddress: text('countersigner_ip_address'),
+    countersignatureConsent: boolean('countersignature_consent'),
+    countersignedAt: timestamp('countersigned_at', { withTimezone: true, mode: 'string' }),
+    executedPdfPath: text('executed_pdf_path'),
+    createdBy: uuid('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    index('idx_proposals_lead')
+      .using('btree', table.leadId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND lead_id IS NOT NULL)`),
+    index('idx_proposals_client')
+      .using('btree', table.clientId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND client_id IS NOT NULL)`),
+    index('idx_proposals_status')
+      .using('btree', table.status.asc().nullsLast())
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_proposals_doc_id')
+      .using('btree', table.docId.asc().nullsLast().op('text_ops'))
+      .where(sql`(deleted_at IS NULL AND doc_id IS NOT NULL)`),
+    index('idx_proposals_share_token')
+      .using('btree', table.shareToken.asc().nullsLast())
+      .where(sql`(deleted_at IS NULL AND share_token IS NOT NULL AND share_enabled = true)`),
+    index('idx_proposals_countersign_token')
+      .using('btree', table.countersignToken.asc().nullsLast())
+      .where(sql`(deleted_at IS NULL AND countersign_token IS NOT NULL)`),
+    foreignKey({
+      columns: [table.leadId],
+      foreignColumns: [leads.id],
+      name: 'proposals_lead_id_fkey',
+    }).onDelete('set null'),
+    foreignKey({
+      columns: [table.clientId],
+      foreignColumns: [clients.id],
+      name: 'proposals_client_id_fkey',
+    }).onDelete('set null'),
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [users.id],
+      name: 'proposals_created_by_fkey',
     }),
   ]
 )

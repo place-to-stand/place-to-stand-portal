@@ -18,6 +18,7 @@ export const taskSheetFormSchema = z.object({
     .min(1, 'Project is required')
     .uuid('Select a project'),
   assigneeId: z.string().uuid().optional().nullable(),
+  leadId: z.string().uuid().optional().nullable(),
 })
 
 export type TaskSheetFormValues = z.infer<typeof taskSheetFormSchema>

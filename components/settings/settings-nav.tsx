@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 
 const TABS = [
   { href: "/settings/users", label: "Users" },
+  { href: "/settings/integrations", label: "Integrations" },
+  { href: "/settings/email-templates", label: "Email Templates" },
 ];
 
 export function SettingsNav() {

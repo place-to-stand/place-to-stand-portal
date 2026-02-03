@@ -1,5 +1,5 @@
 {
-  "id": "b525fcb0-1cdd-48a3-9434-4f7887b2244d",
+  "id": "9cd31648-a42f-482c-ad89-10bc830f1134",
   "prevId": "be6de9ee-8a78-4e2f-a0c5-9ff2b4595638",
   "version": "7",
   "dialect": "postgresql",
@@ -503,18 +503,6 @@
           "notNull": true,
           "default": "'prepaid'"
         },
-        "website": {
-          "name": "website",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "referred_by": {
-          "name": "referred_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
         "created_by": {
           "name": "created_by",
           "type": "uuid",
@@ -556,23 +544,6 @@
           ],
           "isUnique": false,
           "where": "(deleted_at IS NULL)",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_clients_referred_by": {
-          "name": "idx_clients_referred_by",
-          "columns": [
-            {
-              "expression": "referred_by",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last",
-              "opclass": "uuid_ops"
-            }
-          ],
-          "isUnique": false,
-          "where": "(deleted_at IS NULL AND referred_by IS NOT NULL)",
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -1637,6 +1608,74 @@
           "notNull": true,
           "default": "'zzzzzzzz'"
         },
+        "overall_score": {
+          "name": "overall_score",
+          "type": "numeric(3, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "priority_tier": {
+          "name": "priority_tier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "signals": {
+          "name": "signals",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'[]'::jsonb"
+        },
+        "last_scored_at": {
+          "name": "last_scored_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_contact_at": {
+          "name": "last_contact_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "awaiting_reply": {
+          "name": "awaiting_reply",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "predicted_close_probability": {
+          "name": "predicted_close_probability",
+          "type": "numeric(3, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "estimated_value": {
+          "name": "estimated_value",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expected_close_date": {
+          "name": "expected_close_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "converted_at": {
+          "name": "converted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "converted_to_client_id": {
+          "name": "converted_to_client_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -1692,6 +1731,28 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "idx_leads_priority": {
+          "name": "idx_leads_priority",
+          "columns": [
+            {
+              "expression": "priority_tier",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "overall_score",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "first"
+            }
+          ],
+          "isUnique": false,
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -1701,6 +1762,19 @@
           "tableTo": "users",
           "columnsFrom": [
             "assignee_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "leads_converted_to_client_id_fkey": {
+          "name": "leads_converted_to_client_id_fkey",
+          "tableFrom": "leads",
+          "tableTo": "clients",
+          "columnsFrom": [
+            "converted_to_client_id"
           ],
           "columnsTo": [
             "id"
@@ -2226,12 +2300,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "owner_id": {
-          "name": "owner_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -2302,23 +2370,6 @@
           "method": "btree",
           "with": {}
         },
-        "idx_projects_owner": {
-          "name": "idx_projects_owner",
-          "columns": [
-            {
-              "expression": "owner_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last",
-              "opclass": "uuid_ops"
-            }
-          ],
-          "isUnique": false,
-          "where": "(deleted_at IS NULL AND owner_id IS NOT NULL)",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "idx_projects_slug": {
           "name": "idx_projects_slug",
           "columns": [
@@ -2363,19 +2414,6 @@
           ],
           "onDelete": "no action",
           "onUpdate": "no action"
-        },
-        "projects_owner_id_fkey": {
-          "name": "projects_owner_id_fkey",
-          "tableFrom": "projects",
-          "tableTo": "users",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -2408,6 +2446,12 @@
         },
         "thread_id": {
           "name": "thread_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lead_id": {
+          "name": "lead_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
@@ -2588,6 +2632,23 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "idx_suggestions_lead": {
+          "name": "idx_suggestions_lead",
+          "columns": [
+            {
+              "expression": "lead_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops"
+            }
+          ],
+          "isUnique": false,
+          "where": "(deleted_at IS NULL AND lead_id IS NOT NULL)",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -2615,6 +2676,19 @@
             "id"
           ],
           "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "suggestions_lead_id_fkey": {
+          "name": "suggestions_lead_id_fkey",
+          "tableFrom": "suggestions",
+          "tableTo": "leads",
+          "columnsFrom": [
+            "lead_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         },
         "suggestions_project_id_fkey": {
@@ -3398,6 +3472,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "lead_id": {
+          "name": "lead_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "subject": {
           "name": "subject",
           "type": "text",
@@ -3514,6 +3594,23 @@
           "method": "btree",
           "with": {}
         },
+        "idx_threads_lead": {
+          "name": "idx_threads_lead",
+          "columns": [
+            {
+              "expression": "lead_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops"
+            }
+          ],
+          "isUnique": false,
+          "where": "(deleted_at IS NULL AND lead_id IS NOT NULL)",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "idx_threads_external": {
           "name": "idx_threads_external",
           "columns": [
@@ -3568,6 +3665,19 @@
           "tableTo": "projects",
           "columnsFrom": [
             "project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "threads_lead_id_fkey": {
+          "name": "threads_lead_id_fkey",
+          "tableFrom": "threads",
+          "tableTo": "leads",
+          "columnsFrom": [
+            "lead_id"
           ],
           "columnsTo": [
             "id"

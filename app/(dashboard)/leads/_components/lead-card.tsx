@@ -10,7 +10,7 @@ import {
 } from 'react'
 import { defaultAnimateLayoutChanges, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Mail, Phone, User } from 'lucide-react'
+import { CheckCircle, Mail, Phone, User } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -23,6 +23,8 @@ import { getLeadSourceLabel } from '@/lib/leads/constants'
 import type { LeadRecord } from '@/lib/leads/types'
 import { cn } from '@/lib/utils'
 import { formatPhoneUS } from '@/lib/utils/phone-format'
+
+import { PriorityBadge } from './priority-badge'
 
 type LeadCardProps = {
   lead: LeadRecord
@@ -139,7 +141,7 @@ export function LeadCardContent({ lead }: { lead: LeadRecord }) {
   const sourceDetail = lead.sourceDetail?.trim()
   const showSourceTooltip = Boolean(sourceDetail && sourceLabel)
 
-  const badge = sourceLabel ? (
+  const sourceBadge = sourceLabel ? (
     <Badge
       variant='outline'
       className='text-muted-foreground text-[10px] font-medium tracking-wide uppercase'
@@ -148,21 +150,35 @@ export function LeadCardContent({ lead }: { lead: LeadRecord }) {
     </Badge>
   ) : null
 
+  const convertedBadge = lead.convertedToClientId ? (
+    <Badge
+      variant='outline'
+      className='gap-1 bg-green-500/10 text-green-600 border-green-500/20 text-[10px] font-medium dark:text-green-400'
+    >
+      <CheckCircle className='h-3 w-3' aria-hidden />
+      Converted
+    </Badge>
+  ) : null
+
   return (
     <>
       <div className='space-y-0.5'>
-        <div className='flex items-start justify-between gap-3'>
+        <div className='flex items-start justify-between gap-2'>
           <h3 className='text-foreground line-clamp-2 text-sm leading-snug font-semibold'>
             {lead.contactName}
           </h3>
-          {showSourceTooltip && badge ? (
-            <Tooltip>
-              <TooltipTrigger asChild>{badge}</TooltipTrigger>
-              <TooltipContent side='top'>{sourceDetail}</TooltipContent>
-            </Tooltip>
-          ) : (
-            badge
-          )}
+          <div className='flex flex-wrap items-center gap-1.5 shrink-0'>
+            {lead.priorityTier && <PriorityBadge tier={lead.priorityTier} />}
+            {convertedBadge}
+            {showSourceTooltip && sourceBadge ? (
+              <Tooltip>
+                <TooltipTrigger asChild>{sourceBadge}</TooltipTrigger>
+                <TooltipContent side='top'>{sourceDetail}</TooltipContent>
+              </Tooltip>
+            ) : (
+              sourceBadge
+            )}
+          </div>
         </div>
         {companyDisplay ? (
           <p className='text-muted-foreground text-xs font-medium'>

@@ -3,7 +3,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm'
 import { requireUser } from '@/lib/auth/session'
 import { isAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { oauthConnections, clients, projects, emailDrafts } from '@/lib/db/schema'
+import { oauthConnections, clients, projects, emailDrafts, leads } from '@/lib/db/schema'
 import {
   listThreadsForUser,
   getThreadCountsForUser,
@@ -78,7 +78,7 @@ export default async function InboxPage({ searchParams }: Props) {
   // Use 'inbox' filter for default view to exclude sent-only threads, 'sent' for sent view
   const sentFilter = isSentFilter ? 'sent' : 'inbox'
 
-  // Get threads, counts, sync status, clients, projects, and draft counts in parallel
+  // Get threads, counts, sync status, clients, projects, leads, and draft counts in parallel
   const [
     threadSummaries,
     threadCounts,
@@ -89,6 +89,7 @@ export default async function InboxPage({ searchParams }: Props) {
     [connection],
     clientsList,
     projectsList,
+    leadsList,
     linkedThread,
   ] = await Promise.all([
     listThreadsForUser(user.id, { limit: PAGE_SIZE, offset, linkedFilter, sentFilter, search: searchQuery }),
@@ -128,6 +129,11 @@ export default async function InboxPage({ searchParams }: Props) {
       .leftJoin(clients, eq(projects.clientId, clients.id))
       .where(isNull(projects.deletedAt))
       .orderBy(projects.name),
+    db
+      .select({ id: leads.id, contactName: leads.contactName })
+      .from(leads)
+      .where(isNull(leads.deletedAt))
+      .orderBy(leads.contactName),
     // Fetch the specific thread if deep-linking (may not be on current page)
     threadId ? getThreadSummaryById(user.id, threadId) : null,
   ])
@@ -162,6 +168,7 @@ export default async function InboxPage({ searchParams }: Props) {
       syncStatus={syncStatus}
       clients={clientsList}
       projects={projectsList}
+      leads={leadsList}
       isAdmin={isAdmin(user)}
       view={view}
       searchQuery={searchQuery ?? ''}

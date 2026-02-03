@@ -36,6 +36,7 @@ export async function saveTask(input: BaseTaskInput): Promise<ActionResult> {
   const {
     id,
     projectId,
+    leadId,
     title,
     description,
     status,
@@ -93,6 +94,7 @@ export async function saveTask(input: BaseTaskInput): Promise<ActionResult> {
         .insert(tasks)
         .values({
           projectId,
+          leadId: leadId ?? null,
           title,
           description,
           status,

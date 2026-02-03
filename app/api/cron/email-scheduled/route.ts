@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
       let inReplyTo: string | undefined
       let references: string[] | undefined
 
-      if (draft.inReplyToMessageId) {
+      if (draft.inReplyToMessageId && draft.connectionId) {
         const originalMessage = await getMessage(draft.userId, draft.inReplyToMessageId, {
           connectionId: draft.connectionId,
         })
@@ -128,7 +128,7 @@ export async function GET(request: NextRequest) {
         attachments: draftAttachments,
       })
 
-      // Send the email
+      // Send the email via Gmail
       await sendEmail(
         draft.userId,
         {
@@ -143,7 +143,7 @@ export async function GET(request: NextRequest) {
           references,
           attachments: attachments.length > 0 ? attachments : undefined,
         },
-        { connectionId: draft.connectionId }
+        { connectionId: draft.connectionId ?? undefined }
       )
 
       // Mark draft as sent

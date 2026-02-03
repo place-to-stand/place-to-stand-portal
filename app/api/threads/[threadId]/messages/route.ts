@@ -26,10 +26,14 @@ export async function GET(
   // Verify thread exists and user has access
   const thread = await getThreadById(user, threadId)
   if (!thread) {
+    console.log(`[messages/route] Thread not found: ${threadId}`)
     return NextResponse.json({ error: 'Thread not found' }, { status: 404 })
   }
 
+  console.log(`[messages/route] Found thread: ${threadId}, messageCount from thread: ${thread.messageCount}`)
+
   const messages = await listMessagesForThread(threadId, { limit: 100 })
+  console.log(`[messages/route] listMessagesForThread returned ${messages.length} messages for threadId: ${threadId}`)
 
   // For messages with attachments, fetch CID mappings and attachment metadata from Gmail
   const attachmentDataMap: Record<string, MessageAttachmentData> = {}
