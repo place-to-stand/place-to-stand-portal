@@ -187,19 +187,6 @@ export async function matchAndLinkThread(
   }
 }
 
-/**
- * Legacy function for backwards compatibility.
- * @deprecated Use matchAndLinkMessage instead
- */
-export async function matchAndLinkEmail(
-  user: AppUser,
-  messageId: string
-): Promise<{ createdLinkIds: string[] }> {
-  const result = await matchAndLinkMessage(user, messageId)
-  // Return empty array since we no longer create link records
-  return { createdLinkIds: result.linked && result.clientId ? [result.clientId] : [] }
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Lead Matching
 // ─────────────────────────────────────────────────────────────────────────────

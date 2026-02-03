@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
 import { requireUser } from '@/lib/auth/session'
-import { matchAndLinkEmail } from '@/lib/email/matcher'
+import { matchAndLinkMessage } from '@/lib/email/matcher'
 import { toResponsePayload, type HttpError } from '@/lib/errors/http'
 
 export async function POST(req: NextRequest) {
@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = (await req.json()) as { emailMetadataId: string }
-    const result = await matchAndLinkEmail(user, body.emailMetadataId)
+    const result = await matchAndLinkMessage(user, body.emailMetadataId)
     return NextResponse.json({ ok: true, result })
   } catch (err) {
     const error = err as HttpError
