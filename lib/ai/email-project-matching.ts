@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { generateObject } from 'ai'
+import { generateText, Output } from 'ai'
 import { createGateway } from '@ai-sdk/gateway'
 import {
   EMAIL_TO_PROJECT_SYSTEM_PROMPT,
@@ -63,15 +63,15 @@ export async function matchEmailToProjects(
 
   const userPrompt = buildEmailToProjectUserPrompt(promptParams)
 
-  const { object, usage } = await generateObject({
+  const { output, usage } = await generateText({
     model,
     system: EMAIL_TO_PROJECT_SYSTEM_PROMPT,
     prompt: userPrompt,
-    schema: emailProjectMatchResponseSchema,
+    output: Output.object({ schema: emailProjectMatchResponseSchema }),
   })
 
   // Filter out low confidence matches and sort by confidence
-  const filteredMatches = object.matches
+  const filteredMatches = output!.matches
     .filter(m => m.confidence >= 0.4)
     .sort((a, b) => b.confidence - a.confidence)
 

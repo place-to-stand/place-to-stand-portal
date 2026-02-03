@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { generateObject } from 'ai'
+import { generateText, Output } from 'ai'
 import { createGateway } from '@ai-sdk/gateway'
 import {
   EMAIL_ANALYSIS_SYSTEM_PROMPT,
@@ -44,15 +44,15 @@ export async function analyzeEmailForTasks(
 ): Promise<AnalysisResponse> {
   const userPrompt = buildEmailAnalysisUserPrompt(params)
 
-  const { object, usage } = await generateObject({
+  const { output, usage } = await generateText({
     model,
     system: EMAIL_ANALYSIS_SYSTEM_PROMPT,
     prompt: userPrompt,
-    schema: emailAnalysisResultSchema,
+    output: Output.object({ schema: emailAnalysisResultSchema }),
   })
 
   return {
-    result: object,
+    result: output!,
     usage: {
       promptTokens: usage?.inputTokens ?? 0,
       completionTokens: usage?.outputTokens ?? 0,
@@ -76,15 +76,15 @@ export async function analyzeThreadForTasks(
 ): Promise<AnalysisResponse> {
   const userPrompt = buildThreadAnalysisUserPrompt(params)
 
-  const { object, usage } = await generateObject({
+  const { output, usage } = await generateText({
     model,
     system: EMAIL_ANALYSIS_SYSTEM_PROMPT,
     prompt: userPrompt,
-    schema: emailAnalysisResultSchema,
+    output: Output.object({ schema: emailAnalysisResultSchema }),
   })
 
   return {
-    result: object,
+    result: output!,
     usage: {
       promptTokens: usage?.inputTokens ?? 0,
       completionTokens: usage?.outputTokens ?? 0,
