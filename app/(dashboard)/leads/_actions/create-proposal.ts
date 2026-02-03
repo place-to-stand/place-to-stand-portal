@@ -37,6 +37,7 @@ export type CreateProposalInput = z.infer<typeof createProposalSchema>
 
 export type CreateProposalResult = LeadActionResult & {
   proposal?: Proposal
+  warning?: string
 }
 
 export async function createProposal(
@@ -151,7 +152,8 @@ export async function createProposal(
     }).format(estimatedValue)
   }
 
-  // Replace template variables
+  // Replace template variables - track if this fails for user warning
+  let templateReplacementFailed = false
   try {
     await replaceTextInDocument(user.id, {
       docId: newDoc.id,
@@ -159,6 +161,7 @@ export async function createProposal(
     })
   } catch (error) {
     console.error('Failed to replace template variables', error)
+    templateReplacementFailed = true
     // Continue - doc was created, variables just weren't replaced
   }
 
@@ -190,5 +193,8 @@ export async function createProposal(
   return {
     success: true,
     proposal,
+    warning: templateReplacementFailed
+      ? 'Proposal created but template variables could not be replaced. Please edit the document manually.'
+      : undefined,
   }
 }

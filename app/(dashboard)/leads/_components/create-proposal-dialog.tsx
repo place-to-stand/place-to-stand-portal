@@ -120,10 +120,19 @@ function CreateProposalSheetContent({
         return
       }
 
-      toast({
-        title: 'Proposal created',
-        description: `${title} - Document ready in Google Docs.`,
-      })
+      // Show warning toast if template replacement failed, otherwise success
+      if (result.warning) {
+        toast({
+          variant: 'destructive',
+          title: 'Proposal created with warning',
+          description: result.warning,
+        })
+      } else {
+        toast({
+          title: 'Proposal created',
+          description: `${title} - Document ready in Google Docs.`,
+        })
+      }
 
       onOpenChange(false)
       if (result.proposal) {

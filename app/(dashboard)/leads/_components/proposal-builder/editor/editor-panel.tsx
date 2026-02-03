@@ -27,6 +27,7 @@ type EditorPanelProps = {
   onBuild: () => void
   onGenerateDraft: () => void
   existingProposalCount?: number
+  existingProposalsFetchFailed?: boolean
   showPreview?: boolean
   onTogglePreview?: () => void
 }
@@ -39,6 +40,7 @@ export function EditorPanel({
   onBuild,
   onGenerateDraft,
   existingProposalCount = 0,
+  existingProposalsFetchFailed = false,
   showPreview = false,
   onTogglePreview,
 }: EditorPanelProps) {
@@ -117,6 +119,16 @@ export function EditorPanel({
                 This lead already has {existingProposalCount} proposal
                 {existingProposalCount > 1 ? 's' : ''}. Building will create an
                 additional proposal.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Warning when duplicate check couldn't be performed */}
+          {existingProposalsFetchFailed && existingProposalCount === 0 && (
+            <Alert variant="default" className="border-muted-foreground/30 bg-muted/30">
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+              <AlertDescription className="text-muted-foreground">
+                Unable to check for existing proposals. Duplicates may exist.
               </AlertDescription>
             </Alert>
           )}

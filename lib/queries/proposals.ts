@@ -1,3 +1,5 @@
+import 'server-only'
+
 import { and, desc, eq, isNull, isNotNull, sql, inArray } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
@@ -503,20 +505,14 @@ export async function fetchProposalByShareToken(
 /**
  * Record a view on a shared proposal. Increments count and sets viewed_at.
  * Also updates status to VIEWED if currently SENT.
+ * Returns the PREVIOUS view count (before this increment) for "first view" detection.
  */
 export async function recordProposalView(proposalId: string): Promise<number> {
   const now = new Date().toISOString()
 
-  // Get current count before incrementing
-  const [current] = await db
-    .select({ viewedCount: proposals.viewedCount })
-    .from(proposals)
-    .where(eq(proposals.id, proposalId))
-    .limit(1)
-
-  const previousCount = current?.viewedCount ?? 0
-
-  await db
+  // Atomically increment view count and get the NEW count via RETURNING
+  // This eliminates the race condition from separate SELECT + UPDATE
+  const result = await db
     .update(proposals)
     .set({
       viewedAt: now,
@@ -524,8 +520,12 @@ export async function recordProposalView(proposalId: string): Promise<number> {
       updatedAt: now,
     })
     .where(eq(proposals.id, proposalId))
+    .returning({ newCount: proposals.viewedCount })
 
-  // Upgrade status from SENT → VIEWED
+  const newCount = result[0]?.newCount ?? 1
+  const previousCount = newCount - 1
+
+  // Upgrade status from SENT → VIEWED (only if currently SENT)
   await db
     .update(proposals)
     .set({ status: 'VIEWED', updatedAt: now })

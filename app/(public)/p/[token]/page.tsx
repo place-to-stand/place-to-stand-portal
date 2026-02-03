@@ -1,20 +1,14 @@
 import { notFound } from 'next/navigation'
 import { cookies } from 'next/headers'
-import { createHmac } from 'crypto'
 import type { Metadata } from 'next'
 
 import { fetchProposalByShareToken, recordProposalView } from '@/lib/queries/proposals'
 import type { ProposalContent } from '@/lib/proposals/types'
 import { ProposalDocument } from '@/components/proposal-viewer/proposal-document'
+import { verifyTokenSignature } from '@/lib/auth/crypto'
 
 import { ProposalViewerClient } from './proposal-viewer-client'
 import { ProposalActions } from './proposal-actions'
-
-function verifyTokenSignature(token: string, cookieValue: string): boolean {
-  const secret = process.env.COOKIE_SECRET ?? process.env.SUPABASE_SERVICE_ROLE_KEY ?? 'fallback-dev-secret'
-  const expected = createHmac('sha256', secret).update(token).digest('hex')
-  return cookieValue === expected
-}
 
 type Props = {
   params: Promise<{ token: string }>

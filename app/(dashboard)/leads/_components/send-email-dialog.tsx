@@ -192,6 +192,19 @@ export function SendEmailDialog({
       return
     }
 
+    // Validate scheduled time is in the future
+    if (scheduleMode === 'later' && scheduledAt) {
+      const scheduledDate = new Date(scheduledAt)
+      if (scheduledDate <= new Date()) {
+        toast({
+          variant: 'destructive',
+          title: 'Invalid schedule time',
+          description: 'Please select a future date and time.',
+        })
+        return
+      }
+    }
+
     startSendTransition(async () => {
       const result = await createLeadEmail({
         leadId: lead.id,

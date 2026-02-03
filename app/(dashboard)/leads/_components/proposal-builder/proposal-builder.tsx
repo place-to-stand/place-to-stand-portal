@@ -154,17 +154,21 @@ export function ProposalBuilder({
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false)
   const [pendingBuildValues, setPendingBuildValues] = useState<ProposalFormValues | null>(null)
 
-  // Fetch existing proposals on mount
+  const [existingProposalsFetchFailed, setExistingProposalsFetchFailed] = useState(false)
+
+  // Fetch existing proposals on mount to detect duplicates
   useEffect(() => {
     async function fetchExistingProposals() {
       try {
         const res = await fetch(`/api/leads/${lead.id}/proposals`)
-        if (res.ok) {
-          const data = await res.json()
-          setExistingProposals(data.proposals ?? [])
-        }
-      } catch {
-        // Silently fail - we'll just not show the warning
+        if (!res.ok) throw new Error('Failed to fetch')
+        const data = await res.json()
+        setExistingProposals(data.proposals ?? [])
+        setExistingProposalsFetchFailed(false)
+      } catch (err) {
+        console.error('Failed to fetch existing proposals for duplicate check:', err)
+        setExistingProposalsFetchFailed(true)
+        // Continue without duplicate detection - user will see warning
       }
     }
     fetchExistingProposals()
@@ -492,6 +496,7 @@ export function ProposalBuilder({
               onBuild={handleBuildProposal}
               onGenerateDraft={handleGenerateDraft}
               existingProposalCount={existingProposals.length}
+              existingProposalsFetchFailed={existingProposalsFetchFailed}
               showPreview={showPreview}
               onTogglePreview={() => setShowPreview(prev => !prev)}
             />

@@ -1,3 +1,12 @@
+import {
+  FileText,
+  Send,
+  Eye,
+  CheckCircle,
+  XCircle,
+  type LucideIcon,
+} from 'lucide-react'
+
 import type { ProposalRisk } from './types'
 
 // =============================================================================
@@ -13,6 +22,41 @@ export const PROPOSAL_STATUS_LABELS: Record<ProposalStatusValue, string> = {
   VIEWED: 'Viewed',
   ACCEPTED: 'Accepted',
   REJECTED: 'Rejected',
+}
+
+/**
+ * Display configuration for proposal statuses, including icons and colors.
+ * Used by UI components to render status badges consistently.
+ */
+export const PROPOSAL_STATUS_CONFIG: Record<
+  ProposalStatusValue,
+  { label: string; icon: LucideIcon; className: string }
+> = {
+  DRAFT: {
+    label: 'Draft',
+    icon: FileText,
+    className: 'bg-gray-500/10 text-gray-600 border-gray-500/20',
+  },
+  SENT: {
+    label: 'Sent',
+    icon: Send,
+    className: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+  },
+  VIEWED: {
+    label: 'Viewed',
+    icon: Eye,
+    className: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+  },
+  ACCEPTED: {
+    label: 'Accepted',
+    icon: CheckCircle,
+    className: 'bg-green-500/10 text-green-600 border-green-500/20',
+  },
+  REJECTED: {
+    label: 'Rejected',
+    icon: XCircle,
+    className: 'bg-red-500/10 text-red-600 border-red-500/20',
+  },
 }
 
 // =============================================================================

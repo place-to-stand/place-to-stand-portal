@@ -30,19 +30,21 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useToast } from '@/components/ui/use-toast'
 import type { LeadRecord } from '@/lib/leads/types'
+import {
+  PROPOSAL_STATUS_CONFIG,
+  type ProposalStatusValue,
+} from '@/lib/proposals/constants'
 
 import { updateProposalStatus, prepareProposalSend, deleteProposalAction } from '../_actions'
 import { ShareProposalDialog } from './share-proposal-dialog'
 import { SendEmailDialog } from './send-email-dialog'
-
-type ProposalStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED'
 
 type Proposal = {
   id: string
   title: string
   docUrl: string | null
   docId: string | null
-  status: ProposalStatus
+  status: ProposalStatusValue
   sentAt: string | null
   sentToEmail: string | null
   createdAt: string
@@ -59,37 +61,6 @@ type LeadProposalsSectionProps = {
   onSuccess?: () => void
 }
 
-const STATUS_CONFIG: Record<
-  ProposalStatus,
-  { label: string; icon: typeof FileText; className: string }
-> = {
-  DRAFT: {
-    label: 'Draft',
-    icon: FileText,
-    className: 'bg-gray-500/10 text-gray-600 border-gray-500/20',
-  },
-  SENT: {
-    label: 'Sent',
-    icon: Send,
-    className: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
-  },
-  VIEWED: {
-    label: 'Viewed',
-    icon: Eye,
-    className: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
-  },
-  ACCEPTED: {
-    label: 'Accepted',
-    icon: CheckCircle,
-    className: 'bg-green-500/10 text-green-600 border-green-500/20',
-  },
-  REJECTED: {
-    label: 'Rejected',
-    icon: XCircle,
-    className: 'bg-red-500/10 text-red-600 border-red-500/20',
-  },
-}
-
 export function LeadProposalsSection({
   lead,
   canManage,
@@ -98,16 +69,20 @@ export function LeadProposalsSection({
 }: LeadProposalsSectionProps) {
   const [proposals, setProposals] = useState<Proposal[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const fetchProposals = useCallback(async () => {
+    setError(null)
     try {
       const response = await fetch(`/api/leads/${lead.id}/proposals`)
-      if (response.ok) {
-        const data = await response.json()
-        setProposals(data.proposals ?? [])
+      if (!response.ok) {
+        throw new Error('Failed to load proposals')
       }
-    } catch (error) {
-      console.error('Failed to fetch lead proposals:', error)
+      const data = await response.json()
+      setProposals(data.proposals ?? [])
+    } catch (err) {
+      console.error('Failed to fetch lead proposals:', err)
+      setError('Failed to load proposals. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -143,6 +118,13 @@ export function LeadProposalsSection({
         <div className="space-y-2">
           <Skeleton className="h-16 w-full" />
           <Skeleton className="h-16 w-full" />
+        </div>
+      ) : error ? (
+        <div className="flex items-center justify-between rounded-md border border-destructive/20 bg-destructive/5 p-3">
+          <p className="text-sm text-destructive">{error}</p>
+          <Button variant="ghost" size="sm" onClick={fetchProposals}>
+            Retry
+          </Button>
         </div>
       ) : proposals.length === 0 ? (
         <p className="text-sm text-muted-foreground">No proposals created yet.</p>
@@ -210,11 +192,11 @@ function ProposalCard({
     })
   }, [proposal.id, proposal.title, lead.contactName, toast, onUpdate])
 
-  const statusConfig = STATUS_CONFIG[proposal.status]
+  const statusConfig = PROPOSAL_STATUS_CONFIG[proposal.status]
   const StatusIcon = statusConfig.icon
 
   const handleStatusChange = useCallback(
-    (newStatus: ProposalStatus) => {
+    (newStatus: ProposalStatusValue) => {
       startUpdateTransition(async () => {
         const result = await updateProposalStatus({
           leadId: lead.id,
@@ -236,7 +218,7 @@ function ProposalCard({
         const actionLabel =
           newStatus === 'SENT'
             ? 'shared with lead'
-            : `marked as ${STATUS_CONFIG[newStatus].label.toLowerCase()}`
+            : `marked as ${PROPOSAL_STATUS_CONFIG[newStatus].label.toLowerCase()}`
 
         toast({
           title: 'Proposal updated',

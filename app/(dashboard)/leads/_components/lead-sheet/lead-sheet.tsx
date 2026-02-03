@@ -170,6 +170,7 @@ export function LeadSheet({
           assigneeId: values.assigneeId ?? null,
           notes: values.notes ?? '',
           priorityTier: values.priorityTier ?? null,
+          estimatedValue: values.estimatedValue ?? null,
         })
 
         setArchiveDialogOpen(false)

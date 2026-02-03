@@ -1,20 +1,14 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { createHmac } from 'crypto'
 
 import { respondToProposal } from '@/lib/data/proposals'
 import { fetchProposalByShareToken } from '@/lib/queries/proposals'
 import type { SignatureData } from '@/lib/queries/proposals'
+import { verifyTokenSignature, isValidSignatureDataUrl } from '@/lib/auth/crypto'
 
 const TOKEN_REGEX = /^[a-f0-9]{32}$/
 const MAX_COMMENT_LENGTH = 2000
 const MAX_SIGNATURE_DATA_LENGTH = 500_000 // ~375KB base64 PNG
-
-function verifyTokenSignature(token: string, cookieValue: string): boolean {
-  const secret = process.env.COOKIE_SECRET ?? process.env.SUPABASE_SERVICE_ROLE_KEY ?? 'fallback-dev-secret'
-  const expected = createHmac('sha256', secret).update(token).digest('hex')
-  return cookieValue === expected
-}
 
 export async function POST(
   request: Request,
@@ -85,6 +79,13 @@ export async function POST(
       if (signatureData.length > MAX_SIGNATURE_DATA_LENGTH) {
         return NextResponse.json(
           { ok: false, error: 'Signature data exceeds maximum size.' },
+          { status: 400 }
+        )
+      }
+
+      if (!isValidSignatureDataUrl(signatureData)) {
+        return NextResponse.json(
+          { ok: false, error: 'Invalid signature format. Must be a PNG image.' },
           { status: 400 }
         )
       }

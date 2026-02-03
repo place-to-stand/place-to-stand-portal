@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Copy, Check, Link2, Eye, Lock, Unlock } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -45,6 +45,12 @@ export function ShareProposalDialog({
   const [currentToken, setCurrentToken] = useState(shareToken)
   const [currentEnabled, setCurrentEnabled] = useState(shareEnabled ?? false)
 
+  // Sync local state when props change (e.g., after data refresh)
+  useEffect(() => {
+    setCurrentToken(shareToken)
+    setCurrentEnabled(shareEnabled ?? false)
+  }, [shareToken, shareEnabled])
+
   const shareUrl = currentToken
     ? `${typeof window !== 'undefined' ? window.location.origin : ''}/p/${currentToken}`
     : null
@@ -63,9 +69,19 @@ export function ShareProposalDialog({
         setCurrentEnabled(true)
         toast({ title: 'Sharing enabled', description: 'The proposal link is ready to share.' })
         onUpdate?.()
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Failed to enable sharing',
+          description: data.error ?? 'Please try again.',
+        })
       }
     } catch {
-      toast({ variant: 'destructive', title: 'Failed to enable sharing' })
+      toast({
+        variant: 'destructive',
+        title: 'Failed to enable sharing',
+        description: 'Network error. Please check your connection.',
+      })
     } finally {
       setIsLoading(false)
     }
@@ -82,9 +98,19 @@ export function ShareProposalDialog({
         setCurrentEnabled(false)
         toast({ title: 'Sharing disabled' })
         onUpdate?.()
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Failed to disable sharing',
+          description: data.error ?? 'Please try again.',
+        })
       }
     } catch {
-      toast({ variant: 'destructive', title: 'Failed to disable sharing' })
+      toast({
+        variant: 'destructive',
+        title: 'Failed to disable sharing',
+        description: 'Network error. Please check your connection.',
+      })
     } finally {
       setIsLoading(false)
     }

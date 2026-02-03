@@ -1,16 +1,10 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { createHmac } from 'crypto'
 
 import { fetchProposalByShareToken } from '@/lib/queries/proposals'
+import { verifyTokenSignature } from '@/lib/auth/crypto'
 
 const TOKEN_REGEX = /^[a-f0-9]{32}$/
-
-function verifyTokenSignature(token: string, cookieValue: string): boolean {
-  const secret = process.env.COOKIE_SECRET ?? process.env.SUPABASE_SERVICE_ROLE_KEY ?? 'fallback-dev-secret'
-  const expected = createHmac('sha256', secret).update(token).digest('hex')
-  return cookieValue === expected
-}
 
 export async function GET(
   _request: Request,

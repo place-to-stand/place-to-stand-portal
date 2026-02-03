@@ -1,15 +1,10 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { createHmac } from 'crypto'
 
 import { verifySharePassword } from '@/lib/data/proposals'
+import { signToken } from '@/lib/auth/crypto'
 
 const TOKEN_REGEX = /^[a-f0-9]{32}$/
-
-function signToken(token: string): string {
-  const secret = process.env.COOKIE_SECRET ?? process.env.SUPABASE_SERVICE_ROLE_KEY ?? 'fallback-dev-secret'
-  return createHmac('sha256', secret).update(token).digest('hex')
-}
 
 export async function POST(
   request: Request,

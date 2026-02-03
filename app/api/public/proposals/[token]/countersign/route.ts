@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 
 import { countersignProposal } from '@/lib/data/proposals'
+import { isValidSignatureDataUrl } from '@/lib/auth/crypto'
 
 const TOKEN_REGEX = /^[a-f0-9]{64}$/
 const MAX_SIGNATURE_DATA_LENGTH = 500_000
@@ -38,6 +39,13 @@ export async function POST(
     if (countersignatureData.length > MAX_SIGNATURE_DATA_LENGTH) {
       return NextResponse.json(
         { ok: false, error: 'Signature data exceeds maximum size.' },
+        { status: 400 }
+      )
+    }
+
+    if (!isValidSignatureDataUrl(countersignatureData)) {
+      return NextResponse.json(
+        { ok: false, error: 'Invalid signature format. Must be a PNG image.' },
         { status: 400 }
       )
     }
