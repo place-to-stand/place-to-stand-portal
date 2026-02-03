@@ -190,20 +190,20 @@ export async function createProposal(
     }
   }
 
-  // Log activity
+  // Log activity (fire-and-forget to avoid crashing after successful creation)
   const event = proposalCreatedEvent({
     title,
     leadName: lead.contactName,
     estimatedValue: estimatedValue !== undefined ? String(estimatedValue) : null,
   })
-  await logActivity({
+  logActivity({
     actorId: user.id,
     verb: event.verb,
     summary: event.summary,
     targetType: 'PROPOSAL',
     targetId: proposal.id,
     metadata: event.metadata,
-  })
+  }).catch(err => console.error('[proposals] Failed to log creation:', err))
 
   revalidateLeadsPath()
 

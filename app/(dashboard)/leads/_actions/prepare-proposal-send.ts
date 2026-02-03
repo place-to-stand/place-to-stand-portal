@@ -74,14 +74,15 @@ export async function prepareProposalSend(
         title: proposal.title,
         leadName: lead.contactName,
       })
-      await logActivity({
+      // Fire-and-forget to avoid crashing after successful send preparation
+      logActivity({
         actorId: user.id,
         verb: event.verb,
         summary: event.summary,
         targetType: 'PROPOSAL',
         targetId: proposal.id,
         metadata: event.metadata,
-      })
+      }).catch(err => console.error('[proposals] Failed to log send:', err))
     }
   }
 
