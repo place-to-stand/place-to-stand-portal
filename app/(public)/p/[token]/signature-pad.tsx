@@ -49,10 +49,18 @@ export function SignaturePad({ onChange, typedName = '' }: SignaturePadProps) {
 
   return (
     <div className="space-y-3">
-      {/* Mode toggle */}
-      <div className="flex gap-1 rounded-md bg-muted/60 p-1">
+      {/* Mode toggle - uses tab pattern for accessibility */}
+      <div
+        role="tablist"
+        aria-label="Signature input method"
+        className="flex gap-1 rounded-md bg-muted/60 p-1"
+      >
         <button
           type="button"
+          role="tab"
+          id="signature-type-tab"
+          aria-selected={mode === 'type'}
+          aria-controls="signature-type-panel"
           onClick={() => handleModeChange('type')}
           className={`flex flex-1 items-center justify-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium transition-colors ${
             mode === 'type'
@@ -60,11 +68,15 @@ export function SignaturePad({ onChange, typedName = '' }: SignaturePadProps) {
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          <Type className="h-3.5 w-3.5" />
+          <Type className="h-3.5 w-3.5" aria-hidden="true" />
           Type
         </button>
         <button
           type="button"
+          role="tab"
+          id="signature-draw-tab"
+          aria-selected={mode === 'draw'}
+          aria-controls="signature-draw-panel"
           onClick={() => handleModeChange('draw')}
           className={`flex flex-1 items-center justify-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium transition-colors ${
             mode === 'draw'
@@ -72,19 +84,23 @@ export function SignaturePad({ onChange, typedName = '' }: SignaturePadProps) {
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          <PenLine className="h-3.5 w-3.5" />
+          <PenLine className="h-3.5 w-3.5" aria-hidden="true" />
           Draw
         </button>
       </div>
 
       {mode === 'type' ? (
-        <TypedSignature
-          name={typedName}
-          fontFamily={SIGNATURE_FONT}
-          onChange={onChange}
-        />
+        <div id="signature-type-panel" role="tabpanel" aria-labelledby="signature-type-tab">
+          <TypedSignature
+            name={typedName}
+            fontFamily={SIGNATURE_FONT}
+            onChange={onChange}
+          />
+        </div>
       ) : (
-        <DrawnSignature onChange={handleDrawChange} />
+        <div id="signature-draw-panel" role="tabpanel" aria-labelledby="signature-draw-tab">
+          <DrawnSignature onChange={handleDrawChange} />
+        </div>
       )}
     </div>
   )

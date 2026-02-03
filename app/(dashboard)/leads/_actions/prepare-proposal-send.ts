@@ -1,10 +1,16 @@
 'use server'
 
+import { eq, isNull, and } from 'drizzle-orm'
+
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { enableProposalSharing } from '@/lib/data/proposals'
 import { fetchProposalById, updateProposal } from '@/lib/queries/proposals'
 import { serverEnv } from '@/lib/env.server'
+import { db } from '@/lib/db'
+import { leads } from '@/lib/db/schema'
+import { logActivity } from '@/lib/activity/logger'
+import { proposalSentEvent } from '@/lib/activity/events'
 
 export type PrepareProposalSendInput = {
   proposalId: string
@@ -54,6 +60,30 @@ export async function prepareProposalSend(
 
   const baseUrl = serverEnv.APP_BASE_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? ''
   const shareUrl = `${baseUrl}/p/${shareToken}`
+
+  // Log activity - fetch lead name for better context
+  if (proposal.leadId) {
+    const [lead] = await db
+      .select({ contactName: leads.contactName })
+      .from(leads)
+      .where(and(eq(leads.id, proposal.leadId), isNull(leads.deletedAt)))
+      .limit(1)
+
+    if (lead) {
+      const event = proposalSentEvent({
+        title: proposal.title,
+        leadName: lead.contactName,
+      })
+      await logActivity({
+        actorId: user.id,
+        verb: event.verb,
+        summary: event.summary,
+        targetType: 'PROPOSAL',
+        targetId: proposal.id,
+        metadata: event.metadata,
+      })
+    }
+  }
 
   return {
     success: true,

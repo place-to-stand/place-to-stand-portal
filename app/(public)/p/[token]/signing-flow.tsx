@@ -146,7 +146,11 @@ export function SigningFlow({
       {/* Content */}
       <div className="px-6 py-5">
         {errorMessage && (
-          <p className="mb-4 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <p
+            role="alert"
+            aria-live="assertive"
+            className="mb-4 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          >
             {errorMessage}
           </p>
         )}

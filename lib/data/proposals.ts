@@ -19,6 +19,12 @@ import {
   type SignatureData,
   type CountersignatureData,
 } from '@/lib/queries/proposals'
+import { logActivity } from '@/lib/activity/logger'
+import {
+  proposalAcceptedEvent,
+  proposalRejectedEvent,
+  proposalCountersignedEvent,
+} from '@/lib/activity/events'
 
 // =============================================================================
 // Token generation
@@ -129,6 +135,36 @@ export async function respondToProposal(
   const updated = await recordProposalResponse(proposal.id, action, comment, signature)
   if (!updated) return null
 
+  // Log activity - use createdBy as actor since this is a public endpoint
+  if (action === 'ACCEPTED' && signature) {
+    const event = proposalAcceptedEvent({
+      title: proposal.title,
+      signerName: signature.signerName,
+    })
+    logActivity({
+      actorId: proposal.createdBy,
+      verb: event.verb,
+      summary: event.summary,
+      targetType: 'PROPOSAL',
+      targetId: proposal.id,
+      metadata: event.metadata,
+    }).catch(err => console.error('[proposals] Failed to log acceptance:', err))
+  } else if (action === 'REJECTED') {
+    const event = proposalRejectedEvent({
+      title: proposal.title,
+      leadName: signature?.signerName ?? 'Client',
+      comment,
+    })
+    logActivity({
+      actorId: proposal.createdBy,
+      verb: event.verb,
+      summary: event.summary,
+      targetType: 'PROPOSAL',
+      targetId: proposal.id,
+      metadata: event.metadata,
+    }).catch(err => console.error('[proposals] Failed to log rejection:', err))
+  }
+
   // On acceptance: compute content hash and generate countersign token
   if (action === 'ACCEPTED') {
     const contentHash = createHash('sha256')
@@ -169,6 +205,20 @@ export async function countersignProposal(
 
   const updated = await recordCountersignature(proposal.id, data)
   if (!updated) return null
+
+  // Log activity
+  const event = proposalCountersignedEvent({
+    title: proposal.title,
+    countersignerName: data.countersignerName,
+  })
+  logActivity({
+    actorId: proposal.createdBy,
+    verb: event.verb,
+    summary: event.summary,
+    targetType: 'PROPOSAL',
+    targetId: proposal.id,
+    metadata: event.metadata,
+  }).catch(err => console.error('[proposals] Failed to log countersigning:', err))
 
   // Fire-and-forget: generate full PDF, store it, and send completion notifications
   generateAndSendExecutedProposal(updated).catch(err => {

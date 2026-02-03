@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState, useTransition } from 'react'
+import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import { format, addHours } from 'date-fns'
 import { Mail, Clock, Loader2, Send, ChevronDown, Sparkles } from 'lucide-react'
 
@@ -246,16 +246,20 @@ export function SendEmailDialog({
     onSuccess,
   ])
 
-  // Group templates by category
-  const templatesByCategory = templates.reduce(
-    (acc, template) => {
-      if (!acc[template.category]) {
-        acc[template.category] = []
-      }
-      acc[template.category].push(template)
-      return acc
-    },
-    {} as Record<string, EmailTemplateRecord[]>
+  // Group templates by category (memoized to avoid recomputing on every render)
+  const templatesByCategory = useMemo(
+    () =>
+      templates.reduce(
+        (acc, template) => {
+          if (!acc[template.category]) {
+            acc[template.category] = []
+          }
+          acc[template.category].push(template)
+          return acc
+        },
+        {} as Record<string, EmailTemplateRecord[]>
+      ),
+    [templates]
   )
 
   const canSend = toEmail && subject && bodyHtml && !isSending && !isGenerating

@@ -175,9 +175,9 @@ function TaskCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             {isCompleted ? (
-              <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+              <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" aria-hidden="true" />
             ) : (
-              <Circle className="h-4 w-4 text-muted-foreground shrink-0" />
+              <Circle className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
             )}
             <p className={`truncate text-sm font-medium ${isCompleted ? 'line-through' : ''}`}>
               {task.title}
@@ -189,7 +189,7 @@ function TaskCard({
             </Badge>
             {task.dueOn && (
               <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Calendar className="h-3 w-3" />
+                <Calendar className="h-3 w-3" aria-hidden="true" />
                 {format(new Date(task.dueOn), 'MMM d')}
               </span>
             )}
@@ -198,9 +198,9 @@ function TaskCard({
         <a
           href={`/my-tasks?taskId=${task.id}`}
           className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-          title="Open task"
+          aria-label={`Open task: ${task.title}`}
         >
-          <ExternalLink className="h-4 w-4" />
+          <ExternalLink className="h-4 w-4" aria-hidden="true" />
         </a>
       </div>
     </div>

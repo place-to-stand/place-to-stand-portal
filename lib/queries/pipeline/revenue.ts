@@ -24,45 +24,42 @@ export async function fetchRevenueMetrics(start: string, end: string) {
       )
     )
 
-  // Win rate and avg deal size for resolved leads in period
-  const wonCount = await db
-    .select({ count: count() })
-    .from(leads)
-    .where(
-      and(
-        isNull(leads.deletedAt),
-        eq(leads.status, 'CLOSED_WON'),
-        gte(leads.resolvedAt, start),
-        lte(leads.resolvedAt, end)
-      )
-    )
-
-  const lostCount = await db
-    .select({ count: count() })
-    .from(leads)
-    .where(
-      and(
-        isNull(leads.deletedAt),
-        eq(leads.status, 'CLOSED_LOST'),
-        gte(leads.resolvedAt, start),
-        lte(leads.resolvedAt, end)
-      )
-    )
-
-  const avgDealSize = await db
-    .select({ avg: avg(leads.estimatedValue) })
-    .from(leads)
-    .where(
-      and(
-        isNull(leads.deletedAt),
-        eq(leads.status, 'CLOSED_WON'),
-        gte(leads.resolvedAt, start),
-        lte(leads.resolvedAt, end)
-      )
-    )
-
-  // Monthly won revenue
-  const monthlyWon = await db
+  // Win rate, avg deal size, and monthly revenue - run in parallel for performance
+  const [wonCountResult, lostCountResult, avgDealSizeResult, monthlyWon] = await Promise.all([
+    db
+      .select({ count: count() })
+      .from(leads)
+      .where(
+        and(
+          isNull(leads.deletedAt),
+          eq(leads.status, 'CLOSED_WON'),
+          gte(leads.resolvedAt, start),
+          lte(leads.resolvedAt, end)
+        )
+      ),
+    db
+      .select({ count: count() })
+      .from(leads)
+      .where(
+        and(
+          isNull(leads.deletedAt),
+          eq(leads.status, 'CLOSED_LOST'),
+          gte(leads.resolvedAt, start),
+          lte(leads.resolvedAt, end)
+        )
+      ),
+    db
+      .select({ avg: avg(leads.estimatedValue) })
+      .from(leads)
+      .where(
+        and(
+          isNull(leads.deletedAt),
+          eq(leads.status, 'CLOSED_WON'),
+          gte(leads.resolvedAt, start),
+          lte(leads.resolvedAt, end)
+        )
+      ),
+    db
     .select({
       month: sql<string>`to_char(${leads.resolvedAt}, 'YYYY-MM')`,
       total: sum(leads.estimatedValue),
@@ -78,10 +75,11 @@ export async function fetchRevenueMetrics(start: string, end: string) {
       )
     )
     .groupBy(sql`to_char(${leads.resolvedAt}, 'YYYY-MM')`)
-    .orderBy(sql`to_char(${leads.resolvedAt}, 'YYYY-MM')`)
+    .orderBy(sql`to_char(${leads.resolvedAt}, 'YYYY-MM')`),
+  ])
 
-  const won = wonCount[0]?.count ?? 0
-  const lost = lostCount[0]?.count ?? 0
+  const won = wonCountResult[0]?.count ?? 0
+  const lost = lostCountResult[0]?.count ?? 0
   const totalResolved = won + lost
   const winRate = totalResolved > 0 ? won / totalResolved : 0
 
@@ -91,7 +89,7 @@ export async function fetchRevenueMetrics(start: string, end: string) {
     winRate,
     wonCount: won,
     lostCount: lost,
-    avgDealSize: Number(avgDealSize[0]?.avg ?? 0),
+    avgDealSize: Number(avgDealSizeResult[0]?.avg ?? 0),
     monthlyWon: monthlyWon.map(row => ({
       month: row.month,
       total: Number(row.total ?? 0),

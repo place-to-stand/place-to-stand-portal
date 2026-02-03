@@ -9,20 +9,30 @@ type SigningStepsProps = {
 }
 
 export function SigningSteps({ currentStep, steps }: SigningStepsProps) {
+  const currentLabel = steps[currentStep - 1] ?? ''
+
   return (
-    <div className="flex items-center justify-center gap-2">
+    <nav
+      aria-label={`Signing progress: Step ${currentStep} of ${steps.length}, ${currentLabel}`}
+      className="flex items-center justify-center gap-2"
+    >
       {steps.map((label, i) => {
         const stepNum = i + 1
         const isComplete = stepNum < currentStep
         const isCurrent = stepNum === currentStep
         return (
-          <div key={label} className="flex items-center gap-2">
+          <div
+            key={label}
+            className="flex items-center gap-2"
+            aria-current={isCurrent ? 'step' : undefined}
+          >
             {i > 0 && (
               <div
                 className={cn(
                   'h-px w-8 sm:w-12',
                   isComplete ? 'bg-primary' : 'bg-border'
                 )}
+                aria-hidden="true"
               />
             )}
             <div className="flex items-center gap-1.5">
@@ -33,6 +43,7 @@ export function SigningSteps({ currentStep, steps }: SigningStepsProps) {
                   isCurrent && 'bg-primary text-primary-foreground',
                   !isComplete && !isCurrent && 'bg-muted text-muted-foreground'
                 )}
+                aria-hidden="true"
               >
                 {isComplete ? <Check className="h-3.5 w-3.5" /> : stepNum}
               </div>
@@ -44,10 +55,14 @@ export function SigningSteps({ currentStep, steps }: SigningStepsProps) {
               >
                 {label}
               </span>
+              {/* Screen reader only: announce step status */}
+              <span className="sr-only">
+                {isComplete ? '(completed)' : isCurrent ? '(current)' : '(upcoming)'}
+              </span>
             </div>
           </div>
         )
       })}
-    </div>
+    </nav>
   )
 }

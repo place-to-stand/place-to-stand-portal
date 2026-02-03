@@ -18,6 +18,8 @@ import {
   type Proposal,
 } from '@/lib/queries/proposals'
 
+import { logActivity } from '@/lib/activity/logger'
+import { proposalCreatedEvent } from '@/lib/activity/events'
 import { revalidateLeadsPath } from './utils'
 import type { LeadActionResult } from './types'
 
@@ -187,6 +189,21 @@ export async function createProposal(
       error: 'Proposal was created but failed to save to database.',
     }
   }
+
+  // Log activity
+  const event = proposalCreatedEvent({
+    title,
+    leadName: lead.contactName,
+    estimatedValue: estimatedValue !== undefined ? String(estimatedValue) : null,
+  })
+  await logActivity({
+    actorId: user.id,
+    verb: event.verb,
+    summary: event.summary,
+    targetType: 'PROPOSAL',
+    targetId: proposal.id,
+    metadata: event.metadata,
+  })
 
   revalidateLeadsPath()
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useTransition } from 'react'
+import { useState, useEffect, useCallback, useTransition, useMemo } from 'react'
 import { format } from 'date-fns'
 import Link from 'next/link'
 import {
@@ -97,9 +97,13 @@ export function LeadProposalsSection({
     onSuccess?.()
   }, [fetchProposals, onSuccess])
 
-  // Sort proposals: most recent first
-  const sortedProposals = [...proposals].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  // Sort proposals: most recent first (memoized to avoid re-sorting on every render)
+  const sortedProposals = useMemo(
+    () =>
+      [...proposals].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      ),
+    [proposals]
   )
 
   return (
