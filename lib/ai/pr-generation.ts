@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { generateObject } from 'ai'
+import { generateText, Output } from 'ai'
 import { createGateway } from '@ai-sdk/gateway'
 import {
   PR_GENERATION_SYSTEM_PROMPT,
@@ -31,15 +31,15 @@ export async function generatePRSuggestion(
 ): Promise<PRGenerationResponse> {
   const userPrompt = buildPRGenerationUserPrompt(params)
 
-  const { object, usage } = await generateObject({
+  const { output, usage } = await generateText({
     model,
     system: PR_GENERATION_SYSTEM_PROMPT,
     prompt: userPrompt,
-    schema: generatedPRSchema,
+    output: Output.object({ schema: generatedPRSchema }),
   })
 
   return {
-    result: object,
+    result: output!,
     usage: {
       promptTokens: usage?.inputTokens ?? 0,
       completionTokens: usage?.outputTokens ?? 0,

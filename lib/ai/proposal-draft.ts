@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { generateObject } from 'ai'
+import { generateText, Output } from 'ai'
 import { createGateway } from '@ai-sdk/gateway'
 
 import {
@@ -33,15 +33,15 @@ export async function generateProposalDraft(
 ): Promise<GenerateProposalDraftResponse> {
   const userPrompt = buildProposalDraftPrompt(params)
 
-  const { object, usage } = await generateObject({
+  const { output, usage } = await generateText({
     model,
     system: PROPOSAL_DRAFT_SYSTEM_PROMPT,
     prompt: userPrompt,
-    schema: proposalDraftSchema,
+    output: Output.object({ schema: proposalDraftSchema }),
   })
 
   return {
-    draft: object,
+    draft: output!,
     usage: {
       promptTokens: usage?.inputTokens ?? 0,
       completionTokens: usage?.outputTokens ?? 0,
