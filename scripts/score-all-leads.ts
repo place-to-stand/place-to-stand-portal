@@ -10,7 +10,7 @@ config({ path: '.env.local' })
 
 import postgres from 'postgres'
 import { createGateway } from '@ai-sdk/gateway'
-import { generateObject } from 'ai'
+import { generateText, Output } from 'ai'
 import { z } from 'zod'
 
 type LeadRow = {
@@ -209,14 +209,14 @@ ${emailContext}
 
 Analyze this lead and provide a comprehensive score.`
 
-  const { object } = await generateObject({
+  const { output } = await generateText({
     model,
     system: SYSTEM_PROMPT,
     prompt,
-    schema: leadScoringResultSchema,
+    output: Output.object({ schema: leadScoringResultSchema }),
   })
 
-  return object
+  return output!
 }
 
 async function main() {

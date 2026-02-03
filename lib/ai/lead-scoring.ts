@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { generateObject } from 'ai'
+import { generateText, Output } from 'ai'
 import { createGateway } from '@ai-sdk/gateway'
 
 import {
@@ -36,15 +36,15 @@ export async function scoreLeadWithAI(
 ): Promise<ScoreLeadResponse> {
   const userPrompt = buildLeadScoringPrompt(params)
 
-  const { object, usage } = await generateObject({
+  const { output, usage } = await generateText({
     model,
     system: LEAD_SCORING_SYSTEM_PROMPT,
     prompt: userPrompt,
-    schema: leadScoringResultSchema,
+    output: Output.object({ schema: leadScoringResultSchema }),
   })
 
   return {
-    result: object,
+    result: output!,
     usage: {
       promptTokens: usage?.inputTokens ?? 0,
       completionTokens: usage?.outputTokens ?? 0,

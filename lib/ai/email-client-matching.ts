@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { generateObject } from 'ai'
+import { generateText, Output } from 'ai'
 import { createGateway } from '@ai-sdk/gateway'
 import {
   EMAIL_TO_CLIENT_SYSTEM_PROMPT,
@@ -62,15 +62,15 @@ export async function matchEmailToClients(
 
   const userPrompt = buildEmailToClientUserPrompt(promptParams)
 
-  const { object, usage } = await generateObject({
+  const { output, usage } = await generateText({
     model,
     system: EMAIL_TO_CLIENT_SYSTEM_PROMPT,
     prompt: userPrompt,
-    schema: emailClientMatchResponseSchema,
+    output: Output.object({ schema: emailClientMatchResponseSchema }),
   })
 
   // Filter out low confidence matches and sort by confidence
-  const filteredMatches = object.matches
+  const filteredMatches = output!.matches
     .filter(m => m.confidence >= 0.4)
     .sort((a, b) => b.confidence - a.confidence)
 
