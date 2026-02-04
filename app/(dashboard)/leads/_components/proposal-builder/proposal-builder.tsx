@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
-import { useForm, useWatch } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { addDays, format } from 'date-fns'
 import { z } from 'zod'
@@ -16,7 +16,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Form } from '@/components/ui/form'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useToast } from '@/components/ui/use-toast'
@@ -26,17 +25,12 @@ import {
   DEFAULT_KICKOFF_DAYS,
   DEFAULT_RISKS,
 } from '@/lib/proposals/constants'
-import {
-  DEFAULT_DOCUMENT_SETTINGS,
-  type DocumentSettings,
-} from '@/lib/proposals/document-styles'
 import { htmlToPlainText } from '@/lib/proposals/html-to-text'
 import type { ProposalPhase, ProposalRisk } from '@/lib/proposals/types'
 
 import { buildProposalFromScratch } from '../../_actions'
 import { ContextPanel } from './context/context-panel'
 import { EditorPanel } from './editor/editor-panel'
-import { PreviewPanel } from './preview/preview-panel'
 
 // Type for the AI draft response
 type ProposalDraftResponse = {
@@ -146,11 +140,7 @@ export function ProposalBuilder({
   const { toast } = useToast()
   const [isBuilding, startBuildTransition] = useTransition()
   const [isGenerating, setIsGenerating] = useState(false)
-  const [documentSettings, setDocumentSettings] = useState<DocumentSettings>(
-    DEFAULT_DOCUMENT_SETTINGS
-  )
   const [existingProposals, setExistingProposals] = useState<ExistingProposal[]>([])
-  const [showPreview, setShowPreview] = useState(false)
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false)
   const [pendingBuildValues, setPendingBuildValues] = useState<ProposalFormValues | null>(null)
 
@@ -213,9 +203,6 @@ export function ProposalBuilder({
     mode: 'onChange',
   })
 
-  // Watch form values for preview
-  const formValues = useWatch({ control: form.control })
-
   // Track dirty state
   useEffect(() => {
     onDirtyChange(form.formState.isDirty)
@@ -266,8 +253,6 @@ export function ProposalBuilder({
             : undefined,
           kickoffDays: values.kickoffDays,
           estimatedValue: values.estimatedValue,
-          // Pass document formatting settings
-          documentSettings,
         })
 
         if (!result.success) {
@@ -287,7 +272,7 @@ export function ProposalBuilder({
         onSuccess()
       })
     },
-    [lead.id, toast, onSuccess, documentSettings]
+    [lead.id, toast, onSuccess]
   )
 
   // Handle confirmation of duplicate proposal
@@ -434,51 +419,6 @@ export function ProposalBuilder({
     }
   }, [lead.id, form, toast])
 
-  // Merge form values with defaults for preview (handle undefined gracefully)
-  const previewContent = useMemo(
-    () => ({
-      title: formValues.title ?? defaultValues.title,
-      client: {
-        companyName: formValues.clientCompany ?? defaultValues.clientCompany,
-        contactName:
-          formValues.clientContactName ?? defaultValues.clientContactName,
-        contactEmail:
-          formValues.clientContactEmail ?? defaultValues.clientContactEmail,
-        contact2Name: formValues.clientContact2Name,
-        contact2Email: formValues.clientContact2Email,
-        signatoryName: formValues.clientSignatoryName,
-      },
-      projectOverviewText:
-        formValues.projectOverviewText ?? defaultValues.projectOverviewText,
-      phases: (formValues.phases ?? defaultValues.phases).map(
-        (p, i): ProposalPhase => ({
-          index: i + 1,
-          title: p.title ?? '',
-          purpose: p.purpose ?? '',
-          deliverables: (p.deliverables ?? []).filter(d => d.trim()),
-        })
-      ),
-      risks: (formValues.risks ?? defaultValues.risks)
-        .filter(r => r.title?.trim() || r.description?.trim())
-        .map(r => ({ title: r.title ?? '', description: r.description ?? '' })),
-      includeFullTerms:
-        formValues.includeFullTerms ?? defaultValues.includeFullTerms,
-      rates: {
-        hourlyRate: formValues.hourlyRate ?? defaultValues.hourlyRate,
-        initialCommitmentDescription:
-          formValues.initialCommitmentDescription ??
-          defaultValues.initialCommitmentDescription,
-        estimatedScopingHours:
-          formValues.estimatedScopingHours ??
-          defaultValues.estimatedScopingHours,
-      },
-      proposalValidUntil:
-        formValues.proposalValidUntil ?? defaultValues.proposalValidUntil,
-      kickoffDays: formValues.kickoffDays ?? defaultValues.kickoffDays,
-    }),
-    [formValues, defaultValues]
-  )
-
   return (
     <>
       <TooltipProvider delayDuration={300}>
@@ -497,18 +437,7 @@ export function ProposalBuilder({
               onGenerateDraft={handleGenerateDraft}
               existingProposalCount={existingProposals.length}
               existingProposalsFetchFailed={existingProposalsFetchFailed}
-              showPreview={showPreview}
-              onTogglePreview={() => setShowPreview(prev => !prev)}
             />
-
-            {/* Collapsible Preview Panel */}
-            {showPreview && (
-              <PreviewPanel
-                content={previewContent}
-                documentSettings={documentSettings}
-                onDocumentSettingsChange={setDocumentSettings}
-              />
-            )}
           </form>
         </Form>
       </TooltipProvider>

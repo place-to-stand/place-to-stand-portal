@@ -1,16 +1,11 @@
 'use client'
 
 import type { UseFormReturn } from 'react-hook-form'
-import { AlertTriangle, Loader2, FileText, Sparkles, PanelRightOpen, PanelRightClose } from 'lucide-react'
+import { AlertTriangle, Loader2, FileText, Sparkles } from 'lucide-react'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 import type { ProposalFormValues } from '../proposal-builder'
 import { ClientSection } from './client-section'
@@ -28,8 +23,6 @@ type EditorPanelProps = {
   onGenerateDraft: () => void
   existingProposalCount?: number
   existingProposalsFetchFailed?: boolean
-  showPreview?: boolean
-  onTogglePreview?: () => void
 }
 
 export function EditorPanel({
@@ -41,14 +34,13 @@ export function EditorPanel({
   onGenerateDraft,
   existingProposalCount = 0,
   existingProposalsFetchFailed = false,
-  showPreview = false,
-  onTogglePreview,
 }: EditorPanelProps) {
   return (
-    <div className="flex min-w-0 flex-1 flex-col border-r">
+    <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
       {/* Scrollable form content */}
-      <ScrollArea className="min-h-0 flex-1">
-        <div className="space-y-6 p-6">
+      <div className="relative min-h-0 flex-1">
+        <div className="absolute inset-0 overflow-y-auto">
+          <div className="space-y-6 p-6">
           {/* Header with Generate Draft button */}
           <div className="flex items-center justify-between">
             <div className="space-y-1">
@@ -58,29 +50,6 @@ export function EditorPanel({
               </p>
             </div>
             <div className="flex items-center gap-2">
-              {onTogglePreview && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="gap-2"
-                      onClick={onTogglePreview}
-                    >
-                      {showPreview ? (
-                        <PanelRightClose className="h-4 w-4" />
-                      ) : (
-                        <PanelRightOpen className="h-4 w-4" />
-                      )}
-                      {showPreview ? 'Hide' : 'Doc'} Preview
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p>Toggle Google Docs preview panel</p>
-                  </TooltipContent>
-                </Tooltip>
-              )}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -168,8 +137,9 @@ export function EditorPanel({
 
           {/* Rates & Terms */}
           <RatesSection form={form} />
+          </div>
         </div>
-      </ScrollArea>
+      </div>
 
       {/* Footer Actions */}
       <div className="flex-shrink-0 border-t bg-muted/50 px-6 py-4">

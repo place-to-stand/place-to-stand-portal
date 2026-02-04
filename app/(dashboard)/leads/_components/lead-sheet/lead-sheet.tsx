@@ -299,7 +299,7 @@ export function LeadSheet({
 
   return (
     <>
-      <Sheet open={open} onOpenChange={handleSheetOpenChange}>
+      <Sheet open={open && !isBuildProposalDialogOpen} onOpenChange={handleSheetOpenChange}>
         <SheetContent className='flex h-full w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl lg:max-w-6xl'>
           {/* Header */}
           <div className='flex-shrink-0 border-b-2 border-b-amber-500/60 px-6 pt-4 pb-3'>
