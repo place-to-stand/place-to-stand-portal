@@ -667,6 +667,84 @@ export async function fetchAllProposals(
   }))
 }
 
+/**
+ * Fetch all soft-deleted proposals for the archive view.
+ */
+export async function fetchArchivedProposals(): Promise<ProposalWithRelations[]> {
+  const rows = await db
+    .select({
+      id: proposals.id,
+      leadId: proposals.leadId,
+      clientId: proposals.clientId,
+      title: proposals.title,
+      docUrl: proposals.docUrl,
+      docId: proposals.docId,
+      templateDocId: proposals.templateDocId,
+      status: proposals.status,
+      estimatedValue: proposals.estimatedValue,
+      expirationDate: proposals.expirationDate,
+      sentAt: proposals.sentAt,
+      sentToEmail: proposals.sentToEmail,
+      content: proposals.content,
+      shareToken: proposals.shareToken,
+      sharePasswordHash: proposals.sharePasswordHash,
+      shareEnabled: proposals.shareEnabled,
+      viewedAt: proposals.viewedAt,
+      viewedCount: proposals.viewedCount,
+      acceptedAt: proposals.acceptedAt,
+      rejectedAt: proposals.rejectedAt,
+      clientComment: proposals.clientComment,
+      signerName: proposals.signerName,
+      signerEmail: proposals.signerEmail,
+      signatureData: proposals.signatureData,
+      signerIpAddress: proposals.signerIpAddress,
+      signatureConsent: proposals.signatureConsent,
+      contentHashAtSigning: proposals.contentHashAtSigning,
+      countersignToken: proposals.countersignToken,
+      countersignerName: proposals.countersignerName,
+      countersignerEmail: proposals.countersignerEmail,
+      countersignatureData: proposals.countersignatureData,
+      countersignerIpAddress: proposals.countersignerIpAddress,
+      countersignatureConsent: proposals.countersignatureConsent,
+      countersignedAt: proposals.countersignedAt,
+      executedPdfPath: proposals.executedPdfPath,
+      createdBy: proposals.createdBy,
+      createdAt: proposals.createdAt,
+      updatedAt: proposals.updatedAt,
+      leadName: leads.contactName,
+      clientName: clients.name,
+      creatorName: users.fullName,
+    })
+    .from(proposals)
+    .leftJoin(leads, eq(proposals.leadId, leads.id))
+    .leftJoin(clients, eq(proposals.clientId, clients.id))
+    .leftJoin(users, eq(proposals.createdBy, users.id))
+    .where(isNotNull(proposals.deletedAt))
+    .orderBy(desc(proposals.updatedAt))
+
+  return rows.map(row => ({
+    ...row,
+    content: row.content as ProposalContent | Record<string, never>,
+  }))
+}
+
+/**
+ * Restore a soft-deleted proposal.
+ */
+export async function restoreProposal(
+  proposalId: string
+): Promise<{ id: string; title: string } | null> {
+  const timestamp = new Date().toISOString()
+
+  const [restored] = await db
+    .update(proposals)
+    .set({ deletedAt: null, updatedAt: timestamp })
+    .where(and(eq(proposals.id, proposalId), isNotNull(proposals.deletedAt)))
+    .returning({ id: proposals.id, title: proposals.title })
+
+  return restored ?? null
+}
+
 // =============================================================================
 // Countersign queries
 // =============================================================================
