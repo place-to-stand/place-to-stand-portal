@@ -156,8 +156,8 @@ export function TemplateSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex w-full flex-col gap-6 overflow-y-auto px-6 sm:max-w-[600px]">
-        <SheetHeader>
+      <SheetContent className="flex w-full flex-col gap-6 overflow-y-auto pb-32 sm:max-w-[600px]">
+        <SheetHeader className="px-6 pt-6">
           <SheetTitle>{isEditing ? 'Edit template' : 'New template'}</SheetTitle>
           <SheetDescription>
             {isEditing
@@ -168,7 +168,7 @@ export function TemplateSheet({
 
         <Form {...form}>
           <form
-            className="flex flex-1 flex-col gap-6"
+            className="flex flex-1 flex-col gap-6 px-6 pb-32"
             onSubmit={form.handleSubmit(handleSubmit)}
           >
             <FormField
@@ -275,37 +275,30 @@ export function TemplateSheet({
               )}
             />
 
-            <div className="mt-auto flex items-center justify-between border-t pt-4">
-              <div className="flex gap-2">
+            <div className="border-border/40 bg-muted/95 supports-backdrop-filter:bg-muted/90 fixed right-0 bottom-0 z-50 w-full border-t shadow-lg backdrop-blur sm:max-w-[600px]">
+              <div className="flex w-full items-center justify-between gap-3 px-6 py-4">
+                <div className="flex items-center gap-2">
+                  <Button type="submit" disabled={isSaving || isArchiving}>
+                    {isSaving
+                      ? 'Saving...'
+                      : isEditing
+                        ? 'Save'
+                        : 'Create'}
+                  </Button>
+                </div>
                 {isEditing && (
                   <Button
                     type="button"
-                    variant="ghost"
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    variant="destructive"
+                    size="icon"
                     onClick={handleArchive}
                     disabled={isArchiving || isSaving}
+                    aria-label="Archive template"
+                    title="Archive template"
                   >
-                    <Archive className="mr-2 h-4 w-4" />
-                    {isArchiving ? 'Archiving...' : 'Archive'}
+                    <Archive className="h-4 w-4" />
                   </Button>
                 )}
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
-                  disabled={isSaving || isArchiving}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isSaving || isArchiving}>
-                  {isSaving
-                    ? 'Saving...'
-                    : isEditing
-                      ? 'Save'
-                      : 'Create'}
-                </Button>
               </div>
             </div>
           </form>
