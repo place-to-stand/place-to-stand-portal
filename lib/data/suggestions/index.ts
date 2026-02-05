@@ -15,6 +15,7 @@ import type {
   SuggestionWithContext,
   SuggestionType,
   TaskSuggestedContent,
+  LeadActionSuggestedContent,
 } from '@/lib/types/suggestions'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -269,6 +270,12 @@ export async function approveSuggestion(
     throw new Error('Suggestion already processed')
   }
 
+  // Check if this is a context-linking suggestion (no task creation needed)
+  const content = suggestion.suggestedContent as LeadActionSuggestedContent
+  if (content.actionType === 'LINK_EMAIL_THREAD' || content.actionType === 'LINK_TRANSCRIPT') {
+    return approveContextLinkSuggestion(suggestion, userId)
+  }
+
   if (suggestion.type === 'TASK') {
     return approveTaskSuggestion(suggestion, userId, modifications)
   }
@@ -351,6 +358,44 @@ async function approveTaskSuggestion(
   })
 
   return { taskId: result.task.id }
+}
+
+/**
+ * Approve a LINK_EMAIL_THREAD or LINK_TRANSCRIPT suggestion.
+ * No task is created — the approval itself "links" the context.
+ * AI consumers query for approved suggestions with these action types.
+ */
+async function approveContextLinkSuggestion(
+  suggestion: SuggestionWithContext,
+  userId: string
+): Promise<{ taskId?: string }> {
+  const content = suggestion.suggestedContent as LeadActionSuggestedContent
+  const now = new Date().toISOString()
+
+  await db
+    .update(suggestions)
+    .set({
+      status: 'APPROVED',
+      reviewedBy: userId,
+      reviewedAt: now,
+      updatedAt: now,
+    })
+    .where(eq(suggestions.id, suggestion.id))
+
+  await logActivity({
+    actorId: userId,
+    actorRole: 'ADMIN',
+    verb: 'LEAD_SUGGESTION_APPROVED',
+    summary: `Approved "${content.title}" for AI context`,
+    targetType: 'LEAD',
+    targetId: suggestion.leadId ?? suggestion.id,
+    metadata: {
+      suggestionId: suggestion.id,
+      actionType: content.actionType,
+    },
+  })
+
+  return {}
 }
 
 /**

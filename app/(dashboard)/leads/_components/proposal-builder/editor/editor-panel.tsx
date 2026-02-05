@@ -18,6 +18,7 @@ type EditorPanelProps = {
   form: UseFormReturn<ProposalFormValues>
   isBuilding: boolean
   isGenerating: boolean
+  isEditing?: boolean
   onCancel: () => void
   onBuild: () => void
   onGenerateDraft: () => void
@@ -29,6 +30,7 @@ export function EditorPanel({
   form,
   isBuilding,
   isGenerating,
+  isEditing = false,
   onCancel,
   onBuild,
   onGenerateDraft,
@@ -151,12 +153,12 @@ export function EditorPanel({
             {isBuilding ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Building...
+                {isEditing ? 'Saving...' : 'Building...'}
               </>
             ) : (
               <>
                 <FileText className="mr-2 h-4 w-4" />
-                Build Proposal
+                {isEditing ? 'Update Proposal' : 'Build Proposal'}
               </>
             )}
           </Button>

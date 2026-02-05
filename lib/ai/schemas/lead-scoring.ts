@@ -34,8 +34,9 @@ export const leadScoringResultSchema = z.object({
     .number()
     .min(0)
     .max(1)
-    .optional()
-    .describe('Estimated probability of closing (0-1)'),
+    .describe(
+      'Calibrated probability of closing this deal (0-1). Not simply score/100 — factor in concrete risk signals, stage, and momentum.'
+    ),
 })
 
 export type LeadSignal = z.infer<typeof leadSignalSchema>

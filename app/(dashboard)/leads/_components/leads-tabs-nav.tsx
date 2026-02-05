@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 
-type LeadsNavTab = 'board' | 'pipeline'
+type LeadsNavTab = 'board' | 'analytics' | 'forecast' | 'actions'
 
 type LeadsTabsNavProps = {
   activeTab: LeadsNavTab
@@ -15,7 +15,9 @@ type LeadsTabsNavProps = {
 
 const LEADS_TABS: Array<{ label: string; value: LeadsNavTab; href: string }> = [
   { label: 'Board', value: 'board', href: '/leads/board' },
-  { label: 'Pipeline', value: 'pipeline', href: '/leads/pipeline' },
+  { label: 'Analytics', value: 'analytics', href: '/leads/analytics' },
+  { label: 'Forecast', value: 'forecast', href: '/leads/forecast' },
+  { label: 'Actions', value: 'actions', href: '/leads/actions' },
 ]
 
 export function LeadsTabsNav({ activeTab, className }: LeadsTabsNavProps) {

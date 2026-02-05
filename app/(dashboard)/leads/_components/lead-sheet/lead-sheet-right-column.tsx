@@ -8,6 +8,8 @@ import { LeadProposalsSection } from '../lead-proposals-section'
 import { LeadSuggestionsPanel } from '../lead-suggestions-panel'
 import { LeadActionsPanel } from './lead-actions-panel'
 import { LeadTasksSection } from './lead-tasks-section'
+import { LeadEmailSuggestionsSection } from './lead-email-suggestions-section'
+import { LeadTranscriptSuggestionsSection } from './lead-transcript-suggestions-section'
 
 type LeadSheetRightColumnProps = {
   lead: LeadRecord
@@ -92,6 +94,18 @@ export function LeadSheetRightColumn({
           canManage={canManage}
           senderName={senderName}
           onSuccess={onSuccess}
+        />
+
+        {/* Email Threads (context opt-in) */}
+        <LeadEmailSuggestionsSection
+          leadId={lead.id}
+          isAdmin={canManage}
+        />
+
+        {/* Transcripts (context opt-in) */}
+        <LeadTranscriptSuggestionsSection
+          leadId={lead.id}
+          isAdmin={canManage}
         />
       </div>
     </div>

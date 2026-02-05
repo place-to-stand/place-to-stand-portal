@@ -1,12 +1,10 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
-import { Loader2 } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { DbUser, ProjectWithRelations } from '@/lib/types'
 import type { LeadRecord } from '@/lib/leads/types'
 import type { UserRole } from '@/lib/auth/session'
-import { Sheet, SheetContent } from '@/components/ui/sheet'
 
 import { TaskSheet } from '@/app/(dashboard)/projects/task-sheet'
 
@@ -28,7 +26,8 @@ type LeadTaskSheetOverlayProps = {
 
 /**
  * Overlay wrapper for TaskSheet that pre-configures it for lead-related tasks.
- * Fetches the necessary data (admins, projects) when opened.
+ * Fetches init data on first open and caches it across opens to prevent the
+ * loading-Sheet → TaskSheet DOM swap that causes a visible flash.
  */
 export function LeadTaskSheetOverlay({
   open,
@@ -38,96 +37,61 @@ export function LeadTaskSheetOverlay({
   onSuccess,
 }: LeadTaskSheetOverlayProps) {
   const [initData, setInitData] = useState<TaskSheetInitData | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const fetchingRef = useRef(false)
 
-  const fetchInitData = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
+  // Derive sheet visibility: only open once data is loaded.
+  // Data is cached across open/close cycles to eliminate the
+  // loading-Sheet → TaskSheet DOM swap flash.
+  const sheetOpen = open && initData !== null
 
-    try {
-      const response = await fetch('/api/leads/task-sheet-init')
-      const result = await response.json()
-
-      if (!result.ok) {
-        setError(result.error ?? 'Failed to load task form.')
-        return
-      }
-
-      setInitData(result.data)
-    } catch (err) {
-      console.error('Failed to fetch task sheet init data:', err)
-      setError('Unable to load task form. Please try again.')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
+  // Fetch init data when parent requests open and data is not yet cached
   useEffect(() => {
-    if (open && !initData && !isLoading) {
-      fetchInitData()
+    if (!open || initData || fetchingRef.current) return
+
+    fetchingRef.current = true
+    let cancelled = false
+
+    fetch('/api/leads/task-sheet-init')
+      .then(res => res.json())
+      .then(result => {
+        if (cancelled) return
+        if (result.ok) {
+          setInitData(result.data)
+        } else {
+          console.error('[LeadTaskSheetOverlay] Init failed:', result.error)
+          onOpenChange(false)
+        }
+      })
+      .catch(err => {
+        if (cancelled) return
+        console.error('[LeadTaskSheetOverlay] Fetch failed:', err)
+        onOpenChange(false)
+      })
+      .finally(() => {
+        fetchingRef.current = false
+      })
+
+    return () => {
+      cancelled = true
     }
-  }, [open, initData, isLoading, fetchInitData])
+  }, [open, initData, onOpenChange])
 
-  const handleOpenChange = useCallback(
-    (nextOpen: boolean) => {
-      onOpenChange(nextOpen)
-      if (!nextOpen) {
-        // Clear data when closed so it refetches next time (in case projects changed)
-        setInitData(null)
-        setError(null)
-      }
-    },
-    [onOpenChange]
-  )
-
-  const handleTaskSheetOpenChange = useCallback(
+  const handleSheetClose = useCallback(
     (nextOpen: boolean) => {
       if (!nextOpen) {
+        onOpenChange(false)
         onSuccess?.()
       }
-      handleOpenChange(nextOpen)
     },
-    [handleOpenChange, onSuccess]
+    [onOpenChange, onSuccess]
   )
 
-  // Show loading state while fetching init data
-  if (open && (isLoading || error || !initData)) {
-    return (
-      <Sheet open={open} onOpenChange={handleOpenChange}>
-        <SheetContent className='flex w-full flex-col items-center justify-center gap-4 sm:max-w-[676px]'>
-          {isLoading && (
-            <>
-              <Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
-              <p className='text-sm text-muted-foreground'>Loading task form...</p>
-            </>
-          )}
-          {error && (
-            <>
-              <p className='text-sm text-destructive'>{error}</p>
-              <button
-                type='button'
-                onClick={fetchInitData}
-                className='text-sm text-primary underline-offset-4 hover:underline'
-              >
-                Try again
-              </button>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
-    )
-  }
-
-  // Once data is loaded, render the full TaskSheet
-  if (!initData) {
-    return null
-  }
+  if (!sheetOpen || !initData) return null
 
   return (
     <TaskSheet
-      open={open}
-      onOpenChange={handleTaskSheetOpenChange}
+      open
+      onOpenChange={handleSheetClose}
       canManage={canManage}
       admins={initData.admins}
       currentUserId={initData.currentUserId}

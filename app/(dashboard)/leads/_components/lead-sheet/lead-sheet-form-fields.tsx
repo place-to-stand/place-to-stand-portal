@@ -184,17 +184,26 @@ export function LeadSheetFormFields({
             <FormItem>
               <FormLabel>Source</FormLabel>
               <Select
-                value={field.value ?? undefined}
-                onValueChange={(value: LeadSourceTypeValue) =>
-                  field.onChange(value)
+                value={field.value ?? 'none'}
+                onValueChange={(value: string) =>
+                  field.onChange(value === 'none' ? null : value as LeadSourceTypeValue)
                 }
               >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder='Select source' />
+                    <SelectValue placeholder='Select source'>
+                      {field.value ? (
+                        LEAD_SOURCE_LABELS[field.value]
+                      ) : (
+                        <span className='text-muted-foreground'>Not set</span>
+                      )}
+                    </SelectValue>
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
+                  <SelectItem value='none'>
+                    <span className='text-muted-foreground'>Not set</span>
+                  </SelectItem>
                   {LEAD_SOURCE_TYPES.map(source => (
                     <SelectItem key={source} value={source}>
                       {LEAD_SOURCE_LABELS[source]}

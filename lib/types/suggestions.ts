@@ -35,11 +35,13 @@ export interface ReplySuggestedContent {
 
 // Lead-specific action suggestions
 export type LeadActionType =
-  | 'FOLLOW_UP'       // Follow up with lead (creates task)
-  | 'REPLY'           // Draft a reply to lead
-  | 'SCHEDULE_CALL'   // Schedule a call (creates task)
-  | 'SEND_PROPOSAL'   // Send a proposal
-  | 'ADVANCE_STATUS'  // Recommend status change
+  | 'FOLLOW_UP'           // Follow up with lead (creates task)
+  | 'REPLY'               // Draft a reply to lead
+  | 'SCHEDULE_CALL'       // Schedule a call (creates task)
+  | 'SEND_PROPOSAL'       // Send a proposal
+  | 'ADVANCE_STATUS'      // Recommend status change
+  | 'LINK_EMAIL_THREAD'   // Suggest linking email thread to AI context
+  | 'LINK_TRANSCRIPT'     // Suggest linking meeting transcript to AI context
 
 export interface LeadActionSuggestedContent {
   actionType: LeadActionType
@@ -50,7 +52,29 @@ export interface LeadActionSuggestedContent {
   reasoning: string            // Why this action is recommended
 }
 
-export type SuggestedContent = TaskSuggestedContent | PRSuggestedContent | ReplySuggestedContent | LeadActionSuggestedContent
+// Content for LINK_EMAIL_THREAD suggestions
+export interface LinkEmailSuggestedContent {
+  actionType: 'LINK_EMAIL_THREAD'
+  title: string
+  threadId: string
+  snippet: string
+  participantCount: number
+  messageCount: number
+  lastMessageAt: string
+  reasoning: string
+}
+
+// Content for LINK_TRANSCRIPT suggestions
+export interface LinkTranscriptSuggestedContent {
+  actionType: 'LINK_TRANSCRIPT'
+  title: string
+  meetingId: string
+  date: string
+  snippetPreview: string
+  reasoning: string
+}
+
+export type SuggestedContent = TaskSuggestedContent | PRSuggestedContent | ReplySuggestedContent | LeadActionSuggestedContent | LinkEmailSuggestedContent | LinkTranscriptSuggestedContent
 
 // Suggestion with related context for UI
 export interface SuggestionWithContext extends Suggestion {

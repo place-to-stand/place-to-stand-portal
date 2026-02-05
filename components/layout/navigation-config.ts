@@ -127,9 +127,10 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Plug,
       },
       {
-        href: '/settings/email-templates',
-        label: 'Email Templates',
+        href: '/settings/templates',
+        label: 'Templates',
         icon: FileText,
+        matchHrefs: ['/settings/templates'],
       },
     ],
   },

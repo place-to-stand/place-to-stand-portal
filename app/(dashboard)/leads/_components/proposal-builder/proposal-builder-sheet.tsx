@@ -13,13 +13,22 @@ import {
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { LeadRecord } from '@/lib/leads/types'
+import type { ProposalContent } from '@/lib/proposals/types'
 
 import { ProposalBuilder } from './proposal-builder'
 
 const ANIMATION_SETTLE_MS = 350
 
+type EditableProposal = {
+  id: string
+  title: string
+  content: ProposalContent | Record<string, never>
+  estimatedValue: string | null
+}
+
 type ProposalBuilderSheetProps = {
   lead: LeadRecord
+  existingProposal?: EditableProposal
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess?: () => void
@@ -27,6 +36,7 @@ type ProposalBuilderSheetProps = {
 
 export function ProposalBuilderSheet({
   lead,
+  existingProposal,
   open,
   onOpenChange,
   onSuccess,
@@ -100,11 +110,13 @@ export function ProposalBuilderSheet({
             <SheetHeader className="bg-transparent p-0">
               <SheetTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
-                Build Proposal
+                {existingProposal ? 'Edit Proposal' : 'Build Proposal'}
               </SheetTitle>
               <SheetDescription>
-                Create a proposal for {lead.contactName}
-                {lead.companyName && ` at ${lead.companyName}`}
+                {existingProposal
+                  ? `Editing "${existingProposal.title}"`
+                  : <>Create a proposal for {lead.contactName}{lead.companyName && ` at ${lead.companyName}`}</>
+                }
               </SheetDescription>
             </SheetHeader>
           </div>
@@ -114,6 +126,7 @@ export function ProposalBuilderSheet({
             <ProposalBuilder
               key={formKey}
               lead={lead}
+              existingProposal={existingProposal}
               onDirtyChange={setIsDirty}
               onClose={() => handleClose()}
               onSuccess={handleSuccess}

@@ -1,9 +1,9 @@
 import 'server-only'
 
-import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { leads, messages, threads } from '@/lib/db/schema'
+import { leads, messages, threads, suggestions } from '@/lib/db/schema'
 import { updateLeadScoring } from '@/lib/data/leads'
 import { scoreLeadWithAI, shouldRescore } from '@/lib/ai/lead-scoring'
 import type { EmailContext, LeadScoringInput } from '@/lib/ai/prompts/lead-scoring'
@@ -12,7 +12,7 @@ import type { LeadSignal } from '@/lib/leads/intelligence-types'
 const MAX_EMAILS_FOR_SCORING = 20
 
 export type LeadScoringOperationResult =
-  | { success: true; scored: boolean; overallScore?: number; priorityTier?: string }
+  | { success: true; scored: boolean; overallScore?: number; priorityTier?: string; predictedCloseProbability?: number }
   | { success: false; error: string }
 
 /**
@@ -41,18 +41,42 @@ export async function performLeadScoring(
     return { success: true, scored: false }
   }
 
-  // Fetch threads linked to this lead
-  const leadThreads = await db
-    .select({ id: threads.id })
-    .from(threads)
-    .where(and(eq(threads.leadId, leadId), isNull(threads.deletedAt)))
+  // Determine which threads to use for scoring.
+  // If LINK_EMAIL_THREAD suggestions exist, only use approved ones.
+  // Otherwise fall back to all linked threads (no suggestions generated yet).
+  const emailLinkSuggestions = await db
+    .select({
+      threadId: sql<string>`${suggestions.suggestedContent}->>'threadId'`,
+      status: suggestions.status,
+    })
+    .from(suggestions)
+    .where(
+      and(
+        eq(suggestions.leadId, leadId),
+        isNull(suggestions.deletedAt),
+        sql`${suggestions.suggestedContent}->>'actionType' = 'LINK_EMAIL_THREAD'`
+      )
+    )
 
-  // Fetch messages from those threads
+  let threadIds: string[]
+  if (emailLinkSuggestions.length > 0) {
+    // Opt-in mode: only use threads from approved suggestions
+    threadIds = emailLinkSuggestions
+      .filter(s => s.status === 'APPROVED')
+      .map(s => s.threadId)
+      .filter(Boolean)
+  } else {
+    // Fallback: no suggestions generated yet, use all linked threads
+    const leadThreads = await db
+      .select({ id: threads.id })
+      .from(threads)
+      .where(and(eq(threads.leadId, leadId), isNull(threads.deletedAt)))
+    threadIds = leadThreads.map(t => t.id)
+  }
+
+  // Fetch messages from selected threads
   let emailContexts: EmailContext[] = []
-  if (leadThreads.length > 0) {
-    const threadIds = leadThreads.map(t => t.id)
-
-    // Fetch messages from all threads at once
+  if (threadIds.length > 0) {
     const threadMessages = await db
       .select({
         subject: messages.subject,
@@ -93,6 +117,7 @@ export async function performLeadScoring(
     createdAt: lead.createdAt,
     lastContactAt: lead.lastContactAt,
     awaitingReply: lead.awaitingReply ?? false,
+    estimatedValue: lead.estimatedValue ? Number(lead.estimatedValue) : null,
   }
 
   // Parse existing signals if available
@@ -113,6 +138,7 @@ export async function performLeadScoring(
       overallScore: result.overallScore,
       priorityTier: result.priorityTier,
       signals: result.signals,
+      predictedCloseProbability: result.predictedCloseProbability,
     })
 
     return {
@@ -120,6 +146,7 @@ export async function performLeadScoring(
       scored: true,
       overallScore: result.overallScore,
       priorityTier: result.priorityTier,
+      predictedCloseProbability: result.predictedCloseProbability,
     }
   } catch (error) {
     console.error('[performLeadScoring] Scoring failed:', error)

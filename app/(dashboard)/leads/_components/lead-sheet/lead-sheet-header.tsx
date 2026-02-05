@@ -31,11 +31,22 @@ export function LeadSheetHeader({
         {lead.overallScore !== null && (
           <div className='flex items-center gap-2'>
             <span className='text-sm text-muted-foreground'>Score:</span>
-            <ScoreBadge score={lead.overallScore} />
+            <ScoreBadge score={lead.overallScore} signals={lead.signals} />
           </div>
         )}
         {lead.priorityTier && (
           <PriorityBadge tier={lead.priorityTier} showTooltip />
+        )}
+        {lead.predictedCloseProbability !== null && (
+          <div className='flex items-center gap-2'>
+            <span className='text-muted-foreground text-sm'>Close:</span>
+            <Badge
+              variant='outline'
+              className='border-indigo-500/20 bg-indigo-500/10 text-[10px] font-mono font-medium tabular-nums text-indigo-600 dark:text-indigo-400'
+            >
+              {Math.round(lead.predictedCloseProbability * 100)}%
+            </Badge>
+          </div>
         )}
       </div>
       <div className='flex items-center gap-2'>

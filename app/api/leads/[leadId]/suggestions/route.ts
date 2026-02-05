@@ -29,7 +29,10 @@ export async function GET(
     }
 
     const { leadId } = parsed.data
-    const suggestions = await getSuggestionsForLead(leadId)
+    const includeResolved = request.nextUrl.searchParams.get('includeResolved') === 'true'
+    const suggestions = await getSuggestionsForLead(leadId, {
+      pendingOnly: !includeResolved,
+    })
 
     return NextResponse.json({ ok: true, suggestions })
   } catch (error) {

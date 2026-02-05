@@ -28,6 +28,7 @@ type LeadRow = {
   awaiting_reply: boolean | null
   overall_score: number | null
   priority_tier: string | null
+  estimated_value: string | null
 }
 
 const DATABASE_URL = process.env.DATABASE_URL
@@ -83,8 +84,9 @@ const leadScoringResultSchema = z.object({
     .number()
     .min(0)
     .max(1)
-    .optional()
-    .describe('Estimated probability of closing (0-1)'),
+    .describe(
+      'Calibrated probability of closing this deal (0-1). Not simply score/100 — factor in concrete risk signals, stage, and momentum.'
+    ),
 })
 
 // Exact system prompt from lib/ai/prompts/lead-scoring.ts
@@ -135,6 +137,16 @@ const SYSTEM_PROMPT = `You are an expert sales intelligence analyst. Your job is
 - **Warm (40-69)**: Good potential, needs nurturing and consistent follow-up
 - **Cold (<40)**: Low probability, may need qualification or longer-term nurturing
 
+## Close Probability Estimation
+
+In addition to the overall score, estimate the probability of this lead closing as a paying client (0.0 to 1.0). Base this on:
+- The overall score and priority tier
+- Concrete signals (budget mentioned, decision-maker involved, clear requirements)
+- Stage velocity and momentum
+- Any red flags (going cold, competitor mentioned, no response)
+
+This should be a calibrated probability, not just the score divided by 100. A lead with score 70 might have a 0.45 close probability if there are known risk factors.
+
 Be analytical and objective. Base your scoring on concrete signals, not assumptions.`
 
 async function scoreLead(lead: {
@@ -150,6 +162,7 @@ async function scoreLead(lead: {
   created_at: string
   last_contact_at: string | null
   awaiting_reply: boolean | null
+  estimated_value: string | null
 }) {
   // Fetch email threads for this lead
   const threads = await sql`
@@ -200,6 +213,7 @@ async function scoreLead(lead: {
 - **Created**: ${lead.created_at}
 - **Last Contact**: ${lead.last_contact_at || 'Never'}
 - **Awaiting Reply**: ${lead.awaiting_reply ? 'Yes' : 'No'}
+- **Estimated Value**: ${lead.estimated_value ? `$${Number(lead.estimated_value).toLocaleString()}` : 'Not set'}
 
 ### Notes
 ${notesText}
@@ -227,7 +241,7 @@ async function main() {
     SELECT
       id, contact_name, contact_email, company_name, company_website,
       status, source_type, source_detail, notes, created_at,
-      last_contact_at, awaiting_reply, overall_score, priority_tier
+      last_contact_at, awaiting_reply, overall_score, priority_tier, estimated_value
     FROM leads
     WHERE deleted_at IS NULL
     ORDER BY created_at DESC
@@ -256,12 +270,13 @@ async function main() {
           overall_score = ${result.overallScore.toFixed(2)},
           priority_tier = ${result.priorityTier},
           signals = ${JSON.stringify(result.signals)}::jsonb,
+          predicted_close_probability = ${result.predictedCloseProbability.toFixed(2)},
           last_scored_at = ${timestamp},
           updated_at = ${timestamp}
         WHERE id = ${lead.id}
       `
 
-      console.log(`   ✅ Score: ${result.overallScore} | Tier: ${result.priorityTier}`)
+      console.log(`   ✅ Score: ${result.overallScore} | Tier: ${result.priorityTier} | Close: ${(result.predictedCloseProbability * 100).toFixed(0)}%`)
       scored++
     } catch (error) {
       console.log(`   ❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`)

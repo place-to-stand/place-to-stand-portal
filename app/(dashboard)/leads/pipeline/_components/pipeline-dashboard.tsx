@@ -3,7 +3,6 @@
 import { useCallback, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import type { PipelineAnalytics } from '@/lib/data/pipeline/types'
@@ -33,11 +32,11 @@ export function PipelineDashboard({
     const params = new URLSearchParams(searchParams.toString())
     params.set('start', new Date(startInput).toISOString())
     params.set('end', new Date(endInput + 'T23:59:59.999Z').toISOString())
-    router.push(`/leads/pipeline?${params.toString()}`)
+    router.push(`/leads/analytics?${params.toString()}`)
   }, [startInput, endInput, searchParams, router])
 
   return (
-    <div className='flex flex-1 flex-col gap-6'>
+    <div className='flex flex-1 flex-col gap-6 pb-6'>
       <div className='flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4'>
         <div className='flex items-center gap-2'>
           <label className='text-muted-foreground text-sm'>From</label>
@@ -62,34 +61,12 @@ export function PipelineDashboard({
         </Button>
       </div>
 
-      <Tabs defaultValue='analytics' className='flex flex-1 flex-col'>
-        <TabsList className='bg-muted/40 h-10 w-full justify-start gap-2 rounded-lg p-1 sm:w-auto'>
-          <TabsTrigger value='analytics' className='px-3 py-1.5 text-sm'>
-            Analytics
-          </TabsTrigger>
-          <TabsTrigger
-            value='forecast'
-            className='px-3 py-1.5 text-sm'
-            disabled
-          >
-            Forecast
-          </TabsTrigger>
-          <TabsTrigger
-            value='actions'
-            className='px-3 py-1.5 text-sm'
-            disabled
-          >
-            Actions
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value='analytics' className='mt-4 flex flex-col gap-8'>
-          <ConversionFunnel data={analytics.funnel} />
-          <RevenueMetrics data={analytics.revenue} />
-          <VelocityMetrics data={analytics.velocity} />
-          <ActivitySummary data={analytics.activity} />
-        </TabsContent>
-      </Tabs>
+      <div className='flex flex-col gap-8'>
+        <ConversionFunnel data={analytics.funnel} />
+        <RevenueMetrics data={analytics.revenue} />
+        <VelocityMetrics data={analytics.velocity} />
+        <ActivitySummary data={analytics.activity} />
+      </div>
     </div>
   )
 }

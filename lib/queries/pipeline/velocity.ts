@@ -1,26 +1,32 @@
 import 'server-only'
 
-import { and, gte, isNull, isNotNull, lte, sql } from 'drizzle-orm'
+import { and, isNull, isNotNull, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { leads } from '@/lib/db/schema'
 import type { LeadStatusValue } from '@/lib/leads/constants'
 
+/**
+ * Use COALESCE(resolved_at, updated_at) so leads closed before
+ * the resolved_at column was populated are still included.
+ */
+const resolvedDate = sql`COALESCE(${leads.resolvedAt}, ${leads.updatedAt})`
+
 export async function fetchVelocityMetrics(start: string, end: string) {
-  // Average days to close (from creation to resolvedAt)
+  // Average days from lead creation to closed-won
   const avgDaysToClose = await db
     .select({
       avgDays: sql<string>`avg(
-        EXTRACT(EPOCH FROM (${leads.resolvedAt}::timestamptz - ${leads.createdAt}::timestamptz)) / 86400
+        EXTRACT(EPOCH FROM (${resolvedDate}::timestamptz - ${leads.createdAt}::timestamptz)) / 86400
       )`,
     })
     .from(leads)
     .where(
       and(
         isNull(leads.deletedAt),
-        isNotNull(leads.resolvedAt),
-        gte(leads.resolvedAt, start),
-        lte(leads.resolvedAt, end)
+        sql`${leads.status} = 'CLOSED_WON'`,
+        sql`${resolvedDate} >= ${start}`,
+        sql`${resolvedDate} <= ${end}`
       )
     )
 
