@@ -1,12 +1,12 @@
 import 'server-only'
 
-import { and, count, gte, isNull, lte } from 'drizzle-orm'
+import { and, count, countDistinct, eq, gte, isNotNull, isNull, lte } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { leads, meetings, proposals, threads } from '@/lib/db/schema'
+import { leads, meetings, messages, proposals, threads } from '@/lib/db/schema'
 
 export async function fetchActivityMetrics(start: string, end: string) {
-  const [meetingsCount, proposalsCount, threadsCount, newLeadsCount] =
+  const [meetingsCount, proposalsCount, leadsContactedCount, newLeadsCount] =
     await Promise.all([
       db
         .select({ count: count() })
@@ -28,14 +28,20 @@ export async function fetchActivityMetrics(start: string, end: string) {
             lte(proposals.sentAt, end)
           )
         ),
+      // Distinct leads that had a message sent in the period
       db
-        .select({ count: count() })
-        .from(threads)
+        .select({ count: countDistinct(threads.leadId) })
+        .from(messages)
+        .innerJoin(threads, and(
+          eq(messages.threadId, threads.id),
+          isNull(threads.deletedAt),
+          isNotNull(threads.leadId),
+        ))
         .where(
           and(
-            isNull(threads.deletedAt),
-            gte(threads.createdAt, start),
-            lte(threads.createdAt, end)
+            isNull(messages.deletedAt),
+            gte(messages.sentAt, start),
+            lte(messages.sentAt, end),
           )
         ),
       db
@@ -53,7 +59,7 @@ export async function fetchActivityMetrics(start: string, end: string) {
   return {
     meetingsScheduled: meetingsCount[0]?.count ?? 0,
     proposalsSent: proposalsCount[0]?.count ?? 0,
-    leadsContacted: threadsCount[0]?.count ?? 0,
+    leadsContacted: leadsContactedCount[0]?.count ?? 0,
     newLeads: newLeadsCount[0]?.count ?? 0,
   }
 }

@@ -91,3 +91,23 @@ export const proposalCountersignedEvent = (args: {
     },
   }),
 })
+
+export const proposalArchivedEvent = (args: {
+  title: string
+}): ActivityEvent => ({
+  verb: ActivityVerbs.PROPOSAL_ARCHIVED,
+  summary: `Archived proposal "${args.title}"`,
+  metadata: toMetadata({
+    proposal: { title: args.title },
+  }),
+})
+
+export const proposalRestoredEvent = (args: {
+  title: string
+}): ActivityEvent => ({
+  verb: ActivityVerbs.PROPOSAL_RESTORED,
+  summary: `Restored proposal "${args.title}"`,
+  metadata: toMetadata({
+    proposal: { title: args.title },
+  }),
+})

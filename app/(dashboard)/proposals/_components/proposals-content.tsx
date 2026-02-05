@@ -11,6 +11,7 @@ import type { LeadRecord } from '@/lib/leads/types'
 
 import { ProposalsPipelineSummary } from './proposals-pipeline-summary'
 import { ProposalsTable } from './proposals-table'
+import { ProposalsTabsNav } from './proposals-tabs-nav'
 import { LeadPickerDialog } from './lead-picker-dialog'
 import { ProposalBuilderSheet } from '../../leads/_components/proposal-builder/proposal-builder-sheet'
 
@@ -39,7 +40,6 @@ export function ProposalsContent({ proposals, leads, senderName }: ProposalsCont
   }
 
   const handleEditProposal = (proposal: ProposalWithRelations) => {
-    // Find the lead that matches this proposal
     const lead = leads.find(l => l.id === proposal.leadId)
     if (!lead) return
 
@@ -64,28 +64,42 @@ export function ProposalsContent({ proposals, leads, senderName }: ProposalsCont
   }
 
   return (
-    <div className='space-y-6'>
+    <>
       <AppShellHeader>
-        <div className='flex items-center justify-between'>
-          <div>
-            <h1 className='text-2xl font-semibold tracking-tight'>Proposals</h1>
-            <p className='text-muted-foreground text-sm'>
-              Manage proposals and track deal progress.
-            </p>
-          </div>
-          <Button size='sm' onClick={handleNewProposal}>
-            <Plus className='mr-2 h-4 w-4' />
-            New Proposal
-          </Button>
+        <div className='flex flex-col'>
+          <h1 className='text-2xl font-semibold tracking-tight'>Proposals</h1>
+          <p className='text-muted-foreground text-sm'>
+            Manage proposals and track deal progress.
+          </p>
         </div>
       </AppShellHeader>
 
-      <ProposalsPipelineSummary proposals={proposals} />
-      <ProposalsTable
-        proposals={proposals}
-        senderName={senderName}
-        onEditProposal={handleEditProposal}
-      />
+      <div className='space-y-4'>
+        {/* Tabs Row */}
+        <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+          <ProposalsTabsNav activeTab='proposals' className='flex-1 sm:flex-none' />
+          <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6'>
+            <span className='text-muted-foreground text-sm whitespace-nowrap'>
+              Total proposals: {proposals.length}
+            </span>
+            <Button size='sm' onClick={handleNewProposal} className='gap-2'>
+              <Plus className='h-4 w-4' />
+              New Proposal
+            </Button>
+          </div>
+        </div>
+
+        <ProposalsPipelineSummary proposals={proposals} />
+
+        {/* Main Container with Background */}
+        <section className='bg-background rounded-xl border p-6 shadow-sm'>
+          <ProposalsTable
+            proposals={proposals}
+            senderName={senderName}
+            onEditProposal={handleEditProposal}
+          />
+        </section>
+      </div>
 
       <LeadPickerDialog
         leads={leads}
@@ -103,6 +117,6 @@ export function ProposalsContent({ proposals, leads, senderName }: ProposalsCont
           onSuccess={handleBuilderSuccess}
         />
       )}
-    </div>
+    </>
   )
 }

@@ -1,12 +1,11 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { format, formatDistanceToNow } from 'date-fns'
 import { CheckCircle, PenLine } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
   TableBody,
@@ -32,7 +31,6 @@ import type { ProposalWithRelations } from '@/lib/queries/proposals'
 import { PROPOSAL_STATUS_CONFIG } from '@/lib/proposals/constants'
 
 import { ProposalDetailSheet } from './proposal-detail-sheet'
-import { useState } from 'react'
 
 function getStatusDisplay(proposal: ProposalWithRelations) {
   const config = PROPOSAL_STATUS_CONFIG[proposal.status]
@@ -133,85 +131,79 @@ export function ProposalsTable({ proposals, senderName, onEditProposal }: Propos
 
   return (
     <>
-      <Card>
-        <CardHeader className='pb-3'>
-          <div className='flex items-center justify-between'>
-            <CardTitle className='text-base'>
-              All Proposals
-              <span className='ml-2 text-sm font-normal text-muted-foreground'>
-                {filtered.length} proposal{filtered.length !== 1 ? 's' : ''}
-              </span>
-            </CardTitle>
-            <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
-              <SelectTrigger className='w-[160px]'>
-                <SelectValue placeholder='Filter by status' />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='ALL'>All Statuses</SelectItem>
-                <SelectItem value='DRAFT'>Draft</SelectItem>
-                <SelectItem value='SENT'>Sent</SelectItem>
-                <SelectItem value='VIEWED'>Viewed</SelectItem>
-                <SelectItem value='ACCEPTED'>Accepted</SelectItem>
-                <SelectItem value='REJECTED'>Rejected</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardHeader>
-        <CardContent className='p-0'>
-          <Table>
-            <TableHeader>
+      <div className='flex items-center justify-between pb-4'>
+        <span className='text-muted-foreground text-sm'>
+          {filtered.length} proposal{filtered.length !== 1 ? 's' : ''}
+        </span>
+        <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
+          <SelectTrigger className='w-[160px]'>
+            <SelectValue placeholder='Filter by status' />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value='ALL'>All Statuses</SelectItem>
+            <SelectItem value='DRAFT'>Draft</SelectItem>
+            <SelectItem value='SENT'>Sent</SelectItem>
+            <SelectItem value='VIEWED'>Viewed</SelectItem>
+            <SelectItem value='ACCEPTED'>Accepted</SelectItem>
+            <SelectItem value='REJECTED'>Rejected</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className='rounded-lg border'>
+        <Table>
+          <TableHeader>
+            <TableRow className='bg-muted/40'>
+              <TableHead>Title</TableHead>
+              <TableHead>Lead / Client</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className='text-right'>Value</TableHead>
+              <TableHead>Sent</TableHead>
+              <TableHead className='text-right'>Views</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.length === 0 ? (
               <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Lead / Client</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className='text-right'>Value</TableHead>
-                <TableHead>Sent</TableHead>
-                <TableHead className='text-right'>Views</TableHead>
+                <TableCell colSpan={6} className='h-24 text-center text-muted-foreground'>
+                  No proposals found.
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className='h-24 text-center text-muted-foreground'>
-                    No proposals found.
+            ) : (
+              filtered.map(proposal => (
+                <TableRow
+                  key={proposal.id}
+                  className='cursor-pointer'
+                  onClick={() => setSelectedProposal(proposal)}
+                >
+                  <TableCell className='max-w-[200px] truncate font-medium'>
+                    {proposal.title}
+                  </TableCell>
+                  <TableCell className='text-sm text-muted-foreground'>
+                    {proposal.leadName ?? proposal.clientName ?? '—'}
+                  </TableCell>
+                  <TableCell>
+                    {getStatusDisplay(proposal)}
+                  </TableCell>
+                  <TableCell className='text-right tabular-nums'>
+                    {proposal.estimatedValue
+                      ? `$${parseFloat(proposal.estimatedValue).toLocaleString()}`
+                      : '—'}
+                  </TableCell>
+                  <TableCell className='text-sm text-muted-foreground'>
+                    {proposal.sentAt
+                      ? format(new Date(proposal.sentAt), 'MMM d, yyyy')
+                      : '—'}
+                  </TableCell>
+                  <TableCell className='text-right tabular-nums'>
+                    {getViewsDisplay(proposal)}
                   </TableCell>
                 </TableRow>
-              ) : (
-                filtered.map(proposal => (
-                  <TableRow
-                    key={proposal.id}
-                    className='cursor-pointer'
-                    onClick={() => setSelectedProposal(proposal)}
-                  >
-                    <TableCell className='max-w-[200px] truncate font-medium'>
-                      {proposal.title}
-                    </TableCell>
-                    <TableCell className='text-sm text-muted-foreground'>
-                      {proposal.leadName ?? proposal.clientName ?? '—'}
-                    </TableCell>
-                    <TableCell>
-                      {getStatusDisplay(proposal)}
-                    </TableCell>
-                    <TableCell className='text-right tabular-nums'>
-                      {proposal.estimatedValue
-                        ? `$${parseFloat(proposal.estimatedValue).toLocaleString()}`
-                        : '—'}
-                    </TableCell>
-                    <TableCell className='text-sm text-muted-foreground'>
-                      {proposal.sentAt
-                        ? format(new Date(proposal.sentAt), 'MMM d, yyyy')
-                        : '—'}
-                    </TableCell>
-                    <TableCell className='text-right tabular-nums'>
-                      {getViewsDisplay(proposal)}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
       <ProposalDetailSheet
         proposal={selectedProposal}
