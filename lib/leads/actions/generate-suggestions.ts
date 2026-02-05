@@ -5,11 +5,11 @@ import { revalidatePath } from 'next/cache'
 
 import { requireRole } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { leads, threads, messages, meetings } from '@/lib/db/schema'
+import { leads, threads, messages, meetings, suggestions } from '@/lib/db/schema'
 import { suggestLeadActions } from '@/lib/ai/lead-actions'
 import { createSuggestion } from '@/lib/queries/suggestions'
 import type { LeadSignal } from '@/lib/leads/intelligence-types'
-import type { LeadActionSuggestedContent } from '@/lib/types/suggestions'
+import type { LeadActionSuggestedContent, LinkEmailSuggestedContent, LinkTranscriptSuggestedContent } from '@/lib/types/suggestions'
 import type { MessageForActions, ThreadForActions, MeetingForActions } from '@/lib/ai/prompts/lead-actions'
 
 interface GenerateSuggestionsResult {
@@ -191,11 +191,88 @@ export async function generateLeadSuggestions(
       })
     )
 
+    // 6. Auto-create LINK_EMAIL_THREAD suggestions for threads without one
+    const existingThreadSuggestions = await db
+      .select({ threadId: sql<string>`${suggestions.suggestedContent}->>'threadId'` })
+      .from(suggestions)
+      .where(
+        and(
+          eq(suggestions.leadId, leadId),
+          isNull(suggestions.deletedAt),
+          sql`${suggestions.suggestedContent}->>'actionType' = 'LINK_EMAIL_THREAD'`
+        )
+      )
+    const existingThreadIds = new Set(existingThreadSuggestions.map(s => s.threadId))
+
+    const newThreadSuggestions = await Promise.all(
+      linkedThreadRows
+        .filter(t => !existingThreadIds.has(t.id))
+        .map(t => {
+          const msgs = messagesByThread.get(t.id) || []
+          const latestMsg = msgs[0]
+          const content: LinkEmailSuggestedContent = {
+            actionType: 'LINK_EMAIL_THREAD',
+            title: t.subject || 'Untitled Thread',
+            threadId: t.id,
+            snippet: latestMsg?.snippet || '',
+            participantCount: 0,
+            messageCount: t.messageCount ?? 0,
+            lastMessageAt: t.lastMessageAt || new Date().toISOString(),
+            reasoning: 'Email thread associated with this lead. Approve to include in AI scoring context.',
+          }
+          return createSuggestion({
+            leadId,
+            threadId: t.id,
+            type: 'TASK',
+            status: 'PENDING',
+            confidence: 0.8,
+            reasoning: content.reasoning,
+            suggestedContent: content,
+          })
+        })
+    )
+
+    // 7. Auto-create LINK_TRANSCRIPT suggestions for meetings without one
+    const existingMeetingSuggestions = await db
+      .select({ meetingId: sql<string>`${suggestions.suggestedContent}->>'meetingId'` })
+      .from(suggestions)
+      .where(
+        and(
+          eq(suggestions.leadId, leadId),
+          isNull(suggestions.deletedAt),
+          sql`${suggestions.suggestedContent}->>'actionType' = 'LINK_TRANSCRIPT'`
+        )
+      )
+    const existingMeetingIds = new Set(existingMeetingSuggestions.map(s => s.meetingId))
+
+    const newTranscriptSuggestions = await Promise.all(
+      meetingsWithTranscripts
+        .filter(m => !existingMeetingIds.has(m.id))
+        .map(m => {
+          const content: LinkTranscriptSuggestedContent = {
+            actionType: 'LINK_TRANSCRIPT',
+            title: m.title || 'Untitled Meeting',
+            meetingId: m.id,
+            date: m.startsAt,
+            snippetPreview: m.transcriptText ? m.transcriptText.slice(0, 200) : '',
+            reasoning: 'Meeting transcript available. Approve to include in AI scoring context.',
+          }
+          return createSuggestion({
+            leadId,
+            type: 'TASK',
+            status: 'PENDING',
+            confidence: 0.8,
+            reasoning: content.reasoning,
+            suggestedContent: content,
+          })
+        })
+    )
+
     revalidatePath('/leads/board')
 
     return {
       success: true,
-      suggestionsCount: createdSuggestions.length,
+      suggestionsCount: createdSuggestions.length + newThreadSuggestions.length + newTranscriptSuggestions.length,
     }
   } catch (error) {
     console.error('Failed to generate lead suggestions:', error)

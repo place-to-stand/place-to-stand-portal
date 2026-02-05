@@ -163,12 +163,6 @@ export const useTaskSheetState = ({
   )
 
   useEffect(() => {
-    startTransition(() => {
-      resetFormState()
-    })
-  }, [resetFormState, startTransition])
-
-  useEffect(() => {
     if (!open) {
       return
     }

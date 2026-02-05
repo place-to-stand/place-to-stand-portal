@@ -36,14 +36,29 @@ function formatPercent(value: number): string {
 }
 
 export function RevenueMetrics({ data }: RevenueMetricsProps) {
+  const totalResolved = data.wonCount + data.lostCount
+
   const kpis = [
-    { label: 'Pipeline Value', value: formatCurrency(data.totalPipeline) },
+    { label: 'Pipeline Value', value: formatCurrency(data.totalPipeline), description: 'Open deals not yet resolved' },
     {
       label: 'Weighted Pipeline',
       value: formatCurrency(data.weightedPipeline),
+      description: 'Adjusted by AI close probability',
     },
-    { label: 'Win Rate', value: formatPercent(data.winRate) },
-    { label: 'Avg Deal Size', value: formatCurrency(data.avgDealSize) },
+    {
+      label: 'Closed Won',
+      value: formatCurrency(data.totalWonRevenue),
+      description: data.wonCount > 0
+        ? `${data.wonCount} deal${data.wonCount === 1 ? '' : 's'} · ${formatCurrency(data.avgDealSize)} avg`
+        : 'No closed-won deals in period',
+    },
+    {
+      label: 'Win Rate',
+      value: formatPercent(data.winRate),
+      description: totalResolved > 0
+        ? `${data.wonCount}W / ${data.lostCount}L of ${totalResolved} resolved`
+        : 'No resolved deals in period',
+    },
   ]
 
   return (
@@ -56,6 +71,9 @@ export function RevenueMetrics({ data }: RevenueMetricsProps) {
             </CardHeader>
             <CardContent>
               <p className='text-2xl font-bold'>{kpi.value}</p>
+              {kpi.description && (
+                <p className='text-muted-foreground mt-1 text-xs'>{kpi.description}</p>
+              )}
             </CardContent>
           </Card>
         ))}

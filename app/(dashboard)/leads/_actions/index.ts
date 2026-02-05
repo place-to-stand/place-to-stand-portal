@@ -10,4 +10,5 @@ export { createLeadTask, type CreateLeadTaskInput, type CreateLeadTaskResult } f
 export { rescoreLead, type RescoreLeadInput, type RescoreLeadResult } from './rescore-lead'
 export { prepareProposalSend, type PrepareProposalSendInput, type PrepareProposalSendResult } from './prepare-proposal-send'
 export { deleteProposalAction, type DeleteProposalInput, type DeleteProposalResult } from './delete-proposal'
+export { updateProposalContent, type UpdateProposalContentInput, type UpdateProposalContentResult } from './update-proposal-content'
 export { type LeadActionResult } from './types'

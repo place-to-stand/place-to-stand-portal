@@ -295,6 +295,7 @@ export async function updateLeadScoring(
     overallScore: number
     priorityTier: string
     signals: unknown[]
+    predictedCloseProbability: number
   }
 ): Promise<void> {
   const timestamp = new Date().toISOString()
@@ -305,6 +306,7 @@ export async function updateLeadScoring(
       overallScore: scoring.overallScore.toFixed(2),
       priorityTier: scoring.priorityTier,
       signals: scoring.signals,
+      predictedCloseProbability: scoring.predictedCloseProbability.toFixed(2),
       lastScoredAt: timestamp,
       updatedAt: timestamp,
     })

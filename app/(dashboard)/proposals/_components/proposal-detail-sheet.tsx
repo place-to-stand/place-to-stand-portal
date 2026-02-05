@@ -143,6 +143,7 @@ type ProposalDetailSheetProps = {
   senderName: string
   open: boolean
   onOpenChange: (open: boolean) => void
+  onEdit?: (proposal: ProposalWithRelations) => void
 }
 
 export function ProposalDetailSheet({
@@ -150,6 +151,7 @@ export function ProposalDetailSheet({
   senderName,
   open,
   onOpenChange,
+  onEdit,
 }: ProposalDetailSheetProps) {
   const router = useRouter()
   const { toast } = useToast()
@@ -235,6 +237,7 @@ export function ProposalDetailSheet({
   const isAcceptedNotCountersigned = p.status === 'ACCEPTED' && !p.countersignedAt
   const hasLead = !!p.leadId
   const canSendEmail = hasLead && ['DRAFT', 'SENT', 'VIEWED', 'ACCEPTED'].includes(p.status)
+  const canEdit = p.status === 'DRAFT' && !!onEdit
 
   const leadShim = hasLead
     ? {
@@ -362,6 +365,20 @@ export function ProposalDetailSheet({
             <section className="space-y-3">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Actions</h3>
               <div className="flex flex-col gap-2">
+                {canEdit && (
+                  <Button
+                    variant="outline"
+                    className="justify-start"
+                    onClick={() => {
+                      onOpenChange(false)
+                      onEdit!(p)
+                    }}
+                  >
+                    <PenLine className="mr-2 h-4 w-4" />
+                    Edit Proposal
+                  </Button>
+                )}
+
                 {canSendEmail && (
                   <Button
                     variant="outline"
@@ -409,6 +426,19 @@ export function ProposalDetailSheet({
                   <Link2 className="mr-2 h-4 w-4" />
                   Share Link
                 </Button>
+
+                {p.shareToken && p.shareEnabled && (
+                  <Button
+                    variant="outline"
+                    className="justify-start"
+                    asChild
+                  >
+                    <a href={`/p/${p.shareToken}`} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Open in New Tab
+                    </a>
+                  </Button>
+                )}
 
                 {p.docUrl && (
                   <Button

@@ -21,6 +21,8 @@ import type {
   TaskSuggestedContent,
   PRSuggestedContent,
   LeadActionSuggestedContent,
+  LinkEmailSuggestedContent,
+  LinkTranscriptSuggestedContent,
 } from '@/lib/types/suggestions'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -116,7 +118,7 @@ export type CreateSuggestionInput = {
   aiModelVersion?: string | null
   promptTokens?: number | null
   completionTokens?: number | null
-  suggestedContent: TaskSuggestedContent | PRSuggestedContent | LeadActionSuggestedContent
+  suggestedContent: TaskSuggestedContent | PRSuggestedContent | LeadActionSuggestedContent | LinkEmailSuggestedContent | LinkTranscriptSuggestedContent
 }
 
 export async function createSuggestion(input: CreateSuggestionInput): Promise<Suggestion> {

@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
 
-export default function EmailTemplatesRedirect() {
+export default function TemplatesPage() {
   redirect('/settings/templates/emails')
 }

@@ -26,9 +26,9 @@ import {
   DEFAULT_RISKS,
 } from '@/lib/proposals/constants'
 import { htmlToPlainText } from '@/lib/proposals/html-to-text'
-import type { ProposalPhase, ProposalRisk } from '@/lib/proposals/types'
+import type { ProposalContent, ProposalPhase, ProposalRisk } from '@/lib/proposals/types'
 
-import { buildProposalFromScratch } from '../../_actions'
+import { buildProposalFromScratch, updateProposalContent } from '../../_actions'
 import { ContextPanel } from './context/context-panel'
 import { EditorPanel } from './editor/editor-panel'
 
@@ -111,8 +111,16 @@ export type ProposalFormValues = z.infer<typeof proposalFormSchema>
 // Component Props
 // =============================================================================
 
+type EditableProposal = {
+  id: string
+  title: string
+  content: ProposalContent | Record<string, never>
+  estimatedValue: string | null
+}
+
 type ProposalBuilderProps = {
   lead: LeadRecord
+  existingProposal?: EditableProposal
   onDirtyChange: (isDirty: boolean) => void
   onClose: () => void
   onSuccess: () => void
@@ -133,10 +141,12 @@ type ExistingProposal = {
 
 export function ProposalBuilder({
   lead,
+  existingProposal,
   onDirtyChange,
   onClose,
   onSuccess,
 }: ProposalBuilderProps) {
+  const isEditing = !!existingProposal
   const { toast } = useToast()
   const [isBuilding, startBuildTransition] = useTransition()
   const [isGenerating, setIsGenerating] = useState(false)
@@ -164,9 +174,39 @@ export function ProposalBuilder({
     fetchExistingProposals()
   }, [lead.id])
 
-  // Default form values
-  const defaultValues = useMemo<ProposalFormValues>(
-    () => ({
+  // Default form values — prefill from existing proposal when editing
+  const defaultValues = useMemo<ProposalFormValues>(() => {
+    const content = existingProposal?.content as ProposalContent | undefined
+    if (existingProposal && content && 'client' in content) {
+      return {
+        title: existingProposal.title,
+        clientCompany: content.client.companyName,
+        clientContactName: content.client.contactName,
+        clientContactEmail: content.client.contactEmail,
+        clientContact2Name: content.client.contact2Name ?? '',
+        clientContact2Email: content.client.contact2Email ?? '',
+        clientSignatoryName: content.client.signatoryName ?? '',
+        projectOverviewText: content.projectOverviewText,
+        phases: content.phases.map(p => ({
+          ...p,
+          isOpen: false,
+        })),
+        risks: content.risks.map(r => ({ title: r.title, description: r.description })),
+        includeFullTerms: content.includeFullTerms ?? true,
+        hourlyRate: content.rates.hourlyRate,
+        initialCommitmentDescription: content.rates.initialCommitmentDescription,
+        estimatedScopingHours: content.rates.estimatedScopingHours,
+        kickoffDays: content.kickoffDays,
+        proposalValidUntil: content.proposalValidUntil
+          ? format(new Date(content.proposalValidUntil), 'yyyy-MM-dd')
+          : format(addDays(new Date(), 30), 'yyyy-MM-dd'),
+        estimatedValue: existingProposal.estimatedValue
+          ? parseFloat(existingProposal.estimatedValue)
+          : undefined,
+      }
+    }
+
+    return {
       title: `Proposal for ${lead.companyName || lead.contactName}`,
       clientCompany: lead.companyName ?? '',
       clientContactName: lead.contactName,
@@ -192,9 +232,8 @@ export function ProposalBuilder({
       kickoffDays: DEFAULT_KICKOFF_DAYS,
       proposalValidUntil: format(addDays(new Date(), 30), 'yyyy-MM-dd'),
       estimatedValue: lead.estimatedValue ?? undefined,
-    }),
-    [lead]
-  )
+    }
+  }, [lead, existingProposal])
 
   // Form setup
   const form = useForm<ProposalFormValues>({
@@ -208,71 +247,103 @@ export function ProposalBuilder({
     onDirtyChange(form.formState.isDirty)
   }, [form.formState.isDirty, onDirtyChange])
 
-  // Actual build logic (called after validation and confirmation)
-  const executeBuild = useCallback(
+  // Shared fields for both create and update
+  const buildSharedFields = useCallback(
     (values: ProposalFormValues) => {
       const validPhases = values.phases.filter(
         p => p.title.trim() && p.purpose.trim()
       )
+      return {
+        title: values.title.trim(),
+        clientCompany: values.clientCompany.trim(),
+        clientContactName: values.clientContactName.trim(),
+        clientContactEmail: values.clientContactEmail.trim(),
+        clientContact2Name: values.clientContact2Name?.trim() || undefined,
+        clientContact2Email: values.clientContact2Email?.trim() || undefined,
+        clientSignatoryName: values.clientSignatoryName?.trim() || undefined,
+        projectOverviewText: htmlToPlainText(values.projectOverviewText),
+        phases: validPhases.map(
+          (p, i): ProposalPhase => ({
+            index: i + 1,
+            title: p.title.trim(),
+            purpose: p.purpose.trim(),
+            deliverables: p.deliverables
+              .filter(d => d.trim())
+              .map(d => d.trim()),
+          })
+        ),
+        risks: values.risks.filter(
+          (r): r is ProposalRisk => Boolean(r.title.trim() && r.description.trim())
+        ),
+        includeFullTerms: values.includeFullTerms,
+        hourlyRate: values.hourlyRate,
+        initialCommitmentDescription:
+          values.initialCommitmentDescription.trim(),
+        estimatedScopingHours: values.estimatedScopingHours.trim(),
+        proposalValidUntil: values.proposalValidUntil
+          ? new Date(values.proposalValidUntil).toISOString()
+          : undefined,
+        kickoffDays: values.kickoffDays,
+        estimatedValue: values.estimatedValue,
+      }
+    },
+    []
+  )
+
+  // Actual build logic (called after validation and confirmation)
+  const executeBuild = useCallback(
+    (values: ProposalFormValues) => {
+      const shared = buildSharedFields(values)
 
       startBuildTransition(async () => {
-        const result = await buildProposalFromScratch({
-          leadId: lead.id,
-          title: values.title.trim(),
-          clientCompany: values.clientCompany.trim(),
-          clientContactName: values.clientContactName.trim(),
-          clientContactEmail: values.clientContactEmail.trim(),
-          clientContact2Name: values.clientContact2Name?.trim() || undefined,
-          clientContact2Email: values.clientContact2Email?.trim() || undefined,
-          clientSignatoryName: values.clientSignatoryName?.trim() || undefined,
-          // Convert HTML from rich text editor to plain text for Google Docs
-          projectOverviewText: htmlToPlainText(values.projectOverviewText),
-          phases: validPhases.map(
-            (p, i): ProposalPhase => ({
-              index: i + 1,
-              title: p.title.trim(),
-              purpose: p.purpose.trim(),
-              deliverables: p.deliverables
-                .filter(d => d.trim())
-                .map(d => d.trim()),
-            })
-          ),
-          // Pass all risks as customRisks with includeDefaultRisks: false
-          // since user has full control over the risks array
-          includeDefaultRisks: false,
-          customRisks: values.risks.filter(
-            (r): r is ProposalRisk => Boolean(r.title.trim() && r.description.trim())
-          ),
-          includeFullTerms: values.includeFullTerms,
-          hourlyRate: values.hourlyRate,
-          initialCommitmentDescription:
-            values.initialCommitmentDescription.trim(),
-          estimatedScopingHours: values.estimatedScopingHours.trim(),
-          proposalValidUntil: values.proposalValidUntil
-            ? new Date(values.proposalValidUntil).toISOString()
-            : undefined,
-          kickoffDays: values.kickoffDays,
-          estimatedValue: values.estimatedValue,
-        })
-
-        if (!result.success) {
-          toast({
-            variant: 'destructive',
-            title: 'Unable to create proposal',
-            description: result.error ?? 'Please try again.',
+        if (isEditing && existingProposal) {
+          // Update existing proposal
+          const result = await updateProposalContent({
+            proposalId: existingProposal.id,
+            ...shared,
           })
-          return
-        }
 
-        toast({
-          title: 'Proposal created',
-          description: 'Your proposal is ready to share.',
-        })
+          if (!result.success) {
+            toast({
+              variant: 'destructive',
+              title: 'Unable to update proposal',
+              description: result.error ?? 'Please try again.',
+            })
+            return
+          }
+
+          toast({
+            title: 'Proposal updated',
+            description: 'Your changes have been saved.',
+          })
+        } else {
+          // Create new proposal
+          const result = await buildProposalFromScratch({
+            leadId: lead.id,
+            ...shared,
+            includeDefaultRisks: false,
+            customRisks: shared.risks,
+          })
+
+          if (!result.success) {
+            toast({
+              variant: 'destructive',
+              title: 'Unable to create proposal',
+              description: result.error ?? 'Please try again.',
+            })
+            return
+          }
+
+          toast({
+            title: 'Proposal created',
+            description: 'Your proposal is ready to share.',
+          })
+        }
 
         onSuccess()
       })
     },
-    [lead.id, toast, onSuccess]
+    [lead.id, isEditing, existingProposal, buildSharedFields, toast, onSuccess]
   )
 
   // Handle confirmation of duplicate proposal
@@ -432,6 +503,7 @@ export function ProposalBuilder({
               form={form}
               isBuilding={isBuilding}
               isGenerating={isGenerating}
+              isEditing={isEditing}
               onCancel={onClose}
               onBuild={handleBuildProposal}
               onGenerateDraft={handleGenerateDraft}

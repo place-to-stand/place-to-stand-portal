@@ -45,6 +45,16 @@ export const LEAD_SCORING_SYSTEM_PROMPT = `You are an expert sales intelligence 
 - **Warm (40-69)**: Good potential, needs nurturing and consistent follow-up
 - **Cold (<40)**: Low probability, may need qualification or longer-term nurturing
 
+## Close Probability Estimation
+
+In addition to the overall score, estimate the probability of this lead closing as a paying client (0.0 to 1.0). Base this on:
+- The overall score and priority tier
+- Concrete signals (budget mentioned, decision-maker involved, clear requirements)
+- Stage velocity and momentum
+- Any red flags (going cold, competitor mentioned, no response)
+
+This should be a calibrated probability, not just the score divided by 100. A lead with score 70 might have a 0.45 close probability if there are known risk factors.
+
 Be analytical and objective. Base your scoring on concrete signals, not assumptions.`
 
 export interface LeadScoringInput {
@@ -59,6 +69,7 @@ export interface LeadScoringInput {
   createdAt: string
   lastContactAt?: string | null
   awaitingReply?: boolean
+  estimatedValue?: number | null
 }
 
 export interface EmailContext {
@@ -90,6 +101,7 @@ export function buildLeadScoringPrompt(params: LeadScoringPromptParams): string 
 - **Created**: ${lead.createdAt}
 - **Last Contact**: ${lead.lastContactAt || 'Never'}
 - **Awaiting Reply**: ${lead.awaitingReply ? 'Yes' : 'No'}
+- **Estimated Value**: ${lead.estimatedValue ? `$${lead.estimatedValue.toLocaleString()}` : 'Not set'}
 
 ### Notes
 ${lead.notes || 'No notes available.'}

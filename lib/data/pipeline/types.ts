@@ -25,6 +25,7 @@ export type MonthlyWon = {
 export type RevenueMetrics = {
   totalPipeline: number
   weightedPipeline: number
+  totalWonRevenue: number
   winRate: number
   wonCount: number
   lostCount: number
