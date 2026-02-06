@@ -277,7 +277,7 @@ export function SendEmailDialog({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-6 py-4">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 py-4">
           {/* Template Selection */}
           <div className="space-y-2">
             <Label>Template</Label>
@@ -358,7 +358,7 @@ export function SendEmailDialog({
               id="email-body"
               value={bodyHtml}
               onChange={setBodyHtml}
-              contentMinHeightClassName="[&_.ProseMirror]:min-h-[200px]"
+              contentMinHeightClassName="[&_.ProseMirror]:min-h-[200px] [&_.ProseMirror]:max-h-[300px] [&_.ProseMirror]:overflow-y-auto"
             />
           </div>
 
