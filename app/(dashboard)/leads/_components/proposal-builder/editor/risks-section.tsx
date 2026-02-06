@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 import { useFieldArray } from 'react-hook-form'
 import {
@@ -13,7 +13,6 @@ import {
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import {
   Collapsible,
   CollapsibleContent,
@@ -26,17 +25,33 @@ import {
   FormLabel,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
-import { DEFAULT_RISKS, FULL_TERMS_AND_CONDITIONS } from '@/lib/proposals/constants'
+import { DEFAULT_RISKS } from '@/lib/proposals/constants'
+import type { ProposalTemplateRecord } from '@/lib/queries/proposal-templates'
 
 import type { ProposalFormValues } from '../proposal-builder'
 
 type RisksSectionProps = {
   form: UseFormReturn<ProposalFormValues>
+  termsTemplates: ProposalTemplateRecord[]
 }
 
-export function RisksSection({ form }: RisksSectionProps) {
+export function RisksSection({ form, termsTemplates }: RisksSectionProps) {
+  const selectedTemplateId = form.watch('termsTemplateId')
+
+  // Get the selected template's content for preview
+  const selectedTemplate = useMemo(() => {
+    if (!selectedTemplateId) return null
+    return termsTemplates.find(t => t.id === selectedTemplateId) ?? null
+  }, [selectedTemplateId, termsTemplates])
   const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
     name: 'risks',
@@ -140,39 +155,52 @@ export function RisksSection({ form }: RisksSectionProps) {
 
             <Separator />
 
-            {/* Include Full Terms Toggle */}
+            {/* Terms & Conditions Template Selector */}
             <FormField
               control={form.control}
-              name="includeFullTerms"
+              name="termsTemplateId"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-start gap-3 rounded-lg border p-3">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                  <div className="space-y-0.5">
-                    <FormLabel className="cursor-pointer text-sm flex items-center gap-1.5">
-                      <FileText className="h-3.5 w-3.5" />
-                      Include Full Terms & Conditions
-                    </FormLabel>
-                    <p className="text-xs text-muted-foreground">
-                      Complete legal terms ({FULL_TERMS_AND_CONDITIONS.length} sections)
-                    </p>
-                  </div>
+                <FormItem className="space-y-2">
+                  <FormLabel className="text-sm flex items-center gap-1.5">
+                    <FileText className="h-3.5 w-3.5" />
+                    Terms & Conditions
+                  </FormLabel>
+                  <Select
+                    value={field.value ?? 'none'}
+                    onValueChange={value => field.onChange(value === 'none' ? null : value)}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a template..." />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {termsTemplates.map(template => (
+                        <SelectItem key={template.id} value={template.id}>
+                          {template.name}
+                          {template.isDefault && ' (Default)'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedTemplate
+                      ? `${selectedTemplate.content.length} sections will be included`
+                      : 'No terms will be included in the proposal'}
+                  </p>
                 </FormItem>
               )}
             />
 
-            {/* Full Terms Preview */}
-            {form.watch('includeFullTerms') && (
-              <div className="space-y-2">
+            {/* Terms Preview */}
+            {selectedTemplate && (
+              <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
                 <p className="text-xs font-medium text-muted-foreground">
                   Included Sections:
                 </p>
                 <ul className="space-y-1">
-                  {FULL_TERMS_AND_CONDITIONS.map((section, index) => (
+                  {selectedTemplate.content.map((section, index) => (
                     <li
                       key={index}
                       className="text-xs text-muted-foreground"

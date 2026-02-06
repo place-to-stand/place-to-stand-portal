@@ -44,7 +44,7 @@ import {
   NEXT_STEPS_TEXT,
   FULL_TERMS_AND_CONDITIONS,
 } from '@/lib/proposals/constants'
-import type { ProposalPhase, ProposalClientInfo, ProposalRates } from '@/lib/proposals/types'
+import type { ProposalPhase, ProposalClientInfo, ProposalRates, TermsSection } from '@/lib/proposals/types'
 
 // Font size options for increment/decrement
 const FONT_SIZES: DocumentSettings['bodyFontSize'][] = [10, 11, 12]
@@ -64,6 +64,7 @@ type PreviewContent = {
   phases: ProposalPhase[]
   risks: Array<{ title: string; description: string }>
   includeFullTerms: boolean
+  termsContent?: TermsSection[]
   rates: ProposalRates
   proposalValidUntil: string
   kickoffDays: number
@@ -776,7 +777,10 @@ export function PreviewPanel({
               </div>
               {content.includeFullTerms ? (
                 <div style={{ fontSize: styles.bodySize, lineHeight: styles.lineHeight, textAlign: bodyAlign as 'left' | 'center' | 'right' | 'justify' }}>
-                  {FULL_TERMS_AND_CONDITIONS.map((section, index) => (
+                  {(content.termsContent && content.termsContent.length > 0
+                    ? content.termsContent
+                    : FULL_TERMS_AND_CONDITIONS
+                  ).map((section, index) => (
                     <div key={index} style={{ marginBottom: styles.paragraphGap }}>
                       <div
                         style={{

@@ -197,6 +197,13 @@
       "when": 1769998314938,
       "tag": "0027_pipeline_stage_history",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1770345169274,
+      "tag": "0028_add_proposal_templates",
+      "breakpoints": true
     }
   ]
 }

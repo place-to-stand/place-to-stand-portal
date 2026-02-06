@@ -30,10 +30,19 @@ export function ProposalDocument({
     rates,
     proposalValidUntil,
     kickoffDays,
+    includeFullTerms,
+    termsContent,
   } = content
 
   // Always show risks — use content risks if available, otherwise defaults
   const risks = contentRisks && contentRisks.length > 0 ? contentRisks : DEFAULT_RISKS
+
+  // Determine terms to show:
+  // 1. If termsContent exists (snapshotted from template), use that
+  // 2. Else if includeFullTerms is true, fall back to hardcoded constant (backwards compat)
+  // 3. Else don't show terms
+  const shouldShowTerms = termsContent?.length || includeFullTerms !== false
+  const termsToShow = termsContent?.length ? termsContent : FULL_TERMS_AND_CONDITIONS
 
   const validUntil = expirationDate ?? proposalValidUntil
 
@@ -153,20 +162,22 @@ export function ProposalDocument({
         </div>
       </section>
 
-      {/* Terms & Conditions — always shown */}
-      <section className="space-y-4">
-        <h2 className="text-xl font-semibold">Terms & Conditions</h2>
-        {FULL_TERMS_AND_CONDITIONS.map((section, i) => (
-          <div key={i} className="space-y-1">
-            <h3 className="text-sm font-semibold">
-              {i + 1}. {section.title}
-            </h3>
-            <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
-              {section.content}
-            </p>
-          </div>
-        ))}
-      </section>
+      {/* Terms & Conditions — shown if includeFullTerms or termsContent exists */}
+      {shouldShowTerms && (
+        <section className="space-y-4">
+          <h2 className="text-xl font-semibold">Terms & Conditions</h2>
+          {termsToShow.map((section, i) => (
+            <div key={i} className="space-y-1">
+              <h3 className="text-sm font-semibold">
+                {i + 1}. {section.title}
+              </h3>
+              <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+                {section.content}
+              </p>
+            </div>
+          ))}
+        </section>
+      )}
 
       {/* Signature Block — only shown when signature data is passed */}
       {signature && <SignatureBlock {...signature} />}

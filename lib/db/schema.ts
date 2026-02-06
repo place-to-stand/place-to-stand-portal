@@ -166,6 +166,11 @@ export const proposalStatus = pgEnum('proposal_status', [
   'REJECTED',
 ])
 
+// Proposal template types
+export const proposalTemplateType = pgEnum('proposal_template_type', [
+  'TERMS_AND_CONDITIONS',
+])
+
 // Lead loss reason
 export const leadLossReason = pgEnum('lead_loss_reason', [
   'BUDGET',
@@ -1432,6 +1437,36 @@ export const emailTemplates = pgTable(
       foreignColumns: [users.id],
       name: 'email_templates_created_by_fkey',
     }),
+  ]
+)
+
+// =============================================================================
+// PROPOSAL TEMPLATES
+// =============================================================================
+
+export const proposalTemplates = pgTable(
+  'proposal_templates',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    name: varchar({ length: 100 }).notNull(),
+    type: proposalTemplateType().notNull(),
+    content: jsonb().default([]).notNull(), // Array of { title: string, content: string }
+    isDefault: boolean('is_default').default(false).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    index('idx_proposal_templates_type')
+      .using('btree', table.type.asc().nullsLast())
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_proposal_templates_default')
+      .using('btree', table.type.asc().nullsLast())
+      .where(sql`(deleted_at IS NULL AND is_default = true)`),
   ]
 )
 

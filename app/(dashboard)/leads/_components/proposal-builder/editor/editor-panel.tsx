@@ -7,6 +7,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
+import type { ProposalTemplateRecord } from '@/lib/queries/proposal-templates'
+
 import type { ProposalFormValues } from '../proposal-builder'
 import { ClientSection } from './client-section'
 import { OverviewSection } from './overview-section'
@@ -24,6 +26,7 @@ type EditorPanelProps = {
   onGenerateDraft: () => void
   existingProposalCount?: number
   existingProposalsFetchFailed?: boolean
+  termsTemplates: ProposalTemplateRecord[]
 }
 
 export function EditorPanel({
@@ -36,6 +39,7 @@ export function EditorPanel({
   onGenerateDraft,
   existingProposalCount = 0,
   existingProposalsFetchFailed = false,
+  termsTemplates,
 }: EditorPanelProps) {
   return (
     <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
@@ -135,7 +139,7 @@ export function EditorPanel({
           <PhasesSection form={form} />
 
           {/* Risks */}
-          <RisksSection form={form} />
+          <RisksSection form={form} termsTemplates={termsTemplates} />
 
           {/* Rates & Terms */}
           <RatesSection form={form} />

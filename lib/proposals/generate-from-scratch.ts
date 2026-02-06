@@ -106,6 +106,8 @@ function buildProposalContent(input: BuildProposalFromScratchInput): ProposalCon
     risks,
     includeDefaultRisks: input.includeDefaultRisks,
     includeFullTerms: input.includeFullTerms,
+    termsContent: input.termsContent,
+    termsTemplateId: input.termsTemplateId,
     rates: {
       hourlyRate: input.hourlyRate ?? DEFAULT_HOURLY_RATE,
       initialCommitmentDescription: input.initialCommitmentDescription,

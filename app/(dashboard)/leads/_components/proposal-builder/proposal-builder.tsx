@@ -24,7 +24,9 @@ import {
   DEFAULT_HOURLY_RATE,
   DEFAULT_KICKOFF_DAYS,
   DEFAULT_RISKS,
+  FULL_TERMS_AND_CONDITIONS,
 } from '@/lib/proposals/constants'
+import type { ProposalTemplateRecord } from '@/lib/queries/proposal-templates'
 import { htmlToPlainText } from '@/lib/proposals/html-to-text'
 import type { ProposalContent, ProposalPhase, ProposalRisk } from '@/lib/proposals/types'
 
@@ -91,8 +93,8 @@ export const proposalFormSchema = z.object({
   // Risks - editable array, starts with defaults
   risks: z.array(riskSchema),
 
-  // Terms
-  includeFullTerms: z.boolean(),
+  // Terms - template ID (null = no terms)
+  termsTemplateId: z.string().nullable(),
 
   // Rates & terms
   hourlyRate: z.number().min(0),
@@ -155,6 +157,8 @@ export function ProposalBuilder({
   const [pendingBuildValues, setPendingBuildValues] = useState<ProposalFormValues | null>(null)
 
   const [existingProposalsFetchFailed, setExistingProposalsFetchFailed] = useState(false)
+  const [termsTemplates, setTermsTemplates] = useState<ProposalTemplateRecord[]>([])
+  const [defaultTermsTemplateId, setDefaultTermsTemplateId] = useState<string | null>(null)
 
   // Fetch existing proposals on mount to detect duplicates
   useEffect(() => {
@@ -174,10 +178,37 @@ export function ProposalBuilder({
     fetchExistingProposals()
   }, [lead.id])
 
+  // Fetch all terms templates on mount
+  useEffect(() => {
+    async function fetchTermsTemplates() {
+      try {
+        const res = await fetch('/api/proposal-templates?type=TERMS_AND_CONDITIONS')
+        if (res.ok) {
+          const data = await res.json()
+          const templates = data.templates ?? []
+          setTermsTemplates(templates)
+          // Find the default template
+          const defaultTemplate = templates.find((t: ProposalTemplateRecord) => t.isDefault)
+          setDefaultTermsTemplateId(defaultTemplate?.id ?? null)
+        }
+      } catch (err) {
+        console.error('Failed to fetch terms templates:', err)
+        // Will fall back to "None" selected
+      }
+    }
+    fetchTermsTemplates()
+  }, [])
+
   // Default form values — prefill from existing proposal when editing
   const defaultValues = useMemo<ProposalFormValues>(() => {
     const content = existingProposal?.content as ProposalContent | undefined
     if (existingProposal && content && 'client' in content) {
+      // For existing proposals, use stored termsTemplateId or derive from includeFullTerms
+      let termsId: string | null = content.termsTemplateId ?? null
+      // If no termsTemplateId but includeFullTerms was true, use the default template
+      if (!termsId && content.includeFullTerms) {
+        termsId = defaultTermsTemplateId
+      }
       return {
         title: existingProposal.title,
         clientCompany: content.client.companyName,
@@ -192,7 +223,7 @@ export function ProposalBuilder({
           isOpen: false,
         })),
         risks: content.risks.map(r => ({ title: r.title, description: r.description })),
-        includeFullTerms: content.includeFullTerms ?? true,
+        termsTemplateId: termsId,
         hourlyRate: content.rates.hourlyRate,
         initialCommitmentDescription: content.rates.initialCommitmentDescription,
         estimatedScopingHours: content.rates.estimatedScopingHours,
@@ -225,7 +256,7 @@ export function ProposalBuilder({
         },
       ],
       risks: DEFAULT_RISKS.map(r => ({ title: r.title, description: r.description })),
-      includeFullTerms: true,
+      termsTemplateId: defaultTermsTemplateId,
       hourlyRate: DEFAULT_HOURLY_RATE,
       initialCommitmentDescription: '',
       estimatedScopingHours: '',
@@ -233,7 +264,7 @@ export function ProposalBuilder({
       proposalValidUntil: format(addDays(new Date(), 30), 'yyyy-MM-dd'),
       estimatedValue: lead.estimatedValue ?? undefined,
     }
-  }, [lead, existingProposal])
+  }, [lead, existingProposal, defaultTermsTemplateId])
 
   // Form setup
   const form = useForm<ProposalFormValues>({
@@ -247,12 +278,35 @@ export function ProposalBuilder({
     onDirtyChange(form.formState.isDirty)
   }, [form.formState.isDirty, onDirtyChange])
 
+  // Get terms content for a given template ID
+  const getTermsContent = useCallback((templateId: string | null) => {
+    if (!templateId) {
+      return { content: undefined, templateId: undefined }
+    }
+    const template = termsTemplates.find(t => t.id === templateId)
+    if (template?.content && template.content.length > 0) {
+      return {
+        content: template.content,
+        templateId: template.id,
+      }
+    }
+    // Fallback to hardcoded constant if template not found
+    return {
+      content: FULL_TERMS_AND_CONDITIONS,
+      templateId: undefined,
+    }
+  }, [termsTemplates])
+
   // Shared fields for both create and update
   const buildSharedFields = useCallback(
     (values: ProposalFormValues) => {
       const validPhases = values.phases.filter(
         p => p.title.trim() && p.purpose.trim()
       )
+
+      // Snapshot terms content if a template is selected
+      const termsData = getTermsContent(values.termsTemplateId)
+
       return {
         title: values.title.trim(),
         clientCompany: values.clientCompany.trim(),
@@ -275,7 +329,9 @@ export function ProposalBuilder({
         risks: values.risks.filter(
           (r): r is ProposalRisk => Boolean(r.title.trim() && r.description.trim())
         ),
-        includeFullTerms: values.includeFullTerms,
+        includeFullTerms: !!values.termsTemplateId,
+        termsContent: termsData.content,
+        termsTemplateId: termsData.templateId,
         hourlyRate: values.hourlyRate,
         initialCommitmentDescription:
           values.initialCommitmentDescription.trim(),
@@ -287,7 +343,7 @@ export function ProposalBuilder({
         estimatedValue: values.estimatedValue,
       }
     },
-    []
+    [getTermsContent]
   )
 
   // Actual build logic (called after validation and confirmation)
@@ -509,6 +565,7 @@ export function ProposalBuilder({
               onGenerateDraft={handleGenerateDraft}
               existingProposalCount={existingProposals.length}
               existingProposalsFetchFailed={existingProposalsFetchFailed}
+              termsTemplates={termsTemplates}
             />
           </form>
         </Form>

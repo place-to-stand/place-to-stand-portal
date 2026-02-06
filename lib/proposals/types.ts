@@ -3,6 +3,14 @@
 // =============================================================================
 
 /**
+ * A section in the Terms & Conditions template.
+ */
+export interface TermsSection {
+  title: string
+  content: string
+}
+
+/**
  * A phase in the proposal's scope of work.
  */
 export interface ProposalPhase {
@@ -76,6 +84,8 @@ export interface ProposalContent {
 
   // Terms and conditions
   includeFullTerms?: boolean
+  termsContent?: TermsSection[]   // Snapshotted T&C sections
+  termsTemplateId?: string        // Reference to source template
 
   // Rates and engagement
   rates: ProposalRates
@@ -114,6 +124,8 @@ export interface BuildProposalFromScratchInput {
 
   // Terms and conditions
   includeFullTerms?: boolean
+  termsContent?: TermsSection[]   // Snapshotted T&C sections from template
+  termsTemplateId?: string        // Reference to source template
 
   // Rates (optional - uses defaults)
   hourlyRate?: number
