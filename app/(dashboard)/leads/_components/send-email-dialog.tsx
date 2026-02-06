@@ -344,7 +344,7 @@ export function SendEmailDialog({
           </div>
 
           {/* Body */}
-          <div className="space-y-2">
+          <div className="flex min-h-0 flex-1 flex-col space-y-2">
             <div className="flex items-center justify-between">
               <Label>Message</Label>
               {isGenerating && (
@@ -354,12 +354,15 @@ export function SendEmailDialog({
                 </div>
               )}
             </div>
-            <RichTextEditor
-              id="email-body"
-              value={bodyHtml}
-              onChange={setBodyHtml}
-              contentMinHeightClassName="[&_.ProseMirror]:min-h-[200px] [&_.ProseMirror]:max-h-[300px] [&_.ProseMirror]:overflow-y-auto"
-            />
+            <div className="min-h-0 flex-1 overflow-y-auto rounded-md border">
+              <RichTextEditor
+                id="email-body"
+                value={bodyHtml}
+                onChange={setBodyHtml}
+                className="border-0 shadow-none"
+                contentMinHeightClassName="[&_.ProseMirror]:min-h-[180px]"
+              />
+            </div>
           </div>
 
           {/* Schedule Options */}
