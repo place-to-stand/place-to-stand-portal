@@ -29,6 +29,11 @@ const riskSchema = z.object({
   description: z.string().min(1, 'Risk description is required'),
 })
 
+const termsSectionSchema = z.object({
+  title: z.string(),
+  content: z.string(),
+})
+
 const buildProposalSchema = z.object({
   leadId: z.string().uuid(),
   title: z.string().trim().min(1, 'Proposal title is required').max(200),
@@ -51,6 +56,8 @@ const buildProposalSchema = z.object({
 
   // Terms
   includeFullTerms: z.boolean().default(false),
+  termsContent: z.array(termsSectionSchema).optional(),
+  termsTemplateId: z.string().uuid().optional(),
 
   // Rates
   hourlyRate: z.number().min(0).default(200),

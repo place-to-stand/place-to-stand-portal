@@ -1,132 +1,18 @@
-import {
-  FileText,
-  Send,
-  Eye,
-  CheckCircle,
-  XCircle,
-  type LucideIcon,
-} from 'lucide-react'
-
-import type { ProposalRisk, TermsSection } from './types'
-
-// =============================================================================
-// Proposal Status
-// =============================================================================
-
-export const PROPOSAL_STATUSES = ['DRAFT', 'SENT', 'VIEWED', 'ACCEPTED', 'REJECTED'] as const
-export type ProposalStatusValue = (typeof PROPOSAL_STATUSES)[number]
-
-export const PROPOSAL_STATUS_LABELS: Record<ProposalStatusValue, string> = {
-  DRAFT: 'Draft',
-  SENT: 'Sent',
-  VIEWED: 'Viewed',
-  ACCEPTED: 'Accepted',
-  REJECTED: 'Rejected',
-}
+#!/usr/bin/env node
 
 /**
- * Display configuration for proposal statuses, including icons and colors.
- * Used by UI components to render status badges consistently.
+ * Seed proposal templates into the database.
+ *
+ * Usage:
+ *   node scripts/seed-proposal-templates.mjs              # dry-run (default)
+ *   node scripts/seed-proposal-templates.mjs --apply      # actually insert
+ *   node scripts/seed-proposal-templates.mjs --prod       # insert into production (requires PROD_DATABASE_URL)
  */
-export const PROPOSAL_STATUS_CONFIG: Record<
-  ProposalStatusValue,
-  { label: string; icon: LucideIcon; className: string }
-> = {
-  DRAFT: {
-    label: 'Draft',
-    icon: FileText,
-    className: 'bg-gray-500/10 text-gray-600 border-gray-500/20',
-  },
-  SENT: {
-    label: 'Sent',
-    icon: Send,
-    className: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
-  },
-  VIEWED: {
-    label: 'Viewed',
-    icon: Eye,
-    className: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
-  },
-  ACCEPTED: {
-    label: 'Accepted',
-    icon: CheckCircle,
-    className: 'bg-green-500/10 text-green-600 border-green-500/20',
-  },
-  REJECTED: {
-    label: 'Rejected',
-    icon: XCircle,
-    className: 'bg-red-500/10 text-red-600 border-red-500/20',
-  },
-}
 
-// =============================================================================
-// Default Values
-// =============================================================================
+import postgres from 'postgres'
 
-export const DEFAULT_HOURLY_RATE = 200
-export const DEFAULT_KICKOFF_DAYS = 10
-export const DEFAULT_PROPOSAL_VALIDITY_DAYS = 30
-
-// =============================================================================
-// Vendor Information
-// =============================================================================
-
-export const VENDOR_INFO = {
-  name: 'Place To Stand Agency',
-  website: 'https://placetostandagency.com/',
-  address: {
-    street: '1800 W Koenig Lane',
-    city: 'Austin',
-    state: 'TX',
-    zip: '78756',
-  },
-  email: 'jason@placetostandagency.com',
-  phone: '(512) 200-4178',
-} as const
-
-// =============================================================================
-// Default Risks
-// =============================================================================
-
-export const DEFAULT_RISKS: ProposalRisk[] = [
-  {
-    title: 'Scope Evolution',
-    description:
-      'As discovery progresses, requirements may evolve based on technical findings or stakeholder feedback. Any significant scope changes will be documented in an updated SOW before proceeding.',
-  },
-  {
-    title: 'Third-Party Dependencies',
-    description:
-      'Custom software solutions involving external services or APIs will require ongoing maintenance and compatibility updates, billed at the standard hourly rate, to ensure long-term reliability.',
-  },
-  {
-    title: '"As Is" Service',
-    description:
-      'The custom-built deliverables and any software are provided "as is." Place To Stand Agency cannot guarantee specific business results, market performance, or the behavior of external APIs or services.',
-  },
-  {
-    title: 'Total Liability Limit',
-    description:
-      'Our total liability under this Agreement is limited to the total fees paid to us during the 12 months before a claim arose (excluding gross negligence or intentional misconduct).',
-  },
-]
-
-// =============================================================================
-// Static Text Sections
-// =============================================================================
-
-export const SCOPE_OF_WORK_INTRO = `Place To Stand will provide software and technical services as described in this Scope of Work ("SOW"). Each SOW describes, to the best of our abilities – what we'll do, deliverables, and pricing. If a new phase or feature is added, we'll prepare a new or updated SOW. Our services for MVP will focus on, but are not limited to, the following items:`
-
-export const RISKS_INTRO = `The goal is to deliver a successful MVP, but as with any custom software development project, potential risks exist that the Client should be aware of:`
-
-export const NEXT_STEPS_TEXT = `Upon acceptance of this scope of work, please sign below.
-After signing, we will schedule a kickoff meeting and begin the scope of work.`
-
-// =============================================================================
-// Full Terms and Conditions
-// =============================================================================
-
-export const FULL_TERMS_AND_CONDITIONS: TermsSection[] = [
+// Default Terms and Conditions content (mirrors lib/proposals/constants.ts)
+const FULL_TERMS_AND_CONDITIONS = [
   {
     title: 'Scope & Agreement',
     content: `By accepting this proposal, you indicate that the services outlined above have been thoroughly reviewed and are fully understood.
@@ -176,5 +62,98 @@ Fees may include sales or similar taxes if determined applicable by our CPA.`,
   },
 ]
 
-// Terms and Conditions section titles (for reference)
-export const TERMS_SECTIONS = FULL_TERMS_AND_CONDITIONS.map(t => t.title)
+const DEFAULT_TEMPLATE = {
+  name: 'Standard Terms & Conditions',
+  type: 'TERMS_AND_CONDITIONS',
+  content: FULL_TERMS_AND_CONDITIONS,
+  is_default: true,
+}
+
+const LOCAL_URL = 'postgresql://postgres:postgres@127.0.0.1:54322/postgres'
+const PROD_URL = process.env.PROD_DATABASE_URL
+
+const dryRun = !process.argv.includes('--apply')
+const useProd = process.argv.includes('--prod')
+
+async function main() {
+  if (useProd && !PROD_URL) {
+    console.error('Missing PROD_DATABASE_URL. Set it in .env.local or as an env var.')
+    process.exit(1)
+  }
+
+  const dbUrl = useProd ? PROD_URL : LOCAL_URL
+  const dbLabel = useProd ? 'PRODUCTION' : 'local'
+  const sql = postgres(dbUrl)
+
+  console.log(`\nTarget database: ${dbLabel}`)
+
+  try {
+    // Check what already exists
+    const existing = await sql`
+      SELECT id, name, type, is_default
+      FROM proposal_templates
+      WHERE deleted_at IS NULL
+    `
+
+    console.log(`\nExisting templates: ${existing.length}`)
+    for (const t of existing) {
+      console.log(`  [${t.type}] ${t.name}${t.is_default ? ' (default)' : ''}`)
+    }
+
+    // Check if our default template already exists
+    const hasDefault = existing.some(
+      t => t.type === 'TERMS_AND_CONDITIONS' && t.name === DEFAULT_TEMPLATE.name
+    )
+
+    if (hasDefault) {
+      console.log('\n"Standard Terms & Conditions" template already exists. Nothing to insert.')
+      return
+    }
+
+    console.log('\nTemplate to insert:')
+    console.log(`  + [${DEFAULT_TEMPLATE.type}] ${DEFAULT_TEMPLATE.name} (default)`)
+    console.log(`    ${DEFAULT_TEMPLATE.content.length} sections`)
+
+    if (dryRun) {
+      console.log('\n--- DRY RUN --- Pass --apply to actually insert.')
+      return
+    }
+
+    // If there's already a default for this type, unset it
+    const existingDefault = existing.find(
+      t => t.type === 'TERMS_AND_CONDITIONS' && t.is_default
+    )
+    if (existingDefault) {
+      console.log(`\nUnsetting existing default: ${existingDefault.name}`)
+      await sql`
+        UPDATE proposal_templates
+        SET is_default = false, updated_at = NOW()
+        WHERE id = ${existingDefault.id}
+      `
+    }
+
+    // Insert the new template
+    const now = new Date().toISOString()
+    await sql`
+      INSERT INTO proposal_templates (name, type, content, is_default, created_at, updated_at)
+      VALUES (
+        ${DEFAULT_TEMPLATE.name},
+        ${DEFAULT_TEMPLATE.type},
+        ${JSON.stringify(DEFAULT_TEMPLATE.content)},
+        ${DEFAULT_TEMPLATE.is_default},
+        ${now},
+        ${now}
+      )
+    `
+
+    console.log('\nInserted "Standard Terms & Conditions" template successfully.')
+
+  } finally {
+    await sql.end()
+  }
+}
+
+main().catch(err => {
+  console.error('Seed failed:', err.message)
+  process.exit(1)
+})

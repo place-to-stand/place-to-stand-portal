@@ -35,6 +35,11 @@ const riskSchema = z.object({
   description: z.string().min(1),
 })
 
+const termsSectionSchema = z.object({
+  title: z.string(),
+  content: z.string(),
+})
+
 const updateProposalContentSchema = z.object({
   proposalId: z.string().uuid(),
   title: z.string().trim().min(1).max(200),
@@ -48,6 +53,8 @@ const updateProposalContentSchema = z.object({
   phases: z.array(phaseSchema).min(1),
   risks: z.array(riskSchema),
   includeFullTerms: z.boolean().default(false),
+  termsContent: z.array(termsSectionSchema).optional(),
+  termsTemplateId: z.string().uuid().optional(),
   hourlyRate: z.number().min(0).default(200),
   initialCommitmentDescription: z.string().min(1),
   estimatedScopingHours: z.string().min(1),
@@ -121,6 +128,8 @@ export async function updateProposalContent(
     })),
     risks,
     includeFullTerms: data.includeFullTerms,
+    termsContent: data.termsContent,
+    termsTemplateId: data.termsTemplateId,
     rates: {
       hourlyRate: data.hourlyRate ?? DEFAULT_HOURLY_RATE,
       initialCommitmentDescription: data.initialCommitmentDescription,
