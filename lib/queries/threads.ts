@@ -131,8 +131,7 @@ export async function getThreadSummaryById(
 }
 
 export async function getThreadByExternalId(
-  externalThreadId: string,
-  _userId: string
+  externalThreadId: string
 ): Promise<Thread | null> {
   // Find thread by external ID only - don't require messages to exist.
   // This prevents orphan thread creation when sync fails partway through:
@@ -206,7 +205,7 @@ export async function findOrCreateThread(
   defaults: Omit<CreateThreadInput, 'externalThreadId'>
 ): Promise<{ thread: Thread; created: boolean }> {
   // Try to find existing thread
-  const existing = await getThreadByExternalId(externalThreadId, userId)
+  const existing = await getThreadByExternalId(externalThreadId)
   if (existing) {
     return { thread: existing, created: false }
   }

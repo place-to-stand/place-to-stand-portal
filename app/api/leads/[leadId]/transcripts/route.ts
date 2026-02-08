@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, sql, or, isNotNull } from 'drizzle-orm'
+import { and, desc, eq, isNull, or, isNotNull } from 'drizzle-orm'
 import { NextRequest, NextResponse } from 'next/server'
 
 import { getCurrentUser } from '@/lib/auth/session'

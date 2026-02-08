@@ -31,7 +31,6 @@ type ProposalData = {
 export function ProposalViewerClient({
   token,
   title,
-  needsPassword,
 }: ProposalViewerClientProps) {
   const [proposalData, setProposalData] = useState<ProposalData | null>(null)
   const [error, setError] = useState<string | null>(null)

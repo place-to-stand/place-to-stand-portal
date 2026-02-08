@@ -30,7 +30,6 @@ type LeadTasksSectionProps = {
 
 export function LeadTasksSection({
   lead,
-  assignees: _assignees,
   canManage,
   onSuccess,
 }: LeadTasksSectionProps) {

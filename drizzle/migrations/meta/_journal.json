@@ -204,6 +204,13 @@
       "when": 1770345169274,
       "tag": "0028_add_proposal_templates",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1770530149023,
+      "tag": "0029_add_invoices_and_billing",
+      "breakpoints": true
     }
   ]
 }

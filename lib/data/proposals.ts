@@ -1,8 +1,10 @@
 import 'server-only'
 
 import { cache } from 'react'
-import { createHash, randomBytes } from 'crypto'
-import { hash, compare } from 'bcryptjs'
+import { createHash } from 'crypto'
+
+import { generateShareToken, generateSecureToken } from '@/lib/sharing/tokens'
+import { hashSharePassword as hashPassword, verifySharePassword as comparePassword } from '@/lib/sharing/password'
 
 import {
   fetchProposalById,
@@ -27,18 +29,6 @@ import {
 } from '@/lib/activity/events'
 
 // =============================================================================
-// Token generation
-// =============================================================================
-
-function generateShareToken(): string {
-  return crypto.randomUUID().replace(/-/g, '')
-}
-
-function generateCountersignToken(): string {
-  return randomBytes(32).toString('hex')
-}
-
-// =============================================================================
 // Sharing management (admin-facing)
 // =============================================================================
 
@@ -50,7 +40,7 @@ export async function enableProposalSharing(
   if (!proposal) return null
 
   const shareToken = proposal.shareToken ?? generateShareToken()
-  const sharePasswordHash = password ? await hash(password, 10) : proposal.sharePasswordHash ?? null
+  const sharePasswordHash = password ? await hashPassword(password) : proposal.sharePasswordHash ?? null
 
   await updateProposal(proposalId, {
     shareToken,
@@ -72,7 +62,7 @@ export async function updateSharePassword(
   proposalId: string,
   password: string | null
 ): Promise<boolean> {
-  const passwordHash = password ? await hash(password, 10) : null
+  const passwordHash = password ? await hashPassword(password) : null
   const result = await updateProposal(proposalId, {
     sharePasswordHash: passwordHash,
   })
@@ -92,7 +82,7 @@ export async function verifySharePassword(
 
   if (proposal.sharePasswordHash) {
     if (!password) return { ok: false, needsPassword: true }
-    const valid = await compare(password, proposal.sharePasswordHash)
+    const valid = await comparePassword(password, proposal.sharePasswordHash)
     if (!valid) return { ok: false, needsPassword: true }
   }
 
@@ -170,7 +160,7 @@ export async function respondToProposal(
     const contentHash = createHash('sha256')
       .update(JSON.stringify(proposal.content))
       .digest('hex')
-    const countersignToken = generateCountersignToken()
+    const countersignToken = generateSecureToken()
 
     await updateProposal(proposal.id, {
       contentHashAtSigning: contentHash,

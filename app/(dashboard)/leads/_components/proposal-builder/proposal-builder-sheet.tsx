@@ -45,13 +45,17 @@ export function ProposalBuilderSheet({
   const [isDirty, setIsDirty] = useState(false)
   const [contentReady, setContentReady] = useState(false)
 
+  // Reset content ready when sheet closes (state derived from prop)
+  if (!open && contentReady) {
+    setContentReady(false)
+  }
+
   // Defer heavy content until slide animation settles
   useEffect(() => {
     if (open) {
       const timer = setTimeout(() => setContentReady(true), ANIMATION_SETTLE_MS)
       return () => clearTimeout(timer)
     }
-    setContentReady(false)
   }, [open])
 
   const handleOpenChange = useCallback(

@@ -10,7 +10,7 @@ import { getValidAccessToken, listMessages } from '@/lib/gmail/client'
  * GET /api/debug/gmail-sync
  * Debug endpoint to check Gmail sync status and attempt sync
  */
-export async function GET(_request: Request) {
+export async function GET() {
   const user = await requireUser()
 
   // Get OAuth connection status

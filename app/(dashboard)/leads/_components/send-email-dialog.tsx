@@ -43,7 +43,7 @@ import { cn } from '@/lib/utils'
 import { createLeadEmail } from '../_actions'
 
 type SendEmailDialogProps = {
-  lead: LeadRecord
+  lead: Pick<LeadRecord, 'id' | 'contactName' | 'contactEmail' | 'companyName'>
   senderName: string
   open: boolean
   onOpenChange: (open: boolean) => void
