@@ -14,8 +14,8 @@ This document outlines the requirements for adding invoice management and scope-
 ### 1.1 Current State
 
 - **Invoicing**: Invoices are currently created and sent manually through QuickBooks. When a prepaid client pays, an admin manually records the hour block in the portal via the Hour Blocks screen (`/hour-blocks` in the Sales sidebar) — a basic CRUD screen where invoice data is copied in by hand. Net-30 clients are invoiced on the 1st of each month based on time logs, but the tally and invoice creation happen outside the portal. This PRD moves invoicing entirely into the portal with Stripe as the payment processor.
-- **Hour Blocks UI (to be replaced)**: The current `/settings/hour-blocks` screen is a stopgap. It lets admins manually enter purchased hours and an invoice number after a payment is received elsewhere. This PRD replaces that screen with a full invoice management interface. The underlying `hour_blocks` table remains as the data model for tracking prepaid hours, but hour block records will be created automatically when invoices are paid rather than entered by hand.
-- **Scopes of Work**: Proposals (PRD 008) capture phases, deliverables, risks, and rates in structured JSONB content. Once a proposal is accepted and countersigned, the transition from proposal to actionable project tasks is manual — there is no formal SOW document that breaks down phases into estimated hours and feeds into task creation.
+- **Hour Blocks UI (to be replaced)**: The current `/hour-blocks` screen is a stopgap. It lets admins manually enter purchased hours and an invoice number after a payment is received elsewhere. This PRD replaces that screen with a full invoice management interface. The underlying `hour_blocks` table remains as the data model for tracking prepaid hours, but hour block records will be created automatically when invoices are paid rather than entered by hand.
+- **Scopes of Work**: Proposals capture phases, deliverables, risks, and rates in structured JSONB content (see `lib/proposals/` and `lib/data/proposals.ts` — the proposal system was built without a numbered PRD). Once a proposal is accepted and countersigned, the transition from proposal to actionable project tasks is manual — there is no formal SOW document that breaks down phases into estimated hours and feeds into task creation.
 - **Version Control**: The portal has no document versioning. Tasks and proposals are edited in place with no history trail beyond the activity log.
 
 ### 1.2 Goals
@@ -62,7 +62,9 @@ invoices
 ├── client_id           UUID NOT NULL (FK → clients, ON DELETE RESTRICT)
 ├── status              invoice_status ENUM
 ├── invoice_number      TEXT UNIQUE                -- Auto-generated via PG SEQUENCE: "INV-2026-0001"
-│                                                  -- CHECK (invoice_number ~ '^[A-Z]{2,5}-\d{4}-\d{4,}$')
+│                                                  -- CHECK (invoice_number ~ '^[A-Z0-9]{2,10}-\d{4}-\d{4,}$')
+│                                                  -- Must accommodate billing_settings.invoice_number_prefix
+│                                                  -- (validate prefix at settings write time too)
 │                                                  -- Nullable: assigned on DRAFT → SENT transition
 ├── billing_period_start DATE                      -- NULL for prepaid ad-hoc
 ├── billing_period_end   DATE                      -- NULL for prepaid ad-hoc
@@ -139,8 +141,8 @@ invoice_line_items
 ```
 
 **Indexes:**
-- `idx_invoice_line_items_invoice (invoice_id)`
-- `idx_invoice_line_items_hour_block (hour_block_id) WHERE hour_block_id IS NOT NULL`
+- `idx_invoice_line_items_invoice (invoice_id) WHERE deleted_at IS NULL`
+- `idx_invoice_line_items_hour_block (hour_block_id) WHERE deleted_at IS NULL AND hour_block_id IS NOT NULL`
 
 **Line item types** (`line_item_type` enum):
 
@@ -171,7 +173,7 @@ When creating a prepaid invoice:
 
 ### 2.5 Monthly Invoice Generation (Vercel Cron)
 
-A Vercel Cron job runs on the **1st of each month** (e.g., `"0 10 1 * *"` — 10:00 UTC / 6:00 AM ET). Defined in `vercel.json`, it hits an API route that generates draft invoices.
+A Vercel Cron job runs on the **1st of each month** (e.g., `"0 10 1 * *"` — 10:00 UTC / 5:00 AM EST or 6:00 AM EDT). Defined in `vercel.json`, it hits an API route that generates draft invoices.
 
 **Net-30 clients only.** Prepaid invoices are always created manually by the admin when a client requests more hours. The cron does not generate prepaid invoices.
 
@@ -540,11 +542,14 @@ sow_versions
 ├── version_number      INTEGER NOT NULL
 ├── content             JSONB NOT NULL              -- Snapshot of SOW content at this version
 ├── content_hash        VARCHAR(64) NOT NULL        -- SHA-256 of canonical JSON for dedup
-│                                                    -- IMPORTANT: Use a deterministic serializer
-│                                                    -- (sorted keys), NOT JSON.stringify() which has
-│                                                    -- non-deterministic key order. Use a utility like
+│                                                    -- IMPORTANT: Use a deterministic serializer with
+│                                                    -- deeply sorted keys. Do NOT rely on plain
+│                                                    -- JSON.stringify() or on patterns like
 │                                                    -- JSON.stringify(content, Object.keys(content).sort())
-│                                                    -- or a dedicated canonical-json library.
+│                                                    -- which only apply top-level keys and drop nested ones.
+│                                                    -- Instead, use a helper that deeply sorts object keys
+│                                                    -- (e.g. canonicalize(content)) or a dedicated
+│                                                    -- canonical-JSON / stable-stringify library.
 ├── change_summary      TEXT                        -- Optional human-readable summary
 ├── created_by          UUID NOT NULL (FK → users, ON DELETE RESTRICT)
 ├── created_at          TIMESTAMP NOT NULL
@@ -708,9 +713,9 @@ verifySignature(body: string, signature: string): Stripe.Event
 
 ### 6.3 Invoice Number Generation
 
-Invoice numbers follow the format `INV-2026-0001` and must be unique under concurrent creation.
+Invoice numbers follow the format `INV-2026-0001` and must be unique and monotonically increasing under concurrent creation. Small gaps in the sequence (due to rollbacks or failed transactions) are acceptable.
 
-**Approach:** PostgreSQL SEQUENCE for atomic, gap-free numbering:
+**Approach:** PostgreSQL SEQUENCE for atomic, unique, monotonic numbering:
 
 ```sql
 CREATE SEQUENCE invoice_number_seq START WITH 1;
@@ -810,7 +815,7 @@ lib/activity/events/scopes-of-work.ts
 **Usage pattern:**
 ```typescript
 import { invoicePaidEvent } from '@/lib/activity/events/invoices'
-import { logActivity } from '@/lib/activity/log'
+import { logActivity } from '@/lib/activity/logger'
 await logActivity(invoicePaidEvent(invoiceId, userId))
 ```
 
