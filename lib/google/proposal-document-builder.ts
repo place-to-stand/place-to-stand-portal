@@ -12,7 +12,6 @@ import {
 } from '@/lib/proposals/constants'
 import {
   DEFAULT_DOCUMENT_SETTINGS,
-  SECTION_SPACING_OPTIONS,
   type DocumentSettings,
 } from '@/lib/proposals/document-styles'
 
@@ -83,9 +82,6 @@ function createDocumentStyles(settings: DocumentSettings = DEFAULT_DOCUMENT_SETT
     },
   }
 }
-
-// Default styles for backward compatibility
-const STYLES = createDocumentStyles()
 
 // =============================================================================
 // Main Builder Function

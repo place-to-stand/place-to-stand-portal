@@ -316,7 +316,7 @@ async function seedTestLeads() {
         continue
       }
 
-      const result = await db.execute(sql`
+      await db.execute(sql`
         INSERT INTO leads (
           contact_name, contact_email, contact_phone, company_name, company_website,
           status, source_type, source_detail, notes,

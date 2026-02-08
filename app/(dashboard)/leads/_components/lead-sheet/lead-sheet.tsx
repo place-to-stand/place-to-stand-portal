@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, useWatch } from 'react-hook-form'
 import { Archive, Redo2, Undo2 } from 'lucide-react'
@@ -49,14 +49,11 @@ export function LeadSheet({
   const [isBuildProposalDialogOpen, setBuildProposalDialogOpen] = useState(false)
   const { toast } = useToast()
 
-  // Track whether we've already consumed the initial action to avoid re-opening on re-renders
-  const consumedActionRef = useRef<string | null>(null)
-
   // Open the matching dialog when initialAction is set (e.g. deep link)
-  useEffect(() => {
-    if (!initialAction || !lead || consumedActionRef.current === initialAction) return
-    consumedActionRef.current = initialAction
-
+  // Track which action was consumed to avoid re-opening on re-renders
+  const [consumedAction, setConsumedAction] = useState<string | null>(null)
+  if (initialAction && lead && consumedAction !== initialAction) {
+    setConsumedAction(initialAction)
     switch (initialAction) {
       case 'proposals/new':
         setBuildProposalDialogOpen(true)
@@ -71,7 +68,7 @@ export function LeadSheet({
         setConvertDialogOpen(true)
         break
     }
-  }, [initialAction, lead])
+  }
 
   const pushActionUrl = useCallback(
     (action: string) => {

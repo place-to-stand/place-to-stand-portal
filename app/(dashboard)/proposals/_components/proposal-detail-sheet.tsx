@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useTransition, useRef, useEffect } from 'react'
+import { useState, useCallback, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { format, formatDistanceToNow } from 'date-fns'
 import {
@@ -162,15 +162,13 @@ export function ProposalDetailSheet({
   const [isPreparing, startPrepare] = useTransition()
   const [isDeleting, startDelete] = useTransition()
 
-  // Keep a ref to the last non-null proposal so content stays visible during close animation
-  const lastProposalRef = useRef<ProposalWithRelations | null>(null)
-  useEffect(() => {
-    if (proposal) {
-      lastProposalRef.current = proposal
-    }
-  }, [proposal])
+  // Keep a cached version of the last non-null proposal so content stays visible during close animation
+  const [cachedProposal, setCachedProposal] = useState<ProposalWithRelations | null>(null)
+  if (proposal && proposal !== cachedProposal) {
+    setCachedProposal(proposal)
+  }
 
-  const displayProposal = proposal ?? lastProposalRef.current
+  const displayProposal = proposal ?? cachedProposal
 
   const handleSendEmail = useCallback(() => {
     if (!displayProposal) return
@@ -486,7 +484,7 @@ export function ProposalDetailSheet({
 
       {emailDialogOpen && leadShim && (
         <SendEmailDialog
-          lead={leadShim as any}
+          lead={leadShim}
           senderName={senderName}
           open={emailDialogOpen}
           onOpenChange={setEmailDialogOpen}

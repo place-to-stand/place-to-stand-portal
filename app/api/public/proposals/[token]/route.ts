@@ -3,8 +3,7 @@ import { cookies } from 'next/headers'
 
 import { fetchProposalByShareToken } from '@/lib/queries/proposals'
 import { verifyTokenSignature } from '@/lib/auth/crypto'
-
-const TOKEN_REGEX = /^[a-f0-9]{32}$/
+import { TOKEN_REGEX } from '@/lib/sharing/tokens'
 
 export async function GET(
   _request: Request,
