@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { cache } from 'react'
 import { and, desc, eq, isNull, isNotNull, sql, inArray } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
@@ -479,28 +480,28 @@ export async function findProposalByDocId(
  * Fetch a proposal by its public share token.
  * Only returns if sharing is enabled and not soft-deleted.
  */
-export async function fetchProposalByShareToken(
-  token: string
-): Promise<Proposal | null> {
-  const [row] = await db
-    .select()
-    .from(proposals)
-    .where(
-      and(
-        eq(proposals.shareToken, token),
-        eq(proposals.shareEnabled, true),
-        isNull(proposals.deletedAt)
+export const fetchProposalByShareToken = cache(
+  async (token: string): Promise<Proposal | null> => {
+    const [row] = await db
+      .select()
+      .from(proposals)
+      .where(
+        and(
+          eq(proposals.shareToken, token),
+          eq(proposals.shareEnabled, true),
+          isNull(proposals.deletedAt)
+        )
       )
-    )
-    .limit(1)
+      .limit(1)
 
-  if (!row) return null
+    if (!row) return null
 
-  return {
-    ...row,
-    content: row.content as ProposalContent | Record<string, never>,
+    return {
+      ...row,
+      content: row.content as ProposalContent | Record<string, never>,
+    }
   }
-}
+)
 
 /**
  * Record a view on a shared proposal. Increments count and sets viewed_at.

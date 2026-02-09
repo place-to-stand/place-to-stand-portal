@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useEffect, useRef, useState } from 'react'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
 import { Link2, UserPlus } from 'lucide-react'
@@ -85,8 +85,10 @@ export function ConvertLeadDialog({
   })
 
   // Load existing clients when switching to "link" mode
+  const hasFetchedClients = useRef(false)
   useEffect(() => {
-    if (mode === 'link' && clientOptions.length === 0 && !loadingClients) {
+    if (mode === 'link' && !hasFetchedClients.current && !loadingClients) {
+      hasFetchedClients.current = true
       setLoadingClients(true)
       fetchClientOptions()
         .then(setClientOptions)
@@ -98,7 +100,10 @@ export function ConvertLeadDialog({
         })
         .finally(() => setLoadingClients(false))
     }
-  }, [mode, clientOptions.length, loadingClients, toast])
+  }, [mode, loadingClients, toast])
+
+  const watchCreateProject = useWatch({ control: form.control, name: 'createProject' })
+  const watchExistingClientId = useWatch({ control: form.control, name: 'existingClientId' })
 
   // Clear existingClientId when switching modes
   useEffect(() => {
@@ -109,36 +114,57 @@ export function ConvertLeadDialog({
 
   async function onSubmit(values: LeadConversionFormValues) {
     setIsConverting(true)
-    const result = await convertLeadToClient(values)
-    setIsConverting(false)
+    try {
+      const result = await convertLeadToClient(values)
 
-    if (result.error) {
+      if (result.error) {
+        toast({
+          title: 'Conversion failed',
+          description: result.error,
+          variant: 'destructive',
+        })
+        return
+      }
+
+      // Show warnings for partial failures (contact/project creation)
+      if (result.warnings?.length) {
+        for (const warning of result.warnings) {
+          toast({
+            title: 'Warning',
+            description: warning,
+            variant: 'destructive',
+          })
+        }
+      }
+
+      const parts = []
+      if (mode === 'link') {
+        parts.push('Lead linked to existing client')
+      } else {
+        parts.push(`Client "${values.clientName}" created`)
+      }
+      if (result.projectId) {
+        parts.push('project created')
+      }
+      const description = parts.join(', ') + '.'
+
+      toast({ title: 'Lead converted!', description })
+
+      onOpenChange(false)
+      onSuccess?.()
+
+      if (result.clientSlug) {
+        router.push(`/clients/${result.clientSlug}`)
+      }
+    } catch (error) {
+      console.error('Lead conversion failed:', error)
       toast({
         title: 'Conversion failed',
-        description: result.error,
+        description: 'An unexpected error occurred. Please try again.',
         variant: 'destructive',
       })
-      return
-    }
-
-    const parts = []
-    if (mode === 'link') {
-      parts.push('Lead linked to existing client')
-    } else {
-      parts.push(`Client "${values.clientName}" created`)
-    }
-    if (result.projectId) {
-      parts.push('project created')
-    }
-    const description = parts.join(', ') + '.'
-
-    toast({ title: 'Lead converted!', description })
-
-    onOpenChange(false)
-    onSuccess?.()
-
-    if (result.clientSlug) {
-      router.push(`/clients/${result.clientSlug}`)
+    } finally {
+      setIsConverting(false)
     }
   }
 
@@ -343,7 +369,7 @@ export function ConvertLeadDialog({
               )}
             />
 
-            {form.watch('createProject') && (
+            {watchCreateProject && (
               <FormField
                 control={form.control}
                 name="projectName"
@@ -376,7 +402,7 @@ export function ConvertLeadDialog({
                 type="submit"
                 disabled={
                   isConverting ||
-                  (mode === 'link' && !form.watch('existingClientId'))
+                  (mode === 'link' && !watchExistingClientId)
                 }
               >
                 {isConverting

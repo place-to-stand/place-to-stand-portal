@@ -41,6 +41,15 @@ function generateCountersignToken(): string {
   return randomBytes(32).toString('hex')
 }
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 // =============================================================================
 // Sharing management (admin-facing)
 // =============================================================================
@@ -62,7 +71,7 @@ export async function enableProposalSharing(
   })
 
   const event = proposalSharedEvent({ title: proposal.title })
-  await logActivity({
+  logActivity({
     actorId: proposal.createdBy,
     actorRole: 'ADMIN',
     verb: event.verb,
@@ -70,7 +79,7 @@ export async function enableProposalSharing(
     targetType: 'PROPOSAL',
     targetId: proposalId,
     metadata: event.metadata,
-  })
+  }).catch(err => console.error('[proposals] Failed to log sharing:', err))
 
   return { shareToken }
 }
@@ -85,7 +94,7 @@ export async function disableProposalSharing(
   if (!result) return false
 
   const event = proposalUnsharedEvent({ title: proposal.title })
-  await logActivity({
+  logActivity({
     actorId: proposal.createdBy,
     actorRole: 'ADMIN',
     verb: event.verb,
@@ -93,7 +102,7 @@ export async function disableProposalSharing(
     targetType: 'PROPOSAL',
     targetId: proposalId,
     metadata: event.metadata,
-  })
+  }).catch(err => console.error('[proposals] Failed to log unsharing:', err))
 
   return true
 }
@@ -135,15 +144,12 @@ export async function viewSharedProposal(token: string): Promise<Proposal | null
 
   const previousCount = await recordProposalView(proposal.id)
 
-  // Send "first viewed" notification to creator
+  // On first view: send notification and log activity
   if (previousCount === 0) {
     sendViewedNotification(proposal).catch(err => {
       console.error('[proposals] Failed to send viewed notification:', err)
     })
-  }
 
-  // Log first view as activity
-  if (previousCount === 0) {
     const content = proposal.content as Record<string, unknown> | null
     const clientInfo = content?.client as Record<string, string> | null
     const event = proposalViewedEvent({
@@ -152,7 +158,7 @@ export async function viewSharedProposal(token: string): Promise<Proposal | null
       viewCount: 1,
     })
 
-    await logActivity({
+    logActivity({
       actorId: proposal.createdBy,
       actorRole: 'ADMIN',
       verb: event.verb,
@@ -160,7 +166,7 @@ export async function viewSharedProposal(token: string): Promise<Proposal | null
       targetType: 'PROPOSAL',
       targetId: proposal.id,
       metadata: event.metadata,
-    })
+    }).catch(err => console.error('[proposals] Failed to log first view:', err))
   }
 
   return proposal
@@ -312,8 +318,8 @@ async function sendCountersignNotification(
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px;">
       <h2 style="color: #111; margin-bottom: 8px;">Proposal Signed by Client</h2>
       <p style="color: #555; font-size: 14px; line-height: 1.6;">
-        <strong>${proposal.signerName ?? 'The client'}</strong> has accepted and signed
-        <strong>"${proposal.title}"</strong>.
+        <strong>${escapeHtml(proposal.signerName ?? 'The client')}</strong> has accepted and signed
+        <strong>"${escapeHtml(proposal.title)}"</strong>.
       </p>
       ${proposal.signatureData ? `
         <div style="margin: 16px 0; padding: 12px; border: 1px solid #e5e7eb; border-radius: 6px; background: #fff; display: inline-block;">
@@ -381,11 +387,11 @@ async function sendRejectionNotification(
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px;">
       <h2 style="color: #111; margin-bottom: 8px;">Changes Requested</h2>
       <p style="color: #555; font-size: 14px; line-height: 1.6;">
-        The client has requested changes to <strong>"${proposal.title}"</strong>.
+        The client has requested changes to <strong>"${escapeHtml(proposal.title)}"</strong>.
       </p>
       ${comment ? `
         <div style="margin: 16px 0; padding: 12px 16px; border-left: 3px solid #e5e7eb; background: #f9fafb; border-radius: 4px;">
-          <p style="color: #374151; font-size: 14px; line-height: 1.6; margin: 0; white-space: pre-wrap;">${comment}</p>
+          <p style="color: #374151; font-size: 14px; line-height: 1.6; margin: 0; white-space: pre-wrap;">${escapeHtml(comment)}</p>
         </div>
       ` : ''}
       <a href="${proposalUrl}" style="display: inline-block; margin-top: 12px; padding: 10px 24px; background: #111; color: #fff; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500;">
@@ -464,7 +470,7 @@ async function sendViewedNotification(proposal: Proposal): Promise<void> {
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px;">
       <h2 style="color: #111; margin-bottom: 8px;">Proposal Viewed</h2>
       <p style="color: #555; font-size: 14px; line-height: 1.6;">
-        Your proposal <strong>"${proposal.title}"</strong> was just viewed by the recipient for the first time.
+        Your proposal <strong>"${escapeHtml(proposal.title)}"</strong> was just viewed by the recipient for the first time.
       </p>
     </div>
   `
@@ -497,15 +503,15 @@ async function sendCompletionNotifications(proposal: Proposal, pdfBuffer: Buffer
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px;">
       <h2 style="color: #111; margin-bottom: 8px;">Proposal Complete</h2>
       <p style="color: #555; font-size: 14px; line-height: 1.6;">
-        <strong>"${proposal.title}"</strong> has been fully executed. Both parties have signed.
+        <strong>"${escapeHtml(proposal.title)}"</strong> has been fully executed. Both parties have signed.
       </p>
       <div style="margin: 16px 0; padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px;">
         <p style="margin: 0 0 8px; font-size: 13px; color: #666;">
-          <strong>Client:</strong> ${proposal.signerName ?? 'N/A'} ${proposal.signerEmail ? `(${proposal.signerEmail})` : ''}
+          <strong>Client:</strong> ${escapeHtml(proposal.signerName ?? 'N/A')} ${proposal.signerEmail ? `(${escapeHtml(proposal.signerEmail)})` : ''}
           <br/>Signed: ${proposal.acceptedAt ? new Date(proposal.acceptedAt).toLocaleString() : 'N/A'}
         </p>
         <p style="margin: 0; font-size: 13px; color: #666;">
-          <strong>Countersigner:</strong> ${proposal.countersignerName ?? 'N/A'} ${proposal.countersignerEmail ? `(${proposal.countersignerEmail})` : ''}
+          <strong>Countersigner:</strong> ${escapeHtml(proposal.countersignerName ?? 'N/A')} ${proposal.countersignerEmail ? `(${escapeHtml(proposal.countersignerEmail)})` : ''}
           <br/>Signed: ${proposal.countersignedAt ? new Date(proposal.countersignedAt).toLocaleString() : 'N/A'}
         </p>
       </div>

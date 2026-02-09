@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
-import { useFieldArray } from 'react-hook-form'
+import { useFieldArray, useWatch } from 'react-hook-form'
 import {
   DndContext,
   closestCenter,
@@ -158,6 +158,32 @@ function SortablePhaseItem({
     transition,
   }
 
+  const phaseTitle = useWatch({ control: form.control, name: `phases.${phaseIndex}.title` as const })
+
+  // Deliverable IDs use phase's stable field ID + index.
+  // Index-based is acceptable here because all inputs are controlled (values from props).
+  const deliverableIds = phase.deliverables.map((_, i) => `${id}-del-${i}`)
+
+  // Hoist sensors to component level (not inline in JSX)
+  const deliverableSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
+
+  const handleDeliverableDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event
+      if (over && active.id !== over.id) {
+        const oldIdx = deliverableIds.indexOf(active.id as string)
+        const newIdx = deliverableIds.indexOf(over.id as string)
+        if (oldIdx !== -1 && newIdx !== -1) {
+          onReorderDeliverables(oldIdx, newIdx)
+        }
+      }
+    },
+    [deliverableIds, onReorderDeliverables]
+  )
+
   return (
     <Collapsible
       open={phase.isOpen !== false}
@@ -188,7 +214,7 @@ function SortablePhaseItem({
             )}
             <span className="flex-1 text-sm font-medium">
               Phase {phaseIndex + 1}:{' '}
-              {form.watch(`phases.${phaseIndex}.title`) || '(untitled)'}
+              {phaseTitle || '(untitled)'}
             </span>
             <Button
               type="button"
@@ -245,30 +271,18 @@ function SortablePhaseItem({
               <Label className="text-xs">Deliverables</Label>
               <div className="space-y-2">
                 <DndContext
-                  sensors={useSensors(
-                    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-                    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-                  )}
+                  sensors={deliverableSensors}
                   collisionDetection={closestCenter}
-                  onDragEnd={(event) => {
-                    const { active, over } = event
-                    if (over && active.id !== over.id) {
-                      const oldIdx = phase.deliverables.findIndex((_, i) => `del-${phaseIndex}-${i}` === active.id)
-                      const newIdx = phase.deliverables.findIndex((_, i) => `del-${phaseIndex}-${i}` === over.id)
-                      if (oldIdx !== -1 && newIdx !== -1) {
-                        onReorderDeliverables(oldIdx, newIdx)
-                      }
-                    }
-                  }}
+                  onDragEnd={handleDeliverableDragEnd}
                 >
                   <SortableContext
-                    items={phase.deliverables.map((_, i) => `del-${phaseIndex}-${i}`)}
+                    items={deliverableIds}
                     strategy={verticalListSortingStrategy}
                   >
                     {phase.deliverables.map((deliverable, deliverableIndex) => (
                       <SortableDeliverableItem
-                        key={`del-${phaseIndex}-${deliverableIndex}`}
-                        id={`del-${phaseIndex}-${deliverableIndex}`}
+                        key={deliverableIds[deliverableIndex]}
+                        id={deliverableIds[deliverableIndex]}
                         value={deliverable}
                         canRemove={phase.deliverables.length > 1}
                         onChange={value => onUpdateDeliverable(deliverableIndex, value)}

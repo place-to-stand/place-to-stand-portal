@@ -108,6 +108,7 @@ export async function convertLeadToClient(
   }
 
   // 3. Create a contact from lead info (if requested and lead has an email)
+  const warnings: string[] = []
   const contactEmail = lead.contactEmail
   if (createContact && contactEmail) {
     try {
@@ -157,8 +158,8 @@ export async function convertLeadToClient(
         })
       }
     } catch (err) {
-      // Non-critical — log and continue
       console.error('[convert-lead] Failed to create contact:', err)
+      warnings.push('Contact record could not be created. You can add it manually from the client page.')
     }
   }
 
@@ -179,12 +180,13 @@ export async function convertLeadToClient(
 
       if (projectResult.error) {
         console.error('[convert-lead] Failed to create project:', projectResult.error)
+        warnings.push(`Project could not be created: ${projectResult.error}`)
       } else {
         projectId = projectResult.projectId
       }
     } catch (err) {
-      // Non-critical — log and continue
       console.error('[convert-lead] Failed to create project:', err)
+      warnings.push('Project could not be created. You can create it manually from settings.')
     }
   }
 
@@ -233,5 +235,6 @@ export async function convertLeadToClient(
     clientId: finalClientId,
     clientSlug: finalClientSlug,
     projectId,
+    warnings: warnings.length > 0 ? warnings : undefined,
   }
 }

@@ -33,4 +33,5 @@ export interface LeadConversionResult {
   clientSlug?: string
   projectId?: string
   error?: string
+  warnings?: string[]
 }
