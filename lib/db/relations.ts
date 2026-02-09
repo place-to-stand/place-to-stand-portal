@@ -29,6 +29,9 @@ import {
   meetings,
   proposals,
   leadStageHistory,
+  billingSettings,
+  invoices,
+  invoiceLineItems,
 } from './schema'
 
 export const clientsRelations = relations(clients, ({ one, many }) => ({
@@ -48,6 +51,7 @@ export const clientsRelations = relations(clients, ({ one, many }) => ({
   emailDrafts: many(emailDrafts),
   meetings: many(meetings),
   proposals: many(proposals),
+  invoices: many(invoices),
 }))
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -80,6 +84,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   meetings: many(meetings),
   proposals: many(proposals),
   leadStageHistory: many(leadStageHistory),
+  invoices: many(invoices),
 }))
 
 export const taskAssigneesRelations = relations(taskAssignees, ({ one }) => ({
@@ -492,3 +497,43 @@ export const proposalsRelations = relations(proposals, ({ one }) => ({
     references: [users.id],
   }),
 }))
+
+// =============================================================================
+// INVOICES & BILLING
+// =============================================================================
+
+export const billingSettingsRelations = relations(
+  billingSettings,
+  ({ one }) => ({
+    updatedByUser: one(users, {
+      fields: [billingSettings.updatedBy],
+      references: [users.id],
+    }),
+  })
+)
+
+export const invoicesRelations = relations(invoices, ({ one, many }) => ({
+  client: one(clients, {
+    fields: [invoices.clientId],
+    references: [clients.id],
+  }),
+  createdByUser: one(users, {
+    fields: [invoices.createdBy],
+    references: [users.id],
+  }),
+  lineItems: many(invoiceLineItems),
+}))
+
+export const invoiceLineItemsRelations = relations(
+  invoiceLineItems,
+  ({ one }) => ({
+    invoice: one(invoices, {
+      fields: [invoiceLineItems.invoiceId],
+      references: [invoices.id],
+    }),
+    hourBlock: one(hourBlocks, {
+      fields: [invoiceLineItems.hourBlockId],
+      references: [hourBlocks.id],
+    }),
+  })
+)

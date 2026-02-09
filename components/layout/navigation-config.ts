@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import {
   Clock3,
+  Receipt,
   FolderKanban,
   Building2,
   Users,
@@ -73,9 +74,10 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: ScrollText,
       },
       {
-        href: '/hour-blocks',
-        label: 'Hour Blocks',
-        icon: Clock3,
+        href: '/invoices',
+        label: 'Invoices',
+        icon: Receipt,
+        matchHrefs: ['/invoices'],
       },
     ],
   },
