@@ -1,9 +1,9 @@
 'use client'
 
-import { useCallback, useTransition } from 'react'
+import { useCallback, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
-import { RotateCcw, Loader2 } from 'lucide-react'
+import { RotateCcw, Loader2, Eye } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -19,6 +19,7 @@ import { useToast } from '@/components/ui/use-toast'
 import type { ProposalWithRelations } from '@/lib/queries/proposals'
 import { PROPOSAL_STATUS_CONFIG } from '@/lib/proposals/constants'
 
+import { ProposalDetailSheet } from './proposal-detail-sheet'
 import { restoreProposalAction } from '../_actions/restore-proposal'
 
 type ProposalsArchiveTableProps = {
@@ -26,6 +27,8 @@ type ProposalsArchiveTableProps = {
 }
 
 export function ProposalsArchiveTable({ proposals }: ProposalsArchiveTableProps) {
+  const [selectedProposal, setSelectedProposal] = useState<ProposalWithRelations | null>(null)
+
   if (proposals.length === 0) {
     return (
       <div className='grid h-full w-full place-items-center rounded-xl border border-dashed p-12 text-center'>
@@ -40,29 +43,42 @@ export function ProposalsArchiveTable({ proposals }: ProposalsArchiveTableProps)
   }
 
   return (
-    <div className='rounded-lg border'>
-      <Table>
-        <TableHeader>
-          <TableRow className='bg-muted/40'>
-            <TableHead>Title</TableHead>
-            <TableHead>Lead / Client</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className='text-right'>Value</TableHead>
-            <TableHead>Archived</TableHead>
-            <TableHead className='w-24' />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {proposals.map(proposal => (
-            <ArchiveRow key={proposal.id} proposal={proposal} />
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <>
+      <div className='rounded-lg border'>
+        <Table>
+          <TableHeader>
+            <TableRow className='bg-muted/40'>
+              <TableHead>Title</TableHead>
+              <TableHead>Lead / Client</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className='text-right'>Value</TableHead>
+              <TableHead>Archived</TableHead>
+              <TableHead className='w-32' />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {proposals.map(proposal => (
+              <ArchiveRow
+                key={proposal.id}
+                proposal={proposal}
+                onView={() => setSelectedProposal(proposal)}
+              />
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <ProposalDetailSheet
+        proposal={selectedProposal}
+        open={!!selectedProposal}
+        onOpenChange={open => { if (!open) setSelectedProposal(null) }}
+        senderName=""
+      />
+    </>
   )
 }
 
-function ArchiveRow({ proposal }: { proposal: ProposalWithRelations }) {
+function ArchiveRow({ proposal, onView }: { proposal: ProposalWithRelations; onView: () => void }) {
   const router = useRouter()
   const { toast } = useToast()
   const [isPending, startTransition] = useTransition()
@@ -107,20 +123,31 @@ function ArchiveRow({ proposal }: { proposal: ProposalWithRelations }) {
           : '—'}
       </TableCell>
       <TableCell>
-        <Button
-          variant='ghost'
-          size='sm'
-          onClick={handleRestore}
-          disabled={isPending}
-          className='gap-1.5'
-        >
-          {isPending ? (
-            <Loader2 className='h-3.5 w-3.5 animate-spin' />
-          ) : (
-            <RotateCcw className='h-3.5 w-3.5' />
-          )}
-          Restore
-        </Button>
+        <div className='flex items-center justify-end gap-1'>
+          <Button
+            variant='ghost'
+            size='sm'
+            onClick={onView}
+            className='gap-1.5'
+          >
+            <Eye className='h-3.5 w-3.5' />
+            View
+          </Button>
+          <Button
+            variant='ghost'
+            size='sm'
+            onClick={handleRestore}
+            disabled={isPending}
+            className='gap-1.5'
+          >
+            {isPending ? (
+              <Loader2 className='h-3.5 w-3.5 animate-spin' />
+            ) : (
+              <RotateCcw className='h-3.5 w-3.5' />
+            )}
+            Restore
+          </Button>
+        </div>
       </TableCell>
     </TableRow>
   )

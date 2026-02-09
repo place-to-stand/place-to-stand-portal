@@ -54,6 +54,69 @@ type PhaseField = {
   isOpen?: boolean
 }
 
+type SortableDeliverableItemProps = {
+  id: string
+  value: string
+  canRemove: boolean
+  onChange: (value: string) => void
+  onRemove: () => void
+}
+
+function SortableDeliverableItem({
+  id,
+  value,
+  canRemove,
+  onChange,
+  onRemove,
+}: SortableDeliverableItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn('flex items-center gap-2', isDragging && 'opacity-50')}
+    >
+      <button
+        type="button"
+        className="cursor-grab touch-none active:cursor-grabbing"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-3 w-3 text-muted-foreground" />
+      </button>
+      <Input
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder="Deliverable item"
+        className="h-8 flex-1 text-sm"
+      />
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="h-6 w-6 text-muted-foreground hover:text-destructive"
+        onClick={onRemove}
+        disabled={!canRemove}
+      >
+        <Trash2 className="h-3 w-3" />
+      </Button>
+    </div>
+  )
+}
+
 type SortablePhaseItemProps = {
   id: string
   phase: PhaseField
@@ -65,6 +128,7 @@ type SortablePhaseItemProps = {
   onAddDeliverable: () => void
   onRemoveDeliverable: (deliverableIndex: number) => void
   onUpdateDeliverable: (deliverableIndex: number, value: string) => void
+  onReorderDeliverables: (oldIndex: number, newIndex: number) => void
 }
 
 function SortablePhaseItem({
@@ -78,6 +142,7 @@ function SortablePhaseItem({
   onAddDeliverable,
   onRemoveDeliverable,
   onUpdateDeliverable,
+  onReorderDeliverables,
 }: SortablePhaseItemProps) {
   const {
     attributes,
@@ -179,32 +244,39 @@ function SortablePhaseItem({
             <div className="space-y-1.5">
               <Label className="text-xs">Deliverables</Label>
               <div className="space-y-2">
-                {phase.deliverables.map((deliverable, deliverableIndex) => (
-                  <div
-                    key={deliverableIndex}
-                    className="flex items-center gap-2"
-                  >
-                    <span className="text-xs text-muted-foreground">•</span>
-                    <Input
-                      value={deliverable}
-                      onChange={e =>
-                        onUpdateDeliverable(deliverableIndex, e.target.value)
+                <DndContext
+                  sensors={useSensors(
+                    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+                    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+                  )}
+                  collisionDetection={closestCenter}
+                  onDragEnd={(event) => {
+                    const { active, over } = event
+                    if (over && active.id !== over.id) {
+                      const oldIdx = phase.deliverables.findIndex((_, i) => `del-${phaseIndex}-${i}` === active.id)
+                      const newIdx = phase.deliverables.findIndex((_, i) => `del-${phaseIndex}-${i}` === over.id)
+                      if (oldIdx !== -1 && newIdx !== -1) {
+                        onReorderDeliverables(oldIdx, newIdx)
                       }
-                      placeholder="Deliverable item"
-                      className="h-8 flex-1 text-sm"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                      onClick={() => onRemoveDeliverable(deliverableIndex)}
-                      disabled={phase.deliverables.length <= 1}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
+                    }
+                  }}
+                >
+                  <SortableContext
+                    items={phase.deliverables.map((_, i) => `del-${phaseIndex}-${i}`)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {phase.deliverables.map((deliverable, deliverableIndex) => (
+                      <SortableDeliverableItem
+                        key={`del-${phaseIndex}-${deliverableIndex}`}
+                        id={`del-${phaseIndex}-${deliverableIndex}`}
+                        value={deliverable}
+                        canRemove={phase.deliverables.length > 1}
+                        onChange={value => onUpdateDeliverable(deliverableIndex, value)}
+                        onRemove={() => onRemoveDeliverable(deliverableIndex)}
+                      />
+                    ))}
+                  </SortableContext>
+                </DndContext>
                 <Button
                   type="button"
                   variant="ghost"
@@ -316,6 +388,19 @@ export function PhasesSection({ form }: PhasesSectionProps) {
     [fields, update]
   )
 
+  const handleReorderDeliverables = useCallback(
+    (phaseIndex: number, oldIndex: number, newIndex: number) => {
+      const phase = fields[phaseIndex]
+      if (phase) {
+        const newDeliverables = [...phase.deliverables]
+        const [moved] = newDeliverables.splice(oldIndex, 1)
+        newDeliverables.splice(newIndex, 0, moved)
+        update(phaseIndex, { ...phase, deliverables: newDeliverables })
+      }
+    },
+    [fields, update]
+  )
+
   return (
     <Collapsible defaultOpen>
       <div className="rounded-lg border">
@@ -356,6 +441,9 @@ export function PhasesSection({ form }: PhasesSectionProps) {
                     }
                     onUpdateDeliverable={(deliverableIndex, value) =>
                       handleUpdateDeliverable(phaseIndex, deliverableIndex, value)
+                    }
+                    onReorderDeliverables={(oldIndex, newIndex) =>
+                      handleReorderDeliverables(phaseIndex, oldIndex, newIndex)
                     }
                   />
                 ))}

@@ -22,6 +22,8 @@ type CountersignClientProps = {
   signerEmail: string | null
   signatureData: string | null
   acceptedAt: string | null
+  defaultName?: string
+  defaultEmail?: string
 }
 
 export function CountersignClient({
@@ -32,6 +34,8 @@ export function CountersignClient({
   signerEmail,
   signatureData,
   acceptedAt,
+  defaultName = '',
+  defaultEmail = '',
 }: CountersignClientProps) {
   const [step, setStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -39,8 +43,8 @@ export function CountersignClient({
   const [completed, setCompleted] = useState(false)
 
   // Step 1
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
+  const [name, setName] = useState(defaultName)
+  const [email, setEmail] = useState(defaultEmail)
 
   // Step 2
   const [signature, setSignature] = useState<string | null>(null)

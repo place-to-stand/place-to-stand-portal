@@ -22,6 +22,7 @@ import { LeadsHeader } from './leads-header'
 import { LeadsTabsNav } from './leads-tabs-nav'
 import { LeadsBoard } from './leads-board'
 import { LeadSheet } from './lead-sheet'
+import { ConvertLeadDialog } from './convert-lead-dialog'
 
 const LEAD_SHEET_CLOSE_MS = 320
 
@@ -48,6 +49,7 @@ export function LeadsWorkspace({
     null
   )
   const [closingLeadId, setClosingLeadId] = useState<string | null>(null)
+  const [convertingLead, setConvertingLead] = useState<LeadRecord | null>(null)
   const [isSheetClosing, setIsSheetClosing] = useState(false)
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [, startRefresh] = useTransition()
@@ -164,6 +166,13 @@ export function LeadsWorkspace({
     })
   }, [router, startRefresh])
 
+  const handleLeadClosedWon = useCallback(
+    (lead: LeadRecord) => {
+      setConvertingLead(lead)
+    },
+    []
+  )
+
   const isRouteLeadOpen =
     Boolean(activeLeadId) && activeLeadId !== closingLeadId
   const isSheetOpen = isCreatingLead || isRouteLeadOpen
@@ -190,6 +199,21 @@ export function LeadsWorkspace({
           onSuccess={handleSheetSuccess}
         />
       ) : null}
+      {convertingLead && (
+        <ConvertLeadDialog
+          lead={convertingLead}
+          open={!!convertingLead}
+          onOpenChange={(open) => {
+            if (!open) setConvertingLead(null)
+          }}
+          onSuccess={() => {
+            setConvertingLead(null)
+            startRefresh(() => {
+              router.refresh()
+            })
+          }}
+        />
+      )}
       <div className='flex min-h-0 flex-1 flex-col gap-3'>
         <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
           <LeadsTabsNav activeTab='board' />
@@ -220,6 +244,7 @@ export function LeadsWorkspace({
             canManage={canManage}
             onEditLead={handleEditLead}
             onCreateLead={handleCreateLead}
+            onLeadClosedWon={handleLeadClosedWon}
             activeLeadId={boardActiveLeadId}
           />
         </div>

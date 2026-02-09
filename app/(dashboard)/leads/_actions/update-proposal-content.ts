@@ -7,6 +7,8 @@ import { addDays, format } from 'date-fns'
 
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
+import { logActivity } from '@/lib/activity/logger'
+import { proposalUpdatedEvent } from '@/lib/activity/events'
 import { db } from '@/lib/db'
 import { proposals } from '@/lib/db/schema'
 import { updateProposal, type Proposal } from '@/lib/queries/proposals'
@@ -155,6 +157,18 @@ export async function updateProposalContent(
     if (!proposal) {
       return { success: false, error: 'Failed to update proposal.' }
     }
+
+    const event = proposalUpdatedEvent({ title: data.title })
+
+    await logActivity({
+      actorId: user.id,
+      actorRole: user.role,
+      verb: event.verb,
+      summary: event.summary,
+      targetType: 'PROPOSAL',
+      targetId: data.proposalId,
+      metadata: event.metadata,
+    })
 
     revalidatePath('/proposals')
     revalidatePath('/leads/board')

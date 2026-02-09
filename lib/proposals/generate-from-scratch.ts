@@ -47,7 +47,8 @@ export async function generateProposalFromScratch({
     : format(addDays(new Date(), DEFAULT_PROPOSAL_VALIDITY_DAYS), 'yyyy-MM-dd')
 
   const proposal = await createProposal({
-    leadId: input.leadId,
+    leadId: input.leadId ?? null,
+    clientId: input.clientId ?? null,
     title: input.title,
     docUrl: null,
     docId: null,

@@ -6,7 +6,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import type { LeadRecord } from '@/lib/leads/types'
 
 import { ConvertLeadDialog } from '../convert-lead-dialog'
-import { ProposalBuilderSheet } from '../proposal-builder/proposal-builder-sheet'
+import { ProposalBuilderSheet, type EditableProposal } from '../proposal-builder/proposal-builder-sheet'
 import { ScheduleMeetingDialog } from '../schedule-meeting-dialog'
 import { SendEmailDialog } from '../send-email-dialog'
 
@@ -31,6 +31,7 @@ type LeadSheetDialogsProps = {
   onMeetingSuccess: () => void
   // Build proposal dialog
   isBuildProposalDialogOpen: boolean
+  editingProposal?: EditableProposal
   onBuildProposalOpenChange: (open: boolean) => void
   onProposalSuccess: () => void
   // General success callback
@@ -55,6 +56,7 @@ export function LeadSheetDialogs({
   onMeetingOpenChange,
   onMeetingSuccess,
   isBuildProposalDialogOpen,
+  editingProposal,
   onBuildProposalOpenChange,
   onProposalSuccess,
   onSuccess,
@@ -101,6 +103,7 @@ export function LeadSheetDialogs({
       {lead && (
         <ProposalBuilderSheet
           lead={lead}
+          existingProposal={editingProposal}
           open={isBuildProposalDialogOpen}
           onOpenChange={onBuildProposalOpenChange}
           onSuccess={onProposalSuccess}

@@ -106,7 +106,13 @@ export function ProposalsTable({ proposals, senderName, onEditProposal }: Propos
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const [selectedProposal, setSelectedProposal] = useState<ProposalWithRelations | null>(null)
+  const [selectedProposal, setSelectedProposal] = useState<ProposalWithRelations | null>(() => {
+    const idParam = searchParams.get('id')
+    if (idParam) {
+      return proposals.find(p => p.id === idParam) ?? null
+    }
+    return null
+  })
 
   const statusFilter = searchParams.get('status') ?? 'ALL'
 

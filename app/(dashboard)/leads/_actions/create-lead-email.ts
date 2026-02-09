@@ -8,7 +8,7 @@ import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { emailDrafts, leads } from '@/lib/db/schema'
 import { eq, and, isNull } from 'drizzle-orm'
-import { getDefaultGoogleConnectionId } from '@/lib/gmail/client'
+import { getDefaultGoogleConnectionId, sendEmail } from '@/lib/gmail/client'
 
 const createLeadEmailSchema = z.object({
   leadId: z.string().uuid(),
@@ -62,6 +62,7 @@ export async function createLeadEmail(
 
   try {
     const now = new Date().toISOString()
+    const isFutureSchedule = scheduledAt && new Date(scheduledAt) > new Date()
 
     const [draft] = await db
       .insert(emailDrafts)
@@ -78,18 +79,40 @@ export async function createLeadEmail(
         bodyHtml,
         bodyText: null,
         attachments: [],
-        status: 'READY',
+        status: isFutureSchedule ? 'READY' : 'SENDING',
         scheduledAt: scheduledAt ?? now,
         createdAt: now,
         updatedAt: now,
       })
       .returning({ id: emailDrafts.id })
 
+    // Send immediately via Gmail API if not scheduled for the future
+    if (!isFutureSchedule) {
+      await sendEmail(
+        user.id,
+        {
+          to: [toEmail],
+          subject,
+          bodyHtml,
+        },
+        { connectionId }
+      )
+
+      await db
+        .update(emailDrafts)
+        .set({
+          status: 'SENT',
+          sentAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(emailDrafts.id, draft.id))
+    }
+
     revalidatePath('/leads/board')
 
     return { success: true, draftId: draft.id }
   } catch (error) {
-    console.error('Failed to create lead email:', error)
-    return { success: false, error: 'Unable to create email. Please try again.' }
+    console.error('Failed to send lead email:', error)
+    return { success: false, error: 'Unable to send email. Please try again.' }
   }
 }

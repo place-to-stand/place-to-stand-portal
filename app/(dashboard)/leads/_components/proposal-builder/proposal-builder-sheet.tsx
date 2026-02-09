@@ -13,13 +13,14 @@ import {
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { LeadRecord } from '@/lib/leads/types'
+import type { ClientForProposal } from '@/app/(dashboard)/proposals/_actions/fetch-clients-for-proposals'
 import type { ProposalContent } from '@/lib/proposals/types'
 
 import { ProposalBuilder } from './proposal-builder'
 
 const ANIMATION_SETTLE_MS = 350
 
-type EditableProposal = {
+export type EditableProposal = {
   id: string
   title: string
   content: ProposalContent | Record<string, never>
@@ -27,7 +28,8 @@ type EditableProposal = {
 }
 
 type ProposalBuilderSheetProps = {
-  lead: LeadRecord
+  lead?: LeadRecord
+  client?: ClientForProposal
   existingProposal?: EditableProposal
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -36,6 +38,7 @@ type ProposalBuilderSheetProps = {
 
 export function ProposalBuilderSheet({
   lead,
+  client,
   existingProposal,
   open,
   onOpenChange,
@@ -90,6 +93,13 @@ export function ProposalBuilderSheet({
     onSuccess?.()
   }, [onOpenChange, onSuccess])
 
+  // Derive display name for the header
+  const targetName = lead
+    ? `${lead.contactName}${lead.companyName ? ` at ${lead.companyName}` : ''}`
+    : client
+      ? client.name
+      : ''
+
   return (
     <>
       <Sheet open={open} onOpenChange={nextOpen => {
@@ -115,7 +125,7 @@ export function ProposalBuilderSheet({
               <SheetDescription>
                 {existingProposal
                   ? `Editing "${existingProposal.title}"`
-                  : <>Create a proposal for {lead.contactName}{lead.companyName && ` at ${lead.companyName}`}</>
+                  : <>Create a proposal for {targetName}</>
                 }
               </SheetDescription>
             </SheetHeader>
@@ -126,6 +136,7 @@ export function ProposalBuilderSheet({
             <ProposalBuilder
               key={formKey}
               lead={lead}
+              client={client}
               existingProposal={existingProposal}
               onDirtyChange={setIsDirty}
               onClose={() => handleClose()}

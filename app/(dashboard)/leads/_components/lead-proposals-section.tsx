@@ -16,10 +16,12 @@ import {
   PenLine,
   ArrowUpRight,
   Trash2,
+  MoreHorizontal,
 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   DropdownMenu,
@@ -34,8 +36,10 @@ import {
   PROPOSAL_STATUS_CONFIG,
   type ProposalStatusValue,
 } from '@/lib/proposals/constants'
+import type { ProposalContent } from '@/lib/proposals/types'
 
 import { updateProposalStatus, prepareProposalSend, deleteProposalAction } from '../_actions'
+import type { EditableProposal } from './proposal-builder/proposal-builder-sheet'
 import { ShareProposalDialog } from './share-proposal-dialog'
 import { SendEmailDialog } from './send-email-dialog'
 
@@ -52,12 +56,15 @@ type Proposal = {
   shareEnabled: boolean | null
   viewedCount: number | null
   countersignedAt: string | null
+  content: ProposalContent | Record<string, never> | null
+  estimatedValue: string | null
 }
 
 type LeadProposalsSectionProps = {
   lead: LeadRecord
   canManage: boolean
   senderName?: string
+  onEditProposal?: (proposal: EditableProposal) => void
   onSuccess?: () => void
 }
 
@@ -65,6 +72,7 @@ export function LeadProposalsSection({
   lead,
   canManage,
   senderName = '',
+  onEditProposal,
   onSuccess,
 }: LeadProposalsSectionProps) {
   const [proposals, setProposals] = useState<Proposal[]>([])
@@ -141,6 +149,7 @@ export function LeadProposalsSection({
               lead={lead}
               canManage={canManage}
               senderName={senderName}
+              onEditProposal={onEditProposal}
               onUpdate={handleProposalUpdate}
             />
           ))}
@@ -156,12 +165,14 @@ function ProposalCard({
   lead,
   canManage,
   senderName = '',
+  onEditProposal,
   onUpdate,
 }: {
   proposal: Proposal
   lead: LeadRecord
   canManage: boolean
   senderName?: string
+  onEditProposal?: (proposal: EditableProposal) => void
   onUpdate?: () => void
 }) {
   const { toast } = useToast()
@@ -170,6 +181,7 @@ function ProposalCard({
   const [emailDialogOpen, setEmailDialogOpen] = useState(false)
   const [emailInitialSubject, setEmailInitialSubject] = useState('')
   const [emailInitialBody, setEmailInitialBody] = useState('')
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false)
 
   const handleSendViaEmail = useCallback(async () => {
     startUpdateTransition(async () => {
@@ -236,160 +248,173 @@ function ProposalCard({
   )
 
   const handleDelete = useCallback(() => {
-    if (!confirm('Delete this proposal? This cannot be undone.')) return
-
     startUpdateTransition(async () => {
       const result = await deleteProposalAction({ proposalId: proposal.id })
       if (!result.success) {
         toast({
           variant: 'destructive',
-          title: 'Unable to delete proposal',
+          title: 'Unable to archive proposal',
           description: result.error ?? 'Please try again.',
         })
         return
       }
-      toast({ title: 'Proposal deleted' })
+      toast({ title: 'Proposal archived' })
+      setArchiveDialogOpen(false)
       onUpdate?.()
     })
   }, [proposal.id, toast, onUpdate])
 
+  const handleEdit = useCallback(() => {
+    if (!onEditProposal || !proposal.content) return
+    onEditProposal({
+      id: proposal.id,
+      title: proposal.title,
+      content: proposal.content,
+      estimatedValue: proposal.estimatedValue,
+    })
+  }, [onEditProposal, proposal])
+
   return (
     <>
-    <div className="rounded-lg border bg-muted/30 p-3">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <p className="truncate text-sm font-medium">{proposal.title}</p>
-            {proposal.status === 'ACCEPTED' && proposal.countersignedAt ? (
-              <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-700 border-emerald-500/20">
-                <CheckCircle className="mr-1 h-3 w-3" />
-                Fully Executed
-              </Badge>
-            ) : (
-              <Badge variant="outline" className={`text-xs ${statusConfig.className}`}>
-                <StatusIcon className="mr-1 h-3 w-3" />
-                {statusConfig.label}
-              </Badge>
-            )}
-            {proposal.status === 'ACCEPTED' && !proposal.countersignedAt && (
-              <Badge variant="outline" className="text-xs bg-orange-500/10 text-orange-600 border-orange-500/20">
-                <PenLine className="mr-1 h-3 w-3" />
-                Countersign
-              </Badge>
-            )}
-          </div>
-          <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-            <Clock className="h-3 w-3" />
-            <span>Created {format(new Date(proposal.createdAt), 'MMM d, yyyy')}</span>
-            {proposal.sentAt && (
-              <>
-                <span>·</span>
-                <span>Sent {format(new Date(proposal.sentAt), 'MMM d')}</span>
-              </>
-            )}
-            <span>·</span>
-            <Link
-              href="/proposals"
-              className="inline-flex items-center gap-0.5 text-violet-600 hover:underline"
-            >
-              View in Proposals
-              <ArrowUpRight className="h-3 w-3" />
-            </Link>
-          </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-1">
-          {canManage && (
-            <button
-              type="button"
-              onClick={() => setShareDialogOpen(true)}
-              className="flex items-center gap-1 rounded-md bg-violet-500/10 px-2 py-1 text-xs font-medium text-violet-600 hover:bg-violet-500/20"
-            >
-              <Link2 className="h-3 w-3" />
-              Share
-            </button>
-          )}
-          {proposal.docUrl && (
-            <a
-              href={proposal.docUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 rounded-md bg-blue-500/10 px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-500/20"
-            >
-              <FileText className="h-3 w-3" />
-              Open
-              <ExternalLink className="h-2.5 w-2.5" />
-            </a>
-          )}
-          {canManage && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  disabled={isUpdating}
-                >
-                  <span className="sr-only">Actions</span>
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                    />
-                  </svg>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {lead.contactEmail && senderName && (
-                  <DropdownMenuItem onClick={handleSendViaEmail}>
-                    <Mail className="mr-2 h-4 w-4" />
-                    Send via Email
-                  </DropdownMenuItem>
-                )}
-                {proposal.status === 'DRAFT' && lead.contactEmail && (
-                  <DropdownMenuItem onClick={() => handleStatusChange('SENT')}>
-                    <Send className="mr-2 h-4 w-4" />
-                    Mark as Sent
-                  </DropdownMenuItem>
-                )}
-                {proposal.status === 'SENT' && (
-                  <DropdownMenuItem onClick={() => handleStatusChange('VIEWED')}>
-                    <Eye className="mr-2 h-4 w-4" />
-                    Mark as Viewed
-                  </DropdownMenuItem>
-                )}
-                {(proposal.status === 'SENT' || proposal.status === 'VIEWED') && (
-                  <>
-                    <DropdownMenuItem onClick={() => handleStatusChange('ACCEPTED')}>
-                      <CheckCircle className="mr-2 h-4 w-4" />
-                      Mark as Accepted
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleStatusChange('REJECTED')}>
-                      <XCircle className="mr-2 h-4 w-4" />
-                      Mark as Rejected
-                    </DropdownMenuItem>
-                  </>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={handleDelete}
-                  className="text-destructive focus:text-destructive"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
+    <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+      {/* Row 1: Title + dropdown */}
+      <div className="flex items-center justify-between gap-2">
+        <p className="min-w-0 truncate text-sm font-medium">{proposal.title}</p>
+        {canManage && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 shrink-0"
+                disabled={isUpdating}
+              >
+                <span className="sr-only">Actions</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {onEditProposal && proposal.content && (proposal.status === 'DRAFT' || proposal.status === 'SENT') && (
+                <DropdownMenuItem onClick={handleEdit}>
+                  <PenLine className="mr-2 h-4 w-4" />
+                  Edit Proposal
                 </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
+              )}
+              {lead.contactEmail && senderName && (
+                <DropdownMenuItem onClick={handleSendViaEmail}>
+                  <Mail className="mr-2 h-4 w-4" />
+                  Send via Email
+                </DropdownMenuItem>
+              )}
+              {canManage && (
+                <DropdownMenuItem onClick={() => setShareDialogOpen(true)}>
+                  <Link2 className="mr-2 h-4 w-4" />
+                  Share Link
+                </DropdownMenuItem>
+              )}
+              {proposal.docUrl && (
+                <DropdownMenuItem asChild>
+                  <a href={proposal.docUrl} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Open Document
+                  </a>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              {proposal.status === 'DRAFT' && lead.contactEmail && (
+                <DropdownMenuItem onClick={() => handleStatusChange('SENT')}>
+                  <Send className="mr-2 h-4 w-4" />
+                  Mark as Sent
+                </DropdownMenuItem>
+              )}
+              {proposal.status === 'SENT' && (
+                <DropdownMenuItem onClick={() => handleStatusChange('VIEWED')}>
+                  <Eye className="mr-2 h-4 w-4" />
+                  Mark as Viewed
+                </DropdownMenuItem>
+              )}
+              {(proposal.status === 'SENT' || proposal.status === 'VIEWED') && (
+                <>
+                  <DropdownMenuItem onClick={() => handleStatusChange('ACCEPTED')}>
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Mark as Accepted
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleStatusChange('REJECTED')}>
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Mark as Rejected
+                  </DropdownMenuItem>
+                </>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => setArchiveDialogOpen(true)}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Archive
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+
+      {/* Row 2: Status badges + estimated value */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {proposal.status === 'ACCEPTED' && proposal.countersignedAt ? (
+          <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-700 border-emerald-500/20">
+            <CheckCircle className="mr-1 h-3 w-3" />
+            Fully Executed
+          </Badge>
+        ) : (
+          <Badge variant="outline" className={`text-xs ${statusConfig.className}`}>
+            <StatusIcon className="mr-1 h-3 w-3" />
+            {statusConfig.label}
+          </Badge>
+        )}
+        {proposal.status === 'ACCEPTED' && !proposal.countersignedAt && (
+          <Badge variant="outline" className="text-xs bg-orange-500/10 text-orange-600 border-orange-500/20">
+            <PenLine className="mr-1 h-3 w-3" />
+            Countersign
+          </Badge>
+        )}
+        {proposal.estimatedValue && (
+          <span className="text-xs font-medium text-muted-foreground">
+            ${Number(proposal.estimatedValue).toLocaleString()}
+          </span>
+        )}
+      </div>
+
+      {/* Row 3: Metadata + link */}
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Clock className="h-3 w-3 shrink-0" />
+        <span>{format(new Date(proposal.createdAt), 'MMM d, yyyy')}</span>
+        {proposal.sentAt && (
+          <>
+            <span>·</span>
+            <span>Sent {format(new Date(proposal.sentAt), 'MMM d')}</span>
+          </>
+        )}
+        <span>·</span>
+        <Link
+          href={`/proposals?id=${proposal.id}`}
+          className="inline-flex items-center gap-0.5 text-violet-600 hover:underline"
+        >
+          View
+          <ArrowUpRight className="h-3 w-3" />
+        </Link>
       </div>
     </div>
+    <ConfirmDialog
+      open={archiveDialogOpen}
+      title="Archive this proposal?"
+      description="Archiving removes the proposal from the active list. You can restore it from the archive."
+      confirmLabel={isUpdating ? 'Archiving...' : 'Archive'}
+      confirmVariant="destructive"
+      confirmDisabled={isUpdating}
+      onCancel={() => setArchiveDialogOpen(false)}
+      onConfirm={handleDelete}
+    />
     {canManage && (
       <ShareProposalDialog
         open={shareDialogOpen}

@@ -92,6 +92,36 @@ export const proposalCountersignedEvent = (args: {
   }),
 })
 
+export const proposalUpdatedEvent = (args: {
+  title: string
+}): ActivityEvent => ({
+  verb: ActivityVerbs.PROPOSAL_UPDATED,
+  summary: `Updated proposal "${args.title}"`,
+  metadata: toMetadata({
+    proposal: { title: args.title },
+  }),
+})
+
+export const proposalSharedEvent = (args: {
+  title: string
+}): ActivityEvent => ({
+  verb: ActivityVerbs.PROPOSAL_SHARED,
+  summary: `Enabled sharing for proposal "${args.title}"`,
+  metadata: toMetadata({
+    proposal: { title: args.title },
+  }),
+})
+
+export const proposalUnsharedEvent = (args: {
+  title: string
+}): ActivityEvent => ({
+  verb: ActivityVerbs.PROPOSAL_UNSHARED,
+  summary: `Disabled sharing for proposal "${args.title}"`,
+  metadata: toMetadata({
+    proposal: { title: args.title },
+  }),
+})
+
 export const proposalArchivedEvent = (args: {
   title: string
 }): ActivityEvent => ({

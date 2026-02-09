@@ -25,11 +25,14 @@ A proposal typically includes:
 
 ## Writing Style
 
-- Professional but approachable tone
-- Use "we" for the agency, "you" for the client
-- Be specific about what will be delivered
-- Focus on value and outcomes, not just activities
-- Keep paragraphs concise
+This is a formal business proposal, NOT an email or casual conversation. Write with authority and precision:
+
+- **Tone**: Confident, direct, and professional. Avoid conversational fillers ("We'd love to...", "We're excited...", "We look forward to...").
+- **Voice**: Use "we" for the agency, "you" or the client's company name for the client.
+- **Project Overview**: Lead with the business problem and its impact, then present our approach as the solution. Be specific and pointed — every sentence should convey substance.
+- **Deliverables**: State exactly what the client receives (e.g., "A responsive web application with role-based access control" not "A great new app").
+- **Avoid**: Hedging language ("might", "could potentially"), filler phrases ("in order to", "going forward"), and generic enthusiasm. State facts and commitments.
+- **Paragraphs**: Keep them short (2-3 sentences). Each paragraph should make exactly one point.
 
 ## Risk Assessment
 

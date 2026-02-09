@@ -56,25 +56,32 @@ export default function ProposalTemplatesPage() {
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Proposal Templates</h2>
-        <Button onClick={handleCreate} size="sm">
-          <Plus className="mr-2 h-4 w-4" />
-          New Template
-        </Button>
-      </div>
-
-      {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="text-muted-foreground">Loading templates...</div>
+      <section className="bg-background rounded-xl border shadow-sm">
+        <div className="flex items-center justify-between p-6 pb-4">
+          <p className="text-sm text-muted-foreground">
+            {isLoading
+              ? 'Loading...'
+              : `${templates.length} template${templates.length !== 1 ? 's' : ''}`}
+          </p>
+          <Button onClick={handleCreate} size="sm">
+            <Plus className="mr-2 h-4 w-4" />
+            New Template
+          </Button>
         </div>
-      ) : (
-        <ProposalTemplatesTable
-          templates={templates}
-          onEdit={handleEdit}
-          onRefresh={handleSuccess}
-        />
-      )}
+        <div className="px-6 pb-6">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-muted-foreground">Loading templates...</div>
+            </div>
+          ) : (
+            <ProposalTemplatesTable
+              templates={templates}
+              onEdit={handleEdit}
+              onRefresh={handleSuccess}
+            />
+          )}
+        </div>
+      </section>
 
       <ProposalTemplateSheet
         open={sheetOpen}

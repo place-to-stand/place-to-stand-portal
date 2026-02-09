@@ -207,14 +207,18 @@ export async function generateFullProposalPdf(
       )
     }
 
-    // Terms
-    addSectionTitle('Terms & Conditions')
-    for (let i = 0; i < FULL_TERMS_AND_CONDITIONS.length; i++) {
-      const section = FULL_TERMS_AND_CONDITIONS[i]
-      ensureSpace(14)
-      addText(`${i + 1}. ${section.title}`, 10, 'bold')
-      addWrappedText(section.content, 9)
-      addSpacer(2)
+    // Terms — match web viewer logic: only show if termsContent or includeFullTerms
+    const shouldShowTerms = pc.termsContent?.length || pc.includeFullTerms !== false
+    if (shouldShowTerms) {
+      const termsToShow = pc.termsContent?.length ? pc.termsContent : FULL_TERMS_AND_CONDITIONS
+      addSectionTitle('Terms & Conditions')
+      for (let i = 0; i < termsToShow.length; i++) {
+        const section = termsToShow[i]
+        ensureSpace(14)
+        addText(`${i + 1}. ${section.title}`, 10, 'bold')
+        addWrappedText(section.content, 9)
+        addSpacer(2)
+      }
     }
   }
 

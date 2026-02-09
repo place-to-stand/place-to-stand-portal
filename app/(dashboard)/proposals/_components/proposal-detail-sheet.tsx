@@ -10,6 +10,7 @@ import {
   Eye,
   Link2,
   Mail,
+  MessageSquare,
   PenLine,
   Send,
   Loader2,
@@ -22,6 +23,7 @@ import {
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Separator } from '@/components/ui/separator'
 import {
   Sheet,
@@ -161,6 +163,7 @@ export function ProposalDetailSheet({
   const [emailBody, setEmailBody] = useState('')
   const [isPreparing, startPrepare] = useTransition()
   const [isDeleting, startDelete] = useTransition()
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false)
 
   // Keep a ref to the last non-null proposal so content stays visible during close animation
   const lastProposalRef = useRef<ProposalWithRelations | null>(null)
@@ -216,15 +219,15 @@ export function ProposalDetailSheet({
 
   const handleDelete = useCallback(() => {
     if (!displayProposal) return
-    if (!confirm('Delete this proposal? This cannot be undone.')) return
 
     startDelete(async () => {
       const result = await deleteProposalAction({ proposalId: displayProposal.id })
       if (!result.success) {
-        toast({ variant: 'destructive', title: 'Unable to delete', description: result.error })
+        toast({ variant: 'destructive', title: 'Unable to archive', description: result.error })
         return
       }
-      toast({ title: 'Proposal deleted' })
+      toast({ title: 'Proposal archived' })
+      setArchiveDialogOpen(false)
       onOpenChange(false)
       router.refresh()
     })
@@ -237,7 +240,7 @@ export function ProposalDetailSheet({
   const isAcceptedNotCountersigned = p.status === 'ACCEPTED' && !p.countersignedAt
   const hasLead = !!p.leadId
   const canSendEmail = hasLead && ['DRAFT', 'SENT', 'VIEWED', 'ACCEPTED'].includes(p.status)
-  const canEdit = p.status === 'DRAFT' && !!onEdit
+  const canEdit = ['DRAFT', 'SENT'].includes(p.status) && !!onEdit
 
   const leadShim = hasLead
     ? {
@@ -315,6 +318,19 @@ export function ProposalDetailSheet({
                 )}
               </div>
             </section>
+
+            {/* Client Comment */}
+            {p.clientComment && (
+              <>
+                <Separator />
+                <section className="space-y-2">
+                  <h3 className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                    <MessageSquare className="h-3.5 w-3.5" /> Client Feedback
+                  </h3>
+                  <p className="text-sm whitespace-pre-wrap">{p.clientComment}</p>
+                </section>
+              </>
+            )}
 
             {/* Signatures */}
             {(p.signerName || isAcceptedNotCountersigned || isFullyExecuted) && (
@@ -399,7 +415,7 @@ export function ProposalDetailSheet({
                   <Button
                     className="justify-start"
                     onClick={() => {
-                      window.open(`/p/${p.countersignToken}/countersign`, '_blank')
+                      window.open(`/share/proposals/${p.countersignToken}/countersign`, '_blank')
                     }}
                   >
                     <PenLine className="mr-2 h-4 w-4" />
@@ -433,7 +449,7 @@ export function ProposalDetailSheet({
                     className="justify-start"
                     asChild
                   >
-                    <a href={`/p/${p.shareToken}`} target="_blank" rel="noopener noreferrer">
+                    <a href={`/share/proposals/${p.shareToken}`} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="mr-2 h-4 w-4" />
                       Open in New Tab
                     </a>
@@ -458,7 +474,7 @@ export function ProposalDetailSheet({
                 <Button
                   variant="ghost"
                   className="justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={handleDelete}
+                  onClick={() => setArchiveDialogOpen(true)}
                   disabled={isDeleting}
                 >
                   {isDeleting ? (
@@ -466,7 +482,7 @@ export function ProposalDetailSheet({
                   ) : (
                     <Trash2 className="mr-2 h-4 w-4" />
                   )}
-                  Delete Proposal
+                  Archive Proposal
                 </Button>
               </div>
             </section>
@@ -494,6 +510,17 @@ export function ProposalDetailSheet({
           initialBodyHtml={emailBody}
         />
       )}
+
+      <ConfirmDialog
+        open={archiveDialogOpen}
+        title="Archive this proposal?"
+        description="Archiving removes the proposal from the active list. You can restore it from the archive."
+        confirmLabel={isDeleting ? 'Archiving...' : 'Archive'}
+        confirmVariant="destructive"
+        confirmDisabled={isDeleting}
+        onCancel={() => setArchiveDialogOpen(false)}
+        onConfirm={handleDelete}
+      />
     </>
   )
 }

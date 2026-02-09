@@ -6,6 +6,10 @@ export const leadConversionSchema = z.object({
   clientSlug: z.string().max(100).optional(),
   billingType: z.enum(['prepaid', 'net_30']),
   copyNotesToClient: z.boolean(),
+  createContact: z.boolean().default(true),
+  createProject: z.boolean().default(false),
+  projectName: z.string().min(1).max(200).optional(),
+  existingClientId: z.string().uuid().optional(),
   memberIds: z.array(z.string().uuid()).optional(),
 })
 

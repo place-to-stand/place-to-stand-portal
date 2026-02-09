@@ -23,7 +23,7 @@ type EditorPanelProps = {
   isEditing?: boolean
   onCancel: () => void
   onBuild: () => void
-  onGenerateDraft: () => void
+  onGenerateDraft?: () => void
   existingProposalCount?: number
   existingProposalsFetchFailed?: boolean
   termsTemplates: ProposalTemplateRecord[]
@@ -52,38 +52,42 @@ export function EditorPanel({
             <div className="space-y-1">
               <h2 className="text-lg font-semibold">Proposal Editor</h2>
               <p className="text-sm text-muted-foreground">
-                Fill in the details or let AI generate a draft
+                {onGenerateDraft
+                  ? 'Fill in the details or let AI generate a draft'
+                  : 'Fill in the proposal details'}
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="gap-2"
-                    onClick={onGenerateDraft}
-                    disabled={isGenerating || isBuilding}
-                  >
-                    {isGenerating ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="h-4 w-4" />
-                        Generate Draft
-                      </>
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  <p>Use AI to generate a proposal draft from lead context</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
+            {onGenerateDraft && (
+              <div className="flex items-center gap-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={onGenerateDraft}
+                      disabled={isGenerating || isBuilding}
+                    >
+                      {isGenerating ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-4 w-4" />
+                          Generate Draft
+                        </>
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>Use AI to generate a proposal draft from lead context</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            )}
           </div>
 
           {/* Existing proposal warning */}
@@ -108,6 +112,7 @@ export function EditorPanel({
             </Alert>
           )}
 
+          <fieldset disabled={isGenerating} className={isGenerating ? 'opacity-60' : ''}>
           {/* Proposal Title */}
           <div className="space-y-2">
             <label
@@ -143,6 +148,7 @@ export function EditorPanel({
 
           {/* Rates & Terms */}
           <RatesSection form={form} />
+          </fieldset>
           </div>
         </div>
       </div>
@@ -153,7 +159,7 @@ export function EditorPanel({
           <Button type="button" variant="outline" onClick={onCancel} disabled={isBuilding}>
             Cancel
           </Button>
-          <Button type="button" onClick={onBuild} disabled={isBuilding}>
+          <Button type="button" onClick={onBuild} disabled={isBuilding || isGenerating}>
             {isBuilding ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
