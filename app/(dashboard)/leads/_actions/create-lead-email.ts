@@ -8,7 +8,7 @@ import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { emailDrafts, leads } from '@/lib/db/schema'
 import { eq, and, isNull } from 'drizzle-orm'
-import { getDefaultGoogleConnectionId } from '@/lib/gmail/client'
+import { getDefaultGoogleConnectionId, sendEmail } from '@/lib/gmail/client'
 
 const createLeadEmailSchema = z.object({
   leadId: z.string().uuid(),
@@ -60,36 +60,64 @@ export async function createLeadEmail(
     return { success: false, error: 'No Gmail account connected. Please connect Gmail in Settings.' }
   }
 
-  try {
-    const now = new Date().toISOString()
+  const now = new Date().toISOString()
+  const isFutureSchedule = scheduledAt && new Date(scheduledAt) > new Date()
 
-    const [draft] = await db
-      .insert(emailDrafts)
-      .values({
-        userId: user.id,
-        connectionId,
-        leadId,
-        sendVia: 'gmail',
-        composeType: 'new',
-        toEmails: [toEmail],
-        ccEmails: [],
-        bccEmails: [],
-        subject,
-        bodyHtml,
-        bodyText: null,
-        attachments: [],
-        status: 'READY',
-        scheduledAt: scheduledAt ?? now,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .returning({ id: emailDrafts.id })
+  const [draft] = await db
+    .insert(emailDrafts)
+    .values({
+      userId: user.id,
+      connectionId,
+      leadId,
+      sendVia: 'gmail',
+      composeType: 'new',
+      toEmails: [toEmail],
+      ccEmails: [],
+      bccEmails: [],
+      subject,
+      bodyHtml,
+      bodyText: null,
+      attachments: [],
+      status: isFutureSchedule ? 'READY' : 'SENDING',
+      scheduledAt: scheduledAt ?? now,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .returning({ id: emailDrafts.id })
 
-    revalidatePath('/leads/board')
+  // Send immediately via Gmail API if not scheduled for the future
+  if (!isFutureSchedule) {
+    try {
+      await sendEmail(
+        user.id,
+        {
+          to: [toEmail],
+          subject,
+          bodyHtml,
+        },
+        { connectionId }
+      )
 
-    return { success: true, draftId: draft.id }
-  } catch (error) {
-    console.error('Failed to create lead email:', error)
-    return { success: false, error: 'Unable to create email. Please try again.' }
+      const sentAt = new Date().toISOString()
+      await db
+        .update(emailDrafts)
+        .set({ status: 'SENT', sentAt, updatedAt: sentAt })
+        .where(eq(emailDrafts.id, draft.id))
+    } catch (error) {
+      console.error('Failed to send lead email:', error)
+
+      // Mark the draft as FAILED so it doesn't stay stuck in SENDING
+      await db
+        .update(emailDrafts)
+        .set({ status: 'FAILED', updatedAt: new Date().toISOString() })
+        .where(eq(emailDrafts.id, draft.id))
+        .catch(updateErr => console.error('Failed to mark email draft as FAILED:', updateErr))
+
+      return { success: false, error: 'Unable to send email. Please try again.' }
+    }
   }
+
+  revalidatePath('/leads/board')
+
+  return { success: true, draftId: draft.id }
 }

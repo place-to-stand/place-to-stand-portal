@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
-import { useFieldArray } from 'react-hook-form'
+import { useFieldArray, useWatch } from 'react-hook-form'
 import {
   DndContext,
   closestCenter,
@@ -54,6 +54,69 @@ type PhaseField = {
   isOpen?: boolean
 }
 
+type SortableDeliverableItemProps = {
+  id: string
+  value: string
+  canRemove: boolean
+  onChange: (value: string) => void
+  onRemove: () => void
+}
+
+function SortableDeliverableItem({
+  id,
+  value,
+  canRemove,
+  onChange,
+  onRemove,
+}: SortableDeliverableItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn('flex items-center gap-2', isDragging && 'opacity-50')}
+    >
+      <button
+        type="button"
+        className="cursor-grab touch-none active:cursor-grabbing"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-3 w-3 text-muted-foreground" />
+      </button>
+      <Input
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder="Deliverable item"
+        className="h-8 flex-1 text-sm"
+      />
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="h-6 w-6 text-muted-foreground hover:text-destructive"
+        onClick={onRemove}
+        disabled={!canRemove}
+      >
+        <Trash2 className="h-3 w-3" />
+      </Button>
+    </div>
+  )
+}
+
 type SortablePhaseItemProps = {
   id: string
   phase: PhaseField
@@ -65,6 +128,7 @@ type SortablePhaseItemProps = {
   onAddDeliverable: () => void
   onRemoveDeliverable: (deliverableIndex: number) => void
   onUpdateDeliverable: (deliverableIndex: number, value: string) => void
+  onReorderDeliverables: (oldIndex: number, newIndex: number) => void
 }
 
 function SortablePhaseItem({
@@ -78,6 +142,7 @@ function SortablePhaseItem({
   onAddDeliverable,
   onRemoveDeliverable,
   onUpdateDeliverable,
+  onReorderDeliverables,
 }: SortablePhaseItemProps) {
   const {
     attributes,
@@ -92,6 +157,32 @@ function SortablePhaseItem({
     transform: CSS.Transform.toString(transform),
     transition,
   }
+
+  const phaseTitle = useWatch({ control: form.control, name: `phases.${phaseIndex}.title` as const })
+
+  // Deliverable IDs use phase's stable field ID + index.
+  // Index-based is acceptable here because all inputs are controlled (values from props).
+  const deliverableIds = phase.deliverables.map((_, i) => `${id}-del-${i}`)
+
+  // Hoist sensors to component level (not inline in JSX)
+  const deliverableSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
+
+  const handleDeliverableDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event
+      if (over && active.id !== over.id) {
+        const oldIdx = deliverableIds.indexOf(active.id as string)
+        const newIdx = deliverableIds.indexOf(over.id as string)
+        if (oldIdx !== -1 && newIdx !== -1) {
+          onReorderDeliverables(oldIdx, newIdx)
+        }
+      }
+    },
+    [deliverableIds, onReorderDeliverables]
+  )
 
   return (
     <Collapsible
@@ -123,7 +214,7 @@ function SortablePhaseItem({
             )}
             <span className="flex-1 text-sm font-medium">
               Phase {phaseIndex + 1}:{' '}
-              {form.watch(`phases.${phaseIndex}.title`) || '(untitled)'}
+              {phaseTitle || '(untitled)'}
             </span>
             <Button
               type="button"
@@ -179,32 +270,27 @@ function SortablePhaseItem({
             <div className="space-y-1.5">
               <Label className="text-xs">Deliverables</Label>
               <div className="space-y-2">
-                {phase.deliverables.map((deliverable, deliverableIndex) => (
-                  <div
-                    key={deliverableIndex}
-                    className="flex items-center gap-2"
+                <DndContext
+                  sensors={deliverableSensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDeliverableDragEnd}
+                >
+                  <SortableContext
+                    items={deliverableIds}
+                    strategy={verticalListSortingStrategy}
                   >
-                    <span className="text-xs text-muted-foreground">•</span>
-                    <Input
-                      value={deliverable}
-                      onChange={e =>
-                        onUpdateDeliverable(deliverableIndex, e.target.value)
-                      }
-                      placeholder="Deliverable item"
-                      className="h-8 flex-1 text-sm"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                      onClick={() => onRemoveDeliverable(deliverableIndex)}
-                      disabled={phase.deliverables.length <= 1}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
+                    {phase.deliverables.map((deliverable, deliverableIndex) => (
+                      <SortableDeliverableItem
+                        key={deliverableIds[deliverableIndex]}
+                        id={deliverableIds[deliverableIndex]}
+                        value={deliverable}
+                        canRemove={phase.deliverables.length > 1}
+                        onChange={value => onUpdateDeliverable(deliverableIndex, value)}
+                        onRemove={() => onRemoveDeliverable(deliverableIndex)}
+                      />
+                    ))}
+                  </SortableContext>
+                </DndContext>
                 <Button
                   type="button"
                   variant="ghost"
@@ -266,54 +352,72 @@ export function PhasesSection({ form }: PhasesSectionProps) {
     })
   }, [append, fields.length])
 
+  // IMPORTANT: Read current form values via form.getValues() instead of `fields`.
+  // The `fields` array from useFieldArray is a snapshot that does NOT update when
+  // users type into form.register() inputs. Using `fields` in update() would
+  // overwrite title/purpose with stale initial values.
+
   const handleTogglePhase = useCallback(
     (index: number) => {
-      const phase = fields[index]
-      if (phase) {
-        update(index, { ...phase, isOpen: !phase.isOpen })
+      const current = form.getValues(`phases.${index}`)
+      if (current) {
+        update(index, { ...current, isOpen: !(current.isOpen ?? true) })
       }
     },
-    [fields, update]
+    [form, update]
   )
 
   const handleAddDeliverable = useCallback(
     (phaseIndex: number) => {
-      const phase = fields[phaseIndex]
-      if (phase) {
+      const current = form.getValues(`phases.${phaseIndex}`)
+      if (current) {
         update(phaseIndex, {
-          ...phase,
-          deliverables: [...phase.deliverables, ''],
+          ...current,
+          deliverables: [...current.deliverables, ''],
         })
       }
     },
-    [fields, update]
+    [form, update]
   )
 
   const handleRemoveDeliverable = useCallback(
     (phaseIndex: number, deliverableIndex: number) => {
-      const phase = fields[phaseIndex]
-      if (phase && phase.deliverables.length > 1) {
+      const current = form.getValues(`phases.${phaseIndex}`)
+      if (current && current.deliverables.length > 1) {
         update(phaseIndex, {
-          ...phase,
-          deliverables: phase.deliverables.filter(
-            (_, i) => i !== deliverableIndex
+          ...current,
+          deliverables: current.deliverables.filter(
+            (_: string, i: number) => i !== deliverableIndex
           ),
         })
       }
     },
-    [fields, update]
+    [form, update]
   )
 
   const handleUpdateDeliverable = useCallback(
     (phaseIndex: number, deliverableIndex: number, value: string) => {
-      const phase = fields[phaseIndex]
-      if (phase) {
-        const newDeliverables = [...phase.deliverables]
+      const current = form.getValues(`phases.${phaseIndex}`)
+      if (current) {
+        const newDeliverables = [...current.deliverables]
         newDeliverables[deliverableIndex] = value
-        update(phaseIndex, { ...phase, deliverables: newDeliverables })
+        update(phaseIndex, { ...current, deliverables: newDeliverables })
       }
     },
-    [fields, update]
+    [form, update]
+  )
+
+  const handleReorderDeliverables = useCallback(
+    (phaseIndex: number, oldIndex: number, newIndex: number) => {
+      const current = form.getValues(`phases.${phaseIndex}`)
+      if (current) {
+        const newDeliverables = [...current.deliverables]
+        const [moved] = newDeliverables.splice(oldIndex, 1)
+        newDeliverables.splice(newIndex, 0, moved)
+        update(phaseIndex, { ...current, deliverables: newDeliverables })
+      }
+    },
+    [form, update]
   )
 
   return (
@@ -356,6 +460,9 @@ export function PhasesSection({ form }: PhasesSectionProps) {
                     }
                     onUpdateDeliverable={(deliverableIndex, value) =>
                       handleUpdateDeliverable(phaseIndex, deliverableIndex, value)
+                    }
+                    onReorderDeliverables={(oldIndex, newIndex) =>
+                      handleReorderDeliverables(phaseIndex, oldIndex, newIndex)
                     }
                   />
                 ))}

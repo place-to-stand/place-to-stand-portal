@@ -1,6 +1,6 @@
 'use client'
 
-import { Handshake } from 'lucide-react'
+import { Building2, Handshake } from 'lucide-react'
 
 import {
   CommandDialog,
@@ -13,12 +13,18 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { LEAD_STATUS_LABELS, LEAD_STATUS_TOKENS } from '@/lib/leads/constants'
 import type { LeadRecord } from '@/lib/leads/types'
+import type { ClientForProposal } from '../_actions/fetch-clients-for-proposals'
+
+export type ProposalTarget =
+  | { type: 'lead'; lead: LeadRecord }
+  | { type: 'client'; client: ClientForProposal }
 
 type LeadPickerDialogProps = {
   leads: LeadRecord[]
+  clients: ClientForProposal[]
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSelect: (lead: LeadRecord) => void
+  onSelect: (target: ProposalTarget) => void
 }
 
 const ACTIVE_STATUSES = new Set([
@@ -30,6 +36,7 @@ const ACTIVE_STATUSES = new Set([
 
 export function LeadPickerDialog({
   leads,
+  clients,
   open,
   onOpenChange,
   onSelect,
@@ -41,23 +48,42 @@ export function LeadPickerDialog({
     <CommandDialog
       open={open}
       onOpenChange={onOpenChange}
-      title='Select a Lead'
-      description='Choose a lead to create a proposal for.'
+      title='Create a Proposal'
+      description='Choose a lead or client to create a proposal for.'
     >
-      <CommandInput placeholder='Search leads by name or company...' />
+      <CommandInput placeholder='Search leads or clients...' />
       <CommandList>
-        <CommandEmpty>No leads found.</CommandEmpty>
+        <CommandEmpty>No leads or clients found.</CommandEmpty>
+        {clients.length > 0 && (
+          <CommandGroup heading='Clients'>
+            {clients.map(client => (
+              <ClientItem
+                key={client.id}
+                client={client}
+                onSelect={() => onSelect({ type: 'client', client })}
+              />
+            ))}
+          </CommandGroup>
+        )}
         {activeLeads.length > 0 && (
           <CommandGroup heading='Active Leads'>
             {activeLeads.map(lead => (
-              <LeadItem key={lead.id} lead={lead} onSelect={onSelect} />
+              <LeadItem
+                key={lead.id}
+                lead={lead}
+                onSelect={() => onSelect({ type: 'lead', lead })}
+              />
             ))}
           </CommandGroup>
         )}
         {closedLeads.length > 0 && (
-          <CommandGroup heading='Closed'>
+          <CommandGroup heading='Closed Leads'>
             {closedLeads.map(lead => (
-              <LeadItem key={lead.id} lead={lead} onSelect={onSelect} />
+              <LeadItem
+                key={lead.id}
+                lead={lead}
+                onSelect={() => onSelect({ type: 'lead', lead })}
+              />
             ))}
           </CommandGroup>
         )}
@@ -71,12 +97,12 @@ function LeadItem({
   onSelect,
 }: {
   lead: LeadRecord
-  onSelect: (lead: LeadRecord) => void
+  onSelect: () => void
 }) {
   return (
     <CommandItem
-      value={`${lead.contactName} ${lead.companyName ?? ''}`}
-      onSelect={() => onSelect(lead)}
+      value={`lead ${lead.contactName} ${lead.companyName ?? ''}`}
+      onSelect={onSelect}
     >
       <Handshake className='mr-2 h-4 w-4 shrink-0' />
       <div className='flex min-w-0 flex-1 items-center justify-between gap-2'>
@@ -93,6 +119,36 @@ function LeadItem({
           className={`shrink-0 text-[10px] ${LEAD_STATUS_TOKENS[lead.status]}`}
         >
           {LEAD_STATUS_LABELS[lead.status]}
+        </Badge>
+      </div>
+    </CommandItem>
+  )
+}
+
+function ClientItem({
+  client,
+  onSelect,
+}: {
+  client: ClientForProposal
+  onSelect: () => void
+}) {
+  return (
+    <CommandItem
+      value={`client ${client.name} ${client.primaryContactName ?? ''}`}
+      onSelect={onSelect}
+    >
+      <Building2 className='mr-2 h-4 w-4 shrink-0' />
+      <div className='flex min-w-0 flex-1 items-center justify-between gap-2'>
+        <div className='min-w-0'>
+          <span className='truncate font-medium'>{client.name}</span>
+          {client.primaryContactName && (
+            <span className='text-muted-foreground ml-1.5 text-xs'>
+              {client.primaryContactName}
+            </span>
+          )}
+        </div>
+        <Badge variant='outline' className='shrink-0 text-[10px]'>
+          Client
         </Badge>
       </div>
     </CommandItem>

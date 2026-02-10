@@ -24,6 +24,9 @@ import {
   proposalAcceptedEvent,
   proposalRejectedEvent,
   proposalCountersignedEvent,
+  proposalSharedEvent,
+  proposalUnsharedEvent,
+  proposalViewedEvent,
 } from '@/lib/activity/events'
 
 // =============================================================================
@@ -36,6 +39,15 @@ function generateShareToken(): string {
 
 function generateCountersignToken(): string {
   return randomBytes(32).toString('hex')
+}
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 }
 
 // =============================================================================
@@ -58,14 +70,41 @@ export async function enableProposalSharing(
     shareEnabled: true,
   })
 
+  const event = proposalSharedEvent({ title: proposal.title })
+  logActivity({
+    actorId: proposal.createdBy,
+    actorRole: 'ADMIN',
+    verb: event.verb,
+    summary: event.summary,
+    targetType: 'PROPOSAL',
+    targetId: proposalId,
+    metadata: event.metadata,
+  }).catch(err => console.error('[proposals] Failed to log sharing:', err))
+
   return { shareToken }
 }
 
 export async function disableProposalSharing(
   proposalId: string
 ): Promise<boolean> {
+  const proposal = await fetchProposalById(proposalId)
+  if (!proposal) return false
+
   const result = await updateProposal(proposalId, { shareEnabled: false })
-  return result !== null
+  if (!result) return false
+
+  const event = proposalUnsharedEvent({ title: proposal.title })
+  logActivity({
+    actorId: proposal.createdBy,
+    actorRole: 'ADMIN',
+    verb: event.verb,
+    summary: event.summary,
+    targetType: 'PROPOSAL',
+    targetId: proposalId,
+    metadata: event.metadata,
+  }).catch(err => console.error('[proposals] Failed to log unsharing:', err))
+
+  return true
 }
 
 export async function updateSharePassword(
@@ -105,11 +144,29 @@ export async function viewSharedProposal(token: string): Promise<Proposal | null
 
   const previousCount = await recordProposalView(proposal.id)
 
-  // Send "first viewed" notification to creator
+  // On first view: send notification and log activity
   if (previousCount === 0) {
     sendViewedNotification(proposal).catch(err => {
       console.error('[proposals] Failed to send viewed notification:', err)
     })
+
+    const content = proposal.content as Record<string, unknown> | null
+    const clientInfo = content?.client as Record<string, string> | null
+    const event = proposalViewedEvent({
+      title: proposal.title,
+      leadName: clientInfo?.contactName ?? 'Unknown',
+      viewCount: 1,
+    })
+
+    logActivity({
+      actorId: proposal.createdBy,
+      actorRole: 'ADMIN',
+      verb: event.verb,
+      summary: event.summary,
+      targetType: 'PROPOSAL',
+      targetId: proposal.id,
+      metadata: event.metadata,
+    }).catch(err => console.error('[proposals] Failed to log first view:', err))
   }
 
   return proposal
@@ -163,6 +220,11 @@ export async function respondToProposal(
       targetId: proposal.id,
       metadata: event.metadata,
     }).catch(err => console.error('[proposals] Failed to log rejection:', err))
+
+    // Notify the proposal creator
+    sendRejectionNotification(proposal.id, comment).catch(err => {
+      console.error('[proposals] Failed to send rejection notification:', err)
+    })
   }
 
   // On acceptance: compute content hash and generate countersign token
@@ -249,15 +311,15 @@ async function sendCountersignNotification(
   }
 
   const baseUrl = serverEnv.APP_BASE_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? ''
-  const countersignUrl = `${baseUrl}/p/${countersignToken}/countersign`
+  const countersignUrl = `${baseUrl}/share/proposals/${countersignToken}/countersign`
 
   const subject = `Action Required: Countersign "${proposal.title}"`
   const bodyHtml = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px;">
       <h2 style="color: #111; margin-bottom: 8px;">Proposal Signed by Client</h2>
       <p style="color: #555; font-size: 14px; line-height: 1.6;">
-        <strong>${proposal.signerName ?? 'The client'}</strong> has accepted and signed
-        <strong>"${proposal.title}"</strong>.
+        <strong>${escapeHtml(proposal.signerName ?? 'The client')}</strong> has accepted and signed
+        <strong>"${escapeHtml(proposal.title)}"</strong>.
       </p>
       ${proposal.signatureData ? `
         <div style="margin: 16px 0; padding: 12px; border: 1px solid #e5e7eb; border-radius: 6px; background: #fff; display: inline-block;">
@@ -288,6 +350,67 @@ async function sendCountersignNotification(
 
   if (!conn?.providerEmail) {
     console.warn('[proposals] No provider email found for connection, skipping countersign email')
+    return
+  }
+
+  await sendEmail(proposal.createdBy, {
+    to: [conn.providerEmail],
+    subject,
+    bodyHtml,
+  }, { connectionId })
+}
+
+/**
+ * Send an email notification to the proposal creator when a client requests changes.
+ */
+async function sendRejectionNotification(
+  proposalId: string,
+  comment?: string | null
+): Promise<void> {
+  const { getDefaultGoogleConnectionId, sendEmail } = await import('@/lib/gmail/client')
+  const { serverEnv } = await import('@/lib/env.server')
+
+  const proposal = await fetchProposalById(proposalId)
+  if (!proposal) return
+
+  const connectionId = await getDefaultGoogleConnectionId(proposal.createdBy)
+  if (!connectionId) {
+    console.warn('[proposals] No Gmail connection for creator, skipping rejection email')
+    return
+  }
+
+  const baseUrl = serverEnv.APP_BASE_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? ''
+  const proposalUrl = `${baseUrl}/proposals?id=${proposal.id}`
+
+  const subject = `Changes Requested: "${proposal.title}"`
+  const bodyHtml = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px;">
+      <h2 style="color: #111; margin-bottom: 8px;">Changes Requested</h2>
+      <p style="color: #555; font-size: 14px; line-height: 1.6;">
+        The client has requested changes to <strong>"${escapeHtml(proposal.title)}"</strong>.
+      </p>
+      ${comment ? `
+        <div style="margin: 16px 0; padding: 12px 16px; border-left: 3px solid #e5e7eb; background: #f9fafb; border-radius: 4px;">
+          <p style="color: #374151; font-size: 14px; line-height: 1.6; margin: 0; white-space: pre-wrap;">${escapeHtml(comment)}</p>
+        </div>
+      ` : ''}
+      <a href="${proposalUrl}" style="display: inline-block; margin-top: 12px; padding: 10px 24px; background: #111; color: #fff; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500;">
+        View Proposal
+      </a>
+    </div>
+  `
+
+  const { db } = await import('@/lib/db')
+  const { oauthConnections } = await import('@/lib/db/schema')
+  const { eq } = await import('drizzle-orm')
+  const [conn] = await db
+    .select({ providerEmail: oauthConnections.providerEmail })
+    .from(oauthConnections)
+    .where(eq(oauthConnections.id, connectionId))
+    .limit(1)
+
+  if (!conn?.providerEmail) {
+    console.warn('[proposals] No provider email found for connection, skipping rejection email')
     return
   }
 
@@ -347,7 +470,7 @@ async function sendViewedNotification(proposal: Proposal): Promise<void> {
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px;">
       <h2 style="color: #111; margin-bottom: 8px;">Proposal Viewed</h2>
       <p style="color: #555; font-size: 14px; line-height: 1.6;">
-        Your proposal <strong>"${proposal.title}"</strong> was just viewed by the recipient for the first time.
+        Your proposal <strong>"${escapeHtml(proposal.title)}"</strong> was just viewed by the recipient for the first time.
       </p>
     </div>
   `
@@ -373,22 +496,22 @@ async function sendCompletionNotifications(proposal: Proposal, pdfBuffer: Buffer
 
   const { serverEnv } = await import('@/lib/env.server')
   const baseUrl = serverEnv.APP_BASE_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? ''
-  const viewUrl = proposal.shareToken ? `${baseUrl}/p/${proposal.shareToken}` : null
+  const viewUrl = proposal.shareToken ? `${baseUrl}/share/proposals/${proposal.shareToken}` : null
 
   const subject = `Proposal Fully Executed: "${proposal.title}"`
   const bodyHtml = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px;">
       <h2 style="color: #111; margin-bottom: 8px;">Proposal Complete</h2>
       <p style="color: #555; font-size: 14px; line-height: 1.6;">
-        <strong>"${proposal.title}"</strong> has been fully executed. Both parties have signed.
+        <strong>"${escapeHtml(proposal.title)}"</strong> has been fully executed. Both parties have signed.
       </p>
       <div style="margin: 16px 0; padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px;">
         <p style="margin: 0 0 8px; font-size: 13px; color: #666;">
-          <strong>Client:</strong> ${proposal.signerName ?? 'N/A'} ${proposal.signerEmail ? `(${proposal.signerEmail})` : ''}
+          <strong>Client:</strong> ${escapeHtml(proposal.signerName ?? 'N/A')} ${proposal.signerEmail ? `(${escapeHtml(proposal.signerEmail)})` : ''}
           <br/>Signed: ${proposal.acceptedAt ? new Date(proposal.acceptedAt).toLocaleString() : 'N/A'}
         </p>
         <p style="margin: 0; font-size: 13px; color: #666;">
-          <strong>Countersigner:</strong> ${proposal.countersignerName ?? 'N/A'} ${proposal.countersignerEmail ? `(${proposal.countersignerEmail})` : ''}
+          <strong>Countersigner:</strong> ${escapeHtml(proposal.countersignerName ?? 'N/A')} ${proposal.countersignerEmail ? `(${escapeHtml(proposal.countersignerEmail)})` : ''}
           <br/>Signed: ${proposal.countersignedAt ? new Date(proposal.countersignedAt).toLocaleString() : 'N/A'}
         </p>
       </div>

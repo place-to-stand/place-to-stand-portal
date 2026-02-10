@@ -278,6 +278,7 @@ export function IntegrationsPanel() {
                 accounts={googleAccounts}
                 onDisconnect={async id => disconnectGoogle.mutateAsync(id)}
                 onAddAccount={handleConnectGoogle}
+                onUpdatePermissions={handleConnectGoogle}
               />
             ) : (
               <div className='flex items-center justify-between'>

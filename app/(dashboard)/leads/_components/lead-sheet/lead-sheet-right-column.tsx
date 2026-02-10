@@ -5,6 +5,7 @@ import type { LeadAssigneeOption, LeadRecord } from '@/lib/leads/types'
 
 import { LeadMeetingsSection } from '../lead-meetings-section'
 import { LeadProposalsSection } from '../lead-proposals-section'
+import type { EditableProposal } from '../proposal-builder/proposal-builder-sheet'
 import { LeadSuggestionsPanel } from '../lead-suggestions-panel'
 import { LeadActionsPanel } from './lead-actions-panel'
 import { LeadTasksSection } from './lead-tasks-section'
@@ -21,6 +22,7 @@ type LeadSheetRightColumnProps = {
   onSendEmail: () => void
   onScheduleMeeting: (initialTitle?: string) => void
   onBuildProposal: () => void
+  onEditProposal: (proposal: EditableProposal) => void
   onConvertToClient: () => void
   onRescore?: () => void
   isRescoring?: boolean
@@ -37,6 +39,7 @@ export function LeadSheetRightColumn({
   onSendEmail,
   onScheduleMeeting,
   onBuildProposal,
+  onEditProposal,
   onConvertToClient,
   onRescore,
   isRescoring = false,
@@ -93,6 +96,7 @@ export function LeadSheetRightColumn({
           lead={lead}
           canManage={canManage}
           senderName={senderName}
+          onEditProposal={onEditProposal}
           onSuccess={onSuccess}
         />
 

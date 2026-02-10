@@ -1,17 +1,10 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { MoreHorizontal, Pencil, Star, Trash2 } from 'lucide-react'
+import { Archive, Pencil } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import {
   Table,
   TableBody,
@@ -81,14 +74,14 @@ export function TemplateTable({ templates, onEdit }: TemplateTableProps) {
 
   return (
     <>
-      <div className="rounded-lg border">
+      <div className="overflow-hidden rounded-xl border">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="bg-muted/40">
               <TableHead>Name</TableHead>
               <TableHead>Category</TableHead>
               <TableHead>Subject</TableHead>
-              <TableHead className="w-[50px]" />
+              <TableHead className="w-32 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -98,7 +91,9 @@ export function TemplateTable({ templates, onEdit }: TemplateTableProps) {
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{template.name}</span>
                     {template.isDefault && (
-                      <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                      <Badge variant="secondary" className="text-xs">
+                        Default
+                      </Badge>
                     )}
                   </div>
                 </TableCell>
@@ -108,29 +103,25 @@ export function TemplateTable({ templates, onEdit }: TemplateTableProps) {
                 <TableCell className="max-w-[300px] truncate text-muted-foreground">
                   {template.subject}
                 </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Open menu</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onEdit(template)}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        className="text-destructive focus:text-destructive"
-                        onClick={() => openDeleteDialog(template)}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => onEdit(template)}
+                      title="Edit template"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      onClick={() => openDeleteDialog(template)}
+                      title="Delete template"
+                    >
+                      <Archive className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

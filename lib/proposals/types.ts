@@ -103,7 +103,8 @@ export interface ProposalContent {
  * Input for creating a proposal from scratch.
  */
 export interface BuildProposalFromScratchInput {
-  leadId: string
+  leadId?: string | null
+  clientId?: string | null
   title: string
 
   // Client info (typically pre-filled from lead)

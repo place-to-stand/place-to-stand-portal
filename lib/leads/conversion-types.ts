@@ -16,6 +16,14 @@ export interface LeadConversionInput {
   billingType: ClientBillingTypeValue
   /** Whether to copy lead notes to client notes */
   copyNotesToClient: boolean
+  /** Whether to create a contact record from the lead */
+  createContact: boolean
+  /** Whether to create a project linked to the new client */
+  createProject: boolean
+  /** Name for the new project (required if createProject is true) */
+  projectName?: string
+  /** Link to an existing client instead of creating a new one */
+  existingClientId?: string
   /** Initial client member user IDs (optional) */
   memberIds?: string[]
 }
@@ -23,5 +31,7 @@ export interface LeadConversionInput {
 export interface LeadConversionResult {
   clientId?: string
   clientSlug?: string
+  projectId?: string
   error?: string
+  warnings?: string[]
 }

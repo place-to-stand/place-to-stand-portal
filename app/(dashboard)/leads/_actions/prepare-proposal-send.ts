@@ -59,7 +59,7 @@ export async function prepareProposalSend(
   }
 
   const baseUrl = serverEnv.APP_BASE_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? ''
-  const shareUrl = `${baseUrl}/p/${shareToken}`
+  const shareUrl = `${baseUrl}/share/proposals/${shareToken}`
 
   // Log activity - fetch lead name for better context
   if (proposal.leadId) {

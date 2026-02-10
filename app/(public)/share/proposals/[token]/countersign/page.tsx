@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
+import { getCurrentUser } from '@/lib/auth/session'
 import { fetchProposalByCountersignToken } from '@/lib/queries/proposals'
 
 import { CountersignClient } from './countersign-client'
@@ -60,6 +61,9 @@ export default async function CountersignPage({ params }: Props) {
     )
   }
 
+  // Pre-fill countersigner details if logged in
+  const currentUser = await getCurrentUser()
+
   return (
     <CountersignClient
       token={token}
@@ -69,6 +73,8 @@ export default async function CountersignPage({ params }: Props) {
       signerEmail={proposal.signerEmail}
       signatureData={proposal.signatureData}
       acceptedAt={proposal.acceptedAt}
+      defaultName={currentUser?.full_name ?? ''}
+      defaultEmail={currentUser?.email ?? ''}
     />
   )
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Loader2, Trash2, Plus } from 'lucide-react'
+import { Loader2, Trash2, Plus, RefreshCw } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -28,6 +28,7 @@ interface ConnectedAccountsListProps {
   accounts: ConnectedAccount[]
   onDisconnect: (id: string) => Promise<void>
   onAddAccount: () => void
+  onUpdatePermissions?: () => void
   isDisconnecting?: string
 }
 
@@ -36,6 +37,7 @@ export function ConnectedAccountsList({
   accounts,
   onDisconnect,
   onAddAccount,
+  onUpdatePermissions,
   isDisconnecting,
 }: ConnectedAccountsListProps) {
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null)
@@ -149,6 +151,18 @@ export function ConnectedAccountsList({
                 >
                   {account.status}
                 </Badge>
+
+                {onUpdatePermissions && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    onClick={onUpdatePermissions}
+                    title="Update permissions"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
+                )}
 
                 <Button
                   variant="ghost"

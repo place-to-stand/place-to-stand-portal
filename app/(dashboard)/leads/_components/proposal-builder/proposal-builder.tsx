@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { addDays, format } from 'date-fns'
@@ -20,6 +20,7 @@ import { Form } from '@/components/ui/form'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useToast } from '@/components/ui/use-toast'
 import type { LeadRecord } from '@/lib/leads/types'
+import type { ClientForProposal } from '@/app/(dashboard)/proposals/_actions/fetch-clients-for-proposals'
 import {
   DEFAULT_HOURLY_RATE,
   DEFAULT_KICKOFF_DAYS,
@@ -121,7 +122,8 @@ type EditableProposal = {
 }
 
 type ProposalBuilderProps = {
-  lead: LeadRecord
+  lead?: LeadRecord
+  client?: ClientForProposal
   existingProposal?: EditableProposal
   onDirtyChange: (isDirty: boolean) => void
   onClose: () => void
@@ -143,11 +145,13 @@ type ExistingProposal = {
 
 export function ProposalBuilder({
   lead,
+  client,
   existingProposal,
   onDirtyChange,
   onClose,
   onSuccess,
 }: ProposalBuilderProps) {
+  const isClientOnly = !lead && !!client
   const isEditing = !!existingProposal
   const { toast } = useToast()
   const [isBuilding, startBuildTransition] = useTransition()
@@ -160,11 +164,12 @@ export function ProposalBuilder({
   const [termsTemplates, setTermsTemplates] = useState<ProposalTemplateRecord[]>([])
   const [defaultTermsTemplateId, setDefaultTermsTemplateId] = useState<string | null>(null)
 
-  // Fetch existing proposals on mount to detect duplicates
+  // Fetch existing proposals on mount to detect duplicates (lead-only)
   useEffect(() => {
+    if (!lead) return
     async function fetchExistingProposals() {
       try {
-        const res = await fetch(`/api/leads/${lead.id}/proposals`)
+        const res = await fetch(`/api/leads/${lead!.id}/proposals`)
         if (!res.ok) throw new Error('Failed to fetch')
         const data = await res.json()
         setExistingProposals(data.proposals ?? [])
@@ -172,11 +177,10 @@ export function ProposalBuilder({
       } catch (err) {
         console.error('Failed to fetch existing proposals for duplicate check:', err)
         setExistingProposalsFetchFailed(true)
-        // Continue without duplicate detection - user will see warning
       }
     }
     fetchExistingProposals()
-  }, [lead.id])
+  }, [lead])
 
   // Fetch all terms templates on mount
   useEffect(() => {
@@ -237,11 +241,16 @@ export function ProposalBuilder({
       }
     }
 
+    // Pre-fill from lead or client
+    const companyName = lead?.companyName ?? client?.name ?? ''
+    const contactName = lead?.contactName ?? client?.primaryContactName ?? ''
+    const contactEmail = lead?.contactEmail ?? client?.primaryContactEmail ?? ''
+
     return {
-      title: `Proposal for ${lead.companyName || lead.contactName}`,
-      clientCompany: lead.companyName ?? '',
-      clientContactName: lead.contactName,
-      clientContactEmail: lead.contactEmail ?? '',
+      title: `Proposal for ${companyName || contactName}`,
+      clientCompany: companyName,
+      clientContactName: contactName,
+      clientContactEmail: contactEmail,
       clientContact2Name: '',
       clientContact2Email: '',
       clientSignatoryName: '',
@@ -262,9 +271,9 @@ export function ProposalBuilder({
       estimatedScopingHours: '',
       kickoffDays: DEFAULT_KICKOFF_DAYS,
       proposalValidUntil: format(addDays(new Date(), 30), 'yyyy-MM-dd'),
-      estimatedValue: lead.estimatedValue ?? undefined,
+      estimatedValue: lead?.estimatedValue ?? undefined,
     }
-  }, [lead, existingProposal, defaultTermsTemplateId])
+  }, [lead, client, existingProposal, defaultTermsTemplateId])
 
   // Form setup
   const form = useForm<ProposalFormValues>({
@@ -375,7 +384,8 @@ export function ProposalBuilder({
         } else {
           // Create new proposal
           const result = await buildProposalFromScratch({
-            leadId: lead.id,
+            leadId: lead?.id ?? null,
+            clientId: client?.id ?? null,
             ...shared,
             includeDefaultRisks: false,
             customRisks: shared.risks,
@@ -399,7 +409,7 @@ export function ProposalBuilder({
         onSuccess()
       })
     },
-    [lead.id, isEditing, existingProposal, buildSharedFields, toast, onSuccess]
+    [lead, client, isEditing, existingProposal, buildSharedFields, toast, onSuccess]
   )
 
   // Handle confirmation of duplicate proposal
@@ -461,8 +471,9 @@ export function ProposalBuilder({
     [form, toast]
   )
 
-  // Handle AI draft generation
+  // Handle AI draft generation (only for lead-based proposals)
   const handleGenerateDraft = useCallback(async () => {
+    if (!lead) return
     setIsGenerating(true)
 
     try {
@@ -544,15 +555,24 @@ export function ProposalBuilder({
     } finally {
       setIsGenerating(false)
     }
-  }, [lead.id, form, toast])
+  }, [lead, form, toast])
+
+  // Auto-generate AI draft on mount when creating a new lead-based proposal (not editing)
+  const hasAutoGenerated = useRef(false)
+  useEffect(() => {
+    if (!isEditing && !isClientOnly && !hasAutoGenerated.current) {
+      hasAutoGenerated.current = true
+      handleGenerateDraft()
+    }
+  }, [isEditing, isClientOnly, handleGenerateDraft])
 
   return (
     <>
       <TooltipProvider delayDuration={300}>
         <Form {...form}>
           <form className="flex min-h-0 flex-1 overflow-hidden">
-            {/* Left Column - Context Panel */}
-            <ContextPanel lead={lead} onInsert={handleContextInsert} />
+            {/* Left Column - Context Panel (only for lead-based proposals) */}
+            {lead && <ContextPanel lead={lead} onInsert={handleContextInsert} />}
 
             {/* Right Column - Editor Panel */}
             <EditorPanel
@@ -560,9 +580,10 @@ export function ProposalBuilder({
               isBuilding={isBuilding}
               isGenerating={isGenerating}
               isEditing={isEditing}
+              isClientOnly={isClientOnly}
               onCancel={onClose}
               onBuild={handleBuildProposal}
-              onGenerateDraft={handleGenerateDraft}
+              onGenerateDraft={lead ? handleGenerateDraft : undefined}
               existingProposalCount={existingProposals.length}
               existingProposalsFetchFailed={existingProposalsFetchFailed}
               termsTemplates={termsTemplates}

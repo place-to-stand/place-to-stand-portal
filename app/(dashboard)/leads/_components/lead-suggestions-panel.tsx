@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import {
   Sparkles,
   Loader2,
@@ -13,11 +14,13 @@ import {
   X,
   Mail,
   Mic,
+  ChevronDown,
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { SuggestionForLead } from '@/lib/queries/suggestions'
 import type { LeadActionType } from '@/lib/types/suggestions'
 
@@ -97,6 +100,7 @@ export function LeadSuggestionsPanel({
   onSendProposal,
 }: LeadSuggestionsPanelProps) {
   const queryClient = useQueryClient()
+  const [showAll, setShowAll] = useState(false)
 
   const { data: suggestions = [], isLoading } = useQuery({
     queryKey: ['lead-suggestions', leadId],
@@ -181,20 +185,20 @@ export function LeadSuggestionsPanel({
         </div>
       ) : (
         <div className='space-y-2'>
-          {suggestions.map(suggestion => {
+          {(showAll ? suggestions : suggestions.slice(0, 3)).map(suggestion => {
             const content = suggestion.suggestedContent as {
               actionType?: LeadActionType
               title?: string
               reasoning?: string
+              priority?: string
             }
             const actionType = content.actionType || 'FOLLOW_UP'
             const Icon = ACTION_ICONS[actionType] || ListTodo
             const iconColor = ACTION_COLORS[actionType] || 'text-muted-foreground'
-            const priorityBadge = PRIORITY_BADGES[
-              (content as { priority?: string }).priority || 'medium'
-            ] || PRIORITY_BADGES.medium
+            const priorityBadge = PRIORITY_BADGES[content.priority || 'medium'] || PRIORITY_BADGES.medium
 
             const isPending = ['PENDING', 'DRAFT', 'MODIFIED'].includes(suggestion.status)
+            const confidencePct = Math.round(parseFloat(suggestion.confidence) * 100)
 
             return (
               <div
@@ -208,9 +212,18 @@ export function LeadSuggestionsPanel({
                       {suggestion.title || content.title || 'Untitled'}
                     </span>
                   </div>
-                  <Badge variant='secondary' className='shrink-0 text-xs'>
-                    {Math.round(parseFloat(suggestion.confidence) * 100)}%
-                  </Badge>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge variant='secondary' className='shrink-0 cursor-help text-xs'>
+                        {confidencePct}%
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent side='left' className='max-w-xs'>
+                      <p className='text-xs'>
+                        {suggestion.reasoning || 'AI confidence score based on lead context and engagement signals.'}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
 
                 {suggestion.reasoning && (
@@ -236,7 +249,6 @@ export function LeadSuggestionsPanel({
                         className='h-7 w-7 text-green-600 hover:bg-green-500/10 hover:text-green-600'
                         onClick={() => {
                           approveMutation.mutate(suggestion.id)
-                          // Open dialog for actionable suggestions
                           if (actionType === 'SCHEDULE_CALL' && onScheduleCall) {
                             onScheduleCall(content.title)
                           } else if (actionType === 'SEND_PROPOSAL' && onSendProposal) {
@@ -265,6 +277,18 @@ export function LeadSuggestionsPanel({
               </div>
             )
           })}
+          {suggestions.length > 3 && (
+            <Button
+              type='button'
+              variant='ghost'
+              size='sm'
+              className='w-full text-muted-foreground'
+              onClick={() => setShowAll(prev => !prev)}
+            >
+              <ChevronDown className={`mr-1.5 h-3.5 w-3.5 transition-transform ${showAll ? 'rotate-180' : ''}`} />
+              {showAll ? 'Show less' : `Show ${suggestions.length - 3} more`}
+            </Button>
+          )}
         </div>
       )}
     </div>

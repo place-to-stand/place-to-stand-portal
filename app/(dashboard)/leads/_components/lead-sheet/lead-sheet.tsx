@@ -20,6 +20,7 @@ import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 
 import { archiveLead, saveLead, rescoreLead } from '../../actions'
+import type { EditableProposal } from '../proposal-builder/proposal-builder-sheet'
 import { LeadSheetDialogs } from './lead-sheet-dialogs'
 import { LeadSheetFormFields } from './lead-sheet-form-fields'
 import { LeadSheetHeader } from './lead-sheet-header'
@@ -47,6 +48,7 @@ export function LeadSheet({
   const [isMeetingDialogOpen, setMeetingDialogOpen] = useState(false)
   const [meetingInitialTitle, setMeetingInitialTitle] = useState<string | undefined>()
   const [isBuildProposalDialogOpen, setBuildProposalDialogOpen] = useState(false)
+  const [editingProposal, setEditingProposal] = useState<EditableProposal | undefined>()
   const { toast } = useToast()
 
   // Track whether we've already consumed the initial action to avoid re-opening on re-renders
@@ -270,6 +272,12 @@ export function LeadSheet({
     setMeetingDialogOpen(true)
   }, [])
 
+  const handleEditProposal = useCallback((proposal: EditableProposal) => {
+    setEditingProposal(proposal)
+    setBuildProposalDialogOpen(true)
+    pushActionUrl('proposals/edit')
+  }, [pushActionUrl])
+
   const {
     requestConfirmation: requestCloseConfirmation,
     dialog: unsavedChangesDialog,
@@ -422,9 +430,11 @@ export function LeadSheet({
                     pushActionUrl('meeting')
                   }}
                   onBuildProposal={() => {
+                    setEditingProposal(undefined)
                     setBuildProposalDialogOpen(true)
                     pushActionUrl('proposals/new')
                   }}
+                  onEditProposal={handleEditProposal}
                   onConvertToClient={() => {
                     setConvertDialogOpen(true)
                     pushActionUrl('convert')
@@ -472,12 +482,17 @@ export function LeadSheet({
           onSuccess()
         }}
         isBuildProposalDialogOpen={isBuildProposalDialogOpen}
+        editingProposal={editingProposal}
         onBuildProposalOpenChange={(next: boolean) => {
           setBuildProposalDialogOpen(next)
-          if (!next) pushLeadUrl()
+          if (!next) {
+            setEditingProposal(undefined)
+            pushLeadUrl()
+          }
         }}
         onProposalSuccess={() => {
           setBuildProposalDialogOpen(false)
+          setEditingProposal(undefined)
           pushLeadUrl()
           onSuccess()
         }}

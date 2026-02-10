@@ -224,11 +224,11 @@ export function SendEmailDialog({
       }
 
       toast({
-        title: scheduleMode === 'later' ? 'Email scheduled' : 'Email queued',
+        title: scheduleMode === 'later' ? 'Email scheduled' : 'Email sent',
         description:
           scheduleMode === 'later'
             ? `Email will be sent at ${format(new Date(scheduledAt), 'PPp')}`
-            : 'Your email has been queued for delivery.',
+            : 'Your email has been sent.',
       })
 
       onOpenChange(false)
@@ -329,6 +329,7 @@ export function SendEmailDialog({
               value={toEmail}
               onChange={e => setToEmail(e.target.value)}
               placeholder="recipient@example.com"
+              disabled={isGenerating}
             />
           </div>
 
@@ -340,6 +341,7 @@ export function SendEmailDialog({
               value={subject}
               onChange={e => setSubject(e.target.value)}
               placeholder="Email subject line"
+              disabled={isGenerating}
             />
           </div>
 
@@ -354,7 +356,10 @@ export function SendEmailDialog({
                 </div>
               )}
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto rounded-md border">
+            <div className={cn(
+              "min-h-0 flex-1 overflow-y-auto rounded-md border",
+              isGenerating && "pointer-events-none opacity-60"
+            )}>
               <RichTextEditor
                 id="email-body"
                 value={bodyHtml}

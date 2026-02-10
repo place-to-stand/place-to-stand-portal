@@ -6,7 +6,9 @@ import { z } from 'zod'
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { leads } from '@/lib/db/schema'
+import { clients, leads } from '@/lib/db/schema'
+import { logActivity } from '@/lib/activity/logger'
+import { proposalCreatedEvent } from '@/lib/activity/events'
 import { generateProposalFromScratch } from '@/lib/proposals/generate-from-scratch'
 import type { Proposal } from '@/lib/queries/proposals'
 
@@ -35,7 +37,8 @@ const termsSectionSchema = z.object({
 })
 
 const buildProposalSchema = z.object({
-  leadId: z.string().uuid(),
+  leadId: z.string().uuid().optional().nullable(),
+  clientId: z.string().uuid().optional().nullable(),
   title: z.string().trim().min(1, 'Proposal title is required').max(200),
 
   // Client info
@@ -110,20 +113,40 @@ export async function buildProposalFromScratch(
 
   const data = parsed.data
 
-  // Verify lead exists
-  const leadRows = await db
-    .select({ id: leads.id })
-    .from(leads)
-    .where(and(eq(leads.id, data.leadId), isNull(leads.deletedAt)))
-    .limit(1)
+  if (!data.leadId && !data.clientId) {
+    return { success: false, error: 'Either a lead or client is required.' }
+  }
 
-  if (leadRows.length === 0) {
-    return { success: false, error: 'Lead not found.' }
+  // Verify lead or client exists
+  if (data.leadId) {
+    const leadRows = await db
+      .select({ id: leads.id })
+      .from(leads)
+      .where(and(eq(leads.id, data.leadId), isNull(leads.deletedAt)))
+      .limit(1)
+
+    if (leadRows.length === 0) {
+      return { success: false, error: 'Lead not found.' }
+    }
+  }
+
+  if (data.clientId) {
+    const clientRows = await db
+      .select({ id: clients.id })
+      .from(clients)
+      .where(and(eq(clients.id, data.clientId), isNull(clients.deletedAt)))
+      .limit(1)
+
+    if (clientRows.length === 0) {
+      return { success: false, error: 'Client not found.' }
+    }
   }
 
   // Clean up optional empty strings
   const cleanedInput = {
     ...data,
+    leadId: data.leadId ?? undefined,
+    clientId: data.clientId ?? undefined,
     clientContact2Email: data.clientContact2Email || undefined,
     clientContact2Name: data.clientContact2Name || undefined,
     clientSignatoryName: data.clientSignatoryName || undefined,
@@ -133,6 +156,22 @@ export async function buildProposalFromScratch(
     const result = await generateProposalFromScratch({
       userId: user.id,
       input: cleanedInput,
+    })
+
+    const event = proposalCreatedEvent({
+      title: data.title,
+      leadName: data.clientCompany,
+      estimatedValue: data.estimatedValue !== undefined ? String(data.estimatedValue) : null,
+    })
+
+    await logActivity({
+      actorId: user.id,
+      actorRole: user.role,
+      verb: event.verb,
+      summary: event.summary,
+      targetType: 'PROPOSAL',
+      targetId: result.proposal.id,
+      metadata: event.metadata,
     })
 
     revalidateLeadsPath()

@@ -9,22 +9,25 @@ import { Button } from '@/components/ui/button'
 import type { ProposalWithRelations } from '@/lib/queries/proposals'
 import type { LeadRecord } from '@/lib/leads/types'
 
+import type { ClientForProposal } from '../_actions/fetch-clients-for-proposals'
 import { ProposalsPipelineSummary } from './proposals-pipeline-summary'
 import { ProposalsTable } from './proposals-table'
 import { ProposalsTabsNav } from './proposals-tabs-nav'
-import { LeadPickerDialog } from './lead-picker-dialog'
+import { LeadPickerDialog, type ProposalTarget } from './lead-picker-dialog'
 import { ProposalBuilderSheet } from '../../leads/_components/proposal-builder/proposal-builder-sheet'
 
 type ProposalsContentProps = {
   proposals: ProposalWithRelations[]
   leads: LeadRecord[]
+  clients: ClientForProposal[]
   senderName: string
 }
 
-export function ProposalsContent({ proposals, leads, senderName }: ProposalsContentProps) {
+export function ProposalsContent({ proposals, leads, clients, senderName }: ProposalsContentProps) {
   const router = useRouter()
   const [pickerOpen, setPickerOpen] = useState(false)
   const [selectedLead, setSelectedLead] = useState<LeadRecord | null>(null)
+  const [selectedClient, setSelectedClient] = useState<ClientForProposal | null>(null)
   const [editingProposal, setEditingProposal] = useState<ProposalWithRelations | null>(null)
   const [builderOpen, setBuilderOpen] = useState(false)
 
@@ -33,17 +36,30 @@ export function ProposalsContent({ proposals, leads, senderName }: ProposalsCont
     setPickerOpen(true)
   }
 
-  const handleLeadSelected = (lead: LeadRecord) => {
-    setSelectedLead(lead)
+  const handleTargetSelected = (target: ProposalTarget) => {
+    if (target.type === 'lead') {
+      setSelectedLead(target.lead)
+      setSelectedClient(null)
+    } else {
+      setSelectedClient(target.client)
+      setSelectedLead(null)
+    }
     setPickerOpen(false)
     setBuilderOpen(true)
   }
 
   const handleEditProposal = (proposal: ProposalWithRelations) => {
+    // Try to find the lead for context
     const lead = leads.find(l => l.id === proposal.leadId)
-    if (!lead) return
+    // If no lead, try to find the client
+    const client = !lead
+      ? clients.find(c => c.id === proposal.clientId)
+      : null
 
-    setSelectedLead(lead)
+    if (!lead && !client) return
+
+    setSelectedLead(lead ?? null)
+    setSelectedClient(client ?? null)
     setEditingProposal(proposal)
     setBuilderOpen(true)
   }
@@ -52,6 +68,7 @@ export function ProposalsContent({ proposals, leads, senderName }: ProposalsCont
     if (!open) {
       setBuilderOpen(false)
       setSelectedLead(null)
+      setSelectedClient(null)
       setEditingProposal(null)
     }
   }
@@ -59,6 +76,7 @@ export function ProposalsContent({ proposals, leads, senderName }: ProposalsCont
   const handleBuilderSuccess = () => {
     setBuilderOpen(false)
     setSelectedLead(null)
+    setSelectedClient(null)
     setEditingProposal(null)
     router.refresh()
   }
@@ -103,14 +121,16 @@ export function ProposalsContent({ proposals, leads, senderName }: ProposalsCont
 
       <LeadPickerDialog
         leads={leads}
+        clients={clients}
         open={pickerOpen}
         onOpenChange={setPickerOpen}
-        onSelect={handleLeadSelected}
+        onSelect={handleTargetSelected}
       />
 
-      {selectedLead && (
+      {(selectedLead || selectedClient) && (
         <ProposalBuilderSheet
-          lead={selectedLead}
+          lead={selectedLead ?? undefined}
+          client={selectedClient ?? undefined}
           existingProposal={editingProposal ?? undefined}
           open={builderOpen}
           onOpenChange={handleBuilderClose}

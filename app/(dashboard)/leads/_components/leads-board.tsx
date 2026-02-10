@@ -39,6 +39,7 @@ type LeadsBoardProps = {
   canManage: boolean
   onEditLead: (lead: LeadRecord) => void
   onCreateLead?: (status: LeadStatusValue) => void
+  onLeadClosedWon?: (lead: LeadRecord) => void
   activeLeadId: string | null
 }
 
@@ -47,6 +48,7 @@ export function LeadsBoard({
   canManage,
   onEditLead,
   onCreateLead,
+  onLeadClosedWon,
   activeLeadId,
 }: LeadsBoardProps) {
   const { sensors } = useProjectsBoardSensors()
@@ -177,6 +179,8 @@ export function LeadsBoard({
         return
       }
 
+      const movedLead = findLeadById(result.previousColumns, leadId)
+
       startTransition(async () => {
         const response = await moveLead({
           leadId,
@@ -194,11 +198,21 @@ export function LeadsBoard({
           })
         } else {
           columnsRef.current = result.nextColumns
+
+          if (
+            result.targetColumnId === 'CLOSED_WON' &&
+            movedLead &&
+            !movedLead.convertedToClientId &&
+            onLeadClosedWon
+          ) {
+            onLeadClosedWon(movedLead)
+          }
         }
       })
     },
     [
       canManage,
+      onLeadClosedWon,
       scheduleRecentlyMovedReset,
       setDropPreview,
       setRecentlyMovedLeadId,

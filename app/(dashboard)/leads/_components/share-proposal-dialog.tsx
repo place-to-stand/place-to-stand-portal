@@ -52,7 +52,7 @@ export function ShareProposalDialog({
   }, [shareToken, shareEnabled])
 
   const shareUrl = currentToken
-    ? `${typeof window !== 'undefined' ? window.location.origin : ''}/p/${currentToken}`
+    ? `${typeof window !== 'undefined' ? window.location.origin : ''}/share/proposals/${currentToken}`
     : null
 
   const handleEnableSharing = useCallback(async () => {
