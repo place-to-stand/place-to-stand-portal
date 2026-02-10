@@ -7,7 +7,7 @@ import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { leads, leadStageHistory } from '@/lib/db/schema'
-import { LEAD_STATUS_VALUES } from '@/lib/leads/constants'
+import { LEAD_STATUS_VALUES, isTerminalLeadStatus } from '@/lib/leads/constants'
 import { normalizeRank } from '@/lib/rank'
 
 import { revalidateLeadsPath } from './utils'
@@ -71,11 +71,7 @@ export async function moveLead(input: MoveLeadInput): Promise<LeadActionResult> 
     if (statusChanged) {
       setPayload.currentStageEnteredAt = now
 
-      if (
-        parsed.data.targetStatus === 'CLOSED_WON' ||
-        parsed.data.targetStatus === 'CLOSED_LOST' ||
-        parsed.data.targetStatus === 'UNQUALIFIED'
-      ) {
+      if (isTerminalLeadStatus(parsed.data.targetStatus)) {
         setPayload.resolvedAt = now
       }
 
@@ -90,6 +86,15 @@ export async function moveLead(input: MoveLeadInput): Promise<LeadActionResult> 
         if (fullLead[0] && !fullLead[0].convertedAt) {
           setPayload.convertedAt = now
         }
+      }
+
+      // Reset conversion/resolution fields when moving back to an active stage
+      if (isTerminalLeadStatus(current.status) && !isTerminalLeadStatus(parsed.data.targetStatus)) {
+        setPayload.resolvedAt = null
+        setPayload.convertedAt = null
+        setPayload.convertedToClientId = null
+        setPayload.lossReason = null
+        setPayload.lossNotes = null
       }
     }
 

@@ -10,6 +10,7 @@ import { leads, leadStageHistory } from '@/lib/db/schema'
 import {
   LEAD_SOURCE_TYPES,
   LEAD_STATUS_VALUES,
+  isTerminalLeadStatus,
   type LeadSourceTypeValue,
   type LeadStatusValue,
 } from '@/lib/leads/constants'
@@ -148,12 +149,17 @@ export async function saveLead(input: SaveLeadInput): Promise<LeadActionResult> 
       if (statusChanged) {
         setPayload.currentStageEnteredAt = timestamp
 
-        if (
-          normalized.status === 'CLOSED_WON' ||
-          normalized.status === 'CLOSED_LOST' ||
-          normalized.status === 'UNQUALIFIED'
-        ) {
+        if (isTerminalLeadStatus(normalized.status)) {
           setPayload.resolvedAt = timestamp
+        }
+
+        // Reset conversion/resolution fields when moving back to an active stage
+        if (isTerminalLeadStatus(existing.status) && !isTerminalLeadStatus(normalized.status)) {
+          setPayload.resolvedAt = null
+          setPayload.convertedAt = null
+          setPayload.convertedToClientId = null
+          setPayload.lossReason = null
+          setPayload.lossNotes = null
         }
       }
 
