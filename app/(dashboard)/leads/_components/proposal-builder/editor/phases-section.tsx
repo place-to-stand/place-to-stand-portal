@@ -352,67 +352,72 @@ export function PhasesSection({ form }: PhasesSectionProps) {
     })
   }, [append, fields.length])
 
+  // IMPORTANT: Read current form values via form.getValues() instead of `fields`.
+  // The `fields` array from useFieldArray is a snapshot that does NOT update when
+  // users type into form.register() inputs. Using `fields` in update() would
+  // overwrite title/purpose with stale initial values.
+
   const handleTogglePhase = useCallback(
     (index: number) => {
-      const phase = fields[index]
-      if (phase) {
-        update(index, { ...phase, isOpen: !phase.isOpen })
+      const current = form.getValues(`phases.${index}`)
+      if (current) {
+        update(index, { ...current, isOpen: !(current.isOpen ?? true) })
       }
     },
-    [fields, update]
+    [form, update]
   )
 
   const handleAddDeliverable = useCallback(
     (phaseIndex: number) => {
-      const phase = fields[phaseIndex]
-      if (phase) {
+      const current = form.getValues(`phases.${phaseIndex}`)
+      if (current) {
         update(phaseIndex, {
-          ...phase,
-          deliverables: [...phase.deliverables, ''],
+          ...current,
+          deliverables: [...current.deliverables, ''],
         })
       }
     },
-    [fields, update]
+    [form, update]
   )
 
   const handleRemoveDeliverable = useCallback(
     (phaseIndex: number, deliverableIndex: number) => {
-      const phase = fields[phaseIndex]
-      if (phase && phase.deliverables.length > 1) {
+      const current = form.getValues(`phases.${phaseIndex}`)
+      if (current && current.deliverables.length > 1) {
         update(phaseIndex, {
-          ...phase,
-          deliverables: phase.deliverables.filter(
-            (_, i) => i !== deliverableIndex
+          ...current,
+          deliverables: current.deliverables.filter(
+            (_: string, i: number) => i !== deliverableIndex
           ),
         })
       }
     },
-    [fields, update]
+    [form, update]
   )
 
   const handleUpdateDeliverable = useCallback(
     (phaseIndex: number, deliverableIndex: number, value: string) => {
-      const phase = fields[phaseIndex]
-      if (phase) {
-        const newDeliverables = [...phase.deliverables]
+      const current = form.getValues(`phases.${phaseIndex}`)
+      if (current) {
+        const newDeliverables = [...current.deliverables]
         newDeliverables[deliverableIndex] = value
-        update(phaseIndex, { ...phase, deliverables: newDeliverables })
+        update(phaseIndex, { ...current, deliverables: newDeliverables })
       }
     },
-    [fields, update]
+    [form, update]
   )
 
   const handleReorderDeliverables = useCallback(
     (phaseIndex: number, oldIndex: number, newIndex: number) => {
-      const phase = fields[phaseIndex]
-      if (phase) {
-        const newDeliverables = [...phase.deliverables]
+      const current = form.getValues(`phases.${phaseIndex}`)
+      if (current) {
+        const newDeliverables = [...current.deliverables]
         const [moved] = newDeliverables.splice(oldIndex, 1)
         newDeliverables.splice(newIndex, 0, moved)
-        update(phaseIndex, { ...phase, deliverables: newDeliverables })
+        update(phaseIndex, { ...current, deliverables: newDeliverables })
       }
     },
-    [fields, update]
+    [form, update]
   )
 
   return (

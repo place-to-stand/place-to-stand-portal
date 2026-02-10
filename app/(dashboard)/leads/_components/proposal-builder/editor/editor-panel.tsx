@@ -21,6 +21,7 @@ type EditorPanelProps = {
   isBuilding: boolean
   isGenerating: boolean
   isEditing?: boolean
+  isClientOnly?: boolean
   onCancel: () => void
   onBuild: () => void
   onGenerateDraft?: () => void
@@ -34,6 +35,7 @@ export function EditorPanel({
   isBuilding,
   isGenerating,
   isEditing = false,
+  isClientOnly = false,
   onCancel,
   onBuild,
   onGenerateDraft,
@@ -57,7 +59,7 @@ export function EditorPanel({
                   : 'Fill in the proposal details'}
               </p>
             </div>
-            {onGenerateDraft && (
+            {(onGenerateDraft || isClientOnly) && (
               <div className="flex items-center gap-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -67,7 +69,7 @@ export function EditorPanel({
                       size="sm"
                       className="gap-2"
                       onClick={onGenerateDraft}
-                      disabled={isGenerating || isBuilding}
+                      disabled={isGenerating || isBuilding || isClientOnly}
                     >
                       {isGenerating ? (
                         <>
@@ -83,7 +85,11 @@ export function EditorPanel({
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">
-                    <p>Use AI to generate a proposal draft from lead context</p>
+                    <p>
+                      {isClientOnly
+                        ? 'AI drafts require a linked lead with notes, emails, or transcripts'
+                        : 'Use AI to generate a proposal draft from lead context'}
+                    </p>
                   </TooltipContent>
                 </Tooltip>
               </div>

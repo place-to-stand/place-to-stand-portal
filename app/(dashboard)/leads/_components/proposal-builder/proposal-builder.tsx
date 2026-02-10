@@ -580,6 +580,7 @@ export function ProposalBuilder({
               isBuilding={isBuilding}
               isGenerating={isGenerating}
               isEditing={isEditing}
+              isClientOnly={isClientOnly}
               onCancel={onClose}
               onBuild={handleBuildProposal}
               onGenerateDraft={lead ? handleGenerateDraft : undefined}
