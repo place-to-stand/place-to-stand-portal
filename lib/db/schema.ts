@@ -181,6 +181,24 @@ export const leadLossReason = pgEnum('lead_loss_reason', [
   'OTHER',
 ])
 
+// Invoice status
+export const invoiceStatus = pgEnum('invoice_status', [
+  'DRAFT',
+  'SENT',
+  'VIEWED',
+  'PAID',
+  'PARTIALLY_PAID',
+  'REFUNDED',
+  'VOID',
+])
+
+// Invoice line item type
+export const lineItemType = pgEnum('line_item_type', [
+  'HOURS_PREPAID',
+  'HOURS_WORKED',
+  'CUSTOM',
+])
+
 // =============================================================================
 // CORE TABLES
 // =============================================================================
@@ -1630,6 +1648,168 @@ export const proposals = pgTable(
       foreignColumns: [users.id],
       name: 'proposals_created_by_fkey',
     }),
+  ]
+)
+
+// =============================================================================
+// INVOICES & BILLING
+// =============================================================================
+
+export const billingSettings = pgTable(
+  'billing_settings',
+  {
+    id: uuid().primaryKey().notNull(),
+    hourlyRate: numeric('hourly_rate', { precision: 12, scale: 2 })
+      .default('200.00')
+      .notNull(),
+    companyName: text('company_name'),
+    companyAddress: text('company_address'),
+    companyLogoUrl: text('company_logo_url'),
+    defaultPaymentTermsDays: integer('default_payment_terms_days').default(30),
+    invoiceNumberPrefix: text('invoice_number_prefix').default('INV'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedBy: uuid('updated_by'),
+  },
+  table => [
+    foreignKey({
+      columns: [table.updatedBy],
+      foreignColumns: [users.id],
+      name: 'billing_settings_updated_by_fkey',
+    }).onDelete('set null'),
+    check(
+      'billing_settings_singleton',
+      sql`id = '00000000-0000-0000-0000-000000000001'::uuid`
+    ),
+  ]
+)
+
+export const invoices = pgTable(
+  'invoices',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    clientId: uuid('client_id').notNull(),
+    status: invoiceStatus().default('DRAFT').notNull(),
+    invoiceNumber: text('invoice_number'),
+    billingPeriodStart: date('billing_period_start'),
+    billingPeriodEnd: date('billing_period_end'),
+    subtotal: numeric('subtotal', { precision: 12, scale: 2 })
+      .default('0')
+      .notNull(),
+    tax: numeric('tax', { precision: 12, scale: 2 }).default('0').notNull(),
+    total: numeric('total', { precision: 12, scale: 2 }).default('0').notNull(),
+    currency: varchar('currency', { length: 3 }).default('USD'),
+    dueDate: date('due_date'),
+    paidAt: timestamp('paid_at', { withTimezone: true, mode: 'string' }),
+    sentAt: timestamp('sent_at', { withTimezone: true, mode: 'string' }),
+    shareToken: varchar('share_token', { length: 64 }).unique(),
+    shareEnabled: boolean('share_enabled').default(false),
+    stripePaymentIntentId: text('stripe_payment_intent_id'),
+    stripePaymentStatus: text('stripe_payment_status'),
+    paymentMethod: text('payment_method'),
+    notes: text('notes'),
+    createdBy: uuid('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    index('idx_invoices_client')
+      .using('btree', table.clientId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_invoices_status')
+      .using('btree', table.status.asc().nullsLast())
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_invoices_share_token')
+      .using('btree', table.shareToken.asc().nullsLast())
+      .where(
+        sql`(deleted_at IS NULL AND share_token IS NOT NULL AND share_enabled = true)`
+      ),
+    index('idx_invoices_billing_period')
+      .using(
+        'btree',
+        table.billingPeriodStart.asc().nullsLast(),
+        table.billingPeriodEnd.asc().nullsLast()
+      )
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_invoices_created_by')
+      .using('btree', table.createdBy.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_invoices_due_date')
+      .using('btree', table.dueDate.asc().nullsLast())
+      .where(
+        sql`(deleted_at IS NULL AND status NOT IN ('PAID', 'VOID', 'REFUNDED'))`
+      ),
+    uniqueIndex('idx_invoices_stripe_payment_intent')
+      .using(
+        'btree',
+        table.stripePaymentIntentId.asc().nullsLast().op('text_ops')
+      )
+      .where(sql`(stripe_payment_intent_id IS NOT NULL)`),
+    unique('invoices_invoice_number_key').on(table.invoiceNumber),
+    foreignKey({
+      columns: [table.clientId],
+      foreignColumns: [clients.id],
+      name: 'invoices_client_id_fkey',
+    }),
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [users.id],
+      name: 'invoices_created_by_fkey',
+    }),
+    check(
+      'invoices_invoice_number_format',
+      sql`(invoice_number IS NULL) OR (invoice_number ~ '^[A-Z0-9]{2,10}-[0-9]{4}-[0-9]{4,}$')`
+    ),
+  ]
+)
+
+export const invoiceLineItems = pgTable(
+  'invoice_line_items',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    invoiceId: uuid('invoice_id').notNull(),
+    type: lineItemType().notNull(),
+    description: text().notNull(),
+    quantity: numeric('quantity', { precision: 8, scale: 2 }).notNull(),
+    unitPrice: numeric('unit_price', { precision: 12, scale: 2 }).notNull(),
+    amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
+    hourBlockId: uuid('hour_block_id'),
+    metadata: jsonb(),
+    sortOrder: integer('sort_order').default(0).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    index('idx_invoice_line_items_invoice')
+      .using('btree', table.invoiceId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_invoice_line_items_hour_block')
+      .using('btree', table.hourBlockId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND hour_block_id IS NOT NULL)`),
+    foreignKey({
+      columns: [table.invoiceId],
+      foreignColumns: [invoices.id],
+      name: 'invoice_line_items_invoice_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.hourBlockId],
+      foreignColumns: [hourBlocks.id],
+      name: 'invoice_line_items_hour_block_id_fkey',
+    }).onDelete('set null'),
   ]
 )
 

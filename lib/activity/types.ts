@@ -41,6 +41,7 @@ export type ActivityTargetType =
   | 'USER'
   | 'SETTINGS'
   | 'GENERAL'
+  | 'INVOICE'
 
 export const ActivityVerbs = {
   TASK_CREATED: 'TASK_CREATED',
@@ -121,6 +122,13 @@ export const ActivityVerbs = {
   LEAD_RESTORED: 'LEAD_RESTORED',
   LEAD_SUGGESTION_APPROVED: 'LEAD_SUGGESTION_APPROVED',
   LEAD_SUGGESTION_DISMISSED: 'LEAD_SUGGESTION_DISMISSED',
+  // Invoice events
+  INVOICE_CREATED: 'INVOICE_CREATED',
+  INVOICE_SENT: 'INVOICE_SENT',
+  INVOICE_PAID: 'INVOICE_PAID',
+  INVOICE_VOIDED: 'INVOICE_VOIDED',
+  INVOICE_REFUNDED: 'INVOICE_REFUNDED',
+  MONTHLY_INVOICES_GENERATED: 'MONTHLY_INVOICES_GENERATED',
 } as const
 
 export type ActivityVerb = (typeof ActivityVerbs)[keyof typeof ActivityVerbs]
