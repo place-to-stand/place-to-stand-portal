@@ -121,6 +121,9 @@ export const ActivityVerbs = {
   LEAD_RESTORED: 'LEAD_RESTORED',
   LEAD_SUGGESTION_APPROVED: 'LEAD_SUGGESTION_APPROVED',
   LEAD_SUGGESTION_DISMISSED: 'LEAD_SUGGESTION_DISMISSED',
+  // Worker deployment events
+  WORKER_PLAN_REQUESTED: 'WORKER_PLAN_REQUESTED',
+  WORKER_IMPLEMENT_REQUESTED: 'WORKER_IMPLEMENT_REQUESTED',
 } as const
 
 export type ActivityVerb = (typeof ActivityVerbs)[keyof typeof ActivityVerbs]

@@ -1,0 +1,62 @@
+/**
+ * Compose a @pts-worker comment body for GitHub issues.
+ */
+
+const MAX_DESCRIPTION_LENGTH = 2000
+
+type WorkerModel = 'opus' | 'sonnet' | 'haiku'
+
+export function composeWorkerComment(params: {
+  mode: 'plan' | 'implement'
+  model: WorkerModel
+  taskTitle: string
+  taskDescription: string | null
+  customPrompt?: string
+}): string {
+  const { mode, model, taskTitle, taskDescription, customPrompt } = params
+
+  const modelFlag = `/model/${model}`
+  const planFlag = mode === 'plan' ? ' /plan' : ''
+
+  // Custom prompt takes precedence
+  if (customPrompt) {
+    return `@pts-worker ${modelFlag}${planFlag}\n\n${customPrompt}`
+  }
+
+  // "Implement the plan" (accept plan)
+  if (mode === 'implement') {
+    return `@pts-worker ${modelFlag}\n\nImplement the plan from the previous comment.`
+  }
+
+  // Plan request — include task context
+  const lines: string[] = [`@pts-worker ${modelFlag} /plan`]
+  lines.push('')
+  lines.push(`## Task: ${taskTitle}`)
+
+  if (taskDescription) {
+    const plainText = stripHtml(taskDescription)
+    const truncated =
+      plainText.length > MAX_DESCRIPTION_LENGTH
+        ? `${plainText.slice(0, MAX_DESCRIPTION_LENGTH)}…`
+        : plainText
+    lines.push('')
+    lines.push('### Description')
+    lines.push(truncated)
+  }
+
+  return lines.join('\n')
+}
+
+/** Naive HTML-to-plain-text: strip tags, decode common entities. */
+function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}

@@ -44,6 +44,7 @@ type TaskSheetFormProps = {
   maxAttachmentSize: number
   attachmentsDisabledReason: string | null
   isDragActive: boolean
+  isDeployOpen?: boolean
 }
 
 export function TaskSheetForm(props: TaskSheetFormProps) {
@@ -76,6 +77,7 @@ export function TaskSheetForm(props: TaskSheetFormProps) {
     maxAttachmentSize,
     attachmentsDisabledReason,
     isDragActive,
+    isDeployOpen,
   } = props
 
   const handleSave = useCallback(
@@ -161,6 +163,7 @@ export function TaskSheetForm(props: TaskSheetFormProps) {
           deleteDisabled={deleteDisabled}
           deleteDisabledReason={deleteDisabledReason}
           onRequestDelete={onRequestDelete}
+          isDeployOpen={isDeployOpen}
         />
       </form>
     </Form>

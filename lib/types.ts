@@ -68,6 +68,8 @@ export type DbTask = {
   deleted_at: string | null
   accepted_at: string | null
   rank: string
+  github_issue_number: number | null
+  github_issue_url: string | null
 }
 
 export type DbUser = {
