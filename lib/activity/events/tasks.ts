@@ -142,3 +142,35 @@ export const taskCommentDeletedEvent = (
     ? `Removed a comment from "${args.taskTitle}"`
     : 'Removed a comment',
 })
+
+export const workerPlanRequestedEvent = (args: {
+  taskTitle: string
+  model: string
+  repoFullName: string
+  issueNumber: number
+}): ActivityEvent => ({
+  verb: ActivityVerbs.WORKER_PLAN_REQUESTED,
+  summary: `Requested worker plan for "${args.taskTitle}" on ${args.repoFullName}#${args.issueNumber}`,
+  metadata: toMetadata({
+    model: args.model,
+    repoFullName: args.repoFullName,
+    issueNumber: args.issueNumber,
+  }),
+})
+
+export const workerImplementRequestedEvent = (args: {
+  taskTitle: string
+  model: string
+  repoFullName: string
+  issueNumber: number
+  hasCustomPrompt: boolean
+}): ActivityEvent => ({
+  verb: ActivityVerbs.WORKER_IMPLEMENT_REQUESTED,
+  summary: `Requested worker implementation for "${args.taskTitle}" on ${args.repoFullName}#${args.issueNumber}`,
+  metadata: toMetadata({
+    model: args.model,
+    repoFullName: args.repoFullName,
+    issueNumber: args.issueNumber,
+    hasCustomPrompt: args.hasCustomPrompt,
+  }),
+})

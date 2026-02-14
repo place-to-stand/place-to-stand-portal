@@ -2,6 +2,7 @@ import { Archive, Redo2, Undo2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { cn } from '@/lib/utils'
 
 export type TaskSheetFormFooterProps = {
   saveLabel: string
@@ -16,6 +17,7 @@ export type TaskSheetFormFooterProps = {
   deleteDisabledReason: string | null
   onRequestDelete: () => void
   deleteAriaLabel?: string
+  isDeployOpen?: boolean
 }
 
 export function TaskSheetFormFooter(props: TaskSheetFormFooterProps) {
@@ -32,12 +34,16 @@ export function TaskSheetFormFooter(props: TaskSheetFormFooterProps) {
     deleteDisabledReason,
     onRequestDelete,
     deleteAriaLabel,
+    isDeployOpen,
   } = props
 
   const destructiveLabel = deleteAriaLabel ?? 'Archive task'
 
   return (
-    <div className='border-border/40 bg-muted/95 supports-backdrop-filter:bg-muted/90 fixed right-0 bottom-0 z-50 w-full border-t shadow-lg backdrop-blur sm:max-w-[676px]'>
+    <div className={cn(
+      'border-border/40 bg-muted/95 supports-backdrop-filter:bg-muted/90 fixed bottom-0 z-50 w-full border-t shadow-lg backdrop-blur sm:max-w-[676px]',
+      isDeployOpen ? 'right-[calc(676px*0.6)]' : 'right-0'
+    )}>
       <div className='flex w-full items-center justify-between gap-3 px-6 py-4'>
         <div className='flex items-center gap-2'>
           <DisabledFieldTooltip

@@ -462,6 +462,8 @@ export const tasks = pgTable(
       mode: 'string',
     }),
     rank: text().default('zzzzzzzz').notNull(),
+    githubIssueNumber: integer('github_issue_number'),
+    githubIssueUrl: text('github_issue_url'),
   },
   table => [
     index('idx_tasks_created_by')

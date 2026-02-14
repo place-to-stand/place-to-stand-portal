@@ -239,6 +239,91 @@ export async function branchExists(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Issue & Comment helpers (for pts-worker integration)
+// ---------------------------------------------------------------------------
+
+interface GitHubIssue {
+  number: number
+  html_url: string
+}
+
+interface GitHubCommentResult {
+  id: number
+  html_url: string
+}
+
+export interface GitHubComment {
+  id: number
+  body: string
+  user: { login: string; avatar_url: string }
+  created_at: string
+  html_url: string
+}
+
+/**
+ * Create a GitHub issue
+ */
+export async function createIssue(
+  userId: string,
+  owner: string,
+  repo: string,
+  params: { title: string; body: string; labels?: string[] },
+  connectionId?: string
+): Promise<GitHubIssue> {
+  return githubFetch(
+    userId,
+    `/repos/${owner}/${repo}/issues`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    },
+    connectionId
+  )
+}
+
+/**
+ * Create a comment on a GitHub issue
+ */
+export async function createIssueComment(
+  userId: string,
+  owner: string,
+  repo: string,
+  issueNumber: number,
+  body: string,
+  connectionId?: string
+): Promise<GitHubCommentResult> {
+  return githubFetch(
+    userId,
+    `/repos/${owner}/${repo}/issues/${issueNumber}/comments`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ body }),
+    },
+    connectionId
+  )
+}
+
+/**
+ * List comments on a GitHub issue
+ */
+export async function listIssueComments(
+  userId: string,
+  owner: string,
+  repo: string,
+  issueNumber: number,
+  connectionId?: string
+): Promise<GitHubComment[]> {
+  return githubFetch(
+    userId,
+    `/repos/${owner}/${repo}/issues/${issueNumber}/comments?per_page=100`,
+    {},
+    connectionId
+  )
+}
+
 /**
  * Get the default connection ID for a user
  */

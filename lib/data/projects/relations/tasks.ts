@@ -25,6 +25,8 @@ export type TaskRow = {
   createdAt: string
   updatedAt: string
   deletedAt: string | null
+  githubIssueNumber: number | null
+  githubIssueUrl: string | null
   commentCount: number
   attachmentCount: number
 }
@@ -61,6 +63,8 @@ export async function loadTaskRows(
     createdAt: tasksTable.createdAt,
     updatedAt: tasksTable.updatedAt,
     deletedAt: tasksTable.deletedAt,
+    githubIssueNumber: tasksTable.githubIssueNumber,
+    githubIssueUrl: tasksTable.githubIssueUrl,
     commentCount: sql<number>`(
       select coalesce(count(*), 0)
       from ${taskCommentsTable}
@@ -136,6 +140,8 @@ export function mapTaskRowsToRaw(
       created_at: row.createdAt,
       updated_at: row.updatedAt,
       deleted_at: row.deletedAt,
+      github_issue_number: row.githubIssueNumber,
+      github_issue_url: row.githubIssueUrl,
       assignees: assigneesByTask.get(row.id) ?? [],
       comment_count: Number(row.commentCount ?? 0),
       attachment_count: Number(row.attachmentCount ?? 0),
