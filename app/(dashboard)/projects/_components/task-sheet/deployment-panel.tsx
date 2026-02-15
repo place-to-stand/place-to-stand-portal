@@ -193,9 +193,9 @@ export function DeploymentPanel({ task, githubRepos, onClose }: DeploymentPanelP
   }, [toast, queryClient, deploymentsQueryKey])
 
   return (
-    <div className='flex h-full w-[560px] shrink-0 flex-col border-l'>
+    <div className='flex h-full w-[560px] shrink-0 flex-col border-l bg-muted/50'>
       {/* Header */}
-      <div className='flex items-center justify-between border-b px-4 py-3'>
+      <div className='flex items-center justify-between border-b bg-background/60 px-4 py-3'>
         <div className='flex items-center gap-2'>
           <Bot className='h-4 w-4' />
           <span className='text-sm font-semibold'>Deployment</span>
@@ -282,25 +282,29 @@ export function DeploymentPanel({ task, githubRepos, onClose }: DeploymentPanelP
         )}
 
         {deployments.length > 0 && (
-          <div className='flex flex-col gap-3 pt-4 pb-4'>
-            <h4 className='text-sm font-medium text-muted-foreground'>
+          <div className='pt-4 pb-4'>
+            <h4 className='mb-2 text-sm font-medium text-muted-foreground'>
               Deployments ({deployments.length})
             </h4>
-            {deployments.map(deployment => {
-              const isActiveDeployment = deployment.id === activeDeploymentId
-              return (
-                <DeploymentCard
-                  key={deployment.id}
-                  deployment={deployment}
-                  workerStatusData={isActiveDeployment ? workerStatus : null}
-                  isActive={isActiveDeployment}
-                  onAcceptPlan={handleAcceptPlan}
-                  isAccepting={isImplPending}
-                  onCancel={handleCancel}
-                  isCancelling={isCancelPending}
-                />
-              )
-            })}
+            <div className='flex flex-col gap-2'>
+              {deployments.map((deployment, i) => {
+                const isActiveDeployment = deployment.id === activeDeploymentId
+                return (
+                  <div key={deployment.id} className='overflow-hidden rounded-lg border'>
+                    <DeploymentCard
+                      deployment={deployment}
+                      workerStatusData={isActiveDeployment ? workerStatus : null}
+                      isActive={isActiveDeployment}
+                      onAcceptPlan={handleAcceptPlan}
+                      isAccepting={isImplPending}
+                      onCancel={handleCancel}
+                      isCancelling={isCancelPending}
+                      index={deployments.length - i}
+                    />
+                  </div>
+                )
+              })}
+            </div>
           </div>
         )}
       </div>

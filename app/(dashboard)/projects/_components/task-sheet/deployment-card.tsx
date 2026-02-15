@@ -47,6 +47,8 @@ type DeploymentCardProps = {
   isAccepting: boolean
   onCancel: (deploymentId: string) => void
   isCancelling: boolean
+  /** 1-based index shown as a numbered badge (oldest = 1) */
+  index?: number
 }
 
 // ---------------------------------------------------------------------------
@@ -102,9 +104,9 @@ function CommentCard({
   const isMultiLine = comment.body.trim() !== firstLine
 
   return (
-    <div className='overflow-hidden rounded-lg border bg-background'>
+    <div>
       <div
-        className={`sticky top-0 z-[5] flex items-center justify-between bg-muted/50 px-3 py-3 transition-colors ${isMultiLine ? 'cursor-pointer hover:bg-muted/70' : ''}`}
+        className={`sticky top-0 z-[5] flex items-center justify-between bg-background/60 px-3 py-2 transition-colors ${isMultiLine ? 'cursor-pointer hover:bg-background/80' : ''}`}
         onClick={isMultiLine ? () => setExpanded(prev => !prev) : undefined}
       >
         <div className='flex min-w-0 flex-1 items-center gap-2'>
@@ -143,7 +145,7 @@ function CommentCard({
       </div>
 
       {expanded && (
-        <div className='bg-muted/20 px-3 py-3'>
+        <div className='bg-background/30 px-3 py-3'>
           <div className='prose prose-sm dark:prose-invert max-w-none'>
             <Markdown remarkPlugins={[remarkGfm]}>{comment.body}</Markdown>
           </div>
@@ -165,7 +167,7 @@ function CommentCard({
 }
 
 // ---------------------------------------------------------------------------
-// Deployment card
+// Deployment row (rendered inside a shared list container)
 // ---------------------------------------------------------------------------
 
 export function DeploymentCard({
@@ -176,6 +178,7 @@ export function DeploymentCard({
   isAccepting,
   onCancel,
   isCancelling,
+  index,
 }: DeploymentCardProps) {
   const [expanded, setExpanded] = useState(isActive)
   const [model, setModel] = useState<WorkerModel>('sonnet')
@@ -205,13 +208,18 @@ export function DeploymentCard({
   const modelLabel = deployment.model ?? 'sonnet'
 
   return (
-    <div className='overflow-hidden rounded-lg border bg-muted/30'>
-      {/* Header — always visible */}
+    <div className={isActive ? 'bg-background/40' : undefined}>
+      {/* Row header — always visible */}
       <div
-        className='flex cursor-pointer items-center justify-between px-3 py-2.5 transition-colors hover:bg-muted/50'
+        className='flex cursor-pointer items-center justify-between bg-background/60 px-3 py-2 transition-colors hover:bg-background/80'
         onClick={() => setExpanded(prev => !prev)}
       >
         <div className='flex min-w-0 flex-1 items-center gap-2'>
+          {index !== undefined && (
+            <span className='shrink-0 text-[11px] font-medium tabular-nums text-muted-foreground'>
+              #{index}
+            </span>
+          )}
           <WorkerStatusBadge status={displayStatus} />
           <a
             href={deployment.github_issue_url}
@@ -267,7 +275,7 @@ export function DeploymentCard({
 
       {/* Expanded body */}
       {expanded && (
-        <div className='flex flex-col gap-3 border-t px-3 py-3'>
+        <div className='flex flex-col gap-3 border-t border-dashed px-3 py-3'>
           {/* Working spinner */}
           {isWorking && (
             <div className='flex items-center gap-2 text-xs text-muted-foreground'>
@@ -331,17 +339,20 @@ export function DeploymentCard({
 
           {/* Comment feed */}
           {comments.length > 0 && (
-            <div className='flex flex-col gap-2'>
-              <h4 className='text-xs font-medium text-muted-foreground'>
+            <div>
+              <h4 className='mb-2 text-xs font-medium text-muted-foreground'>
                 Worker Responses ({comments.length})
               </h4>
-              {comments.map((comment, i) => (
-                <CommentCard
-                  key={comment.id}
-                  comment={comment}
-                  defaultExpanded={i === comments.length - 1}
-                />
-              ))}
+              <div className='overflow-hidden rounded-lg border'>
+                {comments.map((comment, i) => (
+                  <div key={comment.id} className={i > 0 ? 'border-t' : undefined}>
+                    <CommentCard
+                      comment={comment}
+                      defaultExpanded={i === comments.length - 1}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
