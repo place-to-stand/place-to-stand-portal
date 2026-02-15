@@ -1,0 +1,1 @@
+ALTER TABLE "task_deployments" ADD COLUMN "pr_url" text;

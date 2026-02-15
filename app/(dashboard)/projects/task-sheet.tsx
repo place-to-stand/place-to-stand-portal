@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
+import { useCallback, useMemo, useRef, useState, type DragEvent } from 'react'
 
 import { Loader2, Rocket, X } from 'lucide-react'
 
@@ -22,7 +22,6 @@ import { TaskSheetForm } from './_components/task-sheet/task-sheet-form'
 import { TaskSheetFormFooter } from './_components/task-sheet/form/task-sheet-form-footer'
 import { TaskSheetHeader } from './_components/task-sheet/task-sheet-header'
 import { DeploymentPanel } from './_components/task-sheet/deployment-panel'
-import { useWorkerStatus } from './_components/task-sheet/use-worker-status'
 import type { WorkerCommentStatus } from './actions/fetch-worker-status'
 import type { UserRole } from '@/lib/auth/session'
 import { TaskCommentsPanel } from './_components/task-sheet/task-comments-panel'
@@ -229,20 +228,9 @@ export function TaskSheet(props: TaskSheetProps) {
     props.task && taskProject?.githubRepos && taskProject.githubRepos.length > 0
   )
 
-  // Local state to track just-created issue before server props refresh
-  const [localIssueData, setLocalIssueData] = useState<{
-    issueNumber: number
-    issueUrl: string
-    workerStatus: 'working' | 'implementing'
-  } | null>(null)
-
-  // Clear local override once server props catch up or task changes
-  useEffect(() => {
-    if (props.task?.github_issue_number) setLocalIssueData(null)
-  }, [props.task?.github_issue_number])
-
-  const hasIssue = Boolean(props.task?.github_issue_number) || Boolean(localIssueData)
-  const workerStatus = useWorkerStatus(props.task?.id ?? '', hasIssue && canDeploy)
+  // Deploy button badge uses the task's cached worker_status
+  const cachedWorkerStatus = props.task?.worker_status as WorkerCommentStatus | null | undefined
+  const isWorking = cachedWorkerStatus === 'working' || cachedWorkerStatus === 'implementing'
 
   const headerDescription = projectName ? (
     <>
@@ -287,14 +275,14 @@ export function TaskSheet(props: TaskSheetProps) {
                         size='sm'
                         onClick={() => setIsDeployOpen(prev => !prev)}
                       >
-                        {workerStatus.isWorking || (!workerStatus.latestStatus && localIssueData) ? (
+                        {isWorking ? (
                           <Loader2 className='mr-1.5 h-3.5 w-3.5 animate-spin' />
                         ) : (
                           <Rocket className='mr-1.5 h-3.5 w-3.5' />
                         )}
                         Deploy
-                        {(workerStatus.latestStatus ?? localIssueData?.workerStatus) && (
-                          <DeployButtonBadge status={(workerStatus.latestStatus ?? localIssueData?.workerStatus)!} />
+                        {cachedWorkerStatus && (
+                          <DeployButtonBadge status={cachedWorkerStatus} />
                         )}
                       </Button>
                     )}
@@ -374,14 +362,11 @@ export function TaskSheet(props: TaskSheetProps) {
               />
             </div>
 
-            {/* Right column: deployment panel */}
+            {/* Right column: deployment panel (self-contained) */}
             {isDeployOpen && props.task && taskProject?.githubRepos && (
               <DeploymentPanel
                 task={props.task}
                 githubRepos={taskProject.githubRepos}
-                workerStatus={workerStatus}
-                localIssueData={localIssueData}
-                onDeploySuccess={setLocalIssueData}
                 onClose={() => setIsDeployOpen(false)}
               />
             )}

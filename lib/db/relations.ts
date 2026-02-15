@@ -29,6 +29,7 @@ import {
   meetings,
   proposals,
   leadStageHistory,
+  taskDeployments,
 } from './schema'
 
 export const clientsRelations = relations(clients, ({ one, many }) => ({
@@ -113,6 +114,7 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
   taskComments: many(taskComments),
   timeLogTasks: many(timeLogTasks),
   taskAttachments: many(taskAttachments),
+  taskDeployments: many(taskDeployments),
   project: one(projects, {
     fields: [tasks.projectId],
     references: [projects.id],
@@ -379,6 +381,29 @@ export const githubRepoLinksRelations = relations(
       references: [users.id],
     }),
     suggestions: many(suggestions),
+    taskDeployments: many(taskDeployments),
+  })
+)
+
+// =============================================================================
+// TASK DEPLOYMENTS
+// =============================================================================
+
+export const taskDeploymentsRelations = relations(
+  taskDeployments,
+  ({ one }) => ({
+    task: one(tasks, {
+      fields: [taskDeployments.taskId],
+      references: [tasks.id],
+    }),
+    repoLink: one(githubRepoLinks, {
+      fields: [taskDeployments.repoLinkId],
+      references: [githubRepoLinks.id],
+    }),
+    createdByUser: one(users, {
+      fields: [taskDeployments.createdBy],
+      references: [users.id],
+    }),
   })
 )
 

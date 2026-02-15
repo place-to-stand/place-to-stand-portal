@@ -38,16 +38,16 @@ export type WorkerStatusData = {
   queryKey: readonly string[]
 }
 
-export function useWorkerStatus(taskId: string, hasIssue: boolean): WorkerStatusData {
+export function useWorkerStatus(deploymentId: string | null): WorkerStatusData {
   const queryKey = useMemo(
-    () => [WORKER_STATUS_KEY, taskId] as const,
-    [taskId]
+    () => [WORKER_STATUS_KEY, deploymentId ?? ''] as const,
+    [deploymentId]
   )
 
   const { data: statusData, isLoading: isStatusLoading } = useQuery({
     queryKey,
-    queryFn: () => fetchWorkerStatus({ taskId }),
-    enabled: hasIssue,
+    queryFn: () => fetchWorkerStatus({ deploymentId: deploymentId! }),
+    enabled: Boolean(deploymentId),
     refetchInterval: query => {
       const result = query.state.data
       if (!result || 'error' in result) return POLL_INTERVAL
