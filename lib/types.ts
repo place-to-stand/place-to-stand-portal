@@ -5,6 +5,7 @@ import {
   projectType,
   taskStatus,
   userRole,
+  workerStatus,
 } from '@/lib/db/schema'
 
 export type UserRoleValue = (typeof userRole.enumValues)[number]
@@ -14,6 +15,7 @@ export type ClientBillingTypeValue =
 export type ProjectTypeValue = (typeof projectType.enumValues)[number]
 export type LeadStatusValue = (typeof leadStatus.enumValues)[number]
 export type LeadSourceTypeValue = (typeof leadSourceType.enumValues)[number]
+export type WorkerStatusValue = (typeof workerStatus.enumValues)[number]
 
 export type DbClient = {
   id: string
@@ -70,6 +72,7 @@ export type DbTask = {
   rank: string
   github_issue_number: number | null
   github_issue_url: string | null
+  worker_status: WorkerStatusValue | null
 }
 
 export type DbUser = {

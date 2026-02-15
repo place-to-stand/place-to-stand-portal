@@ -4,7 +4,6 @@ import { useCallback, useMemo } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 
 import { Form } from '@/components/ui/form'
-import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import type { TaskSheetFormValues } from '@/lib/projects/task-sheet/task-sheet-schema'
 import type { AttachmentItem } from '@/lib/projects/task-sheet/use-task-sheet-state'
 import type {
@@ -13,7 +12,8 @@ import type {
 } from '@/components/ui/searchable-combobox'
 
 import { TaskSheetFormFields, type TaskSheetFormFieldsProps } from './task-sheet-form-fields'
-import { TaskSheetFormFooter } from './task-sheet-form-footer'
+
+export const TASK_FORM_ID = 'task-form'
 
 type TaskSheetFormProps = {
   form: UseFormReturn<TaskSheetFormValues>
@@ -28,14 +28,7 @@ type TaskSheetFormProps = {
   taskStatuses: TaskSheetFormFieldsProps['taskStatuses']
   unassignedValue: string
   editorKey: string
-  isEditing: boolean
-  onRequestDelete: () => void
-  deleteDisabled: boolean
-  deleteDisabledReason: string | null
-  submitDisabled: boolean
-  submitDisabledReason: string | null
   isSheetOpen: boolean
-  historyKey: string
   attachments: AttachmentItem[]
   onAttachmentUpload: (files: FileList | File[]) => void
   onAttachmentRemove: (key: string) => void
@@ -44,7 +37,6 @@ type TaskSheetFormProps = {
   maxAttachmentSize: number
   attachmentsDisabledReason: string | null
   isDragActive: boolean
-  isDeployOpen?: boolean
 }
 
 export function TaskSheetForm(props: TaskSheetFormProps) {
@@ -61,14 +53,7 @@ export function TaskSheetForm(props: TaskSheetFormProps) {
     taskStatuses,
     unassignedValue,
     editorKey,
-    isEditing,
-    onRequestDelete,
-    deleteDisabled,
-    deleteDisabledReason,
-    submitDisabled,
-    submitDisabledReason,
     isSheetOpen,
-    historyKey,
     attachments,
     onAttachmentUpload,
     onAttachmentRemove,
@@ -77,33 +62,7 @@ export function TaskSheetForm(props: TaskSheetFormProps) {
     maxAttachmentSize,
     attachmentsDisabledReason,
     isDragActive,
-    isDeployOpen,
   } = props
-
-  const handleSave = useCallback(
-    () => form.handleSubmit(onSubmit)(),
-    [form, onSubmit]
-  )
-
-  const { undo, redo, canUndo, canRedo } = useSheetFormControls({
-    form,
-    isActive: isSheetOpen,
-    canSave: !submitDisabled,
-    onSave: handleSave,
-    historyKey,
-  })
-
-  const saveLabel = useMemo(() => {
-    if (isPending) {
-      return 'Saving...'
-    }
-
-    if (isEditing) {
-      return 'Save changes'
-    }
-
-    return 'Create task'
-  }, [isEditing, isPending])
 
   const attachmentsDisabled = isPending || !canManage
 
@@ -125,6 +84,7 @@ export function TaskSheetForm(props: TaskSheetFormProps) {
   return (
     <Form {...form}>
       <form
+        id={TASK_FORM_ID}
         onSubmit={submitHandler}
         className='flex flex-1 flex-col gap-6 px-6 pb-4'
       >
@@ -150,20 +110,6 @@ export function TaskSheetForm(props: TaskSheetFormProps) {
           maxAttachmentSize={maxAttachmentSize}
           feedback={feedback}
           isSheetOpen={isSheetOpen}
-        />
-        <TaskSheetFormFooter
-          saveLabel={saveLabel}
-          submitDisabled={submitDisabled}
-          submitDisabledReason={submitDisabledReason}
-          undo={undo}
-          redo={redo}
-          canUndo={canUndo}
-          canRedo={canRedo}
-          isEditing={isEditing}
-          deleteDisabled={deleteDisabled}
-          deleteDisabledReason={deleteDisabledReason}
-          onRequestDelete={onRequestDelete}
-          isDeployOpen={isDeployOpen}
         />
       </form>
     </Form>

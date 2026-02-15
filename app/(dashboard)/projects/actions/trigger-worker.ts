@@ -24,10 +24,13 @@ import { serverEnv } from '@/lib/env.server'
 
 const modelSchema = z.enum(['opus', 'sonnet', 'haiku'])
 
+const deployModeSchema = z.enum(['plan', 'execute'])
+
 const triggerPlanSchema = z.object({
   taskId: z.string().uuid(),
   repoLinkId: z.string().uuid(),
   model: modelSchema,
+  mode: deployModeSchema.default('plan'),
 })
 
 const triggerImplementSchema = z.object({
@@ -38,7 +41,7 @@ const triggerImplementSchema = z.object({
 })
 
 type TriggerResult =
-  | { issueUrl: string; commentUrl: string }
+  | { issueNumber: number; issueUrl: string; commentUrl: string; workerStatus: 'working' | 'implementing' }
   | { error: string }
 
 type ImplementResult =
@@ -52,6 +55,7 @@ export async function triggerWorkerPlan(input: {
   taskId: string
   repoLinkId: string
   model: 'opus' | 'sonnet' | 'haiku'
+  mode?: 'plan' | 'execute'
 }): Promise<TriggerResult> {
   const user = await requireUser()
 
@@ -60,7 +64,7 @@ export async function triggerWorkerPlan(input: {
     return { error: 'Invalid payload.' }
   }
 
-  const { taskId, repoLinkId, model } = parsed.data
+  const { taskId, repoLinkId, model, mode } = parsed.data
 
   // Auth check
   try {
@@ -131,12 +135,13 @@ export async function triggerWorkerPlan(input: {
     }
   }
 
-  // Update task with issue reference
+  // Update task with issue reference and initial worker status
   await db
     .update(tasks)
     .set({
       githubIssueNumber: issue.number,
       githubIssueUrl: issue.html_url,
+      workerStatus: mode === 'execute' ? 'implementing' : 'working',
       updatedBy: user.id,
       updatedAt: new Date().toISOString(),
     })
@@ -146,7 +151,7 @@ export async function triggerWorkerPlan(input: {
   let comment: { id: number; html_url: string }
   try {
     const body = composeWorkerComment({
-      mode: 'plan',
+      mode: mode === 'execute' ? 'execute' : 'plan',
       model,
       taskTitle: task.title,
       taskDescription: task.description,
@@ -170,12 +175,21 @@ export async function triggerWorkerPlan(input: {
   }
 
   // Log activity
-  const event = workerPlanRequestedEvent({
-    taskTitle: task.title,
-    model,
-    repoFullName: repoLink.repoFullName,
-    issueNumber: issue.number,
-  })
+  const event =
+    mode === 'execute'
+      ? workerImplementRequestedEvent({
+          taskTitle: task.title,
+          model,
+          repoFullName: repoLink.repoFullName,
+          issueNumber: issue.number,
+          hasCustomPrompt: false,
+        })
+      : workerPlanRequestedEvent({
+          taskTitle: task.title,
+          model,
+          repoFullName: repoLink.repoFullName,
+          issueNumber: issue.number,
+        })
   await logActivity({
     actorId: user.id,
     actorRole: user.role,
@@ -188,7 +202,8 @@ export async function triggerWorkerPlan(input: {
     metadata: event.metadata,
   })
 
-  return { issueUrl: issue.html_url, commentUrl: comment.html_url }
+  const initialStatus = mode === 'execute' ? 'implementing' as const : 'working' as const
+  return { issueNumber: issue.number, issueUrl: issue.html_url, commentUrl: comment.html_url, workerStatus: initialStatus }
 }
 
 /**
@@ -273,6 +288,16 @@ export async function triggerWorkerImplement(input: {
           : 'Failed to post implement comment.',
     }
   }
+
+  // Update worker status to implementing
+  await db
+    .update(tasks)
+    .set({
+      workerStatus: 'implementing',
+      updatedBy: user.id,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(eq(tasks.id, taskId))
 
   // Log activity
   const event = workerImplementRequestedEvent({
