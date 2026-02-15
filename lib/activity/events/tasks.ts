@@ -174,3 +174,16 @@ export const workerImplementRequestedEvent = (args: {
     hasCustomPrompt: args.hasCustomPrompt,
   }),
 })
+
+export const workerCancelledEvent = (args: {
+  taskTitle: string
+  repoFullName: string
+  issueNumber: number
+}): ActivityEvent => ({
+  verb: ActivityVerbs.WORKER_CANCELLED,
+  summary: `Cancelled worker deployment for "${args.taskTitle}" on ${args.repoFullName}#${args.issueNumber}`,
+  metadata: toMetadata({
+    repoFullName: args.repoFullName,
+    issueNumber: args.issueNumber,
+  }),
+})

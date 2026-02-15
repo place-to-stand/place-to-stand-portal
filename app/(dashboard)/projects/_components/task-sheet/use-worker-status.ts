@@ -20,6 +20,7 @@ const TERMINAL_STATUSES: WorkerCommentStatus[] = [
   'pr_created',
   'done_no_changes',
   'error',
+  'cancelled',
 ]
 
 export const WORKER_STATUS_KEY = 'worker-status'

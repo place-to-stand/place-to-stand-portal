@@ -124,6 +124,7 @@ export const ActivityVerbs = {
   // Worker deployment events
   WORKER_PLAN_REQUESTED: 'WORKER_PLAN_REQUESTED',
   WORKER_IMPLEMENT_REQUESTED: 'WORKER_IMPLEMENT_REQUESTED',
+  WORKER_CANCELLED: 'WORKER_CANCELLED',
 } as const
 
 export type ActivityVerb = (typeof ActivityVerbs)[keyof typeof ActivityVerbs]

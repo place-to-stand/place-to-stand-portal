@@ -10,6 +10,7 @@ import {
   GitPullRequestArrow,
   Loader2,
   Play,
+  StopCircle,
 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
@@ -44,6 +45,8 @@ type DeploymentCardProps = {
   isActive: boolean
   onAcceptPlan: (deploymentId: string, model: WorkerModel) => void
   isAccepting: boolean
+  onCancel: (deploymentId: string) => void
+  isCancelling: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -64,6 +67,8 @@ function WorkerStatusBadge({ status }: { status: WorkerCommentStatus | string })
       return <Badge variant='secondary' className='text-[10px]'>Done</Badge>
     case 'error':
       return <Badge variant='destructive' className='text-[10px]'>Error</Badge>
+    case 'cancelled':
+      return <Badge className='bg-orange-100 text-orange-800 text-[10px] dark:bg-orange-900 dark:text-orange-200'>Cancelled</Badge>
     default:
       return null
   }
@@ -97,9 +102,9 @@ function CommentCard({
   const isMultiLine = comment.body.trim() !== firstLine
 
   return (
-    <div className='overflow-hidden rounded-lg border'>
+    <div className='overflow-hidden rounded-lg border bg-background'>
       <div
-        className={`sticky top-0 z-[5] flex items-center justify-between bg-muted/20 px-3 py-3 ${isMultiLine ? 'cursor-pointer' : ''}`}
+        className={`sticky top-0 z-[5] flex items-center justify-between bg-muted/50 px-3 py-3 transition-colors ${isMultiLine ? 'cursor-pointer hover:bg-muted/70' : ''}`}
         onClick={isMultiLine ? () => setExpanded(prev => !prev) : undefined}
       >
         <div className='flex min-w-0 flex-1 items-center gap-2'>
@@ -138,7 +143,7 @@ function CommentCard({
       </div>
 
       {expanded && (
-        <div className='bg-muted/40 px-3 py-3'>
+        <div className='bg-muted/20 px-3 py-3'>
           <div className='prose prose-sm dark:prose-invert max-w-none'>
             <Markdown remarkPlugins={[remarkGfm]}>{comment.body}</Markdown>
           </div>
@@ -169,6 +174,8 @@ export function DeploymentCard({
   isActive,
   onAcceptPlan,
   isAccepting,
+  onCancel,
+  isCancelling,
 }: DeploymentCardProps) {
   const [expanded, setExpanded] = useState(isActive)
   const [model, setModel] = useState<WorkerModel>('sonnet')
@@ -198,10 +205,10 @@ export function DeploymentCard({
   const modelLabel = deployment.model ?? 'sonnet'
 
   return (
-    <div className='overflow-hidden rounded-lg border'>
+    <div className='overflow-hidden rounded-lg border bg-muted/30'>
       {/* Header — always visible */}
       <div
-        className='flex cursor-pointer items-center justify-between px-3 py-2.5'
+        className='flex cursor-pointer items-center justify-between px-3 py-2.5 transition-colors hover:bg-muted/50'
         onClick={() => setExpanded(prev => !prev)}
       >
         <div className='flex min-w-0 flex-1 items-center gap-2'>
@@ -233,6 +240,24 @@ export function DeploymentCard({
           )}
         </div>
         <div className='flex shrink-0 items-center gap-1.5'>
+          {(displayStatus === 'working' || displayStatus === 'implementing') && (
+            <button
+              type='button'
+              onClick={e => {
+                e.stopPropagation()
+                onCancel(deployment.id)
+              }}
+              disabled={isCancelling}
+              className='inline-flex items-center text-destructive hover:text-destructive/80 disabled:opacity-50'
+              title='Cancel deployment'
+            >
+              {isCancelling ? (
+                <Loader2 className='h-4 w-4 animate-spin' />
+              ) : (
+                <StopCircle className='h-4 w-4' />
+              )}
+            </button>
+          )}
           <span className='text-[10px] text-muted-foreground'>{timeAgo}</span>
           {expanded
             ? <ChevronUp className='h-3 w-3 text-muted-foreground' />

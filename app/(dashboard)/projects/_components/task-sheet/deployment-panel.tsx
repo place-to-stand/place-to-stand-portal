@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import {
   Bot,
   ExternalLink,
+  Github,
   Info,
   Loader2,
   Play,
@@ -22,7 +23,7 @@ import {
 } from '@/components/ui/select'
 import { useToast } from '@/components/ui/use-toast'
 
-import { triggerWorkerPlan, triggerWorkerImplement } from '../../actions/trigger-worker'
+import { triggerWorkerPlan, triggerWorkerImplement, cancelDeployment } from '../../actions/trigger-worker'
 import type { WorkerCommentStatus, WorkerStatusResult } from '../../actions/fetch-worker-status'
 
 import type { GitHubRepoLinkSummary, TaskWithRelations } from '@/lib/types'
@@ -42,6 +43,7 @@ const TERMINAL_STATUSES: WorkerCommentStatus[] = [
   'pr_created',
   'done_no_changes',
   'error',
+  'cancelled',
 ]
 
 type DeploymentPanelProps = {
@@ -65,6 +67,7 @@ export function DeploymentPanel({ task, githubRepos, onClose }: DeploymentPanelP
   const [deployMode, setDeployMode] = useState<DeployMode>('plan')
   const [isPlanPending, startPlanTransition] = useTransition()
   const [isImplPending, startImplTransition] = useTransition()
+  const [isCancelPending, startCancelTransition] = useTransition()
 
   // Track the active deployment ID for polling (optimistic or from list)
   const [optimisticDeploymentId, setOptimisticDeploymentId] = useState<string | null>(null)
@@ -163,6 +166,32 @@ export function DeploymentPanel({ task, githubRepos, onClose }: DeploymentPanelP
     })
   }, [toast, queryClient, deploymentsQueryKey])
 
+  const handleCancel = useCallback((deploymentId: string) => {
+    startCancelTransition(async () => {
+      const result = await cancelDeployment({ deploymentId })
+
+      if ('error' in result) {
+        toast({ variant: 'destructive', title: 'Error', description: result.error })
+        return
+      }
+
+      // Optimistically update status
+      queryClient.setQueryData<WorkerStatusResult>(
+        [WORKER_STATUS_KEY, deploymentId],
+        prev => {
+          if (!prev || 'error' in prev) {
+            return { comments: [], prUrl: null, latestStatus: 'cancelled' as const }
+          }
+          return { ...prev, latestStatus: 'cancelled' as const }
+        }
+      )
+
+      toast({ title: 'Deployment cancelled', description: 'Cancel signal sent to worker.' })
+      queryClient.invalidateQueries({ queryKey: [WORKER_STATUS_KEY, deploymentId] })
+      queryClient.invalidateQueries({ queryKey: deploymentsQueryKey })
+    })
+  }, [toast, queryClient, deploymentsQueryKey])
+
   return (
     <div className='flex h-full w-[560px] shrink-0 flex-col border-l'>
       {/* Header */}
@@ -202,6 +231,7 @@ export function DeploymentPanel({ task, githubRepos, onClose }: DeploymentPanelP
               rel='noopener noreferrer'
               className='inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground'
             >
+              <Github className='h-3.5 w-3.5' />
               {selectedRepo.repoFullName}
               <ExternalLink className='h-3 w-3' />
             </a>
@@ -252,8 +282,8 @@ export function DeploymentPanel({ task, githubRepos, onClose }: DeploymentPanelP
         )}
 
         {deployments.length > 0 && (
-          <div className='flex flex-col gap-3 pb-4'>
-            <h4 className='text-xs font-medium text-muted-foreground'>
+          <div className='flex flex-col gap-3 pt-4 pb-4'>
+            <h4 className='text-sm font-medium text-muted-foreground'>
               Deployments ({deployments.length})
             </h4>
             {deployments.map(deployment => {
@@ -266,6 +296,8 @@ export function DeploymentPanel({ task, githubRepos, onClose }: DeploymentPanelP
                   isActive={isActiveDeployment}
                   onAcceptPlan={handleAcceptPlan}
                   isAccepting={isImplPending}
+                  onCancel={handleCancel}
+                  isCancelling={isCancelPending}
                 />
               )
             })}
@@ -335,6 +367,8 @@ function HeaderStatusBadge({ status }: { status: WorkerCommentStatus }) {
       return <Badge variant='secondary' className='text-[10px]'>Done</Badge>
     case 'error':
       return <Badge variant='destructive' className='text-[10px]'>Error</Badge>
+    case 'cancelled':
+      return <Badge className='bg-orange-100 text-orange-800 text-[10px] dark:bg-orange-900 dark:text-orange-200'>Cancelled</Badge>
     default:
       return null
   }

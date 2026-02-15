@@ -22,6 +22,7 @@ export type WorkerCommentStatus =
   | 'pr_created'
   | 'done_no_changes'
   | 'error'
+  | 'cancelled'
   | 'unknown'
 
 export type WorkerComment = {
