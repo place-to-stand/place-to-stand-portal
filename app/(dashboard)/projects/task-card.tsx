@@ -379,7 +379,7 @@ const WORKER_BADGE_CONFIG: Record<
       'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
   },
   implementing: {
-    label: 'Implementing',
+    label: 'Executing',
     className:
       'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
   },

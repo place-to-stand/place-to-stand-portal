@@ -157,6 +157,22 @@ export async function fetchWorkerStatus(input: {
     }
   })
 
+  // Post-process: reclassify 'working' bot comments as 'implementing' when
+  // the preceding user command was an implement/execute request (no /plan flag).
+  for (let i = 0; i < allComments.length; i++) {
+    if (allComments[i].isBot && allComments[i].status === 'working') {
+      // Walk backwards to find the nearest preceding user command
+      for (let j = i - 1; j >= 0; j--) {
+        if (!allComments[j].isBot && allComments[j].body.includes('@pts-worker')) {
+          if (!allComments[j].body.includes('/plan')) {
+            allComments[i].status = 'implementing'
+          }
+          break
+        }
+      }
+    }
+  }
+
   const botComments = allComments.filter(c => c.isBot)
   const prUrl = extractPrUrl(botComments)
   const latestStatus =

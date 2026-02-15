@@ -30,6 +30,7 @@ import {
   fetchWorkerStatus,
   type WorkerComment,
   type WorkerCommentStatus,
+  type WorkerStatusResult,
 } from '../../actions/fetch-worker-status'
 
 import type { GitHubRepoLinkSummary, TaskWithRelations } from '@/lib/types'
@@ -132,8 +133,14 @@ export function WorkerSection({ task, githubRepos }: WorkerSectionProps) {
         return
       }
 
+      // Optimistically set status so polling starts immediately
+      queryClient.setQueryData<WorkerStatusResult>(queryKey, {
+        comments: [],
+        prUrl: null,
+        latestStatus: 'working',
+      })
+
       toast({ title: 'Plan requested', description: 'GitHub issue created. Worker is planning...' })
-      // Invalidate to start polling
       queryClient.invalidateQueries({ queryKey })
     })
   }, [task.id, selectedRepoId, model, toast, queryClient, queryKey])
@@ -151,7 +158,15 @@ export function WorkerSection({ task, githubRepos }: WorkerSectionProps) {
         return
       }
 
-      toast({ title: 'Implementation requested', description: 'Worker is implementing...' })
+      // Optimistically set status so polling resumes (plan_ready is terminal)
+      queryClient.setQueryData<WorkerStatusResult>(queryKey, prev => {
+        if (!prev || 'error' in prev) {
+          return { comments: [], prUrl: null, latestStatus: 'implementing' as const }
+        }
+        return { ...prev, latestStatus: 'implementing' as const }
+      })
+
+      toast({ title: 'Implementation requested', description: 'Worker is executing...' })
       queryClient.invalidateQueries({ queryKey })
     })
   }, [task.id, selectedRepoId, model, toast, queryClient, queryKey])
@@ -172,8 +187,16 @@ export function WorkerSection({ task, githubRepos }: WorkerSectionProps) {
         return
       }
 
+      // Optimistically set status so polling resumes
+      queryClient.setQueryData<WorkerStatusResult>(queryKey, prev => {
+        if (!prev || 'error' in prev) {
+          return { comments: [], prUrl: null, latestStatus: 'implementing' as const }
+        }
+        return { ...prev, latestStatus: 'implementing' as const }
+      })
+
       setCustomPrompt('')
-      toast({ title: 'Comment posted', description: 'Worker is working...' })
+      toast({ title: 'Comment posted', description: 'Worker is executing...' })
       queryClient.invalidateQueries({ queryKey })
     })
   }, [task.id, selectedRepoId, model, customPrompt, toast, queryClient, queryKey])
@@ -270,7 +293,7 @@ export function WorkerSection({ task, githubRepos }: WorkerSectionProps) {
               <Loader2 className='h-3.5 w-3.5 animate-spin' />
               {latestStatus === 'working'
                 ? 'Worker is planning...'
-                : 'Worker is implementing...'}
+                : 'Worker is executing...'}
             </div>
           )}
 
@@ -412,7 +435,7 @@ function WorkerStatusBadge({ status }: { status: WorkerCommentStatus }) {
     case 'implementing':
       return (
         <Badge variant='secondary' className='text-[10px]'>
-          Implementing
+          Executing
         </Badge>
       )
     case 'plan_ready':

@@ -4,15 +4,16 @@ import { useCallback, useState, useTransition } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { formatDistanceToNow } from 'date-fns'
 import {
+  AlertTriangle,
   Bot,
   ChevronDown,
   ChevronUp,
   ExternalLink,
   GitPullRequestArrow,
+  Info,
   Loader2,
   Play,
   RefreshCw,
-  AlertTriangle,
   X,
 } from 'lucide-react'
 
@@ -33,6 +34,7 @@ import { triggerWorkerPlan, triggerWorkerImplement } from '../../actions/trigger
 import {
   type WorkerComment,
   type WorkerCommentStatus,
+  type WorkerStatusResult,
 } from '../../actions/fetch-worker-status'
 
 import type { GitHubRepoLinkSummary, TaskWithRelations } from '@/lib/types'
@@ -114,9 +116,17 @@ export function DeploymentPanel({ task, githubRepos, workerStatus, localIssueDat
         workerStatus: result.workerStatus,
       })
 
+      // Optimistically set status so polling resumes immediately
+      const optimisticStatus: WorkerCommentStatus = deployMode === 'execute' ? 'implementing' : 'working'
+      queryClient.setQueryData<WorkerStatusResult>(queryKey, {
+        comments: [],
+        prUrl: null,
+        latestStatus: optimisticStatus,
+      })
+
       const desc =
         deployMode === 'execute'
-          ? 'GitHub issue created. Worker is implementing...'
+          ? 'GitHub issue created. Worker is executing...'
           : 'GitHub issue created. Worker is planning...'
       toast({ title: 'Deploy started', description: desc })
       queryClient.invalidateQueries({ queryKey })
@@ -136,7 +146,15 @@ export function DeploymentPanel({ task, githubRepos, workerStatus, localIssueDat
         return
       }
 
-      toast({ title: 'Implementation requested', description: 'Worker is implementing...' })
+      // Optimistically set status so polling resumes (plan_ready is terminal)
+      queryClient.setQueryData<WorkerStatusResult>(queryKey, prev => {
+        if (!prev || 'error' in prev) {
+          return { comments: [], prUrl: null, latestStatus: 'implementing' as const }
+        }
+        return { ...prev, latestStatus: 'implementing' as const }
+      })
+
+      toast({ title: 'Implementation requested', description: 'Worker is executing...' })
       queryClient.invalidateQueries({ queryKey })
     })
   }, [task.id, selectedRepoId, model, toast, queryClient, queryKey])
@@ -190,6 +208,22 @@ export function DeploymentPanel({ task, githubRepos, workerStatus, localIssueDat
               </a>
             ) : null}
 
+            {/* Context hint */}
+            <div className='flex gap-2 rounded-md border bg-muted/40 px-3 py-2'>
+              <Info className='mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground' />
+              <div className='text-xs text-muted-foreground'>
+                <p>
+                  The task <span className='font-medium text-foreground'>Title</span> and{' '}
+                  <span className='font-medium text-foreground'>Description</span> will be sent to the worker.
+                </p>
+                {!task.description?.trim() && (
+                  <p className='mt-1 text-amber-600 dark:text-amber-400'>
+                    No description set — the worker will only have the title for context.
+                  </p>
+                )}
+              </div>
+            </div>
+
             {/* Controls row */}
             <div className='flex items-center gap-2'>
               <ModelSelector model={model} onChange={setModel} />
@@ -234,7 +268,7 @@ export function DeploymentPanel({ task, githubRepos, workerStatus, localIssueDat
                   <Loader2 className='h-3.5 w-3.5 animate-spin' />
                   {(latestStatus ?? localWorkerStatus) === 'working'
                     ? 'Worker is planning...'
-                    : 'Worker is implementing...'}
+                    : 'Worker is executing...'}
                 </div>
               )}
 
@@ -389,7 +423,7 @@ function WorkerStatusBadge({ status }: { status: WorkerCommentStatus }) {
     case 'implementing':
       return (
         <Badge variant='secondary' className='text-[10px]'>
-          Implementing
+          Executing
         </Badge>
       )
     case 'plan_ready':
