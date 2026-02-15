@@ -164,5 +164,13 @@ export async function fetchWorkerStatus(input: {
       ? botComments[botComments.length - 1].status
       : null
 
-  return { comments: allComments, prUrl, latestStatus }
+  // Persist the latest worker status to the task for board display
+  if (latestStatus && latestStatus !== 'unknown') {
+    await db
+      .update(tasks)
+      .set({ workerStatus: latestStatus })
+      .where(eq(tasks.id, taskId))
+  }
+
+  return { comments: botComments, prUrl, latestStatus }
 }

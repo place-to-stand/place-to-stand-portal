@@ -7,7 +7,7 @@ const MAX_DESCRIPTION_LENGTH = 2000
 type WorkerModel = 'opus' | 'sonnet' | 'haiku'
 
 export function composeWorkerComment(params: {
-  mode: 'plan' | 'implement'
+  mode: 'plan' | 'implement' | 'execute'
   model: WorkerModel
   taskTitle: string
   taskDescription: string | null
@@ -28,8 +28,12 @@ export function composeWorkerComment(params: {
     return `@pts-worker ${modelFlag}\n\nImplement the plan from the previous comment.`
   }
 
-  // Plan request — include task context
-  const lines: string[] = [`@pts-worker ${modelFlag} /plan`]
+  // Plan or execute — include task context
+  const lines: string[] = [
+    mode === 'plan'
+      ? `@pts-worker ${modelFlag} /plan`
+      : `@pts-worker ${modelFlag}`,
+  ]
   lines.push('')
   lines.push(`## Task: ${taskTitle}`)
 

@@ -26,6 +26,7 @@ type TaskRow = {
   rank: string
   githubIssueNumber: number | null
   githubIssueUrl: string | null
+  workerStatus: string | null
 }
 
 type TaskAssigneeRow = {
@@ -63,6 +64,7 @@ export async function fetchProjectCalendarTasks({
       rank: tasksTable.rank,
       githubIssueNumber: tasksTable.githubIssueNumber,
       githubIssueUrl: tasksTable.githubIssueUrl,
+      workerStatus: tasksTable.workerStatus,
     })
     .from(tasksTable)
     .where(
@@ -117,6 +119,7 @@ export async function fetchProjectCalendarTasks({
     deleted_at: row.deletedAt,
     github_issue_number: row.githubIssueNumber,
     github_issue_url: row.githubIssueUrl,
+    worker_status: row.workerStatus as RawTaskWithRelations['worker_status'],
     assignees: assigneesByTask.get(row.id) ?? [],
     comment_count: 0,
     attachment_count: 0,

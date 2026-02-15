@@ -19,5 +19,6 @@ export const taskFields = {
   rank: tasks.rank,
   githubIssueNumber: tasks.githubIssueNumber,
   githubIssueUrl: tasks.githubIssueUrl,
+  workerStatus: tasks.workerStatus,
 } as const
 

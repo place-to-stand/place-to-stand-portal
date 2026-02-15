@@ -181,6 +181,15 @@ export const leadLossReason = pgEnum('lead_loss_reason', [
   'OTHER',
 ])
 
+export const workerStatus = pgEnum('worker_status', [
+  'working',
+  'plan_ready',
+  'implementing',
+  'pr_created',
+  'done_no_changes',
+  'error',
+])
+
 // =============================================================================
 // CORE TABLES
 // =============================================================================
@@ -464,6 +473,7 @@ export const tasks = pgTable(
     rank: text().default('zzzzzzzz').notNull(),
     githubIssueNumber: integer('github_issue_number'),
     githubIssueUrl: text('github_issue_url'),
+    workerStatus: workerStatus('worker_status'),
   },
   table => [
     index('idx_tasks_created_by')
