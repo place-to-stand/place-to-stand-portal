@@ -232,6 +232,13 @@
       "when": 1771136572255,
       "tag": "0032_add_deployment_pr_url",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1771139469758,
+      "tag": "0033_add_cancelled_worker_status",
+      "breakpoints": true
     }
   ]
 }

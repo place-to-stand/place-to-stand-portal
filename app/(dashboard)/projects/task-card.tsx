@@ -402,6 +402,11 @@ const WORKER_BADGE_CONFIG: Record<
     label: 'Error',
     className: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
   },
+  cancelled: {
+    label: 'Cancelled',
+    className:
+      'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300',
+  },
 }
 
 function WorkerBadge({ status }: { status: WorkerStatusValue }) {

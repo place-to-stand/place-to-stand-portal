@@ -325,6 +325,29 @@ export async function listIssueComments(
 }
 
 /**
+ * Add a reaction to an issue comment
+ */
+export async function createCommentReaction(
+  userId: string,
+  owner: string,
+  repo: string,
+  commentId: number,
+  content: string,
+  connectionId?: string
+): Promise<{ id: number }> {
+  return githubFetch(
+    userId,
+    `/repos/${owner}/${repo}/issues/comments/${commentId}/reactions`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content }),
+    },
+    connectionId
+  )
+}
+
+/**
  * Get the default connection ID for a user
  */
 export async function getDefaultConnectionId(userId: string): Promise<string | null> {

@@ -188,6 +188,7 @@ export const workerStatus = pgEnum('worker_status', [
   'pr_created',
   'done_no_changes',
   'error',
+  'cancelled',
 ])
 
 // =============================================================================

@@ -7,6 +7,7 @@ import { logActivity } from '@/lib/activity/logger'
 import {
   workerPlanRequestedEvent,
   workerImplementRequestedEvent,
+  workerCancelledEvent,
 } from '@/lib/activity/events'
 import { requireUser } from '@/lib/auth/session'
 import { ensureClientAccessByTaskId } from '@/lib/auth/permissions'
@@ -17,6 +18,8 @@ import { getRepoLinkById } from '@/lib/data/github-repos'
 import {
   createIssue,
   createIssueComment,
+  createCommentReaction,
+  listIssueComments,
 } from '@/lib/github/client'
 import { composeWorkerComment } from '@/lib/github/compose-worker-comment'
 import { composeIssueBody } from '@/lib/github/compose-issue-body'
@@ -352,4 +355,165 @@ export async function triggerWorkerImplement(input: {
   })
 
   return { commentUrl: comment.html_url }
+}
+
+// ---------------------------------------------------------------------------
+// Cancel Deployment
+// ---------------------------------------------------------------------------
+
+const WORKER_BOT_LOGIN = 'pts-worker[bot]'
+
+const cancelSchema = z.object({
+  deploymentId: z.string().uuid(),
+})
+
+type CancelResult = { ok: true } | { error: string }
+
+/**
+ * Cancel an in-progress deployment by reacting 👎 on the latest bot comment.
+ */
+export async function cancelDeployment(input: {
+  deploymentId: string
+}): Promise<CancelResult> {
+  const user = await requireUser()
+
+  const parsed = cancelSchema.safeParse(input)
+  if (!parsed.success) return { error: 'Invalid payload.' }
+
+  const { deploymentId } = parsed.data
+
+  // Load deployment
+  const [deployment] = await db
+    .select()
+    .from(taskDeployments)
+    .where(eq(taskDeployments.id, deploymentId))
+    .limit(1)
+
+  if (!deployment) return { error: 'Deployment not found.' }
+
+  // Verify cancellable status
+  if (deployment.workerStatus !== 'working' && deployment.workerStatus !== 'implementing') {
+    return { error: 'Deployment is not in a cancellable state.' }
+  }
+
+  const taskId = deployment.taskId
+
+  // Auth check
+  try {
+    await ensureClientAccessByTaskId(user, taskId)
+  } catch (error) {
+    if (error instanceof NotFoundError) return { error: 'Task not found.' }
+    if (error instanceof ForbiddenError) return { error: 'Permission denied.' }
+    console.error('cancelDeployment auth error', error)
+    return { error: 'Unable to authorize request.' }
+  }
+
+  // Load task for context
+  const [task] = await db
+    .select({
+      id: tasks.id,
+      title: tasks.title,
+      projectId: tasks.projectId,
+      clientId: projects.clientId,
+    })
+    .from(tasks)
+    .leftJoin(projects, eq(projects.id, tasks.projectId))
+    .where(eq(tasks.id, taskId))
+    .limit(1)
+
+  if (!task) return { error: 'Task not found.' }
+
+  // Load repo link
+  const repoLink = await getRepoLinkById(deployment.repoLinkId)
+  if (!repoLink) return { error: 'Repository link not found.' }
+
+  // Find latest bot comment to react on
+  let rawComments
+  try {
+    rawComments = await listIssueComments(
+      user.id,
+      repoLink.repoOwner,
+      repoLink.repoName,
+      deployment.githubIssueNumber,
+      repoLink.oauthConnectionId
+    )
+  } catch (error) {
+    console.error('Failed to fetch issue comments for cancel', error)
+    return { error: 'Failed to fetch issue comments.' }
+  }
+
+  const botComments = rawComments.filter(c => c.user.login === WORKER_BOT_LOGIN)
+  if (botComments.length === 0) {
+    return { error: 'No worker comments found to cancel.' }
+  }
+
+  const latestBotComment = botComments[botComments.length - 1]
+
+  // React with 👎 (-1) on the latest bot comment
+  try {
+    await createCommentReaction(
+      user.id,
+      repoLink.repoOwner,
+      repoLink.repoName,
+      latestBotComment.id,
+      '-1',
+      repoLink.oauthConnectionId
+    )
+  } catch (error) {
+    console.error('Failed to add cancel reaction', error)
+    return {
+      error:
+        error instanceof Error
+          ? `GitHub API error: ${error.message}`
+          : 'Failed to add cancel reaction.',
+    }
+  }
+
+  // Update deployment status
+  await db
+    .update(taskDeployments)
+    .set({
+      workerStatus: 'cancelled',
+      updatedAt: new Date().toISOString(),
+    })
+    .where(eq(taskDeployments.id, deploymentId))
+
+  // Sync task cached status if this is the latest deployment
+  const [latest] = await db
+    .select({ id: taskDeployments.id })
+    .from(taskDeployments)
+    .where(eq(taskDeployments.taskId, taskId))
+    .orderBy(desc(taskDeployments.createdAt))
+    .limit(1)
+
+  if (latest && latest.id === deploymentId) {
+    await db
+      .update(tasks)
+      .set({
+        workerStatus: 'cancelled',
+        updatedBy: user.id,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(tasks.id, taskId))
+  }
+
+  // Log activity
+  const event = workerCancelledEvent({
+    taskTitle: task.title,
+    repoFullName: repoLink.repoFullName,
+    issueNumber: deployment.githubIssueNumber,
+  })
+  await logActivity({
+    actorId: user.id,
+    actorRole: user.role,
+    verb: event.verb,
+    summary: event.summary,
+    targetType: 'TASK',
+    targetId: taskId,
+    targetProjectId: task.projectId,
+    targetClientId: task.clientId ?? null,
+    metadata: event.metadata,
+  })
+
+  return { ok: true }
 }
