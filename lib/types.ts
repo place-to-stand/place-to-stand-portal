@@ -130,6 +130,21 @@ export type DbTaskAttachment = {
   deleted_at: string | null
 }
 
+export type DbTaskDeployment = {
+  id: string
+  task_id: string
+  repo_link_id: string
+  github_issue_number: number
+  github_issue_url: string
+  worker_status: WorkerStatusValue
+  pr_url: string | null
+  model: string | null
+  mode: string | null
+  created_by: string
+  created_at: string
+  updated_at: string
+}
+
 // ProjectMemberWithUser represents a client member who has access to a project
 // The project_id is derived from the client_id for backwards compatibility
 export type ProjectMemberWithUser = {

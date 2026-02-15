@@ -218,6 +218,20 @@
       "when": 1771112980986,
       "tag": "0030_add_task_worker_status",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1771132922219,
+      "tag": "0031_task_deployments",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1771136572255,
+      "tag": "0032_add_deployment_pr_url",
+      "breakpoints": true
     }
   ]
 }

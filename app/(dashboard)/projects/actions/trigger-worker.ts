@@ -1,6 +1,6 @@
 'use server'
 
-import { eq } from 'drizzle-orm'
+import { eq, desc } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { logActivity } from '@/lib/activity/logger'
@@ -11,7 +11,7 @@ import {
 import { requireUser } from '@/lib/auth/session'
 import { ensureClientAccessByTaskId } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { tasks, projects } from '@/lib/db/schema'
+import { tasks, projects, taskDeployments } from '@/lib/db/schema'
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
 import { getRepoLinkById } from '@/lib/data/github-repos'
 import {
@@ -34,14 +34,13 @@ const triggerPlanSchema = z.object({
 })
 
 const triggerImplementSchema = z.object({
-  taskId: z.string().uuid(),
-  repoLinkId: z.string().uuid(),
+  deploymentId: z.string().uuid(),
   model: modelSchema,
   customPrompt: z.string().max(4000).optional(),
 })
 
 type TriggerResult =
-  | { issueNumber: number; issueUrl: string; commentUrl: string; workerStatus: 'working' | 'implementing' }
+  | { deploymentId: string; issueNumber: number; issueUrl: string; commentUrl: string; workerStatus: 'working' | 'implementing' }
   | { error: string }
 
 type ImplementResult =
@@ -84,7 +83,6 @@ export async function triggerWorkerPlan(input: {
       description: tasks.description,
       projectId: tasks.projectId,
       clientId: projects.clientId,
-      githubIssueNumber: tasks.githubIssueNumber,
     })
     .from(tasks)
     .leftJoin(projects, eq(projects.id, tasks.projectId))
@@ -92,9 +90,6 @@ export async function triggerWorkerPlan(input: {
     .limit(1)
 
   if (!task) return { error: 'Task not found.' }
-  if (task.githubIssueNumber) {
-    return { error: 'This task already has a linked GitHub issue.' }
-  }
 
   // Load repo link and verify it belongs to the task's project
   const repoLink = await getRepoLinkById(repoLinkId)
@@ -135,13 +130,30 @@ export async function triggerWorkerPlan(input: {
     }
   }
 
-  // Update task with issue reference and initial worker status
+  const initialStatus = mode === 'execute' ? 'implementing' as const : 'working' as const
+
+  // Insert deployment row
+  const [deployment] = await db
+    .insert(taskDeployments)
+    .values({
+      taskId,
+      repoLinkId,
+      githubIssueNumber: issue.number,
+      githubIssueUrl: issue.html_url,
+      workerStatus: initialStatus,
+      model,
+      mode,
+      createdBy: user.id,
+    })
+    .returning()
+
+  // Update task cached fields to point to latest deployment
   await db
     .update(tasks)
     .set({
       githubIssueNumber: issue.number,
       githubIssueUrl: issue.html_url,
-      workerStatus: mode === 'execute' ? 'implementing' : 'working',
+      workerStatus: initialStatus,
       updatedBy: user.id,
       updatedAt: new Date().toISOString(),
     })
@@ -202,16 +214,14 @@ export async function triggerWorkerPlan(input: {
     metadata: event.metadata,
   })
 
-  const initialStatus = mode === 'execute' ? 'implementing' as const : 'working' as const
-  return { issueNumber: issue.number, issueUrl: issue.html_url, commentUrl: comment.html_url, workerStatus: initialStatus }
+  return { deploymentId: deployment.id, issueNumber: issue.number, issueUrl: issue.html_url, commentUrl: comment.html_url, workerStatus: initialStatus }
 }
 
 /**
- * Post a @pts-worker implement comment on an existing GitHub issue.
+ * Post a @pts-worker implement comment on an existing deployment's GitHub issue.
  */
 export async function triggerWorkerImplement(input: {
-  taskId: string
-  repoLinkId: string
+  deploymentId: string
   model: 'opus' | 'sonnet' | 'haiku'
   customPrompt?: string
 }): Promise<ImplementResult> {
@@ -222,7 +232,18 @@ export async function triggerWorkerImplement(input: {
     return { error: 'Invalid payload.' }
   }
 
-  const { taskId, repoLinkId, model, customPrompt } = parsed.data
+  const { deploymentId, model, customPrompt } = parsed.data
+
+  // Load deployment
+  const [deployment] = await db
+    .select()
+    .from(taskDeployments)
+    .where(eq(taskDeployments.id, deploymentId))
+    .limit(1)
+
+  if (!deployment) return { error: 'Deployment not found.' }
+
+  const taskId = deployment.taskId
 
   // Auth check
   try {
@@ -234,7 +255,7 @@ export async function triggerWorkerImplement(input: {
     return { error: 'Unable to authorize request.' }
   }
 
-  // Load task
+  // Load task for context
   const [task] = await db
     .select({
       id: tasks.id,
@@ -242,7 +263,6 @@ export async function triggerWorkerImplement(input: {
       description: tasks.description,
       projectId: tasks.projectId,
       clientId: projects.clientId,
-      githubIssueNumber: tasks.githubIssueNumber,
     })
     .from(tasks)
     .leftJoin(projects, eq(projects.id, tasks.projectId))
@@ -250,16 +270,10 @@ export async function triggerWorkerImplement(input: {
     .limit(1)
 
   if (!task) return { error: 'Task not found.' }
-  if (!task.githubIssueNumber) {
-    return { error: 'No GitHub issue linked. Run "Start Plan" first.' }
-  }
 
   // Load repo link
-  const repoLink = await getRepoLinkById(repoLinkId)
+  const repoLink = await getRepoLinkById(deployment.repoLinkId)
   if (!repoLink) return { error: 'Repository link not found.' }
-  if (repoLink.projectId !== task.projectId) {
-    return { error: 'Repository does not belong to this project.' }
-  }
 
   // Post implement comment
   let comment: { id: number; html_url: string }
@@ -275,7 +289,7 @@ export async function triggerWorkerImplement(input: {
       user.id,
       repoLink.repoOwner,
       repoLink.repoName,
-      task.githubIssueNumber,
+      deployment.githubIssueNumber,
       body,
       repoLink.oauthConnectionId
     )
@@ -289,22 +303,40 @@ export async function triggerWorkerImplement(input: {
     }
   }
 
-  // Update worker status to implementing
+  // Update deployment status
   await db
-    .update(tasks)
+    .update(taskDeployments)
     .set({
       workerStatus: 'implementing',
-      updatedBy: user.id,
       updatedAt: new Date().toISOString(),
     })
-    .where(eq(tasks.id, taskId))
+    .where(eq(taskDeployments.id, deploymentId))
+
+  // Sync task cached fields if this is the latest deployment
+  const [latest] = await db
+    .select({ id: taskDeployments.id })
+    .from(taskDeployments)
+    .where(eq(taskDeployments.taskId, taskId))
+    .orderBy(desc(taskDeployments.createdAt))
+    .limit(1)
+
+  if (latest && latest.id === deploymentId) {
+    await db
+      .update(tasks)
+      .set({
+        workerStatus: 'implementing',
+        updatedBy: user.id,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(tasks.id, taskId))
+  }
 
   // Log activity
   const event = workerImplementRequestedEvent({
     taskTitle: task.title,
     model,
     repoFullName: repoLink.repoFullName,
-    issueNumber: task.githubIssueNumber,
+    issueNumber: deployment.githubIssueNumber,
     hasCustomPrompt: Boolean(customPrompt),
   })
   await logActivity({

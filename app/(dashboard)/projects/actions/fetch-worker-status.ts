@@ -1,14 +1,14 @@
 'use server'
 
-import { eq } from 'drizzle-orm'
+import { eq, desc } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { requireUser } from '@/lib/auth/session'
 import { ensureClientAccessByTaskId } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { tasks } from '@/lib/db/schema'
+import { tasks, taskDeployments } from '@/lib/db/schema'
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
-import { getProjectRepos } from '@/lib/data/github-repos'
+import { getRepoLinkById } from '@/lib/data/github-repos'
 import { listIssueComments, type GitHubComment } from '@/lib/github/client'
 
 // ---------------------------------------------------------------------------
@@ -75,24 +75,34 @@ function extractPrUrl(comments: WorkerComment[]): string | null {
 // ---------------------------------------------------------------------------
 
 const fetchSchema = z.object({
-  taskId: z.string().uuid(),
+  deploymentId: z.string().uuid(),
 })
 
 /**
- * Fetch the current worker status for a task by reading GitHub issue comments.
+ * Fetch the current worker status for a deployment by reading GitHub issue comments.
  */
 export async function fetchWorkerStatus(input: {
-  taskId: string
+  deploymentId: string
 }): Promise<WorkerStatusResult> {
   const user = await requireUser()
 
   const parsed = fetchSchema.safeParse(input)
   if (!parsed.success) return { error: 'Invalid payload.' }
 
-  const { taskId } = parsed.data
+  const { deploymentId } = parsed.data
 
+  // Load deployment
+  const [deployment] = await db
+    .select()
+    .from(taskDeployments)
+    .where(eq(taskDeployments.id, deploymentId))
+    .limit(1)
+
+  if (!deployment) return { error: 'Deployment not found.' }
+
+  // Auth check
   try {
-    await ensureClientAccessByTaskId(user, taskId)
+    await ensureClientAccessByTaskId(user, deployment.taskId)
   } catch (error) {
     if (error instanceof NotFoundError) return { error: 'Task not found.' }
     if (error instanceof ForbiddenError) return { error: 'Permission denied.' }
@@ -100,28 +110,9 @@ export async function fetchWorkerStatus(input: {
     return { error: 'Unable to authorize request.' }
   }
 
-  // Load task
-  const [task] = await db
-    .select({
-      id: tasks.id,
-      projectId: tasks.projectId,
-      githubIssueNumber: tasks.githubIssueNumber,
-    })
-    .from(tasks)
-    .where(eq(tasks.id, taskId))
-    .limit(1)
-
-  if (!task) return { error: 'Task not found.' }
-  if (!task.githubIssueNumber) {
-    return { comments: [], prUrl: null, latestStatus: null }
-  }
-
-  // Find the repo link for this project to get connection credentials
-  const repos = await getProjectRepos(task.projectId)
-  if (repos.length === 0) return { error: 'No linked repository found.' }
-
-  // Use the first active repo link (most common case)
-  const repoLink = repos[0]
+  // Load repo link
+  const repoLink = await getRepoLinkById(deployment.repoLinkId)
+  if (!repoLink) return { error: 'Repository link not found.' }
 
   let rawComments: GitHubComment[]
   try {
@@ -129,7 +120,7 @@ export async function fetchWorkerStatus(input: {
       user.id,
       repoLink.repoOwner,
       repoLink.repoName,
-      task.githubIssueNumber,
+      deployment.githubIssueNumber,
       repoLink.oauthConnectionId
     )
   } catch (error) {
@@ -180,12 +171,31 @@ export async function fetchWorkerStatus(input: {
       ? botComments[botComments.length - 1].status
       : null
 
-  // Persist the latest worker status to the task for board display
+  // Persist the latest worker status to the deployment
   if (latestStatus && latestStatus !== 'unknown') {
     await db
-      .update(tasks)
-      .set({ workerStatus: latestStatus })
-      .where(eq(tasks.id, taskId))
+      .update(taskDeployments)
+      .set({ workerStatus: latestStatus, prUrl: prUrl, updatedAt: new Date().toISOString() })
+      .where(eq(taskDeployments.id, deploymentId))
+
+    // Sync task cached fields if this is the latest deployment
+    const [latest] = await db
+      .select({ id: taskDeployments.id })
+      .from(taskDeployments)
+      .where(eq(taskDeployments.taskId, deployment.taskId))
+      .orderBy(desc(taskDeployments.createdAt))
+      .limit(1)
+
+    if (latest && latest.id === deploymentId) {
+      await db
+        .update(tasks)
+        .set({
+          workerStatus: latestStatus,
+          githubIssueNumber: deployment.githubIssueNumber,
+          githubIssueUrl: deployment.githubIssueUrl,
+        })
+        .where(eq(tasks.id, deployment.taskId))
+    }
   }
 
   return { comments: botComments, prUrl, latestStatus }

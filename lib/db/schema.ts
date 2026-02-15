@@ -1646,6 +1646,51 @@ export const proposals = pgTable(
 )
 
 // =============================================================================
+// TASK DEPLOYMENTS (GitHub issue-based worker deployments per task)
+// =============================================================================
+
+export const taskDeployments = pgTable(
+  'task_deployments',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    taskId: uuid('task_id').notNull(),
+    repoLinkId: uuid('repo_link_id').notNull(),
+    githubIssueNumber: integer('github_issue_number').notNull(),
+    githubIssueUrl: text('github_issue_url').notNull(),
+    workerStatus: workerStatus('worker_status').notNull(),
+    prUrl: text('pr_url'),
+    model: text(),
+    mode: text(),
+    createdBy: uuid('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+  },
+  table => [
+    index('idx_task_deployments_task')
+      .using('btree', table.taskId.asc().nullsLast().op('uuid_ops')),
+    foreignKey({
+      columns: [table.taskId],
+      foreignColumns: [tasks.id],
+      name: 'task_deployments_task_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.repoLinkId],
+      foreignColumns: [githubRepoLinks.id],
+      name: 'task_deployments_repo_link_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [users.id],
+      name: 'task_deployments_created_by_fkey',
+    }),
+  ]
+)
+
+// =============================================================================
 // VIEWS
 // =============================================================================
 
