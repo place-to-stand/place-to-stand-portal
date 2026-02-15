@@ -181,6 +181,16 @@ export const leadLossReason = pgEnum('lead_loss_reason', [
   'OTHER',
 ])
 
+export const workerStatus = pgEnum('worker_status', [
+  'working',
+  'plan_ready',
+  'implementing',
+  'pr_created',
+  'done_no_changes',
+  'error',
+  'cancelled',
+])
+
 // =============================================================================
 // CORE TABLES
 // =============================================================================
@@ -462,6 +472,9 @@ export const tasks = pgTable(
       mode: 'string',
     }),
     rank: text().default('zzzzzzzz').notNull(),
+    githubIssueNumber: integer('github_issue_number'),
+    githubIssueUrl: text('github_issue_url'),
+    workerStatus: workerStatus('worker_status'),
   },
   table => [
     index('idx_tasks_created_by')
@@ -1629,6 +1642,51 @@ export const proposals = pgTable(
       columns: [table.createdBy],
       foreignColumns: [users.id],
       name: 'proposals_created_by_fkey',
+    }),
+  ]
+)
+
+// =============================================================================
+// TASK DEPLOYMENTS (GitHub issue-based worker deployments per task)
+// =============================================================================
+
+export const taskDeployments = pgTable(
+  'task_deployments',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    taskId: uuid('task_id').notNull(),
+    repoLinkId: uuid('repo_link_id').notNull(),
+    githubIssueNumber: integer('github_issue_number').notNull(),
+    githubIssueUrl: text('github_issue_url').notNull(),
+    workerStatus: workerStatus('worker_status').notNull(),
+    prUrl: text('pr_url'),
+    model: text(),
+    mode: text(),
+    createdBy: uuid('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+  },
+  table => [
+    index('idx_task_deployments_task')
+      .using('btree', table.taskId.asc().nullsLast().op('uuid_ops')),
+    foreignKey({
+      columns: [table.taskId],
+      foreignColumns: [tasks.id],
+      name: 'task_deployments_task_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.repoLinkId],
+      foreignColumns: [githubRepoLinks.id],
+      name: 'task_deployments_repo_link_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [users.id],
+      name: 'task_deployments_created_by_fkey',
     }),
   ]
 )
