@@ -1,29 +1,32 @@
 'use client'
 
-import { useState, useCallback, useTransition, useRef, useEffect } from 'react'
+import { useState, useCallback, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { format, formatDistanceToNow } from 'date-fns'
 import {
-  CheckCircle,
   Download,
   ExternalLink,
   Eye,
+  FileText,
   Link2,
+  Loader2,
   Mail,
   MessageSquare,
+  MoreHorizontal,
   PenLine,
   Send,
-  Loader2,
-  Hash,
-  User,
-  DollarSign,
-  CalendarDays,
   Trash2,
 } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
 import {
   Sheet,
@@ -32,59 +35,18 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { useToast } from '@/components/ui/use-toast'
+import { ProposalDocument } from '@/components/proposal-viewer/proposal-document'
+import type { ProposalContent } from '@/lib/proposals/types'
 import type { ProposalWithRelations } from '@/lib/queries/proposals'
 
 import { ShareProposalDialog } from '../../leads/_components/share-proposal-dialog'
 import { SendEmailDialog } from '../../leads/_components/send-email-dialog'
 import { prepareProposalSend } from '../../leads/_actions/prepare-proposal-send'
 import { deleteProposalAction } from '../../leads/_actions/delete-proposal'
+import { ProposalStatusBadge } from './proposal-status-badge'
 
 // ---------------------------------------------------------------------------
-// Status badge
-// ---------------------------------------------------------------------------
-
-function StatusBadge({ proposal }: { proposal: ProposalWithRelations }) {
-  if (proposal.status === 'ACCEPTED' && proposal.countersignedAt) {
-    return (
-      <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-700 border-emerald-500/20">
-        <CheckCircle className="mr-1 h-3 w-3" />
-        Fully Executed
-      </Badge>
-    )
-  }
-
-  if (proposal.status === 'ACCEPTED' && !proposal.countersignedAt) {
-    return (
-      <div className="flex items-center gap-1.5">
-        <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/20">
-          <CheckCircle className="mr-1 h-3 w-3" />
-          Accepted
-        </Badge>
-        <Badge variant="outline" className="text-xs bg-orange-500/10 text-orange-600 border-orange-500/20">
-          <PenLine className="mr-1 h-3 w-3" />
-          Awaiting Countersign
-        </Badge>
-      </div>
-    )
-  }
-
-  const config: Record<string, { label: string; className: string }> = {
-    DRAFT: { label: 'Draft', className: 'bg-gray-500/10 text-gray-600 border-gray-500/20' },
-    SENT: { label: 'Sent', className: 'bg-blue-500/10 text-blue-600 border-blue-500/20' },
-    VIEWED: { label: 'Viewed', className: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
-    REJECTED: { label: 'Rejected', className: 'bg-red-500/10 text-red-600 border-red-500/20' },
-  }
-
-  const c = config[proposal.status] ?? config.DRAFT
-  return (
-    <Badge variant="outline" className={`text-xs ${c.className}`}>
-      {c.label}
-    </Badge>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Signature card
+// Signature card (kept for metadata section below document)
 // ---------------------------------------------------------------------------
 
 function SignatureCard({
@@ -137,6 +99,16 @@ function SignatureCard({
 }
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function hasProposalContent(
+  content: ProposalContent | Record<string, never> | null
+): content is ProposalContent {
+  return !!content && 'client' in content && 'phases' in content
+}
+
+// ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 
@@ -165,15 +137,7 @@ export function ProposalDetailSheet({
   const [isDeleting, startDelete] = useTransition()
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false)
 
-  // Keep a ref to the last non-null proposal so content stays visible during close animation
-  const lastProposalRef = useRef<ProposalWithRelations | null>(null)
-  useEffect(() => {
-    if (proposal) {
-      lastProposalRef.current = proposal
-    }
-  }, [proposal])
-
-  const displayProposal = proposal ?? lastProposalRef.current
+  const displayProposal = proposal
 
   const handleSendEmail = useCallback(() => {
     if (!displayProposal) return
@@ -241,6 +205,7 @@ export function ProposalDetailSheet({
   const hasLead = !!p.leadId
   const canSendEmail = hasLead && ['DRAFT', 'SENT', 'VIEWED', 'ACCEPTED'].includes(p.status)
   const canEdit = ['DRAFT', 'SENT'].includes(p.status) && !!onEdit
+  const contentExists = hasProposalContent(p.content)
 
   const leadShim = hasLead
     ? {
@@ -254,238 +219,219 @@ export function ProposalDetailSheet({
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="right" className="flex w-full flex-col overflow-y-auto sm:max-w-lg">
-          <SheetHeader className="bg-transparent p-0 px-6 pt-6">
-            <div className="flex items-start justify-between gap-3">
+        <SheetContent
+          side="right"
+          className="flex w-full flex-col overflow-hidden sm:max-w-3xl"
+        >
+          {/* Compact header with metadata + actions */}
+          <SheetHeader className="flex-shrink-0 border-b-2 border-b-indigo-500/60 px-6 pt-4">
+            <div className="flex items-start justify-between gap-3 pr-8">
               <div className="min-w-0 flex-1">
                 <SheetTitle className="text-lg leading-tight">{p.title}</SheetTitle>
-                <div className="mt-2">
-                  <StatusBadge proposal={p} />
+                {/* Metadata row */}
+                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm">
+                  <ProposalStatusBadge status={p.status} countersignedAt={p.countersignedAt} />
+                  {p.estimatedValue && (
+                    <span className="text-muted-foreground tabular-nums">
+                      ${parseFloat(p.estimatedValue).toLocaleString()}
+                    </span>
+                  )}
+                  {p.sentAt && (
+                    <span className="flex items-center gap-1 text-muted-foreground">
+                      <Send className="h-3 w-3" />
+                      {format(new Date(p.sentAt), 'MMM d, yyyy')}
+                    </span>
+                  )}
+                  <span className="flex items-center gap-1 text-muted-foreground">
+                    <Eye className="h-3 w-3" />
+                    {p.viewedCount ?? 0} view{(p.viewedCount ?? 0) !== 1 ? 's' : ''}
+                    {p.viewedAt && (
+                      <span className="ml-0.5">
+                        ({formatDistanceToNow(new Date(p.viewedAt), { addSuffix: true })})
+                      </span>
+                    )}
+                  </span>
+                  {(p.leadName || p.clientName) && (
+                    <span className="text-muted-foreground">
+                      {p.leadName ?? p.clientName}
+                    </span>
+                  )}
                 </div>
               </div>
+
+              {/* Actions dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-8 w-8 shrink-0">
+                    <MoreHorizontal className="h-4 w-4" />
+                    <span className="sr-only">Actions</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {canEdit && (
+                    <DropdownMenuItem
+                      onClick={() => {
+                        onOpenChange(false)
+                        onEdit!(p)
+                      }}
+                    >
+                      <PenLine className="mr-2 h-4 w-4" />
+                      Edit Proposal
+                    </DropdownMenuItem>
+                  )}
+                  {canSendEmail && (
+                    <DropdownMenuItem onClick={handleSendEmail} disabled={isPreparing}>
+                      {isPreparing ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Mail className="mr-2 h-4 w-4" />
+                      )}
+                      Send via Email
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onClick={() => setShareDialogOpen(true)}>
+                    <Link2 className="mr-2 h-4 w-4" />
+                    Share Link
+                  </DropdownMenuItem>
+                  {isAcceptedNotCountersigned && p.countersignToken && (
+                    <DropdownMenuItem
+                      onClick={() => {
+                        window.open(`/share/proposals/${p.countersignToken}/countersign`, '_blank')
+                      }}
+                    >
+                      <PenLine className="mr-2 h-4 w-4" />
+                      Countersign Now
+                    </DropdownMenuItem>
+                  )}
+                  {isFullyExecuted && (
+                    <DropdownMenuItem onClick={handleDownloadCertificate}>
+                      <Download className="mr-2 h-4 w-4" />
+                      Download Certificate
+                    </DropdownMenuItem>
+                  )}
+                  {p.shareToken && p.shareEnabled && (
+                    <DropdownMenuItem asChild>
+                      <a href={`/share/proposals/${p.shareToken}`} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Open in New Tab
+                      </a>
+                    </DropdownMenuItem>
+                  )}
+                  {p.docUrl && (
+                    <DropdownMenuItem asChild>
+                      <a href={p.docUrl} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Open Document
+                      </a>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => setArchiveDialogOpen(true)}
+                    disabled={isDeleting}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    {isDeleting ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="mr-2 h-4 w-4" />
+                    )}
+                    Archive
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </SheetHeader>
 
-          <div className="flex-1 space-y-6 px-6 py-5">
-            {/* Summary */}
-            <section className="space-y-3">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Summary</h3>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                {p.estimatedValue && (
+          {/* Scrollable body: rendered proposal + signatures */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            {contentExists ? (
+              <div className="space-y-8">
+                {/* Rendered proposal document */}
+                <ProposalDocument
+                  title={p.title}
+                  content={p.content as ProposalContent}
+                  estimatedValue={p.estimatedValue}
+                  expirationDate={p.expirationDate}
+                />
+
+                {/* Client feedback */}
+                {p.clientComment && (
                   <>
-                    <span className="flex items-center gap-1.5 text-muted-foreground">
-                      <DollarSign className="h-3.5 w-3.5" /> Value
-                    </span>
-                    <span className="font-medium tabular-nums">
-                      ${parseFloat(p.estimatedValue).toLocaleString()}
-                    </span>
+                    <Separator />
+                    <section className="space-y-2">
+                      <h3 className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                        <MessageSquare className="h-3.5 w-3.5" /> Client Feedback
+                      </h3>
+                      <p className="text-sm whitespace-pre-wrap">{p.clientComment}</p>
+                    </section>
                   </>
                 )}
-                {p.sentAt && (
+
+                {/* Signatures */}
+                {(p.signerName || isAcceptedNotCountersigned || isFullyExecuted) && (
                   <>
-                    <span className="flex items-center gap-1.5 text-muted-foreground">
-                      <Send className="h-3.5 w-3.5" /> Sent
-                    </span>
-                    <span>{format(new Date(p.sentAt), 'MMM d, yyyy')}</span>
+                    <Separator />
+                    <section className="space-y-3">
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Signatures</h3>
+                      <div className="space-y-3">
+                        <SignatureCard
+                          label="Client"
+                          name={p.signerName}
+                          email={p.signerEmail}
+                          signatureData={p.signatureData}
+                          timestamp={p.acceptedAt}
+                          ipAddress={p.signerIpAddress}
+                        />
+                        <SignatureCard
+                          label="Countersigner"
+                          name={p.countersignerName}
+                          email={p.countersignerEmail}
+                          signatureData={p.countersignatureData}
+                          timestamp={p.countersignedAt}
+                          ipAddress={p.countersignerIpAddress}
+                          pending={isAcceptedNotCountersigned}
+                        />
+                      </div>
+                    </section>
                   </>
                 )}
-                {p.expirationDate && (
+
+                {/* Content hash */}
+                {p.contentHashAtSigning && (
                   <>
-                    <span className="flex items-center gap-1.5 text-muted-foreground">
-                      <CalendarDays className="h-3.5 w-3.5" /> Expires
-                    </span>
-                    <span>{format(new Date(p.expirationDate), 'MMM d, yyyy')}</span>
-                  </>
-                )}
-                <span className="flex items-center gap-1.5 text-muted-foreground">
-                  <Eye className="h-3.5 w-3.5" /> Views
-                </span>
-                <span>
-                  {p.viewedCount ?? 0}
-                  {p.viewedAt && (
-                    <span className="ml-1 text-muted-foreground">
-                      (last {formatDistanceToNow(new Date(p.viewedAt), { addSuffix: true })})
-                    </span>
-                  )}
-                </span>
-                {(p.leadName || p.clientName) && (
-                  <>
-                    <span className="flex items-center gap-1.5 text-muted-foreground">
-                      <User className="h-3.5 w-3.5" /> Contact
-                    </span>
-                    <span>{p.leadName ?? p.clientName}</span>
+                    <Separator />
+                    <section className="space-y-1">
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                        Content Hash
+                      </h3>
+                      <p className="break-all font-mono text-xs text-muted-foreground">
+                        {p.contentHashAtSigning}
+                      </p>
+                    </section>
                   </>
                 )}
               </div>
-            </section>
-
-            {/* Client Comment */}
-            {p.clientComment && (
-              <>
-                <Separator />
-                <section className="space-y-2">
-                  <h3 className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                    <MessageSquare className="h-3.5 w-3.5" /> Client Feedback
-                  </h3>
-                  <p className="text-sm whitespace-pre-wrap">{p.clientComment}</p>
-                </section>
-              </>
-            )}
-
-            {/* Signatures */}
-            {(p.signerName || isAcceptedNotCountersigned || isFullyExecuted) && (
-              <>
-                <Separator />
-                <section className="space-y-3">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Signatures</h3>
-                  <div className="space-y-3">
-                    <SignatureCard
-                      label="Client"
-                      name={p.signerName}
-                      email={p.signerEmail}
-                      signatureData={p.signatureData}
-                      timestamp={p.acceptedAt}
-                      ipAddress={p.signerIpAddress}
-                    />
-                    <SignatureCard
-                      label="Countersigner"
-                      name={p.countersignerName}
-                      email={p.countersignerEmail}
-                      signatureData={p.countersignatureData}
-                      timestamp={p.countersignedAt}
-                      ipAddress={p.countersignerIpAddress}
-                      pending={isAcceptedNotCountersigned}
-                    />
-                  </div>
-                </section>
-              </>
-            )}
-
-            {/* Content hash */}
-            {p.contentHashAtSigning && (
-              <>
-                <Separator />
-                <section className="space-y-1">
-                  <h3 className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                    <Hash className="h-3.5 w-3.5" /> Content Hash
-                  </h3>
-                  <p className="break-all font-mono text-xs text-muted-foreground">
-                    {p.contentHashAtSigning}
+            ) : (
+              /* Legacy proposal — no structured content */
+              <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+                <FileText className="h-12 w-12 text-muted-foreground/40" />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Google Docs Proposal</p>
+                  <p className="text-sm text-muted-foreground">
+                    This proposal was created as a Google Doc and cannot be previewed here.
                   </p>
-                </section>
-              </>
-            )}
-
-            {/* Actions */}
-            <Separator />
-            <section className="space-y-3">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Actions</h3>
-              <div className="flex flex-col gap-2">
-                {canEdit && (
-                  <Button
-                    variant="outline"
-                    className="justify-start"
-                    onClick={() => {
-                      onOpenChange(false)
-                      onEdit!(p)
-                    }}
-                  >
-                    <PenLine className="mr-2 h-4 w-4" />
-                    Edit Proposal
-                  </Button>
-                )}
-
-                {canSendEmail && (
-                  <Button
-                    variant="outline"
-                    className="justify-start"
-                    onClick={handleSendEmail}
-                    disabled={isPreparing}
-                  >
-                    {isPreparing ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Mail className="mr-2 h-4 w-4" />
-                    )}
-                    Send via Email
-                  </Button>
-                )}
-
-                {isAcceptedNotCountersigned && p.countersignToken && (
-                  <Button
-                    className="justify-start"
-                    onClick={() => {
-                      window.open(`/share/proposals/${p.countersignToken}/countersign`, '_blank')
-                    }}
-                  >
-                    <PenLine className="mr-2 h-4 w-4" />
-                    Countersign Now
-                  </Button>
-                )}
-
-                {isFullyExecuted && (
-                  <Button
-                    variant="outline"
-                    className="justify-start"
-                    onClick={handleDownloadCertificate}
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Download Certificate
-                  </Button>
-                )}
-
-                <Button
-                  variant="outline"
-                  className="justify-start"
-                  onClick={() => setShareDialogOpen(true)}
-                >
-                  <Link2 className="mr-2 h-4 w-4" />
-                  Share Link
-                </Button>
-
-                {p.shareToken && p.shareEnabled && (
-                  <Button
-                    variant="outline"
-                    className="justify-start"
-                    asChild
-                  >
-                    <a href={`/share/proposals/${p.shareToken}`} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="mr-2 h-4 w-4" />
-                      Open in New Tab
-                    </a>
-                  </Button>
-                )}
-
+                </div>
                 {p.docUrl && (
-                  <Button
-                    variant="ghost"
-                    className="justify-start"
-                    asChild
-                  >
+                  <Button variant="outline" asChild>
                     <a href={p.docUrl} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="mr-2 h-4 w-4" />
-                      Open Document
+                      Open in Google Docs
                     </a>
                   </Button>
                 )}
-
-                <Separator />
-
-                <Button
-                  variant="ghost"
-                  className="justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={() => setArchiveDialogOpen(true)}
-                  disabled={isDeleting}
-                >
-                  {isDeleting ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Trash2 className="mr-2 h-4 w-4" />
-                  )}
-                  Archive Proposal
-                </Button>
               </div>
-            </section>
+            )}
           </div>
         </SheetContent>
       </Sheet>
@@ -502,6 +448,7 @@ export function ProposalDetailSheet({
 
       {emailDialogOpen && leadShim && (
         <SendEmailDialog
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- shim provides only the fields SendEmailDialog uses
           lead={leadShim as any}
           senderName={senderName}
           open={emailDialogOpen}
