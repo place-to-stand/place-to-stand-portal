@@ -6,6 +6,7 @@ import { Plus } from 'lucide-react'
 
 import { AppShellHeader } from '@/components/layout/app-shell'
 import { Button } from '@/components/ui/button'
+import { useToast } from '@/components/ui/use-toast'
 import type { ProposalWithRelations } from '@/lib/queries/proposals'
 import type { LeadRecord } from '@/lib/leads/types'
 
@@ -25,6 +26,7 @@ type ProposalsContentProps = {
 
 export function ProposalsContent({ proposals, leads, clients, senderName }: ProposalsContentProps) {
   const router = useRouter()
+  const { toast } = useToast()
   const [pickerOpen, setPickerOpen] = useState(false)
   const [selectedLead, setSelectedLead] = useState<LeadRecord | null>(null)
   const [selectedClient, setSelectedClient] = useState<ClientForProposal | null>(null)
@@ -56,7 +58,14 @@ export function ProposalsContent({ proposals, leads, clients, senderName }: Prop
       ? clients.find(c => c.id === proposal.clientId)
       : null
 
-    if (!lead && !client) return
+    if (!lead && !client) {
+      toast({
+        variant: 'destructive',
+        title: 'Cannot edit proposal',
+        description: 'The associated lead or client could not be found.',
+      })
+      return
+    }
 
     setSelectedLead(lead ?? null)
     setSelectedClient(client ?? null)

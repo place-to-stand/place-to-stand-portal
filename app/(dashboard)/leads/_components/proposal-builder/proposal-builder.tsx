@@ -437,8 +437,8 @@ export function ProposalBuilder({
         return
       }
 
-      // Check for existing proposals
-      if (existingProposals.length > 0) {
+      // Check for existing proposals (skip when editing an existing one)
+      if (!isEditing && existingProposals.length > 0) {
         setPendingBuildValues(values)
         setShowDuplicateWarning(true)
         return
@@ -447,7 +447,7 @@ export function ProposalBuilder({
       // No existing proposals, build directly
       executeBuild(values)
     })()
-  }, [form, toast, existingProposals, executeBuild])
+  }, [form, toast, isEditing, existingProposals, executeBuild])
 
   // Handle inserting content from context panel into project overview
   const handleContextInsert = useCallback(
