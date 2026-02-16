@@ -14,7 +14,7 @@ type ProposalStatusBadgeProps = {
 export function ProposalStatusBadge({ status, countersignedAt }: ProposalStatusBadgeProps) {
   if (status === 'ACCEPTED' && countersignedAt) {
     return (
-      <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-700 border-emerald-500/20">
+      <Badge variant="outline" className="text-xs border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
         <CheckCircle className="mr-1 h-3 w-3" />
         Fully Executed
       </Badge>
@@ -24,11 +24,11 @@ export function ProposalStatusBadge({ status, countersignedAt }: ProposalStatusB
   if (status === 'ACCEPTED' && !countersignedAt) {
     return (
       <div className="flex items-center gap-1.5">
-        <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/20">
+        <Badge variant="outline" className="text-xs border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
           <CheckCircle className="mr-1 h-3 w-3" />
           Accepted
         </Badge>
-        <Badge variant="outline" className="text-xs bg-orange-500/10 text-orange-600 border-orange-500/20">
+        <Badge variant="outline" className="text-xs border-transparent bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200">
           <PenLine className="mr-1 h-3 w-3" />
           Awaiting Countersign
         </Badge>

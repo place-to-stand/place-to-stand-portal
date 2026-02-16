@@ -35,27 +35,27 @@ export const PROPOSAL_STATUS_CONFIG: Record<
   DRAFT: {
     label: 'Draft',
     icon: FileText,
-    className: 'bg-gray-500/10 text-gray-600 border-gray-500/20',
+    className: 'border-transparent bg-slate-100 text-slate-800 dark:bg-slate-800/40 dark:text-slate-200',
   },
   SENT: {
     label: 'Sent',
     icon: Send,
-    className: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+    className: 'border-transparent bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200',
   },
   VIEWED: {
     label: 'Viewed',
     icon: Eye,
-    className: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+    className: 'border-transparent bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200',
   },
   ACCEPTED: {
     label: 'Accepted',
     icon: CheckCircle,
-    className: 'bg-green-500/10 text-green-600 border-green-500/20',
+    className: 'border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200',
   },
   REJECTED: {
     label: 'Rejected',
     icon: XCircle,
-    className: 'bg-red-500/10 text-red-600 border-red-500/20',
+    className: 'border-transparent bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200',
   },
 }
 
