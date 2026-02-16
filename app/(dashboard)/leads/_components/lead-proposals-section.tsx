@@ -347,7 +347,7 @@ function ProposalCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {onEditProposal && proposal.content && (proposal.status === 'DRAFT' || proposal.status === 'SENT') && (
+              {onEditProposal && proposal.content && ['DRAFT', 'SENT', 'VIEWED'].includes(proposal.status) && (
                 <DropdownMenuItem onClick={handleEdit}>
                   <PenLine className="mr-2 h-4 w-4" />
                   Edit Proposal

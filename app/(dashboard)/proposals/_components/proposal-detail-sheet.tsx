@@ -204,7 +204,7 @@ export function ProposalDetailSheet({
   const isAcceptedNotCountersigned = p.status === 'ACCEPTED' && !p.countersignedAt
   const hasLead = !!p.leadId
   const canSendEmail = hasLead && ['DRAFT', 'SENT', 'VIEWED', 'ACCEPTED'].includes(p.status)
-  const canEdit = ['DRAFT', 'SENT'].includes(p.status) && !!onEdit
+  const canEdit = ['DRAFT', 'SENT', 'VIEWED'].includes(p.status) && !!onEdit
   const contentExists = hasProposalContent(p.content)
 
   const leadShim = hasLead
