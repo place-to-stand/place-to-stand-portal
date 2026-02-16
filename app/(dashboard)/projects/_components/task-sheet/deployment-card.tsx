@@ -1,16 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { formatDistanceToNow } from 'date-fns'
 import {
   AlertTriangle,
+  Check,
   ChevronDown,
   ChevronUp,
+  Copy,
   ExternalLink,
   GitPullRequestArrow,
   Loader2,
   Play,
   StopCircle,
+  Terminal,
 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
@@ -74,6 +78,99 @@ function WorkerStatusBadge({ status }: { status: WorkerCommentStatus | string })
     default:
       return null
   }
+}
+
+// ---------------------------------------------------------------------------
+// PR link with hover-revealed copy buttons
+// ---------------------------------------------------------------------------
+
+function CopyButton({
+  text,
+  label,
+  icon: Icon,
+  title,
+  className = '',
+}: {
+  text: string
+  label: string
+  icon: typeof Copy
+  title: string
+  className?: string
+}) {
+  const [copied, setCopied] = useState(false)
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null)
+
+  useEffect(() => {
+    if (!copied || !btnRef.current) { setPos(null); return }
+    const rect = btnRef.current.getBoundingClientRect()
+    setPos({ top: rect.top - 4, left: rect.left + rect.width / 2 })
+  }, [copied])
+
+  return (
+    <span className={className}>
+      <button
+        ref={btnRef}
+        type='button'
+        onClick={e => {
+          e.stopPropagation()
+          navigator.clipboard.writeText(text)
+          setCopied(true)
+          setTimeout(() => setCopied(false), 2000)
+        }}
+        className='cursor-pointer text-muted-foreground hover:text-foreground'
+        title={title}
+      >
+        {copied
+          ? <Check className='h-3.5 w-3.5 text-green-600 dark:text-green-400' />
+          : <Icon className='h-3.5 w-3.5' />}
+      </button>
+      {copied && pos && createPortal(
+        <span
+          className='pointer-events-none fixed z-[9999] -translate-x-1/2 -translate-y-full animate-in fade-in slide-in-from-bottom-1 duration-150'
+          style={{ top: pos.top, left: pos.left }}
+        >
+          <span className='flex max-w-[260px] flex-col whitespace-nowrap rounded-md bg-popover px-2.5 py-1.5 text-[11px] shadow-md ring-1 ring-border'>
+            <span className='font-medium text-green-600 dark:text-green-400'>
+              {label} copied
+            </span>
+            <span className='truncate text-muted-foreground'>{text}</span>
+          </span>
+        </span>,
+        document.body,
+      )}
+    </span>
+  )
+}
+
+function PrLinkWithCopy({ prUrl }: { prUrl: string }) {
+  return (
+    <span className='inline-flex items-center gap-1.5' onClick={e => e.stopPropagation()}>
+      <a
+        href={prUrl}
+        target='_blank'
+        rel='noopener noreferrer'
+        className='inline-flex items-center gap-1 text-xs font-medium text-green-600 hover:underline dark:text-green-400'
+      >
+        <GitPullRequestArrow className='h-3.5 w-3.5' />
+        PR
+      </a>
+      <CopyButton
+        text={prUrl}
+        label='PR link'
+        icon={Copy}
+        title='Copy PR link'
+        className='hidden group-hover/deploy-row:inline-flex'
+      />
+      <CopyButton
+        text={`git pull ${prUrl}`}
+        label='git pull'
+        icon={Terminal}
+        title='Copy git pull command'
+        className='hidden group-hover/deploy-row:inline-flex'
+      />
+    </span>
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -211,7 +308,7 @@ export function DeploymentCard({
     <div className={isActive ? 'bg-background/40' : undefined}>
       {/* Row header — always visible */}
       <div
-        className='flex cursor-pointer items-center justify-between bg-background/60 px-3 py-2 transition-colors hover:bg-background/80'
+        className='group/deploy-row flex cursor-pointer items-center justify-between bg-background/60 px-3 py-2 transition-colors hover:bg-background/80'
         onClick={() => setExpanded(prev => !prev)}
       >
         <div className='flex min-w-0 flex-1 items-center gap-2'>
@@ -231,20 +328,8 @@ export function DeploymentCard({
             #{deployment.github_issue_number}
             <ExternalLink className='ml-0.5 inline h-3 w-3' />
           </a>
-          <span className='text-[10px] text-muted-foreground'>
-            {modeLabel} &middot; {modelLabel}
-          </span>
           {prUrl && (
-            <a
-              href={prUrl}
-              target='_blank'
-              rel='noopener noreferrer'
-              className='inline-flex items-center gap-1 text-xs font-medium text-green-600 hover:underline dark:text-green-400'
-              onClick={e => e.stopPropagation()}
-            >
-              <GitPullRequestArrow className='h-3.5 w-3.5' />
-              PR
-            </a>
+            <PrLinkWithCopy prUrl={prUrl} />
           )}
         </div>
         <div className='flex shrink-0 items-center gap-1.5'>
@@ -340,8 +425,9 @@ export function DeploymentCard({
           {/* Comment feed */}
           {comments.length > 0 && (
             <div>
-              <h4 className='mb-2 text-xs font-medium text-muted-foreground'>
-                Worker Responses ({comments.length})
+              <h4 className='mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground'>
+                <span>Worker Responses ({comments.length})</span>
+                <span className='text-[10px]'>{modeLabel} &middot; {modelLabel}</span>
               </h4>
               <div className='overflow-hidden rounded-lg border'>
                 {comments.map((comment, i) => (
