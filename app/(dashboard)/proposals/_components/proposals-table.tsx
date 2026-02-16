@@ -3,9 +3,7 @@
 import { useCallback, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { format, formatDistanceToNow } from 'date-fns'
-import { CheckCircle, PenLine } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
 import {
   Table,
   TableBody,
@@ -28,47 +26,9 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import type { ProposalWithRelations } from '@/lib/queries/proposals'
-import { PROPOSAL_STATUS_CONFIG } from '@/lib/proposals/constants'
 
 import { ProposalDetailSheet } from './proposal-detail-sheet'
-
-function getStatusDisplay(proposal: ProposalWithRelations) {
-  const config = PROPOSAL_STATUS_CONFIG[proposal.status]
-  const StatusIcon = config.icon
-
-  if (proposal.status === 'ACCEPTED' && proposal.countersignedAt) {
-    return (
-      <div className="flex items-center gap-1.5">
-        <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-700 border-emerald-500/20">
-          <CheckCircle className="mr-1 h-3 w-3" />
-          Fully Executed
-        </Badge>
-      </div>
-    )
-  }
-
-  if (proposal.status === 'ACCEPTED' && !proposal.countersignedAt) {
-    return (
-      <div className="flex items-center gap-1.5">
-        <Badge variant="outline" className={`text-xs ${config.className}`}>
-          <StatusIcon className="mr-1 h-3 w-3" />
-          {config.label}
-        </Badge>
-        <Badge variant="outline" className="text-xs bg-orange-500/10 text-orange-600 border-orange-500/20">
-          <PenLine className="mr-1 h-3 w-3" />
-          Awaiting Countersign
-        </Badge>
-      </div>
-    )
-  }
-
-  return (
-    <Badge variant="outline" className={`text-xs ${config.className}`}>
-      <StatusIcon className="mr-1 h-3 w-3" />
-      {config.label}
-    </Badge>
-  )
-}
+import { ProposalStatusBadge } from './proposal-status-badge'
 
 function getViewsDisplay(proposal: ProposalWithRelations) {
   const count = proposal.viewedCount ?? 0
@@ -116,18 +76,48 @@ export function ProposalsTable({ proposals, senderName, onEditProposal }: Propos
 
   const statusFilter = searchParams.get('status') ?? 'ALL'
 
+  const buildQueryString = useCallback(
+    (overrides: Record<string, string | null>) => {
+      const params = new URLSearchParams(searchParams.toString())
+      for (const [key, value] of Object.entries(overrides)) {
+        if (value === null) {
+          params.delete(key)
+        } else {
+          params.set(key, value)
+        }
+      }
+      const qs = params.toString()
+      return qs ? `${pathname}?${qs}` : pathname
+    },
+    [pathname, searchParams]
+  )
+
   const handleStatusFilterChange = useCallback(
     (value: string) => {
-      const params = new URLSearchParams(searchParams.toString())
-      if (value === 'ALL') {
-        params.delete('status')
-      } else {
-        params.set('status', value)
-      }
-      const queryString = params.toString()
-      router.push(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false })
+      router.push(
+        buildQueryString({ status: value === 'ALL' ? null : value }),
+        { scroll: false }
+      )
     },
-    [pathname, router, searchParams]
+    [buildQueryString, router]
+  )
+
+  const handleSelectProposal = useCallback(
+    (proposal: ProposalWithRelations) => {
+      setSelectedProposal(proposal)
+      router.push(buildQueryString({ id: proposal.id }), { scroll: false })
+    },
+    [buildQueryString, router]
+  )
+
+  const handleCloseSheet = useCallback(
+    (open: boolean) => {
+      if (!open) {
+        setSelectedProposal(null)
+        router.push(buildQueryString({ id: null }), { scroll: false })
+      }
+    },
+    [buildQueryString, router]
   )
 
   const filtered =
@@ -180,7 +170,7 @@ export function ProposalsTable({ proposals, senderName, onEditProposal }: Propos
                 <TableRow
                   key={proposal.id}
                   className='cursor-pointer'
-                  onClick={() => setSelectedProposal(proposal)}
+                  onClick={() => handleSelectProposal(proposal)}
                 >
                   <TableCell className='max-w-[200px] truncate font-medium'>
                     {proposal.title}
@@ -189,7 +179,7 @@ export function ProposalsTable({ proposals, senderName, onEditProposal }: Propos
                     {proposal.leadName ?? proposal.clientName ?? '—'}
                   </TableCell>
                   <TableCell>
-                    {getStatusDisplay(proposal)}
+                    <ProposalStatusBadge status={proposal.status} countersignedAt={proposal.countersignedAt} />
                   </TableCell>
                   <TableCell className='text-right tabular-nums'>
                     {proposal.estimatedValue
@@ -215,9 +205,7 @@ export function ProposalsTable({ proposals, senderName, onEditProposal }: Propos
         proposal={selectedProposal}
         senderName={senderName}
         open={!!selectedProposal}
-        onOpenChange={open => {
-          if (!open) setSelectedProposal(null)
-        }}
+        onOpenChange={handleCloseSheet}
         onEdit={onEditProposal}
       />
     </>

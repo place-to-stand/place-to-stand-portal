@@ -2,21 +2,19 @@
 
 import { useState, useEffect, useCallback, useTransition, useMemo } from 'react'
 import { format } from 'date-fns'
-import Link from 'next/link'
 import {
-  FileText,
-  ExternalLink,
-  Send,
-  Eye,
   CheckCircle,
-  XCircle,
   Clock,
+  ExternalLink,
+  Eye,
+  FileText,
   Link2,
   Mail,
-  PenLine,
-  ArrowUpRight,
-  Trash2,
   MoreHorizontal,
+  PenLine,
+  Send,
+  Trash2,
+  XCircle,
 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
@@ -37,9 +35,12 @@ import {
   type ProposalStatusValue,
 } from '@/lib/proposals/constants'
 import type { ProposalContent } from '@/lib/proposals/types'
+import type { ProposalWithRelations } from '@/lib/queries/proposals'
 
 import { updateProposalStatus, prepareProposalSend, deleteProposalAction } from '../_actions'
 import type { EditableProposal } from './proposal-builder/proposal-builder-sheet'
+import { ProposalDetailSheet } from '../../proposals/_components/proposal-detail-sheet'
+import { ProposalStatusBadge } from '../../proposals/_components/proposal-status-badge'
 import { ShareProposalDialog } from './share-proposal-dialog'
 import { SendEmailDialog } from './send-email-dialog'
 
@@ -78,6 +79,7 @@ export function LeadProposalsSection({
   const [proposals, setProposals] = useState<Proposal[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedProposal, setSelectedProposal] = useState<ProposalWithRelations | null>(null)
 
   const fetchProposals = useCallback(async () => {
     setError(null)
@@ -104,6 +106,48 @@ export function LeadProposalsSection({
     fetchProposals()
     onSuccess?.()
   }, [fetchProposals, onSuccess])
+
+  const mapToViewProposal = useCallback(
+    (p: Proposal): ProposalWithRelations => ({
+      ...p,
+      content: p.content ?? ({} as Record<string, never>),
+      leadId: lead.id,
+      clientId: null,
+      templateDocId: null,
+      expirationDate: null,
+      createdBy: '',
+      updatedAt: p.createdAt,
+      sharePasswordHash: null,
+      viewedAt: null,
+      acceptedAt: null,
+      rejectedAt: null,
+      clientComment: null,
+      signerName: null,
+      signerEmail: null,
+      signatureData: null,
+      signerIpAddress: null,
+      signatureConsent: null,
+      contentHashAtSigning: null,
+      countersignToken: null,
+      countersignerName: null,
+      countersignerEmail: null,
+      countersignatureData: null,
+      countersignerIpAddress: null,
+      countersignatureConsent: null,
+      executedPdfPath: null,
+      leadName: lead.contactName,
+      clientName: lead.companyName,
+      creatorName: null,
+    }),
+    [lead]
+  )
+
+  const handleViewProposal = useCallback(
+    (proposal: Proposal) => {
+      setSelectedProposal(mapToViewProposal(proposal))
+    },
+    [mapToViewProposal]
+  )
 
   // Sort proposals: most recent first (memoized to avoid re-sorting on every render)
   const sortedProposals = useMemo(
@@ -151,11 +195,20 @@ export function LeadProposalsSection({
               senderName={senderName}
               onEditProposal={onEditProposal}
               onUpdate={handleProposalUpdate}
+              onView={handleViewProposal}
             />
           ))}
         </div>
       )}
 
+      <ProposalDetailSheet
+        proposal={selectedProposal}
+        senderName={senderName}
+        open={!!selectedProposal}
+        onOpenChange={open => {
+          if (!open) setSelectedProposal(null)
+        }}
+      />
     </div>
   )
 }
@@ -167,6 +220,7 @@ function ProposalCard({
   senderName = '',
   onEditProposal,
   onUpdate,
+  onView,
 }: {
   proposal: Proposal
   lead: LeadRecord
@@ -174,6 +228,7 @@ function ProposalCard({
   senderName?: string
   onEditProposal?: (proposal: EditableProposal) => void
   onUpdate?: () => void
+  onView?: (proposal: Proposal) => void
 }) {
   const { toast } = useToast()
   const [isUpdating, startUpdateTransition] = useTransition()
@@ -207,9 +262,6 @@ function ProposalCard({
       onUpdate?.()
     })
   }, [proposal.id, proposal.title, lead.contactName, toast, onUpdate])
-
-  const statusConfig = PROPOSAL_STATUS_CONFIG[proposal.status]
-  const StatusIcon = statusConfig.icon
 
   const handleStatusChange = useCallback(
     (newStatus: ProposalStatusValue) => {
@@ -361,23 +413,7 @@ function ProposalCard({
 
       {/* Row 2: Status badges + estimated value */}
       <div className="flex flex-wrap items-center gap-1.5">
-        {proposal.status === 'ACCEPTED' && proposal.countersignedAt ? (
-          <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-700 border-emerald-500/20">
-            <CheckCircle className="mr-1 h-3 w-3" />
-            Fully Executed
-          </Badge>
-        ) : (
-          <Badge variant="outline" className={`text-xs ${statusConfig.className}`}>
-            <StatusIcon className="mr-1 h-3 w-3" />
-            {statusConfig.label}
-          </Badge>
-        )}
-        {proposal.status === 'ACCEPTED' && !proposal.countersignedAt && (
-          <Badge variant="outline" className="text-xs bg-orange-500/10 text-orange-600 border-orange-500/20">
-            <PenLine className="mr-1 h-3 w-3" />
-            Countersign
-          </Badge>
-        )}
+        <ProposalStatusBadge status={proposal.status} countersignedAt={proposal.countersignedAt} />
         {proposal.estimatedValue && (
           <span className="text-xs font-medium text-muted-foreground">
             ${Number(proposal.estimatedValue).toLocaleString()}
@@ -396,13 +432,14 @@ function ProposalCard({
           </>
         )}
         <span>·</span>
-        <Link
-          href={`/proposals?id=${proposal.id}`}
+        <button
+          type="button"
+          onClick={() => onView?.(proposal)}
           className="inline-flex items-center gap-0.5 text-violet-600 hover:underline"
         >
           View
-          <ArrowUpRight className="h-3 w-3" />
-        </Link>
+          <Eye className="h-3 w-3" />
+        </button>
       </div>
     </div>
     <ConfirmDialog
