@@ -259,40 +259,15 @@ export function ProposalDetailSheet({
                 </div>
               </div>
 
-              {/* Actions dropdown */}
+              {/* Overflow dropdown (less common actions) */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="icon" className="h-8 w-8 shrink-0">
                     <MoreHorizontal className="h-4 w-4" />
-                    <span className="sr-only">Actions</span>
+                    <span className="sr-only">More actions</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
-                  {canEdit && (
-                    <DropdownMenuItem
-                      onClick={() => {
-                        onOpenChange(false)
-                        onEdit!(p)
-                      }}
-                    >
-                      <PenLine className="mr-2 h-4 w-4" />
-                      Edit Proposal
-                    </DropdownMenuItem>
-                  )}
-                  {canSendEmail && (
-                    <DropdownMenuItem onClick={handleSendEmail} disabled={isPreparing}>
-                      {isPreparing ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Mail className="mr-2 h-4 w-4" />
-                      )}
-                      Send via Email
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem onClick={() => setShareDialogOpen(true)}>
-                    <Link2 className="mr-2 h-4 w-4" />
-                    Share Link
-                  </DropdownMenuItem>
                   {isAcceptedNotCountersigned && p.countersignToken && (
                     <DropdownMenuItem
                       onClick={() => {
@@ -340,6 +315,49 @@ export function ProposalDetailSheet({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+            </div>
+
+            {/* Quick action buttons */}
+            <div className="mt-3 flex items-center gap-2 pb-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 gap-1.5 text-xs"
+                onClick={() => setShareDialogOpen(true)}
+              >
+                <Link2 className="h-3.5 w-3.5" />
+                Share Link
+              </Button>
+              {canSendEmail && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 gap-1.5 text-xs"
+                  onClick={handleSendEmail}
+                  disabled={isPreparing}
+                >
+                  {isPreparing ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Mail className="h-3.5 w-3.5" />
+                  )}
+                  Send Email
+                </Button>
+              )}
+              {canEdit && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 gap-1.5 text-xs"
+                  onClick={() => {
+                    onOpenChange(false)
+                    onEdit!(p)
+                  }}
+                >
+                  <PenLine className="h-3.5 w-3.5" />
+                  Edit
+                </Button>
+              )}
             </div>
           </SheetHeader>
 
