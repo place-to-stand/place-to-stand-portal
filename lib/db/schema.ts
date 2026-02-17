@@ -1660,6 +1660,7 @@ export const taskDeployments = pgTable(
     githubIssueUrl: text('github_issue_url').notNull(),
     workerStatus: workerStatus('worker_status').notNull(),
     prUrl: text('pr_url'),
+    planId: text('plan_id').notNull(),
     model: text(),
     mode: text(),
     createdBy: uuid('created_by').notNull(),
@@ -1671,6 +1672,8 @@ export const taskDeployments = pgTable(
       .notNull(),
   },
   table => [
+    uniqueIndex('idx_task_deployments_plan_id')
+      .using('btree', table.planId.asc().nullsLast().op('text_ops')),
     index('idx_task_deployments_task')
       .using('btree', table.taskId.asc().nullsLast().op('uuid_ops')),
     foreignKey({

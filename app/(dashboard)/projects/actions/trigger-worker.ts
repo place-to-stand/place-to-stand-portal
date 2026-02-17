@@ -24,6 +24,9 @@ import {
 import { composeWorkerComment } from '@/lib/github/compose-worker-comment'
 import { composeIssueBody } from '@/lib/github/compose-issue-body'
 import { serverEnv } from '@/lib/env.server'
+import { customAlphabet } from 'nanoid'
+
+const generatePlanId = customAlphabet('0123456789abcdefghijklmnopqrstuvwxyz', 6)
 
 const modelSchema = z.enum(['opus', 'sonnet', 'haiku'])
 
@@ -134,6 +137,7 @@ export async function triggerWorkerPlan(input: {
   }
 
   const initialStatus = mode === 'execute' ? 'implementing' as const : 'working' as const
+  const planId = `PLN-${generatePlanId()}`
 
   // Insert deployment row
   const [deployment] = await db
@@ -144,6 +148,7 @@ export async function triggerWorkerPlan(input: {
       githubIssueNumber: issue.number,
       githubIssueUrl: issue.html_url,
       workerStatus: initialStatus,
+      planId,
       model,
       mode,
       createdBy: user.id,
@@ -170,6 +175,7 @@ export async function triggerWorkerPlan(input: {
       model,
       taskTitle: task.title,
       taskDescription: task.description,
+      planId,
     })
     comment = await createIssueComment(
       user.id,

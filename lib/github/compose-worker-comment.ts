@@ -12,15 +12,17 @@ export function composeWorkerComment(params: {
   taskTitle: string
   taskDescription: string | null
   customPrompt?: string
+  planId?: string
 }): string {
-  const { mode, model, taskTitle, taskDescription, customPrompt } = params
+  const { mode, model, taskTitle, taskDescription, customPrompt, planId } = params
 
   const modelFlag = `/model/${model}`
   const planFlag = mode === 'plan' ? ' /plan' : ''
+  const planIdFooter = planId ? `\n\n---\nPlan ID: ${planId}` : ''
 
   // Custom prompt takes precedence
   if (customPrompt) {
-    return `@pts-worker ${modelFlag}${planFlag}\n\n${customPrompt}`
+    return `@pts-worker ${modelFlag}${planFlag}\n\n${customPrompt}${planIdFooter}`
   }
 
   // "Implement the plan" (accept plan)
@@ -48,7 +50,8 @@ export function composeWorkerComment(params: {
     lines.push(truncated)
   }
 
-  return lines.join('\n')
+  const body = lines.join('\n')
+  return `${body}${planIdFooter}`
 }
 
 /** Naive HTML-to-plain-text: strip tags, decode common entities. */

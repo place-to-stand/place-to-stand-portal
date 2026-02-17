@@ -239,6 +239,13 @@
       "when": 1771139469758,
       "tag": "0033_add_cancelled_worker_status",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1771208856183,
+      "tag": "0034_add_plan_id",
+      "breakpoints": true
     }
   ]
 }

@@ -188,9 +188,11 @@ function getFirstLine(body: string): string {
 function CommentCard({
   comment,
   defaultExpanded,
+  planId,
 }: {
   comment: WorkerComment
   defaultExpanded: boolean
+  planId?: string
 }) {
   const timeAgo = formatDistanceToNow(new Date(comment.createdAt), {
     addSuffix: true,
@@ -213,7 +215,7 @@ function CommentCard({
             alt={comment.login}
             className='h-5 w-5 shrink-0 rounded-full'
           />
-          <span className='shrink-0 text-xs font-medium'>pts-worker</span>
+          <span className='shrink-0 text-xs font-medium font-mono'>{planId ?? 'pts-worker'}</span>
           {comment.status !== 'unknown' && (
             <WorkerStatusBadge status={comment.status} />
           )}
@@ -435,6 +437,7 @@ export function DeploymentCard({
                     <CommentCard
                       comment={comment}
                       defaultExpanded={i === comments.length - 1}
+                      planId={deployment.plan_id}
                     />
                   </div>
                 ))}

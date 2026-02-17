@@ -138,6 +138,7 @@ export type DbTaskDeployment = {
   github_issue_url: string
   worker_status: WorkerStatusValue
   pr_url: string | null
+  plan_id: string
   model: string | null
   mode: string | null
   created_by: string

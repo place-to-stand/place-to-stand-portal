@@ -73,6 +73,7 @@
     "jspdf": "^4.0.0",
     "lodash.throttle": "^4.1.1",
     "lucide-react": "^0.563.0",
+    "nanoid": "^5.1.6",
     "next": "^16.1.6",
     "postgres": "^3.4.8",
     "posthog-js": "^1.335.4",
