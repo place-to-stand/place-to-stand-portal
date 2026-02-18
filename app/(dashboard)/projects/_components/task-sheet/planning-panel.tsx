@@ -359,6 +359,15 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
         </div>
       )}
 
+      {/* Deployment status — outside scrollable body for full-bleed background */}
+      {hasStartedPlanning && (
+        <PlanDeploymentStatus
+          taskId={task.id}
+          activeThreadId={activeThreadId}
+          currentVersion={displayedVersion}
+        />
+      )}
+
       {/* Scrollable body */}
       <div className='flex-1 overflow-y-auto px-4 py-3'>
         {!hasStartedPlanning ? (
@@ -403,21 +412,12 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
             </Button>
           </div>
         ) : (
-          <>
-            <PlanDocumentViewer
-              content={displayContent}
-              isStreaming={isGenerating}
-              toolCalls={toolCalls}
-              error={streamError}
-            />
-
-            {/* Compact dispatch status rows — filtered to current thread+version */}
-            <PlanDeploymentStatus
-              taskId={task.id}
-              activeThreadId={activeThreadId}
-              currentVersion={displayedVersion}
-            />
-          </>
+          <PlanDocumentViewer
+            content={displayContent}
+            isStreaming={isGenerating}
+            toolCalls={toolCalls}
+            error={streamError}
+          />
         )}
       </div>
 

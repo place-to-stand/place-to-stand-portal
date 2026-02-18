@@ -212,7 +212,7 @@ export function PlanDeploymentStatus({
   const [showAll, setShowAll] = useState(false)
   const [isCancelPending, startCancelTransition] = useTransition()
 
-  const deploymentsQueryKey = [TASK_DEPLOYMENTS_KEY, taskId]
+  const deploymentsQueryKey = useMemo(() => [TASK_DEPLOYMENTS_KEY, taskId], [taskId])
 
   // Filter to only show deployments that match the current thread + version
   const deployments = useMemo(
@@ -253,7 +253,7 @@ export function PlanDeploymentStatus({
   const hiddenCount = deployments.length - DEFAULT_VISIBLE
 
   return (
-    <div className='mt-4 flex flex-col gap-1.5'>
+    <div className='flex flex-col gap-1.5 border-b bg-muted/30 px-4 py-2'>
       {visibleDeployments.map(deployment => (
         <DeploymentRow
           key={deployment.id}
