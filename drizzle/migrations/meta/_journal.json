@@ -246,6 +246,20 @@
       "when": 1771208856183,
       "tag": "0034_add_plan_id",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1771349387435,
+      "tag": "0035_add_planning_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1771384451746,
+      "tag": "0036_add_deployment_plan_version",
+      "breakpoints": true
     }
   ]
 }

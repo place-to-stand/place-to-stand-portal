@@ -59,7 +59,7 @@ type DeploymentCardProps = {
 // Status badge
 // ---------------------------------------------------------------------------
 
-function WorkerStatusBadge({ status }: { status: WorkerCommentStatus | string }) {
+export function WorkerStatusBadge({ status }: { status: WorkerCommentStatus | string }) {
   switch (status) {
     case 'working':
       return <Badge variant='secondary' className='text-[10px]'>Planning</Badge>

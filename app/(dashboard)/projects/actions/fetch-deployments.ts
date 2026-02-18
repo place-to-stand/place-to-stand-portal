@@ -55,6 +55,8 @@ export async function fetchTaskDeployments(input: {
     worker_status: r.workerStatus,
     pr_url: r.prUrl,
     plan_id: r.planId,
+    plan_thread_id: r.planThreadId,
+    plan_version: r.planVersion,
     model: r.model,
     mode: r.mode,
     created_by: r.createdBy,

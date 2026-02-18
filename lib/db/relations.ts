@@ -30,6 +30,10 @@ import {
   proposals,
   leadStageHistory,
   taskDeployments,
+  planningSessions,
+  planThreads,
+  planRevisions,
+  planMessages,
 } from './schema'
 
 export const clientsRelations = relations(clients, ({ one, many }) => ({
@@ -115,6 +119,7 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
   timeLogTasks: many(timeLogTasks),
   taskAttachments: many(taskAttachments),
   taskDeployments: many(taskDeployments),
+  planningSessions: many(planningSessions),
   project: one(projects, {
     fields: [tasks.projectId],
     references: [projects.id],
@@ -517,3 +522,58 @@ export const proposalsRelations = relations(proposals, ({ one }) => ({
     references: [users.id],
   }),
 }))
+
+// =============================================================================
+// AI PLANNING SESSIONS
+// =============================================================================
+
+export const planningSessionsRelations = relations(
+  planningSessions,
+  ({ one, many }) => ({
+    task: one(tasks, {
+      fields: [planningSessions.taskId],
+      references: [tasks.id],
+    }),
+    repoLink: one(githubRepoLinks, {
+      fields: [planningSessions.repoLinkId],
+      references: [githubRepoLinks.id],
+    }),
+    createdByUser: one(users, {
+      fields: [planningSessions.createdBy],
+      references: [users.id],
+    }),
+    threads: many(planThreads),
+  })
+)
+
+export const planThreadsRelations = relations(
+  planThreads,
+  ({ one, many }) => ({
+    session: one(planningSessions, {
+      fields: [planThreads.sessionId],
+      references: [planningSessions.id],
+    }),
+    revisions: many(planRevisions),
+    messages: many(planMessages),
+  })
+)
+
+export const planRevisionsRelations = relations(
+  planRevisions,
+  ({ one }) => ({
+    thread: one(planThreads, {
+      fields: [planRevisions.threadId],
+      references: [planThreads.id],
+    }),
+  })
+)
+
+export const planMessagesRelations = relations(
+  planMessages,
+  ({ one }) => ({
+    thread: one(planThreads, {
+      fields: [planMessages.threadId],
+      references: [planThreads.id],
+    }),
+  })
+)

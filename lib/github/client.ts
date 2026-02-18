@@ -347,6 +347,164 @@ export async function createCommentReaction(
   )
 }
 
+// ---------------------------------------------------------------------------
+// File / Tree / Search helpers (for AI planning tool use)
+// ---------------------------------------------------------------------------
+
+interface GitHubFileContent {
+  type: 'file'
+  name: string
+  path: string
+  content: string // base64
+  encoding: string
+  size: number
+  sha: string
+}
+
+interface GitHubDirEntry {
+  type: 'file' | 'dir' | 'symlink' | 'submodule'
+  name: string
+  path: string
+  size: number
+  sha: string
+}
+
+interface GitHubTreeEntry {
+  path: string
+  mode: string
+  type: 'blob' | 'tree'
+  sha: string
+  size?: number
+}
+
+interface GitHubTreeResponse {
+  sha: string
+  tree: GitHubTreeEntry[]
+  truncated: boolean
+}
+
+interface GitHubSearchCodeResult {
+  total_count: number
+  items: Array<{
+    name: string
+    path: string
+    sha: string
+    html_url: string
+    repository: { full_name: string }
+    text_matches?: Array<{
+      fragment: string
+      matches: Array<{ text: string; indices: number[] }>
+    }>
+  }>
+}
+
+/**
+ * Get file contents or directory listing from a GitHub repo.
+ * For files: returns decoded UTF-8 content.
+ * For directories: returns array of entries.
+ */
+export async function getFileContents(
+  userId: string,
+  owner: string,
+  repo: string,
+  path: string,
+  ref?: string,
+  connectionId?: string
+): Promise<
+  | { type: 'file'; content: string; path: string; size: number; sha: string }
+  | { type: 'dir'; entries: Array<{ type: string; name: string; path: string; size: number }> }
+> {
+  const params = ref ? `?ref=${encodeURIComponent(ref)}` : ''
+  const encodedPath = path.split('/').map(encodeURIComponent).join('/')
+  const result = await githubFetch<GitHubFileContent | GitHubDirEntry[]>(
+    userId,
+    `/repos/${owner}/${repo}/contents/${encodedPath}${params}`,
+    {},
+    connectionId
+  )
+
+  // Directory response is an array
+  if (Array.isArray(result)) {
+    return {
+      type: 'dir',
+      entries: result.map(e => ({
+        type: e.type,
+        name: e.name,
+        path: e.path,
+        size: e.size,
+      })),
+    }
+  }
+
+  // File response — decode base64 content
+  const content = Buffer.from(result.content, 'base64').toString('utf-8')
+  return {
+    type: 'file',
+    content,
+    path: result.path,
+    size: result.size,
+    sha: result.sha,
+  }
+}
+
+/**
+ * Get the full repository tree (recursive).
+ * Returns a flat list of paths with types.
+ */
+export async function getRepoTree(
+  userId: string,
+  owner: string,
+  repo: string,
+  ref = 'HEAD',
+  connectionId?: string
+): Promise<{ entries: Array<{ path: string; type: 'blob' | 'tree'; size?: number }>; truncated: boolean }> {
+  const result = await githubFetch<GitHubTreeResponse>(
+    userId,
+    `/repos/${owner}/${repo}/git/trees/${encodeURIComponent(ref)}?recursive=1`,
+    {},
+    connectionId
+  )
+
+  return {
+    entries: result.tree.map(e => ({
+      path: e.path,
+      type: e.type,
+      size: e.size,
+    })),
+    truncated: result.truncated,
+  }
+}
+
+/**
+ * Search code in a specific repository.
+ * Uses the GitHub Code Search API with text-match fragments.
+ */
+export async function searchRepoCode(
+  userId: string,
+  owner: string,
+  repo: string,
+  query: string,
+  connectionId?: string
+): Promise<Array<{ name: string; path: string; fragments: string[] }>> {
+  const q = encodeURIComponent(`${query} repo:${owner}/${repo}`)
+  const result = await githubFetch<GitHubSearchCodeResult>(
+    userId,
+    `/search/code?q=${q}`,
+    {
+      headers: {
+        Accept: 'application/vnd.github.text-match+json',
+      },
+    },
+    connectionId
+  )
+
+  return result.items.map(item => ({
+    name: item.name,
+    path: item.path,
+    fragments: item.text_matches?.map(m => m.fragment) ?? [],
+  }))
+}
+
 /**
  * Get the default connection ID for a user
  */

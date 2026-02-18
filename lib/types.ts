@@ -139,6 +139,8 @@ export type DbTaskDeployment = {
   worker_status: WorkerStatusValue
   pr_url: string | null
   plan_id: string
+  plan_thread_id: string | null
+  plan_version: number | null
   model: string | null
   mode: string | null
   created_by: string
