@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import {
@@ -11,8 +11,6 @@ import {
 
 export const PLANNING_SESSION_KEY = 'planning-session'
 
-type ThreadData = PlanningSessionData['threads'][number]
-
 const DEFAULT_MODEL = 'claude-sonnet-4.6'
 const DEFAULT_LABEL = 'Sonnet 4.6'
 
@@ -20,7 +18,7 @@ export function usePlanningSession(taskId: string, repoLinkId: string) {
   const queryClient = useQueryClient()
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null)
 
-  const queryKey = [PLANNING_SESSION_KEY, taskId]
+  const queryKey = useMemo(() => [PLANNING_SESSION_KEY, taskId], [taskId])
 
   const { data, isLoading } = useQuery({
     queryKey,
@@ -32,18 +30,11 @@ export function usePlanningSession(taskId: string, repoLinkId: string) {
     staleTime: 30_000,
   })
 
-  // Auto-select first thread or auto-create default thread
-  useEffect(() => {
-    if (!data) return
-
-    if (data.threads.length > 0 && !activeThreadId) {
-      setActiveThreadId(data.threads[0].id)
-    }
-  }, [data, activeThreadId])
-
   const threads = data?.threads ?? []
   const sessionId = data?.sessionId ?? null
-  const activeThread = threads.find(t => t.id === activeThreadId) ?? null
+  // Derive effective thread ID: explicit selection, or fall back to first thread
+  const effectiveThreadId = activeThreadId ?? threads[0]?.id ?? null
+  const activeThread = threads.find(t => t.id === effectiveThreadId) ?? null
 
   const addThread = useCallback(
     async (model: string, modelLabel: string) => {
@@ -74,7 +65,7 @@ export function usePlanningSession(taskId: string, repoLinkId: string) {
     sessionId,
     threads,
     activeThread,
-    activeThreadId,
+    activeThreadId: effectiveThreadId,
     setActiveThreadId,
     addThread,
     createDefaultThread,

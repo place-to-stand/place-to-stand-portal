@@ -3,10 +3,7 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 
-import {
-  fetchTaskDeployments,
-  type FetchDeploymentsResult,
-} from '../../actions/fetch-deployments'
+import { fetchTaskDeployments } from '../../actions/fetch-deployments'
 import type { DbTaskDeployment } from '@/lib/types'
 
 export const TASK_DEPLOYMENTS_KEY = 'task-deployments'

@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { fetchPlanRevisions, type PlanRevisionData } from '../../actions/planning'
+import { fetchPlanRevisions } from '../../actions/planning'
 
 export const PLAN_REVISIONS_KEY = 'plan-revisions'
 
@@ -28,7 +28,7 @@ export function usePlanRevisions(threadId: string | null, enabled: boolean) {
     staleTime: 10_000,
   })
 
-  const revisions = data?.revisions ?? []
+  const revisions = useMemo(() => data?.revisions ?? [], [data?.revisions])
   const latestVersion = revisions.length > 0 ? revisions[revisions.length - 1].version : 0
   const currentVersion = viewingVersion ?? latestVersion
 
