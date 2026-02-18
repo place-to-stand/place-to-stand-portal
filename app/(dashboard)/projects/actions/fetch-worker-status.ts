@@ -20,7 +20,6 @@ export type WorkerCommentStatus =
   | 'plan_ready'
   | 'implementing'
   | 'pr_created'
-  | 'done_no_changes'
   | 'error'
   | 'cancelled'
   | 'unknown'
@@ -57,7 +56,6 @@ const ERROR_PATTERNS = ['**Agent failed**', '**Budget limit**', '❌ Agent faile
 function classifyWorkerComment(body: string): WorkerCommentStatus {
   if (ERROR_PATTERNS.some(p => body.includes(p))) return 'error'
   if (PR_URL_REGEX.test(body)) return 'pr_created'
-  if (body.includes('**No changes made**') || body.includes('**Changes committed**')) return 'done_no_changes'
   if (body.includes(PLAN_HEADING)) return 'plan_ready'
   if (WORKING_PATTERNS.some(p => body.includes(p))) return 'working'
   return 'unknown'

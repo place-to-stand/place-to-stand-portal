@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { formatDistanceToNow } from 'date-fns'
 import {
@@ -69,8 +69,6 @@ export function WorkerStatusBadge({ status }: { status: WorkerCommentStatus | st
       return <Badge className='bg-blue-100 text-blue-800 text-[10px] dark:bg-blue-900 dark:text-blue-200'>Plan Ready</Badge>
     case 'pr_created':
       return <Badge className='bg-green-100 text-green-800 text-[10px] dark:bg-green-900 dark:text-green-200'>PR Created</Badge>
-    case 'done_no_changes':
-      return <Badge variant='secondary' className='text-[10px]'>Done</Badge>
     case 'error':
       return <Badge variant='destructive' className='text-[10px]'>Error</Badge>
     case 'cancelled':
@@ -101,12 +99,6 @@ function CopyButton({
   const btnRef = useRef<HTMLButtonElement>(null)
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null)
 
-  useEffect(() => {
-    if (!copied || !btnRef.current) { setPos(null); return }
-    const rect = btnRef.current.getBoundingClientRect()
-    setPos({ top: rect.top - 4, left: rect.left + rect.width / 2 })
-  }, [copied])
-
   return (
     <span className={className}>
       <button
@@ -115,8 +107,12 @@ function CopyButton({
         onClick={e => {
           e.stopPropagation()
           navigator.clipboard.writeText(text)
+          if (btnRef.current) {
+            const rect = btnRef.current.getBoundingClientRect()
+            setPos({ top: rect.top - 4, left: rect.left + rect.width / 2 })
+          }
           setCopied(true)
-          setTimeout(() => setCopied(false), 2000)
+          setTimeout(() => { setCopied(false); setPos(null) }, 2000)
         }}
         className='cursor-pointer text-muted-foreground hover:text-foreground'
         title={title}
@@ -408,12 +404,6 @@ export function DeploymentCard({
               <AlertTriangle className='h-3.5 w-3.5' />
               Worker encountered an error.
             </div>
-          )}
-
-          {displayStatus === 'done_no_changes' && !prUrl && (
-            <p className='text-xs text-muted-foreground'>
-              Worker completed with no changes.
-            </p>
           )}
 
           {/* Loading state */}

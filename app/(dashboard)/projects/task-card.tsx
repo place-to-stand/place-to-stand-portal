@@ -369,9 +369,8 @@ function renderProjectTypeIcon(
   return <Building2 className={className} aria-hidden />
 }
 
-const WORKER_BADGE_CONFIG: Record<
-  WorkerStatusValue,
-  { label: string; className: string }
+const WORKER_BADGE_CONFIG: Partial<
+  Record<WorkerStatusValue, { label: string; className: string }>
 > = {
   working: {
     label: 'Planning',
@@ -393,11 +392,6 @@ const WORKER_BADGE_CONFIG: Record<
     className:
       'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
   },
-  done_no_changes: {
-    label: 'Done',
-    className:
-      'bg-gray-100 text-gray-700 dark:bg-gray-800/40 dark:text-gray-400',
-  },
   error: {
     label: 'Error',
     className: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
@@ -411,6 +405,7 @@ const WORKER_BADGE_CONFIG: Record<
 
 function WorkerBadge({ status }: { status: WorkerStatusValue }) {
   const config = WORKER_BADGE_CONFIG[status]
+  if (!config) return null
   return (
     <span
       className={cn(

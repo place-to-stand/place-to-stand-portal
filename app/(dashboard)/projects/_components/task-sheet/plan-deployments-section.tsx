@@ -27,7 +27,6 @@ import { useTaskDeployments, TASK_DEPLOYMENTS_KEY } from './use-task-deployments
 const TERMINAL_STATUSES: string[] = [
   'plan_ready',
   'pr_created',
-  'done_no_changes',
   'error',
   'cancelled',
 ]

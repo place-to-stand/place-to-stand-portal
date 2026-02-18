@@ -41,7 +41,6 @@ type DeployMode = 'plan' | 'execute'
 const TERMINAL_STATUSES: WorkerCommentStatus[] = [
   'plan_ready',
   'pr_created',
-  'done_no_changes',
   'error',
   'cancelled',
 ]
@@ -367,8 +366,6 @@ function HeaderStatusBadge({ status }: { status: WorkerCommentStatus }) {
       return <Badge className='bg-blue-100 text-blue-800 text-[10px] dark:bg-blue-900 dark:text-blue-200'>Plan Ready</Badge>
     case 'pr_created':
       return <Badge className='bg-green-100 text-green-800 text-[10px] dark:bg-green-900 dark:text-green-200'>PR Created</Badge>
-    case 'done_no_changes':
-      return <Badge variant='secondary' className='text-[10px]'>Done</Badge>
     case 'error':
       return <Badge variant='destructive' className='text-[10px]'>Error</Badge>
     case 'cancelled':

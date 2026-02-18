@@ -18,7 +18,6 @@ const POLL_INTERVAL = 10_000
 const TERMINAL_STATUSES: WorkerCommentStatus[] = [
   'plan_ready',
   'pr_created',
-  'done_no_changes',
   'error',
   'cancelled',
 ]
