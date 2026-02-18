@@ -4,6 +4,17 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Check, ChevronDown, ExternalLink, Loader2, MessageCircleQuestion, Play, Send } from 'lucide-react'
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import {
   Popover,
@@ -53,6 +64,7 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
   const [isDispatchPending, startDispatchTransition] = useTransition()
   const [generatingVersion, setGeneratingVersion] = useState<number | null>(null)
   const [selectedModel, setSelectedModel] = useState<string | null>(null)
+  const [dispatchModel, setDispatchModel] = useState<string>('claude-sonnet-4.6')
 
   // Session management
   const {
@@ -67,6 +79,7 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
   // Effective model: user selection overrides thread default
   const activeModel = selectedModel ?? activeThread?.model ?? 'claude-sonnet-4.6'
   const activeModelLabel = MODEL_OPTIONS.find(m => m.model === activeModel)?.label ?? 'Sonnet 4.6'
+  const dispatchModelLabel = MODEL_OPTIONS.find(m => m.model === dispatchModel)?.label ?? 'Sonnet 4.6'
 
   // Streaming plan generation
   const {
@@ -250,7 +263,7 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
         version: currentVersion || latestVersion,
         taskId: task.id,
         repoLinkId: selectedRepoId,
-        model: mapModelToWorker(activeModelLabel),
+        model: mapModelToWorker(dispatchModelLabel),
       })
 
       if ('error' in result) {
@@ -275,7 +288,7 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
     latestVersion,
     task.id,
     selectedRepoId,
-    activeModelLabel,
+    dispatchModelLabel,
     toast,
     queryClient,
   ])
@@ -408,21 +421,39 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
         )}
       </div>
 
-      {/* Footer: feedback input + dispatch plan (only after planning started) */}
+      {/* Footer: feedback input + refine (only after planning started) */}
       {hasStartedPlanning && (
         <div className='border-t bg-background/60 px-4 py-3'>
-          {/* Feedback / answer input */}
-          <div className='flex items-end gap-2'>
-            <Textarea
-              value={feedbackInput}
-              onChange={e => setFeedbackInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={isQuestionsResponse ? 'Answer the questions above...' : 'Refine this plan...'}
-              className='min-h-[36px] max-h-[100px] resize-none text-xs'
-              rows={1}
-              disabled={isGenerating || isViewingOldVersion}
-            />
-            {/* Model selector */}
+          <Textarea
+            value={feedbackInput}
+            onChange={e => setFeedbackInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={isQuestionsResponse ? 'Answer the questions above...' : 'Refine this plan...'}
+            className='min-h-[36px] max-h-[100px] resize-none text-xs'
+            rows={1}
+            disabled={isGenerating || isViewingOldVersion}
+          />
+          <div className='mt-2 flex items-center gap-2'>
+            {isGenerating ? (
+              <Button
+                size='sm'
+                variant='secondary'
+                onClick={cancelStream}
+                className='flex-1'
+              >
+                Stop
+              </Button>
+            ) : (
+              <Button
+                size='sm'
+                onClick={handleFeedbackSubmit}
+                disabled={!feedbackInput.trim()}
+                className='flex-1'
+              >
+                <Send className='mr-1.5 h-3.5 w-3.5' />
+                Refine
+              </Button>
+            )}
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -450,46 +481,74 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
                 ))}
               </PopoverContent>
             </Popover>
-            {isGenerating ? (
-              <Button
-                size='sm'
-                variant='secondary'
-                onClick={cancelStream}
-                className='shrink-0'
-              >
-                Stop
-              </Button>
-            ) : (
-              <Button
-                size='sm'
-                onClick={handleFeedbackSubmit}
-                disabled={!feedbackInput.trim()}
-                className='shrink-0'
-              >
-                <Send className='mr-1.5 h-3.5 w-3.5' />
-                Send
-              </Button>
-            )}
           </div>
+        </div>
+      )}
 
-          {/* Dispatch plan button — only when viewing a plan (not questions, not generating) */}
-          {!isGenerating && !isQuestionsResponse && displayContent && (
-            <Button
-              size='sm'
-              onClick={handleDispatch}
-              disabled={isDispatchPending || versionAlreadyDispatched}
-              className='mt-4 w-full'
-            >
-              {isDispatchPending ? (
-                <Loader2 className='mr-1.5 h-3.5 w-3.5 animate-spin' />
-              ) : (
-                <Check className='mr-1.5 h-3.5 w-3.5' />
-              )}
-              {versionAlreadyDispatched
-                ? `Plan ${currentVersionLabel} Dispatched`
-                : `Dispatch Plan ${currentVersionLabel}`}
-            </Button>
-          )}
+      {/* Dispatch section — visually separated from feedback input */}
+      {hasStartedPlanning && !isGenerating && !isQuestionsResponse && displayContent && (
+        <div className='flex items-center gap-2 border-t bg-muted/30 px-4 py-4'>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                size='sm'
+                disabled={isDispatchPending || versionAlreadyDispatched}
+                className='flex-1'
+              >
+                {isDispatchPending ? (
+                  <Loader2 className='mr-1.5 h-3.5 w-3.5 animate-spin' />
+                ) : (
+                  <Play className='mr-1.5 h-3.5 w-3.5' />
+                )}
+                {versionAlreadyDispatched
+                  ? `Plan ${currentVersionLabel} Dispatched`
+                  : `Dispatch Plan ${currentVersionLabel}`}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Dispatch Plan {currentVersionLabel}?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will create a GitHub issue and start the worker with{' '}
+                  <span className='font-medium'>{dispatchModelLabel}</span> to implement
+                  the plan on <span className='font-medium'>{selectedRepo?.repoFullName}</span>.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDispatch}>
+                  Dispatch
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant='outline'
+                size='sm'
+                className='shrink-0 gap-1 text-xs'
+                disabled={isDispatchPending || versionAlreadyDispatched}
+              >
+                {dispatchModelLabel.split(' ')[0]}
+                <ChevronDown className='h-3 w-3 opacity-50' />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className='w-36 p-1' align='end'>
+              {MODEL_OPTIONS.map(opt => (
+                <button
+                  key={opt.model}
+                  className='flex w-full items-center rounded-sm px-2 py-1.5 text-left text-xs hover:bg-muted'
+                  onClick={() => setDispatchModel(opt.model)}
+                >
+                  {opt.label}
+                  {dispatchModel === opt.model && (
+                    <Check className='ml-auto h-3 w-3' />
+                  )}
+                </button>
+              ))}
+            </PopoverContent>
+          </Popover>
         </div>
       )}
     </div>
