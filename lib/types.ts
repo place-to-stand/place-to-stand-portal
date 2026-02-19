@@ -5,6 +5,7 @@ import {
   projectType,
   taskStatus,
   userRole,
+  workerStatus,
 } from '@/lib/db/schema'
 
 export type UserRoleValue = (typeof userRole.enumValues)[number]
@@ -14,6 +15,7 @@ export type ClientBillingTypeValue =
 export type ProjectTypeValue = (typeof projectType.enumValues)[number]
 export type LeadStatusValue = (typeof leadStatus.enumValues)[number]
 export type LeadSourceTypeValue = (typeof leadSourceType.enumValues)[number]
+export type WorkerStatusValue = (typeof workerStatus.enumValues)[number]
 
 export type DbClient = {
   id: string
@@ -68,6 +70,9 @@ export type DbTask = {
   deleted_at: string | null
   accepted_at: string | null
   rank: string
+  github_issue_number: number | null
+  github_issue_url: string | null
+  worker_status: WorkerStatusValue | null
 }
 
 export type DbUser = {
@@ -123,6 +128,24 @@ export type DbTaskAttachment = {
   created_at: string
   updated_at: string
   deleted_at: string | null
+}
+
+export type DbTaskDeployment = {
+  id: string
+  task_id: string
+  repo_link_id: string
+  github_issue_number: number
+  github_issue_url: string
+  worker_status: WorkerStatusValue
+  pr_url: string | null
+  plan_id: string
+  plan_thread_id: string | null
+  plan_version: number | null
+  model: string | null
+  mode: string | null
+  created_by: string
+  created_at: string
+  updated_at: string
 }
 
 // ProjectMemberWithUser represents a client member who has access to a project

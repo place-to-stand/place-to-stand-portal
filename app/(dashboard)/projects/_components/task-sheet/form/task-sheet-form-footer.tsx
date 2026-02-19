@@ -3,6 +3,8 @@ import { Archive, Redo2, Undo2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 
+import { TASK_FORM_ID } from './task-sheet-form'
+
 export type TaskSheetFormFooterProps = {
   saveLabel: string
   submitDisabled: boolean
@@ -37,7 +39,7 @@ export function TaskSheetFormFooter(props: TaskSheetFormFooterProps) {
   const destructiveLabel = deleteAriaLabel ?? 'Archive task'
 
   return (
-    <div className='border-border/40 bg-muted/95 supports-backdrop-filter:bg-muted/90 fixed right-0 bottom-0 z-50 w-full border-t shadow-lg backdrop-blur sm:max-w-[676px]'>
+    <div className='border-border/40 bg-muted/95 supports-backdrop-filter:bg-muted/90 z-10 w-full border-t shadow-lg backdrop-blur'>
       <div className='flex w-full items-center justify-between gap-3 px-6 py-4'>
         <div className='flex items-center gap-2'>
           <DisabledFieldTooltip
@@ -46,6 +48,7 @@ export function TaskSheetFormFooter(props: TaskSheetFormFooterProps) {
           >
             <Button
               type='submit'
+              form={TASK_FORM_ID}
               disabled={submitDisabled}
               aria-label={`${saveLabel} (⌘S / Ctrl+S)`}
               title={`${saveLabel} (⌘S / Ctrl+S)`}

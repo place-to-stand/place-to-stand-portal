@@ -28,6 +28,9 @@ type TaskWithRelationsSelection = {
   createdAt: string
   updatedAt: string
   deletedAt: string | null
+  githubIssueNumber: number | null
+  githubIssueUrl: string | null
+  workerStatus: string | null
   commentCount: number
   attachmentCount: number
 }
@@ -71,6 +74,9 @@ export async function listProjectTasksWithRelations(
       createdAt: tasks.createdAt,
       updatedAt: tasks.updatedAt,
       deletedAt: tasks.deletedAt,
+      githubIssueNumber: tasks.githubIssueNumber,
+      githubIssueUrl: tasks.githubIssueUrl,
+      workerStatus: tasks.workerStatus,
       commentCount: sql<number>`(
         select coalesce(count(*), 0)
         from ${taskComments}
@@ -130,6 +136,9 @@ export async function listProjectTasksWithRelations(
     created_at: row.createdAt,
     updated_at: row.updatedAt,
     deleted_at: row.deletedAt,
+    github_issue_number: row.githubIssueNumber,
+    github_issue_url: row.githubIssueUrl,
+    worker_status: row.workerStatus as RawTaskWithRelations['worker_status'],
     assignees: assigneesByTask.get(row.id) ?? [],
     comment_count: Number(row.commentCount ?? 0),
     attachment_count: Number(row.attachmentCount ?? 0),

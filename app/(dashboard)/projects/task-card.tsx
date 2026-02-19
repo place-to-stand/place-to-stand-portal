@@ -11,6 +11,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { useSortable } from '@dnd-kit/sortable'
 import {
+  Bot,
   Building2,
   CalendarDays,
   FolderKanban,
@@ -22,7 +23,7 @@ import {
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
-import type { ProjectTypeValue, TaskWithRelations } from '@/lib/types'
+import type { ProjectTypeValue, TaskWithRelations, WorkerStatusValue } from '@/lib/types'
 import {
   TASK_DUE_TONE_CLASSES,
   getTaskDueMeta,
@@ -209,6 +210,9 @@ function CardContent({
             ) : null}
           </div>
         ) : null}
+        {task.worker_status ? (
+          <WorkerBadge status={task.worker_status} />
+        ) : null}
       </div>
     </>
   )
@@ -363,6 +367,56 @@ function renderProjectTypeIcon(
   }
 
   return <Building2 className={className} aria-hidden />
+}
+
+const WORKER_BADGE_CONFIG: Partial<
+  Record<WorkerStatusValue, { label: string; className: string }>
+> = {
+  working: {
+    label: 'Planning',
+    className:
+      'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+  },
+  implementing: {
+    label: 'Executing',
+    className:
+      'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+  },
+  plan_ready: {
+    label: 'Plan Ready',
+    className:
+      'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+  },
+  pr_created: {
+    label: 'PR Created',
+    className:
+      'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+  },
+  error: {
+    label: 'Error',
+    className: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+  },
+  cancelled: {
+    label: 'Cancelled',
+    className:
+      'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300',
+  },
+}
+
+function WorkerBadge({ status }: { status: WorkerStatusValue }) {
+  const config = WORKER_BADGE_CONFIG[status]
+  if (!config) return null
+  return (
+    <span
+      className={cn(
+        'inline-flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium',
+        config.className
+      )}
+    >
+      <Bot className='h-3 w-3' />
+      {config.label}
+    </span>
+  )
 }
 
 export type { TaskContextDetails }

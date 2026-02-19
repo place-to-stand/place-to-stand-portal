@@ -181,6 +181,16 @@ export const leadLossReason = pgEnum('lead_loss_reason', [
   'OTHER',
 ])
 
+export const workerStatus = pgEnum('worker_status', [
+  'working',
+  'plan_ready',
+  'implementing',
+  'pr_created',
+  'done_no_changes',
+  'error',
+  'cancelled',
+])
+
 // =============================================================================
 // CORE TABLES
 // =============================================================================
@@ -462,6 +472,9 @@ export const tasks = pgTable(
       mode: 'string',
     }),
     rank: text().default('zzzzzzzz').notNull(),
+    githubIssueNumber: integer('github_issue_number'),
+    githubIssueUrl: text('github_issue_url'),
+    workerStatus: workerStatus('worker_status'),
   },
   table => [
     index('idx_tasks_created_by')
@@ -1630,6 +1643,171 @@ export const proposals = pgTable(
       foreignColumns: [users.id],
       name: 'proposals_created_by_fkey',
     }),
+  ]
+)
+
+// =============================================================================
+// TASK DEPLOYMENTS (GitHub issue-based worker deployments per task)
+// =============================================================================
+
+export const taskDeployments = pgTable(
+  'task_deployments',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    taskId: uuid('task_id').notNull(),
+    repoLinkId: uuid('repo_link_id').notNull(),
+    githubIssueNumber: integer('github_issue_number').notNull(),
+    githubIssueUrl: text('github_issue_url').notNull(),
+    workerStatus: workerStatus('worker_status').notNull(),
+    prUrl: text('pr_url'),
+    planId: text('plan_id').notNull(),
+    planThreadId: uuid('plan_thread_id'),
+    planVersion: integer('plan_version'),
+    model: text(),
+    mode: text(),
+    createdBy: uuid('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+  },
+  table => [
+    uniqueIndex('idx_task_deployments_plan_id')
+      .using('btree', table.planId.asc().nullsLast().op('text_ops')),
+    index('idx_task_deployments_task')
+      .using('btree', table.taskId.asc().nullsLast().op('uuid_ops')),
+    foreignKey({
+      columns: [table.taskId],
+      foreignColumns: [tasks.id],
+      name: 'task_deployments_task_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.repoLinkId],
+      foreignColumns: [githubRepoLinks.id],
+      name: 'task_deployments_repo_link_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [users.id],
+      name: 'task_deployments_created_by_fkey',
+    }),
+  ]
+)
+
+// =============================================================================
+// AI PLANNING SESSIONS
+// =============================================================================
+
+export const planningSessionStatus = pgEnum('planning_session_status', [
+  'active',
+  'deployed',
+])
+
+export const planningSessions = pgTable(
+  'planning_sessions',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    taskId: uuid('task_id').notNull(),
+    repoLinkId: uuid('repo_link_id').notNull(),
+    status: planningSessionStatus().default('active').notNull(),
+    createdBy: uuid('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+  },
+  table => [
+    index('idx_planning_sessions_task')
+      .using('btree', table.taskId.asc().nullsLast().op('uuid_ops')),
+    foreignKey({
+      columns: [table.taskId],
+      foreignColumns: [tasks.id],
+      name: 'planning_sessions_task_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.repoLinkId],
+      foreignColumns: [githubRepoLinks.id],
+      name: 'planning_sessions_repo_link_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [users.id],
+      name: 'planning_sessions_created_by_fkey',
+    }),
+  ]
+)
+
+export const planThreads = pgTable(
+  'plan_threads',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    sessionId: uuid('session_id').notNull(),
+    model: text().notNull(),
+    modelLabel: text('model_label').notNull(),
+    currentVersion: integer('current_version').default(0).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+  },
+  table => [
+    index('idx_plan_threads_session')
+      .using('btree', table.sessionId.asc().nullsLast().op('uuid_ops')),
+    foreignKey({
+      columns: [table.sessionId],
+      foreignColumns: [planningSessions.id],
+      name: 'plan_threads_session_id_fkey',
+    }).onDelete('cascade'),
+  ]
+)
+
+export const planRevisions = pgTable(
+  'plan_revisions',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    threadId: uuid('thread_id').notNull(),
+    version: integer().notNull(),
+    content: text().notNull(),
+    feedback: text(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+  },
+  table => [
+    index('idx_plan_revisions_thread')
+      .using('btree', table.threadId.asc().nullsLast().op('uuid_ops')),
+    unique('plan_revisions_thread_version_key').on(table.threadId, table.version),
+    foreignKey({
+      columns: [table.threadId],
+      foreignColumns: [planThreads.id],
+      name: 'plan_revisions_thread_id_fkey',
+    }).onDelete('cascade'),
+  ]
+)
+
+export const planMessages = pgTable(
+  'plan_messages',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    threadId: uuid('thread_id').notNull(),
+    role: text().notNull(),
+    content: text().notNull(),
+    metadata: jsonb(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+  },
+  table => [
+    index('idx_plan_messages_thread')
+      .using('btree', table.threadId.asc().nullsLast().op('uuid_ops'), table.createdAt.asc().nullsLast()),
+    foreignKey({
+      columns: [table.threadId],
+      foreignColumns: [planThreads.id],
+      name: 'plan_messages_thread_id_fkey',
+    }).onDelete('cascade'),
   ]
 )
 
