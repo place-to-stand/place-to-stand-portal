@@ -104,7 +104,7 @@ export async function POST(request: Request) {
     conversationMessages.push({ role: 'user', content: feedback })
     await appendMessage(threadId, 'user', feedback)
   } else if (conversationMessages.length === 0) {
-    const initialPrompt = 'Generate the implementation plan.'
+    const initialPrompt = 'Explore the repository to understand its structure, patterns, and relevant code, then generate the implementation plan.'
     conversationMessages.push({ role: 'user', content: initialPrompt })
     await appendMessage(threadId, 'user', initialPrompt)
   } else if (conversationMessages[conversationMessages.length - 1].role !== 'user') {
@@ -132,11 +132,11 @@ export async function POST(request: Request) {
     system: systemPrompt,
     messages: conversationMessages,
     tools,
-    stopWhen: stepCountIs(10),
+    stopWhen: stepCountIs(25),
     providerOptions: supportsThinking
       ? {
           anthropic: {
-            thinking: { type: 'enabled', budgetTokens: 10000 },
+            thinking: { type: 'enabled', budgetTokens: 16000 },
           } satisfies AnthropicLanguageModelOptions,
         }
       : undefined,
