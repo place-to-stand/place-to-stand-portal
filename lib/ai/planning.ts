@@ -3,7 +3,7 @@ import 'server-only'
 import { tool } from 'ai'
 import { z } from 'zod'
 
-import { getFileContents } from '@/lib/github/client'
+import { getFileContents, searchRepoCode } from '@/lib/github/client'
 
 // ---------------------------------------------------------------------------
 // System prompt builder
@@ -16,24 +16,42 @@ export function buildPlanningSystemPrompt(
 ): string {
   const treeSection =
     repoTree.length > 0
-      ? `\n\n## Repository Structure\n\`\`\`\n${repoTree.join('\n')}\n\`\`\``
+      ? `\n## Repository File Tree\n\`\`\`\n${repoTree.join('\n')}\n\`\`\`\n`
       : ''
 
   const descSection = taskDescription
-    ? `\n\n## Task Description\n${taskDescription}`
+    ? `\n## Task Description\n${taskDescription}\n`
     : ''
 
-  return `You are an expert software architect generating an implementation plan.
+  return `You are an expert software architect generating an implementation plan for a codebase.
 
-## Task: ${taskTitle}${descSection}${treeSection}
+## Orientation
+${treeSection}${descSection}
+## Task: ${taskTitle}
 
-## Instructions
+---
 
-Create a detailed, actionable implementation plan for the task above. Your plan is a living document that will be iterated on through feedback.
+## Before You Begin — Explore the Code
 
-If the task description is ambiguous, underspecified, or missing critical details needed to produce a good plan, start your response with a "## Clarifying Questions" heading followed by numbered questions. Do NOT include any plan content when asking clarifying questions — only questions. Once the user answers, generate the full plan incorporating their answers.
+You have \`read_file\`, \`list_directory\`, and \`search_code\` tools. **Use them extensively before writing any plan or asking any questions.** Never guess at code structure, types, or patterns — always read the source.
 
-If the task is clear enough to plan immediately, skip questions and go straight to the plan.
+Follow this exploration sequence:
+
+1. **Read foundational files first** — Look for README, package.json, config files (e.g., next.config.ts, tsconfig.json), and any project instruction files (CLAUDE.md, AGENTS.md) to understand the stack, conventions, and architecture.
+2. **Read files directly relevant to the task** — Using the file tree above and the task description, identify and read the source files that will be created or modified. Read their imports and dependencies too.
+3. **Search for related patterns** — Use \`search_code\` to find how similar features are implemented, how relevant types/interfaces are used, and what conventions exist.
+
+Spend your first several tool calls on exploration. A plan grounded in actual code is vastly more useful than one based on file names alone.
+
+---
+
+## Planning Instructions
+
+After exploring the codebase, produce an implementation plan. Your plan is a living document that will be iterated on through feedback.
+
+**If you need clarification:** Start with a "## Clarifying Questions" heading followed by numbered questions. These questions should demonstrate that you've read the code — reference specific files, types, or patterns you found. Do NOT include any plan content when asking clarifying questions. Once the user answers, generate the full plan.
+
+**If the task is clear enough:** Skip questions and go straight to the plan.
 
 Structure your plan with:
 1. **Context** — Brief summary of what needs to be built and why
@@ -44,8 +62,6 @@ Structure your plan with:
    - What changes are needed
    - Verification steps
 5. **Critical Files Reference** — Quick lookup table
-
-Use the available tools to read relevant source files from the repository when you need to understand existing patterns, types, or implementations. Read files proactively — don't guess at code structure.
 
 Keep the plan concise but comprehensive. Focus on the "what" and "why", not boilerplate. Use markdown formatting.`
 }
@@ -60,6 +76,10 @@ const readFileSchema = z.object({
 
 const listDirectorySchema = z.object({
   path: z.string().describe('Directory path relative to repository root (e.g., "lib/db" or "" for root)'),
+})
+
+const searchCodeSchema = z.object({
+  query: z.string().describe('Search query — function names, type names, import paths, or keywords (e.g., "createPlanningTools", "TaskStatus enum", "useSheetFormControls")'),
 })
 
 export function createPlanningTools(
@@ -105,6 +125,30 @@ export function createPlanningTools(
             .join('\n')
         } catch (error) {
           return `Error listing "${path}": ${error instanceof Error ? error.message : 'Unknown error'}`
+        }
+      },
+    }),
+
+    search_code: tool({
+      description:
+        'Search for code patterns, identifiers, or keywords across the repository. Returns matching file paths with text fragments. Use this to find how things are implemented, where types are used, or what conventions exist.',
+      inputSchema: searchCodeSchema,
+      execute: async ({ query }: z.infer<typeof searchCodeSchema>) => {
+        try {
+          const results = await searchRepoCode(userId, owner, repo, query, connectionId)
+          if (results.length === 0) {
+            return `No results found for "${query}".`
+          }
+          return results
+            .map(r => {
+              const fragments = r.fragments.length > 0
+                ? `\n${r.fragments.map(f => `  | ${f}`).join('\n')}`
+                : ''
+              return `${r.path}${fragments}`
+            })
+            .join('\n\n')
+        } catch (error) {
+          return `Error searching for "${query}": ${error instanceof Error ? error.message : 'Unknown error'}`
         }
       },
     }),
