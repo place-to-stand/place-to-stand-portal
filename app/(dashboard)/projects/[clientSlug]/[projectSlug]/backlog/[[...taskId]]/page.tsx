@@ -6,6 +6,8 @@ import { fetchProjectsWithRelations } from '@/lib/data/projects'
 import { fetchAdminUsers } from '@/lib/data/users'
 import { requireUser } from '@/lib/auth/session'
 import { getProjectClientSegment } from '@/lib/projects/board/board-utils'
+import { fetchClientDirectory } from '@/lib/queries/clients'
+import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
 import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
 
 export const metadata: Metadata = {
@@ -24,13 +26,20 @@ export default async function ProjectBacklogRoute({ params }: PageProps) {
   const resolvedParams = await params
   const { clientSlug, projectSlug, taskId } = resolvedParams
   const user = await requireUser()
-  const [projects, admins] = await Promise.all([
+  const [projects, admins, clientDirectory] = await Promise.all([
     fetchProjectsWithRelations({
       forUserId: user.id,
       forRole: user.role,
     }),
     fetchAdminUsers(),
+    fetchClientDirectory(),
   ])
+
+  const allClients: ClientRow[] = clientDirectory.map(c => ({
+    id: c.id,
+    name: c.name,
+    deleted_at: c.deletedAt,
+  }))
 
   const clients = projects
     .map(project => project.client)
@@ -92,6 +101,7 @@ export default async function ProjectBacklogRoute({ params }: PageProps) {
       currentUserRole={user.role}
       admins={admins}
       adminUsers={adminUsers}
+      allClients={allClients}
       activeClientId={activeClientId}
       activeProjectId={activeProjectId}
       activeTaskId={activeTaskId}

@@ -42,6 +42,7 @@ import {
 
 type ProjectsBoardComponentProps = ProjectsBoardProps & {
   adminUsers?: AdminUserForOwner[]
+  allClients?: ClientRow[]
 }
 
 export function ProjectsBoard(props: ProjectsBoardComponentProps) {
@@ -56,8 +57,8 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
   })
 
   const clientRows = useMemo<ClientRow[]>(
-    () => buildClientRows(props.projects),
-    [props.projects]
+    () => props.allClients ?? buildClientRows(props.projects),
+    [props.allClients, props.projects]
   )
   const sortedClients = useMemo(
     () => sortClientsByName(clientRows),
