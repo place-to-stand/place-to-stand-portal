@@ -13,8 +13,9 @@
  * // Navigate to a specific task
  * router.push(routes.my.tasks.board('task-id-123'))
  *
- * // Build inbox URL with query params
- * routes.my.inbox({ thread: 'thread-id', filter: 'linked' })
+ * // Build inbox URL
+ * routes.my.inbox.index()
+ * routes.my.inbox.thread('thread-id')
  */
 
 // ============================================================================
@@ -54,25 +55,17 @@ export const routes = {
     },
 
     /** Inbox routes */
-    inbox: (params?: { thread?: string; filter?: string; page?: number }) => {
-      if (!params) return '/my/inbox' as const
+    inbox: {
+      /** Default inbox view */
+      index: () => '/my/inbox/emails' as const,
 
-      const searchParams = new URLSearchParams()
-      if (params.thread) searchParams.set('thread', params.thread)
-      if (params.filter && params.filter !== 'all') searchParams.set('filter', params.filter)
-      if (params.page && params.page > 1) searchParams.set('page', String(params.page))
+      /** Specific view (sent, drafts, scheduled, linked, unlinked) */
+      view: (view: string) => `/my/inbox/emails/${view}` as const,
 
-      const queryString = searchParams.toString()
-      return queryString ? `/my/inbox?${queryString}` : '/my/inbox'
+      /** Deep-link to a specific thread */
+      thread: (threadId: string) => `/my/inbox/emails?thread=${threadId}` as const,
     },
 
-    /** Suggestions routes */
-    suggestions: (params?: { filter?: string }) => {
-      if (!params?.filter || params.filter === 'pending') {
-        return '/my/suggestions' as const
-      }
-      return `/my/suggestions?filter=${params.filter}`
-    },
   },
 
   // ============================================================================

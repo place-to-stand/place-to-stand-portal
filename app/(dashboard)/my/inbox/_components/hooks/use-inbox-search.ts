@@ -7,6 +7,7 @@ import type { ReadonlyURLSearchParams } from 'next/navigation'
 interface UseInboxSearchOptions {
   searchQuery: string
   searchParams: ReadonlyURLSearchParams
+  pathname: string
   router: AppRouterInstance
 }
 
@@ -21,6 +22,7 @@ interface UseInboxSearchReturn {
 export function useInboxSearch({
   searchQuery,
   searchParams,
+  pathname,
   router,
 }: UseInboxSearchOptions): UseInboxSearchReturn {
   const [searchInput, setSearchInput] = useState(searchQuery)
@@ -40,12 +42,12 @@ export function useInboxSearch({
           params.delete('q')
         }
         const newUrl = params.toString()
-          ? `/my/inbox?${params.toString()}`
-          : '/my/inbox'
+          ? `${pathname}?${params.toString()}`
+          : pathname
         router.push(newUrl)
       })
     },
-    [router, searchParams, startTransition]
+    [router, searchParams, pathname, startTransition]
   )
 
   // Clear search

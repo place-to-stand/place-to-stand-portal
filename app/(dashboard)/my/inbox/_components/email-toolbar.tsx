@@ -78,20 +78,19 @@ export function EmailToolbar({
         <TooltipContent>Reply</TooltipContent>
       </Tooltip>
 
-      {showReplyAll && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant='outline'
-              size='icon-sm'
-              onClick={() => onReply('reply_all')}
-            >
-              <ReplyAll className='h-4 w-4' />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Reply All</TooltipContent>
-        </Tooltip>
-      )}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant='outline'
+            size='icon-sm'
+            onClick={() => onReply('reply_all')}
+            disabled={!showReplyAll}
+          >
+            <ReplyAll className='h-4 w-4' />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Reply All</TooltipContent>
+      </Tooltip>
 
       <Tooltip>
         <TooltipTrigger asChild>

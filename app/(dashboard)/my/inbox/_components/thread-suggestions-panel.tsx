@@ -141,15 +141,29 @@ export function ThreadSuggestionsPanel({
           </span>
         </div>
       ) : suggestions.length === 0 ? (
-        <p className='text-muted-foreground text-sm'>
-          {!hasClient && !hasProject
-            ? 'Link a client and project to generate suggestions.'
-            : !hasClient
-              ? 'Link a client to generate suggestions.'
-              : !hasProject
-                ? 'Link a project to generate suggestions.'
-                : 'No suggestions for this thread.'}
-        </p>
+        hasClient && hasProject && onRefresh ? (
+          <div className='bg-muted/30 flex flex-col items-center gap-2 rounded-lg border p-4 text-center'>
+            <p className='text-muted-foreground text-sm'>
+              No suggestions yet for this thread.
+            </p>
+            <Button
+              variant='outline'
+              size='sm'
+              onClick={onRefresh}
+            >
+              <Sparkles className='h-3.5 w-3.5' />
+              Generate Suggestions
+            </Button>
+          </div>
+        ) : (
+          <p className='text-muted-foreground text-sm'>
+            {!hasClient && !hasProject
+              ? 'Link a client and project to generate suggestions.'
+              : !hasClient
+                ? 'Link a client to generate suggestions.'
+                : 'Link a project to generate suggestions.'}
+          </p>
+        )
       ) : (
         <div className='space-y-2'>
           {suggestions.map(suggestion => {

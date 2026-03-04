@@ -7,16 +7,13 @@ import {
   FileEdit,
   Send,
   Clock,
-  Users,
-  FolderKanban,
   LinkIcon,
   Unlink,
-  FileText,
 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
-type View = 'inbox' | 'drafts' | 'sent' | 'scheduled' | 'by-client' | 'by-project' | 'linked' | 'unlinked' | 'templates'
+type View = 'inbox' | 'drafts' | 'sent' | 'scheduled' | 'linked' | 'unlinked'
 
 interface InboxSidebarProps {
   currentView: View
@@ -45,15 +42,12 @@ const navItems: Array<{
   section?: string
   isExternal?: boolean
 }> = [
-  { view: 'inbox', label: 'Inbox', icon: Inbox, href: '/my/inbox', showCount: 'unread' },
-  { view: 'drafts', label: 'Drafts', icon: FileEdit, href: '/my/inbox?view=drafts', showCount: 'total' },
-  { view: 'sent', label: 'Sent', icon: Send, href: '/my/inbox?view=sent' },
-  { view: 'scheduled', label: 'Scheduled', icon: Clock, href: '/my/inbox?view=scheduled', showCount: 'total' },
-  { view: 'linked', label: 'Linked', icon: LinkIcon, href: '/my/inbox?view=linked', showCount: 'total', section: 'Portal Views' },
-  { view: 'unlinked', label: 'Unlinked', icon: Unlink, href: '/my/inbox?view=unlinked', showCount: 'total' },
-  { view: 'by-client', label: 'By Client', icon: Users, href: '/my/inbox?view=by-client', section: 'Browse' },
-  { view: 'by-project', label: 'By Project', icon: FolderKanban, href: '/my/inbox?view=by-project' },
-  { view: 'templates', label: 'Templates', icon: FileText, href: '/settings/email-templates', isExternal: true },
+  { view: 'inbox', label: 'Inbox', icon: Inbox, href: '/my/inbox/emails', showCount: 'unread' },
+  { view: 'drafts', label: 'Drafts', icon: FileEdit, href: '/my/inbox/emails/drafts', showCount: 'total' },
+  { view: 'sent', label: 'Sent', icon: Send, href: '/my/inbox/emails/sent' },
+  { view: 'scheduled', label: 'Scheduled', icon: Clock, href: '/my/inbox/emails/scheduled', showCount: 'total' },
+  { view: 'linked', label: 'Linked', icon: LinkIcon, href: '/my/inbox/emails/linked', showCount: 'total', section: 'Portal Views' },
+  { view: 'unlinked', label: 'Unlinked', icon: Unlink, href: '/my/inbox/emails/unlinked', showCount: 'total' },
 ]
 
 export function InboxSidebar({ currentView, counts, preservedParams }: InboxSidebarProps) {
@@ -70,18 +64,17 @@ export function InboxSidebar({ currentView, counts, preservedParams }: InboxSide
 
   // Build URL that preserves thread and search params across view changes
   const buildViewUrl = (view: View): string => {
+    const base = view === 'inbox' ? '/my/inbox/emails' : `/my/inbox/emails/${view}`
     const params = new URLSearchParams()
     // Preserve thread param (selected thread is independent of view)
     if (preservedParams?.thread) params.set('thread', preservedParams.thread)
     // Preserve search query
     if (preservedParams?.q) params.set('q', preservedParams.q)
-    // Set view (omit for inbox default)
-    if (view !== 'inbox') params.set('view', view)
-    return params.toString() ? `/my/inbox?${params.toString()}` : '/my/inbox'
+    return params.toString() ? `${base}?${params.toString()}` : base
   }
 
   return (
-    <nav className='flex flex-col gap-1 p-3'>
+    <nav className='space-y-0.5 px-3'>
       {itemsWithSectionFlags.map(item => {
         const count =
           item.view === 'inbox' && item.showCount === 'unread'
@@ -99,25 +92,25 @@ export function InboxSidebar({ currentView, counts, preservedParams }: InboxSide
         return (
           <div key={item.view}>
             {item.showSectionHeader && (
-              <div className='text-muted-foreground mt-4 mb-2 px-3 text-xs font-medium uppercase tracking-wider'>
+              <p className='text-muted-foreground/60 mb-1 mt-4 px-1 text-[11px] font-semibold uppercase tracking-wide'>
                 {item.section}
-              </div>
+              </p>
             )}
             <Link
               href={item.isExternal ? item.href : buildViewUrl(item.view)}
               className={cn(
-                'flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                'flex w-full items-center gap-2 rounded px-2 py-1.5 text-[12px] transition',
                 currentView === item.view
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
             >
-              <item.icon className='h-4 w-4 flex-shrink-0' />
+              <item.icon className='size-3.5 shrink-0' />
               <span className='flex-1 text-left'>{item.label}</span>
               {count > 0 && (
                 <span
                   className={cn(
-                    'rounded-full px-2 py-0.5 text-xs font-medium',
+                    'rounded-full px-1.5 py-0.5 text-[10px] font-medium',
                     currentView === item.view
                       ? 'bg-primary-foreground/20 text-primary-foreground'
                       : item.view === 'inbox' && counts.unread > 0

@@ -1,10 +1,9 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import {
   Clock,
-  FolderKanban,
   Mail,
   PenSquare,
 } from 'lucide-react'
@@ -18,6 +17,7 @@ import {
   SheetDescription,
   SheetTitle,
 } from '@/components/ui/sheet'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/components/ui/use-toast'
 import type { ThreadSummary, Message } from '@/lib/types/messages'
 
@@ -106,6 +106,7 @@ export function InboxPanel({
 }: InboxPanelProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const pathname = usePathname()
   const { toast } = useToast()
 
   const [threads, setThreads] = useState(initialThreads)
@@ -134,6 +135,7 @@ export function InboxPanel({
     threads,
     initialSelectedThread,
     searchParams,
+    pathname,
     router,
     setThreads,
   })
@@ -147,6 +149,7 @@ export function InboxPanel({
   } = useInboxSearch({
     searchQuery,
     searchParams,
+    pathname,
     router,
   })
 
@@ -230,7 +233,6 @@ export function InboxPanel({
     clients,
     projects,
     leads,
-    onLinkComplete: triggerThreadAnalysis,
     onClientLinked: clearSuggestions,
     onProjectLinked: clearProjectSuggestions,
     toast,
@@ -254,20 +256,20 @@ export function InboxPanel({
         params.set('page', String(page))
       }
       const newUrl = params.toString()
-        ? `/my/inbox?${params.toString()}`
-        : '/my/inbox'
+        ? `${pathname}?${params.toString()}`
+        : pathname
       router.push(newUrl)
     },
-    [router, searchParams]
+    [router, searchParams, pathname]
   )
 
   // Handle mobile view changes - triggers server-side navigation
   const handleMobileViewChange = useCallback(
     (newView: string) => {
       if (newView === 'inbox') {
-        router.push('/my/inbox')
+        router.push('/my/inbox/emails')
       } else {
-        router.push(`/my/inbox?view=${newView}`)
+        router.push(`/my/inbox/emails/${newView}`)
       }
     },
     [router]
@@ -418,119 +420,126 @@ export function InboxPanel({
         </p>
       </AppShellHeader>
 
-      {/* Two-column layout with sidebar */}
-      <div className='flex gap-6'>
-        {/* Left Sidebar */}
-        <aside className='bg-background hidden w-56 flex-shrink-0 rounded-xl border shadow-sm md:block'>
-          <div className='p-2'>
-            {/* Compose button at top of sidebar */}
-            {syncStatus.connected && (
-              <Button
-                className='mb-2 w-full'
-                onClick={() => setIsComposeOpen(true)}
-              >
-                <PenSquare className='h-4 w-4' />
-                Compose
-              </Button>
-            )}
-          </div>
-          <InboxSidebar
-            currentView={currentView}
-            counts={sidebarCounts}
-            preservedParams={{
-              thread: searchParams.get('thread'),
-              q: searchParams.get('q'),
-            }}
-          />
-        </aside>
+      <div className='space-y-4'>
+        {/* Tabs Row */}
+        <Tabs value='emails' className='w-full sm:w-auto'>
+          <TabsList className='bg-muted/40 h-10 w-full justify-start gap-2 rounded-lg p-1 sm:w-auto'>
+            <TabsTrigger value='emails' className='px-3 py-1.5 text-sm'>
+              Emails
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
-        {/* Main Content */}
-        <section className='bg-background min-w-0 flex-1 rounded-xl border p-6 shadow-sm'>
-          <div className='space-y-4'>
-            {/* Reconnect Banner - shown when connection needs reauth */}
-            {syncStatus.connectionStatus &&
-              syncStatus.connectionStatus !== 'ACTIVE' && (
-                <GmailReconnectBanner
-                  status={syncStatus.connectionStatus}
-                  errorMessage={syncStatus.connectionError}
-                />
-              )}
-
-            {/* Header Row */}
-            <InboxToolbar
-              currentView={currentView}
-              onViewChange={handleMobileViewChange}
-              searchInput={searchInput}
-              onSearchInputChange={setSearchInput}
-              isSearching={isSearching}
-              onClearSearch={handleClearSearch}
-              syncStatus={syncStatus}
-              pagination={pagination}
-              isSyncing={isSyncing}
-              onSync={handleSync}
-              onCompose={() => setIsComposeOpen(true)}
-            />
-
-            {/* Thread List or Drafts View */}
-            {currentView === 'drafts' ? (
-              <DraftsList onResumeDraft={handleResumeDraft} />
-            ) : currentView === 'scheduled' ? (
-              <div className='flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center'>
-                <Clock className='text-muted-foreground mb-4 h-12 w-12' />
-                <h3 className='text-lg font-medium'>Scheduled Emails</h3>
-                <p className='text-muted-foreground mt-1 text-sm'>
-                  {sidebarCounts.scheduled > 0
-                    ? `${sidebarCounts.scheduled} email${sidebarCounts.scheduled > 1 ? 's' : ''} scheduled to send.`
-                    : 'No scheduled emails.'}
-                </p>
-              </div>
-            ) : currentView === 'by-client' || currentView === 'by-project' ? (
-              <div className='flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center'>
-                <FolderKanban className='text-muted-foreground mb-4 h-12 w-12' />
-                <h3 className='text-lg font-medium'>Coming Soon</h3>
-                <p className='text-muted-foreground mt-1 text-sm'>
-                  Browse by {currentView === 'by-client' ? 'client' : 'project'} is coming soon.
-                </p>
-              </div>
-            ) : threads.length === 0 ? (
-              <div className='flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center'>
-                <Mail className='text-muted-foreground mb-4 h-12 w-12' />
-                <h3 className='text-lg font-medium'>No threads found</h3>
-                <p className='text-muted-foreground mt-1 text-sm'>
-                  {!syncStatus.connected
-                    ? 'Connect Gmail in Settings → Integrations to get started'
-                    : currentView !== 'inbox'
-                      ? `No ${currentView} threads found.`
-                      : isSyncing
-                        ? 'Syncing your emails...'
-                        : 'No emails synced yet.'}
-                </p>
-              </div>
-            ) : (
-              <>
-                <div className='overflow-hidden rounded-lg border'>
-                  {threads.map((thread, idx) => (
-                    <ThreadRow
-                      key={thread.id}
-                      thread={thread}
-                      isSelected={selectedThread?.id === thread.id}
-                      isFirst={idx === 0}
-                      onClick={() => onThreadClick(thread)}
-                    />
-                  ))}
+        {/* Main Card */}
+        <section className='bg-background flex min-h-[calc(100vh-13rem)] flex-col overflow-hidden rounded-xl border shadow-sm'>
+          <div className='flex flex-1'>
+            {/* Left Sidebar */}
+            <aside className='hidden w-56 flex-shrink-0 border-r py-6 md:block'>
+              {/* Compose button at top of sidebar */}
+              {syncStatus.connected && (
+                <div className='px-3 pb-4'>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    className='w-full text-[12px]'
+                    onClick={() => setIsComposeOpen(true)}
+                  >
+                    <PenSquare className='size-3.5' />
+                    Compose
+                  </Button>
                 </div>
+              )}
+              <InboxSidebar
+                currentView={currentView}
+                counts={sidebarCounts}
+                preservedParams={{
+                  thread: searchParams.get('thread'),
+                  q: searchParams.get('q'),
+                }}
+              />
+            </aside>
 
-                {/* Bottom Pagination */}
-                <PaginationControls
-                  mode='paged'
-                  currentPage={pagination.currentPage}
-                  totalPages={pagination.totalPages}
-                  totalItems={pagination.totalItems}
-                  pageSize={pagination.pageSize}
-                  onPageChange={handlePageChange}
+            {/* Main Content */}
+            <div className='flex min-w-0 flex-1 flex-col p-6'>
+              <div className='flex flex-1 flex-col space-y-4'>
+                {/* Reconnect Banner - shown when connection needs reauth */}
+                {syncStatus.connectionStatus &&
+                  syncStatus.connectionStatus !== 'ACTIVE' && (
+                    <GmailReconnectBanner
+                      status={syncStatus.connectionStatus}
+                      errorMessage={syncStatus.connectionError}
+                    />
+                  )}
+
+                {/* Header Row */}
+                <InboxToolbar
+                  currentView={currentView}
+                  onViewChange={handleMobileViewChange}
+                  searchInput={searchInput}
+                  onSearchInputChange={setSearchInput}
+                  isSearching={isSearching}
+                  onClearSearch={handleClearSearch}
+                  syncStatus={syncStatus}
+                  pagination={pagination}
+                  isSyncing={isSyncing}
+                  onSync={handleSync}
+                  onCompose={() => setIsComposeOpen(true)}
                 />
-              </>
-            )}
+
+                {/* Thread List or Drafts View */}
+                {currentView === 'drafts' ? (
+                  <DraftsList onResumeDraft={handleResumeDraft} />
+                ) : currentView === 'scheduled' ? (
+                  <div className='flex flex-1 flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center'>
+                    <Clock className='text-muted-foreground mb-4 h-12 w-12' />
+                    <h3 className='text-lg font-medium'>Scheduled Emails</h3>
+                    <p className='text-muted-foreground mt-1 text-sm'>
+                      {sidebarCounts.scheduled > 0
+                        ? `${sidebarCounts.scheduled} email${sidebarCounts.scheduled > 1 ? 's' : ''} scheduled to send.`
+                        : 'No scheduled emails.'}
+                    </p>
+                  </div>
+                ) : threads.length === 0 ? (
+                  <div className='flex flex-1 flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center'>
+                    <Mail className='text-muted-foreground mb-4 h-12 w-12' />
+                    <h3 className='text-lg font-medium'>No threads found</h3>
+                    <p className='text-muted-foreground mt-1 text-sm'>
+                      {!syncStatus.connected
+                        ? 'Connect Gmail in Settings → Integrations to get started'
+                        : currentView !== 'inbox'
+                          ? `No ${currentView} threads found.`
+                          : isSyncing
+                            ? 'Syncing your emails...'
+                            : 'No emails synced yet.'}
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className='overflow-hidden rounded-lg border'>
+                      {threads.map((thread, idx) => (
+                        <ThreadRow
+                          key={thread.id}
+                          thread={thread}
+                          isSelected={selectedThread?.id === thread.id}
+                          isFirst={idx === 0}
+                          onClick={() => onThreadClick(thread)}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Bottom Pagination */}
+                    <PaginationControls
+                      mode='paged'
+                      currentPage={pagination.currentPage}
+                      totalPages={pagination.totalPages}
+                      totalItems={pagination.totalItems}
+                      pageSize={pagination.pageSize}
+                      onPageChange={handlePageChange}
+                    />
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </section>
       </div>

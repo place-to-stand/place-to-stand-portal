@@ -305,7 +305,7 @@ export function SuggestionCard({
               <div className='text-muted-foreground flex flex-wrap items-center gap-2 text-xs'>
                 {suggestion.emailContext.threadId ? (
                   <Link
-                    href={`/my/inbox?thread=${suggestion.emailContext.threadId}`}
+                    href={`/my/inbox/emails?thread=${suggestion.emailContext.threadId}`}
                     className='hover:text-foreground flex items-center gap-1 hover:underline'
                   >
                     <Mail className='h-3 w-3' />
