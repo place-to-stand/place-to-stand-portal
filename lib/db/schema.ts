@@ -1170,6 +1170,9 @@ export const messages = pgTable(
     index('idx_messages_from_email')
       .using('btree', table.fromEmail.asc().nullsLast().op('text_ops'))
       .where(sql`(deleted_at IS NULL)`),
+    index('idx_messages_thread_sent_at')
+      .using('btree', table.threadId.asc(), table.sentAt.desc())
+      .where(sql`(deleted_at IS NULL)`),
     foreignKey({
       columns: [table.threadId],
       foreignColumns: [threads.id],

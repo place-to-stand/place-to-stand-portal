@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, Dispatch, SetStateAction } from 'react'
+import { useState, useEffect, useCallback, useRef, Dispatch, SetStateAction } from 'react'
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import type { ReadonlyURLSearchParams } from 'next/navigation'
 import type { ThreadSummary, Message } from '@/lib/types/messages'
@@ -11,6 +11,7 @@ interface UseThreadSelectionOptions {
   threads: ThreadSummary[]
   initialSelectedThread: ThreadSummary | null | undefined
   searchParams: ReadonlyURLSearchParams
+  pathname: string
   router: AppRouterInstance
   setThreads: Dispatch<SetStateAction<ThreadSummary[]>>
 }
@@ -33,6 +34,7 @@ export function useThreadSelection({
   threads,
   initialSelectedThread,
   searchParams,
+  pathname,
   router,
   setThreads,
 }: UseThreadSelectionOptions): UseThreadSelectionReturn {
@@ -42,8 +44,18 @@ export function useThreadSelection({
   const [attachmentsMap, setAttachmentsMap] = useState<Record<string, AttachmentMetadata[]>>({})
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
 
+  // Track in-flight fetch so rapid clicks cancel previous requests
+  const abortControllerRef = useRef<AbortController | null>(null)
+  const currentThreadIdRef = useRef<string | null>(null)
+
   const handleThreadClick = useCallback(
     async (thread: ThreadSummary, updateUrl = true) => {
+      // Abort any in-flight request before starting a new one
+      abortControllerRef.current?.abort()
+      const controller = new AbortController()
+      abortControllerRef.current = controller
+      currentThreadIdRef.current = thread.id
+
       setSelectedThread(thread)
       setIsLoadingMessages(true)
       setThreadMessages([])
@@ -54,11 +66,17 @@ export function useThreadSelection({
       if (updateUrl) {
         const params = new URLSearchParams(searchParams.toString())
         params.set('thread', thread.id)
-        router.push(`/my/inbox?${params.toString()}`, { scroll: false })
+        router.push(`${pathname}?${params.toString()}`, { scroll: false })
       }
 
       try {
-        const res = await fetch(`/api/threads/${thread.id}/messages`)
+        const res = await fetch(`/api/threads/${thread.id}/messages`, {
+          signal: controller.signal,
+        })
+
+        // Guard: if user clicked a different thread while we were fetching, discard
+        if (currentThreadIdRef.current !== thread.id) return
+
         if (res.ok) {
           const data = await res.json()
           setThreadMessages(data.messages || [])
@@ -99,15 +117,22 @@ export function useThreadSelection({
           }
         }
       } catch (err) {
+        // Ignore aborted requests — they're expected during rapid navigation
+        if (err instanceof DOMException && err.name === 'AbortError') return
         console.error('Failed to load messages:', err)
       } finally {
-        setIsLoadingMessages(false)
+        // Only clear loading if this is still the current request
+        if (currentThreadIdRef.current === thread.id) {
+          setIsLoadingMessages(false)
+        }
       }
     },
-    [router, searchParams, setThreads]
+    [router, searchParams, pathname, setThreads]
   )
 
   const handleCloseSheet = useCallback(() => {
+    abortControllerRef.current?.abort()
+    currentThreadIdRef.current = null
     setSelectedThread(null)
     setThreadMessages([])
     setCidMappings({})
@@ -117,10 +142,10 @@ export function useThreadSelection({
     const params = new URLSearchParams(searchParams.toString())
     params.delete('thread')
     const newUrl = params.toString()
-      ? `/my/inbox?${params.toString()}`
-      : '/my/inbox'
+      ? `${pathname}?${params.toString()}`
+      : pathname
     router.push(newUrl, { scroll: false })
-  }, [router, searchParams])
+  }, [router, searchParams, pathname])
 
   /** Refresh messages for a thread (e.g., after sending a reply) */
   const refreshMessages = useCallback(async (threadId: string) => {

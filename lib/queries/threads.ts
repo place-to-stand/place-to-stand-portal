@@ -221,6 +221,42 @@ export async function findOrCreateThread(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+type LatestMessageRow = {
+  thread_id: string
+  id: string
+  snippet: string | null
+  from_email: string
+  from_name: string | null
+  sent_at: string
+  is_inbound: boolean
+  is_read: boolean
+}
+
+/**
+ * Fetch the latest message per thread using DISTINCT ON (single pass).
+ * Replaces the correlated MAX subquery pattern which is O(N*M).
+ */
+async function getLatestMessagesForThreads(
+  threadIds: string[]
+): Promise<Map<string, LatestMessageRow>> {
+  if (threadIds.length === 0) return new Map()
+
+  const rows = await db.execute<LatestMessageRow>(sql`
+    SELECT DISTINCT ON (thread_id)
+      thread_id, id, snippet, from_email, from_name, sent_at, is_inbound, is_read
+    FROM messages
+    WHERE thread_id IN (${sql.join(threadIds.map(id => sql`${id}`), sql`, `)})
+      AND deleted_at IS NULL
+    ORDER BY thread_id, sent_at DESC
+  `)
+
+  return new Map(rows.map(r => [r.thread_id, r]))
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Thread Listing
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -389,45 +425,33 @@ export async function listThreadsForUser(
 
   // Get latest message for each thread
   const threadIds = threadRows.map(t => t.id)
-  const latestMessages = await db
-    .select({
-      threadId: messages.threadId,
-      id: messages.id,
-      snippet: messages.snippet,
-      fromEmail: messages.fromEmail,
-      fromName: messages.fromName,
-      sentAt: messages.sentAt,
-      isInbound: messages.isInbound,
-      isRead: messages.isRead,
-    })
-    .from(messages)
-    .where(
-      and(
-        inArray(messages.threadId, threadIds),
-        isNull(messages.deletedAt),
-        sql`${messages.sentAt} = (
-          SELECT MAX(m2.sent_at)
-          FROM messages m2
-          WHERE m2.thread_id = ${messages.threadId}
-          AND m2.deleted_at IS NULL
-        )`
-      )
-    )
+  const latestMessageMap = await getLatestMessagesForThreads(threadIds)
 
-  const latestMessageMap = new Map(latestMessages.map(m => [m.threadId, m]))
-
-  return threadRows.map(thread => ({
-    id: thread.id,
-    subject: thread.subject,
-    status: thread.status as ThreadStatus,
-    source: thread.source as 'EMAIL' | 'CHAT' | 'VOICE_MEMO' | 'DOCUMENT' | 'FORM',
-    participantEmails: thread.participantEmails ?? [],
-    lastMessageAt: thread.lastMessageAt,
-    messageCount: thread.messageCount,
-    client: thread.clientId ? clientMap.get(thread.clientId) ?? null : null,
-    project: thread.projectId ? projectMap.get(thread.projectId) ?? null : null,
-    latestMessage: latestMessageMap.get(thread.id) ?? null,
-  }))
+  return threadRows.map(thread => {
+    const msg = latestMessageMap.get(thread.id)
+    return {
+      id: thread.id,
+      subject: thread.subject,
+      status: thread.status as ThreadStatus,
+      source: thread.source as 'EMAIL' | 'CHAT' | 'VOICE_MEMO' | 'DOCUMENT' | 'FORM',
+      participantEmails: thread.participantEmails ?? [],
+      lastMessageAt: thread.lastMessageAt,
+      messageCount: thread.messageCount,
+      client: thread.clientId ? clientMap.get(thread.clientId) ?? null : null,
+      project: thread.projectId ? projectMap.get(thread.projectId) ?? null : null,
+      latestMessage: msg
+        ? {
+            id: msg.id,
+            snippet: msg.snippet,
+            fromEmail: msg.from_email,
+            fromName: msg.from_name,
+            sentAt: msg.sent_at,
+            isInbound: msg.is_inbound,
+            isRead: msg.is_read,
+          }
+        : null,
+    }
+  })
 }
 
 export async function listThreadsForClient(
@@ -474,45 +498,33 @@ export async function listThreadsForClient(
 
   // Get latest message for each thread
   const threadIds = threadRows.map(t => t.id)
-  const latestMessages = await db
-    .select({
-      threadId: messages.threadId,
-      id: messages.id,
-      snippet: messages.snippet,
-      fromEmail: messages.fromEmail,
-      fromName: messages.fromName,
-      sentAt: messages.sentAt,
-      isInbound: messages.isInbound,
-      isRead: messages.isRead,
-    })
-    .from(messages)
-    .where(
-      and(
-        inArray(messages.threadId, threadIds),
-        isNull(messages.deletedAt),
-        sql`${messages.sentAt} = (
-          SELECT MAX(m2.sent_at)
-          FROM messages m2
-          WHERE m2.thread_id = ${messages.threadId}
-          AND m2.deleted_at IS NULL
-        )`
-      )
-    )
+  const latestMessageMap = await getLatestMessagesForThreads(threadIds)
 
-  const latestMessageMap = new Map(latestMessages.map(m => [m.threadId, m]))
-
-  return threadRows.map(thread => ({
-    id: thread.id,
-    subject: thread.subject,
-    status: thread.status as ThreadStatus,
-    source: thread.source as 'EMAIL' | 'CHAT' | 'VOICE_MEMO' | 'DOCUMENT' | 'FORM',
-    participantEmails: thread.participantEmails ?? [],
-    lastMessageAt: thread.lastMessageAt,
-    messageCount: thread.messageCount,
-    client: client ?? null,
-    project: thread.projectId ? projectMap.get(thread.projectId) ?? null : null,
-    latestMessage: latestMessageMap.get(thread.id) ?? null,
-  }))
+  return threadRows.map(thread => {
+    const msg = latestMessageMap.get(thread.id)
+    return {
+      id: thread.id,
+      subject: thread.subject,
+      status: thread.status as ThreadStatus,
+      source: thread.source as 'EMAIL' | 'CHAT' | 'VOICE_MEMO' | 'DOCUMENT' | 'FORM',
+      participantEmails: thread.participantEmails ?? [],
+      lastMessageAt: thread.lastMessageAt,
+      messageCount: thread.messageCount,
+      client: client ?? null,
+      project: thread.projectId ? projectMap.get(thread.projectId) ?? null : null,
+      latestMessage: msg
+        ? {
+            id: msg.id,
+            snippet: msg.snippet,
+            fromEmail: msg.from_email,
+            fromName: msg.from_name,
+            sentAt: msg.sent_at,
+            isInbound: msg.is_inbound,
+            isRead: msg.is_read,
+          }
+        : null,
+    }
+  })
 }
 
 export async function listThreadsForLead(
@@ -580,45 +592,33 @@ export async function listThreadsForLead(
 
   // Get latest message for each thread
   const threadIds = threadRows.map(t => t.id)
-  const latestMessages = await db
-    .select({
-      threadId: messages.threadId,
-      id: messages.id,
-      snippet: messages.snippet,
-      fromEmail: messages.fromEmail,
-      fromName: messages.fromName,
-      sentAt: messages.sentAt,
-      isInbound: messages.isInbound,
-      isRead: messages.isRead,
-    })
-    .from(messages)
-    .where(
-      and(
-        inArray(messages.threadId, threadIds),
-        isNull(messages.deletedAt),
-        sql`${messages.sentAt} = (
-          SELECT MAX(m2.sent_at)
-          FROM messages m2
-          WHERE m2.thread_id = ${messages.threadId}
-          AND m2.deleted_at IS NULL
-        )`
-      )
-    )
+  const latestMessageMap = await getLatestMessagesForThreads(threadIds)
 
-  const latestMessageMap = new Map(latestMessages.map(m => [m.threadId, m]))
-
-  return threadRows.map(thread => ({
-    id: thread.id,
-    subject: thread.subject,
-    status: thread.status as ThreadStatus,
-    source: thread.source as 'EMAIL' | 'CHAT' | 'VOICE_MEMO' | 'DOCUMENT' | 'FORM',
-    participantEmails: thread.participantEmails ?? [],
-    lastMessageAt: thread.lastMessageAt,
-    messageCount: thread.messageCount,
-    client: thread.clientId ? clientMap.get(thread.clientId) ?? null : null,
-    project: thread.projectId ? projectMap.get(thread.projectId) ?? null : null,
-    latestMessage: latestMessageMap.get(thread.id) ?? null,
-  }))
+  return threadRows.map(thread => {
+    const msg = latestMessageMap.get(thread.id)
+    return {
+      id: thread.id,
+      subject: thread.subject,
+      status: thread.status as ThreadStatus,
+      source: thread.source as 'EMAIL' | 'CHAT' | 'VOICE_MEMO' | 'DOCUMENT' | 'FORM',
+      participantEmails: thread.participantEmails ?? [],
+      lastMessageAt: thread.lastMessageAt,
+      messageCount: thread.messageCount,
+      client: thread.clientId ? clientMap.get(thread.clientId) ?? null : null,
+      project: thread.projectId ? projectMap.get(thread.projectId) ?? null : null,
+      latestMessage: msg
+        ? {
+            id: msg.id,
+            snippet: msg.snippet,
+            fromEmail: msg.from_email,
+            fromName: msg.from_name,
+            sentAt: msg.sent_at,
+            isInbound: msg.is_inbound,
+            isRead: msg.is_read,
+          }
+        : null,
+    }
+  })
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -766,5 +766,64 @@ export async function getThreadCountsForUser(
       RESOLVED: counts?.resolved ?? 0,
       ARCHIVED: counts?.archived ?? 0,
     },
+  }
+}
+
+/**
+ * Fetch all sidebar counts in a single query using conditional aggregation.
+ * Replaces 3 separate getThreadCountsForUser calls (inbox + linked + unlinked).
+ */
+export async function getInboxSidebarCounts(
+  userId: string
+): Promise<{ inbox: number; linked: number; unlinked: number; sent: number }> {
+  const userAccessCondition = sql`(
+    t.created_by = ${userId}
+    OR EXISTS (
+      SELECT 1 FROM messages m
+      WHERE m.thread_id = t.id
+      AND m.user_id = ${userId}
+      AND m.deleted_at IS NULL
+    )
+  )`
+
+  const hasInboundCondition = sql`EXISTS (
+    SELECT 1 FROM messages m
+    WHERE m.thread_id = t.id
+    AND m.user_id = ${userId}
+    AND m.is_inbound = true
+    AND m.deleted_at IS NULL
+  )`
+
+  const hasSentCondition = sql`EXISTS (
+    SELECT 1 FROM messages m
+    WHERE m.thread_id = t.id
+    AND m.user_id = ${userId}
+    AND m.is_inbound = false
+    AND m.deleted_at IS NULL
+  )`
+
+  type SidebarCountRow = {
+    inbox: number
+    linked: number
+    unlinked: number
+    sent: number
+  }
+
+  const [row] = await db.execute<SidebarCountRow>(sql`
+    SELECT
+      count(*) FILTER (WHERE ${hasInboundCondition})::int AS inbox,
+      count(*) FILTER (WHERE t.client_id IS NOT NULL AND ${hasInboundCondition})::int AS linked,
+      count(*) FILTER (WHERE t.client_id IS NULL AND ${hasInboundCondition})::int AS unlinked,
+      count(*) FILTER (WHERE ${hasSentCondition})::int AS sent
+    FROM threads t
+    WHERE t.deleted_at IS NULL
+      AND ${userAccessCondition}
+  `)
+
+  return {
+    inbox: row?.inbox ?? 0,
+    linked: row?.linked ?? 0,
+    unlinked: row?.unlinked ?? 0,
+    sent: row?.sent ?? 0,
   }
 }

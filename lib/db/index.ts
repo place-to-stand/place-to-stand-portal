@@ -14,7 +14,11 @@ declare global {
 }
 
 const client =
-  globalThis.__drizzle_postgres__ ?? postgres(databaseUrl, { prepare: false })
+  globalThis.__drizzle_postgres__ ?? postgres(databaseUrl, {
+    prepare: false,
+    max: 20,
+    idle_timeout: 20,
+  })
 
 if (process.env.NODE_ENV !== 'production') {
   globalThis.__drizzle_postgres__ = client

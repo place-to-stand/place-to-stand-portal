@@ -48,18 +48,24 @@ export function useThreadSuggestions({
       return
     }
 
+    const controller = new AbortController()
     setSuggestionsLoading(true)
-    fetch(`/api/threads/${selectedThread.id}/suggestions`)
+    fetch(`/api/threads/${selectedThread.id}/suggestions`, {
+      signal: controller.signal,
+    })
       .then(r => {
         if (!r.ok) throw new Error(`Suggestions fetch failed: ${r.status}`)
         return r.json()
       })
       .then(data => setSuggestions(data.suggestions || []))
       .catch(err => {
+        if (err instanceof DOMException && err.name === 'AbortError') return
         console.error('Failed to load client suggestions:', err)
         setSuggestions([])
       })
       .finally(() => setSuggestionsLoading(false))
+
+    return () => controller.abort()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedThread?.id, selectedThread?.client])
 
@@ -70,18 +76,24 @@ export function useThreadSuggestions({
       return
     }
 
+    const controller = new AbortController()
     setProjectSuggestionsLoading(true)
-    fetch(`/api/threads/${selectedThread.id}/project-suggestions`)
+    fetch(`/api/threads/${selectedThread.id}/project-suggestions`, {
+      signal: controller.signal,
+    })
       .then(r => {
         if (!r.ok) throw new Error(`Project suggestions fetch failed: ${r.status}`)
         return r.json()
       })
       .then(data => setProjectSuggestions(data.suggestions || []))
       .catch(err => {
+        if (err instanceof DOMException && err.name === 'AbortError') return
         console.error('Failed to load project suggestions:', err)
         setProjectSuggestions([])
       })
       .finally(() => setProjectSuggestionsLoading(false))
+
+    return () => controller.abort()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedThread?.id, selectedThread?.project])
 

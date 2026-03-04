@@ -260,6 +260,13 @@
       "when": 1771384451746,
       "tag": "0036_add_deployment_plan_version",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1772667133428,
+      "tag": "0037_add_messages_thread_sent_at_index",
+      "breakpoints": true
     }
   ]
 }
