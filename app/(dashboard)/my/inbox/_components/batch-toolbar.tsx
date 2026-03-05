@@ -1,17 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import { X, XCircle } from 'lucide-react'
+import { Sparkles, X, XCircle } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 
 interface BatchToolbarProps {
   selectedCount: number
+  onAnalyze: () => void
   onDismiss: () => Promise<void>
   onClear: () => void
 }
 
-export function BatchToolbar({ selectedCount, onDismiss, onClear }: BatchToolbarProps) {
+export function BatchToolbar({ selectedCount, onAnalyze, onDismiss, onClear }: BatchToolbarProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   if (selectedCount === 0) return null
@@ -31,6 +32,15 @@ export function BatchToolbar({ selectedCount, onDismiss, onClear }: BatchToolbar
         <span className='text-sm font-medium'>
           {selectedCount} selected
         </span>
+        <Button
+          variant='outline'
+          size='sm'
+          onClick={onAnalyze}
+          disabled={isSubmitting}
+        >
+          <Sparkles className='mr-1.5 h-3.5 w-3.5' />
+          Analyze {selectedCount} thread{selectedCount !== 1 ? 's' : ''}
+        </Button>
         <Button
           variant='destructive'
           size='sm'

@@ -42,6 +42,7 @@ export function TriageView({ clients, projects, leads, currentUserId }: TriageVi
   const [hasMore, setHasMore] = useState(false)
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [sessionStats, setSessionStats] = useState({ classified: 0, dismissed: 0 })
+  const [analyzeQueue, setAnalyzeQueue] = useState<Set<string>>(new Set())
 
   // Thread detail sheet state (lightweight — no URL sync)
   const [selectedThread, setSelectedThread] = useState<ThreadSummary | null>(null)
@@ -204,6 +205,18 @@ export function TriageView({ clients, projects, leads, currentUserId }: TriageVi
     }
   }, [router])
 
+  const handleBatchAnalyze = useCallback(() => {
+    setAnalyzeQueue(new Set(selectedIds))
+  }, [selectedIds])
+
+  const handleAnalyzeStarted = useCallback((threadId: string) => {
+    setAnalyzeQueue(prev => {
+      const next = new Set(prev)
+      next.delete(threadId)
+      return next
+    })
+  }, [])
+
   const handleBatchDismiss = useCallback(async () => {
     const ids = Array.from(selectedIds)
     const res = await fetch('/api/threads/batch', {
@@ -305,6 +318,8 @@ export function TriageView({ clients, projects, leads, currentUserId }: TriageVi
               leads={leads}
               currentUserId={currentUserId}
               isChecked={isSelected(thread.id)}
+              shouldAnalyze={analyzeQueue.has(thread.id)}
+              onAnalyzeStarted={() => handleAnalyzeStarted(thread.id)}
               onToggle={(shiftKey) => toggle(thread.id, shiftKey)}
               onAccept={handleAccept}
               onDismiss={() => handleDismiss(thread.id)}
@@ -330,6 +345,7 @@ export function TriageView({ clients, projects, leads, currentUserId }: TriageVi
 
       <BatchToolbar
         selectedCount={selectedCount}
+        onAnalyze={handleBatchAnalyze}
         onDismiss={handleBatchDismiss}
         onClear={clearSelection}
       />

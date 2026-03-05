@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback, useRef } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import {
   Building2,
@@ -49,6 +49,8 @@ interface TriageRowProps {
   leads: Lead[]
   currentUserId: string
   isChecked: boolean
+  shouldAnalyze?: boolean
+  onAnalyzeStarted?: () => void
   onToggle: (shiftKey: boolean) => void
   onAccept: (threadId: string, linkData: { clientId?: string; projectId?: string; leadId?: string }) => Promise<void>
   onDismiss: () => void
@@ -65,6 +67,8 @@ export function TriageRow({
   leads,
   currentUserId,
   isChecked,
+  shouldAnalyze,
+  onAnalyzeStarted,
   onToggle,
   onAccept,
   onDismiss,
@@ -175,6 +179,14 @@ export function TriageRow({
     }
   }, [thread.id, thread.leadSuggestion, projects, currentUserId])
 
+  // Batch analyze trigger — auto-start when parent queues this row
+  useEffect(() => {
+    if (shouldAnalyze && analysisState === 'idle') {
+      onAnalyzeStarted?.()
+      handleAnalyze()
+    }
+  }, [shouldAnalyze, analysisState, onAnalyzeStarted, handleAnalyze])
+
   const handleAccept = async () => {
     if (!hasValidSelection) return
     setIsSubmitting(true)
@@ -266,7 +278,7 @@ export function TriageRow({
         </div>
 
         {/* RIGHT COLUMN: classification controls */}
-        <div className='relative flex w-64 flex-shrink-0 flex-col rounded-lg border bg-muted/30 p-2.5' onClick={e => e.stopPropagation()}>
+        <div className='relative flex w-72 flex-shrink-0 flex-col rounded-lg border bg-muted/30 p-2.5' onClick={e => e.stopPropagation()}>
           {/* Analyze overlay — shown when not yet analyzed */}
           {analysisState === 'idle' && (
             <div className='absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-lg bg-background/60 backdrop-blur-[2px]'>
