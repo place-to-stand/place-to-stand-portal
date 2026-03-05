@@ -306,6 +306,7 @@ export function ThreadClassificationPanel({
                 name: project.name,
                 slug: project.slug,
                 clientSlug: project.clientSlug,
+                type: project.type,
               }
             : t.project,
         }))
@@ -320,6 +321,7 @@ export function ThreadClassificationPanel({
                 name: project.name,
                 slug: project.slug,
                 clientSlug: null,
+                type: project.type,
               }
             : t.project,
         }))
@@ -545,18 +547,22 @@ export function ThreadClassificationPanel({
             <div className='bg-muted/30 flex items-center justify-between rounded-lg border p-2'>
               <div className='flex min-w-0 items-center gap-2'>
                 <FolderKanban className='h-4 w-4 shrink-0 text-green-500' />
-                {thread.project.clientSlug && thread.project.slug ? (
-                  <Link
-                    href={`/projects/${thread.project.clientSlug}/${thread.project.slug}/board`}
-                    className='hover:text-primary truncate text-sm font-medium underline-offset-4 hover:underline'
-                  >
-                    {thread.project.name}
-                  </Link>
-                ) : (
-                  <span className='truncate text-sm font-medium'>
-                    {thread.project.name}
-                  </span>
-                )}
+                {(() => {
+                  const segment = thread.project!.clientSlug
+                    ?? (thread.project!.type === 'INTERNAL' ? 'internal' : thread.project!.type === 'PERSONAL' ? 'personal' : null)
+                  return segment && thread.project!.slug ? (
+                    <Link
+                      href={`/projects/${segment}/${thread.project!.slug}/board`}
+                      className='hover:text-primary truncate text-sm font-medium underline-offset-4 hover:underline'
+                    >
+                      {thread.project!.name}
+                    </Link>
+                  ) : (
+                    <span className='truncate text-sm font-medium'>
+                      {thread.project!.name}
+                    </span>
+                  )
+                })()}
                 <Badge variant='secondary' className='shrink-0 text-xs'>
                   Project
                 </Badge>

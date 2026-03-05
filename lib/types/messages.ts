@@ -26,6 +26,7 @@ export interface ThreadWithMessages extends Thread {
     name: string
     slug: string | null
     clientSlug: string | null
+    type?: 'CLIENT' | 'PERSONAL' | 'INTERNAL'
   } | null
   lead?: {
     id: string
@@ -53,6 +54,7 @@ export interface ThreadSummary {
     name: string
     slug: string | null
     clientSlug: string | null
+    type?: 'CLIENT' | 'PERSONAL' | 'INTERNAL'
   } | null
   lead?: {
     id: string
@@ -96,6 +98,7 @@ export interface InboxItem {
     name: string
     slug: string | null
     clientSlug: string | null
+    type?: 'CLIENT' | 'PERSONAL' | 'INTERNAL'
   } | null
 }
 

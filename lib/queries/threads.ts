@@ -443,6 +443,7 @@ export async function listThreadsForUser(
             name: projects.name,
             slug: projects.slug,
             clientSlug: clients.slug,
+            type: projects.type,
           })
           .from(projects)
           .leftJoin(clients, eq(projects.clientId, clients.id))
@@ -522,6 +523,7 @@ export async function listThreadsForClient(
           id: projects.id,
           name: projects.name,
           slug: projects.slug,
+          type: projects.type,
         })
         .from(projects)
         .where(inArray(projects.id, projectIds))
@@ -617,6 +619,7 @@ export async function listThreadsForLead(
             name: projects.name,
             slug: projects.slug,
             clientSlug: clients.slug,
+            type: projects.type,
           })
           .from(projects)
           .leftJoin(clients, eq(projects.clientId, clients.id))
