@@ -23,6 +23,9 @@ export default async function TriagePage() {
         name: projects.name,
         slug: projects.slug,
         clientId: projects.clientId,
+        type: projects.type,
+        ownerId: projects.ownerId,
+        createdBy: projects.createdBy,
       })
       .from(projects)
       .where(isNull(projects.deletedAt))
@@ -43,6 +46,7 @@ export default async function TriagePage() {
       clients={clientsList}
       projects={projectsList}
       leads={leadsList}
+      currentUserId={user.id}
     />
   )
 }

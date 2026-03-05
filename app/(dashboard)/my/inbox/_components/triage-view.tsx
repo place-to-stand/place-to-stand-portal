@@ -23,16 +23,17 @@ export type TriageThread = ThreadSummary & {
 }
 
 type Client = { id: string; name: string; slug: string | null }
-type Project = { id: string; name: string; slug: string | null; clientId: string | null }
+type Project = { id: string; name: string; slug: string | null; clientId: string | null; type: 'CLIENT' | 'PERSONAL' | 'INTERNAL'; ownerId: string | null; createdBy: string | null }
 type Lead = { id: string; contactName: string; contactEmail: string | null }
 
 interface TriageViewProps {
   clients: Client[]
   projects: Project[]
   leads: Lead[]
+  currentUserId: string
 }
 
-export function TriageView({ clients, projects, leads }: TriageViewProps) {
+export function TriageView({ clients, projects, leads, currentUserId }: TriageViewProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [queue, setQueue] = useState<TriageThread[]>([])
@@ -111,7 +112,7 @@ export function TriageView({ clients, projects, leads }: TriageViewProps) {
   const sheetProjects = useMemo(
     () => projects.map(p => {
       const client = clients.find(c => c.id === p.clientId)
-      return { id: p.id, name: p.name, slug: p.slug, clientSlug: client?.slug ?? null }
+      return { id: p.id, name: p.name, slug: p.slug, clientSlug: client?.slug ?? null, type: p.type, ownerId: p.ownerId, createdBy: p.createdBy }
     }),
     [projects, clients]
   )
@@ -302,6 +303,7 @@ export function TriageView({ clients, projects, leads }: TriageViewProps) {
               clients={clients}
               projects={projects}
               leads={leads}
+              currentUserId={currentUserId}
               isChecked={isSelected(thread.id)}
               onToggle={(shiftKey) => toggle(thread.id, shiftKey)}
               onAccept={handleAccept}
@@ -340,6 +342,7 @@ export function TriageView({ clients, projects, leads }: TriageViewProps) {
         attachmentsMap={attachmentsMap}
         isLoadingMessages={isLoadingMessages}
         isAdmin
+        currentUserId={currentUserId}
         clients={clients}
         projects={sheetProjects}
         leads={sheetLeads}

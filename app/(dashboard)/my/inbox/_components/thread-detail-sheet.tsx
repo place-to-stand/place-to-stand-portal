@@ -33,6 +33,9 @@ type Project = {
   name: string
   slug: string | null
   clientSlug: string | null
+  type: 'CLIENT' | 'PERSONAL' | 'INTERNAL'
+  ownerId: string | null
+  createdBy: string | null
 }
 
 type Lead = {
@@ -47,6 +50,7 @@ interface ThreadDetailSheetProps {
   attachmentsMap: Record<string, AttachmentMetadata[]>
   isLoadingMessages: boolean
   isAdmin: boolean
+  currentUserId: string
   clients: Client[]
   projects: Project[]
   leads: Lead[]
@@ -79,6 +83,7 @@ export function ThreadDetailSheet({
   attachmentsMap,
   isLoadingMessages,
   isAdmin,
+  currentUserId,
   clients,
   projects,
   leads,
@@ -273,6 +278,7 @@ export function ThreadDetailSheet({
                     clients={clients}
                     projects={projects}
                     leads={leads}
+                    currentUserId={currentUserId}
                     setThreads={setThreads}
                     setSelectedThread={setSelectedThread}
                   />

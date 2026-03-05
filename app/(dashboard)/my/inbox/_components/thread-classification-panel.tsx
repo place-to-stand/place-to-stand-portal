@@ -26,7 +26,9 @@ import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
@@ -60,6 +62,9 @@ type Project = {
   name: string
   slug: string | null
   clientSlug: string | null
+  type: 'CLIENT' | 'PERSONAL' | 'INTERNAL'
+  ownerId: string | null
+  createdBy: string | null
 }
 type Lead = { id: string; contactName: string }
 
@@ -73,7 +78,7 @@ type AISuggestion = {
   matchType?: string
 }
 
-type Track = 'client' | 'lead'
+type Track = 'client' | 'internal' | 'lead'
 type AnalysisState = 'idle' | 'analyzing' | 'done' | 'error'
 
 interface ThreadClassificationPanelProps {
@@ -82,6 +87,7 @@ interface ThreadClassificationPanelProps {
   clients: Client[]
   projects: Project[]
   leads: Lead[]
+  currentUserId: string
   setThreads: Dispatch<SetStateAction<ThreadSummary[]>>
   setSelectedThread: Dispatch<SetStateAction<ThreadSummary | null>>
 }
@@ -92,6 +98,7 @@ export function ThreadClassificationPanel({
   clients,
   projects,
   leads,
+  currentUserId,
   setThreads,
   setSelectedThread,
 }: ThreadClassificationPanelProps) {
@@ -123,6 +130,9 @@ export function ThreadClassificationPanel({
   const [isCreateLeadOpen, setIsCreateLeadOpen] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
 
+  // State for internal track
+  const [selectedInternalProjectId, setSelectedInternalProjectId] = useState<string>('')
+
   const filteredProjects = useMemo(() => {
     if (!selectedClientId) return []
     // Match projects by client — check both clientSlug-based and direct clientId
@@ -131,11 +141,20 @@ export function ThreadClassificationPanel({
     return projects.filter(p => p.clientSlug === client.slug)
   }, [selectedClientId, clients, projects])
 
+  // Internal/personal projects for the internal track (personal filtered to current user)
+  const internalProjectGroups = useMemo(() => {
+    const internal = projects.filter(p => p.type === 'INTERNAL')
+    const personal = projects.filter(p => p.type === 'PERSONAL' && (p.ownerId ?? p.createdBy) === currentUserId)
+    return { internal, personal }
+  }, [projects, currentUserId])
+
   // Determine if thread is already classified (has links)
   const isAlreadyClassified =
     !!thread.client || !!thread.project || !!thread.lead
   const hasValidSelection =
-    track === 'client' ? !!selectedClientId : !!selectedLeadId
+    track === 'client' ? !!selectedClientId
+    : track === 'internal' ? !!selectedInternalProjectId
+    : !!selectedLeadId
 
   const cancelAnalysis = useCallback(() => {
     abortRef.current?.abort()
@@ -174,8 +193,20 @@ export function ThreadClassificationPanel({
           setProjectSuggestion(topProject)
           setSelectedProjectId(topProject.projectId)
         }
+      } else if (topProject) {
+        // No client match but AI matched a project — check if it's internal/personal
+        const matchedProject = projects.find(p => p.id === topProject.projectId)
+        if (matchedProject && (matchedProject.type === 'INTERNAL' || matchedProject.type === 'PERSONAL')) {
+          setProjectSuggestion(topProject)
+          setTrack('internal')
+          setAnalysisTrack('internal')
+          setSelectedInternalProjectId(topProject.projectId)
+        } else {
+          // Client project matched without a client — fall through to lead/dismiss
+          setSuggestDismiss(true)
+        }
       } else {
-        // No client match — check for DB lead suggestion
+        // No client or project match — check for DB lead suggestion
         const leadRes = await fetch(
           `/api/threads/${thread.id}/lead-suggestions`,
           { signal: controller.signal }
@@ -202,7 +233,7 @@ export function ThreadClassificationPanel({
       console.error('Classification analysis error:', err)
       setAnalysisState('error')
     }
-  }, [thread.id])
+  }, [thread.id, projects])
 
   // Auto-start analysis for unclassified threads
   useEffect(() => {
@@ -254,7 +285,9 @@ export function ThreadClassificationPanel({
               clientId: selectedClientId,
               ...(selectedProjectId ? { projectId: selectedProjectId } : {}),
             }
-          : { leadId: selectedLeadId }
+          : track === 'internal'
+            ? { projectId: selectedInternalProjectId }
+            : { leadId: selectedLeadId }
 
       await patchThread(body)
 
@@ -276,6 +309,20 @@ export function ThreadClassificationPanel({
                 name: project.name,
                 slug: project.slug,
                 clientSlug: project.clientSlug,
+              }
+            : t.project,
+        }))
+      } else if (track === 'internal') {
+        const project = projects.find(p => p.id === selectedInternalProjectId)
+        updateLocalThread(t => ({
+          ...t,
+          classification: 'CLASSIFIED' as const,
+          project: project
+            ? {
+                id: project.id,
+                name: project.name,
+                slug: project.slug,
+                clientSlug: null,
               }
             : t.project,
         }))
@@ -305,6 +352,7 @@ export function ThreadClassificationPanel({
     track,
     selectedClientId,
     selectedProjectId,
+    selectedInternalProjectId,
     selectedLeadId,
     patchThread,
     clients,
@@ -649,7 +697,7 @@ export function ThreadClassificationPanel({
             </div>
           )}
 
-          {/* Segmented Client/Lead toggle */}
+          {/* Segmented Client/Internal/Lead toggle */}
           <div className='flex rounded-md bg-muted/60 p-0.5'>
             <button
               type='button'
@@ -664,6 +712,22 @@ export function ThreadClassificationPanel({
               <Building2 className='h-3 w-3' />
               Client
               {isAnalyzed && analysisTrack === 'client' && clientSuggestion && (
+                <span className='text-[9px] font-normal opacity-60'>AI</span>
+              )}
+            </button>
+            <button
+              type='button'
+              onClick={() => setTrack('internal')}
+              className={cn(
+                'flex flex-1 items-center justify-center gap-1.5 rounded-sm px-2 py-1 text-xs font-medium transition-all',
+                track === 'internal'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              <FolderKanban className='h-3 w-3' />
+              Internal
+              {isAnalyzed && analysisTrack === 'internal' && projectSuggestion && (
                 <span className='text-[9px] font-normal opacity-60'>AI</span>
               )}
             </button>
@@ -800,6 +864,74 @@ export function ThreadClassificationPanel({
                     </div>
                   )}
                 </>
+              )}
+
+              {track === 'internal' && (
+                <div className='relative'>
+                  <Select
+                    value={selectedInternalProjectId}
+                    onValueChange={setSelectedInternalProjectId}
+                  >
+                    <SelectTrigger className='h-8 w-full border-transparent bg-background/60 text-xs shadow-none'>
+                      <SelectValue placeholder='Select project...' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {internalProjectGroups.internal.length > 0 && (
+                        <SelectGroup>
+                          <SelectLabel>Internal</SelectLabel>
+                          {internalProjectGroups.internal.map(p => (
+                            <SelectItem key={p.id} value={p.id}>
+                              <FolderKanban className='mr-1 inline h-3 w-3' />
+                              {p.name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      )}
+                      {internalProjectGroups.personal.length > 0 && (
+                        <SelectGroup>
+                          <SelectLabel>Personal</SelectLabel>
+                          {internalProjectGroups.personal.map(p => (
+                            <SelectItem key={p.id} value={p.id}>
+                              <FolderKanban className='mr-1 inline h-3 w-3' />
+                              {p.name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {projectSuggestion && selectedInternalProjectId === projectSuggestion.projectId && (
+                    <div className='absolute top-1 right-7 flex items-center gap-0.5'>
+                      <Badge
+                        variant={
+                          projectSuggestion.confidence >= 0.8
+                            ? 'default'
+                            : 'secondary'
+                        }
+                        className='h-5 px-1 text-[9px]'
+                      >
+                        {Math.round(projectSuggestion.confidence * 100)}%
+                      </Badge>
+                      {projectSuggestion.reasoning && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type='button'
+                              className='text-muted-foreground hover:text-foreground transition-colors'
+                            >
+                              <HelpCircle className='h-3 w-3' />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side='left' className='max-w-xs'>
+                            <p className='text-xs'>
+                              {projectSuggestion.reasoning}
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
 
               {track === 'lead' && (

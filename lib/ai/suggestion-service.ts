@@ -268,7 +268,7 @@ export async function analyzeMessagesForClient(
 
 /**
  * Analyze messages for a specific thread.
- * Only analyzes if the thread has both a client and project linked.
+ * Only analyzes if the thread has a project linked.
  *
  * When triggered, this function:
  * 1. Soft-deletes existing PENDING/DRAFT suggestions (clears unpushed work)
@@ -303,12 +303,12 @@ export async function analyzeMessagesForThread(
     return { processed: 0, created: 0, errors: 0, skipped: 'thread_not_found' }
   }
 
-  if (!thread.clientId || !thread.projectId) {
+  if (!thread.projectId) {
     return {
       processed: 0,
       created: 0,
       errors: 0,
-      skipped: 'missing_client_or_project',
+      skipped: 'missing_project',
     }
   }
 
@@ -407,12 +407,16 @@ export async function analyzeMessagesForThread(
     .orderBy(desc(tasks.createdAt))
     .limit(10)
 
-  // Get client name
-  const [client] = await db
-    .select({ name: clients.name })
-    .from(clients)
-    .where(eq(clients.id, thread.clientId))
-    .limit(1)
+  // Get client name (only if thread is linked to a client)
+  let client: { name: string } | undefined
+  if (thread.clientId) {
+    const [row] = await db
+      .select({ name: clients.name })
+      .from(clients)
+      .where(eq(clients.id, thread.clientId))
+      .limit(1)
+    client = row
+  }
 
   // Analyze the entire thread at once
   try {

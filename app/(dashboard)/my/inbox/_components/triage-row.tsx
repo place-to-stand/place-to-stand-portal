@@ -20,7 +20,9 @@ import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
@@ -35,7 +37,7 @@ import { cn } from '@/lib/utils'
 import type { TriageThread } from './triage-view'
 
 type Client = { id: string; name: string; slug: string | null }
-type Project = { id: string; name: string; slug: string | null; clientId: string | null }
+type Project = { id: string; name: string; slug: string | null; clientId: string | null; type: 'CLIENT' | 'PERSONAL' | 'INTERNAL'; ownerId: string | null; createdBy: string | null }
 type Lead = { id: string; contactName: string; contactEmail: string | null }
 
 type AISuggestion = {
@@ -53,6 +55,7 @@ interface TriageRowProps {
   clients: Client[]
   projects: Project[]
   leads: Lead[]
+  currentUserId: string
   isChecked: boolean
   onToggle: (shiftKey: boolean) => void
   onAccept: (threadId: string, linkData: { clientId?: string; projectId?: string; leadId?: string }) => Promise<void>
@@ -60,7 +63,7 @@ interface TriageRowProps {
   onViewThread: (thread: TriageThread) => void
 }
 
-type Track = 'client' | 'lead'
+type Track = 'client' | 'internal' | 'lead'
 type AnalysisState = 'idle' | 'analyzing' | 'done' | 'error'
 
 export function TriageRow({
@@ -68,6 +71,7 @@ export function TriageRow({
   clients,
   projects,
   leads,
+  currentUserId,
   isChecked,
   onToggle,
   onAccept,
@@ -89,13 +93,24 @@ export function TriageRow({
   const [suggestDismiss, setSuggestDismiss] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
 
+  const [selectedInternalProjectId, setSelectedInternalProjectId] = useState<string>('')
+
   const filteredProjects = useMemo(() => {
     if (!selectedClientId) return []
     return projects.filter(p => p.clientId === selectedClientId)
   }, [selectedClientId, projects])
 
+  const internalProjectGroups = useMemo(() => {
+    const internal = projects.filter(p => p.type === 'INTERNAL')
+    const personal = projects.filter(p => p.type === 'PERSONAL' && (p.ownerId ?? p.createdBy) === currentUserId)
+    return { internal, personal }
+  }, [projects, currentUserId])
+
   const latestMessage = thread.latestMessage
-  const hasValidSelection = track === 'client' ? !!selectedClientId : !!selectedLeadId
+  const hasValidSelection =
+    track === 'client' ? !!selectedClientId
+    : track === 'internal' ? !!selectedInternalProjectId
+    : !!selectedLeadId
 
   const cancelAnalysis = useCallback(() => {
     abortRef.current?.abort()
@@ -133,8 +148,19 @@ export function TriageRow({
           setProjectSuggestion(topProject)
           setSelectedProjectId(topProject.projectId)
         }
+      } else if (topProject) {
+        // No client match but AI matched a project — check if internal/personal
+        const matchedProject = projects.find(p => p.id === topProject.projectId)
+        if (matchedProject && (matchedProject.type === 'INTERNAL' || matchedProject.type === 'PERSONAL')) {
+          setProjectSuggestion(topProject)
+          setTrack('internal')
+          setAnalysisTrack('internal')
+          setSelectedInternalProjectId(topProject.projectId)
+        } else {
+          setSuggestDismiss(true)
+        }
       } else {
-        // No client match — check for lead
+        // No client or project match — check for lead
         if (thread.leadSuggestion) {
           setTrack('lead')
           setAnalysisTrack('lead')
@@ -151,7 +177,7 @@ export function TriageRow({
       console.error('Triage analysis error:', err)
       setAnalysisState('error')
     }
-  }, [thread.id, thread.leadSuggestion])
+  }, [thread.id, thread.leadSuggestion, projects])
 
   const handleAccept = async () => {
     if (!hasValidSelection) return
@@ -161,6 +187,8 @@ export function TriageRow({
         ...(track === 'client' ? {
           clientId: selectedClientId,
           projectId: selectedProjectId || undefined,
+        } : track === 'internal' ? {
+          projectId: selectedInternalProjectId,
         } : {
           leadId: selectedLeadId,
         }),
@@ -248,7 +276,7 @@ export function TriageRow({
         </div>
 
         {/* RIGHT COLUMN: classification controls */}
-        <div className='relative flex w-56 flex-shrink-0 flex-col rounded-lg border bg-muted/30 p-2.5' onClick={e => e.stopPropagation()}>
+        <div className='relative flex w-64 flex-shrink-0 flex-col rounded-lg border bg-muted/30 p-2.5' onClick={e => e.stopPropagation()}>
           {/* Analyze overlay — shown when not yet analyzed */}
           {analysisState === 'idle' && (
             <div className='absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-lg bg-background/60 backdrop-blur-[2px]'>
@@ -333,7 +361,7 @@ export function TriageRow({
               type='button'
               onClick={() => setTrack('client')}
               className={cn(
-                'flex flex-1 items-center justify-center gap-1.5 rounded-sm px-2 py-1 text-xs font-medium transition-all',
+                'flex flex-1 items-center justify-center gap-1 rounded-sm px-1.5 py-1 text-xs font-medium transition-all',
                 track === 'client'
                   ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
@@ -347,9 +375,25 @@ export function TriageRow({
             </button>
             <button
               type='button'
+              onClick={() => setTrack('internal')}
+              className={cn(
+                'flex flex-1 items-center justify-center gap-1 rounded-sm px-1.5 py-1 text-xs font-medium transition-all',
+                track === 'internal'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              <FolderKanban className='h-3 w-3' />
+              Internal
+              {isAnalyzed && analysisTrack === 'internal' && projectSuggestion && (
+                <span className='text-[9px] font-normal opacity-60'>AI</span>
+              )}
+            </button>
+            <button
+              type='button'
               onClick={() => setTrack('lead')}
               className={cn(
-                'flex flex-1 items-center justify-center gap-1.5 rounded-sm px-2 py-1 text-xs font-medium transition-all',
+                'flex flex-1 items-center justify-center gap-1 rounded-sm px-1.5 py-1 text-xs font-medium transition-all',
                 track === 'lead'
                   ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
@@ -446,6 +490,62 @@ export function TriageRow({
                     </div>
                   )}
                 </>
+              )}
+
+              {track === 'internal' && (
+                <div className='relative'>
+                  <Select value={selectedInternalProjectId} onValueChange={setSelectedInternalProjectId}>
+                    <SelectTrigger className='h-8 w-full border-transparent bg-background/60 text-xs shadow-none'>
+                      <SelectValue placeholder='Select project...' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {internalProjectGroups.internal.length > 0 && (
+                        <SelectGroup>
+                          <SelectLabel>Internal</SelectLabel>
+                          {internalProjectGroups.internal.map(p => (
+                            <SelectItem key={p.id} value={p.id}>
+                              <FolderKanban className='mr-1 inline h-3 w-3' />
+                              {p.name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      )}
+                      {internalProjectGroups.personal.length > 0 && (
+                        <SelectGroup>
+                          <SelectLabel>Personal</SelectLabel>
+                          {internalProjectGroups.personal.map(p => (
+                            <SelectItem key={p.id} value={p.id}>
+                              <FolderKanban className='mr-1 inline h-3 w-3' />
+                              {p.name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {projectSuggestion && selectedInternalProjectId === projectSuggestion.projectId && (
+                    <div className='absolute top-1 right-7 flex items-center gap-0.5'>
+                      <Badge
+                        variant={projectSuggestion.confidence >= 0.8 ? 'default' : 'secondary'}
+                        className='h-5 px-1 text-[9px]'
+                      >
+                        {Math.round(projectSuggestion.confidence * 100)}%
+                      </Badge>
+                      {projectSuggestion.reasoning && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button type='button' className='text-muted-foreground hover:text-foreground transition-colors'>
+                              <HelpCircle className='h-3 w-3' />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side='left' className='max-w-xs'>
+                            <p className='text-xs'>{projectSuggestion.reasoning}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
 
               {track === 'lead' && (

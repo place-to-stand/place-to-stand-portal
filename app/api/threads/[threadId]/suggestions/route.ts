@@ -31,6 +31,19 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ thr
       return NextResponse.json({ ok: true, suggestions: [], projectSuggestions: [] })
     }
 
+    // If thread is linked to an internal/personal project (no client), skip client suggestions
+    let linkedProjectIsInternal = false
+    if (thread.projectId && !thread.clientId) {
+      const [linkedProject] = await db
+        .select({ type: projects.type })
+        .from(projects)
+        .where(eq(projects.id, thread.projectId))
+        .limit(1)
+      if (linkedProject && (linkedProject.type === 'INTERNAL' || linkedProject.type === 'PERSONAL')) {
+        linkedProjectIsInternal = true
+      }
+    }
+
     // Get the latest message in the thread for analysis
     const [latestMessage] = await db
       .select()
@@ -109,7 +122,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ thr
     })
 
     // Transform to suggestion format (backward compatible)
-    const suggestions = thread.clientId
+    // Skip client suggestions if thread is already linked to an internal/personal project
+    const suggestions = (thread.clientId || linkedProjectIsInternal)
       ? []
       : clientMatches.map(match => ({
           clientId: match.clientId,

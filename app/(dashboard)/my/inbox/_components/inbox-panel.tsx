@@ -37,6 +37,9 @@ type Project = {
   name: string
   slug: string | null
   clientSlug: string | null
+  type: 'CLIENT' | 'PERSONAL' | 'INTERNAL'
+  ownerId: string | null
+  createdBy: string | null
 }
 
 type Lead = {
@@ -62,6 +65,7 @@ type InboxPanelProps = {
   projects: Project[]
   leads: Lead[]
   isAdmin: boolean
+  currentUserId: string
   view: ViewType
   searchQuery: string
   sidebarCounts: {
@@ -90,6 +94,7 @@ export function InboxPanel({
   projects,
   leads,
   isAdmin,
+  currentUserId,
   view,
   searchQuery,
   sidebarCounts,
@@ -393,6 +398,7 @@ export function InboxPanel({
         attachmentsMap={attachmentsMap}
         isLoadingMessages={isLoadingMessages}
         isAdmin={isAdmin}
+        currentUserId={currentUserId}
         clients={clients}
         projects={projects}
         leads={leads}

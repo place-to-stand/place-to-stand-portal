@@ -114,6 +114,9 @@ export default async function InboxEmailsPage({ params, searchParams }: Props) {
         name: projects.name,
         slug: projects.slug,
         clientSlug: clients.slug,
+        type: projects.type,
+        ownerId: projects.ownerId,
+        createdBy: projects.createdBy,
       })
       .from(projects)
       .leftJoin(clients, eq(projects.clientId, clients.id))
@@ -160,6 +163,7 @@ export default async function InboxEmailsPage({ params, searchParams }: Props) {
       projects={projectsList}
       leads={leadsList}
       isAdmin={isAdmin(user)}
+      currentUserId={user.id}
       view={view}
       searchQuery={searchQuery ?? ''}
       sidebarCounts={sidebarCounts}
