@@ -6,7 +6,6 @@ import {
   Building2,
   Check,
   FolderKanban,
-  HelpCircle,
   Loader2,
   Mail,
   Sparkles,
@@ -14,7 +13,6 @@ import {
   XCircle,
 } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -26,12 +24,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 import type { TriageThread } from './triage-view'
@@ -149,9 +141,13 @@ export function TriageRow({
           setSelectedProjectId(topProject.projectId)
         }
       } else if (topProject) {
-        // No client match but AI matched a project — check if internal/personal
+        // No client match but AI matched a project — check if internal/personal and accessible
         const matchedProject = projects.find(p => p.id === topProject.projectId)
-        if (matchedProject && (matchedProject.type === 'INTERNAL' || matchedProject.type === 'PERSONAL')) {
+        const isAccessibleInternal = matchedProject && (
+          matchedProject.type === 'INTERNAL' ||
+          (matchedProject.type === 'PERSONAL' && (matchedProject.ownerId ?? matchedProject.createdBy) === currentUserId)
+        )
+        if (isAccessibleInternal) {
           setProjectSuggestion(topProject)
           setTrack('internal')
           setAnalysisTrack('internal')
@@ -177,7 +173,7 @@ export function TriageRow({
       console.error('Triage analysis error:', err)
       setAnalysisState('error')
     }
-  }, [thread.id, thread.leadSuggestion, projects])
+  }, [thread.id, thread.leadSuggestion, projects, currentUserId])
 
   const handleAccept = async () => {
     if (!hasValidSelection) return
@@ -199,12 +195,6 @@ export function TriageRow({
   }
 
   const isAnalyzed = analysisState === 'done'
-
-  // Get the active suggestion for the current selection (for confidence display)
-  const activeClientConfidence = clientSuggestion && selectedClientId === clientSuggestion.clientId
-    ? clientSuggestion : null
-  const activeProjectConfidence = projectSuggestion && selectedProjectId === projectSuggestion.projectId
-    ? projectSuggestion : null
 
   return (
     <div
@@ -408,162 +398,88 @@ export function TriageRow({
           </div>
 
           {/* Fields */}
-          <TooltipProvider delayDuration={200}>
-            <div className='mt-2 space-y-1.5'>
-              {track === 'client' && (
-                <>
-                  <div className='relative'>
-                    <Select value={selectedClientId} onValueChange={id => {
-                      setSelectedClientId(id)
-                      setSelectedProjectId('')
-                    }}>
-                      <SelectTrigger className='h-8 w-full border-transparent bg-background/60 text-xs shadow-none'>
-                        <SelectValue placeholder='Select client...' />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {clients.map(c => (
-                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {activeClientConfidence && (
-                      <div className='absolute top-1 right-7 flex items-center gap-0.5'>
-                        <Badge
-                          variant={activeClientConfidence.confidence >= 0.8 ? 'default' : 'secondary'}
-                          className='h-5 px-1 text-[9px]'
-                        >
-                          {Math.round(activeClientConfidence.confidence * 100)}%
-                        </Badge>
-                        {activeClientConfidence.reasoning && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button type='button' className='text-muted-foreground hover:text-foreground transition-colors'>
-                                <HelpCircle className='h-3 w-3' />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side='left' className='max-w-xs'>
-                              <p className='text-xs'>{activeClientConfidence.reasoning}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {selectedClientId && filteredProjects.length > 0 && (
-                    <div className='relative'>
-                      <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
-                        <SelectTrigger className='h-8 w-full border-transparent bg-background/60 text-xs shadow-none'>
-                          <SelectValue placeholder='Project (optional)' />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {filteredProjects.map(p => (
-                            <SelectItem key={p.id} value={p.id}>
-                              <FolderKanban className='mr-1 inline h-3 w-3' />
-                              {p.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {activeProjectConfidence && (
-                        <div className='absolute top-1 right-7 flex items-center gap-0.5'>
-                          <Badge
-                            variant={activeProjectConfidence.confidence >= 0.8 ? 'default' : 'secondary'}
-                            className='h-5 px-1 text-[9px]'
-                          >
-                            {Math.round(activeProjectConfidence.confidence * 100)}%
-                          </Badge>
-                          {activeProjectConfidence.reasoning && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button type='button' className='text-muted-foreground hover:text-foreground transition-colors'>
-                                  <HelpCircle className='h-3 w-3' />
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent side='left' className='max-w-xs'>
-                                <p className='text-xs'>{activeProjectConfidence.reasoning}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
-
-              {track === 'internal' && (
-                <div className='relative'>
-                  <Select value={selectedInternalProjectId} onValueChange={setSelectedInternalProjectId}>
-                    <SelectTrigger className='h-8 w-full border-transparent bg-background/60 text-xs shadow-none'>
-                      <SelectValue placeholder='Select project...' />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {internalProjectGroups.internal.length > 0 && (
-                        <SelectGroup>
-                          <SelectLabel>Internal</SelectLabel>
-                          {internalProjectGroups.internal.map(p => (
-                            <SelectItem key={p.id} value={p.id}>
-                              <FolderKanban className='mr-1 inline h-3 w-3' />
-                              {p.name}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      )}
-                      {internalProjectGroups.personal.length > 0 && (
-                        <SelectGroup>
-                          <SelectLabel>Personal</SelectLabel>
-                          {internalProjectGroups.personal.map(p => (
-                            <SelectItem key={p.id} value={p.id}>
-                              <FolderKanban className='mr-1 inline h-3 w-3' />
-                              {p.name}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  {projectSuggestion && selectedInternalProjectId === projectSuggestion.projectId && (
-                    <div className='absolute top-1 right-7 flex items-center gap-0.5'>
-                      <Badge
-                        variant={projectSuggestion.confidence >= 0.8 ? 'default' : 'secondary'}
-                        className='h-5 px-1 text-[9px]'
-                      >
-                        {Math.round(projectSuggestion.confidence * 100)}%
-                      </Badge>
-                      {projectSuggestion.reasoning && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button type='button' className='text-muted-foreground hover:text-foreground transition-colors'>
-                              <HelpCircle className='h-3 w-3' />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side='left' className='max-w-xs'>
-                            <p className='text-xs'>{projectSuggestion.reasoning}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {track === 'lead' && (
-                <Select value={selectedLeadId} onValueChange={setSelectedLeadId}>
+          <div className='mt-2 space-y-1.5'>
+            {track === 'client' && (
+              <>
+                <Select value={selectedClientId} onValueChange={id => {
+                  setSelectedClientId(id)
+                  setSelectedProjectId('')
+                }}>
                   <SelectTrigger className='h-8 w-full border-transparent bg-background/60 text-xs shadow-none'>
-                    <SelectValue placeholder='Select lead...' />
+                    <SelectValue placeholder='Select client...' />
                   </SelectTrigger>
                   <SelectContent>
-                    {leads.map(l => (
-                      <SelectItem key={l.id} value={l.id}>
-                        {l.contactName}
-                      </SelectItem>
+                    {clients.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-              )}
-            </div>
-          </TooltipProvider>
+
+                {selectedClientId && filteredProjects.length > 0 && (
+                  <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+                    <SelectTrigger className='h-8 w-full border-transparent bg-background/60 text-xs shadow-none'>
+                      <SelectValue placeholder='Project (optional)' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filteredProjects.map(p => (
+                        <SelectItem key={p.id} value={p.id}>
+                          <FolderKanban className='mr-1 inline h-3 w-3' />
+                          {p.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </>
+            )}
+
+            {track === 'internal' && (
+              <Select value={selectedInternalProjectId} onValueChange={setSelectedInternalProjectId}>
+                <SelectTrigger className='h-8 w-full border-transparent bg-background/60 text-xs shadow-none'>
+                  <SelectValue placeholder='Select project...' />
+                </SelectTrigger>
+                <SelectContent>
+                  {internalProjectGroups.internal.length > 0 && (
+                    <SelectGroup>
+                      <SelectLabel>Internal</SelectLabel>
+                      {internalProjectGroups.internal.map(p => (
+                        <SelectItem key={p.id} value={p.id}>
+                          <FolderKanban className='mr-1 inline h-3 w-3' />
+                          {p.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  )}
+                  {internalProjectGroups.personal.length > 0 && (
+                    <SelectGroup>
+                      <SelectLabel>Personal</SelectLabel>
+                      {internalProjectGroups.personal.map(p => (
+                        <SelectItem key={p.id} value={p.id}>
+                          <FolderKanban className='mr-1 inline h-3 w-3' />
+                          {p.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  )}
+                </SelectContent>
+              </Select>
+            )}
+
+            {track === 'lead' && (
+              <Select value={selectedLeadId} onValueChange={setSelectedLeadId}>
+                <SelectTrigger className='h-8 w-full border-transparent bg-background/60 text-xs shadow-none'>
+                  <SelectValue placeholder='Select lead...' />
+                </SelectTrigger>
+                <SelectContent>
+                  {leads.map(l => (
+                    <SelectItem key={l.id} value={l.id}>
+                      {l.contactName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
 
           {/* Action buttons */}
           <div className='mt-2 flex gap-1.5'>
