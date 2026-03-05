@@ -55,9 +55,11 @@ WHERE (client_id IS NOT NULL OR project_id IS NOT NULL OR lead_id IS NOT NULL)
 ## Indexes
 
 ```sql
-CREATE INDEX idx_threads_classification ON threads (classification);
+CREATE INDEX idx_threads_classification ON threads (classification) WHERE deleted_at IS NULL;
 ```
 
+> Partial index matches codebase convention — all existing `threads` indexes are scoped to active rows via `WHERE deleted_at IS NULL`.
+>
 > `classified_by` does not need an index — there's no planned query pattern that filters by who classified a thread.
 
 ## Behavioral Rules

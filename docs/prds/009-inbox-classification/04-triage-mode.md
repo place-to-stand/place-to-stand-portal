@@ -26,7 +26,7 @@ Triage is a **top-level tab** in the inbox, not nested under Emails:
 - Badge on the Triage tab shows unclassified count across ALL sources
 - Triage tab is positioned first (leftmost) because classification is the primary workflow
 
-**Routing architecture**: This requires a shared layout at `app/(dashboard)/my/inbox/layout.tsx` that renders the top-level tab bar. The existing `app/(dashboard)/my/inbox/page.tsx` (which currently redirects to `/my/inbox/emails`) becomes this layout. The triage page lives at `app/(dashboard)/my/inbox/triage/page.tsx`.
+**Routing architecture**: This requires a shared layout at `app/(dashboard)/my/inbox/layout.tsx` that renders the top-level tab bar. The existing `app/(dashboard)/my/inbox/page.tsx` redirect is replaced by a layout that wraps both the triage and emails routes. The triage page lives at `app/(dashboard)/my/inbox/triage/page.tsx`.
 
 ## Triage Card Layout
 
@@ -167,7 +167,6 @@ Returns a paginated list of unclassified threads with pre-computed match suggest
     suggestion: {
       track: 'client_work' | 'lead' | null
       client?: { id: string, name: string, confidence: 'HIGH' | 'MEDIUM' }
-      project?: { id: string, name: string, confidence: number }
       lead?: { id: string, name: string }
     }
   }>
@@ -175,7 +174,9 @@ Returns a paginated list of unclassified threads with pre-computed match suggest
 }
 ```
 
-**Implementation**: The endpoint runs the deterministic matchers (`suggestClientMatch`, `suggestLeadMatch`) for each thread in the page. AI project matching is deferred to when the user focuses a specific card (on-demand, not batch). Pagination keeps the initial load fast (e.g., 10 threads per page with suggestions pre-computed).
+**Implementation**: The endpoint runs the deterministic matchers (`suggestClientMatch`, `suggestLeadMatch`) for each thread in the page. AI project matching is deferred to a separate on-demand call when the user focuses a specific card (not included in this response shape — fetched client-side when needed). Pagination keeps the initial load fast (e.g., 10 threads per page with suggestions pre-computed).
+
+**Access control**: This endpoint requires an authenticated user via `requireUser()`. All users with inbox access can use the triage view — no additional role check is needed since the unclassified threads query already scopes to the user's connected email accounts.
 
 **Session count** (`classified_this_session`) is tracked client-side via React state — it resets when the user navigates away from triage and back.
 

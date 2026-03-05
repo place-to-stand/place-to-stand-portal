@@ -189,7 +189,7 @@
 ### PostHog Events
 | # | Test Case | Status | Notes |
 |---|-----------|--------|-------|
-| 5.7 | `inbox_thread_classified` fires on classify (triage, manual, auto_link) | ⏭️ | |
+| 5.7 | `inbox_thread_classified` fires on classify (triage, manual, suggestion_approved) | ⏭️ | |
 | 5.8 | `inbox_triage_started` fires on triage page load | ⏭️ | |
 | 5.9 | `inbox_triage_session_ended` fires on triage navigation away | ⏭️ | |
 | 5.10 | `inbox_batch_dismissed` fires on batch dismiss | ⏭️ | |

@@ -14,7 +14,7 @@ A compact indicator in the inbox toolbar:
 
 | Event | Properties |
 |-------|-----------|
-| `inbox_thread_classified` | `classification`, `source` (`triage`, `manual`, `auto_link`), `track` (`client_work`, `lead`), `had_match` |
+| `inbox_thread_classified` | `classification`, `source` (`triage`, `manual`, `suggestion_approved`), `track` (`client_work`, `lead`), `had_match` |
 | `inbox_triage_started` | `unclassified_count` |
 | `inbox_triage_session_ended` | `classified_count`, `dismissed_count`, `skipped_count`, `duration_seconds` |
 | `inbox_batch_dismissed` | `count` |
