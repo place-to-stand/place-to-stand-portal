@@ -49,11 +49,14 @@ export async function suggestClientMatch(
         sql`(lower(${contacts.email}) IN (${sql.join(allAddresses.map(e => sql`${e}`), sql`, `)}) OR split_part(lower(${contacts.email}), '@', 2) IN (${sql.join(addressDomains.map(d => sql`${d}`), sql`, `)}))`
       )
     )
+    .orderBy(clients.name)
 
   if (!matchedContacts.length) return null
 
-  const bestMatch = matchedContacts[0]
-  const isExactMatch = allAddresses.includes(normalize(bestMatch.email))
+  // Prefer exact email match over domain-only match
+  const exactMatch = matchedContacts.find(c => allAddresses.includes(normalize(c.email)))
+  const bestMatch = exactMatch ?? matchedContacts[0]
+  const isExactMatch = !!exactMatch
 
   return {
     clientId: bestMatch.clientId,

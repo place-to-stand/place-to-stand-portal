@@ -13,19 +13,30 @@ import type { Thread, ThreadSummary, ThreadStatus, ThreadClassification } from '
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function getThreadById(user: AppUser, id: string): Promise<Thread | null> {
+  const conditions = [eq(threads.id, id), isNull(threads.deletedAt)]
+
+  // Non-admin users can only access threads they created or have messages in
+  if (user.role !== 'ADMIN') {
+    conditions.push(
+      or(
+        eq(threads.createdBy, user.id),
+        sql`EXISTS (
+          SELECT 1 FROM messages
+          WHERE messages.thread_id = ${threads.id}
+          AND messages.user_id = ${user.id}
+          AND messages.deleted_at IS NULL
+        )`
+      )!
+    )
+  }
+
   const [thread] = await db
     .select()
     .from(threads)
-    .where(and(eq(threads.id, id), isNull(threads.deletedAt)))
+    .where(and(...conditions))
     .limit(1)
 
-  if (!thread) return null
-
-  // Access check: admin, owner, or member of linked client/project
-  // TODO: For non-admins who aren't the creator, add client_members check
-  // to verify they have access to threads linked to their clients
-
-  return thread
+  return thread ?? null
 }
 
 /**
@@ -106,12 +117,12 @@ export async function getThreadSummaryById(
     .orderBy(desc(messages.sentAt))
     .limit(1)
 
-  // Get lead info
+  // Get lead info (exclude soft-deleted leads)
   const leadRow = thread.leadId
     ? await db
         .select({ id: leads.id, contactName: leads.contactName })
         .from(leads)
-        .where(eq(leads.id, thread.leadId))
+        .where(and(eq(leads.id, thread.leadId), isNull(leads.deletedAt)))
         .limit(1)
         .then(rows => rows[0] ?? null)
     : null
@@ -277,7 +288,7 @@ export type ListThreadsOptions = {
   projectId?: string
   status?: ThreadStatus
   linkedFilter?: 'all' | 'linked' | 'unlinked'
-  classificationFilter?: ThreadClassification
+  classificationFilter?: ThreadClassification | 'NOT_DISMISSED'
   /** Filter threads by message direction: 'sent' = outbound, 'inbox' = inbound only */
   sentFilter?: 'sent' | 'inbox'
   /** Search threads by subject or message content (case-insensitive) */
@@ -362,7 +373,9 @@ export async function listThreadsForUser(
   } else if (linkedFilter === 'unlinked') {
     conditions.push(isNull(threads.clientId))
   }
-  if (classificationFilter) {
+  if (classificationFilter === 'NOT_DISMISSED') {
+    conditions.push(sql`${threads.classification} != 'DISMISSED'`)
+  } else if (classificationFilter) {
     conditions.push(eq(threads.classification, classificationFilter))
   }
 
@@ -436,7 +449,7 @@ export async function listThreadsForUser(
           .where(inArray(projects.id, projectIds))
       : [],
     leadIds.length > 0
-      ? db.select({ id: leads.id, contactName: leads.contactName }).from(leads).where(inArray(leads.id, leadIds))
+      ? db.select({ id: leads.id, contactName: leads.contactName }).from(leads).where(and(inArray(leads.id, leadIds), isNull(leads.deletedAt)))
       : [],
   ])
 
@@ -652,7 +665,7 @@ export async function listThreadsForLead(
 
 export async function getThreadCountsForUser(
   userId: string,
-  options: { linkedFilter?: 'all' | 'linked' | 'unlinked'; classificationFilter?: ThreadClassification; sentFilter?: 'sent' | 'inbox'; search?: string } = {}
+  options: { linkedFilter?: 'all' | 'linked' | 'unlinked'; classificationFilter?: ThreadClassification | 'NOT_DISMISSED'; sentFilter?: 'sent' | 'inbox'; search?: string } = {}
 ): Promise<{
   total: number
   unread: number
@@ -731,7 +744,9 @@ export async function getThreadCountsForUser(
   } else if (linkedFilter === 'unlinked') {
     conditions.push(isNull(threads.clientId))
   }
-  if (classificationFilter) {
+  if (classificationFilter === 'NOT_DISMISSED') {
+    conditions.push(sql`${threads.classification} != 'DISMISSED'`)
+  } else if (classificationFilter) {
     conditions.push(eq(threads.classification, classificationFilter))
   }
 
@@ -839,7 +854,7 @@ export async function getInboxSidebarCounts(
 
   const [row] = await db.execute<SidebarCountRow>(sql`
     SELECT
-      count(*) FILTER (WHERE ${hasInboundCondition})::int AS inbox,
+      count(*) FILTER (WHERE t.classification != 'DISMISSED' AND ${hasInboundCondition})::int AS inbox,
       count(*) FILTER (WHERE t.classification = 'UNCLASSIFIED' AND ${hasInboundCondition})::int AS unclassified,
       count(*) FILTER (WHERE t.classification = 'CLASSIFIED' AND ${hasInboundCondition})::int AS classified,
       count(*) FILTER (WHERE ${hasSentCondition})::int AS sent

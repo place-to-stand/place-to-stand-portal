@@ -67,6 +67,7 @@ export default async function InboxEmailsPage({ params, searchParams }: Props) {
   const classificationFilter = view === 'unclassified' ? 'UNCLASSIFIED' as const
     : view === 'classified' ? 'CLASSIFIED' as const
     : view === 'dismissed' ? 'DISMISSED' as const
+    : view === 'inbox' ? 'NOT_DISMISSED' as const
     : undefined
 
   // Get threads, counts, sync status, clients, projects, leads, and draft counts in parallel

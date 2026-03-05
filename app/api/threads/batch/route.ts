@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   const parsed = batchSchema.safeParse(body)
   if (!parsed.success) {
     return NextResponse.json(
-      { error: 'Invalid request body', details: parsed.error.flatten() },
+      { ok: false, error: 'Invalid request body', details: parsed.error.flatten() },
       { status: 400 }
     )
   }
@@ -60,5 +60,5 @@ export async function POST(request: Request) {
     })
   }
 
-  return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
+  return NextResponse.json({ ok: false, error: 'Unknown action' }, { status: 400 })
 }

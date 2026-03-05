@@ -20,12 +20,12 @@ export async function GET(
 
   const parsed = threadIdSchema.safeParse(threadId)
   if (!parsed.success) {
-    return NextResponse.json({ error: 'Invalid thread ID' }, { status: 400 })
+    return NextResponse.json({ ok: false, error: 'Invalid thread ID' }, { status: 400 })
   }
 
   const thread = await getThreadById(user, threadId)
   if (!thread) {
-    return NextResponse.json({ error: 'Thread not found' }, { status: 404 })
+    return NextResponse.json({ ok: false, error: 'Thread not found' }, { status: 404 })
   }
 
   return NextResponse.json({ ok: true, thread })
@@ -50,21 +50,21 @@ export async function PATCH(
 
   const parsed = threadIdSchema.safeParse(threadId)
   if (!parsed.success) {
-    return NextResponse.json({ error: 'Invalid thread ID' }, { status: 400 })
+    return NextResponse.json({ ok: false, error: 'Invalid thread ID' }, { status: 400 })
   }
 
   const body = await request.json()
   const bodyParsed = patchSchema.safeParse(body)
   if (!bodyParsed.success) {
     return NextResponse.json(
-      { error: 'Invalid request body', details: bodyParsed.error.flatten() },
+      { ok: false, error: 'Invalid request body', details: bodyParsed.error.flatten() },
       { status: 400 }
     )
   }
 
   const thread = await getThreadById(user, threadId)
   if (!thread) {
-    return NextResponse.json({ error: 'Thread not found' }, { status: 404 })
+    return NextResponse.json({ ok: false, error: 'Thread not found' }, { status: 404 })
   }
 
   const updates: Parameters<typeof updateThread>[1] = {}
@@ -85,6 +85,19 @@ export async function PATCH(
 
   // Explicit classification from client
   if (classification !== undefined) {
+    // Validate: CLASSIFIED requires at least one link
+    if (classification === 'CLASSIFIED') {
+      const finalClientId = clientId !== undefined ? clientId : thread.clientId
+      const finalProjectId = projectId !== undefined ? projectId : thread.projectId
+      const finalLeadId = leadId !== undefined ? leadId : thread.leadId
+      if (!finalClientId && !finalProjectId && !finalLeadId) {
+        return NextResponse.json(
+          { ok: false, error: 'Cannot classify without linking to a client, project, or lead' },
+          { status: 400 }
+        )
+      }
+    }
+
     updates.classification = classification
     if (classification === 'DISMISSED') {
       // Dismiss clears all links

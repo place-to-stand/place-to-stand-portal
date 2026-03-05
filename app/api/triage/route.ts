@@ -1,13 +1,11 @@
 import { NextResponse } from 'next/server'
 
 import { requireUser } from '@/lib/auth/session'
-import { assertAdmin } from '@/lib/auth/permissions'
 import { listThreadsForUser } from '@/lib/queries/threads'
 import { suggestClientMatch, suggestLeadMatch } from '@/lib/email/suggestions'
 
 export async function GET(request: Request) {
   const user = await requireUser()
-  assertAdmin(user)
 
   const { searchParams } = new URL(request.url)
   const limit = Math.min(parseInt(searchParams.get('limit') || '10', 10), 50)
