@@ -78,7 +78,12 @@ export const usersRelations = relations(users, ({ many }) => ({
   }),
   activityLogs: many(activityLogs),
   oauthConnections: many(oauthConnections),
-  threads: many(threads),
+  threads_createdBy: many(threads, {
+    relationName: 'threads_createdBy_users_id',
+  }),
+  threads_classifiedBy: many(threads, {
+    relationName: 'threads_classifiedBy_users_id',
+  }),
   messages: many(messages),
   emailDrafts: many(emailDrafts),
   emailTemplates: many(emailTemplates),
@@ -347,6 +352,12 @@ export const threadsRelations = relations(threads, ({ one, many }) => ({
   createdByUser: one(users, {
     fields: [threads.createdBy],
     references: [users.id],
+    relationName: 'threads_createdBy_users_id',
+  }),
+  classifiedByUser: one(users, {
+    fields: [threads.classifiedBy],
+    references: [users.id],
+    relationName: 'threads_classifiedBy_users_id',
   }),
   messages: many(messages),
   suggestions: many(suggestions),

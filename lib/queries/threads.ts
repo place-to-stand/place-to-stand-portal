@@ -6,7 +6,7 @@ import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { threads, messages, clients, projects, leads } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
-import type { Thread, ThreadSummary, ThreadStatus } from '@/lib/types/messages'
+import type { Thread, ThreadSummary, ThreadStatus, ThreadClassification } from '@/lib/types/messages'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Thread CRUD
@@ -106,16 +106,28 @@ export async function getThreadSummaryById(
     .orderBy(desc(messages.sentAt))
     .limit(1)
 
+  // Get lead info
+  const leadRow = thread.leadId
+    ? await db
+        .select({ id: leads.id, contactName: leads.contactName })
+        .from(leads)
+        .where(eq(leads.id, thread.leadId))
+        .limit(1)
+        .then(rows => rows[0] ?? null)
+    : null
+
   return {
     id: thread.id,
     subject: thread.subject,
     status: thread.status as ThreadStatus,
+    classification: thread.classification as ThreadClassification,
     source: thread.source as 'EMAIL' | 'CHAT' | 'VOICE_MEMO' | 'DOCUMENT' | 'FORM',
     participantEmails: thread.participantEmails ?? [],
     lastMessageAt: thread.lastMessageAt,
     messageCount: thread.messageCount,
     client: clientRow,
     project: projectRow,
+    lead: leadRow,
     latestMessage: latestMessage
       ? {
           id: latestMessage.id,
@@ -185,7 +197,7 @@ export async function createThread(input: CreateThreadInput): Promise<Thread> {
 
 export async function updateThread(
   id: string,
-  updates: Partial<Pick<Thread, 'clientId' | 'projectId' | 'leadId' | 'subject' | 'status' | 'participantEmails' | 'lastMessageAt' | 'messageCount' | 'metadata'>>
+  updates: Partial<Pick<Thread, 'clientId' | 'projectId' | 'leadId' | 'subject' | 'status' | 'participantEmails' | 'lastMessageAt' | 'messageCount' | 'metadata' | 'classification' | 'classifiedBy' | 'classifiedAt'>>
 ): Promise<Thread> {
   const [updated] = await db
     .update(threads)
@@ -265,6 +277,7 @@ export type ListThreadsOptions = {
   projectId?: string
   status?: ThreadStatus
   linkedFilter?: 'all' | 'linked' | 'unlinked'
+  classificationFilter?: ThreadClassification
   /** Filter threads by message direction: 'sent' = outbound, 'inbox' = inbound only */
   sentFilter?: 'sent' | 'inbox'
   /** Search threads by subject or message content (case-insensitive) */
@@ -277,7 +290,7 @@ export async function listThreadsForUser(
   userId: string,
   options: ListThreadsOptions = {}
 ): Promise<ThreadSummary[]> {
-  const { clientId, projectId, status, linkedFilter, sentFilter, search, limit = 50, offset = 0 } = options
+  const { clientId, projectId, status, linkedFilter, classificationFilter, sentFilter, search, limit = 50, offset = 0 } = options
 
   const conditions = [isNull(threads.deletedAt)]
 
@@ -349,6 +362,9 @@ export async function listThreadsForUser(
   } else if (linkedFilter === 'unlinked') {
     conditions.push(isNull(threads.clientId))
   }
+  if (classificationFilter) {
+    conditions.push(eq(threads.classification, classificationFilter))
+  }
 
   // Filter by message direction
   if (sentFilter === 'sent') {
@@ -398,11 +414,12 @@ export async function listThreadsForUser(
 
   if (threadRows.length === 0) return []
 
-  // Get client and project names
+  // Get client, project, and lead names
   const clientIds = [...new Set(threadRows.map(t => t.clientId).filter(Boolean))] as string[]
   const projectIds = [...new Set(threadRows.map(t => t.projectId).filter(Boolean))] as string[]
+  const leadIds = [...new Set(threadRows.map(t => t.leadId).filter(Boolean))] as string[]
 
-  const [clientRows, projectRows] = await Promise.all([
+  const [clientRows, projectRows, leadRows] = await Promise.all([
     clientIds.length > 0
       ? db.select({ id: clients.id, name: clients.name, slug: clients.slug }).from(clients).where(inArray(clients.id, clientIds))
       : [],
@@ -418,10 +435,14 @@ export async function listThreadsForUser(
           .leftJoin(clients, eq(projects.clientId, clients.id))
           .where(inArray(projects.id, projectIds))
       : [],
+    leadIds.length > 0
+      ? db.select({ id: leads.id, contactName: leads.contactName }).from(leads).where(inArray(leads.id, leadIds))
+      : [],
   ])
 
   const clientMap = new Map(clientRows.map(c => [c.id, c]))
   const projectMap = new Map(projectRows.map(p => [p.id, p]))
+  const leadMap = new Map(leadRows.map(l => [l.id, l]))
 
   // Get latest message for each thread
   const threadIds = threadRows.map(t => t.id)
@@ -433,12 +454,14 @@ export async function listThreadsForUser(
       id: thread.id,
       subject: thread.subject,
       status: thread.status as ThreadStatus,
+      classification: thread.classification as ThreadClassification,
       source: thread.source as 'EMAIL' | 'CHAT' | 'VOICE_MEMO' | 'DOCUMENT' | 'FORM',
       participantEmails: thread.participantEmails ?? [],
       lastMessageAt: thread.lastMessageAt,
       messageCount: thread.messageCount,
       client: thread.clientId ? clientMap.get(thread.clientId) ?? null : null,
       project: thread.projectId ? projectMap.get(thread.projectId) ?? null : null,
+      lead: thread.leadId ? leadMap.get(thread.leadId) ?? null : null,
       latestMessage: msg
         ? {
             id: msg.id,
@@ -506,6 +529,7 @@ export async function listThreadsForClient(
       id: thread.id,
       subject: thread.subject,
       status: thread.status as ThreadStatus,
+      classification: thread.classification as ThreadClassification,
       source: thread.source as 'EMAIL' | 'CHAT' | 'VOICE_MEMO' | 'DOCUMENT' | 'FORM',
       participantEmails: thread.participantEmails ?? [],
       lastMessageAt: thread.lastMessageAt,
@@ -600,6 +624,7 @@ export async function listThreadsForLead(
       id: thread.id,
       subject: thread.subject,
       status: thread.status as ThreadStatus,
+      classification: thread.classification as ThreadClassification,
       source: thread.source as 'EMAIL' | 'CHAT' | 'VOICE_MEMO' | 'DOCUMENT' | 'FORM',
       participantEmails: thread.participantEmails ?? [],
       lastMessageAt: thread.lastMessageAt,
@@ -627,13 +652,13 @@ export async function listThreadsForLead(
 
 export async function getThreadCountsForUser(
   userId: string,
-  options: { linkedFilter?: 'all' | 'linked' | 'unlinked'; sentFilter?: 'sent' | 'inbox'; search?: string } = {}
+  options: { linkedFilter?: 'all' | 'linked' | 'unlinked'; classificationFilter?: ThreadClassification; sentFilter?: 'sent' | 'inbox'; search?: string } = {}
 ): Promise<{
   total: number
   unread: number
   byStatus: Record<ThreadStatus, number>
 }> {
-  const { linkedFilter, sentFilter, search } = options
+  const { linkedFilter, classificationFilter, sentFilter, search } = options
 
   const userThreadCondition = or(
     eq(threads.createdBy, userId),
@@ -706,6 +731,9 @@ export async function getThreadCountsForUser(
   } else if (linkedFilter === 'unlinked') {
     conditions.push(isNull(threads.clientId))
   }
+  if (classificationFilter) {
+    conditions.push(eq(threads.classification, classificationFilter))
+  }
 
   // Filter by message direction
   if (sentFilter === 'sent') {
@@ -775,7 +803,7 @@ export async function getThreadCountsForUser(
  */
 export async function getInboxSidebarCounts(
   userId: string
-): Promise<{ inbox: number; linked: number; unlinked: number; sent: number }> {
+): Promise<{ inbox: number; unclassified: number; classified: number; sent: number }> {
   const userAccessCondition = sql`(
     t.created_by = ${userId}
     OR EXISTS (
@@ -804,16 +832,16 @@ export async function getInboxSidebarCounts(
 
   type SidebarCountRow = {
     inbox: number
-    linked: number
-    unlinked: number
+    unclassified: number
+    classified: number
     sent: number
   }
 
   const [row] = await db.execute<SidebarCountRow>(sql`
     SELECT
       count(*) FILTER (WHERE ${hasInboundCondition})::int AS inbox,
-      count(*) FILTER (WHERE t.client_id IS NOT NULL AND ${hasInboundCondition})::int AS linked,
-      count(*) FILTER (WHERE t.client_id IS NULL AND ${hasInboundCondition})::int AS unlinked,
+      count(*) FILTER (WHERE t.classification = 'UNCLASSIFIED' AND ${hasInboundCondition})::int AS unclassified,
+      count(*) FILTER (WHERE t.classification = 'CLASSIFIED' AND ${hasInboundCondition})::int AS classified,
       count(*) FILTER (WHERE ${hasSentCondition})::int AS sent
     FROM threads t
     WHERE t.deleted_at IS NULL
@@ -822,8 +850,8 @@ export async function getInboxSidebarCounts(
 
   return {
     inbox: row?.inbox ?? 0,
-    linked: row?.linked ?? 0,
-    unlinked: row?.unlinked ?? 0,
+    unclassified: row?.unclassified ?? 0,
+    classified: row?.classified ?? 0,
     sent: row?.sent ?? 0,
   }
 }

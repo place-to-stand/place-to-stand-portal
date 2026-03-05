@@ -4,7 +4,6 @@ import { and, eq, inArray, isNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { messages, oauthConnections } from '@/lib/db/schema'
-import { updateLeadLastContact } from '@/lib/data/leads'
 import {
   listMessages,
   listHistory,
@@ -15,8 +14,6 @@ import {
 } from '@/lib/gmail/client'
 import { findOrCreateThread } from '@/lib/queries/threads'
 import { getMessageByExternalId, createMessage } from '@/lib/queries/messages'
-import { matchThreadToLead, linkThreadToLead } from '@/lib/email/matcher'
-import { performLeadScoring } from '@/lib/leads/scoring'
 import type { GmailMessage, GmailHistoryRecord } from '@/lib/gmail/types'
 import type { GmailSyncState } from '@/lib/types/sync-state'
 
@@ -175,27 +172,6 @@ async function processNewMessages(
           createdBy: userId,
           metadata: {},
         })
-
-        // Auto-link thread to lead if sender matches a lead's contact email
-        if (!thread.leadId) {
-          const leadMatch = await matchThreadToLead(Array.from(allParticipants))
-          if (leadMatch) {
-            await linkThreadToLead(thread.id, leadMatch.leadId)
-            // Update lead's lastContactAt with earliest message timestamp
-            const earliestSentAt = threadMessages.reduce((earliest, msg) => {
-              const sentAt = msg.internalDate
-                ? new Date(parseInt(msg.internalDate, 10)).toISOString()
-                : new Date().toISOString()
-              return sentAt < earliest ? sentAt : earliest
-            }, new Date().toISOString())
-            await updateLeadLastContact(leadMatch.leadId, earliestSentAt)
-
-            // Trigger AI rescoring for the lead (async, don't block sync)
-            performLeadScoring(leadMatch.leadId).catch(err => {
-              console.warn('[syncGmail] Lead rescoring failed:', err)
-            })
-          }
-        }
 
         for (const msg of threadMessages) {
           // Check if message already exists

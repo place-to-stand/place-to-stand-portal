@@ -1,9 +1,10 @@
 'use client'
 
 import { formatDistanceToNow } from 'date-fns'
-import { Building2, FolderKanban } from 'lucide-react'
+import { Building2, FolderKanban, UserCircle } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
 import type { ThreadSummary } from '@/lib/types/messages'
 
@@ -12,6 +13,9 @@ type ThreadRowProps = {
   isSelected: boolean
   isFirst: boolean
   onClick: () => void
+  showCheckbox?: boolean
+  isChecked?: boolean
+  onToggle?: (shiftKey: boolean) => void
 }
 
 export function ThreadRow({
@@ -19,6 +23,9 @@ export function ThreadRow({
   isSelected,
   isFirst,
   onClick,
+  showCheckbox,
+  isChecked,
+  onToggle,
 }: ThreadRowProps) {
   const latestMessage = thread.latestMessage
   const isUnread = latestMessage && !latestMessage.isRead
@@ -32,12 +39,24 @@ export function ThreadRow({
         'hover:bg-muted/60',
         isUnread &&
           'bg-blue-50/50 hover:bg-blue-100/50 dark:bg-blue-950/20 dark:hover:bg-blue-950/40',
+        thread.classification === 'DISMISSED' && 'opacity-60',
         isSelected && 'bg-muted ring-border ring-1 ring-inset',
         !isFirst && 'border-border/50 border-t'
       )}
     >
+      {/* Checkbox */}
+      {showCheckbox && (
+        <div className='flex-shrink-0' onClick={e => e.stopPropagation()}>
+          <Checkbox
+            checked={isChecked}
+            onCheckedChange={() => onToggle?.((window.event as MouseEvent)?.shiftKey ?? false)}
+            className='h-4 w-4'
+          />
+        </div>
+      )}
+
       {/* Unread indicator */}
-      <div className='w-2 flex-shrink-0'>
+      <div className='flex w-4 flex-shrink-0 items-center justify-center'>
         {isUnread && <div className='h-2 w-2 rounded-full bg-blue-500' />}
       </div>
 
@@ -86,7 +105,7 @@ export function ThreadRow({
         </Badge>
       )}
 
-      {/* Far right: Project badge */}
+      {/* Project badge */}
       {thread.project && (
         <Badge
           variant='default'
@@ -94,6 +113,17 @@ export function ThreadRow({
         >
           <FolderKanban className='mr-1 h-3 w-3' />
           <span className='max-w-[100px] truncate'>{thread.project.name}</span>
+        </Badge>
+      )}
+
+      {/* Lead badge */}
+      {thread.lead && !thread.client && (
+        <Badge
+          variant='default'
+          className='flex-shrink-0 border-0 bg-purple-100 text-xs font-medium text-purple-700 hover:bg-purple-100 dark:bg-purple-900/50 dark:text-purple-300'
+        >
+          <UserCircle className='mr-1 h-3 w-3' />
+          <span className='max-w-[100px] truncate'>{thread.lead.contactName}</span>
         </Badge>
       )}
     </button>

@@ -32,8 +32,7 @@ async function getDraftCounts(userId: string) {
 
 const PAGE_SIZE = 25
 
-type FilterType = 'all' | 'linked' | 'unlinked' | 'sent'
-type ViewType = 'inbox' | 'sent' | 'drafts' | 'scheduled' | 'linked' | 'unlinked'
+type ViewType = 'inbox' | 'sent' | 'drafts' | 'scheduled' | 'unclassified' | 'classified' | 'dismissed'
 
 type Props = {
   params: Promise<{ view?: string[] }>
@@ -46,7 +45,7 @@ export default async function InboxEmailsPage({ params, searchParams }: Props) {
   const query = await searchParams
 
   // Extract view from path segment (e.g., /my/inbox/emails/sent → 'sent')
-  const validViews: ViewType[] = ['inbox', 'sent', 'drafts', 'scheduled', 'linked', 'unlinked']
+  const validViews: ViewType[] = ['inbox', 'sent', 'drafts', 'scheduled', 'unclassified', 'classified', 'dismissed']
   const viewSegment = resolvedParams.view?.[0]
   const view: ViewType = validViews.includes(viewSegment as ViewType)
     ? (viewSegment as ViewType)
@@ -56,21 +55,19 @@ export default async function InboxEmailsPage({ params, searchParams }: Props) {
   const currentPage = Math.max(1, parseInt(query.page || '1', 10) || 1)
   const offset = (currentPage - 1) * PAGE_SIZE
 
-  // Map view to filter for backwards compatibility with thread queries
-  const filter: FilterType = view === 'linked' ? 'linked'
-    : view === 'unlinked' ? 'unlinked'
-    : view === 'sent' ? 'sent'
-    : 'all'
+  // Map view to query filters
   const searchQuery = query.q?.trim() || undefined
 
   // Parse thread param for deep-linking
   const threadId = query.thread || null
 
-  // Determine query options based on filter
-  const isSentFilter = filter === 'sent'
-  const linkedFilter = isSentFilter ? undefined : (filter === 'all' ? undefined : filter)
-  // Use 'inbox' filter for default view to exclude sent-only threads, 'sent' for sent view
-  const sentFilter = isSentFilter ? 'sent' : 'inbox'
+  // Determine query options based on view
+  const isSentView = view === 'sent'
+  const sentFilter = isSentView ? 'sent' as const : 'inbox' as const
+  const classificationFilter = view === 'unclassified' ? 'UNCLASSIFIED' as const
+    : view === 'classified' ? 'CLASSIFIED' as const
+    : view === 'dismissed' ? 'DISMISSED' as const
+    : undefined
 
   // Get threads, counts, sync status, clients, projects, leads, and draft counts in parallel
   const [
@@ -85,8 +82,8 @@ export default async function InboxEmailsPage({ params, searchParams }: Props) {
     leadsList,
     linkedThread,
   ] = await Promise.all([
-    listThreadsForUser(user.id, { limit: PAGE_SIZE, offset, linkedFilter, sentFilter, search: searchQuery }),
-    getThreadCountsForUser(user.id, { linkedFilter, sentFilter, search: searchQuery }),
+    listThreadsForUser(user.id, { limit: PAGE_SIZE, offset, classificationFilter, sentFilter, search: searchQuery }),
+    getThreadCountsForUser(user.id, { classificationFilter, sentFilter, search: searchQuery }),
     getMessageCountsForUser(user.id),
     getDraftCounts(user.id),
     getInboxSidebarCounts(user.id),
@@ -150,8 +147,8 @@ export default async function InboxEmailsPage({ params, searchParams }: Props) {
     drafts: draftCounts.drafts,
     sent: sidebarCountsResult.sent,
     scheduled: draftCounts.scheduled,
-    linked: sidebarCountsResult.linked,
-    unlinked: sidebarCountsResult.unlinked,
+    unclassified: sidebarCountsResult.unclassified,
+    classified: sidebarCountsResult.classified,
   }
 
   return (

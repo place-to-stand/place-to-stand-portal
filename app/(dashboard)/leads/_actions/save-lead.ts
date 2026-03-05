@@ -73,6 +73,8 @@ export async function saveLead(input: SaveLeadInput): Promise<LeadActionResult> 
   }
   const timestamp = new Date().toISOString()
 
+  let createdLeadId: string | undefined
+
   try {
     if (!normalized.id) {
       const rank = await resolveNextLeadRank(normalized.status)
@@ -96,9 +98,10 @@ export async function saveLead(input: SaveLeadInput): Promise<LeadActionResult> 
         updatedAt: timestamp,
       }).returning({ id: leads.id })
 
-      if (inserted[0]) {
+      createdLeadId = inserted[0]?.id
+      if (createdLeadId) {
         await db.insert(leadStageHistory).values({
-          leadId: inserted[0].id,
+          leadId: createdLeadId,
           fromStatus: null,
           toStatus: normalized.status,
           changedAt: timestamp,
@@ -187,7 +190,7 @@ export async function saveLead(input: SaveLeadInput): Promise<LeadActionResult> 
   }
 
   revalidateLeadsPath()
-  return { success: true }
+  return { success: true, leadId: createdLeadId }
 }
 
 function normalizeLeadPayload(

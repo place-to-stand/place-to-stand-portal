@@ -48,4 +48,8 @@ export type LeadSheetProps = {
   canManage?: boolean
   senderName?: string
   onSuccess: () => void
+  /** Called with the new lead's ID after successful creation (not editing) */
+  onCreated?: (leadId: string) => void
+  /** Pre-fill form fields when creating a new lead (ignored when editing) */
+  initialValues?: Partial<Pick<LeadFormValues, 'contactName' | 'contactEmail' | 'companyName' | 'notes'>>
 }

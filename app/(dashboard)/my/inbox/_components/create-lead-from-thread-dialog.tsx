@@ -4,16 +4,16 @@ import { useCallback, useState, useTransition } from 'react'
 import { Target, Loader2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/use-toast'
 
@@ -63,7 +63,7 @@ function extractDisplayName(name: string | null, email: string): string {
     .replace(/\b\w/g, c => c.toUpperCase())
 }
 
-// Use key-based remounting to reset form state when dialog opens
+// Use key-based remounting to reset form state when sheet opens
 export function CreateLeadFromThreadDialog({
   open,
   onOpenChange,
@@ -73,7 +73,7 @@ export function CreateLeadFromThreadDialog({
   subject,
   onSuccess,
 }: CreateLeadFromThreadDialogProps) {
-  // Key changes when dialog opens to reset internal state
+  // Key changes when sheet opens to reset internal state
   const [formKey, setFormKey] = useState(0)
 
   const handleOpenChange = useCallback(
@@ -88,8 +88,8 @@ export function CreateLeadFromThreadDialog({
   )
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <CreateLeadFromThreadDialogContent
+    <Sheet open={open} onOpenChange={handleOpenChange}>
+      <CreateLeadFromThreadSheetContent
         key={formKey}
         threadId={threadId}
         senderEmail={senderEmail}
@@ -98,11 +98,11 @@ export function CreateLeadFromThreadDialog({
         onOpenChange={onOpenChange}
         onSuccess={onSuccess}
       />
-    </Dialog>
+    </Sheet>
   )
 }
 
-function CreateLeadFromThreadDialogContent({
+function CreateLeadFromThreadSheetContent({
   threadId,
   senderEmail,
   senderName,
@@ -180,18 +180,18 @@ function CreateLeadFromThreadDialogContent({
   const canCreate = contactName.trim() && contactEmail.trim() && !isCreating
 
   return (
-    <DialogContent className='sm:max-w-[450px]'>
-      <DialogHeader>
-        <DialogTitle className='flex items-center gap-2'>
+    <SheetContent side='right' className='sm:max-w-[450px]'>
+      <SheetHeader>
+        <SheetTitle className='flex items-center gap-2'>
           <Target className='h-5 w-5' />
           Create Lead from Email
-        </DialogTitle>
-        <DialogDescription>
+        </SheetTitle>
+        <SheetDescription>
           Create a new lead and link this email thread to track the conversation.
-        </DialogDescription>
-      </DialogHeader>
+        </SheetDescription>
+      </SheetHeader>
 
-      <div className='flex flex-col gap-4 py-4'>
+      <div className='flex flex-col gap-4 px-4 py-4'>
         {/* Contact Name */}
         <div className='space-y-2'>
           <Label htmlFor='contact-name'>Contact Name</Label>
@@ -238,13 +238,13 @@ function CreateLeadFromThreadDialogContent({
           />
         </div>
 
-        <p className='text-xs text-muted-foreground'>
+        <p className='text-muted-foreground text-xs'>
           The lead will be created in &quot;New Opportunities&quot; status and this
           email thread will be linked automatically.
         </p>
       </div>
 
-      <DialogFooter>
+      <SheetFooter className='px-4'>
         <Button
           variant='outline'
           onClick={() => onOpenChange(false)}
@@ -265,7 +265,7 @@ function CreateLeadFromThreadDialogContent({
             </>
           )}
         </Button>
-      </DialogFooter>
-    </DialogContent>
+      </SheetFooter>
+    </SheetContent>
   )
 }

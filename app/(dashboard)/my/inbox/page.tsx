@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
 
 export default function InboxRedirectPage() {
-  redirect('/my/inbox/emails')
+  redirect('/my/inbox/triage')
 }

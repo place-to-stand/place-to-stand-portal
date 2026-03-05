@@ -1,6 +1,8 @@
 'use client'
 
+import Link from 'next/link'
 import {
+  CircleDashed,
   Filter,
   PenSquare,
   RefreshCw,
@@ -31,6 +33,7 @@ interface InboxToolbarProps {
   onClearSearch: () => void
   isConnected: boolean
   onCompose: () => void
+  unclassifiedCount?: number
 }
 
 /** Strip operator tokens from the search string for display */
@@ -63,6 +66,7 @@ export function InboxToolbar({
   onClearSearch,
   isConnected,
   onCompose,
+  unclassifiedCount,
 }: InboxToolbarProps) {
   const displayText = getDisplayText(searchInput)
   const { hasAttachment, isUnread } = getOperators(searchInput)
@@ -83,8 +87,9 @@ export function InboxToolbar({
           <SelectItem value='inbox'>Inbox</SelectItem>
           <SelectItem value='sent'>Sent</SelectItem>
           <SelectItem value='drafts'>Drafts</SelectItem>
-          <SelectItem value='linked'>Linked</SelectItem>
-          <SelectItem value='unlinked'>Unlinked</SelectItem>
+          <SelectItem value='unclassified'>Unclassified</SelectItem>
+          <SelectItem value='classified'>Classified</SelectItem>
+          <SelectItem value='dismissed'>Dismissed</SelectItem>
         </SelectContent>
       </Select>
 
@@ -144,9 +149,18 @@ export function InboxToolbar({
         </div>
       )}
 
-      {/* Compose button - right aligned */}
-      {isConnected && (
-        <div className='ml-auto'>
+      {/* Right side - unclassified indicator + compose */}
+      <div className='ml-auto flex items-center gap-3'>
+        {unclassifiedCount !== undefined && unclassifiedCount > 0 && (
+          <Link
+            href='/my/inbox/triage'
+            className='text-muted-foreground hover:text-foreground flex items-center gap-1.5 text-sm transition-colors'
+          >
+            <CircleDashed className='h-3.5 w-3.5 text-yellow-500' />
+            <span>{unclassifiedCount} unclassified</span>
+          </Link>
+        )}
+        {isConnected && (
           <Button
             size='sm'
             onClick={onCompose}
@@ -154,8 +168,8 @@ export function InboxToolbar({
             <PenSquare className='h-4 w-4' />
             Compose
           </Button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

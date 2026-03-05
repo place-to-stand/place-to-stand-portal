@@ -267,6 +267,13 @@
       "when": 1772667133428,
       "tag": "0037_add_messages_thread_sent_at_index",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1772675660571,
+      "tag": "0038_inbox_classification",
+      "breakpoints": true
     }
   ]
 }

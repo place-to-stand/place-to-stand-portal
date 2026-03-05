@@ -110,6 +110,11 @@ export const threadStatus = pgEnum('thread_status', [
   'RESOLVED',
   'ARCHIVED',
 ])
+export const threadClassification = pgEnum('thread_classification', [
+  'UNCLASSIFIED',
+  'CLASSIFIED',
+  'DISMISSED',
+])
 
 // Unified suggestion enums
 export const suggestionType = pgEnum('suggestion_type', ['TASK', 'PR', 'REPLY'])
@@ -1074,6 +1079,9 @@ export const threads = pgTable(
     lastMessageAt: timestamp('last_message_at', { withTimezone: true, mode: 'string' }),
     messageCount: integer('message_count').default(0).notNull(),
     metadata: jsonb().default({}).notNull(),
+    classification: threadClassification().default('UNCLASSIFIED').notNull(),
+    classifiedBy: uuid('classified_by'),
+    classifiedAt: timestamp('classified_at', { withTimezone: true, mode: 'string' }),
     createdBy: uuid('created_by'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
@@ -1084,6 +1092,9 @@ export const threads = pgTable(
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
   table => [
+    index('idx_threads_classification')
+      .using('btree', table.classification.asc().nullsLast())
+      .where(sql`(deleted_at IS NULL)`),
     index('idx_threads_client')
       .using('btree', table.clientId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL AND client_id IS NOT NULL)`),
@@ -1118,6 +1129,11 @@ export const threads = pgTable(
       columns: [table.createdBy],
       foreignColumns: [users.id],
       name: 'threads_created_by_fkey',
+    }),
+    foreignKey({
+      columns: [table.classifiedBy],
+      foreignColumns: [users.id],
+      name: 'threads_classified_by_fkey',
     }),
   ]
 )

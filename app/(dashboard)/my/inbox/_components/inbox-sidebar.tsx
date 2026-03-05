@@ -7,13 +7,14 @@ import {
   FileEdit,
   Send,
   Clock,
-  LinkIcon,
-  Unlink,
+  CircleDashed,
+  CheckCircle,
+  XCircle,
 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
-type View = 'inbox' | 'drafts' | 'sent' | 'scheduled' | 'linked' | 'unlinked'
+type View = 'inbox' | 'drafts' | 'sent' | 'scheduled' | 'unclassified' | 'classified' | 'dismissed'
 
 interface InboxSidebarProps {
   currentView: View
@@ -23,8 +24,8 @@ interface InboxSidebarProps {
     drafts: number
     sent: number
     scheduled: number
-    linked: number
-    unlinked: number
+    unclassified: number
+    classified: number
   }
   /** Query params to preserve across view changes */
   preservedParams?: {
@@ -46,8 +47,9 @@ const navItems: Array<{
   { view: 'drafts', label: 'Drafts', icon: FileEdit, href: '/my/inbox/emails/drafts', showCount: 'total' },
   { view: 'sent', label: 'Sent', icon: Send, href: '/my/inbox/emails/sent' },
   { view: 'scheduled', label: 'Scheduled', icon: Clock, href: '/my/inbox/emails/scheduled', showCount: 'total' },
-  { view: 'linked', label: 'Linked', icon: LinkIcon, href: '/my/inbox/emails/linked', showCount: 'total', section: 'Portal Views' },
-  { view: 'unlinked', label: 'Unlinked', icon: Unlink, href: '/my/inbox/emails/unlinked', showCount: 'total' },
+  { view: 'unclassified', label: 'Unclassified', icon: CircleDashed, href: '/my/inbox/emails/unclassified', showCount: 'total', section: 'Classification' },
+  { view: 'classified', label: 'Classified', icon: CheckCircle, href: '/my/inbox/emails/classified', showCount: 'total' },
+  { view: 'dismissed', label: 'Dismissed', icon: XCircle, href: '/my/inbox/emails/dismissed' },
 ]
 
 export function InboxSidebar({ currentView, counts, preservedParams }: InboxSidebarProps) {
@@ -83,10 +85,10 @@ export function InboxSidebar({ currentView, counts, preservedParams }: InboxSide
               ? counts.drafts
               : item.view === 'scheduled'
                 ? counts.scheduled
-                : item.view === 'linked'
-                  ? counts.linked
-                  : item.view === 'unlinked'
-                    ? counts.unlinked
+                : item.view === 'unclassified'
+                  ? counts.unclassified
+                  : item.view === 'classified'
+                    ? counts.classified
                     : 0
 
         return (
