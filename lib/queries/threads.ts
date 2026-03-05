@@ -286,6 +286,8 @@ async function getLatestMessagesForThreads(
 export type ListThreadsOptions = {
   clientId?: string
   projectId?: string
+  projectType?: 'CLIENT' | 'INTERNAL' | 'PERSONAL'
+  leadId?: string
   status?: ThreadStatus
   linkedFilter?: 'all' | 'linked' | 'unlinked'
   classificationFilter?: ThreadClassification | 'NOT_DISMISSED'
@@ -301,7 +303,7 @@ export async function listThreadsForUser(
   userId: string,
   options: ListThreadsOptions = {}
 ): Promise<ThreadSummary[]> {
-  const { clientId, projectId, status, linkedFilter, classificationFilter, sentFilter, search, limit = 50, offset = 0 } = options
+  const { clientId, projectId, projectType, leadId, status, linkedFilter, classificationFilter, sentFilter, search, limit = 50, offset = 0 } = options
 
   const conditions = [isNull(threads.deletedAt)]
 
@@ -364,6 +366,14 @@ export async function listThreadsForUser(
   }
   if (projectId) {
     conditions.push(eq(threads.projectId, projectId))
+  }
+  if (projectType) {
+    conditions.push(
+      sql`${threads.projectId} IN (SELECT id FROM projects WHERE type = ${projectType} AND deleted_at IS NULL)`
+    )
+  }
+  if (leadId) {
+    conditions.push(eq(threads.leadId, leadId))
   }
   if (status) {
     conditions.push(eq(threads.status, status))
@@ -668,13 +678,13 @@ export async function listThreadsForLead(
 
 export async function getThreadCountsForUser(
   userId: string,
-  options: { linkedFilter?: 'all' | 'linked' | 'unlinked'; classificationFilter?: ThreadClassification | 'NOT_DISMISSED'; sentFilter?: 'sent' | 'inbox'; search?: string } = {}
+  options: { clientId?: string; projectId?: string; projectType?: 'CLIENT' | 'INTERNAL' | 'PERSONAL'; leadId?: string; linkedFilter?: 'all' | 'linked' | 'unlinked'; classificationFilter?: ThreadClassification | 'NOT_DISMISSED'; sentFilter?: 'sent' | 'inbox'; search?: string } = {}
 ): Promise<{
   total: number
   unread: number
   byStatus: Record<ThreadStatus, number>
 }> {
-  const { linkedFilter, classificationFilter, sentFilter, search } = options
+  const { clientId, projectId, projectType, leadId, linkedFilter, classificationFilter, sentFilter, search } = options
 
   const userThreadCondition = or(
     eq(threads.createdBy, userId),
@@ -742,6 +752,20 @@ export async function getThreadCountsForUser(
     }
   }
 
+  if (clientId) {
+    conditions.push(eq(threads.clientId, clientId))
+  }
+  if (projectId) {
+    conditions.push(eq(threads.projectId, projectId))
+  }
+  if (projectType) {
+    conditions.push(
+      sql`${threads.projectId} IN (SELECT id FROM projects WHERE type = ${projectType} AND deleted_at IS NULL)`
+    )
+  }
+  if (leadId) {
+    conditions.push(eq(threads.leadId, leadId))
+  }
   if (linkedFilter === 'linked') {
     conditions.push(sql`${threads.clientId} IS NOT NULL`)
   } else if (linkedFilter === 'unlinked') {

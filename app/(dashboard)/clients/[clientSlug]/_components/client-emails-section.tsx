@@ -17,9 +17,10 @@ import type { MessageForClient } from '@/lib/queries/messages'
 type Props = {
   messages: MessageForClient[]
   currentUserId: string
+  clientId: string
 }
 
-export function ClientEmailsSection({ messages, currentUserId }: Props) {
+export function ClientEmailsSection({ messages, currentUserId, clientId }: Props) {
   return (
     <section className='bg-card text-card-foreground overflow-hidden rounded-lg border'>
       <div className='flex items-center gap-3 border-b px-4 py-3'>
@@ -50,7 +51,7 @@ export function ClientEmailsSection({ messages, currentUserId }: Props) {
               {messages.length > 5 && (
                 <div className='px-3 py-2 text-center'>
                   <Link
-                    href='/my/inbox/emails'
+                    href={`/my/inbox/emails?client=${clientId}`}
                     className='text-muted-foreground hover:text-foreground text-xs transition'
                   >
                     +{messages.length - 5} more

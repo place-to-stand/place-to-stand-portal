@@ -31,6 +31,10 @@ interface InboxSidebarProps {
   preservedParams?: {
     thread?: string | null
     q?: string | null
+    client?: string | null
+    project?: string | null
+    projectType?: string | null
+    lead?: string | null
   }
 }
 
@@ -72,6 +76,11 @@ export function InboxSidebar({ currentView, counts, preservedParams }: InboxSide
     if (preservedParams?.thread) params.set('thread', preservedParams.thread)
     // Preserve search query
     if (preservedParams?.q) params.set('q', preservedParams.q)
+    // Preserve entity filters
+    if (preservedParams?.client) params.set('client', preservedParams.client)
+    if (preservedParams?.project) params.set('project', preservedParams.project)
+    if (preservedParams?.projectType) params.set('projectType', preservedParams.projectType)
+    if (preservedParams?.lead) params.set('lead', preservedParams.lead)
     return params.toString() ? `${base}?${params.toString()}` : base
   }
 

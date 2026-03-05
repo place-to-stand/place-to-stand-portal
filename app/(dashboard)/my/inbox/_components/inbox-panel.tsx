@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useTransition } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import {
   Clock,
@@ -36,6 +36,7 @@ type Project = {
   id: string
   name: string
   slug: string | null
+  clientId: string | null
   clientSlug: string | null
   type: 'CLIENT' | 'PERSONAL' | 'INTERNAL'
   ownerId: string | null
@@ -85,6 +86,11 @@ type InboxPanelProps = {
   }
   /** Pre-fetched thread for deep-linking (may not be on current page) */
   initialSelectedThread?: ThreadSummary | null
+  /** Active entity filters from URL */
+  filterClientId?: string
+  filterProjectId?: string
+  filterProjectType?: 'CLIENT' | 'INTERNAL' | 'PERSONAL'
+  filterLeadId?: string
 }
 
 export function InboxPanel({
@@ -100,12 +106,35 @@ export function InboxPanel({
   sidebarCounts,
   pagination,
   initialSelectedThread,
+  filterClientId,
+  filterProjectId,
+  filterProjectType,
+  filterLeadId,
 }: InboxPanelProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = usePathname()
+  const [isFilterPending, startFilterTransition] = useTransition()
 
   const [threads, setThreads] = useState(initialThreads)
+
+  // Optimistic local filter state — updates instantly, server catches up via transition
+  const [localFilters, setLocalFilters] = useState({
+    client: filterClientId,
+    project: filterProjectId,
+    projectType: filterProjectType,
+    lead: filterLeadId,
+  })
+
+  // Sync local filters when server props arrive (after transition completes)
+  useEffect(() => {
+    setLocalFilters({
+      client: filterClientId,
+      project: filterProjectId,
+      projectType: filterProjectType,
+      lead: filterLeadId,
+    })
+  }, [filterClientId, filterProjectId, filterProjectType, filterLeadId])
 
   // Current sidebar view - derived directly from URL via view prop
   const currentView: InboxView = view as InboxView
@@ -197,6 +226,66 @@ export function InboxPanel({
     },
     [router]
   )
+
+  // Handle filter changes — optimistic local update + server navigation in transition
+  const handleFilterChange = useCallback(
+    (key: 'client' | 'project' | 'projectType' | 'lead', value: string | undefined) => {
+      // Optimistic: update local state immediately
+      setLocalFilters(prev => {
+        const next = { ...prev, [key]: value }
+        // Clear project/projectType when client changes
+        if (key === 'client') {
+          next.project = undefined
+          next.projectType = undefined
+        }
+        // Clear projectType when specific project selected, and vice versa
+        if (key === 'project') next.projectType = undefined
+        if (key === 'projectType') next.project = undefined
+        return next
+      })
+
+      // Build URL and navigate in transition (non-blocking)
+      const params = new URLSearchParams(searchParams.toString())
+      params.delete('thread')
+      params.delete('page')
+      if (value) {
+        params.set(key, value)
+      } else {
+        params.delete(key)
+      }
+      if (key === 'client') {
+        params.delete('project')
+        params.delete('projectType')
+      }
+      if (key === 'project') params.delete('projectType')
+      if (key === 'projectType') params.delete('project')
+      const newUrl = params.toString()
+        ? `${pathname}?${params.toString()}`
+        : pathname
+      startFilterTransition(() => {
+        router.push(newUrl)
+      })
+    },
+    [router, searchParams, pathname, startFilterTransition]
+  )
+
+  // Clear all entity filters at once
+  const handleClearFilters = useCallback(() => {
+    setLocalFilters({ client: undefined, project: undefined, projectType: undefined, lead: undefined })
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete('thread')
+    params.delete('page')
+    params.delete('client')
+    params.delete('project')
+    params.delete('projectType')
+    params.delete('lead')
+    const newUrl = params.toString()
+      ? `${pathname}?${params.toString()}`
+      : pathname
+    startFilterTransition(() => {
+      router.push(newUrl)
+    })
+  }, [router, searchParams, pathname, startFilterTransition])
 
   // Wrapper that clears local state when closing the sheet
   const onCloseSheet = useCallback(() => {
@@ -292,6 +381,43 @@ export function InboxPanel({
       <div className='space-y-4'>
         {/* Main Card */}
         <section className='bg-background flex min-h-[calc(100vh-13rem)] min-w-0 flex-col overflow-hidden rounded-xl border shadow-sm'>
+          {/* Toolbar — spans full width above sidebar + content */}
+          <div className='border-b px-6 py-4'>
+            {/* Reconnect Banner - shown when connection needs reauth */}
+            {syncStatus.connectionStatus &&
+              syncStatus.connectionStatus !== 'ACTIVE' && (
+                <div className='mb-4'>
+                  <GmailReconnectBanner
+                    status={syncStatus.connectionStatus}
+                    errorMessage={syncStatus.connectionError}
+                  />
+                </div>
+              )}
+
+            <InboxToolbar
+              currentView={currentView}
+              onViewChange={handleMobileViewChange}
+              searchInput={searchInput}
+              onSearchInputChange={setSearchInput}
+              isSearching={isSearching}
+              onClearSearch={handleClearSearch}
+              isConnected={syncStatus.connected}
+              onCompose={() => setIsComposeOpen(true)}
+              unclassifiedCount={sidebarCounts.unclassified}
+              clients={clients}
+              projects={projects}
+              leads={leads}
+              filterClientId={localFilters.client}
+              filterProjectId={localFilters.project}
+              filterProjectType={localFilters.projectType}
+              filterLeadId={localFilters.lead}
+              currentUserId={currentUserId}
+              isFilterPending={isFilterPending}
+              onFilterChange={handleFilterChange}
+              onClearFilters={handleClearFilters}
+            />
+          </div>
+
           <div className='flex min-w-0 flex-1'>
             {/* Left Sidebar */}
             <aside className='hidden w-56 flex-shrink-0 border-r py-6 md:block'>
@@ -301,6 +427,10 @@ export function InboxPanel({
                 preservedParams={{
                   thread: searchParams.get('thread'),
                   q: searchParams.get('q'),
+                  client: searchParams.get('client'),
+                  project: searchParams.get('project'),
+                  projectType: searchParams.get('projectType'),
+                  lead: searchParams.get('lead'),
                 }}
               />
             </aside>
@@ -308,27 +438,6 @@ export function InboxPanel({
             {/* Main Content */}
             <div className='flex min-w-0 flex-1 flex-col p-6'>
               <div className='flex min-w-0 flex-1 flex-col space-y-4'>
-                {/* Reconnect Banner - shown when connection needs reauth */}
-                {syncStatus.connectionStatus &&
-                  syncStatus.connectionStatus !== 'ACTIVE' && (
-                    <GmailReconnectBanner
-                      status={syncStatus.connectionStatus}
-                      errorMessage={syncStatus.connectionError}
-                    />
-                  )}
-
-                {/* Header Row */}
-                <InboxToolbar
-                  currentView={currentView}
-                  onViewChange={handleMobileViewChange}
-                  searchInput={searchInput}
-                  onSearchInputChange={setSearchInput}
-                  isSearching={isSearching}
-                  onClearSearch={handleClearSearch}
-                  isConnected={syncStatus.connected}
-                  onCompose={() => setIsComposeOpen(true)}
-                  unclassifiedCount={sidebarCounts.unclassified}
-                />
 
                 {/* Thread List or Drafts View */}
                 {currentView === 'drafts' ? (

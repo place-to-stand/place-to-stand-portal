@@ -141,6 +141,7 @@ export function ClientDetail({
           <ClientEmailsSection
             messages={messages}
             currentUserId={currentUserId}
+            clientId={client.id}
           />
         </div>
       </div>

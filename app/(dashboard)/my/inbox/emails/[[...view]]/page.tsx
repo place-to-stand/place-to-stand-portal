@@ -36,7 +36,7 @@ type ViewType = 'inbox' | 'sent' | 'drafts' | 'scheduled' | 'unclassified' | 'cl
 
 type Props = {
   params: Promise<{ view?: string[] }>
-  searchParams: Promise<{ page?: string; thread?: string; q?: string }>
+  searchParams: Promise<{ page?: string; thread?: string; q?: string; client?: string; project?: string; projectType?: string; lead?: string }>
 }
 
 export default async function InboxEmailsPage({ params, searchParams }: Props) {
@@ -57,6 +57,15 @@ export default async function InboxEmailsPage({ params, searchParams }: Props) {
 
   // Map view to query filters
   const searchQuery = query.q?.trim() || undefined
+
+  // Parse entity filter params
+  const filterClientId = query.client || undefined
+  const filterProjectId = query.project || undefined
+  const validProjectTypes = ['CLIENT', 'INTERNAL', 'PERSONAL'] as const
+  const filterProjectType = validProjectTypes.includes(query.projectType as typeof validProjectTypes[number])
+    ? (query.projectType as 'CLIENT' | 'INTERNAL' | 'PERSONAL')
+    : undefined
+  const filterLeadId = query.lead || undefined
 
   // Parse thread param for deep-linking
   const threadId = query.thread || null
@@ -83,8 +92,8 @@ export default async function InboxEmailsPage({ params, searchParams }: Props) {
     leadsList,
     linkedThread,
   ] = await Promise.all([
-    listThreadsForUser(user.id, { limit: PAGE_SIZE, offset, classificationFilter, sentFilter, search: searchQuery }),
-    getThreadCountsForUser(user.id, { classificationFilter, sentFilter, search: searchQuery }),
+    listThreadsForUser(user.id, { limit: PAGE_SIZE, offset, classificationFilter, sentFilter, search: searchQuery, clientId: filterClientId, projectId: filterProjectId, projectType: filterProjectType, leadId: filterLeadId }),
+    getThreadCountsForUser(user.id, { classificationFilter, sentFilter, search: searchQuery, clientId: filterClientId, projectId: filterProjectId, projectType: filterProjectType, leadId: filterLeadId }),
     getMessageCountsForUser(user.id),
     getDraftCounts(user.id),
     getInboxSidebarCounts(user.id),
@@ -113,6 +122,7 @@ export default async function InboxEmailsPage({ params, searchParams }: Props) {
         id: projects.id,
         name: projects.name,
         slug: projects.slug,
+        clientId: projects.clientId,
         clientSlug: clients.slug,
         type: projects.type,
         ownerId: projects.ownerId,
@@ -174,6 +184,10 @@ export default async function InboxEmailsPage({ params, searchParams }: Props) {
         pageSize: PAGE_SIZE,
       }}
       initialSelectedThread={linkedThread}
+      filterClientId={filterClientId}
+      filterProjectId={filterProjectId}
+      filterProjectType={filterProjectType}
+      filterLeadId={filterLeadId}
     />
   )
 }
