@@ -39,7 +39,7 @@ export function TaskSelector(props: TaskSelectorProps) {
   } = props
 
   return (
-    <Popover open={isOpen} onOpenChange={onOpenChange}>
+    <Popover open={isOpen} onOpenChange={onOpenChange} modal>
       <DisabledFieldTooltip disabled={disabled} reason={disabledReason}>
         <div className='w-full'>
           <PopoverTrigger asChild>
@@ -60,7 +60,7 @@ export function TaskSelector(props: TaskSelectorProps) {
           </PopoverTrigger>
         </div>
       </DisabledFieldTooltip>
-      <PopoverContent className='w-[320px] p-0' align='start'>
+      <PopoverContent className='w-[var(--radix-popover-trigger-width)] p-0' align='start'>
         <Command>
           <CommandInput placeholder='Search tasks...' />
           <CommandEmpty>No matching tasks.</CommandEmpty>

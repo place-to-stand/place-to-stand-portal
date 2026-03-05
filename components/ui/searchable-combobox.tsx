@@ -197,7 +197,7 @@ export const SearchableCombobox = React.forwardRef<
     return (
       <div className={cn('w-full', className)}>
         <input type='hidden' name={name} value={value ?? ''} />
-        <Popover open={open} onOpenChange={handleOpenChange}>
+        <Popover open={open} onOpenChange={handleOpenChange} modal>
           <PopoverTrigger asChild>
             <Button
               ref={mergedRef}

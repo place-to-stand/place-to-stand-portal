@@ -1,9 +1,6 @@
 'use client'
 
-import { formatDistanceToNow } from 'date-fns'
 import {
-  CheckCircle,
-  Circle,
   Filter,
   PenSquare,
   RefreshCw,
@@ -11,9 +8,10 @@ import {
   X,
 } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -21,19 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { cn } from '@/lib/utils'
 
 import type { InboxView } from './inbox-sidebar'
-
-type SyncStatus = {
-  connected: boolean
-  lastSyncAt: string | null
-  unread: number
-}
-
-type Pagination = {
-  totalItems: number
-}
 
 interface InboxToolbarProps {
   currentView: InboxView
@@ -42,11 +29,29 @@ interface InboxToolbarProps {
   onSearchInputChange: (value: string) => void
   isSearching: boolean
   onClearSearch: () => void
-  syncStatus: SyncStatus
-  pagination: Pagination
-  isSyncing: boolean
-  onSync: () => void
+  isConnected: boolean
   onCompose: () => void
+}
+
+/** Strip operator tokens from the search string for display */
+function getDisplayText(query: string): string {
+  return query.replace(/\s*(has:attachment|is:unread)\s*/g, ' ').trim()
+}
+
+/** Extract operator tokens from the full search string */
+function getOperators(query: string): { hasAttachment: boolean; isUnread: boolean } {
+  return {
+    hasAttachment: query.includes('has:attachment'),
+    isUnread: query.includes('is:unread'),
+  }
+}
+
+/** Rebuild the full search string from display text and operator flags */
+function buildSearchString(text: string, hasAttachment: boolean, isUnread: boolean): string {
+  const parts = [text.trim()]
+  if (hasAttachment) parts.push('has:attachment')
+  if (isUnread) parts.push('is:unread')
+  return parts.filter(Boolean).join(' ')
 }
 
 export function InboxToolbar({
@@ -56,12 +61,11 @@ export function InboxToolbar({
   onSearchInputChange,
   isSearching,
   onClearSearch,
-  syncStatus,
-  pagination,
-  isSyncing,
-  onSync,
+  isConnected,
   onCompose,
 }: InboxToolbarProps) {
+  const displayText = getDisplayText(searchInput)
+  const { hasAttachment, isUnread } = getOperators(searchInput)
   return (
     <div className='flex flex-wrap items-center gap-4'>
       {/* Mobile-only view dropdown */}
@@ -94,14 +98,14 @@ export function InboxToolbar({
         <Input
           type='text'
           placeholder='Search emails...'
-          value={searchInput}
-          onChange={e => onSearchInputChange(e.target.value)}
+          value={displayText}
+          onChange={e => onSearchInputChange(buildSearchString(e.target.value, hasAttachment, isUnread))}
           className='h-9 pl-10 pr-9'
         />
-        {searchInput && (
+        {displayText && (
           <button
             type='button'
-            onClick={onClearSearch}
+            onClick={() => onSearchInputChange(buildSearchString('', hasAttachment, isUnread))}
             className='text-muted-foreground hover:text-foreground absolute right-3 top-1/2 -translate-y-1/2'
           >
             <X className='h-4 w-4' />
@@ -110,84 +114,48 @@ export function InboxToolbar({
         )}
       </div>
 
-      {/* Quick Search Filters - Toggle buttons */}
-      {syncStatus.connected && (
-        <div className='hidden items-center gap-1.5 lg:flex'>
-          <Button
-            variant={searchInput.includes('has:attachment') ? 'default' : 'outline'}
-            size='xs'
-            onClick={() => {
-              if (searchInput.includes('has:attachment')) {
-                onSearchInputChange(searchInput.replace(/\s*has:attachment\s*/g, ' ').trim())
-              } else {
-                onSearchInputChange((searchInput + ' has:attachment').trim())
-              }
-            }}
-          >
-            Has attachment
-          </Button>
-          <Button
-            variant={searchInput.includes('is:unread') ? 'default' : 'outline'}
-            size='xs'
-            onClick={() => {
-              if (searchInput.includes('is:unread')) {
-                onSearchInputChange(searchInput.replace(/\s*is:unread\s*/g, ' ').trim())
-              } else {
-                onSearchInputChange((searchInput + ' is:unread').trim())
-              }
-            }}
-          >
-            Unread
-          </Button>
+      {/* Quick Search Filters */}
+      {isConnected && (
+        <div className='hidden items-center gap-4 lg:flex'>
+          <div className='flex items-center gap-2'>
+            <Checkbox
+              id='filter-attachment'
+              checked={hasAttachment}
+              onCheckedChange={checked => {
+                onSearchInputChange(buildSearchString(displayText, !!checked, isUnread))
+              }}
+            />
+            <Label htmlFor='filter-attachment' className='text-sm font-normal cursor-pointer'>
+              Has attachment
+            </Label>
+          </div>
+          <div className='flex items-center gap-2'>
+            <Checkbox
+              id='filter-unread'
+              checked={isUnread}
+              onCheckedChange={checked => {
+                onSearchInputChange(buildSearchString(displayText, hasAttachment, !!checked))
+              }}
+            />
+            <Label htmlFor='filter-unread' className='text-sm font-normal cursor-pointer'>
+              Unread
+            </Label>
+          </div>
         </div>
       )}
 
-      <div className='text-muted-foreground flex items-center gap-2 text-sm'>
-        {syncStatus.connected ? (
-          <CheckCircle className='h-4 w-4 text-green-500' />
-        ) : (
-          <Circle className='h-4 w-4' />
-        )}
-        <span>{pagination.totalItems} threads</span>
-        {syncStatus.unread > 0 && (
-          <Badge variant='secondary' className='text-xs'>
-            {syncStatus.unread} unread
-          </Badge>
-        )}
-      </div>
-
-      <div className='ml-auto flex items-center gap-4'>
-        {syncStatus.lastSyncAt && (
-          <span className='text-muted-foreground text-xs'>
-            Last sync{' '}
-            {formatDistanceToNow(new Date(syncStatus.lastSyncAt))} ago
-          </span>
-        )}
-        {syncStatus.connected && (
-          <>
-            <Button
-              variant='outline'
-              size='sm'
-              onClick={onSync}
-              disabled={isSyncing}
-            >
-              <RefreshCw
-                className={cn('h-4 w-4', isSyncing && 'animate-spin')}
-              />
-              {isSyncing ? 'Syncing...' : 'Sync'}
-            </Button>
-            {/* Mobile-only compose button */}
-            <Button
-              size='sm'
-              className='md:hidden'
-              onClick={onCompose}
-            >
-              <PenSquare className='h-4 w-4' />
-              Compose
-            </Button>
-          </>
-        )}
-      </div>
+      {/* Compose button - right aligned */}
+      {isConnected && (
+        <div className='ml-auto'>
+          <Button
+            size='sm'
+            onClick={onCompose}
+          >
+            <PenSquare className='h-4 w-4' />
+            Compose
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

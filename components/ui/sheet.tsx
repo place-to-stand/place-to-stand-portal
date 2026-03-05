@@ -64,8 +64,20 @@ const SheetContent = React.forwardRef<
     showOverlay?: boolean
     hideCloseButton?: boolean
   }
->(({ className, children, side = 'right', size = 'sm', showOverlay = true, hideCloseButton = false, ...props }, ref) => {
+>(({ className, children, side = 'right', size = 'sm', showOverlay = true, hideCloseButton = false, onInteractOutside, ...props }, ref) => {
   const isHorizontal = side === 'left' || side === 'right'
+
+  const handleInteractOutside = React.useCallback(
+    (e: Parameters<NonNullable<typeof onInteractOutside>>[0]) => {
+      // Don't close the sheet when interacting with toasts
+      const target = e.target as HTMLElement | null
+      if (target?.closest('[data-toast]')) {
+        e.preventDefault()
+      }
+      onInteractOutside?.(e)
+    },
+    [onInteractOutside]
+  )
 
   return (
     <SheetPortal>
@@ -73,6 +85,7 @@ const SheetContent = React.forwardRef<
       <SheetPrimitive.Content
         ref={ref}
         data-slot='sheet-content'
+        onInteractOutside={handleInteractOutside}
         className={cn(
           'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col gap-4 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500',
           side === 'right' &&

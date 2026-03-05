@@ -136,7 +136,10 @@ export function ThreadDetailSheet({
       open={!!selectedThread}
       onOpenChange={open => !open && onClose()}
     >
-      <SheetContent className='flex h-full w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl lg:max-w-6xl'>
+      <SheetContent
+        className='flex h-full w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl lg:max-w-6xl'
+        onOpenAutoFocus={e => e.preventDefault()}
+      >
         {/* Custom Header - Outside the scroll area */}
         <div className='bg-muted/50 flex-shrink-0 border-b-2 px-6 pt-4 pb-3'>
           <div className='flex items-start justify-between gap-4'>
@@ -225,6 +228,7 @@ export function ThreadDetailSheet({
                     threadMessages.length > 0 &&
                     threadMessages.every(m => m.isRead)
                   }
+                  isLoadingMessages={isLoadingMessages}
                   canGoPrev={canGoPrev}
                   canGoNext={canGoNext}
                   showReplyAll={

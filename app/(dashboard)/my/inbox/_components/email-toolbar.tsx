@@ -22,6 +22,7 @@ import {
 type EmailToolbarProps = {
   threadId: string
   isRead: boolean
+  isLoadingMessages: boolean
   canGoPrev: boolean
   canGoNext: boolean
   showReplyAll: boolean
@@ -34,6 +35,7 @@ type EmailToolbarProps = {
 export function EmailToolbar({
   threadId,
   isRead,
+  isLoadingMessages,
   canGoPrev,
   canGoNext,
   showReplyAll,
@@ -68,7 +70,7 @@ export function EmailToolbar({
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
-            variant='outline'
+            variant='ghost'
             size='icon-sm'
             onClick={() => onReply('reply')}
           >
@@ -81,7 +83,7 @@ export function EmailToolbar({
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
-            variant='outline'
+            variant='ghost'
             size='icon-sm'
             onClick={() => onReply('reply_all')}
             disabled={!showReplyAll}
@@ -95,7 +97,7 @@ export function EmailToolbar({
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
-            variant='outline'
+            variant='ghost'
             size='icon-sm'
             onClick={() => onReply('forward')}
           >
@@ -112,12 +114,12 @@ export function EmailToolbar({
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
-            variant='outline'
+            variant='ghost'
             size='icon-sm'
             onClick={handleToggleRead}
-            disabled={isTogglingRead}
+            disabled={isTogglingRead || isLoadingMessages}
           >
-            {isTogglingRead ? (
+            {isTogglingRead || isLoadingMessages ? (
               <Loader2 className='h-4 w-4 animate-spin' />
             ) : isRead ? (
               <Mail className='h-4 w-4' />

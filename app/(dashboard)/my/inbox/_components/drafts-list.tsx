@@ -109,9 +109,12 @@ export function DraftsList({ onResumeDraft }: DraftsListProps) {
 
   if (drafts.length === 0) {
     return (
-      <div className='flex flex-col items-center justify-center py-8 text-center'>
-        <Mail className='text-muted-foreground mb-2 h-8 w-8' />
-        <p className='text-muted-foreground text-sm'>No drafts</p>
+      <div className='flex flex-1 flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center'>
+        <FileEdit className='text-muted-foreground mb-4 h-12 w-12' />
+        <h3 className='text-lg font-medium'>No drafts</h3>
+        <p className='text-muted-foreground mt-1 text-sm'>
+          Your draft emails will appear here.
+        </p>
       </div>
     )
   }

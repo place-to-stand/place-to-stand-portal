@@ -96,7 +96,7 @@ export function ClientReferralPicker({
   // When no referral is selected, show the dropdown picker
   return (
     <div className='space-y-2'>
-      <Popover open={isPickerOpen} onOpenChange={onPickerOpenChange}>
+      <Popover open={isPickerOpen} onOpenChange={onPickerOpenChange} modal>
         <DisabledFieldTooltip
           disabled={disabled || hasNoAvailableContacts}
           reason={disabledReason ?? (hasNoAvailableContacts ? 'No contacts available' : null)}
@@ -118,7 +118,7 @@ export function ClientReferralPicker({
             </PopoverTrigger>
           </div>
         </DisabledFieldTooltip>
-        <PopoverContent className='w-[320px] p-0' align='start'>
+        <PopoverContent className='w-[var(--radix-popover-trigger-width)] p-0' align='start'>
           <Command>
             <CommandInput placeholder='Search contacts...' />
             <CommandEmpty>No matching contacts.</CommandEmpty>

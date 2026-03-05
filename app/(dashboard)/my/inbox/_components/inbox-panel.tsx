@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
+import { formatDistanceToNow } from 'date-fns'
 import {
   Clock,
   Mail,
-  PenSquare,
+  RefreshCw,
 } from 'lucide-react'
 
 import { AppShellHeader } from '@/components/layout/app-shell'
@@ -19,6 +20,7 @@ import {
 } from '@/components/ui/sheet'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/components/ui/use-toast'
+import { cn } from '@/lib/utils'
 import type { ThreadSummary, Message } from '@/lib/types/messages'
 
 import { AttachmentViewer, type AttachmentMetadata } from './attachment-viewer'
@@ -299,16 +301,24 @@ export function InboxPanel({
     }
   }
 
-  // Auto-sync on page load when Gmail is connected
-  // Use a ref to ensure this only runs once per session
+  // Auto-sync on page load and poll every 60s while connected
   const hasSyncedRef = useRef(false)
   useEffect(() => {
-    if (syncStatus.connected && !hasSyncedRef.current) {
+    if (!syncStatus.connected) return
+
+    // Initial sync on mount
+    if (!hasSyncedRef.current) {
       hasSyncedRef.current = true
-      handleSync(true) // Silent sync
+      handleSync(true)
     }
+
+    const interval = setInterval(() => {
+      handleSync(true)
+    }, 60_000)
+
+    return () => clearInterval(interval)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [syncStatus.connected])
 
   // Wrapper that clears suggestions when selecting a new thread
   const onThreadClick = useCallback(
@@ -422,33 +432,42 @@ export function InboxPanel({
 
       <div className='space-y-4'>
         {/* Tabs Row */}
-        <Tabs value='emails' className='w-full sm:w-auto'>
-          <TabsList className='bg-muted/40 h-10 w-full justify-start gap-2 rounded-lg p-1 sm:w-auto'>
-            <TabsTrigger value='emails' className='px-3 py-1.5 text-sm'>
-              Emails
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+          <Tabs value='emails' className='w-full sm:w-auto'>
+            <TabsList className='bg-muted/40 h-10 w-full justify-start gap-2 rounded-lg p-1 sm:w-auto'>
+              <TabsTrigger value='emails' className='px-3 py-1.5 text-sm'>
+                Emails
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          {syncStatus.connected && (
+            <div className='flex items-center gap-4'>
+              {syncStatus.lastSyncAt && (
+                <span className='text-muted-foreground text-sm whitespace-nowrap'>
+                  Last sync{' '}
+                  {formatDistanceToNow(new Date(syncStatus.lastSyncAt))} ago
+                </span>
+              )}
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={() => handleSync()}
+                disabled={isSyncing}
+              >
+                <RefreshCw
+                  className={cn('h-4 w-4', isSyncing && 'animate-spin')}
+                />
+                {isSyncing ? 'Syncing...' : 'Sync'}
+              </Button>
+            </div>
+          )}
+        </div>
 
         {/* Main Card */}
         <section className='bg-background flex min-h-[calc(100vh-13rem)] flex-col overflow-hidden rounded-xl border shadow-sm'>
           <div className='flex flex-1'>
             {/* Left Sidebar */}
             <aside className='hidden w-56 flex-shrink-0 border-r py-6 md:block'>
-              {/* Compose button at top of sidebar */}
-              {syncStatus.connected && (
-                <div className='px-3 pb-4'>
-                  <Button
-                    variant='outline'
-                    size='sm'
-                    className='w-full text-[12px]'
-                    onClick={() => setIsComposeOpen(true)}
-                  >
-                    <PenSquare className='size-3.5' />
-                    Compose
-                  </Button>
-                </div>
-              )}
               <InboxSidebar
                 currentView={currentView}
                 counts={sidebarCounts}
@@ -479,10 +498,7 @@ export function InboxPanel({
                   onSearchInputChange={setSearchInput}
                   isSearching={isSearching}
                   onClearSearch={handleClearSearch}
-                  syncStatus={syncStatus}
-                  pagination={pagination}
-                  isSyncing={isSyncing}
-                  onSync={handleSync}
+                  isConnected={syncStatus.connected}
                   onCompose={() => setIsComposeOpen(true)}
                 />
 
@@ -492,11 +508,15 @@ export function InboxPanel({
                 ) : currentView === 'scheduled' ? (
                   <div className='flex flex-1 flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center'>
                     <Clock className='text-muted-foreground mb-4 h-12 w-12' />
-                    <h3 className='text-lg font-medium'>Scheduled Emails</h3>
+                    <h3 className='text-lg font-medium'>
+                      {sidebarCounts.scheduled > 0
+                        ? `${sidebarCounts.scheduled} Scheduled Email${sidebarCounts.scheduled > 1 ? 's' : ''}`
+                        : 'No scheduled emails'}
+                    </h3>
                     <p className='text-muted-foreground mt-1 text-sm'>
                       {sidebarCounts.scheduled > 0
-                        ? `${sidebarCounts.scheduled} email${sidebarCounts.scheduled > 1 ? 's' : ''} scheduled to send.`
-                        : 'No scheduled emails.'}
+                        ? 'Your scheduled emails will be sent automatically.'
+                        : 'Emails you schedule will appear here.'}
                     </p>
                   </div>
                 ) : threads.length === 0 ? (

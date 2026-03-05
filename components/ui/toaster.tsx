@@ -64,6 +64,7 @@ export function Toaster() {
               ? 'border-destructive/40 bg-destructive text-white'
               : 'border-border'
           )}
+          data-toast
         >
           <div className='flex items-start gap-3'>
             <div className='flex-1 space-y-1'>
