@@ -94,7 +94,7 @@ export function InboxToolbar({
       </Select>
 
       {/* Search Input */}
-      <div className='relative w-64'>
+      <div className='relative min-w-0 max-w-64 flex-1'>
         {isSearching ? (
           <RefreshCw className='text-muted-foreground pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin' />
         ) : (
@@ -150,7 +150,7 @@ export function InboxToolbar({
       )}
 
       {/* Right side - unclassified indicator + compose */}
-      <div className='ml-auto flex items-center gap-3'>
+      <div className='ml-auto flex min-w-0 flex-shrink-0 items-center gap-3'>
         {unclassifiedCount !== undefined && unclassifiedCount > 0 && (
           <Link
             href='/my/inbox/triage'

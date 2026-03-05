@@ -286,8 +286,8 @@ export function InboxPanel({
     <>
       <div className='space-y-4'>
         {/* Main Card */}
-        <section className='bg-background flex min-h-[calc(100vh-13rem)] flex-col overflow-hidden rounded-xl border shadow-sm'>
-          <div className='flex flex-1'>
+        <section className='bg-background flex min-h-[calc(100vh-13rem)] min-w-0 flex-col overflow-hidden rounded-xl border shadow-sm'>
+          <div className='flex min-w-0 flex-1'>
             {/* Left Sidebar */}
             <aside className='hidden w-56 flex-shrink-0 border-r py-6 md:block'>
               <InboxSidebar
@@ -302,7 +302,7 @@ export function InboxPanel({
 
             {/* Main Content */}
             <div className='flex min-w-0 flex-1 flex-col p-6'>
-              <div className='flex flex-1 flex-col space-y-4'>
+              <div className='flex min-w-0 flex-1 flex-col space-y-4'>
                 {/* Reconnect Banner - shown when connection needs reauth */}
                 {syncStatus.connectionStatus &&
                   syncStatus.connectionStatus !== 'ACTIVE' && (

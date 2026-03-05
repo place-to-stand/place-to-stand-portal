@@ -151,16 +151,17 @@ export function ThreadClassificationPanel({
 
     setAnalysisState('analyzing')
     try {
-      // Step 1: Get client suggestions via AI
-      const clientRes = await fetch(`/api/threads/${thread.id}/suggestions`, {
+      // Single call returns both client and project suggestions
+      const res = await fetch(`/api/threads/${thread.id}/suggestions`, {
         signal: controller.signal,
       })
-      if (!clientRes.ok) {
+      if (!res.ok) {
         setAnalysisState('error')
         return
       }
-      const clientData = await clientRes.json()
-      const topClient = clientData.suggestions?.[0] ?? null
+      const data = await res.json()
+      const topClient = data.suggestions?.[0] ?? null
+      const topProject = data.projectSuggestions?.[0] ?? null
 
       if (topClient) {
         // AI found a client match — set to client track
@@ -169,18 +170,9 @@ export function ThreadClassificationPanel({
         setAnalysisTrack('client')
         setSelectedClientId(topClient.clientId)
 
-        // Step 2: Get project suggestions via AI
-        const projectRes = await fetch(
-          `/api/threads/${thread.id}/project-suggestions`,
-          { signal: controller.signal }
-        )
-        if (projectRes.ok) {
-          const projectData = await projectRes.json()
-          const topProject = projectData.suggestions?.[0] ?? null
-          if (topProject) {
-            setProjectSuggestion(topProject)
-            setSelectedProjectId(topProject.projectId)
-          }
+        if (topProject) {
+          setProjectSuggestion(topProject)
+          setSelectedProjectId(topProject.projectId)
         }
       } else {
         // No client match — check for DB lead suggestion

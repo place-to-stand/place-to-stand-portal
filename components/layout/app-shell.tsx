@@ -94,7 +94,7 @@ export function AppShell({ user, children }: Props) {
     <div className='bg-muted flex h-screen overflow-hidden'>
       <Sidebar user={user} />
       <HeaderContext.Provider value={headerContextValue}>
-        <div className='flex min-h-0 flex-1 flex-col'>
+        <div className='flex min-h-0 min-w-0 flex-1 flex-col'>
           <header className='bg-background flex flex-wrap items-center gap-4 border-b px-4 py-4 sm:px-6'>
             {Icon && (
               <div className='bg-muted flex items-center justify-center rounded-md border p-2'>

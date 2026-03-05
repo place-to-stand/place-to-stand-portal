@@ -256,7 +256,7 @@ export function TriageView({ clients, projects, leads }: TriageViewProps) {
 
   return (
     <>
-      <section className='bg-background flex min-h-[calc(100vh-13rem)] flex-col overflow-hidden rounded-xl border shadow-sm'>
+      <section className='bg-background flex min-h-[calc(100vh-13rem)] min-w-0 flex-col overflow-hidden rounded-xl border shadow-sm'>
         {/* Toolbar */}
         <div className='flex items-center justify-between border-b px-4 py-3'>
           <div className='flex items-center gap-3'>
