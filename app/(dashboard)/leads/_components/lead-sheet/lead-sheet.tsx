@@ -37,6 +37,8 @@ export function LeadSheet({
   canManage = false,
   senderName = '',
   onSuccess,
+  onCreated,
+  initialValues,
 }: LeadSheetProps) {
   const isEditing = Boolean(lead)
   const [isSaving, startSaveTransition] = useTransition()
@@ -93,20 +95,20 @@ export function LeadSheet({
 
   const defaultValues = useMemo<LeadFormValues>(
     () => ({
-      contactName: lead?.contactName ?? '',
-      contactEmail: lead?.contactEmail ?? '',
+      contactName: lead?.contactName ?? initialValues?.contactName ?? '',
+      contactEmail: lead?.contactEmail ?? initialValues?.contactEmail ?? '',
       contactPhone: lead?.contactPhone ?? '',
-      companyName: lead?.companyName ?? '',
+      companyName: lead?.companyName ?? initialValues?.companyName ?? '',
       companyWebsite: lead?.companyWebsite ?? '',
       sourceType: lead?.sourceType ?? null,
       sourceDetail: lead?.sourceDetail ?? '',
       status: lead?.status ?? initialStatus ?? 'NEW_OPPORTUNITIES',
       assigneeId: lead?.assigneeId ?? null,
       estimatedValue: lead?.estimatedValue != null ? String(lead.estimatedValue) : '',
-      notes: lead?.notesHtml ?? '',
+      notes: lead?.notesHtml ?? initialValues?.notes ?? '',
       priorityTier: lead?.priorityTier ?? null,
     }),
-    [lead, initialStatus]
+    [lead, initialStatus, initialValues]
   )
 
   const form = useForm<LeadFormValues>({
@@ -178,9 +180,12 @@ export function LeadSheet({
         setArchiveDialogOpen(false)
         onOpenChange(false)
         onSuccess()
+        if (!isEditing && result.leadId) {
+          onCreated?.(result.leadId)
+        }
       })
     },
-    [form, isEditing, lead?.id, onOpenChange, onSuccess, toast]
+    [form, isEditing, lead?.id, onOpenChange, onSuccess, onCreated, toast]
   )
 
   const handleSaveShortcut = useCallback(

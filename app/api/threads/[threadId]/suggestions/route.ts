@@ -6,7 +6,7 @@ import { isAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { clients, contacts, contactClients, projects, messages, threads } from '@/lib/db/schema'
 import { toResponsePayload, NotFoundError, ForbiddenError, type HttpError } from '@/lib/errors/http'
-import { matchEmailToClients } from '@/lib/ai/email-client-matching'
+import { classifyEmailThread } from '@/lib/ai/email-classification-matching'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ threadId: string }> }) {
   const user = await requireUser()
@@ -26,9 +26,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ thr
       throw new ForbiddenError('Access denied')
     }
 
-    // If thread already has a client, return empty suggestions
-    if (thread.clientId) {
-      return NextResponse.json({ ok: true, suggestions: [] })
+    // If thread already has both client and project, return empty suggestions
+    if (thread.clientId && thread.projectId) {
+      return NextResponse.json({ ok: true, suggestions: [], projectSuggestions: [] })
     }
 
     // Get the latest message in the thread for analysis
@@ -40,7 +40,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ thr
       .limit(1)
 
     if (!latestMessage) {
-      return NextResponse.json({ ok: true, suggestions: [] })
+      return NextResponse.json({ ok: true, suggestions: [], projectSuggestions: [] })
     }
 
     // Fetch all clients
@@ -51,10 +51,6 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ thr
       })
       .from(clients)
       .where(isNull(clients.deletedAt))
-
-    if (allClients.length === 0) {
-      return NextResponse.json({ ok: true, suggestions: [] })
-    }
 
     // Fetch contacts for each client via junction table
     const allContacts = await db
@@ -67,16 +63,20 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ thr
       .innerJoin(contacts, eq(contactClients.contactId, contacts.id))
       .where(isNull(contacts.deletedAt))
 
-    // Fetch projects for each client
+    // Fetch all active projects
     const allProjects = await db
       .select({
-        clientId: projects.clientId,
+        id: projects.id,
         name: projects.name,
+        clientId: projects.clientId,
       })
       .from(projects)
-      .where(and(isNull(projects.deletedAt), eq(projects.type, 'CLIENT')))
+      .where(isNull(projects.deletedAt))
 
-    // Group contacts and projects by client
+    // Build client name lookup
+    const clientNameMap = new Map(allClients.map(c => [c.id, c.name]))
+
+    // Group contacts and projects by client for client matching context
     const clientsWithData = allClients.map(client => ({
       id: client.id,
       name: client.name,
@@ -88,8 +88,15 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ thr
         .map(p => ({ name: p.name })),
     }))
 
-    // Use AI to match thread to clients based on latest message
-    const { matches } = await matchEmailToClients({
+    // Build projects list for project matching
+    const projectsForMatching = allProjects.map(project => ({
+      id: project.id,
+      name: project.name,
+      clientName: project.clientId ? clientNameMap.get(project.clientId) ?? null : null,
+    }))
+
+    // Single AI call for both client and project matching
+    const { clientMatches, projectMatches } = await classifyEmailThread({
       email: {
         from: latestMessage.fromEmail,
         to: latestMessage.toEmails ?? [],
@@ -98,19 +105,32 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ thr
         snippet: latestMessage.snippet,
       },
       clients: clientsWithData,
+      projects: projectsForMatching,
     })
 
-    // Transform AI matches to suggestion format
-    const suggestions = matches.map(match => ({
-      clientId: match.clientId,
-      clientName: match.clientName,
-      confidence: match.confidence,
-      matchedContacts: [],
-      reasoning: match.reasoning,
-      matchType: match.matchType,
-    }))
+    // Transform to suggestion format (backward compatible)
+    const suggestions = thread.clientId
+      ? []
+      : clientMatches.map(match => ({
+          clientId: match.clientId,
+          clientName: match.clientName,
+          confidence: match.confidence,
+          matchedContacts: [],
+          reasoning: match.reasoning,
+          matchType: match.matchType,
+        }))
 
-    return NextResponse.json({ ok: true, suggestions })
+    const projectSuggestions = thread.projectId
+      ? []
+      : projectMatches.map(match => ({
+          projectId: match.projectId,
+          projectName: match.projectName,
+          confidence: match.confidence,
+          reasoning: match.reasoning,
+          matchType: match.matchType,
+        }))
+
+    return NextResponse.json({ ok: true, suggestions, projectSuggestions })
   } catch (err) {
     const error = err as HttpError
     console.error('Thread suggestions error:', error)

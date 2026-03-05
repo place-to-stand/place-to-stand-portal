@@ -11,6 +11,7 @@ export type NewMessage = InferInsertModel<typeof messages>
 // Enum types
 export type MessageSource = 'EMAIL' | 'CHAT' | 'VOICE_MEMO' | 'DOCUMENT' | 'FORM'
 export type ThreadStatus = 'OPEN' | 'RESOLVED' | 'ARCHIVED'
+export type ThreadClassification = 'UNCLASSIFIED' | 'CLASSIFIED' | 'DISMISSED'
 
 // Thread with related data for UI
 export interface ThreadWithMessages extends Thread {
@@ -37,6 +38,7 @@ export interface ThreadSummary {
   id: string
   subject: string | null
   status: ThreadStatus
+  classification: ThreadClassification
   source: MessageSource
   participantEmails: string[]
   lastMessageAt: string | null

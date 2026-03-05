@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import {
   Sparkles,
   Loader2,
@@ -61,10 +62,12 @@ export function ThreadSuggestionsPanel({
   hasProject = false,
   onRefresh,
 }: ThreadSuggestionsPanelProps) {
+  const [activated, setActivated] = useState(false)
+
   const { data: suggestions = [], isLoading } = useQuery({
     queryKey: ['thread-suggestions', threadId, refreshTrigger],
     queryFn: () => fetchThreadSuggestions(threadId),
-    enabled: isAdmin,
+    enabled: isAdmin && activated,
   })
 
   // Get the project URL for "View in project" button
@@ -133,6 +136,30 @@ export function ThreadSuggestionsPanel({
             Analyzing emails...
           </span>
         </div>
+      ) : !activated ? (
+        hasClient && hasProject && onRefresh ? (
+          <div className='bg-muted/30 flex flex-col items-center gap-2 rounded-lg border p-4 text-center'>
+            <Button
+              variant='outline'
+              size='sm'
+              onClick={() => {
+                setActivated(true)
+                onRefresh()
+              }}
+            >
+              <Sparkles className='h-3.5 w-3.5' />
+              Generate Suggestions
+            </Button>
+          </div>
+        ) : (
+          <p className='text-muted-foreground text-sm'>
+            {!hasClient && !hasProject
+              ? 'Link a client and project to generate suggestions.'
+              : !hasClient
+                ? 'Link a client to generate suggestions.'
+                : 'Link a project to generate suggestions.'}
+          </p>
+        )
       ) : isLoading ? (
         <div className='bg-muted/30 flex items-center gap-2 rounded-lg border p-3'>
           <Loader2 className='text-muted-foreground h-4 w-4 animate-spin' />
@@ -152,7 +179,7 @@ export function ThreadSuggestionsPanel({
               onClick={onRefresh}
             >
               <Sparkles className='h-3.5 w-3.5' />
-              Generate Suggestions
+              Re-generate Suggestions
             </Button>
           </div>
         ) : (

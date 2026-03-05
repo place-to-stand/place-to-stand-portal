@@ -1,6 +1,6 @@
 'use client'
 
-import { Dispatch, SetStateAction } from 'react'
+import { Dispatch, SetStateAction, useCallback, useState } from 'react'
 import { format } from 'date-fns'
 import { RefreshCw } from 'lucide-react'
 
@@ -18,12 +18,9 @@ import { AttachmentMetadata } from './attachment-viewer'
 import { EmailToolbar } from './email-toolbar'
 import { MessageCard } from './message-card'
 import { ThreadContactPanel } from './thread-contact-panel'
-import { ThreadLeadPanel } from './thread-lead-panel'
-import { ThreadLinkingPanel } from './thread-linking-panel'
-import { ThreadProjectLinkingPanel } from './thread-project-linking-panel'
+import { ThreadClassificationPanel } from './thread-classification-panel'
 import { ThreadSuggestionsPanel } from './thread-suggestions-panel'
 import { ComposePanel, type ComposeContext } from './compose-panel'
-import type { Suggestion, ProjectSuggestion } from './hooks/use-thread-suggestions'
 
 type Client = {
   id: string
@@ -53,24 +50,6 @@ interface ThreadDetailSheetProps {
   clients: Client[]
   projects: Project[]
   leads: Lead[]
-  // Suggestions
-  suggestions: Suggestion[]
-  projectSuggestions: ProjectSuggestion[]
-  suggestionsLoading: boolean
-  projectSuggestionsLoading: boolean
-  isAnalyzingThread: boolean
-  suggestionRefreshKey: number
-  // Linking
-  isLinking: boolean
-  isLinkingProject: boolean
-  isLinkingLead: boolean
-  onLinkClient: (clientId: string) => void
-  onUnlinkClient: () => void
-  onLinkProject: (projectId: string) => void
-  onUnlinkProject: () => void
-  onLinkLead: (leadId: string) => void
-  onUnlinkLead: () => void
-  onRefreshSuggestions: () => void
   // Navigation
   canGoPrev: boolean
   canGoNext: boolean
@@ -81,9 +60,10 @@ interface ThreadDetailSheetProps {
   setComposeContext: Dispatch<SetStateAction<ComposeContext | null>>
   onReply: (message: Message, mode: 'reply' | 'reply_all' | 'forward') => void
   onRefreshMessages: (threadId: string) => void
-  // State setters for toolbar
+  // State setters
   setThreadMessages: Dispatch<SetStateAction<Message[]>>
   setThreads: Dispatch<SetStateAction<ThreadSummary[]>>
+  setSelectedThread: Dispatch<SetStateAction<ThreadSummary | null>>
   setViewingAttachment: Dispatch<SetStateAction<{
     attachment: AttachmentMetadata
     externalMessageId: string
@@ -102,22 +82,6 @@ export function ThreadDetailSheet({
   clients,
   projects,
   leads,
-  suggestions,
-  projectSuggestions,
-  suggestionsLoading,
-  projectSuggestionsLoading,
-  isAnalyzingThread,
-  suggestionRefreshKey,
-  isLinking,
-  isLinkingProject,
-  isLinkingLead,
-  onLinkClient,
-  onUnlinkClient,
-  onLinkProject,
-  onUnlinkProject,
-  onLinkLead,
-  onUnlinkLead,
-  onRefreshSuggestions,
   canGoPrev,
   canGoNext,
   onPrev,
@@ -128,9 +92,29 @@ export function ThreadDetailSheet({
   onRefreshMessages,
   setThreadMessages,
   setThreads,
+  setSelectedThread,
   setViewingAttachment,
   onClose,
 }: ThreadDetailSheetProps) {
+  const [isAnalyzingThread, setIsAnalyzingThread] = useState(false)
+  const [suggestionRefreshKey, setSuggestionRefreshKey] = useState(0)
+
+  const triggerThreadAnalysis = useCallback(async (threadId: string) => {
+    setIsAnalyzingThread(true)
+    try {
+      const res = await fetch(`/api/threads/${threadId}/analyze`, {
+        method: 'POST',
+      })
+      if (res.ok) {
+        setSuggestionRefreshKey(prev => prev + 1)
+      }
+    } catch (err) {
+      console.error('Failed to analyze thread:', err)
+    } finally {
+      setIsAnalyzingThread(false)
+    }
+  }, [])
+
   return (
     <Sheet
       open={!!selectedThread}
@@ -279,57 +263,26 @@ export function ThreadDetailSheet({
                 </>
               )}
 
-              {/* Lead Linking Section */}
+              {/* Classification Panel — unified client/lead/project linking */}
               {isAdmin && selectedThread && (
                 <>
                   <Separator />
-                  <ThreadLeadPanel
+                  <ThreadClassificationPanel
                     thread={selectedThread}
                     threadMessages={threadMessages}
-                    leads={leads}
-                    isLinking={isLinkingLead}
-                    onLinkLead={onLinkLead}
-                    onUnlinkLead={onUnlinkLead}
-                  />
-                </>
-              )}
-
-              {/* Client Linking Section */}
-              {isAdmin && selectedThread && (
-                <>
-                  <Separator />
-                  <ThreadLinkingPanel
-                    thread={selectedThread}
                     clients={clients}
-                    suggestions={suggestions}
-                    suggestionsLoading={suggestionsLoading}
-                    isLinking={isLinking}
-                    onLinkClient={onLinkClient}
-                    onUnlinkClient={onUnlinkClient}
-                  />
-                </>
-              )}
-
-              {/* Project Linking Section */}
-              {isAdmin && selectedThread && (
-                <>
-                  <Separator />
-                  <ThreadProjectLinkingPanel
-                    thread={selectedThread}
                     projects={projects}
-                    suggestions={projectSuggestions}
-                    suggestionsLoading={projectSuggestionsLoading}
-                    isLinking={isLinkingProject}
-                    onLinkProject={onLinkProject}
-                    onUnlinkProject={onUnlinkProject}
+                    leads={leads}
+                    setThreads={setThreads}
+                    setSelectedThread={setSelectedThread}
                   />
                 </>
               )}
 
+              {/* AI Task/PR Suggestions */}
               {isAdmin && selectedThread && (
                 <>
                   <Separator />
-                  {/* AI Task/PR Suggestions */}
                   <ThreadSuggestionsPanel
                     threadId={selectedThread.id}
                     isAdmin={isAdmin}
@@ -337,7 +290,7 @@ export function ThreadDetailSheet({
                     isAnalyzing={isAnalyzingThread}
                     hasClient={!!selectedThread.client}
                     hasProject={!!selectedThread.project}
-                    onRefresh={onRefreshSuggestions}
+                    onRefresh={() => triggerThreadAnalysis(selectedThread.id)}
                   />
                 </>
               )}

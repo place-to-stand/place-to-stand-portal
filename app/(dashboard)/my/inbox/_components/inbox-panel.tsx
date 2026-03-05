@@ -1,16 +1,11 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import { formatDistanceToNow } from 'date-fns'
 import {
   Clock,
   Mail,
-  RefreshCw,
 } from 'lucide-react'
-
-import { AppShellHeader } from '@/components/layout/app-shell'
-import { Button } from '@/components/ui/button'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 import {
   Sheet,
@@ -18,9 +13,6 @@ import {
   SheetDescription,
   SheetTitle,
 } from '@/components/ui/sheet'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useToast } from '@/components/ui/use-toast'
-import { cn } from '@/lib/utils'
 import type { ThreadSummary, Message } from '@/lib/types/messages'
 
 import { AttachmentViewer, type AttachmentMetadata } from './attachment-viewer'
@@ -32,8 +24,6 @@ import { InboxSidebar, type InboxView } from './inbox-sidebar'
 import { InboxToolbar } from './inbox-toolbar'
 import { useInboxSearch } from './hooks/use-inbox-search'
 import { useThreadSelection } from './hooks/use-thread-selection'
-import { useThreadSuggestions } from './hooks/use-thread-suggestions'
-import { useThreadLinking } from './hooks/use-thread-linking'
 import { ThreadDetailSheet } from './thread-detail-sheet'
 
 type Client = {
@@ -54,7 +44,7 @@ type Lead = {
   contactName: string
 }
 
-type ViewType = 'inbox' | 'sent' | 'drafts' | 'scheduled' | 'linked' | 'unlinked'
+type ViewType = 'inbox' | 'sent' | 'drafts' | 'scheduled' | 'unclassified' | 'classified' | 'dismissed'
 
 type ConnectionStatus = 'ACTIVE' | 'EXPIRED' | 'REVOKED' | 'PENDING_REAUTH'
 
@@ -80,8 +70,8 @@ type InboxPanelProps = {
     drafts: number
     sent: number
     scheduled: number
-    linked: number
-    unlinked: number
+    unclassified: number
+    classified: number
   }
   pagination: {
     currentPage: number
@@ -109,7 +99,6 @@ export function InboxPanel({
   const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = usePathname()
-  const { toast } = useToast()
 
   const [threads, setThreads] = useState(initialThreads)
 
@@ -155,90 +144,17 @@ export function InboxPanel({
     router,
   })
 
-  const [isSyncing, setIsSyncing] = useState(false)
-
   // Attachment viewer state
   const [viewingAttachment, setViewingAttachment] = useState<{
     attachment: AttachmentMetadata
     externalMessageId: string
   } | null>(null)
 
-  // AI Task Suggestions state (auto-triggered when both client + project linked)
-  const [isAnalyzingThread, setIsAnalyzingThread] = useState(false)
-  const [suggestionRefreshKey, setSuggestionRefreshKey] = useState(0)
-
   // Compose panel state (for replies within thread detail)
   const [composeContext, setComposeContext] = useState<ComposeContext | null>(null)
 
   // Standalone compose sheet state (for new emails)
   const [isComposeOpen, setIsComposeOpen] = useState(false)
-
-  /**
-   * Trigger AI analysis for a thread when both client and project are linked.
-   * This allows automatic task suggestion generation without manual intervention.
-   */
-  const triggerThreadAnalysis = useCallback(
-    async (threadId: string) => {
-      setIsAnalyzingThread(true)
-      try {
-        const res = await fetch(`/api/threads/${threadId}/analyze`, {
-          method: 'POST',
-        })
-        if (res.ok) {
-          // Increment refresh key to trigger re-fetch in ThreadSuggestionsPanel
-          setSuggestionRefreshKey(prev => prev + 1)
-        } else {
-          // Log non-ok responses for debugging (e.g., 400, 403, 500)
-          const errorData = await res.json().catch(() => ({}))
-          console.error('Thread analysis returned error:', {
-            status: res.status,
-            threadId,
-            error: errorData.error || res.statusText,
-          })
-        }
-      } catch (err) {
-        console.error('Failed to analyze thread:', err)
-      } finally {
-        setIsAnalyzingThread(false)
-      }
-    },
-    []
-  )
-
-  // Suggestions hook - manages client and project suggestions
-  const {
-    suggestions,
-    suggestionsLoading,
-    projectSuggestions,
-    projectSuggestionsLoading,
-    clearSuggestions,
-    clearProjectSuggestions,
-  } = useThreadSuggestions({
-    selectedThread,
-  })
-
-  // Linking hook - manages client, project, and lead linking
-  const {
-    isLinking,
-    isLinkingProject,
-    isLinkingLead,
-    handleLinkClient,
-    handleUnlinkClient,
-    handleLinkProject,
-    handleUnlinkProject,
-    handleLinkLead,
-    handleUnlinkLead,
-  } = useThreadLinking({
-    selectedThread,
-    setSelectedThread,
-    setThreads,
-    clients,
-    projects,
-    leads,
-    onClientLinked: clearSuggestions,
-    onProjectLinked: clearProjectSuggestions,
-    toast,
-  })
 
   // Handler for resuming a draft
   const handleResumeDraft = useCallback((draftContext: ComposeContext) => {
@@ -277,67 +193,12 @@ export function InboxPanel({
     [router]
   )
 
-  const handleSync = async (silent = false) => {
-    setIsSyncing(true)
-    try {
-      const res = await fetch('/api/integrations/gmail/sync', {
-        method: 'POST',
-      })
-      if (res.ok) {
-        if (!silent) {
-          toast({
-            title: 'Sync complete',
-            description: 'Emails synced successfully.',
-          })
-        }
-        router.refresh()
-      }
-    } catch {
-      if (!silent) {
-        toast({ title: 'Sync failed', variant: 'destructive' })
-      }
-    } finally {
-      setIsSyncing(false)
-    }
-  }
-
-  // Auto-sync on page load and poll every 60s while connected
-  const hasSyncedRef = useRef(false)
-  useEffect(() => {
-    if (!syncStatus.connected) return
-
-    // Initial sync on mount
-    if (!hasSyncedRef.current) {
-      hasSyncedRef.current = true
-      handleSync(true)
-    }
-
-    const interval = setInterval(() => {
-      handleSync(true)
-    }, 60_000)
-
-    return () => clearInterval(interval)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [syncStatus.connected])
-
-  // Wrapper that clears suggestions when selecting a new thread
-  const onThreadClick = useCallback(
-    async (thread: ThreadSummary, updateUrl = true) => {
-      clearSuggestions()
-      clearProjectSuggestions()
-      await handleThreadClick(thread, updateUrl)
-    },
-    [handleThreadClick, clearSuggestions, clearProjectSuggestions]
-  )
-
   // Wrapper that clears local state when closing the sheet
   const onCloseSheet = useCallback(() => {
     setViewingAttachment(null)
-    clearSuggestions()
-    clearProjectSuggestions()
     setComposeContext(null)
     handleCloseSheet()
-  }, [handleCloseSheet, clearSuggestions, clearProjectSuggestions])
+  }, [handleCloseSheet])
 
   const handleReply = useCallback(
     (message: Message, mode: 'reply' | 'reply_all' | 'forward') => {
@@ -414,58 +275,19 @@ export function InboxPanel({
   const canGoNext = currentIndex < threads.length - 1
 
   const goToPrev = () => {
-    if (canGoPrev) onThreadClick(threads[currentIndex - 1])
+    if (canGoPrev) handleThreadClick(threads[currentIndex - 1])
   }
 
   const goToNext = () => {
-    if (canGoNext) onThreadClick(threads[currentIndex + 1])
+    if (canGoNext) handleThreadClick(threads[currentIndex + 1])
   }
 
   return (
     <>
-      <AppShellHeader>
-        <h1 className='text-2xl font-semibold tracking-tight'>Inbox</h1>
-        <p className='text-muted-foreground text-sm'>
-          View and manage synced communications.
-        </p>
-      </AppShellHeader>
-
       <div className='space-y-4'>
-        {/* Tabs Row */}
-        <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-          <Tabs value='emails' className='w-full sm:w-auto'>
-            <TabsList className='bg-muted/40 h-10 w-full justify-start gap-2 rounded-lg p-1 sm:w-auto'>
-              <TabsTrigger value='emails' className='px-3 py-1.5 text-sm'>
-                Emails
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-          {syncStatus.connected && (
-            <div className='flex items-center gap-4'>
-              {syncStatus.lastSyncAt && (
-                <span className='text-muted-foreground text-sm whitespace-nowrap'>
-                  Last sync{' '}
-                  {formatDistanceToNow(new Date(syncStatus.lastSyncAt))} ago
-                </span>
-              )}
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={() => handleSync()}
-                disabled={isSyncing}
-              >
-                <RefreshCw
-                  className={cn('h-4 w-4', isSyncing && 'animate-spin')}
-                />
-                {isSyncing ? 'Syncing...' : 'Sync'}
-              </Button>
-            </div>
-          )}
-        </div>
-
         {/* Main Card */}
-        <section className='bg-background flex min-h-[calc(100vh-13rem)] flex-col overflow-hidden rounded-xl border shadow-sm'>
-          <div className='flex flex-1'>
+        <section className='bg-background flex min-h-[calc(100vh-13rem)] min-w-0 flex-col overflow-hidden rounded-xl border shadow-sm'>
+          <div className='flex min-w-0 flex-1'>
             {/* Left Sidebar */}
             <aside className='hidden w-56 flex-shrink-0 border-r py-6 md:block'>
               <InboxSidebar
@@ -480,7 +302,7 @@ export function InboxPanel({
 
             {/* Main Content */}
             <div className='flex min-w-0 flex-1 flex-col p-6'>
-              <div className='flex flex-1 flex-col space-y-4'>
+              <div className='flex min-w-0 flex-1 flex-col space-y-4'>
                 {/* Reconnect Banner - shown when connection needs reauth */}
                 {syncStatus.connectionStatus &&
                   syncStatus.connectionStatus !== 'ACTIVE' && (
@@ -500,6 +322,7 @@ export function InboxPanel({
                   onClearSearch={handleClearSearch}
                   isConnected={syncStatus.connected}
                   onCompose={() => setIsComposeOpen(true)}
+                  unclassifiedCount={sidebarCounts.unclassified}
                 />
 
                 {/* Thread List or Drafts View */}
@@ -528,9 +351,7 @@ export function InboxPanel({
                         ? 'Connect Gmail in Settings → Integrations to get started'
                         : currentView !== 'inbox'
                           ? `No ${currentView} threads found.`
-                          : isSyncing
-                            ? 'Syncing your emails...'
-                            : 'No emails synced yet.'}
+                          : 'No emails synced yet.'}
                     </p>
                   </div>
                 ) : (
@@ -542,7 +363,7 @@ export function InboxPanel({
                           thread={thread}
                           isSelected={selectedThread?.id === thread.id}
                           isFirst={idx === 0}
-                          onClick={() => onThreadClick(thread)}
+                          onClick={() => handleThreadClick(thread)}
                         />
                       ))}
                     </div>
@@ -575,22 +396,6 @@ export function InboxPanel({
         clients={clients}
         projects={projects}
         leads={leads}
-        suggestions={suggestions}
-        projectSuggestions={projectSuggestions}
-        suggestionsLoading={suggestionsLoading}
-        projectSuggestionsLoading={projectSuggestionsLoading}
-        isAnalyzingThread={isAnalyzingThread}
-        suggestionRefreshKey={suggestionRefreshKey}
-        isLinking={isLinking}
-        isLinkingProject={isLinkingProject}
-        isLinkingLead={isLinkingLead}
-        onLinkClient={handleLinkClient}
-        onUnlinkClient={handleUnlinkClient}
-        onLinkProject={handleLinkProject}
-        onUnlinkProject={handleUnlinkProject}
-        onLinkLead={handleLinkLead}
-        onUnlinkLead={handleUnlinkLead}
-        onRefreshSuggestions={() => triggerThreadAnalysis(selectedThread?.id || '')}
         canGoPrev={canGoPrev}
         canGoNext={canGoNext}
         onPrev={goToPrev}
@@ -601,6 +406,7 @@ export function InboxPanel({
         onRefreshMessages={refreshMessages}
         setThreadMessages={setThreadMessages}
         setThreads={setThreads}
+        setSelectedThread={setSelectedThread}
         setViewingAttachment={setViewingAttachment}
         onClose={onCloseSheet}
       />
@@ -631,8 +437,8 @@ export function InboxPanel({
             onSent={() => {
               setIsComposeOpen(false)
               setComposeContext(null)
-              // Trigger a sync to fetch the sent message
-              handleSync(true)
+              // Refresh to pick up the sent message
+              router.refresh()
             }}
             hideCloseButton
           />
