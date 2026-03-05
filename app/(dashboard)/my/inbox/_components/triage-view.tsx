@@ -37,6 +37,8 @@ export function TriageView({ clients, projects, leads }: TriageViewProps) {
   const { toast } = useToast()
   const [queue, setQueue] = useState<TriageThread[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [sessionStats, setSessionStats] = useState({ classified: 0, dismissed: 0 })
 
@@ -134,14 +136,23 @@ export function TriageView({ clients, projects, leads }: TriageViewProps) {
     selectedIds,
   } = useBatchSelection(threadIds)
 
-  const fetchQueue = useCallback(async () => {
-    setIsLoading(true)
+  const fetchQueue = useCallback(async (offset = 0) => {
+    if (offset === 0) {
+      setIsLoading(true)
+    } else {
+      setIsLoadingMore(true)
+    }
     setFetchError(null)
     try {
-      const res = await fetch('/api/triage?limit=50')
+      const res = await fetch(`/api/triage?limit=50&offset=${offset}`)
       if (res.ok) {
         const data = await res.json()
-        setQueue(data.threads)
+        setHasMore(data.hasMore)
+        if (offset === 0) {
+          setQueue(data.threads)
+        } else {
+          setQueue(prev => [...prev, ...data.threads])
+        }
       } else {
         const errorData = await res.json().catch(() => ({}))
         const message = errorData.error || `Failed to load triage queue (${res.status})`
@@ -153,6 +164,7 @@ export function TriageView({ clients, projects, leads }: TriageViewProps) {
       setFetchError('Failed to connect to server')
     } finally {
       setIsLoading(false)
+      setIsLoadingMore(false)
     }
   }, [])
 
@@ -300,10 +312,15 @@ export function TriageView({ clients, projects, leads }: TriageViewProps) {
         </div>
 
         {/* Load more */}
-        {queue.length >= 50 && (
+        {hasMore && (
           <div className='border-t px-4 py-3 text-center'>
-            <Button variant='outline' size='sm' onClick={() => fetchQueue()}>
-              Load more
+            <Button
+              variant='outline'
+              size='sm'
+              onClick={() => fetchQueue(queue.length)}
+              disabled={isLoadingMore}
+            >
+              {isLoadingMore ? 'Loading...' : 'Load more'}
             </Button>
           </div>
         )}
