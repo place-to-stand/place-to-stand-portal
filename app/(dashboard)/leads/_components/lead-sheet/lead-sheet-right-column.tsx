@@ -1,7 +1,7 @@
 'use client'
 
 import { Separator } from '@/components/ui/separator'
-import type { LeadAssigneeOption, LeadRecord } from '@/lib/leads/types'
+import type { LeadRecord } from '@/lib/leads/types'
 
 import { LeadMeetingsSection } from '../lead-meetings-section'
 import { LeadProposalsSection } from '../lead-proposals-section'
@@ -14,7 +14,6 @@ import { LeadTranscriptSuggestionsSection } from './lead-transcript-suggestions-
 
 type LeadSheetRightColumnProps = {
   lead: LeadRecord
-  assignees: LeadAssigneeOption[]
   canManage: boolean
   senderName?: string
   canConvert: boolean
@@ -31,7 +30,6 @@ type LeadSheetRightColumnProps = {
 
 export function LeadSheetRightColumn({
   lead,
-  assignees,
   canManage,
   senderName = '',
   canConvert,
@@ -78,7 +76,6 @@ export function LeadSheetRightColumn({
         <Separator />
         <LeadTasksSection
           lead={lead}
-          assignees={assignees}
           canManage={canManage}
           onSuccess={onSuccess}
         />

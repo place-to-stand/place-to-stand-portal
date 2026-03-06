@@ -25,7 +25,6 @@ import {
   suggestions,
   emailDrafts,
   emailTemplates,
-  proposalTemplates,
   meetings,
   proposals,
   leadStageHistory,

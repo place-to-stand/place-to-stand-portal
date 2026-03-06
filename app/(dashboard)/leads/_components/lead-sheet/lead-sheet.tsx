@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, useWatch } from 'react-hook-form'
 import { Archive, Redo2, Undo2 } from 'lucide-react'
@@ -44,38 +44,15 @@ export function LeadSheet({
   const [isSaving, startSaveTransition] = useTransition()
   const [isArchiving, startArchiveTransition] = useTransition()
   const [isRescoring, startRescoreTransition] = useTransition()
+  const hasInitialAction = Boolean(lead && initialAction)
   const [isArchiveDialogOpen, setArchiveDialogOpen] = useState(false)
-  const [isConvertDialogOpen, setConvertDialogOpen] = useState(false)
-  const [isEmailDialogOpen, setEmailDialogOpen] = useState(false)
-  const [isMeetingDialogOpen, setMeetingDialogOpen] = useState(false)
+  const [isConvertDialogOpen, setConvertDialogOpen] = useState(() => hasInitialAction && initialAction === 'convert')
+  const [isEmailDialogOpen, setEmailDialogOpen] = useState(() => hasInitialAction && initialAction === 'email')
+  const [isMeetingDialogOpen, setMeetingDialogOpen] = useState(() => hasInitialAction && initialAction === 'meeting')
   const [meetingInitialTitle, setMeetingInitialTitle] = useState<string | undefined>()
-  const [isBuildProposalDialogOpen, setBuildProposalDialogOpen] = useState(false)
+  const [isBuildProposalDialogOpen, setBuildProposalDialogOpen] = useState(() => hasInitialAction && initialAction === 'proposals/new')
   const [editingProposal, setEditingProposal] = useState<EditableProposal | undefined>()
   const { toast } = useToast()
-
-  // Track whether we've already consumed the initial action to avoid re-opening on re-renders
-  const consumedActionRef = useRef<string | null>(null)
-
-  // Open the matching dialog when initialAction is set (e.g. deep link)
-  useEffect(() => {
-    if (!initialAction || !lead || consumedActionRef.current === initialAction) return
-    consumedActionRef.current = initialAction
-
-    switch (initialAction) {
-      case 'proposals/new':
-        setBuildProposalDialogOpen(true)
-        break
-      case 'email':
-        setEmailDialogOpen(true)
-        break
-      case 'meeting':
-        setMeetingDialogOpen(true)
-        break
-      case 'convert':
-        setConvertDialogOpen(true)
-        break
-    }
-  }, [initialAction, lead])
 
   const pushActionUrl = useCallback(
     (action: string) => {
@@ -421,7 +398,6 @@ export function LeadSheet({
               {isEditing && lead && (
                 <LeadSheetRightColumn
                   lead={lead}
-                  assignees={assignees}
                   canManage={canManage}
                   senderName={senderName}
                   canConvert={canConvert}

@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, count, eq, gte, isNull, lte, sql } from 'drizzle-orm'
+import { and, count, gte, isNull, lte } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { leads, leadStageHistory } from '@/lib/db/schema'

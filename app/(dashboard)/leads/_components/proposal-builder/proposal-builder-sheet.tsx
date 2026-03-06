@@ -50,11 +50,11 @@ export function ProposalBuilderSheet({
 
   // Defer heavy content until slide animation settles
   useEffect(() => {
-    if (open) {
-      const timer = setTimeout(() => setContentReady(true), ANIMATION_SETTLE_MS)
-      return () => clearTimeout(timer)
-    }
-    setContentReady(false)
+    const timer = setTimeout(
+      () => setContentReady(open),
+      open ? ANIMATION_SETTLE_MS : 0
+    )
+    return () => clearTimeout(timer)
   }, [open])
 
   const handleOpenChange = useCallback(

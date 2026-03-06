@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { formatDistanceToNow } from 'date-fns'
-import { FileEdit, Trash2, RefreshCw, Mail } from 'lucide-react'
+import { FileEdit, Trash2, RefreshCw } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'

@@ -1,4 +1,4 @@
-import { DollarSign, Send, Eye, CheckCircle, XCircle } from 'lucide-react'
+import { DollarSign, Send, Eye, CheckCircle } from 'lucide-react'
 import type { ProposalWithRelations } from '@/lib/queries/proposals'
 
 type PipelineSummaryProps = {
