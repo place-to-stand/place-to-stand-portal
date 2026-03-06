@@ -271,9 +271,9 @@ Transcripts
 16. Wire eager AI analysis on email triage page load (same pattern — fire suggestions for unanalyzed threads)
 17. Increase checkbox hit area on `triage-row.tsx`, `thread-row.tsx`, and `transcript-row.tsx` (negative margin + padding pattern)
 18. Test: navigate to Transcripts tab, view unclassified list
-16. Test: classify a transcript as client → verify status change
-17. Test: classify as lead → verify client/project cleared
-18. Test: dismiss → verify links cleared
-19. Test: batch dismiss → verify multiple transcripts dismissed
-20. Test: bulk dismiss by date → verify older transcripts cleared
-21. Test: non-admin user does not see Transcripts tab
+19. Test: classify a transcript as client → verify status change
+20. Test: classify as lead → verify client/project cleared
+21. Test: dismiss → verify links cleared
+22. Test: batch dismiss → verify multiple transcripts dismissed
+23. Test: bulk dismiss by date → verify older transcripts cleared
+24. Test: non-admin user does not see Transcripts tab

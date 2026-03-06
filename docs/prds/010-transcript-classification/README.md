@@ -85,7 +85,7 @@ Phase 5b: Context Surfacing                        ← depends on Phases 1, 5
 | Multi-user sync dedup | **driveFileId unique constraint** | If user A syncs a doc, user B's sync sees it already exists and skips. Natural dedup. Sync state is per-connection (stored in existing `oauthConnections.syncState` JSONB). |
 | Source enum | **Single value: `DRIVE_SEARCH`** | Ship minimal enum. Add `MEET_API` or `GEMINI_NOTES` via non-breaking migration when those discovery methods ship. |
 | `meeting_id` FK | **Deferred** | No v1 logic correlates Drive docs to existing meeting records. Add when calendar-based discovery ships. |
-| Analyze endpoint | **POST only** | POST for analyze (side-effecting), GET for reading cached results. Follows HTTP semantics. |
+| Analyze endpoint | **POST analyze; GET cache** | POST for analyze (side-effecting), GET for reading cached results. Follows HTTP semantics. |
 | Lead matching in AI | **Single-prompt for both flows** | Include leads directly in the AI classification prompt (alongside clients/projects). Align email classification to match. |
 | Tab visibility | **Hidden for non-admins** | Transcripts tab not rendered in nav for CLIENT-role users. Don't show what you can't use. |
 | Eager AI analysis | **On page load** | Triage/transcript pages eagerly fire analyze calls for unanalyzed items on load. Results are cached, so repeated loads are free. Non-blocking — UI renders immediately. |

@@ -50,7 +50,7 @@ export type DiscoveredTranscript = {
   driveFileId: string
   driveFileUrl: string
   title: string
-  content: string
+  content: string | null
   source: 'DRIVE_SEARCH'
   meetingDate: string | null  // ISO timestamp
   participantNames: string[]

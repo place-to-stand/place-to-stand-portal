@@ -74,7 +74,9 @@ Mirrors the existing `lead-email-threads.tsx` pattern:
 
 ### API Endpoint
 
-**New route:** `app/api/leads/[leadId]/transcripts/route.ts`
+**Existing route (extend):** `app/api/leads/[leadId]/transcripts/route.ts`
+
+> **Note:** This route already exists and returns meetings-with-transcripts from the `meetings` table. Extend it to also return classified transcripts from the new `transcripts` table, keeping the existing meetings response intact.
 
 ```typescript
 export async function GET(
@@ -82,8 +84,9 @@ export async function GET(
   { params }: { params: Promise<{ leadId: string }> }
 ) {
   // 1. Auth + admin check
-  // 2. Fetch transcripts where leadId matches
-  // 3. Return TranscriptForLead[] (no content column)
+  // 2. Fetch meetings with transcripts (existing behavior)
+  // 3. Fetch classified transcripts from new transcripts table where leadId matches
+  // 4. Return { meetings: [...], transcripts: TranscriptForLead[] }
 }
 ```
 
@@ -159,7 +162,7 @@ export async function getTranscriptsForLead(leadId: string, options?: { limit?: 
 2. Create `client-transcripts-section.tsx` (mirrors `client-emails-section.tsx`)
 3. Add to `client-detail.tsx` right column
 4. Create `lead-transcripts-section.tsx` (mirrors `lead-email-threads.tsx`)
-5. Create `GET /api/leads/[leadId]/transcripts` route
+5. Extend existing `GET /api/leads/[leadId]/transcripts` route to also return classified transcripts
 6. Add to `lead-sheet-right-column.tsx` (in the slot freed by Phase 3 cleanup)
 7. Test: classify transcript to client -> appears on client detail page
 8. Test: classify transcript to lead -> appears on lead sheet

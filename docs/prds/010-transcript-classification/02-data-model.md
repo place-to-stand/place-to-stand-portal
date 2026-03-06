@@ -55,7 +55,7 @@ CREATE TABLE transcripts (
   ai_suggested_project_name TEXT,                    -- Cached for display without join
   ai_suggested_lead_id      UUID,                    -- Cached AI top lead match
   ai_suggested_lead_name    TEXT,                    -- Cached for display without join
-  ai_confidence             NUMERIC,                 -- Overall confidence score (0-1)
+  ai_confidence             NUMERIC(4,3) CHECK (ai_confidence >= 0 AND ai_confidence <= 1),  -- Overall confidence score (0-1)
   ai_analyzed_at            TIMESTAMPTZ,             -- When AI last analyzed (NULL = not yet)
   -- NOTE: ai_suggested_*_name fields are display hints cached at analysis time.
   -- They may drift if entities are renamed. The ID fields are authoritative.
@@ -153,7 +153,7 @@ export const transcripts = pgTable('transcripts', {
   aiSuggestedProjectName: text('ai_suggested_project_name'),
   aiSuggestedLeadId: uuid('ai_suggested_lead_id'),
   aiSuggestedLeadName: text('ai_suggested_lead_name'),
-  aiConfidence: numeric('ai_confidence'),
+  aiConfidence: numeric('ai_confidence', { precision: 4, scale: 3 }),
   aiAnalyzedAt: timestamp('ai_analyzed_at', { withTimezone: true, mode: 'string' }),
   syncedBy: uuid('synced_by'),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })

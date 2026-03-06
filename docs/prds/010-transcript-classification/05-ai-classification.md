@@ -214,9 +214,10 @@ export async function POST(
     leads,
   })
 
-  // Store top match in cache fields
+  // Store top match in cache fields — pick the highest-confidence match overall
   const topClient = result.clientMatches[0]
   const topLead = result.leadMatches[0]
+  const topConfidence = Math.max(topClient?.confidence ?? 0, topLead?.confidence ?? 0) || null
 
   await updateTranscript(transcriptId, {
     aiSuggestedClientId: topClient?.clientId ?? null,
@@ -225,7 +226,7 @@ export async function POST(
     aiSuggestedProjectName: topClient?.projectName ?? null,
     aiSuggestedLeadId: topLead?.leadId ?? null,
     aiSuggestedLeadName: topLead?.leadName ?? null,
-    aiConfidence: topClient?.confidence ?? topLead?.confidence ?? null,
+    aiConfidence: topConfidence,
     aiAnalyzedAt: new Date().toISOString(),
   })
 
