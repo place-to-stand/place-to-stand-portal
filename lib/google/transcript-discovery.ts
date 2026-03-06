@@ -1,0 +1,295 @@
+import 'server-only'
+
+import { getValidAccessToken } from '@/lib/gmail/client'
+
+// =============================================================================
+// Search Query Constants
+// =============================================================================
+
+const TRANSCRIPT_SEARCH_QUERIES = [
+  {
+    name: 'Gemini Notes',
+    query:
+      "name contains 'Notes by Gemini' and mimeType='application/vnd.google-apps.document'",
+  },
+  {
+    name: 'Transcript',
+    query:
+      "name contains 'Transcript' and mimeType='application/vnd.google-apps.document'",
+  },
+  {
+    name: 'Meeting notes',
+    query:
+      "name contains 'Meeting notes' and mimeType='application/vnd.google-apps.document'",
+  },
+] as const
+
+const MAX_RESULTS_PER_QUERY = 100
+const MAX_DOCUMENTS_PER_SYNC = 50
+const CONTENT_FETCH_DELAY_MS = 200
+
+// =============================================================================
+// Types
+// =============================================================================
+
+export type DiscoveredTranscript = {
+  driveFileId: string
+  driveFileUrl: string
+  title: string
+  content: string | null
+  source: 'DRIVE_SEARCH'
+  meetingDate: string | null
+  participantNames: string[]
+  modifiedTime: string
+}
+
+type DriveFile = {
+  id: string
+  name: string
+  webViewLink: string
+  createdTime: string
+  modifiedTime: string
+}
+
+// =============================================================================
+// Discovery
+// =============================================================================
+
+/**
+ * Search Google Drive for transcript/meeting notes documents.
+ * Runs multiple search queries, deduplicates by file ID, and extracts content.
+ */
+export async function discoverTranscriptsFromDrive(
+  userId: string,
+  options?: { connectionId?: string }
+): Promise<DiscoveredTranscript[]> {
+  const { accessToken } = await getValidAccessToken(userId, options?.connectionId)
+
+  // Run all search queries and collect results
+  const allFiles = new Map<string, DriveFile>()
+
+  for (const searchQuery of TRANSCRIPT_SEARCH_QUERIES) {
+    try {
+      const files = await searchDrive(accessToken, searchQuery.query)
+      console.log(
+        `[Transcript Discovery] ${searchQuery.name}: ${files.length} results`
+      )
+      for (const file of files) {
+        if (!allFiles.has(file.id)) {
+          allFiles.set(file.id, file)
+        }
+      }
+    } catch (error) {
+      console.error(
+        `[Transcript Discovery] ${searchQuery.name} search failed:`,
+        error
+      )
+    }
+  }
+
+  console.log(
+    `[Transcript Discovery] Total unique files: ${allFiles.size}`
+  )
+
+  // Limit to MAX_DOCUMENTS_PER_SYNC most recent
+  const sortedFiles = Array.from(allFiles.values())
+    .sort(
+      (a, b) =>
+        new Date(b.modifiedTime).getTime() -
+        new Date(a.modifiedTime).getTime()
+    )
+    .slice(0, MAX_DOCUMENTS_PER_SYNC)
+
+  // Extract content from each document
+  const results: DiscoveredTranscript[] = []
+
+  for (const file of sortedFiles) {
+    try {
+      const content = await fetchDocContent(accessToken, file.id)
+      const participantNames = extractParticipantNames(content)
+      const meetingDate = extractMeetingDate(file.name, file.createdTime)
+
+      results.push({
+        driveFileId: file.id,
+        driveFileUrl: file.webViewLink,
+        title: file.name,
+        content,
+        source: 'DRIVE_SEARCH',
+        meetingDate,
+        participantNames,
+        modifiedTime: file.modifiedTime,
+      })
+    } catch (error) {
+      console.error(
+        `[Transcript Discovery] Failed to fetch content for ${file.name}:`,
+        error
+      )
+      // Insert with null content — can still be classified by title
+      results.push({
+        driveFileId: file.id,
+        driveFileUrl: file.webViewLink,
+        title: file.name,
+        content: null,
+        source: 'DRIVE_SEARCH',
+        meetingDate: extractMeetingDate(file.name, file.createdTime),
+        participantNames: [],
+        modifiedTime: file.modifiedTime,
+      })
+    }
+
+    // Rate limit content fetches
+    await new Promise(resolve => setTimeout(resolve, CONTENT_FETCH_DELAY_MS))
+  }
+
+  return results
+}
+
+// =============================================================================
+// Drive API
+// =============================================================================
+
+async function searchDrive(
+  accessToken: string,
+  query: string
+): Promise<DriveFile[]> {
+  const url = new URL('https://www.googleapis.com/drive/v3/files')
+  url.searchParams.set('q', query)
+  url.searchParams.set('orderBy', 'modifiedTime desc')
+  url.searchParams.set('pageSize', String(MAX_RESULTS_PER_QUERY))
+  url.searchParams.set(
+    'fields',
+    'files(id,name,webViewLink,createdTime,modifiedTime)'
+  )
+
+  const res = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+
+  if (!res.ok) {
+    const errorText = await res.text()
+    throw new Error(`Drive search failed: ${errorText}`)
+  }
+
+  const data = await res.json()
+  return (data.files ?? []) as DriveFile[]
+}
+
+async function fetchDocContent(
+  accessToken: string,
+  docId: string
+): Promise<string | null> {
+  const url = `https://docs.googleapis.com/v1/documents/${docId}`
+
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+
+  if (!res.ok) {
+    const errorText = await res.text()
+    throw new Error(`Docs API failed: ${errorText}`)
+  }
+
+  const doc = await res.json()
+  return extractTextFromGoogleDoc(doc)
+}
+
+function extractTextFromGoogleDoc(doc: {
+  body?: {
+    content?: Array<{
+      paragraph?: {
+        elements?: Array<{
+          textRun?: { content?: string }
+        }>
+      }
+    }>
+  }
+}): string | null {
+  if (!doc.body?.content) return null
+
+  const lines: string[] = []
+
+  for (const element of doc.body.content) {
+    if (element.paragraph?.elements) {
+      const paragraphText = element.paragraph.elements
+        .map(e => e.textRun?.content ?? '')
+        .join('')
+      if (paragraphText.trim()) {
+        lines.push(paragraphText)
+      }
+    }
+  }
+
+  const text = lines.join('')
+  return text || null
+}
+
+// =============================================================================
+// Parsing Helpers
+// =============================================================================
+
+/**
+ * Extract participant names from transcript content.
+ * Looks for speaker labels like "[HH:MM] Name:" or "Name:" at line starts.
+ */
+function extractParticipantNames(content: string | null): string[] {
+  if (!content) return []
+
+  const names = new Set<string>()
+
+  // Pattern: "[HH:MM] Name:" or "[HH:MM AM/PM] Name:"
+  const timestampPattern = /\[\d{1,2}:\d{2}(?:\s*(?:AM|PM))?\]\s*([^:]+):/gi
+  let match
+  while ((match = timestampPattern.exec(content)) !== null) {
+    const name = match[1].trim()
+    if (name && name.length < 50) {
+      names.add(name)
+    }
+  }
+
+  // Pattern: line starts with "Name:" (common in Gemini Notes)
+  if (names.size === 0) {
+    const lineStartPattern = /^([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s*:/gm
+    while ((match = lineStartPattern.exec(content)) !== null) {
+      const name = match[1].trim()
+      if (name && name.length < 50) {
+        names.add(name)
+      }
+    }
+  }
+
+  return Array.from(names)
+}
+
+/**
+ * Extract meeting date from document title.
+ * Gemini Notes use: "Title - YYYY/MM/DD HH:MM TZ - Notes by Gemini"
+ * Falls back to createdTime.
+ */
+function extractMeetingDate(
+  title: string,
+  createdTime: string
+): string | null {
+  // Try to extract date from title
+  const datePattern = /(\d{4}\/\d{2}\/\d{2})/
+  const dateMatch = title.match(datePattern)
+
+  if (dateMatch) {
+    const dateStr = dateMatch[1].replace(/\//g, '-')
+    // Try to also extract time
+    const timePattern = /(\d{2}:\d{2})/
+    const timeMatch = title.match(timePattern)
+    const timeStr = timeMatch ? `T${timeMatch[1]}:00` : 'T00:00:00'
+
+    try {
+      const date = new Date(`${dateStr}${timeStr}`)
+      if (!isNaN(date.getTime())) {
+        return date.toISOString()
+      }
+    } catch {
+      // Fall through to createdTime
+    }
+  }
+
+  // Fall back to createdTime
+  return createdTime
+}

@@ -46,7 +46,7 @@ export function ThreadRow({
     >
       {/* Checkbox */}
       {showCheckbox && (
-        <div className='flex-shrink-0' onClick={e => { e.stopPropagation(); onToggle?.(e.shiftKey) }}>
+        <div className='-m-2 flex-shrink-0 p-2' onClick={e => { e.stopPropagation(); onToggle?.(e.shiftKey) }}>
           <Checkbox
             checked={isChecked}
             onCheckedChange={() => {}}

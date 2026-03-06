@@ -12,8 +12,6 @@ import {
   RefreshCw,
   Check,
   X,
-  Mail,
-  Mic,
   ChevronDown,
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -73,8 +71,6 @@ const ACTION_ICONS: Record<LeadActionType, typeof ListTodo> = {
   SCHEDULE_CALL: Phone,
   SEND_PROPOSAL: FileText,
   ADVANCE_STATUS: ArrowRight,
-  LINK_EMAIL_THREAD: Mail,
-  LINK_TRANSCRIPT: Mic,
 }
 
 const ACTION_COLORS: Record<LeadActionType, string> = {
@@ -83,8 +79,6 @@ const ACTION_COLORS: Record<LeadActionType, string> = {
   SCHEDULE_CALL: 'text-green-500',
   SEND_PROPOSAL: 'text-amber-500',
   ADVANCE_STATUS: 'text-cyan-500',
-  LINK_EMAIL_THREAD: 'text-sky-500',
-  LINK_TRANSCRIPT: 'text-rose-500',
 }
 
 const PRIORITY_BADGES: Record<string, { className: string; label: string }> = {

@@ -29,6 +29,7 @@ import type {
 } from '@/lib/data/clients'
 import type { ContactWithClientLink } from '@/lib/types/client-contacts'
 import type { MessageForClient } from '@/lib/queries/messages'
+import type { TranscriptForClient } from '@/lib/queries/transcripts'
 import { getBillingTypeLabel } from '@/lib/settings/clients/billing-types'
 import {
   ARCHIVE_CLIENT_CONFIRM_LABEL,
@@ -48,6 +49,7 @@ import { ClientSheet } from '../../_components/clients-sheet'
 import { ClientContactsSection } from './client-contacts-section'
 import { ClientEmailsSection } from './client-emails-section'
 import { ClientNotesSection } from './client-notes-section'
+import { ClientTranscriptsSection } from './client-transcripts-section'
 
 type HydratedClientDetail = ClientDetailType & { resolvedId: string }
 
@@ -62,6 +64,8 @@ type ClientDetailProps = {
   projects: ClientProject[]
   contacts: ContactWithClientLink[]
   messages: MessageForClient[]
+  transcripts: TranscriptForClient[]
+  transcriptCount: number
   canManageClients: boolean
   clientUsers: ClientUserSummary[]
   clientMembers: Record<string, ClientUserSummary[]>
@@ -75,6 +79,8 @@ export function ClientDetail({
   projects,
   contacts,
   messages,
+  transcripts,
+  transcriptCount,
   canManageClients,
   clientUsers,
   clientMembers,
@@ -142,6 +148,12 @@ export function ClientDetail({
             messages={messages}
             currentUserId={currentUserId}
             clientId={client.id}
+          />
+
+          {/* Transcripts Section */}
+          <ClientTranscriptsSection
+            transcripts={transcripts}
+            totalCount={transcriptCount}
           />
         </div>
       </div>

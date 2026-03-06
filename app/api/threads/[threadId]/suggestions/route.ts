@@ -4,7 +4,7 @@ import { and, eq, isNull, desc } from 'drizzle-orm'
 import { requireUser } from '@/lib/auth/session'
 import { isAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, contacts, contactClients, projects, messages, threads } from '@/lib/db/schema'
+import { clients, contacts, contactClients, leads, projects, messages, threads } from '@/lib/db/schema'
 import { toResponsePayload, NotFoundError, ForbiddenError, type HttpError } from '@/lib/errors/http'
 import { classifyEmailThread } from '@/lib/ai/email-classification-matching'
 
@@ -108,8 +108,19 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ thr
       clientName: project.clientId ? clientNameMap.get(project.clientId) ?? null : null,
     }))
 
-    // Single AI call for both client and project matching
-    const { clientMatches, projectMatches } = await classifyEmailThread({
+    // Fetch active leads for lead matching
+    const allLeads = await db
+      .select({
+        id: leads.id,
+        contactName: leads.contactName,
+        contactEmail: leads.contactEmail,
+        companyName: leads.companyName,
+      })
+      .from(leads)
+      .where(isNull(leads.deletedAt))
+
+    // Single AI call for client, project, and lead matching
+    const { clientMatches, projectMatches, leadMatches } = await classifyEmailThread({
       email: {
         from: latestMessage.fromEmail,
         to: latestMessage.toEmails ?? [],
@@ -119,6 +130,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ thr
       },
       clients: clientsWithData,
       projects: projectsForMatching,
+      leads: allLeads,
     })
 
     // Transform to suggestion format (backward compatible)
@@ -144,7 +156,17 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ thr
           matchType: match.matchType,
         }))
 
-    return NextResponse.json({ ok: true, suggestions, projectSuggestions })
+    const leadSuggestions = thread.leadId
+      ? []
+      : leadMatches.map(match => ({
+          leadId: match.leadId,
+          leadName: match.leadName,
+          confidence: match.confidence,
+          reasoning: match.reasoning,
+          matchType: match.matchType,
+        }))
+
+    return NextResponse.json({ ok: true, suggestions, projectSuggestions, leadSuggestions })
   } catch (err) {
     const error = err as HttpError
     console.error('Thread suggestions error:', error)

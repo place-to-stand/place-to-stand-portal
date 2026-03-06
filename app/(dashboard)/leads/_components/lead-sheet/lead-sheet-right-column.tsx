@@ -9,8 +9,7 @@ import type { EditableProposal } from '../proposal-builder/proposal-builder-shee
 import { LeadSuggestionsPanel } from '../lead-suggestions-panel'
 import { LeadActionsPanel } from './lead-actions-panel'
 import { LeadTasksSection } from './lead-tasks-section'
-import { LeadEmailSuggestionsSection } from './lead-email-suggestions-section'
-import { LeadTranscriptSuggestionsSection } from './lead-transcript-suggestions-section'
+import { LeadTranscriptsSection } from './lead-transcripts-section'
 
 type LeadSheetRightColumnProps = {
   lead: LeadRecord
@@ -87,6 +86,10 @@ export function LeadSheetRightColumn({
           onSuccess={onSuccess}
         />
 
+        {/* Transcripts */}
+        <Separator />
+        <LeadTranscriptsSection leadId={lead.id} />
+
         {/* Proposals */}
         <Separator />
         <LeadProposalsSection
@@ -97,17 +100,6 @@ export function LeadSheetRightColumn({
           onSuccess={onSuccess}
         />
 
-        {/* Email Threads (context opt-in) */}
-        <LeadEmailSuggestionsSection
-          leadId={lead.id}
-          isAdmin={canManage}
-        />
-
-        {/* Transcripts (context opt-in) */}
-        <LeadTranscriptSuggestionsSection
-          leadId={lead.id}
-          isAdmin={canManage}
-        />
       </div>
     </div>
   )
