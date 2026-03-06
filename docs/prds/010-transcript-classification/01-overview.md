@@ -68,6 +68,8 @@ Rather than depending on existing meeting records or conferenceIds (which requir
 - AI classification adapted from email classification, with result caching
 - Removal of lead auto-linking (LINK_EMAIL_THREAD, LINK_TRANSCRIPT suggestions)
 - Classification behavioral invariants (same as threads)
+- Context surfacing: classified transcripts appear on client detail pages and lead sheets
+- Aligning email classification to include leads in a single prompt (matching transcript flow)
 
 **This PRD does NOT cover:**
 

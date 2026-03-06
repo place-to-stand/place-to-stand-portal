@@ -95,6 +95,8 @@ After the above changes, review these files for any orphaned LINK_EMAIL_THREAD /
 
 Existing LINK_EMAIL_THREAD and LINK_TRANSCRIPT suggestions in the `suggestions` table should be left in place (soft-delete is not necessary). They are stored as JSONB `suggestedContent` and will simply no longer be generated or displayed. The data is harmless and may be useful for historical reference.
 
+> **Decision:** No runtime guard is needed when deserializing old suggestions. The UI components that rendered these suggestions are being deleted, so the old rows will never be queried or displayed. The `actionType` values in JSONB simply won't match any known type — this is safe because the rendering code no longer exists.
+
 ## Implementation Checklist (Phase 3)
 
 1. Modify `lib/leads/actions/generate-suggestions.ts` — remove steps 6 and 7

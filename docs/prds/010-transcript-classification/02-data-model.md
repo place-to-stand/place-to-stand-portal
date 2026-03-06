@@ -8,9 +8,7 @@
 
 ```sql
 CREATE TYPE transcript_source AS ENUM (
-  'DRIVE_SEARCH',   -- Discovered via broad Google Drive search
-  'MEET_API',       -- Fetched via Google Meet transcript API
-  'GEMINI_NOTES'    -- Discovered as Gemini-generated meeting notes
+  'DRIVE_SEARCH'    -- Discovered via broad Google Drive search
 );
 
 CREATE TYPE transcript_classification AS ENUM (
@@ -19,6 +17,8 @@ CREATE TYPE transcript_classification AS ENUM (
   'DISMISSED'       -- Reviewed and determined to have no business value.
 );
 ```
+
+> **Note:** The `transcript_source` enum ships with a single value. Additional values like `MEET_API` (for Google Meet transcript API) or `GEMINI_NOTES` (for Gemini-specific documents) can be added via non-breaking migration when those discovery methods are implemented.
 
 ## Transcripts Table
 
@@ -34,8 +34,7 @@ CREATE TABLE transcripts (
   drive_file_id   TEXT,                             -- Google Drive file ID (dedup key)
   drive_file_url  TEXT,                             -- Link to original document
 
-  -- Meeting context
-  meeting_id      UUID REFERENCES meetings(id) ON DELETE SET NULL,  -- Optional link to existing meeting record
+  -- Meeting context (meeting_id FK deferred — no v1 logic to correlate Drive docs to meeting records)
   meeting_date    TIMESTAMPTZ,                      -- When the meeting occurred
   duration_minutes INTEGER,                         -- Meeting length in minutes
   participant_names TEXT[] NOT NULL DEFAULT '{}',    -- Extracted speaker names from transcript
@@ -58,6 +57,9 @@ CREATE TABLE transcripts (
   ai_suggested_lead_name    TEXT,                    -- Cached for display without join
   ai_confidence             NUMERIC,                 -- Overall confidence score (0-1)
   ai_analyzed_at            TIMESTAMPTZ,             -- When AI last analyzed (NULL = not yet)
+  -- NOTE: ai_suggested_*_name fields are display hints cached at analysis time.
+  -- They may drift if entities are renamed. The ID fields are authoritative.
+  -- Re-analysis (POST with force:true) refreshes cached names.
 
   -- Metadata
   synced_by       UUID REFERENCES users(id),        -- Which user's Google connection discovered this
@@ -101,6 +103,18 @@ CREATE INDEX idx_transcripts_meeting_date
 
 All indexes are partial (`WHERE deleted_at IS NULL`), matching the codebase convention from threads and meetings tables.
 
+## Query Constraints
+
+### Exclude `content` from List Queries
+
+Transcript content can be 40KB-120KB per row (a 1-hour meeting generates 10,000-30,000 words). All list/summary queries **must exclude the `content` column**. Only `getTranscriptById()` should fetch content for the detail panel.
+
+Fetching 50 transcripts with content = 5MB payload. Without content = ~50KB. This is an architectural constraint, not a suggestion.
+
+### `updatedAt` Management
+
+The `updatedAt` column must be set explicitly in every UPDATE query in the query layer (same pattern as other tables in this codebase). This includes sync updates (content changes), classification updates, and AI cache writes.
+
 ## Drizzle Schema
 
 In `lib/db/schema.ts`:
@@ -108,8 +122,6 @@ In `lib/db/schema.ts`:
 ```typescript
 export const transcriptSource = pgEnum('transcript_source', [
   'DRIVE_SEARCH',
-  'MEET_API',
-  'GEMINI_NOTES',
 ])
 
 export const transcriptClassification = pgEnum('transcript_classification', [
@@ -125,7 +137,6 @@ export const transcripts = pgTable('transcripts', {
   source: transcriptSource().notNull(),
   driveFileId: text('drive_file_id'),
   driveFileUrl: text('drive_file_url'),
-  meetingId: uuid('meeting_id'),
   meetingDate: timestamp('meeting_date', { withTimezone: true, mode: 'string' }),
   durationMinutes: integer('duration_minutes'),
   participantNames: text('participant_names').array().default([]).notNull(),
@@ -157,7 +168,7 @@ export const transcripts = pgTable('transcripts', {
 ])
 ```
 
-In `lib/db/relations.ts`, add relations for transcripts → clients, projects, leads, meetings, users.
+In `lib/db/relations.ts`, add relations for transcripts → clients, projects, leads, users.
 
 ## Behavioral Rules
 
@@ -197,7 +208,7 @@ This is enforced in the query layer (`updateTranscript()`) not via database cons
 
 Generate with: `npm run db:generate -- --name add_transcripts_table`
 
-The migration creates the table, enums, and indexes. No backfill needed — this is a new table with no existing data.
+The migration creates the table, enums, and indexes. This is a new table with no existing data.
 
 ## Implementation Checklist (Phase 1)
 

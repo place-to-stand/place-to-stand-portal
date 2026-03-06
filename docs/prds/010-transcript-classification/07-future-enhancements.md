@@ -3,6 +3,14 @@
 > Part of [PRD 010: Transcript Classification & Triage](./README.md)
 > Status: **Not in scope for v1** — deferred but architecture supports them
 
+## Meeting Record Linking
+
+Add a `meeting_id UUID REFERENCES meetings(id) ON DELETE SET NULL` column to the `transcripts` table, enabling a direct FK from a transcript to an existing meeting record. This was deferred from v1 because the Drive search discovery method has no logic to correlate a discovered document back to a known meeting. This becomes useful when calendar-based discovery is implemented (below), or when meeting records gain a `driveFileId` that can be matched during sync.
+
+## `MEET_API` Source Enum Value
+
+Add `MEET_API` to the `transcript_source` enum for transcripts fetched directly via the Google Meet Transcript API (using `conferenceId` → `conferenceRecords` → `transcripts` → `entries`). This path requires a known `conferenceId` from a meeting record, making it dependent on calendar-based discovery or the existing leads-meeting flow.
+
 ## Calendar-Based Discovery
 
 Sync all Google Calendar events (not just lead meetings), extract conferenceIds, and automatically create meeting + transcript records. This would:
@@ -74,6 +82,18 @@ Once participant email resolution is reliable, auto-suggest classifications base
 - Known lead contacts → suggest that lead
 - All-internal participants → suggest internal project
 - Match confidence determines whether to auto-classify or suggest
+
+## Transcript Segment Classification
+
+A single meeting transcript may cover multiple clients/projects (e.g., a weekly sync discussing 3 accounts). V1 forces whole-transcript classification to one entity. Future: segment transcripts by topic (using AI or speaker-turn analysis) and classify segments independently. Each segment would link to a different client/project while the parent transcript remains a single record.
+
+## Project Detail Transcript Surfacing
+
+V1 surfaces transcripts on client pages and lead sheets but not on project detail pages (since emails aren't surfaced there yet either). Future: add a "Communications" section to project detail pages showing both classified emails and transcripts, establishing the pattern for full context surfacing at the project level.
+
+## Activity Logging for Classification
+
+Add activity events for transcript and email classification actions (`logTranscriptClassified`, `logTranscriptDismissed`, `logEmailClassified`, etc.). Deferred from v1 because email classification doesn't log activity events today — both flows should be instrumented together in a future pass.
 
 ## Transcript Change Detection
 

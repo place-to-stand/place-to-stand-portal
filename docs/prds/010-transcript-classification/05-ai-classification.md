@@ -80,7 +80,18 @@ Return ranked matches with confidence scores and reasoning.
 | Input signal | From/To/CC emails, subject, snippet | Title, participant names, content snippet |
 | Matching basis | Email addresses → contacts | Names + content mentions → entities |
 | Content length | Short snippet | ~2000 char excerpt from potentially long transcript |
-| Leads included | Yes (via `suggestLeadMatch`) | Yes (included in AI prompt) |
+
+> **Decision:** Both email and transcript classification include leads directly in a single AI prompt (alongside clients/projects). The existing email classification currently uses a separate `suggestLeadMatch()` step — this should be updated to include leads in the main `classifyEmailThread()` prompt as part of this PRD, aligning both flows. **This is Phase 4b** — a separate sub-task from transcript classification (Phase 4a) because it refactors production email triage. Test email classification independently before and after.
+
+### Known Accuracy Limitations
+
+Transcript AI confidence scores will likely be **lower on average** than email scores. Email classification matches on email addresses (deterministic — `jane@acme.co` maps to a known contact). Transcript classification matches on participant *names* ("Jane") which are ambiguous — "Sarah" could be from Client A or Client B.
+
+This is a known tradeoff accepted for v1. Accuracy improves significantly with [Participant Email Resolution](./07-future-enhancements.md) (future enhancement).
+
+### Single-Classification Constraint
+
+A weekly sync meeting might cover 3 client projects in 30 minutes. The current model forces classifying the entire transcript to one entity. This matches the email model (one thread → one classification) and is pragmatically sufficient for v1. Future enhancement: segment transcripts by topic/section and classify segments independently.
 
 ## AI Suggestion Caching
 
@@ -115,6 +126,10 @@ If a user wants to re-analyze (e.g., after adding a new client):
 
 **New file:** `app/api/transcripts/[transcriptId]/analyze/route.ts`
 
+> **Decision:** Analyze uses POST (side-effecting: runs AI, writes to DB). A separate GET returns cached results only. This follows HTTP semantics and avoids prefetch/caching issues with side-effecting GETs.
+
+### GET — Read Cached Analysis
+
 ```typescript
 export async function GET(
   request: NextRequest,
@@ -128,8 +143,45 @@ export async function GET(
   const transcript = await getTranscriptById(transcriptId)
   if (!transcript) return notFound()
 
-  // Cache hit: return existing analysis
-  if (transcript.aiAnalyzedAt) {
+  // Return cached analysis (or null if not yet analyzed)
+  return NextResponse.json({
+    ok: true,
+    analyzed: !!transcript.aiAnalyzedAt,
+    suggestion: transcript.aiAnalyzedAt ? {
+      clientId: transcript.aiSuggestedClientId,
+      clientName: transcript.aiSuggestedClientName,
+      projectId: transcript.aiSuggestedProjectId,
+      projectName: transcript.aiSuggestedProjectName,
+      leadId: transcript.aiSuggestedLeadId,
+      leadName: transcript.aiSuggestedLeadName,
+      confidence: transcript.aiConfidence,
+      analyzedAt: transcript.aiAnalyzedAt,
+    } : null,
+  })
+}
+```
+
+### POST — Run AI Analysis (or Re-Analyze)
+
+```typescript
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ transcriptId: string }> }
+) {
+  const user = await getCurrentUser()
+  if (!user) return unauthorized()
+  assertAdmin(user)
+
+  const { transcriptId } = await params
+  const transcript = await getTranscriptById(transcriptId)
+  if (!transcript) return notFound()
+
+  // Optionally check { force: true } in body to re-analyze
+  const body = await request.json().catch(() => ({}))
+  const force = body.force === true
+
+  // Cache hit (and not forced): return existing analysis
+  if (transcript.aiAnalyzedAt && !force) {
     return NextResponse.json({
       ok: true,
       cached: true,
@@ -146,7 +198,7 @@ export async function GET(
     })
   }
 
-  // Cache miss: run AI classification
+  // Run AI classification
   const [clients, projects, leads] = await Promise.all([
     fetchActiveClients(),
     fetchActiveProjectsWithClient(),
@@ -188,30 +240,7 @@ export async function GET(
 }
 ```
 
-### Re-Analyze Endpoint
-
-`POST /api/transcripts/[transcriptId]/analyze` (same file, POST method)
-
-Clears the cache and re-runs analysis:
-
-```typescript
-export async function POST(/* ... */) {
-  // Clear cache fields
-  await updateTranscript(transcriptId, {
-    aiSuggestedClientId: null,
-    aiSuggestedClientName: null,
-    aiSuggestedProjectId: null,
-    aiSuggestedProjectName: null,
-    aiSuggestedLeadId: null,
-    aiSuggestedLeadName: null,
-    aiConfidence: null,
-    aiAnalyzedAt: null,
-  })
-
-  // Redirect to GET to run fresh analysis
-  // (or inline the analysis logic)
-}
-```
+To re-analyze, call POST with `{ force: true }`. This clears the cache inline and runs fresh analysis in a single request.
 
 ## UI Integration
 
@@ -232,7 +261,9 @@ if (transcript.aiAnalyzedAt) {
 
 ### Analyze Button
 
-For transcripts where `aiAnalyzedAt` is NULL, show an "Analyze" button that calls `GET /api/transcripts/{id}/analyze`. On success, update the row to show the suggestion.
+Most transcripts arrive pre-analyzed (auto-analyze on sync — see [03-drive-sync.md](./03-drive-sync.md)). For the rare case where `aiAnalyzedAt` is NULL (sync-time analysis failed, or transcript was created before auto-analyze was enabled), show an "Analyze" button that calls `POST /api/transcripts/{id}/analyze`. On success, update the row to show the suggestion.
+
+For already-analyzed transcripts, show a "Re-analyze" button (calls POST with `{ force: true }`) for when context has changed (e.g., new client was added to the system).
 
 ### Classification Panel Pre-Population
 
@@ -243,17 +274,40 @@ When the user opens the classification panel, pre-select dropdowns based on cach
 
 User can accept the suggestion (one click) or change it.
 
-## Implementation Checklist (Phase 4)
+## Implementation Checklist (Phase 4a — Transcript Classification)
 
 1. Create `lib/ai/transcript-classification.ts` with `classifyTranscript()`
    - System prompt adapted for transcript context
    - User prompt builder with title, participants, content snippet
+   - Include leads alongside clients/projects in single prompt
    - Zod response schema
-   - Confidence filtering
+   - Confidence filtering (>= 0.4)
 2. Create `app/api/transcripts/[transcriptId]/analyze/route.ts`
-   - GET: cache-or-compute pattern
-   - POST: clear cache and re-analyze
+   - GET: return cached results only (no side effects)
+   - POST: run AI analysis (or return cache; `{ force: true }` to re-analyze)
 3. Test: analyze a transcript → verify AI suggestion returned
-4. Test: analyze same transcript again → verify cached result returned (no AI call)
-5. Test: re-analyze → verify cache cleared and fresh result computed
+4. Test: POST same transcript again → verify cached result returned (no AI call)
+5. Test: POST with `{ force: true }` → verify fresh result computed
 6. Test: verify suggestion pre-populates classification panel
+
+## Implementation Checklist (Phase 4b — Email Classification Alignment)
+
+> **Caution:** This refactors production email triage. Test independently.
+>
+> **Important:** The existing DB-based matchers (`suggestClientMatch()`, `suggestLeadMatch()` in `lib/email/suggestions.ts`) are fast deterministic lookups by email address. They run per-request on the triage route and are **not being replaced**. Phase 4b adds leads to the *AI* classification prompt (the on-demand analysis that runs when users click "Analyze"). Both systems coexist:
+> - **DB matchers** (fast, per-request): match by email address → high confidence
+> - **AI classification** (slow, cached): match by content/names → probabilistic
+
+1. Update `lib/ai/email-classification-matching.ts` to include leads in single prompt
+   - Add `leads` parameter to `classifyEmailThread()`
+   - Include leads in system prompt and user prompt
+   - Return `leadMatches` alongside `clientMatches` and `projectMatches`
+   - Update Zod response schema
+2. Update callers of `classifyEmailThread()` to pass leads
+   - `app/api/threads/[threadId]/suggestions/route.ts` (or wherever AI analysis is triggered)
+   - **Do NOT change `app/api/triage/route.ts`** — it uses DB matchers, not AI classification
+3. `suggestLeadMatch()` and `suggestClientMatch()` remain unchanged — they serve a different purpose (fast per-request matching)
+4. Test: email triage still works identically (DB matchers unchanged)
+5. Test: email AI analysis now returns lead matches alongside client/project matches
+6. Test: confidence scores and thresholds behave correctly for AI lead matches
+7. Test: existing classified threads are unaffected
