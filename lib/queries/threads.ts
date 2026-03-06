@@ -845,7 +845,7 @@ export async function getThreadCountsForUser(
  */
 export async function getInboxSidebarCounts(
   userId: string
-): Promise<{ inbox: number; unclassified: number; classified: number; sent: number }> {
+): Promise<{ inbox: number; unread: number; unclassified: number; classified: number; sent: number }> {
   const userAccessCondition = sql`(
     t.created_by = ${userId}
     OR EXISTS (
@@ -872,8 +872,18 @@ export async function getInboxSidebarCounts(
     AND m.deleted_at IS NULL
   )`
 
+  const hasUnreadInboundCondition = sql`EXISTS (
+    SELECT 1 FROM messages m
+    WHERE m.thread_id = t.id
+    AND m.user_id = ${userId}
+    AND m.is_inbound = true
+    AND m.is_read = false
+    AND m.deleted_at IS NULL
+  )`
+
   type SidebarCountRow = {
     inbox: number
+    unread: number
     unclassified: number
     classified: number
     sent: number
@@ -881,7 +891,8 @@ export async function getInboxSidebarCounts(
 
   const [row] = await db.execute<SidebarCountRow>(sql`
     SELECT
-      count(*) FILTER (WHERE t.classification != 'DISMISSED' AND ${hasInboundCondition})::int AS inbox,
+      count(*) FILTER (WHERE ${hasInboundCondition})::int AS inbox,
+      count(*) FILTER (WHERE ${hasUnreadInboundCondition})::int AS unread,
       count(*) FILTER (WHERE t.classification = 'UNCLASSIFIED' AND ${hasInboundCondition})::int AS unclassified,
       count(*) FILTER (WHERE t.classification = 'CLASSIFIED' AND ${hasInboundCondition})::int AS classified,
       count(*) FILTER (WHERE ${hasSentCondition})::int AS sent
@@ -892,6 +903,7 @@ export async function getInboxSidebarCounts(
 
   return {
     inbox: row?.inbox ?? 0,
+    unread: row?.unread ?? 0,
     unclassified: row?.unclassified ?? 0,
     classified: row?.classified ?? 0,
     sent: row?.sent ?? 0,

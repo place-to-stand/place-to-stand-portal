@@ -31,9 +31,11 @@ interface TriageViewProps {
   projects: Project[]
   leads: Lead[]
   currentUserId: string
+  /** Server-side unclassified count — triggers queue refetch when it changes (e.g. after sync) */
+  serverQueueSize: number
 }
 
-export function TriageView({ clients, projects, leads, currentUserId }: TriageViewProps) {
+export function TriageView({ clients, projects, leads, currentUserId, serverQueueSize }: TriageViewProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [queue, setQueue] = useState<TriageThread[]>([])
@@ -173,6 +175,15 @@ export function TriageView({ clients, projects, leads, currentUserId }: TriageVi
   useEffect(() => {
     fetchQueue()
   }, [fetchQueue])
+
+  // Re-fetch queue when server-side count changes (e.g. after Gmail sync)
+  const prevServerQueueSize = useRef(serverQueueSize)
+  useEffect(() => {
+    if (prevServerQueueSize.current !== serverQueueSize) {
+      prevServerQueueSize.current = serverQueueSize
+      fetchQueue()
+    }
+  }, [serverQueueSize, fetchQueue])
 
   const handleAccept = useCallback(async (
     threadId: string,
