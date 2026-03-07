@@ -162,6 +162,17 @@ export const transcriptStatus = pgEnum('transcript_status', [
   'FAILED', // Failed to retrieve transcript
 ])
 
+// Transcript enums
+export const transcriptSource = pgEnum('transcript_source', [
+  'DRIVE_SEARCH', // Discovered via broad Google Drive search
+])
+
+export const transcriptClassification = pgEnum('transcript_classification', [
+  'UNCLASSIFIED', // Default. Not yet reviewed.
+  'CLASSIFIED', // Reviewed and linked to a client, project, or lead.
+  'DISMISSED', // Reviewed and determined to have no business value.
+])
+
 // Proposal status
 export const proposalStatus = pgEnum('proposal_status', [
   'DRAFT',
@@ -1827,6 +1838,108 @@ export const planMessages = pgTable(
       foreignColumns: [planThreads.id],
       name: 'plan_messages_thread_id_fkey',
     }).onDelete('cascade'),
+  ]
+)
+
+// =============================================================================
+// TRANSCRIPTS
+// =============================================================================
+
+export const transcripts = pgTable(
+  'transcripts',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    title: text().notNull(),
+    content: text(),
+    source: transcriptSource().notNull(),
+
+    // Google Drive reference
+    driveFileId: text('drive_file_id'),
+    driveFileUrl: text('drive_file_url'),
+
+    // Meeting context
+    meetingDate: timestamp('meeting_date', { withTimezone: true, mode: 'string' }),
+    durationMinutes: integer('duration_minutes'),
+    participantNames: text('participant_names').array().default([]).notNull(),
+    participantEmails: text('participant_emails').array().default([]).notNull(),
+
+    // Classification (same model as threads)
+    classification: transcriptClassification().default('UNCLASSIFIED').notNull(),
+    clientId: uuid('client_id'),
+    projectId: uuid('project_id'),
+    leadId: uuid('lead_id'),
+    classifiedBy: uuid('classified_by'),
+    classifiedAt: timestamp('classified_at', { withTimezone: true, mode: 'string' }),
+
+    // AI suggestion cache
+    aiSuggestedClientId: uuid('ai_suggested_client_id'),
+    aiSuggestedClientName: text('ai_suggested_client_name'),
+    aiSuggestedProjectId: uuid('ai_suggested_project_id'),
+    aiSuggestedProjectName: text('ai_suggested_project_name'),
+    aiSuggestedLeadId: uuid('ai_suggested_lead_id'),
+    aiSuggestedLeadName: text('ai_suggested_lead_name'),
+    aiConfidence: numeric('ai_confidence', { precision: 4, scale: 3 }),
+    aiAnalyzedAt: timestamp('ai_analyzed_at', { withTimezone: true, mode: 'string' }),
+
+    // Metadata
+    syncedBy: uuid('synced_by'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    // Dedup: unique Drive file ID among active records
+    uniqueIndex('idx_transcripts_drive_file')
+      .on(table.driveFileId)
+      .where(sql`(deleted_at IS NULL AND drive_file_id IS NOT NULL)`),
+    index('idx_transcripts_classification')
+      .using('btree', table.classification.asc().nullsLast())
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_transcripts_client')
+      .using('btree', table.clientId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND client_id IS NOT NULL)`),
+    index('idx_transcripts_project')
+      .using('btree', table.projectId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND project_id IS NOT NULL)`),
+    index('idx_transcripts_lead')
+      .using('btree', table.leadId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND lead_id IS NOT NULL)`),
+    index('idx_transcripts_meeting_date')
+      .using('btree', table.meetingDate.desc().nullsFirst())
+      .where(sql`(deleted_at IS NULL)`),
+    foreignKey({
+      columns: [table.clientId],
+      foreignColumns: [clients.id],
+      name: 'transcripts_client_id_fkey',
+    }).onDelete('set null'),
+    foreignKey({
+      columns: [table.projectId],
+      foreignColumns: [projects.id],
+      name: 'transcripts_project_id_fkey',
+    }).onDelete('set null'),
+    foreignKey({
+      columns: [table.leadId],
+      foreignColumns: [leads.id],
+      name: 'transcripts_lead_id_fkey',
+    }).onDelete('set null'),
+    foreignKey({
+      columns: [table.classifiedBy],
+      foreignColumns: [users.id],
+      name: 'transcripts_classified_by_fkey',
+    }),
+    foreignKey({
+      columns: [table.syncedBy],
+      foreignColumns: [users.id],
+      name: 'transcripts_synced_by_fkey',
+    }),
+    check(
+      'transcripts_ai_confidence_range',
+      sql`ai_confidence >= 0 AND ai_confidence <= 1`
+    ),
   ]
 )
 

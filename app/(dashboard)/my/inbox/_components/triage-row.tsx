@@ -217,7 +217,7 @@ export function TriageRow({
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onViewThread(thread) } }}
     >
       {/* Checkbox */}
-      <div className='flex flex-shrink-0 pt-0.5' onClick={e => { e.stopPropagation(); onToggle(e.shiftKey) }}>
+      <div className='-m-2 flex flex-shrink-0 p-2' onClick={e => { e.stopPropagation(); onToggle(e.shiftKey) }}>
         <Checkbox
           checked={isChecked}
           onCheckedChange={() => {}}

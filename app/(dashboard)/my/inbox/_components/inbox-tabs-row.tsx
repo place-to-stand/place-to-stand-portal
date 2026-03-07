@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
 import { RefreshCw } from 'lucide-react'
 
@@ -13,29 +13,59 @@ import { InboxTabs } from './inbox-tabs'
 
 interface InboxTabsRowProps {
   unclassifiedCount: number
+  unclassifiedTranscriptCount?: number
+  isAdmin?: boolean
   isConnected: boolean
   lastSyncAt: string | null
 }
 
-export function InboxTabsRow({ unclassifiedCount, isConnected, lastSyncAt }: InboxTabsRowProps) {
+type ActiveTab = 'triage' | 'emails' | 'transcripts'
+
+export function InboxTabsRow({ unclassifiedCount, unclassifiedTranscriptCount = 0, isAdmin = false, isConnected, lastSyncAt }: InboxTabsRowProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const { toast } = useToast()
   const [isSyncing, setIsSyncing] = useState(false)
+
+  const activeTab: ActiveTab = pathname.startsWith('/my/inbox/transcripts')
+    ? 'transcripts'
+    : pathname.startsWith('/my/inbox/triage')
+      ? 'triage'
+      : 'emails'
+
+  const syncEmail = useCallback(async () => {
+    const res = await fetch('/api/integrations/gmail/sync', { method: 'POST' })
+    return res.ok
+  }, [])
+
+  const syncTranscripts = useCallback(async () => {
+    const res = await fetch('/api/integrations/transcripts/sync', { method: 'POST' })
+    return res.ok
+  }, [])
 
   const handleSync = useCallback(async (silent = false) => {
     setIsSyncing(true)
     try {
-      const res = await fetch('/api/integrations/gmail/sync', {
-        method: 'POST',
-      })
-      if (res.ok) {
-        if (!silent) {
-          toast({
-            title: 'Sync complete',
-            description: 'Emails synced successfully.',
-          })
+      if (activeTab === 'transcripts') {
+        const ok = await syncTranscripts()
+        if (ok) {
+          if (!silent) toast({ title: 'Sync complete', description: 'Transcripts synced successfully.' })
+          router.refresh()
         }
-        router.refresh()
+      } else if (activeTab === 'triage') {
+        // Triage: sync emails (blocking) + transcripts (fire-and-forget)
+        const ok = await syncEmail()
+        syncTranscripts().then(() => router.refresh()).catch(() => {})
+        if (ok) {
+          if (!silent) toast({ title: 'Sync complete', description: 'Emails synced successfully.' })
+          router.refresh()
+        }
+      } else {
+        const ok = await syncEmail()
+        if (ok) {
+          if (!silent) toast({ title: 'Sync complete', description: 'Emails synced successfully.' })
+          router.refresh()
+        }
       }
     } catch {
       if (!silent) {
@@ -44,7 +74,7 @@ export function InboxTabsRow({ unclassifiedCount, isConnected, lastSyncAt }: Inb
     } finally {
       setIsSyncing(false)
     }
-  }, [router, toast])
+  }, [activeTab, syncEmail, syncTranscripts, router, toast])
 
   // Auto-sync on mount and poll every 60s
   const hasSyncedRef = useRef(false)
@@ -66,7 +96,12 @@ export function InboxTabsRow({ unclassifiedCount, isConnected, lastSyncAt }: Inb
 
   return (
     <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-      <InboxTabs unclassifiedCount={unclassifiedCount} className='flex-1 sm:flex-none' />
+      <InboxTabs
+        unclassifiedCount={unclassifiedCount}
+        unclassifiedTranscriptCount={unclassifiedTranscriptCount}
+        isAdmin={isAdmin}
+        className='flex-1 sm:flex-none'
+      />
 
       {isConnected && (
         <div className='flex items-center gap-4'>
