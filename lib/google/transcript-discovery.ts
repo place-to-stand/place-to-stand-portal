@@ -10,17 +10,17 @@ const TRANSCRIPT_SEARCH_QUERIES = [
   {
     name: 'Gemini Notes',
     query:
-      "name contains 'Notes by Gemini' and mimeType='application/vnd.google-apps.document'",
+      "name contains 'Notes by Gemini' and mimeType='application/vnd.google-apps.document' and trashed=false",
   },
   {
     name: 'Transcript',
     query:
-      "name contains 'Transcript' and mimeType='application/vnd.google-apps.document'",
+      "name contains 'Transcript' and mimeType='application/vnd.google-apps.document' and trashed=false",
   },
   {
     name: 'Meeting notes',
     query:
-      "name contains 'Meeting notes' and mimeType='application/vnd.google-apps.document'",
+      "name contains 'Meeting notes' and mimeType='application/vnd.google-apps.document' and trashed=false",
   },
 ] as const
 
@@ -129,6 +129,9 @@ async function searchDrive(
       'fields',
       'nextPageToken,files(id,name,webViewLink,createdTime,modifiedTime)'
     )
+    // Include files from shared/team drives
+    url.searchParams.set('supportsAllDrives', 'true')
+    url.searchParams.set('includeItemsFromAllDrives', 'true')
     if (pageToken) url.searchParams.set('pageToken', pageToken)
 
     const res = await fetch(url.toString(), {

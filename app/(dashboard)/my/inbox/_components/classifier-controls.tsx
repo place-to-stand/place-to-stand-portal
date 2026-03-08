@@ -108,8 +108,9 @@ export function ClassifierControls({
         : null
   )
   // If AI already analyzed and found no matches, show dismiss overlay immediately
+  // DB suggestions are a weaker signal (domain matching) — AI analysis takes priority
   const hasNoAiSuggestions = !!aiAnalyzedAt && !aiSuggestion?.clientId && !aiSuggestion?.projectId && !aiSuggestion?.leadId
-  const [suggestDismiss, setSuggestDismiss] = useState(hasNoAiSuggestions && !dbClientSuggestion && !dbLeadSuggestion)
+  const [suggestDismiss, setSuggestDismiss] = useState(hasNoAiSuggestions)
   const abortRef = useRef<AbortController | null>(null)
   const hasAutoAnalyzed = useRef(!!aiAnalyzedAt)
 
@@ -162,11 +163,9 @@ export function ClassifierControls({
         setTrack('lead')
         setAnalysisTrack('lead')
         setSelectedLeadId(suggestion.leadId)
-      } else if (dbLeadSuggestion) {
-        setTrack('lead')
-        setAnalysisTrack('lead')
-        setSelectedLeadId(dbLeadSuggestion.leadId)
       } else {
+        // AI explicitly found no matches — suggest dismiss
+        // DB suggestions (domain matching) are a weaker signal shown as row badges
         setSuggestDismiss(true)
       }
 
@@ -176,7 +175,7 @@ export function ClassifierControls({
       console.error('Classification analysis error:', err)
       setAnalysisState('error')
     }
-  }, [onAnalyze, projects, currentUserId, dbLeadSuggestion])
+  }, [onAnalyze, projects, currentUserId])
 
   // Auto-analyze on mount if not already cached
   useEffect(() => {

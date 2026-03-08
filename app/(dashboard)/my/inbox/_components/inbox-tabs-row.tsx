@@ -59,14 +59,17 @@ export function InboxTabsRow({ unclassifiedCount, unclassifiedTranscriptCount = 
 
           const emailSynced = emailData?.synced ?? 0
           const emailSkipped = emailData?.skipped ?? 0
-          const transcriptSynced = transcriptData?.synced ?? 0
+          // Transcript sync returns { created, updated, discovered, skipped }
+          const transcriptCreated = transcriptData?.created ?? 0
+          const transcriptDiscovered = transcriptData?.discovered ?? 0
 
           const parts: string[] = []
           if (emailSynced > 0) parts.push(`${emailSynced} new email${emailSynced === 1 ? '' : 's'}`)
-          if (transcriptSynced > 0) parts.push(`${transcriptSynced} new transcript${transcriptSynced === 1 ? '' : 's'}`)
+          if (transcriptCreated > 0) parts.push(`${transcriptCreated} new transcript${transcriptCreated === 1 ? '' : 's'}`)
 
+          const upToDate = emailSkipped + (transcriptDiscovered - transcriptCreated)
           const description = parts.length > 0
-            ? `Synced ${parts.join(' and ')}.${emailSkipped > 0 ? ` ${emailSkipped} already up to date.` : ''}`
+            ? `Synced ${parts.join(' and ')}.${upToDate > 0 ? ` ${upToDate} already up to date.` : ''}`
             : 'Everything is up to date.'
 
           toast({
