@@ -328,7 +328,6 @@ export function LeadSheet({
                     control={form.control}
                     assignees={assignees}
                     selectedSourceType={selectedSourceType}
-                    leadId={lead?.id}
                   />
                 </div>
 

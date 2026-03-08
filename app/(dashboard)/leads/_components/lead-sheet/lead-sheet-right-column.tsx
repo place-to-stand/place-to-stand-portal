@@ -8,6 +8,7 @@ import { LeadProposalsSection } from '../lead-proposals-section'
 import type { EditableProposal } from '../proposal-builder/proposal-builder-sheet'
 import { LeadSuggestionsPanel } from '../lead-suggestions-panel'
 import { LeadActionsPanel } from './lead-actions-panel'
+import { LeadEmailThreads } from './lead-email-threads'
 import { LeadTasksSection } from './lead-tasks-section'
 import { LeadTranscriptsSection } from './lead-transcripts-section'
 
@@ -85,6 +86,10 @@ export function LeadSheetRightColumn({
           lead={lead}
           onSuccess={onSuccess}
         />
+
+        {/* Emails */}
+        <Separator />
+        <LeadEmailThreads leadId={lead.id} />
 
         {/* Transcripts */}
         <Separator />
