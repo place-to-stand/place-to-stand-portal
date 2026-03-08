@@ -686,6 +686,7 @@ function EmailTriageRow({
               <span className='inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-400'>
                 <Sparkles className='h-2.5 w-2.5' />
                 {thread.aiSuggestedClientName}
+                {thread.aiSuggestedProjectName && ` → ${thread.aiSuggestedProjectName}`}
               </span>
             )}
             {!thread.aiSuggestedClientName && thread.aiSuggestedLeadName && (
