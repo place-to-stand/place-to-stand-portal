@@ -24,8 +24,7 @@ const TRANSCRIPT_SEARCH_QUERIES = [
   },
 ] as const
 
-const MAX_RESULTS_PER_QUERY = 100
-const MAX_DOCUMENTS_PER_SYNC = 50
+const DRIVE_PAGE_SIZE = 100
 const CONTENT_FETCH_DELAY_MS = 200
 
 // =============================================================================
@@ -61,7 +60,7 @@ type DriveFile = {
  */
 export async function discoverTranscriptsFromDrive(
   userId: string,
-  options?: { connectionId?: string }
+  options?: { connectionId?: string; since?: string }
 ): Promise<DiscoveredTranscript[]> {
   const { accessToken } = await getValidAccessToken(userId, options?.connectionId)
 
@@ -70,7 +69,11 @@ export async function discoverTranscriptsFromDrive(
 
   for (const searchQuery of TRANSCRIPT_SEARCH_QUERIES) {
     try {
-      const files = await searchDrive(accessToken, searchQuery.query)
+      // For incremental sync, add modifiedTime filter to narrow results
+      const query = options?.since
+        ? `${searchQuery.query} and modifiedTime > '${options.since}'`
+        : searchQuery.query
+      const files = await searchDrive(accessToken, query)
       console.log(
         `[Transcript Discovery] ${searchQuery.name}: ${files.length} results`
       )
@@ -91,14 +94,13 @@ export async function discoverTranscriptsFromDrive(
     `[Transcript Discovery] Total unique files: ${allFiles.size}`
   )
 
-  // Limit to MAX_DOCUMENTS_PER_SYNC most recent
+  // Sort by most recent
   const sortedFiles = Array.from(allFiles.values())
     .sort(
       (a, b) =>
         new Date(b.modifiedTime).getTime() -
         new Date(a.modifiedTime).getTime()
     )
-    .slice(0, MAX_DOCUMENTS_PER_SYNC)
 
   // Extract content from each document
   const results: DiscoveredTranscript[] = []
@@ -152,29 +154,38 @@ async function searchDrive(
   accessToken: string,
   query: string
 ): Promise<DriveFile[]> {
-  const url = new URL('https://www.googleapis.com/drive/v3/files')
-  url.searchParams.set('q', query)
-  url.searchParams.set('orderBy', 'modifiedTime desc')
-  url.searchParams.set('pageSize', String(MAX_RESULTS_PER_QUERY))
-  url.searchParams.set(
-    'fields',
-    'files(id,name,webViewLink,createdTime,modifiedTime)'
-  )
+  const allFiles: DriveFile[] = []
+  let pageToken: string | undefined
 
-  const res = await fetch(url.toString(), {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  })
+  do {
+    const url = new URL('https://www.googleapis.com/drive/v3/files')
+    url.searchParams.set('q', query)
+    url.searchParams.set('orderBy', 'modifiedTime desc')
+    url.searchParams.set('pageSize', String(DRIVE_PAGE_SIZE))
+    url.searchParams.set(
+      'fields',
+      'nextPageToken,files(id,name,webViewLink,createdTime,modifiedTime)'
+    )
+    if (pageToken) url.searchParams.set('pageToken', pageToken)
 
-  if (!res.ok) {
-    const errorText = await res.text()
-    throw new Error(`Drive search failed: ${errorText}`)
-  }
+    const res = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
 
-  const data = await res.json()
-  return (data.files ?? []) as DriveFile[]
+    if (!res.ok) {
+      const errorText = await res.text()
+      throw new Error(`Drive search failed: ${errorText}`)
+    }
+
+    const data = await res.json()
+    allFiles.push(...((data.files ?? []) as DriveFile[]))
+    pageToken = data.nextPageToken
+  } while (pageToken)
+
+  return allFiles
 }
 
-async function fetchDocContent(
+export async function fetchDocContent(
   accessToken: string,
   docId: string
 ): Promise<string | null> {
@@ -231,7 +242,7 @@ function extractTextFromGoogleDoc(doc: {
  * Extract participant names from transcript content.
  * Looks for speaker labels like "[HH:MM] Name:" or "Name:" at line starts.
  */
-function extractParticipantNames(content: string | null): string[] {
+export function extractParticipantNames(content: string | null): string[] {
   if (!content) return []
 
   const names = new Set<string>()

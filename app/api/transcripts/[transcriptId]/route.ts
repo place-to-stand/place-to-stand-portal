@@ -1,23 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { getCurrentUser } from '@/lib/auth/session'
-import { assertAdmin } from '@/lib/auth/permissions'
+import { requireUser } from '@/lib/auth/session'
 import { getTranscriptById, classifyTranscriptRecord } from '@/lib/queries/transcripts'
+import { getValidAccessToken } from '@/lib/gmail/client'
+import { fetchDocContent } from '@/lib/google/transcript-discovery'
 
 type RouteParams = { params: Promise<{ transcriptId: string }> }
 
 /**
- * GET /api/transcripts/[transcriptId] — Get single transcript with content
+ * GET /api/transcripts/[transcriptId] — Get single transcript with content (fetched from Google Drive)
  */
 export async function GET(
   _request: NextRequest,
   { params }: RouteParams
 ) {
-  const user = await getCurrentUser()
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-  assertAdmin(user)
+  const user = await requireUser()
 
   const { transcriptId } = await params
   const transcript = await getTranscriptById(transcriptId)
@@ -26,7 +23,18 @@ export async function GET(
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
-  return NextResponse.json({ ok: true, transcript })
+  // Fetch content fresh from Google Drive
+  let content: string | null = null
+  if (transcript.driveFileId) {
+    try {
+      const { accessToken } = await getValidAccessToken(user.id)
+      content = await fetchDocContent(accessToken, transcript.driveFileId)
+    } catch {
+      // Content unavailable — return transcript without it
+    }
+  }
+
+  return NextResponse.json({ ok: true, transcript: { ...transcript, content } })
 }
 
 /**
@@ -36,11 +44,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: RouteParams
 ) {
-  const user = await getCurrentUser()
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-  assertAdmin(user)
+  const user = await requireUser()
 
   const { transcriptId } = await params
   const transcript = await getTranscriptById(transcriptId)

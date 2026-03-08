@@ -60,6 +60,15 @@ export interface ThreadSummary {
     id: string
     contactName: string
   } | null
+  // AI classification cache
+  aiSuggestedClientId?: string | null
+  aiSuggestedClientName?: string | null
+  aiSuggestedProjectId?: string | null
+  aiSuggestedProjectName?: string | null
+  aiSuggestedLeadId?: string | null
+  aiSuggestedLeadName?: string | null
+  aiConfidence?: string | null
+  aiAnalyzedAt?: string | null
   // Preview of latest message
   latestMessage?: {
     id: string

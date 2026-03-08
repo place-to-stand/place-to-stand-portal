@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, count, desc, eq, ilike, isNull, or, sql } from 'drizzle-orm'
+import { and, count, desc, eq, ilike, isNull, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { transcripts } from '@/lib/db/schema'
@@ -16,9 +16,6 @@ export type TranscriptSummary = {
   driveFileId: string | null
   driveFileUrl: string | null
   meetingDate: string | null
-  durationMinutes: number | null
-  participantNames: string[]
-  participantEmails: string[]
   classification: string
   clientId: string | null
   projectId: string | null
@@ -38,22 +35,16 @@ export type TranscriptSummary = {
   updatedAt: string
 }
 
-export type TranscriptDetail = TranscriptSummary & {
-  content: string | null
-}
-
 export type TranscriptForClient = {
   id: string
   title: string
   meetingDate: string | null
-  durationMinutes: number | null
-  participantNames: string[]
   driveFileUrl: string | null
 }
 
 export type TranscriptForLead = TranscriptForClient
 
-// Columns to select for list views (excludes content)
+// Columns to select for list views
 const summaryColumns = {
   id: transcripts.id,
   title: transcripts.title,
@@ -61,9 +52,6 @@ const summaryColumns = {
   driveFileId: transcripts.driveFileId,
   driveFileUrl: transcripts.driveFileUrl,
   meetingDate: transcripts.meetingDate,
-  durationMinutes: transcripts.durationMinutes,
-  participantNames: transcripts.participantNames,
-  participantEmails: transcripts.participantEmails,
   classification: transcripts.classification,
   clientId: transcripts.clientId,
   projectId: transcripts.projectId,
@@ -93,6 +81,8 @@ export async function listTranscripts(options: {
   projectId?: string
   leadId?: string
   search?: string
+  /** Cursor: only return transcripts with meetingDate (or createdAt) before this ISO date */
+  beforeDate?: string
   limit?: number
   offset?: number
 }): Promise<TranscriptSummary[]> {
@@ -114,11 +104,11 @@ export async function listTranscripts(options: {
   }
   if (options.search) {
     const searchTerm = `%${options.search}%`
+    conditions.push(ilike(transcripts.title, searchTerm))
+  }
+  if (options.beforeDate) {
     conditions.push(
-      or(
-        ilike(transcripts.title, searchTerm),
-        sql`array_to_string(${transcripts.participantNames}, ', ') ILIKE ${searchTerm}`
-      )!
+      sql`COALESCE(${transcripts.meetingDate}, ${transcripts.createdAt}) < ${options.beforeDate}`
     )
   }
 
@@ -154,14 +144,47 @@ export async function getTranscriptCounts(): Promise<{
   return counts
 }
 
+export async function getTranscriptTotalCount(options: {
+  classification?: string
+  clientId?: string
+  projectId?: string
+  leadId?: string
+  search?: string
+}): Promise<number> {
+  const conditions = [isNull(transcripts.deletedAt)]
+
+  if (options.classification) {
+    conditions.push(
+      eq(transcripts.classification, options.classification as 'UNCLASSIFIED' | 'CLASSIFIED' | 'DISMISSED')
+    )
+  }
+  if (options.clientId) {
+    conditions.push(eq(transcripts.clientId, options.clientId))
+  }
+  if (options.projectId) {
+    conditions.push(eq(transcripts.projectId, options.projectId))
+  }
+  if (options.leadId) {
+    conditions.push(eq(transcripts.leadId, options.leadId))
+  }
+  if (options.search) {
+    const searchTerm = `%${options.search}%`
+    conditions.push(ilike(transcripts.title, searchTerm))
+  }
+
+  const [result] = await db
+    .select({ count: count() })
+    .from(transcripts)
+    .where(and(...conditions))
+
+  return result?.count ?? 0
+}
+
 export async function getTranscriptById(
   id: string
-): Promise<TranscriptDetail | null> {
+): Promise<TranscriptSummary | null> {
   const [result] = await db
-    .select({
-      ...summaryColumns,
-      content: transcripts.content,
-    })
+    .select(summaryColumns)
     .from(transcripts)
     .where(and(eq(transcripts.id, id), isNull(transcripts.deletedAt)))
     .limit(1)
@@ -173,7 +196,6 @@ export async function updateTranscript(
   id: string,
   data: Partial<{
     title: string
-    content: string | null
     classification: 'UNCLASSIFIED' | 'CLASSIFIED' | 'DISMISSED'
     clientId: string | null
     projectId: string | null
@@ -259,8 +281,6 @@ export async function getTranscriptsForClient(
       id: transcripts.id,
       title: transcripts.title,
       meetingDate: transcripts.meetingDate,
-      durationMinutes: transcripts.durationMinutes,
-      participantNames: transcripts.participantNames,
       driveFileUrl: transcripts.driveFileUrl,
     })
     .from(transcripts)
@@ -284,8 +304,6 @@ export async function getTranscriptsForLead(
       id: transcripts.id,
       title: transcripts.title,
       meetingDate: transcripts.meetingDate,
-      durationMinutes: transcripts.durationMinutes,
-      participantNames: transcripts.participantNames,
       driveFileUrl: transcripts.driveFileUrl,
     })
     .from(transcripts)

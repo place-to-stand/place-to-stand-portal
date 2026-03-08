@@ -1,18 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { getCurrentUser } from '@/lib/auth/session'
-import { assertAdmin } from '@/lib/auth/permissions'
+import { requireUser } from '@/lib/auth/session'
 import { listTranscripts, getTranscriptCounts } from '@/lib/queries/transcripts'
 
 /**
- * GET /api/transcripts — List transcripts (content column excluded)
+ * GET /api/transcripts — List transcripts
  */
 export async function GET(request: NextRequest) {
-  const user = await getCurrentUser()
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-  assertAdmin(user)
+  await requireUser()
 
   const searchParams = request.nextUrl.searchParams
   const classification = searchParams.get('classification') ?? undefined

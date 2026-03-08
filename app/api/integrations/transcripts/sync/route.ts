@@ -1,17 +1,16 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
-import { getCurrentUser } from '@/lib/auth/session'
-import { assertAdmin } from '@/lib/auth/permissions'
+import { requireUser } from '@/lib/auth/session'
 import { syncTranscriptsForUser } from '@/lib/transcripts/sync'
 
-export async function POST() {
-  const user = await getCurrentUser()
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-  assertAdmin(user)
+export const maxDuration = 300
 
-  const result = await syncTranscriptsForUser(user.id)
+export async function POST(request: NextRequest) {
+  const user = await requireUser()
+
+  const full = request.nextUrl.searchParams.get('full') === '1'
+
+  const result = await syncTranscriptsForUser(user.id, { full })
 
   return NextResponse.json({ ok: true, ...result })
 }

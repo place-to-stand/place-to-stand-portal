@@ -29,7 +29,7 @@ export type TranscriptSyncResult = {
  */
 export async function syncTranscriptsForUser(
   userId: string,
-  options?: { connectionId?: string }
+  options?: { connectionId?: string; full?: boolean }
 ): Promise<TranscriptSyncResult> {
   const result: TranscriptSyncResult = {
     discovered: 0,
@@ -39,9 +39,37 @@ export async function syncTranscriptsForUser(
     errors: [],
   }
 
+  // Determine if this is an incremental sync (has previous sync timestamp)
+  let lastTranscriptSyncAt: string | undefined
+  try {
+    const conditions = [
+      eq(oauthConnections.userId, userId),
+      eq(oauthConnections.provider, 'GOOGLE'),
+      eq(oauthConnections.status, 'ACTIVE'),
+      isNull(oauthConnections.deletedAt),
+    ]
+    if (options?.connectionId) {
+      conditions.push(eq(oauthConnections.id, options.connectionId))
+    }
+    const [conn] = await db
+      .select({ syncState: oauthConnections.syncState })
+      .from(oauthConnections)
+      .where(and(...conditions))
+      .limit(1)
+    const state = (conn?.syncState ?? {}) as Record<string, unknown>
+    if (!options?.full && typeof state.lastTranscriptSyncAt === 'string') {
+      lastTranscriptSyncAt = state.lastTranscriptSyncAt
+    }
+  } catch {
+    // Continue without incremental filter
+  }
+
   let discovered: DiscoveredTranscript[]
   try {
-    discovered = await discoverTranscriptsFromDrive(userId, options)
+    discovered = await discoverTranscriptsFromDrive(userId, {
+      connectionId: options?.connectionId,
+      since: lastTranscriptSyncAt,
+    })
     result.discovered = discovered.length
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown discovery error'
@@ -84,13 +112,11 @@ export async function syncTranscriptsForUser(
 
       if (existing) {
         // Document already exists — check if it needs updating
-        if (doc.title !== existing.title || doc.content) {
+        if (doc.title !== existing.title || doc.meetingDate) {
           await db
             .update(transcripts)
             .set({
               title: doc.title,
-              content: doc.content,
-              participantNames: doc.participantNames,
               meetingDate: doc.meetingDate,
               updatedAt: new Date().toISOString(),
             })
@@ -103,13 +129,10 @@ export async function syncTranscriptsForUser(
         // New document — insert
         await db.insert(transcripts).values({
           title: doc.title,
-          content: doc.content,
           source: doc.source,
           driveFileId: doc.driveFileId,
           driveFileUrl: doc.driveFileUrl,
           meetingDate: doc.meetingDate,
-          participantNames: doc.participantNames,
-          participantEmails: [],
           classification: 'UNCLASSIFIED',
           syncedBy: userId,
         })

@@ -1,6 +1,6 @@
 'use client'
 
-import { ExternalLink, FileText, Users } from 'lucide-react'
+import { ExternalLink, FileText } from 'lucide-react'
 import { format } from 'date-fns'
 
 import { Badge } from '@/components/ui/badge'
@@ -55,29 +55,11 @@ function TranscriptRow({ transcript }: { transcript: TranscriptForClient }) {
         <div className='truncate text-sm font-medium'>
           {transcript.title}
         </div>
-        <div className='text-muted-foreground mt-0.5 flex items-center gap-2 text-xs'>
-          {transcript.participantNames.length > 0 && (
-            <span className='flex items-center gap-1 truncate'>
-              <Users className='h-3 w-3 flex-shrink-0' />
-              {transcript.participantNames.slice(0, 3).join(', ')}
-              {transcript.participantNames.length > 3 && ` +${transcript.participantNames.length - 3}`}
-            </span>
-          )}
-          {transcript.participantNames.length > 0 && transcript.meetingDate && (
-            <span className='shrink-0'>·</span>
-          )}
-          {transcript.meetingDate && (
-            <span className='shrink-0'>
-              {format(new Date(transcript.meetingDate), 'MMM d, yyyy')}
-            </span>
-          )}
-          {transcript.durationMinutes && (
-            <>
-              <span className='shrink-0'>·</span>
-              <span className='shrink-0'>{transcript.durationMinutes}m</span>
-            </>
-          )}
-        </div>
+        {transcript.meetingDate && (
+          <div className='text-muted-foreground mt-0.5 text-xs'>
+            {format(new Date(transcript.meetingDate), 'MMM d, yyyy')}
+          </div>
+        )}
       </div>
       {transcript.driveFileUrl && (
         <a

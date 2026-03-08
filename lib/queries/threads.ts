@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, desc, eq, isNull, inArray, sql, or } from 'drizzle-orm'
+import { and, desc, eq, isNull, inArray, lt, sql, or } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
@@ -136,6 +136,14 @@ export async function getThreadSummaryById(
     participantEmails: thread.participantEmails ?? [],
     lastMessageAt: thread.lastMessageAt,
     messageCount: thread.messageCount,
+    aiSuggestedClientId: thread.aiSuggestedClientId,
+    aiSuggestedClientName: thread.aiSuggestedClientName,
+    aiSuggestedProjectId: thread.aiSuggestedProjectId,
+    aiSuggestedProjectName: thread.aiSuggestedProjectName,
+    aiSuggestedLeadId: thread.aiSuggestedLeadId,
+    aiSuggestedLeadName: thread.aiSuggestedLeadName,
+    aiConfidence: thread.aiConfidence,
+    aiAnalyzedAt: thread.aiAnalyzedAt,
     client: clientRow,
     project: projectRow,
     lead: leadRow,
@@ -294,6 +302,8 @@ export type ListThreadsOptions = {
   sentFilter?: 'sent' | 'inbox'
   /** Search threads by subject or message content (case-insensitive) */
   search?: string
+  /** Cursor: only return threads with lastMessageAt before this ISO date */
+  beforeDate?: string
   limit?: number
   offset?: number
 }
@@ -302,7 +312,7 @@ export async function listThreadsForUser(
   userId: string,
   options: ListThreadsOptions = {}
 ): Promise<ThreadSummary[]> {
-  const { clientId, projectId, projectType, leadId, status, linkedFilter, classificationFilter, sentFilter, search, limit = 50, offset = 0 } = options
+  const { clientId, projectId, projectType, leadId, status, linkedFilter, classificationFilter, sentFilter, search, beforeDate, limit = 50, offset = 0 } = options
 
   const conditions = [isNull(threads.deletedAt)]
 
@@ -426,6 +436,10 @@ export async function listThreadsForUser(
     )!
   )
 
+  if (beforeDate) {
+    conditions.push(lt(threads.lastMessageAt, beforeDate))
+  }
+
   const threadRows = await db
     .select()
     .from(threads)
@@ -482,6 +496,14 @@ export async function listThreadsForUser(
       participantEmails: thread.participantEmails ?? [],
       lastMessageAt: thread.lastMessageAt,
       messageCount: thread.messageCount,
+      aiSuggestedClientId: thread.aiSuggestedClientId,
+      aiSuggestedClientName: thread.aiSuggestedClientName,
+      aiSuggestedProjectId: thread.aiSuggestedProjectId,
+      aiSuggestedProjectName: thread.aiSuggestedProjectName,
+      aiSuggestedLeadId: thread.aiSuggestedLeadId,
+      aiSuggestedLeadName: thread.aiSuggestedLeadName,
+      aiConfidence: thread.aiConfidence,
+      aiAnalyzedAt: thread.aiAnalyzedAt,
       client: thread.clientId ? clientMap.get(thread.clientId) ?? null : null,
       project: thread.projectId ? projectMap.get(thread.projectId) ?? null : null,
       lead: thread.leadId ? leadMap.get(thread.leadId) ?? null : null,

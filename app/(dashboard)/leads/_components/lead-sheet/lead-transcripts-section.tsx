@@ -1,6 +1,6 @@
 'use client'
 
-import { ExternalLink, FileText, Loader2, Users } from 'lucide-react'
+import { ExternalLink, FileText, Loader2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { useQuery } from '@tanstack/react-query'
 
@@ -10,8 +10,6 @@ type TranscriptForLead = {
   id: string
   title: string
   meetingDate: string | null
-  durationMinutes: number | null
-  participantNames: string[]
   driveFileUrl: string | null
 }
 
@@ -78,21 +76,11 @@ export function LeadTranscriptsSection({ leadId }: LeadTranscriptsSectionProps) 
                   </a>
                 )}
               </div>
-              <div className='text-muted-foreground mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs'>
-                {t.meetingDate && (
-                  <span>{format(new Date(t.meetingDate), 'MMM d, yyyy')}</span>
-                )}
-                {t.durationMinutes && (
-                  <span>{t.durationMinutes}m</span>
-                )}
-                {t.participantNames.length > 0 && (
-                  <span className='flex items-center gap-1'>
-                    <Users className='h-3 w-3' />
-                    {t.participantNames.slice(0, 3).join(', ')}
-                    {t.participantNames.length > 3 && ` +${t.participantNames.length - 3}`}
-                  </span>
-                )}
-              </div>
+              {t.meetingDate && (
+                <div className='text-muted-foreground mt-1 text-xs'>
+                  {format(new Date(t.meetingDate), 'MMM d, yyyy')}
+                </div>
+              )}
             </div>
           ))}
         </div>

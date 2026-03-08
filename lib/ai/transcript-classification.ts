@@ -55,10 +55,9 @@ const transcriptClassifyResponseSchema = z.object({
         projectId: z.string().uuid().optional().describe('The exact UUID of the matched project (if applicable)'),
         projectName: z.string().optional().describe('The name of the matched project'),
         confidence: z.number().min(0).max(1).describe('Confidence score 0.0-1.0'),
-        reasoning: z.string().max(500).describe('Brief explanation'),
+        reasoning: z.string().describe('Brief explanation'),
       })
     )
-    .max(5)
     .describe('Matched clients, sorted by confidence'),
   leadMatches: z
     .array(
@@ -67,14 +66,12 @@ const transcriptClassifyResponseSchema = z.object({
         leadName: z.string().describe('The contact name of the matched lead'),
         companyName: z.string().optional().describe('The company name of the matched lead'),
         confidence: z.number().min(0).max(1).describe('Confidence score 0.0-1.0'),
-        reasoning: z.string().max(500).describe('Brief explanation'),
+        reasoning: z.string().describe('Brief explanation'),
       })
     )
-    .max(5)
     .describe('Matched leads, sorted by confidence'),
   noMatchReason: z
     .string()
-    .max(500)
     .optional()
     .describe('If no matches found, briefly explain why'),
 })
@@ -130,18 +127,29 @@ export async function classifyTranscript(
 
   const userPrompt = buildUserPrompt(params)
 
-  const { output, usage } = await generateText({
-    model,
-    system: TRANSCRIPT_CLASSIFY_SYSTEM_PROMPT,
-    prompt: userPrompt,
-    output: Output.object({ schema: transcriptClassifyResponseSchema }),
-  })
+  let output: z.infer<typeof transcriptClassifyResponseSchema> | null = null
+  let tokenUsage: { inputTokens?: number; outputTokens?: number } = {}
 
-  const filteredClientMatches = output!.clientMatches
+  try {
+    const result = await generateText({
+      model,
+      system: TRANSCRIPT_CLASSIFY_SYSTEM_PROMPT,
+      prompt: userPrompt,
+      output: Output.object({ schema: transcriptClassifyResponseSchema }),
+    })
+    output = result.output
+    tokenUsage = result.usage ?? {}
+  } catch (err) {
+    console.error('[Transcript Classification] AI generation failed:', err instanceof Error ? err.message : err)
+  }
+
+  const parsed = output ?? { clientMatches: [], leadMatches: [] }
+
+  const filteredClientMatches = parsed.clientMatches
     .filter(m => m.confidence >= 0.4)
     .sort((a, b) => b.confidence - a.confidence)
 
-  const filteredLeadMatches = output!.leadMatches
+  const filteredLeadMatches = parsed.leadMatches
     .filter(m => m.confidence >= 0.4)
     .sort((a, b) => b.confidence - a.confidence)
 
@@ -149,8 +157,8 @@ export async function classifyTranscript(
     clientMatches: filteredClientMatches,
     leadMatches: filteredLeadMatches,
     usage: {
-      promptTokens: usage?.inputTokens ?? 0,
-      completionTokens: usage?.outputTokens ?? 0,
+      promptTokens: tokenUsage.inputTokens ?? 0,
+      completionTokens: tokenUsage.outputTokens ?? 0,
     },
   }
 }

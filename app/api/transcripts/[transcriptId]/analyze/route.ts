@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { getCurrentUser } from '@/lib/auth/session'
-import { assertAdmin } from '@/lib/auth/permissions'
+import { requireUser } from '@/lib/auth/session'
 import { getTranscriptById, updateTranscript } from '@/lib/queries/transcripts'
 import { classifyTranscript } from '@/lib/ai/transcript-classification'
 import { fetchActiveClientsForClassification, fetchActiveProjectsForClassification, fetchActiveLeadsForClassification } from '@/lib/data/transcripts'
+import { getValidAccessToken } from '@/lib/gmail/client'
+import { fetchDocContent, extractParticipantNames } from '@/lib/google/transcript-discovery'
 
 type RouteParams = { params: Promise<{ transcriptId: string }> }
 
@@ -15,11 +16,7 @@ export async function GET(
   _request: NextRequest,
   { params }: RouteParams
 ) {
-  const user = await getCurrentUser()
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-  assertAdmin(user)
+  await requireUser()
 
   const { transcriptId } = await params
   const transcript = await getTranscriptById(transcriptId)
@@ -52,11 +49,7 @@ export async function POST(
   request: NextRequest,
   { params }: RouteParams
 ) {
-  const user = await getCurrentUser()
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-  assertAdmin(user)
+  const user = await requireUser()
 
   const { transcriptId } = await params
   const transcript = await getTranscriptById(transcriptId)
@@ -85,6 +78,19 @@ export async function POST(
     })
   }
 
+  // Fetch content from Google Drive for analysis
+  let content: string | null = null
+  if (transcript.driveFileId) {
+    try {
+      const { accessToken } = await getValidAccessToken(user.id)
+      content = await fetchDocContent(accessToken, transcript.driveFileId)
+    } catch {
+      // Proceed without content — AI can still classify by title
+    }
+  }
+
+  const participantNames = extractParticipantNames(content)
+
   // Run AI classification
   const [clients, projects, leads] = await Promise.all([
     fetchActiveClientsForClassification(),
@@ -94,8 +100,8 @@ export async function POST(
 
   const result = await classifyTranscript({
     title: transcript.title,
-    participantNames: transcript.participantNames,
-    contentSnippet: (transcript.content ?? '').slice(0, 2000),
+    participantNames,
+    contentSnippet: (content ?? '').slice(0, 2000),
     clients,
     projects,
     leads,

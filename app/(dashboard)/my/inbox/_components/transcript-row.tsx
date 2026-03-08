@@ -14,7 +14,6 @@ import {
   Loader2,
   Sparkles,
   UserCircle,
-  Users,
   XCircle,
 } from 'lucide-react'
 
@@ -212,18 +211,7 @@ export function TranscriptRow({
               </span>
             </div>
 
-            {/* Row 2: Participants */}
-            {transcript.participantNames.length > 0 && (
-              <p className='text-muted-foreground/70 mt-0.5 flex items-center gap-1 text-xs'>
-                <Users className='h-3 w-3 flex-shrink-0' />
-                <span className='truncate'>
-                  {transcript.participantNames.slice(0, 5).join(', ')}
-                  {transcript.participantNames.length > 5 && ` +${transcript.participantNames.length - 5} more`}
-                </span>
-              </p>
-            )}
-
-            {/* Row 3: AI suggestion badge */}
+            {/* Row 2: AI suggestion badge */}
             <div className='mt-1.5 flex items-center gap-2'>
               {hasAiSuggestion && transcript.aiSuggestedClientId && (
                 <span className='inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-400'>
@@ -238,12 +226,6 @@ export function TranscriptRow({
                   <Sparkles className='h-2.5 w-2.5' />
                   Lead → {transcript.aiSuggestedLeadName}
                   {transcript.aiConfidence && ` (${Math.round(parseFloat(transcript.aiConfidence) * 100)}%)`}
-                </span>
-              )}
-              {transcript.durationMinutes && (
-                <span className='text-muted-foreground/50 inline-flex items-center gap-1 text-[10px]'>
-                  <Clock className='h-2.5 w-2.5' />
-                  {transcript.durationMinutes}m
                 </span>
               )}
             </div>
@@ -470,9 +452,6 @@ export function TranscriptRow({
                     <Clock className='h-3 w-3' />
                     {format(new Date(transcript.meetingDate), 'PPP')}
                   </span>
-                )}
-                {transcript.durationMinutes && (
-                  <span>{transcript.durationMinutes} minutes</span>
                 )}
                 {transcript.driveFileUrl && (
                   <a

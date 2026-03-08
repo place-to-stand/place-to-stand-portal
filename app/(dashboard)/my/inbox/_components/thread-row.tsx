@@ -1,7 +1,7 @@
 'use client'
 
 import { formatDistanceToNow } from 'date-fns'
-import { Building2, FolderKanban, UserCircle } from 'lucide-react'
+import { Building2, FolderKanban, Mail, UserCircle } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -55,9 +55,12 @@ export function ThreadRow({
         </div>
       )}
 
-      {/* Unread indicator */}
+      {/* Unread indicator / Mail icon */}
       <div className='flex w-4 flex-shrink-0 items-center justify-center'>
-        {isUnread && <div className='h-2 w-2 rounded-full bg-blue-500' />}
+        {isUnread
+          ? <div className='h-2 w-2 rounded-full bg-blue-500' />
+          : <Mail className='text-muted-foreground h-3.5 w-3.5' />
+        }
       </div>
 
       {/* Center: Sender, count, timestamp / Subject */}

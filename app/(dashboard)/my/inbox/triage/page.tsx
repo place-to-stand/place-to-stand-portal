@@ -5,6 +5,7 @@ import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { clients, projects, leads } from '@/lib/db/schema'
 import { getInboxSidebarCounts } from '@/lib/queries/threads'
+import { getTranscriptCounts } from '@/lib/queries/transcripts'
 
 import { TriageView } from '../_components/triage-view'
 
@@ -12,7 +13,7 @@ export default async function TriagePage() {
   const user = await requireUser()
   assertAdmin(user)
 
-  const [clientsList, projectsList, leadsList, sidebarCounts] = await Promise.all([
+  const [clientsList, projectsList, leadsList, sidebarCounts, transcriptCounts] = await Promise.all([
     db
       .select({ id: clients.id, name: clients.name, slug: clients.slug })
       .from(clients)
@@ -41,6 +42,7 @@ export default async function TriagePage() {
       .where(isNull(leads.deletedAt))
       .orderBy(leads.contactName),
     getInboxSidebarCounts(user.id),
+    getTranscriptCounts(),
   ])
 
   return (
@@ -49,7 +51,7 @@ export default async function TriagePage() {
       projects={projectsList}
       leads={leadsList}
       currentUserId={user.id}
-      serverQueueSize={sidebarCounts.unclassified}
+      serverQueueSize={sidebarCounts.unclassified + transcriptCounts.unclassified}
     />
   )
 }

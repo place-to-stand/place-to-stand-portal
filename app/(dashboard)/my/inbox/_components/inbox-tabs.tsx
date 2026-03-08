@@ -11,17 +11,28 @@ type InboxNavTab = 'triage' | 'emails' | 'transcripts'
 interface InboxTabsProps {
   unclassifiedCount: number
   unclassifiedTranscriptCount?: number
-  isAdmin?: boolean
   className?: string
 }
 
-const INBOX_TABS: Array<{ label: string; value: InboxNavTab; href: string; adminOnly?: boolean }> = [
-  { label: 'Triage', value: 'triage', href: '/my/inbox/triage' },
+const INBOX_TABS: Array<{
+  label: string
+  value: InboxNavTab
+  href: string
+}> = [
+  { label: 'All Triage', value: 'triage', href: '/my/inbox/triage' },
   { label: 'Emails', value: 'emails', href: '/my/inbox/emails' },
-  { label: 'Transcripts', value: 'transcripts', href: '/my/inbox/transcripts', adminOnly: true },
+  {
+    label: 'Transcripts',
+    value: 'transcripts',
+    href: '/my/inbox/transcripts',
+  },
 ]
 
-export function InboxTabs({ unclassifiedCount, unclassifiedTranscriptCount = 0, isAdmin = false, className }: InboxTabsProps) {
+export function InboxTabs({
+  unclassifiedCount,
+  unclassifiedTranscriptCount = 0,
+  className,
+}: InboxTabsProps) {
   const router = useRouter()
   const pathname = usePathname()
 
@@ -31,7 +42,7 @@ export function InboxTabs({ unclassifiedCount, unclassifiedTranscriptCount = 0, 
       ? 'transcripts'
       : 'emails'
 
-  const visibleTabs = INBOX_TABS.filter(tab => !tab.adminOnly || isAdmin)
+  const visibleTabs = INBOX_TABS
 
   const handleValueChange = useCallback(
     (nextValue: string) => {
@@ -52,12 +63,20 @@ export function InboxTabs({ unclassifiedCount, unclassifiedTranscriptCount = 0, 
       <TabsList className='bg-muted/40 h-10 w-full justify-start gap-2 rounded-lg p-1 sm:w-auto'>
         {visibleTabs.map(tab => {
           const badgeCount =
-            tab.value === 'triage' ? unclassifiedCount
-            : tab.value === 'transcripts' ? unclassifiedTranscriptCount
-            : 0
+            tab.value === 'triage'
+              ? unclassifiedCount + unclassifiedTranscriptCount
+              : tab.value === 'emails'
+                ? unclassifiedCount
+                : tab.value === 'transcripts'
+                  ? unclassifiedTranscriptCount
+                  : 0
 
           return (
-            <TabsTrigger key={tab.value} value={tab.value} className='px-3 py-1.5 text-sm'>
+            <TabsTrigger
+              key={tab.value}
+              value={tab.value}
+              className='px-3 py-1.5 text-sm'
+            >
               {tab.label}
               {badgeCount > 0 && (
                 <span className='bg-primary text-primary-foreground ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-medium'>

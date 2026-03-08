@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
 import { RefreshCw } from 'lucide-react'
 
@@ -14,58 +14,67 @@ import { InboxTabs } from './inbox-tabs'
 interface InboxTabsRowProps {
   unclassifiedCount: number
   unclassifiedTranscriptCount?: number
-  isAdmin?: boolean
   isConnected: boolean
   lastSyncAt: string | null
 }
 
-type ActiveTab = 'triage' | 'emails' | 'transcripts'
-
-export function InboxTabsRow({ unclassifiedCount, unclassifiedTranscriptCount = 0, isAdmin = false, isConnected, lastSyncAt }: InboxTabsRowProps) {
+export function InboxTabsRow({ unclassifiedCount, unclassifiedTranscriptCount = 0, isConnected, lastSyncAt }: InboxTabsRowProps) {
   const router = useRouter()
-  const pathname = usePathname()
   const { toast } = useToast()
   const [isSyncing, setIsSyncing] = useState(false)
+  const [isCtrlHeld, setIsCtrlHeld] = useState(false)
 
-  const activeTab: ActiveTab = pathname.startsWith('/my/inbox/transcripts')
-    ? 'transcripts'
-    : pathname.startsWith('/my/inbox/triage')
-      ? 'triage'
-      : 'emails'
+  // Track Ctrl/Meta key state for full sync mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Control' || e.key === 'Meta') setIsCtrlHeld(true)
+    }
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Control' || e.key === 'Meta') setIsCtrlHeld(false)
+    }
+    const handleBlur = () => setIsCtrlHeld(false)
 
-  const syncEmail = useCallback(async () => {
-    const res = await fetch('/api/integrations/gmail/sync', { method: 'POST' })
-    return res.ok
+    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('keyup', handleKeyUp)
+    window.addEventListener('blur', handleBlur)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('keyup', handleKeyUp)
+      window.removeEventListener('blur', handleBlur)
+    }
   }, [])
 
-  const syncTranscripts = useCallback(async () => {
-    const res = await fetch('/api/integrations/transcripts/sync', { method: 'POST' })
-    return res.ok
-  }, [])
-
-  const handleSync = useCallback(async (silent = false) => {
+  const handleSync = useCallback(async (silent = false, full = false) => {
     setIsSyncing(true)
     try {
-      if (activeTab === 'transcripts') {
-        const ok = await syncTranscripts()
-        if (ok) {
-          if (!silent) toast({ title: 'Sync complete', description: 'Transcripts synced successfully.' })
-          router.refresh()
+      const qs = full ? '?full=1' : ''
+      const [emailRes, transcriptRes] = await Promise.all([
+        fetch(`/api/integrations/gmail/sync${qs}`, { method: 'POST' }),
+        fetch(`/api/integrations/transcripts/sync${qs}`, { method: 'POST' }),
+      ])
+      if (emailRes.ok || transcriptRes.ok) {
+        if (!silent) {
+          const emailData = emailRes.ok ? await emailRes.json().catch(() => null) : null
+          const transcriptData = transcriptRes.ok ? await transcriptRes.json().catch(() => null) : null
+
+          const emailSynced = emailData?.synced ?? 0
+          const emailSkipped = emailData?.skipped ?? 0
+          const transcriptSynced = transcriptData?.synced ?? 0
+
+          const parts: string[] = []
+          if (emailSynced > 0) parts.push(`${emailSynced} new email${emailSynced === 1 ? '' : 's'}`)
+          if (transcriptSynced > 0) parts.push(`${transcriptSynced} new transcript${transcriptSynced === 1 ? '' : 's'}`)
+
+          const description = parts.length > 0
+            ? `Synced ${parts.join(' and ')}.${emailSkipped > 0 ? ` ${emailSkipped} already up to date.` : ''}`
+            : 'Everything is up to date.'
+
+          toast({
+            title: full ? 'Full sync complete' : 'Sync complete',
+            description,
+          })
         }
-      } else if (activeTab === 'triage') {
-        // Triage: sync emails (blocking) + transcripts (fire-and-forget)
-        const ok = await syncEmail()
-        syncTranscripts().then(() => router.refresh()).catch(() => {})
-        if (ok) {
-          if (!silent) toast({ title: 'Sync complete', description: 'Emails synced successfully.' })
-          router.refresh()
-        }
-      } else {
-        const ok = await syncEmail()
-        if (ok) {
-          if (!silent) toast({ title: 'Sync complete', description: 'Emails synced successfully.' })
-          router.refresh()
-        }
+        router.refresh()
       }
     } catch {
       if (!silent) {
@@ -74,7 +83,7 @@ export function InboxTabsRow({ unclassifiedCount, unclassifiedTranscriptCount = 
     } finally {
       setIsSyncing(false)
     }
-  }, [activeTab, syncEmail, syncTranscripts, router, toast])
+  }, [router, toast])
 
   // Auto-sync on mount and poll every 60s
   const hasSyncedRef = useRef(false)
@@ -99,7 +108,6 @@ export function InboxTabsRow({ unclassifiedCount, unclassifiedTranscriptCount = 
       <InboxTabs
         unclassifiedCount={unclassifiedCount}
         unclassifiedTranscriptCount={unclassifiedTranscriptCount}
-        isAdmin={isAdmin}
         className='flex-1 sm:flex-none'
       />
 
@@ -114,13 +122,17 @@ export function InboxTabsRow({ unclassifiedCount, unclassifiedTranscriptCount = 
           <Button
             variant='outline'
             size='sm'
-            onClick={() => handleSync()}
+            onClick={() => handleSync(false, isCtrlHeld)}
             disabled={isSyncing}
           >
             <RefreshCw
               className={cn('h-4 w-4', isSyncing && 'animate-spin')}
             />
-            {isSyncing ? 'Syncing...' : 'Sync'}
+            {isSyncing
+              ? 'Syncing...'
+              : isCtrlHeld
+                ? 'Full Sync'
+                : 'Sync'}
           </Button>
         </div>
       )}

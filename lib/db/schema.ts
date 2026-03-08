@@ -1093,6 +1093,15 @@ export const threads = pgTable(
     classification: threadClassification().default('UNCLASSIFIED').notNull(),
     classifiedBy: uuid('classified_by'),
     classifiedAt: timestamp('classified_at', { withTimezone: true, mode: 'string' }),
+    // AI classification cache (same pattern as transcripts)
+    aiSuggestedClientId: uuid('ai_suggested_client_id'),
+    aiSuggestedClientName: text('ai_suggested_client_name'),
+    aiSuggestedProjectId: uuid('ai_suggested_project_id'),
+    aiSuggestedProjectName: text('ai_suggested_project_name'),
+    aiSuggestedLeadId: uuid('ai_suggested_lead_id'),
+    aiSuggestedLeadName: text('ai_suggested_lead_name'),
+    aiConfidence: numeric('ai_confidence', { precision: 3, scale: 2 }),
+    aiAnalyzedAt: timestamp('ai_analyzed_at', { withTimezone: true, mode: 'string' }),
     createdBy: uuid('created_by'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
@@ -1850,7 +1859,6 @@ export const transcripts = pgTable(
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
     title: text().notNull(),
-    content: text(),
     source: transcriptSource().notNull(),
 
     // Google Drive reference
@@ -1859,9 +1867,6 @@ export const transcripts = pgTable(
 
     // Meeting context
     meetingDate: timestamp('meeting_date', { withTimezone: true, mode: 'string' }),
-    durationMinutes: integer('duration_minutes'),
-    participantNames: text('participant_names').array().default([]).notNull(),
-    participantEmails: text('participant_emails').array().default([]).notNull(),
 
     // Classification (same model as threads)
     classification: transcriptClassification().default('UNCLASSIFIED').notNull(),

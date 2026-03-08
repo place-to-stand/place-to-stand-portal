@@ -26,6 +26,38 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ thr
       throw new ForbiddenError('Access denied')
     }
 
+    const body = await _req.json().catch(() => ({}))
+    const force = body?.force === true
+
+    // Return cached results if available (unless force re-analyze)
+    if (thread.aiAnalyzedAt && !force) {
+      return NextResponse.json({
+        ok: true,
+        cached: true,
+        suggestions: thread.aiSuggestedClientId
+          ? [{
+              clientId: thread.aiSuggestedClientId,
+              clientName: thread.aiSuggestedClientName,
+              confidence: thread.aiConfidence ? parseFloat(thread.aiConfidence) : 0,
+            }]
+          : [],
+        projectSuggestions: thread.aiSuggestedProjectId
+          ? [{
+              projectId: thread.aiSuggestedProjectId,
+              projectName: thread.aiSuggestedProjectName,
+              confidence: thread.aiConfidence ? parseFloat(thread.aiConfidence) : 0,
+            }]
+          : [],
+        leadSuggestions: thread.aiSuggestedLeadId
+          ? [{
+              leadId: thread.aiSuggestedLeadId,
+              leadName: thread.aiSuggestedLeadName,
+              confidence: thread.aiConfidence ? parseFloat(thread.aiConfidence) : 0,
+            }]
+          : [],
+      })
+    }
+
     // If thread already has both client and project, return empty suggestions
     if (thread.clientId && thread.projectId) {
       return NextResponse.json({ ok: true, suggestions: [], projectSuggestions: [] })
@@ -156,7 +188,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ thr
           matchType: match.matchType,
         }))
 
-    const leadSuggestions = thread.leadId
+    const leadSuggestionsList = thread.leadId
       ? []
       : leadMatches.map(match => ({
           leadId: match.leadId,
@@ -166,7 +198,38 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ thr
           matchType: match.matchType,
         }))
 
-    return NextResponse.json({ ok: true, suggestions, projectSuggestions, leadSuggestions })
+    // Cache top results in thread AI columns
+    const topClient = suggestions[0]
+    const topProject = projectSuggestions[0]
+    const topLead = leadSuggestionsList[0]
+    const topConfidence = Math.max(
+      topClient?.confidence ?? 0,
+      topProject?.confidence ?? 0,
+      topLead?.confidence ?? 0,
+    ) || null
+
+    await db
+      .update(threads)
+      .set({
+        aiSuggestedClientId: topClient?.clientId ?? null,
+        aiSuggestedClientName: topClient?.clientName ?? null,
+        aiSuggestedProjectId: topProject?.projectId ?? null,
+        aiSuggestedProjectName: topProject?.projectName ?? null,
+        aiSuggestedLeadId: topLead?.leadId ?? null,
+        aiSuggestedLeadName: topLead?.leadName ?? null,
+        aiConfidence: topConfidence?.toString() ?? null,
+        aiAnalyzedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(threads.id, threadId))
+
+    return NextResponse.json({
+      ok: true,
+      cached: false,
+      suggestions,
+      projectSuggestions,
+      leadSuggestions: leadSuggestionsList,
+    })
   } catch (err) {
     const error = err as HttpError
     console.error('Thread suggestions error:', error)
