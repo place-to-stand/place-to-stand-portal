@@ -17,6 +17,7 @@ import { Separator } from '@/components/ui/separator'
 import type { TranscriptSummary } from '@/lib/queries/transcripts'
 
 import { ClassifierControls } from './classifier-controls'
+import { TranscriptContentRenderer } from './transcript-content-renderer'
 
 type Client = { id: string; name: string; slug?: string | null }
 type Project = { id: string; name: string; slug?: string | null; clientId: string | null; type: 'CLIENT' | 'PERSONAL' | 'INTERNAL'; ownerId?: string | null; createdBy?: string | null }
@@ -179,17 +180,7 @@ export function TranscriptDetailSheet({
                   <span className='text-muted-foreground text-sm'>Loading transcript...</span>
                 </div>
               ) : content ? (
-                <div className='overflow-hidden rounded-lg border'>
-                  <div className='bg-muted/40 flex items-center gap-2 border-b px-4 py-2'>
-                    <FileText className='text-muted-foreground h-4 w-4' />
-                    <span className='text-muted-foreground text-xs font-medium'>Transcript</span>
-                  </div>
-                  <div className='p-4'>
-                    <div className='whitespace-pre-wrap font-sans text-sm leading-relaxed'>
-                      {content}
-                    </div>
-                  </div>
-                </div>
+                <TranscriptContentRenderer content={content} />
               ) : (
                 <div className='flex flex-col items-center justify-center gap-3 py-16'>
                   <FileText className='text-muted-foreground h-8 w-8' />

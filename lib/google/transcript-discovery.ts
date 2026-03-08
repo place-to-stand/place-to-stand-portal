@@ -201,7 +201,7 @@ function extractTextFromGoogleDoc(doc: {
     }
   }
 
-  const text = lines.join('')
+  const text = lines.join('\n')
   return text || null
 }
 
