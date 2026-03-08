@@ -22,6 +22,11 @@ const TRANSCRIPT_SEARCH_QUERIES = [
     query:
       "name contains 'Meeting notes' and mimeType='application/vnd.google-apps.document' and trashed=false",
   },
+  {
+    name: 'Call notes',
+    query:
+      "name contains 'Call notes' and mimeType='application/vnd.google-apps.document' and trashed=false",
+  },
 ] as const
 
 const DRIVE_PAGE_SIZE = 100

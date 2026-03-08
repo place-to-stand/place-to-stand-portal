@@ -6,6 +6,7 @@ import { db } from '@/lib/db'
 import { transcripts, oauthConnections } from '@/lib/db/schema'
 import { discoverTranscriptsFromDrive } from '@/lib/google/transcript-discovery'
 import type { DiscoveredTranscript } from '@/lib/google/transcript-discovery'
+import { hasDocsScopes } from '@/lib/oauth/google'
 
 // =============================================================================
 // Types
@@ -52,10 +53,20 @@ export async function syncTranscriptsForUser(
       conditions.push(eq(oauthConnections.id, options.connectionId))
     }
     const [conn] = await db
-      .select({ syncState: oauthConnections.syncState })
+      .select({ syncState: oauthConnections.syncState, scopes: oauthConnections.scopes })
       .from(oauthConnections)
       .where(and(...conditions))
       .limit(1)
+
+    // Fail loudly if the connection lacks Drive scopes
+    const scopes = (conn?.scopes ?? []) as string[]
+    if (!hasDocsScopes(scopes)) {
+      const msg = 'Google connection missing Drive scopes — reconnect to grant access'
+      console.warn(`[Transcript Sync] ${msg}`)
+      result.errors.push(msg)
+      return result
+    }
+
     const state = (conn?.syncState ?? {}) as Record<string, unknown>
     if (!options?.full && typeof state.lastTranscriptSyncAt === 'string') {
       lastTranscriptSyncAt = state.lastTranscriptSyncAt
