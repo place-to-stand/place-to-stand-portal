@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireUser } from '@/lib/auth/session'
 import { getTranscriptById, classifyTranscriptRecord } from '@/lib/queries/transcripts'
 import { getValidAccessToken } from '@/lib/gmail/client'
-import { fetchDocContent } from '@/lib/google/transcript-discovery'
+import { fetchDocContent, fetchDocHtml } from '@/lib/google/transcript-discovery'
 
 type RouteParams = { params: Promise<{ transcriptId: string }> }
 
@@ -23,18 +23,24 @@ export async function GET(
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
-  // Fetch content fresh from Google Drive
+  // Fetch content fresh from Google Drive (HTML for rendering, text for AI/fallback)
   let content: string | null = null
+  let contentHtml: string | null = null
   if (transcript.driveFileId) {
     try {
       const { accessToken } = await getValidAccessToken(user.id)
-      content = await fetchDocContent(accessToken, transcript.driveFileId)
+      const [text, html] = await Promise.all([
+        fetchDocContent(accessToken, transcript.driveFileId),
+        fetchDocHtml(accessToken, transcript.driveFileId),
+      ])
+      content = text
+      contentHtml = html
     } catch {
       // Content unavailable — return transcript without it
     }
   }
 
-  return NextResponse.json({ ok: true, transcript: { ...transcript, content } })
+  return NextResponse.json({ ok: true, transcript: { ...transcript, content, contentHtml } })
 }
 
 /**

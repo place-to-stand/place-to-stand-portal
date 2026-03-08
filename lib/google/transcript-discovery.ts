@@ -175,6 +175,29 @@ export async function fetchDocContent(
   return extractTextFromGoogleDoc(doc)
 }
 
+/**
+ * Export a Google Doc as HTML via the Drive API.
+ * Preserves headings, bold, italic, lists, and other formatting.
+ */
+export async function fetchDocHtml(
+  accessToken: string,
+  docId: string
+): Promise<string | null> {
+  const url = `https://www.googleapis.com/drive/v3/files/${docId}/export?mimeType=text/html`
+
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+
+  if (!res.ok) {
+    const errorText = await res.text()
+    throw new Error(`Drive export failed: ${errorText}`)
+  }
+
+  const html = await res.text()
+  return html || null
+}
+
 function extractTextFromGoogleDoc(doc: {
   body?: {
     content?: Array<{

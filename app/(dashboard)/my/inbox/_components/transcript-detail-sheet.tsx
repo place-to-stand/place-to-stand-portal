@@ -18,6 +18,7 @@ import type { TranscriptSummary } from '@/lib/queries/transcripts'
 
 import { ClassifierControls } from './classifier-controls'
 import { TranscriptContentRenderer } from './transcript-content-renderer'
+import { TranscriptHtmlRenderer } from './transcript-html-renderer'
 
 type Client = { id: string; name: string; slug?: string | null }
 type Project = { id: string; name: string; slug?: string | null; clientId: string | null; type: 'CLIENT' | 'PERSONAL' | 'INTERNAL'; ownerId?: string | null; createdBy?: string | null }
@@ -49,6 +50,7 @@ export function TranscriptDetailSheet({
   onClose,
 }: TranscriptDetailSheetProps) {
   const [content, setContent] = useState<string | null>(null)
+  const [contentHtml, setContentHtml] = useState<string | null>(null)
   const [isLoadingContent, setIsLoadingContent] = useState(false)
   const [loadedTranscriptId, setLoadedTranscriptId] = useState<string | null>(null)
   const transcriptId = transcript?.id ?? null
@@ -56,12 +58,14 @@ export function TranscriptDetailSheet({
   const loadContent = useCallback(async (id: string) => {
     setIsLoadingContent(true)
     setContent(null)
+    setContentHtml(null)
     setLoadedTranscriptId(id)
     try {
       const res = await fetch(`/api/transcripts/${id}`)
       if (res.ok) {
         const data = await res.json()
         setContent(data?.transcript?.content ?? null)
+        setContentHtml(data?.transcript?.contentHtml ?? null)
       }
     } catch {
       // ignore
@@ -179,6 +183,8 @@ export function TranscriptDetailSheet({
                   <Loader2 className='text-muted-foreground h-6 w-6 animate-spin' />
                   <span className='text-muted-foreground text-sm'>Loading transcript...</span>
                 </div>
+              ) : contentHtml ? (
+                <TranscriptHtmlRenderer html={contentHtml} />
               ) : content ? (
                 <TranscriptContentRenderer content={content} />
               ) : (
