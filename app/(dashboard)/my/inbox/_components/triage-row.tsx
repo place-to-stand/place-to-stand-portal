@@ -262,13 +262,14 @@ export function TriageRow({
 
           {/* Row 4: Badges */}
           <div className='mt-1.5 flex items-center gap-2'>
-            {thread.clientSuggestion && (
+            {(clientSuggestion || thread.clientSuggestion) && (
               <span className='inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-400'>
-                <Building2 className='h-2.5 w-2.5' />
-                {thread.clientSuggestion.clientName}
+                {clientSuggestion ? <Sparkles className='h-2.5 w-2.5' /> : <Building2 className='h-2.5 w-2.5' />}
+                {clientSuggestion?.clientName ?? thread.clientSuggestion?.clientName}
+                {projectSuggestion?.projectName && ` → ${projectSuggestion.projectName}`}
               </span>
             )}
-            {thread.leadSuggestion && !thread.clientSuggestion && (
+            {thread.leadSuggestion && !thread.clientSuggestion && !clientSuggestion && (
               <span className='inline-flex items-center gap-1 rounded-full bg-purple-500/10 px-2 py-0.5 text-[10px] font-medium text-purple-400'>
                 <UserCircle className='h-2.5 w-2.5' />
                 {thread.leadSuggestion.contactName}
