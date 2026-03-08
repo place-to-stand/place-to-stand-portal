@@ -232,10 +232,23 @@ export async function classifyTranscriptRecord(
     clientId?: string | null
     projectId?: string | null
     leadId?: string | null
-    classification?: 'CLASSIFIED' | 'DISMISSED'
+    classification?: 'CLASSIFIED' | 'DISMISSED' | 'UNCLASSIFIED'
   }
 ): Promise<void> {
   const now = new Date().toISOString()
+
+  if (data.classification === 'UNCLASSIFIED') {
+    // Undo dismiss: revert to unclassified, keep AI fields intact
+    await updateTranscript(id, {
+      classification: 'UNCLASSIFIED',
+      clientId: null,
+      projectId: null,
+      leadId: null,
+      classifiedBy: null,
+      classifiedAt: null,
+    })
+    return
+  }
 
   if (data.classification === 'DISMISSED') {
     // Dismiss: clear all links
