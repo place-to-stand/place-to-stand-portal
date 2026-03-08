@@ -25,7 +25,6 @@ const TRANSCRIPT_SEARCH_QUERIES = [
 ] as const
 
 const DRIVE_PAGE_SIZE = 100
-const CONTENT_FETCH_DELAY_MS = 200
 
 // =============================================================================
 // Types
@@ -35,10 +34,8 @@ export type DiscoveredTranscript = {
   driveFileId: string
   driveFileUrl: string
   title: string
-  content: string | null
   source: 'DRIVE_SEARCH'
   meetingDate: string | null
-  participantNames: string[]
   modifiedTime: string
 }
 
@@ -94,56 +91,22 @@ export async function discoverTranscriptsFromDrive(
     `[Transcript Discovery] Total unique files: ${allFiles.size}`
   )
 
-  // Sort by most recent
-  const sortedFiles = Array.from(allFiles.values())
+  // Sort by most recent and map to metadata-only results
+  // (content is lazy-loaded on demand from detail sheet and analyze endpoints)
+  return Array.from(allFiles.values())
     .sort(
       (a, b) =>
         new Date(b.modifiedTime).getTime() -
         new Date(a.modifiedTime).getTime()
     )
-
-  // Extract content from each document
-  const results: DiscoveredTranscript[] = []
-
-  for (const file of sortedFiles) {
-    try {
-      const content = await fetchDocContent(accessToken, file.id)
-      const participantNames = extractParticipantNames(content)
-      const meetingDate = extractMeetingDate(file.name, file.createdTime)
-
-      results.push({
-        driveFileId: file.id,
-        driveFileUrl: file.webViewLink,
-        title: file.name,
-        content,
-        source: 'DRIVE_SEARCH',
-        meetingDate,
-        participantNames,
-        modifiedTime: file.modifiedTime,
-      })
-    } catch (error) {
-      console.error(
-        `[Transcript Discovery] Failed to fetch content for ${file.name}:`,
-        error
-      )
-      // Insert with null content — can still be classified by title
-      results.push({
-        driveFileId: file.id,
-        driveFileUrl: file.webViewLink,
-        title: file.name,
-        content: null,
-        source: 'DRIVE_SEARCH',
-        meetingDate: extractMeetingDate(file.name, file.createdTime),
-        participantNames: [],
-        modifiedTime: file.modifiedTime,
-      })
-    }
-
-    // Rate limit content fetches
-    await new Promise(resolve => setTimeout(resolve, CONTENT_FETCH_DELAY_MS))
-  }
-
-  return results
+    .map(file => ({
+      driveFileId: file.id,
+      driveFileUrl: file.webViewLink,
+      title: file.name,
+      source: 'DRIVE_SEARCH' as const,
+      meetingDate: extractMeetingDate(file.name, file.createdTime),
+      modifiedTime: file.modifiedTime,
+    }))
 }
 
 // =============================================================================
