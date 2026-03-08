@@ -107,12 +107,15 @@ export function ClassifierControls({
       : aiAnalyzedAt && aiSuggestion?.leadId ? 'lead'
         : null
   )
-  // If AI already analyzed and found no matches, show dismiss overlay immediately
-  // DB suggestions are a weaker signal (domain matching) — AI analysis takes priority
-  const hasNoAiSuggestions = !!aiAnalyzedAt && !aiSuggestion?.clientId && !aiSuggestion?.projectId && !aiSuggestion?.leadId
-  const [suggestDismiss, setSuggestDismiss] = useState(hasNoAiSuggestions)
+  // User clicked "Classify manually" — suppress dismiss overlay
+  const [manualClassify, setManualClassify] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
   const hasAutoAnalyzed = useRef(!!aiAnalyzedAt)
+
+  // Derived: show dismiss overlay when analysis completed with no match
+  // This is derived from state, not set explicitly — no code path can miss it
+  const isAnalyzed = analysisState === 'done'
+  const showDismissOverlay = isAnalyzed && !analysisTrack && !manualClassify
 
   const filteredProjects = useMemo(() => {
     if (!selectedClientId) return []
@@ -133,11 +136,13 @@ export function ClassifierControls({
   const cancelAnalysis = useCallback(() => {
     abortRef.current?.abort()
     abortRef.current = null
+    setManualClassify(true)
     setAnalysisState('done')
   }, [])
 
   const handleAnalyze = useCallback(async () => {
     setAnalysisState('analyzing')
+    setManualClassify(false)
     try {
       const suggestion = await onAnalyze()
 
@@ -156,18 +161,14 @@ export function ClassifierControls({
           setTrack('internal')
           setAnalysisTrack('internal')
           setSelectedInternalProjectId(suggestion.projectId)
-        } else {
-          setSuggestDismiss(true)
         }
+        // No match → analysisTrack stays null → dismiss overlay shows
       } else if (suggestion?.leadId) {
         setTrack('lead')
         setAnalysisTrack('lead')
         setSelectedLeadId(suggestion.leadId)
-      } else {
-        // AI explicitly found no matches — suggest dismiss
-        // DB suggestions (domain matching) are a weaker signal shown as row badges
-        setSuggestDismiss(true)
       }
+      // No explicit setSuggestDismiss needed — derived from analysisTrack === null
 
       setAnalysisState('done')
     } catch (err) {
@@ -211,8 +212,6 @@ export function ClassifierControls({
     }
   }
 
-  const isAnalyzed = analysisState === 'done'
-
   return (
     <div className='relative flex w-full min-w-0 flex-col rounded-lg border bg-muted/30 p-2.5' onClick={e => e.stopPropagation()}>
       {/* Analyzing spinner overlay */}
@@ -247,8 +246,8 @@ export function ClassifierControls({
         </div>
       )}
 
-      {/* Dismiss suggestion — AI found no matches */}
-      {suggestDismiss && isAnalyzed && (
+      {/* Dismiss suggestion — analysis completed with no matches */}
+      {showDismissOverlay && (
         <div className='absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-lg bg-background/60 backdrop-blur-[2px]'>
           <span className='text-muted-foreground text-xs'>No matches found</span>
           <Button
@@ -264,7 +263,7 @@ export function ClassifierControls({
           <button
             type='button'
             className='text-muted-foreground hover:text-foreground text-[11px] underline-offset-2 hover:underline transition-colors'
-            onClick={() => setSuggestDismiss(false)}
+            onClick={() => setManualClassify(true)}
           >
             Classify manually
           </button>
