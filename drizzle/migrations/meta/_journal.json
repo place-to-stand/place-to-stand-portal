@@ -274,6 +274,27 @@
       "when": 1772675660571,
       "tag": "0038_inbox_classification",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1772818040005,
+      "tag": "0039_add_transcripts_table",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1772899927477,
+      "tag": "0040_add_threads_ai_cache_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1772914840620,
+      "tag": "0041_drop_transcript_content_and_unused_columns",
+      "breakpoints": true
     }
   ]
 }

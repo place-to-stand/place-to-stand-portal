@@ -20,8 +20,10 @@ import type { GmailSyncState } from '@/lib/types/sync-state'
 const BATCH_SIZE = 50
 const MAX_FULL_SYNC = 500 // Max messages to sync on initial full sync
 const MAX_HISTORY_RESULTS = 500 // Max history records per request
-// Include both INBOX and SENT, exclude spam and trash
+// Include both INBOX and SENT, exclude spam and trash (used for incremental/default sync)
 const GMAIL_QUERY_FILTER = '(in:inbox OR in:sent) -in:spam -in:trash'
+// For exhaustive sync: get ALL messages except spam and trash (includes archived, labels, categories)
+const GMAIL_QUERY_FILTER_ALL = '-in:spam -in:trash'
 
 // Labels to exclude from sync - used in incremental sync where query filter isn't available
 const EXCLUDED_LABELS = ['SPAM', 'TRASH']
@@ -283,30 +285,56 @@ async function processLabelChanges(
 }
 
 /**
- * Full sync: fetch all messages up to MAX_FULL_SYNC.
+ * Full sync: paginate through all messages up to MAX_FULL_SYNC.
  * Used for initial sync or when historyId expires.
  */
-async function performFullSync(userId: string, result: SyncResult): Promise<string | undefined> {
+async function performFullSync(
+  userId: string,
+  result: SyncResult,
+  maxMessages = MAX_FULL_SYNC,
+  queryFilter = GMAIL_QUERY_FILTER
+): Promise<string | undefined> {
   result.syncType = 'full'
 
-  // List recent messages (excluding spam and trash)
-  const listRes = await listMessages(userId, { maxResults: MAX_FULL_SYNC, q: GMAIL_QUERY_FILTER })
-  const messageRefs = listRes.messages || []
-  if (messageRefs.length === 0) {
+  // Paginate through all message IDs (Gmail returns pages even with maxResults=500)
+  const allMessageRefs: { id: string; threadId: string }[] = []
+  let pageToken: string | undefined
+
+  do {
+    const listRes = await listMessages(userId, {
+      maxResults: Math.min(maxMessages, 500),
+      q: queryFilter,
+      pageToken,
+    })
+    const pageMessages = listRes.messages || []
+    allMessageRefs.push(...pageMessages)
+    pageToken = listRes.nextPageToken
+
+    // Stop if we've collected enough
+    if (allMessageRefs.length >= maxMessages) break
+  } while (pageToken)
+
+  console.log(`[Gmail Sync] Full sync listed ${allMessageRefs.length} messages`)
+
+  if (allMessageRefs.length === 0) {
     // No messages, get historyId from profile
     const profile = await getProfile(userId)
     return profile.historyId
   }
 
-  const gmailIds = messageRefs.map(m => m.id)
+  const gmailIds = allMessageRefs.map(m => m.id)
 
-  // Check which already exist
-  const existing = await db
-    .select({ externalMessageId: messages.externalMessageId })
-    .from(messages)
-    .where(and(eq(messages.userId, userId), inArray(messages.externalMessageId, gmailIds)))
+  // Check which already exist (batch in chunks to avoid query size limits)
+  const existingSet = new Set<string>()
+  for (let i = 0; i < gmailIds.length; i += 500) {
+    const chunk = gmailIds.slice(i, i + 500)
+    const existing = await db
+      .select({ externalMessageId: messages.externalMessageId })
+      .from(messages)
+      .where(and(eq(messages.userId, userId), inArray(messages.externalMessageId, chunk)))
+    existing.forEach(e => { if (e.externalMessageId) existingSet.add(e.externalMessageId) })
+  }
 
-  const existingSet = new Set(existing.map(e => e.externalMessageId).filter(Boolean))
   const newIds = gmailIds.filter(id => !existingSet.has(id))
   result.skipped = existingSet.size
 
@@ -390,7 +418,10 @@ async function performIncrementalSync(
  * Sync Gmail messages for a single user.
  * Uses incremental sync via history.list when possible, falls back to full sync.
  */
-export async function syncGmailForUser(userId: string): Promise<SyncResult> {
+/** Max messages to fetch on a standard full sync */
+const MAX_EXHAUSTIVE_SYNC = 10_000
+
+export async function syncGmailForUser(userId: string, options?: { full?: boolean }): Promise<SyncResult> {
   const result: SyncResult = { synced: 0, skipped: 0, labelsUpdated: 0, errors: [], syncType: 'full' }
 
   const connState = await getConnectionSyncState(userId)
@@ -403,7 +434,7 @@ export async function syncGmailForUser(userId: string): Promise<SyncResult> {
   let newHistoryId: string | undefined
 
   try {
-    if (syncState.historyId && syncState.fullSyncCompleted) {
+    if (!options?.full && syncState.historyId && syncState.fullSyncCompleted) {
       // Incremental sync using history.list
       try {
         newHistoryId = await performIncrementalSync(userId, syncState.historyId, result)
@@ -417,8 +448,10 @@ export async function syncGmailForUser(userId: string): Promise<SyncResult> {
         }
       }
     } else {
-      // Initial full sync
-      newHistoryId = await performFullSync(userId, result)
+      // Full sync — use exhaustive limit and broader filter when explicitly requested
+      const maxMessages = options?.full ? MAX_EXHAUSTIVE_SYNC : MAX_FULL_SYNC
+      const queryFilter = options?.full ? GMAIL_QUERY_FILTER_ALL : GMAIL_QUERY_FILTER
+      newHistoryId = await performFullSync(userId, result, maxMessages, queryFilter)
     }
 
     // Check for total failure: if we attempted to sync messages but got zero

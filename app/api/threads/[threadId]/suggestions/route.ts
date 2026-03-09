@@ -4,7 +4,7 @@ import { and, eq, isNull, desc } from 'drizzle-orm'
 import { requireUser } from '@/lib/auth/session'
 import { isAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, contacts, contactClients, projects, messages, threads } from '@/lib/db/schema'
+import { clients, contacts, contactClients, leads, projects, messages, threads } from '@/lib/db/schema'
 import { toResponsePayload, NotFoundError, ForbiddenError, type HttpError } from '@/lib/errors/http'
 import { classifyEmailThread } from '@/lib/ai/email-classification-matching'
 
@@ -24,6 +24,38 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ thr
 
     if (!isAdmin(user) && thread.createdBy !== user.id) {
       throw new ForbiddenError('Access denied')
+    }
+
+    const body = await _req.json().catch(() => ({}))
+    const force = body?.force === true
+
+    // Return cached results if available (unless force re-analyze)
+    if (thread.aiAnalyzedAt && !force) {
+      return NextResponse.json({
+        ok: true,
+        cached: true,
+        suggestions: thread.aiSuggestedClientId
+          ? [{
+              clientId: thread.aiSuggestedClientId,
+              clientName: thread.aiSuggestedClientName,
+              confidence: thread.aiConfidence ? parseFloat(thread.aiConfidence) : 0,
+            }]
+          : [],
+        projectSuggestions: thread.aiSuggestedProjectId
+          ? [{
+              projectId: thread.aiSuggestedProjectId,
+              projectName: thread.aiSuggestedProjectName,
+              confidence: thread.aiConfidence ? parseFloat(thread.aiConfidence) : 0,
+            }]
+          : [],
+        leadSuggestions: thread.aiSuggestedLeadId
+          ? [{
+              leadId: thread.aiSuggestedLeadId,
+              leadName: thread.aiSuggestedLeadName,
+              confidence: thread.aiConfidence ? parseFloat(thread.aiConfidence) : 0,
+            }]
+          : [],
+      })
     }
 
     // If thread already has both client and project, return empty suggestions
@@ -108,8 +140,19 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ thr
       clientName: project.clientId ? clientNameMap.get(project.clientId) ?? null : null,
     }))
 
-    // Single AI call for both client and project matching
-    const { clientMatches, projectMatches } = await classifyEmailThread({
+    // Fetch active leads for lead matching
+    const allLeads = await db
+      .select({
+        id: leads.id,
+        contactName: leads.contactName,
+        contactEmail: leads.contactEmail,
+        companyName: leads.companyName,
+      })
+      .from(leads)
+      .where(isNull(leads.deletedAt))
+
+    // Single AI call for client, project, and lead matching
+    const { clientMatches, projectMatches, leadMatches } = await classifyEmailThread({
       email: {
         from: latestMessage.fromEmail,
         to: latestMessage.toEmails ?? [],
@@ -119,6 +162,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ thr
       },
       clients: clientsWithData,
       projects: projectsForMatching,
+      leads: allLeads,
     })
 
     // Transform to suggestion format (backward compatible)
@@ -144,7 +188,48 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ thr
           matchType: match.matchType,
         }))
 
-    return NextResponse.json({ ok: true, suggestions, projectSuggestions })
+    const leadSuggestionsList = thread.leadId
+      ? []
+      : leadMatches.map(match => ({
+          leadId: match.leadId,
+          leadName: match.leadName,
+          confidence: match.confidence,
+          reasoning: match.reasoning,
+          matchType: match.matchType,
+        }))
+
+    // Cache top results in thread AI columns
+    const topClient = suggestions[0]
+    const topProject = projectSuggestions[0]
+    const topLead = leadSuggestionsList[0]
+    const topConfidence = Math.max(
+      topClient?.confidence ?? 0,
+      topProject?.confidence ?? 0,
+      topLead?.confidence ?? 0,
+    ) || null
+
+    await db
+      .update(threads)
+      .set({
+        aiSuggestedClientId: topClient?.clientId ?? null,
+        aiSuggestedClientName: topClient?.clientName ?? null,
+        aiSuggestedProjectId: topProject?.projectId ?? null,
+        aiSuggestedProjectName: topProject?.projectName ?? null,
+        aiSuggestedLeadId: topLead?.leadId ?? null,
+        aiSuggestedLeadName: topLead?.leadName ?? null,
+        aiConfidence: topConfidence?.toString() ?? null,
+        aiAnalyzedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(threads.id, threadId))
+
+    return NextResponse.json({
+      ok: true,
+      cached: false,
+      suggestions,
+      projectSuggestions,
+      leadSuggestions: leadSuggestionsList,
+    })
   } catch (err) {
     const error = err as HttpError
     console.error('Thread suggestions error:', error)

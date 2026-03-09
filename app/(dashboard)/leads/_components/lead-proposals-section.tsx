@@ -164,7 +164,7 @@ export function LeadProposalsSection({
         <FileText className="h-4 w-4 text-muted-foreground" />
         <span className="text-sm font-medium">Proposals</span>
         {proposals.length > 0 && (
-          <Badge variant="secondary" className="text-xs">
+          <Badge variant="secondary" className="ml-auto text-xs">
             {proposals.length}
           </Badge>
         )}

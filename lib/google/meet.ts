@@ -551,7 +551,7 @@ function extractTextFromGoogleDoc(doc: {
     }
   }
 
-  return lines.join('')
+  return lines.join('\n')
 }
 
 /**

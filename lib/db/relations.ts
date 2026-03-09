@@ -33,6 +33,7 @@ import {
   planThreads,
   planRevisions,
   planMessages,
+  transcripts,
 } from './schema'
 
 export const clientsRelations = relations(clients, ({ one, many }) => ({
@@ -587,3 +588,28 @@ export const planMessagesRelations = relations(
     }),
   })
 )
+
+export const transcriptsRelations = relations(transcripts, ({ one }) => ({
+  client: one(clients, {
+    fields: [transcripts.clientId],
+    references: [clients.id],
+  }),
+  project: one(projects, {
+    fields: [transcripts.projectId],
+    references: [projects.id],
+  }),
+  lead: one(leads, {
+    fields: [transcripts.leadId],
+    references: [leads.id],
+  }),
+  classifiedByUser: one(users, {
+    fields: [transcripts.classifiedBy],
+    references: [users.id],
+    relationName: 'transcripts_classifiedBy_users_id',
+  }),
+  syncedByUser: one(users, {
+    fields: [transcripts.syncedBy],
+    references: [users.id],
+    relationName: 'transcripts_syncedBy_users_id',
+  }),
+}))

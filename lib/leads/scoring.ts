@@ -1,9 +1,9 @@
 import 'server-only'
 
-import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { leads, messages, threads, suggestions } from '@/lib/db/schema'
+import { leads, messages, threads } from '@/lib/db/schema'
 import { updateLeadScoring } from '@/lib/data/leads'
 import { scoreLeadWithAI, shouldRescore } from '@/lib/ai/lead-scoring'
 import type { EmailContext, LeadScoringInput } from '@/lib/ai/prompts/lead-scoring'
@@ -41,38 +41,12 @@ export async function performLeadScoring(
     return { success: true, scored: false }
   }
 
-  // Determine which threads to use for scoring.
-  // If LINK_EMAIL_THREAD suggestions exist, only use approved ones.
-  // Otherwise fall back to all linked threads (no suggestions generated yet).
-  const emailLinkSuggestions = await db
-    .select({
-      threadId: sql<string>`${suggestions.suggestedContent}->>'threadId'`,
-      status: suggestions.status,
-    })
-    .from(suggestions)
-    .where(
-      and(
-        eq(suggestions.leadId, leadId),
-        isNull(suggestions.deletedAt),
-        sql`${suggestions.suggestedContent}->>'actionType' = 'LINK_EMAIL_THREAD'`
-      )
-    )
-
-  let threadIds: string[]
-  if (emailLinkSuggestions.length > 0) {
-    // Opt-in mode: only use threads from approved suggestions
-    threadIds = emailLinkSuggestions
-      .filter(s => s.status === 'APPROVED')
-      .map(s => s.threadId)
-      .filter(Boolean)
-  } else {
-    // Fallback: no suggestions generated yet, use all linked threads
-    const leadThreads = await db
-      .select({ id: threads.id })
-      .from(threads)
-      .where(and(eq(threads.leadId, leadId), isNull(threads.deletedAt)))
-    threadIds = leadThreads.map(t => t.id)
-  }
+  // Use all threads linked to this lead for scoring
+  const leadThreads = await db
+    .select({ id: threads.id })
+    .from(threads)
+    .where(and(eq(threads.leadId, leadId), isNull(threads.deletedAt)))
+  const threadIds = leadThreads.map(t => t.id)
 
   // Fetch messages from selected threads
   let emailContexts: EmailContext[] = []

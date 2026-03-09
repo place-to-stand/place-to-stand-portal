@@ -163,23 +163,9 @@ export function LeadCardContent({ lead }: { lead: LeadRecord }) {
   return (
     <>
       <div className='space-y-0.5'>
-        <div className='flex items-start justify-between gap-2'>
-          <h3 className='text-foreground line-clamp-2 text-sm leading-snug font-semibold'>
-            {lead.contactName}
-          </h3>
-          <div className='flex flex-wrap items-center gap-1.5 shrink-0'>
-            {lead.priorityTier && <PriorityBadge tier={lead.priorityTier} />}
-            {convertedBadge}
-            {showSourceTooltip && sourceBadge ? (
-              <Tooltip>
-                <TooltipTrigger asChild>{sourceBadge}</TooltipTrigger>
-                <TooltipContent side='top'>{sourceDetail}</TooltipContent>
-              </Tooltip>
-            ) : (
-              sourceBadge
-            )}
-          </div>
-        </div>
+        <h3 className='text-foreground line-clamp-2 text-sm leading-snug font-semibold'>
+          {lead.contactName}
+        </h3>
         {companyDisplay ? (
           <p className='text-muted-foreground text-xs font-medium'>
             {companyDisplay}
@@ -223,6 +209,20 @@ export function LeadCardContent({ lead }: { lead: LeadRecord }) {
           <span>{assigneeDisplay}</span>
         </div>
       </div>
+      {(lead.priorityTier || convertedBadge || sourceBadge) && (
+        <div className='mt-3 flex flex-wrap items-center gap-1.5'>
+          {lead.priorityTier && <PriorityBadge tier={lead.priorityTier} />}
+          {showSourceTooltip && sourceBadge ? (
+            <Tooltip>
+              <TooltipTrigger asChild>{sourceBadge}</TooltipTrigger>
+              <TooltipContent side='top'>{sourceDetail}</TooltipContent>
+            </Tooltip>
+          ) : (
+            sourceBadge
+          )}
+          {convertedBadge}
+        </div>
+      )}
     </>
   )
 }
