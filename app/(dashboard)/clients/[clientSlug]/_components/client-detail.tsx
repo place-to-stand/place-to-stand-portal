@@ -118,7 +118,7 @@ export function ClientDetail({
 
       {/* Two-column layout */}
       <div className='grid gap-4 lg:grid-cols-2'>
-        {/* Left column: Details, Contacts, Messages */}
+        {/* Left column: Details, Contacts, Notes */}
         <div className='space-y-4'>
           {/* Client Details Widget */}
           <ClientDetailsWidget
@@ -128,6 +128,9 @@ export function ClientDetail({
             referralContact={referralContact}
           />
 
+          {/* Contacts Section */}
+          <ClientContactsSection contacts={contacts} />
+
           {/* Notes Section */}
           <ClientNotesSection
             clientId={client.id}
@@ -135,13 +138,10 @@ export function ClientDetail({
           />
         </div>
 
-        {/* Right column: Projects, Notes */}
+        {/* Right column: Projects, Messages, Transcripts */}
         <div className='space-y-4'>
           {/* Projects Section */}
           <ClientProjectsSection projects={projects} clientSlug={client.slug} />
-
-          {/* Contacts Section */}
-          <ClientContactsSection contacts={contacts} />
 
           {/* Messages Section */}
           <ClientEmailsSection

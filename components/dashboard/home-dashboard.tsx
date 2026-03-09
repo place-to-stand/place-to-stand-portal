@@ -3,22 +3,19 @@
 import { AppShellHeader } from '@/components/layout/app-shell'
 import type { AppUser } from '@/lib/auth/session'
 import type { AssignedTaskSummary } from '@/lib/data/tasks'
-import type {
-  HoursSnapshot,
-  RecentlyViewedSummary,
-} from '@/lib/dashboard/types'
+import type { HoursSnapshot } from '@/lib/dashboard/types'
 
 import { MyTasksWidget } from './my-tasks-widget'
+import { TriageWidget, type TriageWidgetItem } from './triage-widget'
 import { RecentActivityOverviewWidget } from './recent-activity-overview-widget'
-import { RecentlyViewedWidget } from './recently-viewed-widget'
 import { HoursWidget } from './hours-widget'
 
 type HomeDashboardProps = {
   user: AppUser
   tasks: AssignedTaskSummary[]
   totalTaskCount: number
-  recentProjects: RecentlyViewedSummary[]
-  recentClients: RecentlyViewedSummary[]
+  triageItems: TriageWidgetItem[]
+  triageTotalCount: number
   initialHoursSnapshot: HoursSnapshot
 }
 
@@ -26,8 +23,8 @@ export function HomeDashboard({
   user,
   tasks,
   totalTaskCount,
-  recentProjects,
-  recentClients,
+  triageItems,
+  triageTotalCount,
   initialHoursSnapshot,
 }: HomeDashboardProps) {
   const displayName = getDisplayName(user)
@@ -44,15 +41,15 @@ export function HomeDashboard({
       </AppShellHeader>
       <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
         <div>
+          <TriageWidget
+            items={triageItems}
+            totalCount={triageTotalCount}
+            className='mb-6'
+          />
           <MyTasksWidget
             tasks={tasks}
             role={user.role}
             totalCount={totalTaskCount}
-            className='mb-6'
-          />
-          <RecentlyViewedWidget
-            projects={recentProjects}
-            clients={recentClients}
             className='mb-6'
           />
         </div>
