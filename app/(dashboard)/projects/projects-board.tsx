@@ -183,7 +183,7 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
       <AppShellHeader>
         <div className='flex items-center justify-between'>
           <ProjectsBoardHeader {...viewModel.header} />
-          <div className='flex items-center gap-6'>
+          <div className='flex items-center gap-3'>
             {viewModel.burndown.visible ? (
               <ProjectBurndownWidget
                 totalClientRemainingHours={

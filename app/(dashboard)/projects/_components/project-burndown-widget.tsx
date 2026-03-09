@@ -58,7 +58,7 @@ export function ProjectBurndownWidget({
       className={cn('flex gap-2 text-[11px]', className)}
       aria-label='Burndown overview'
     >
-      <dl className='flex flex-col gap-2 text-[10px] font-medium md:flex-row md:items-stretch md:gap-2'>
+      <dl className='flex flex-col gap-1.5 text-[10px] font-medium md:flex-row md:items-stretch md:gap-1.5'>
         <MetricRow
           label={projectHoursLabel}
           value={`${formatHours(projectLoggedValue)} hrs`}
@@ -71,17 +71,17 @@ export function ProjectBurndownWidget({
           />
         ) : null}
       </dl>
-      <div className='flex flex-col gap-2'>
+      <div className='flex flex-col gap-1'>
         {viewTimeLogsHref ? (
           <Button
             type='button'
             size='xs'
             variant='outline'
             asChild
-            className='justify-start'
+            className='h-6 justify-start gap-1 px-1.5 text-[10px]'
           >
             <Link href={viewTimeLogsHref} prefetch={false}>
-              <Eye className='h-3! w-3!' />
+              <Eye className='h-2.5! w-2.5!' />
               View
             </Link>
           </Button>
@@ -91,9 +91,9 @@ export function ProjectBurndownWidget({
             size='xs'
             variant='outline'
             disabled
-            className='justify-start'
+            className='h-6 justify-start gap-1 px-1.5 text-[10px]'
           >
-            <Eye className='h-3! w-3!' />
+            <Eye className='h-2.5! w-2.5!' />
             View
           </Button>
         )}
@@ -111,9 +111,9 @@ export function ProjectBurndownWidget({
             size='xs'
             onClick={onAddTimeLog}
             disabled={!canLogTime}
-            className='items-center justify-start'
+            className='h-6 items-center justify-start gap-1 px-1.5 text-[10px]'
           >
-            <Plus className='h-3! w-3!' />
+            <Plus className='h-2.5! w-2.5!' />
             Add
           </Button>
         </DisabledFieldTooltip>
@@ -132,7 +132,7 @@ function MetricRow({ label, value, tone = 'default' }: MetricRowProps) {
   return (
     <div
       className={cn(
-        'flex min-w-[200px] flex-1 items-center justify-between gap-1 rounded-md border px-3 py-2 md:flex-col md:items-start',
+        'flex min-w-[180px] flex-1 items-center justify-between gap-1 rounded-md border px-2.5 py-1.5 md:flex-col md:items-start',
         tone === 'destructive'
           ? 'border-destructive/40 bg-destructive/10 text-destructive'
           : 'border-border bg-background text-foreground'
