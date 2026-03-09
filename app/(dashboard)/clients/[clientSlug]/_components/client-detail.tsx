@@ -138,12 +138,12 @@ export function ClientDetail({
           />
         </div>
 
-        {/* Right column: Projects, Messages, Transcripts */}
+        {/* Right column: Projects, Emails, Transcripts */}
         <div className='space-y-4'>
           {/* Projects Section */}
           <ClientProjectsSection projects={projects} clientSlug={client.slug} />
 
-          {/* Messages Section */}
+          {/* Emails Section */}
           <ClientEmailsSection
             messages={messages}
             currentUserId={currentUserId}

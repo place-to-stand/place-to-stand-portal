@@ -104,11 +104,18 @@ export function useProjectsBoardViewModel({
     return {
       id: boardState.activeProject.id,
       name: boardState.activeProject.name,
+      slug: boardState.activeProject.slug,
       status: boardState.activeProject.status,
       client: {
         id: boardState.activeProject.client?.id ?? null,
         name: boardState.activeProject.client?.name ?? null,
+        slug: boardState.activeProject.client?.slug ?? null,
+        billing_type: boardState.activeProject.client?.billing_type ?? null,
       },
+      owner: boardState.activeProject.owner,
+      starts_on: boardState.activeProject.starts_on,
+      ends_on: boardState.activeProject.ends_on,
+      githubRepos: boardState.activeProject.githubRepos,
       burndown: {
         totalClientRemainingHours:
           boardState.activeProject.burndown.totalClientRemainingHours,

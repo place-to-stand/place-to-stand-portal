@@ -27,7 +27,7 @@ export function ClientEmailsSection({ messages, currentUserId, clientId }: Props
         <div className='bg-muted flex h-7 w-7 items-center justify-center rounded-md'>
           <Mail className='text-muted-foreground h-4 w-4' />
         </div>
-        <h2 className='font-semibold'>Messages</h2>
+        <h2 className='font-semibold'>Emails</h2>
         <Badge variant='secondary' className='ml-auto'>
           {messages.length}
         </Badge>

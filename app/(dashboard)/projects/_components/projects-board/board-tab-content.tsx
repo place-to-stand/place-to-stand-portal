@@ -30,8 +30,13 @@ import type { RenderAssigneeFn } from '../../../../../lib/projects/board/board-s
 export type ProjectsBoardActiveProject = {
   id: string
   name: string
+  slug: string | null
   status: string
-  client: { id: string | null; name: string | null } | null
+  client: { id: string | null; name: string | null; slug: string | null; billing_type: string | null } | null
+  owner: { id: string; full_name: string | null; avatar_url: string | null } | null
+  starts_on: string | null
+  ends_on: string | null
+  githubRepos: { id: string; repoFullName: string; defaultBranch: string }[]
   burndown: {
     totalClientRemainingHours: number
     totalProjectLoggedHours: number

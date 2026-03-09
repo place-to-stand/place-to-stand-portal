@@ -3,17 +3,21 @@
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import {
+  Calendar,
   ExternalLink,
   FileText,
   Info,
   Loader2,
   Mail,
 } from 'lucide-react'
+import { siGithub } from 'simple-icons/icons'
 import { format, formatDistanceToNow } from 'date-fns'
 
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { TabsContent } from '@/components/ui/tabs'
 import { getProjectStatusLabel, getProjectStatusToken } from '@/lib/constants'
+import { formatProjectDateRange } from '@/lib/settings/projects/project-formatters'
 import { cn } from '@/lib/utils'
 import { ProjectsBoardEmpty } from '../projects-board-empty'
 import {
@@ -44,6 +48,7 @@ type OverviewTranscript = {
 
 type OverviewData = {
   threads: OverviewThread[]
+  threadCount: number
   transcripts: OverviewTranscript[]
   transcriptCount: number
 }
@@ -95,6 +100,7 @@ export function OverviewTabContent(props: OverviewTabContentProps) {
           <div className='space-y-4'>
             <EmailsSection
               threads={data?.threads ?? []}
+              totalCount={data?.threadCount ?? 0}
               isLoading={isLoading}
               isError={isError}
               projectId={activeProject.id}
@@ -113,6 +119,34 @@ export function OverviewTabContent(props: OverviewTabContentProps) {
   )
 }
 
+function SimpleIcon({
+  icon,
+  className,
+}: {
+  icon: { title: string; path: string }
+  className?: string
+}) {
+  return (
+    <svg
+      role='img'
+      viewBox='0 0 24 24'
+      className={className}
+      xmlns='http://www.w3.org/2000/svg'
+      fill='currentColor'
+    >
+      <title>{icon.title}</title>
+      <path d={icon.path} />
+    </svg>
+  )
+}
+
+function getInitials(name: string | null): string {
+  if (!name) return '?'
+  const parts = name.trim().split(/\s+/)
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase()
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
+}
+
 function ProjectDetailsWidget({
   project,
 }: {
@@ -120,6 +154,7 @@ function ProjectDetailsWidget({
 }) {
   const statusLabel = getProjectStatusLabel(project.status)
   const statusToken = getProjectStatusToken(project.status)
+  const dateRange = formatProjectDateRange(project.starts_on, project.ends_on)
 
   return (
     <section className='bg-card text-card-foreground overflow-hidden rounded-lg border'>
@@ -130,6 +165,10 @@ function ProjectDetailsWidget({
         <h2 className='font-semibold'>Project Details</h2>
       </div>
       <div className='divide-y'>
+        <DetailRow label='Name' value={project.name} />
+        {project.slug && (
+          <DetailRow label='Slug' value={project.slug} mono />
+        )}
         <div className='flex items-center gap-3 px-4 py-2.5'>
           <span className='text-muted-foreground text-sm'>Status</span>
           <Badge className={cn('ml-auto text-[10px]', statusToken)}>
@@ -139,45 +178,130 @@ function ProjectDetailsWidget({
         {project.client?.name && (
           <div className='flex items-center gap-3 px-4 py-2.5'>
             <span className='text-muted-foreground text-sm'>Client</span>
-            <span className='ml-auto text-sm font-medium'>
-              {project.client.name}
-            </span>
+            <div className='ml-auto flex items-center gap-2'>
+              <Link
+                href={
+                  project.client.slug
+                    ? `/clients/${project.client.slug}`
+                    : `/clients/${project.client.id}`
+                }
+                className='text-sm font-medium underline-offset-4 hover:underline'
+              >
+                {project.client.name}
+              </Link>
+              {project.client.billing_type && (
+                <Badge variant='outline' className='text-[10px] font-medium'>
+                  {project.client.billing_type === 'net_30' ? 'Net 30' : 'Prepaid'}
+                </Badge>
+              )}
+            </div>
+          </div>
+        )}
+        <div className='flex items-center gap-3 px-4 py-2.5'>
+          <span className='text-muted-foreground text-sm'>Owner</span>
+          <div className='ml-auto flex items-center gap-2'>
+            {project.owner ? (
+              <>
+                <Avatar className='h-6 w-6'>
+                  {project.owner.avatar_url && (
+                    <AvatarImage
+                      src={`/api/storage/user-avatar/${project.owner.id}`}
+                      alt={project.owner.full_name ?? 'Owner'}
+                    />
+                  )}
+                  <AvatarFallback className='text-[10px]'>
+                    {getInitials(project.owner.full_name)}
+                  </AvatarFallback>
+                </Avatar>
+                <span className='text-sm font-medium'>
+                  {project.owner.full_name ?? 'Unknown'}
+                </span>
+              </>
+            ) : (
+              <span className='text-muted-foreground/60 text-sm'>—</span>
+            )}
+          </div>
+        </div>
+        {dateRange !== '—' && (
+          <div className='flex items-center gap-3 px-4 py-2.5'>
+            <span className='text-muted-foreground text-sm'>Dates</span>
+            <div className='ml-auto flex items-center gap-1.5'>
+              <Calendar className='text-muted-foreground h-3.5 w-3.5' />
+              <span className='text-sm font-medium'>{dateRange}</span>
+            </div>
           </div>
         )}
         {project.burndown && (
           <>
-            <div className='flex items-center gap-3 px-4 py-2.5'>
-              <span className='text-muted-foreground text-sm'>
-                Hours logged
-              </span>
-              <span className='ml-auto text-sm font-medium'>
-                {project.burndown.totalProjectLoggedHours.toFixed(1)}h
-              </span>
-            </div>
+            <DetailRow
+              label='Hours logged'
+              value={`${project.burndown.totalProjectLoggedHours.toFixed(2)}h`}
+            />
             {project.burndown.totalClientRemainingHours > 0 && (
-              <div className='flex items-center gap-3 px-4 py-2.5'>
-                <span className='text-muted-foreground text-sm'>
-                  Client hours remaining
-                </span>
-                <span className='ml-auto text-sm font-medium'>
-                  {project.burndown.totalClientRemainingHours.toFixed(1)}h
-                </span>
-              </div>
+              <DetailRow
+                label='Client hours remaining'
+                value={`${project.burndown.totalClientRemainingHours.toFixed(2)}h`}
+              />
             )}
           </>
+        )}
+        {project.githubRepos.length > 0 && (
+          <div className='flex items-center gap-3 px-4 py-2.5'>
+            <span className='text-muted-foreground text-sm'>Repos</span>
+            <div className='ml-auto flex flex-col items-end gap-1'>
+              {project.githubRepos.map(repo => (
+                <a
+                  key={repo.id}
+                  href={`https://github.com/${repo.repoFullName}`}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className='text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm transition-colors'
+                >
+                  <SimpleIcon icon={siGithub} className='h-3.5 w-3.5' />
+                  <span className='font-medium'>{repo.repoFullName}</span>
+                </a>
+              ))}
+            </div>
+          </div>
         )}
       </div>
     </section>
   )
 }
 
+function DetailRow({
+  label,
+  value,
+  mono,
+}: {
+  label: string
+  value: string
+  mono?: boolean
+}) {
+  return (
+    <div className='flex items-center gap-3 px-4 py-2.5'>
+      <span className='text-muted-foreground text-sm'>{label}</span>
+      <span
+        className={cn(
+          'ml-auto text-sm font-medium',
+          mono && 'font-mono text-xs'
+        )}
+      >
+        {value}
+      </span>
+    </div>
+  )
+}
+
 function EmailsSection({
   threads,
+  totalCount,
   isLoading,
   isError,
   projectId,
 }: {
   threads: OverviewThread[]
+  totalCount: number
   isLoading: boolean
   isError: boolean
   projectId: string
@@ -188,9 +312,9 @@ function EmailsSection({
         <div className='bg-muted flex h-7 w-7 items-center justify-center rounded-md'>
           <Mail className='text-muted-foreground h-4 w-4' />
         </div>
-        <h2 className='font-semibold'>Messages</h2>
+        <h2 className='font-semibold'>Emails</h2>
         <Badge variant='secondary' className='ml-auto'>
-          {threads.length}
+          {totalCount}
         </Badge>
       </div>
       <div className='p-3'>
@@ -200,11 +324,11 @@ function EmailsSection({
           </div>
         ) : isError ? (
           <div className='text-muted-foreground px-3 py-4 text-center text-sm'>
-            Unable to load messages.
+            Unable to load emails.
           </div>
         ) : threads.length === 0 ? (
           <div className='text-muted-foreground rounded-md border border-dashed px-4 py-6 text-center text-sm'>
-            No messages classified to this project yet.
+            No emails classified to this project yet.
           </div>
         ) : (
           <div className='divide-y'>
@@ -237,13 +361,13 @@ function EmailsSection({
                 </div>
               </Link>
             ))}
-            {threads.length >= 10 && (
+            {totalCount > threads.length && (
               <div className='px-3 py-2 text-center'>
                 <Link
                   href={`/my/communications/emails?project=${projectId}`}
                   className='text-muted-foreground hover:text-foreground text-xs transition'
                 >
-                  View all in communications
+                  See all ({totalCount})
                 </Link>
               </div>
             )}
@@ -320,7 +444,7 @@ function TranscriptsSection({
                   href={`/my/communications/transcripts?project=${projectId}`}
                   className='text-muted-foreground hover:text-foreground text-xs transition'
                 >
-                  +{totalCount - transcripts.length} more
+                  See all ({totalCount})
                 </Link>
               </div>
             )}

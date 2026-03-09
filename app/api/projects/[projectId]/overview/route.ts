@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 
 import { getCurrentUser } from '@/lib/auth/session'
 import { ensureClientAccessByProjectId, isAdmin } from '@/lib/auth/permissions'
-import { listThreadsForUser } from '@/lib/queries/threads'
+import { listThreadsForUser, getThreadCountsForUser } from '@/lib/queries/threads'
 import { listTranscripts, getTranscriptTotalCount } from '@/lib/queries/transcripts'
 
 type RouteParams = {
@@ -26,15 +26,16 @@ export async function GET(_req: Request, { params }: RouteParams) {
     }
   }
 
-  const [threads, transcripts, transcriptCount] = await Promise.all([
+  const [threads, threadCounts, transcripts, transcriptCount] = await Promise.all([
     listThreadsForUser(user.id, {
       projectId,
-      limit: 10,
+      limit: 5,
     }),
+    getThreadCountsForUser(user.id, { projectId }),
     listTranscripts({
       projectId,
       classification: 'CLASSIFIED',
-      limit: 10,
+      limit: 5,
     }),
     getTranscriptTotalCount({ projectId, classification: 'CLASSIFIED' }),
   ])
@@ -49,6 +50,7 @@ export async function GET(_req: Request, { params }: RouteParams) {
         messageCount: t.messageCount,
         participantEmails: t.participantEmails,
       })),
+      threadCount: threadCounts.total,
       transcripts: transcripts.map(t => ({
         id: t.id,
         title: t.title,

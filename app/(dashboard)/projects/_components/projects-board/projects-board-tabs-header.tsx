@@ -208,8 +208,7 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
           </Link>
         </TabsTrigger>
       </TabsList>
-      {(initialTab === 'board' || initialTab === 'calendar') &&
-      projectActions ? (
+      {projectActions ? (
         <div className='flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-2'>
           {activeProjectId && activeProjectStatus ? (
             <ProjectStatusCell
