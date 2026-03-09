@@ -244,13 +244,15 @@ export function TriageView({ clients, projects, leads, currentUserId, serverQueu
     fetchQueue()
   }, [fetchQueue])
 
-  // Re-fetch queue when server-side count changes
+  // Re-fetch queue when server-side count increases (e.g. after Gmail sync).
+  // Ignore decreases — those are from the user classifying/dismissing items,
+  // which are already handled optimistically by removing from the queue.
   const prevServerQueueSize = useRef(serverQueueSize)
   useEffect(() => {
-    if (prevServerQueueSize.current !== serverQueueSize) {
-      prevServerQueueSize.current = serverQueueSize
+    if (serverQueueSize > prevServerQueueSize.current) {
       fetchQueue()
     }
+    prevServerQueueSize.current = serverQueueSize
   }, [serverQueueSize, fetchQueue])
 
   // --- Email handlers ---
