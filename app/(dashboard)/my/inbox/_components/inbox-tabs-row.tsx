@@ -16,9 +16,10 @@ interface InboxTabsRowProps {
   unclassifiedTranscriptCount?: number
   isConnected: boolean
   lastSyncAt: string | null
+  showTranscriptsTab?: boolean
 }
 
-export function InboxTabsRow({ unclassifiedCount, unclassifiedTranscriptCount = 0, isConnected, lastSyncAt }: InboxTabsRowProps) {
+export function InboxTabsRow({ unclassifiedCount, unclassifiedTranscriptCount = 0, isConnected, lastSyncAt, showTranscriptsTab = true }: InboxTabsRowProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [isSyncing, setIsSyncing] = useState(false)
@@ -111,6 +112,7 @@ export function InboxTabsRow({ unclassifiedCount, unclassifiedTranscriptCount = 
       <InboxTabs
         unclassifiedCount={unclassifiedCount}
         unclassifiedTranscriptCount={unclassifiedTranscriptCount}
+        showTranscriptsTab={showTranscriptsTab}
         className='flex-1 sm:flex-none'
       />
 

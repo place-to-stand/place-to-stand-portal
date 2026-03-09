@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { and, eq, isNull } from 'drizzle-orm'
 
+import { isAdmin } from '@/lib/auth/permissions'
 import { requireUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { oauthConnections } from '@/lib/db/schema'
@@ -13,9 +14,11 @@ import { InboxTabsRow } from './_components/inbox-tabs-row'
 export default async function InboxLayout({ children }: { children: ReactNode }) {
   const user = await requireUser()
 
+  const userIsAdmin = isAdmin(user)
+
   const [counts, transcriptCounts, [connection]] = await Promise.all([
     getInboxSidebarCounts(user.id),
-    getTranscriptCounts(),
+    userIsAdmin ? getTranscriptCounts() : Promise.resolve({ unclassified: 0, classified: 0, dismissed: 0 }),
     db
       .select({
         lastSyncAt: oauthConnections.lastSyncAt,
@@ -38,9 +41,10 @@ export default async function InboxLayout({ children }: { children: ReactNode })
       <div className='min-w-0 space-y-4'>
         <InboxTabsRow
           unclassifiedCount={counts.unclassified}
-          unclassifiedTranscriptCount={transcriptCounts.unclassified}
+          unclassifiedTranscriptCount={userIsAdmin ? transcriptCounts.unclassified : 0}
           isConnected={!!connection}
           lastSyncAt={connection?.lastSyncAt ?? null}
+          showTranscriptsTab={userIsAdmin}
         />
         {children}
       </div>

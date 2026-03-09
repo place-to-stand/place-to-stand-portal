@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { assertAdmin } from '@/lib/auth/permissions'
 import { requireUser } from '@/lib/auth/session'
 import { getTranscriptById, classifyTranscriptRecord } from '@/lib/queries/transcripts'
 import { getValidAccessToken } from '@/lib/gmail/client'
@@ -15,6 +16,7 @@ export async function GET(
   { params }: RouteParams
 ) {
   const user = await requireUser()
+  assertAdmin(user)
 
   const { transcriptId } = await params
   const transcript = await getTranscriptById(transcriptId)
@@ -51,6 +53,7 @@ export async function PATCH(
   { params }: RouteParams
 ) {
   const user = await requireUser()
+  assertAdmin(user)
 
   const { transcriptId } = await params
   const transcript = await getTranscriptById(transcriptId)

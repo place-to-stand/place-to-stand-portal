@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 
+import { isAdmin } from '@/lib/auth/permissions'
 import { requireUser } from '@/lib/auth/session'
 import { listThreadsForUser } from '@/lib/queries/threads'
 import { listTranscripts } from '@/lib/queries/transcripts'
@@ -20,6 +21,8 @@ export async function GET(request: Request) {
   const cursor = searchParams.get('cursor') // ISO date string — fetch items older than this
 
   // Fetch `limit` items from each source (to properly interleave, we need candidates from both)
+  const userIsAdmin = isAdmin(user)
+
   const [emailThreads, transcriptRows] = await Promise.all([
     typeFilter === 'transcript'
       ? Promise.resolve([])
@@ -30,7 +33,7 @@ export async function GET(request: Request) {
           limit,
           offset: 0,
         }),
-    typeFilter === 'email'
+    typeFilter === 'email' || !userIsAdmin
       ? Promise.resolve([])
       : listTranscripts({
           classification: 'UNCLASSIFIED',

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 
+import { assertAdmin } from '@/lib/auth/permissions'
 import { requireUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { transcripts } from '@/lib/db/schema'
@@ -14,6 +15,7 @@ import { transcripts } from '@/lib/db/schema'
  */
 export async function POST(request: NextRequest) {
   const user = await requireUser()
+  assertAdmin(user)
 
   const body = await request.json()
   const { action } = body

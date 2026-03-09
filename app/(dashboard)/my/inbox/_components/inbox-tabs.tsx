@@ -11,6 +11,7 @@ type InboxNavTab = 'triage' | 'emails' | 'transcripts'
 interface InboxTabsProps {
   unclassifiedCount: number
   unclassifiedTranscriptCount?: number
+  showTranscriptsTab?: boolean
   className?: string
 }
 
@@ -31,6 +32,7 @@ const INBOX_TABS: Array<{
 export function InboxTabs({
   unclassifiedCount,
   unclassifiedTranscriptCount = 0,
+  showTranscriptsTab = true,
   className,
 }: InboxTabsProps) {
   const router = useRouter()
@@ -42,7 +44,9 @@ export function InboxTabs({
       ? 'transcripts'
       : 'emails'
 
-  const visibleTabs = INBOX_TABS
+  const visibleTabs = showTranscriptsTab
+    ? INBOX_TABS
+    : INBOX_TABS.filter(tab => tab.value !== 'transcripts')
 
   const handleValueChange = useCallback(
     (nextValue: string) => {

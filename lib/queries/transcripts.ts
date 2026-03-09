@@ -218,7 +218,7 @@ export async function updateTranscript(
       ...data,
       updatedAt: new Date().toISOString(),
     })
-    .where(eq(transcripts.id, id))
+    .where(and(eq(transcripts.id, id), isNull(transcripts.deletedAt)))
 }
 
 /**

@@ -1,6 +1,6 @@
 import { isNull } from 'drizzle-orm'
 
-import { requireUser } from '@/lib/auth/session'
+import { requireRole } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { clients, projects, leads } from '@/lib/db/schema'
 import {
@@ -28,7 +28,7 @@ type Props = {
 }
 
 export default async function TranscriptsPage({ params, searchParams }: Props) {
-  const user = await requireUser()
+  const user = await requireRole('ADMIN')
 
   const { view } = await params
   const query = await searchParams

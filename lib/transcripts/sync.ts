@@ -105,6 +105,7 @@ export async function syncTranscriptsForUser(
           id: transcripts.id,
           driveFileId: transcripts.driveFileId,
           title: transcripts.title,
+          meetingDate: transcripts.meetingDate,
         })
         .from(transcripts)
         .where(isNull(transcripts.deletedAt))
@@ -123,7 +124,7 @@ export async function syncTranscriptsForUser(
 
       if (existing) {
         // Document already exists — check if it needs updating
-        if (doc.title !== existing.title || doc.meetingDate) {
+        if (doc.title !== existing.title || doc.meetingDate !== existing.meetingDate) {
           await db
             .update(transcripts)
             .set({

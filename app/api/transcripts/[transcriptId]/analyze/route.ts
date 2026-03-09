@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { assertAdmin } from '@/lib/auth/permissions'
 import { requireUser } from '@/lib/auth/session'
 import { getTranscriptById, updateTranscript } from '@/lib/queries/transcripts'
 import { classifyTranscript } from '@/lib/ai/transcript-classification'
@@ -16,7 +17,8 @@ export async function GET(
   _request: NextRequest,
   { params }: RouteParams
 ) {
-  await requireUser()
+  const user = await requireUser()
+  assertAdmin(user)
 
   const { transcriptId } = await params
   const transcript = await getTranscriptById(transcriptId)
@@ -50,6 +52,7 @@ export async function POST(
   { params }: RouteParams
 ) {
   const user = await requireUser()
+  assertAdmin(user)
 
   const { transcriptId } = await params
   const transcript = await getTranscriptById(transcriptId)
