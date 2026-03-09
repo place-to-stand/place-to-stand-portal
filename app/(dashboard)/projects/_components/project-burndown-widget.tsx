@@ -55,10 +55,10 @@ export function ProjectBurndownWidget({
 
   return (
     <section
-      className={cn('flex gap-2 text-[11px]', className)}
+      className={cn('flex gap-1 text-[11px]', className)}
       aria-label='Burndown overview'
     >
-      <dl className='flex flex-col gap-1.5 text-[10px] font-medium md:flex-row md:items-stretch md:gap-1.5'>
+      <dl className='flex flex-col gap-1 text-[10px] font-medium md:flex-row md:items-stretch'>
         <MetricRow
           label={projectHoursLabel}
           value={`${formatHours(projectLoggedValue)} hrs`}
