@@ -1,10 +1,8 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import type { ClientWithMetrics } from '@/lib/data/clients'
@@ -37,7 +35,7 @@ export function ClientsLandingHeader({
   const canSelectNext =
     selectedIndex >= 0 && selectedIndex < clients.length - 1
 
-  const handleClientSelect = (clientId: string | null) => {
+  const handleClientSelect = useCallback((clientId: string | null) => {
     if (!clientId) {
       router.push('/clients')
       return
@@ -48,63 +46,43 @@ export function ClientsLandingHeader({
       const path = client.slug ? `/clients/${client.slug}` : `/clients/${client.id}`
       router.push(path)
     }
-  }
+  }, [clients, router])
 
-  const handleSelectPrevious = () => {
-    if (!canSelectPrevious) return
-    const prevClient = clients[selectedIndex - 1]
-    handleClientSelect(prevClient.id)
-  }
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (!(e.metaKey || e.ctrlKey)) return
 
-  const handleSelectNext = () => {
-    if (!canSelectNext) return
-    const nextClient = clients[selectedIndex + 1]
-    handleClientSelect(nextClient.id)
-  }
+      if (e.key === '[' && canSelectPrevious) {
+        e.preventDefault()
+        const prevClient = clients[selectedIndex - 1]
+        if (prevClient) handleClientSelect(prevClient.id)
+      } else if (e.key === ']' && canSelectNext) {
+        e.preventDefault()
+        const nextClient = clients[selectedIndex + 1]
+        if (nextClient) handleClientSelect(nextClient.id)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [canSelectNext, canSelectPrevious, clients, selectedIndex, handleClientSelect])
 
   return (
-    <div className='flex w-full flex-wrap items-center gap-3'>
-      <div className='flex flex-1 items-center gap-3'>
-        <div className='min-w-[400px] space-y-2'>
-          <Label htmlFor='clients-client-select' className='sr-only'>
-            Client Selector
-          </Label>
-          <SearchableCombobox
-            id='clients-client-select'
-            items={clientItems}
-            value={selectedClientId ?? ''}
-            onChange={value => handleClientSelect(value || null)}
-            placeholder='Select a client...'
-            searchPlaceholder='Search clients...'
-            disabled={clientItems.length === 0}
-            ariaLabel='Select a client'
-            variant='heading'
-          />
-        </div>
-        <div className='flex gap-2'>
-          <Button
-            type='button'
-            variant='outline'
-            size='icon'
-            onClick={handleSelectPrevious}
-            disabled={!canSelectPrevious}
-            aria-label='Select previous client'
-          >
-            <ChevronLeft className='h-4 w-4' />
-          </Button>
-          <Button
-            type='button'
-            variant='outline'
-            size='icon'
-            onClick={handleSelectNext}
-            disabled={!canSelectNext}
-            aria-label='Select next client'
-          >
-            <ChevronRight className='h-4 w-4' />
-          </Button>
-        </div>
-      </div>
+    <div className='min-w-[400px] flex-1 space-y-2'>
+      <Label htmlFor='clients-client-select' className='sr-only'>
+        Client Selector
+      </Label>
+      <SearchableCombobox
+        id='clients-client-select'
+        items={clientItems}
+        value={selectedClientId ?? ''}
+        onChange={value => handleClientSelect(value || null)}
+        placeholder='Select a client...'
+        searchPlaceholder='Search clients...'
+        disabled={clientItems.length === 0}
+        ariaLabel='Select a client'
+        variant='heading'
+      />
     </div>
   )
 }
-

@@ -1,6 +1,5 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useEffect } from 'react'
 
-import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import {
   SearchableCombobox,
@@ -32,49 +31,40 @@ export function ProjectsBoardHeader({
   canSelectNext,
   canSelectPrevious,
 }: ProjectsBoardHeaderProps) {
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (!(e.metaKey || e.ctrlKey)) return
+
+      if (e.key === '[' && canSelectPrevious) {
+        e.preventDefault()
+        onSelectPreviousProject()
+      } else if (e.key === ']' && canSelectNext) {
+        e.preventDefault()
+        onSelectNextProject()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [canSelectNext, canSelectPrevious, onSelectNextProject, onSelectPreviousProject])
+
   return (
-    <div className='flex w-full flex-wrap items-center gap-3'>
-      <div className='flex flex-1 items-center gap-3'>
-        <div className='min-w-[400px] space-y-2'>
-          <Label htmlFor='projects-project-select' className='sr-only'>
-            Project Selector
-          </Label>
-          <SearchableCombobox
-            id='projects-project-select'
-            items={projectItems}
-            groups={projectGroups}
-            value={selectedProjectId ?? ''}
-            onChange={value => onProjectChange(value || null)}
-            placeholder='Select a project...'
-            searchPlaceholder='Search clients or projects...'
-            disabled={projectItems.length === 0}
-            ariaLabel='Select a project'
-            variant='heading'
-          />
-        </div>
-        <div className='flex gap-2'>
-          <Button
-            type='button'
-            variant='outline'
-            size='icon'
-            onClick={onSelectPreviousProject}
-            disabled={!canSelectPrevious}
-            aria-label='Select previous project'
-          >
-            <ChevronLeft className='h-4 w-4' />
-          </Button>
-          <Button
-            type='button'
-            variant='outline'
-            size='icon'
-            onClick={onSelectNextProject}
-            disabled={!canSelectNext}
-            aria-label='Select next project'
-          >
-            <ChevronRight className='h-4 w-4' />
-          </Button>
-        </div>
-      </div>
+    <div className='min-w-[400px] flex-1 space-y-2'>
+      <Label htmlFor='projects-project-select' className='sr-only'>
+        Project Selector
+      </Label>
+      <SearchableCombobox
+        id='projects-project-select'
+        items={projectItems}
+        groups={projectGroups}
+        value={selectedProjectId ?? ''}
+        onChange={value => onProjectChange(value || null)}
+        placeholder='Select a project...'
+        searchPlaceholder='Search clients or projects...'
+        disabled={projectItems.length === 0}
+        ariaLabel='Select a project'
+        variant='heading'
+      />
     </div>
   )
 }
