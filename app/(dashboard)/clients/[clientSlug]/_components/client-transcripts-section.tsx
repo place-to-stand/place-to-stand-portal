@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { ExternalLink, FileText } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -9,9 +10,10 @@ import type { TranscriptForClient } from '@/lib/queries/transcripts'
 type Props = {
   transcripts: TranscriptForClient[]
   totalCount: number
+  clientId: string
 }
 
-export function ClientTranscriptsSection({ transcripts, totalCount }: Props) {
+export function ClientTranscriptsSection({ transcripts, totalCount, clientId }: Props) {
   return (
     <section className='bg-card text-card-foreground overflow-hidden rounded-lg border'>
       <div className='flex items-center gap-3 border-b px-4 py-3'>
@@ -36,9 +38,12 @@ export function ClientTranscriptsSection({ transcripts, totalCount }: Props) {
             ))}
             {totalCount > transcripts.length && (
               <div className='px-3 py-2 text-center'>
-                <span className='text-muted-foreground text-xs'>
+                <Link
+                  href={`/my/inbox/transcripts?client=${clientId}`}
+                  className='text-muted-foreground hover:text-foreground text-xs transition'
+                >
                   +{totalCount - transcripts.length} more
-                </span>
+                </Link>
               </div>
             )}
           </div>
@@ -49,8 +54,11 @@ export function ClientTranscriptsSection({ transcripts, totalCount }: Props) {
 }
 
 function TranscriptRow({ transcript }: { transcript: TranscriptForClient }) {
-  const content = (
-    <>
+  return (
+    <Link
+      href={`/my/inbox/transcripts?transcript=${transcript.id}`}
+      className='hover:bg-muted/50 flex items-center gap-3 px-3 py-2.5 transition'
+    >
       <div className='min-w-0 flex-1'>
         <div className='truncate text-sm font-medium'>
           {transcript.title}
@@ -62,22 +70,13 @@ function TranscriptRow({ transcript }: { transcript: TranscriptForClient }) {
         )}
       </div>
       {transcript.driveFileUrl && (
-        <a
-          href={transcript.driveFileUrl}
-          target='_blank'
-          rel='noopener noreferrer'
+        <span
           className='text-muted-foreground hover:text-primary shrink-0'
           onClick={e => e.stopPropagation()}
         >
           <ExternalLink className='h-3.5 w-3.5' />
-        </a>
+        </span>
       )}
-    </>
-  )
-
-  return (
-    <div className='flex items-center gap-3 px-3 py-2.5'>
-      {content}
-    </div>
+    </Link>
   )
 }

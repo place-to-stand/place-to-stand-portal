@@ -29,4 +29,5 @@ export type ListContactsForSettingsInput = {
   cursor?: string | null
   direction?: CursorDirection | null
   limit?: number | null
+  offset?: number | null
 }

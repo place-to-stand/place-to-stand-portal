@@ -74,6 +74,7 @@ export type ListHourBlocksForSettingsInput = {
   cursor?: string | null
   direction?: CursorDirection | null
   limit?: number | null
+  offset?: number | null
 }
 
 export type HourBlocksSettingsResult = {
@@ -131,43 +132,66 @@ export async function listHourBlocksForSettings(
     )
   }
 
-  const cursorPayload = decodeCursor<{ createdAt?: string; id?: string }>(
-    input.cursor
-  )
-  const cursorCondition = buildHourBlocksCursorCondition(
-    direction,
-    cursorPayload
-  )
+  const useOffset = typeof input.offset === 'number' && input.offset >= 0
 
-  const paginatedConditions = cursorCondition
-    ? [...baseConditions, cursorCondition]
-    : baseConditions
+  let hourBlocksList: HourBlockWithClient[]
 
-  const whereClause =
-    paginatedConditions.length > 0 ? and(...paginatedConditions) : undefined
+  if (useOffset) {
+    const baseWhere =
+      baseConditions.length > 0 ? and(...baseConditions) : undefined
 
-  const ordering =
-    direction === 'forward'
-      ? [desc(hourBlocks.createdAt), desc(hourBlocks.id)]
-      : [asc(hourBlocks.createdAt), asc(hourBlocks.id)]
+    const rows = (await db
+      .select({
+        block: hourBlockSelection,
+        client: clientSelection,
+      })
+      .from(hourBlocks)
+      .leftJoin(clients, eq(hourBlocks.clientId, clients.id))
+      .where(baseWhere)
+      .orderBy(desc(hourBlocks.createdAt), desc(hourBlocks.id))
+      .limit(limit)
+      .offset(input.offset!)) as HourBlockSelection[]
 
-  const rows = (await db
-    .select({
-      block: hourBlockSelection,
-      client: clientSelection,
-    })
-    .from(hourBlocks)
-    .leftJoin(clients, eq(hourBlocks.clientId, clients.id))
-    .where(whereClause)
-    .orderBy(...ordering)
-    .limit(limit + 1)) as HourBlockSelection[]
+    hourBlocksList = rows.map(mapHourBlockWithClient)
+  } else {
+    const cursorPayload = decodeCursor<{ createdAt?: string; id?: string }>(
+      input.cursor
+    )
+    const cursorCondition = buildHourBlocksCursorCondition(
+      direction,
+      cursorPayload
+    )
 
-  const hasExtraRecord = rows.length > limit
-  const slicedRows = hasExtraRecord ? rows.slice(0, limit) : rows
-  const normalizedRows =
-    direction === 'backward' ? [...slicedRows].reverse() : slicedRows
+    const paginatedConditions = cursorCondition
+      ? [...baseConditions, cursorCondition]
+      : baseConditions
 
-  const hourBlocksList = normalizedRows.map(mapHourBlockWithClient)
+    const whereClause =
+      paginatedConditions.length > 0 ? and(...paginatedConditions) : undefined
+
+    const ordering =
+      direction === 'forward'
+        ? [desc(hourBlocks.createdAt), desc(hourBlocks.id)]
+        : [asc(hourBlocks.createdAt), asc(hourBlocks.id)]
+
+    const rows = (await db
+      .select({
+        block: hourBlockSelection,
+        client: clientSelection,
+      })
+      .from(hourBlocks)
+      .leftJoin(clients, eq(hourBlocks.clientId, clients.id))
+      .where(whereClause)
+      .orderBy(...ordering)
+      .limit(limit + 1)) as HourBlockSelection[]
+
+    const hasExtraRecord = rows.length > limit
+    const slicedRows = hasExtraRecord ? rows.slice(0, limit) : rows
+    const normalizedRows =
+      direction === 'backward' ? [...slicedRows].reverse() : slicedRows
+
+    hourBlocksList = normalizedRows.map(mapHourBlockWithClient)
+  }
 
   const [totalResult, clientDirectory] = await Promise.all([
     db
@@ -181,14 +205,11 @@ export async function listHourBlocksForSettings(
   const firstItem = hourBlocksList[0] ?? null
   const lastItem = hourBlocksList[hourBlocksList.length - 1] ?? null
 
-  const hasPreviousPage =
-    direction === 'forward' ? Boolean(cursorPayload) : hasExtraRecord
-  const hasNextPage =
-    direction === 'forward' ? hasExtraRecord : Boolean(cursorPayload)
-
   const pageInfo: PageInfo = {
-    hasPreviousPage,
-    hasNextPage,
+    hasPreviousPage: useOffset ? input.offset! > 0 : false,
+    hasNextPage: useOffset
+      ? input.offset! + limit < totalCount
+      : false,
     startCursor: firstItem
       ? encodeCursor({
           createdAt: firstItem.created_at,

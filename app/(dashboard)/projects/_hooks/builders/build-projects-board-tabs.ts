@@ -4,7 +4,6 @@ import type { ProjectsBoardNavigation } from '../use-projects-board-navigation'
 type BuildTabsArgs = {
   initialTab: ProjectsBoardTabsSectionProps['initialTab']
   navigation: ProjectsBoardNavigation
-  assignmentFilter: ProjectsBoardTabsSectionProps['assignmentFilter']
   board: ProjectsBoardTabsSectionProps['board']
   drag: ProjectsBoardTabsSectionProps['drag']
   calendarDrag: ProjectsBoardTabsSectionProps['calendarDrag']
@@ -17,7 +16,6 @@ type BuildTabsArgs = {
 export function buildProjectsBoardTabs({
   initialTab,
   navigation,
-  assignmentFilter,
   board,
   drag,
   calendarDrag,
@@ -29,7 +27,6 @@ export function buildProjectsBoardTabs({
   return {
     initialTab,
     navigation,
-    assignmentFilter,
     board,
     drag,
     calendarDrag,
@@ -39,4 +36,3 @@ export function buildProjectsBoardTabs({
     timeLogs,
   }
 }
-

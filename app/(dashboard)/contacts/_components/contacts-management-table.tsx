@@ -1,12 +1,11 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useCallback } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 
-import type { PageInfo } from '@/lib/pagination/cursor'
 import {
   type ContactsTableContact,
   useContactsTableState,
@@ -18,7 +17,10 @@ import { ContactsSheet } from './contacts-sheet'
 
 type ContactsManagementTableProps = {
   contacts: ContactsTableContact[]
-  pageInfo: PageInfo
+  totalCount: number
+  currentPage: number
+  totalPages: number
+  pageSize: number
   mode: 'active' | 'archive'
   allClients?: ClientOption[]
 }
@@ -30,7 +32,10 @@ const EMPTY_MESSAGES = {
 
 export function ContactsManagementTable({
   contacts,
-  pageInfo,
+  totalCount,
+  currentPage,
+  totalPages,
+  pageSize,
   mode,
   allClients = [],
 }: ContactsManagementTableProps) {
@@ -62,27 +67,18 @@ export function ContactsManagementTable({
 
   const emptyMessage = EMPTY_MESSAGES[mode]
 
-  const handlePaginate = (direction: 'forward' | 'backward') => {
-    const cursor =
-      direction === 'forward' ? pageInfo.endCursor : pageInfo.startCursor
-
-    if (!cursor) {
-      return
-    }
-
-    const params = new URLSearchParams(searchParams.toString())
-    params.set('cursor', cursor)
-    params.set('dir', direction)
-    const query = params.toString()
-    router.push(query ? `${pathname}?${query}` : pathname)
-  }
-
-  const paginationState = useMemo(
-    () => ({
-      hasNextPage: pageInfo.hasNextPage,
-      hasPreviousPage: pageInfo.hasPreviousPage,
-    }),
-    [pageInfo.hasNextPage, pageInfo.hasPreviousPage]
+  const handlePageChange = useCallback(
+    (page: number) => {
+      const params = new URLSearchParams(searchParams.toString())
+      if (page <= 1) {
+        params.delete('page')
+      } else {
+        params.set('page', String(page))
+      }
+      const query = params.toString()
+      router.push(query ? `${pathname}?${query}` : pathname)
+    },
+    [pathname, router, searchParams]
   )
 
   return (
@@ -130,11 +126,12 @@ export function ContactsManagementTable({
         emptyMessage={emptyMessage}
       />
       <PaginationControls
-        hasNextPage={paginationState.hasNextPage}
-        hasPreviousPage={paginationState.hasPreviousPage}
-        onNext={() => handlePaginate('forward')}
-        onPrevious={() => handlePaginate('backward')}
-        disableAll={isPending}
+        mode='paged'
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={totalCount}
+        pageSize={pageSize}
+        onPageChange={handlePageChange}
       />
       <ContactsSheet
         open={sheetOpen}

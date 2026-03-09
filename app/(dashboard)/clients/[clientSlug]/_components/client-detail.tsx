@@ -154,6 +154,7 @@ export function ClientDetail({
           <ClientTranscriptsSection
             transcripts={transcripts}
             totalCount={transcriptCount}
+            clientId={client.id}
           />
         </div>
       </div>

@@ -5,6 +5,7 @@ import type { ProjectsBoardTabsProps } from './projects-board-tabs'
 
 type NavigationProps = Pick<
   ProjectsBoardTabsProps,
+  | 'overviewHref'
   | 'boardHref'
   | 'calendarHref'
   | 'backlogHref'
@@ -16,11 +17,6 @@ type NavigationProps = Pick<
   | 'activityDisabled'
   | 'reviewDisabled'
   | 'timeLogsDisabled'
->
-
-type AssignmentFilterProps = Pick<
-  ProjectsBoardTabsProps,
-  'onlyAssignedToMe' | 'onAssignedFilterChange'
 >
 
 type BoardProps = Pick<
@@ -91,7 +87,6 @@ type TimeLogsProps = Pick<
 export type ProjectsBoardTabsSectionProps = {
   initialTab: ProjectsBoardTabsProps['initialTab']
   navigation: NavigationProps
-  assignmentFilter: AssignmentFilterProps
   board: BoardProps
   drag: DragProps
   calendarDrag: CalendarDragProps
@@ -109,7 +104,6 @@ type ProjectsBoardTabsSectionComponentProps = ProjectsBoardTabsSectionProps & {
 export function ProjectsBoardTabsSection({
   initialTab,
   navigation,
-  assignmentFilter,
   board,
   drag,
   calendarDrag,
@@ -124,7 +118,6 @@ export function ProjectsBoardTabsSection({
     <ProjectsBoardTabs
       initialTab={initialTab}
       {...navigation}
-      {...assignmentFilter}
       {...board}
       {...drag}
       {...calendarDrag}

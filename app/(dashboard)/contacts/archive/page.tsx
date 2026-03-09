@@ -17,6 +17,8 @@ export const metadata: Metadata = {
   title: 'Contact Archive | Place to Stand Portal',
 }
 
+const PAGE_SIZE = 20
+
 export default async function ContactsArchivePage({
   searchParams,
 }: ContactsArchivePageProps) {
@@ -29,40 +31,28 @@ export default async function ContactsArchivePage({
       : Array.isArray(params.q)
         ? params.q[0] ?? ''
         : ''
-  const cursor =
-    typeof params.cursor === 'string'
-      ? params.cursor
-      : Array.isArray(params.cursor)
-        ? params.cursor[0] ?? null
-        : null
-  const directionParam =
-    typeof params.dir === 'string'
-      ? params.dir
-      : Array.isArray(params.dir)
-        ? params.dir[0] ?? null
-        : null
-  const direction =
-    directionParam === 'backward' ? 'backward' : ('forward' as const)
-  const limitParamRaw =
-    typeof params.limit === 'string'
-      ? params.limit
-      : Array.isArray(params.limit)
-        ? params.limit[0]
-        : undefined
-  const limitParam = Number.parseInt(limitParamRaw ?? '', 10)
 
-  const [{ items, totalCount, pageInfo }, allClients] = await Promise.all([
+  const pageParam =
+    typeof params.page === 'string'
+      ? params.page
+      : Array.isArray(params.page)
+        ? params.page[0] ?? '1'
+        : '1'
+  const currentPage = Math.max(1, Number.parseInt(pageParam, 10) || 1)
+  const offset = (currentPage - 1) * PAGE_SIZE
+
+  const [{ items, totalCount }, allClients] = await Promise.all([
     listContactsForSettings(admin, {
       status: 'archived',
       search: searchQuery,
-      cursor,
-      direction,
-      limit: Number.isFinite(limitParam) ? limitParam : undefined,
+      offset,
+      limit: PAGE_SIZE,
     }),
     listAllActiveClients(admin),
   ])
 
   const contactsForTable = items.map(mapContactToTableRow)
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
 
   return (
     <>
@@ -89,7 +79,10 @@ export default async function ContactsArchivePage({
         <section className='bg-background rounded-xl border p-6 shadow-sm space-y-4'>
           <ContactsManagementTable
             contacts={contactsForTable}
-            pageInfo={pageInfo}
+            totalCount={totalCount}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={PAGE_SIZE}
             mode='archive'
             allClients={allClients}
           />

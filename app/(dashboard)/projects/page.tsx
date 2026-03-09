@@ -2,9 +2,11 @@ import type { Metadata } from 'next'
 
 import { AppShellHeader } from '@/components/layout/app-shell'
 import { ProjectsLanding } from './_components/projects-landing'
+import type { ClientHoursData } from './_components/projects-landing'
 import { ProjectsLandingAdminSection } from './_components/projects-landing-admin-section'
 import { ProjectsLandingHeader } from './_components/projects-landing-header'
 import { fetchProjectsWithRelations } from '@/lib/data/projects'
+import { fetchClientsWithMetrics } from '@/lib/data/clients'
 import { fetchAdminUsers } from '@/lib/data/users'
 import { isAdmin } from '@/lib/auth/permissions'
 import { requireUser } from '@/lib/auth/session'
@@ -22,15 +24,19 @@ export const metadata: Metadata = {
 
 export default async function ProjectsPage() {
   const user = await requireUser()
-  const projects = await fetchProjectsWithRelations({
-    forUserId: user.id,
-    forRole: user.role,
-  })
+  const [projects, clientsWithMetrics] = await Promise.all([
+    fetchProjectsWithRelations({
+      forUserId: user.id,
+      forRole: user.role,
+    }),
+    fetchClientsWithMetrics(user),
+  ])
   const landingClients = buildLandingClients(projects)
   const visibleProjectCount = countVisibleProjects(projects, user.id)
+  const clientHoursMap = buildClientHoursMap(clientsWithMetrics)
 
   if (!isAdmin(user)) {
-    return renderProjectLanding({ user, projects, landingClients, userIsAdmin: false })
+    return renderProjectLanding({ user, projects, landingClients, clientHoursMap, userIsAdmin: false })
   }
 
   const [managementResult, adminUsersResult]: [ProjectsSettingsResult, Awaited<ReturnType<typeof fetchAdminUsers>>] =
@@ -71,6 +77,7 @@ export default async function ProjectsPage() {
         adminUsers={adminUsers}
         currentUserId={user.id}
         totalProjectCount={visibleProjectCount}
+        clientHoursMap={clientHoursMap}
       />
     </>
   )
@@ -82,11 +89,13 @@ function renderProjectLanding({
   user,
   projects,
   landingClients,
+  clientHoursMap,
   userIsAdmin,
 }: {
   user: Awaited<ReturnType<typeof requireUser>>
   projects: ProjectWithRelations[]
   landingClients: LandingClient[]
+  clientHoursMap: Record<string, ClientHoursData>
   userIsAdmin: boolean
 }) {
   const sortableProjects = [...projects]
@@ -106,6 +115,7 @@ function renderProjectLanding({
           clients={landingClients}
           currentUserId={user.id}
           isAdmin={userIsAdmin}
+          clientHoursMap={clientHoursMap}
         />
       </div>
     </>
@@ -141,4 +151,26 @@ function countVisibleProjects(
 
     return project.created_by === currentUserId
   }).length
+}
+
+function buildClientHoursMap(
+  clients: Awaited<ReturnType<typeof fetchClientsWithMetrics>>
+): Record<string, ClientHoursData> {
+  const map: Record<string, ClientHoursData> = {}
+
+  clients.forEach(client => {
+    if (client.billingType === 'prepaid') {
+      map[client.id] = {
+        billingType: client.billingType,
+        hoursRemaining: client.hoursRemaining,
+        totalHoursPurchased: client.totalHoursPurchased,
+      }
+    } else if (client.billingType === 'net_30') {
+      map[client.id] = {
+        billingType: 'net_30',
+      }
+    }
+  })
+
+  return map
 }

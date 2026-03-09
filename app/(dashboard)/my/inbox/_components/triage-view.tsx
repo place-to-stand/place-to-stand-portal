@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
 import {
   Building2,
@@ -72,6 +73,7 @@ interface TriageViewProps {
 // =============================================================================
 
 export function TriageView({ clients, projects, leads, currentUserId, serverQueueSize }: TriageViewProps) {
+  const router = useRouter()
   const { toast } = useToast()
   const [queue, setQueue] = useState<TriageItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -268,8 +270,9 @@ export function TriageView({ clients, projects, leads, currentUserId, serverQueu
     if (res.ok) {
       setSessionStats(prev => ({ ...prev, classified: prev.classified + 1 }))
       setQueue(prev => prev.filter(t => t.id !== threadId))
+      router.refresh()
     }
-  }, [])
+  }, [router])
 
   const handleDismissEmail = useCallback(async (threadId: string) => {
     const res = await fetch(`/api/threads/${threadId}`, {
@@ -280,8 +283,9 @@ export function TriageView({ clients, projects, leads, currentUserId, serverQueu
     if (res.ok) {
       setSessionStats(prev => ({ ...prev, dismissed: prev.dismissed + 1 }))
       setQueue(prev => prev.filter(t => t.id !== threadId))
+      router.refresh()
     }
-  }, [])
+  }, [router])
 
   // --- Transcript handlers ---
   const handleAcceptTranscript = useCallback(async (
@@ -297,8 +301,9 @@ export function TriageView({ clients, projects, leads, currentUserId, serverQueu
       setSessionStats(prev => ({ ...prev, classified: prev.classified + 1 }))
       setQueue(prev => prev.filter(t => t.id !== transcriptId))
       if (selectedTranscript?.id === transcriptId) setSelectedTranscript(null)
+      router.refresh()
     }
-  }, [selectedTranscript])
+  }, [selectedTranscript, router])
 
   const handleDismissTranscript = useCallback(async (transcriptId: string) => {
     const res = await fetch(`/api/transcripts/${transcriptId}`, {
@@ -310,8 +315,9 @@ export function TriageView({ clients, projects, leads, currentUserId, serverQueu
       setSessionStats(prev => ({ ...prev, dismissed: prev.dismissed + 1 }))
       setQueue(prev => prev.filter(t => t.id !== transcriptId))
       if (selectedTranscript?.id === transcriptId) setSelectedTranscript(null)
+      router.refresh()
     }
-  }, [selectedTranscript])
+  }, [selectedTranscript, router])
 
   // --- Batch handlers ---
   const handleBatchDismiss = useCallback(async () => {
@@ -347,7 +353,8 @@ export function TriageView({ clients, projects, leads, currentUserId, serverQueu
     setQueue(prev => prev.filter(t => !selectedIds.has(t.id)))
     clearSelection()
     toast({ title: `Dismissed ${total} item${total !== 1 ? 's' : ''}` })
-  }, [selectedIds, queue, clearSelection, toast])
+    router.refresh()
+  }, [selectedIds, queue, clearSelection, toast, router])
 
   const totalProcessed = sessionStats.classified + sessionStats.dismissed
 

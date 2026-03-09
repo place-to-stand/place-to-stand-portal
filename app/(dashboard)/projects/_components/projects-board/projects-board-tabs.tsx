@@ -14,6 +14,7 @@ import { BoardTabContent } from './board-tab-content'
 import { CalendarTabContent } from './calendar-tab-content'
 import { BacklogTabContent } from './backlog-tab-content'
 import { ActivityTabContent } from './activity-tab-content'
+import { OverviewTabContent } from './overview-tab-content'
 import { ReviewTabContent } from './review-tab-content'
 import type { ReviewActionKind } from './review-tab/review-tab.types'
 import { ProjectsBoardTabsHeader } from './projects-board-tabs-header'
@@ -31,12 +32,14 @@ export type ProjectActionControls = {
 
 export type ProjectsBoardTabsProps = {
   initialTab:
+    | 'overview'
     | 'board'
     | 'calendar'
     | 'backlog'
     | 'activity'
     | 'review'
     | 'timeLogs'
+  overviewHref: string
   boardHref: string
   calendarHref: string
   backlogHref: string
@@ -48,8 +51,6 @@ export type ProjectsBoardTabsProps = {
   activityDisabled: boolean
   reviewDisabled: boolean
   timeLogsDisabled: boolean
-  onlyAssignedToMe: boolean
-  onAssignedFilterChange: (checked: boolean) => void
   feedback: string | null
   activeProject: ProjectsBoardActiveProject
   canManageTasks: boolean
@@ -108,6 +109,7 @@ export type ProjectsBoardTabsProps = {
 export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
   const {
     initialTab,
+    overviewHref,
     boardHref,
     calendarHref,
     backlogHref,
@@ -119,8 +121,6 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
     activityDisabled,
     reviewDisabled,
     timeLogsDisabled,
-    onlyAssignedToMe,
-    onAssignedFilterChange,
     feedback,
     activeProject,
     canManageTasks,
@@ -181,6 +181,7 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
     <Tabs value={initialTab} className='flex min-h-0 flex-1 flex-col gap-2'>
       <ProjectsBoardTabsHeader
         initialTab={initialTab}
+        overviewHref={overviewHref}
         boardHref={boardHref}
         calendarHref={calendarHref}
         backlogHref={backlogHref}
@@ -192,12 +193,14 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
         activityDisabled={activityDisabled}
         reviewDisabled={reviewDisabled}
         timeLogsDisabled={timeLogsDisabled}
-        onlyAssignedToMe={onlyAssignedToMe}
-        onAssignedFilterChange={onAssignedFilterChange}
         projectActions={projectActions}
         activeProjectId={activeProject?.id ?? null}
         activeProjectStatus={activeProject?.status ?? null}
         onProjectStatusChange={onProjectStatusChange}
+      />
+      <OverviewTabContent
+        isActive={initialTab === 'overview'}
+        activeProject={activeProject}
       />
       <BoardTabContent
         isActive={initialTab === 'board'}
@@ -226,7 +229,7 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
         activeProject={activeProject}
         projectId={calendarProjectId}
         assignedUserId={calendarAssignedUserId}
-        onlyAssignedToMe={onlyAssignedToMe}
+        onlyAssignedToMe={false}
         renderAssignees={renderAssignees}
         canManageTasks={canManageTasks}
         onEditTask={onEditTask}

@@ -2,9 +2,7 @@ import Link from 'next/link'
 import { Pencil } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import { Label } from '@/components/ui/label'
 import { TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { startBoardTabInteraction } from '@/lib/projects/board/board-tab-interaction'
 import { ProjectStatusCell } from '@/components/projects/project-status-cell'
@@ -14,12 +12,14 @@ import type { ProjectActionControls } from './projects-board-tabs'
 
 export type ProjectsBoardTabsHeaderProps = {
   initialTab:
+    | 'overview'
     | 'board'
     | 'calendar'
     | 'backlog'
     | 'activity'
     | 'review'
     | 'timeLogs'
+  overviewHref: string
   boardHref: string
   calendarHref: string
   backlogHref: string
@@ -31,8 +31,6 @@ export type ProjectsBoardTabsHeaderProps = {
   activityDisabled: boolean
   reviewDisabled: boolean
   timeLogsDisabled: boolean
-  onlyAssignedToMe: boolean
-  onAssignedFilterChange: (checked: boolean) => void
   projectActions: ProjectActionControls
   activeProjectId: string | null
   activeProjectStatus: string | null
@@ -45,6 +43,7 @@ export type ProjectsBoardTabsHeaderProps = {
 export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
   const {
     initialTab,
+    overviewHref,
     boardHref,
     calendarHref,
     backlogHref,
@@ -56,8 +55,6 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
     activityDisabled,
     reviewDisabled,
     timeLogsDisabled,
-    onlyAssignedToMe,
-    onAssignedFilterChange,
     projectActions,
     activeProjectId,
     activeProjectStatus,
@@ -67,6 +64,15 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
   return (
     <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
       <TabsList className='bg-muted/40 h-10 w-full justify-start gap-2 rounded-lg p-1 sm:w-auto'>
+        <TabsTrigger value='overview' className='px-3 py-1.5 text-sm' asChild>
+          <Link
+            href={overviewHref}
+            prefetch={false}
+            onClick={() => startBoardTabInteraction(initialTab, 'overview')}
+          >
+            Overview
+          </Link>
+        </TabsTrigger>
         <TabsTrigger value='board' className='px-3 py-1.5 text-sm' asChild>
           <Link
             href={boardHref}
@@ -202,48 +208,33 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
           </Link>
         </TabsTrigger>
       </TabsList>
-      {initialTab === 'board' || initialTab === 'calendar' ? (
+      {(initialTab === 'board' || initialTab === 'calendar') &&
+      projectActions ? (
         <div className='flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-2'>
-          <Label
-            htmlFor='projects-board-assigned-filter'
-            className='text-muted-foreground bg-background/80 flex w-full cursor-pointer justify-end rounded-md border p-2 sm:w-auto'
-          >
-            <Checkbox
-              id='projects-board-assigned-filter'
-              checked={onlyAssignedToMe}
-              onCheckedChange={value => onAssignedFilterChange(value === true)}
-              className='h-4 w-4'
+          {activeProjectId && activeProjectStatus ? (
+            <ProjectStatusCell
+              projectId={activeProjectId}
+              status={activeProjectStatus}
+              onStatusChange={onProjectStatusChange}
+              disabled={!projectActions.canEdit}
+              variant='standalone'
             />
-            <span>Only show my tasks</span>
-          </Label>
-          {projectActions ? (
-            <>
-              {activeProjectId && activeProjectStatus ? (
-                <ProjectStatusCell
-                  projectId={activeProjectId}
-                  status={activeProjectStatus}
-                  onStatusChange={onProjectStatusChange}
-                  disabled={!projectActions.canEdit}
-                  variant='standalone'
-                />
-              ) : null}
-              <DisabledFieldTooltip
-                disabled={!projectActions.canEdit}
-                reason={projectActions.editDisabledReason}
-              >
-                <Button
-                  variant='outline'
-                  onClick={projectActions.onEdit}
-                  disabled={!projectActions.canEdit}
-                  title='Edit project'
-                  aria-label='Edit project'
-                >
-                  <Pencil className='h-4 w-4' />
-                  Edit project
-                </Button>
-              </DisabledFieldTooltip>
-            </>
           ) : null}
+          <DisabledFieldTooltip
+            disabled={!projectActions.canEdit}
+            reason={projectActions.editDisabledReason}
+          >
+            <Button
+              variant='outline'
+              onClick={projectActions.onEdit}
+              disabled={!projectActions.canEdit}
+              title='Edit project'
+              aria-label='Edit project'
+            >
+              <Pencil className='h-4 w-4' />
+              Edit project
+            </Button>
+          </DisabledFieldTooltip>
         </div>
       ) : null}
     </div>

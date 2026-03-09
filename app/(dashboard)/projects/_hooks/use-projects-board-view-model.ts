@@ -27,6 +27,7 @@ type BaseProps = Omit<UseProjectsBoardCoreStateArgs, 'currentView'>
 
 export type ProjectsBoardProps = BaseProps & {
   initialTab?:
+    | 'overview'
     | 'board'
     | 'calendar'
     | 'activity'
@@ -72,15 +73,13 @@ export function useProjectsBoardViewModel({
   initialTab = 'board',
   ...props
 }: ProjectsBoardProps): ProjectsBoardViewModel {
-  const currentBoardView = initialTab === 'timeLogs' ? 'board' : initialTab
+  const currentBoardView = initialTab === 'timeLogs' || initialTab === 'overview' ? 'board' : initialTab
   const { sensors } = useProjectsBoardSensors()
   const {
     boardState,
     derivedState,
     reviewActions,
     renderAssignees,
-    handleAssignedFilterChange,
-    onlyAssignedToMe,
     boardViewportRef,
     handleBoardScroll,
     timeLogDialogs,
@@ -148,10 +147,6 @@ export function useProjectsBoardViewModel({
   const tabs = buildProjectsBoardTabs({
     initialTab,
     navigation,
-    assignmentFilter: {
-      onlyAssignedToMe,
-      onAssignedFilterChange: handleAssignedFilterChange,
-    },
     board: {
       feedback: boardState.feedback,
       activeProject: activeProjectSummary,

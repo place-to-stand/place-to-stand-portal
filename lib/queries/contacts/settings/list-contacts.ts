@@ -45,9 +45,10 @@ function buildBaseConditions(status: StatusFilter, searchQuery: string): SQL[] {
 async function queryContactRows(
   whereClause: SQL | undefined,
   ordering: SQL[],
-  limit: number
+  limit: number,
+  opts?: { offset?: number }
 ) {
-  return db
+  const query = db
     .select({
       ...contactFields,
       totalClients: sql<number>`count(${contactClients.clientId})`,
@@ -57,7 +58,12 @@ async function queryContactRows(
     .where(whereClause)
     .groupBy(...contactGroupByColumns)
     .orderBy(...ordering)
-    .limit(limit + 1) as Promise<ContactMetricsResult[]>
+
+  if (typeof opts?.offset === 'number') {
+    return query.limit(limit).offset(opts.offset) as Promise<ContactMetricsResult[]>
+  }
+
+  return query.limit(limit + 1) as Promise<ContactMetricsResult[]>
 }
 
 async function fetchClientDetails(
@@ -165,25 +171,38 @@ export async function listContactsForSettings(
   const searchQuery = input.search?.trim() ?? ''
 
   const baseConditions = buildBaseConditions(normalizedStatus, searchQuery)
+  const useOffset = typeof input.offset === 'number' && input.offset >= 0
 
-  const cursorPayload = decodeContactCursor(input.cursor)
-  const cursorCondition = buildContactCursorCondition(direction, cursorPayload)
+  let normalizedRows: ContactMetricsResult[]
+  let cursorHasExtraRecord = false
+  let cursorPayloadForPageInfo: ReturnType<typeof decodeContactCursor> = null
 
-  const whereClause = cursorCondition
-    ? and(...baseConditions, cursorCondition)
-    : and(...baseConditions)
+  if (useOffset) {
+    const baseWhere = and(...baseConditions)
+    const ordering = [asc(contacts.email), asc(contacts.id)]
+    normalizedRows = await queryContactRows(baseWhere, ordering, limit, {
+      offset: input.offset!,
+    })
+  } else {
+    cursorPayloadForPageInfo = decodeContactCursor(input.cursor)
+    const cursorCondition = buildContactCursorCondition(direction, cursorPayloadForPageInfo)
 
-  const ordering =
-    direction === 'forward'
-      ? [asc(contacts.email), asc(contacts.id)]
-      : [desc(contacts.email), desc(contacts.id)]
+    const whereClause = cursorCondition
+      ? and(...baseConditions, cursorCondition)
+      : and(...baseConditions)
 
-  const rows = await queryContactRows(whereClause, ordering, limit)
+    const ordering =
+      direction === 'forward'
+        ? [asc(contacts.email), asc(contacts.id)]
+        : [desc(contacts.email), desc(contacts.id)]
 
-  const hasExtraRecord = rows.length > limit
-  const slicedRows = hasExtraRecord ? rows.slice(0, limit) : rows
-  const normalizedRows =
-    direction === 'backward' ? [...slicedRows].reverse() : slicedRows
+    const rows = await queryContactRows(whereClause, ordering, limit)
+
+    cursorHasExtraRecord = rows.length > limit
+    const slicedRows = cursorHasExtraRecord ? rows.slice(0, limit) : rows
+    normalizedRows =
+      direction === 'backward' ? [...slicedRows].reverse() : slicedRows
+  }
 
   // Fetch client details for all contacts in parallel with total count
   const contactIds = normalizedRows.map(row => row.id)
@@ -193,7 +212,20 @@ export async function listContactsForSettings(
   ])
 
   const mappedItems = mapContactMetrics(normalizedRows, clientsMap)
-  const pageInfo = buildPageInfo(direction, cursorPayload, mappedItems, hasExtraRecord)
+
+  const pageInfo: PageInfo = useOffset
+    ? {
+        hasPreviousPage: input.offset! > 0,
+        hasNextPage: input.offset! + limit < totalCount,
+        startCursor: null,
+        endCursor: null,
+      }
+    : buildPageInfo(
+        direction,
+        cursorPayloadForPageInfo,
+        mappedItems,
+        cursorHasExtraRecord
+      )
 
   return {
     items: mappedItems,

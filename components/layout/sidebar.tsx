@@ -20,9 +20,10 @@ const isDev = process.env.NODE_ENV === 'development'
 
 type Props = {
   user: AppUser
+  inboxTriageCount?: number
 }
 
-export function Sidebar({ user }: Props) {
+export function Sidebar({ user, inboxTriageCount = 0 }: Props) {
   const pathname = usePathname()
   const role = user.role
   const { theme, mounted: themeMounted } = useTheme()
@@ -88,6 +89,9 @@ export function Sidebar({ user }: Props) {
                         )
                       })
 
+                      const badgeCount =
+                        item.label === 'Inbox' ? inboxTriageCount : 0
+
                       return (
                         <Link
                           key={item.href}
@@ -102,6 +106,18 @@ export function Sidebar({ user }: Props) {
                         >
                           <Icon className='size-3.5 shrink-0' />
                           <span>{item.label}</span>
+                          {badgeCount > 0 && (
+                            <span
+                              className={cn(
+                                'ml-auto inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-medium',
+                                isActive
+                                  ? 'bg-primary-foreground text-primary'
+                                  : 'bg-primary text-primary-foreground'
+                              )}
+                            >
+                              {badgeCount}
+                            </span>
+                          )}
                         </Link>
                       )
                     })}

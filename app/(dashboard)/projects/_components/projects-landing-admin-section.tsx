@@ -15,6 +15,7 @@ import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui
 import type { ProjectWithRelations } from '@/lib/types'
 
 import { ProjectsLanding } from './projects-landing'
+import type { ClientHoursData } from './projects-landing'
 import { ProjectsTabsNav } from './projects-tabs-nav'
 
 export type ProjectsLandingAdminSectionProps = {
@@ -24,6 +25,7 @@ export type ProjectsLandingAdminSectionProps = {
   adminUsers: AdminUserForOwner[]
   currentUserId: string
   totalProjectCount: number
+  clientHoursMap?: Record<string, ClientHoursData>
 }
 
 export function ProjectsLandingAdminSection({
@@ -33,6 +35,7 @@ export function ProjectsLandingAdminSection({
   adminUsers,
   currentUserId,
   totalProjectCount,
+  clientHoursMap = {},
 }: ProjectsLandingAdminSectionProps) {
   const router = useRouter()
   const { toast } = useToast()
@@ -94,6 +97,7 @@ export function ProjectsLandingAdminSection({
           clients={landingClients}
           currentUserId={currentUserId}
           isAdmin={true}
+          clientHoursMap={clientHoursMap}
         />
       </section>
       <ProjectSheet

@@ -12,6 +12,8 @@ export const metadata: Metadata = {
   title: 'Hour Blocks | Settings',
 }
 
+const PAGE_SIZE = 20
+
 type HourBlocksPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 }
@@ -22,35 +24,23 @@ export default async function HourBlocksPage({
   const currentUser = await requireRole('ADMIN')
   const params = searchParams ? await searchParams : {}
 
-  const cursor =
-    typeof params.cursor === 'string'
-      ? params.cursor
-      : Array.isArray(params.cursor)
-        ? params.cursor[0] ?? null
-        : null
-  const directionParam =
-    typeof params.dir === 'string'
-      ? params.dir
-      : Array.isArray(params.dir)
-        ? params.dir[0] ?? null
-        : null
-  const direction =
-    directionParam === 'backward' ? 'backward' : ('forward' as const)
-  const limitParamRaw =
-    typeof params.limit === 'string'
-      ? params.limit
-      : Array.isArray(params.limit)
-        ? params.limit[0]
-        : undefined
-  const limitParam = Number.parseInt(limitParamRaw ?? '', 10)
+  const pageParam =
+    typeof params.page === 'string'
+      ? params.page
+      : Array.isArray(params.page)
+        ? params.page[0] ?? '1'
+        : '1'
+  const currentPage = Math.max(1, Number.parseInt(pageParam, 10) || 1)
+  const offset = (currentPage - 1) * PAGE_SIZE
 
-  const { items, clients, totalCount, pageInfo } =
+  const { items, clients, totalCount } =
     await listHourBlocksForSettings(currentUser, {
       status: 'active',
-      cursor,
-      direction,
-      limit: Number.isFinite(limitParam) ? limitParam : undefined,
+      offset,
+      limit: PAGE_SIZE,
     })
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
 
   return (
     <>
@@ -79,7 +69,10 @@ export default async function HourBlocksPage({
           <HourBlocksManagementTable
             hourBlocks={items}
             clients={clients}
-            pageInfo={pageInfo}
+            totalCount={totalCount}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={PAGE_SIZE}
             mode='active'
           />
         </section>

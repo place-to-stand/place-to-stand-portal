@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useCallback, useMemo, useTransition } from 'react'
 import type { ReactNode } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import { Building2, FolderKanban, UserRound, Users } from 'lucide-react'
+import { Building2, Clock, FolderKanban, UserRound, Users } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { siGithub } from 'simple-icons/icons'
 
@@ -42,6 +42,15 @@ import { updateProjectStatus } from '@/lib/settings/projects/actions/update-proj
 import type { ProjectWithRelations } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
+const HOURS_FORMATTER = new Intl.NumberFormat('en-US', {
+  maximumFractionDigits: 2,
+  minimumFractionDigits: 0,
+})
+
+function formatHours(hours: number): string {
+  return HOURS_FORMATTER.format(hours)
+}
+
 function getInitials(name: string | null): string {
   if (!name) return '?'
   const parts = name.trim().split(/\s+/)
@@ -72,6 +81,16 @@ function SimpleIcon({
   )
 }
 
+export type ClientHoursData =
+  | {
+      billingType: 'prepaid'
+      hoursRemaining: number
+      totalHoursPurchased: number
+    }
+  | {
+      billingType: 'net_30'
+    }
+
 type ClientProjectSection = {
   client: { id: string; name: string; slug: string | null }
   projects: ProjectWithRelations[]
@@ -82,6 +101,7 @@ type ProjectsLandingProps = {
   clients: Array<{ id: string; name: string; slug: string | null }>
   currentUserId: string
   isAdmin: boolean
+  clientHoursMap?: Record<string, ClientHoursData>
 }
 
 type SectionConfig = {
@@ -97,6 +117,7 @@ export function ProjectsLanding({
   clients,
   currentUserId,
   isAdmin,
+  clientHoursMap = {},
 }: ProjectsLandingProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -437,27 +458,66 @@ export function ProjectsLanding({
     id: string
     name: string
     slug: string | null
-  }) => (
-    <TableRow
-      key={`client-${client.id}`}
-      className='border-t-muted hover:bg-transparent'
-    >
-      <TableCell
-        colSpan={6}
-        className='bg-blue-100 py-3 align-middle dark:bg-blue-500/8'
+  }) => {
+    const hours = clientHoursMap[client.id]
+
+    return (
+      <TableRow
+        key={`client-${client.id}`}
+        className='border-t-muted hover:bg-transparent'
       >
-        <Link
-          href={
-            client.slug ? `/clients/${client.slug}` : `/clients/${client.id}`
-          }
-          className='flex w-fit shrink items-center gap-2 underline-offset-4 opacity-65 hover:underline'
+        <TableCell
+          colSpan={6}
+          className='bg-blue-100 py-3 align-middle dark:bg-blue-500/8'
         >
-          <Building2 className='h-4 w-4 shrink-0 text-blue-500/80' />
-          <span className='text-sm font-semibold'>{client.name}</span>
-        </Link>
-      </TableCell>
-    </TableRow>
-  )
+          <div className='flex items-center gap-3'>
+            <Link
+              href={
+                client.slug ? `/clients/${client.slug}` : `/clients/${client.id}`
+              }
+              className='flex w-fit shrink items-center gap-2 underline-offset-4 opacity-65 hover:underline'
+            >
+              <Building2 className='h-4 w-4 shrink-0 text-blue-500/80' />
+              <span className='text-sm font-semibold'>{client.name}</span>
+            </Link>
+            {hours && hours.billingType === 'prepaid' && (
+              <div className='flex items-center gap-1.5 text-xs'>
+                <Clock
+                  className={cn(
+                    'h-3.5 w-3.5',
+                    hours.hoursRemaining > 0
+                      ? 'text-emerald-600'
+                      : hours.hoursRemaining === 0
+                        ? 'text-muted-foreground'
+                        : 'text-red-600'
+                  )}
+                />
+                <span
+                  className={cn(
+                    hours.hoursRemaining > 0
+                      ? 'font-medium text-emerald-600'
+                      : hours.hoursRemaining === 0
+                        ? 'text-muted-foreground'
+                        : 'font-medium text-red-600'
+                  )}
+                >
+                  {formatHours(hours.hoursRemaining)}h remaining
+                </span>
+              </div>
+            )}
+            {hours && hours.billingType === 'net_30' && (
+              <div className='flex items-center gap-1.5 text-xs'>
+                <Clock className='text-muted-foreground h-3.5 w-3.5' />
+                <span className='text-muted-foreground font-medium'>
+                  Net 30
+                </span>
+              </div>
+            )}
+          </div>
+        </TableCell>
+      </TableRow>
+    )
+  }
 
   const clientSectionContent =
     clientSections.length > 0 ? (

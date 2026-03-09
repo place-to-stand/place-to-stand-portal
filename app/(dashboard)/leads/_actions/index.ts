@@ -1,6 +1,8 @@
 export { saveLead, type SaveLeadInput } from './save-lead'
 export { moveLead, type MoveLeadInput } from './move-lead'
 export { archiveLead, type ArchiveLeadInput } from './archive-lead'
+export { restoreLead, type RestoreLeadInput } from './restore-lead'
+export { destroyLead, type DestroyLeadInput } from './destroy-lead'
 export { createLeadEmail, type CreateLeadEmailInput, type CreateLeadEmailResult } from './create-lead-email'
 export { scheduleMeeting, type ScheduleMeetingInput, type ScheduleMeetingResult } from './schedule-meeting'
 export { createProposal, type CreateProposalInput, type CreateProposalResult } from './create-proposal'

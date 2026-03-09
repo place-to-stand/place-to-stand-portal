@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { cache } from 'react'
-import { and, asc, eq, isNull, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, isNotNull, isNull, sql } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
@@ -163,6 +163,46 @@ export const fetchLeadById = cache(
       googleMeetings: (lead.googleMeetings as GoogleMeetingRef[]) ?? [],
       googleProposals: (lead.googleProposals as GoogleProposalRef[]) ?? [],
     }
+  }
+)
+
+export type ArchivedLead = {
+  id: string
+  contactName: string
+  companyName: string | null
+  contactEmail: string | null
+  status: string
+  deletedAt: string
+  createdAt: string
+}
+
+export const fetchArchivedLeads = cache(
+  async (user: AppUser): Promise<ArchivedLead[]> => {
+    assertAdmin(user)
+
+    const rows = await db
+      .select({
+        id: leads.id,
+        contactName: leads.contactName,
+        companyName: leads.companyName,
+        contactEmail: leads.contactEmail,
+        status: leads.status,
+        deletedAt: leads.deletedAt,
+        createdAt: leads.createdAt,
+      })
+      .from(leads)
+      .where(isNotNull(leads.deletedAt))
+      .orderBy(desc(leads.deletedAt))
+
+    return rows.map(row => ({
+      id: row.id,
+      contactName: row.contactName,
+      companyName: row.companyName ?? null,
+      contactEmail: row.contactEmail ?? null,
+      status: row.status,
+      deletedAt: row.deletedAt!,
+      createdAt: row.createdAt,
+    }))
   }
 )
 

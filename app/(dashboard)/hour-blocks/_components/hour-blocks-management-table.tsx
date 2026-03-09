@@ -1,12 +1,11 @@
 'use client'
 
-import { useMemo } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useCallback } from 'react'
 
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 
-import type { PageInfo } from '@/lib/pagination/cursor'
 import type {
   ClientRow,
   HourBlockWithClient,
@@ -20,7 +19,10 @@ import { HourBlockSheet } from '../hour-block-sheet'
 type HourBlocksManagementTableProps = {
   hourBlocks: HourBlockWithClient[]
   clients: ClientRow[]
-  pageInfo: PageInfo
+  totalCount: number
+  currentPage: number
+  totalPages: number
+  pageSize: number
   mode: 'active' | 'archive'
 }
 
@@ -32,7 +34,10 @@ const EMPTY_MESSAGES = {
 export function HourBlocksManagementTable({
   hourBlocks,
   clients,
-  pageInfo,
+  totalCount,
+  currentPage,
+  totalPages,
+  pageSize,
   mode,
 }: HourBlocksManagementTableProps) {
   const router = useRouter()
@@ -60,27 +65,18 @@ export function HourBlocksManagementTable({
 
   const emptyMessage = EMPTY_MESSAGES[mode]
 
-  const handlePaginate = (direction: 'forward' | 'backward') => {
-    const cursor =
-      direction === 'forward' ? pageInfo.endCursor : pageInfo.startCursor
-
-    if (!cursor) {
-      return
-    }
-
-    const params = new URLSearchParams(searchParams.toString())
-    params.set('cursor', cursor)
-    params.set('dir', direction)
-    const query = params.toString()
-    router.push(query ? `${pathname}?${query}` : pathname)
-  }
-
-  const paginationState = useMemo(
-    () => ({
-      hasNextPage: pageInfo.hasNextPage,
-      hasPreviousPage: pageInfo.hasPreviousPage,
-    }),
-    [pageInfo.hasNextPage, pageInfo.hasPreviousPage]
+  const handlePageChange = useCallback(
+    (page: number) => {
+      const params = new URLSearchParams(searchParams.toString())
+      if (page <= 1) {
+        params.delete('page')
+      } else {
+        params.set('page', String(page))
+      }
+      const query = params.toString()
+      router.push(query ? `${pathname}?${query}` : pathname)
+    },
+    [pathname, router, searchParams]
   )
 
   return (
@@ -116,11 +112,12 @@ export function HourBlocksManagementTable({
         emptyMessage={emptyMessage}
       />
       <PaginationControls
-        hasNextPage={paginationState.hasNextPage}
-        hasPreviousPage={paginationState.hasPreviousPage}
-        onNext={() => handlePaginate('forward')}
-        onPrevious={() => handlePaginate('backward')}
-        disableAll={isPending}
+        mode='paged'
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={totalCount}
+        pageSize={pageSize}
+        onPageChange={handlePageChange}
       />
       <HourBlockSheet
         open={sheetOpen}
