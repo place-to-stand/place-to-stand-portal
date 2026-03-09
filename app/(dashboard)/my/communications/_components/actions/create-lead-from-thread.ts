@@ -85,7 +85,7 @@ export async function createLeadFromThread(
     // Revalidate relevant paths
     revalidatePath('/leads')
     revalidatePath('/leads/board')
-    revalidatePath('/my/inbox')
+    revalidatePath('/my/communications')
 
     return { success: true, leadId: newLead.id }
   } catch (error) {

@@ -13,9 +13,9 @@
  * // Navigate to a specific task
  * router.push(routes.my.tasks.board('task-id-123'))
  *
- * // Build inbox URL
- * routes.my.inbox.index()
- * routes.my.inbox.thread('thread-id')
+ * // Build communications URL
+ * routes.my.communications.index()
+ * routes.my.communications.thread('thread-id')
  */
 
 // ============================================================================
@@ -54,16 +54,16 @@ export const routes = {
       },
     },
 
-    /** Inbox routes */
-    inbox: {
-      /** Default inbox view */
-      index: () => '/my/inbox/emails' as const,
+    /** Communications routes */
+    communications: {
+      /** Default communications view */
+      index: () => '/my/communications/emails' as const,
 
       /** Specific view (sent, drafts, scheduled, linked, unlinked) */
-      view: (view: string) => `/my/inbox/emails/${view}` as const,
+      view: (view: string) => `/my/communications/emails/${view}` as const,
 
       /** Deep-link to a specific thread */
-      thread: (threadId: string) => `/my/inbox/emails?thread=${threadId}` as const,
+      thread: (threadId: string) => `/my/communications/emails?thread=${threadId}` as const,
     },
 
   },

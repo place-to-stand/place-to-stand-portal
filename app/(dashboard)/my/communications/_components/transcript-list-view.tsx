@@ -86,7 +86,7 @@ export function TranscriptListView({
 
   // Sub-tab navigation
   const handleViewChange = useCallback((view: string) => {
-    const base = '/my/inbox/transcripts'
+    const base = '/my/communications/transcripts'
     const path = view === 'unclassified' ? base : `${base}/${view}`
     router.push(path)
   }, [router])

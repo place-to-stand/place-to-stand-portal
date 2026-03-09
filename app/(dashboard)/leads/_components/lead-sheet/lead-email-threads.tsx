@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import type { ThreadSummary, Message } from '@/lib/types/messages'
-import { MessageCard } from '@/app/(dashboard)/my/inbox/_components/message-card'
+import { MessageCard } from '@/app/(dashboard)/my/communications/_components/message-card'
 
 type LeadEmailThreadsProps = {
   leadId: string | undefined

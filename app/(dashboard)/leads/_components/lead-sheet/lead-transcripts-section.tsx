@@ -13,8 +13,8 @@ import {
   SheetDescription,
   SheetTitle,
 } from '@/components/ui/sheet'
-import { TranscriptHtmlRenderer } from '@/app/(dashboard)/my/inbox/_components/transcript-html-renderer'
-import { TranscriptContentRenderer } from '@/app/(dashboard)/my/inbox/_components/transcript-content-renderer'
+import { TranscriptHtmlRenderer } from '@/app/(dashboard)/my/communications/_components/transcript-html-renderer'
+import { TranscriptContentRenderer } from '@/app/(dashboard)/my/communications/_components/transcript-content-renderer'
 
 type TranscriptForLead = {
   id: string

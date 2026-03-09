@@ -306,9 +306,9 @@ export function TranscriptPanel({
   const handleMobileViewChange = useCallback(
     (newView: string) => {
       if (newView === 'inbox') {
-        router.push('/my/inbox/transcripts')
+        router.push('/my/communications/transcripts')
       } else {
-        router.push(`/my/inbox/transcripts/${newView}`)
+        router.push(`/my/communications/transcripts/${newView}`)
       }
     },
     [router]

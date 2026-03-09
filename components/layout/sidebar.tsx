@@ -90,7 +90,7 @@ export function Sidebar({ user, inboxTriageCount = 0 }: Props) {
                       })
 
                       const badgeCount =
-                        item.label === 'Inbox' ? inboxTriageCount : 0
+                        item.label === 'Communications' ? inboxTriageCount : 0
 
                       return (
                         <Link

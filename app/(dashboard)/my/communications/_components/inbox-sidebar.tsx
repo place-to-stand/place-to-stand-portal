@@ -47,13 +47,13 @@ const navItems: Array<{
   section?: string
   isExternal?: boolean
 }> = [
-  { view: 'inbox', label: 'Inbox', icon: Inbox, href: '/my/inbox/emails', showCount: 'unread' },
-  { view: 'drafts', label: 'Drafts', icon: FileEdit, href: '/my/inbox/emails/drafts', showCount: 'total' },
-  { view: 'sent', label: 'Sent', icon: Send, href: '/my/inbox/emails/sent' },
-  { view: 'scheduled', label: 'Scheduled', icon: Clock, href: '/my/inbox/emails/scheduled', showCount: 'total' },
-  { view: 'unclassified', label: 'Unclassified', icon: CircleDashed, href: '/my/inbox/emails/unclassified', showCount: 'total', section: 'Classification' },
-  { view: 'classified', label: 'Classified', icon: CheckCircle, href: '/my/inbox/emails/classified', showCount: 'total' },
-  { view: 'dismissed', label: 'Dismissed', icon: XCircle, href: '/my/inbox/emails/dismissed' },
+  { view: 'inbox', label: 'All Emails', icon: Inbox, href: '/my/communications/emails', showCount: 'unread' },
+  { view: 'drafts', label: 'Drafts', icon: FileEdit, href: '/my/communications/emails/drafts', showCount: 'total' },
+  { view: 'sent', label: 'Sent', icon: Send, href: '/my/communications/emails/sent' },
+  { view: 'scheduled', label: 'Scheduled', icon: Clock, href: '/my/communications/emails/scheduled', showCount: 'total' },
+  { view: 'unclassified', label: 'Unclassified', icon: CircleDashed, href: '/my/communications/emails/unclassified', showCount: 'total', section: 'Classification' },
+  { view: 'classified', label: 'Classified', icon: CheckCircle, href: '/my/communications/emails/classified', showCount: 'total' },
+  { view: 'dismissed', label: 'Dismissed', icon: XCircle, href: '/my/communications/emails/dismissed' },
 ]
 
 export function InboxSidebar({ currentView, counts, preservedParams }: InboxSidebarProps) {
@@ -70,7 +70,7 @@ export function InboxSidebar({ currentView, counts, preservedParams }: InboxSide
 
   // Build URL that preserves thread and search params across view changes
   const buildViewUrl = (view: View): string => {
-    const base = view === 'inbox' ? '/my/inbox/emails' : `/my/inbox/emails/${view}`
+    const base = view === 'inbox' ? '/my/communications/emails' : `/my/communications/emails/${view}`
     const params = new URLSearchParams()
     // Preserve thread param (selected thread is independent of view)
     if (preservedParams?.thread) params.set('thread', preservedParams.thread)

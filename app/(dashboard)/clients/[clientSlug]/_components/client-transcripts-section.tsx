@@ -39,7 +39,7 @@ export function ClientTranscriptsSection({ transcripts, totalCount, clientId }: 
             {totalCount > transcripts.length && (
               <div className='px-3 py-2 text-center'>
                 <Link
-                  href={`/my/inbox/transcripts?client=${clientId}`}
+                  href={`/my/communications/transcripts?client=${clientId}`}
                   className='text-muted-foreground hover:text-foreground text-xs transition'
                 >
                   +{totalCount - transcripts.length} more
@@ -56,7 +56,7 @@ export function ClientTranscriptsSection({ transcripts, totalCount, clientId }: 
 function TranscriptRow({ transcript }: { transcript: TranscriptForClient }) {
   return (
     <Link
-      href={`/my/inbox/transcripts?transcript=${transcript.id}`}
+      href={`/my/communications/transcripts?transcript=${transcript.id}`}
       className='hover:bg-muted/50 flex items-center gap-3 px-3 py-2.5 transition'
     >
       <div className='min-w-0 flex-1'>

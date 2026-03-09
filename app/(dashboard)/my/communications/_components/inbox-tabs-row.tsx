@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
 import { RefreshCw } from 'lucide-react'
@@ -89,23 +89,8 @@ export function InboxTabsRow({ unclassifiedCount, unclassifiedTranscriptCount = 
     }
   }, [router, toast])
 
-  // Auto-sync on mount and poll every 60s
-  const hasSyncedRef = useRef(false)
-  useEffect(() => {
-    if (!isConnected) return
-
-    if (!hasSyncedRef.current) {
-      hasSyncedRef.current = true
-      handleSync(true)
-    }
-
-    const interval = setInterval(() => {
-      handleSync(true)
-    }, 60_000)
-
-    return () => clearInterval(interval)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConnected])
+  // Background polling is handled globally by BackgroundSync in the dashboard layout.
+  // This component only handles manual sync (button click).
 
   return (
     <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>

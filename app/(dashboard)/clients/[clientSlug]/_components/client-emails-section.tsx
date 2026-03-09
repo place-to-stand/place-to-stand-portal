@@ -51,7 +51,7 @@ export function ClientEmailsSection({ messages, currentUserId, clientId }: Props
               {messages.length > 5 && (
                 <div className='px-3 py-2 text-center'>
                   <Link
-                    href={`/my/inbox/emails?client=${clientId}`}
+                    href={`/my/communications/emails?client=${clientId}`}
                     className='text-muted-foreground hover:text-foreground text-xs transition'
                   >
                     +{messages.length - 5} more
@@ -124,7 +124,7 @@ function MessageRow({ message, isOwned }: MessageRowProps) {
   if (isOwned) {
     return (
       <Link
-        href={`/my/inbox/emails?thread=${message.threadId}`}
+        href={`/my/communications/emails?thread=${message.threadId}`}
         className='hover:bg-muted/50 flex items-center gap-3 px-3 py-2.5 transition'
       >
         {content}

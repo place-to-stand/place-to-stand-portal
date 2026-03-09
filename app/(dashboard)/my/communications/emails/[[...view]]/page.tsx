@@ -44,7 +44,7 @@ export default async function InboxEmailsPage({ params, searchParams }: Props) {
   const resolvedParams = await params
   const query = await searchParams
 
-  // Extract view from path segment (e.g., /my/inbox/emails/sent → 'sent')
+  // Extract view from path segment (e.g., /my/communications/emails/sent → 'sent')
   const validViews: ViewType[] = ['inbox', 'sent', 'drafts', 'scheduled', 'unclassified', 'classified', 'dismissed']
   const viewSegment = resolvedParams.view?.[0]
   const view: ViewType = validViews.includes(viewSegment as ViewType)

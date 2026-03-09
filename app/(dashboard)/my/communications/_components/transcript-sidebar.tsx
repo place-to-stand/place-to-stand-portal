@@ -38,10 +38,10 @@ const navItems: Array<{
   countKey?: 'total' | 'unclassified' | 'classified'
   section?: string
 }> = [
-  { view: 'inbox', label: 'All Transcripts', icon: Inbox, href: '/my/inbox/transcripts' },
-  { view: 'unclassified', label: 'Unclassified', icon: CircleDashed, href: '/my/inbox/transcripts/unclassified', countKey: 'unclassified', section: 'Classification' },
-  { view: 'classified', label: 'Classified', icon: CheckCircle, href: '/my/inbox/transcripts/classified', countKey: 'classified' },
-  { view: 'dismissed', label: 'Dismissed', icon: XCircle, href: '/my/inbox/transcripts/dismissed' },
+  { view: 'inbox', label: 'All Transcripts', icon: Inbox, href: '/my/communications/transcripts' },
+  { view: 'unclassified', label: 'Unclassified', icon: CircleDashed, href: '/my/communications/transcripts/unclassified', countKey: 'unclassified', section: 'Classification' },
+  { view: 'classified', label: 'Classified', icon: CheckCircle, href: '/my/communications/transcripts/classified', countKey: 'classified' },
+  { view: 'dismissed', label: 'Dismissed', icon: XCircle, href: '/my/communications/transcripts/dismissed' },
 ]
 
 export function TranscriptSidebar({ currentView, counts, preservedParams }: TranscriptSidebarProps) {

@@ -219,9 +219,9 @@ export function InboxPanel({
   const handleMobileViewChange = useCallback(
     (newView: string) => {
       if (newView === 'inbox') {
-        router.push('/my/inbox/emails')
+        router.push('/my/communications/emails')
       } else {
-        router.push(`/my/inbox/emails/${newView}`)
+        router.push(`/my/communications/emails/${newView}`)
       }
     },
     [router]

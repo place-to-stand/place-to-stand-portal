@@ -211,7 +211,7 @@ function EmailsSection({
             {threads.map(thread => (
               <Link
                 key={thread.id}
-                href={`/my/inbox/emails?thread=${thread.id}`}
+                href={`/my/communications/emails?thread=${thread.id}`}
                 className='hover:bg-muted/50 flex items-center gap-3 px-3 py-2.5 transition'
               >
                 <div className='min-w-0 flex-1'>
@@ -240,10 +240,10 @@ function EmailsSection({
             {threads.length >= 10 && (
               <div className='px-3 py-2 text-center'>
                 <Link
-                  href={`/my/inbox/emails?project=${projectId}`}
+                  href={`/my/communications/emails?project=${projectId}`}
                   className='text-muted-foreground hover:text-foreground text-xs transition'
                 >
-                  View all in inbox
+                  View all in communications
                 </Link>
               </div>
             )}
@@ -296,7 +296,7 @@ function TranscriptsSection({
             {transcripts.map(t => (
               <Link
                 key={t.id}
-                href={`/my/inbox/transcripts?transcript=${t.id}`}
+                href={`/my/communications/transcripts?transcript=${t.id}`}
                 className='hover:bg-muted/50 flex items-center gap-3 px-3 py-2.5 transition'
               >
                 <div className='min-w-0 flex-1'>
@@ -317,7 +317,7 @@ function TranscriptsSection({
             {totalCount > transcripts.length && (
               <div className='px-3 py-2 text-center'>
                 <Link
-                  href={`/my/inbox/transcripts?project=${projectId}`}
+                  href={`/my/communications/transcripts?project=${projectId}`}
                   className='text-muted-foreground hover:text-foreground text-xs transition'
                 >
                   +{totalCount - transcripts.length} more

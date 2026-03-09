@@ -20,12 +20,12 @@ const INBOX_TABS: Array<{
   value: InboxNavTab
   href: string
 }> = [
-  { label: 'All Triage', value: 'triage', href: '/my/inbox/triage' },
-  { label: 'Emails', value: 'emails', href: '/my/inbox/emails' },
+  { label: 'All Triage', value: 'triage', href: '/my/communications/triage' },
+  { label: 'Emails', value: 'emails', href: '/my/communications/emails' },
   {
     label: 'Transcripts',
     value: 'transcripts',
-    href: '/my/inbox/transcripts',
+    href: '/my/communications/transcripts',
   },
 ]
 
@@ -38,9 +38,9 @@ export function InboxTabs({
   const router = useRouter()
   const pathname = usePathname()
 
-  const activeTab: InboxNavTab = pathname.startsWith('/my/inbox/triage')
+  const activeTab: InboxNavTab = pathname.startsWith('/my/communications/triage')
     ? 'triage'
-    : pathname.startsWith('/my/inbox/transcripts')
+    : pathname.startsWith('/my/communications/transcripts')
       ? 'transcripts'
       : 'emails'
 
