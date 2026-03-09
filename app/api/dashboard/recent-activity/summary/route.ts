@@ -21,7 +21,7 @@ import { clients, leads, projects, tasks } from '@/lib/db/schema'
 const VALID_TIMEFRAMES = [1, 7, 14, 28] as const
 const ONE_HOUR_MS = 60 * 60 * 1000
 const MAX_LOG_LINES_IN_PROMPT = 200
-const HIGHLIGHT_CHARACTER_LIMIT = 400
+const HIGHLIGHT_CHARACTER_LIMIT = 1200
 
 type ValidTimeframe = (typeof VALID_TIMEFRAMES)[number]
 
@@ -307,15 +307,27 @@ async function countBlockedTasks(): Promise<number> {
 
 function buildSystemPrompt(timeframe: ValidTimeframe): string {
   return [
-    "You're a chief of staff writing a brief narrative CEO briefing.",
-    `Based on the last ${timeframe} day${timeframe === 1 ? '' : 's'} of activity, write 2-3 casual sentences (max 400 characters total) that tell a story about what's happening in the business.`,
-    'Start with the most important headline, then add context or a secondary development.',
-    'Focus on what matters: progress made, deals or leads, blockers requiring attention, or notable momentum.',
-    'Be specific—mention actual project names or clients when they appear in the activity.',
-    'Write conversationally, as if updating a busy executive over coffee.',
-    'No markdown, no bullets, no headers—just flowing prose.',
-    'Example: "Made solid progress on the Acme dashboard redesign, knocking out 5 tasks this week. Meanwhile, 2 new leads came in from the website—worth following up on. One blocker on the API integration is waiting on client feedback."',
-  ].join(' ')
+    "You're a chief of staff writing a brief team activity briefing.",
+    `Based on the last ${timeframe} day${timeframe === 1 ? '' : 's'} of activity, write a summary broken down by team member.`,
+    '',
+    'Format rules:',
+    '- Use **Name** as a bold heading for each team member who had activity.',
+    '- Under each name, use 1-3 bullet points (using -) summarizing their key contributions.',
+    '- Each bullet should be a concise, specific sentence mentioning project names or clients when available.',
+    '- Focus on what matters: progress made, deals or leads, blockers, or notable momentum.',
+    '- Write conversationally and casually.',
+    '- If a team member only had minor activity (e.g., a single comment), you can combine them into an "Others" section.',
+    '- No H1/H2 headers (#), no code blocks — just bold names and bullets.',
+    '',
+    'Example:',
+    '**Jason**',
+    '- Knocked out 5 tasks on the Acme dashboard redesign, moving it closer to launch.',
+    '- Logged 3.5 hours on the WidgetCo API integration.',
+    '',
+    '**Sarah**',
+    '- Closed 2 new leads from the website — worth following up on.',
+    '- Flagged a blocker on the API integration waiting on client feedback.',
+  ].join('\n')
 }
 
 function buildUserPrompt({
@@ -332,13 +344,24 @@ function buildUserPrompt({
   metrics: ActivityMetrics
 }): string {
   const timeframeLabel = timeframeDaysLabel(timeframeDays)
-  const formattedLogs = logs
-    .slice(0, 50)
-    .map(log => formatActivityLog(log, context))
-    .join('\n')
+
+  // Group logs by actor for per-member breakdown
+  const logsByActor = new Map<string, string[]>()
+  for (const log of logs.slice(0, 50)) {
+    const actorName = (
+      log.actor?.full_name?.trim() || log.actor?.email || 'System'
+    ).replace(/\s+/g, ' ')
+    const existing = logsByActor.get(actorName) ?? []
+    existing.push(formatActivityLog(log, context))
+    logsByActor.set(actorName, existing)
+  }
+
+  const groupedSection = Array.from(logsByActor.entries())
+    .map(([actor, entries]) => `=== ${actor} ===\n${entries.join('\n')}`)
+    .join('\n\n')
 
   return [
-    `Today is ${now.toISOString()}. Write a brief narrative summary for ${timeframeLabel}.`,
+    `Today is ${now.toISOString()}. Write a team activity summary for ${timeframeLabel}.`,
     '',
     'Current metrics:',
     `- Tasks accepted: ${metrics.tasksDone}`,
@@ -346,10 +369,10 @@ function buildUserPrompt({
     `- Active projects: ${metrics.activeProjects}`,
     `- Blocked tasks: ${metrics.blockedTasks}`,
     '',
-    'Recent activity (JSON lines):',
-    formattedLogs,
+    'Recent activity grouped by team member:',
+    groupedSection,
     '',
-    'Write 2-3 sentences (max 400 chars) that tell the story of what happened. Start with the headline, add context.',
+    'Write a summary broken down by team member using **Name** headings and bullet points. Keep it concise and actionable.',
   ].join('\n')
 }
 
@@ -364,29 +387,28 @@ function buildFallbackHighlight(
   metrics: ActivityMetrics
 ): string {
   const dayLabel = timeframeDays === 1 ? 'day' : 'days'
-  const sentences: string[] = []
+  const bullets: string[] = []
 
   if (metrics.tasksDone > 0) {
     const taskWord = metrics.tasksDone === 1 ? 'task was' : 'tasks were'
-    sentences.push(`${metrics.tasksDone} ${taskWord} accepted over the past ${timeframeDays} ${dayLabel}.`)
+    bullets.push(`${metrics.tasksDone} ${taskWord} accepted over the past ${timeframeDays} ${dayLabel}.`)
   }
 
   if (metrics.newLeads > 0) {
     const leadWord = metrics.newLeads === 1 ? 'lead' : 'leads'
-    const verb = metrics.newLeads === 1 ? 'came' : 'came'
-    sentences.push(`${metrics.newLeads} new ${leadWord} ${verb} in—worth a look.`)
+    bullets.push(`${metrics.newLeads} new ${leadWord} came in — worth a look.`)
   }
 
   if (metrics.blockedTasks > 0) {
     const blockedWord = metrics.blockedTasks === 1 ? 'task is' : 'tasks are'
-    sentences.push(`${metrics.blockedTasks} ${blockedWord} currently blocked and may need attention.`)
+    bullets.push(`${metrics.blockedTasks} ${blockedWord} currently blocked and may need attention.`)
   }
 
-  if (sentences.length === 0) {
+  if (bullets.length === 0) {
     return `${logs.length} updates logged over the past ${timeframeDays} ${dayLabel}. Activity is ticking along steadily.`
   }
 
-  return sentences.join(' ')
+  return '**Team Summary**\n' + bullets.map(b => `- ${b}`).join('\n')
 }
 
 function enforceHighlightCharacterLimit(text: string, limit: number): string {

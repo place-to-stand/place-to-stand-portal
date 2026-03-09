@@ -470,10 +470,12 @@ export function ProjectsLanding({
           colSpan={6}
           className='bg-blue-100 py-3 align-middle dark:bg-blue-500/8'
         >
-          <div className='flex items-center gap-3'>
+          <div className='flex items-center gap-4'>
             <Link
               href={
-                client.slug ? `/clients/${client.slug}` : `/clients/${client.id}`
+                client.slug
+                  ? `/clients/${client.slug}`
+                  : `/clients/${client.id}`
               }
               className='flex w-fit shrink items-center gap-2 underline-offset-4 opacity-65 hover:underline'
             >
@@ -481,10 +483,10 @@ export function ProjectsLanding({
               <span className='text-sm font-semibold'>{client.name}</span>
             </Link>
             {hours && hours.billingType === 'prepaid' && (
-              <div className='flex items-center gap-1.5 text-xs'>
+              <div className='flex items-center gap-1.25 text-[11px]'>
                 <Clock
                   className={cn(
-                    'h-3.5 w-3.5',
+                    'h-3 w-3',
                     hours.hoursRemaining > 0
                       ? 'text-emerald-600'
                       : hours.hoursRemaining === 0
@@ -506,8 +508,8 @@ export function ProjectsLanding({
               </div>
             )}
             {hours && hours.billingType === 'net_30' && (
-              <div className='flex items-center gap-1.5 text-xs'>
-                <Clock className='text-muted-foreground h-3.5 w-3.5' />
+              <div className='flex items-center gap-1.25 text-[11px]'>
+                <Clock className='text-muted-foreground h-3 w-3' />
                 <span className='text-muted-foreground font-medium'>
                   Net 30
                 </span>
