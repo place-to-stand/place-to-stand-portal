@@ -74,7 +74,7 @@ export function ConversionFunnel({ data }: ConversionFunnelProps) {
                 tick={{ fontSize: 12 }}
               />
               <Tooltip
-                formatter={(value: number | undefined) => [value ?? 0, 'Leads']}
+                formatter={(value) => [Number(value) || 0, 'Leads']}
               />
               <Bar dataKey='count' radius={[0, 4, 4, 0]}>
                 {chartData.map(entry => (

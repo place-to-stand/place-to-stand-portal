@@ -99,8 +99,8 @@ export function RevenueMetrics({ data }: RevenueMetricsProps) {
                     }
                   />
                   <Tooltip
-                    formatter={(value: number | undefined) => [
-                      formatCurrency(value ?? 0),
+                    formatter={(value) => [
+                      formatCurrency(Number(value) || 0),
                       'Revenue',
                     ]}
                   />
