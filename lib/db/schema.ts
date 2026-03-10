@@ -173,6 +173,15 @@ export const transcriptClassification = pgEnum('transcript_classification', [
   'DISMISSED', // Reviewed and determined to have no business value.
 ])
 
+// Invoice status
+export const invoiceStatus = pgEnum('invoice_status', [
+  'DRAFT',
+  'SENT',
+  'VIEWED',
+  'PAID',
+  'VOID',
+])
+
 // Proposal status
 export const proposalStatus = pgEnum('proposal_status', [
   'DRAFT',
@@ -699,6 +708,8 @@ export const hourBlocks = pgTable(
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
     invoiceNumber: text('invoice_number'),
     clientId: uuid('client_id').notNull(),
+    invoiceId: uuid('invoice_id'),
+    invoiceLineItemId: uuid('invoice_line_item_id'),
   },
   table => [
     index('idx_hour_blocks_client_id')
@@ -707,6 +718,12 @@ export const hourBlocks = pgTable(
     index('idx_hour_blocks_created_by')
       .using('btree', table.createdBy.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
+    index('idx_hour_blocks_invoice_id')
+      .using('btree', table.invoiceId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND invoice_id IS NOT NULL)`),
+    uniqueIndex('idx_hour_blocks_invoice_line_item_unique')
+      .on(table.invoiceLineItemId)
+      .where(sql`(deleted_at IS NULL AND invoice_line_item_id IS NOT NULL)`),
     foreignKey({
       columns: [table.createdBy],
       foreignColumns: [users.id],
@@ -721,6 +738,9 @@ export const hourBlocks = pgTable(
       'hour_blocks_invoice_number_format',
       sql`(invoice_number IS NULL) OR (invoice_number ~ '^[A-Za-z0-9-]+$'::text)`
     ),
+    // Note: FK constraints for invoiceId -> invoices.id and
+    // invoiceLineItemId -> invoice_line_items.id added in migration
+    // to avoid forward reference (invoices table defined later in this file)
   ]
 )
 
@@ -1945,6 +1965,153 @@ export const transcripts = pgTable(
       'transcripts_ai_confidence_range',
       sql`ai_confidence >= 0 AND ai_confidence <= 1`
     ),
+  ]
+)
+
+// =============================================================================
+// INVOICING (Product Catalog, Invoices, Line Items)
+// =============================================================================
+
+export const productCatalogItems = pgTable(
+  'product_catalog_items',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    name: text().notNull(),
+    description: text(),
+    unitPrice: numeric('unit_price', { precision: 12, scale: 2 }).notNull(),
+    unitLabel: text('unit_label').notNull().default('unit'),
+    createsHourBlockDefault: boolean('creates_hour_block_default')
+      .notNull()
+      .default(false),
+    isActive: boolean('is_active').notNull().default(true),
+    sortOrder: integer('sort_order').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    index('idx_product_catalog_items_active')
+      .using('btree', table.sortOrder.asc())
+      .where(sql`(deleted_at IS NULL AND is_active = true)`),
+  ]
+)
+
+export const invoices = pgTable(
+  'invoices',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    invoiceNumber: text('invoice_number').unique(),
+    status: invoiceStatus().notNull().default('DRAFT'),
+    clientId: uuid('client_id').notNull(),
+    createdBy: uuid('created_by'),
+    proposalId: uuid('proposal_id'),
+    issuedDate: date('issued_date'),
+    dueDate: date('due_date'),
+    subtotal: numeric({ precision: 12, scale: 2 }).notNull().default('0'),
+    taxRate: numeric('tax_rate', { precision: 5, scale: 4 }).default('0'),
+    taxAmount: numeric('tax_amount', { precision: 12, scale: 2 })
+      .notNull()
+      .default('0'),
+    total: numeric({ precision: 12, scale: 2 }).notNull().default('0'),
+    notes: text(),
+    shareToken: varchar('share_token', { length: 64 }).unique(),
+    shareEnabled: boolean('share_enabled').notNull().default(false),
+    viewedAt: timestamp('viewed_at', { withTimezone: true, mode: 'string' }),
+    viewedCount: integer('viewed_count').notNull().default(0),
+    stripeCheckoutSessionId: text('stripe_checkout_session_id'),
+    stripePaymentIntentId: text('stripe_payment_intent_id'),
+    paidAt: timestamp('paid_at', { withTimezone: true, mode: 'string' }),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    index('idx_invoices_client_id')
+      .using('btree', table.clientId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_invoices_status')
+      .using('btree', table.status.asc())
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_invoices_created_by')
+      .using('btree', table.createdBy.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_invoices_share_token')
+      .using('btree', table.shareToken.asc())
+      .where(
+        sql`(deleted_at IS NULL AND share_token IS NOT NULL AND share_enabled = true)`
+      ),
+    index('idx_invoices_stripe_checkout_session')
+      .using('btree', table.stripeCheckoutSessionId.asc())
+      .where(sql`(stripe_checkout_session_id IS NOT NULL)`),
+    index('idx_invoices_proposal_id')
+      .using('btree', table.proposalId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND proposal_id IS NOT NULL)`),
+    foreignKey({
+      columns: [table.clientId],
+      foreignColumns: [clients.id],
+      name: 'invoices_client_id_fkey',
+    }).onDelete('restrict'),
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [users.id],
+      name: 'invoices_created_by_fkey',
+    }),
+    foreignKey({
+      columns: [table.proposalId],
+      foreignColumns: [proposals.id],
+      name: 'invoices_proposal_id_fkey',
+    }).onDelete('set null'),
+  ]
+)
+
+export const invoiceLineItems = pgTable(
+  'invoice_line_items',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    invoiceId: uuid('invoice_id').notNull(),
+    productCatalogItemId: uuid('product_catalog_item_id'),
+    description: text().notNull(),
+    quantity: numeric({ precision: 8, scale: 2 }).notNull(),
+    unitPrice: numeric('unit_price', { precision: 12, scale: 2 }).notNull(),
+    amount: numeric({ precision: 12, scale: 2 }).notNull(),
+    sortOrder: integer('sort_order').notNull().default(0),
+    createsHourBlock: boolean('creates_hour_block').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    index('idx_invoice_line_items_invoice_id')
+      .using('btree', table.invoiceId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_invoice_line_items_product_catalog')
+      .using(
+        'btree',
+        table.productCatalogItemId.asc().nullsLast().op('uuid_ops')
+      )
+      .where(sql`(deleted_at IS NULL AND product_catalog_item_id IS NOT NULL)`),
+    foreignKey({
+      columns: [table.invoiceId],
+      foreignColumns: [invoices.id],
+      name: 'invoice_line_items_invoice_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.productCatalogItemId],
+      foreignColumns: [productCatalogItems.id],
+      name: 'invoice_line_items_product_catalog_item_id_fkey',
+    }).onDelete('set null'),
   ]
 )
 

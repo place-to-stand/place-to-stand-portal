@@ -34,6 +34,9 @@ import {
   planRevisions,
   planMessages,
   transcripts,
+  productCatalogItems,
+  invoices,
+  invoiceLineItems,
 } from './schema'
 
 export const clientsRelations = relations(clients, ({ one, many }) => ({
@@ -53,6 +56,7 @@ export const clientsRelations = relations(clients, ({ one, many }) => ({
   emailDrafts: many(emailDrafts),
   meetings: many(meetings),
   proposals: many(proposals),
+  invoices: many(invoices),
 }))
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -90,6 +94,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   meetings: many(meetings),
   proposals: many(proposals),
   leadStageHistory: many(leadStageHistory),
+  invoices: many(invoices),
 }))
 
 export const taskAssigneesRelations = relations(taskAssignees, ({ one }) => ({
@@ -187,6 +192,10 @@ export const hourBlocksRelations = relations(hourBlocks, ({ one }) => ({
   client: one(clients, {
     fields: [hourBlocks.clientId],
     references: [clients.id],
+  }),
+  invoice: one(invoices, {
+    fields: [hourBlocks.invoiceId],
+    references: [invoices.id],
   }),
 }))
 
@@ -586,6 +595,47 @@ export const planMessagesRelations = relations(
       fields: [planMessages.threadId],
       references: [planThreads.id],
     }),
+  })
+)
+
+// =============================================================================
+// INVOICING (Invoices, Line Items, Product Catalog)
+// =============================================================================
+
+export const invoicesRelations = relations(invoices, ({ one, many }) => ({
+  client: one(clients, {
+    fields: [invoices.clientId],
+    references: [clients.id],
+  }),
+  creator: one(users, {
+    fields: [invoices.createdBy],
+    references: [users.id],
+  }),
+  proposal: one(proposals, {
+    fields: [invoices.proposalId],
+    references: [proposals.id],
+  }),
+  lineItems: many(invoiceLineItems),
+}))
+
+export const invoiceLineItemsRelations = relations(
+  invoiceLineItems,
+  ({ one }) => ({
+    invoice: one(invoices, {
+      fields: [invoiceLineItems.invoiceId],
+      references: [invoices.id],
+    }),
+    productCatalogItem: one(productCatalogItems, {
+      fields: [invoiceLineItems.productCatalogItemId],
+      references: [productCatalogItems.id],
+    }),
+  })
+)
+
+export const productCatalogItemsRelations = relations(
+  productCatalogItems,
+  ({ many }) => ({
+    lineItems: many(invoiceLineItems),
   })
 )
 

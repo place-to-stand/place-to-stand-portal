@@ -7,18 +7,54 @@
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| 1: Data Model | Not started | Schema, migration, product catalog seed |
-| 2: Stripe Integration | Not started | Package, env, checkout, webhook |
-| 3: Dashboard UI | Not started | List, sheet, archive, activity, nav |
-| 4: Sharing & Public Page | Not started | Share flow, public page, view tracking, payment |
-| 5: Hour Block Automation | Not started | Auto-create hour blocks on payment |
-| 6: Email & PDF | Not started | PDF generation, email delivery via Resend |
-| 7: Proposal-to-Invoice | Not started | Create invoice from signed proposal |
+| 1: Data Model | Complete | Schema, migration, product catalog seed, relations, activity types |
+| 2: Stripe Integration | Complete | Stripe client, checkout routes (admin + public), webhook handler |
+| 3: Dashboard UI | Complete | List, sheet (full form with line items), archive, activity, nav, tabs |
+| 4: Sharing & Public Page | Complete | Share/unshare API routes, public invoice page, view tracking, payment flow |
+| 5: Hour Block Automation | Complete | createHourBlocksFromInvoice in webhook handler |
+| 6: Email & PDF | Complete | jsPDF invoice generation, Resend email delivery on send |
+| 7: Proposal-to-Invoice | Complete | mapProposalToInvoiceDefaults, "Create Invoice" action on proposals |
 
-## Session Log
+## Key Files Created
 
-_No sessions yet._
+### Phase 1 — Data Model
+- `lib/db/schema.ts` — Added `invoiceStatus` enum, `productCatalogItems`, `invoices`, `invoiceLineItems` tables
+- `lib/db/relations.ts` — Added invoice relations
+- `lib/activity/types.ts` — Added INVOICE target type and verbs
+- `lib/activity/events/invoices.ts` — Invoice lifecycle event builders
+- `drizzle/migrations/0042_add_invoicing.sql` — Migration with SEQUENCE + seed data
 
-## Key Files Modified
+### Phase 2 — Stripe Integration
+- `lib/stripe/client.ts` — Stripe SDK initialization
+- `app/api/invoices/[id]/checkout/route.ts` — Admin checkout session creation
+- `app/api/public/invoices/[token]/checkout/route.ts` — Public checkout
+- `app/api/integrations/stripe/route.ts` — Webhook handler
+- `lib/data/invoices.ts` — createHourBlocksFromInvoice
 
-_No modifications yet._
+### Phase 3 — Dashboard UI
+- `app/(dashboard)/invoices/page.tsx` — Active invoices list
+- `app/(dashboard)/invoices/archive/page.tsx` — Archived invoices
+- `app/(dashboard)/invoices/activity/page.tsx` — Activity feed
+- `app/(dashboard)/invoices/invoice-sheet.tsx` — Full slide-out form with line items
+- `app/(dashboard)/invoices/_components/` — All table, tabs, button, dialog components
+- `app/(dashboard)/invoices/actions/` — All server actions (save, send, void, archive, restore, destroy)
+- `lib/invoices/invoice-form.ts` — Form types, Zod schema, defaults, payload builder
+- `lib/invoices/invoice-options.ts` — Client and catalog option builders
+- `lib/invoices/invoice-ui-state.ts` — Pure state derivation functions
+- `lib/invoices/use-invoice-sheet-state.ts` — Sheet logic hook
+- `lib/queries/invoices.ts` — Query layer
+- `lib/queries/product-catalog.ts` — Product catalog queries
+
+### Phase 4 — Sharing & Public Page
+- `app/api/invoices/[id]/share/route.ts` — Enable sharing
+- `app/api/invoices/[id]/unshare/route.ts` — Disable sharing
+- `app/(public)/share/invoices/[token]/page.tsx` — Public invoice page
+- `app/(public)/share/invoices/[token]/public-invoice.tsx` — Invoice document UI
+
+### Phase 6 — Email & PDF
+- `lib/invoices/invoice-pdf.ts` — jsPDF invoice generation
+- `lib/email/send-invoice-email.ts` — Resend email template and sender
+
+### Phase 7 — Proposal-to-Invoice
+- `lib/invoices/proposal-to-invoice.ts` — mapProposalToInvoiceDefaults helper
+- Updated `app/(dashboard)/proposals/_components/proposal-detail-sheet.tsx` — "Create Invoice" action

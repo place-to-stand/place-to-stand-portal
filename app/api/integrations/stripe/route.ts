@@ -1,0 +1,144 @@
+import { NextResponse } from 'next/server'
+import { eq, sql } from 'drizzle-orm'
+
+import { db } from '@/lib/db'
+import { invoices } from '@/lib/db/schema'
+import { getStripe } from '@/lib/stripe/client'
+import { getInvoiceByStripeSession } from '@/lib/queries/invoices'
+import { invoicePaidEvent } from '@/lib/activity/events'
+import { logActivity } from '@/lib/activity/logger'
+import { createHourBlocksFromInvoice } from '@/lib/data/invoices'
+
+export async function POST(request: Request) {
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+
+  if (!webhookSecret) {
+    console.error('[stripe-webhook] STRIPE_WEBHOOK_SECRET is not configured')
+    return NextResponse.json(
+      { ok: false, error: 'Webhook not configured.' },
+      { status: 500 }
+    )
+  }
+
+  const signature = request.headers.get('stripe-signature')
+
+  if (!signature) {
+    return NextResponse.json(
+      { ok: false, error: 'Missing stripe-signature header.' },
+      { status: 400 }
+    )
+  }
+
+  let event
+
+  try {
+    const body = await request.text()
+    event = getStripe().webhooks.constructEvent(body, signature, webhookSecret)
+  } catch (err) {
+    console.error('[stripe-webhook] Invalid signature:', err)
+    return NextResponse.json(
+      { ok: false, error: 'Invalid signature.' },
+      { status: 400 }
+    )
+  }
+
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object
+
+        const invoiceId =
+          session.metadata?.invoiceId ?? session.client_reference_id
+
+        if (!invoiceId) {
+          console.error('[stripe-webhook] No invoiceId in session metadata or client_reference_id')
+          return NextResponse.json({ ok: true, received: true })
+        }
+
+        // Fetch invoice by checkout session ID for idempotency
+        const invoice = await getInvoiceByStripeSession(session.id)
+
+        if (!invoice) {
+          console.error('[stripe-webhook] Invoice not found for session:', session.id)
+          return NextResponse.json({ ok: true, received: true })
+        }
+
+        // Idempotency: if already PAID, return early
+        if (invoice.status === 'PAID') {
+          return NextResponse.json({ ok: true, received: true })
+        }
+
+        // Update invoice to PAID
+        const paymentIntentId =
+          typeof session.payment_intent === 'string'
+            ? session.payment_intent
+            : session.payment_intent?.id ?? null
+
+        await db
+          .update(invoices)
+          .set({
+            status: 'PAID',
+            stripePaymentIntentId: paymentIntentId,
+            paidAt: sql`timezone('utc'::text, now())`,
+            updatedAt: sql`timezone('utc'::text, now())`,
+          })
+          .where(eq(invoices.id, invoice.id))
+
+        // Log activity (fire-and-forget)
+        const paidEvent = invoicePaidEvent({
+          invoiceNumber: invoice.invoice_number,
+          total: invoice.total,
+          clientName: invoice.client?.name,
+        })
+
+        if (invoice.created_by) {
+          logActivity({
+            actorId: invoice.created_by,
+            verb: paidEvent.verb,
+            summary: paidEvent.summary,
+            targetType: 'INVOICE',
+            targetId: invoice.id,
+            targetClientId: invoice.client_id,
+            metadata: paidEvent.metadata,
+          }).catch(console.error)
+        }
+
+        // Create hour blocks from qualifying line items
+        createHourBlocksFromInvoice(invoice.id).catch(err => {
+          console.error('[stripe-webhook] Failed to create hour blocks:', err)
+        })
+
+        break
+      }
+
+      case 'checkout.session.expired': {
+        const session = event.data.object
+
+        // Clear the checkout session ID so a new one can be created
+        if (session.id) {
+          await db
+            .update(invoices)
+            .set({
+              stripeCheckoutSessionId: null,
+              updatedAt: sql`timezone('utc'::text, now())`,
+            })
+            .where(eq(invoices.stripeCheckoutSessionId, session.id))
+        }
+
+        break
+      }
+
+      default:
+        // Return 200 for unknown events
+        break
+    }
+
+    return NextResponse.json({ ok: true, received: true })
+  } catch (err) {
+    console.error('[stripe-webhook] Error processing event:', err)
+    return NextResponse.json(
+      { ok: false, error: 'Webhook processing failed.' },
+      { status: 500 }
+    )
+  }
+}
