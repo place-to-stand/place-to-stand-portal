@@ -53,7 +53,7 @@ Resend — the portal's existing email provider for client-facing communication.
 
 ### Template
 
-File: `lib/emails/invoice-sent.tsx` (React Email template)
+File: `lib/email/invoice-sent.tsx` (React Email template)
 
 **Subject:** `Invoice ${invoiceNumber} from Place to Stand — ${formattedTotal}`
 
@@ -121,10 +121,10 @@ async function sendInvoice(user: User, invoiceId: string) {
 ### Resend Integration
 
 ```typescript
-import { Resend } from 'resend'
+import { getResendClient } from '@/lib/email/resend'
 import { serverEnv } from '@/lib/env.server'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const resend = getResendClient()
 
 async function sendInvoiceEmail(params: {
   to: string[]
@@ -161,8 +161,8 @@ async function sendInvoiceEmail(params: {
 ## Implementation Checklist (Phase 6)
 
 1. Create `lib/invoices/invoice-pdf.tsx` — React PDF template
-2. Create `lib/emails/invoice-sent.tsx` — React Email template
-3. Add `sendInvoiceEmail()` to `lib/emails/` (or `lib/invoices/`)
+2. Create `lib/email/invoice-sent.tsx` — React Email template
+3. Add `sendInvoiceEmail()` to `lib/email/` (or `lib/invoices/`)
 4. Integrate PDF generation + email into `sendInvoice` action
 5. Add `getClientContacts()` query if not already available
 6. Test: send invoice → email received with PDF attachment

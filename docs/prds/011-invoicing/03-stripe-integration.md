@@ -91,42 +91,40 @@ function mapLineItemsToStripe(
   return lineItems
     .filter(item => !item.deletedAt)
     .sort((a, b) => a.sortOrder - b.sortOrder)
-    .map(item => ({
-      price_data: {
-        currency: 'usd',
-        unit_amount: Math.round(Number(item.unitPrice) * 100), // Stripe uses cents
-        product_data: {
-          name: item.description,
+    .map(item => {
+      const quantity = Number(item.quantity)
+
+      // Stripe requires integer quantities. For fractional quantities
+      // (e.g., 12.5 hours × $200/hr), send as quantity=1 with the
+      // pre-computed total as unit_amount to preserve accuracy.
+      if (quantity % 1 !== 0) {
+        return {
+          price_data: {
+            currency: 'usd',
+            unit_amount: Math.round(Number(item.amount) * 100),
+            product_data: {
+              name: `${item.description} (${item.quantity} units)`,
+            },
+          },
+          quantity: 1,
+        }
+      }
+
+      return {
+        price_data: {
+          currency: 'usd',
+          unit_amount: Math.round(Number(item.unitPrice) * 100), // Stripe uses cents
+          product_data: {
+            name: item.description,
+          },
         },
-      },
-      quantity: Math.round(Number(item.quantity)), // Stripe requires integer quantities
-    }))
+        quantity,
+      }
+    })
 }
 ```
 
-> **Note on quantity precision:** Stripe Checkout requires integer quantities. For fractional hours (e.g., 2.5 hours), the line item should be structured as quantity=1 with a pre-computed total as the unit amount, or the admin should round to whole hours. The implementation should handle this gracefully.
-
-### Fractional Quantity Strategy
-
-When a line item has a non-integer quantity (e.g., 12.5 hours × $200/hr = $2,500):
-
-```typescript
-// If quantity is not a whole number, send as single unit with total amount
-if (Number(item.quantity) % 1 !== 0) {
-  return {
-    price_data: {
-      currency: 'usd',
-      unit_amount: Math.round(Number(item.amount) * 100),
-      product_data: {
-        name: `${item.description} (${item.quantity} ${unitLabel})`,
-      },
-    },
-    quantity: 1,
-  }
-}
-```
-
-This preserves accurate billing while working within Stripe's integer quantity constraint.
+> **Note on quantity precision:** Stripe Checkout requires integer quantities. The function automatically handles fractional quantities (e.g., 2.5 hours) by collapsing to `quantity=1` with the pre-computed total as `unit_amount`, appending the actual quantity to the description for clarity.
 
 ## Webhook Handler
 

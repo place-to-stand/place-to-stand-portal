@@ -216,11 +216,11 @@ CREATE INDEX idx_product_catalog_items_active
   WHERE deleted_at IS NULL AND is_active = true;
 ```
 
-All indexes follow the codebase convention of partial indexes with `WHERE deleted_at IS NULL`.
+All business-data indexes follow the codebase convention of partial indexes with `WHERE deleted_at IS NULL`, with one intentional exception noted below.
 
 The `share_token` index mirrors the proposals pattern — only indexes tokens where sharing is actually enabled.
 
-The `stripe_checkout_session_id` index supports webhook lookups (finding the invoice from the Stripe session ID).
+The `stripe_checkout_session_id` index intentionally omits `deleted_at IS NULL` and only filters on `stripe_checkout_session_id IS NOT NULL`. This supports Stripe webhook lookups — finding the invoice from the session ID even if the invoice has been soft-deleted mid-checkout (see [03-stripe-integration.md](./03-stripe-integration.md), "Archived Invoice Handling").
 
 ## Drizzle Schema
 

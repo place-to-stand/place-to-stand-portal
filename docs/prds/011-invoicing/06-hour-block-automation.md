@@ -64,6 +64,7 @@ export async function createHourBlocksFromInvoice(invoiceId: string) {
         })
         .onConflictDoNothing({
           target: hourBlocks.invoiceLineItemId,
+          where: isNull(hourBlocks.deletedAt),
         })
     }
   })
@@ -122,8 +123,8 @@ This provides traceability from hour block back to the invoice that generated it
 - The `invoiceNumber` string field preserves the reference for display
 
 ### Line item has quantity 0
-- Skip hour block creation for items with `quantity <= 0`
-- Log a warning for debugging
+- Handled by the filtering logic (`Number(item.quantity) > 0`) — these items are silently skipped
+- No warning needed; zero-quantity line items are a normal case (e.g., placeholder items)
 
 ### Client deleted
 - Hour blocks CASCADE on client delete, so they're removed

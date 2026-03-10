@@ -22,7 +22,7 @@ import { Receipt } from 'lucide-react'
 
 **Position:** After Proposals, before Hour Blocks. The natural Sales flow becomes: Leads → Proposals → Invoices → Hour Blocks.
 
-**Visibility:** `roles: ['ADMIN', 'CLIENT']` (matching the Sales group). However, client-role users will see a filtered/empty view in v1. Full client access is deferred.
+**Visibility (v1):** `roles: ['ADMIN']` — admin-only. Clients access invoices via the public share link only. Client dashboard visibility is deferred (see [07-future-enhancements.md](./07-future-enhancements.md)).
 
 ## File Structure
 
