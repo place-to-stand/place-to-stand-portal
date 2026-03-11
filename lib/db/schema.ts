@@ -250,6 +250,7 @@ export const clients = pgTable(
       .default('prepaid')
       .notNull(),
     website: text(),
+    state: varchar({ length: 2 }),
     referredBy: uuid('referred_by'),
     createdBy: uuid('created_by'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
@@ -1984,6 +1985,7 @@ export const productCatalogItems = pgTable(
       .notNull()
       .default(false),
     isActive: boolean('is_active').notNull().default(true),
+    minQuantity: integer('min_quantity'),
     sortOrder: integer('sort_order').notNull().default(0),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
@@ -1997,6 +1999,28 @@ export const productCatalogItems = pgTable(
     index('idx_product_catalog_items_active')
       .using('btree', table.sortOrder.asc())
       .where(sql`(deleted_at IS NULL AND is_active = true)`),
+  ]
+)
+
+export const taxRates = pgTable(
+  'tax_rates',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    state: varchar({ length: 2 }).notNull().unique(),
+    rate: numeric({ precision: 5, scale: 4 }).notNull(),
+    label: varchar({ length: 100 }).notNull(),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+  },
+  table => [
+    index('idx_tax_rates_state')
+      .using('btree', table.state.asc())
+      .where(sql`(is_active = true)`),
   ]
 )
 

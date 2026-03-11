@@ -10,6 +10,7 @@ import {
   FolderKanban,
   Globe,
   LinkIcon,
+  MapPin,
   Pencil,
   UserPlus,
 } from 'lucide-react'
@@ -189,6 +190,13 @@ function ClientDetailsWidget({
           label='Billing'
           value={getBillingTypeLabel(client.billingType)}
         />
+        {client.state ? (
+          <DetailRow
+            icon={MapPin}
+            label='State'
+            value={client.state}
+          />
+        ) : null}
         <DetailRow
           icon={FolderKanban}
           label='Projects'

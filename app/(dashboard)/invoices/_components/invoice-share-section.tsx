@@ -1,41 +1,26 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import { Copy, Check, Link2, Eye, Link2Off } from 'lucide-react'
+import { Copy, Check, Link2, Link2Off } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { useToast } from '@/components/ui/use-toast'
 
-type ShareInvoiceDialogProps = {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+type InvoiceShareSectionProps = {
   invoiceId: string
-  invoiceNumber: string | null
   shareToken: string | null
   shareEnabled: boolean
-  viewedCount: number
-  onUpdate?: () => void
+  onShareStateChange?: (enabled: boolean) => void
 }
 
-export function ShareInvoiceDialog({
-  open,
-  onOpenChange,
+export function InvoiceShareSection({
   invoiceId,
-  invoiceNumber,
   shareToken,
   shareEnabled,
-  viewedCount,
-  onUpdate,
-}: ShareInvoiceDialogProps) {
+  onShareStateChange,
+}: InvoiceShareSectionProps) {
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -62,11 +47,11 @@ export function ShareInvoiceDialog({
       if (data.ok) {
         setCurrentToken(data.data.shareToken)
         setCurrentEnabled(true)
+        onShareStateChange?.(true)
         toast({
           title: 'Sharing enabled',
           description: 'The invoice link is ready to share.',
         })
-        onUpdate?.()
       } else {
         toast({
           variant: 'destructive',
@@ -83,7 +68,7 @@ export function ShareInvoiceDialog({
     } finally {
       setIsLoading(false)
     }
-  }, [invoiceId, toast, onUpdate])
+  }, [invoiceId, toast])
 
   const handleDisableSharing = useCallback(async () => {
     setIsLoading(true)
@@ -94,8 +79,8 @@ export function ShareInvoiceDialog({
       const data = await res.json()
       if (data.ok) {
         setCurrentEnabled(false)
+        onShareStateChange?.(false)
         toast({ title: 'Sharing disabled' })
-        onUpdate?.()
       } else {
         toast({
           variant: 'destructive',
@@ -112,7 +97,7 @@ export function ShareInvoiceDialog({
     } finally {
       setIsLoading(false)
     }
-  }, [invoiceId, toast, onUpdate])
+  }, [invoiceId, toast])
 
   const handleCopy = useCallback(() => {
     if (!shareUrl) return
@@ -121,69 +106,54 @@ export function ShareInvoiceDialog({
     setTimeout(() => setCopied(false), 2000)
   }, [shareUrl])
 
-  const displayTitle = invoiceNumber ? `Invoice ${invoiceNumber}` : 'Invoice Draft'
-
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='sm:max-w-md'>
-        <DialogHeader>
-          <DialogTitle>Share Invoice</DialogTitle>
-          <DialogDescription className='truncate'>
-            {displayTitle}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className='space-y-4'>
-          {currentEnabled && shareUrl ? (
-            <>
-              <div className='space-y-2'>
-                <Label>Shareable Link</Label>
-                <div className='flex gap-2'>
-                  <Input value={shareUrl} readOnly className='text-xs' />
-                  <Button
-                    type='button'
-                    variant='outline'
-                    size='icon'
-                    onClick={handleCopy}
-                  >
-                    {copied ? (
-                      <Check className='h-4 w-4 text-green-600' />
-                    ) : (
-                      <Copy className='h-4 w-4' />
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              {viewedCount > 0 && (
-                <div className='text-muted-foreground flex items-center gap-2 text-sm'>
-                  <Eye className='h-4 w-4' />
-                  Viewed {viewedCount} time{viewedCount !== 1 ? 's' : ''}
-                </div>
-              )}
-
+    <div className='space-y-4'>
+      <span className='mb-2 block text-sm font-medium'>Share Link</span>
+      {currentEnabled && shareUrl ? (
+        <div className='space-y-3'>
+          <div className='space-y-1.5'>
+            <Label className='sr-only'>Shareable Link</Label>
+            <div className='flex gap-2'>
+              <Input value={shareUrl} readOnly className='text-xs' />
               <Button
+                type='button'
                 variant='outline'
-                className='w-full'
-                onClick={handleDisableSharing}
-                disabled={isLoading}
+                size='icon'
+                className='flex-shrink-0'
+                onClick={handleCopy}
               >
-                <Link2Off className='mr-2 h-4 w-4' />
-                Disable Sharing
+                {copied ? (
+                  <Check className='h-4 w-4 text-green-600' />
+                ) : (
+                  <Copy className='h-4 w-4' />
+                )}
               </Button>
-            </>
-          ) : (
-            <Button
-              className='w-full'
-              onClick={handleEnableSharing}
-              disabled={isLoading}
-            >
-              <Link2 className='mr-2 h-4 w-4' />
-              {isLoading ? 'Generating link...' : 'Generate Shareable Link'}
-            </Button>
-          )}
+            </div>
+          </div>
+          <Button
+            type='button'
+            variant='outline'
+            size='sm'
+            className='w-full'
+            onClick={handleDisableSharing}
+            disabled={isLoading}
+          >
+            <Link2Off className='mr-2 h-4 w-4' />
+            Disable Sharing
+          </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      ) : (
+        <Button
+          type='button'
+          size='sm'
+          className='w-full'
+          onClick={handleEnableSharing}
+          disabled={isLoading}
+        >
+          <Link2 className='mr-2 h-4 w-4' />
+          {isLoading ? 'Generating link...' : 'Generate Shareable Link'}
+        </Button>
+      )}
+    </div>
   )
 }

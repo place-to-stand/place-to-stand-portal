@@ -170,6 +170,7 @@ function mapClientDetailToRow(
     slug: client.slug,
     notes: client.notes,
     website: client.website,
+    state: client.state ?? null,
     referred_by: client.referredBy,
     billing_type: client.billingType,
     created_by: null,

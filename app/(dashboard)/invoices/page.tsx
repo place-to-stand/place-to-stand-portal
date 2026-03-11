@@ -33,7 +33,7 @@ export default async function InvoicesPage({
   const currentPage = Math.max(1, Number.parseInt(pageParam, 10) || 1)
   const offset = (currentPage - 1) * PAGE_SIZE
 
-  const { items, clients, productCatalog, totalCount } =
+  const { items, clients, productCatalog, taxRates, totalCount } =
     await listInvoices(currentUser, {
       status: 'active',
       offset,
@@ -60,7 +60,7 @@ export default async function InvoicesPage({
             <span className='text-muted-foreground text-sm whitespace-nowrap'>
               Total invoices: {totalCount}
             </span>
-            <InvoicesAddButton clients={clients} productCatalog={productCatalog} />
+            <InvoicesAddButton clients={clients} productCatalog={productCatalog} taxRates={taxRates} />
           </div>
         </div>
         {/* Main Container with Background */}
@@ -69,6 +69,7 @@ export default async function InvoicesPage({
             invoices={items}
             clients={clients}
             productCatalog={productCatalog}
+            taxRates={taxRates}
             totalCount={totalCount}
             currentPage={currentPage}
             totalPages={totalPages}

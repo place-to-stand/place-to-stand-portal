@@ -3,7 +3,7 @@
 import crypto from 'node:crypto'
 
 import { revalidatePath } from 'next/cache'
-import { and, eq, isNull, sql } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
@@ -59,6 +59,7 @@ async function performSendInvoice(
       id: invoices.id,
       status: invoices.status,
       clientId: invoices.clientId,
+      invoiceNumber: invoices.invoiceNumber,
       total: invoices.total,
     })
     .from(invoices)
@@ -75,6 +76,12 @@ async function performSendInvoice(
     return { error: 'Only draft invoices can be sent.' }
   }
 
+  const invoiceNumber = existing.invoiceNumber
+
+  if (!invoiceNumber) {
+    return { error: 'Invoice is missing an invoice number.' }
+  }
+
   const clientRows = await db
     .select({ name: clients.name })
     .from(clients)
@@ -84,18 +91,6 @@ async function performSendInvoice(
   const clientName = clientRows[0]?.name ?? null
 
   try {
-    const seqResult = await db.execute(
-      sql`SELECT nextval('invoice_number_seq')`,
-    )
-
-    const seqValue = (seqResult[0] as { nextval: string } | undefined)
-      ?.nextval
-
-    if (!seqValue) {
-      throw new Error('Failed to generate invoice number.')
-    }
-
-    const invoiceNumber = `INV-${String(seqValue).padStart(4, '0')}`
     const today = new Date().toISOString().split('T')[0]!
     const shareToken = crypto.randomUUID().replace(/-/g, '')
     const nowIso = new Date().toISOString()
@@ -104,7 +99,6 @@ async function performSendInvoice(
       .update(invoices)
       .set({
         status: 'SENT',
-        invoiceNumber,
         issuedDate: today,
         shareToken,
         shareEnabled: true,
@@ -129,18 +123,18 @@ async function performSendInvoice(
       metadata: event.metadata,
     })
 
-    // Fire-and-forget: generate PDF and send email
-    deliverInvoiceEmail({
-      invoiceId,
-      invoiceNumber,
-      clientId: existing.clientId,
-      clientName: clientName ?? 'Client',
-      total: existing.total,
-      dueDate: null, // Fetch from full record below
-      shareToken,
-    }).catch(error => {
-      console.error('Failed to deliver invoice email', error)
-    })
+    // EMAIL SENDING DISABLED — will revisit in a future iteration.
+    // deliverInvoiceEmail({
+    //   invoiceId,
+    //   invoiceNumber,
+    //   clientId: existing.clientId,
+    //   clientName: clientName ?? 'Client',
+    //   total: existing.total,
+    //   dueDate: null,
+    //   shareToken,
+    // }).catch(error => {
+    //   console.error('Failed to deliver invoice email', error)
+    // })
 
     revalidatePath(INVOICES_PATH)
 

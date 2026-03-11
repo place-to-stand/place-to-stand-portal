@@ -33,6 +33,7 @@ import {
   buildInvoiceFormDefaults,
   computeInvoiceTotals,
   createEmptyLineItem,
+  createLineItemFromCatalog,
   createInvoiceSavePayload,
   invoiceFormSchema,
   INVOICE_FORM_FIELDS,
@@ -64,6 +65,12 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 
+export type TaxRateData = {
+  state: string
+  rate: string
+  label: string
+}
+
 export type UseInvoiceSheetStateArgs = {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -71,6 +78,7 @@ export type UseInvoiceSheetStateArgs = {
   invoice: InvoiceWithClient | null
   clients: ClientRow[]
   productCatalog: ProductCatalogItemRow[]
+  taxRates: TaxRateData[]
 }
 
 export type UseInvoiceSheetStateReturn = {
@@ -89,6 +97,7 @@ export type UseInvoiceSheetStateReturn = {
   isDeleteDialogOpen: boolean
   unsavedChangesDialog: ReturnType<typeof useUnsavedChangesWarning>['dialog']
   totals: { subtotal: number; taxAmount: number; total: number }
+  taxRateLabel: string | null
   handleSheetOpenChange: (open: boolean) => void
   handleSubmit: (values: InvoiceFormValues) => void
   handleRequestDelete: () => void
@@ -96,6 +105,7 @@ export type UseInvoiceSheetStateReturn = {
   handleConfirmDelete: () => void
   handleAddLineItem: () => void
   handleRemoveLineItem: (index: number) => void
+  handleMoveLineItem: (fromIndex: number, toIndex: number) => void
   handleProductSelect: (index: number, productId: string) => void
   setFeedback: (value: string | null) => void
 }
@@ -111,6 +121,7 @@ export function useInvoiceSheetState({
   invoice,
   clients,
   productCatalog,
+  taxRates,
 }: UseInvoiceSheetStateArgs): UseInvoiceSheetStateReturn {
   const isEditing = Boolean(invoice)
   const invoiceStatus = invoice?.status ?? null
@@ -209,13 +220,24 @@ export function useInvoiceSheetState({
         // Ignore malformed sessionStorage data
       }
 
+      // Mark the pre-filled client (if any) so auto-fill skips hydration
+      loadedClientIdRef.current = prefillData?.clientId ?? null
+
       startTransition(() => {
         if (prefillData) {
           form.reset(prefillData)
           form.clearErrors()
           setFeedback(null)
         } else {
-          resetFormState(null)
+          const defaults = buildInvoiceFormDefaults(null)
+          // Default the first line item to the first active catalog product
+          const firstProduct = productCatalog[0]
+          if (firstProduct) {
+            defaults.lineItems = [createLineItemFromCatalog(firstProduct)]
+          }
+          form.reset(defaults)
+          form.clearErrors()
+          setFeedback(null)
         }
       })
       return
@@ -226,13 +248,80 @@ export function useInvoiceSheetState({
     startTransition(async () => {
       try {
         const fullInvoice = await getInvoiceDetails(invoice.id)
+        // Mark the loaded client so auto-fill skips hydration
+        loadedClientIdRef.current = fullInvoice?.client_id ?? null
         invoiceWithLineItemsRef.current = fullInvoice
         resetFormState(fullInvoice)
       } catch {
         setFeedback('Unable to load invoice details.')
       }
     })
-  }, [open, invoice, form, resetFormState, startTransition])
+  }, [open, invoice, form, resetFormState, productCatalog, startTransition])
+
+  // ---------------------------------------------------------------------------
+  // Auto-fill: due date + tax rate based on selected client
+  // ---------------------------------------------------------------------------
+
+  const watchedClientId = useWatch({ control: form.control, name: 'clientId' })
+
+  // Build a map of state → tax rate for lookup
+  const taxRateMap = useMemo(() => {
+    const map = new Map<string, TaxRateData>()
+    for (const tr of taxRates) {
+      map.set(tr.state, tr)
+    }
+    return map
+  }, [taxRates])
+
+  // Track the client ID loaded from the database / pre-fill so we only
+  // auto-fill when the user actively picks a *different* client.
+  const loadedClientIdRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!watchedClientId) return
+
+    // Skip auto-fill when the client matches what was loaded (initial hydration)
+    if (watchedClientId === loadedClientIdRef.current) return
+
+    // Mark this client as the "current" so switching back won't re-trigger
+    loadedClientIdRef.current = watchedClientId
+
+    const selectedClient = clients.find(c => c.id === watchedClientId)
+    if (!selectedClient) return
+
+    // Auto-fill due date for net_30 clients
+    if (selectedClient.billing_type === 'net_30') {
+      const today = new Date()
+      today.setDate(today.getDate() + 30)
+      const dueDateStr = today.toISOString().split('T')[0]!
+      form.setValue('dueDate', dueDateStr, { shouldDirty: true })
+    } else {
+      form.setValue('dueDate', null, { shouldDirty: true })
+    }
+
+    // Auto-fill tax rate from client state
+    if (selectedClient.state) {
+      const matchingRate = taxRateMap.get(selectedClient.state)
+      if (matchingRate) {
+        const ratePercent = Number(matchingRate.rate) * 100
+        form.setValue('taxRate', ratePercent, { shouldDirty: true })
+      } else {
+        form.setValue('taxRate', 0, { shouldDirty: true })
+      }
+    } else {
+      form.setValue('taxRate', 0, { shouldDirty: true })
+    }
+  }, [watchedClientId, clients, taxRateMap, form])
+
+  // Derive tax rate label for display
+  const taxRateLabel = useMemo(() => {
+    if (!watchedClientId) return null
+    const selectedClient = clients.find(c => c.id === watchedClientId)
+    if (!selectedClient?.state) return null
+    const matchingRate = taxRateMap.get(selectedClient.state)
+    if (!matchingRate) return null
+    return matchingRate.label
+  }, [watchedClientId, clients, taxRateMap])
 
   // ---------------------------------------------------------------------------
   // Server field errors
@@ -479,8 +568,32 @@ export function useInvoiceSheetState({
     [fieldArray],
   )
 
+  const handleMoveLineItem = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      fieldArray.move(fromIndex, toIndex)
+    },
+    [fieldArray],
+  )
+
   const handleProductSelect = useCallback(
     (index: number, productId: string) => {
+      // "custom" clears the catalog link and resets fields for manual entry
+      if (productId === '__custom__') {
+        form.setValue(`lineItems.${index}.productCatalogItemId`, null, {
+          shouldDirty: true,
+        })
+        form.setValue(`lineItems.${index}.description`, '', {
+          shouldDirty: true,
+        })
+        form.setValue(`lineItems.${index}.unitPrice`, 0, {
+          shouldDirty: true,
+        })
+        form.setValue(`lineItems.${index}.createsHourBlock`, false, {
+          shouldDirty: true,
+        })
+        return
+      }
+
       const product = productCatalog.find(p => p.id === productId)
       if (!product) return
 
@@ -554,6 +667,7 @@ export function useInvoiceSheetState({
     isDeleteDialogOpen,
     unsavedChangesDialog,
     totals,
+    taxRateLabel,
     handleSheetOpenChange,
     handleSubmit,
     handleRequestDelete,
@@ -561,6 +675,7 @@ export function useInvoiceSheetState({
     handleConfirmDelete,
     handleAddLineItem,
     handleRemoveLineItem,
+    handleMoveLineItem,
     handleProductSelect,
     setFeedback,
   }

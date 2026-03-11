@@ -51,6 +51,7 @@ export type ClientRow = {
   id: string
   name: string
   billing_type: string
+  state: string | null
   deleted_at: string | null
 }
 
@@ -113,6 +114,17 @@ export const createEmptyLineItem = (): InvoiceLineItemFormValues => ({
   quantity: 1,
   unitPrice: 0,
   createsHourBlock: false,
+})
+
+export const createLineItemFromCatalog = (
+  product: ProductCatalogItemRow,
+): InvoiceLineItemFormValues => ({
+  id: undefined,
+  productCatalogItemId: product.id,
+  description: product.name,
+  quantity: product.min_quantity ?? 1,
+  unitPrice: Number(product.unit_price),
+  createsHourBlock: product.creates_hour_block_default,
 })
 
 // ---------------------------------------------------------------------------

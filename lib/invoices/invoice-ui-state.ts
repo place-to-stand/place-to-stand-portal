@@ -22,7 +22,7 @@ export const MISSING_CLIENT_REASON =
   'Create a client before creating invoices.'
 export const NON_EDITABLE_REASON = 'This invoice cannot be edited.'
 
-const EDITABLE_STATUSES = new Set(['DRAFT', 'SENT'])
+const NON_EDITABLE_STATUSES = new Set(['VOID', 'PAID'])
 
 const SUBMIT_LABELS = {
   creating: 'Create invoice',
@@ -36,7 +36,7 @@ const SUBMIT_LABELS = {
 
 export function isInvoiceEditable(status: string | null): boolean {
   if (!status) return true // new invoice
-  return EDITABLE_STATUSES.has(status)
+  return !NON_EDITABLE_STATUSES.has(status)
 }
 
 // ---------------------------------------------------------------------------

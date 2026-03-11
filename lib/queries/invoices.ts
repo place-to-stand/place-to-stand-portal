@@ -18,6 +18,10 @@ import {
   listProductCatalogItems,
   type ProductCatalogItemRow,
 } from '@/lib/queries/product-catalog'
+import {
+  listTaxRates,
+  type TaxRateRow,
+} from '@/lib/queries/tax-rates'
 
 // ---------------------------------------------------------------------------
 // Selection objects
@@ -68,6 +72,7 @@ const clientSelection = {
   id: clients.id,
   name: clients.name,
   billingType: clients.billingType,
+  state: clients.state,
   deletedAt: clients.deletedAt,
 } as const
 
@@ -105,6 +110,7 @@ type InvoiceSelectionRow = {
     id: string
     name: string
     billingType: string
+    state: string | null
     deletedAt: string | null
   } | null
 }
@@ -128,6 +134,7 @@ type ClientSelectionRow = {
   id: string
   name: string
   billingType: string
+  state: string | null
   deletedAt: string | null
 }
 
@@ -145,6 +152,7 @@ export type ListInvoicesResult = {
   items: InvoiceWithClient[]
   clients: ClientRow[]
   productCatalog: ProductCatalogItemRow[]
+  taxRates: TaxRateRow[]
   totalCount: number
 }
 
@@ -183,17 +191,19 @@ export async function listInvoices(
 
   const invoicesList = rows.map(mapInvoiceWithClient)
 
-  const [totalResult, clientDirectory, productCatalog] = await Promise.all([
-    db
-      .select({ count: sql<number>`count(*)` })
-      .from(invoices)
-      .where(baseWhere),
-    db
-      .select(clientSelection)
-      .from(clients)
-      .orderBy(asc(clients.name)) as Promise<ClientSelectionRow[]>,
-    listProductCatalogItems(),
-  ])
+  const [totalResult, clientDirectory, productCatalog, activeTaxRates] =
+    await Promise.all([
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(invoices)
+        .where(baseWhere),
+      db
+        .select(clientSelection)
+        .from(clients)
+        .orderBy(asc(clients.name)) as Promise<ClientSelectionRow[]>,
+      listProductCatalogItems(),
+      listTaxRates(),
+    ])
 
   const totalCount = Number(totalResult[0]?.count ?? 0)
 
@@ -201,6 +211,7 @@ export async function listInvoices(
     items: invoicesList,
     clients: clientDirectory.map(mapClientRow),
     productCatalog,
+    taxRates: activeTaxRates,
     totalCount,
   }
 }
@@ -422,6 +433,7 @@ function mapClientRow(row: ClientSelectionRow): ClientRow {
     id: row.id,
     name: row.name,
     billing_type: row.billingType,
+    state: row.state,
     deleted_at: row.deletedAt,
   }
 }

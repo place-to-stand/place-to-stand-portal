@@ -5,6 +5,7 @@ export type ClientOption = {
   label: string
   keywords: string[]
   billingType: string
+  state: string | null
 }
 
 export type ProductCatalogOption = {
@@ -14,19 +15,19 @@ export type ProductCatalogOption = {
   unitPrice: string
   unitLabel: string
   createsHourBlockDefault: boolean
+  minQuantity: number | null
 }
 
 export const buildClientOptions = (clients: ClientRow[]): ClientOption[] =>
-  clients.map(client => ({
-    value: client.id,
-    label: client.deleted_at
-      ? `${client.name} (Archived)`
-      : client.name,
-    keywords: client.deleted_at
-      ? [client.name, 'archived']
-      : [client.name],
-    billingType: client.billing_type,
-  }))
+  clients
+    .filter(client => !client.deleted_at)
+    .map(client => ({
+      value: client.id,
+      label: client.name,
+      keywords: [client.name],
+      billingType: client.billing_type,
+      state: client.state ?? null,
+    }))
 
 export const buildProductCatalogOptions = (
   items: ProductCatalogItemRow[]
@@ -38,4 +39,5 @@ export const buildProductCatalogOptions = (
     unitPrice: item.unit_price,
     unitLabel: item.unit_label,
     createsHourBlockDefault: item.creates_hour_block_default,
+    minQuantity: item.min_quantity ?? null,
   }))

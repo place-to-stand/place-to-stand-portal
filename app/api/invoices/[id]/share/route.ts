@@ -10,7 +10,7 @@ import { invoices } from '@/lib/db/schema'
 import { invoiceSharedEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
 
-const SHAREABLE_STATUSES = ['SENT', 'VIEWED', 'PAID'] as const
+const SHAREABLE_STATUSES = ['DRAFT', 'SENT', 'VIEWED', 'PAID'] as const
 
 export async function POST(
   _request: Request,
@@ -44,7 +44,7 @@ export async function POST(
     )
   }
 
-  // Validate status - must not be DRAFT or VOID
+  // Validate status - void invoices cannot be shared
   if (
     !SHAREABLE_STATUSES.includes(
       invoice.status as (typeof SHAREABLE_STATUSES)[number]
@@ -53,7 +53,7 @@ export async function POST(
     return NextResponse.json(
       {
         ok: false,
-        error: 'Sharing is only available for sent, viewed, or paid invoices.',
+        error: 'Sharing is not available for void invoices.',
       },
       { status: 422 }
     )

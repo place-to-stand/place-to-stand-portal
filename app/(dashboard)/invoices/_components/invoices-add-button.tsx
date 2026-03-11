@@ -8,17 +8,20 @@ import { Button } from '@/components/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { InvoiceSheet } from '../invoice-sheet'
 import type { ClientRow, ProductCatalogItemRow } from '@/lib/invoices/invoice-form'
+import type { TaxRateData } from '@/lib/invoices/use-invoice-sheet-state'
 import { cn } from '@/lib/utils'
 
 type InvoicesAddButtonProps = {
   clients: ClientRow[]
   productCatalog: ProductCatalogItemRow[]
+  taxRates: TaxRateData[]
   className?: string
 }
 
 export function InvoicesAddButton({
   clients,
   productCatalog,
+  taxRates,
   className,
 }: InvoicesAddButtonProps) {
   const router = useRouter()
@@ -62,6 +65,7 @@ export function InvoicesAddButton({
         invoice={null}
         clients={sortedClients}
         productCatalog={productCatalog}
+        taxRates={taxRates}
       />
     </div>
   )

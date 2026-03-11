@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { and, eq, inArray, isNull } from 'drizzle-orm'
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
@@ -76,10 +76,21 @@ async function performSaveInvoice(
   if (!id) {
     try {
       const [inserted] = await db.transaction(async tx => {
+        const seqResult = await tx.execute(
+          sql`SELECT nextval('invoice_number_seq')`,
+        )
+        const seqValue = (seqResult[0] as { nextval: string } | undefined)
+          ?.nextval
+        if (!seqValue) {
+          throw new Error('Failed to generate invoice number.')
+        }
+        const invoiceNumber = `INV-${String(seqValue).padStart(4, '0')}`
+
         const [inv] = await tx
           .insert(invoices)
           .values({
             clientId,
+            invoiceNumber,
             dueDate: dueDate ?? null,
             notes: notes ?? null,
             taxRate: taxRate.toString(),
@@ -163,8 +174,8 @@ async function performSaveInvoice(
       return { error: 'Invoice not found.' }
     }
 
-    if (existing.status !== 'DRAFT' && existing.status !== 'SENT') {
-      return { error: 'Only draft or sent invoices can be edited.' }
+    if (existing.status === 'VOID' || existing.status === 'PAID') {
+      return { error: 'Void or paid invoices cannot be edited.' }
     }
 
     try {

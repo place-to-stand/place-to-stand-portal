@@ -35,6 +35,7 @@ import {
   planMessages,
   transcripts,
   productCatalogItems,
+  taxRates,
   invoices,
   invoiceLineItems,
 } from './schema'
@@ -597,6 +598,12 @@ export const planMessagesRelations = relations(
     }),
   })
 )
+
+// =============================================================================
+// TAX RATES
+// =============================================================================
+
+export const taxRatesRelations = relations(taxRates, () => ({}))
 
 // =============================================================================
 // INVOICING (Invoices, Line Items, Product Catalog)

@@ -1,12 +1,14 @@
+'use client'
+
+import { useState, useCallback } from 'react'
 import { format } from 'date-fns'
 import {
   Archive,
-  Ban,
   Building2,
-  ExternalLink,
+  Check,
+  Copy,
   Pencil,
   RefreshCw,
-  Send,
   Trash2,
 } from 'lucide-react'
 
@@ -33,21 +35,14 @@ export type InvoicesTableSectionProps = {
   pendingDeleteId: string | null
   pendingRestoreId: string | null
   pendingDestroyId: string | null
-  pendingSendId: string | null
-  pendingVoidId: string | null
   onEdit: (invoice: InvoiceWithClient) => void
   onRequestDelete: (invoice: InvoiceWithClient) => void
   onRestore: (invoice: InvoiceWithClient) => void
   onRequestDestroy: (invoice: InvoiceWithClient) => void
-  onSend: (invoice: InvoiceWithClient) => void
-  onCopyLink: (invoice: InvoiceWithClient) => void
-  onVoid: (invoice: InvoiceWithClient) => void
   emptyMessage: string
 }
 
-const EDITABLE_STATUSES = new Set(['DRAFT', 'SENT'])
-const SENDABLE_STATUSES = new Set(['DRAFT'])
-const VOIDABLE_STATUSES = new Set(['DRAFT', 'SENT', 'VIEWED'])
+const NON_EDITABLE_STATUSES = new Set(['VOID', 'PAID'])
 
 const formatCurrency = (value: string) => {
   try {
@@ -118,6 +113,45 @@ function StatusBadge({ status, dueDate }: { status: string; dueDate: string | nu
   )
 }
 
+function ShareLinkCell({ invoice }: { invoice: InvoiceWithClient }) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = useCallback(() => {
+    if (!invoice.share_token) return
+    const url = `${window.location.origin}/share/invoices/${invoice.share_token}`
+    navigator.clipboard.writeText(url)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }, [invoice.share_token])
+
+  if (!invoice.share_enabled || !invoice.share_token) {
+    return <span className='text-muted-foreground text-sm'>{'\u2014'}</span>
+  }
+
+  const truncatedPath = `/share/invoices/${invoice.share_token.slice(0, 8)}...`
+
+  return (
+    <div className='flex items-center gap-1.5'>
+      <span className='text-muted-foreground truncate text-xs font-mono'>
+        {truncatedPath}
+      </span>
+      <Button
+        variant='ghost'
+        size='icon'
+        className='h-6 w-6 flex-shrink-0'
+        onClick={handleCopy}
+        title='Copy share link'
+      >
+        {copied ? (
+          <Check className='h-3 w-3 text-green-600' />
+        ) : (
+          <Copy className='h-3 w-3' />
+        )}
+      </Button>
+    </div>
+  )
+}
+
 export function InvoicesTableSection({
   invoices: invoiceList,
   mode,
@@ -126,15 +160,10 @@ export function InvoicesTableSection({
   pendingDeleteId,
   pendingRestoreId,
   pendingDestroyId,
-  pendingSendId,
-  pendingVoidId,
   onEdit,
   onRequestDelete,
   onRestore,
   onRequestDestroy,
-  onSend,
-  onCopyLink,
-  onVoid,
   emptyMessage,
 }: InvoicesTableSectionProps) {
   return (
@@ -146,9 +175,9 @@ export function InvoicesTableSection({
             <TableHead>Client</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Total</TableHead>
-            <TableHead>Due Date</TableHead>
             <TableHead>Issued</TableHead>
-            <TableHead className='w-48 text-right'>Actions</TableHead>
+            <TableHead>Share Link</TableHead>
+            <TableHead className='w-28 text-right'>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -158,29 +187,19 @@ export function InvoicesTableSection({
             const isDeleting = isPending && pendingDeleteId === invoice.id
             const isRestoring = isPending && pendingRestoreId === invoice.id
             const isDestroying = isPending && pendingDestroyId === invoice.id
-            const isSending = isPending && pendingSendId === invoice.id
-            const isVoiding = isPending && pendingVoidId === invoice.id
-            const isBusy =
-              isDeleting || isRestoring || isDestroying || isSending || isVoiding
+            const isBusy = isDeleting || isRestoring || isDestroying
 
-            const showEdit = mode === 'active' && EDITABLE_STATUSES.has(invoice.status)
-            const showSend = mode === 'active' && SENDABLE_STATUSES.has(invoice.status)
-            const showCopyLink = mode === 'active' && invoice.share_enabled
-            const showVoid = mode === 'active' && VOIDABLE_STATUSES.has(invoice.status)
+            const showEdit = mode === 'active' && !NON_EDITABLE_STATUSES.has(invoice.status)
             const showArchive = mode === 'active'
             const showRestore = mode === 'archive'
             const showDestroy = mode === 'archive'
 
             const editDisabled = isBusy
-            const sendDisabled = isBusy
-            const voidDisabled = isBusy
             const archiveDisabled = isBusy || isArchived
             const restoreDisabled = isBusy || !isArchived
             const destroyDisabled = isBusy || !isArchived
 
             const editDisabledReason = editDisabled ? pendingReason : null
-            const sendDisabledReason = sendDisabled ? pendingReason : null
-            const voidDisabledReason = voidDisabled ? pendingReason : null
 
             const archiveDisabledReason = archiveDisabled
               ? isArchived
@@ -230,10 +249,21 @@ export function InvoicesTableSection({
                   {formatCurrency(invoice.total)}
                 </TableCell>
                 <TableCell className='text-muted-foreground text-sm'>
-                  {formatDate(invoice.due_date)}
+                  {invoice.issued_date ? (
+                    <>
+                      {formatDate(invoice.issued_date)}
+                      {invoice.due_date ? (
+                        <span className='text-muted-foreground/70'>
+                          {' '}(due {formatDate(invoice.due_date)})
+                        </span>
+                      ) : null}
+                    </>
+                  ) : (
+                    '\u2014'
+                  )}
                 </TableCell>
-                <TableCell className='text-muted-foreground text-sm'>
-                  {formatDate(invoice.issued_date)}
+                <TableCell>
+                  <ShareLinkCell invoice={invoice} />
                 </TableCell>
                 <TableCell className='text-right'>
                   <div className='flex justify-end gap-2'>
@@ -250,54 +280,6 @@ export function InvoicesTableSection({
                           disabled={editDisabled}
                         >
                           <Pencil className='h-4 w-4' />
-                        </Button>
-                      </DisabledFieldTooltip>
-                    ) : null}
-                    {showSend ? (
-                      <DisabledFieldTooltip
-                        disabled={sendDisabled}
-                        reason={sendDisabledReason}
-                      >
-                        <Button
-                          variant='outline'
-                          size='icon'
-                          onClick={() => onSend(invoice)}
-                          title='Send invoice'
-                          aria-label='Send invoice'
-                          disabled={sendDisabled}
-                        >
-                          <Send className='h-4 w-4' />
-                          <span className='sr-only'>Send</span>
-                        </Button>
-                      </DisabledFieldTooltip>
-                    ) : null}
-                    {showCopyLink ? (
-                      <Button
-                        variant='outline'
-                        size='icon'
-                        onClick={() => onCopyLink(invoice)}
-                        title='Copy share link'
-                        aria-label='Copy share link'
-                      >
-                        <ExternalLink className='h-4 w-4' />
-                        <span className='sr-only'>Copy link</span>
-                      </Button>
-                    ) : null}
-                    {showVoid ? (
-                      <DisabledFieldTooltip
-                        disabled={voidDisabled}
-                        reason={voidDisabledReason}
-                      >
-                        <Button
-                          variant='outline'
-                          size='icon'
-                          onClick={() => onVoid(invoice)}
-                          title='Void invoice'
-                          aria-label='Void invoice'
-                          disabled={voidDisabled}
-                        >
-                          <Ban className='h-4 w-4' />
-                          <span className='sr-only'>Void</span>
                         </Button>
                       </DisabledFieldTooltip>
                     ) : null}

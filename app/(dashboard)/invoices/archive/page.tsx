@@ -33,7 +33,7 @@ export default async function InvoicesArchivePage({
   const currentPage = Math.max(1, Number.parseInt(pageParam, 10) || 1)
   const offset = (currentPage - 1) * PAGE_SIZE
 
-  const { items, clients, productCatalog, totalCount } =
+  const { items, clients, productCatalog, taxRates, totalCount } =
     await listInvoices(currentUser, {
       status: 'archived',
       offset,
@@ -60,7 +60,7 @@ export default async function InvoicesArchivePage({
             <span className='text-muted-foreground text-sm whitespace-nowrap'>
               Total archived: {totalCount}
             </span>
-            <InvoicesAddButton clients={clients} productCatalog={productCatalog} />
+            <InvoicesAddButton clients={clients} productCatalog={productCatalog} taxRates={taxRates} />
           </div>
         </div>
         {/* Main Container with Background */}
@@ -69,6 +69,7 @@ export default async function InvoicesArchivePage({
             invoices={items}
             clients={clients}
             productCatalog={productCatalog}
+            taxRates={taxRates}
             totalCount={totalCount}
             currentPage={currentPage}
             totalPages={totalPages}

@@ -24,7 +24,7 @@ export async function saveClientMutation(
     })
   }
 
-  const { id, name, slug, notes, memberIds, billingType, website, referredBy } = parsed.data
+  const { id, name, slug, notes, memberIds, billingType, state, website, referredBy } = parsed.data
   const normalizedMemberIds = Array.from(new Set(memberIds ?? [])).filter(
     Boolean
   )
@@ -55,6 +55,7 @@ export async function saveClientMutation(
           name: trimmedName,
           providedSlug,
           billingType,
+          state: state ?? null,
           website: cleanedWebsite,
           referredBy: referredBy ?? null,
           notes: cleanedNotes,
@@ -67,6 +68,7 @@ export async function saveClientMutation(
         name: trimmedName,
         providedSlug,
         billingType,
+        state: state ?? null,
         website: cleanedWebsite,
         referredBy: referredBy ?? null,
         notes: cleanedNotes,

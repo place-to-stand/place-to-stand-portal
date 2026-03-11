@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 export default async function InvoicesActivityPage() {
   const currentUser = await requireRole('ADMIN')
 
-  const { clients, productCatalog } = await listInvoices(currentUser, {
+  const { clients, productCatalog, taxRates } = await listInvoices(currentUser, {
     status: 'active',
     limit: 1,
   })
@@ -34,7 +34,7 @@ export default async function InvoicesActivityPage() {
         {/* Tabs Row - Above the main container */}
         <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
           <InvoicesTabsNav activeTab='activity' className='flex-1 sm:flex-none' />
-          <InvoicesAddButton clients={clients} productCatalog={productCatalog} />
+          <InvoicesAddButton clients={clients} productCatalog={productCatalog} taxRates={taxRates} />
         </div>
         {/* Main Container with Background */}
         <section className='bg-background rounded-xl border p-6 shadow-sm'>

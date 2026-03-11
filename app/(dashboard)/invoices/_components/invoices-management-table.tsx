@@ -12,23 +12,22 @@ import type {
   InvoiceWithClient,
   ProductCatalogItemRow,
 } from '@/lib/invoices/invoice-form'
+import type { TaxRateData } from '@/lib/invoices/use-invoice-sheet-state'
 import {
   archiveInvoice,
   restoreInvoice,
   destroyInvoice,
-  sendInvoiceAction,
-  voidInvoice,
 } from '../actions'
 
 import { InvoiceArchiveDialog } from './invoice-archive-dialog'
 import { InvoicesTableSection } from './invoices-table-section'
-import { ShareInvoiceDialog } from './share-invoice-dialog'
 import { InvoiceSheet } from '../invoice-sheet'
 
 type InvoicesManagementTableProps = {
   invoices: InvoiceWithClient[]
   clients: ClientRow[]
   productCatalog: ProductCatalogItemRow[]
+  taxRates: TaxRateData[]
   totalCount: number
   currentPage: number
   totalPages: number
@@ -49,6 +48,7 @@ export function InvoicesManagementTable({
   invoices,
   clients,
   productCatalog,
+  taxRates,
   totalCount,
   currentPage,
   totalPages,
@@ -69,14 +69,9 @@ export function InvoicesManagementTable({
   const [destroyTarget, setDestroyTarget] = useState<InvoiceWithClient | null>(
     null
   )
-  const [voidTarget, setVoidTarget] = useState<InvoiceWithClient | null>(null)
-  const [shareTarget, setShareTarget] = useState<InvoiceWithClient | null>(null)
-
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [pendingRestoreId, setPendingRestoreId] = useState<string | null>(null)
   const [pendingDestroyId, setPendingDestroyId] = useState<string | null>(null)
-  const [pendingSendId, setPendingSendId] = useState<string | null>(null)
-  const [pendingVoidId, setPendingVoidId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
   const sortedClients = useMemo(
@@ -88,6 +83,16 @@ export function InvoicesManagementTable({
   )
 
   const emptyMessage = EMPTY_MESSAGES[mode]
+
+  // Keep selectedInvoice in sync when server data refreshes (e.g. after
+  // send/unsend/void actions that call router.refresh() without closing the sheet)
+  useEffect(() => {
+    if (!selectedInvoice) return
+    const updated = invoices.find(inv => inv.id === selectedInvoice.id)
+    if (updated && updated !== selectedInvoice) {
+      setSelectedInvoice(updated)
+    }
+  }, [invoices, selectedInvoice])
 
   // Check for proposal-to-invoice pre-fill on mount
   const prefillCheckedRef = useRef(false)
@@ -268,104 +273,6 @@ export function InvoicesManagementTable({
   }
 
   // -------------------------------------------------------------------------
-  // Send handler
-  // -------------------------------------------------------------------------
-
-  const handleSend = (invoice: InvoiceWithClient) => {
-    if (invoice.status !== 'DRAFT' || isPending) return
-
-    setPendingSendId(invoice.id)
-
-    startTransition(async () => {
-      try {
-        const result = await sendInvoiceAction({ id: invoice.id })
-
-        if (result.error) {
-          toast({
-            title: 'Unable to send invoice',
-            description: result.error,
-            variant: 'destructive',
-          })
-          return
-        }
-
-        toast({
-          title: 'Invoice sent',
-          description: result.invoiceNumber
-            ? `Invoice ${result.invoiceNumber} has been issued and sharing is enabled.`
-            : 'Invoice has been issued and sharing is enabled.',
-        })
-        router.refresh()
-      } finally {
-        setPendingSendId(null)
-      }
-    })
-  }
-
-  // -------------------------------------------------------------------------
-  // Copy link handler
-  // -------------------------------------------------------------------------
-
-  const handleCopyLink = (invoice: InvoiceWithClient) => {
-    if (!invoice.share_enabled || !invoice.share_token) return
-
-    const shareUrl = `${window.location.origin}/share/invoices/${invoice.share_token}`
-    navigator.clipboard.writeText(shareUrl)
-    toast({
-      title: 'Link copied',
-      description: 'Invoice share link copied to clipboard.',
-    })
-  }
-
-  // -------------------------------------------------------------------------
-  // Void handlers
-  // -------------------------------------------------------------------------
-
-  const handleRequestVoid = (invoice: InvoiceWithClient) => {
-    if (isPending) return
-    setVoidTarget(invoice)
-  }
-
-  const handleCancelVoid = () => {
-    if (isPending) return
-    setVoidTarget(null)
-  }
-
-  const handleConfirmVoid = () => {
-    if (!voidTarget) {
-      setVoidTarget(null)
-      return
-    }
-
-    const invoice = voidTarget
-    setVoidTarget(null)
-    setPendingVoidId(invoice.id)
-
-    startTransition(async () => {
-      try {
-        const result = await voidInvoice({ id: invoice.id })
-
-        if (result.error) {
-          toast({
-            title: 'Unable to void invoice',
-            description: result.error,
-            variant: 'destructive',
-          })
-          return
-        }
-
-        toast({
-          title: 'Invoice voided',
-          description: 'The invoice has been marked as void.',
-        })
-        router.refresh()
-      } finally {
-        setPendingVoidId(null)
-      }
-    })
-  }
-
-  // -------------------------------------------------------------------------
   // Pagination
   // -------------------------------------------------------------------------
 
@@ -401,30 +308,6 @@ export function InvoicesManagementTable({
         onCancel={handleCancelDestroy}
         onConfirm={handleConfirmDestroy}
       />
-      <ConfirmDialog
-        open={Boolean(voidTarget)}
-        title='Void invoice?'
-        description='Voiding this invoice marks it as canceled. This cannot be undone.'
-        confirmLabel='Void invoice'
-        confirmVariant='destructive'
-        confirmDisabled={isPending}
-        onCancel={handleCancelVoid}
-        onConfirm={handleConfirmVoid}
-      />
-      {shareTarget ? (
-        <ShareInvoiceDialog
-          open={Boolean(shareTarget)}
-          onOpenChange={open => {
-            if (!open) setShareTarget(null)
-          }}
-          invoiceId={shareTarget.id}
-          invoiceNumber={shareTarget.invoice_number}
-          shareToken={shareTarget.share_token}
-          shareEnabled={shareTarget.share_enabled}
-          viewedCount={shareTarget.viewed_count}
-          onUpdate={() => router.refresh()}
-        />
-      ) : null}
       <InvoicesTableSection
         invoices={invoices}
         mode={mode}
@@ -432,16 +315,11 @@ export function InvoicesManagementTable({
         onRequestDelete={handleRequestDelete}
         onRestore={handleRestore}
         onRequestDestroy={handleRequestDestroy}
-        onSend={handleSend}
-        onCopyLink={handleCopyLink}
-        onVoid={handleRequestVoid}
         isPending={isPending}
         pendingReason={PENDING_REASON}
         pendingDeleteId={pendingDeleteId}
         pendingRestoreId={pendingRestoreId}
         pendingDestroyId={pendingDestroyId}
-        pendingSendId={pendingSendId}
-        pendingVoidId={pendingVoidId}
         emptyMessage={emptyMessage}
       />
       <PaginationControls
@@ -459,6 +337,7 @@ export function InvoicesManagementTable({
         invoice={selectedInvoice}
         clients={sortedClients}
         productCatalog={productCatalog}
+        taxRates={taxRates}
       />
     </div>
   )

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 
-type InvoicesNavTab = 'invoices' | 'archive' | 'activity'
+type InvoicesNavTab = 'invoices' | 'settings' | 'archive' | 'activity'
 
 type InvoicesTabsNavProps = {
   activeTab: InvoicesNavTab
@@ -15,6 +15,7 @@ type InvoicesTabsNavProps = {
 
 const INVOICES_TABS: Array<{ label: string; value: InvoicesNavTab; href: string }> = [
   { label: 'Invoices', value: 'invoices', href: '/invoices' },
+  { label: 'Settings', value: 'settings', href: '/invoices/settings' },
   { label: 'Archive', value: 'archive', href: '/invoices/archive' },
   { label: 'Activity', value: 'activity', href: '/invoices/activity' },
 ]
