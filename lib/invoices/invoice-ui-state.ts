@@ -22,7 +22,7 @@ export const MISSING_CLIENT_REASON =
   'Create a client before creating invoices.'
 export const NON_EDITABLE_REASON = 'This invoice cannot be edited.'
 
-const NON_EDITABLE_STATUSES = new Set(['VOID', 'PAID'])
+const NON_EDITABLE_STATUSES = new Set(['PAID'])
 
 const SUBMIT_LABELS = {
   creating: 'Create invoice',

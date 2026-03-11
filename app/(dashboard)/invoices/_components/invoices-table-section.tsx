@@ -7,6 +7,7 @@ import {
   Building2,
   Check,
   Copy,
+  ExternalLink,
   Pencil,
   RefreshCw,
   Trash2,
@@ -42,7 +43,7 @@ export type InvoicesTableSectionProps = {
   emptyMessage: string
 }
 
-const NON_EDITABLE_STATUSES = new Set(['VOID', 'PAID'])
+const NON_EDITABLE_STATUSES = new Set(['PAID'])
 
 const formatCurrency = (value: string) => {
   try {
@@ -130,6 +131,8 @@ function ShareLinkCell({ invoice }: { invoice: InvoiceWithClient }) {
 
   const truncatedPath = `/share/invoices/${invoice.share_token.slice(0, 8)}...`
 
+  const shareUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/share/invoices/${invoice.share_token}`
+
   return (
     <div className='flex items-center gap-1.5'>
       <span className='text-muted-foreground truncate text-xs font-mono'>
@@ -147,6 +150,15 @@ function ShareLinkCell({ invoice }: { invoice: InvoiceWithClient }) {
         ) : (
           <Copy className='h-3 w-3' />
         )}
+      </Button>
+      <Button
+        variant='ghost'
+        size='icon'
+        className='h-6 w-6 flex-shrink-0'
+        onClick={() => window.open(shareUrl, '_blank')}
+        title='Open share link'
+      >
+        <ExternalLink className='h-3 w-3' />
       </Button>
     </div>
   )

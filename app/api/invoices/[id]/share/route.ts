@@ -10,8 +10,6 @@ import { invoices } from '@/lib/db/schema'
 import { invoiceSharedEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
 
-const SHAREABLE_STATUSES = ['DRAFT', 'SENT', 'VIEWED', 'PAID'] as const
-
 export async function POST(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -41,21 +39,6 @@ export async function POST(
     return NextResponse.json(
       { ok: false, error: 'Invoice not found.' },
       { status: 404 }
-    )
-  }
-
-  // Validate status - void invoices cannot be shared
-  if (
-    !SHAREABLE_STATUSES.includes(
-      invoice.status as (typeof SHAREABLE_STATUSES)[number]
-    )
-  ) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: 'Sharing is not available for void invoices.',
-      },
-      { status: 422 }
     )
   }
 

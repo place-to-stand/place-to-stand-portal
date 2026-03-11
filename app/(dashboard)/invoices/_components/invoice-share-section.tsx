@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { Copy, Check, Link2, Link2Off } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ui/use-toast'
@@ -12,20 +13,25 @@ type InvoiceShareSectionProps = {
   invoiceId: string
   shareToken: string | null
   shareEnabled: boolean
+  invoiceStatus?: string
   onShareStateChange?: (enabled: boolean) => void
+  onSendInvoice?: () => void
 }
 
 export function InvoiceShareSection({
   invoiceId,
   shareToken,
   shareEnabled,
+  invoiceStatus,
   onShareStateChange,
+  onSendInvoice,
 }: InvoiceShareSectionProps) {
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [copied, setCopied] = useState(false)
   const [currentToken, setCurrentToken] = useState(shareToken)
   const [currentEnabled, setCurrentEnabled] = useState(shareEnabled)
+  const [showSendPrompt, setShowSendPrompt] = useState(false)
 
   useEffect(() => {
     setCurrentToken(shareToken)
@@ -37,6 +43,7 @@ export function InvoiceShareSection({
     : null
 
   const handleEnableSharing = useCallback(async () => {
+    const isFirstGeneration = !currentToken
     setIsLoading(true)
     try {
       const res = await fetch(`/api/invoices/${invoiceId}/share`, {
@@ -52,6 +59,9 @@ export function InvoiceShareSection({
           title: 'Sharing enabled',
           description: 'The invoice link is ready to share.',
         })
+        if (isFirstGeneration && invoiceStatus === 'DRAFT' && onSendInvoice) {
+          setShowSendPrompt(true)
+        }
       } else {
         toast({
           variant: 'destructive',
@@ -106,8 +116,26 @@ export function InvoiceShareSection({
     setTimeout(() => setCopied(false), 2000)
   }, [shareUrl])
 
+  const handleConfirmSend = useCallback(() => {
+    setShowSendPrompt(false)
+    onSendInvoice?.()
+  }, [onSendInvoice])
+
+  const handleDeclineSend = useCallback(() => {
+    setShowSendPrompt(false)
+  }, [])
+
   return (
     <div className='space-y-4'>
+      <ConfirmDialog
+        open={showSendPrompt}
+        title='Mark invoice as sent?'
+        description='The invoice must be marked as sent before the client can make a payment. Would you like to mark it as sent now?'
+        confirmLabel='Mark as Sent'
+        cancelLabel='Not Now'
+        onConfirm={handleConfirmSend}
+        onCancel={handleDeclineSend}
+      />
       <span className='mb-2 block text-sm font-medium'>Share Link</span>
       {currentEnabled && shareUrl ? (
         <div className='space-y-3'>

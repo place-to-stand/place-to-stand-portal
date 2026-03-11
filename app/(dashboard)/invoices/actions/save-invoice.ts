@@ -174,8 +174,8 @@ async function performSaveInvoice(
       return { error: 'Invoice not found.' }
     }
 
-    if (existing.status === 'VOID' || existing.status === 'PAID') {
-      return { error: 'Void or paid invoices cannot be edited.' }
+    if (existing.status === 'PAID') {
+      return { error: 'Paid invoices cannot be edited.' }
     }
 
     try {

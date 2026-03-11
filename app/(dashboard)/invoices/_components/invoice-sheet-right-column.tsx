@@ -133,7 +133,9 @@ export function InvoiceSheetRightColumn({
           invoiceId={invoice.id}
           shareToken={invoice.share_token}
           shareEnabled={invoice.share_enabled}
+          invoiceStatus={invoice.status}
           onShareStateChange={handleShareStateChange}
+          onSendInvoice={onSendInvoice}
         />
 
         <Separator />

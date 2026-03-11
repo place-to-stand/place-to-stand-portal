@@ -44,6 +44,7 @@ export function PublicInvoice({
 }: PublicInvoiceProps) {
   const [isRedirecting, setIsRedirecting] = useState(false)
 
+  const isDraft = invoice.status === 'DRAFT'
   const isVoid = invoice.status === 'VOID'
   const isPaid = invoice.status === 'PAID'
   const isPayable = invoice.status === 'SENT' || invoice.status === 'VIEWED'
@@ -83,6 +84,24 @@ export function PublicInvoice({
           <AlertCircle className="size-5 shrink-0" />
           <p className="text-sm font-medium">
             Payment was cancelled. You can try again below.
+          </p>
+        </div>
+      )}
+
+      {isDraft && (
+        <div className="mb-6 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
+          <AlertCircle className="size-5 shrink-0" />
+          <p className="text-sm font-medium">
+            This invoice is a draft and has not been finalized. Payment is not available until the invoice is issued.
+          </p>
+        </div>
+      )}
+
+      {isVoid && (
+        <div className="mb-6 flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-800 dark:bg-red-950/50 dark:text-red-200">
+          <XCircle className="size-5 shrink-0" />
+          <p className="text-sm font-medium">
+            This invoice has been voided and is no longer payable.
           </p>
         </div>
       )}
