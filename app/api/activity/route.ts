@@ -15,6 +15,7 @@ const VALID_TARGET_TYPES: ActivityTargetType[] = [
   'COMMENT',
   'TIME_LOG',
   'HOUR_BLOCK',
+  'INVOICE',
   'USER',
   'SETTINGS',
   'GENERAL',
