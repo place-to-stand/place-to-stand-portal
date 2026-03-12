@@ -8,6 +8,7 @@ import {
   Building2,
   Check,
   Copy,
+  Eye,
   ExternalLink,
   Link2,
   Loader2,
@@ -50,7 +51,7 @@ export type InvoicesTableSectionProps = {
   emptyMessage: string
 }
 
-const NON_EDITABLE_STATUSES = new Set(['PAID'])
+const NON_EDITABLE_STATUSES = new Set(['PAID', 'VOID'])
 
 const formatCurrency = (value: string) => {
   try {
@@ -305,7 +306,8 @@ export function InvoicesTableSection({
             const isDestroying = isPending && pendingDestroyId === invoice.id
             const isBusy = isDeleting || isRestoring || isDestroying
 
-            const showEdit = mode === 'active' && !NON_EDITABLE_STATUSES.has(invoice.status)
+            const isViewOnly = NON_EDITABLE_STATUSES.has(invoice.status)
+            const showEditOrView = mode === 'active'
             const showArchive = mode === 'active'
             const showRestore = mode === 'archive'
             const showDestroy = mode === 'archive'
@@ -405,21 +407,32 @@ export function InvoicesTableSection({
                 </TableCell>
                 <TableCell className='text-right'>
                   <div className='flex justify-end gap-2'>
-                    {showEdit ? (
-                      <DisabledFieldTooltip
-                        disabled={editDisabled}
-                        reason={editDisabledReason}
-                      >
+                    {showEditOrView ? (
+                      isViewOnly ? (
                         <Button
                           variant='outline'
                           size='icon'
                           onClick={() => onEdit(invoice)}
-                          title='Edit invoice'
-                          disabled={editDisabled}
+                          title='View invoice'
                         >
-                          <Pencil className='h-4 w-4' />
+                          <Eye className='h-4 w-4' />
                         </Button>
-                      </DisabledFieldTooltip>
+                      ) : (
+                        <DisabledFieldTooltip
+                          disabled={editDisabled}
+                          reason={editDisabledReason}
+                        >
+                          <Button
+                            variant='outline'
+                            size='icon'
+                            onClick={() => onEdit(invoice)}
+                            title='Edit invoice'
+                            disabled={editDisabled}
+                          >
+                            <Pencil className='h-4 w-4' />
+                          </Button>
+                        </DisabledFieldTooltip>
+                      )
                     ) : null}
                     {showArchive ? (
                       <DisabledFieldTooltip

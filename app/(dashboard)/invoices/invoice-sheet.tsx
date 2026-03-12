@@ -259,7 +259,7 @@ export function InvoiceSheet({
       } else {
         toast({
           title: 'Invoice reverted to draft',
-          description: 'The invoice has been marked as unsent.',
+          description: 'The invoice has been reverted to draft.',
         })
         router.refresh()
       }
@@ -501,6 +501,10 @@ export function InvoiceSheet({
                                 canRemove={fieldArray.fields.length > 1}
                                 disabled={standardField.disabled || isReadOnly}
                                 isReadOnly={isReadOnly}
+                                isNet30={
+                                  invoice?.billing_type === 'net_30' ||
+                                  selectedClientBillingType === 'net_30'
+                                }
                               />
                             ))}
                           </SortableContext>
@@ -682,6 +686,7 @@ type LineItemRowProps = {
   canRemove: boolean
   disabled: boolean
   isReadOnly: boolean
+  isNet30: boolean
   dragHandleProps?: React.HTMLAttributes<HTMLButtonElement>
 }
 
@@ -697,6 +702,7 @@ function LineItemRow({
   canRemove,
   disabled,
   isReadOnly,
+  isNet30,
   dragHandleProps,
 }: LineItemRowProps) {
   const quantity = useWatch({ control: form.control, name: `lineItems.${index}.quantity` })
@@ -899,8 +905,8 @@ function LineItemRow({
         </div>
       </div>
 
-      {/* Hour block label — only shown for catalog items that create hour blocks */}
-      {isCatalogItem && createsHourBlock ? (
+      {/* Hour block label — only shown for catalog items that create hour blocks (not net_30) */}
+      {isCatalogItem && createsHourBlock && !isNet30 ? (
         <p className='text-muted-foreground text-xs'>
           Creates hour block on payment
         </p>

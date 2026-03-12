@@ -126,8 +126,11 @@ export function PublicInvoice({
 
   const isDraft = invoice.status === 'DRAFT'
   const isVoid = invoice.status === 'VOID'
-  const isPaid = invoice.status === 'PAID'
-  const isPayable = invoice.status === 'SENT' || invoice.status === 'VIEWED'
+  // When redirected back from Stripe with success, treat as paid even if the
+  // webhook hasn't updated the DB status yet (race between redirect & webhook).
+  const isPaid = invoice.status === 'PAID' || paymentStatus === 'success'
+  const isPayable =
+    !isPaid && (invoice.status === 'SENT' || invoice.status === 'VIEWED')
 
   const fetchClientSecret = useCallback(async () => {
     if (clientSecret || isFetchingSecret) return
@@ -171,13 +174,6 @@ export function PublicInvoice({
   return (
     <div className={isVoid ? 'opacity-60' : undefined}>
       {/* ── Status banners ── */}
-      {paymentStatus === 'success' && (
-        <div className="mb-6 flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-4 text-green-800 dark:border-green-800 dark:bg-green-950/50 dark:text-green-200">
-          <CheckCircle2 className="size-5 shrink-0" />
-          <p className="text-sm font-medium">Payment received! Thank you.</p>
-        </div>
-      )}
-
       {paymentStatus === 'cancelled' && (
         <div className="mb-6 flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 text-blue-800 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-200">
           <AlertCircle className="size-5 shrink-0" />

@@ -174,7 +174,7 @@ export function InvoiceSheetRightColumn({
                     disabled={isPending}
                   >
                     <Undo2 className='h-4 w-4 text-amber-500' />
-                    Mark as Unsent
+                    Revert to Draft
                   </Button>
                 ) : null}
                 {canVoid ? (
