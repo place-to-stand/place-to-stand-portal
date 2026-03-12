@@ -18,6 +18,7 @@ import {
   restoreInvoice,
   destroyInvoice,
 } from '../actions'
+import { sendInvoiceAction } from '../actions/send-invoice'
 
 import { InvoiceArchiveDialog } from './invoice-archive-dialog'
 import { InvoicesTableSection } from './invoices-table-section'
@@ -124,21 +125,60 @@ export function InvoicesManagementTable({
   // Sheet handlers
   // -------------------------------------------------------------------------
 
+  // Sync sheet state with URL ?invoiceId= param
+  const syncUrlWithInvoice = useCallback(
+    (invoiceId: string | null) => {
+      const params = new URLSearchParams(searchParams.toString())
+      if (invoiceId) {
+        params.set('invoiceId', invoiceId)
+      } else {
+        params.delete('invoiceId')
+      }
+      const query = params.toString()
+      router.replace(query ? `${pathname}?${query}` : pathname, {
+        scroll: false,
+      })
+    },
+    [pathname, router, searchParams]
+  )
+
+  // Open invoice from URL param on mount
+  const urlOpenCheckedRef = useRef(false)
+  useEffect(() => {
+    if (urlOpenCheckedRef.current || mode !== 'active') return
+    urlOpenCheckedRef.current = true
+
+    const invoiceId = searchParams.get('invoiceId')
+    if (!invoiceId) return
+
+    const invoice = invoices.find(inv => inv.id === invoiceId)
+    if (invoice) {
+      setSelectedInvoice(invoice)
+      setSheetOpen(true)
+    } else {
+      // Invalid ID — clean URL
+      syncUrlWithInvoice(null)
+    }
+  }, [mode, invoices, searchParams, syncUrlWithInvoice])
+
   const openEdit = (invoice: InvoiceWithClient) => {
     setSelectedInvoice(invoice)
     setSheetOpen(true)
+    syncUrlWithInvoice(invoice.id)
   }
 
   const handleSheetOpenChange = (open: boolean) => {
     setSheetOpen(open)
     if (!open) {
       setSelectedInvoice(null)
+      syncUrlWithInvoice(null)
     }
   }
 
   const handleComplete = () => {
     setSheetOpen(false)
     setSelectedInvoice(null)
+    syncUrlWithInvoice(null)
     router.refresh()
   }
 
@@ -273,6 +313,38 @@ export function InvoicesManagementTable({
   }
 
   // -------------------------------------------------------------------------
+  // Send invoice (from table share link generation)
+  // -------------------------------------------------------------------------
+
+  const handleSendInvoice = useCallback(
+    (invoiceId: string) => {
+      startTransition(async () => {
+        const result = await sendInvoiceAction({ id: invoiceId })
+        if (result.error) {
+          toast({
+            title: 'Unable to send invoice',
+            description: result.error,
+            variant: 'destructive',
+          })
+        } else {
+          toast({
+            title: 'Invoice marked as sent',
+            description: result.invoiceNumber
+              ? `${result.invoiceNumber} is now active.`
+              : 'The invoice is now active.',
+          })
+          router.refresh()
+        }
+      })
+    },
+    [router, startTransition, toast]
+  )
+
+  const handleRefresh = useCallback(() => {
+    router.refresh()
+  }, [router])
+
+  // -------------------------------------------------------------------------
   // Pagination
   // -------------------------------------------------------------------------
 
@@ -315,6 +387,8 @@ export function InvoicesManagementTable({
         onRequestDelete={handleRequestDelete}
         onRestore={handleRestore}
         onRequestDestroy={handleRequestDestroy}
+        onSendInvoice={handleSendInvoice}
+        onRefresh={handleRefresh}
         isPending={isPending}
         pendingReason={PENDING_REASON}
         pendingDeleteId={pendingDeleteId}

@@ -1,4 +1,5 @@
 import { format } from 'date-fns'
+import Link from 'next/link'
 import { Archive, Building2, Pencil, RefreshCw, Trash2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -126,8 +127,17 @@ export function HourBlocksTableSection({
                     <p className='text-destructive text-xs'>Client archived</p>
                   ) : null}
                 </TableCell>
-                <TableCell className='text-muted-foreground text-sm'>
-                  {invoiceNumber}
+                <TableCell className='text-sm'>
+                  {block.invoice_id && block.invoice_number ? (
+                    <Link
+                      href={`/invoices?invoiceId=${block.invoice_id}`}
+                      className='text-muted-foreground hover:text-foreground hover:underline'
+                    >
+                      {block.invoice_number}
+                    </Link>
+                  ) : (
+                    <span className='text-muted-foreground'>{invoiceNumber}</span>
+                  )}
                 </TableCell>
                 <TableCell className='text-sm'>
                   {toHours(block.hours_purchased)}

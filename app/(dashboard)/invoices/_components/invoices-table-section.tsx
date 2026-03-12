@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import Link from 'next/link'
 import { format } from 'date-fns'
 import {
   Archive,
@@ -8,6 +9,8 @@ import {
   Check,
   Copy,
   ExternalLink,
+  Link2,
+  Loader2,
   Pencil,
   RefreshCw,
   Trash2,
@@ -15,6 +18,7 @@ import {
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
   Table,
@@ -24,6 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { useToast } from '@/components/ui/use-toast'
 import type { InvoiceWithClient } from '@/lib/invoices/invoice-form'
 
 export type InvoicesTableMode = 'active' | 'archive'
@@ -40,6 +45,8 @@ export type InvoicesTableSectionProps = {
   onRequestDelete: (invoice: InvoiceWithClient) => void
   onRestore: (invoice: InvoiceWithClient) => void
   onRequestDestroy: (invoice: InvoiceWithClient) => void
+  onSendInvoice: (invoiceId: string) => void
+  onRefresh: () => void
   emptyMessage: string
 }
 
@@ -114,8 +121,30 @@ function StatusBadge({ status, dueDate }: { status: string; dueDate: string | nu
   )
 }
 
-function ShareLinkCell({ invoice }: { invoice: InvoiceWithClient }) {
+function BillingTypeBadge() {
+  return (
+    <Badge
+      variant='outline'
+      className='border-transparent bg-amber-100 text-[10px] px-1.5 py-0 leading-4 text-amber-800 dark:bg-amber-500/10 dark:text-amber-300'
+    >
+      Net 30
+    </Badge>
+  )
+}
+
+function ShareLinkCell({
+  invoice,
+  onSendInvoice,
+  onRefresh,
+}: {
+  invoice: InvoiceWithClient
+  onSendInvoice: (invoiceId: string) => void
+  onRefresh: () => void
+}) {
+  const { toast } = useToast()
   const [copied, setCopied] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [showSendPrompt, setShowSendPrompt] = useState(false)
 
   const handleCopy = useCallback(() => {
     if (!invoice.share_token) return
@@ -125,8 +154,81 @@ function ShareLinkCell({ invoice }: { invoice: InvoiceWithClient }) {
     setTimeout(() => setCopied(false), 2000)
   }, [invoice.share_token])
 
+  const handleGenerateLink = useCallback(async () => {
+    setIsGenerating(true)
+    try {
+      const res = await fetch(`/api/invoices/${invoice.id}/share`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      const data = await res.json()
+      if (data.ok) {
+        toast({
+          title: 'Sharing enabled',
+          description: 'The invoice link is ready to share.',
+        })
+        if (invoice.status === 'DRAFT') {
+          // Show dialog before refreshing — refresh would unmount the dialog
+          setShowSendPrompt(true)
+        } else {
+          onRefresh()
+        }
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Failed to generate link',
+          description: data.error ?? 'Please try again.',
+        })
+      }
+    } catch {
+      toast({
+        variant: 'destructive',
+        title: 'Failed to generate link',
+        description: 'Network error. Please check your connection.',
+      })
+    } finally {
+      setIsGenerating(false)
+    }
+  }, [invoice.id, invoice.status, toast, onRefresh])
+
+  const handleConfirmSend = useCallback(() => {
+    setShowSendPrompt(false)
+    onSendInvoice(invoice.id)
+    onRefresh()
+  }, [invoice.id, onSendInvoice, onRefresh])
+
+  const handleDeclineSend = useCallback(() => {
+    setShowSendPrompt(false)
+    onRefresh()
+  }, [onRefresh])
+
   if (!invoice.share_enabled || !invoice.share_token) {
-    return <span className='text-muted-foreground text-sm'>{'\u2014'}</span>
+    return (
+      <>
+        <ConfirmDialog
+          open={showSendPrompt}
+          title='Mark invoice as sent?'
+          description='The invoice must be marked as sent before the client can make a payment. Would you like to mark it as sent now?'
+          confirmLabel='Mark as Sent'
+          cancelLabel='Not Now'
+          onConfirm={handleConfirmSend}
+          onCancel={handleDeclineSend}
+        />
+        <Button
+          size='sm'
+          className='h-7 gap-1.5 px-3 text-xs'
+          onClick={handleGenerateLink}
+          disabled={isGenerating}
+        >
+          {isGenerating ? (
+            <Loader2 className='h-3 w-3 animate-spin' />
+          ) : (
+            <Link2 className='h-3 w-3' />
+          )}
+          {isGenerating ? 'Generating...' : 'Generate Shareable Link'}
+        </Button>
+      </>
+    )
   }
 
   const truncatedPath = `/share/invoices/${invoice.share_token.slice(0, 8)}...`
@@ -176,6 +278,8 @@ export function InvoicesTableSection({
   onRequestDelete,
   onRestore,
   onRequestDestroy,
+  onSendInvoice,
+  onRefresh,
   emptyMessage,
 }: InvoicesTableSectionProps) {
   return (
@@ -237,18 +341,36 @@ export function InvoicesTableSection({
                 className={isArchived ? 'opacity-60' : undefined}
               >
                 <TableCell className='text-sm font-medium'>
-                  {invoice.invoice_number ? (
-                    invoice.invoice_number
-                  ) : (
-                    <Badge variant='secondary' className='text-xs'>
-                      Draft
-                    </Badge>
-                  )}
+                  <div className='flex items-center gap-2'>
+                    {invoice.invoice_number ? (
+                      invoice.invoice_number
+                    ) : (
+                      <Badge variant='secondary' className='text-xs'>
+                        Draft
+                      </Badge>
+                    )}
+                    {invoice.billing_type === 'net_30' ? (
+                      <BillingTypeBadge />
+                    ) : null}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div className='flex items-center gap-2 text-sm'>
                     <Building2 className='text-muted-foreground h-4 w-4' />
-                    <span>{client ? client.name : 'Unassigned'}</span>
+                    {client ? (
+                      client.slug ? (
+                        <Link
+                          href={`/clients/${client.slug}`}
+                          className='hover:text-foreground hover:underline'
+                        >
+                          {client.name}
+                        </Link>
+                      ) : (
+                        <span>{client.name}</span>
+                      )
+                    ) : (
+                      <span>Unassigned</span>
+                    )}
                   </div>
                   {client?.deleted_at ? (
                     <p className='text-destructive text-xs'>Client archived</p>
@@ -275,7 +397,11 @@ export function InvoicesTableSection({
                   )}
                 </TableCell>
                 <TableCell>
-                  <ShareLinkCell invoice={invoice} />
+                  <ShareLinkCell
+                    invoice={invoice}
+                    onSendInvoice={onSendInvoice}
+                    onRefresh={onRefresh}
+                  />
                 </TableCell>
                 <TableCell className='text-right'>
                   <div className='flex justify-end gap-2'>

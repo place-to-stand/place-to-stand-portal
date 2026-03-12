@@ -57,7 +57,7 @@ export type ClientRow = {
 }
 
 export type InvoiceWithClient = InvoiceRow & {
-  client: { id: string; name: string; deleted_at: string | null } | null
+  client: { id: string; name: string; slug: string | null; deleted_at: string | null } | null
 }
 
 export type InvoiceWithLineItems = InvoiceWithClient & {

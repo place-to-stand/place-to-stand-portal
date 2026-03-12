@@ -32,6 +32,7 @@ type HourBlockSelection = {
     id: string
     clientId: string
     hoursPurchased: string | null
+    invoiceId: string | null
     invoiceNumber: string | null
     createdBy: string | null
     createdAt: string
@@ -55,6 +56,7 @@ const hourBlockSelection = {
   id: hourBlocks.id,
   clientId: hourBlocks.clientId,
   hoursPurchased: hourBlocks.hoursPurchased,
+  invoiceId: hourBlocks.invoiceId,
   invoiceNumber: hourBlocks.invoiceNumber,
   createdBy: hourBlocks.createdBy,
   createdAt: hourBlocks.createdAt,
@@ -291,6 +293,7 @@ function mapHourBlockWithClient(row: HourBlockSelection): HourBlockWithClient {
     id: row.block.id,
     client_id: row.block.clientId,
     hours_purchased: Number(row.block.hoursPurchased ?? '0'),
+    invoice_id: row.block.invoiceId,
     invoice_number: row.block.invoiceNumber,
     created_by: row.block.createdBy,
     created_at: row.block.createdAt,

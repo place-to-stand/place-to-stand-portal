@@ -72,6 +72,7 @@ const lineItemSelection = {
 const clientSelection = {
   id: clients.id,
   name: clients.name,
+  slug: clients.slug,
   billingType: clients.billingType,
   state: clients.state,
   deletedAt: clients.deletedAt,
@@ -111,6 +112,7 @@ type InvoiceSelectionRow = {
   client: {
     id: string
     name: string
+    slug: string | null
     billingType: string
     state: string | null
     deletedAt: string | null
@@ -135,6 +137,7 @@ type LineItemSelectionRow = {
 type ClientSelectionRow = {
   id: string
   name: string
+  slug: string | null
   billingType: string
   state: string | null
   deletedAt: string | null
@@ -417,6 +420,7 @@ function mapInvoiceWithClient(row: InvoiceSelectionRow): InvoiceWithClient {
       ? {
           id: row.client.id,
           name: row.client.name,
+          slug: row.client.slug,
           deleted_at: row.client.deletedAt,
         }
       : null

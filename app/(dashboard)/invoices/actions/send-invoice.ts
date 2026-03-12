@@ -264,7 +264,7 @@ async function deliverInvoiceEmail(params: {
     created_at: inv.createdAt,
     updated_at: inv.updatedAt,
     deleted_at: inv.deletedAt,
-    client: { id: params.clientId, name: params.clientName, deleted_at: null },
+    client: { id: params.clientId, name: params.clientName, slug: null, deleted_at: null },
     line_items: lineItemRows.map(li => ({
       id: li.id,
       invoice_id: li.invoiceId,
