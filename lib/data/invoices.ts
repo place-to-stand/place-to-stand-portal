@@ -27,6 +27,7 @@ export async function createHourBlocksFromInvoice(
     .select({
       id: invoices.id,
       clientId: invoices.clientId,
+      billingType: invoices.billingType,
       invoiceNumber: invoices.invoiceNumber,
       createdBy: invoices.createdBy,
       clientName: clients.name,
@@ -40,6 +41,11 @@ export async function createHourBlocksFromInvoice(
     console.error(
       `[createHourBlocksFromInvoice] Invoice not found: ${invoiceId}`
     )
+    return
+  }
+
+  // Net 30 invoices are for work already performed — no hour blocks needed
+  if (invoice.billingType === 'net_30') {
     return
   }
 

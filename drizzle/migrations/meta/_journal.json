@@ -309,6 +309,13 @@
       "when": 1773191359491,
       "tag": "0043_add_client_state",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1773331349290,
+      "tag": "0044_add_invoice_billing_type",
+      "breakpoints": true
     }
   ]
 }

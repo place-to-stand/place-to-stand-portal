@@ -43,6 +43,7 @@ const invoiceSelection = {
   notes: invoices.notes,
   shareToken: invoices.shareToken,
   shareEnabled: invoices.shareEnabled,
+  billingType: invoices.billingType,
   viewedAt: invoices.viewedAt,
   viewedCount: invoices.viewedCount,
   stripeCheckoutSessionId: invoices.stripeCheckoutSessionId,
@@ -97,6 +98,7 @@ type InvoiceSelectionRow = {
     notes: string | null
     shareToken: string | null
     shareEnabled: boolean
+    billingType: string | null
     viewedAt: string | null
     viewedCount: number
     stripeCheckoutSessionId: string | null
@@ -435,6 +437,7 @@ function mapInvoiceWithClient(row: InvoiceSelectionRow): InvoiceWithClient {
     notes: row.invoice.notes,
     share_token: row.invoice.shareToken,
     share_enabled: row.invoice.shareEnabled,
+    billing_type: row.invoice.billingType,
     viewed_at: row.invoice.viewedAt,
     viewed_count: row.invoice.viewedCount,
     stripe_checkout_session_id: row.invoice.stripeCheckoutSessionId,

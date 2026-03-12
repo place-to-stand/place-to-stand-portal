@@ -55,7 +55,7 @@ async function performSaveInvoice(
   const { id, clientId, dueDate, notes, taxRate, lineItems } = parsed.data
 
   const clientRows = await db
-    .select({ id: clients.id, name: clients.name })
+    .select({ id: clients.id, name: clients.name, billingType: clients.billingType })
     .from(clients)
     .where(and(eq(clients.id, clientId), isNull(clients.deletedAt)))
     .limit(1)
@@ -91,6 +91,7 @@ async function performSaveInvoice(
           .values({
             clientId,
             invoiceNumber,
+            billingType: client.billingType,
             dueDate: dueDate ?? null,
             notes: notes ?? null,
             taxRate: taxRate.toString(),
@@ -189,6 +190,11 @@ async function performSaveInvoice(
           taxAmount: taxAmount.toFixed(2),
           total: total.toFixed(2),
           updatedAt: nowIso,
+        }
+
+        // Re-sync billing type when client changes
+        if (existing.clientId !== clientId) {
+          updateData.billingType = client.billingType
         }
 
         if (existing.status === 'SENT') {

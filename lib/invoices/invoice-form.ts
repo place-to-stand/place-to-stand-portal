@@ -22,6 +22,7 @@ export type InvoiceRow = {
   notes: string | null
   share_token: string | null
   share_enabled: boolean
+  billing_type: string | null
   viewed_at: string | null
   viewed_count: number
   stripe_checkout_session_id: string | null

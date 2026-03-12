@@ -2046,6 +2046,7 @@ export const invoices = pgTable(
     shareEnabled: boolean('share_enabled').notNull().default(false),
     viewedAt: timestamp('viewed_at', { withTimezone: true, mode: 'string' }),
     viewedCount: integer('viewed_count').notNull().default(0),
+    billingType: clientBillingType('billing_type'),
     stripeCheckoutSessionId: text('stripe_checkout_session_id'),
     stripePaymentIntentId: text('stripe_payment_intent_id'),
     paidAt: timestamp('paid_at', { withTimezone: true, mode: 'string' }),
