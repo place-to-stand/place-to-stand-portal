@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { and, eq, isNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { invoices, invoiceLineItems } from '@/lib/db/schema'
+import { invoices } from '@/lib/db/schema'
 import { getStripe } from '@/lib/stripe/client'
 
 const TOKEN_REGEX = /^[a-f0-9]{32}$/
@@ -49,89 +49,65 @@ export async function POST(
       )
     }
 
-    // If a checkout session already exists, try to retrieve it
-    if (invoice.stripeCheckoutSessionId) {
+    // If a payment intent already exists, try to reuse it
+    if (invoice.stripePaymentIntentId) {
       try {
-        const existingSession = await getStripe().checkout.sessions.retrieve(
-          invoice.stripeCheckoutSessionId
+        const existingIntent = await getStripe().paymentIntents.retrieve(
+          invoice.stripePaymentIntentId
         )
-        if (existingSession.status === 'open') {
+        const isReusable =
+          (existingIntent.status === 'requires_payment_method' ||
+            existingIntent.status === 'requires_confirmation') &&
+          existingIntent.payment_method_types?.length === 1 &&
+          existingIntent.payment_method_types[0] === 'card'
+
+        if (isReusable) {
           return NextResponse.json({
             ok: true,
-            data: { url: existingSession.url },
+            data: { clientSecret: existingIntent.client_secret },
           })
         }
+
+        // Cancel stale/mismatched intent before creating a new one
+        if (
+          existingIntent.status === 'requires_payment_method' ||
+          existingIntent.status === 'requires_confirmation'
+        ) {
+          await getStripe().paymentIntents.cancel(
+            invoice.stripePaymentIntentId
+          )
+        }
       } catch {
-        // Session no longer valid, create a new one
+        // Intent no longer valid, create a new one
       }
     }
 
-    // Fetch line items
-    const lineItems = await db
-      .select()
-      .from(invoiceLineItems)
-      .where(
-        and(
-          eq(invoiceLineItems.invoiceId, invoice.id),
-          isNull(invoiceLineItems.deletedAt)
-        )
-      )
+    const totalCents = Math.round(Number(invoice.total) * 100)
+    const invoiceLabel = invoice.invoiceNumber
+      ? `Invoice ${invoice.invoiceNumber}`
+      : 'Invoice Payment'
 
-    const appBaseUrl =
-      process.env.APP_BASE_URL ?? new URL(request.url).origin
-
-    // Build Stripe line items
-    const stripeLineItems = lineItems.map(item => {
-      const amount = Math.round(Number(item.amount) * 100)
-      return {
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: item.description,
-          },
-          unit_amount: amount,
-        },
-        quantity: 1,
-      }
-    })
-
-    // Add tax as separate line item if applicable
-    const taxAmount = Number(invoice.taxAmount)
-    if (taxAmount > 0) {
-      stripeLineItems.push({
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: 'Tax',
-          },
-          unit_amount: Math.round(taxAmount * 100),
-        },
-        quantity: 1,
-      })
-    }
-
-    // Create Stripe Checkout Session
-    const session = await getStripe().checkout.sessions.create({
-      mode: 'payment',
-      line_items: stripeLineItems,
-      success_url: `${appBaseUrl}/share/invoices/${invoice.shareToken}?payment=success`,
-      cancel_url: `${appBaseUrl}/share/invoices/${invoice.shareToken}?payment=cancelled`,
+    // Create PaymentIntent
+    const paymentIntent = await getStripe().paymentIntents.create({
+      amount: totalCents,
+      currency: 'usd',
+      description: invoiceLabel,
       metadata: { invoiceId: invoice.id },
-      client_reference_id: invoice.id,
+      payment_method_types: ['card'],
     })
 
-    // Store checkout session ID on invoice
+    // Store payment intent ID on invoice for reuse and webhook lookup
     await db
       .update(invoices)
       .set({
-        stripeCheckoutSessionId: session.id,
+        stripePaymentIntentId: paymentIntent.id,
         updatedAt: new Date().toISOString(),
       })
       .where(eq(invoices.id, invoice.id))
 
     return NextResponse.json({
       ok: true,
-      data: { url: session.url },
+      data: { clientSecret: paymentIntent.client_secret },
     })
   } catch (err) {
     console.error('[api/public/invoices/checkout] Unhandled error:', err)

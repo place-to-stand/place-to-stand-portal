@@ -345,6 +345,42 @@ export async function getInvoiceByStripeSession(
   }
 }
 
+export async function getInvoiceByPaymentIntent(
+  paymentIntentId: string
+): Promise<InvoiceWithLineItems | null> {
+  const rows = (await db
+    .select({
+      invoice: invoiceSelection,
+      client: clientSelection,
+    })
+    .from(invoices)
+    .leftJoin(clients, eq(invoices.clientId, clients.id))
+    .where(eq(invoices.stripePaymentIntentId, paymentIntentId))
+    .limit(1)) as InvoiceSelectionRow[]
+
+  if (!rows.length) {
+    return null
+  }
+
+  const invoice = mapInvoiceWithClient(rows[0]!)
+
+  const lineItemRows = (await db
+    .select(lineItemSelection)
+    .from(invoiceLineItems)
+    .where(
+      and(
+        eq(invoiceLineItems.invoiceId, invoice.id),
+        isNull(invoiceLineItems.deletedAt)
+      )
+    )
+    .orderBy(asc(invoiceLineItems.sortOrder))) as LineItemSelectionRow[]
+
+  return {
+    ...invoice,
+    line_items: lineItemRows.map(mapLineItemRow),
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Record invoice view (atomic)
 // ---------------------------------------------------------------------------

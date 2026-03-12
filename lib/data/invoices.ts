@@ -82,7 +82,7 @@ export async function createHourBlocksFromInvoice(
       })
       .onConflictDoNothing({
         target: hourBlocks.invoiceLineItemId,
-        where: sql`deleted_at IS NULL`,
+        where: sql`deleted_at IS NULL AND invoice_line_item_id IS NOT NULL`,
       })
 
     // Log activity (fire-and-forget)

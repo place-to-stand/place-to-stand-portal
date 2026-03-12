@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
-import { and, eq, isNull } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { invoices, invoiceLineItems } from '@/lib/db/schema'
+import { invoices } from '@/lib/db/schema'
 import { getStripe } from '@/lib/stripe/client'
 
 export async function POST(
@@ -46,16 +46,16 @@ export async function POST(
       )
     }
 
-    // If a checkout session already exists, try to retrieve it
+    // If a checkout session already exists, try to reuse it
     if (invoice.stripeCheckoutSessionId) {
       try {
         const existingSession = await getStripe().checkout.sessions.retrieve(
           invoice.stripeCheckoutSessionId
         )
-        if (existingSession.status === 'open') {
+        if (existingSession.status === 'open' && existingSession.client_secret) {
           return NextResponse.json({
             ok: true,
-            data: { url: existingSession.url },
+            data: { clientSecret: existingSession.client_secret },
           })
         }
       } catch {
@@ -63,56 +63,33 @@ export async function POST(
       }
     }
 
-    // Fetch line items
-    const lineItems = await db
-      .select()
-      .from(invoiceLineItems)
-      .where(
-        and(
-          eq(invoiceLineItems.invoiceId, id),
-          isNull(invoiceLineItems.deletedAt)
-        )
-      )
-
     const appBaseUrl =
       process.env.APP_BASE_URL ?? new URL(request.url).origin
 
-    // Build Stripe line items
-    const stripeLineItems = lineItems.map(item => {
-      const amount = Math.round(Number(item.amount) * 100)
-      return {
+    // Send total as a single line item so the embedded checkout header
+    // shows "Invoice INV-XXXX" instead of duplicating the line-item breakdown.
+    const totalCents = Math.round(Number(invoice.total) * 100)
+    const invoiceLabel = invoice.invoiceNumber
+      ? `Invoice ${invoice.invoiceNumber}`
+      : 'Invoice Payment'
+
+    const stripeLineItems = [
+      {
         price_data: {
           currency: 'usd',
-          product_data: {
-            name: item.description,
-          },
-          unit_amount: amount,
+          product_data: { name: invoiceLabel },
+          unit_amount: totalCents,
         },
         quantity: 1,
-      }
-    })
+      },
+    ]
 
-    // Add tax as separate line item if applicable
-    const taxAmount = Number(invoice.taxAmount)
-    if (taxAmount > 0) {
-      stripeLineItems.push({
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: 'Tax',
-          },
-          unit_amount: Math.round(taxAmount * 100),
-        },
-        quantity: 1,
-      })
-    }
-
-    // Create Stripe Checkout Session
+    // Create Stripe Checkout Session (embedded mode)
     const session = await getStripe().checkout.sessions.create({
+      ui_mode: 'embedded',
       mode: 'payment',
       line_items: stripeLineItems,
-      success_url: `${appBaseUrl}/share/invoices/${invoice.shareToken}?payment=success`,
-      cancel_url: `${appBaseUrl}/share/invoices/${invoice.shareToken}?payment=cancelled`,
+      return_url: `${appBaseUrl}/share/invoices/${invoice.shareToken}?payment=success&session_id={CHECKOUT_SESSION_ID}`,
       metadata: { invoiceId: invoice.id },
       client_reference_id: invoice.id,
     })
@@ -128,7 +105,7 @@ export async function POST(
 
     return NextResponse.json({
       ok: true,
-      data: { url: session.url },
+      data: { clientSecret: session.client_secret },
     })
   } catch (err) {
     console.error('[api/invoices/checkout] Unhandled error:', err)
