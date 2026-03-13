@@ -61,6 +61,7 @@ async function performSendInvoice(
       clientId: invoices.clientId,
       invoiceNumber: invoices.invoiceNumber,
       total: invoices.total,
+      shareToken: invoices.shareToken,
     })
     .from(invoices)
     .where(eq(invoices.id, invoiceId))
@@ -92,7 +93,10 @@ async function performSendInvoice(
 
   try {
     const today = new Date().toISOString().split('T')[0]!
-    const shareToken = crypto.randomUUID().replace(/-/g, '')
+    // Reuse existing share token if one was already generated (e.g. via
+    // "Generate Shareable Link" button) to avoid invalidating copied links.
+    const shareToken =
+      existing.shareToken ?? crypto.randomUUID().replace(/-/g, '')
     const nowIso = new Date().toISOString()
 
     await db
