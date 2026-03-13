@@ -88,11 +88,23 @@ export async function POST(
       : 'Invoice Payment'
 
     // Create PaymentIntent
+    const subtotalCents = Math.round(Number(invoice.subtotal) * 100)
+    const taxAmountCents = Math.round(Number(invoice.taxAmount) * 100)
+    const taxRatePercent = invoice.taxRate
+      ? (Number(invoice.taxRate) * 100).toString()
+      : '0'
+
     const paymentIntent = await getStripe().paymentIntents.create({
       amount: totalCents,
       currency: 'usd',
       description: invoiceLabel,
-      metadata: { invoiceId: invoice.id },
+      metadata: {
+        invoiceId: invoice.id,
+        invoiceNumber: invoice.invoiceNumber ?? '',
+        subtotal: subtotalCents.toString(),
+        tax_amount: taxAmountCents.toString(),
+        tax_rate_percent: taxRatePercent,
+      },
       payment_method_types: ['card'],
     })
 

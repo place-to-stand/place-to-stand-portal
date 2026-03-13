@@ -142,7 +142,7 @@ export function InvoiceShareSection({
           <div className='space-y-1.5'>
             <Label className='sr-only'>Shareable Link</Label>
             <div className='flex gap-2'>
-              <Input value={shareUrl} readOnly className='text-xs' />
+              <Input value={shareUrl} readOnly tabIndex={-1} className='text-xs' />
               <Button
                 type='button'
                 variant='outline'
