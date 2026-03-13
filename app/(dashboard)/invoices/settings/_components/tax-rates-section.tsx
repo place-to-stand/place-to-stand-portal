@@ -118,7 +118,7 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
       setEditingRate(rate)
       form.reset({
         state: rate.state,
-        rate: rate.rate,
+        rate: (Number(rate.rate) * 100).toString(),
         label: rate.label,
         isActive: rate.is_active,
       })
@@ -147,10 +147,12 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
   const onSubmit = useCallback(
     (values: TaxRateFormValues) => {
       startTransition(async () => {
+        const rateDecimal = (Number(values.rate) / 100).toString()
+
         const result = await saveTaxRate({
           id: editingRate?.id,
           state: values.state,
-          rate: values.rate,
+          rate: rateDecimal,
           label: values.label,
           isActive: values.isActive,
         })
@@ -164,7 +166,7 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
                   ? {
                       ...r,
                       state: values.state,
-                      rate: values.rate,
+                      rate: rateDecimal,
                       label: values.label,
                       is_active: values.isActive,
                     }
@@ -177,7 +179,7 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
               {
                 id: crypto.randomUUID(),
                 state: values.state,
-                rate: values.rate,
+                rate: rateDecimal,
                 label: values.label,
                 is_active: values.isActive,
                 created_at: new Date().toISOString(),
@@ -227,7 +229,7 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
               rates.map(rate => (
                 <TableRow key={rate.id}>
                   <TableCell className='font-medium'>{rate.state}</TableCell>
-                  <TableCell>{rate.rate}%</TableCell>
+                  <TableCell>{(Number(rate.rate) * 100).toFixed(2).replace(/\.?0+$/, '')}%</TableCell>
                   <TableCell>{rate.label}</TableCell>
                   <TableCell>
                     <Switch
