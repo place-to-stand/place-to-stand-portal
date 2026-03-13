@@ -12,6 +12,7 @@ import {
   Contact,
   FileText,
   ScrollText,
+  Receipt,
 } from 'lucide-react'
 import type { UserRole } from '@/lib/auth/session'
 
@@ -66,6 +67,12 @@ export const NAV_GROUPS: NavGroup[] = [
         href: '/proposals',
         label: 'Proposals',
         icon: ScrollText,
+      },
+      {
+        href: '/invoices',
+        label: 'Invoices',
+        icon: Receipt,
+        matchHrefs: ['/invoices'],
       },
       {
         href: '/hour-blocks',

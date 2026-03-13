@@ -4,7 +4,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen overflow-auto bg-background" style={{ height: '100vh' }}>
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto flex h-14 max-w-4xl items-center px-6">
+        <div className="mx-auto flex h-14 max-w-6xl items-center px-6">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/pts-logo-black-transparent.png"
@@ -19,7 +19,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
           />
         </div>
       </header>
-      <main className="mx-auto max-w-4xl px-6 py-8">{children}</main>
+      <main className="mx-auto max-w-6xl px-6 py-8">{children}</main>
     </div>
   )
 }

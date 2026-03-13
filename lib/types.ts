@@ -23,6 +23,7 @@ export type DbClient = {
   slug: string | null
   notes: string | null
   website: string | null
+  state: string | null
   referred_by: string | null
   billing_type: ClientBillingTypeValue
   created_by: string | null

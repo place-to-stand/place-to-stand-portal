@@ -14,6 +14,7 @@ import {
   MessageSquare,
   MoreHorizontal,
   PenLine,
+  Receipt,
   Send,
   Trash2,
 } from 'lucide-react'
@@ -36,6 +37,7 @@ import {
 } from '@/components/ui/sheet'
 import { useToast } from '@/components/ui/use-toast'
 import { ProposalDocument } from '@/components/proposal-viewer/proposal-document'
+import { mapProposalToInvoiceDefaults } from '@/lib/invoices/proposal-to-invoice'
 import type { ProposalContent } from '@/lib/proposals/types'
 import type { ProposalWithRelations } from '@/lib/queries/proposals'
 
@@ -197,12 +199,39 @@ export function ProposalDetailSheet({
     })
   }, [displayProposal, toast, onOpenChange, router])
 
+  const handleCreateInvoice = useCallback(() => {
+    if (!displayProposal?.clientId) return
+
+    const invoiceDefaults = mapProposalToInvoiceDefaults({
+      id: displayProposal.id,
+      title: displayProposal.title,
+      clientId: displayProposal.clientId,
+      content: displayProposal.content,
+    })
+
+    if (!invoiceDefaults) return
+
+    // Store pre-fill data in sessionStorage and navigate to invoices
+    sessionStorage.setItem(
+      'invoice-prefill',
+      JSON.stringify({
+        proposalId: displayProposal.id,
+        proposalTitle: displayProposal.title,
+        ...invoiceDefaults,
+      }),
+    )
+
+    onOpenChange(false)
+    router.push('/invoices?from=proposal')
+  }, [displayProposal, onOpenChange, router])
+
   if (!displayProposal) return null
 
   const p = displayProposal
   const isFullyExecuted = p.status === 'ACCEPTED' && !!p.countersignedAt
   const isAcceptedNotCountersigned = p.status === 'ACCEPTED' && !p.countersignedAt
   const hasLead = !!p.leadId
+  const canCreateInvoice = p.status === 'ACCEPTED' && !!p.clientId
   const canSendEmail = hasLead && ['DRAFT', 'SENT', 'VIEWED', 'ACCEPTED'].includes(p.status)
   const canEdit = ['DRAFT', 'SENT', 'VIEWED'].includes(p.status) && !!onEdit
   const contentExists = hasProposalContent(p.content)
@@ -276,6 +305,12 @@ export function ProposalDetailSheet({
                     >
                       <PenLine className="mr-2 h-4 w-4" />
                       Countersign Now
+                    </DropdownMenuItem>
+                  )}
+                  {canCreateInvoice && (
+                    <DropdownMenuItem onClick={handleCreateInvoice}>
+                      <Receipt className="mr-2 h-4 w-4" />
+                      Create Invoice
                     </DropdownMenuItem>
                   )}
                   {isFullyExecuted && (

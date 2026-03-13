@@ -78,7 +78,11 @@ export function SupabaseListener({ initialSession }: Props) {
             return;
           }
           // If no session, redirect to login
-          if (typeof window !== 'undefined' && window.location.pathname !== '/sign-in') {
+          if (
+            typeof window !== 'undefined' &&
+            window.location.pathname !== '/sign-in' &&
+            !window.location.pathname.startsWith('/share/')
+          ) {
             window.location.href = '/sign-in';
           }
         });

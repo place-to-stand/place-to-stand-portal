@@ -22,6 +22,11 @@ export const clientSchema = z.object({
     .nullish()
     .transform(value => (value ? value : null)),
   billingType: z.enum(CLIENT_BILLING_TYPE_VALUES).default('prepaid'),
+  state: z
+    .string()
+    .max(2)
+    .nullish()
+    .transform(value => (value ? value : null)),
   website: z
     .string()
     .url('Please enter a valid URL')

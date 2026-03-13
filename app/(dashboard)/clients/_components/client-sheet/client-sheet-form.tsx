@@ -34,6 +34,7 @@ import type {
   UseClientSheetStateReturn,
 } from '@/lib/settings/clients/use-client-sheet-state'
 import { CLIENT_BILLING_TYPE_SELECT_OPTIONS } from '@/lib/settings/clients/billing-types'
+import { US_STATES } from '@/lib/settings/clients/us-states'
 import { cn } from '@/lib/utils'
 import type { ClientSheetFormValues } from '@/lib/settings/clients/client-sheet-schema'
 
@@ -280,6 +281,44 @@ export function ClientSheetForm({
               </FormItem>
             )
           }}
+        />
+        <FormField
+          control={form.control}
+          name='state'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>State (optional)</FormLabel>
+              <Select
+                value={field.value ?? ''}
+                onValueChange={value => {
+                  field.onChange(value === '' ? '' : value)
+                }}
+                disabled={isPending}
+              >
+                <FormControl>
+                  <DisabledFieldTooltip
+                    disabled={isPending}
+                    reason={isPending ? pendingReason : null}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder='Select state (optional)' />
+                    </SelectTrigger>
+                  </DisabledFieldTooltip>
+                </FormControl>
+                <SelectContent align='start'>
+                  {US_STATES.map(state => (
+                    <SelectItem key={state.value} value={state.value}>
+                      {state.label} ({state.value})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>
+                Used to calculate tax rate on invoices.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
         />
         <FormField
           control={form.control}

@@ -26,6 +26,7 @@ type HourBlockRow = {
   id: string
   client_id: string
   hours_purchased: number
+  invoice_id: string | null
   invoice_number: string | null
   created_by: string | null
   created_at: string

@@ -13,6 +13,7 @@ export const clientSheetFormSchema = z.object({
     .or(z.literal(''))
     .optional(),
   billingType: z.enum(CLIENT_BILLING_TYPE_VALUES),
+  state: z.string().max(2).optional(),
   website: z
     .string()
     .url('Please enter a valid URL')

@@ -26,6 +26,7 @@ export type ClientWithMetrics = {
   notes: string | null
   website: string | null
   billingType: 'prepaid' | 'net_30'
+  state: string | null
   referredBy: string | null
   referrerName: string | null
   createdAt: string
@@ -45,6 +46,7 @@ export type ClientDetail = {
   slug: string | null
   notes: string | null
   website: string | null
+  state: string | null
   referredBy: string | null
   billingType: 'prepaid' | 'net_30'
   createdAt: string
@@ -73,6 +75,7 @@ export const fetchClientsWithMetrics = cache(
         notes: clients.notes,
         website: clients.website,
         billingType: clients.billingType,
+        state: clients.state,
         referredBy: clients.referredBy,
         referrerName: contacts.name,
         createdAt: clients.createdAt,
@@ -99,6 +102,7 @@ export const fetchClientsWithMetrics = cache(
         clients.notes,
         clients.website,
         clients.billingType,
+        clients.state,
         clients.referredBy,
         contacts.name,
         clients.createdAt,
@@ -195,6 +199,7 @@ export const fetchClientsWithMetrics = cache(
         notes: row.notes,
         website: row.website,
         billingType: row.billingType,
+        state: row.state,
         referredBy: row.referredBy,
         referrerName: row.referrerName,
         createdAt: row.createdAt,
@@ -222,6 +227,7 @@ export const fetchClientById = cache(
         slug: clients.slug,
         notes: clients.notes,
         website: clients.website,
+        state: clients.state,
         referredBy: clients.referredBy,
         billingType: clients.billingType,
         createdAt: clients.createdAt,
@@ -343,6 +349,7 @@ export async function fetchClientsByIds(
       slug: clients.slug,
       notes: clients.notes,
       website: clients.website,
+      state: clients.state,
       referredBy: clients.referredBy,
       billingType: clients.billingType,
       createdAt: clients.createdAt,

@@ -8,8 +8,11 @@ const PUBLIC_PATHS = new Set([
   '/unauthorized',
   '/forgot-password',
   '/reset-password',
+  '/share/',
   '/api/integrations/leads-intake',
+  '/api/integrations/stripe',
   '/api/cron/',
+  '/api/public/',
 ])
 const FORCE_RESET_PATH = '/force-reset-password'
 
@@ -101,6 +104,6 @@ export async function proxy(req: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|assets/|relay-HVAq/).*)',
+    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|assets/|relay-HVAq/|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp)$).*)',
   ],
 }

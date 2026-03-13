@@ -295,6 +295,27 @@
       "when": 1772914840620,
       "tag": "0041_drop_transcript_content_and_unused_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1773171417320,
+      "tag": "0042_add_invoicing",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1773191359491,
+      "tag": "0043_add_client_state",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1773331349290,
+      "tag": "0044_add_invoice_billing_type",
+      "breakpoints": true
     }
   ]
 }
