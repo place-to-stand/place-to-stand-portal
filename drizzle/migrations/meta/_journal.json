@@ -316,6 +316,13 @@
       "when": 1773331349290,
       "tag": "0044_add_invoice_billing_type",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1773897600000,
+      "tag": "0045_seed_default_terms_template",
+      "breakpoints": true
     }
   ]
 }
