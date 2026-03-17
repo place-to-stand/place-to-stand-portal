@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "idx_leads_contact_email_unique" ON "leads" USING btree ("contact_email" text_ops) WHERE (deleted_at IS NULL AND contact_email IS NOT NULL);

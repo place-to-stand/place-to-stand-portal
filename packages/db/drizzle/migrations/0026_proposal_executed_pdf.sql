@@ -1,0 +1,1 @@
+ALTER TABLE "proposals" ADD COLUMN "executed_pdf_path" text;

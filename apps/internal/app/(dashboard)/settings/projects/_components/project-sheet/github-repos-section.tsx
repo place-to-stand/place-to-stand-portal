@@ -311,8 +311,13 @@ export function GitHubReposSection({
                     <ExternalLink className='text-muted-foreground ml-1 inline h-3 w-3' />
                   </a>
                 </div>
-                <div className='text-muted-foreground pl-6 text-xs'>
-                  {repo.defaultBranch}
+                <div className='text-muted-foreground flex items-center gap-2 pl-6 text-xs'>
+                  <span>{repo.defaultBranch}</span>
+                  {repo.githubAppInstallationId && (
+                    <span className='bg-muted rounded px-1.5 py-0.5 text-[10px] font-medium'>
+                      App
+                    </span>
+                  )}
                 </div>
               </div>
               <Button

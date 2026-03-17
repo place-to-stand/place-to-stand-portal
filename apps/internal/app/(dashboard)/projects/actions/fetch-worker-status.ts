@@ -120,7 +120,7 @@ export async function fetchWorkerStatus(input: {
       repoLink.repoOwner,
       repoLink.repoName,
       deployment.githubIssueNumber,
-      repoLink.oauthConnectionId
+      repoLink.oauthConnectionId ?? undefined
     )
   } catch (error) {
     console.error('Failed to fetch issue comments', error)

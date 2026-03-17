@@ -56,7 +56,8 @@ export async function getReposForProjects(
 export async function linkRepoToProject(
   projectId: string,
   repo: {
-    oauthConnectionId: string
+    oauthConnectionId?: string
+    githubAppInstallationId?: string
     repoOwner: string
     repoName: string
     repoFullName: string
@@ -69,7 +70,8 @@ export async function linkRepoToProject(
     .insert(githubRepoLinks)
     .values({
       projectId,
-      oauthConnectionId: repo.oauthConnectionId,
+      oauthConnectionId: repo.oauthConnectionId ?? null,
+      githubAppInstallationId: repo.githubAppInstallationId ?? null,
       repoOwner: repo.repoOwner,
       repoName: repo.repoName,
       repoFullName: repo.repoFullName,
