@@ -160,9 +160,12 @@ function SortablePhaseItem({
 
   const phaseTitle = useWatch({ control: form.control, name: `phases.${phaseIndex}.title` as const })
 
+  // Watch deliverables from live form state so setValue updates are reflected immediately
+  const watchedDeliverables: string[] = useWatch({ control: form.control, name: `phases.${phaseIndex}.deliverables` as const }) ?? phase.deliverables
+
   // Deliverable IDs use phase's stable field ID + index.
   // Index-based is acceptable here because all inputs are controlled (values from props).
-  const deliverableIds = phase.deliverables.map((_, i) => `${id}-del-${i}`)
+  const deliverableIds = watchedDeliverables.map((_, i) => `${id}-del-${i}`)
 
   // Hoist sensors to component level (not inline in JSX)
   const deliverableSensors = useSensors(
@@ -279,12 +282,12 @@ function SortablePhaseItem({
                     items={deliverableIds}
                     strategy={verticalListSortingStrategy}
                   >
-                    {phase.deliverables.map((deliverable, deliverableIndex) => (
+                    {watchedDeliverables.map((deliverable, deliverableIndex) => (
                       <SortableDeliverableItem
                         key={deliverableIds[deliverableIndex]}
                         id={deliverableIds[deliverableIndex]}
                         value={deliverable}
-                        canRemove={phase.deliverables.length > 1}
+                        canRemove={watchedDeliverables.length > 1}
                         onChange={value => onUpdateDeliverable(deliverableIndex, value)}
                         onRemove={() => onRemoveDeliverable(deliverableIndex)}
                       />
@@ -397,14 +400,15 @@ export function PhasesSection({ form }: PhasesSectionProps) {
 
   const handleUpdateDeliverable = useCallback(
     (phaseIndex: number, deliverableIndex: number, value: string) => {
-      const current = form.getValues(`phases.${phaseIndex}`)
-      if (current) {
-        const newDeliverables = [...current.deliverables]
-        newDeliverables[deliverableIndex] = value
-        update(phaseIndex, { ...current, deliverables: newDeliverables })
-      }
+      // Use setValue instead of update() to avoid replacing the entire phase entry,
+      // which would cause the field array to re-render and the input to lose focus.
+      form.setValue(
+        `phases.${phaseIndex}.deliverables.${deliverableIndex}` as `phases.${number}.deliverables.${number}`,
+        value,
+        { shouldDirty: true }
+      )
     },
-    [form, update]
+    [form]
   )
 
   const handleReorderDeliverables = useCallback(
