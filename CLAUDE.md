@@ -2,33 +2,69 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Monorepo Structure
+
+This is a **Turborepo monorepo** using npm workspaces.
+
+```
+place-to-stand-portal/
+├── apps/
+│   └── internal/          # Admin portal (Next.js, deployed to Vercel)
+│       ├── app/           # Next.js App Router routes
+│       ├── components/    # React components
+│       ├── hooks/         # Custom React hooks
+│       ├── lib/           # Business logic, data layer, utilities
+│       ├── drizzle/       # Database migrations
+│       ├── styles/        # Global CSS
+│       └── public/        # Static assets
+├── packages/              # Shared packages (future: db, auth, github, shared)
+├── supabase/              # Supabase config (stays at root)
+├── turbo.json             # Build orchestration
+├── tsconfig.base.json     # Shared TypeScript config
+└── package.json           # Workspace root
+```
+
+All application code lives in `apps/internal/`. Paths like `lib/`, `app/`, `components/` refer to directories inside `apps/internal/` unless stated otherwise.
+
 ## Commands
 
-### Development
-- `npm run dev` - Start development server with Turbopack
-- `npm run build` - Build for production with Turbopack
+### Development (from repo root)
+- `npm run dev` - Start all apps via Turbo
+- `npm run build` - Build all apps via Turbo
+- `npm run lint` - Lint all apps via Turbo
+- `npm run type-check` - Type-check all apps via Turbo
+
+### Development (from `apps/internal/`)
+- `npm run dev` - Start internal portal with Turbopack
+- `npm run build` - Build internal portal with Turbopack
 - `npm start` - Start production server
 - `npm run lint` - Run ESLint
 - `npm run type-check` - Run TypeScript compiler checks (no emit)
 
 ### Database (Drizzle ORM)
-Ensure `DATABASE_URL` is set in your environment before running these commands.
+Run these from `apps/internal/`. Ensure `DATABASE_URL` is set in your environment.
 
 - `npm run db:pull` - Introspect database schema into schema file (use sparingly, only when DB is source of truth)
 - `npm run db:generate -- --name <change>` - Generate SQL migration from schema edits
 - `npm run db:migrate` - Apply migrations to database
 
 **Migration workflow:**
-1. Update schema files in `lib/db/schema.ts` and `lib/db/relations.ts`
-2. Run `npm run db:generate -- --name descriptive_label`
-3. Review generated SQL in `drizzle/migrations/`
+1. Update schema files in `apps/internal/lib/db/schema.ts` and `apps/internal/lib/db/relations.ts`
+2. Run `npm run db:generate -- --name descriptive_label` from `apps/internal/`
+3. Review generated SQL in `apps/internal/drizzle/migrations/`
 4. Apply locally with `npm run db:migrate`, then in staging/production
 
-The baseline migration (`drizzle/migrations/0000_supabase_baseline.sql`) captures existing Supabase schema. Run `npm run db:migrate` once after configuring `DATABASE_URL` to register existing state.
+The baseline migration (`apps/internal/drizzle/migrations/0000_supabase_baseline.sql`) captures existing Supabase schema. Run `npm run db:migrate` once after configuring `DATABASE_URL` to register existing state.
+
+### Turbo Environment Variables
+Turbo v2 uses strict mode by default — only env vars listed in `turbo.json` are passed to build tasks. When adding a new server-side env var:
+1. Add it to `apps/internal/lib/env.server.ts` schema
+2. Add it to `turbo.json` → `tasks.build.passThroughEnv` (secrets that shouldn't bust cache) or `tasks.build.env` (vars that should invalidate cache)
 
 ## Architecture Overview
 
 ### Tech Stack
+- **Monorepo**: Turborepo with npm workspaces
 - **Framework**: Next.js 16 (App Router) with Turbopack
 - **Database**: PostgreSQL via Supabase with Drizzle ORM
 - **Auth**: Supabase Auth with session-based authentication
@@ -40,7 +76,7 @@ The baseline migration (`drizzle/migrations/0000_supabase_baseline.sql`) capture
 
 ### Route Organization
 ```
-app/
+apps/internal/app/
 ├── (auth)/           # Sign-in, password reset (unauthenticated)
 ├── (dashboard)/      # Protected routes
 │   ├── clients/      # Client management (archive, activity)
@@ -62,7 +98,7 @@ Routes use slug-based patterns: `/projects/[clientSlug]/[projectSlug]/board/[[..
 
 ### Database Schema
 
-**Core tables** (`lib/db/schema.ts`):
+**Core tables** (`apps/internal/lib/db/schema.ts`):
 - `users` - User accounts with roles (ADMIN, CLIENT)
 - `clients` - Client records with billing types (prepaid, net_30)
 - `projects` - Projects with types: CLIENT (tied to clients), PERSONAL (individual), INTERNAL (team)
@@ -81,19 +117,19 @@ Routes use slug-based patterns: `/projects/[clientSlug]/[projectSlug]/board/[[..
 - Soft deletes via `deletedAt` timestamps on all core tables
 - `createdAt`/`updatedAt` on all records
 - PostgreSQL enums for status fields
-- Relations defined in `lib/db/relations.ts`
+- Relations defined in `apps/internal/lib/db/relations.ts`
 - **NO Row Level Security** - access control is handled in the application layer (see below)
 
 ### Data Layer Architecture
 
 **Two-layer approach:**
 
-1. **Queries layer** (`lib/queries/`) - Low-level database operations
+1. **Queries layer** (`apps/internal/lib/queries/`) - Low-level database operations
    - Direct Drizzle queries
    - Minimal business logic
    - Organized by domain: tasks, projects, clients, time-logs, etc.
 
-2. **Data layer** (`lib/data/`) - Business logic assembly
+2. **Data layer** (`apps/internal/lib/data/`) - Business logic assembly
    - Combines multiple queries
    - Enforces permissions
    - Example: `fetchProjectsWithRelations()` calls `fetchBaseProjects()`, then parallel fetches relations, then assembles final structure
@@ -109,9 +145,9 @@ Routes use slug-based patterns: `/projects/[clientSlug]/[projectSlug]/board/[[..
 **CRITICAL: No Row Level Security (RLS)**
 
 This project does NOT use PostgreSQL Row Level Security. All access control is handled in the application layer via:
-- Permission helpers in `lib/auth/permissions.ts`
-- Query functions in `lib/queries/` that enforce scoping
-- Data layer in `lib/data/` that assembles and filters results
+- Permission helpers in `apps/internal/lib/auth/permissions.ts`
+- Query functions in `apps/internal/lib/queries/` that enforce scoping
+- Data layer in `apps/internal/lib/data/` that assembles and filters results
 
 **NEVER:**
 - Add `ENABLE ROW LEVEL SECURITY` to any table
@@ -128,13 +164,13 @@ This project does NOT use PostgreSQL Row Level Security. All access control is h
 
 ### Authentication & Permissions
 
-**Session management** (`lib/auth/session.ts`):
+**Session management** (`apps/internal/lib/auth/session.ts`):
 - `getSession()` - Retrieve Supabase session
 - `getCurrentUser()` - Combine Supabase auth with database user record
 - `requireUser()` - Guard protected routes (throws if unauthenticated)
 - `requireRole()` - Role-based access control
 
-**Permission helpers** (`lib/auth/permissions.ts`):
+**Permission helpers** (`apps/internal/lib/auth/permissions.ts`):
 - `isAdmin(user)` - Boolean role check
 - `assertAdmin(user)` - Throws ForbiddenError if not admin
 - `ensureClientAccess(userId, clientId)` - Verify client membership
@@ -152,7 +188,7 @@ This project does NOT use PostgreSQL Row Level Security. All access control is h
 - Server Actions in `_actions/` directories (marked with `'use server'`)
 - Use TanStack React Query only for client-side mutations and polling
 
-**Providers** (`components/providers/`):
+**Providers** (`apps/internal/components/providers/`):
 - `ReactQueryProvider` - Client-side cache
 - `PostHogProvider` - Analytics
 - `ThemeProvider` - Dark/light mode
@@ -160,7 +196,7 @@ This project does NOT use PostgreSQL Row Level Security. All access control is h
 
 ### Error Handling
 
-Use standardized error classes from `lib/errors/http.ts`:
+Use standardized error classes from `apps/internal/lib/errors/http.ts`:
 - `UnauthorizedError` - 401, user not authenticated
 - `ForbiddenError` - 403, user lacks permission
 - `NotFoundError` - 404, resource not found
@@ -170,8 +206,8 @@ API responses follow `{ ok: boolean, data?: T, error?: string }` pattern.
 ### UI Components
 
 **Component library:**
-- Radix UI primitives in `components/ui/`
-- Custom business components in `components/` organized by feature
+- Radix UI primitives in `apps/internal/components/ui/`
+- Custom business components in `apps/internal/components/` organized by feature
 - Rich text editor: TipTap with extensions (highlight, link, image, typography, etc.)
 - Drag-and-drop: `@dnd-kit` for kanban boards and task ordering
 
@@ -187,15 +223,15 @@ API responses follow `{ ok: boolean, data?: T, error?: string }` pattern.
 - **Bucket: `task-attachments`** - Task files
 
 **Storage utilities:**
-- `lib/storage/avatar.ts` - Upload/delete user avatars
-- `lib/storage/task-attachments.ts` - Upload/delete task files
+- `apps/internal/lib/storage/avatar.ts` - Upload/delete user avatars
+- `apps/internal/lib/storage/task-attachments.ts` - Upload/delete task files
 - Signed URLs generated for secure access
 
 ### Activity System
 
-**Event tracking** (`lib/activity/events/`):
+**Event tracking** (`apps/internal/lib/activity/events/`):
 - Domain-specific event handlers: `tasks.ts`, `projects.ts`, `clients.ts`, `time-logs.ts`, `users.ts`, `hour-blocks.ts`
-- Centralized in `lib/activity/events.ts`
+- Centralized in `apps/internal/lib/activity/events.ts`
 - Activity feed with highlights computation
 - Overview cache for performance (`activity_overview_cache` table)
 
@@ -209,7 +245,7 @@ await logTaskCreated(taskId, userId)
 
 **Configuration:**
 - Never hallucinate API keys; use keys from `.env` file
-- Event tracking via `lib/posthog/client.ts` (client-side) and `lib/posthog/server.ts` (server-side)
+- Event tracking via `apps/internal/lib/posthog/client.ts` (client-side) and `apps/internal/lib/posthog/server.ts` (server-side)
 - Feature flags stored in enums/const objects with UPPERCASE_WITH_UNDERSCORE naming
 - Gate flag-dependent code on value validation checks
 
@@ -269,7 +305,7 @@ Leads are inserted with `WEBSITE` source and appear on `/leads/board` immediatel
 - Server-only imports: Mark with `'server-only'` to prevent client-side execution
 
 **Performance:**
-- React Compiler enabled (`next.config.ts`)
+- React Compiler enabled (`apps/internal/next.config.ts`)
 - Parallel data loading with `Promise.all()`
 - TanStack Virtual for long lists
 - Strategic indexes on foreign keys and filtered columns
@@ -277,38 +313,44 @@ Leads are inserted with `WEBSITE` source and appear on `/leads/board` immediatel
 ## Common Workflows
 
 ### Adding a new task status
-1. Update `taskStatus` enum in `lib/db/schema.ts`
-2. Run `npm run db:generate -- --name add_task_status`
+1. Update `taskStatus` enum in `apps/internal/lib/db/schema.ts`
+2. Run `npm run db:generate -- --name add_task_status` from `apps/internal/`
 3. Review generated migration
 4. Apply: `npm run db:migrate`
 5. Update UI components that reference task statuses
-6. Update `lib/projects/task-status.ts` if status logic changes
+6. Update `apps/internal/lib/projects/task-status.ts` if status logic changes
 
 ### Creating a new protected route
-1. Add page under `app/(dashboard)/your-route/page.tsx`
+1. Add page under `apps/internal/app/(dashboard)/your-route/page.tsx`
 2. Use `requireUser()` or `requireRole()` in Server Component
-3. Fetch data using functions from `lib/data/`
+3. Fetch data using functions from `apps/internal/lib/data/`
 4. Add navigation link if needed
 
 ### Adding a new API endpoint
-1. Create route in `app/api/your-endpoint/route.ts`
+1. Create route in `apps/internal/app/api/your-endpoint/route.ts`
 2. Export handler: `export async function POST(req: Request) { ... }`
 3. Use `getCurrentUser()` for auth
 4. Apply permission checks with `ensureClientAccess()` or `assertAdmin()`
 5. Return standardized responses: `{ ok: true, data }` or `{ ok: false, error }`
 
 ### Creating a new table
-1. Define schema in `lib/db/schema.ts`
-2. Add relations in `lib/db/relations.ts`
-3. Generate migration: `npm run db:generate -- --name table_name`
-4. Review SQL in `drizzle/migrations/`
+1. Define schema in `apps/internal/lib/db/schema.ts`
+2. Add relations in `apps/internal/lib/db/relations.ts`
+3. Generate migration: `npm run db:generate -- --name table_name` from `apps/internal/`
+4. Review SQL in `apps/internal/drizzle/migrations/`
 5. Apply: `npm run db:migrate`
-6. Add query functions in `lib/queries/`
-7. Add data layer functions in `lib/data/`
+6. Add query functions in `apps/internal/lib/queries/`
+7. Add data layer functions in `apps/internal/lib/data/`
+
+### Adding a new server-side env var
+1. Add Zod validation to `apps/internal/lib/env.server.ts`
+2. Add to `turbo.json` → `tasks.build.passThroughEnv` (or `env` if it should bust cache)
+3. Add to Vercel project settings for all required environments
+4. Add to `apps/internal/.env.example`
 
 ### Logging activity events
-1. Create event handler in `lib/activity/events/domain.ts`
-2. Export handler from `lib/activity/events.ts`
+1. Create event handler in `apps/internal/lib/activity/events/domain.ts`
+2. Export handler from `apps/internal/lib/activity/events.ts`
 3. Call handler after mutations: `await logTaskUpdated(taskId, userId, changes)`
 4. Activity appears in feeds automatically
 
@@ -322,7 +364,7 @@ See `AGENTS.md` for comprehensive development practices including:
 
 **Key guardrails from AGENTS.md:**
 - Do not edit `package.json`, lockfiles, or migrations directly
-- Always run `npm run build`, `npm run lint`, `npm run type-check` for touched surfaces
+- Always run `npm run build`, `npm run lint`, `npm run type-check` from the repo root (runs via Turbo) for touched surfaces
 - Prefer existing modules, utilities, and shadcn components before building new
 - Files approaching 300 lines should be split by responsibility
 
