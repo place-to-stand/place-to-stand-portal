@@ -1,0 +1,1 @@
+ALTER TABLE "leads" ALTER COLUMN "overall_score" SET DATA TYPE numeric(5, 2);

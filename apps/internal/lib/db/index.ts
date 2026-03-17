@@ -1,7 +1,6 @@
 import 'server-only'
 
-import { drizzle } from 'drizzle-orm/postgres-js'
-import postgres from 'postgres'
+import { createDb } from '@pts/db/client'
 
 const databaseUrl = process.env.DATABASE_URL
 
@@ -10,20 +9,13 @@ if (!databaseUrl) {
 }
 
 declare global {
-  var __drizzle_postgres__: ReturnType<typeof postgres> | undefined
+  var __drizzle_db__: ReturnType<typeof createDb> | undefined
 }
 
-const client =
-  globalThis.__drizzle_postgres__ ?? postgres(databaseUrl, {
-    prepare: false,
-    max: 20,
-    idle_timeout: 20,
-  })
+export const db = globalThis.__drizzle_db__ ?? createDb(databaseUrl)
 
 if (process.env.NODE_ENV !== 'production') {
-  globalThis.__drizzle_postgres__ = client
+  globalThis.__drizzle_db__ = db
 }
 
-export const db = drizzle(client)
-
-export type DbClient = typeof db
+export type { DbClient } from '@pts/db/client'

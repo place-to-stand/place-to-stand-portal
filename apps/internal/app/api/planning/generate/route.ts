@@ -68,7 +68,7 @@ export async function POST(request: Request) {
       repoLink.repoOwner,
       repoLink.repoName,
       repoLink.defaultBranch,
-      repoLink.oauthConnectionId
+      repoLink.oauthConnectionId ?? undefined
     )
     // Filter to key file types, limit depth
     repoTreePaths = tree.entries
@@ -119,7 +119,7 @@ export async function POST(request: Request) {
     user.id,
     repoLink.repoOwner,
     repoLink.repoName,
-    repoLink.oauthConnectionId
+    repoLink.oauthConnectionId ?? undefined
   )
 
   const nextVersion = currentVersion + 1

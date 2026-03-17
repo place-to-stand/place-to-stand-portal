@@ -28,7 +28,12 @@
         "POSTHOG_PERSONAL_API_KEY",
         "POSTHOG_PROJECT_ID",
         "DISABLE_POSTHOG_UPLOAD_SOURCEMAPS",
-        "LEADS_INTAKE_TOKEN"
+        "LEADS_INTAKE_TOKEN",
+        "GITHUB_APP_ID",
+        "GITHUB_APP_PRIVATE_KEY",
+        "GITHUB_APP_WEBHOOK_SECRET",
+        "GITHUB_APP_CLIENT_ID",
+        "GITHUB_APP_CLIENT_SECRET"
       ]
     },
     "dev": {

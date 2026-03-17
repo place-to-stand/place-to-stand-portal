@@ -1,0 +1,2 @@
+CREATE TYPE "public"."worker_status" AS ENUM('working', 'plan_ready', 'implementing', 'pr_created', 'done_no_changes', 'error');--> statement-breakpoint
+ALTER TABLE "tasks" ADD COLUMN "worker_status" "worker_status";

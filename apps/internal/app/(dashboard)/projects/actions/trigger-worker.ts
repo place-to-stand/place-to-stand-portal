@@ -126,7 +126,7 @@ export async function triggerWorkerPlan(input: {
           portalUrl,
         }),
       },
-      repoLink.oauthConnectionId
+      repoLink.oauthConnectionId ?? undefined
     )
   } catch (error) {
     console.error('Failed to create GitHub issue', error)
@@ -185,7 +185,7 @@ export async function triggerWorkerPlan(input: {
       repoLink.repoName,
       issue.number,
       body,
-      repoLink.oauthConnectionId
+      repoLink.oauthConnectionId ?? undefined
     )
   } catch (error) {
     console.error('Failed to post worker comment', error)
@@ -302,7 +302,7 @@ export async function triggerWorkerImplement(input: {
       repoLink.repoName,
       deployment.githubIssueNumber,
       body,
-      repoLink.oauthConnectionId
+      repoLink.oauthConnectionId ?? undefined
     )
   } catch (error) {
     console.error('Failed to post implement comment', error)
@@ -443,7 +443,7 @@ export async function cancelDeployment(input: {
       repoLink.repoOwner,
       repoLink.repoName,
       deployment.githubIssueNumber,
-      repoLink.oauthConnectionId
+      repoLink.oauthConnectionId ?? undefined
     )
   } catch (error) {
     console.error('Failed to fetch issue comments for cancel', error)
@@ -465,7 +465,7 @@ export async function cancelDeployment(input: {
       repoLink.repoName,
       latestBotComment.id,
       '-1',
-      repoLink.oauthConnectionId
+      repoLink.oauthConnectionId ?? undefined
     )
   } catch (error) {
     console.error('Failed to add cancel reaction', error)
@@ -600,7 +600,7 @@ export async function deployPlan(input: {
       repoLink.repoName,
       'docs/prds',
       undefined,
-      repoLink.oauthConnectionId
+      repoLink.oauthConnectionId ?? undefined
     )
     if (result.type === 'dir') {
       // Parse existing folder names like "001-feature-name"
@@ -650,7 +650,7 @@ export async function deployPlan(input: {
           portalUrl,
         }),
       },
-      repoLink.oauthConnectionId
+      repoLink.oauthConnectionId ?? undefined
     )
   } catch (error) {
     console.error('deployPlan: Failed to create GitHub issue', error)
@@ -706,7 +706,7 @@ export async function deployPlan(input: {
       repoLink.repoName,
       issue.number,
       workerBody,
-      repoLink.oauthConnectionId
+      repoLink.oauthConnectionId ?? undefined
     )
   } catch (error) {
     console.error('deployPlan: Failed to post worker comment', error)

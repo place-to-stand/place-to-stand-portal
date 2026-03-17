@@ -24,6 +24,8 @@ const schema = z.object({
   GITHUB_REDIRECT_URI: z.string().url().optional(),
   STRIPE_SECRET_KEY: z.string().min(1).optional(),
   STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
+  GITHUB_APP_ID: z.string().min(1).optional(),
+  GITHUB_APP_PRIVATE_KEY: z.string().min(1).optional(),
 })
 
 // Helper to convert empty strings to undefined for optional env vars
@@ -51,4 +53,6 @@ export const serverEnv = schema.parse({
   GITHUB_REDIRECT_URI: emptyToUndefined(process.env.GITHUB_REDIRECT_URI),
   STRIPE_SECRET_KEY: emptyToUndefined(process.env.STRIPE_SECRET_KEY),
   STRIPE_WEBHOOK_SECRET: emptyToUndefined(process.env.STRIPE_WEBHOOK_SECRET),
+  GITHUB_APP_ID: emptyToUndefined(process.env.GITHUB_APP_ID),
+  GITHUB_APP_PRIVATE_KEY: emptyToUndefined(process.env.GITHUB_APP_PRIVATE_KEY),
 })
