@@ -1,5 +1,7 @@
 export const dynamic = 'force-dynamic'
 
+import Link from 'next/link'
+
 import { requireClientUser } from '@/lib/auth/session'
 
 export default async function PortalLayout({
@@ -18,18 +20,18 @@ export default async function PortalLayout({
               Place to Stand
             </span>
             <nav className="flex items-center gap-2">
-              <a
+              <Link
                 href="/"
                 className="rounded-md px-3 py-1.5 text-sm text-foreground/70 hover:bg-foreground/5 hover:text-foreground"
               >
                 Projects
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/github/setup"
                 className="rounded-md px-3 py-1.5 text-sm text-foreground/70 hover:bg-foreground/5 hover:text-foreground"
               >
                 GitHub
-              </a>
+              </Link>
             </nav>
           </div>
           <div className="flex items-center gap-2">

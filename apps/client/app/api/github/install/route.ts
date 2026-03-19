@@ -17,7 +17,7 @@ export async function GET() {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
   }
 
-  const env = getEnv()
+  getEnv() // validate env vars are present
   const state = nanoid(32)
 
   // Store state in a signed cookie for CSRF verification in callback

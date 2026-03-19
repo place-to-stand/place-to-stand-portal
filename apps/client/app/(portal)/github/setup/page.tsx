@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { and, eq, isNull } from 'drizzle-orm'
+import Image from 'next/image'
 
 import { db } from '@/lib/db'
 import { githubAppInstallations, clientMembers } from '@pts/db/schema'
@@ -62,9 +63,11 @@ export default async function GitHubSetupPage() {
               className="flex items-center gap-4 rounded-lg border border-foreground/10 p-4"
             >
               {inst.accountAvatarUrl && (
-                <img
+                <Image
                   src={inst.accountAvatarUrl}
                   alt={inst.accountLogin}
+                  width={40}
+                  height={40}
                   className="h-10 w-10 rounded-full"
                 />
               )}

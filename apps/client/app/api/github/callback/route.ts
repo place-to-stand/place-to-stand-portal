@@ -23,8 +23,6 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const installationId = searchParams.get('installation_id')
   const state = searchParams.get('state')
-  const setupAction = searchParams.get('setup_action') // 'install' | 'update'
-
   if (!installationId || !state) {
     return NextResponse.redirect(
       new URL('/github/setup?error=missing_params', request.url)

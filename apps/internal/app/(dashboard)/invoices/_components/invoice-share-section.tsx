@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { Copy, Check, Link2, Link2Off } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -29,14 +29,13 @@ export function InvoiceShareSection({
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [currentToken, setCurrentToken] = useState(shareToken)
-  const [currentEnabled, setCurrentEnabled] = useState(shareEnabled)
+  // Track local overrides; null means "use prop value"
+  const [tokenOverride, setTokenOverride] = useState<string | null>(null)
+  const [enabledOverride, setEnabledOverride] = useState<boolean | null>(null)
   const [showSendPrompt, setShowSendPrompt] = useState(false)
 
-  useEffect(() => {
-    setCurrentToken(shareToken)
-    setCurrentEnabled(shareEnabled)
-  }, [shareToken, shareEnabled])
+  const currentToken = tokenOverride ?? shareToken
+  const currentEnabled = enabledOverride ?? shareEnabled
 
   const shareUrl = currentToken
     ? `${typeof window !== 'undefined' ? window.location.origin : ''}/share/invoices/${currentToken}`
@@ -52,8 +51,8 @@ export function InvoiceShareSection({
       })
       const data = await res.json()
       if (data.ok) {
-        setCurrentToken(data.data.shareToken)
-        setCurrentEnabled(true)
+        setTokenOverride(data.data.shareToken)
+        setEnabledOverride(true)
         onShareStateChange?.(true)
         toast({
           title: 'Sharing enabled',
@@ -78,7 +77,7 @@ export function InvoiceShareSection({
     } finally {
       setIsLoading(false)
     }
-  }, [invoiceId, toast])
+  }, [invoiceId, currentToken, invoiceStatus, onSendInvoice, onShareStateChange, toast])
 
   const handleDisableSharing = useCallback(async () => {
     setIsLoading(true)
@@ -88,7 +87,7 @@ export function InvoiceShareSection({
       })
       const data = await res.json()
       if (data.ok) {
-        setCurrentEnabled(false)
+        setEnabledOverride(false)
         onShareStateChange?.(false)
         toast({ title: 'Sharing disabled' })
       } else {
@@ -107,7 +106,7 @@ export function InvoiceShareSection({
     } finally {
       setIsLoading(false)
     }
-  }, [invoiceId, toast])
+  }, [invoiceId, onShareStateChange, toast])
 
   const handleCopy = useCallback(() => {
     if (!shareUrl) return

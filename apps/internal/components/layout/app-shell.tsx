@@ -30,6 +30,21 @@ type HeaderContextValue = {
 
 const HeaderContext = createContext<HeaderContextValue | null>(null)
 
+type SidebarCountsContextValue = {
+  inboxTriageCount: number
+  refreshCounts: () => Promise<void>
+}
+
+const SidebarCountsContext = createContext<SidebarCountsContextValue | null>(null)
+
+export function useSidebarCounts() {
+  const context = useContext(SidebarCountsContext)
+  if (!context) {
+    throw new Error('useSidebarCounts must be used within AppShell')
+  }
+  return context
+}
+
 export function useAppShellHeader() {
   const context = useContext(HeaderContext)
 
@@ -53,9 +68,27 @@ export function AppShellHeader({ children }: { children: ReactNode }) {
   return null
 }
 
-export function AppShell({ user, inboxTriageCount = 0, children }: Props) {
+export function AppShell({ user, inboxTriageCount: initialInboxTriageCount = 0, children }: Props) {
   const [headerContent, setHeaderContent] = useState<ReactNode>(null)
+  const [inboxTriageCount, setInboxTriageCount] = useState(initialInboxTriageCount)
   const pathname = usePathname()
+
+  const refreshCounts = useCallback(async () => {
+    try {
+      const res = await fetch('/api/sidebar-counts')
+      if (res.ok) {
+        const data = await res.json()
+        setInboxTriageCount(data.inboxTriageCount)
+      }
+    } catch {
+      // Silent — background update, no need to surface errors
+    }
+  }, [])
+
+  const sidebarCountsValue = useMemo(
+    () => ({ inboxTriageCount, refreshCounts }),
+    [inboxTriageCount, refreshCounts]
+  )
 
   const currentNav = useMemo(() => {
     const matchesPath = (target: string) =>
@@ -92,24 +125,26 @@ export function AppShell({ user, inboxTriageCount = 0, children }: Props) {
   )
 
   return (
-    <div className='bg-muted flex h-screen overflow-hidden'>
-      <Sidebar user={user} inboxTriageCount={inboxTriageCount} />
-      <HeaderContext.Provider value={headerContextValue}>
-        <div className='flex min-h-0 min-w-0 flex-1 flex-col'>
-          <header className='bg-background flex flex-wrap items-center gap-4 border-b px-4 py-4 sm:px-6'>
-            {Icon && (
-              <div className='bg-muted flex items-center justify-center rounded-md border p-2'>
-                <Icon className='text-muted-foreground h-5 w-5' />
+    <SidebarCountsContext.Provider value={sidebarCountsValue}>
+      <div className='bg-muted flex h-screen overflow-hidden'>
+        <Sidebar user={user} inboxTriageCount={inboxTriageCount} />
+        <HeaderContext.Provider value={headerContextValue}>
+          <div className='flex min-h-0 min-w-0 flex-1 flex-col'>
+            <header className='bg-background flex flex-wrap items-center gap-4 border-b px-4 py-4 sm:px-6'>
+              {Icon && (
+                <div className='bg-muted flex items-center justify-center rounded-md border p-2'>
+                  <Icon className='text-muted-foreground h-5 w-5' />
+                </div>
+              )}
+              <div className='min-w-0 flex-1'>{headerContent}</div>
+              <div className='md:hidden'>
+                <UserMenu user={user} />
               </div>
-            )}
-            <div className='min-w-0 flex-1'>{headerContent}</div>
-            <div className='md:hidden'>
-              <UserMenu user={user} />
-            </div>
-          </header>
-          <main className='flex-1 overflow-y-auto p-4 sm:p-6'>{children}</main>
-        </div>
-      </HeaderContext.Provider>
-    </div>
+            </header>
+            <main className='flex-1 overflow-y-auto p-4 sm:p-6'>{children}</main>
+          </div>
+        </HeaderContext.Provider>
+      </div>
+    </SidebarCountsContext.Provider>
   )
 }

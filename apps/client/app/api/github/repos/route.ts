@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server'
 import { and, eq, isNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { githubAppInstallations, clientMembers } from '@pts/db/schema'
+import { githubAppInstallations } from '@pts/db/schema'
 import { getCurrentUser } from '@/lib/auth/session'
-import { ensureClientAccess, isAdmin } from '@/lib/auth/permissions'
+import { ensureClientAccess } from '@/lib/auth/permissions'
 import { getEnv } from '@/lib/env.server'
 import { listInstallationRepos } from '@pts/github/app-client'
 

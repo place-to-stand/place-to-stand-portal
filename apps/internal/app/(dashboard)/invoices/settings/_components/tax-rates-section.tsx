@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useTransition } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Pencil, Plus } from 'lucide-react'
@@ -83,6 +83,9 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
       isActive: true,
     },
   })
+
+  const isActive = useWatch({ control: form.control, name: 'isActive' })
+  const watchedState = useWatch({ control: form.control, name: 'state' })
 
   const { requestConfirmation, dialog: discardDialog } =
     useUnsavedChangesWarning({
@@ -276,7 +279,7 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
               <Switch
                 id='tax-is-active'
                 className='data-[state=checked]:bg-emerald-600'
-                checked={form.watch('isActive')}
+                checked={isActive}
                 onCheckedChange={(checked: boolean) =>
                   form.setValue('isActive', checked, { shouldDirty: true })
                 }
@@ -289,7 +292,7 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
             <div className='space-y-2'>
               <Label htmlFor='tax-state'>State</Label>
               <Select
-                value={form.watch('state')}
+                value={watchedState}
                 onValueChange={value => form.setValue('state', value, { shouldValidate: true, shouldDirty: true })}
               >
                 <SelectTrigger id='tax-state'>

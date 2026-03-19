@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useMemo, useTransition } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Pencil, Plus } from 'lucide-react'
@@ -138,6 +138,9 @@ export function ProductCatalogSection({
       minQuantity: '',
     },
   })
+
+  const isActive = useWatch({ control: form.control, name: 'isActive' })
+  const createsHourBlockDefault = useWatch({ control: form.control, name: 'createsHourBlockDefault' })
 
   const { requestConfirmation, dialog: discardDialog } =
     useUnsavedChangesWarning({
@@ -349,7 +352,7 @@ export function ProductCatalogSection({
               <Switch
                 id='product-is-active'
                 className='data-[state=checked]:bg-emerald-600'
-                checked={form.watch('isActive')}
+                checked={isActive}
                 onCheckedChange={(checked: boolean) =>
                   form.setValue('isActive', checked, { shouldDirty: true })
                 }
@@ -426,7 +429,7 @@ export function ProductCatalogSection({
               <Checkbox
                 id='product-creates-hour-block'
                 className='mt-0.5'
-                checked={form.watch('createsHourBlockDefault')}
+                checked={createsHourBlockDefault}
                 onCheckedChange={(checked: boolean) =>
                   form.setValue('createsHourBlockDefault', checked === true, { shouldDirty: true })
                 }
