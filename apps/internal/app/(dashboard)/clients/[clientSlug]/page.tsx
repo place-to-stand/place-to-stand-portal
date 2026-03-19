@@ -106,6 +106,7 @@ export default async function ClientDetailPage({
       name: contacts.name,
       phone: contacts.phone,
       createdBy: contacts.createdBy,
+      userId: contacts.userId,
       createdAt: contacts.createdAt,
       updatedAt: contacts.updatedAt,
       deletedAt: contacts.deletedAt,

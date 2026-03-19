@@ -330,6 +330,13 @@
       "when": 1773779119895,
       "tag": "0046_add_github_app_installations",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1773997600000,
+      "tag": "0047_add_onboarding_and_contact_user_link",
+      "breakpoints": true
     }
   ]
 }

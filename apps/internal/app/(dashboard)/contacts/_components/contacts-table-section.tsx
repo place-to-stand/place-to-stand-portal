@@ -2,6 +2,7 @@
 
 import {
   Archive,
+  Building2,
   Contact,
   Mail,
   Pencil,
@@ -32,6 +33,7 @@ export type ContactsTableSectionProps = {
   onRequestDelete: (contact: ContactsTableContact) => void
   onRestore: (contact: ContactsTableContact) => void
   onRequestDestroy: (contact: ContactsTableContact) => void
+  onRequestPromote: (contact: ContactsTableContact) => void
   isPending: boolean
   pendingReason: string
   pendingDeleteId: string | null
@@ -47,6 +49,7 @@ export function ContactsTableSection({
   onRequestDelete,
   onRestore,
   onRequestDestroy,
+  onRequestPromote,
   isPending,
   pendingReason,
   pendingDeleteId,
@@ -103,6 +106,13 @@ export function ContactsTableSection({
             const showSoftDelete = mode === 'active'
             const showRestore = mode === 'archive'
             const showDestroy = mode === 'archive'
+            const showPromote =
+              mode === 'active' &&
+              contact.metrics.totalClients === 0 &&
+              !contact.userId
+
+            const promoteDisabled = isDeleting || isRestoring || isDestroying
+            const promoteDisabledReason = promoteDisabled ? pendingReason : null
 
             return (
               <TableRow
@@ -155,6 +165,22 @@ export function ContactsTableSection({
                           disabled={editDisabled}
                         >
                           <Pencil className='h-4 w-4' />
+                        </Button>
+                      </DisabledFieldTooltip>
+                    ) : null}
+                    {showPromote ? (
+                      <DisabledFieldTooltip
+                        disabled={promoteDisabled}
+                        reason={promoteDisabledReason}
+                      >
+                        <Button
+                          variant='outline'
+                          size='icon'
+                          onClick={() => onRequestPromote(contact)}
+                          title='Create client from contact'
+                          disabled={promoteDisabled}
+                        >
+                          <Building2 className='h-4 w-4' />
                         </Button>
                       </DisabledFieldTooltip>
                     ) : null}

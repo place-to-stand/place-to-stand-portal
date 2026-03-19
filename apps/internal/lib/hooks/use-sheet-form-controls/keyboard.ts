@@ -27,6 +27,7 @@ export function useHistoryKeyboardShortcuts({
     }
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (!event.key) return
       const key = event.key.toLowerCase()
       const hasMeta = event.metaKey
       const hasCtrl = event.ctrlKey

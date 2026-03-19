@@ -1,7 +1,25 @@
 import { importPKCS8, SignJWT } from 'jose'
+import { createPrivateKey } from 'node:crypto'
 import type { InstallationToken, GitHubInstallation } from './types'
 
 const GITHUB_API_BASE = 'https://api.github.com'
+
+/**
+ * Import a PEM private key that may be PKCS#1 (RSA PRIVATE KEY) or PKCS#8 (PRIVATE KEY).
+ * GitHub App keys are generated as PKCS#1, but jose's importPKCS8 requires PKCS#8.
+ */
+async function importPrivateKey(pem: string) {
+  if (pem.includes('BEGIN PRIVATE KEY')) {
+    return importPKCS8(pem, 'RS256')
+  }
+
+  // Convert PKCS#1 to PKCS#8 via Node crypto
+  const keyObject = createPrivateKey({ key: pem, format: 'pem' })
+  const pkcs8Pem = keyObject
+    .export({ type: 'pkcs8', format: 'pem' })
+    .toString()
+  return importPKCS8(pkcs8Pem, 'RS256')
+}
 
 /**
  * Generate a JWT for GitHub App authentication.
@@ -15,7 +33,7 @@ export async function generateAppJwt(
   const privateKeyPem = Buffer.from(privateKeyBase64, 'base64').toString(
     'utf-8'
   )
-  const privateKey = await importPKCS8(privateKeyPem, 'RS256')
+  const privateKey = await importPrivateKey(privateKeyPem)
 
   const now = Math.floor(Date.now() / 1000)
 

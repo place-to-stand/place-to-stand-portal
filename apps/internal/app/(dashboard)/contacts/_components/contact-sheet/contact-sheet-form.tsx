@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type React from 'react'
-import { Archive, Redo2, Undo2 } from 'lucide-react'
+import { Archive, Building2, Check, Redo2, Send, Undo2 } from 'lucide-react'
 import type { UseFormReturn } from 'react-hook-form'
 
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
@@ -57,6 +58,15 @@ type ContactSheetFormProps = {
   onClientPickerOpenChange: (open: boolean) => void
   onAddClient: (client: ContactClientOption) => void
   onRemoveClient: (client: ContactClientOption) => void
+  // Promote to client props
+  promoteDisabled: boolean
+  promoteDisabledReason: string | null
+  onRequestPromote: () => void
+  // Portal invite props
+  hasPortalAccess: boolean
+  inviteDisabled: boolean
+  inviteDisabledReason: string | null
+  onRequestInvite: () => void
 }
 
 export function ContactSheetForm({
@@ -81,6 +91,13 @@ export function ContactSheetForm({
   onClientPickerOpenChange,
   onAddClient,
   onRemoveClient,
+  promoteDisabled,
+  promoteDisabledReason,
+  onRequestPromote,
+  hasPortalAccess,
+  inviteDisabled,
+  inviteDisabledReason,
+  onRequestInvite,
 }: ContactSheetFormProps) {
   const handleSave = useCallback(
     () => form.handleSubmit(onSubmit)(),
@@ -214,6 +231,56 @@ export function ContactSheetForm({
             onRequestRemoval={onRemoveClient}
           />
         </div>
+        {isEditing && selectedClients.length === 0 && !hasPortalAccess ? (
+          <div>
+            <DisabledFieldTooltip
+              disabled={promoteDisabled}
+              reason={promoteDisabledReason}
+            >
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                disabled={promoteDisabled}
+                onClick={onRequestPromote}
+                className='gap-1.5'
+              >
+                <Building2 className='h-3.5 w-3.5' />
+                Create Client
+              </Button>
+            </DisabledFieldTooltip>
+          </div>
+        ) : null}
+        {isEditing && selectedClients.length > 0 ? (
+          <div className='space-y-2'>
+            <FormLabel>Portal Access</FormLabel>
+            {hasPortalAccess ? (
+              <Badge variant='secondary' className='gap-1.5'>
+                <Check className='h-3 w-3' />
+                Portal access
+              </Badge>
+            ) : (
+              <div>
+                <DisabledFieldTooltip
+                  disabled={inviteDisabled}
+                  reason={inviteDisabledReason}
+                >
+                  <Button
+                    type='button'
+                    variant='outline'
+                    size='sm'
+                    disabled={inviteDisabled}
+                    onClick={onRequestInvite}
+                    className='gap-1.5'
+                  >
+                    <Send className='h-3.5 w-3.5' />
+                    Invite to Portal
+                  </Button>
+                </DisabledFieldTooltip>
+              </div>
+            )}
+          </div>
+        ) : null}
         {feedback ? <p className={FEEDBACK_CLASSES}>{feedback}</p> : null}
         <div className='border-border/40 bg-muted/95 supports-backdrop-filter:bg-muted/90 fixed right-0 bottom-0 z-50 w-full border-t shadow-lg backdrop-blur sm:max-w-lg'>
           <div className='flex w-full items-center justify-between gap-3 px-6 py-4'>

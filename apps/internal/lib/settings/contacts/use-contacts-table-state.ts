@@ -18,6 +18,7 @@ export type ContactsTableContact = {
   email: string
   name: string
   phone: string | null
+  userId: string | null
   createdAt: string
   updatedAt: string
   deletedAt: string | null

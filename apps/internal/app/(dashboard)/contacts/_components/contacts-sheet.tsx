@@ -13,6 +13,8 @@ import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warnin
 import {
   saveContact,
   softDeleteContact,
+  inviteContactToPortal,
+  promoteContactToClient,
   getContactSheetData,
   syncContactClients,
 } from '../actions'
@@ -21,6 +23,7 @@ import type { ContactClientOption } from './contact-sheet/contact-client-picker'
 
 import { ContactSheetHeader } from './contact-sheet/contact-sheet-header'
 import { ContactSheetForm } from './contact-sheet/contact-sheet-form'
+import { PromoteToClientDialog } from './contact-sheet/promote-to-client-dialog'
 
 const contactFormSchema = z.object({
   email: z.string().email({ message: 'Valid email is required' }),
@@ -51,6 +54,8 @@ type ContactsSheetProps = {
 
 const ARCHIVE_CONTACT_DIALOG_TITLE = 'Archive contact?'
 const ARCHIVE_CONTACT_CONFIRM_LABEL = 'Archive'
+const INVITE_DIALOG_TITLE = 'Invite to Portal?'
+const INVITE_DIALOG_CONFIRM_LABEL = 'Send Invite'
 
 function getArchiveContactDialogDescription(displayName: string) {
   return `Archiving ${displayName} hides it from active views but preserves the record.`
@@ -73,6 +78,8 @@ export function ContactsSheet({
   const [isPending, startTransition] = useTransition()
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false)
+  const [isPromoteDialogOpen, setIsPromoteDialogOpen] = useState(false)
   const [isClientPickerOpen, setIsClientPickerOpen] = useState(false)
 
   // Client data state - can come from props or be fetched
@@ -295,6 +302,115 @@ export function ContactsSheet({
     setIsDeleteDialogOpen(false)
   }, [isPending])
 
+  const hasPortalAccess = Boolean(
+    contact && 'userId' in contact && contact.userId
+  )
+
+  const inviteDisabled =
+    isPending || !isEditing || hasPortalAccess || selectedClients.length === 0
+  const inviteDisabledReason = isPending
+    ? pendingReason
+    : !isEditing
+      ? 'Save the contact first.'
+      : hasPortalAccess
+        ? 'This contact already has portal access.'
+        : selectedClients.length === 0
+          ? 'Link at least one client before inviting.'
+          : null
+
+  const handleRequestInvite = useCallback(() => {
+    if (inviteDisabled) return
+    setIsInviteDialogOpen(true)
+  }, [inviteDisabled])
+
+  const handleCancelInvite = useCallback(() => {
+    if (isPending) return
+    setIsInviteDialogOpen(false)
+  }, [isPending])
+
+  const promoteDisabled =
+    isPending || !isEditing || hasPortalAccess || selectedClients.length > 0
+  const promoteDisabledReason = isPending
+    ? pendingReason
+    : !isEditing
+      ? 'Save the contact first.'
+      : hasPortalAccess
+        ? 'This contact already has portal access.'
+        : selectedClients.length > 0
+          ? 'This contact already has linked clients.'
+          : null
+
+  const handleRequestPromote = useCallback(() => {
+    if (promoteDisabled) return
+    setIsPromoteDialogOpen(true)
+  }, [promoteDisabled])
+
+  const handlePromoteSubmit = useCallback(
+    (values: { clientName: string; projectName: string; billingType: 'prepaid' | 'net_30' }) => {
+      const contactId = contact?.id
+      if (!contactId || isPending) {
+        setIsPromoteDialogOpen(false)
+        return
+      }
+
+      setIsPromoteDialogOpen(false)
+      startTransition(async () => {
+        const result = await promoteContactToClient({
+          contactId,
+          clientName: values.clientName,
+          projectName: values.projectName,
+          billingType: values.billingType,
+        })
+
+        if (result.error) {
+          setFeedback(result.error)
+          toast({
+            title: 'Unable to create client',
+            description: result.error,
+            variant: 'destructive',
+          })
+          return
+        }
+
+        toast({
+          title: 'Client created',
+          description: `${values.clientName} has been created with an onboarding project. A portal invite has been sent.`,
+        })
+        onComplete()
+      })
+    },
+    [contact?.id, isPending, toast, onComplete]
+  )
+
+  const handleConfirmInvite = useCallback(() => {
+    const contactId = contact?.id
+    if (!contactId || isPending) {
+      setIsInviteDialogOpen(false)
+      return
+    }
+
+    setIsInviteDialogOpen(false)
+    startTransition(async () => {
+      const result = await inviteContactToPortal(contactId)
+
+      if (result.error) {
+        setFeedback(result.error)
+        toast({
+          title: 'Unable to invite contact',
+          description: result.error,
+          variant: 'destructive',
+        })
+        return
+      }
+
+      toast({
+        title: 'Invitation sent',
+        description: `${contact?.name || contact?.email || 'Contact'} has been invited to the portal.`,
+      })
+      onComplete()
+    })
+  }, [contact, isPending, toast, onComplete])
+
   const handleConfirmDelete = useCallback(() => {
     const contactId = contact?.id
     const displayName = contact?.name || contact?.email || 'this contact'
@@ -381,6 +497,13 @@ export function ContactsSheet({
             onClientPickerOpenChange={setIsClientPickerOpen}
             onAddClient={handleAddClient}
             onRemoveClient={handleRemoveClient}
+            promoteDisabled={promoteDisabled}
+            promoteDisabledReason={promoteDisabledReason}
+            onRequestPromote={handleRequestPromote}
+            hasPortalAccess={hasPortalAccess}
+            inviteDisabled={inviteDisabled}
+            inviteDisabledReason={inviteDisabledReason}
+            onRequestInvite={handleRequestInvite}
           />
         </SheetContent>
       </Sheet>
@@ -393,6 +516,22 @@ export function ContactsSheet({
         confirmDisabled={isPending}
         onCancel={handleCancelDelete}
         onConfirm={handleConfirmDelete}
+      />
+      <ConfirmDialog
+        open={isInviteDialogOpen}
+        title={INVITE_DIALOG_TITLE}
+        description={`This will create a portal account for ${contactDisplayName} and send them an email with login credentials.`}
+        confirmLabel={INVITE_DIALOG_CONFIRM_LABEL}
+        confirmDisabled={isPending}
+        onCancel={handleCancelInvite}
+        onConfirm={handleConfirmInvite}
+      />
+      <PromoteToClientDialog
+        open={isPromoteDialogOpen}
+        onOpenChange={setIsPromoteDialogOpen}
+        contactName={contactDisplayName}
+        isPending={isPending}
+        onSubmit={handlePromoteSubmit}
       />
       {unsavedChangesDialog}
     </>

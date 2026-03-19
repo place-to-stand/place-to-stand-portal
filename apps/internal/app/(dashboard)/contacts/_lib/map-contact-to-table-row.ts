@@ -9,6 +9,7 @@ export function mapContactToTableRow(
     email: item.email,
     name: item.name,
     phone: item.phone,
+    userId: item.userId,
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
     deletedAt: item.deletedAt,

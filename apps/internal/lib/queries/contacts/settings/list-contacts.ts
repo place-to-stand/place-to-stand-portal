@@ -114,6 +114,7 @@ function mapContactMetrics(
     name: row.name,
     phone: row.phone,
     createdBy: row.createdBy,
+    userId: row.userId,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
