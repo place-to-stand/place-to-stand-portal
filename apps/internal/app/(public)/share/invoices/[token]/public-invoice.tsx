@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { loadStripe } from '@stripe/stripe-js'
 import {
   Elements,
@@ -132,32 +132,29 @@ export function PublicInvoice({
   const isPayable =
     !isPaid && (invoice.status === 'SENT' || invoice.status === 'VIEWED')
 
-  const fetchClientSecret = useCallback(async () => {
-    if (clientSecret || isFetchingSecret) return
+  const fetchedRef = useRef(false)
+
+  useEffect(() => {
+    if (!isPayable || fetchedRef.current) return
+    fetchedRef.current = true
     setIsFetchingSecret(true)
 
-    try {
-      const res = await fetch(`/api/public/invoices/${shareToken}/checkout`, {
-        method: 'POST',
+    fetch(`/api/public/invoices/${shareToken}/checkout`, { method: 'POST' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.ok || !data.data?.clientSecret) {
+          setCheckoutError(data.error ?? 'Unable to start checkout.')
+          return
+        }
+        setClientSecret(data.data.clientSecret)
       })
-      const data = await res.json()
-
-      if (!data.ok || !data.data?.clientSecret) {
-        setCheckoutError(data.error ?? 'Unable to start checkout.')
-        return
-      }
-
-      setClientSecret(data.data.clientSecret)
-    } catch {
-      setCheckoutError('Unable to connect to payment provider.')
-    } finally {
-      setIsFetchingSecret(false)
-    }
-  }, [shareToken, clientSecret, isFetchingSecret])
-
-  if (isPayable && !clientSecret && !checkoutError && !isFetchingSecret) {
-    fetchClientSecret()
-  }
+      .catch(() => {
+        setCheckoutError('Unable to connect to payment provider.')
+      })
+      .finally(() => {
+        setIsFetchingSecret(false)
+      })
+  }, [isPayable, shareToken])
 
   const returnUrl =
     typeof window !== 'undefined'
