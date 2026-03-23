@@ -180,6 +180,7 @@ export function ContactsManagementTable({
         onOpenChange={open => { if (!open) setPromoteTarget(null) }}
         contactName={promoteTarget?.name || promoteTarget?.email || ''}
         contactEmail={promoteTarget?.email || ''}
+        linkedClientCount={promoteTarget?.metrics.totalClients ?? 0}
         isPending={isPromotePending}
         onConfirm={handleConfirmPromote}
       />

@@ -13,7 +13,6 @@ import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warnin
 import {
   saveContact,
   softDeleteContact,
-  inviteContactToPortal,
   promoteContactToUser,
   getContactSheetData,
   syncContactClients,
@@ -54,8 +53,6 @@ type ContactsSheetProps = {
 
 const ARCHIVE_CONTACT_DIALOG_TITLE = 'Archive contact?'
 const ARCHIVE_CONTACT_CONFIRM_LABEL = 'Archive'
-const INVITE_DIALOG_TITLE = 'Invite to Portal?'
-const INVITE_DIALOG_CONFIRM_LABEL = 'Send Invite'
 
 function getArchiveContactDialogDescription(displayName: string) {
   return `Archiving ${displayName} hides it from active views but preserves the record.`
@@ -78,7 +75,6 @@ export function ContactsSheet({
   const [isPending, startTransition] = useTransition()
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false)
   const [isPromoteDialogOpen, setIsPromoteDialogOpen] = useState(false)
   const [isClientPickerOpen, setIsClientPickerOpen] = useState(false)
 
@@ -306,28 +302,6 @@ export function ContactsSheet({
     contact && 'userId' in contact && contact.userId
   )
 
-  const inviteDisabled =
-    isPending || !isEditing || hasPortalAccess || selectedClients.length === 0
-  const inviteDisabledReason = isPending
-    ? pendingReason
-    : !isEditing
-      ? 'Save the contact first.'
-      : hasPortalAccess
-        ? 'This contact already has portal access.'
-        : selectedClients.length === 0
-          ? 'Link at least one client before inviting.'
-          : null
-
-  const handleRequestInvite = useCallback(() => {
-    if (inviteDisabled) return
-    setIsInviteDialogOpen(true)
-  }, [inviteDisabled])
-
-  const handleCancelInvite = useCallback(() => {
-    if (isPending) return
-    setIsInviteDialogOpen(false)
-  }, [isPending])
-
   const promoteDisabled = isPending || !isEditing || hasPortalAccess
   const promoteDisabledReason = isPending
     ? pendingReason
@@ -366,35 +340,6 @@ export function ContactsSheet({
       toast({
         title: 'Portal account created',
         description: `A portal invite has been sent to ${contact?.name || contact?.email || 'the contact'}.`,
-      })
-      onComplete()
-    })
-  }, [contact, isPending, toast, onComplete])
-
-  const handleConfirmInvite = useCallback(() => {
-    const contactId = contact?.id
-    if (!contactId || isPending) {
-      setIsInviteDialogOpen(false)
-      return
-    }
-
-    setIsInviteDialogOpen(false)
-    startTransition(async () => {
-      const result = await inviteContactToPortal(contactId)
-
-      if (result.error) {
-        setFeedback(result.error)
-        toast({
-          title: 'Unable to invite contact',
-          description: result.error,
-          variant: 'destructive',
-        })
-        return
-      }
-
-      toast({
-        title: 'Invitation sent',
-        description: `${contact?.name || contact?.email || 'Contact'} has been invited to the portal.`,
       })
       onComplete()
     })
@@ -490,9 +435,6 @@ export function ContactsSheet({
             promoteDisabledReason={promoteDisabledReason}
             onRequestPromote={handleRequestPromote}
             hasPortalAccess={hasPortalAccess}
-            inviteDisabled={inviteDisabled}
-            inviteDisabledReason={inviteDisabledReason}
-            onRequestInvite={handleRequestInvite}
           />
         </SheetContent>
       </Sheet>
@@ -506,20 +448,12 @@ export function ContactsSheet({
         onCancel={handleCancelDelete}
         onConfirm={handleConfirmDelete}
       />
-      <ConfirmDialog
-        open={isInviteDialogOpen}
-        title={INVITE_DIALOG_TITLE}
-        description={`This will create a portal account for ${contactDisplayName} and send them an email with login credentials.`}
-        confirmLabel={INVITE_DIALOG_CONFIRM_LABEL}
-        confirmDisabled={isPending}
-        onCancel={handleCancelInvite}
-        onConfirm={handleConfirmInvite}
-      />
       <PromoteToUserDialog
         open={isPromoteDialogOpen}
         onOpenChange={setIsPromoteDialogOpen}
         contactName={contactDisplayName}
         contactEmail={contact?.email ?? ''}
+        linkedClientCount={selectedClients.length}
         isPending={isPending}
         onConfirm={handleConfirmPromote}
       />

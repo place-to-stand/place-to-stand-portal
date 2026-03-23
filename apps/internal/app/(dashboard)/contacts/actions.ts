@@ -12,7 +12,6 @@ import {
 } from '@/lib/settings/contacts/contact-service'
 import {
   destroyContactMutation,
-  inviteContactToPortalMutation,
   promoteContactToUserMutation,
   restoreContactMutation,
   saveContactMutation,
@@ -73,26 +72,6 @@ async function runContactMutation<TInput>(
     for (const path of CONTACT_ROUTES_TO_REVALIDATE) {
       revalidatePath(path)
     }
-  }
-
-  return result
-}
-
-export async function inviteContactToPortal(
-  contactId: string
-): Promise<ContactActionResult> {
-  const user = await requireUser()
-  const mutationResult = await inviteContactToPortalMutation(
-    { user },
-    { contactId }
-  )
-  const { didMutate, ...result } = mutationResult
-
-  if (didMutate) {
-    for (const path of CONTACT_ROUTES_TO_REVALIDATE) {
-      revalidatePath(path)
-    }
-    revalidatePath('/settings/users')
   }
 
   return result

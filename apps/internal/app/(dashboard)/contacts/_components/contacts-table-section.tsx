@@ -108,7 +108,6 @@ export function ContactsTableSection({
             const showDestroy = mode === 'archive'
             const showPromote =
               mode === 'active' &&
-              contact.metrics.totalClients === 0 &&
               !contact.userId
 
             const promoteDisabled = isDeleting || isRestoring || isDestroying

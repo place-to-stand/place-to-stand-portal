@@ -15,6 +15,7 @@ type PromoteToUserDialogProps = {
   onOpenChange: (open: boolean) => void
   contactName: string
   contactEmail: string
+  linkedClientCount?: number
   isPending: boolean
   onConfirm: () => void
 }
@@ -24,6 +25,7 @@ export function PromoteToUserDialog({
   onOpenChange,
   contactName,
   contactEmail,
+  linkedClientCount = 0,
   isPending,
   onConfirm,
 }: PromoteToUserDialogProps) {
@@ -33,8 +35,12 @@ export function PromoteToUserDialog({
         <DialogHeader>
           <DialogTitle>Create Portal Account</DialogTitle>
           <DialogDescription>
-            This will create a portal account for {contactName} ({contactEmail})
-            and send them an invite with a temporary password.
+            This will create a portal account for {contactName} (<span className='font-bold'>{contactEmail}</span>)
+            {linkedClientCount > 0 ? (
+              <> and grant them access to {linkedClientCount} linked client{linkedClientCount === 1 ? '' : 's'}.<br /><br />They&apos;ll receive an email with a temporary password.</>
+            ) : (
+              <>.<br /><br />They&apos;ll receive an email with a temporary password. No clients are currently linked — they won&apos;t see any projects until you link them to a client.</>
+            )}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className='mt-4'>
@@ -51,7 +57,7 @@ export function PromoteToUserDialog({
             onClick={onConfirm}
             disabled={isPending}
           >
-            {isPending ? 'Creating...' : 'Create Account'}
+            {isPending ? 'Creating...' : 'Create & Notify'}
           </Button>
         </DialogFooter>
       </DialogContent>

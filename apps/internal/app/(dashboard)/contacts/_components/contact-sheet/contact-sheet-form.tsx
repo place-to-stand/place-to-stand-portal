@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type React from 'react'
-import { Archive, Check, Redo2, Send, Undo2, UserPlus } from 'lucide-react'
+import { Archive, Check, Redo2, Undo2, UserPlus } from 'lucide-react'
 import type { UseFormReturn } from 'react-hook-form'
 
 import { Badge } from '@/components/ui/badge'
@@ -62,11 +62,7 @@ type ContactSheetFormProps = {
   promoteDisabled: boolean
   promoteDisabledReason: string | null
   onRequestPromote: () => void
-  // Portal invite props
   hasPortalAccess: boolean
-  inviteDisabled: boolean
-  inviteDisabledReason: string | null
-  onRequestInvite: () => void
 }
 
 export function ContactSheetForm({
@@ -95,9 +91,6 @@ export function ContactSheetForm({
   promoteDisabledReason,
   onRequestPromote,
   hasPortalAccess,
-  inviteDisabled,
-  inviteDisabledReason,
-  onRequestInvite,
 }: ContactSheetFormProps) {
   const handleSave = useCallback(
     () => form.handleSubmit(onSubmit)(),
@@ -231,27 +224,7 @@ export function ContactSheetForm({
             onRequestRemoval={onRemoveClient}
           />
         </div>
-        {isEditing && !hasPortalAccess ? (
-          <div>
-            <DisabledFieldTooltip
-              disabled={promoteDisabled}
-              reason={promoteDisabledReason}
-            >
-              <Button
-                type='button'
-                variant='outline'
-                size='sm'
-                disabled={promoteDisabled}
-                onClick={onRequestPromote}
-                className='gap-1.5'
-              >
-                <UserPlus className='h-3.5 w-3.5' />
-                Create Portal Account
-              </Button>
-            </DisabledFieldTooltip>
-          </div>
-        ) : null}
-        {isEditing && selectedClients.length > 0 ? (
+        {isEditing ? (
           <div className='space-y-2'>
             <FormLabel>Portal Access</FormLabel>
             {hasPortalAccess ? (
@@ -262,19 +235,19 @@ export function ContactSheetForm({
             ) : (
               <div>
                 <DisabledFieldTooltip
-                  disabled={inviteDisabled}
-                  reason={inviteDisabledReason}
+                  disabled={promoteDisabled}
+                  reason={promoteDisabledReason}
                 >
                   <Button
                     type='button'
                     variant='outline'
                     size='sm'
-                    disabled={inviteDisabled}
-                    onClick={onRequestInvite}
+                    disabled={promoteDisabled}
+                    onClick={onRequestPromote}
                     className='gap-1.5'
                   >
-                    <Send className='h-3.5 w-3.5' />
-                    Invite to Portal
+                    <UserPlus className='h-3.5 w-3.5' />
+                    Create Portal Account
                   </Button>
                 </DisabledFieldTooltip>
               </div>
