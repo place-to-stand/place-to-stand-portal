@@ -235,6 +235,10 @@ export const users = pgTable(
       .default(sql`timezone('utc'::text, now())`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+    onboardingCompletedAt: timestamp('onboarding_completed_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
   },
   table => [unique('users_email_key').on(table.email)]
 )
@@ -287,6 +291,7 @@ export const contacts = pgTable(
     name: text().notNull(),
     phone: text(),
     createdBy: uuid('created_by'),
+    userId: uuid('user_id'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
       .notNull(),
@@ -297,16 +302,25 @@ export const contacts = pgTable(
   },
   table => [
     unique('contacts_email_key').on(table.email),
+    unique('contacts_user_id_key').on(table.userId),
     index('idx_contacts_email')
       .using('btree', table.email.asc().nullsLast().op('text_ops'))
       .where(sql`(deleted_at IS NULL)`),
     index('idx_contacts_email_domain')
       .using('btree', sql`split_part(email, '@', 2)`)
       .where(sql`(deleted_at IS NULL)`),
+    index('idx_contacts_user_id')
+      .using('btree', table.userId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(user_id IS NOT NULL)`),
     foreignKey({
       columns: [table.createdBy],
       foreignColumns: [users.id],
       name: 'contacts_created_by_fkey',
+    }),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [users.id],
+      name: 'contacts_user_id_fkey',
     }),
   ]
 )

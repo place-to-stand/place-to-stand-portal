@@ -24,7 +24,7 @@ type CreateClientPayload = {
   website: string | null
   referredBy: string | null
   notes: string | null
-  memberIds: string[]
+  memberIds?: string[]
 }
 
 const INSERT_RETRY_LIMIT = 3
@@ -66,16 +66,18 @@ export async function createClient(
         return buildMutationResult({ error: 'Unable to create client.' })
       }
 
-      const syncResult = await syncClientMembers(clientId, memberIds)
+      if (memberIds && memberIds.length > 0) {
+        const syncResult = await syncClientMembers(clientId, memberIds)
 
-      if (syncResult.error) {
-        console.error('Failed to sync client members after create', syncResult)
-        return buildMutationResult(syncResult)
+        if (syncResult.error) {
+          console.error('Failed to sync client members after create', syncResult)
+          return buildMutationResult(syncResult)
+        }
       }
 
       const event = clientCreatedEvent({
         name,
-        memberIds,
+        memberIds: memberIds ?? [],
       })
 
       await logActivity({

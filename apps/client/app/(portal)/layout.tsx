@@ -1,8 +1,10 @@
 export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 
 import { requireClientUser } from '@/lib/auth/session'
+import { UserMenu } from '@/components/layout/user-menu'
 
 export default async function PortalLayout({
   children,
@@ -10,6 +12,12 @@ export default async function PortalLayout({
   children: React.ReactNode
 }) {
   const user = await requireClientUser()
+
+  // Redirect CLIENT users to onboarding if they haven't completed it.
+  // Admins skip onboarding (they're just previewing the portal).
+  if (user.role === 'CLIENT' && !user.onboarding_completed_at) {
+    redirect('/onboarding')
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -34,9 +42,11 @@ export default async function PortalLayout({
               </Link>
             </nav>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-foreground/60">{user.email}</span>
-          </div>
+          <UserMenu
+            email={user.email}
+            fullName={user.full_name}
+            avatarUrl={user.avatar_url}
+          />
         </div>
       </header>
       <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>

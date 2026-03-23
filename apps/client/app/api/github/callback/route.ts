@@ -23,24 +23,40 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const installationId = searchParams.get('installation_id')
   const state = searchParams.get('state')
+  const cookieStore = await cookies()
+  const returnProjectId = cookieStore.get('github_app_return_project')?.value
+  const returnTo = cookieStore.get('github_app_return_to')?.value
+
+  // Build redirect paths — returnTo cookie takes precedence, then projectId, then github/setup
+  let errorPath: string
+  let successPath: string
+
+  if (returnTo) {
+    errorPath = `${returnTo}?github=error`
+    successPath = `${returnTo}?github=installed`
+  } else if (returnProjectId) {
+    errorPath = `/projects/${returnProjectId}?github=error`
+    successPath = `/projects/${returnProjectId}?github=installed`
+  } else {
+    errorPath = '/github/setup?error=callback_failed'
+    successPath = '/github/setup?success=true'
+  }
+
   if (!installationId || !state) {
-    return NextResponse.redirect(
-      new URL('/github/setup?error=missing_params', request.url)
-    )
+    return NextResponse.redirect(new URL(errorPath, request.url))
   }
 
   // Verify CSRF state
-  const cookieStore = await cookies()
   const savedState = cookieStore.get('github_app_state')?.value
 
   if (!savedState || savedState !== state) {
-    return NextResponse.redirect(
-      new URL('/github/setup?error=invalid_state', request.url)
-    )
+    return NextResponse.redirect(new URL(errorPath, request.url))
   }
 
-  // Clear the state cookie
+  // Clear cookies
   cookieStore.delete('github_app_state')
+  cookieStore.delete('github_app_return_project')
+  cookieStore.delete('github_app_return_to')
 
   const env = getEnv()
 
@@ -65,9 +81,7 @@ export async function GET(request: NextRequest) {
       .limit(1)
 
     if (!membership) {
-      return NextResponse.redirect(
-        new URL('/github/setup?error=no_client', request.url)
-      )
+      return NextResponse.redirect(new URL(errorPath, request.url))
     }
 
     // Upsert the installation record
@@ -111,13 +125,9 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    return NextResponse.redirect(
-      new URL('/github/setup?success=true', request.url)
-    )
+    return NextResponse.redirect(new URL(successPath, request.url))
   } catch (error) {
     console.error('GitHub App callback error:', error)
-    return NextResponse.redirect(
-      new URL('/github/setup?error=callback_failed', request.url)
-    )
+    return NextResponse.redirect(new URL(errorPath, request.url))
   }
 }

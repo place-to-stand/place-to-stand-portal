@@ -12,6 +12,8 @@ import {
 } from '@/lib/settings/contacts/contact-service'
 import {
   destroyContactMutation,
+  inviteContactToPortalMutation,
+  promoteContactToUserMutation,
   restoreContactMutation,
   saveContactMutation,
   softDeleteContactMutation,
@@ -76,6 +78,26 @@ async function runContactMutation<TInput>(
   return result
 }
 
+export async function inviteContactToPortal(
+  contactId: string
+): Promise<ContactActionResult> {
+  const user = await requireUser()
+  const mutationResult = await inviteContactToPortalMutation(
+    { user },
+    { contactId }
+  )
+  const { didMutate, ...result } = mutationResult
+
+  if (didMutate) {
+    for (const path of CONTACT_ROUTES_TO_REVALIDATE) {
+      revalidatePath(path)
+    }
+    revalidatePath('/settings/users')
+  }
+
+  return result
+}
+
 /**
  * Fetches all data needed for the contact sheet client picker.
  */
@@ -84,6 +106,26 @@ export async function getContactSheetData(
 ): Promise<ContactSheetData> {
   const user = await requireUser()
   return getSheetData(user, contactId)
+}
+
+export async function promoteContactToUser(
+  contactId: string
+): Promise<ContactActionResult> {
+  const user = await requireUser()
+  const mutationResult = await promoteContactToUserMutation(
+    { user },
+    { contactId }
+  )
+  const { didMutate, ...result } = mutationResult
+
+  if (didMutate) {
+    for (const path of CONTACT_ROUTES_TO_REVALIDATE) {
+      revalidatePath(path)
+    }
+    revalidatePath('/settings/users')
+  }
+
+  return result
 }
 
 /**

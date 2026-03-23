@@ -55,3 +55,14 @@ export const contactDeletedEvent = (args: {
   verb: ActivityVerbs.CONTACT_DELETED,
   summary: `Permanently deleted contact "${args.name || args.email}"`,
 })
+
+export const contactInvitedToPortalEvent = (args: {
+  email: string
+  name: string | null
+}): ActivityEvent => ({
+  verb: ActivityVerbs.CONTACT_INVITED_TO_PORTAL,
+  summary: `Invited contact "${args.name || args.email}" to the client portal`,
+  metadata: toMetadata({
+    contact: { email: args.email, name: args.name },
+  }),
+})

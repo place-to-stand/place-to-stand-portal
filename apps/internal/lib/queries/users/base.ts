@@ -73,6 +73,7 @@ export async function listUsersWithAssignmentCounts(
       users.createdAt,
       users.updatedAt,
       users.deletedAt,
+      users.onboardingCompletedAt,
     )
     .orderBy(desc(users.createdAt))
 
@@ -85,6 +86,7 @@ export async function listUsersWithAssignmentCounts(
     createdAt: row.user.createdAt,
     updatedAt: row.user.updatedAt,
     deletedAt: row.user.deletedAt,
+    onboardingCompletedAt: row.user.onboardingCompletedAt,
     clientsCount: Number(row.clientsCount ?? 0),
     tasksCount: Number(row.tasksCount ?? 0),
   }))

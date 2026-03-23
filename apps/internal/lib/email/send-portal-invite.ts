@@ -29,7 +29,7 @@ export async function sendPortalInviteEmail({
     "",
     "For security, you'll be asked to create a new password when you first log in.",
     "",
-    "Go to https://portal.placetostandagency.com or the link provided by your account manager to get started.",
+    `Go to ${serverEnv.CLIENT_PORTAL_URL}/sign-in to get started.`,
     "",
     "If you weren't expecting this message, please reach out to hello@placetostandagency.com.",
     "",
@@ -47,7 +47,7 @@ export async function sendPortalInviteEmail({
       </ul>
       <p>For security, you'll be asked to create a new password when you first log in.</p>
       <p>
-        Go to <a href="https://portal.placetostandagency.com">portal.placetostandagency.com</a> or use the link shared by your account manager to get started.
+        <a href="${serverEnv.CLIENT_PORTAL_URL}/sign-in">Sign in to the portal</a> to get started.
       </p>
       <p>If you weren't expecting this message, please reach out to <a href="mailto:${serverEnv.RESEND_REPLY_TO_EMAIL}">${serverEnv.RESEND_REPLY_TO_EMAIL}</a>.</p>
       <p>Talk soon,<br />The Place To Stand Team</p>

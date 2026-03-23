@@ -13,6 +13,7 @@ export const userFields = {
   createdAt: users.createdAt,
   updatedAt: users.updatedAt,
   deletedAt: users.deletedAt,
+  onboardingCompletedAt: users.onboardingCompletedAt,
 }
 
 export const userSortExpression = sql<string>`

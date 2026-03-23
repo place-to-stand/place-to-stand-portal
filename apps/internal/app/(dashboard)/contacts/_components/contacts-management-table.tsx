@@ -1,10 +1,11 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useCallback, useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { PaginationControls } from '@/components/ui/pagination-controls'
+import { useToast } from '@/components/ui/use-toast'
 
 import {
   type ContactsTableContact,
@@ -12,8 +13,10 @@ import {
 } from '@/lib/settings/contacts/use-contacts-table-state'
 import type { ClientOption } from '@/lib/queries/contacts'
 
+import { promoteContactToUser } from '../actions'
 import { ContactsTableSection } from './contacts-table-section'
 import { ContactsSheet } from './contacts-sheet'
+import { PromoteToUserDialog } from './contact-sheet/promote-to-user-dialog'
 
 type ContactsManagementTableProps = {
   contacts: ContactsTableContact[]
@@ -43,6 +46,10 @@ export function ContactsManagementTable({
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
+  const { toast } = useToast()
+  const [promoteTarget, setPromoteTarget] = useState<ContactsTableContact | null>(null)
+  const [isPromotePending, startPromoteTransition] = useTransition()
+
   const {
     sheetOpen,
     selectedContact,
@@ -66,6 +73,40 @@ export function ContactsManagementTable({
   } = useContactsTableState()
 
   const emptyMessage = EMPTY_MESSAGES[mode]
+
+  const handleRequestPromote = useCallback(
+    (contact: ContactsTableContact) => {
+      if (isPending || isPromotePending) return
+      setPromoteTarget(contact)
+    },
+    [isPending, isPromotePending]
+  )
+
+  const handleConfirmPromote = useCallback(() => {
+    if (!promoteTarget) return
+
+    const contact = promoteTarget
+    setPromoteTarget(null)
+
+    startPromoteTransition(async () => {
+      const result = await promoteContactToUser(contact.id)
+
+      if (result.error) {
+        toast({
+          title: 'Unable to create portal account',
+          description: result.error,
+          variant: 'destructive',
+        })
+        return
+      }
+
+      toast({
+        title: 'Portal account created',
+        description: `A portal invite has been sent to ${contact.name || contact.email}.`,
+      })
+      router.refresh()
+    })
+  }, [promoteTarget, toast, router])
 
   const handlePageChange = useCallback(
     (page: number) => {
@@ -118,7 +159,8 @@ export function ContactsManagementTable({
         onRequestDelete={handleRequestDelete}
         onRestore={handleRestore}
         onRequestDestroy={handleRequestDestroy}
-        isPending={isPending}
+        onRequestPromote={handleRequestPromote}
+        isPending={isPending || isPromotePending}
         pendingReason={pendingReason}
         pendingDeleteId={pendingDeleteId}
         pendingRestoreId={pendingRestoreId}
@@ -132,6 +174,14 @@ export function ContactsManagementTable({
         totalItems={totalCount}
         pageSize={pageSize}
         onPageChange={handlePageChange}
+      />
+      <PromoteToUserDialog
+        open={Boolean(promoteTarget)}
+        onOpenChange={open => { if (!open) setPromoteTarget(null) }}
+        contactName={promoteTarget?.name || promoteTarget?.email || ''}
+        contactEmail={promoteTarget?.email || ''}
+        isPending={isPromotePending}
+        onConfirm={handleConfirmPromote}
       />
       <ContactsSheet
         open={sheetOpen}

@@ -18,6 +18,7 @@ export type AppUser = {
   created_at: string
   updated_at: string
   deleted_at: string | null
+  onboarding_completed_at: string | null
 }
 
 export const getSession = cache(async (): Promise<Session | null> => {
@@ -61,6 +62,7 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
         createdAt: users.createdAt,
         updatedAt: users.updatedAt,
         deletedAt: users.deletedAt,
+        onboardingCompletedAt: users.onboardingCompletedAt,
       })
       .from(users)
       .where(and(eq(users.id, authUser.id), isNull(users.deletedAt)))
@@ -79,6 +81,7 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
       created_at: profile.createdAt,
       updated_at: profile.updatedAt,
       deleted_at: profile.deletedAt ?? null,
+      onboarding_completed_at: profile.onboardingCompletedAt ?? null,
     }
   } catch (profileError) {
     console.error('Failed to load current user', profileError)

@@ -29,7 +29,6 @@ import {
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import type {
   ClientContactOption,
-  ClientMemberOption,
   ReferralContactOption,
   UseClientSheetStateReturn,
 } from '@/lib/settings/clients/use-client-sheet-state'
@@ -39,7 +38,6 @@ import { cn } from '@/lib/utils'
 import type { ClientSheetFormValues } from '@/lib/settings/clients/client-sheet-schema'
 
 import { ClientContactPicker } from './client-contact-picker'
-import { ClientMemberPicker } from './client-member-picker'
 import { ClientReferralPicker } from './client-referral-picker'
 
 const FEEDBACK_CLASSES =
@@ -51,18 +49,10 @@ type ClientSheetFormProps = {
   isPending: boolean
   isEditing: boolean
   pendingReason: string
-  addButtonDisabled: boolean
-  addButtonDisabledReason: string | null
   submitDisabled: boolean
   submitDisabledReason: string | null
   deleteDisabled: boolean
   deleteDisabledReason: string | null
-  selectedMembers: ClientMemberOption[]
-  availableMembers: ClientMemberOption[]
-  isPickerOpen: boolean
-  onPickerOpenChange: (open: boolean) => void
-  onAddMember: (member: ClientMemberOption) => void
-  onRequestRemoval: (member: ClientMemberOption) => void
   onSubmit: UseClientSheetStateReturn['handleFormSubmit']
   onRequestDelete: () => void
   isSheetOpen: boolean
@@ -93,18 +83,10 @@ export function ClientSheetForm({
   isPending,
   isEditing,
   pendingReason,
-  addButtonDisabled,
-  addButtonDisabledReason,
   submitDisabled,
   submitDisabledReason,
   deleteDisabled,
   deleteDisabledReason,
-  selectedMembers,
-  availableMembers,
-  isPickerOpen,
-  onPickerOpenChange,
-  onAddMember,
-  onRequestRemoval,
   onSubmit,
   onRequestDelete,
   isSheetOpen,
@@ -371,21 +353,6 @@ export function ClientSheetForm({
             onPickerOpenChange={onContactPickerOpenChange}
             onAddContact={onAddContact}
             onRequestRemoval={onRemoveContact}
-          />
-        </div>
-        <div className='space-y-2'>
-          <FormLabel>Users</FormLabel>
-          <ClientMemberPicker
-            selectedMembers={selectedMembers}
-            availableMembers={availableMembers}
-            addButtonDisabled={addButtonDisabled}
-            addButtonDisabledReason={addButtonDisabledReason}
-            isPickerOpen={isPickerOpen}
-            isPending={isPending}
-            pendingReason={pendingReason}
-            onPickerOpenChange={onPickerOpenChange}
-            onAddMember={onAddMember}
-            onRequestRemoval={onRequestRemoval}
           />
         </div>
         {feedback ? <p className={FEEDBACK_CLASSES}>{feedback}</p> : null}

@@ -25,9 +25,9 @@ export async function saveClientMutation(
   }
 
   const { id, name, slug, notes, memberIds, billingType, state, website, referredBy } = parsed.data
-  const normalizedMemberIds = Array.from(new Set(memberIds ?? [])).filter(
-    Boolean
-  )
+  const normalizedMemberIds = memberIds
+    ? Array.from(new Set(memberIds)).filter(Boolean)
+    : undefined
 
   const trimmedName = name.trim()
 
@@ -46,7 +46,7 @@ export async function saveClientMutation(
       mode,
       targetId: id ?? null,
       metadata: {
-        hasMembers: normalizedMemberIds.length > 0,
+        hasMembers: normalizedMemberIds ? normalizedMemberIds.length > 0 : undefined,
       },
     },
     async () => {

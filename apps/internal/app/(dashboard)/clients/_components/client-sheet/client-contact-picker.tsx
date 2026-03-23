@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronsUpDown, Users, X } from 'lucide-react'
+import { ChevronsUpDown, UserCheck, Users, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
@@ -23,6 +23,7 @@ export type ClientContactOption = {
   name: string | null
   email: string
   phone: string | null
+  hasPortalAccess: boolean
 }
 
 const assignedContainerClass =
@@ -101,13 +102,23 @@ export function ClientContactPicker({
                     <div className='flex flex-col'>
                       {contact.name ? (
                         <>
-                          <span className='font-medium'>{contact.name}</span>
+                          <span className='flex items-center gap-1.5 font-medium'>
+                            {contact.name}
+                            {contact.hasPortalAccess && (
+                              <span title='Has portal access'><UserCheck className='h-3 w-3 text-emerald-500' /></span>
+                            )}
+                          </span>
                           <span className='text-muted-foreground text-xs'>
                             {contact.email}
                           </span>
                         </>
                       ) : (
-                        <span className='font-medium'>{contact.email}</span>
+                        <span className='flex items-center gap-1.5 font-medium'>
+                          {contact.email}
+                          {contact.hasPortalAccess && (
+                            <span title='Has portal access'><UserCheck className='h-3 w-3 text-emerald-500' /></span>
+                          )}
+                        </span>
                       )}
                     </div>
                   </CommandItem>
@@ -131,13 +142,23 @@ export function ClientContactPicker({
               <div className='flex flex-col text-sm leading-tight'>
                 {contact.name ? (
                   <>
-                    <span className='font-medium'>{contact.name}</span>
+                    <span className='flex items-center gap-1.5 font-medium'>
+                      {contact.name}
+                      {contact.hasPortalAccess && (
+                        <span title='Has portal access'><UserCheck className='h-3 w-3 text-emerald-500' /></span>
+                      )}
+                    </span>
                     <span className='text-muted-foreground text-xs'>
                       {contact.email}
                     </span>
                   </>
                 ) : (
-                  <span className='font-medium'>{contact.email}</span>
+                  <span className='flex items-center gap-1.5 font-medium'>
+                    {contact.email}
+                    {contact.hasPortalAccess && (
+                      <span title='Has portal access'><UserCheck className='h-3 w-3 text-emerald-500' /></span>
+                    )}
+                  </span>
                 )}
                 {contact.phone ? (
                   <span className='text-muted-foreground text-xs'>

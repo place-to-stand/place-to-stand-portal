@@ -10,10 +10,6 @@ import { ClientsLanding } from './_components/clients-landing'
 import { ClientsLandingHeader } from './_components/clients-landing-header'
 import { ClientsTabsNav } from './_components/clients-tabs-nav'
 import { ClientsAddButton } from './_components/clients-add-button'
-import {
-  normalizeClientMembersMap,
-  normalizeClientUsers,
-} from './_lib/client-user-helpers'
 
 export const metadata: Metadata = {
   title: 'Clients | Place to Stand Portal',
@@ -69,13 +65,6 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
     fetchClientsWithMetrics(user),
     managementDataPromise,
   ])
-
-  const clientUsers = managementData
-    ? normalizeClientUsers(managementData.clientUsers)
-    : []
-  const membersByClient = managementData
-    ? normalizeClientMembersMap(managementData.membersByClient)
-    : {}
   return (
     <>
       <AppShellHeader>
@@ -93,10 +82,7 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
               <span className='text-muted-foreground text-sm whitespace-nowrap'>
                 Total clients: {managementData.totalCount}
               </span>
-              <ClientsAddButton
-                clientUsers={clientUsers}
-                clientMembers={membersByClient}
-              />
+              <ClientsAddButton />
             </div>
           ) : null}
         </div>

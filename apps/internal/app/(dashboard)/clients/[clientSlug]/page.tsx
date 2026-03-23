@@ -12,16 +12,11 @@ import {
   fetchProjectsForClient,
   resolveClientIdentifier,
 } from '@/lib/data/clients'
-import { buildMembersByClient, listClientUsers } from '@/lib/queries/clients'
 import { getMessagesForClient } from '@/lib/queries/messages'
 import { getTranscriptsForClient, getTranscriptCountForClient } from '@/lib/queries/transcripts'
 import type { ClientRow } from '@/lib/settings/clients/client-sheet-utils'
 
 import { ClientsLandingHeader } from '../_components/clients-landing-header'
-import {
-  normalizeClientMembersMap,
-  normalizeClientUsers,
-} from '../_lib/client-user-helpers'
 import { ClientDetail } from './_components/client-detail'
 
 type Params = Promise<{ clientSlug: string }>
@@ -64,19 +59,6 @@ export default async function ClientDetailPage({
 
   const canManageClients = isAdmin(user)
 
-  const managementDataPromise: Promise<
-    | [
-        Awaited<ReturnType<typeof listClientUsers>>,
-        Awaited<ReturnType<typeof buildMembersByClient>>,
-      ]
-    | null
-  > = canManageClients
-    ? Promise.all([
-        listClientUsers(),
-        buildMembersByClient([client.resolvedId]),
-      ])
-    : Promise.resolve(null)
-
   // Build referral contact query if client has a referredBy
   const referralContactPromise = client.referredBy
     ? db.select({
@@ -95,10 +77,9 @@ export default async function ClientDetailPage({
         .then(rows => rows[0] ?? null)
     : Promise.resolve(null)
 
-  const [allClients, projects, managementData, clientContacts, messages, referralContact, clientTranscripts, transcriptCount] = await Promise.all([
+  const [allClients, projects, clientContacts, messages, referralContact, clientTranscripts, transcriptCount] = await Promise.all([
     fetchClientsWithMetrics(user),
     fetchProjectsForClient(user, client.resolvedId),
-    managementDataPromise,
     // Fetch contacts for this client via junction table
     db.select({
       id: contacts.id,
@@ -106,6 +87,7 @@ export default async function ClientDetailPage({
       name: contacts.name,
       phone: contacts.phone,
       createdBy: contacts.createdBy,
+      userId: contacts.userId,
       createdAt: contacts.createdAt,
       updatedAt: contacts.updatedAt,
       deletedAt: contacts.deletedAt,
@@ -126,13 +108,6 @@ export default async function ClientDetailPage({
     getTranscriptCountForClient(client.resolvedId),
   ])
 
-  const clientUsers = managementData
-    ? normalizeClientUsers(managementData[0])
-    : []
-  const clientMembers = managementData
-    ? normalizeClientMembersMap(managementData[1])
-    : {}
-
   return (
     <>
       <AppShellHeader>
@@ -150,8 +125,6 @@ export default async function ClientDetailPage({
           transcripts={clientTranscripts}
           transcriptCount={transcriptCount}
           canManageClients={canManageClients}
-          clientUsers={clientUsers}
-          clientMembers={clientMembers}
           clientRow={mapClientDetailToRow(client)}
           currentUserId={user.id}
           referralContact={referralContact}

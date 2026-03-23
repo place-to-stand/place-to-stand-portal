@@ -9,22 +9,27 @@ This is a **Turborepo monorepo** using npm workspaces.
 ```
 place-to-stand-portal/
 ├── apps/
-│   └── internal/          # Admin portal (Next.js, deployed to Vercel)
+│   ├── internal/          # Admin portal (Next.js, deployed to Vercel, port 3000)
+│   │   ├── app/           # Next.js App Router routes
+│   │   ├── components/    # React components
+│   │   ├── hooks/         # Custom React hooks
+│   │   ├── lib/           # Business logic, data layer, utilities
+│   │   ├── styles/        # Global CSS
+│   │   └── public/        # Static assets
+│   └── client/            # Client portal (Next.js, deployed to Vercel, port 3001)
 │       ├── app/           # Next.js App Router routes
 │       ├── components/    # React components
-│       ├── hooks/         # Custom React hooks
-│       ├── lib/           # Business logic, data layer, utilities
-│       ├── drizzle/       # Database migrations
-│       ├── styles/        # Global CSS
-│       └── public/        # Static assets
-├── packages/              # Shared packages (future: db, auth, github, shared)
+│       └── lib/           # Auth, data fetching, utilities
+├── packages/
+│   ├── db/                # Shared database schema, relations, and migrations (@pts/db)
+│   └── github/            # GitHub App auth and API utilities (@pts/github)
 ├── supabase/              # Supabase config (stays at root)
 ├── turbo.json             # Build orchestration
 ├── tsconfig.base.json     # Shared TypeScript config
 └── package.json           # Workspace root
 ```
 
-All application code lives in `apps/internal/`. Paths like `lib/`, `app/`, `components/` refer to directories inside `apps/internal/` unless stated otherwise.
+The two main apps are `apps/internal/` (admin portal) and `apps/client/` (client portal). Unqualified paths like `lib/`, `app/`, `components/` refer to directories inside `apps/internal/` unless stated otherwise. Shared database schema and GitHub utilities live in `packages/`.
 
 ## Commands
 
@@ -34,9 +39,9 @@ All application code lives in `apps/internal/`. Paths like `lib/`, `app/`, `comp
 - `npm run lint` - Lint all apps via Turbo
 - `npm run type-check` - Type-check all apps via Turbo
 
-### Development (from `apps/internal/`)
-- `npm run dev` - Start internal portal with Turbopack
-- `npm run build` - Build internal portal with Turbopack
+### Development (from `apps/internal/` or `apps/client/`)
+- `npm run dev` - Start app with Turbopack (internal: port 3000, client: port 3001)
+- `npm run build` - Build app with Turbopack
 - `npm start` - Start production server
 - `npm run lint` - Run ESLint
 - `npm run type-check` - Run TypeScript compiler checks (no emit)
@@ -49,16 +54,16 @@ Run these from `apps/internal/`. Ensure `DATABASE_URL` is set in your environmen
 - `npm run db:migrate` - Apply migrations to database
 
 **Migration workflow:**
-1. Update schema files in `apps/internal/lib/db/schema.ts` and `apps/internal/lib/db/relations.ts`
-2. Run `npm run db:generate -- --name descriptive_label` from `apps/internal/`
-3. Review generated SQL in `apps/internal/drizzle/migrations/`
+1. Update schema files in `packages/db/src/schema.ts` and `packages/db/src/relations.ts`
+2. Run `npm run db:generate -- --name descriptive_label` from `packages/db/`
+3. Review generated SQL in `packages/db/drizzle/migrations/`
 4. Apply locally with `npm run db:migrate`, then in staging/production
 
-The baseline migration (`apps/internal/drizzle/migrations/0000_supabase_baseline.sql`) captures existing Supabase schema. Run `npm run db:migrate` once after configuring `DATABASE_URL` to register existing state.
+The baseline migration (`packages/db/drizzle/migrations/0000_supabase_baseline.sql`) captures existing Supabase schema. Run `npm run db:migrate` once after configuring `DATABASE_URL` to register existing state.
 
 ### Turbo Environment Variables
 Turbo v2 uses strict mode by default — only env vars listed in `turbo.json` are passed to build tasks. When adding a new server-side env var:
-1. Add it to `apps/internal/lib/env.server.ts` schema
+1. Add it to the appropriate app's `lib/env.server.ts` schema (`apps/internal/` or `apps/client/`)
 2. Add it to `turbo.json` → `tasks.build.passThroughEnv` (secrets that shouldn't bust cache) or `tasks.build.env` (vars that should invalidate cache)
 
 ## Architecture Overview
@@ -66,20 +71,23 @@ Turbo v2 uses strict mode by default — only env vars listed in `turbo.json` ar
 ### Tech Stack
 - **Monorepo**: Turborepo with npm workspaces
 - **Framework**: Next.js 16 (App Router) with Turbopack
-- **Database**: PostgreSQL via Supabase with Drizzle ORM
+- **Database**: PostgreSQL via Supabase with Drizzle ORM (schema in `packages/db`)
 - **Auth**: Supabase Auth with session-based authentication
 - **Storage**: Supabase Storage (buckets: `user-avatars`, `task-attachments`)
 - **State**: React Server Components + TanStack React Query
 - **Styling**: Tailwind CSS v4, Radix UI, shadcn/ui components
 - **Analytics**: PostHog (client and server-side)
 - **Email**: Resend
+- **GitHub Integration**: GitHub App for repo linking (`packages/github`)
 
 ### Route Organization
+
+**Internal admin portal** (`apps/internal/app/`):
 ```
-apps/internal/app/
 ├── (auth)/           # Sign-in, password reset (unauthenticated)
 ├── (dashboard)/      # Protected routes
 │   ├── clients/      # Client management (archive, activity)
+│   ├── contacts/     # Contact management, portal user promotion
 │   ├── projects/     # Project boards (board, backlog, calendar, review, time-logs, archive, activity)
 │   ├── leads/        # Lead kanban board
 │   ├── my-tasks/     # User's assigned tasks
@@ -96,11 +104,27 @@ apps/internal/app/
 
 Routes use slug-based patterns: `/projects/[clientSlug]/[projectSlug]/board/[[...taskId]]/`
 
+**Client portal** (`apps/client/app/`):
+```
+├── (auth)/           # Sign-in (unauthenticated)
+├── (portal)/         # Protected routes (force-dynamic)
+│   ├── projects/     # Project detail with GitHub integration
+│   └── github/       # GitHub App setup and management
+├── api/github/       # GitHub App install, callback, webhook, repos, link
+├── onboarding/       # First-time setup wizard
+└── unauthorized/     # Access denied page
+```
+
+Portal access is controlled via `client_members` table. Contacts promoted to portal users automatically get access to their linked clients.
+
 ### Database Schema
 
-**Core tables** (`apps/internal/lib/db/schema.ts`):
+**Core tables** (`packages/db/src/schema.ts`):
 - `users` - User accounts with roles (ADMIN, CLIENT)
 - `clients` - Client records with billing types (prepaid, net_30)
+- `contacts` - Contact records (may have a `userId` for portal access)
+- `contact_clients` - Contact-to-client links
+- `client_members` - Client-to-user portal memberships (auto-synced when contacts are linked/promoted)
 - `projects` - Projects with types: CLIENT (tied to clients), PERSONAL (individual), INTERNAL (team)
 - `tasks` - Tasks with workflow: BACKLOG → ON_DECK → IN_PROGRESS → IN_REVIEW → BLOCKED → DONE → ARCHIVED
 - `leads` - Lead pipeline: NEW_OPPORTUNITIES → ACTIVE → PROPOSAL_SENT → ON_ICE → CLOSED_WON/LOST/UNQUALIFIED
@@ -109,7 +133,8 @@ Routes use slug-based patterns: `/projects/[clientSlug]/[projectSlug]/board/[[..
 - `task_comments` - Task discussions
 - `task_attachments` - File attachments
 - `task_assignees` + `task_assignee_metadata` - Task assignments with custom sort order
-- `client_members` - Client-to-user memberships
+- `github_app_installations` - GitHub App installs per client
+- `github_repo_links` - Repository links per project
 - `activity_logs` + `activity_overview_cache` - Activity audit trail
 
 **Key patterns:**
@@ -117,7 +142,8 @@ Routes use slug-based patterns: `/projects/[clientSlug]/[projectSlug]/board/[[..
 - Soft deletes via `deletedAt` timestamps on all core tables
 - `createdAt`/`updatedAt` on all records
 - PostgreSQL enums for status fields
-- Relations defined in `apps/internal/lib/db/relations.ts`
+- Relations defined in `packages/db/src/relations.ts`
+- Both apps import schema via `@pts/db/schema`
 - **NO Row Level Security** - access control is handled in the application layer (see below)
 
 ### Data Layer Architecture
@@ -313,8 +339,8 @@ Leads are inserted with `WEBSITE` source and appear on `/leads/board` immediatel
 ## Common Workflows
 
 ### Adding a new task status
-1. Update `taskStatus` enum in `apps/internal/lib/db/schema.ts`
-2. Run `npm run db:generate -- --name add_task_status` from `apps/internal/`
+1. Update `taskStatus` enum in `packages/db/src/schema.ts`
+2. Run `npm run db:generate -- --name add_task_status` from `packages/db/`
 3. Review generated migration
 4. Apply: `npm run db:migrate`
 5. Update UI components that reference task statuses
@@ -334,19 +360,23 @@ Leads are inserted with `WEBSITE` source and appear on `/leads/board` immediatel
 5. Return standardized responses: `{ ok: true, data }` or `{ ok: false, error }`
 
 ### Creating a new table
-1. Define schema in `apps/internal/lib/db/schema.ts`
-2. Add relations in `apps/internal/lib/db/relations.ts`
-3. Generate migration: `npm run db:generate -- --name table_name` from `apps/internal/`
-4. Review SQL in `apps/internal/drizzle/migrations/`
+1. Define schema in `packages/db/src/schema.ts`
+2. Add relations in `packages/db/src/relations.ts`
+3. Generate migration: `npm run db:generate -- --name table_name` from `packages/db/`
+4. Review SQL in `packages/db/drizzle/migrations/`
 5. Apply: `npm run db:migrate`
 6. Add query functions in `apps/internal/lib/queries/`
 7. Add data layer functions in `apps/internal/lib/data/`
 
 ### Adding a new server-side env var
-1. Add Zod validation to `apps/internal/lib/env.server.ts`
+1. Add Zod validation to the appropriate app's `lib/env.server.ts`
 2. Add to `turbo.json` → `tasks.build.passThroughEnv` (or `env` if it should bust cache)
-3. Add to Vercel project settings for all required environments
-4. Add to `apps/internal/.env.example`
+3. Add to the correct Vercel project settings for all required environments
+4. Add to the app's `.env.example`
+
+**Cross-app env vars:**
+- `CLIENT_PORTAL_URL` (internal app) — full URL of the client portal (e.g. `https://client.placetostand.co`)
+- `GITHUB_APP_*` (client app) — GitHub App credentials for repo integration
 
 ### Logging activity events
 1. Create event handler in `apps/internal/lib/activity/events/domain.ts`
