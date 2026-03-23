@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type React from 'react'
-import { Archive, Building2, Check, Redo2, Send, Undo2 } from 'lucide-react'
+import { Archive, Check, Redo2, Send, Undo2, UserPlus } from 'lucide-react'
 import type { UseFormReturn } from 'react-hook-form'
 
 import { Badge } from '@/components/ui/badge'
@@ -231,7 +231,7 @@ export function ContactSheetForm({
             onRequestRemoval={onRemoveClient}
           />
         </div>
-        {isEditing && selectedClients.length === 0 && !hasPortalAccess ? (
+        {isEditing && !hasPortalAccess ? (
           <div>
             <DisabledFieldTooltip
               disabled={promoteDisabled}
@@ -245,8 +245,8 @@ export function ContactSheetForm({
                 onClick={onRequestPromote}
                 className='gap-1.5'
               >
-                <Building2 className='h-3.5 w-3.5' />
-                Create Client
+                <UserPlus className='h-3.5 w-3.5' />
+                Create Portal Account
               </Button>
             </DisabledFieldTooltip>
           </div>

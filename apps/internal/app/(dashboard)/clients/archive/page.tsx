@@ -7,10 +7,6 @@ import { listClientsForSettings } from '@/lib/queries/clients'
 import { ClientsTabsNav } from '../_components/clients-tabs-nav'
 import { ClientsAddButton } from '../_components/clients-add-button'
 import { ClientsManagementTable } from '../_components/clients-management-table'
-import {
-  normalizeClientMembersMap,
-  normalizeClientUsers,
-} from '../_lib/client-user-helpers'
 import { mapClientToTableRow } from '../_lib/map-client-to-table-row'
 
 type ClientsArchivePageProps = {
@@ -55,7 +51,7 @@ export default async function ClientsArchivePage({
         : undefined
   const limitParam = Number.parseInt(limitParamRaw ?? '', 10)
 
-  const { items, membersByClient, clientUsers, totalCount, pageInfo } =
+  const { items, totalCount, pageInfo } =
     await listClientsForSettings(admin, {
       status: 'archived',
       search: searchQuery,
@@ -84,18 +80,13 @@ export default async function ClientsArchivePage({
             <span className='text-muted-foreground text-sm whitespace-nowrap'>
               Total archived: {totalCount}
             </span>
-            <ClientsAddButton
-              clientUsers={normalizeClientUsers(clientUsers)}
-              clientMembers={normalizeClientMembersMap(membersByClient)}
-            />
+            <ClientsAddButton />
           </div>
         </div>
         {/* Main Container with Background */}
         <section className='bg-background rounded-xl border p-6 shadow-sm space-y-4'>
           <ClientsManagementTable
             clients={clientsForTable}
-            clientUsers={normalizeClientUsers(clientUsers)}
-            membersByClient={normalizeClientMembersMap(membersByClient)}
             pageInfo={pageInfo}
             mode='archive'
           />

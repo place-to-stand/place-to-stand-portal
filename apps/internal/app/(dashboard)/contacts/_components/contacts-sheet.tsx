@@ -14,7 +14,7 @@ import {
   saveContact,
   softDeleteContact,
   inviteContactToPortal,
-  promoteContactToClient,
+  promoteContactToUser,
   getContactSheetData,
   syncContactClients,
 } from '../actions'
@@ -23,7 +23,7 @@ import type { ContactClientOption } from './contact-sheet/contact-client-picker'
 
 import { ContactSheetHeader } from './contact-sheet/contact-sheet-header'
 import { ContactSheetForm } from './contact-sheet/contact-sheet-form'
-import { PromoteToClientDialog } from './contact-sheet/promote-to-client-dialog'
+import { PromoteToUserDialog } from './contact-sheet/promote-to-user-dialog'
 
 const contactFormSchema = z.object({
   email: z.string().email({ message: 'Valid email is required' }),
@@ -328,59 +328,48 @@ export function ContactsSheet({
     setIsInviteDialogOpen(false)
   }, [isPending])
 
-  const promoteDisabled =
-    isPending || !isEditing || hasPortalAccess || selectedClients.length > 0
+  const promoteDisabled = isPending || !isEditing || hasPortalAccess
   const promoteDisabledReason = isPending
     ? pendingReason
     : !isEditing
       ? 'Save the contact first.'
       : hasPortalAccess
         ? 'This contact already has portal access.'
-        : selectedClients.length > 0
-          ? 'This contact already has linked clients.'
-          : null
+        : null
 
   const handleRequestPromote = useCallback(() => {
     if (promoteDisabled) return
     setIsPromoteDialogOpen(true)
   }, [promoteDisabled])
 
-  const handlePromoteSubmit = useCallback(
-    (values: { clientName: string; projectName: string; billingType: 'prepaid' | 'net_30' }) => {
-      const contactId = contact?.id
-      if (!contactId || isPending) {
-        setIsPromoteDialogOpen(false)
+  const handleConfirmPromote = useCallback(() => {
+    const contactId = contact?.id
+    if (!contactId || isPending) {
+      setIsPromoteDialogOpen(false)
+      return
+    }
+
+    setIsPromoteDialogOpen(false)
+    startTransition(async () => {
+      const result = await promoteContactToUser(contactId)
+
+      if (result.error) {
+        setFeedback(result.error)
+        toast({
+          title: 'Unable to create portal account',
+          description: result.error,
+          variant: 'destructive',
+        })
         return
       }
 
-      setIsPromoteDialogOpen(false)
-      startTransition(async () => {
-        const result = await promoteContactToClient({
-          contactId,
-          clientName: values.clientName,
-          projectName: values.projectName,
-          billingType: values.billingType,
-        })
-
-        if (result.error) {
-          setFeedback(result.error)
-          toast({
-            title: 'Unable to create client',
-            description: result.error,
-            variant: 'destructive',
-          })
-          return
-        }
-
-        toast({
-          title: 'Client created',
-          description: `${values.clientName} has been created with an onboarding project. A portal invite has been sent.`,
-        })
-        onComplete()
+      toast({
+        title: 'Portal account created',
+        description: `A portal invite has been sent to ${contact?.name || contact?.email || 'the contact'}.`,
       })
-    },
-    [contact?.id, isPending, toast, onComplete]
-  )
+      onComplete()
+    })
+  }, [contact, isPending, toast, onComplete])
 
   const handleConfirmInvite = useCallback(() => {
     const contactId = contact?.id
@@ -526,12 +515,13 @@ export function ContactsSheet({
         onCancel={handleCancelInvite}
         onConfirm={handleConfirmInvite}
       />
-      <PromoteToClientDialog
+      <PromoteToUserDialog
         open={isPromoteDialogOpen}
         onOpenChange={setIsPromoteDialogOpen}
         contactName={contactDisplayName}
+        contactEmail={contact?.email ?? ''}
         isPending={isPending}
-        onSubmit={handlePromoteSubmit}
+        onConfirm={handleConfirmPromote}
       />
       {unsavedChangesDialog}
     </>

@@ -5,20 +5,15 @@ import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import type { ClientUserSummary } from '@/lib/settings/clients/client-sheet-utils'
 import { cn } from '@/lib/utils'
 
 import { ClientSheet } from './clients-sheet'
 
 type ClientsAddButtonProps = {
-  clientUsers: ClientUserSummary[]
-  clientMembers?: Record<string, ClientUserSummary[]>
   className?: string
 }
 
 export function ClientsAddButton({
-  clientUsers,
-  clientMembers = {},
   className,
 }: ClientsAddButtonProps) {
   const router = useRouter()
@@ -40,8 +35,6 @@ export function ClientsAddButton({
         onOpenChange={setOpen}
         onComplete={handleComplete}
         client={null}
-        allClientUsers={clientUsers}
-        clientMembers={clientMembers}
       />
     </div>
   )

@@ -2,13 +2,13 @@
 
 import {
   Archive,
-  Building2,
   Contact,
   Mail,
   Pencil,
   Phone,
   RefreshCw,
   Trash2,
+  UserPlus,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -177,10 +177,10 @@ export function ContactsTableSection({
                           variant='outline'
                           size='icon'
                           onClick={() => onRequestPromote(contact)}
-                          title='Create client from contact'
+                          title='Create portal account'
                           disabled={promoteDisabled}
                         >
-                          <Building2 className='h-4 w-4' />
+                          <UserPlus className='h-4 w-4' />
                         </Button>
                       </DisabledFieldTooltip>
                     ) : null}

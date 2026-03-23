@@ -13,7 +13,7 @@ import {
 import {
   destroyContactMutation,
   inviteContactToPortalMutation,
-  promoteContactToClientMutation,
+  promoteContactToUserMutation,
   restoreContactMutation,
   saveContactMutation,
   softDeleteContactMutation,
@@ -21,7 +21,6 @@ import {
 import type {
   ContactMutationContext,
   ContactMutationResult,
-  PromoteToClientInput,
 } from '@/lib/settings/contacts/actions'
 import {
   getContactSheetData as getSheetData,
@@ -109,13 +108,13 @@ export async function getContactSheetData(
   return getSheetData(user, contactId)
 }
 
-export async function promoteContactToClient(
-  input: PromoteToClientInput
+export async function promoteContactToUser(
+  contactId: string
 ): Promise<ContactActionResult> {
   const user = await requireUser()
-  const mutationResult = await promoteContactToClientMutation(
+  const mutationResult = await promoteContactToUserMutation(
     { user },
-    input
+    { contactId }
   )
   const { didMutate, ...result } = mutationResult
 
@@ -123,11 +122,7 @@ export async function promoteContactToClient(
     for (const path of CONTACT_ROUTES_TO_REVALIDATE) {
       revalidatePath(path)
     }
-    revalidatePath('/clients')
-    revalidatePath('/projects')
     revalidatePath('/settings/users')
-    revalidatePath('/settings/clients')
-    revalidatePath('/settings/projects')
   }
 
   return result

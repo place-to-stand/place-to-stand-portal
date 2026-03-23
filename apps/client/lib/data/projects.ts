@@ -5,6 +5,7 @@ import { and, eq, inArray, isNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import {
+  clients,
   projects,
   clientMembers,
   githubRepoLinks,
@@ -19,6 +20,7 @@ export type ClientProject = {
   status: string
   slug: string | null
   clientId: string | null
+  clientName: string | null
   hasRepoLinked: boolean
   repoFullName: string | null
   hasInstallation: boolean
@@ -42,8 +44,8 @@ export const fetchClientProjects = cache(
     const clientIds = memberships.map(m => m.clientId)
     if (clientIds.length === 0) return []
 
-    // Fetch projects, repo links, and installations in parallel
-    const [projectRows, repoLinks, installations] = await Promise.all([
+    // Fetch projects, repo links, installations, and client names in parallel
+    const [projectRows, repoLinks, installations, clientRows] = await Promise.all([
       db
         .select({
           id: projects.id,
@@ -83,6 +85,10 @@ export const fetchClientProjects = cache(
             isNull(githubAppInstallations.deletedAt)
           )
         ),
+      db
+        .select({ id: clients.id, name: clients.name })
+        .from(clients)
+        .where(inArray(clients.id, clientIds)),
     ])
 
     const repoLinkMap = new Map(
@@ -91,6 +97,9 @@ export const fetchClientProjects = cache(
     const clientsWithInstallation = new Set(
       installations.map(i => i.clientId)
     )
+    const clientNameMap = new Map(
+      clientRows.map(c => [c.id, c.name])
+    )
 
     return projectRows.map(p => ({
       id: p.id,
@@ -98,6 +107,7 @@ export const fetchClientProjects = cache(
       status: p.status,
       slug: p.slug,
       clientId: p.clientId,
+      clientName: p.clientId ? clientNameMap.get(p.clientId) ?? null : null,
       hasRepoLinked: repoLinkMap.has(p.id),
       repoFullName: repoLinkMap.get(p.id) ?? null,
       hasInstallation: p.clientId

@@ -38,10 +38,7 @@ import {
   PENDING_REASON,
   getArchiveClientDialogDescription,
 } from '@/lib/settings/clients/client-sheet-constants'
-import type {
-  ClientRow,
-  ClientUserSummary,
-} from '@/lib/settings/clients/client-sheet-utils'
+import type { ClientRow } from '@/lib/settings/clients/client-sheet-utils'
 import { cn } from '@/lib/utils'
 import { ViewLogger } from '@/components/activity/view-logger'
 import { ActivityVerbs } from '@/lib/activity/types'
@@ -68,8 +65,6 @@ type ClientDetailProps = {
   transcripts: TranscriptForClient[]
   transcriptCount: number
   canManageClients: boolean
-  clientUsers: ClientUserSummary[]
-  clientMembers: Record<string, ClientUserSummary[]>
   clientRow: ClientRow
   currentUserId: string
   referralContact: ReferralContactInfo
@@ -83,8 +78,6 @@ export function ClientDetail({
   transcripts,
   transcriptCount,
   canManageClients,
-  clientUsers,
-  clientMembers,
   clientRow,
   currentUserId,
   referralContact,
@@ -110,8 +103,6 @@ export function ClientDetail({
           <ClientOverviewActions
             client={client}
             clientRow={clientRow}
-            clientUsers={clientUsers}
-            clientMembers={clientMembers}
             contacts={contacts}
           />
         </div>
@@ -345,16 +336,12 @@ function ProjectRow({ project, clientSlug }: ProjectRowProps) {
 type ClientOverviewActionsProps = {
   client: HydratedClientDetail
   clientRow: ClientRow
-  clientUsers: ClientUserSummary[]
-  clientMembers: Record<string, ClientUserSummary[]>
   contacts: ContactWithClientLink[]
 }
 
 function ClientOverviewActions({
   client,
   clientRow,
-  clientUsers,
-  clientMembers,
   contacts,
 }: ClientOverviewActionsProps) {
   const router = useRouter()
@@ -420,13 +407,12 @@ function ClientOverviewActions({
         onComplete={handleSheetComplete}
         onArchived={handleSheetArchived}
         client={clientRow}
-        allClientUsers={clientUsers}
-        clientMembers={clientMembers}
         clientContacts={contacts.map(c => ({
           id: c.id,
           name: c.name,
           email: c.email,
           phone: c.phone,
+          hasPortalAccess: Boolean(c.userId),
         }))}
       />
       <ConfirmDialog

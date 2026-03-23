@@ -28,7 +28,7 @@ type UpdateClientPayload = {
   website: string | null
   referredBy: string | null
   notes: string | null
-  memberIds: string[]
+  memberIds?: string[]
 }
 
 type ExistingClientRecord = {
@@ -90,20 +90,22 @@ export async function updateClient(
     return buildMutationResult({ error: 'Client not found.' })
   }
 
-  let existingMemberIds: string[] = []
+  let existingMemberIds: string[] | undefined = undefined
 
-  try {
-    const memberRows = await db
-      .select({ userId: clientMembers.userId })
-      .from(clientMembers)
-      .where(
-        and(eq(clientMembers.clientId, id), isNull(clientMembers.deletedAt))
-      )
+  if (memberIds) {
+    try {
+      const memberRows = await db
+        .select({ userId: clientMembers.userId })
+        .from(clientMembers)
+        .where(
+          and(eq(clientMembers.clientId, id), isNull(clientMembers.deletedAt))
+        )
 
-    existingMemberIds = memberRows.map(member => member.userId)
-  } catch (error) {
-    console.error('Failed to load client members', error)
-    return buildMutationResult({ error: 'Unable to update client members.' })
+      existingMemberIds = memberRows.map(member => member.userId)
+    } catch (error) {
+      console.error('Failed to load client members', error)
+      return buildMutationResult({ error: 'Unable to update client members.' })
+    }
   }
 
   try {
@@ -119,18 +121,20 @@ export async function updateClient(
     })
   }
 
-  const syncResult = await syncClientMembers(id, memberIds)
+  if (memberIds) {
+    const syncResult = await syncClientMembers(id, memberIds)
 
-  if (syncResult.error) {
-    return buildMutationResult(syncResult)
+    if (syncResult.error) {
+      return buildMutationResult(syncResult)
+    }
   }
 
   await recordUpdateActivity({
     userContext: { id: user.id, role: user.role },
     existingClient,
     updatedValues: { name, notes, slugToUpdate, billingType },
-    existingMemberIds,
-    nextMemberIds: memberIds,
+    existingMemberIds: existingMemberIds ?? [],
+    nextMemberIds: memberIds ?? [],
   })
 
   return buildMutationResult({})

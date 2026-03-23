@@ -7,7 +7,6 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 
 import type { PageInfo } from '@/lib/pagination/cursor'
-import type { ClientUserSummary } from '@/lib/settings/clients/client-sheet-utils'
 import {
   type ClientsTableClient,
   useClientsTableState,
@@ -18,8 +17,6 @@ import { ClientSheet } from './clients-sheet'
 
 type ClientsManagementTableProps = {
   clients: ClientsTableClient[]
-  clientUsers: ClientUserSummary[]
-  membersByClient: Record<string, ClientUserSummary[]>
   pageInfo: PageInfo
   mode: 'active' | 'archive'
 }
@@ -31,8 +28,6 @@ const EMPTY_MESSAGES = {
 
 export function ClientsManagementTable({
   clients,
-  clientUsers,
-  membersByClient,
   pageInfo,
   mode,
 }: ClientsManagementTableProps) {
@@ -143,8 +138,6 @@ export function ClientsManagementTable({
         onOpenChange={handleSheetOpenChange}
         onComplete={handleSheetComplete}
         client={selectedClient}
-        allClientUsers={clientUsers}
-        clientMembers={membersByClient}
       />
     </div>
   )

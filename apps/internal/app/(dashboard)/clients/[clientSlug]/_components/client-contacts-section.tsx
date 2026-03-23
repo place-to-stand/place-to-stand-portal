@@ -1,6 +1,6 @@
 'use client'
 
-import { Mail, Phone, Star, Users } from 'lucide-react'
+import { Mail, Phone, Star, UserCheck, Users } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import type { ContactWithClientLink } from '@/lib/types/client-contacts'
@@ -53,6 +53,11 @@ function ContactRow({ contact }: { contact: ContactWithClientLink }) {
           )}
           {contact.isPrimary && (
             <Star className='h-3 w-3 shrink-0 fill-amber-400 text-amber-400' />
+          )}
+          {contact.userId && (
+            <span title='Has portal access'>
+              <UserCheck className='h-3 w-3 shrink-0 text-emerald-500' />
+            </span>
           )}
         </div>
         <a

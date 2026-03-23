@@ -4,11 +4,7 @@ import type { UseFormReturn } from 'react-hook-form'
 import type { useToast } from '@/components/ui/use-toast'
 import type { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 
-import type {
-  ClientMember,
-  ClientRow,
-  ClientUserSummary,
-} from '../client-sheet-utils'
+import type { ClientRow } from '../client-sheet-utils'
 import type { ClientSheetFormValues } from '../client-sheet-schema'
 
 type ToastFn = ReturnType<typeof useToast>['toast']
@@ -21,6 +17,7 @@ export type ClientContactOption = {
   name: string | null
   email: string
   phone: string | null
+  hasPortalAccess: boolean
 }
 
 export type ReferralContactOption = {
@@ -35,37 +32,19 @@ export type UseClientSheetStateArgs = {
   onComplete: () => void
   onArchived?: () => void
   client: ClientRow | null
-  allClientUsers: ClientUserSummary[]
-  clientMembers: Record<string, ClientUserSummary[]>
   /** All available contacts for the contact picker (optional - will be fetched if not provided) */
   allContacts?: ClientContactOption[]
   /** Contacts linked to the client (optional - will be fetched if not provided) */
   clientContacts?: ClientContactOption[]
 }
 
-export type ClientMemberOption = ClientMember
-
 export type BaseFormState = {
   form: UseFormReturn<ClientSheetFormValues>
-  addButtonDisabled: boolean
-  addButtonDisabledReason: string | null
   submitDisabled: boolean
   submitDisabledReason: string | null
-  availableMembers: ClientMemberOption[]
-  selectedMembers: ClientMemberOption[]
-  membersHelpText: string
-  isPickerOpen: boolean
-  removalCandidate: ClientMemberOption | null
-  removalName: string | null
   unsavedChangesDialog: UnsavedChangesDialog
   handleSheetOpenChange: (open: boolean) => void
   handleFormSubmit: (values: ClientSheetFormValues) => void
-  handlePickerOpenChange: (open: boolean) => void
-  handleAddMember: (member: ClientMemberOption) => void
-  handleRequestRemoval: (member: ClientMemberOption) => void
-  handleCancelRemoval: () => void
-  handleConfirmRemoval: () => void
-  replaceMembers: (members: ClientMemberOption[]) => void
   // Contacts
   availableContacts: ClientContactOption[]
   selectedContacts: ClientContactOption[]
@@ -122,18 +101,10 @@ export type UseClientSheetStateReturn = {
   isEditing: boolean
   feedback: string | null
   isPending: boolean
-  addButtonDisabled: boolean
-  addButtonDisabledReason: string | null
   submitDisabled: boolean
   submitDisabledReason: string | null
   deleteDisabled: boolean
   deleteDisabledReason: string | null
-  selectedMembers: ClientMemberOption[]
-  availableMembers: ClientMemberOption[]
-  membersHelpText: string
-  isPickerOpen: boolean
-  removalCandidate: ClientMemberOption | null
-  removalName: string | null
   clientDisplayName: string
   sheetTitle: string
   sheetDescription: string
@@ -142,15 +113,9 @@ export type UseClientSheetStateReturn = {
   unsavedChangesDialog: UnsavedChangesDialog
   handleSheetOpenChange: (open: boolean) => void
   handleFormSubmit: (values: ClientSheetFormValues) => void
-  handlePickerOpenChange: (open: boolean) => void
-  handleAddMember: (member: ClientMemberOption) => void
-  handleRequestRemoval: (member: ClientMemberOption) => void
-  handleCancelRemoval: () => void
-  handleConfirmRemoval: () => void
   handleRequestDelete: () => void
   handleCancelDelete: () => void
   handleConfirmDelete: () => void
-  replaceMembers: (members: ClientMemberOption[]) => void
   // Contacts
   availableContacts: ClientContactOption[]
   selectedContacts: ClientContactOption[]

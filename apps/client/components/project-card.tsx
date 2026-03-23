@@ -107,7 +107,12 @@ export function ProjectCard({ project }: { project: ClientProject }) {
       className="block rounded-lg border border-border bg-card p-4 transition-colors active:bg-muted hover:bg-muted/50"
     >
       <div className="flex items-start justify-between gap-3">
-        <h3 className="font-medium text-card-foreground">{project.name}</h3>
+        <div className="min-w-0">
+          <h3 className="font-medium text-card-foreground">{project.name}</h3>
+          {project.clientName && (
+            <p className="text-xs text-muted-foreground truncate">{project.clientName}</p>
+          )}
+        </div>
         <Badge
           variant="secondary"
           className={cn(

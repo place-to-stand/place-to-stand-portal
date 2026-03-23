@@ -12,7 +12,6 @@ import {
 import type { UseClientSheetStateArgs } from '@/lib/settings/clients/use-client-sheet-state'
 import { useClientSheetState } from '@/lib/settings/clients/use-client-sheet-state'
 
-import { ClientMemberRemovalDialog } from './client-sheet/client-member-removal-dialog'
 import { ClientSheetForm } from './client-sheet/client-sheet-form'
 import { ClientSheetHeader } from './client-sheet/client-sheet-header'
 
@@ -24,30 +23,18 @@ export function ClientSheet(props: ClientSheetProps) {
     isEditing,
     feedback,
     isPending,
-    addButtonDisabled,
-    addButtonDisabledReason,
     submitDisabled,
     submitDisabledReason,
     deleteDisabled,
     deleteDisabledReason,
-    selectedMembers,
-    availableMembers,
-    isPickerOpen,
     pendingReason,
     isDeleteDialogOpen,
-    removalCandidate,
-    removalName,
     clientDisplayName,
     sheetTitle,
     sheetDescription,
     unsavedChangesDialog,
     handleSheetOpenChange,
     handleFormSubmit,
-    handlePickerOpenChange,
-    handleAddMember,
-    handleRequestRemoval,
-    handleCancelRemoval,
-    handleConfirmRemoval,
     handleRequestDelete,
     handleCancelDelete,
     handleConfirmDelete,
@@ -85,18 +72,10 @@ export function ClientSheet(props: ClientSheetProps) {
             isPending={isPending}
             isEditing={isEditing}
             pendingReason={pendingReason}
-            addButtonDisabled={addButtonDisabled}
-            addButtonDisabledReason={addButtonDisabledReason}
             submitDisabled={submitDisabled}
             submitDisabledReason={submitDisabledReason}
             deleteDisabled={deleteDisabled}
             deleteDisabledReason={deleteDisabledReason}
-            selectedMembers={selectedMembers}
-            availableMembers={availableMembers}
-            isPickerOpen={isPickerOpen}
-            onPickerOpenChange={handlePickerOpenChange}
-            onAddMember={handleAddMember}
-            onRequestRemoval={handleRequestRemoval}
             onSubmit={handleFormSubmit}
             onRequestDelete={handleRequestDelete}
             isSheetOpen={props.open}
@@ -131,15 +110,6 @@ export function ClientSheet(props: ClientSheetProps) {
         onConfirm={handleConfirmDelete}
       />
       {unsavedChangesDialog}
-      <ClientMemberRemovalDialog
-        open={Boolean(removalCandidate)}
-        isPending={isPending}
-        pendingReason={pendingReason}
-        memberName={removalName}
-        clientDisplayName={clientDisplayName}
-        onCancel={handleCancelRemoval}
-        onConfirm={handleConfirmRemoval}
-      />
     </>
   )
 }
