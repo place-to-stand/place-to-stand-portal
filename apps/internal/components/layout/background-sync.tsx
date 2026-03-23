@@ -1,7 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react'
-import { useRouter } from 'next/navigation'
+
+import { useSidebarCounts } from './app-shell'
 
 interface BackgroundSyncProps {
   isConnected: boolean
@@ -33,7 +34,7 @@ function getServerSnapshot() {
  * unhandled network errors that crash the React error boundary.
  */
 export function BackgroundSync({ isConnected }: BackgroundSyncProps) {
-  const router = useRouter()
+  const { refreshCounts } = useSidebarCounts()
   const hasSyncedRef = useRef(false)
   const isOnline = useSyncExternalStore(
     subscribeOnline,
@@ -45,17 +46,19 @@ export function BackgroundSync({ isConnected }: BackgroundSyncProps) {
     if (!navigator.onLine) return
 
     try {
-      const [emailRes, transcriptRes] = await Promise.all([
+      await Promise.all([
         fetch('/api/integrations/gmail/sync', { method: 'POST' }),
         fetch('/api/integrations/transcripts/sync', { method: 'POST' }),
       ])
-      if (emailRes.ok || transcriptRes.ok) {
-        router.refresh()
-      }
+
+      // After syncing, refresh only the sidebar badge counts.
+      // This updates just the count via React state — no router.refresh(),
+      // so form state, scroll position, and other client state are preserved.
+      await refreshCounts()
     } catch {
       // Silent — no toast, no UI
     }
-  }, [router])
+  }, [refreshCounts])
 
   useEffect(() => {
     if (!isConnected || !isOnline) return

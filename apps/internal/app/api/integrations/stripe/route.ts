@@ -15,47 +15,51 @@ import { createHourBlocksFromInvoice } from '@/lib/data/invoices'
 /**
  * Mark an invoice as paid, log activity, and create hour blocks.
  * Shared by both checkout.session.completed and payment_intent.succeeded handlers.
+ *
+ * Hour block creation is idempotent (ON CONFLICT DO NOTHING), so it runs
+ * even when the invoice is already PAID — this ensures retried webhooks
+ * can recover from a previous incomplete execution.
  */
 async function markInvoicePaid(
   invoice: NonNullable<Awaited<ReturnType<typeof getInvoiceByStripeSession>>>,
   paymentIntentId: string | null
 ) {
-  // Idempotency: if already PAID, skip
-  if (invoice.status === 'PAID') return
+  // Only update status if not already paid
+  if (invoice.status !== 'PAID') {
+    await db
+      .update(invoices)
+      .set({
+        status: 'PAID',
+        stripePaymentIntentId: paymentIntentId,
+        paidAt: sql`timezone('utc'::text, now())`,
+        updatedAt: sql`timezone('utc'::text, now())`,
+      })
+      .where(eq(invoices.id, invoice.id))
 
-  await db
-    .update(invoices)
-    .set({
-      status: 'PAID',
-      stripePaymentIntentId: paymentIntentId,
-      paidAt: sql`timezone('utc'::text, now())`,
-      updatedAt: sql`timezone('utc'::text, now())`,
+    // Log activity (fire-and-forget — acceptable for non-critical logging)
+    const paidEvent = invoicePaidEvent({
+      invoiceNumber: invoice.invoice_number,
+      total: invoice.total,
+      clientName: invoice.client?.name,
     })
-    .where(eq(invoices.id, invoice.id))
 
-  // Log activity (fire-and-forget)
-  const paidEvent = invoicePaidEvent({
-    invoiceNumber: invoice.invoice_number,
-    total: invoice.total,
-    clientName: invoice.client?.name,
-  })
-
-  if (invoice.created_by) {
-    logActivity({
-      actorId: invoice.created_by,
-      verb: paidEvent.verb,
-      summary: paidEvent.summary,
-      targetType: 'INVOICE',
-      targetId: invoice.id,
-      targetClientId: invoice.client_id,
-      metadata: paidEvent.metadata,
-    }).catch(console.error)
+    if (invoice.created_by) {
+      logActivity({
+        actorId: invoice.created_by,
+        verb: paidEvent.verb,
+        summary: paidEvent.summary,
+        targetType: 'INVOICE',
+        targetId: invoice.id,
+        targetClientId: invoice.client_id,
+        metadata: paidEvent.metadata,
+      }).catch(console.error)
+    }
   }
 
-  // Create hour blocks from qualifying line items
-  createHourBlocksFromInvoice(invoice.id).catch(err => {
-    console.error('[stripe-webhook] Failed to create hour blocks:', err)
-  })
+  // Always attempt hour block creation — must be awaited so it completes
+  // before the serverless function terminates. Safe to run on retries
+  // because the insert uses ON CONFLICT DO NOTHING.
+  await createHourBlocksFromInvoice(invoice.id)
 }
 
 export async function POST(request: Request) {

@@ -176,6 +176,7 @@ const formatDate = (date: string | null): string | null => {
   })
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function deliverInvoiceEmail(params: {
   invoiceId: string
   invoiceNumber: string

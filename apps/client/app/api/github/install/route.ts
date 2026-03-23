@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { nanoid } from 'nanoid'
 
 import { getCurrentUser } from '@/lib/auth/session'
+import { getEnv } from '@/lib/env.server'
 
 /**
  * GET /api/github/install?projectId=xxx
@@ -17,6 +18,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
   }
 
+  getEnv() // validate env vars are present
   const state = nanoid(32)
 
   const cookieStore = await cookies()

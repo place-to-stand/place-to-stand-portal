@@ -131,6 +131,9 @@ export function useInvoiceSheetState({
   const [isPending, startTransition] = useTransition()
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const invoiceWithLineItemsRef = useRef<InvoiceWithLineItems | null>(null)
+  // Track the client ID loaded from the database / pre-fill so we only
+  // auto-fill when the user actively picks a *different* client.
+  const loadedClientIdRef = useRef<string | null>(null)
   const { toast } = useToast()
 
   const clientOptions = useMemo<ClientOption[]>(
@@ -221,7 +224,7 @@ export function useInvoiceSheetState({
       }
 
       // Mark the pre-filled client (if any) so auto-fill skips hydration
-      loadedClientIdRef.current = prefillData?.clientId ?? null
+      loadedClientIdRef.current = (prefillData?.clientId ?? null)
 
       startTransition(() => {
         if (prefillData) {
@@ -249,7 +252,7 @@ export function useInvoiceSheetState({
       try {
         const fullInvoice = await getInvoiceDetails(invoice.id)
         // Mark the loaded client so auto-fill skips hydration
-        loadedClientIdRef.current = fullInvoice?.client_id ?? null
+        loadedClientIdRef.current = (fullInvoice?.client_id ?? null)
         invoiceWithLineItemsRef.current = fullInvoice
         resetFormState(fullInvoice)
       } catch {
@@ -273,10 +276,6 @@ export function useInvoiceSheetState({
     return map
   }, [taxRates])
 
-  // Track the client ID loaded from the database / pre-fill so we only
-  // auto-fill when the user actively picks a *different* client.
-  const loadedClientIdRef = useRef<string | null>(null)
-
   useEffect(() => {
     if (!watchedClientId) return
 
@@ -284,7 +283,7 @@ export function useInvoiceSheetState({
     if (watchedClientId === loadedClientIdRef.current) return
 
     // Mark this client as the "current" so switching back won't re-trigger
-    loadedClientIdRef.current = watchedClientId
+    loadedClientIdRef.current = (watchedClientId)
 
     const selectedClient = clients.find(c => c.id === watchedClientId)
     if (!selectedClient) return

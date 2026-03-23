@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { Ban, Calendar, Eye, Hash, Send, Undo2 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
@@ -108,19 +108,15 @@ export function InvoiceSheetRightColumn({
   onUnsendInvoice,
   onVoidInvoice,
 }: InvoiceSheetRightColumnProps) {
-  const [shareActive, setShareActive] = useState(invoice.share_enabled)
-
-  // Sync local share state when the invoice prop updates (e.g. after send/unsend)
-  useEffect(() => {
-    setShareActive(invoice.share_enabled)
-  }, [invoice.share_enabled])
+  // Track local optimistic override; null means "use prop value"
+  const [shareOverride, setShareOverride] = useState<boolean | null>(null)
+  const shareActive = shareOverride ?? invoice.share_enabled
 
   const handleShareStateChange = useCallback((enabled: boolean) => {
-    setShareActive(enabled)
+    setShareOverride(enabled)
   }, [])
 
   const canSend = invoice.status === 'DRAFT' && shareActive
-  const canUnsend = invoice.status === 'SENT'
   const canVoid = VOIDABLE_STATUSES.has(invoice.status)
   const showSendButton = invoice.status === 'DRAFT'
   const showUnsendButton = invoice.status === 'SENT'

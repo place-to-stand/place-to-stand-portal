@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
   const returnProjectId = cookieStore.get('github_app_return_project')?.value
   const returnTo = cookieStore.get('github_app_return_to')?.value
 
-  // Build redirect paths — returnTo cookie takes precedence
+  // Build redirect paths — returnTo cookie takes precedence, then projectId, then github/setup
   let errorPath: string
   let successPath: string
 
@@ -38,8 +38,8 @@ export async function GET(request: NextRequest) {
     errorPath = `/projects/${returnProjectId}?github=error`
     successPath = `/projects/${returnProjectId}?github=installed`
   } else {
-    errorPath = '/'
-    successPath = '/'
+    errorPath = '/github/setup?error=callback_failed'
+    successPath = '/github/setup?success=true'
   }
 
   if (!installationId || !state) {
