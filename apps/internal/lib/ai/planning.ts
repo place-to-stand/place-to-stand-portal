@@ -3,7 +3,7 @@ import 'server-only'
 import { tool } from 'ai'
 import { z } from 'zod'
 
-import { getFileContents, searchRepoCode } from '@/lib/github/client'
+import { getFileContents, searchRepoCode, type GitHubAuth } from '@/lib/github/client'
 
 // ---------------------------------------------------------------------------
 // System prompt builder
@@ -86,7 +86,7 @@ export function createPlanningTools(
   userId: string,
   owner: string,
   repo: string,
-  connectionId?: string
+  auth?: GitHubAuth
 ) {
   return {
     read_file: tool({
@@ -95,7 +95,7 @@ export function createPlanningTools(
       inputSchema: readFileSchema,
       execute: async ({ path }: z.infer<typeof readFileSchema>) => {
         try {
-          const result = await getFileContents(userId, owner, repo, path, undefined, connectionId)
+          const result = await getFileContents(userId, owner, repo, path, undefined, auth)
           if (result.type === 'dir') {
             return `"${path}" is a directory. Entries:\n${result.entries.map(e => `  ${e.type === 'dir' ? '\u{1F4C1}' : '\u{1F4C4}'} ${e.name}`).join('\n')}`
           }
@@ -116,7 +116,7 @@ export function createPlanningTools(
       inputSchema: listDirectorySchema,
       execute: async ({ path }: z.infer<typeof listDirectorySchema>) => {
         try {
-          const result = await getFileContents(userId, owner, repo, path || '.', undefined, connectionId)
+          const result = await getFileContents(userId, owner, repo, path || '.', undefined, auth)
           if (result.type === 'file') {
             return `"${path}" is a file, not a directory.`
           }
@@ -135,7 +135,7 @@ export function createPlanningTools(
       inputSchema: searchCodeSchema,
       execute: async ({ query }: z.infer<typeof searchCodeSchema>) => {
         try {
-          const results = await searchRepoCode(userId, owner, repo, query, connectionId)
+          const results = await searchRepoCode(userId, owner, repo, query, auth)
           if (results.length === 0) {
             return `No results found for "${query}".`
           }

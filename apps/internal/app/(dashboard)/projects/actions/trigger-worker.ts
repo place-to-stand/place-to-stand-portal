@@ -21,6 +21,7 @@ import {
   createCommentReaction,
   listIssueComments,
   getFileContents,
+  resolveRepoLinkAuth,
 } from '@/lib/github/client'
 import { composeWorkerComment } from '@/lib/github/compose-worker-comment'
 import { composeIssueBody } from '@/lib/github/compose-issue-body'
@@ -106,6 +107,16 @@ export async function triggerWorkerPlan(input: {
     return { error: 'Repository does not belong to this project.' }
   }
 
+  // Resolve auth once for all GitHub API calls in this function
+  let repoAuth: { token: string }
+  try {
+    repoAuth = await resolveRepoLinkAuth(repoLink)
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Failed to resolve GitHub credentials.',
+    }
+  }
+
   // Build portal URL for issue body
   const baseUrl =
     serverEnv.APP_BASE_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? ''
@@ -126,7 +137,7 @@ export async function triggerWorkerPlan(input: {
           portalUrl,
         }),
       },
-      repoLink.oauthConnectionId ?? undefined
+      repoAuth
     )
   } catch (error) {
     console.error('Failed to create GitHub issue', error)
@@ -185,7 +196,7 @@ export async function triggerWorkerPlan(input: {
       repoLink.repoName,
       issue.number,
       body,
-      repoLink.oauthConnectionId ?? undefined
+      repoAuth
     )
   } catch (error) {
     console.error('Failed to post worker comment', error)
@@ -286,6 +297,15 @@ export async function triggerWorkerImplement(input: {
   const repoLink = await getRepoLinkById(deployment.repoLinkId)
   if (!repoLink) return { error: 'Repository link not found.' }
 
+  let repoAuth: { token: string }
+  try {
+    repoAuth = await resolveRepoLinkAuth(repoLink)
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Failed to resolve GitHub credentials.',
+    }
+  }
+
   // Post implement comment
   let comment: { id: number; html_url: string }
   try {
@@ -302,7 +322,7 @@ export async function triggerWorkerImplement(input: {
       repoLink.repoName,
       deployment.githubIssueNumber,
       body,
-      repoLink.oauthConnectionId ?? undefined
+      repoAuth
     )
   } catch (error) {
     console.error('Failed to post implement comment', error)
@@ -435,6 +455,15 @@ export async function cancelDeployment(input: {
   const repoLink = await getRepoLinkById(deployment.repoLinkId)
   if (!repoLink) return { error: 'Repository link not found.' }
 
+  let repoAuth: { token: string }
+  try {
+    repoAuth = await resolveRepoLinkAuth(repoLink)
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Failed to resolve GitHub credentials.',
+    }
+  }
+
   // Find latest bot comment to react on
   let rawComments
   try {
@@ -443,7 +472,7 @@ export async function cancelDeployment(input: {
       repoLink.repoOwner,
       repoLink.repoName,
       deployment.githubIssueNumber,
-      repoLink.oauthConnectionId ?? undefined
+      repoAuth
     )
   } catch (error) {
     console.error('Failed to fetch issue comments for cancel', error)
@@ -465,7 +494,7 @@ export async function cancelDeployment(input: {
       repoLink.repoName,
       latestBotComment.id,
       '-1',
-      repoLink.oauthConnectionId ?? undefined
+      repoAuth
     )
   } catch (error) {
     console.error('Failed to add cancel reaction', error)
@@ -591,6 +620,15 @@ export async function deployPlan(input: {
   const repoLink = await getRepoLinkById(repoLinkId)
   if (!repoLink) return { error: 'Repository link not found.' }
 
+  let repoAuth: { token: string }
+  try {
+    repoAuth = await resolveRepoLinkAuth(repoLink)
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Failed to resolve GitHub credentials.',
+    }
+  }
+
   // Determine PRD number by reading docs/prds/ directory
   let prdNumber = 1
   try {
@@ -600,7 +638,7 @@ export async function deployPlan(input: {
       repoLink.repoName,
       'docs/prds',
       undefined,
-      repoLink.oauthConnectionId ?? undefined
+      repoAuth
     )
     if (result.type === 'dir') {
       // Parse existing folder names like "001-feature-name"
@@ -650,7 +688,7 @@ export async function deployPlan(input: {
           portalUrl,
         }),
       },
-      repoLink.oauthConnectionId ?? undefined
+      repoAuth
     )
   } catch (error) {
     console.error('deployPlan: Failed to create GitHub issue', error)
@@ -706,7 +744,7 @@ export async function deployPlan(input: {
       repoLink.repoName,
       issue.number,
       workerBody,
-      repoLink.oauthConnectionId ?? undefined
+      repoAuth
     )
   } catch (error) {
     console.error('deployPlan: Failed to post worker comment', error)

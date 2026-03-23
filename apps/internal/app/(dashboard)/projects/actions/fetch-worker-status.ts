@@ -9,7 +9,7 @@ import { db } from '@/lib/db'
 import { tasks, taskDeployments } from '@/lib/db/schema'
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
 import { getRepoLinkById } from '@/lib/data/github-repos'
-import { listIssueComments, type GitHubComment } from '@/lib/github/client'
+import { listIssueComments, resolveRepoLinkAuth, type GitHubComment } from '@/lib/github/client'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -113,6 +113,15 @@ export async function fetchWorkerStatus(input: {
   const repoLink = await getRepoLinkById(deployment.repoLinkId)
   if (!repoLink) return { error: 'Repository link not found.' }
 
+  let repoAuth: { token: string }
+  try {
+    repoAuth = await resolveRepoLinkAuth(repoLink)
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Failed to resolve GitHub credentials.',
+    }
+  }
+
   let rawComments: GitHubComment[]
   try {
     rawComments = await listIssueComments(
@@ -120,7 +129,7 @@ export async function fetchWorkerStatus(input: {
       repoLink.repoOwner,
       repoLink.repoName,
       deployment.githubIssueNumber,
-      repoLink.oauthConnectionId ?? undefined
+      repoAuth
     )
   } catch (error) {
     console.error('Failed to fetch issue comments', error)
