@@ -3,6 +3,17 @@ import { db } from '@/lib/db'
 import { oauthConnections } from '@/lib/db/schema'
 import { decryptToken } from '@/lib/oauth/encryption'
 
+export { resolveRepoLinkAuth } from './resolve-auth'
+
+/**
+ * Union type for GitHub authentication.
+ *
+ * - `string`           — OAuth connection ID (legacy callers)
+ * - `{ token: string }` — Pre-resolved bearer token (from resolveRepoLinkAuth)
+ * - `undefined`         — Use default OAuth connection for the user
+ */
+export type GitHubAuth = string | { token: string } | undefined
+
 const GITHUB_API_BASE = 'https://api.github.com'
 
 interface GitHubRepo {
@@ -72,9 +83,12 @@ async function githubFetch<T>(
   userId: string,
   endpoint: string,
   options: RequestInit = {},
-  connectionId?: string
+  auth?: GitHubAuth
 ): Promise<T> {
-  const { token } = await getGitHubToken(userId, connectionId)
+  const token =
+    typeof auth === 'object' && auth !== null
+      ? auth.token
+      : (await getGitHubToken(userId, auth)).token
 
   const response = await fetch(`${GITHUB_API_BASE}${endpoint}`, {
     ...options,
@@ -117,9 +131,9 @@ export async function getRepo(
   userId: string,
   owner: string,
   repo: string,
-  connectionId?: string
+  auth?: GitHubAuth
 ): Promise<GitHubRepo> {
-  return githubFetch(userId, `/repos/${owner}/${repo}`, {}, connectionId)
+  return githubFetch(userId, `/repos/${owner}/${repo}`, {}, auth)
 }
 
 /**
@@ -136,7 +150,7 @@ export async function createPullRequest(
     base: string
     draft?: boolean
   },
-  connectionId?: string
+  auth?: GitHubAuth
 ): Promise<{ number: number; html_url: string }> {
   return githubFetch(
     userId,
@@ -146,7 +160,7 @@ export async function createPullRequest(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),
     },
-    connectionId
+    auth
   )
 }
 
@@ -157,9 +171,9 @@ export async function listBranches(
   userId: string,
   owner: string,
   repo: string,
-  connectionId?: string
+  auth?: GitHubAuth
 ): Promise<GitHubBranch[]> {
-  return githubFetch(userId, `/repos/${owner}/${repo}/branches`, {}, connectionId)
+  return githubFetch(userId, `/repos/${owner}/${repo}/branches`, {}, auth)
 }
 
 /**
@@ -170,13 +184,13 @@ export async function getBranch(
   owner: string,
   repo: string,
   branch: string,
-  connectionId?: string
+  auth?: GitHubAuth
 ): Promise<GitHubBranch> {
   return githubFetch(
     userId,
     `/repos/${owner}/${repo}/branches/${encodeURIComponent(branch)}`,
     {},
-    connectionId
+    auth
   )
 }
 
@@ -191,10 +205,10 @@ export async function createBranch(
     newBranch: string
     baseBranch: string
   },
-  connectionId?: string
+  auth?: GitHubAuth
 ): Promise<{ ref: string; sha: string }> {
   // First, get the SHA of the base branch
-  const baseBranchInfo = await getBranch(userId, owner, repo, params.baseBranch, connectionId)
+  const baseBranchInfo = await getBranch(userId, owner, repo, params.baseBranch, auth)
   const sha = baseBranchInfo.commit.sha
 
   // Create the new branch reference
@@ -209,7 +223,7 @@ export async function createBranch(
         sha,
       }),
     },
-    connectionId
+    auth
   )
 
   return { ref: result.ref, sha: result.object.sha }
@@ -224,10 +238,10 @@ export async function branchExists(
   owner: string,
   repo: string,
   branch: string,
-  connectionId?: string
+  auth?: GitHubAuth
 ): Promise<boolean> {
   try {
-    await getBranch(userId, owner, repo, branch, connectionId)
+    await getBranch(userId, owner, repo, branch, auth)
     return true
   } catch (error) {
     // Only treat 404 as "branch doesn't exist"
@@ -269,7 +283,7 @@ export async function createIssue(
   owner: string,
   repo: string,
   params: { title: string; body: string; labels?: string[] },
-  connectionId?: string
+  auth?: GitHubAuth
 ): Promise<GitHubIssue> {
   return githubFetch(
     userId,
@@ -279,7 +293,7 @@ export async function createIssue(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),
     },
-    connectionId
+    auth
   )
 }
 
@@ -292,7 +306,7 @@ export async function createIssueComment(
   repo: string,
   issueNumber: number,
   body: string,
-  connectionId?: string
+  auth?: GitHubAuth
 ): Promise<GitHubCommentResult> {
   return githubFetch(
     userId,
@@ -302,7 +316,7 @@ export async function createIssueComment(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ body }),
     },
-    connectionId
+    auth
   )
 }
 
@@ -314,13 +328,13 @@ export async function listIssueComments(
   owner: string,
   repo: string,
   issueNumber: number,
-  connectionId?: string
+  auth?: GitHubAuth
 ): Promise<GitHubComment[]> {
   return githubFetch(
     userId,
     `/repos/${owner}/${repo}/issues/${issueNumber}/comments?per_page=100`,
     {},
-    connectionId
+    auth
   )
 }
 
@@ -333,7 +347,7 @@ export async function createCommentReaction(
   repo: string,
   commentId: number,
   content: string,
-  connectionId?: string
+  auth?: GitHubAuth
 ): Promise<{ id: number }> {
   return githubFetch(
     userId,
@@ -343,7 +357,7 @@ export async function createCommentReaction(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content }),
     },
-    connectionId
+    auth
   )
 }
 
@@ -409,7 +423,7 @@ export async function getFileContents(
   repo: string,
   path: string,
   ref?: string,
-  connectionId?: string
+  auth?: GitHubAuth
 ): Promise<
   | { type: 'file'; content: string; path: string; size: number; sha: string }
   | { type: 'dir'; entries: Array<{ type: string; name: string; path: string; size: number }> }
@@ -420,7 +434,7 @@ export async function getFileContents(
     userId,
     `/repos/${owner}/${repo}/contents/${encodedPath}${params}`,
     {},
-    connectionId
+    auth
   )
 
   // Directory response is an array
@@ -456,13 +470,13 @@ export async function getRepoTree(
   owner: string,
   repo: string,
   ref = 'HEAD',
-  connectionId?: string
+  auth?: GitHubAuth
 ): Promise<{ entries: Array<{ path: string; type: 'blob' | 'tree'; size?: number }>; truncated: boolean }> {
   const result = await githubFetch<GitHubTreeResponse>(
     userId,
     `/repos/${owner}/${repo}/git/trees/${encodeURIComponent(ref)}?recursive=1`,
     {},
-    connectionId
+    auth
   )
 
   return {
@@ -484,7 +498,7 @@ export async function searchRepoCode(
   owner: string,
   repo: string,
   query: string,
-  connectionId?: string
+  auth?: GitHubAuth
 ): Promise<Array<{ name: string; path: string; fragments: string[] }>> {
   const q = encodeURIComponent(`${query} repo:${owner}/${repo}`)
   const result = await githubFetch<GitHubSearchCodeResult>(
@@ -495,7 +509,7 @@ export async function searchRepoCode(
         Accept: 'application/vnd.github.text-match+json',
       },
     },
-    connectionId
+    auth
   )
 
   return result.items.map(item => ({

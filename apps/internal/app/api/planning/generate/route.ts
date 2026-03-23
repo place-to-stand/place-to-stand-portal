@@ -5,7 +5,7 @@ import { z } from 'zod'
 
 import { getCurrentUser } from '@/lib/auth/session'
 import { getRepoLinkById } from '@/lib/data/github-repos'
-import { getRepoTree } from '@/lib/github/client'
+import { getRepoTree, resolveRepoLinkAuth } from '@/lib/github/client'
 import { buildPlanningSystemPrompt, createPlanningTools } from '@/lib/ai/planning'
 import {
   getMessages,
@@ -60,6 +60,9 @@ export async function POST(request: Request) {
     })
   }
 
+  // Resolve auth once for all GitHub API calls
+  const repoAuth = await resolveRepoLinkAuth(repoLink)
+
   // Fetch repo tree for system prompt context
   let repoTreePaths: string[] = []
   try {
@@ -68,7 +71,7 @@ export async function POST(request: Request) {
       repoLink.repoOwner,
       repoLink.repoName,
       repoLink.defaultBranch,
-      repoLink.oauthConnectionId ?? undefined
+      repoAuth
     )
     // Filter to key file types, limit depth
     repoTreePaths = tree.entries
@@ -119,7 +122,7 @@ export async function POST(request: Request) {
     user.id,
     repoLink.repoOwner,
     repoLink.repoName,
-    repoLink.oauthConnectionId ?? undefined
+    repoAuth
   )
 
   const nextVersion = currentVersion + 1
