@@ -18,10 +18,13 @@ import { serverEnv } from '@/lib/env.server'
  *
  * Throws if the repo link has no usable auth credentials.
  */
-export async function resolveRepoLinkAuth(repoLink: {
-  oauthConnectionId: string | null
-  githubAppInstallationId: string | null
-}): Promise<{ token: string }> {
+export async function resolveRepoLinkAuth(
+  userId: string,
+  repoLink: {
+    oauthConnectionId: string | null
+    githubAppInstallationId: string | null
+  }
+): Promise<{ token: string }> {
   // --- OAuth path ---
   if (repoLink.oauthConnectionId) {
     const [conn] = await db
@@ -32,7 +35,8 @@ export async function resolveRepoLinkAuth(repoLink: {
       .from(oauthConnections)
       .where(
         and(
-          eq(oauthConnections.id, repoLink.oauthConnectionId),
+          eq(oauthConnections.userId, userId),
+          eq(oauthConnections.provider, 'GITHUB'),
           eq(oauthConnections.status, 'ACTIVE'),
           isNull(oauthConnections.deletedAt)
         )
@@ -41,7 +45,7 @@ export async function resolveRepoLinkAuth(repoLink: {
 
     if (!conn) {
       throw new Error(
-        'OAuth connection is inactive or deleted. Re-authenticate GitHub to continue.'
+        'You need to connect your GitHub account to perform this action.'
       )
     }
 

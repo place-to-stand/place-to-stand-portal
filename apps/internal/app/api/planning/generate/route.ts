@@ -61,7 +61,7 @@ export async function POST(request: Request) {
   }
 
   // Resolve auth once for all GitHub API calls
-  const repoAuth = await resolveRepoLinkAuth(repoLink)
+  const repoAuth = await resolveRepoLinkAuth(user.id, repoLink)
 
   // Fetch repo tree for system prompt context
   let repoTreePaths: string[] = []
