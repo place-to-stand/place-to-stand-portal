@@ -115,7 +115,7 @@ export async function fetchWorkerStatus(input: {
 
   let repoAuth: { token: string }
   try {
-    repoAuth = await resolveRepoLinkAuth(repoLink)
+    repoAuth = await resolveRepoLinkAuth(user.id, repoLink)
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : 'Failed to resolve GitHub credentials.',

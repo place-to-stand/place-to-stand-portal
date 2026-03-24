@@ -110,7 +110,7 @@ export async function triggerWorkerPlan(input: {
   // Resolve auth once for all GitHub API calls in this function
   let repoAuth: { token: string }
   try {
-    repoAuth = await resolveRepoLinkAuth(repoLink)
+    repoAuth = await resolveRepoLinkAuth(user.id, repoLink)
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : 'Failed to resolve GitHub credentials.',
@@ -299,7 +299,7 @@ export async function triggerWorkerImplement(input: {
 
   let repoAuth: { token: string }
   try {
-    repoAuth = await resolveRepoLinkAuth(repoLink)
+    repoAuth = await resolveRepoLinkAuth(user.id, repoLink)
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : 'Failed to resolve GitHub credentials.',
@@ -457,7 +457,7 @@ export async function cancelDeployment(input: {
 
   let repoAuth: { token: string }
   try {
-    repoAuth = await resolveRepoLinkAuth(repoLink)
+    repoAuth = await resolveRepoLinkAuth(user.id, repoLink)
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : 'Failed to resolve GitHub credentials.',
@@ -622,7 +622,7 @@ export async function deployPlan(input: {
 
   let repoAuth: { token: string }
   try {
-    repoAuth = await resolveRepoLinkAuth(repoLink)
+    repoAuth = await resolveRepoLinkAuth(user.id, repoLink)
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : 'Failed to resolve GitHub credentials.',
