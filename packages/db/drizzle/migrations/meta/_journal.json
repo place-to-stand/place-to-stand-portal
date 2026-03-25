@@ -337,6 +337,27 @@
       "when": 1773997600000,
       "tag": "0047_add_onboarding_and_contact_user_link",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1774368719772,
+      "tag": "0048_sow_integration",
+      "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1774383115711,
+      "tag": "0049_allow_multiple_sows_per_project",
+      "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1774391975195,
+      "tag": "0050_sow_status",
+      "breakpoints": true
     }
   ]
 }

@@ -1847,6 +1847,176 @@ export const taskDeployments = pgTable(
 )
 
 // =============================================================================
+// SOW (SCOPE OF WORK) INTEGRATION
+// =============================================================================
+
+export const sowSnapshotStatus = pgEnum('sow_snapshot_status', [
+  'CURRENT',
+  'SUPERSEDED',
+])
+
+export const scopePlanningSessionStatus = pgEnum(
+  'scope_planning_session_status',
+  ['active', 'finalized']
+)
+
+export const sowStatus = pgEnum('sow_status', [
+  'DRAFT',
+  'ACCEPTED',
+  'IN_PROGRESS',
+  'BLOCKED',
+  'FINISHED',
+])
+
+export const projectSows = pgTable(
+  'project_sows',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    projectId: uuid('project_id').notNull(),
+    googleDocId: text('google_doc_id').notNull(),
+    googleDocUrl: text('google_doc_url').notNull(),
+    googleDocTitle: text('google_doc_title'),
+    status: sowStatus('status').default('DRAFT').notNull(),
+    linkedBy: uuid('linked_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    index('idx_project_sows_project_active')
+      .using('btree', table.projectId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_project_sows_google_doc')
+      .using('btree', table.googleDocId.asc().nullsLast().op('text_ops')),
+    foreignKey({
+      columns: [table.projectId],
+      foreignColumns: [projects.id],
+      name: 'project_sows_project_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.linkedBy],
+      foreignColumns: [users.id],
+      name: 'project_sows_linked_by_fkey',
+    }),
+  ]
+)
+
+export const sowSnapshots = pgTable(
+  'sow_snapshots',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    sowId: uuid('sow_id').notNull(),
+    version: integer().notNull(),
+    status: sowSnapshotStatus().default('CURRENT').notNull(),
+    rawContent: jsonb('raw_content'),
+    textContent: text('text_content'),
+    docModifiedAt: timestamp('doc_modified_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
+    snappedBy: uuid('snapped_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+  },
+  table => [
+    index('idx_sow_snapshots_sow')
+      .using('btree', table.sowId.asc().nullsLast().op('uuid_ops')),
+    unique('sow_snapshots_sow_version_key').on(table.sowId, table.version),
+    foreignKey({
+      columns: [table.sowId],
+      foreignColumns: [projectSows.id],
+      name: 'sow_snapshots_sow_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.snappedBy],
+      foreignColumns: [users.id],
+      name: 'sow_snapshots_snapped_by_fkey',
+    }),
+  ]
+)
+
+export const sowSections = pgTable(
+  'sow_sections',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    snapshotId: uuid('snapshot_id').notNull(),
+    sowId: uuid('sow_id').notNull(),
+    headingLevel: smallint('heading_level').notNull(),
+    headingText: text('heading_text').notNull(),
+    bodyText: text('body_text'),
+    sectionOrder: integer('section_order').notNull(),
+    contentHash: text('content_hash').notNull(),
+    firstSeenInVersion: integer('first_seen_in_version').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+  },
+  table => [
+    index('idx_sow_sections_snapshot')
+      .using('btree', table.snapshotId.asc().nullsLast().op('uuid_ops')),
+    index('idx_sow_sections_sow')
+      .using('btree', table.sowId.asc().nullsLast().op('uuid_ops')),
+    foreignKey({
+      columns: [table.snapshotId],
+      foreignColumns: [sowSnapshots.id],
+      name: 'sow_sections_snapshot_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.sowId],
+      foreignColumns: [projectSows.id],
+      name: 'sow_sections_sow_id_fkey',
+    }).onDelete('cascade'),
+  ]
+)
+
+export const scopePlanningSessions = pgTable(
+  'scope_planning_sessions',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    sowId: uuid('sow_id').notNull(),
+    repoLinkId: uuid('repo_link_id').notNull(),
+    snapshotId: uuid('snapshot_id'),
+    status: scopePlanningSessionStatus().default('active').notNull(),
+    createdBy: uuid('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+  },
+  table => [
+    index('idx_scope_planning_sessions_sow')
+      .using('btree', table.sowId.asc().nullsLast().op('uuid_ops')),
+    foreignKey({
+      columns: [table.sowId],
+      foreignColumns: [projectSows.id],
+      name: 'scope_planning_sessions_sow_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.repoLinkId],
+      foreignColumns: [githubRepoLinks.id],
+      name: 'scope_planning_sessions_repo_link_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.snapshotId],
+      foreignColumns: [sowSnapshots.id],
+      name: 'scope_planning_sessions_snapshot_id_fkey',
+    }),
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [users.id],
+      name: 'scope_planning_sessions_created_by_fkey',
+    }),
+  ]
+)
+
+// =============================================================================
 // AI PLANNING SESSIONS
 // =============================================================================
 
@@ -1895,7 +2065,8 @@ export const planThreads = pgTable(
   'plan_threads',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
-    sessionId: uuid('session_id').notNull(),
+    sessionId: uuid('session_id'),
+    scopeSessionId: uuid('scope_session_id'),
     model: text().notNull(),
     modelLabel: text('model_label').notNull(),
     currentVersion: integer('current_version').default(0).notNull(),
@@ -1906,11 +2077,22 @@ export const planThreads = pgTable(
   table => [
     index('idx_plan_threads_session')
       .using('btree', table.sessionId.asc().nullsLast().op('uuid_ops')),
+    index('idx_plan_threads_scope_session')
+      .using('btree', table.scopeSessionId.asc().nullsLast().op('uuid_ops')),
     foreignKey({
       columns: [table.sessionId],
       foreignColumns: [planningSessions.id],
       name: 'plan_threads_session_id_fkey',
     }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.scopeSessionId],
+      foreignColumns: [scopePlanningSessions.id],
+      name: 'plan_threads_scope_session_id_fkey',
+    }).onDelete('cascade'),
+    check(
+      'plan_threads_session_xor_scope',
+      sql`(session_id IS NOT NULL AND scope_session_id IS NULL) OR (session_id IS NULL AND scope_session_id IS NOT NULL)`
+    ),
   ]
 )
 

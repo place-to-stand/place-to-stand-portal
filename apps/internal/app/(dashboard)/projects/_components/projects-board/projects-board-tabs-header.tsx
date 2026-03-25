@@ -19,6 +19,7 @@ export type ProjectsBoardTabsHeaderProps = {
     | 'activity'
     | 'review'
     | 'timeLogs'
+    | 'scope'
   overviewHref: string
   boardHref: string
   calendarHref: string
@@ -26,11 +27,13 @@ export type ProjectsBoardTabsHeaderProps = {
   activityHref: string
   reviewHref: string
   timeLogsHref: string
+  scopeHref: string
   calendarDisabled: boolean
   backlogDisabled: boolean
   activityDisabled: boolean
   reviewDisabled: boolean
   timeLogsDisabled: boolean
+  scopeDisabled: boolean
   projectActions: ProjectActionControls
   activeProjectId: string | null
   activeProjectStatus: string | null
@@ -50,11 +53,13 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
     activityHref,
     reviewHref,
     timeLogsHref,
+    scopeHref,
     calendarDisabled,
     backlogDisabled,
     activityDisabled,
     reviewDisabled,
     timeLogsDisabled,
+    scopeDisabled,
     projectActions,
     activeProjectId,
     activeProjectStatus,
@@ -71,6 +76,31 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
             onClick={() => startBoardTabInteraction(initialTab, 'overview')}
           >
             Overview
+          </Link>
+        </TabsTrigger>
+        <TabsTrigger
+          value='scope'
+          className='px-3 py-1.5 text-sm'
+          asChild
+          disabled={scopeDisabled}
+        >
+          <Link
+            href={scopeHref}
+            prefetch={false}
+            aria-disabled={scopeDisabled}
+            tabIndex={scopeDisabled ? -1 : undefined}
+            onClick={event => {
+              if (scopeDisabled) {
+                event.preventDefault()
+                return
+              }
+              startBoardTabInteraction(initialTab, 'scope')
+            }}
+            className={
+              scopeDisabled ? 'pointer-events-none opacity-50' : undefined
+            }
+          >
+            Scope
           </Link>
         </TabsTrigger>
         <TabsTrigger value='board' className='px-3 py-1.5 text-sm' asChild>
