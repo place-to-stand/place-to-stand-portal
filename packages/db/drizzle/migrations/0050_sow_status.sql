@@ -1,2 +1,0 @@
-CREATE TYPE "public"."sow_status" AS ENUM('DRAFT', 'ACCEPTED', 'IN_PROGRESS', 'BLOCKED', 'FINISHED');--> statement-breakpoint
-ALTER TABLE "project_sows" ADD COLUMN "status" "sow_status" DEFAULT 'DRAFT' NOT NULL;

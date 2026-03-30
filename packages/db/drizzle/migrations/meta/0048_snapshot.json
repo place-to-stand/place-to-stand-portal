@@ -1,5 +1,5 @@
 {
-  "id": "624a2ef2-bb27-414c-bdbd-ce1f655510fb",
+  "id": "2cd39404-8f38-4b02-be87-6e0d8b0ecd48",
   "prevId": "cc5675aa-7ae7-44ff-a8d6-672ed52ed060",
   "version": "7",
   "dialect": "postgresql",
@@ -3905,13 +3905,7 @@
           "name": "session_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": false
-        },
-        "scope_session_id": {
-          "name": "scope_session_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "model": {
           "name": "model",
@@ -3956,22 +3950,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "idx_plan_threads_scope_session": {
-          "name": "idx_plan_threads_scope_session",
-          "columns": [
-            {
-              "expression": "scope_session_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last",
-              "opclass": "uuid_ops"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
@@ -3987,30 +3965,12 @@
           ],
           "onDelete": "cascade",
           "onUpdate": "no action"
-        },
-        "plan_threads_scope_session_id_fkey": {
-          "name": "plan_threads_scope_session_id_fkey",
-          "tableFrom": "plan_threads",
-          "tableTo": "scope_planning_sessions",
-          "columnsFrom": [
-            "scope_session_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {
-        "plan_threads_session_xor_scope": {
-          "name": "plan_threads_session_xor_scope",
-          "value": "(session_id IS NOT NULL AND scope_session_id IS NULL) OR (session_id IS NULL AND scope_session_id IS NOT NULL)"
-        }
-      },
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.planning_sessions": {
@@ -4274,6 +4234,14 @@
           "primaryKey": false,
           "notNull": false
         },
+        "status": {
+          "name": "status",
+          "type": "sow_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'DRAFT'"
+        },
         "linked_by": {
           "name": "linked_by",
           "type": "uuid",
@@ -4313,7 +4281,7 @@
               "opclass": "uuid_ops"
             }
           ],
-          "isUnique": true,
+          "isUnique": false,
           "where": "(deleted_at IS NULL)",
           "concurrently": false,
           "method": "btree",
@@ -5088,142 +5056,6 @@
           ]
         }
       },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.scope_planning_sessions": {
-      "name": "scope_planning_sessions",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "sow_id": {
-          "name": "sow_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "repo_link_id": {
-          "name": "repo_link_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "snapshot_id": {
-          "name": "snapshot_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "status": {
-          "name": "status",
-          "type": "scope_planning_session_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'active'"
-        },
-        "created_by": {
-          "name": "created_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "timezone('utc'::text, now())"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "timezone('utc'::text, now())"
-        }
-      },
-      "indexes": {
-        "idx_scope_planning_sessions_sow": {
-          "name": "idx_scope_planning_sessions_sow",
-          "columns": [
-            {
-              "expression": "sow_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last",
-              "opclass": "uuid_ops"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "scope_planning_sessions_sow_id_fkey": {
-          "name": "scope_planning_sessions_sow_id_fkey",
-          "tableFrom": "scope_planning_sessions",
-          "tableTo": "project_sows",
-          "columnsFrom": [
-            "sow_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "scope_planning_sessions_repo_link_id_fkey": {
-          "name": "scope_planning_sessions_repo_link_id_fkey",
-          "tableFrom": "scope_planning_sessions",
-          "tableTo": "github_repo_links",
-          "columnsFrom": [
-            "repo_link_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "scope_planning_sessions_snapshot_id_fkey": {
-          "name": "scope_planning_sessions_snapshot_id_fkey",
-          "tableFrom": "scope_planning_sessions",
-          "tableTo": "sow_snapshots",
-          "columnsFrom": [
-            "snapshot_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "scope_planning_sessions_created_by_fkey": {
-          "name": "scope_planning_sessions_created_by_fkey",
-          "tableFrom": "scope_planning_sessions",
-          "tableTo": "users",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -8027,20 +7859,23 @@
         "TERMS_AND_CONDITIONS"
       ]
     },
-    "public.scope_planning_session_status": {
-      "name": "scope_planning_session_status",
-      "schema": "public",
-      "values": [
-        "active",
-        "finalized"
-      ]
-    },
     "public.sow_snapshot_status": {
       "name": "sow_snapshot_status",
       "schema": "public",
       "values": [
         "CURRENT",
         "SUPERSEDED"
+      ]
+    },
+    "public.sow_status": {
+      "name": "sow_status",
+      "schema": "public",
+      "values": [
+        "DRAFT",
+        "ACCEPTED",
+        "IN_PROGRESS",
+        "BLOCKED",
+        "FINISHED"
       ]
     },
     "public.suggestion_status": {
