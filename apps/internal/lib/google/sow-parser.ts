@@ -272,17 +272,25 @@ export function parseRichContent(doc: GoogleDocsDocument): RichBlock[] {
 // =============================================================================
 
 function formatRunText(run: RichTextRun): string {
-  let text = run.text
+  const text = run.text
 
   // Don't wrap whitespace-only runs
   if (!text.trim()) return text
 
-  if (run.strikethrough) text = `~~${text.trim()}~~`
-  if (run.bold) text = `**${text.trim()}**`
-  if (run.italic) text = `*${text.trim()}*`
-  if (run.linkUrl) text = `[${text.trim()}](${run.linkUrl})`
+  // Preserve leading and trailing whitespace while formatting the core text
+  const leadingMatch = text.match(/^\s*/)
+  const trailingMatch = text.match(/\s*$/)
+  const leading = leadingMatch ? leadingMatch[0] : ''
+  const trailing = trailingMatch ? trailingMatch[0] : ''
+  const core = text.slice(leading.length, text.length - trailing.length)
 
-  return text
+  let formatted = core
+  if (run.strikethrough) formatted = `~~${formatted}~~`
+  if (run.bold) formatted = `**${formatted}**`
+  if (run.italic) formatted = `*${formatted}*`
+  if (run.linkUrl) formatted = `[${formatted}](${run.linkUrl})`
+
+  return `${leading}${formatted}${trailing}`
 }
 
 function formatRuns(runs: RichTextRun[]): string {

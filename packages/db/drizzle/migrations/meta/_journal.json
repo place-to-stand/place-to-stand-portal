@@ -358,6 +358,13 @@
       "when": 1774391975195,
       "tag": "0050_sow_status",
       "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1774898263560,
+      "tag": "0051_remove_scope_planning",
+      "breakpoints": true
     }
   ]
 }

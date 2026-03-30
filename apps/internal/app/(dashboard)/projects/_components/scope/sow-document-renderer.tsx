@@ -1,5 +1,7 @@
 'use client'
 
+import type { ReactNode } from 'react'
+
 import type { RichBlock, RichTextRun } from '@/lib/google/sow-parser-types'
 
 // =============================================================================
@@ -7,7 +9,7 @@ import type { RichBlock, RichTextRun } from '@/lib/google/sow-parser-types'
 // =============================================================================
 
 function TextRunRenderer({ run }: { run: RichTextRun }) {
-  let content: React.ReactNode = run.text
+  let content: ReactNode = run.text
 
   if (run.bold) content = <strong>{content}</strong>
   if (run.italic) content = <em>{content}</em>

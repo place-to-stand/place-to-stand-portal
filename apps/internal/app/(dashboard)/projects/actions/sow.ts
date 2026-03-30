@@ -2,7 +2,10 @@
 
 import { z } from 'zod'
 import { requireUser } from '@/lib/auth/session'
-import { assertAdmin } from '@/lib/auth/permissions'
+import {
+  assertAdmin,
+  ensureClientAccessByProjectId,
+} from '@/lib/auth/permissions'
 import { extractDocIdFromUrl, getDocument } from '@/lib/google/docs'
 import { createSnapshot } from '@/lib/google/sow-snapshot'
 import { parseRichContent } from '@/lib/google/sow-parser'
@@ -285,7 +288,8 @@ export type SowDisplayData = {
 export async function fetchSowForProject(input: {
   projectId: string
 }): Promise<SowDisplayData | null> {
-  await requireUser()
+  const user = await requireUser()
+  await ensureClientAccessByProjectId(user, input.projectId)
 
   const sow = await getActiveSowByProjectId(input.projectId)
   if (!sow) return null
@@ -342,7 +346,8 @@ export async function fetchSowForProject(input: {
 export async function fetchSowsForProject(input: {
   projectId: string
 }): Promise<SowDisplayData[]> {
-  await requireUser()
+  const user = await requireUser()
+  await ensureClientAccessByProjectId(user, input.projectId)
 
   const sows = await getActiveSowsByProjectId(input.projectId)
   if (sows.length === 0) return []

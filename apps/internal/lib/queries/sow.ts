@@ -20,6 +20,7 @@ export async function getActiveSowByProjectId(projectId: string) {
         isNull(projectSows.deletedAt)
       )
     )
+    .orderBy(desc(projectSows.createdAt))
     .limit(1)
 
   return sow ?? null

@@ -42,7 +42,6 @@ import {
   projectSows,
   sowSnapshots,
   sowSections,
-  scopePlanningSessions,
 } from './schema'
 
 export const clientsRelations = relations(clients, ({ one, many }) => ({
@@ -612,10 +611,6 @@ export const planThreadsRelations = relations(
       fields: [planThreads.sessionId],
       references: [planningSessions.id],
     }),
-    scopeSession: one(scopePlanningSessions, {
-      fields: [planThreads.scopeSessionId],
-      references: [scopePlanningSessions.id],
-    }),
     revisions: many(planRevisions),
     messages: many(planMessages),
   })
@@ -705,7 +700,6 @@ export const projectSowsRelations = relations(
     }),
     snapshots: many(sowSnapshots),
     sections: many(sowSections),
-    scopePlanningSessions: many(scopePlanningSessions),
   })
 )
 
@@ -734,29 +728,6 @@ export const sowSectionsRelations = relations(sowSections, ({ one }) => ({
     references: [projectSows.id],
   }),
 }))
-
-export const scopePlanningSessionsRelations = relations(
-  scopePlanningSessions,
-  ({ one, many }) => ({
-    sow: one(projectSows, {
-      fields: [scopePlanningSessions.sowId],
-      references: [projectSows.id],
-    }),
-    repoLink: one(githubRepoLinks, {
-      fields: [scopePlanningSessions.repoLinkId],
-      references: [githubRepoLinks.id],
-    }),
-    snapshot: one(sowSnapshots, {
-      fields: [scopePlanningSessions.snapshotId],
-      references: [sowSnapshots.id],
-    }),
-    createdByUser: one(users, {
-      fields: [scopePlanningSessions.createdBy],
-      references: [users.id],
-    }),
-    threads: many(planThreads),
-  })
-)
 
 export const transcriptsRelations = relations(transcripts, ({ one }) => ({
   client: one(clients, {

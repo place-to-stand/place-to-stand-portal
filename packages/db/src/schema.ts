@@ -1855,11 +1855,6 @@ export const sowSnapshotStatus = pgEnum('sow_snapshot_status', [
   'SUPERSEDED',
 ])
 
-export const scopePlanningSessionStatus = pgEnum(
-  'scope_planning_session_status',
-  ['active', 'finalized']
-)
-
 export const sowStatus = pgEnum('sow_status', [
   'DRAFT',
   'ACCEPTED',
@@ -1974,48 +1969,6 @@ export const sowSections = pgTable(
   ]
 )
 
-export const scopePlanningSessions = pgTable(
-  'scope_planning_sessions',
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    sowId: uuid('sow_id').notNull(),
-    repoLinkId: uuid('repo_link_id').notNull(),
-    snapshotId: uuid('snapshot_id'),
-    status: scopePlanningSessionStatus().default('active').notNull(),
-    createdBy: uuid('created_by').notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
-      .notNull(),
-    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
-      .notNull(),
-  },
-  table => [
-    index('idx_scope_planning_sessions_sow')
-      .using('btree', table.sowId.asc().nullsLast().op('uuid_ops')),
-    foreignKey({
-      columns: [table.sowId],
-      foreignColumns: [projectSows.id],
-      name: 'scope_planning_sessions_sow_id_fkey',
-    }).onDelete('cascade'),
-    foreignKey({
-      columns: [table.repoLinkId],
-      foreignColumns: [githubRepoLinks.id],
-      name: 'scope_planning_sessions_repo_link_id_fkey',
-    }).onDelete('cascade'),
-    foreignKey({
-      columns: [table.snapshotId],
-      foreignColumns: [sowSnapshots.id],
-      name: 'scope_planning_sessions_snapshot_id_fkey',
-    }),
-    foreignKey({
-      columns: [table.createdBy],
-      foreignColumns: [users.id],
-      name: 'scope_planning_sessions_created_by_fkey',
-    }),
-  ]
-)
-
 // =============================================================================
 // AI PLANNING SESSIONS
 // =============================================================================
@@ -2065,8 +2018,7 @@ export const planThreads = pgTable(
   'plan_threads',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
-    sessionId: uuid('session_id'),
-    scopeSessionId: uuid('scope_session_id'),
+    sessionId: uuid('session_id').notNull(),
     model: text().notNull(),
     modelLabel: text('model_label').notNull(),
     currentVersion: integer('current_version').default(0).notNull(),
@@ -2077,22 +2029,11 @@ export const planThreads = pgTable(
   table => [
     index('idx_plan_threads_session')
       .using('btree', table.sessionId.asc().nullsLast().op('uuid_ops')),
-    index('idx_plan_threads_scope_session')
-      .using('btree', table.scopeSessionId.asc().nullsLast().op('uuid_ops')),
     foreignKey({
       columns: [table.sessionId],
       foreignColumns: [planningSessions.id],
       name: 'plan_threads_session_id_fkey',
     }).onDelete('cascade'),
-    foreignKey({
-      columns: [table.scopeSessionId],
-      foreignColumns: [scopePlanningSessions.id],
-      name: 'plan_threads_scope_session_id_fkey',
-    }).onDelete('cascade'),
-    check(
-      'plan_threads_session_xor_scope',
-      sql`(session_id IS NOT NULL AND scope_session_id IS NULL) OR (session_id IS NULL AND scope_session_id IS NOT NULL)`
-    ),
   ]
 )
 

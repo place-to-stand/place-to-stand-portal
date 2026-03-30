@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { ChevronDown, Loader2 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
@@ -34,6 +34,10 @@ export function SowStatusCell({
   const [isPending, startTransition] = useTransition()
   const [optimisticStatus, setOptimisticStatus] = useState(status)
   const [isOpen, setIsOpen] = useState(false)
+
+  useEffect(() => {
+    setOptimisticStatus(status)
+  }, [status])
 
   const handleSelect = (value: SowStatusValue) => {
     if (value === optimisticStatus) {
