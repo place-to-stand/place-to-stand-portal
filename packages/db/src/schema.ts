@@ -1847,6 +1847,129 @@ export const taskDeployments = pgTable(
 )
 
 // =============================================================================
+// SOW (SCOPE OF WORK) INTEGRATION
+// =============================================================================
+
+export const sowSnapshotStatus = pgEnum('sow_snapshot_status', [
+  'CURRENT',
+  'SUPERSEDED',
+])
+
+export const sowStatus = pgEnum('sow_status', [
+  'DRAFT',
+  'ACCEPTED',
+  'IN_PROGRESS',
+  'BLOCKED',
+  'FINISHED',
+])
+
+export const projectSows = pgTable(
+  'project_sows',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    projectId: uuid('project_id').notNull(),
+    googleDocId: text('google_doc_id').notNull(),
+    googleDocUrl: text('google_doc_url').notNull(),
+    googleDocTitle: text('google_doc_title'),
+    status: sowStatus('status').default('DRAFT').notNull(),
+    linkedBy: uuid('linked_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    index('idx_project_sows_project_active')
+      .using('btree', table.projectId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_project_sows_google_doc')
+      .using('btree', table.googleDocId.asc().nullsLast().op('text_ops')),
+    foreignKey({
+      columns: [table.projectId],
+      foreignColumns: [projects.id],
+      name: 'project_sows_project_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.linkedBy],
+      foreignColumns: [users.id],
+      name: 'project_sows_linked_by_fkey',
+    }),
+  ]
+)
+
+export const sowSnapshots = pgTable(
+  'sow_snapshots',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    sowId: uuid('sow_id').notNull(),
+    version: integer().notNull(),
+    status: sowSnapshotStatus().default('CURRENT').notNull(),
+    rawContent: jsonb('raw_content'),
+    textContent: text('text_content'),
+    docModifiedAt: timestamp('doc_modified_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
+    snappedBy: uuid('snapped_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+  },
+  table => [
+    index('idx_sow_snapshots_sow')
+      .using('btree', table.sowId.asc().nullsLast().op('uuid_ops')),
+    unique('sow_snapshots_sow_version_key').on(table.sowId, table.version),
+    foreignKey({
+      columns: [table.sowId],
+      foreignColumns: [projectSows.id],
+      name: 'sow_snapshots_sow_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.snappedBy],
+      foreignColumns: [users.id],
+      name: 'sow_snapshots_snapped_by_fkey',
+    }),
+  ]
+)
+
+export const sowSections = pgTable(
+  'sow_sections',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    snapshotId: uuid('snapshot_id').notNull(),
+    sowId: uuid('sow_id').notNull(),
+    headingLevel: smallint('heading_level').notNull(),
+    headingText: text('heading_text').notNull(),
+    bodyText: text('body_text'),
+    sectionOrder: integer('section_order').notNull(),
+    contentHash: text('content_hash').notNull(),
+    firstSeenInVersion: integer('first_seen_in_version').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+  },
+  table => [
+    index('idx_sow_sections_snapshot')
+      .using('btree', table.snapshotId.asc().nullsLast().op('uuid_ops')),
+    index('idx_sow_sections_sow')
+      .using('btree', table.sowId.asc().nullsLast().op('uuid_ops')),
+    foreignKey({
+      columns: [table.snapshotId],
+      foreignColumns: [sowSnapshots.id],
+      name: 'sow_sections_snapshot_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.sowId],
+      foreignColumns: [projectSows.id],
+      name: 'sow_sections_sow_id_fkey',
+    }).onDelete('cascade'),
+  ]
+)
+
+// =============================================================================
 // AI PLANNING SESSIONS
 // =============================================================================
 

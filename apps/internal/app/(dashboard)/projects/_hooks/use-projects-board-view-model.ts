@@ -34,6 +34,7 @@ export type ProjectsBoardProps = BaseProps & {
     | 'backlog'
     | 'review'
     | 'timeLogs'
+    | 'scope'
 }
 
 export type ProjectsBoardHeaderProps = {
@@ -73,7 +74,7 @@ export function useProjectsBoardViewModel({
   initialTab = 'board',
   ...props
 }: ProjectsBoardProps): ProjectsBoardViewModel {
-  const currentBoardView = initialTab === 'timeLogs' || initialTab === 'overview' ? 'board' : initialTab
+  const currentBoardView = initialTab === 'timeLogs' || initialTab === 'overview' || initialTab === 'scope' ? 'board' : initialTab
   const { sensors } = useProjectsBoardSensors()
   const {
     boardState,
@@ -215,6 +216,9 @@ export function useProjectsBoardViewModel({
       currentUserRole: props.currentUserRole,
       onEditTimeLogEntry: timeLogDialogs.openEditTimeLogDialog,
       canLogTime,
+    },
+    scope: {
+      scopeProjectId: boardState.activeProject?.id ?? null,
     },
   })
 
