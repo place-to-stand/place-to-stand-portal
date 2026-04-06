@@ -1,9 +1,11 @@
 'use server';
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { ensureUserProfile } from "@/lib/auth/profile";
+import { serverEnv } from "@/lib/env.server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 const schema = z.object({
@@ -73,4 +75,48 @@ export async function signInWithPassword(
   }
 
   redirect(redirectTo ?? "/");
+}
+
+/* ------------------------------------------------------------------ */
+/*  Magic link                                                        */
+/* ------------------------------------------------------------------ */
+
+export type MagicLinkState = {
+  error?: string;
+  success?: boolean;
+};
+
+export async function sendMagicLink(input: {
+  email: string;
+  redirectTo?: string | null;
+}): Promise<MagicLinkState> {
+  const email = input.email?.trim();
+  if (!email || !z.string().email().safeParse(email).success) {
+    return { error: "Enter a valid email address." };
+  }
+
+  const supabase = getSupabaseServerClient();
+  const headersList = await headers();
+  const origin =
+    headersList.get("origin") ??
+    serverEnv.APP_BASE_URL ??
+    "http://localhost:3000";
+
+  const callbackPath = input.redirectTo
+    ? `/auth/callback?redirect_to=${encodeURIComponent(input.redirectTo)}`
+    : "/auth/callback";
+
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      emailRedirectTo: `${origin}${callbackPath}`,
+    },
+  });
+
+  if (error) {
+    console.error("Failed to send magic link", error);
+    return { error: "We couldn't send the link. Please try again." };
+  }
+
+  return { success: true };
 }

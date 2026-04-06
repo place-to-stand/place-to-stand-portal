@@ -46,5 +46,10 @@ export async function GET(request: NextRequest) {
     )
   }
 
+  // For password recovery, redirect to the reset form so the user can set a new password
+  if (type === 'recovery') {
+    return NextResponse.redirect(new URL('/reset-password', request.url))
+  }
+
   return NextResponse.redirect(new URL(redirectTo, request.url))
 }
