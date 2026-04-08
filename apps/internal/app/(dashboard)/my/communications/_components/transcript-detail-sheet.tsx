@@ -289,7 +289,7 @@ export function TranscriptDetailSheet({
                                   ?? (linkedProject.type === 'INTERNAL' ? 'internal' : linkedProject.type === 'PERSONAL' ? 'personal' : null)
                                 return segment && linkedProject.slug ? (
                                   <Link
-                                    href={`/projects/${segment}/${linkedProject.slug}/board`}
+                                    href={`/projects/${segment}/${linkedProject.slug}/tasks`}
                                     className='hover:text-primary truncate text-sm font-medium underline-offset-4 hover:underline'
                                   >
                                     {linkedProject.name}

@@ -111,7 +111,7 @@ export async function createLeadTask(
     const projectId = await getOrCreateSalesProject(user.id)
 
     // Determine rank for the new task
-    const rank = await resolveNextTaskRank(projectId, 'BACKLOG')
+    const rank = await resolveNextTaskRank(projectId, 'ON_DECK')
 
     // Create the task with leadId
     const timestamp = new Date().toISOString()
@@ -122,7 +122,7 @@ export async function createLeadTask(
         leadId,
         title,
         description: description ?? null,
-        status: 'BACKLOG',
+        status: 'ON_DECK',
         dueOn: dueOn ?? null,
         createdBy: user.id,
         updatedBy: user.id,

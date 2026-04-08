@@ -13,7 +13,7 @@ import {
   SheetDescription,
   SheetTitle,
 } from '@/components/ui/sheet'
-import type { ThreadSummary, Message } from '@/lib/types/messages'
+import type { ThreadSummary } from '@/lib/types/messages'
 
 import { AttachmentViewer, type AttachmentMetadata } from './attachment-viewer'
 import { GmailReconnectBanner } from './gmail-reconnect-banner'
@@ -294,60 +294,6 @@ export function InboxPanel({
     handleCloseSheet()
   }, [handleCloseSheet])
 
-  const handleReply = useCallback(
-    (message: Message, mode: 'reply' | 'reply_all' | 'forward') => {
-      if (!selectedThread) return
-
-      // Build recipient list based on mode
-      let toEmails: string[] = []
-      let ccEmails: string[] = []
-
-      if (mode === 'reply') {
-        // Reply to sender only
-        toEmails = message.fromEmail ? [message.fromEmail] : []
-      } else if (mode === 'reply_all') {
-        // Reply to sender + all recipients (excluding self)
-        toEmails = message.fromEmail ? [message.fromEmail] : []
-        const allRecipients = [
-          ...(message.toEmails || []),
-          ...(message.ccEmails || []),
-        ]
-        ccEmails = allRecipients.filter(
-          email => email !== message.fromEmail && !toEmails.includes(email)
-        )
-      }
-      // Forward mode: leave recipients empty for user to fill
-
-      // Build subject
-      let subject = message.subject || selectedThread.subject || ''
-      if (mode === 'forward') {
-        if (!subject.toLowerCase().startsWith('fwd:')) {
-          subject = `Fwd: ${subject}`
-        }
-      } else {
-        if (!subject.toLowerCase().startsWith('re:')) {
-          subject = `Re: ${subject}`
-        }
-      }
-
-      // Build quoted body
-      const quotedBody = message.bodyText || message.snippet || ''
-
-      setComposeContext({
-        mode,
-        threadId: selectedThread.id,
-        inReplyToMessageId: message.externalMessageId || undefined,
-        to: toEmails,
-        cc: ccEmails,
-        subject,
-        quotedBody,
-        clientId: selectedThread.client?.id,
-        projectId: selectedThread.project?.id,
-      })
-    },
-    [selectedThread]
-  )
-
   // Auto-scroll to inline compose when it opens
   useEffect(() => {
     if (composeContext && selectedThread) {
@@ -402,7 +348,6 @@ export function InboxPanel({
               isSearching={isSearching}
               onClearSearch={handleClearSearch}
               isConnected={syncStatus.connected}
-              onCompose={() => setIsComposeOpen(true)}
               unclassifiedCount={sidebarCounts.unclassified}
               clients={clients}
               projects={projects}
@@ -517,7 +462,6 @@ export function InboxPanel({
         onNext={goToNext}
         composeContext={composeContext}
         setComposeContext={setComposeContext}
-        onReply={handleReply}
         onRefreshMessages={refreshMessages}
         setThreadMessages={setThreadMessages}
         setThreads={setThreads}

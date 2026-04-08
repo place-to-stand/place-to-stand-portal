@@ -27,10 +27,8 @@ import { sql } from 'drizzle-orm'
 // =============================================================================
 
 export const taskStatus = pgEnum('task_status', [
-  'BACKLOG',
   'ON_DECK',
   'IN_PROGRESS',
-  'IN_REVIEW',
   'BLOCKED',
   'DONE',
   'ARCHIVED',
@@ -496,7 +494,7 @@ export const tasks = pgTable(
     leadId: uuid('lead_id'),
     title: text().notNull(),
     description: text(),
-    status: taskStatus().default('BACKLOG').notNull(),
+    status: taskStatus().default('ON_DECK').notNull(),
     dueOn: date('due_on'),
     createdBy: uuid('created_by'),
     updatedBy: uuid('updated_by'),

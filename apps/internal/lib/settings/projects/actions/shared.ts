@@ -10,5 +10,5 @@ export async function revalidateProjectSettings() {
 
 export async function revalidateProjectDetailRoutes() {
   revalidatePath('/projects')
-  revalidatePath('/projects/[clientSlug]/[projectSlug]/board')
+  revalidatePath('/projects/[clientSlug]/[projectSlug]/tasks')
 }

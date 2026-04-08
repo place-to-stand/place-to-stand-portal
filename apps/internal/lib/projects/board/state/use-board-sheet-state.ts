@@ -59,9 +59,8 @@ export const useBoardSheetState = ({
   )
   const [routeTaskId, setRouteTaskId] = useState<string | null>(activeTaskId)
   const [pendingTaskId, setPendingTaskId] = useState<string | null>(null)
-  const [scrimLocked, setScrimLocked] = useState(false)
   const [defaultTaskStatus, setDefaultTaskStatus] =
-    useState<BoardColumnId>('BACKLOG')
+    useState<BoardColumnId>('ON_DECK')
   const [defaultTaskDueOn, setDefaultTaskDueOn] = useState<string | null>(null)
   const taskSheetInteractionRef = useRef<InteractionHandle | null>(null)
   const previousSheetOpenRef = useRef<boolean>(Boolean(activeTaskId))
@@ -123,7 +122,7 @@ export const useBoardSheetState = ({
   const openCreateSheet = useCallback(
     (status?: BoardColumnId, options?: { dueOn?: string | null }) => {
       const targetProjectId = selectedProjectId ?? activeProject?.id ?? null
-      setDefaultTaskStatus(status ?? 'BACKLOG')
+      setDefaultTaskStatus(status ?? 'ON_DECK')
       setDefaultTaskDueOn(options?.dueOn ?? null)
 
       taskSheetInteractionRef.current = startClientInteraction(
@@ -157,7 +156,6 @@ export const useBoardSheetState = ({
 
   const handleEditTask = useCallback(
     (task: TaskWithRelations) => {
-      setScrimLocked(true)
       setRouteTaskId(task.id)
       setPendingTaskId(task.id)
       setDefaultTaskDueOn(null)
@@ -185,11 +183,10 @@ export const useBoardSheetState = ({
       setIsSheetOpen(open)
       if (!open) {
         const projectIdForSheet = sheetTask?.project_id ?? selectedProjectId
-        setDefaultTaskStatus('BACKLOG')
+        setDefaultTaskStatus('ON_DECK')
         setDefaultTaskDueOn(null)
 
         if (routeTaskId && projectIdForSheet) {
-          setScrimLocked(true)
           startTransition(() => {
             setRouteTaskId(null)
             setPendingTaskId(null)
@@ -254,7 +251,6 @@ export const useBoardSheetState = ({
   return {
     isSheetOpen,
     sheetTask,
-    scrimLocked,
     openCreateSheet,
     handleEditTask,
     handleSheetOpenChange,

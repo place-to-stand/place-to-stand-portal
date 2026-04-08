@@ -7,14 +7,10 @@ type NavigationProps = Pick<
   ProjectsBoardTabsProps,
   | 'overviewHref'
   | 'boardHref'
-  | 'calendarHref'
-  | 'backlogHref'
   | 'activityHref'
   | 'reviewHref'
   | 'timeLogsHref'
   | 'scopeHref'
-  | 'calendarDisabled'
-  | 'backlogDisabled'
   | 'activityDisabled'
   | 'reviewDisabled'
   | 'timeLogsDisabled'
@@ -28,11 +24,8 @@ type BoardProps = Pick<
   | 'canManageTasks'
   | 'renderAssignees'
   | 'tasksByColumn'
-  | 'calendarProjectId'
-  | 'calendarAssignedUserId'
   | 'onEditTask'
   | 'onCreateTask'
-  | 'onCreateTaskForDate'
   | 'activeSheetTaskId'
   | 'activityTargetClientId'
 >
@@ -44,18 +37,10 @@ type DragProps = Pick<
   | 'onDragOver'
   | 'onDragEnd'
   | 'draggingTask'
-  | 'scrimLocked'
   | 'isPending'
   | 'boardViewportRef'
   | 'onBoardScroll'
 >
-
-type CalendarDragProps = Pick<
-  ProjectsBoardTabsProps,
-  'onCalendarDragStart' | 'onCalendarDragEnd' | 'calendarDraggingTask'
->
-
-type BacklogProps = Pick<ProjectsBoardTabsProps, 'onDeckTasks' | 'backlogTasks'>
 
 type ReviewProps = Pick<
   ProjectsBoardTabsProps,
@@ -96,8 +81,6 @@ export type ProjectsBoardTabsSectionProps = {
   navigation: NavigationProps
   board: BoardProps
   drag: DragProps
-  calendarDrag: CalendarDragProps
-  backlog: BacklogProps
   review: ReviewProps
   drop: DropProps
   timeLogs: TimeLogsProps
@@ -114,8 +97,6 @@ export function ProjectsBoardTabsSection({
   navigation,
   board,
   drag,
-  calendarDrag,
-  backlog,
   review,
   drop,
   timeLogs,
@@ -129,8 +110,6 @@ export function ProjectsBoardTabsSection({
       {...navigation}
       {...board}
       {...drag}
-      {...calendarDrag}
-      {...backlog}
       {...review}
       {...drop}
       {...timeLogs}

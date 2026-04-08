@@ -4,17 +4,14 @@ const ACTIVE_STATUSES = new Set([
   'ON_DECK',
   'IN_PROGRESS',
   'BLOCKED',
-  'IN_REVIEW',
 ])
 
 const STATUS_PRIORITY: Record<string, number> = {
   BLOCKED: 0,
   IN_PROGRESS: 1,
-  IN_REVIEW: 2,
-  ON_DECK: 3,
-  BACKLOG: 4,
-  DONE: 5,
-  ARCHIVED: 6,
+  ON_DECK: 2,
+  DONE: 3,
+  ARCHIVED: 4,
 }
 
 export function isActiveAssignedTaskStatus(status: string | null): boolean {

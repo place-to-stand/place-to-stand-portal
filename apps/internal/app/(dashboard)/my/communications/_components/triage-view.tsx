@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/components/ui/use-toast'
+import { useSidebarCounts } from '@/components/layout/app-shell'
 import type { ThreadSummary, Message } from '@/lib/types/messages'
 import type { CidMapping } from '@/lib/email/sanitize'
 import type { ClientSuggestion, LeadSuggestion } from '@/lib/email/suggestions'
@@ -75,6 +76,15 @@ interface TriageViewProps {
 export function TriageView({ clients, projects, leads, currentUserId, serverQueueSize }: TriageViewProps) {
   const router = useRouter()
   const { toast } = useToast()
+  const { refreshCounts } = useSidebarCounts()
+
+  // Invalidate badge counts after a triage action.
+  // - router.refresh() re-renders the server layout, refreshing tab badges (props from layout.tsx)
+  // - refreshCounts() re-fetches the AppShell client state for the sidebar menu item badge
+  const invalidateInboxCounts = useCallback(() => {
+    router.refresh()
+    void refreshCounts()
+  }, [router, refreshCounts])
   const [queue, setQueue] = useState<TriageItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
@@ -270,9 +280,9 @@ export function TriageView({ clients, projects, leads, currentUserId, serverQueu
     if (res.ok) {
       setSessionStats(prev => ({ ...prev, classified: prev.classified + 1 }))
       setQueue(prev => prev.filter(t => t.id !== threadId))
-      router.refresh()
+      invalidateInboxCounts()
     }
-  }, [router])
+  }, [invalidateInboxCounts])
 
   const handleDismissEmail = useCallback(async (threadId: string) => {
     const res = await fetch(`/api/threads/${threadId}`, {
@@ -283,9 +293,9 @@ export function TriageView({ clients, projects, leads, currentUserId, serverQueu
     if (res.ok) {
       setSessionStats(prev => ({ ...prev, dismissed: prev.dismissed + 1 }))
       setQueue(prev => prev.filter(t => t.id !== threadId))
-      router.refresh()
+      invalidateInboxCounts()
     }
-  }, [router])
+  }, [invalidateInboxCounts])
 
   // --- Transcript handlers ---
   const handleAcceptTranscript = useCallback(async (
@@ -301,9 +311,9 @@ export function TriageView({ clients, projects, leads, currentUserId, serverQueu
       setSessionStats(prev => ({ ...prev, classified: prev.classified + 1 }))
       setQueue(prev => prev.filter(t => t.id !== transcriptId))
       if (selectedTranscript?.id === transcriptId) setSelectedTranscript(null)
-      router.refresh()
+      invalidateInboxCounts()
     }
-  }, [selectedTranscript, router])
+  }, [selectedTranscript, invalidateInboxCounts])
 
   const handleDismissTranscript = useCallback(async (transcriptId: string) => {
     const res = await fetch(`/api/transcripts/${transcriptId}`, {
@@ -315,9 +325,9 @@ export function TriageView({ clients, projects, leads, currentUserId, serverQueu
       setSessionStats(prev => ({ ...prev, dismissed: prev.dismissed + 1 }))
       setQueue(prev => prev.filter(t => t.id !== transcriptId))
       if (selectedTranscript?.id === transcriptId) setSelectedTranscript(null)
-      router.refresh()
+      invalidateInboxCounts()
     }
-  }, [selectedTranscript, router])
+  }, [selectedTranscript, invalidateInboxCounts])
 
   // --- Batch handlers ---
   const handleBatchDismiss = useCallback(async () => {
@@ -353,8 +363,8 @@ export function TriageView({ clients, projects, leads, currentUserId, serverQueu
     setQueue(prev => prev.filter(t => !selectedIds.has(t.id)))
     clearSelection()
     toast({ title: `Dismissed ${total} item${total !== 1 ? 's' : ''}` })
-    router.refresh()
-  }, [selectedIds, queue, clearSelection, toast, router])
+    invalidateInboxCounts()
+  }, [selectedIds, queue, clearSelection, toast, invalidateInboxCounts])
 
   const totalProcessed = sessionStats.classified + sessionStats.dismissed
 
@@ -526,7 +536,6 @@ export function TriageView({ clients, projects, leads, currentUserId, serverQueu
         onNext={() => {}}
         composeContext={null}
         setComposeContext={() => {}}
-        onReply={() => {}}
         onRefreshMessages={refreshMessages}
         setThreadMessages={setThreadMessages}
         setThreads={setThreadsForSheet}
@@ -554,6 +563,7 @@ export function TriageView({ clients, projects, leads, currentUserId, serverQueu
             setSelectedTranscript(prev =>
               prev?.id === transcriptId ? { ...prev, classification: 'UNCLASSIFIED' } : prev
             )
+            invalidateInboxCounts()
           }
         }}
         onUnlink={async (transcriptId, unlinkData) => {
@@ -579,6 +589,7 @@ export function TriageView({ clients, projects, leads, currentUserId, serverQueu
                 ...(allCleared ? { classification: 'UNCLASSIFIED' } : {}),
               }
             })
+            invalidateInboxCounts()
           }
         }}
         onClose={() => setSelectedTranscript(null)}

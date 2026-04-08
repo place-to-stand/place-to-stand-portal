@@ -11,8 +11,6 @@ import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 import type { ProjectStatusValue } from '@/lib/constants'
 
 import { BoardTabContent } from './board-tab-content'
-import { CalendarTabContent } from './calendar-tab-content'
-import { BacklogTabContent } from './backlog-tab-content'
 import { ActivityTabContent } from './activity-tab-content'
 import { OverviewTabContent } from './overview-tab-content'
 import { ReviewTabContent } from './review-tab-content'
@@ -35,22 +33,16 @@ export type ProjectsBoardTabsProps = {
   initialTab:
     | 'overview'
     | 'board'
-    | 'calendar'
-    | 'backlog'
     | 'activity'
     | 'review'
     | 'timeLogs'
     | 'scope'
   overviewHref: string
   boardHref: string
-  calendarHref: string
-  backlogHref: string
   activityHref: string
   reviewHref: string
   timeLogsHref: string
   scopeHref: string
-  calendarDisabled: boolean
-  backlogDisabled: boolean
   activityDisabled: boolean
   reviewDisabled: boolean
   timeLogsDisabled: boolean
@@ -61,25 +53,16 @@ export type ProjectsBoardTabsProps = {
   canManageTasks: boolean
   renderAssignees: RenderAssigneeFn
   tasksByColumn: ReadonlyMap<string, TaskWithRelations[]>
-  calendarProjectId: string | null
-  calendarAssignedUserId: string | null
   onEditTask: (task: TaskWithRelations) => void
   onCreateTask: () => void
-  onCreateTaskForDate: (dueOn: string) => void
   sensors: DndContextProps['sensors']
   onDragStart: DndContextProps['onDragStart']
   onDragOver: DndContextProps['onDragOver']
   onDragEnd: DndContextProps['onDragEnd']
-  onCalendarDragStart: DndContextProps['onDragStart']
-  onCalendarDragEnd: DndContextProps['onDragEnd']
   draggingTask: TaskWithRelations | null
-  calendarDraggingTask: TaskWithRelations | null
-  scrimLocked: boolean
   isPending: boolean
   boardViewportRef: RefObject<HTMLDivElement | null>
   onBoardScroll: UIEventHandler<HTMLDivElement>
-  onDeckTasks: TaskWithRelations[]
-  backlogTasks: TaskWithRelations[]
   activeSheetTaskId: string | null
   activityTargetClientId: string | null
   doneTasks: TaskWithRelations[]
@@ -116,14 +99,10 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
     initialTab,
     overviewHref,
     boardHref,
-    calendarHref,
-    backlogHref,
     activityHref,
     reviewHref,
     timeLogsHref,
     scopeHref,
-    calendarDisabled,
-    backlogDisabled,
     activityDisabled,
     reviewDisabled,
     timeLogsDisabled,
@@ -134,25 +113,15 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
     canManageTasks,
     renderAssignees,
     tasksByColumn,
-    calendarProjectId,
-    calendarAssignedUserId,
     onEditTask,
     onCreateTask,
-    onCreateTaskForDate,
     sensors,
     onDragStart,
     onDragOver,
     onDragEnd,
-    onCalendarDragStart,
-    onCalendarDragEnd,
     draggingTask,
-    calendarDraggingTask,
-    scrimLocked,
-    isPending,
     boardViewportRef,
     onBoardScroll,
-    onDeckTasks,
-    backlogTasks,
     activeSheetTaskId,
     activityTargetClientId,
     doneTasks,
@@ -191,14 +160,10 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
         initialTab={initialTab}
         overviewHref={overviewHref}
         boardHref={boardHref}
-        calendarHref={calendarHref}
-        backlogHref={backlogHref}
         activityHref={activityHref}
         reviewHref={reviewHref}
         timeLogsHref={timeLogsHref}
         scopeHref={scopeHref}
-        calendarDisabled={calendarDisabled}
-        backlogDisabled={backlogDisabled}
         activityDisabled={activityDisabled}
         reviewDisabled={reviewDisabled}
         timeLogsDisabled={timeLogsDisabled}
@@ -232,45 +197,6 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
         activeDropColumnId={activeDropColumnId}
         dropPreview={dropPreview}
         recentlyMovedTaskId={recentlyMovedTaskId}
-      />
-      <CalendarTabContent
-        isActive={initialTab === 'calendar'}
-        feedback={feedback}
-        activeProject={activeProject}
-        projectId={calendarProjectId}
-        assignedUserId={calendarAssignedUserId}
-        onlyAssignedToMe={false}
-        renderAssignees={renderAssignees}
-        canManageTasks={canManageTasks}
-        onEditTask={onEditTask}
-        onCreateTask={onCreateTaskForDate}
-        sensors={sensors}
-        onDragStart={onCalendarDragStart}
-        onDragEnd={onCalendarDragEnd}
-        draggingTask={calendarDraggingTask}
-        scrimLocked={scrimLocked}
-        isPending={isPending}
-        activeSheetTaskId={activeSheetTaskId}
-      />
-      <BacklogTabContent
-        isActive={initialTab === 'backlog'}
-        feedback={feedback}
-        activeProject={activeProject}
-        onDeckTasks={onDeckTasks}
-        backlogTasks={backlogTasks}
-        canManageTasks={canManageTasks}
-        renderAssignees={renderAssignees}
-        onEditTask={onEditTask}
-        onCreateTask={onCreateTask}
-        sensors={sensors}
-        onDragStart={onDragStart}
-        onDragOver={onDragOver}
-        onDragEnd={onDragEnd}
-        draggingTask={draggingTask}
-        scrimLocked={scrimLocked}
-        isPending={isPending}
-        activeSheetTaskId={activeSheetTaskId}
-        activeDropColumnId={activeDropColumnId}
       />
       <ReviewTabContent
         isActive={initialTab === 'review'}

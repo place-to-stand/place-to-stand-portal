@@ -96,7 +96,7 @@ export function LeadTaskSheetOverlay({
       admins={initData.admins}
       currentUserId={initData.currentUserId}
       currentUserRole={initData.currentUserRole}
-      defaultStatus='BACKLOG'
+      defaultStatus='ON_DECK'
       defaultDueOn={null}
       projects={initData.projects}
       defaultProjectId={initData.salesProjectId}

@@ -6,6 +6,7 @@ import { CheckCircle, FileText } from 'lucide-react'
 
 import { PaginationControls } from '@/components/ui/pagination-controls'
 import { useToast } from '@/components/ui/use-toast'
+import { useSidebarCounts } from '@/components/layout/app-shell'
 import type { TranscriptSummary } from '@/lib/queries/transcripts'
 
 import { TranscriptCompactRow } from './transcript-compact-row'
@@ -73,7 +74,16 @@ export function TranscriptPanel({
   const searchParams = useSearchParams()
   const pathname = usePathname()
   const { toast } = useToast()
+  const { refreshCounts } = useSidebarCounts()
   const [isFilterPending, startFilterTransition] = useTransition()
+
+  // Invalidate badge counts after a triage action.
+  // - router.refresh() re-renders the server layout, refreshing tab badges (props from layout.tsx)
+  // - refreshCounts() re-fetches the AppShell client state for the sidebar menu item badge
+  const invalidateInboxCounts = useCallback(() => {
+    router.refresh()
+    void refreshCounts()
+  }, [router, refreshCounts])
 
   const [transcripts, setTranscripts] = useState(initialTranscripts)
   const [selectedTranscript, setSelectedTranscript] = useState<TranscriptSummary | null>(null)
@@ -189,8 +199,9 @@ export function TranscriptPanel({
         prev?.id === transcriptId ? updatedTranscript(prev) : prev
       )
       toast({ title: 'Transcript classified' })
+      invalidateInboxCounts()
     }
-  }, [toast])
+  }, [toast, invalidateInboxCounts])
 
   // Dismiss a transcript — update in-place so the sheet shows the dismissed state
   const handleDismiss = useCallback(async (transcriptId: string) => {
@@ -215,8 +226,9 @@ export function TranscriptPanel({
         prev?.id === transcriptId ? updatedTranscript(prev) : prev
       )
       toast({ title: 'Transcript dismissed' })
+      invalidateInboxCounts()
     }
-  }, [toast])
+  }, [toast, invalidateInboxCounts])
 
   // Undo dismiss — revert to unclassified
   const handleUndoDismiss = useCallback(async (transcriptId: string) => {
@@ -238,8 +250,9 @@ export function TranscriptPanel({
         prev?.id === transcriptId ? updatedTranscript(prev) : prev
       )
       toast({ title: 'Dismiss undone' })
+      invalidateInboxCounts()
     }
-  }, [toast])
+  }, [toast, invalidateInboxCounts])
 
   // Unlink entities — remove client/project/lead links
   // If all entities end up null, revert classification to UNCLASSIFIED
@@ -281,8 +294,9 @@ export function TranscriptPanel({
 
       const unlinked = 'clientId' in unlinkData ? 'Client' : 'projectId' in unlinkData ? 'Project' : 'Lead'
       toast({ title: `${unlinked} unlinked` })
+      invalidateInboxCounts()
     }
-  }, [toast, transcripts])
+  }, [toast, transcripts, invalidateInboxCounts])
 
   // Page changes
   const handlePageChange = useCallback(

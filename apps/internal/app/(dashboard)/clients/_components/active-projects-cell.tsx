@@ -61,7 +61,7 @@ export function ActiveProjectsCell({
               return (
                 <li key={project.id}>
                   <Link
-                    href={`/projects/${clientPath}/${projectPath}/board`}
+                    href={`/projects/${clientPath}/${projectPath}/tasks`}
                     className='hover:bg-accent flex items-center gap-2 px-3 py-2 text-sm transition-colors'
                   >
                     <FolderKanban className='text-muted-foreground h-4 w-4 shrink-0' />

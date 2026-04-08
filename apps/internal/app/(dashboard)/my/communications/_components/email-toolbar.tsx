@@ -4,12 +4,10 @@ import { useState } from 'react'
 import {
   ArrowLeft,
   ArrowRight,
+  ExternalLink,
   Mail,
   MailOpen,
   Loader2,
-  Reply,
-  ReplyAll,
-  Forward,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -25,11 +23,10 @@ type EmailToolbarProps = {
   isLoadingMessages: boolean
   canGoPrev: boolean
   canGoNext: boolean
-  showReplyAll: boolean
+  gmailUrl: string | null
   onToggleReadStatus: (isRead: boolean) => void
   onPrev: () => void
   onNext: () => void
-  onReply: (mode: 'reply' | 'reply_all' | 'forward') => void
 }
 
 export function EmailToolbar({
@@ -38,11 +35,10 @@ export function EmailToolbar({
   isLoadingMessages,
   canGoPrev,
   canGoNext,
-  showReplyAll,
+  gmailUrl,
   onToggleReadStatus,
   onPrev,
   onNext,
-  onReply,
 }: EmailToolbarProps) {
   const [isTogglingRead, setIsTogglingRead] = useState(false)
 
@@ -66,74 +62,6 @@ export function EmailToolbar({
 
   return (
     <div className='flex items-center gap-1 rounded-lg border bg-muted/30 p-1'>
-      {/* Reply Actions */}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant='ghost'
-            size='icon-sm'
-            onClick={() => onReply('reply')}
-          >
-            <Reply className='h-4 w-4' />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Reply</TooltipContent>
-      </Tooltip>
-
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant='ghost'
-            size='icon-sm'
-            onClick={() => onReply('reply_all')}
-            disabled={!showReplyAll}
-          >
-            <ReplyAll className='h-4 w-4' />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Reply All</TooltipContent>
-      </Tooltip>
-
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant='ghost'
-            size='icon-sm'
-            onClick={() => onReply('forward')}
-          >
-            <Forward className='h-4 w-4' />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Forward</TooltipContent>
-      </Tooltip>
-
-      {/* Separator */}
-      <div className='mx-1 h-5 w-px bg-border' />
-
-      {/* Read/Unread Toggle */}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant='ghost'
-            size='icon-sm'
-            onClick={handleToggleRead}
-            disabled={isTogglingRead || isLoadingMessages}
-          >
-            {isTogglingRead || isLoadingMessages ? (
-              <Loader2 className='h-4 w-4 animate-spin' />
-            ) : isRead ? (
-              <Mail className='h-4 w-4' />
-            ) : (
-              <MailOpen className='h-4 w-4' />
-            )}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>{isRead ? 'Mark as unread' : 'Mark as read'}</TooltipContent>
-      </Tooltip>
-
-      {/* Separator */}
-      <div className='mx-1 h-5 w-px bg-border' />
-
       {/* Previous Thread */}
       <Tooltip>
         <TooltipTrigger asChild>
@@ -163,6 +91,52 @@ export function EmailToolbar({
         </TooltipTrigger>
         <TooltipContent>Next</TooltipContent>
       </Tooltip>
+
+      {/* Separator */}
+      <div className='mx-1 h-5 w-px bg-border' />
+
+      {/* Read/Unread Toggle */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant='ghost'
+            size='icon-sm'
+            onClick={handleToggleRead}
+            disabled={isTogglingRead || isLoadingMessages}
+          >
+            {isTogglingRead || isLoadingMessages ? (
+              <Loader2 className='h-4 w-4 animate-spin' />
+            ) : isRead ? (
+              <Mail className='h-4 w-4' />
+            ) : (
+              <MailOpen className='h-4 w-4' />
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{isRead ? 'Mark as unread' : 'Mark as read'}</TooltipContent>
+      </Tooltip>
+
+      {/* Separator */}
+      <div className='mx-1 h-5 w-px bg-border' />
+
+      {/* Open Email in Gmail */}
+      {gmailUrl && (
+        <Button
+          asChild
+          variant='ghost'
+          size='sm'
+          className='h-7 gap-1.5 px-2'
+        >
+          <a
+            href={gmailUrl}
+            target='_blank'
+            rel='noopener noreferrer'
+          >
+            <ExternalLink className='h-3.5 w-3.5' />
+            Open in Gmail
+          </a>
+        </Button>
+      )}
     </div>
   )
 }

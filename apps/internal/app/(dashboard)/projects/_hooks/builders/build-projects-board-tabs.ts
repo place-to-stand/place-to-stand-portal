@@ -6,8 +6,6 @@ type BuildTabsArgs = {
   navigation: ProjectsBoardNavigation
   board: ProjectsBoardTabsSectionProps['board']
   drag: ProjectsBoardTabsSectionProps['drag']
-  calendarDrag: ProjectsBoardTabsSectionProps['calendarDrag']
-  backlog: ProjectsBoardTabsSectionProps['backlog']
   review: ProjectsBoardTabsSectionProps['review']
   drop: ProjectsBoardTabsSectionProps['drop']
   timeLogs: ProjectsBoardTabsSectionProps['timeLogs']
@@ -19,8 +17,6 @@ export function buildProjectsBoardTabs({
   navigation,
   board,
   drag,
-  calendarDrag,
-  backlog,
   review,
   drop,
   timeLogs,
@@ -31,8 +27,6 @@ export function buildProjectsBoardTabs({
     navigation,
     board,
     drag,
-    calendarDrag,
-    backlog,
     review,
     drop,
     timeLogs,

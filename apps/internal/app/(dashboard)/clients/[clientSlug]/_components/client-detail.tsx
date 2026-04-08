@@ -308,7 +308,7 @@ function ProjectRow({ project, clientSlug }: ProjectRowProps) {
   // Build the project board URL
   const projectSlug = project.slug ?? project.id
   const clientPath = clientSlug ?? project.id
-  const href = `/projects/${clientPath}/${projectSlug}/board`
+  const href = `/projects/${clientPath}/${projectSlug}/tasks`
 
   return (
     <Link

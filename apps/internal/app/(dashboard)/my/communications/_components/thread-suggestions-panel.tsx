@@ -73,7 +73,7 @@ export function ThreadSuggestionsPanel({
   // Get the project URL for "View in project" button
   const getProjectUrl = (suggestion: SuggestionSummary) => {
     if (suggestion.clientSlug && suggestion.projectSlug) {
-      return `/projects/${suggestion.clientSlug}/${suggestion.projectSlug}/board?suggestions=open`
+      return `/projects/${suggestion.clientSlug}/${suggestion.projectSlug}/tasks`
     }
     return null
   }

@@ -479,11 +479,11 @@ function buildProjectHref(project: ProjectWithRelations): string | null {
   }
 
   if (project.type === 'INTERNAL') {
-    return `/projects/${PROJECT_SPECIAL_SEGMENTS.INTERNAL}/${project.slug}/board`
+    return `/projects/${PROJECT_SPECIAL_SEGMENTS.INTERNAL}/${project.slug}/tasks`
   }
 
   if (project.type === 'PERSONAL') {
-    return `/projects/${PROJECT_SPECIAL_SEGMENTS.PERSONAL}/${project.slug}/board`
+    return `/projects/${PROJECT_SPECIAL_SEGMENTS.PERSONAL}/${project.slug}/tasks`
   }
 
   const clientSlug = project.client?.slug ?? null
@@ -492,5 +492,5 @@ function buildProjectHref(project: ProjectWithRelations): string | null {
     return null
   }
 
-  return `/projects/${clientSlug}/${project.slug}/board`
+  return `/projects/${clientSlug}/${project.slug}/tasks`
 }

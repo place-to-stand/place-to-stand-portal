@@ -183,7 +183,12 @@ export function MyTasksBoard({
               onDragEnd={handleDragEnd}
               onDragCancel={handleDragCancel}
             >
-              <div className='flex h-full w-max gap-4 p-1'>
+              <div
+                className='grid h-full gap-4 p-1'
+                style={{
+                  gridTemplateColumns: `repeat(${MY_TASK_BOARD_COLUMNS.length}, minmax(20rem, 1fr))`,
+                }}
+              >
                 {MY_TASK_BOARD_COLUMNS.map(column => {
                   const rows = rowsByColumn.get(column.id) ?? []
                   const handleCreateForColumn =
@@ -447,9 +452,11 @@ function normalizeStatus(status: string | null | undefined): MyTaskStatus {
     case 'ON_DECK':
     case 'IN_PROGRESS':
     case 'BLOCKED':
-    case 'IN_REVIEW':
     case 'DONE':
       return status
+    case 'IN_REVIEW':
+      // IN_REVIEW status was removed; treat any legacy value as IN_PROGRESS
+      return 'IN_PROGRESS'
     default:
       return 'ON_DECK'
   }

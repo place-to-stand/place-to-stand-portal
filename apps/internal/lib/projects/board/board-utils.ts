@@ -170,8 +170,8 @@ export const buildBoardPath = (
     return `${rootPath}/${BOARD_VIEW_SEGMENTS.timeLogs}`
   }
 
-  if (view === 'review' || view === 'backlog' || view === 'calendar') {
-    const basePath = `${rootPath}/${BOARD_VIEW_SEGMENTS[view]}`
+  if (view === 'review') {
+    const basePath = `${rootPath}/${BOARD_VIEW_SEGMENTS.review}`
     return taskId ? `${basePath}/${taskId}` : basePath
   }
 

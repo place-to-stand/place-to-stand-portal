@@ -7,7 +7,6 @@ import { useBoardAssignedFilter } from "@/lib/projects/board/state/use-board-ass
 import { useBoardScrollPersistence } from "@/lib/projects/board/state/use-board-scroll-persistence"
 import { useBoardTimeLogDialogs } from "@/lib/projects/board/state/use-board-time-log-dialogs"
 import { useProjectsBoardDerivedState } from "@/lib/projects/board/state/use-projects-board-derived-state"
-import { useProjectCalendarSync } from "@/lib/projects/calendar/use-project-calendar-sync"
 import { createRenderAssignees } from "@/lib/projects/board/board-selectors"
 import { useToast } from "@/components/ui/use-toast"
 
@@ -64,11 +63,6 @@ export function useProjectsBoardCoreState({
     () => createRenderAssignees(boardState.memberDirectory),
     [boardState.memberDirectory]
   )
-
-  useProjectCalendarSync({
-    activeProjectId,
-    tasks: boardState.activeProjectTasks,
-  })
 
   return {
     boardState,

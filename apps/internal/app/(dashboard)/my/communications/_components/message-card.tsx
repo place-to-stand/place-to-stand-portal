@@ -2,10 +2,8 @@
 
 import { useState, useMemo } from 'react'
 import { format, formatDistanceToNow } from 'date-fns'
-import { Reply, ReplyAll, Forward, ChevronDown } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
 import type { Message } from '@/lib/types/messages'
 import { sanitizeEmailHtml, type CidMapping } from '@/lib/email/sanitize'
 import { cn } from '@/lib/utils'
@@ -32,7 +30,6 @@ type MessageCardProps = {
   message: Message
   cidMappings?: CidMapping[]
   attachments?: AttachmentMetadata[]
-  onReply?: (mode: 'reply' | 'reply_all' | 'forward') => void
   onViewAttachment?: (attachment: AttachmentMetadata) => void
   /** Whether message should be expanded by default. Defaults to false. */
   defaultExpanded?: boolean
@@ -42,7 +39,6 @@ export function MessageCard({
   message,
   cidMappings,
   attachments,
-  onReply,
   onViewAttachment,
   defaultExpanded = false,
 }: MessageCardProps) {
@@ -252,40 +248,6 @@ export function MessageCard({
         )}
       </div>
 
-      {/* Reply Actions */}
-      {onReply && (
-        <>
-          <Separator />
-          <div className='flex items-center gap-2 p-3 pl-[68px]'>
-            <Button
-              variant='outline'
-              size='sm'
-              onClick={() => onReply('reply')}
-            >
-              <Reply className='h-4 w-4' />
-              Reply
-            </Button>
-            {((message.toEmails?.length ?? 0) > 1 || (message.ccEmails?.length ?? 0) > 0) && (
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={() => onReply('reply_all')}
-              >
-                <ReplyAll className='h-4 w-4' />
-                Reply All
-              </Button>
-            )}
-            <Button
-              variant='outline'
-              size='sm'
-              onClick={() => onReply('forward')}
-            >
-              <Forward className='h-4 w-4' />
-              Forward
-            </Button>
-          </div>
-        </>
-      )}
     </div>
   )
 }

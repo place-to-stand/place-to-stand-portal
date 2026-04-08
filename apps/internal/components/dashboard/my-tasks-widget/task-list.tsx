@@ -161,13 +161,13 @@ function getProjectLinkMeta(task: AssignedTaskSummary): TaskLinkMeta {
 
   if (project.type === 'INTERNAL') {
     return {
-      href: `/projects/${PROJECT_SPECIAL_SEGMENTS.INTERNAL}/${projectSlug}/board`,
+      href: `/projects/${PROJECT_SPECIAL_SEGMENTS.INTERNAL}/${projectSlug}/tasks`,
     }
   }
 
   if (project.type === 'PERSONAL') {
     return {
-      href: `/projects/${PROJECT_SPECIAL_SEGMENTS.PERSONAL}/${projectSlug}/board`,
+      href: `/projects/${PROJECT_SPECIAL_SEGMENTS.PERSONAL}/${projectSlug}/tasks`,
     }
   }
 
@@ -178,7 +178,7 @@ function getProjectLinkMeta(task: AssignedTaskSummary): TaskLinkMeta {
   }
 
   return {
-    href: `/projects/${clientSlug}/${projectSlug}/board`,
+    href: `/projects/${clientSlug}/${projectSlug}/tasks`,
   }
 }
 

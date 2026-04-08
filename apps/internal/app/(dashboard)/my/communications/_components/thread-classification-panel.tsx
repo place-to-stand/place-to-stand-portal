@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Building2,
   Check,
@@ -22,6 +23,7 @@ import {
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { useSidebarCounts } from '@/components/layout/app-shell'
 import {
   Select,
   SelectContent,
@@ -96,6 +98,16 @@ export function ThreadClassificationPanel({
   setSelectedThread,
 }: ThreadClassificationPanelProps) {
   const { toast } = useToast()
+  const router = useRouter()
+  const { refreshCounts } = useSidebarCounts()
+
+  // Invalidate badge counts after a triage action.
+  // - router.refresh() re-renders the server layout, refreshing tab badges (props from layout.tsx)
+  // - refreshCounts() re-fetches the AppShell client state for the sidebar menu item badge
+  const invalidateInboxCounts = useCallback(() => {
+    router.refresh()
+    void refreshCounts()
+  }, [router, refreshCounts])
 
   // Track & selection state
   const [track, setTrack] = useState<Track>('client')
@@ -337,6 +349,7 @@ export function ThreadClassificationPanel({
       }
 
       toast({ title: 'Thread classified' })
+      invalidateInboxCounts()
     } catch {
       toast({
         title: 'Error',
@@ -359,6 +372,7 @@ export function ThreadClassificationPanel({
     leads,
     updateLocalThread,
     toast,
+    invalidateInboxCounts,
   ])
 
   // Dismiss action
@@ -374,6 +388,7 @@ export function ThreadClassificationPanel({
         lead: null,
       }))
       toast({ title: 'Thread dismissed' })
+      invalidateInboxCounts()
     } catch {
       toast({
         title: 'Error',
@@ -383,7 +398,7 @@ export function ThreadClassificationPanel({
     } finally {
       setIsSubmitting(false)
     }
-  }, [patchThread, updateLocalThread, toast])
+  }, [patchThread, updateLocalThread, toast, invalidateInboxCounts])
 
   // Undo dismiss — revert to UNCLASSIFIED
   const handleUndoDismiss = useCallback(async () => {
@@ -395,6 +410,7 @@ export function ThreadClassificationPanel({
         classification: 'UNCLASSIFIED' as const,
       }))
       toast({ title: 'Dismiss undone' })
+      invalidateInboxCounts()
     } catch {
       toast({
         title: 'Error',
@@ -404,7 +420,7 @@ export function ThreadClassificationPanel({
     } finally {
       setIsSubmitting(false)
     }
-  }, [patchThread, updateLocalThread, toast])
+  }, [patchThread, updateLocalThread, toast, invalidateInboxCounts])
 
   // Unlink actions (for already-classified threads)
   const handleUnlinkClient = useCallback(async () => {
@@ -415,6 +431,7 @@ export function ThreadClassificationPanel({
       setSelectedClientId('')
       setSelectedProjectId('')
       toast({ title: 'Client unlinked' })
+      invalidateInboxCounts()
     } catch {
       toast({
         title: 'Error',
@@ -424,7 +441,7 @@ export function ThreadClassificationPanel({
     } finally {
       setIsSubmitting(false)
     }
-  }, [patchThread, updateLocalThread, toast])
+  }, [patchThread, updateLocalThread, toast, invalidateInboxCounts])
 
   const handleUnlinkProject = useCallback(async () => {
     setIsSubmitting(true)
@@ -433,6 +450,7 @@ export function ThreadClassificationPanel({
       updateLocalThread(t => ({ ...t, project: null }))
       setSelectedProjectId('')
       toast({ title: 'Project unlinked' })
+      invalidateInboxCounts()
     } catch {
       toast({
         title: 'Error',
@@ -442,7 +460,7 @@ export function ThreadClassificationPanel({
     } finally {
       setIsSubmitting(false)
     }
-  }, [patchThread, updateLocalThread, toast])
+  }, [patchThread, updateLocalThread, toast, invalidateInboxCounts])
 
   const handleUnlinkLead = useCallback(async () => {
     setIsSubmitting(true)
@@ -451,6 +469,7 @@ export function ThreadClassificationPanel({
       updateLocalThread(t => ({ ...t, lead: null }))
       setSelectedLeadId('')
       toast({ title: 'Lead unlinked' })
+      invalidateInboxCounts()
     } catch {
       toast({
         title: 'Error',
@@ -460,7 +479,7 @@ export function ThreadClassificationPanel({
     } finally {
       setIsSubmitting(false)
     }
-  }, [patchThread, updateLocalThread, toast])
+  }, [patchThread, updateLocalThread, toast, invalidateInboxCounts])
 
   // Handle lead creation success — link the new lead
   const handleLeadCreated = useCallback(
@@ -478,6 +497,7 @@ export function ThreadClassificationPanel({
             : { id: leadId, contactName: 'New Lead' },
         }))
         toast({ title: 'Lead created and linked' })
+        invalidateInboxCounts()
       } catch {
         toast({
           title: 'Error',
@@ -488,7 +508,7 @@ export function ThreadClassificationPanel({
         setIsSubmitting(false)
       }
     },
-    [patchThread, leads, updateLocalThread, toast]
+    [patchThread, leads, updateLocalThread, toast, invalidateInboxCounts]
   )
 
   // Extract sender info from first inbound message for Create Lead dialog
@@ -552,7 +572,7 @@ export function ThreadClassificationPanel({
                     ?? (thread.project!.type === 'INTERNAL' ? 'internal' : thread.project!.type === 'PERSONAL' ? 'personal' : null)
                   return segment && thread.project!.slug ? (
                     <Link
-                      href={`/projects/${segment}/${thread.project!.slug}/board`}
+                      href={`/projects/${segment}/${thread.project!.slug}/tasks`}
                       className='hover:text-primary truncate text-sm font-medium underline-offset-4 hover:underline'
                     >
                       {thread.project!.name}

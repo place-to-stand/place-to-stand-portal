@@ -84,7 +84,7 @@ export default async function ProjectBoardRoute({ params }: PageProps) {
 
   if (canonicalClientSlug !== clientSlug) {
     const suffix = requestedTaskPath ? `/${requestedTaskPath}` : ''
-    redirect(`/projects/${canonicalClientSlug}/${project.slug}/board${suffix}`)
+    redirect(`/projects/${canonicalClientSlug}/${project.slug}/tasks${suffix}`)
   }
 
   const activeClientId = project.client_id ?? null

@@ -13,7 +13,6 @@ import type { BoardColumnId } from '../board-constants'
 import type { useBoardDnDState } from '../state/use-board-dnd'
 import type { useBoardNavigation } from '../state/use-board-navigation'
 import type { useBoardSheetState } from '../state/use-board-sheet-state'
-import type { useCalendarDnDState } from '../../calendar/state/use-calendar-dnd-state'
 import type { BoardView } from '../board-constants'
 
 export type UseProjectsBoardStateArgs = {
@@ -46,22 +45,16 @@ export type ProjectsBoardState = {
   memberDirectory: Map<string, MemberDirectoryEntry>
   tasksByColumn: Map<string, TaskWithRelations[]>
   draggingTask: TaskWithRelations | null
-  calendarDraggingTask: TaskWithRelations | null
   addTaskDisabled: boolean
   addTaskDisabledReason: string | null
   isSheetOpen: boolean
   sheetTask: TaskWithRelations | undefined
-  scrimLocked: boolean
   handleProjectSelect: (projectId: string | null) => void
   handleSelectNextProject: () => void
   handleSelectPreviousProject: () => void
   handleDragStart: ReturnType<typeof useBoardDnDState>['handleDragStart']
   handleDragOver: ReturnType<typeof useBoardDnDState>['handleDragOver']
   handleDragEnd: ReturnType<typeof useBoardDnDState>['handleDragEnd']
-  handleCalendarDragStart: ReturnType<
-    typeof useCalendarDnDState
-  >['handleDragStart']
-  handleCalendarDragEnd: ReturnType<typeof useCalendarDnDState>['handleDragEnd']
   openCreateSheet: ReturnType<typeof useBoardSheetState>['openCreateSheet']
   handleEditTask: ReturnType<typeof useBoardSheetState>['handleEditTask']
   handleSheetOpenChange: ReturnType<

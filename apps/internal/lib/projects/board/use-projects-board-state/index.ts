@@ -10,7 +10,6 @@ import {
   createProjectsByClientLookup,
   groupTasksByColumn,
 } from '../board-utils'
-import { useCalendarDnDState } from '../../calendar/state/use-calendar-dnd-state'
 import { useBoardDnDState } from '../state/use-board-dnd'
 import { useBoardNavigation } from '../state/use-board-navigation'
 import { useBoardSelectionState } from '../state/use-board-selection'
@@ -164,7 +163,6 @@ export const useProjectsBoardState = ({
   const {
     isSheetOpen,
     sheetTask,
-    scrimLocked,
     openCreateSheet,
     handleEditTask,
     handleSheetOpenChange,
@@ -199,19 +197,6 @@ export const useProjectsBoardState = ({
     setFeedback,
   })
 
-  const {
-    handleDragStart: handleCalendarDragStart,
-    handleDragEnd: handleCalendarDragEnd,
-    draggingTask: calendarDraggingTask,
-  } = useCalendarDnDState({
-    canManageTasks,
-    tasksByProject,
-    setTasksByProject,
-    startTransition,
-    setFeedback,
-    activeProjectTasks,
-  })
-
   const addTaskDisabled = !activeProject || !canManageTasks
   const addTaskDisabledReason = !activeProject
     ? 'Select a project to add tasks.'
@@ -239,18 +224,14 @@ export const useProjectsBoardState = ({
     addTaskDisabledReason,
     isSheetOpen,
     sheetTask,
-    scrimLocked,
     handleProjectSelect,
     handleDragStart,
     handleDragEnd,
-    handleCalendarDragStart,
-    handleCalendarDragEnd,
     openCreateSheet,
     handleEditTask,
     handleSheetOpenChange,
     defaultTaskStatus,
     defaultTaskDueOn,
-    calendarDraggingTask,
     navigateToProject,
     handleDragOver,
     activeDropColumnId,

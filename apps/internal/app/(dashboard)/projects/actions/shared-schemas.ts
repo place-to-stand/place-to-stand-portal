@@ -1,11 +1,9 @@
 import { z } from 'zod'
 
 export const TASK_STATUSES = [
-  'BACKLOG',
   'ON_DECK',
   'IN_PROGRESS',
   'BLOCKED',
-  'IN_REVIEW',
   'DONE',
   'ARCHIVED',
 ] as const
@@ -30,7 +28,7 @@ export const baseTaskSchema = z.object({
   leadId: z.string().uuid().optional().nullable(),
   title: z.string().min(1),
   description: z.string().optional().nullable(),
-  status: statusSchema.default('BACKLOG'),
+  status: statusSchema.default('ON_DECK'),
   dueOn: z.string().optional().nullable(),
   assigneeIds: z.array(z.string().uuid()).default([]),
   attachments: attachmentsSchema.optional(),

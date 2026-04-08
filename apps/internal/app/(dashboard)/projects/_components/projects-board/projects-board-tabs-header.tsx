@@ -14,22 +14,16 @@ export type ProjectsBoardTabsHeaderProps = {
   initialTab:
     | 'overview'
     | 'board'
-    | 'calendar'
-    | 'backlog'
     | 'activity'
     | 'review'
     | 'timeLogs'
     | 'scope'
   overviewHref: string
   boardHref: string
-  calendarHref: string
-  backlogHref: string
   activityHref: string
   reviewHref: string
   timeLogsHref: string
   scopeHref: string
-  calendarDisabled: boolean
-  backlogDisabled: boolean
   activityDisabled: boolean
   reviewDisabled: boolean
   timeLogsDisabled: boolean
@@ -48,14 +42,10 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
     initialTab,
     overviewHref,
     boardHref,
-    calendarHref,
-    backlogHref,
     activityHref,
     reviewHref,
     timeLogsHref,
     scopeHref,
-    calendarDisabled,
-    backlogDisabled,
     activityDisabled,
     reviewDisabled,
     timeLogsDisabled,
@@ -109,57 +99,7 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
             prefetch={false}
             onClick={() => startBoardTabInteraction(initialTab, 'board')}
           >
-            Board
-          </Link>
-        </TabsTrigger>
-        <TabsTrigger
-          value='calendar'
-          className='px-3 py-1.5 text-sm'
-          asChild
-          disabled={calendarDisabled}
-        >
-          <Link
-            href={calendarHref}
-            prefetch={false}
-            aria-disabled={calendarDisabled}
-            tabIndex={calendarDisabled ? -1 : undefined}
-            onClick={event => {
-              if (calendarDisabled) {
-                event.preventDefault()
-                return
-              }
-              startBoardTabInteraction(initialTab, 'calendar')
-            }}
-            className={
-              calendarDisabled ? 'pointer-events-none opacity-50' : undefined
-            }
-          >
-            Calendar
-          </Link>
-        </TabsTrigger>
-        <TabsTrigger
-          value='backlog'
-          className='px-3 py-1.5 text-sm'
-          asChild
-          disabled={backlogDisabled}
-        >
-          <Link
-            href={backlogHref}
-            prefetch={false}
-            aria-disabled={backlogDisabled}
-            tabIndex={backlogDisabled ? -1 : undefined}
-            onClick={event => {
-              if (backlogDisabled) {
-                event.preventDefault()
-                return
-              }
-              startBoardTabInteraction(initialTab, 'backlog')
-            }}
-            className={
-              backlogDisabled ? 'pointer-events-none opacity-50' : undefined
-            }
-          >
-            Backlog
+            Tasks
           </Link>
         </TabsTrigger>
         <TabsTrigger

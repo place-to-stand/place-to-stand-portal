@@ -5,14 +5,12 @@ import {
   CircleDashed,
   Filter,
   Loader2,
-  PenSquare,
   RefreshCw,
   Search,
   X,
 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -41,7 +39,6 @@ interface InboxToolbarProps {
   isSearching: boolean
   onClearSearch: () => void
   isConnected: boolean
-  onCompose: () => void
   unclassifiedCount?: number
   clients?: Client[]
   projects?: Project[]
@@ -90,7 +87,6 @@ export function InboxToolbar({
   onSearchInputChange,
   isSearching,
   isConnected,
-  onCompose,
   unclassifiedCount,
   clients,
   projects,
@@ -352,15 +348,6 @@ export function InboxToolbar({
             <CircleDashed className='h-3.5 w-3.5 text-yellow-500' />
             <span>{unclassifiedCount} unclassified</span>
           </Link>
-        )}
-        {isConnected && (
-          <Button
-            size='sm'
-            onClick={onCompose}
-          >
-            <PenSquare className='h-4 w-4' />
-            Compose
-          </Button>
         )}
       </div>
     </div>

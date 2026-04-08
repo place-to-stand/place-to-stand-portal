@@ -1,8 +1,6 @@
 import { useMemo } from 'react'
 
-import { BACKLOG_SECTIONS } from '@/lib/projects/board/board-constants'
 import { filterTasksByAssignee } from '@/lib/projects/board/board-filters'
-import { groupTasksByColumn } from '@/lib/projects/board/board-utils'
 import type { TaskWithRelations } from '@/lib/types'
 
 export type ProjectsBoardDerivedStateArgs = {
@@ -16,8 +14,6 @@ export type ProjectsBoardDerivedStateArgs = {
 }
 
 export type ProjectsBoardDerivedState = {
-  onDeckTasks: TaskWithRelations[]
-  backlogTasks: TaskWithRelations[]
   tasksByColumnToRender: Map<string, TaskWithRelations[]>
   acceptedTasks: TaskWithRelations[]
   archivedTasks: TaskWithRelations[]
@@ -27,7 +23,6 @@ export type ProjectsBoardDerivedState = {
 }
 
 export function useProjectsBoardDerivedState({
-  activeProjectTasks,
   activeProjectArchivedTasks,
   activeProjectAcceptedTasks,
   tasksByColumn,
@@ -35,14 +30,6 @@ export function useProjectsBoardDerivedState({
   currentUserId,
   canAcceptTasks,
 }: ProjectsBoardDerivedStateArgs): ProjectsBoardDerivedState {
-  const backlogGroups = useMemo(() => {
-    const groups = groupTasksByColumn(activeProjectTasks, BACKLOG_SECTIONS)
-    return {
-      onDeck: groups.get('ON_DECK') ?? [],
-      backlog: groups.get('BACKLOG') ?? [],
-    }
-  }, [activeProjectTasks])
-
   const tasksByColumnToRender = useMemo(() => {
     if (!onlyAssignedToMe || !currentUserId) {
       return tasksByColumn
@@ -65,8 +52,6 @@ export function useProjectsBoardDerivedState({
       : null
 
   return {
-    onDeckTasks: backlogGroups.onDeck,
-    backlogTasks: backlogGroups.backlog,
     tasksByColumnToRender,
     acceptedTasks: activeProjectAcceptedTasks,
     archivedTasks: activeProjectArchivedTasks,

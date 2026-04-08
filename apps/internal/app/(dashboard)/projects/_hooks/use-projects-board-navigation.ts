@@ -8,14 +8,10 @@ import { getProjectClientSegment } from '@/lib/projects/board/board-utils'
 export type ProjectsBoardNavigation = {
   overviewHref: string
   boardHref: string
-  calendarHref: string
-  backlogHref: string
   activityHref: string
   reviewHref: string
   timeLogsHref: string
   scopeHref: string
-  calendarDisabled: boolean
-  backlogDisabled: boolean
   activityDisabled: boolean
   reviewDisabled: boolean
   timeLogsDisabled: boolean
@@ -51,11 +47,7 @@ export function useProjectsBoardNavigation({
       overviewHref: projectPathBase
         ? `${projectPathBase}/overview`
         : defaultHref,
-      boardHref: projectPathBase ? `${projectPathBase}/board` : defaultHref,
-      calendarHref: projectPathBase
-        ? `${projectPathBase}/calendar`
-        : defaultHref,
-      backlogHref: projectPathBase ? `${projectPathBase}/backlog` : defaultHref,
+      boardHref: projectPathBase ? `${projectPathBase}/tasks` : defaultHref,
       activityHref: projectPathBase
         ? `${projectPathBase}/activity`
         : defaultHref,
@@ -66,8 +58,6 @@ export function useProjectsBoardNavigation({
       scopeHref: projectPathBase
         ? `${projectPathBase}/scope`
         : defaultHref,
-      calendarDisabled: !projectPathBase,
-      backlogDisabled: !projectPathBase,
       activityDisabled: !projectPathBase,
       reviewDisabled: !projectPathBase,
       timeLogsDisabled: !projectPathBase,

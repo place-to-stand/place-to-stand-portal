@@ -299,7 +299,12 @@ export function BoardTabContent(props: BoardTabContentProps) {
                 }}
                 collisionDetection={collisionDetection}
               >
-                <div className='flex h-full w-max gap-4 p-1'>
+                <div
+                  className='grid h-full gap-4 p-1'
+                  style={{
+                    gridTemplateColumns: `repeat(${BOARD_COLUMNS.length}, minmax(20rem, 1fr))`,
+                  }}
+                >
                   {BOARD_COLUMNS.map(column => (
                     <KanbanColumn
                       key={column.id}

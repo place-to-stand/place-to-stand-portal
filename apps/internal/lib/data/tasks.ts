@@ -59,11 +59,9 @@ const STATUS_PRIORITY_SQL = sql`
   CASE
     WHEN ${tasksTable.status} = 'BLOCKED' THEN 0
     WHEN ${tasksTable.status} = 'IN_PROGRESS' THEN 1
-    WHEN ${tasksTable.status} = 'IN_REVIEW' THEN 2
-    WHEN ${tasksTable.status} = 'ON_DECK' THEN 3
-    WHEN ${tasksTable.status} = 'BACKLOG' THEN 4
-    WHEN ${tasksTable.status} = 'DONE' THEN 5
-    WHEN ${tasksTable.status} = 'ARCHIVED' THEN 6
+    WHEN ${tasksTable.status} = 'ON_DECK' THEN 2
+    WHEN ${tasksTable.status} = 'DONE' THEN 3
+    WHEN ${tasksTable.status} = 'ARCHIVED' THEN 4
     ELSE 999
   END
 `
@@ -115,7 +113,6 @@ async function loadAssignedTaskSummaries({
     isNull(projectsTable.deletedAt),
     isNull(tasksTable.acceptedAt),
     ne(tasksTable.status, 'ARCHIVED'),
-    ne(tasksTable.status, 'BACKLOG'),
   ]
 
   if (!includeCompletedStatuses) {

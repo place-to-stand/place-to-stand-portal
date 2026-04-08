@@ -2,18 +2,9 @@
 
 import { useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Sparkles } from 'lucide-react'
 
 import { AppShellHeader } from '@/components/layout/app-shell'
 import { ProjectSheet } from '@/app/(dashboard)/settings/projects/project-sheet'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
 import { useToast } from '@/components/ui/use-toast'
 import { ProjectLifecycleDialogs } from '@/components/settings/projects/table/project-lifecycle-dialogs'
 import { useProjectsSettingsController } from '@/components/settings/projects/table/use-projects-settings-controller'
@@ -27,7 +18,6 @@ import type { ContractorUserSummary } from '@/components/settings/projects/table
 import type { ProjectWithRelations } from '@/lib/types'
 import { ViewLogger } from '@/components/activity/view-logger'
 import { ActivityVerbs } from '@/lib/activity/types'
-import { useAISuggestionsSheet } from '@/lib/projects/board/state/use-ai-suggestions-sheet'
 import { updateProjectStatus } from '@/lib/settings/projects/actions/update-project-status'
 import type { ProjectStatusValue } from '@/lib/constants'
 import { ProjectsBoardEmpty } from './_components/projects-board-empty'
@@ -49,12 +39,6 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
   const viewModel = useProjectsBoardViewModel(props)
   const router = useRouter()
   const { toast } = useToast()
-
-  // AI Suggestions sheet state
-  const aiSuggestionsState = useAISuggestionsSheet({
-    activeProject: viewModel.dialogs.activeProject,
-    currentUserId: props.currentUserId,
-  })
 
   const clientRows = useMemo<ClientRow[]>(
     () => props.allClients ?? buildClientRows(props.projects),
@@ -146,15 +130,7 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
     return (
       <>
         <AppShellHeader>
-          <div className='flex items-center justify-between'>
-            <ProjectsBoardHeader {...viewModel.header} />
-            <AISuggestionsButton
-              onOpen={aiSuggestionsState.onOpen}
-              pendingCount={aiSuggestionsState.pendingCount}
-              disabled={aiSuggestionsState.disabled}
-              disabledReason={aiSuggestionsState.disabledReason}
-            />
-          </div>
+          <ProjectsBoardHeader {...viewModel.header} />
         </AppShellHeader>
         <div className='flex h-full flex-col gap-6'>
           <ProjectsBoardEmpty
@@ -183,40 +159,32 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
       <AppShellHeader>
         <div className='flex items-center justify-between'>
           <ProjectsBoardHeader {...viewModel.header} />
-          <div className='flex items-center gap-3'>
-            {viewModel.burndown.visible ? (
-              <ProjectBurndownWidget
-                totalClientRemainingHours={
-                  viewModel.burndown.totalClientRemainingHours
-                }
-                totalProjectLoggedHours={
-                  viewModel.burndown.totalProjectLoggedHours
-                }
-                projectMonthToDateLoggedHours={
-                  viewModel.burndown.projectMonthToDateLoggedHours
-                }
-                className='w-full sm:w-auto'
-                canLogTime={viewModel.burndown.canLogTime}
-                addTimeLogDisabledReason={
-                  viewModel.burndown.addTimeLogDisabledReason
-                }
-                viewTimeLogsHref={viewModel.burndown.viewTimeLogsHref}
-                onAddTimeLog={viewModel.burndown.onAddTimeLog}
-                showClientRemainingCard={
-                  viewModel.burndown.showClientRemainingCard
-                }
-                showProjectMonthToDate={
-                  viewModel.burndown.showProjectMonthToDate
-                }
-              />
-            ) : null}
-            <AISuggestionsButton
-              onOpen={aiSuggestionsState.onOpen}
-              pendingCount={aiSuggestionsState.pendingCount}
-              disabled={aiSuggestionsState.disabled}
-              disabledReason={aiSuggestionsState.disabledReason}
+          {viewModel.burndown.visible ? (
+            <ProjectBurndownWidget
+              totalClientRemainingHours={
+                viewModel.burndown.totalClientRemainingHours
+              }
+              totalProjectLoggedHours={
+                viewModel.burndown.totalProjectLoggedHours
+              }
+              projectMonthToDateLoggedHours={
+                viewModel.burndown.projectMonthToDateLoggedHours
+              }
+              className='w-full sm:w-auto'
+              canLogTime={viewModel.burndown.canLogTime}
+              addTimeLogDisabledReason={
+                viewModel.burndown.addTimeLogDisabledReason
+              }
+              viewTimeLogsHref={viewModel.burndown.viewTimeLogsHref}
+              onAddTimeLog={viewModel.burndown.onAddTimeLog}
+              showClientRemainingCard={
+                viewModel.burndown.showClientRemainingCard
+              }
+              showProjectMonthToDate={
+                viewModel.burndown.showProjectMonthToDate
+              }
             />
-          </div>
+          ) : null}
         </div>
       </AppShellHeader>
       <div className='flex h-full min-h-0 flex-col gap-4 sm:gap-6'>
@@ -225,10 +193,7 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
           projectActions={projectActions}
           onProjectStatusChange={handleProjectStatusChange}
         />
-        <ProjectsBoardDialogs
-          {...viewModel.dialogs}
-          aiSuggestionsState={aiSuggestionsState}
-        />
+        <ProjectsBoardDialogs {...viewModel.dialogs} />
       </div>
       <ProjectLifecycleDialogs
         deleteTarget={deleteTarget}
@@ -251,60 +216,6 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
       />
     </>
   )
-}
-
-type AISuggestionsButtonProps = {
-  onOpen: () => void
-  pendingCount: number
-  disabled: boolean
-  disabledReason: string | null
-}
-
-function AISuggestionsButton({
-  onOpen,
-  pendingCount,
-  disabled,
-  disabledReason,
-}: AISuggestionsButtonProps) {
-  const button = (
-    <Button
-      type='button'
-      variant='outline'
-      onClick={onOpen}
-      disabled={disabled}
-      aria-label={`AI Suggestions${pendingCount > 0 ? ` (${pendingCount} pending)` : ''}`}
-      className='relative aspect-square h-full p-0'
-    >
-      <Sparkles className='size-7! text-fuchsia-500' />
-      {pendingCount > 0 && (
-        <Badge
-          variant='secondary'
-          className='absolute -top-1.5 -right-1.5 h-5 min-w-5 bg-fuchsia-100 px-1 text-xs text-fuchsia-700 dark:bg-fuchsia-900 dark:text-fuchsia-400'
-        >
-          {pendingCount}
-        </Badge>
-      )}
-    </Button>
-  )
-
-  if (disabledReason) {
-    return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span tabIndex={0} className='flex self-stretch'>
-              {button}
-            </span>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{disabledReason}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    )
-  }
-
-  return <div className='flex self-stretch'>{button}</div>
 }
 
 function buildClientRows(projects: ProjectWithRelations[]): ClientRow[] {

@@ -133,7 +133,7 @@ export function mapTaskRowsToRaw(
       project_id: row.projectId,
       title: row.title ?? '',
       description: row.description,
-      status: (row.status ?? 'BACKLOG') as RawTaskWithRelations['status'],
+      status: (row.status ?? 'ON_DECK') as RawTaskWithRelations['status'],
       rank: row.rank,
       accepted_at: row.acceptedAt,
       due_on: row.dueOn,

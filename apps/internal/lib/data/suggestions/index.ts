@@ -247,7 +247,7 @@ export interface ApproveTaskModifications {
   projectId?: string
   dueDate?: string
   priority?: string
-  status?: 'BACKLOG' | 'ON_DECK' | 'IN_PROGRESS' | 'IN_REVIEW' | 'BLOCKED' | 'DONE'
+  status?: 'ON_DECK' | 'IN_PROGRESS' | 'BLOCKED' | 'DONE'
 }
 
 /**
@@ -294,7 +294,7 @@ async function approveTaskSuggestion(
   const finalDescription = modifications?.description ?? content.description
   const finalProjectId = modifications?.projectId ?? suggestion.projectId
   const finalDueDate = modifications?.dueDate ?? content.dueDate
-  const finalStatus = modifications?.status ?? 'BACKLOG'
+  const finalStatus = modifications?.status ?? 'ON_DECK'
 
   if (!finalProjectId) {
     throw new Error('Project is required')

@@ -2,11 +2,6 @@ import { TASK_STATUS_TOKENS } from '@/lib/projects/task-status'
 
 export const TASK_STATUSES = [
   {
-    value: 'BACKLOG',
-    label: 'Backlog',
-    token: TASK_STATUS_TOKENS.BACKLOG,
-  },
-  {
     value: 'ON_DECK',
     label: 'On Deck',
     token: TASK_STATUS_TOKENS.ON_DECK,
@@ -20,11 +15,6 @@ export const TASK_STATUSES = [
     value: 'BLOCKED',
     label: 'Blocked',
     token: TASK_STATUS_TOKENS.BLOCKED,
-  },
-  {
-    value: 'IN_REVIEW',
-    label: 'In Review',
-    token: TASK_STATUS_TOKENS.IN_REVIEW,
   },
   { value: 'DONE', label: 'Done', token: TASK_STATUS_TOKENS.DONE },
 ]

@@ -808,10 +808,8 @@ export type Database = {
       hour_block_type: 'RETAINER' | 'PROJECT' | 'MAINTENANCE'
       member_role: 'OWNER' | 'CONTRIBUTOR' | 'VIEWER'
       task_status:
-        | 'BACKLOG'
         | 'ON_DECK'
         | 'IN_PROGRESS'
-        | 'IN_REVIEW'
         | 'BLOCKED'
         | 'DONE'
         | 'ARCHIVED'
@@ -946,10 +944,8 @@ export const Constants = {
       hour_block_type: ['RETAINER', 'PROJECT', 'MAINTENANCE'],
       member_role: ['OWNER', 'CONTRIBUTOR', 'VIEWER'],
       task_status: [
-        'BACKLOG',
         'ON_DECK',
         'IN_PROGRESS',
-        'IN_REVIEW',
         'BLOCKED',
         'DONE',
         'ARCHIVED',

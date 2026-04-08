@@ -4,11 +4,9 @@ export const taskSheetFormSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional().nullable(),
   status: z.enum([
-    'BACKLOG',
     'ON_DECK',
     'IN_PROGRESS',
     'BLOCKED',
-    'IN_REVIEW',
     'DONE',
     'ARCHIVED',
   ] as const),

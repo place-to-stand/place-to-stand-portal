@@ -134,20 +134,16 @@ export function LeadTasksSection({
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  BACKLOG: 'Backlog',
   ON_DECK: 'On Deck',
   IN_PROGRESS: 'In Progress',
-  IN_REVIEW: 'In Review',
   BLOCKED: 'Blocked',
   DONE: 'Done',
   ARCHIVED: 'Archived',
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  BACKLOG: 'bg-slate-500/10 text-slate-600 border-slate-500/20',
   ON_DECK: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
   IN_PROGRESS: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
-  IN_REVIEW: 'bg-purple-500/10 text-purple-600 border-purple-500/20',
   BLOCKED: 'bg-red-500/10 text-red-600 border-red-500/20',
   DONE: 'bg-green-500/10 text-green-600 border-green-500/20',
   ARCHIVED: 'bg-slate-500/10 text-slate-500 border-slate-500/20',

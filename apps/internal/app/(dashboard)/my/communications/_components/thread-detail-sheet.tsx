@@ -62,7 +62,6 @@ interface ThreadDetailSheetProps {
   // Compose
   composeContext: ComposeContext | null
   setComposeContext: Dispatch<SetStateAction<ComposeContext | null>>
-  onReply: (message: Message, mode: 'reply' | 'reply_all' | 'forward') => void
   onRefreshMessages: (threadId: string) => void
   // State setters
   setThreadMessages: Dispatch<SetStateAction<Message[]>>
@@ -93,7 +92,6 @@ export function ThreadDetailSheet({
   onNext,
   composeContext,
   setComposeContext,
-  onReply,
   onRefreshMessages,
   setThreadMessages,
   setThreads,
@@ -119,6 +117,20 @@ export function ThreadDetailSheet({
       setIsAnalyzingThread(false)
     }
   }, [])
+
+  // Build a Gmail web URL for the loaded thread. Gmail accepts a message ID in
+  // the URL fragment and opens the conversation containing it. We use the
+  // latest message's externalMessageId since it's already loaded into state.
+  const gmailUrl =
+    selectedThread?.source === 'EMAIL' && threadMessages.length > 0
+      ? (() => {
+          const latestExternalId =
+            threadMessages[threadMessages.length - 1]?.externalMessageId
+          return latestExternalId
+            ? `https://mail.google.com/mail/u/0/#all/${latestExternalId}`
+            : null
+        })()
+      : null
 
   return (
     <Sheet
@@ -172,7 +184,6 @@ export function ThreadDetailSheet({
                       cidMappings={cidMappings[message.id]}
                       attachments={attachmentsMap[message.id]}
                       defaultExpanded={index === threadMessages.length - 1}
-                      onReply={mode => onReply(message, mode)}
                       onViewAttachment={attachment => {
                         if (message.externalMessageId) {
                           setViewingAttachment({
@@ -209,7 +220,7 @@ export function ThreadDetailSheet({
           {/* Right Column - Metadata & Actions */}
           <div className='bg-muted/20 w-80 flex-shrink-0 overflow-y-auto lg:w-96'>
             <div className='space-y-6 p-6'>
-              {/* Email Toolbar - Reply actions, Read/Unread toggle, Navigation */}
+              {/* Email Toolbar - Navigation, Read/Unread toggle, Open in Gmail */}
               {selectedThread && (
                 <EmailToolbar
                   threadId={selectedThread.id}
@@ -220,11 +231,7 @@ export function ThreadDetailSheet({
                   isLoadingMessages={isLoadingMessages}
                   canGoPrev={canGoPrev}
                   canGoNext={canGoNext}
-                  showReplyAll={
-                    threadMessages.length > 0 &&
-                    (((threadMessages[threadMessages.length - 1]?.toEmails?.length ?? 0) > 1) ||
-                      ((threadMessages[threadMessages.length - 1]?.ccEmails?.length ?? 0) > 0))
-                  }
+                  gmailUrl={gmailUrl}
                   onToggleReadStatus={newIsRead => {
                     // Update local thread messages state
                     setThreadMessages(prev =>
@@ -247,13 +254,6 @@ export function ThreadDetailSheet({
                   }}
                   onPrev={onPrev}
                   onNext={onNext}
-                  onReply={mode => {
-                    // Reply to the latest message in the thread
-                    const latestMessage = threadMessages[threadMessages.length - 1]
-                    if (latestMessage) {
-                      onReply(latestMessage, mode)
-                    }
-                  }}
                 />
               )}
 

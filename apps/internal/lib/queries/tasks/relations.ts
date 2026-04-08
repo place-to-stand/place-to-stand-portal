@@ -127,7 +127,7 @@ export async function listProjectTasksWithRelations(
     lead_id: row.leadId,
     title: row.title ?? '',
     description: row.description,
-    status: row.status ?? 'BACKLOG',
+    status: row.status ?? 'ON_DECK',
     rank: row.rank,
     accepted_at: row.acceptedAt,
     due_on: row.dueOn,

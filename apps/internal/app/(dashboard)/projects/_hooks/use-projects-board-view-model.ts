@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo } from 'react'
+import { useMemo } from 'react'
 
 import type { ProjectsBoardTabsSectionProps } from '../_components/projects-board/projects-board-tabs-section'
 import type { ProjectsBoardDialogsProps } from '../_components/projects-board-dialogs'
@@ -29,9 +29,7 @@ export type ProjectsBoardProps = BaseProps & {
   initialTab?:
     | 'overview'
     | 'board'
-    | 'calendar'
     | 'activity'
-    | 'backlog'
     | 'review'
     | 'timeLogs'
     | 'scope'
@@ -134,13 +132,6 @@ export function useProjectsBoardViewModel({
     ? null
     : 'Only administrators can manage review tasks.'
 
-  const handleCreateTaskForDate = useCallback(
-    (dueOn: string) => {
-      boardState.openCreateSheet(undefined, { dueOn })
-    },
-    [boardState]
-  )
-
   const header = buildProjectsBoardHeader({
     projectItems: boardState.projectItems,
     projectGroups: boardState.projectGroups,
@@ -161,11 +152,8 @@ export function useProjectsBoardViewModel({
       canManageTasks: boardState.canManageTasks,
       renderAssignees,
       tasksByColumn: derivedState.tasksByColumnToRender,
-      calendarProjectId: boardState.activeProject?.id ?? null,
-      calendarAssignedUserId: props.currentUserId ?? null,
       onEditTask: boardState.handleEditTask,
       onCreateTask: boardState.openCreateSheet,
-      onCreateTaskForDate: handleCreateTaskForDate,
       activeSheetTaskId: boardState.sheetTask?.id ?? null,
       activityTargetClientId: boardState.activeProject?.client?.id ?? null,
     },
@@ -175,19 +163,9 @@ export function useProjectsBoardViewModel({
       onDragOver: boardState.handleDragOver,
       onDragEnd: boardState.handleDragEnd,
       draggingTask: boardState.draggingTask,
-      scrimLocked: boardState.scrimLocked,
       isPending: boardState.isPending,
       boardViewportRef,
       onBoardScroll: handleBoardScroll,
-    },
-    calendarDrag: {
-      onCalendarDragStart: boardState.handleCalendarDragStart,
-      onCalendarDragEnd: boardState.handleCalendarDragEnd,
-      calendarDraggingTask: boardState.calendarDraggingTask,
-    },
-    backlog: {
-      onDeckTasks: derivedState.onDeckTasks,
-      backlogTasks: derivedState.backlogTasks,
     },
     review: {
       doneTasks: derivedState.doneColumnTasks,
