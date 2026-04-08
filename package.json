@@ -2,7 +2,10 @@
   "name": "place-to-stand",
   "private": true,
   "packageManager": "npm@11.6.2",
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
@@ -11,23 +14,23 @@
   },
   "devDependencies": {
     "turbo": "^2.8.17",
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.2"
   },
   "overrides": {
-    "@tiptap/core": "3.20.1",
-    "@tiptap/pm": "3.20.1",
-    "@tiptap/extension-blockquote": "3.20.1",
-    "@tiptap/extension-bold": "3.20.1",
-    "@tiptap/extension-bubble-menu": "3.20.1",
-    "@tiptap/extension-code": "3.20.1",
-    "@tiptap/extension-code-block": "3.20.1",
-    "@tiptap/extension-document": "3.20.1",
-    "@tiptap/extension-floating-menu": "3.20.1",
-    "@tiptap/extension-hard-break": "3.20.1",
-    "@tiptap/extension-heading": "3.20.1",
-    "@tiptap/extension-italic": "3.20.1",
-    "@tiptap/extension-paragraph": "3.20.1",
-    "@tiptap/extension-strike": "3.20.1",
-    "@tiptap/extension-text": "3.20.1"
+    "@tiptap/core": "3.22.3",
+    "@tiptap/pm": "3.22.3",
+    "@tiptap/extension-blockquote": "3.22.3",
+    "@tiptap/extension-bold": "3.22.3",
+    "@tiptap/extension-bubble-menu": "3.22.3",
+    "@tiptap/extension-code": "3.22.3",
+    "@tiptap/extension-code-block": "3.22.3",
+    "@tiptap/extension-document": "3.22.3",
+    "@tiptap/extension-floating-menu": "3.22.3",
+    "@tiptap/extension-hard-break": "3.22.3",
+    "@tiptap/extension-heading": "3.22.3",
+    "@tiptap/extension-italic": "3.22.3",
+    "@tiptap/extension-paragraph": "3.22.3",
+    "@tiptap/extension-strike": "3.22.3",
+    "@tiptap/extension-text": "3.22.3"
   }
 }
