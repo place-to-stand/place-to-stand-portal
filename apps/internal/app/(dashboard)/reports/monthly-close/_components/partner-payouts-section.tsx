@@ -1,10 +1,6 @@
 import { LinkIcon, Wallet } from 'lucide-react'
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import {
   Table,
@@ -18,11 +14,7 @@ import {
 import { cn } from '@/lib/utils'
 import type { PartnerPayoutData } from '@/lib/data/reports/types'
 
-import {
-  SectionShell,
-  formatCurrency,
-  tableClasses,
-} from './section-shell'
+import { SectionShell, formatCurrency, tableClasses } from './section-shell'
 
 type PartnerPayoutsSectionProps = {
   data: PartnerPayoutData
@@ -57,7 +49,7 @@ export function PartnerPayoutsSection({ data }: PartnerPayoutsSectionProps) {
       icon={Wallet}
       iconTone='violet'
       title='Partner Payouts'
-      description='Every person owed money this month — Payroll + Origination + Closer combined per payee. Cut checks top to bottom.'
+      description='Every person owed money this month — Payroll + Origination + Closer combined per payee.'
       total={formatCurrency(data.totalAmount)}
       totalLabel='to distribute'
     >
@@ -71,9 +63,7 @@ export function PartnerPayoutsSection({ data }: PartnerPayoutsSectionProps) {
                 Origination
               </TableHead>
               {hasCloserColumn ? (
-                <TableHead className={tableClasses.headRight}>
-                  Closer
-                </TableHead>
+                <TableHead className={tableClasses.headRight}>Closer</TableHead>
               ) : null}
               <TableHead className={tableClasses.headRight}>Total</TableHead>
             </TableRow>
@@ -87,9 +77,7 @@ export function PartnerPayoutsSection({ data }: PartnerPayoutsSectionProps) {
                   : null
               return (
                 <TableRow key={row.key} className={tableClasses.row}>
-                  <TableCell
-                    className={cn(tableClasses.cell, 'font-medium')}
-                  >
+                  <TableCell className={cn(tableClasses.cell, 'font-medium')}>
                     <div className='flex items-center gap-3'>
                       {isInternal ? (
                         <Avatar className='h-9 w-9'>
@@ -118,20 +106,14 @@ export function PartnerPayoutsSection({ data }: PartnerPayoutsSectionProps) {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell
-                    className={cn(tableClasses.cell, 'text-right')}
-                  >
+                  <TableCell className={cn(tableClasses.cell, 'text-right')}>
                     <Amount value={row.payrollAmount} muted />
                   </TableCell>
-                  <TableCell
-                    className={cn(tableClasses.cell, 'text-right')}
-                  >
+                  <TableCell className={cn(tableClasses.cell, 'text-right')}>
                     <Amount value={row.originationAmount} muted />
                   </TableCell>
                   {hasCloserColumn ? (
-                    <TableCell
-                      className={cn(tableClasses.cell, 'text-right')}
-                    >
+                    <TableCell className={cn(tableClasses.cell, 'text-right')}>
                       <Amount value={row.closerAmount} muted />
                     </TableCell>
                   ) : null}
@@ -148,7 +130,7 @@ export function PartnerPayoutsSection({ data }: PartnerPayoutsSectionProps) {
             })}
           </TableBody>
           <TableFooter>
-            <TableRow className='hover:bg-transparent border-t bg-transparent'>
+            <TableRow className='border-t bg-transparent hover:bg-transparent'>
               <TableCell
                 className={cn(
                   tableClasses.footerCell,
