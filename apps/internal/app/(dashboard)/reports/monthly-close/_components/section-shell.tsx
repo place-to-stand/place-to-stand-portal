@@ -81,12 +81,7 @@ export function SectionShell({
               iconAccent[iconTone]
             )}
           />
-          <div
-            className={cn(
-              'min-w-0',
-              compact ? 'space-y-1' : 'space-y-1.5'
-            )}
-          >
+          <div className={cn('min-w-0', compact ? 'space-y-0' : 'space-y-1.5')}>
             <h3
               className={cn(
                 'leading-none font-semibold tracking-tight',
@@ -113,7 +108,7 @@ export function SectionShell({
             <div
               className={cn(
                 'text-muted-foreground/70 leading-none font-semibold tracking-[0.18em] uppercase',
-                compact ? 'mt-1 text-[9px]' : 'mt-1.5 text-[9px]'
+                compact ? 'mt-0 text-[9px]' : 'mt-1.5 text-[9px]'
               )}
             >
               {totalLabel}
