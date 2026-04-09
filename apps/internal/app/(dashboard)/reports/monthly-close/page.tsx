@@ -11,6 +11,7 @@ import { fetchMonthlyCloseReport } from '@/lib/data/reports/monthly-close'
 import { BreakdownSheet } from './_components/breakdown-sheet'
 import { CloserSection } from './_components/closer-section'
 import { FormulaNotice } from './_components/formula-notice'
+import { HouseSection } from './_components/house-section'
 import { Net30Section } from './_components/net30-section'
 import { OriginationSection } from './_components/origination-section'
 import { PartnerPayoutsSection } from './_components/partner-payouts-section'
@@ -19,8 +20,8 @@ import { PrepaidSection } from './_components/prepaid-section'
 import { ReportHeader } from './_components/report-header'
 import {
   BillingInCard,
+  HoursLoggedCard,
   TotalPayoutsCard,
-  WorkBillableCard,
 } from './_components/summary-cards'
 
 export const metadata: Metadata = {
@@ -110,7 +111,9 @@ export default async function MonthlyClosePage({
             <BillingInCard
               total={report.combinedBillingTotal}
               prepaidTotal={report.prepaidBilling.totalAmount}
+              prepaidHours={report.prepaidBilling.totalHours}
               net30Total={report.net30Billing.totalAmount}
+              net30Hours={report.net30Billing.totalHours}
               action={
                 <BreakdownSheet
                   trigger={
@@ -126,11 +129,7 @@ export default async function MonthlyClosePage({
                 </BreakdownSheet>
               }
             />
-            <WorkBillableCard
-              total={report.workBillableTotal}
-              hours={report.workBillableHours}
-              billablePerHour={report.rates.billablePerHour}
-            />
+            <HoursLoggedCard hours={report.workBillableHours} />
           </div>
           <TotalPayoutsCard
             rates={report.rates}
@@ -147,11 +146,17 @@ export default async function MonthlyClosePage({
                   </button>
                 }
                 title='Payout Breakdown'
-                description='Payroll, origination, and closer commissions this month.'
+                description='Payroll, origination, closer, and house breakdown this month.'
               >
                 <PayrollSection data={report.payroll} />
                 <OriginationSection data={report.origination} />
                 {hasCloser ? <CloserSection data={report.closer} /> : null}
+                <HouseSection
+                  data={report.house}
+                  nominalPercent={`${Math.round((report.rates.housePerHour / report.rates.billablePerHour) * 100)}%`}
+                  prepaidHours={report.prepaidBilling.totalHours}
+                  net30Hours={report.net30Billing.totalHours}
+                />
               </BreakdownSheet>
             }
           />

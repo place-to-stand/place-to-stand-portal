@@ -151,54 +151,24 @@ function RollupCard({
 }
 
 // ------------------------------------------------------------------
-// MetaCard — compact supporting card for Work Billable.
-// Mirrors the SectionShell header: icon in leading column, hero title
-// on the left, hero value on the right, description below the title.
-// No body (these cards have no detail list).
-// ------------------------------------------------------------------
-type MetaCardProps = {
-  label: string
-  icon: Icon
-  value: number
-  caption: string
-}
-
-function MetaCard({ label, icon: Icon, value, caption }: MetaCardProps) {
-  return (
-    <section className='bg-card overflow-hidden rounded-xl border shadow-sm'>
-      <header className='flex items-start justify-between gap-6 px-5 pt-5 pb-5'>
-        <div className='flex min-w-0 items-start gap-3'>
-          <Icon className='text-muted-foreground h-5 w-5 shrink-0' />
-          <div className='min-w-0 space-y-1.5'>
-            <h3 className='text-xl leading-none font-semibold tracking-tight'>
-              {label}
-            </h3>
-            <p className='text-foreground/60 text-xs leading-snug'>{caption}</p>
-          </div>
-        </div>
-        <div className='shrink-0 text-2xl leading-none font-semibold tracking-tight tabular-nums'>
-          {formatCurrency(value)}
-        </div>
-      </header>
-    </section>
-  )
-}
-
-// ------------------------------------------------------------------
 // Exports
 // ------------------------------------------------------------------
 
 type BillingInCardProps = {
   total: number
   prepaidTotal: number
+  prepaidHours: number
   net30Total: number
+  net30Hours: number
   action?: ReactNode
 }
 
 export function BillingInCard({
   total,
   prepaidTotal,
+  prepaidHours,
   net30Total,
+  net30Hours,
   action,
 }: BillingInCardProps) {
   return (
@@ -210,8 +180,18 @@ export function BillingInCard({
       accent='emerald'
       action={action}
       children={[
-        { label: 'Prepaid', value: prepaidTotal, icon: CreditCard },
-        { label: 'Net 30', value: net30Total, icon: Building2 },
+        {
+          label: 'Prepaid',
+          sublabel: `${prepaidHours.toFixed(2)} hrs`,
+          value: prepaidTotal,
+          icon: CreditCard,
+        },
+        {
+          label: 'Net 30',
+          sublabel: `${net30Hours.toFixed(2)} hrs`,
+          value: net30Total,
+          icon: Building2,
+        },
       ]}
     />
   )
@@ -284,24 +264,29 @@ export function TotalPayoutsCard({
   )
 }
 
-type WorkBillableCardProps = {
-  total: number
+type HoursLoggedCardProps = {
   hours: number
-  billablePerHour: number
 }
 
-export function WorkBillableCard({
-  total,
-  hours,
-  billablePerHour,
-}: WorkBillableCardProps) {
+export function HoursLoggedCard({ hours }: HoursLoggedCardProps) {
   return (
-    <MetaCard
-      label='Work Billable'
-      icon={Briefcase}
-      value={total}
-      caption={`${hours.toFixed(2)} logged hrs × $${billablePerHour}/hr — accrual value of client work this month.`}
-    />
+    <section className='bg-card overflow-hidden rounded-xl border shadow-sm'>
+      <header className='flex items-start justify-between gap-6 px-5 pt-5 pb-5'>
+        <div className='flex min-w-0 items-start gap-3'>
+          <Briefcase className='text-muted-foreground h-5 w-5 shrink-0' />
+          <div className='min-w-0 space-y-1.5'>
+            <h3 className='text-xl leading-none font-semibold tracking-tight'>
+              Total Hours Logged
+            </h3>
+            <p className='text-foreground/60 text-xs leading-snug'>
+              Hours logged on client projects this month.
+            </p>
+          </div>
+        </div>
+        <div className='shrink-0 text-2xl leading-none font-semibold tracking-tight tabular-nums'>
+          {hours.toFixed(2)}
+        </div>
+      </header>
+    </section>
   )
 }
-
