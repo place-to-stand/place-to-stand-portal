@@ -5,11 +5,20 @@ import { AppShellHeader } from '@/components/layout/app-shell'
 import { requireRole } from '@/lib/auth/session'
 import { fetchMonthlyCloseReport } from '@/lib/data/reports/monthly-close'
 
-import { ReportHeader } from './_components/report-header'
-import { ReportSummary } from './_components/report-summary'
-import { PayrollSection } from './_components/payroll-section'
-import { ReferralsSection } from './_components/referrals-section'
+import { CloserSection } from './_components/closer-section'
 import { Net30Section } from './_components/net30-section'
+import { OriginationSection } from './_components/origination-section'
+import { PartnerPayoutsSection } from './_components/partner-payouts-section'
+import { PayrollSection } from './_components/payroll-section'
+import { PrepaidSection } from './_components/prepaid-section'
+import { ReportHeader } from './_components/report-header'
+import {
+  BillingInCard,
+  HouseCard,
+  TotalPayoutsCard,
+  WorkBillableCard,
+  housePercentFromRates,
+} from './_components/summary-cards'
 
 export const metadata: Metadata = {
   title: 'Monthly Close | Reports',
@@ -19,9 +28,7 @@ type MonthlyClosePageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 }
 
-function parseSearchParam(
-  value: string | string[] | undefined
-): string | null {
+function parseSearchParam(value: string | string[] | undefined): string | null {
   if (typeof value === 'string') return value
   if (Array.isArray(value)) return value[0] ?? null
   return null
@@ -61,6 +68,10 @@ export default async function MonthlyClosePage({
   // Format month for display
   const displayMonth = format(selectedMonth, 'MMMM yyyy')
 
+  // Hide the closer section + column entirely when the period pre-dates the
+  // closer cutover (closerPerHour === 0).
+  const hasCloser = report.rates.closerPerHour > 0
+
   return (
     <>
       <AppShellHeader>
@@ -69,30 +80,61 @@ export default async function MonthlyClosePage({
             Monthly Close Report
           </h1>
           <p className='text-muted-foreground text-sm'>
-            End-of-month financial reconciliation for payroll, referrals, and
-            billing.
+            End-of-month reconciliation for billing, payroll, origination, and
+            closer commissions.
           </p>
         </div>
       </AppShellHeader>
-      <div className='space-y-6'>
+
+      <div className='space-y-8'>
         <ReportHeader
           displayMonth={displayMonth}
           minCursor={report.minCursor}
           maxCursor={report.maxCursor}
         />
 
-        <ReportSummary
-          prepaidTotal={report.prepaidBilling.totalAmount}
-          net30Total={report.net30Billing.totalAmount}
-          payrollTotal={report.payroll.totalAmount}
-          referralsTotal={report.referrals.totalAmount}
-        />
+        {/* ─── Ledger layout: money in (left) ┃ money out (right) ── */}
+        <div className='grid gap-8 lg:grid-cols-2'>
+          {/* Left column — money in + derived value */}
+          <div className='space-y-3'>
+            <BillingInCard
+              total={report.combinedBillingTotal}
+              prepaidTotal={report.prepaidBilling.totalAmount}
+              net30Total={report.net30Billing.totalAmount}
+            />
+            <div className='grid gap-3 sm:grid-cols-2'>
+              <WorkBillableCard
+                total={report.workBillableTotal}
+                hours={report.workBillableHours}
+                billablePerHour={report.rates.billablePerHour}
+              />
+              <HouseCard
+                total={report.house.totalAmount}
+                nominalPercent={housePercentFromRates(report.rates)}
+                ratePerHour={report.rates.housePerHour}
+              />
+            </div>
+            <PrepaidSection data={report.prepaidBilling} />
+            <Net30Section data={report.net30Billing} />
+          </div>
 
-        <div className='space-y-6'>
-          <Net30Section data={report.net30Billing} />
-          <PayrollSection data={report.payroll} />
-          <ReferralsSection data={report.referrals} />
+          {/* Right column — money out */}
+          <div className='space-y-3'>
+            <TotalPayoutsCard
+              rates={report.rates}
+              total={report.combinedPayoutTotal}
+              payrollTotal={report.payroll.totalAmount}
+              originationTotal={report.origination.totalAmount}
+              closerTotal={report.closer.totalAmount}
+            />
+            <PayrollSection data={report.payroll} />
+            <OriginationSection data={report.origination} />
+            {hasCloser ? <CloserSection data={report.closer} /> : null}
+          </div>
         </div>
+
+        {/* Full-width action footer: the lump-sum payment sheet */}
+        <PartnerPayoutsSection data={report.partnerPayouts} />
       </div>
     </>
   )

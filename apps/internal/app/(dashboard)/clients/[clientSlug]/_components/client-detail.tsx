@@ -9,6 +9,7 @@ import {
   CreditCard,
   FolderKanban,
   Globe,
+  Handshake,
   LinkIcon,
   MapPin,
   Pencil,
@@ -51,9 +52,15 @@ import { ClientTranscriptsSection } from './client-transcripts-section'
 
 type HydratedClientDetail = ClientDetailType & { resolvedId: string }
 
-export type ReferralContactInfo = {
+export type OriginationContactInfo = {
   id: string
   name: string | null
+  email: string
+} | null
+
+export type PartnerUserInfo = {
+  id: string
+  fullName: string | null
   email: string
 } | null
 
@@ -67,7 +74,9 @@ type ClientDetailProps = {
   canManageClients: boolean
   clientRow: ClientRow
   currentUserId: string
-  referralContact: ReferralContactInfo
+  originationContact: OriginationContactInfo
+  originationUser: PartnerUserInfo
+  closerUser: PartnerUserInfo
 }
 
 export function ClientDetail({
@@ -80,7 +89,9 @@ export function ClientDetail({
   canManageClients,
   clientRow,
   currentUserId,
-  referralContact,
+  originationContact,
+  originationUser,
+  closerUser,
 }: ClientDetailProps) {
   const activeProjects = projects.filter(p => p.status === 'ACTIVE')
   const otherProjects = projects.filter(p => p.status !== 'ACTIVE')
@@ -117,7 +128,9 @@ export function ClientDetail({
             client={client}
             activeProjectCount={activeProjects.length}
             otherProjectCount={otherProjects.length}
-            referralContact={referralContact}
+            originationContact={originationContact}
+            originationUser={originationUser}
+            closerUser={closerUser}
           />
 
           {/* Contacts Section */}
@@ -158,15 +171,33 @@ type ClientDetailsWidgetProps = {
   client: HydratedClientDetail
   activeProjectCount: number
   otherProjectCount: number
-  referralContact: ReferralContactInfo
+  originationContact: OriginationContactInfo
+  originationUser: PartnerUserInfo
+  closerUser: PartnerUserInfo
 }
 
 function ClientDetailsWidget({
   client,
   activeProjectCount,
   otherProjectCount,
-  referralContact,
+  originationContact,
+  originationUser,
+  closerUser,
 }: ClientDetailsWidgetProps) {
+  const originationLabel = originationUser
+    ? (originationUser.fullName ?? originationUser.email)
+    : originationContact
+      ? (originationContact.name ?? originationContact.email)
+      : null
+  const originationKind = originationUser
+    ? 'Internal partner'
+    : originationContact
+      ? 'External referrer'
+      : null
+  const closerLabel = closerUser
+    ? (closerUser.fullName ?? closerUser.email)
+    : null
+
   return (
     <section className='bg-card text-card-foreground overflow-hidden rounded-lg border'>
       <div className='flex items-center gap-3 border-b px-4 py-3'>
@@ -212,13 +243,25 @@ function ClientDetailsWidget({
             </a>
           </div>
         ) : null}
-        {referralContact ? (
+        {originationLabel ? (
           <div className='flex items-center gap-3 px-4 py-2.5'>
             <UserPlus className='text-muted-foreground h-4 w-4' />
-            <span className='text-muted-foreground text-sm'>Referred By</span>
-            <span className='ml-auto text-sm font-medium'>
-              {referralContact.name ?? referralContact.email}
+            <span className='text-muted-foreground text-sm'>Origination</span>
+            <span className='ml-auto flex items-center gap-2 text-sm font-medium'>
+              {originationLabel}
+              {originationKind ? (
+                <span className='text-muted-foreground text-xs font-normal'>
+                  ({originationKind})
+                </span>
+              ) : null}
             </span>
+          </div>
+        ) : null}
+        {closerLabel ? (
+          <div className='flex items-center gap-3 px-4 py-2.5'>
+            <Handshake className='text-muted-foreground h-4 w-4' />
+            <span className='text-muted-foreground text-sm'>Closer</span>
+            <span className='ml-auto text-sm font-medium'>{closerLabel}</span>
           </div>
         ) : null}
         {client.slug ? (

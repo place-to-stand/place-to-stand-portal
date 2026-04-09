@@ -1,6 +1,6 @@
-import { Building2 } from 'lucide-react'
+import { CreditCard } from 'lucide-react'
 
-import type { Net30Data } from '@/lib/data/reports/types'
+import type { PrepaidBillingData } from '@/lib/data/reports/types'
 
 import {
   SectionEmpty,
@@ -10,18 +10,18 @@ import {
   formatCurrency,
 } from './section-shell'
 
-type Net30SectionProps = {
-  data: Net30Data
+type PrepaidSectionProps = {
+  data: PrepaidBillingData
 }
 
-export function Net30Section({ data }: Net30SectionProps) {
+export function PrepaidSection({ data }: PrepaidSectionProps) {
   return (
     <SectionShell
       compact
-      icon={Building2}
-      iconTone='sky'
-      title='Net 30 Billing'
-      description={`Hours logged on net 30 clients × $${data.hourlyRate}/hr — what we'll invoice this month.`}
+      icon={CreditCard}
+      iconTone='emerald'
+      title='Prepaid Billing'
+      description={`New hour blocks sold this month × $${data.hourlyRate}/hr — what we billed prepaid clients.`}
       total={formatCurrency(data.totalAmount)}
     >
       {data.rows.length > 0 ? (
@@ -36,7 +36,7 @@ export function Net30Section({ data }: Net30SectionProps) {
           ))}
         </SectionRowList>
       ) : (
-        <SectionEmpty message='No hours logged for net 30 clients this month.' />
+        <SectionEmpty message='No hour blocks purchased this month.' />
       )}
     </SectionShell>
   )

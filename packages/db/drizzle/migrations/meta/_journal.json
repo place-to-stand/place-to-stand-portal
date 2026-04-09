@@ -351,6 +351,13 @@
       "when": 1775680835584,
       "tag": "0049_remove_backlog_in_review_statuses",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1775689084663,
+      "tag": "0050_partners_payment_formula",
+      "breakpoints": true
     }
   ]
 }

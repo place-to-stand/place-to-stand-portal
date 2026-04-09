@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { cache } from 'react'
-import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import { aliasedTable, and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import {
@@ -10,7 +10,14 @@ import {
   ensureClientAccess,
 } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, contacts, projects, hourBlocks, timeLogs } from '@/lib/db/schema'
+import {
+  clients,
+  contacts,
+  projects,
+  hourBlocks,
+  timeLogs,
+  users,
+} from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 
 export type ClientActiveProject = {
@@ -27,8 +34,16 @@ export type ClientWithMetrics = {
   website: string | null
   billingType: 'prepaid' | 'net_30'
   state: string | null
-  referredBy: string | null
-  referrerName: string | null
+  originationContactId: string | null
+  originationContactName: string | null
+  originationUserId: string | null
+  originationUserName: string | null
+  originationUserAvatarUrl: string | null
+  originationUserUpdatedAt: string | null
+  closerUserId: string | null
+  closerUserName: string | null
+  closerUserAvatarUrl: string | null
+  closerUserUpdatedAt: string | null
   createdAt: string
   updatedAt: string
   deletedAt: string | null
@@ -47,7 +62,9 @@ export type ClientDetail = {
   notes: string | null
   website: string | null
   state: string | null
-  referredBy: string | null
+  originationContactId: string | null
+  originationUserId: string | null
+  closerUserId: string | null
   billingType: 'prepaid' | 'net_30'
   createdAt: string
   updatedAt: string
@@ -66,6 +83,12 @@ export const fetchClientsWithMetrics = cache(
       baseConditions.push(inArray(clients.id, clientIds))
     }
 
+    // Aliased user joins: the clients table references users three times
+    // (createdBy, origination, closer) so we need distinct table aliases for
+    // the two user joins we care about here.
+    const originationUsers = aliasedTable(users, 'origination_users')
+    const closerUsers = aliasedTable(users, 'closer_users')
+
     // Fetch base client data with project counts
     const rows = await db
       .select({
@@ -76,8 +99,18 @@ export const fetchClientsWithMetrics = cache(
         website: clients.website,
         billingType: clients.billingType,
         state: clients.state,
-        referredBy: clients.referredBy,
-        referrerName: contacts.name,
+        originationContactId: clients.originationContactId,
+        originationContactName: contacts.name,
+        originationUserId: clients.originationUserId,
+        originationUserName: originationUsers.fullName,
+        originationUserEmail: originationUsers.email,
+        originationUserAvatarUrl: originationUsers.avatarUrl,
+        originationUserUpdatedAt: originationUsers.updatedAt,
+        closerUserId: clients.closerUserId,
+        closerUserName: closerUsers.fullName,
+        closerUserEmail: closerUsers.email,
+        closerUserAvatarUrl: closerUsers.avatarUrl,
+        closerUserUpdatedAt: closerUsers.updatedAt,
         createdAt: clients.createdAt,
         updatedAt: clients.updatedAt,
         deletedAt: clients.deletedAt,
@@ -93,7 +126,12 @@ export const fetchClientsWithMetrics = cache(
       })
       .from(clients)
       .leftJoin(projects, eq(projects.clientId, clients.id))
-      .leftJoin(contacts, eq(clients.referredBy, contacts.id))
+      .leftJoin(contacts, eq(clients.originationContactId, contacts.id))
+      .leftJoin(
+        originationUsers,
+        eq(clients.originationUserId, originationUsers.id)
+      )
+      .leftJoin(closerUsers, eq(clients.closerUserId, closerUsers.id))
       .where(and(...baseConditions))
       .groupBy(
         clients.id,
@@ -103,8 +141,18 @@ export const fetchClientsWithMetrics = cache(
         clients.website,
         clients.billingType,
         clients.state,
-        clients.referredBy,
+        clients.originationContactId,
         contacts.name,
+        clients.originationUserId,
+        originationUsers.fullName,
+        originationUsers.email,
+        originationUsers.avatarUrl,
+        originationUsers.updatedAt,
+        clients.closerUserId,
+        closerUsers.fullName,
+        closerUsers.email,
+        closerUsers.avatarUrl,
+        closerUsers.updatedAt,
         clients.createdAt,
         clients.updatedAt,
         clients.deletedAt
@@ -200,8 +248,17 @@ export const fetchClientsWithMetrics = cache(
         website: row.website,
         billingType: row.billingType,
         state: row.state,
-        referredBy: row.referredBy,
-        referrerName: row.referrerName,
+        originationContactId: row.originationContactId,
+        originationContactName: row.originationContactName,
+        originationUserId: row.originationUserId,
+        originationUserName:
+          row.originationUserName ?? row.originationUserEmail ?? null,
+        originationUserAvatarUrl: row.originationUserAvatarUrl ?? null,
+        originationUserUpdatedAt: row.originationUserUpdatedAt ?? null,
+        closerUserId: row.closerUserId,
+        closerUserName: row.closerUserName ?? row.closerUserEmail ?? null,
+        closerUserAvatarUrl: row.closerUserAvatarUrl ?? null,
+        closerUserUpdatedAt: row.closerUserUpdatedAt ?? null,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
         deletedAt: row.deletedAt,
@@ -228,7 +285,9 @@ export const fetchClientById = cache(
         notes: clients.notes,
         website: clients.website,
         state: clients.state,
-        referredBy: clients.referredBy,
+        originationContactId: clients.originationContactId,
+        originationUserId: clients.originationUserId,
+        closerUserId: clients.closerUserId,
         billingType: clients.billingType,
         createdAt: clients.createdAt,
         updatedAt: clients.updatedAt,
@@ -350,7 +409,9 @@ export async function fetchClientsByIds(
       notes: clients.notes,
       website: clients.website,
       state: clients.state,
-      referredBy: clients.referredBy,
+      originationContactId: clients.originationContactId,
+      originationUserId: clients.originationUserId,
+      closerUserId: clients.closerUserId,
       billingType: clients.billingType,
       createdAt: clients.createdAt,
       updatedAt: clients.updatedAt,

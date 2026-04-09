@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { clients } from '@/lib/db/schema'
 import type { ClientBillingTypeValue } from '@/lib/types'
 import {
+  assertClientPartnerUserRoles,
   generateUniqueClientSlug,
   syncClientMembers,
   toClientSlug,
@@ -22,7 +23,9 @@ type CreateClientPayload = {
   billingType: ClientBillingTypeValue
   state: string | null
   website: string | null
-  referredBy: string | null
+  originationContactId: string | null
+  originationUserId: string | null
+  closerUserId: string | null
   notes: string | null
   memberIds?: string[]
 }
@@ -35,7 +38,26 @@ export async function createClient(
 ): Promise<ClientMutationResult> {
   const { user } = context
   assertAdmin(user)
-  const { name, providedSlug, billingType, state, website, referredBy, notes, memberIds } = payload
+  const {
+    name,
+    providedSlug,
+    billingType,
+    state,
+    website,
+    originationContactId,
+    originationUserId,
+    closerUserId,
+    notes,
+    memberIds,
+  } = payload
+
+  const partnerRoleError = await assertClientPartnerUserRoles({
+    originationUserId,
+    closerUserId,
+  })
+  if (partnerRoleError) {
+    return buildMutationResult(partnerRoleError)
+  }
 
   const baseSlug = providedSlug
     ? toClientSlug(providedSlug)
@@ -53,7 +75,9 @@ export async function createClient(
           billingType,
           state,
           website,
-          referredBy,
+          originationContactId,
+          originationUserId,
+          closerUserId,
           notes,
           createdBy: user.id,
         })

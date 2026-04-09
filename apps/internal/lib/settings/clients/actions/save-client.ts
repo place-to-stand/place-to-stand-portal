@@ -24,7 +24,19 @@ export async function saveClientMutation(
     })
   }
 
-  const { id, name, slug, notes, memberIds, billingType, state, website, referredBy } = parsed.data
+  const {
+    id,
+    name,
+    slug,
+    notes,
+    memberIds,
+    billingType,
+    state,
+    website,
+    originationContactId,
+    originationUserId,
+    closerUserId,
+  } = parsed.data
   const normalizedMemberIds = memberIds
     ? Array.from(new Set(memberIds)).filter(Boolean)
     : undefined
@@ -57,7 +69,9 @@ export async function saveClientMutation(
           billingType,
           state: state ?? null,
           website: cleanedWebsite,
-          referredBy: referredBy ?? null,
+          originationContactId,
+          originationUserId,
+          closerUserId,
           notes: cleanedNotes,
           memberIds: normalizedMemberIds,
         })
@@ -70,7 +84,9 @@ export async function saveClientMutation(
         billingType,
         state: state ?? null,
         website: cleanedWebsite,
-        referredBy: referredBy ?? null,
+        originationContactId,
+        originationUserId,
+        closerUserId,
         notes: cleanedNotes,
         memberIds: normalizedMemberIds,
       })

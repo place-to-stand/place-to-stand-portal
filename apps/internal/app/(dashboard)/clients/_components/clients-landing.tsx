@@ -3,6 +3,11 @@
 import Link from 'next/link'
 import { Building2, CheckCircle2, Clock, ExternalLink } from 'lucide-react'
 
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import {
   Tooltip,
@@ -36,6 +41,13 @@ function formatHours(hours: number): string {
   return HOURS_FORMATTER.format(hours)
 }
 
+function getInitials(name: string | null): string {
+  if (!name) return '?'
+  const parts = name.trim().split(/\s+/)
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase()
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
+}
+
 export function ClientsLanding({ clients }: ClientsLandingProps) {
   if (clients.length === 0) {
     return (
@@ -63,7 +75,8 @@ export function ClientsLanding({ clients }: ClientsLandingProps) {
             <TableHead>Billing</TableHead>
             <TableHead>Projects</TableHead>
             <TableHead>Hours</TableHead>
-            <TableHead className='w-20 text-center'>Referral</TableHead>
+            <TableHead className='w-24 text-center'>Origination</TableHead>
+            <TableHead className='w-20 text-center'>Closer</TableHead>
             <TableHead className='w-16 text-center'>Links</TableHead>
           </TableRow>
         </TableHeader>
@@ -134,7 +147,24 @@ export function ClientsLanding({ clients }: ClientsLandingProps) {
               </TableCell>
               <TableCell>
                 <div className='flex items-center justify-center'>
-                  {client.referredBy ? (
+                  {client.originationUserId ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Avatar className='h-6 w-6'>
+                          <AvatarImage
+                            src={`/api/storage/user-avatar/${client.originationUserId}?v=${encodeURIComponent(client.originationUserUpdatedAt ?? '')}`}
+                            alt={client.originationUserName ?? 'Internal partner'}
+                          />
+                          <AvatarFallback className='text-[9px]'>
+                            {getInitials(client.originationUserName)}
+                          </AvatarFallback>
+                        </Avatar>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Internal — {client.originationUserName ?? 'partner'}
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : client.originationContactId ? (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span className='cursor-default'>
@@ -142,7 +172,31 @@ export function ClientsLanding({ clients }: ClientsLandingProps) {
                         </span>
                       </TooltipTrigger>
                       <TooltipContent>
-                        {client.referrerName ?? 'Referred'}
+                        External — {client.originationContactName ?? 'referrer'}
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <span className='text-muted-foreground/40 text-sm'>—</span>
+                  )}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className='flex items-center justify-center'>
+                  {client.closerUserId ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Avatar className='h-6 w-6'>
+                          <AvatarImage
+                            src={`/api/storage/user-avatar/${client.closerUserId}?v=${encodeURIComponent(client.closerUserUpdatedAt ?? '')}`}
+                            alt={client.closerUserName ?? 'Closer'}
+                          />
+                          <AvatarFallback className='text-[9px]'>
+                            {getInitials(client.closerUserName)}
+                          </AvatarFallback>
+                        </Avatar>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {client.closerUserName ?? 'Closer'}
                       </TooltipContent>
                     </Tooltip>
                   ) : (

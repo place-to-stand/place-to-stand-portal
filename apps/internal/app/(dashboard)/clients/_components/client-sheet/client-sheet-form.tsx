@@ -29,7 +29,9 @@ import {
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import type {
   ClientContactOption,
-  ReferralContactOption,
+  OriginationContactOption,
+  OriginationMode,
+  PartnerUserOption,
   UseClientSheetStateReturn,
 } from '@/lib/settings/clients/use-client-sheet-state'
 import { CLIENT_BILLING_TYPE_SELECT_OPTIONS } from '@/lib/settings/clients/billing-types'
@@ -38,7 +40,8 @@ import { cn } from '@/lib/utils'
 import type { ClientSheetFormValues } from '@/lib/settings/clients/client-sheet-schema'
 
 import { ClientContactPicker } from './client-contact-picker'
-import { ClientReferralPicker } from './client-referral-picker'
+import { ClientCloserPicker } from './client-closer-picker'
+import { ClientOriginationPicker } from './client-origination-picker'
 
 const FEEDBACK_CLASSES =
   'border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm'
@@ -66,15 +69,33 @@ type ClientSheetFormProps = {
   onContactPickerOpenChange: (open: boolean) => void
   onAddContact: (contact: ClientContactOption) => void
   onRemoveContact: (contact: ClientContactOption) => void
-  // Referral
-  selectedReferral: ReferralContactOption | null
-  availableReferralContacts: ReferralContactOption[]
-  referralPickerDisabled: boolean
-  referralPickerDisabledReason: string | null
-  isReferralPickerOpen: boolean
-  onReferralPickerOpenChange: (open: boolean) => void
-  onSelectReferral: (contact: ReferralContactOption) => void
-  onClearReferral: () => void
+  // Origination
+  originationMode: OriginationMode
+  selectedOriginationUser: PartnerUserOption | null
+  selectedOriginationContact: OriginationContactOption | null
+  availableOriginationUsers: PartnerUserOption[]
+  availableOriginationContacts: OriginationContactOption[]
+  isOriginationUserPickerOpen: boolean
+  isOriginationContactPickerOpen: boolean
+  originationPickerDisabled: boolean
+  originationPickerDisabledReason: string | null
+  originationError: string | null
+  onOriginationModeChange: (mode: OriginationMode) => void
+  onOriginationUserPickerOpenChange: (open: boolean) => void
+  onOriginationContactPickerOpenChange: (open: boolean) => void
+  onSelectOriginationUser: (user: PartnerUserOption) => void
+  onSelectOriginationContact: (contact: OriginationContactOption) => void
+  onClearOrigination: () => void
+  // Closer
+  selectedCloser: PartnerUserOption | null
+  availableClosers: PartnerUserOption[]
+  isCloserPickerOpen: boolean
+  closerPickerDisabled: boolean
+  closerPickerDisabledReason: string | null
+  closerError: string | null
+  onCloserPickerOpenChange: (open: boolean) => void
+  onSelectCloser: (user: PartnerUserOption) => void
+  onClearCloser: () => void
 }
 
 export function ClientSheetForm({
@@ -99,14 +120,31 @@ export function ClientSheetForm({
   onContactPickerOpenChange,
   onAddContact,
   onRemoveContact,
-  selectedReferral,
-  availableReferralContacts,
-  referralPickerDisabled,
-  referralPickerDisabledReason,
-  isReferralPickerOpen,
-  onReferralPickerOpenChange,
-  onSelectReferral,
-  onClearReferral,
+  originationMode,
+  selectedOriginationUser,
+  selectedOriginationContact,
+  availableOriginationUsers,
+  availableOriginationContacts,
+  isOriginationUserPickerOpen,
+  isOriginationContactPickerOpen,
+  originationPickerDisabled,
+  originationPickerDisabledReason,
+  originationError,
+  onOriginationModeChange,
+  onOriginationUserPickerOpenChange,
+  onOriginationContactPickerOpenChange,
+  onSelectOriginationUser,
+  onSelectOriginationContact,
+  onClearOrigination,
+  selectedCloser,
+  availableClosers,
+  isCloserPickerOpen,
+  closerPickerDisabled,
+  closerPickerDisabledReason,
+  closerError,
+  onCloserPickerOpenChange,
+  onSelectCloser,
+  onClearCloser,
 }: ClientSheetFormProps) {
   const handleSave = useCallback(
     () => form.handleSubmit(onSubmit)(),
@@ -325,20 +363,58 @@ export function ClientSheetForm({
             </FormItem>
           )}
         />
-        <div className='space-y-2'>
-          <FormLabel>Referred By (optional)</FormLabel>
-          <ClientReferralPicker
-            selectedReferral={selectedReferral}
-            availableContacts={availableReferralContacts}
-            disabled={referralPickerDisabled}
-            disabledReason={referralPickerDisabledReason}
-            isPickerOpen={isReferralPickerOpen}
+        <div className='grid gap-2'>
+          <FormLabel
+            data-error={Boolean(originationError)}
+            className='data-[error=true]:text-destructive'
+          >
+            Origination
+          </FormLabel>
+          <ClientOriginationPicker
+            mode={originationMode}
+            selectedUser={selectedOriginationUser}
+            selectedContact={selectedOriginationContact}
+            availableUsers={availableOriginationUsers}
+            availableContacts={availableOriginationContacts}
+            disabled={originationPickerDisabled}
+            disabledReason={originationPickerDisabledReason}
+            isUserPickerOpen={isOriginationUserPickerOpen}
+            isContactPickerOpen={isOriginationContactPickerOpen}
             isPending={isPending}
             pendingReason={pendingReason}
-            onPickerOpenChange={onReferralPickerOpenChange}
-            onSelect={onSelectReferral}
-            onClear={onClearReferral}
+            onModeChange={onOriginationModeChange}
+            onUserPickerOpenChange={onOriginationUserPickerOpenChange}
+            onContactPickerOpenChange={onOriginationContactPickerOpenChange}
+            onSelectUser={onSelectOriginationUser}
+            onSelectContact={onSelectOriginationContact}
+            onClear={onClearOrigination}
           />
+          {originationError ? (
+            <p className='text-destructive text-xs'>{originationError}</p>
+          ) : null}
+        </div>
+        <div className='grid gap-2'>
+          <FormLabel
+            data-error={Boolean(closerError)}
+            className='data-[error=true]:text-destructive'
+          >
+            Closer
+          </FormLabel>
+          <ClientCloserPicker
+            selectedCloser={selectedCloser}
+            availableClosers={availableClosers}
+            disabled={closerPickerDisabled}
+            disabledReason={closerPickerDisabledReason}
+            isPickerOpen={isCloserPickerOpen}
+            isPending={isPending}
+            pendingReason={pendingReason}
+            onPickerOpenChange={onCloserPickerOpenChange}
+            onSelect={onSelectCloser}
+            onClear={onClearCloser}
+          />
+          {closerError ? (
+            <p className='text-destructive text-xs'>{closerError}</p>
+          ) : null}
         </div>
         <div className='space-y-2'>
           <FormLabel>Contacts</FormLabel>

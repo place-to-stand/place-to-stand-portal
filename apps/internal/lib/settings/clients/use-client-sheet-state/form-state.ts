@@ -23,7 +23,9 @@ import type {
   BaseFormState,
   ClientContactOption,
   ClientSheetFormStateArgs,
-  ReferralContactOption,
+  OriginationContactOption,
+  OriginationMode,
+  PartnerUserOption,
 } from './types'
 
 export function useClientSheetFormState({
@@ -33,6 +35,7 @@ export function useClientSheetFormState({
   client,
   allContacts: allContactsProp,
   clientContacts: clientContactsProp,
+  allAdminUsers: allAdminUsersProp,
   isEditing,
   isPending,
   startTransition,
@@ -42,14 +45,45 @@ export function useClientSheetFormState({
   // Contact state
   const [isContactPickerOpen, setIsContactPickerOpen] = useState(false)
   const [fetchedAllContacts, setFetchedAllContacts] = useState<ClientContactOption[]>([])
+  const [fetchedAllAdminUsers, setFetchedAllAdminUsers] = useState<PartnerUserOption[]>([])
   const [selectedContacts, setSelectedContacts] = useState<ClientContactOption[]>([])
   const [initialContacts, setInitialContacts] = useState<ClientContactOption[]>([])
   const [isLoadingContacts, setIsLoadingContacts] = useState(false)
 
-  // Referral state
-  const [isReferralPickerOpen, setIsReferralPickerOpen] = useState(false)
-  const [selectedReferral, setSelectedReferral] = useState<ReferralContactOption | null>(null)
-  const [initialReferralId, setInitialReferralId] = useState<string | null>(null)
+  // Origination state — defaults to 'internal' for new clients; existing
+  // clients with an external contact set get flipped to 'external' in the
+  // open effect below.
+  const [originationMode, setOriginationMode] = useState<OriginationMode>(
+    'internal'
+  )
+  const [isOriginationUserPickerOpen, setIsOriginationUserPickerOpen] =
+    useState(false)
+  const [isOriginationContactPickerOpen, setIsOriginationContactPickerOpen] =
+    useState(false)
+  const [selectedOriginationUser, setSelectedOriginationUser] =
+    useState<PartnerUserOption | null>(null)
+  const [selectedOriginationContact, setSelectedOriginationContact] =
+    useState<OriginationContactOption | null>(null)
+  const [initialOriginationUserId, setInitialOriginationUserId] = useState<
+    string | null
+  >(null)
+  const [initialOriginationContactId, setInitialOriginationContactId] =
+    useState<string | null>(null)
+
+  // Closer state
+  const [isCloserPickerOpen, setIsCloserPickerOpen] = useState(false)
+  const [selectedCloser, setSelectedCloser] = useState<PartnerUserOption | null>(
+    null
+  )
+  const [initialCloserUserId, setInitialCloserUserId] = useState<string | null>(
+    null
+  )
+
+  // Field-level errors for the pickers — rendered inline (shadcn
+  // FormMessage pattern) below each picker. Cleared as the user interacts
+  // so they don't linger after a fix.
+  const [originationError, setOriginationError] = useState<string | null>(null)
+  const [closerError, setCloserError] = useState<string | null>(null)
 
   const form = useForm<ClientSheetFormValues>({
     resolver: zodResolver(clientSheetFormSchema),
@@ -63,8 +97,9 @@ export function useClientSheetFormState({
     },
   })
 
-  // Use provided allContacts or fetched ones
+  // Use provided data or fetched data
   const allContacts = allContactsProp ?? fetchedAllContacts
+  const allAdminUsers = allAdminUsersProp ?? fetchedAllAdminUsers
 
   // Compute available contacts (all contacts minus selected ones)
   const availableContacts = useMemo(() => {
@@ -84,18 +119,44 @@ export function useClientSheetFormState({
     return false
   }, [initialContacts, selectedContacts])
 
-  // Compute available contacts for referral (excludes currently selected)
-  const availableReferralContacts = useMemo<ReferralContactOption[]>(() => {
-    return allContacts
-      .filter(c => c.id !== selectedReferral?.id)
-      .map(c => ({ id: c.id, name: c.name, email: c.email }))
-  }, [allContacts, selectedReferral])
+  // Origination user picker: any admin user except the one already selected
+  const availableOriginationUsers = useMemo<PartnerUserOption[]>(() => {
+    return allAdminUsers.filter(u => u.id !== selectedOriginationUser?.id)
+  }, [allAdminUsers, selectedOriginationUser])
 
-  // Check if referral has changed
-  const referralDirty = useMemo(() => {
-    const currentId = selectedReferral?.id ?? null
-    return currentId !== initialReferralId
-  }, [selectedReferral, initialReferralId])
+  // Origination contact picker: any contact except the one already selected
+  const availableOriginationContacts = useMemo<OriginationContactOption[]>(
+    () =>
+      allContacts
+        .filter(c => c.id !== selectedOriginationContact?.id)
+        .map(c => ({ id: c.id, name: c.name, email: c.email })),
+    [allContacts, selectedOriginationContact]
+  )
+
+  // Closer picker: any admin user except the one already selected
+  const availableClosers = useMemo<PartnerUserOption[]>(() => {
+    return allAdminUsers.filter(u => u.id !== selectedCloser?.id)
+  }, [allAdminUsers, selectedCloser])
+
+  // Origination dirty: either side differs from initial
+  const originationDirty = useMemo(() => {
+    const currentUserId = selectedOriginationUser?.id ?? null
+    const currentContactId = selectedOriginationContact?.id ?? null
+    return (
+      currentUserId !== initialOriginationUserId ||
+      currentContactId !== initialOriginationContactId
+    )
+  }, [
+    selectedOriginationUser,
+    selectedOriginationContact,
+    initialOriginationUserId,
+    initialOriginationContactId,
+  ])
+
+  const closerDirty = useMemo(() => {
+    const currentCloserId = selectedCloser?.id ?? null
+    return currentCloserId !== initialCloserUserId
+  }, [selectedCloser, initialCloserUserId])
 
   const contactsAddButtonDisabled = isPending || isLoadingContacts || availableContacts.length === 0
   const contactsAddButtonDisabledReason = contactsAddButtonDisabled
@@ -106,8 +167,15 @@ export function useClientSheetFormState({
         : 'All contacts are already linked.'
     : null
 
-  const referralPickerDisabled = isPending || isLoadingContacts
-  const referralPickerDisabledReason = referralPickerDisabled
+  const originationPickerDisabled = isPending || isLoadingContacts
+  const originationPickerDisabledReason = originationPickerDisabled
+    ? isPending
+      ? PENDING_REASON
+      : 'Loading contacts...'
+    : null
+
+  const closerPickerDisabled = isPending || isLoadingContacts
+  const closerPickerDisabledReason = closerPickerDisabled
     ? isPending
       ? PENDING_REASON
       : 'Loading contacts...'
@@ -116,7 +184,8 @@ export function useClientSheetFormState({
   const submitDisabled = isPending
   const submitDisabledReason = submitDisabled ? PENDING_REASON : null
 
-  const hasUnsavedChanges = form.formState.isDirty || contactsDirty || referralDirty
+  const hasUnsavedChanges =
+    form.formState.isDirty || contactsDirty || originationDirty || closerDirty
 
   const { requestConfirmation: confirmDiscard, dialog: unsavedChangesDialog } =
     useUnsavedChangesWarning({ isDirty: hasUnsavedChanges })
@@ -133,12 +202,14 @@ export function useClientSheetFormState({
 
     form.reset(defaults)
     setFeedback(null)
+    setOriginationError(null)
+    setCloserError(null)
 
-    // Reset contacts
+    // Reset pickers
     setIsContactPickerOpen(false)
-
-    // Reset referral
-    setIsReferralPickerOpen(false)
+    setIsOriginationUserPickerOpen(false)
+    setIsOriginationContactPickerOpen(false)
+    setIsCloserPickerOpen(false)
   }, [client, form, setFeedback])
 
   useEffect(() => {
@@ -164,34 +235,69 @@ export function useClientSheetFormState({
 
     // Fetch contact data if not provided via props
     const clientId = client?.id
-    const clientReferredBy = client?.referred_by ?? null
-    const shouldFetch = !allContactsProp || allContactsProp.length === 0
+    const clientOriginationContactId = client?.origination_contact_id ?? null
+    const clientOriginationUserId = client?.origination_user_id ?? null
+    const clientCloserUserId = client?.closer_user_id ?? null
+    const shouldFetch =
+      !allContactsProp ||
+      allContactsProp.length === 0 ||
+      !allAdminUsersProp ||
+      allAdminUsersProp.length === 0
 
-    // Initialize referral from client
-    setInitialReferralId(clientReferredBy)
+    // Initialize origination/closer "initial" references
+    setInitialOriginationUserId(clientOriginationUserId)
+    setInitialOriginationContactId(clientOriginationContactId)
+    setInitialCloserUserId(clientCloserUserId)
+
+    // Default origination mode: 'external' only if an external contact is
+    // already set on this client; otherwise default to 'internal' (for new
+    // clients and existing clients with an internal user or no origination).
+    setOriginationMode(clientOriginationContactId ? 'external' : 'internal')
+
+    const hydrateSelectionsFromData = (
+      contacts: ClientContactOption[],
+      adminUsers: PartnerUserOption[]
+    ) => {
+      // Origination contact
+      if (clientOriginationContactId) {
+        const contact = contacts.find(c => c.id === clientOriginationContactId)
+        setSelectedOriginationContact(
+          contact
+            ? { id: contact.id, name: contact.name, email: contact.email }
+            : null
+        )
+      } else {
+        setSelectedOriginationContact(null)
+      }
+
+      // Origination user
+      if (clientOriginationUserId) {
+        const u = adminUsers.find(u => u.id === clientOriginationUserId)
+        setSelectedOriginationUser(u ?? null)
+      } else {
+        setSelectedOriginationUser(null)
+      }
+
+      // Closer
+      if (clientCloserUserId) {
+        const u = adminUsers.find(u => u.id === clientCloserUserId)
+        setSelectedCloser(u ?? null)
+      } else {
+        setSelectedCloser(null)
+      }
+    }
 
     if (shouldFetch) {
       setIsLoadingContacts(true)
       getClientSheetContactData(clientId)
         .then(data => {
           setFetchedAllContacts(data.allContacts)
+          setFetchedAllAdminUsers(data.allAdminUsers)
           if (clientId && data.linkedContacts.length > 0) {
             setSelectedContacts(data.linkedContacts)
             setInitialContacts(data.linkedContacts)
           }
-          // Set referral from fetched contacts if client has referred_by
-          if (clientReferredBy) {
-            const referralContact = data.allContacts.find(c => c.id === clientReferredBy)
-            if (referralContact) {
-              setSelectedReferral({
-                id: referralContact.id,
-                name: referralContact.name,
-                email: referralContact.email,
-              })
-            }
-          } else {
-            setSelectedReferral(null)
-          }
+          hydrateSelectionsFromData(data.allContacts, data.allAdminUsers)
         })
         .catch(err => {
           console.error('Failed to fetch contact sheet data:', err)
@@ -199,22 +305,24 @@ export function useClientSheetFormState({
         .finally(() => {
           setIsLoadingContacts(false)
         })
-    } else if (allContactsProp && clientReferredBy) {
-      // Use provided contacts to find referral
-      const referralContact = allContactsProp.find(c => c.id === clientReferredBy)
-      if (referralContact) {
-        setSelectedReferral({
-          id: referralContact.id,
-          name: referralContact.name,
-          email: referralContact.email,
-        })
-      } else {
-        setSelectedReferral(null)
-      }
     } else {
-      setSelectedReferral(null)
+      hydrateSelectionsFromData(
+        allContactsProp ?? [],
+        allAdminUsersProp ?? []
+      )
     }
-  }, [open, resetFormState, startTransition, client?.id, client?.referred_by, allContactsProp, clientContactsProp])
+  }, [
+    open,
+    resetFormState,
+    startTransition,
+    client?.id,
+    client?.origination_contact_id,
+    client?.origination_user_id,
+    client?.closer_user_id,
+    allContactsProp,
+    clientContactsProp,
+    allAdminUsersProp,
+  ])
 
   const handleSheetOpenChange = useCallback(
     (next: boolean) => {
@@ -259,25 +367,88 @@ export function useClientSheetFormState({
     setSelectedContacts(prev => prev.filter(c => c.id !== contact.id))
   }, [])
 
-  // Referral handlers
-  const handleReferralPickerOpenChange = useCallback(
-    (next: boolean) => {
-      if (referralPickerDisabled) {
-        setIsReferralPickerOpen(false)
-        return
+  // Origination handlers
+  const handleOriginationModeChange = useCallback(
+    (mode: OriginationMode) => {
+      setOriginationMode(mode)
+      setOriginationError(null)
+      // Switching modes clears the opposite side to enforce mutex in UI
+      if (mode === 'internal') {
+        setSelectedOriginationContact(null)
+      } else {
+        setSelectedOriginationUser(null)
       }
-      setIsReferralPickerOpen(next)
     },
-    [referralPickerDisabled]
+    []
   )
 
-  const handleSelectReferral = useCallback((contact: ReferralContactOption) => {
-    setSelectedReferral(contact)
-    setIsReferralPickerOpen(false)
+  const handleOriginationUserPickerOpenChange = useCallback(
+    (next: boolean) => {
+      if (originationPickerDisabled) {
+        setIsOriginationUserPickerOpen(false)
+        return
+      }
+      setIsOriginationUserPickerOpen(next)
+    },
+    [originationPickerDisabled]
+  )
+
+  const handleOriginationContactPickerOpenChange = useCallback(
+    (next: boolean) => {
+      if (originationPickerDisabled) {
+        setIsOriginationContactPickerOpen(false)
+        return
+      }
+      setIsOriginationContactPickerOpen(next)
+    },
+    [originationPickerDisabled]
+  )
+
+  const handleSelectOriginationUser = useCallback(
+    (user: PartnerUserOption) => {
+      setSelectedOriginationUser(user)
+      setSelectedOriginationContact(null)
+      setIsOriginationUserPickerOpen(false)
+      setOriginationError(null)
+    },
+    []
+  )
+
+  const handleSelectOriginationContact = useCallback(
+    (contact: OriginationContactOption) => {
+      setSelectedOriginationContact(contact)
+      setSelectedOriginationUser(null)
+      setIsOriginationContactPickerOpen(false)
+      setOriginationError(null)
+    },
+    []
+  )
+
+  const handleClearOrigination = useCallback(() => {
+    setSelectedOriginationUser(null)
+    setSelectedOriginationContact(null)
   }, [])
 
-  const handleClearReferral = useCallback(() => {
-    setSelectedReferral(null)
+  // Closer handlers
+  const handleCloserPickerOpenChange = useCallback(
+    (next: boolean) => {
+      if (closerPickerDisabled) {
+        setIsCloserPickerOpen(false)
+        return
+      }
+      setIsCloserPickerOpen(next)
+    },
+    [closerPickerDisabled]
+  )
+
+  const handleSelectCloser = useCallback((user: PartnerUserOption) => {
+    setSelectedCloser(user)
+    setIsCloserPickerOpen(false)
+    setCloserError(null)
+  }, [])
+
+  const handleClearCloser = useCallback(() => {
+    setSelectedCloser(null)
   }, [])
 
   const handleFormSubmit = useCallback(
@@ -286,6 +457,29 @@ export function useClientSheetFormState({
         form.setError('slug', { type: 'manual', message: 'Slug is required' })
         return
       }
+
+      // Origination is required — exactly one of user OR contact must be set.
+      const hasOriginationUser =
+        originationMode === 'internal' && selectedOriginationUser !== null
+      const hasOriginationContact =
+        originationMode === 'external' && selectedOriginationContact !== null
+      const originationMissing = !hasOriginationUser && !hasOriginationContact
+      const closerMissing = !selectedCloser
+
+      if (originationMissing || closerMissing) {
+        setOriginationError(
+          originationMissing
+            ? originationMode === 'internal'
+              ? 'Pick an internal partner.'
+              : 'Pick an external referrer.'
+            : null
+        )
+        setCloserError(closerMissing ? 'Pick a closer.' : null)
+        return
+      }
+
+      setOriginationError(null)
+      setCloserError(null)
 
       startTransition(async () => {
         setFeedback(null)
@@ -301,7 +495,15 @@ export function useClientSheetFormState({
           billingType: values.billingType,
           state: values.state?.trim() ? values.state.trim() : null,
           website: values.website?.trim() ? values.website.trim() : null,
-          referredBy: selectedReferral?.id ?? null,
+          originationContactId:
+            originationMode === 'external'
+              ? (selectedOriginationContact?.id ?? null)
+              : null,
+          originationUserId:
+            originationMode === 'internal'
+              ? (selectedOriginationUser?.id ?? null)
+              : null,
+          closerUserId: selectedCloser?.id ?? null,
           notes: values.notes?.trim() ? values.notes.trim() : null,
         } satisfies Parameters<typeof saveClient>[0]
 
@@ -359,7 +561,9 @@ export function useClientSheetFormState({
           })
 
           setInitialContacts(selectedContacts)
-          setInitialReferralId(selectedReferral?.id ?? null)
+          setInitialOriginationUserId(payload.originationUserId)
+          setInitialOriginationContactId(payload.originationContactId)
+          setInitialCloserUserId(payload.closerUserId)
           form.reset({
             name: payload.name,
             slug: payload.slug ?? '',
@@ -388,8 +592,11 @@ export function useClientSheetFormState({
       isEditing,
       onComplete,
       onOpenChange,
+      originationMode,
+      selectedCloser,
       selectedContacts,
-      selectedReferral,
+      selectedOriginationContact,
+      selectedOriginationUser,
       setFeedback,
       startTransition,
       toast,
@@ -413,14 +620,32 @@ export function useClientSheetFormState({
     handleContactPickerOpenChange,
     handleAddContact,
     handleRemoveContact,
-    // Referral
-    selectedReferral,
-    availableReferralContacts,
-    isReferralPickerOpen,
-    referralPickerDisabled,
-    referralPickerDisabledReason,
-    handleReferralPickerOpenChange,
-    handleSelectReferral,
-    handleClearReferral,
+    // Origination
+    originationMode,
+    selectedOriginationUser,
+    selectedOriginationContact,
+    availableOriginationUsers,
+    availableOriginationContacts,
+    isOriginationUserPickerOpen,
+    isOriginationContactPickerOpen,
+    originationPickerDisabled,
+    originationPickerDisabledReason,
+    originationError,
+    handleOriginationModeChange,
+    handleOriginationUserPickerOpenChange,
+    handleOriginationContactPickerOpenChange,
+    handleSelectOriginationUser,
+    handleSelectOriginationContact,
+    handleClearOrigination,
+    // Closer
+    selectedCloser,
+    availableClosers,
+    isCloserPickerOpen,
+    closerPickerDisabled,
+    closerPickerDisabledReason,
+    closerError,
+    handleCloserPickerOpenChange,
+    handleSelectCloser,
+    handleClearCloser,
   }
 }

@@ -8,6 +8,7 @@ import { db } from '@/lib/db'
 import { clientMembers, clients } from '@/lib/db/schema'
 import type { ClientBillingTypeValue } from '@/lib/types'
 import {
+  assertClientPartnerUserRoles,
   clientSlugExists,
   syncClientMembers,
   toClientSlug,
@@ -26,7 +27,9 @@ type UpdateClientPayload = {
   billingType: ClientBillingTypeValue
   state: string | null
   website: string | null
-  referredBy: string | null
+  originationContactId: string | null
+  originationUserId: string | null
+  closerUserId: string | null
   notes: string | null
   memberIds?: string[]
 }
@@ -37,6 +40,9 @@ type ExistingClientRecord = {
   slug: string | null
   billingType: ClientBillingTypeValue
   notes: string | null
+  originationContactId: string | null
+  originationUserId: string | null
+  closerUserId: string | null
 }
 
 export async function updateClient(
@@ -45,7 +51,27 @@ export async function updateClient(
 ): Promise<ClientMutationResult> {
   const { user } = context
   assertAdmin(user)
-  const { id, name, providedSlug, billingType, state, website, referredBy, notes, memberIds } = payload
+  const {
+    id,
+    name,
+    providedSlug,
+    billingType,
+    state,
+    website,
+    originationContactId,
+    originationUserId,
+    closerUserId,
+    notes,
+    memberIds,
+  } = payload
+
+  const partnerRoleError = await assertClientPartnerUserRoles({
+    originationUserId,
+    closerUserId,
+  })
+  if (partnerRoleError) {
+    return buildMutationResult(partnerRoleError)
+  }
 
   const slugToUpdate = providedSlug ? toClientSlug(providedSlug) : null
 
@@ -75,6 +101,9 @@ export async function updateClient(
         slug: clients.slug,
         billingType: clients.billingType,
         notes: clients.notes,
+        originationContactId: clients.originationContactId,
+        originationUserId: clients.originationUserId,
+        closerUserId: clients.closerUserId,
       })
       .from(clients)
       .where(eq(clients.id, id))
@@ -111,7 +140,17 @@ export async function updateClient(
   try {
     await db
       .update(clients)
-      .set({ name, slug: slugToUpdate, billingType, state, website, referredBy, notes })
+      .set({
+        name,
+        slug: slugToUpdate,
+        billingType,
+        state,
+        website,
+        originationContactId,
+        originationUserId,
+        closerUserId,
+        notes,
+      })
       .where(eq(clients.id, id))
   } catch (error) {
     console.error('Failed to update client', error)
@@ -132,7 +171,15 @@ export async function updateClient(
   await recordUpdateActivity({
     userContext: { id: user.id, role: user.role },
     existingClient,
-    updatedValues: { name, notes, slugToUpdate, billingType },
+    updatedValues: {
+      name,
+      notes,
+      slugToUpdate,
+      billingType,
+      originationContactId,
+      originationUserId,
+      closerUserId,
+    },
     existingMemberIds: existingMemberIds ?? [],
     nextMemberIds: memberIds ?? [],
   })
@@ -151,6 +198,9 @@ type RecordUpdateActivityArgs = {
     notes: string | null
     slugToUpdate: string | null
     billingType: ClientBillingTypeValue
+    originationContactId: string | null
+    originationUserId: string | null
+    closerUserId: string | null
   }
   existingMemberIds: string[]
   nextMemberIds: string[]
@@ -240,6 +290,35 @@ function calculateDiff({
     changedFields.push('billing type')
     previousDetails.billingType = previousBillingType
     nextDetails.billingType = nextBillingType
+  }
+
+  // Origination — treat both sides (user + contact) as a single logical
+  // field for the activity feed. Any change to either one surfaces as
+  // "origination".
+  const previousOriginationUserId = existingClient.originationUserId ?? null
+  const nextOriginationUserId = updatedValues.originationUserId ?? null
+  const previousOriginationContactId =
+    existingClient.originationContactId ?? null
+  const nextOriginationContactId = updatedValues.originationContactId ?? null
+
+  if (
+    previousOriginationUserId !== nextOriginationUserId ||
+    previousOriginationContactId !== nextOriginationContactId
+  ) {
+    changedFields.push('origination')
+    previousDetails.originationUserId = previousOriginationUserId
+    previousDetails.originationContactId = previousOriginationContactId
+    nextDetails.originationUserId = nextOriginationUserId
+    nextDetails.originationContactId = nextOriginationContactId
+  }
+
+  const previousCloserUserId = existingClient.closerUserId ?? null
+  const nextCloserUserId = updatedValues.closerUserId ?? null
+
+  if (previousCloserUserId !== nextCloserUserId) {
+    changedFields.push('closer')
+    previousDetails.closerUserId = previousCloserUserId
+    nextDetails.closerUserId = nextCloserUserId
   }
 
   const addedMembers = diff(nextMemberIds, existingMemberIds)

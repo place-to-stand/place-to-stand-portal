@@ -6,7 +6,7 @@ import { AppShellHeader } from '@/components/layout/app-shell'
 import { isAdmin } from '@/lib/auth/permissions'
 import { requireUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { contacts, contactClients } from '@/lib/db/schema'
+import { contacts, contactClients, users } from '@/lib/db/schema'
 import {
   fetchClientsWithMetrics,
   fetchProjectsForClient,
@@ -59,17 +59,20 @@ export default async function ClientDetailPage({
 
   const canManageClients = isAdmin(user)
 
-  // Build referral contact query if client has a referredBy
-  const referralContactPromise = client.referredBy
-    ? db.select({
-        id: contacts.id,
-        name: contacts.name,
-        email: contacts.email,
-      })
+  // Build origination and closer lookups. Origination may be either a
+  // contact (external referrer) or an admin user (internal partner);
+  // closer is always an admin user.
+  const originationContactPromise = client.originationContactId
+    ? db
+        .select({
+          id: contacts.id,
+          name: contacts.name,
+          email: contacts.email,
+        })
         .from(contacts)
         .where(
           and(
-            eq(contacts.id, client.referredBy),
+            eq(contacts.id, client.originationContactId),
             isNull(contacts.deletedAt)
           )
         )
@@ -77,7 +80,53 @@ export default async function ClientDetailPage({
         .then(rows => rows[0] ?? null)
     : Promise.resolve(null)
 
-  const [allClients, projects, clientContacts, messages, referralContact, clientTranscripts, transcriptCount] = await Promise.all([
+  const originationUserPromise = client.originationUserId
+    ? db
+        .select({
+          id: users.id,
+          fullName: users.fullName,
+          email: users.email,
+        })
+        .from(users)
+        .where(
+          and(
+            eq(users.id, client.originationUserId),
+            isNull(users.deletedAt)
+          )
+        )
+        .limit(1)
+        .then(rows => rows[0] ?? null)
+    : Promise.resolve(null)
+
+  const closerUserPromise = client.closerUserId
+    ? db
+        .select({
+          id: users.id,
+          fullName: users.fullName,
+          email: users.email,
+        })
+        .from(users)
+        .where(
+          and(
+            eq(users.id, client.closerUserId),
+            isNull(users.deletedAt)
+          )
+        )
+        .limit(1)
+        .then(rows => rows[0] ?? null)
+    : Promise.resolve(null)
+
+  const [
+    allClients,
+    projects,
+    clientContacts,
+    messages,
+    originationContact,
+    originationUser,
+    closerUser,
+    clientTranscripts,
+    transcriptCount,
+  ] = await Promise.all([
     fetchClientsWithMetrics(user),
     fetchProjectsForClient(user, client.resolvedId),
     // Fetch contacts for this client via junction table
@@ -103,7 +152,9 @@ export default async function ClientDetailPage({
       )
       .orderBy(desc(contactClients.isPrimary), contacts.email),
     getMessagesForClient(client.resolvedId),
-    referralContactPromise,
+    originationContactPromise,
+    originationUserPromise,
+    closerUserPromise,
     getTranscriptsForClient(client.resolvedId),
     getTranscriptCountForClient(client.resolvedId),
   ])
@@ -127,7 +178,9 @@ export default async function ClientDetailPage({
           canManageClients={canManageClients}
           clientRow={mapClientDetailToRow(client)}
           currentUserId={user.id}
-          referralContact={referralContact}
+          originationContact={originationContact}
+          originationUser={originationUser}
+          closerUser={closerUser}
         />
       </div>
     </>
@@ -144,7 +197,9 @@ function mapClientDetailToRow(
     notes: client.notes,
     website: client.website,
     state: client.state ?? null,
-    referred_by: client.referredBy,
+    origination_contact_id: client.originationContactId,
+    origination_user_id: client.originationUserId,
+    closer_user_id: client.closerUserId,
     billing_type: client.billingType,
     created_by: null,
     created_at: client.createdAt,

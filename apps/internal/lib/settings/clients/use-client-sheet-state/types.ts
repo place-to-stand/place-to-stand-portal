@@ -20,11 +20,21 @@ export type ClientContactOption = {
   hasPortalAccess: boolean
 }
 
-export type ReferralContactOption = {
+/** A contact available as an external origination source (IC referrer). */
+export type OriginationContactOption = {
   id: string
   name: string | null
   email: string
 }
+
+/** An admin user available as an internal origination partner or closer. */
+export type PartnerUserOption = {
+  id: string
+  fullName: string | null
+  email: string
+}
+
+export type OriginationMode = 'internal' | 'external'
 
 export type UseClientSheetStateArgs = {
   open: boolean
@@ -36,6 +46,8 @@ export type UseClientSheetStateArgs = {
   allContacts?: ClientContactOption[]
   /** Contacts linked to the client (optional - will be fetched if not provided) */
   clientContacts?: ClientContactOption[]
+  /** All admin users for origination + closer pickers (optional - will be fetched if not provided) */
+  allAdminUsers?: PartnerUserOption[]
 }
 
 export type BaseFormState = {
@@ -55,15 +67,33 @@ export type BaseFormState = {
   handleContactPickerOpenChange: (open: boolean) => void
   handleAddContact: (contact: ClientContactOption) => void
   handleRemoveContact: (contact: ClientContactOption) => void
-  // Referral
-  selectedReferral: ReferralContactOption | null
-  availableReferralContacts: ReferralContactOption[]
-  isReferralPickerOpen: boolean
-  referralPickerDisabled: boolean
-  referralPickerDisabledReason: string | null
-  handleReferralPickerOpenChange: (open: boolean) => void
-  handleSelectReferral: (contact: ReferralContactOption) => void
-  handleClearReferral: () => void
+  // Origination
+  originationMode: OriginationMode
+  selectedOriginationUser: PartnerUserOption | null
+  selectedOriginationContact: OriginationContactOption | null
+  availableOriginationUsers: PartnerUserOption[]
+  availableOriginationContacts: OriginationContactOption[]
+  isOriginationUserPickerOpen: boolean
+  isOriginationContactPickerOpen: boolean
+  originationPickerDisabled: boolean
+  originationPickerDisabledReason: string | null
+  originationError: string | null
+  handleOriginationModeChange: (mode: OriginationMode) => void
+  handleOriginationUserPickerOpenChange: (open: boolean) => void
+  handleOriginationContactPickerOpenChange: (open: boolean) => void
+  handleSelectOriginationUser: (user: PartnerUserOption) => void
+  handleSelectOriginationContact: (contact: OriginationContactOption) => void
+  handleClearOrigination: () => void
+  // Closer
+  selectedCloser: PartnerUserOption | null
+  availableClosers: PartnerUserOption[]
+  isCloserPickerOpen: boolean
+  closerPickerDisabled: boolean
+  closerPickerDisabledReason: string | null
+  closerError: string | null
+  handleCloserPickerOpenChange: (open: boolean) => void
+  handleSelectCloser: (user: PartnerUserOption) => void
+  handleClearCloser: () => void
 }
 
 export type DeletionState = {
@@ -83,6 +113,7 @@ export type ClientSheetFormStateArgs = UseClientSheetStateArgs & {
   toast: ToastFn
   allContacts?: ClientContactOption[]
   clientContacts?: ClientContactOption[]
+  allAdminUsers?: PartnerUserOption[]
 }
 
 export type ClientDeletionStateArgs = {
@@ -126,13 +157,31 @@ export type UseClientSheetStateReturn = {
   handleContactPickerOpenChange: (open: boolean) => void
   handleAddContact: (contact: ClientContactOption) => void
   handleRemoveContact: (contact: ClientContactOption) => void
-  // Referral
-  selectedReferral: ReferralContactOption | null
-  availableReferralContacts: ReferralContactOption[]
-  isReferralPickerOpen: boolean
-  referralPickerDisabled: boolean
-  referralPickerDisabledReason: string | null
-  handleReferralPickerOpenChange: (open: boolean) => void
-  handleSelectReferral: (contact: ReferralContactOption) => void
-  handleClearReferral: () => void
+  // Origination
+  originationMode: OriginationMode
+  selectedOriginationUser: PartnerUserOption | null
+  selectedOriginationContact: OriginationContactOption | null
+  availableOriginationUsers: PartnerUserOption[]
+  availableOriginationContacts: OriginationContactOption[]
+  isOriginationUserPickerOpen: boolean
+  isOriginationContactPickerOpen: boolean
+  originationPickerDisabled: boolean
+  originationPickerDisabledReason: string | null
+  originationError: string | null
+  handleOriginationModeChange: (mode: OriginationMode) => void
+  handleOriginationUserPickerOpenChange: (open: boolean) => void
+  handleOriginationContactPickerOpenChange: (open: boolean) => void
+  handleSelectOriginationUser: (user: PartnerUserOption) => void
+  handleSelectOriginationContact: (contact: OriginationContactOption) => void
+  handleClearOrigination: () => void
+  // Closer
+  selectedCloser: PartnerUserOption | null
+  availableClosers: PartnerUserOption[]
+  isCloserPickerOpen: boolean
+  closerPickerDisabled: boolean
+  closerPickerDisabledReason: string | null
+  closerError: string | null
+  handleCloserPickerOpenChange: (open: boolean) => void
+  handleSelectCloser: (user: PartnerUserOption) => void
+  handleClearCloser: () => void
 }

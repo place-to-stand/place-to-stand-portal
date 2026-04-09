@@ -5,7 +5,7 @@ import { asc, eq, and, inArray, isNull } from 'drizzle-orm'
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clientMembers, contacts, contactClients } from '@/lib/db/schema'
+import { clientMembers, contacts, contactClients, users } from '@/lib/db/schema'
 
 export type ContactOption = {
   id: string
@@ -15,9 +15,16 @@ export type ContactOption = {
   hasPortalAccess: boolean
 }
 
+export type AdminUserOption = {
+  id: string
+  fullName: string | null
+  email: string
+}
+
 export type ClientSheetContactData = {
   allContacts: ContactOption[]
   linkedContacts: ContactOption[]
+  allAdminUsers: AdminUserOption[]
 }
 
 /**
@@ -86,7 +93,32 @@ export async function listClientContacts(
 }
 
 /**
- * Fetches all data needed for the client sheet contact picker.
+ * Fetches all active ADMIN users for use in origination + closer pickers.
+ */
+export async function listAllAdminUsers(
+  user: AppUser
+): Promise<AdminUserOption[]> {
+  assertAdmin(user)
+
+  const rows = await db
+    .select({
+      id: users.id,
+      fullName: users.fullName,
+      email: users.email,
+    })
+    .from(users)
+    .where(and(eq(users.role, 'ADMIN'), isNull(users.deletedAt)))
+    .orderBy(asc(users.fullName), asc(users.email))
+
+  return rows.map(row => ({
+    id: row.id,
+    fullName: row.fullName,
+    email: row.email,
+  }))
+}
+
+/**
+ * Fetches all data needed for the client sheet contact and partner pickers.
  * If clientId is provided, also fetches the client's linked contacts.
  */
 export async function getClientSheetContactData(
@@ -95,12 +127,13 @@ export async function getClientSheetContactData(
 ): Promise<ClientSheetContactData> {
   assertAdmin(user)
 
-  const [allContacts, linkedContacts] = await Promise.all([
+  const [allContacts, linkedContacts, allAdminUsers] = await Promise.all([
     listAllActiveContacts(user),
     clientId ? listClientContacts(user, clientId) : Promise.resolve([]),
+    listAllAdminUsers(user),
   ])
 
-  return { allContacts, linkedContacts }
+  return { allContacts, linkedContacts, allAdminUsers }
 }
 
 /**

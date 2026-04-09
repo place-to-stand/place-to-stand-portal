@@ -48,10 +48,21 @@ export const clientsRelations = relations(clients, ({ one, many }) => ({
   user: one(users, {
     fields: [clients.createdBy],
     references: [users.id],
+    relationName: 'clients_createdBy_users_id',
   }),
-  referredByContact: one(contacts, {
-    fields: [clients.referredBy],
+  originationContact: one(contacts, {
+    fields: [clients.originationContactId],
     references: [contacts.id],
+  }),
+  originationUser: one(users, {
+    fields: [clients.originationUserId],
+    references: [users.id],
+    relationName: 'clients_originationUser_users_id',
+  }),
+  closerUser: one(users, {
+    fields: [clients.closerUserId],
+    references: [users.id],
+    relationName: 'clients_closerUser_users_id',
   }),
   hourBlocks: many(hourBlocks),
   clientMembers: many(clientMembers),
@@ -72,7 +83,15 @@ export const usersRelations = relations(users, ({ many }) => ({
   contactsLinked: many(contacts, {
     relationName: 'contacts_userId_users_id',
   }),
-  clients: many(clients),
+  clients: many(clients, {
+    relationName: 'clients_createdBy_users_id',
+  }),
+  clientsOriginated: many(clients, {
+    relationName: 'clients_originationUser_users_id',
+  }),
+  clientsClosed: many(clients, {
+    relationName: 'clients_closerUser_users_id',
+  }),
   taskAssignees: many(taskAssignees),
   taskAssigneeMetadata: many(taskAssigneeMetadata),
   hourBlocks: many(hourBlocks),
@@ -335,7 +354,7 @@ export const contactsRelations = relations(contacts, ({ one, many }) => ({
   }),
   contactClients: many(contactClients),
   contactLeads: many(contactLeads),
-  clientsReferredBy: many(clients),
+  clientsOriginated: many(clients),
 }))
 
 export const contactClientsRelations = relations(contactClients, ({ one }) => ({

@@ -1,11 +1,11 @@
-import { Users } from 'lucide-react'
+import { UserCheck } from 'lucide-react'
 
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from '@/components/ui/avatar'
-import type { PayrollData } from '@/lib/data/reports/types'
+import type { CloserData } from '@/lib/data/reports/types'
 
 import {
   SectionEmpty,
@@ -15,8 +15,8 @@ import {
   formatCurrency,
 } from './section-shell'
 
-type PayrollSectionProps = {
-  data: PayrollData
+type CloserSectionProps = {
+  data: CloserData
 }
 
 function getInitials(name: string | null): string {
@@ -26,24 +26,24 @@ function getInitials(name: string | null): string {
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
 }
 
-export function PayrollSection({ data }: PayrollSectionProps) {
+export function CloserSection({ data }: CloserSectionProps) {
   return (
     <SectionShell
       compact
-      icon={Users}
-      iconTone='violet'
-      title='Payroll'
-      description={`Admin hours logged on client projects × $${data.hourlyRate}/hr — what we owe on payroll this month.`}
+      icon={UserCheck}
+      iconTone='rose'
+      title='Closer'
+      description={`20% closer fee at $${data.commissionPerHour}/hr on billing in — paid to the PTS partner who finalized the deal.`}
       total={formatCurrency(data.totalAmount)}
     >
       {data.rows.length > 0 ? (
         <SectionRowList>
           {data.rows.map(row => {
-            const displayName = row.fullName ?? row.email
-            const avatarSrc = `/api/storage/user-avatar/${row.userId}?v=${encodeURIComponent(row.updatedAt)}`
+            const displayName = row.closerName ?? row.closerEmail
+            const avatarSrc = `/api/storage/user-avatar/${row.closerUserId}?v=${encodeURIComponent(row.closerUpdatedAt)}`
             return (
               <SectionRow
-                key={row.userId}
+                key={row.closerUserId}
                 leading={
                   <Avatar className='h-7 w-7'>
                     <AvatarImage src={avatarSrc} alt={displayName} />
@@ -53,14 +53,15 @@ export function PayrollSection({ data }: PayrollSectionProps) {
                   </Avatar>
                 }
                 primary={displayName}
+                secondary={row.clients.map(c => c.clientName).join(', ')}
                 hours={row.totalHours}
-                amount={row.amount}
+                amount={row.totalCommission}
               />
             )
           })}
         </SectionRowList>
       ) : (
-        <SectionEmpty message='No time logged by employees this month.' />
+        <SectionEmpty message='No closer activity this month.' />
       )}
     </SectionShell>
   )

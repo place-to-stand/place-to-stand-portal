@@ -47,15 +47,33 @@ export function ClientSheet(props: ClientSheetProps) {
     handleContactPickerOpenChange,
     handleAddContact,
     handleRemoveContact,
-    // Referral
-    selectedReferral,
-    availableReferralContacts,
-    isReferralPickerOpen,
-    referralPickerDisabled,
-    referralPickerDisabledReason,
-    handleReferralPickerOpenChange,
-    handleSelectReferral,
-    handleClearReferral,
+    // Origination
+    originationMode,
+    selectedOriginationUser,
+    selectedOriginationContact,
+    availableOriginationUsers,
+    availableOriginationContacts,
+    isOriginationUserPickerOpen,
+    isOriginationContactPickerOpen,
+    originationPickerDisabled,
+    originationPickerDisabledReason,
+    originationError,
+    handleOriginationModeChange,
+    handleOriginationUserPickerOpenChange,
+    handleOriginationContactPickerOpenChange,
+    handleSelectOriginationUser,
+    handleSelectOriginationContact,
+    handleClearOrigination,
+    // Closer
+    selectedCloser,
+    availableClosers,
+    isCloserPickerOpen,
+    closerPickerDisabled,
+    closerPickerDisabledReason,
+    closerError,
+    handleCloserPickerOpenChange,
+    handleSelectCloser,
+    handleClearCloser,
   } = useClientSheetState(props)
 
   return (
@@ -88,14 +106,31 @@ export function ClientSheet(props: ClientSheetProps) {
             onContactPickerOpenChange={handleContactPickerOpenChange}
             onAddContact={handleAddContact}
             onRemoveContact={handleRemoveContact}
-            selectedReferral={selectedReferral}
-            availableReferralContacts={availableReferralContacts}
-            referralPickerDisabled={referralPickerDisabled}
-            referralPickerDisabledReason={referralPickerDisabledReason}
-            isReferralPickerOpen={isReferralPickerOpen}
-            onReferralPickerOpenChange={handleReferralPickerOpenChange}
-            onSelectReferral={handleSelectReferral}
-            onClearReferral={handleClearReferral}
+            originationMode={originationMode}
+            selectedOriginationUser={selectedOriginationUser}
+            selectedOriginationContact={selectedOriginationContact}
+            availableOriginationUsers={availableOriginationUsers}
+            availableOriginationContacts={availableOriginationContacts}
+            isOriginationUserPickerOpen={isOriginationUserPickerOpen}
+            isOriginationContactPickerOpen={isOriginationContactPickerOpen}
+            originationPickerDisabled={originationPickerDisabled}
+            originationPickerDisabledReason={originationPickerDisabledReason}
+            originationError={originationError}
+            onOriginationModeChange={handleOriginationModeChange}
+            onOriginationUserPickerOpenChange={handleOriginationUserPickerOpenChange}
+            onOriginationContactPickerOpenChange={handleOriginationContactPickerOpenChange}
+            onSelectOriginationUser={handleSelectOriginationUser}
+            onSelectOriginationContact={handleSelectOriginationContact}
+            onClearOrigination={handleClearOrigination}
+            selectedCloser={selectedCloser}
+            availableClosers={availableClosers}
+            isCloserPickerOpen={isCloserPickerOpen}
+            closerPickerDisabled={closerPickerDisabled}
+            closerPickerDisabledReason={closerPickerDisabledReason}
+            closerError={closerError}
+            onCloserPickerOpenChange={handleCloserPickerOpenChange}
+            onSelectCloser={handleSelectCloser}
+            onClearCloser={handleClearCloser}
           />
         </SheetContent>
       </Sheet>

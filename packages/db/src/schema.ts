@@ -253,7 +253,15 @@ export const clients = pgTable(
       .notNull(),
     website: text(),
     state: varchar({ length: 2 }),
-    referredBy: uuid('referred_by'),
+    // Origination (finder / 10% commission): at most ONE of these may be set
+    // per the clients_origination_mutex CHECK constraint below. Internal
+    // sourcing partners use originationUserId; external referrers with IC
+    // agreements use originationContactId. Both NULL means no origination.
+    originationContactId: uuid('origination_contact_id'),
+    originationUserId: uuid('origination_user_id'),
+    // Closer (internal PTS partner who finalized the deal / 20% commission).
+    // Must reference an admin user; enforced at application layer.
+    closerUserId: uuid('closer_user_id'),
     createdBy: uuid('created_by'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
@@ -267,16 +275,36 @@ export const clients = pgTable(
     index('idx_clients_created_by')
       .using('btree', table.createdBy.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
-    index('idx_clients_referred_by')
-      .using('btree', table.referredBy.asc().nullsLast().op('uuid_ops'))
-      .where(sql`(deleted_at IS NULL AND referred_by IS NOT NULL)`),
+    index('idx_clients_origination_contact_id')
+      .using('btree', table.originationContactId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND origination_contact_id IS NOT NULL)`),
+    index('idx_clients_origination_user_id')
+      .using('btree', table.originationUserId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND origination_user_id IS NOT NULL)`),
+    index('idx_clients_closer_user_id')
+      .using('btree', table.closerUserId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND closer_user_id IS NOT NULL)`),
     foreignKey({
       columns: [table.createdBy],
       foreignColumns: [users.id],
       name: 'clients_created_by_fkey',
     }),
-    // Note: FK constraint for referredBy -> contacts.id added in migration
-    // to avoid forward reference (contacts table defined later in this file)
+    foreignKey({
+      columns: [table.originationUserId],
+      foreignColumns: [users.id],
+      name: 'clients_origination_user_id_fkey',
+    }),
+    foreignKey({
+      columns: [table.closerUserId],
+      foreignColumns: [users.id],
+      name: 'clients_closer_user_id_fkey',
+    }),
+    // Note: FK constraint for originationContactId -> contacts.id added in
+    // migration to avoid forward reference (contacts table defined later).
+    check(
+      'clients_origination_mutex',
+      sql`NOT (origination_user_id IS NOT NULL AND origination_contact_id IS NOT NULL)`
+    ),
     unique('clients_slug_key').on(table.slug),
   ]
 )

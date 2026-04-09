@@ -21,6 +21,7 @@ export const useClientSheetState = ({
   client,
   allContacts,
   clientContacts,
+  allAdminUsers,
 }: UseClientSheetStateArgs): UseClientSheetStateReturn => {
   const isEditing = Boolean(client)
   const [feedback, setFeedback] = useState<string | null>(null)
@@ -34,6 +35,7 @@ export const useClientSheetState = ({
     client,
     allContacts,
     clientContacts,
+    allAdminUsers,
     isEditing,
     isPending,
     startTransition,
@@ -86,15 +88,35 @@ export const useClientSheetState = ({
     handleContactPickerOpenChange: formState.handleContactPickerOpenChange,
     handleAddContact: formState.handleAddContact,
     handleRemoveContact: formState.handleRemoveContact,
-    // Referral
-    selectedReferral: formState.selectedReferral,
-    availableReferralContacts: formState.availableReferralContacts,
-    isReferralPickerOpen: formState.isReferralPickerOpen,
-    referralPickerDisabled: formState.referralPickerDisabled,
-    referralPickerDisabledReason: formState.referralPickerDisabledReason,
-    handleReferralPickerOpenChange: formState.handleReferralPickerOpenChange,
-    handleSelectReferral: formState.handleSelectReferral,
-    handleClearReferral: formState.handleClearReferral,
+    // Origination
+    originationMode: formState.originationMode,
+    selectedOriginationUser: formState.selectedOriginationUser,
+    selectedOriginationContact: formState.selectedOriginationContact,
+    availableOriginationUsers: formState.availableOriginationUsers,
+    availableOriginationContacts: formState.availableOriginationContacts,
+    isOriginationUserPickerOpen: formState.isOriginationUserPickerOpen,
+    isOriginationContactPickerOpen: formState.isOriginationContactPickerOpen,
+    originationPickerDisabled: formState.originationPickerDisabled,
+    originationPickerDisabledReason: formState.originationPickerDisabledReason,
+    originationError: formState.originationError,
+    handleOriginationModeChange: formState.handleOriginationModeChange,
+    handleOriginationUserPickerOpenChange:
+      formState.handleOriginationUserPickerOpenChange,
+    handleOriginationContactPickerOpenChange:
+      formState.handleOriginationContactPickerOpenChange,
+    handleSelectOriginationUser: formState.handleSelectOriginationUser,
+    handleSelectOriginationContact: formState.handleSelectOriginationContact,
+    handleClearOrigination: formState.handleClearOrigination,
+    // Closer
+    selectedCloser: formState.selectedCloser,
+    availableClosers: formState.availableClosers,
+    isCloserPickerOpen: formState.isCloserPickerOpen,
+    closerPickerDisabled: formState.closerPickerDisabled,
+    closerPickerDisabledReason: formState.closerPickerDisabledReason,
+    closerError: formState.closerError,
+    handleCloserPickerOpenChange: formState.handleCloserPickerOpenChange,
+    handleSelectCloser: formState.handleSelectCloser,
+    handleClearCloser: formState.handleClearCloser,
   }
 }
 
@@ -102,5 +124,7 @@ export type {
   UseClientSheetStateArgs,
   UseClientSheetStateReturn,
   ClientContactOption,
-  ReferralContactOption,
+  OriginationContactOption,
+  PartnerUserOption,
+  OriginationMode,
 } from './types'

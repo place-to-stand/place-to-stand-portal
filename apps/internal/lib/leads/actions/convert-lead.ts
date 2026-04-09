@@ -88,7 +88,9 @@ export async function convertLeadToClient(
         billingType,
         state: null,
         website: lead.companyWebsite || null,
-        referredBy: null,
+        originationContactId: null,
+        originationUserId: null,
+        closerUserId: null,
         notes: resolvedNotes,
         memberIds: memberIds || [],
       }
