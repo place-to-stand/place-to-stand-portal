@@ -29,8 +29,8 @@ export function BreakdownSheet({
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>{trigger}</SheetTrigger>
-      <SheetContent side='right' size='lg' className='overflow-y-auto p-0'>
-        <SheetHeader className='sticky top-0 z-10 border-b'>
+      <SheetContent side='right' size='lg' className='overflow-y-auto p-0 [&>[data-slot=sheet-close]]:z-20'>
+        <SheetHeader className='sticky top-0 z-10 border-b pr-10'>
           <SheetTitle>{title}</SheetTitle>
           <SheetDescription>{description}</SheetDescription>
         </SheetHeader>
