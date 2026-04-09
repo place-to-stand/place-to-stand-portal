@@ -183,7 +183,7 @@ export function BillingInCard({
       label='Billing In'
       icon={TrendingUp}
       total={total}
-      caption='Cash collected this month — prepaid sales plus net 30 invoices.'
+      caption='Cash collected this month — prepaid invoices plus net 30 hours logged.'
       accent='emerald'
       children={[
         { label: 'Prepaid', value: prepaidTotal, icon: CreditCard },
