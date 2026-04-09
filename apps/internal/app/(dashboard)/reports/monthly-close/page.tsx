@@ -3,9 +3,11 @@ import { startOfMonth, endOfMonth, format, getMonth, getYear } from 'date-fns'
 
 import { AppShellHeader } from '@/components/layout/app-shell'
 import { requireRole } from '@/lib/auth/session'
+import { getLatestPartnerRates } from '@/lib/billing/partner-rates'
 import { fetchMonthlyCloseReport } from '@/lib/data/reports/monthly-close'
 
 import { CloserSection } from './_components/closer-section'
+import { FormulaNotice } from './_components/formula-notice'
 import { Net30Section } from './_components/net30-section'
 import { OriginationSection } from './_components/origination-section'
 import { PartnerPayoutsSection } from './_components/partner-payouts-section'
@@ -72,6 +74,10 @@ export default async function MonthlyClosePage({
   // closer cutover (closerPerHour === 0).
   const hasCloser = report.rates.closerPerHour > 0
 
+  const latestRates = getLatestPartnerRates()
+  const isOlderFormula =
+    report.rates.effectiveFrom !== latestRates.effectiveFrom
+
   return (
     <>
       <AppShellHeader>
@@ -92,6 +98,10 @@ export default async function MonthlyClosePage({
           minCursor={report.minCursor}
           maxCursor={report.maxCursor}
         />
+
+        {isOlderFormula ? (
+          <FormulaNotice rates={report.rates} latestRates={latestRates} />
+        ) : null}
 
         {/* ─── Ledger layout: money in (left) ┃ money out (right) ── */}
         <div className='grid gap-8 lg:grid-cols-2'>

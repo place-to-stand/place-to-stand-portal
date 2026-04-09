@@ -57,7 +57,7 @@ const RATE_SCHEDULE: readonly PartnerRateSchedule[] = [
     housePerHour: 50,
   },
   {
-    effectiveFrom: '1970-01-01',
+    effectiveFrom: '2025-10-01',
     billablePerHour: 200,
     payrollPerHour: 100,
     closerPerHour: 0,
@@ -101,4 +101,13 @@ export function getPartnerRatesForPeriod(
     )
   }
   return entry
+}
+
+/**
+ * Returns the most recent (current) rate schedule — the first entry in the
+ * newest-first sorted array. Useful for detecting when a historical month
+ * uses an older formula.
+ */
+export function getLatestPartnerRates(): PartnerRateSchedule {
+  return RATE_SCHEDULE[0]
 }
