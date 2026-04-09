@@ -9,7 +9,7 @@ import {
   Users,
   Wallet,
 } from 'lucide-react'
-import type { ComponentType } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
 
@@ -52,6 +52,9 @@ type RollupCardProps = {
   caption: string
   children: RollupChild[]
   accent: 'emerald' | 'violet'
+  action?: ReactNode
+  /** When true, the card stretches to fill its parent and pins the action to the bottom. */
+  stretch?: boolean
 }
 
 function RollupCard({
@@ -61,6 +64,8 @@ function RollupCard({
   caption,
   children,
   accent,
+  action,
+  stretch,
 }: RollupCardProps) {
   const glow = {
     emerald:
@@ -78,10 +83,16 @@ function RollupCard({
       className={cn(
         'bg-card relative overflow-hidden rounded-xl border shadow-sm',
         'before:pointer-events-none before:absolute before:inset-0',
+        stretch && 'flex h-full flex-col',
         glow[accent]
       )}
     >
-      <div className='relative px-5 pt-5 pb-5'>
+      <div
+        className={cn(
+          'relative px-5 pt-5 pb-5',
+          stretch && 'flex flex-1 flex-col'
+        )}
+      >
         {/* Kicker */}
         <div className='flex items-center gap-2'>
           <Icon className={cn('h-4 w-4', iconTone[accent])} />
@@ -124,13 +135,23 @@ function RollupCard({
             ))}
           </div>
         ) : null}
+        {action ? (
+          <div
+            className={cn(
+              'flex justify-end pt-4',
+              stretch ? 'mt-auto' : 'mt-0'
+            )}
+          >
+            {action}
+          </div>
+        ) : null}
       </div>
     </section>
   )
 }
 
 // ------------------------------------------------------------------
-// MetaCard — compact supporting card for Work Billable / House.
+// MetaCard — compact supporting card for Work Billable.
 // Mirrors the SectionShell header: icon in leading column, hero title
 // on the left, hero value on the right, description below the title.
 // No body (these cards have no detail list).
@@ -171,12 +192,14 @@ type BillingInCardProps = {
   total: number
   prepaidTotal: number
   net30Total: number
+  action?: ReactNode
 }
 
 export function BillingInCard({
   total,
   prepaidTotal,
   net30Total,
+  action,
 }: BillingInCardProps) {
   return (
     <RollupCard
@@ -185,6 +208,7 @@ export function BillingInCard({
       total={total}
       caption='Cash collected this month — prepaid invoices plus net 30 hours logged.'
       accent='emerald'
+      action={action}
       children={[
         { label: 'Prepaid', value: prepaidTotal, icon: CreditCard },
         { label: 'Net 30', value: net30Total, icon: Building2 },
@@ -199,6 +223,8 @@ type TotalPayoutsCardProps = {
   payrollTotal: number
   originationTotal: number
   closerTotal: number
+  houseTotal: number
+  action?: ReactNode
 }
 
 export function TotalPayoutsCard({
@@ -207,6 +233,8 @@ export function TotalPayoutsCard({
   payrollTotal,
   originationTotal,
   closerTotal,
+  houseTotal,
+  action,
 }: TotalPayoutsCardProps) {
   const children: RollupChild[] = []
 
@@ -235,6 +263,12 @@ export function TotalPayoutsCard({
       icon: UserCheck,
     })
   }
+  children.push({
+    label: 'House',
+    sublabel: formatPercent(rates.housePerHour, rates.billablePerHour),
+    value: houseTotal,
+    icon: Building,
+  })
 
   return (
     <RollupCard
@@ -243,6 +277,8 @@ export function TotalPayoutsCard({
       total={total}
       caption='Owed to partners this month — Payroll + Origination + Closer.'
       accent='violet'
+      action={action}
+      stretch
       children={children}
     />
   )
@@ -264,33 +300,8 @@ export function WorkBillableCard({
       label='Work Billable'
       icon={Briefcase}
       value={total}
-      caption={`${hours.toFixed(2)} admin hrs × $${billablePerHour}/hr — accrual value of client work this month.`}
+      caption={`${hours.toFixed(2)} logged hrs × $${billablePerHour}/hr — accrual value of client work this month.`}
     />
   )
 }
 
-type HouseCardProps = {
-  total: number
-  nominalPercent: string
-  ratePerHour: number
-}
-
-export function HouseCard({
-  total,
-  nominalPercent,
-  ratePerHour,
-}: HouseCardProps) {
-  return (
-    <MetaCard
-      label='House'
-      icon={Building}
-      value={total}
-      caption={`${nominalPercent} of Billing In at $${ratePerHour}/hr — the firm's share of this month's billing.`}
-    />
-  )
-}
-
-// Helper re-export so page.tsx can compute the house nominal percent.
-export function housePercentFromRates(rates: PartnerRateSchedule): string {
-  return formatPercent(rates.housePerHour, rates.billablePerHour)
-}

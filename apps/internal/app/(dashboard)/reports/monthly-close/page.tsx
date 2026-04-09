@@ -1,11 +1,14 @@
 import type { Metadata } from 'next'
 import { startOfMonth, endOfMonth, format, getMonth, getYear } from 'date-fns'
 
+import { ArrowRight } from 'lucide-react'
+
 import { AppShellHeader } from '@/components/layout/app-shell'
 import { requireRole } from '@/lib/auth/session'
 import { getLatestPartnerRates } from '@/lib/billing/partner-rates'
 import { fetchMonthlyCloseReport } from '@/lib/data/reports/monthly-close'
 
+import { BreakdownSheet } from './_components/breakdown-sheet'
 import { CloserSection } from './_components/closer-section'
 import { FormulaNotice } from './_components/formula-notice'
 import { Net30Section } from './_components/net30-section'
@@ -16,10 +19,8 @@ import { PrepaidSection } from './_components/prepaid-section'
 import { ReportHeader } from './_components/report-header'
 import {
   BillingInCard,
-  HouseCard,
   TotalPayoutsCard,
   WorkBillableCard,
-  housePercentFromRates,
 } from './_components/summary-cards'
 
 export const metadata: Metadata = {
@@ -103,47 +104,59 @@ export default async function MonthlyClosePage({
           <FormulaNotice rates={report.rates} latestRates={latestRates} />
         ) : null}
 
-        {/* ─── Ledger layout: money in (left) ┃ money out (right) ── */}
-        <div className='grid gap-8 lg:grid-cols-2'>
-          {/* Left column — money in + derived value */}
-          <div className='space-y-3'>
+        {/* ─── Hero cards: left stack (Billing In + Work Billable) | right (Total Payouts) ── */}
+        <div className='grid gap-4 lg:grid-cols-2'>
+          <div className='flex flex-col gap-4'>
             <BillingInCard
               total={report.combinedBillingTotal}
               prepaidTotal={report.prepaidBilling.totalAmount}
               net30Total={report.net30Billing.totalAmount}
+              action={
+                <BreakdownSheet
+                  trigger={
+                    <button className='text-muted-foreground hover:text-foreground inline-flex cursor-pointer items-center gap-1 text-[11px] transition-colors'>
+                      See breakdown <ArrowRight className='h-2.5 w-2.5' />
+                    </button>
+                  }
+                  title='Billing Breakdown'
+                  description='Prepaid hour block purchases and net 30 hours logged this month.'
+                >
+                  <PrepaidSection data={report.prepaidBilling} />
+                  <Net30Section data={report.net30Billing} />
+                </BreakdownSheet>
+              }
             />
-            <div className='grid gap-3 sm:grid-cols-2'>
-              <WorkBillableCard
-                total={report.workBillableTotal}
-                hours={report.workBillableHours}
-                billablePerHour={report.rates.billablePerHour}
-              />
-              <HouseCard
-                total={report.house.totalAmount}
-                nominalPercent={housePercentFromRates(report.rates)}
-                ratePerHour={report.rates.housePerHour}
-              />
-            </div>
-            <PrepaidSection data={report.prepaidBilling} />
-            <Net30Section data={report.net30Billing} />
-          </div>
-
-          {/* Right column — money out */}
-          <div className='space-y-3'>
-            <TotalPayoutsCard
-              rates={report.rates}
-              total={report.combinedPayoutTotal}
-              payrollTotal={report.payroll.totalAmount}
-              originationTotal={report.origination.totalAmount}
-              closerTotal={report.closer.totalAmount}
+            <WorkBillableCard
+              total={report.workBillableTotal}
+              hours={report.workBillableHours}
+              billablePerHour={report.rates.billablePerHour}
             />
-            <PayrollSection data={report.payroll} />
-            <OriginationSection data={report.origination} />
-            {hasCloser ? <CloserSection data={report.closer} /> : null}
           </div>
+          <TotalPayoutsCard
+            rates={report.rates}
+            total={report.combinedPayoutTotal}
+            payrollTotal={report.payroll.totalAmount}
+            originationTotal={report.origination.totalAmount}
+            closerTotal={report.closer.totalAmount}
+            houseTotal={report.house.totalAmount}
+            action={
+              <BreakdownSheet
+                trigger={
+                  <button className='text-muted-foreground hover:text-foreground inline-flex cursor-pointer items-center gap-1 text-[11px] transition-colors'>
+                    See breakdown <ArrowRight className='h-2.5 w-2.5' />
+                  </button>
+                }
+                title='Payout Breakdown'
+                description='Payroll, origination, and closer commissions this month.'
+              >
+                <PayrollSection data={report.payroll} />
+                <OriginationSection data={report.origination} />
+                {hasCloser ? <CloserSection data={report.closer} /> : null}
+              </BreakdownSheet>
+            }
+          />
         </div>
 
-        {/* Full-width action footer: the lump-sum payment sheet */}
         <PartnerPayoutsSection data={report.partnerPayouts} />
       </div>
     </>
