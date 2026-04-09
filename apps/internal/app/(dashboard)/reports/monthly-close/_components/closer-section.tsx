@@ -1,10 +1,6 @@
 import { UserCheck } from 'lucide-react'
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import type { CloserData } from '@/lib/data/reports/types'
 
 import {
@@ -33,7 +29,7 @@ export function CloserSection({ data }: CloserSectionProps) {
       icon={UserCheck}
       iconTone='rose'
       title='Closer'
-      description={`20% closer fee at $${data.commissionPerHour}/hr on billing in — paid to the PTS partner who finalized the deal.`}
+      description={`20% closer fee at $${data.commissionPerHour}/hr on billing in — prepaid hours sold + net 30 hours logged.`}
       total={formatCurrency(data.totalAmount)}
     >
       {data.rows.length > 0 ? (

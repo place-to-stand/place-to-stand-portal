@@ -272,10 +272,10 @@ export function TotalPayoutsCard({
 
   return (
     <RollupCard
-      label='Total Payouts'
+      label='Billing Distribution'
       icon={Wallet}
       total={total}
-      caption='Owed to partners this month — Payroll + Origination + Closer.'
+      caption='How billing is distributed — Payroll + Origination + Closer + House.'
       accent='violet'
       action={action}
       stretch

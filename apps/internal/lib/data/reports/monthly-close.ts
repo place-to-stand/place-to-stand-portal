@@ -443,9 +443,6 @@ export const fetchMonthlyCloseReport = cache(
 
     const combinedBillingTotal =
       prepaidBilling.totalAmount + net30Billing.totalAmount
-    const combinedPayoutTotal =
-      payroll.totalAmount + origination.totalAmount + closer.totalAmount
-
     // House is a rate × billing-hours calculation. Billing hours = prepaid
     // hours purchased + net_30 hours logged (same population as
     // origination/closer).
@@ -456,6 +453,12 @@ export const fetchMonthlyCloseReport = cache(
       ratePerHour: rates.housePerHour,
       totalAmount: billingHours * rates.housePerHour,
     }
+
+    const combinedPayoutTotal =
+      payroll.totalAmount +
+      origination.totalAmount +
+      closer.totalAmount +
+      house.totalAmount
 
     return {
       payroll,

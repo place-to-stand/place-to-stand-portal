@@ -1,10 +1,6 @@
 import { Users } from 'lucide-react'
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import type { PayrollData } from '@/lib/data/reports/types'
 
 import {
@@ -33,7 +29,7 @@ export function PayrollSection({ data }: PayrollSectionProps) {
       icon={Users}
       iconTone='violet'
       title='Payroll'
-      description={`Admin hours logged on client projects × $${data.hourlyRate}/hr — what we owe on payroll this month.`}
+      description={`Hours logged on client projects × $${data.hourlyRate}/hr — what we owe on payroll this month.`}
       total={formatCurrency(data.totalAmount)}
     >
       {data.rows.length > 0 ? (
