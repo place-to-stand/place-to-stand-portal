@@ -1,7 +1,7 @@
 {
   "name": "place-to-stand",
   "private": true,
-  "packageManager": "npm@11.6.2",
+  "packageManager": "npm@11.12.1",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -13,8 +13,8 @@
     "type-check": "turbo type-check"
   },
   "devDependencies": {
-    "turbo": "^2.8.17",
-    "typescript": "^6.0.2"
+    "turbo": "^2.9.6",
+    "typescript": "^6.0.3"
   },
   "overrides": {
     "@tiptap/core": "3.22.3",
