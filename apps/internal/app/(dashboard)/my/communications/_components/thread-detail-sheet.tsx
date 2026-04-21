@@ -1,6 +1,6 @@
 'use client'
 
-import { Dispatch, SetStateAction, useCallback, useState } from 'react'
+import { Dispatch, SetStateAction } from 'react'
 import { format } from 'date-fns'
 import { RefreshCw } from 'lucide-react'
 
@@ -19,7 +19,6 @@ import { EmailToolbar } from './email-toolbar'
 import { MessageCard } from './message-card'
 import { ThreadContactPanel } from './thread-contact-panel'
 import { ThreadClassificationPanel } from './thread-classification-panel'
-import { ThreadSuggestionsPanel } from './thread-suggestions-panel'
 import { ComposePanel, type ComposeContext } from './compose-panel'
 
 type Client = {
@@ -99,25 +98,6 @@ export function ThreadDetailSheet({
   setViewingAttachment,
   onClose,
 }: ThreadDetailSheetProps) {
-  const [isAnalyzingThread, setIsAnalyzingThread] = useState(false)
-  const [suggestionRefreshKey, setSuggestionRefreshKey] = useState(0)
-
-  const triggerThreadAnalysis = useCallback(async (threadId: string) => {
-    setIsAnalyzingThread(true)
-    try {
-      const res = await fetch(`/api/threads/${threadId}/analyze`, {
-        method: 'POST',
-      })
-      if (res.ok) {
-        setSuggestionRefreshKey(prev => prev + 1)
-      }
-    } catch (err) {
-      console.error('Failed to analyze thread:', err)
-    } finally {
-      setIsAnalyzingThread(false)
-    }
-  }, [])
-
   // Build a Gmail web URL for the loaded thread. Gmail accepts a message ID in
   // the URL fragment and opens the conversation containing it. We use the
   // latest message's externalMessageId since it's already loaded into state.
@@ -285,21 +265,6 @@ export function ThreadDetailSheet({
                 </>
               )}
 
-              {/* AI Task/PR Suggestions */}
-              {isAdmin && selectedThread && (
-                <>
-                  <Separator />
-                  <ThreadSuggestionsPanel
-                    threadId={selectedThread.id}
-                    isAdmin={isAdmin}
-                    refreshTrigger={suggestionRefreshKey}
-                    isAnalyzing={isAnalyzingThread}
-                    hasClient={!!selectedThread.client}
-                    hasProject={!!selectedThread.project}
-                    onRefresh={() => triggerThreadAnalysis(selectedThread.id)}
-                  />
-                </>
-              )}
             </div>
           </div>
 
