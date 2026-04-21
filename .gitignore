@@ -42,6 +42,7 @@ next-env.d.ts
 
 # supabase
 supabase/seed.sql
+supabase/.temp/
 
 # Ignore local OAuth client secrets
 client_secret_*.json
@@ -51,6 +52,7 @@ Screenshot*.png
 
 # Claude Code
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
 
 # Migration data (contains PII - emails, names, etc.)
 **/scripts/migrate/data/
