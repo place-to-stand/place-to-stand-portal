@@ -86,7 +86,7 @@ export async function POST(
 
     // Create Stripe Checkout Session (embedded mode)
     const session = await getStripe().checkout.sessions.create({
-      ui_mode: 'embedded',
+      ui_mode: 'embedded_page',
       mode: 'payment',
       line_items: stripeLineItems,
       return_url: `${appBaseUrl}/share/invoices/${invoice.shareToken}?payment=success&session_id={CHECKOUT_SESSION_ID}`,
