@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { requireUser } from '@/lib/auth/session'
 import { getTranscriptById, classifyTranscriptRecord } from '@/lib/queries/transcripts'
-import { getValidAccessToken } from '@/lib/gmail/client'
+import { getDriveReadAccessToken } from '@/lib/google/service-account'
 import { fetchDocContent, fetchDocHtml } from '@/lib/google/transcript-discovery'
 
 type RouteParams = { params: Promise<{ transcriptId: string }> }
@@ -30,7 +30,7 @@ export async function GET(
   let contentHtml: string | null = null
   if (transcript.driveFileId) {
     try {
-      const { accessToken } = await getValidAccessToken(user.id)
+      const accessToken = await getDriveReadAccessToken(user.id)
       const [text, html] = await Promise.all([
         fetchDocContent(accessToken, transcript.driveFileId),
         fetchDocHtml(accessToken, transcript.driveFileId),

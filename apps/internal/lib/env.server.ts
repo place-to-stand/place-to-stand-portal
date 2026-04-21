@@ -19,6 +19,11 @@ const schema = z.object({
   GOOGLE_CLIENT_ID: z.string().min(1),
   GOOGLE_CLIENT_SECRET: z.string().min(1),
   GOOGLE_REDIRECT_URI: z.string().url(),
+  // Service account with domain-wide delegation, used to fetch transcript content
+  // on behalf of any workspace user. Both must be set for the feature to activate;
+  // otherwise, transcript fetches fall back to the requesting user's OAuth token.
+  GOOGLE_SERVICE_ACCOUNT_KEY: z.string().min(1).optional(),
+  GOOGLE_WORKSPACE_IMPERSONATION_SUBJECT: z.email().optional(),
   GITHUB_CLIENT_ID: z.string().min(1).optional(),
   GITHUB_CLIENT_SECRET: z.string().min(1).optional(),
   GITHUB_REDIRECT_URI: z.string().url().optional(),
@@ -49,6 +54,8 @@ export const serverEnv = schema.parse({
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
   GOOGLE_REDIRECT_URI: process.env.GOOGLE_REDIRECT_URI,
+  GOOGLE_SERVICE_ACCOUNT_KEY: emptyToUndefined(process.env.GOOGLE_SERVICE_ACCOUNT_KEY),
+  GOOGLE_WORKSPACE_IMPERSONATION_SUBJECT: emptyToUndefined(process.env.GOOGLE_WORKSPACE_IMPERSONATION_SUBJECT),
   GITHUB_CLIENT_ID: emptyToUndefined(process.env.GITHUB_CLIENT_ID),
   GITHUB_CLIENT_SECRET: emptyToUndefined(process.env.GITHUB_CLIENT_SECRET),
   GITHUB_REDIRECT_URI: emptyToUndefined(process.env.GITHUB_REDIRECT_URI),
