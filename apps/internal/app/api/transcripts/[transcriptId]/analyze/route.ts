@@ -5,7 +5,7 @@ import { requireUser } from '@/lib/auth/session'
 import { getTranscriptById, updateTranscript } from '@/lib/queries/transcripts'
 import { classifyTranscript } from '@/lib/ai/transcript-classification'
 import { fetchActiveClientsForClassification, fetchActiveProjectsForClassification, fetchActiveLeadsForClassification } from '@/lib/data/transcripts'
-import { getValidAccessToken } from '@/lib/gmail/client'
+import { getDriveReadAccessToken } from '@/lib/google/service-account'
 import { fetchDocContent, extractParticipantNames } from '@/lib/google/transcript-discovery'
 
 type RouteParams = { params: Promise<{ transcriptId: string }> }
@@ -85,7 +85,7 @@ export async function POST(
   let content: string | null = null
   if (transcript.driveFileId) {
     try {
-      const { accessToken } = await getValidAccessToken(user.id)
+      const accessToken = await getDriveReadAccessToken(user.id)
       content = await fetchDocContent(accessToken, transcript.driveFileId)
     } catch {
       // Proceed without content — AI can still classify by title
