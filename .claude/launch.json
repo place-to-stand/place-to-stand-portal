@@ -1,0 +1,32 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "All apps (turbo)",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "set -e; docker info >/dev/null 2>&1 || { echo '>> Starting Docker Desktop'; open -a Docker; until docker info >/dev/null 2>&1; do sleep 2; done; echo '>> Docker ready'; }; npx supabase status >/dev/null 2>&1 || { echo '>> Starting Supabase'; npx supabase start; }; exec npm run dev"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "Internal admin portal",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "set -e; docker info >/dev/null 2>&1 || { echo '>> Starting Docker Desktop'; open -a Docker; until docker info >/dev/null 2>&1; do sleep 2; done; echo '>> Docker ready'; }; npx supabase status >/dev/null 2>&1 || { echo '>> Starting Supabase'; npx supabase start; }; exec npm run dev -w @pts/internal"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "Client portal",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "set -e; docker info >/dev/null 2>&1 || { echo '>> Starting Docker Desktop'; open -a Docker; until docker info >/dev/null 2>&1; do sleep 2; done; echo '>> Docker ready'; }; npx supabase status >/dev/null 2>&1 || { echo '>> Starting Supabase'; npx supabase start; }; exec npm run dev -w @pts/client"
+      ],
+      "port": 3001
+    }
+  ]
+}
