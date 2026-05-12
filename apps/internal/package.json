@@ -76,7 +76,7 @@
     "lodash.throttle": "^4.1.1",
     "lucide-react": "^1.8.0",
     "nanoid": "^5.1.9",
-    "next": "^16.2.4",
+    "next": "^16.2.6",
     "postgres": "^3.4.9",
     "posthog-js": "^1.369.5",
     "posthog-node": "^5.29.4",
