@@ -13,7 +13,7 @@
     "type-check": "turbo type-check"
   },
   "devDependencies": {
-    "turbo": "^2.9.6",
+    "turbo": "^2.9.14",
     "typescript": "^6.0.3"
   },
   "overrides": {
