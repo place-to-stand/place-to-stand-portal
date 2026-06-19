@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useRef, useState, type DragEvent } from 'react'
 
-import { X } from 'lucide-react'
+import { PanelRightClose, Sparkles, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -93,6 +93,8 @@ export function TaskSheet(props: TaskSheetProps) {
   })
 
   const [isDragActive, setIsDragActive] = useState(false)
+  // Planning panel is collapsed by default; user expands it on demand.
+  const [isPlanningOpen, setIsPlanningOpen] = useState(false)
   const dragCounterRef = useRef(0)
   const attachmentsDisabled = isPending || !props.canManage
   const dropDisabled = attachmentsDisabled || isUploadingAttachments
@@ -240,7 +242,7 @@ export function TaskSheet(props: TaskSheetProps) {
           hideCloseButton
           className={cn(
             'flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-[676px]',
-            canDeploy && 'sm:max-w-[1236px]'
+            canDeploy && isPlanningOpen && 'sm:max-w-[1236px]'
           )}
         >
           {/* Header — spans full width */}
@@ -336,12 +338,43 @@ export function TaskSheet(props: TaskSheetProps) {
               />
             </div>
 
-            {/* Right column: planning panel (always visible when canDeploy) */}
+            {/* Right column: planning panel — collapsed by default */}
             {props.task && taskProject?.githubRepos && taskProject.githubRepos.length > 0 && (
-              <PlanningPanel
-                task={props.task}
-                githubRepos={taskProject.githubRepos}
-              />
+              isPlanningOpen ? (
+                <div className='flex h-full shrink-0'>
+                  {/* Collapse strip */}
+                  <div className='flex h-full w-9 shrink-0 flex-col items-center border-l bg-muted/50 pt-2'>
+                    <Button
+                      variant='ghost'
+                      size='icon'
+                      className='h-7 w-7 text-muted-foreground hover:text-foreground'
+                      onClick={() => setIsPlanningOpen(false)}
+                      aria-expanded={true}
+                      aria-label='Collapse planning panel'
+                    >
+                      <PanelRightClose className='h-4 w-4' />
+                    </Button>
+                  </div>
+                  <PlanningPanel
+                    task={props.task}
+                    githubRepos={taskProject.githubRepos}
+                  />
+                </div>
+              ) : (
+                /* Slim expand tab when collapsed */
+                <button
+                  type='button'
+                  onClick={() => setIsPlanningOpen(true)}
+                  aria-expanded={false}
+                  aria-label='Open planning panel'
+                  className='flex h-full w-9 shrink-0 flex-col items-center gap-2 border-l bg-muted/50 pt-3 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'
+                >
+                  <Sparkles className='h-4 w-4' />
+                  <span className='text-xs font-medium [writing-mode:vertical-rl]'>
+                    Planning
+                  </span>
+                </button>
+              )
             )}
           </div>
         </SheetContent>

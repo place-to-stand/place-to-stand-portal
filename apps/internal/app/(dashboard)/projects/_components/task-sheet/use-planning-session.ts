@@ -8,11 +8,12 @@ import {
   addPlanThread,
   type PlanningSessionData,
 } from '../../actions/planning'
+import { DEFAULT_PLANNING_TIER, getModelLabel } from '@/lib/planning/models'
 
 export const PLANNING_SESSION_KEY = 'planning-session'
 
-const DEFAULT_MODEL = 'claude-sonnet-4.6'
-const DEFAULT_LABEL = 'Sonnet 4.6'
+const DEFAULT_MODEL = DEFAULT_PLANNING_TIER
+const DEFAULT_LABEL = getModelLabel(DEFAULT_PLANNING_TIER)
 
 export function usePlanningSession(taskId: string, repoLinkId: string) {
   const queryClient = useQueryClient()

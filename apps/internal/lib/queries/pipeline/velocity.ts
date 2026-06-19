@@ -56,7 +56,6 @@ export async function fetchVelocityMetrics(start: string, end: string) {
       companyName: leads.companyName,
       status: leads.status,
       currentStageEnteredAt: leads.currentStageEnteredAt,
-      estimatedValue: leads.estimatedValue,
       daysInStage: sql<number>`EXTRACT(EPOCH FROM (NOW() - ${leads.currentStageEnteredAt}::timestamptz)) / 86400`,
     })
     .from(leads)
@@ -83,7 +82,8 @@ export async function fetchVelocityMetrics(start: string, end: string) {
       companyName: row.companyName,
       status: row.status,
       currentStageEnteredAt: row.currentStageEnteredAt,
-      estimatedValue: Number(row.estimatedValue ?? 0),
+      // TODO: estimatedValue column removed; aging leads no longer carry value
+      estimatedValue: 0,
       daysInStage: Math.round(Number(row.daysInStage ?? 0)),
     })),
   }

@@ -13,6 +13,12 @@ import {
   createRevision,
   updateThreadVersion,
 } from '@/lib/queries/planning'
+import {
+  PLANNING_MODEL_TIERS,
+  DEFAULT_PLANNING_TIER,
+  resolveGatewayModel,
+  tierSupportsThinking,
+} from '@/lib/planning/models'
 
 const gateway = createGateway()
 
@@ -22,7 +28,7 @@ const requestSchema = z.object({
   taskTitle: z.string().min(1),
   taskDescription: z.string().nullable(),
   feedback: z.string().optional(),
-  model: z.string().default('claude-sonnet-4.6'),
+  model: z.enum(PLANNING_MODEL_TIERS).default(DEFAULT_PLANNING_TIER),
   currentVersion: z.number().int().min(0),
 })
 
@@ -47,9 +53,12 @@ export async function POST(request: Request) {
     taskTitle,
     taskDescription,
     feedback,
-    model,
+    model: modelTier,
     currentVersion,
   } = parsed.data
+
+  // Resolve the generic tier to the latest gateway model id server-side.
+  const gatewayModel = resolveGatewayModel(modelTier)
 
   // Load repo link for GitHub API access
   const repoLink = await getRepoLinkById(repoLinkId)
@@ -128,10 +137,10 @@ export async function POST(request: Request) {
   const nextVersion = currentVersion + 1
 
   // Haiku doesn't support extended thinking
-  const supportsThinking = !model.includes('haiku')
+  const supportsThinking = tierSupportsThinking(modelTier)
 
   const result = streamText({
-    model: gateway(`anthropic/${model}`),
+    model: gateway(gatewayModel),
     system: systemPrompt,
     messages: conversationMessages,
     tools,

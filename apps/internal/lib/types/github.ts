@@ -1,9 +1,6 @@
 import type { InferSelectModel, InferInsertModel } from 'drizzle-orm'
 import type { githubRepoLinks } from '@/lib/db/schema'
 
-// Re-export PRSuggestionWithContext for backwards compatibility
-export type { PRSuggestionWithContext } from './suggestions'
-
 // Base types from schema
 export type GitHubRepoLink = InferSelectModel<typeof githubRepoLinks>
 export type NewGitHubRepoLink = InferInsertModel<typeof githubRepoLinks>

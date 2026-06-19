@@ -55,9 +55,6 @@ export type VelocityMetrics = {
 }
 
 export type ActivityMetrics = {
-  meetingsScheduled: number
-  proposalsSent: number
-  leadsContacted: number
   newLeads: number
 }
 

@@ -30,8 +30,6 @@ import type {
   ClientProject,
 } from '@/lib/data/clients'
 import type { ContactWithClientLink } from '@/lib/types/client-contacts'
-import type { MessageForClient } from '@/lib/queries/messages'
-import type { TranscriptForClient } from '@/lib/queries/transcripts'
 import { getBillingTypeLabel } from '@/lib/settings/clients/billing-types'
 import {
   ARCHIVE_CLIENT_CONFIRM_LABEL,
@@ -46,9 +44,7 @@ import { ActivityVerbs } from '@/lib/activity/types'
 
 import { ClientSheet } from '../../_components/clients-sheet'
 import { ClientContactsSection } from './client-contacts-section'
-import { ClientEmailsSection } from './client-emails-section'
 import { ClientNotesSection } from './client-notes-section'
-import { ClientTranscriptsSection } from './client-transcripts-section'
 
 type HydratedClientDetail = ClientDetailType & { resolvedId: string }
 
@@ -68,9 +64,6 @@ type ClientDetailProps = {
   client: HydratedClientDetail
   projects: ClientProject[]
   contacts: ContactWithClientLink[]
-  messages: MessageForClient[]
-  transcripts: TranscriptForClient[]
-  transcriptCount: number
   canManageClients: boolean
   clientRow: ClientRow
   currentUserId: string
@@ -83,9 +76,6 @@ export function ClientDetail({
   client,
   projects,
   contacts,
-  messages,
-  transcripts,
-  transcriptCount,
   canManageClients,
   clientRow,
   currentUserId,
@@ -143,24 +133,10 @@ export function ClientDetail({
           />
         </div>
 
-        {/* Right column: Projects, Emails, Transcripts */}
+        {/* Right column: Projects */}
         <div className='space-y-4'>
           {/* Projects Section */}
           <ClientProjectsSection projects={projects} clientSlug={client.slug} />
-
-          {/* Emails Section */}
-          <ClientEmailsSection
-            messages={messages}
-            currentUserId={currentUserId}
-            clientId={client.id}
-          />
-
-          {/* Transcripts Section */}
-          <ClientTranscriptsSection
-            transcripts={transcripts}
-            totalCount={transcriptCount}
-            clientId={client.id}
-          />
         </div>
       </div>
     </div>

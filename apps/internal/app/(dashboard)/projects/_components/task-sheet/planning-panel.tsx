@@ -43,12 +43,18 @@ import { deployPlan } from '../../actions/trigger-worker'
 import type { WorkerStatusResult } from '../../actions/fetch-worker-status'
 import { WORKER_STATUS_KEY } from './use-worker-status'
 import { GitHubIcon } from './github-icon'
+import {
+  PLANNING_MODEL_TIERS,
+  DEFAULT_PLANNING_TIER,
+  getModelLabel,
+  toPlanningModelTier,
+  type PlanningModelTier,
+} from '@/lib/planning/models'
 
-const MODEL_OPTIONS = [
-  { model: 'claude-sonnet-4.6', label: 'Sonnet 4.6' },
-  { model: 'claude-opus-4.6', label: 'Opus 4.6' },
-  { model: 'claude-haiku-4.5', label: 'Haiku 4.5' },
-] as const
+const MODEL_OPTIONS = PLANNING_MODEL_TIERS.map(tier => ({
+  model: tier,
+  label: getModelLabel(tier),
+}))
 
 type PlanningPanelProps = {
   task: TaskWithRelations
@@ -63,8 +69,8 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
   const [feedbackInput, setFeedbackInput] = useState('')
   const [isDispatchPending, startDispatchTransition] = useTransition()
   const [generatingVersion, setGeneratingVersion] = useState<number | null>(null)
-  const [selectedModel, setSelectedModel] = useState<string | null>(null)
-  const [dispatchModel, setDispatchModel] = useState<string>('claude-sonnet-4.6')
+  const [selectedModel, setSelectedModel] = useState<PlanningModelTier | null>(null)
+  const [dispatchModel, setDispatchModel] = useState<PlanningModelTier>(DEFAULT_PLANNING_TIER)
 
   // Session management
   const {
@@ -76,10 +82,10 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
     isLoading: isSessionLoading,
   } = usePlanningSession(task.id, selectedRepoId)
 
-  // Effective model: user selection overrides thread default
-  const activeModel = selectedModel ?? activeThread?.model ?? 'claude-sonnet-4.6'
-  const activeModelLabel = MODEL_OPTIONS.find(m => m.model === activeModel)?.label ?? 'Sonnet 4.6'
-  const dispatchModelLabel = MODEL_OPTIONS.find(m => m.model === dispatchModel)?.label ?? 'Sonnet 4.6'
+  // Effective model tier: user selection overrides thread default
+  const activeModel = selectedModel ?? toPlanningModelTier(activeThread?.model)
+  const activeModelLabel = getModelLabel(activeModel)
+  const dispatchModelLabel = getModelLabel(dispatchModel)
 
   // Streaming plan generation
   const {
@@ -263,7 +269,7 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
         version: currentVersion || latestVersion,
         taskId: task.id,
         repoLinkId: selectedRepoId,
-        model: mapModelToWorker(dispatchModelLabel),
+        model: dispatchModel,
       })
 
       if ('error' in result) {
@@ -288,7 +294,7 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
     latestVersion,
     task.id,
     selectedRepoId,
-    dispatchModelLabel,
+    dispatchModel,
     toast,
     queryClient,
   ])
@@ -553,12 +559,4 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
       )}
     </div>
   )
-}
-
-// Map model label to worker model format
-function mapModelToWorker(label: string): 'opus' | 'sonnet' | 'haiku' {
-  const lower = label.toLowerCase()
-  if (lower.includes('opus')) return 'opus'
-  if (lower.includes('haiku')) return 'haiku'
-  return 'sonnet'
 }

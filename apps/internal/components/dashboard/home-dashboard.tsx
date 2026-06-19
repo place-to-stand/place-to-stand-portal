@@ -6,7 +6,6 @@ import type { AssignedTaskSummary } from '@/lib/data/tasks'
 import type { HoursSnapshot } from '@/lib/dashboard/types'
 
 import { MyTasksWidget } from './my-tasks-widget'
-import { TriageWidget, type TriageWidgetItem } from './triage-widget'
 import { RecentActivityOverviewWidget } from './recent-activity-overview-widget'
 import { HoursWidget } from './hours-widget'
 
@@ -14,8 +13,6 @@ type HomeDashboardProps = {
   user: AppUser
   tasks: AssignedTaskSummary[]
   totalTaskCount: number
-  triageItems: TriageWidgetItem[]
-  triageTotalCount: number
   initialHoursSnapshot: HoursSnapshot
 }
 
@@ -23,8 +20,6 @@ export function HomeDashboard({
   user,
   tasks,
   totalTaskCount,
-  triageItems,
-  triageTotalCount,
   initialHoursSnapshot,
 }: HomeDashboardProps) {
   const displayName = getDisplayName(user)
@@ -41,11 +36,6 @@ export function HomeDashboard({
       </AppShellHeader>
       <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
         <div>
-          <TriageWidget
-            items={triageItems}
-            totalCount={triageTotalCount}
-            className='mb-6'
-          />
           <MyTasksWidget
             tasks={tasks}
             role={user.role}

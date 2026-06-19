@@ -13,12 +13,7 @@ type ActivitySummaryProps = {
 }
 
 export function ActivitySummary({ data }: ActivitySummaryProps) {
-  const kpis = [
-    { label: 'Meetings Scheduled', value: data.meetingsScheduled },
-    { label: 'Proposals Sent', value: data.proposalsSent },
-    { label: 'Leads Contacted', value: data.leadsContacted },
-    { label: 'New Leads', value: data.newLeads },
-  ]
+  const kpis = [{ label: 'New Leads', value: data.newLeads }]
 
   return (
     <div className='grid grid-cols-2 gap-4 lg:grid-cols-4'>

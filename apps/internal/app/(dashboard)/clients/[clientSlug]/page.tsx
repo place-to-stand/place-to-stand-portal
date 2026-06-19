@@ -12,8 +12,6 @@ import {
   fetchProjectsForClient,
   resolveClientIdentifier,
 } from '@/lib/data/clients'
-import { getMessagesForClient } from '@/lib/queries/messages'
-import { getTranscriptsForClient, getTranscriptCountForClient } from '@/lib/queries/transcripts'
 import type { ClientRow } from '@/lib/settings/clients/client-sheet-utils'
 
 import { ClientsLandingHeader } from '../_components/clients-landing-header'
@@ -120,12 +118,9 @@ export default async function ClientDetailPage({
     allClients,
     projects,
     clientContacts,
-    messages,
     originationContact,
     originationUser,
     closerUser,
-    clientTranscripts,
-    transcriptCount,
   ] = await Promise.all([
     fetchClientsWithMetrics(user),
     fetchProjectsForClient(user, client.resolvedId),
@@ -151,12 +146,9 @@ export default async function ClientDetailPage({
         )
       )
       .orderBy(desc(contactClients.isPrimary), contacts.email),
-    getMessagesForClient(client.resolvedId),
     originationContactPromise,
     originationUserPromise,
     closerUserPromise,
-    getTranscriptsForClient(client.resolvedId),
-    getTranscriptCountForClient(client.resolvedId),
   ])
 
   return (
@@ -172,9 +164,6 @@ export default async function ClientDetailPage({
           client={client}
           projects={projects}
           contacts={clientContacts}
-          messages={messages}
-          transcripts={clientTranscripts}
-          transcriptCount={transcriptCount}
           canManageClients={canManageClients}
           clientRow={mapClientDetailToRow(client)}
           currentUserId={user.id}

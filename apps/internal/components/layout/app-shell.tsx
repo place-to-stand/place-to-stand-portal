@@ -19,7 +19,6 @@ import { NAV_GROUPS } from './navigation-config'
 
 interface Props {
   user: AppUser
-  inboxTriageCount?: number
   children: ReactNode
 }
 
@@ -29,21 +28,6 @@ type HeaderContextValue = {
 }
 
 const HeaderContext = createContext<HeaderContextValue | null>(null)
-
-type SidebarCountsContextValue = {
-  inboxTriageCount: number
-  refreshCounts: () => Promise<void>
-}
-
-const SidebarCountsContext = createContext<SidebarCountsContextValue | null>(null)
-
-export function useSidebarCounts() {
-  const context = useContext(SidebarCountsContext)
-  if (!context) {
-    throw new Error('useSidebarCounts must be used within AppShell')
-  }
-  return context
-}
 
 export function useAppShellHeader() {
   const context = useContext(HeaderContext)
@@ -68,27 +52,9 @@ export function AppShellHeader({ children }: { children: ReactNode }) {
   return null
 }
 
-export function AppShell({ user, inboxTriageCount: initialInboxTriageCount = 0, children }: Props) {
+export function AppShell({ user, children }: Props) {
   const [headerContent, setHeaderContent] = useState<ReactNode>(null)
-  const [inboxTriageCount, setInboxTriageCount] = useState(initialInboxTriageCount)
   const pathname = usePathname()
-
-  const refreshCounts = useCallback(async () => {
-    try {
-      const res = await fetch('/api/sidebar-counts')
-      if (res.ok) {
-        const data = await res.json()
-        setInboxTriageCount(data.inboxTriageCount)
-      }
-    } catch {
-      // Silent — background update, no need to surface errors
-    }
-  }, [])
-
-  const sidebarCountsValue = useMemo(
-    () => ({ inboxTriageCount, refreshCounts }),
-    [inboxTriageCount, refreshCounts]
-  )
 
   const currentNav = useMemo(() => {
     const matchesPath = (target: string) =>
@@ -125,9 +91,8 @@ export function AppShell({ user, inboxTriageCount: initialInboxTriageCount = 0, 
   )
 
   return (
-    <SidebarCountsContext.Provider value={sidebarCountsValue}>
       <div className='bg-muted flex h-screen overflow-hidden'>
-        <Sidebar user={user} inboxTriageCount={inboxTriageCount} />
+        <Sidebar user={user} />
         <HeaderContext.Provider value={headerContextValue}>
           <div className='flex min-h-0 min-w-0 flex-1 flex-col'>
             <header className='bg-background flex flex-wrap items-center gap-4 border-b px-4 py-4 sm:px-6'>
@@ -145,6 +110,5 @@ export function AppShell({ user, inboxTriageCount: initialInboxTriageCount = 0, 
           </div>
         </HeaderContext.Provider>
       </div>
-    </SidebarCountsContext.Provider>
   )
 }

@@ -19,8 +19,7 @@ import { useToast } from '@/components/ui/use-toast'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 
-import { archiveLead, saveLead, rescoreLead } from '../../actions'
-import type { EditableProposal } from '../proposal-builder/proposal-builder-sheet'
+import { archiveLead, saveLead } from '../../actions'
 import { LeadSheetDialogs } from './lead-sheet-dialogs'
 import { LeadSheetFormFields } from './lead-sheet-form-fields'
 import { LeadSheetHeader } from './lead-sheet-header'
@@ -35,7 +34,6 @@ export function LeadSheet({
   initialAction = null,
   assignees,
   canManage = false,
-  senderName = '',
   onSuccess,
   onCreated,
   initialValues,
@@ -43,15 +41,9 @@ export function LeadSheet({
   const isEditing = Boolean(lead)
   const [isSaving, startSaveTransition] = useTransition()
   const [isArchiving, startArchiveTransition] = useTransition()
-  const [isRescoring, startRescoreTransition] = useTransition()
   const hasInitialAction = Boolean(lead && initialAction)
   const [isArchiveDialogOpen, setArchiveDialogOpen] = useState(false)
   const [isConvertDialogOpen, setConvertDialogOpen] = useState(() => hasInitialAction && initialAction === 'convert')
-  const [isEmailDialogOpen, setEmailDialogOpen] = useState(() => hasInitialAction && initialAction === 'email')
-  const [isMeetingDialogOpen, setMeetingDialogOpen] = useState(() => hasInitialAction && initialAction === 'meeting')
-  const [meetingInitialTitle, setMeetingInitialTitle] = useState<string | undefined>()
-  const [isBuildProposalDialogOpen, setBuildProposalDialogOpen] = useState(() => hasInitialAction && initialAction === 'proposals/new')
-  const [editingProposal, setEditingProposal] = useState<EditableProposal | undefined>()
   const { toast } = useToast()
 
   const pushActionUrl = useCallback(
@@ -81,9 +73,7 @@ export function LeadSheet({
       sourceDetail: lead?.sourceDetail ?? '',
       status: lead?.status ?? initialStatus ?? 'NEW_OPPORTUNITIES',
       assigneeId: lead?.assigneeId ?? null,
-      estimatedValue: lead?.estimatedValue != null ? String(lead.estimatedValue) : '',
       notes: lead?.notesHtml ?? initialValues?.notes ?? '',
-      priorityTier: lead?.priorityTier ?? null,
     }),
     [lead, initialStatus, initialValues]
   )
@@ -150,8 +140,6 @@ export function LeadSheet({
           status: values.status,
           assigneeId: values.assigneeId ?? null,
           notes: values.notes ?? '',
-          priorityTier: values.priorityTier ?? null,
-          estimatedValue: values.estimatedValue ?? null,
         })
 
         setArchiveDialogOpen(false)
@@ -225,41 +213,6 @@ export function LeadSheet({
     })
   }, [lead, onOpenChange, onSuccess, toast])
 
-  const handleRescore = useCallback(() => {
-    if (!lead) return
-
-    startRescoreTransition(async () => {
-      const result = await rescoreLead({ leadId: lead.id })
-
-      if (!result.success) {
-        toast({
-          variant: 'destructive',
-          title: 'Unable to rescore lead',
-          description: result.error ?? 'Please try again.',
-        })
-        return
-      }
-
-      toast({
-        title: 'Lead rescored',
-        description: 'The lead has been analyzed and rescored.',
-      })
-
-      onSuccess()
-    })
-  }, [lead, onSuccess, toast])
-
-  const handleScheduleMeeting = useCallback((initialTitle?: string) => {
-    setMeetingInitialTitle(initialTitle)
-    setMeetingDialogOpen(true)
-  }, [])
-
-  const handleEditProposal = useCallback((proposal: EditableProposal) => {
-    setEditingProposal(proposal)
-    setBuildProposalDialogOpen(true)
-    pushActionUrl('proposals/edit')
-  }, [pushActionUrl])
-
   const {
     requestConfirmation: requestCloseConfirmation,
     dialog: unsavedChangesDialog,
@@ -289,7 +242,7 @@ export function LeadSheet({
 
   return (
     <>
-      <Sheet open={open && !isBuildProposalDialogOpen} onOpenChange={handleSheetOpenChange}>
+      <Sheet open={open} onOpenChange={handleSheetOpenChange}>
         <SheetContent className='flex h-full w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl lg:max-w-6xl'>
           {/* Header */}
           <div className='flex-shrink-0 border-b-2 border-b-amber-500/60 px-6 pt-4 pb-3'>
@@ -393,34 +346,11 @@ export function LeadSheet({
                 </div>
               </div>
 
-              {/* Right Column - Actions & Panels (only for editing) */}
+              {/* Right Column - Tasks (only for editing) */}
               {isEditing && lead && (
                 <LeadSheetRightColumn
                   lead={lead}
                   canManage={canManage}
-                  senderName={senderName}
-                  canConvert={canConvert}
-                  isConverted={isConverted}
-                  onSendEmail={() => {
-                    setEmailDialogOpen(true)
-                    pushActionUrl('email')
-                  }}
-                  onScheduleMeeting={(title?: string) => {
-                    handleScheduleMeeting(title)
-                    pushActionUrl('meeting')
-                  }}
-                  onBuildProposal={() => {
-                    setEditingProposal(undefined)
-                    setBuildProposalDialogOpen(true)
-                    pushActionUrl('proposals/new')
-                  }}
-                  onEditProposal={handleEditProposal}
-                  onConvertToClient={() => {
-                    setConvertDialogOpen(true)
-                    pushActionUrl('convert')
-                  }}
-                  onRescore={handleRescore}
-                  isRescoring={isRescoring}
                   onSuccess={onSuccess}
                 />
               )}
@@ -430,7 +360,6 @@ export function LeadSheet({
       </Sheet>
       <LeadSheetDialogs
         lead={lead}
-        senderName={senderName}
         isArchiveDialogOpen={isArchiveDialogOpen}
         isArchiving={isArchiving}
         onArchiveCancel={() => {
@@ -443,38 +372,6 @@ export function LeadSheet({
         onConvertOpenChange={(next: boolean) => {
           setConvertDialogOpen(next)
           if (!next) pushLeadUrl()
-        }}
-        isEmailDialogOpen={isEmailDialogOpen}
-        onEmailOpenChange={(next: boolean) => {
-          setEmailDialogOpen(next)
-          if (!next) pushLeadUrl()
-        }}
-        isMeetingDialogOpen={isMeetingDialogOpen}
-        meetingInitialTitle={meetingInitialTitle}
-        onMeetingOpenChange={(next: boolean) => {
-          setMeetingDialogOpen(next)
-          if (!next) pushLeadUrl()
-        }}
-        onMeetingSuccess={() => {
-          setMeetingDialogOpen(false)
-          setMeetingInitialTitle(undefined)
-          pushLeadUrl()
-          onSuccess()
-        }}
-        isBuildProposalDialogOpen={isBuildProposalDialogOpen}
-        editingProposal={editingProposal}
-        onBuildProposalOpenChange={(next: boolean) => {
-          setBuildProposalDialogOpen(next)
-          if (!next) {
-            setEditingProposal(undefined)
-            pushLeadUrl()
-          }
-        }}
-        onProposalSuccess={() => {
-          setBuildProposalDialogOpen(false)
-          setEditingProposal(undefined)
-          pushLeadUrl()
-          onSuccess()
         }}
         onSuccess={onSuccess}
         unsavedChangesDialog={unsavedChangesDialog}

@@ -358,6 +358,13 @@
       "when": 1775689084663,
       "tag": "0050_partners_payment_formula",
       "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1781829786436,
+      "tag": "0051_remove_comms_proposals_meetings_scoring",
+      "breakpoints": true
     }
   ]
 }

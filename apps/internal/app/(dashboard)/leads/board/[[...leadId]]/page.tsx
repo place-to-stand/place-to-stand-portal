@@ -22,7 +22,6 @@ export default async function LeadsBoardPage({ params }: PageProps) {
   const resolvedParams = await params
   const requestedLeadId = resolvedParams.leadId?.[0] ?? null
   const actionSegment = resolvedParams.leadId?.[1] ?? null
-  const subActionSegment = resolvedParams.leadId?.[2] ?? null
   const user = await requireUser()
 
   if (requestedLeadId && user.role !== 'ADMIN') {
@@ -33,12 +32,8 @@ export default async function LeadsBoardPage({ params }: PageProps) {
 
   // Derive activeAction from URL segments
   let activeAction: string | null = null
-  if (activeLeadId && actionSegment) {
-    if (actionSegment === 'proposals' && subActionSegment === 'new') {
-      activeAction = 'proposals/new'
-    } else if (['email', 'meeting', 'convert'].includes(actionSegment)) {
-      activeAction = actionSegment
-    }
+  if (activeLeadId && actionSegment === 'convert') {
+    activeAction = 'convert'
   }
 
   const [board, assignees] = await Promise.all([

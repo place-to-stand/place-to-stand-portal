@@ -12,8 +12,8 @@ import { resolveNextTaskRank } from '@/app/(dashboard)/projects/actions/task-ran
 import { revalidateLeadsPath } from './utils'
 import type { LeadActionResult } from './types'
 
-const SALES_PROJECT_NAME = 'Sales Strategy'
-const SALES_PROJECT_SLUG = 'sales-strategy'
+const SALES_PROJECT_NAME = 'Sales'
+const SALES_PROJECT_SLUG = 'sales'
 
 const createLeadTaskSchema = z.object({
   leadId: z.string().uuid(),
@@ -31,28 +31,35 @@ export type CreateLeadTaskResult = LeadActionResult & {
 }
 
 /**
- * Find or create the internal "Sales Strategy" project for lead-related tasks.
- * This is a centralized project where all lead tasks are stored.
+ * Find (or, only if absent, create) the internal "Sales" project for
+ * lead-related tasks. This is a centralized project where all lead tasks are
+ * stored. The existing real project is always preferred — a project is only
+ * created as a guarded fallback when none exists.
  */
 async function getOrCreateSalesProject(userId: string): Promise<string> {
-  // First, try to find existing Sales Strategy project
-  const [existingProject] = await db
-    .select({ id: projects.id })
-    .from(projects)
-    .where(
-      and(
-        eq(projects.slug, SALES_PROJECT_SLUG),
-        eq(projects.type, 'INTERNAL'),
-        isNull(projects.deletedAt)
+  // Prefer the existing internal Sales project.
+  const findSalesProject = async () =>
+    db
+      .select({ id: projects.id })
+      .from(projects)
+      .where(
+        and(
+          eq(projects.slug, SALES_PROJECT_SLUG),
+          eq(projects.type, 'INTERNAL'),
+          isNull(projects.deletedAt)
+        )
       )
-    )
-    .limit(1)
+      .limit(1)
+
+  const [existingProject] = await findSalesProject()
 
   if (existingProject) {
     return existingProject.id
   }
 
-  // Create new internal Sales Strategy project
+  // Fallback: create the Sales project only if it does not already exist.
+  // `onConflictDoNothing` on the unique slug index prevents concurrent callers
+  // from creating duplicates.
   const timestamp = new Date().toISOString()
   const [newProject] = await db
     .insert(projects)
@@ -65,18 +72,27 @@ async function getOrCreateSalesProject(userId: string): Promise<string> {
       createdAt: timestamp,
       updatedAt: timestamp,
     })
+    .onConflictDoNothing({ target: projects.slug })
     .returning({ id: projects.id })
 
-  if (!newProject) {
-    throw new Error('Failed to create Sales Strategy project')
+  if (newProject) {
+    return newProject.id
   }
 
-  return newProject.id
+  // A concurrent call won the insert race (conflict → no row returned).
+  // Re-select to resolve the now-existing project.
+  const [racedProject] = await findSalesProject()
+
+  if (!racedProject) {
+    throw new Error('Failed to resolve Sales project')
+  }
+
+  return racedProject.id
 }
 
 /**
  * Create a task linked to a lead.
- * Tasks are created in the internal "Sales Strategy" project.
+ * Tasks are created in the internal "Sales" project.
  */
 export async function createLeadTask(
   input: CreateLeadTaskInput
@@ -107,7 +123,7 @@ export async function createLeadTask(
   }
 
   try {
-    // Get or create the Sales Strategy project
+    // Get the existing Sales project (created only if absent)
     const projectId = await getOrCreateSalesProject(user.id)
 
     // Determine rank for the new task

@@ -24,8 +24,6 @@ import type { LeadRecord } from '@/lib/leads/types'
 import { cn } from '@/lib/utils'
 import { formatPhoneUS } from '@/lib/utils/phone-format'
 
-import { PriorityBadge } from './priority-badge'
-
 type LeadCardProps = {
   lead: LeadRecord
   columnId: string
@@ -209,9 +207,8 @@ export function LeadCardContent({ lead }: { lead: LeadRecord }) {
           <span>{assigneeDisplay}</span>
         </div>
       </div>
-      {(lead.priorityTier || convertedBadge || sourceBadge) && (
+      {(convertedBadge || sourceBadge) && (
         <div className='mt-3 flex flex-wrap items-center gap-1.5'>
-          {lead.priorityTier && <PriorityBadge tier={lead.priorityTier} />}
           {showSourceTooltip && sourceBadge ? (
             <Tooltip>
               <TooltipTrigger asChild>{sourceBadge}</TooltipTrigger>

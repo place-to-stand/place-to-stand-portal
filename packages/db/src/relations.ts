@@ -20,21 +20,13 @@ import {
   contacts,
   contactClients,
   contactLeads,
-  threads,
-  messages,
   githubRepoLinks,
-  suggestions,
-  emailDrafts,
-  emailTemplates,
-  meetings,
-  proposals,
   leadStageHistory,
   taskDeployments,
   planningSessions,
   planThreads,
   planRevisions,
   planMessages,
-  transcripts,
   productCatalogItems,
   taxRates,
   invoices,
@@ -68,10 +60,6 @@ export const clientsRelations = relations(clients, ({ one, many }) => ({
   clientMembers: many(clientMembers),
   projects: many(projects),
   contactClients: many(contactClients),
-  threads: many(threads),
-  emailDrafts: many(emailDrafts),
-  meetings: many(meetings),
-  proposals: many(proposals),
   invoices: many(invoices),
   githubAppInstallations: many(githubAppInstallations),
 }))
@@ -113,17 +101,6 @@ export const usersRelations = relations(users, ({ many }) => ({
   }),
   activityLogs: many(activityLogs),
   oauthConnections: many(oauthConnections),
-  threads_createdBy: many(threads, {
-    relationName: 'threads_createdBy_users_id',
-  }),
-  threads_classifiedBy: many(threads, {
-    relationName: 'threads_classifiedBy_users_id',
-  }),
-  messages: many(messages),
-  emailDrafts: many(emailDrafts),
-  emailTemplates: many(emailTemplates),
-  meetings: many(meetings),
-  proposals: many(proposals),
   leadStageHistory: many(leadStageHistory),
   invoices: many(invoices),
 }))
@@ -179,7 +156,6 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
     references: [users.id],
     relationName: 'tasks_updatedBy_users_id',
   }),
-  suggestions: many(suggestions),
 }))
 
 export const leadsRelations = relations(leads, ({ one, many }) => ({
@@ -192,12 +168,7 @@ export const leadsRelations = relations(leads, ({ one, many }) => ({
     references: [clients.id],
   }),
   contactLeads: many(contactLeads),
-  threads: many(threads),
-  suggestions: many(suggestions),
-  emailDrafts: many(emailDrafts),
   tasks: many(tasks),
-  meetings: many(meetings),
-  proposals: many(proposals),
   stageHistory: many(leadStageHistory),
 }))
 
@@ -258,9 +229,6 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   timeLogs: many(timeLogs),
   tasks: many(tasks),
   githubRepos: many(githubRepoLinks),
-  threads: many(threads),
-  suggestions: many(suggestions),
-  emailDrafts: many(emailDrafts),
   sows: many(projectSows),
 }))
 
@@ -337,7 +305,6 @@ export const oauthConnectionsRelations = relations(
       references: [users.id],
     }),
     githubRepoLinks: many(githubRepoLinks),
-    emailDrafts: many(emailDrafts),
   })
 )
 
@@ -380,51 +347,6 @@ export const contactLeadsRelations = relations(contactLeads, ({ one }) => ({
 }))
 
 // =============================================================================
-// THREADS & MESSAGES (Phase 5 - Unified Messaging)
-// =============================================================================
-
-export const threadsRelations = relations(threads, ({ one, many }) => ({
-  client: one(clients, {
-    fields: [threads.clientId],
-    references: [clients.id],
-  }),
-  project: one(projects, {
-    fields: [threads.projectId],
-    references: [projects.id],
-  }),
-  lead: one(leads, {
-    fields: [threads.leadId],
-    references: [leads.id],
-  }),
-  createdByUser: one(users, {
-    fields: [threads.createdBy],
-    references: [users.id],
-    relationName: 'threads_createdBy_users_id',
-  }),
-  classifiedByUser: one(users, {
-    fields: [threads.classifiedBy],
-    references: [users.id],
-    relationName: 'threads_classifiedBy_users_id',
-  }),
-  messages: many(messages),
-  suggestions: many(suggestions),
-  emailDrafts: many(emailDrafts),
-}))
-
-export const messagesRelations = relations(messages, ({ one, many }) => ({
-  thread: one(threads, {
-    fields: [messages.threadId],
-    references: [threads.id],
-  }),
-  user: one(users, {
-    fields: [messages.userId],
-    references: [users.id],
-  }),
-  suggestions: many(suggestions),
-}))
-
-
-// =============================================================================
 // GITHUB INTEGRATION
 // =============================================================================
 
@@ -462,7 +384,6 @@ export const githubRepoLinksRelations = relations(
       fields: [githubRepoLinks.linkedBy],
       references: [users.id],
     }),
-    suggestions: many(suggestions),
     taskDeployments: many(taskDeployments),
   })
 )
@@ -488,117 +409,6 @@ export const taskDeploymentsRelations = relations(
     }),
   })
 )
-
-// =============================================================================
-// UNIFIED SUGGESTIONS (Phase 5 - Polymorphic)
-// =============================================================================
-
-export const suggestionsRelations = relations(suggestions, ({ one }) => ({
-  message: one(messages, {
-    fields: [suggestions.messageId],
-    references: [messages.id],
-  }),
-  thread: one(threads, {
-    fields: [suggestions.threadId],
-    references: [threads.id],
-  }),
-  lead: one(leads, {
-    fields: [suggestions.leadId],
-    references: [leads.id],
-  }),
-  project: one(projects, {
-    fields: [suggestions.projectId],
-    references: [projects.id],
-  }),
-  reviewedByUser: one(users, {
-    fields: [suggestions.reviewedBy],
-    references: [users.id],
-  }),
-  createdTask: one(tasks, {
-    fields: [suggestions.createdTaskId],
-    references: [tasks.id],
-  }),
-}))
-
-// =============================================================================
-// EMAIL DRAFTS (Compose, Reply, Forward, Scheduled Send)
-// =============================================================================
-
-export const emailDraftsRelations = relations(emailDrafts, ({ one }) => ({
-  user: one(users, {
-    fields: [emailDrafts.userId],
-    references: [users.id],
-  }),
-  connection: one(oauthConnections, {
-    fields: [emailDrafts.connectionId],
-    references: [oauthConnections.id],
-  }),
-  thread: one(threads, {
-    fields: [emailDrafts.threadId],
-    references: [threads.id],
-  }),
-  lead: one(leads, {
-    fields: [emailDrafts.leadId],
-    references: [leads.id],
-  }),
-  client: one(clients, {
-    fields: [emailDrafts.clientId],
-    references: [clients.id],
-  }),
-  project: one(projects, {
-    fields: [emailDrafts.projectId],
-    references: [projects.id],
-  }),
-}))
-
-// =============================================================================
-// EMAIL TEMPLATES
-// =============================================================================
-
-export const emailTemplatesRelations = relations(emailTemplates, ({ one }) => ({
-  createdByUser: one(users, {
-    fields: [emailTemplates.createdBy],
-    references: [users.id],
-  }),
-}))
-
-// =============================================================================
-// MEETINGS (Lead & Client meetings)
-// =============================================================================
-
-export const meetingsRelations = relations(meetings, ({ one }) => ({
-  lead: one(leads, {
-    fields: [meetings.leadId],
-    references: [leads.id],
-  }),
-  client: one(clients, {
-    fields: [meetings.clientId],
-    references: [clients.id],
-  }),
-  createdByUser: one(users, {
-    fields: [meetings.createdBy],
-    references: [users.id],
-  }),
-}))
-
-// =============================================================================
-// PROPOSALS (Lead & Client proposals)
-// =============================================================================
-
-export const proposalsRelations = relations(proposals, ({ one }) => ({
-  lead: one(leads, {
-    fields: [proposals.leadId],
-    references: [leads.id],
-  }),
-  client: one(clients, {
-    fields: [proposals.clientId],
-    references: [clients.id],
-  }),
-  createdByUser: one(users, {
-    fields: [proposals.createdBy],
-    references: [users.id],
-  }),
-}))
 
 // =============================================================================
 // AI PLANNING SESSIONS
@@ -674,10 +484,6 @@ export const invoicesRelations = relations(invoices, ({ one, many }) => ({
     fields: [invoices.createdBy],
     references: [users.id],
   }),
-  proposal: one(proposals, {
-    fields: [invoices.proposalId],
-    references: [proposals.id],
-  }),
   lineItems: many(invoiceLineItems),
 }))
 
@@ -745,30 +551,5 @@ export const sowSectionsRelations = relations(sowSections, ({ one }) => ({
   sow: one(projectSows, {
     fields: [sowSections.sowId],
     references: [projectSows.id],
-  }),
-}))
-
-export const transcriptsRelations = relations(transcripts, ({ one }) => ({
-  client: one(clients, {
-    fields: [transcripts.clientId],
-    references: [clients.id],
-  }),
-  project: one(projects, {
-    fields: [transcripts.projectId],
-    references: [projects.id],
-  }),
-  lead: one(leads, {
-    fields: [transcripts.leadId],
-    references: [leads.id],
-  }),
-  classifiedByUser: one(users, {
-    fields: [transcripts.classifiedBy],
-    references: [users.id],
-    relationName: 'transcripts_classifiedBy_users_id',
-  }),
-  syncedByUser: one(users, {
-    fields: [transcripts.syncedBy],
-    references: [users.id],
-    relationName: 'transcripts_syncedBy_users_id',
   }),
 }))

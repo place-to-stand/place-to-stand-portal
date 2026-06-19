@@ -4,7 +4,7 @@ import { sql } from 'drizzle-orm'
 
 import { requireUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { contacts, leads, messages } from '@/lib/db/schema'
+import { contacts, leads } from '@/lib/db/schema'
 
 const searchSchema = z.object({
   q: z.string().min(1).max(100),
@@ -14,7 +14,7 @@ const searchSchema = z.object({
 export type ContactSearchResult = {
   email: string
   name: string | null
-  source: 'contact' | 'lead' | 'thread'
+  source: 'contact' | 'lead'
 }
 
 export async function GET(request: Request) {
@@ -67,19 +67,6 @@ export async function GET(request: Request) {
       )
       .limit(limit)
 
-    // Search message participants (distinct emails from recent messages)
-    const messageResults = await db
-      .selectDistinct({
-        email: messages.fromEmail,
-        name: messages.fromName,
-      })
-      .from(messages)
-      .where(
-        sql`${messages.fromEmail} ILIKE ${searchPattern} OR
-            ${messages.fromName} ILIKE ${searchPattern}`
-      )
-      .limit(limit)
-
     // Combine and deduplicate results
     const seen = new Set<string>()
     const results: ContactSearchResult[] = []
@@ -100,15 +87,6 @@ export async function GET(request: Request) {
       if (!seen.has(emailLower)) {
         seen.add(emailLower)
         results.push({ email: l.email, name: l.name, source: 'lead' })
-      }
-    }
-
-    // Add thread participants
-    for (const m of messageResults) {
-      const emailLower = m.email.toLowerCase()
-      if (!seen.has(emailLower)) {
-        seen.add(emailLower)
-        results.push({ email: m.email, name: m.name, source: 'thread' })
       }
     }
 

@@ -24,15 +24,6 @@ type VelocityMetricsProps = {
   data: VelocityMetricsType
 }
 
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value)
-}
-
 export function VelocityMetrics({ data }: VelocityMetricsProps) {
   return (
     <div className='flex flex-col gap-4'>
@@ -96,7 +87,6 @@ export function VelocityMetrics({ data }: VelocityMetricsProps) {
                   <TableHead>Contact</TableHead>
                   <TableHead>Company</TableHead>
                   <TableHead>Stage</TableHead>
-                  <TableHead className='text-right'>Value</TableHead>
                   <TableHead className='text-right'>Days</TableHead>
                 </TableRow>
               </TableHeader>
@@ -114,11 +104,6 @@ export function VelocityMetrics({ data }: VelocityMetricsProps) {
                       >
                         {LEAD_STATUS_LABELS[lead.status]}
                       </Badge>
-                    </TableCell>
-                    <TableCell className='text-right'>
-                      {lead.estimatedValue > 0
-                        ? formatCurrency(lead.estimatedValue)
-                        : '—'}
                     </TableCell>
                     <TableCell className='text-right'>
                       {lead.daysInStage}

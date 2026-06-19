@@ -7,7 +7,7 @@ import { logActivity } from '@/lib/activity/logger'
 import { leadConvertedEvent } from '@/lib/activity/events'
 import { requireRole } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { clients, contacts, contactClients, leads, threads } from '@/lib/db/schema'
+import { clients, contacts, contactClients, leads } from '@/lib/db/schema'
 import { createClient } from '@/lib/settings/clients/actions/create-client'
 import { saveProject } from '@/lib/settings/projects/actions/save-project'
 import { extractLeadNotes } from '@/lib/leads/notes'
@@ -203,16 +203,7 @@ export async function convertLeadToClient(
     })
     .where(eq(leads.id, leadId))
 
-  // 6. Transfer linked threads to client (if any)
-  await db
-    .update(threads)
-    .set({
-      clientId: finalClientId,
-      updatedAt: new Date().toISOString(),
-    })
-    .where(eq(threads.leadId, leadId))
-
-  // 7. Log activity
+  // 6. Log activity
   const resolvedName = clientName || lead.companyName || lead.contactName
   const event = leadConvertedEvent({
     leadId,
