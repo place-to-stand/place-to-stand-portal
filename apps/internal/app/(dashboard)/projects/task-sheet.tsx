@@ -2,11 +2,17 @@
 
 import { useCallback, useMemo, useRef, useState, type DragEvent } from 'react'
 
-import { PanelRightClose, Sparkles, X } from 'lucide-react'
+import { ClipboardList, HelpCircle, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Sheet, SheetClose, SheetContent } from '@/components/ui/sheet'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 
@@ -242,6 +248,7 @@ export function TaskSheet(props: TaskSheetProps) {
           hideCloseButton
           className={cn(
             'flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-[676px]',
+            // Widen to fit the 560px planning panel when it is expanded.
             canDeploy && isPlanningOpen && 'sm:max-w-[1236px]'
           )}
         >
@@ -249,6 +256,44 @@ export function TaskSheet(props: TaskSheetProps) {
           <TaskSheetHeader
             title={sheetTitle}
             description={headerDescription}
+            descriptionAction={
+              canDeploy ? (
+                <Button
+                  variant='ghost'
+                  size='sm'
+                  className='h-7 shrink-0 cursor-pointer gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground'
+                  onClick={() => setIsPlanningOpen(open => !open)}
+                  aria-expanded={isPlanningOpen}
+                >
+                  <ClipboardList className='h-3.5 w-3.5' />
+                  {isPlanningOpen ? 'Hide planning' : 'Planning'}
+                </Button>
+              ) : (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span tabIndex={0} className='inline-flex shrink-0'>
+                        <Button
+                          variant='ghost'
+                          size='sm'
+                          disabled
+                          className='h-7 gap-1.5 px-2 text-xs text-muted-foreground'
+                        >
+                          <ClipboardList className='h-3.5 w-3.5' />
+                          Planning
+                          <HelpCircle className='h-3.5 w-3.5' />
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side='bottom' className='max-w-[220px]'>
+                      Planning needs a GitHub repo linked to this task&rsquo;s
+                      project. Link one in the project&rsquo;s settings to
+                      enable it.
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )
+            }
           >
             <SheetClose asChild>
               <Button variant='ghost' size='icon' className='h-7 w-7 opacity-70 hover:opacity-100'>
@@ -338,44 +383,16 @@ export function TaskSheet(props: TaskSheetProps) {
               />
             </div>
 
-            {/* Right column: planning panel — collapsed by default */}
-            {props.task && taskProject?.githubRepos && taskProject.githubRepos.length > 0 && (
-              isPlanningOpen ? (
-                <div className='flex h-full shrink-0'>
-                  {/* Collapse strip */}
-                  <div className='flex h-full w-9 shrink-0 flex-col items-center border-l bg-muted/50 pt-2'>
-                    <Button
-                      variant='ghost'
-                      size='icon'
-                      className='h-7 w-7 text-muted-foreground hover:text-foreground'
-                      onClick={() => setIsPlanningOpen(false)}
-                      aria-expanded={true}
-                      aria-label='Collapse planning panel'
-                    >
-                      <PanelRightClose className='h-4 w-4' />
-                    </Button>
-                  </div>
-                  <PlanningPanel
-                    task={props.task}
-                    githubRepos={taskProject.githubRepos}
-                  />
-                </div>
-              ) : (
-                /* Slim expand tab when collapsed */
-                <button
-                  type='button'
-                  onClick={() => setIsPlanningOpen(true)}
-                  aria-expanded={false}
-                  aria-label='Open planning panel'
-                  className='flex h-full w-9 shrink-0 flex-col items-center gap-2 border-l bg-muted/50 pt-3 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'
-                >
-                  <Sparkles className='h-4 w-4' />
-                  <span className='text-xs font-medium [writing-mode:vertical-rl]'>
-                    Planning
-                  </span>
-                </button>
-              )
-            )}
+            {/* Right column: planning panel — toggled from the header button */}
+            {props.task &&
+              taskProject?.githubRepos &&
+              taskProject.githubRepos.length > 0 &&
+              isPlanningOpen && (
+                <PlanningPanel
+                  task={props.task}
+                  githubRepos={taskProject.githubRepos}
+                />
+              )}
           </div>
         </SheetContent>
       </Sheet>
