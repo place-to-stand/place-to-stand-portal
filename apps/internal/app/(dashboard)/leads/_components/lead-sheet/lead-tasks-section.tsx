@@ -188,7 +188,7 @@ function TaskCard({
           </div>
         </div>
         <a
-          href={`/my-tasks?taskId=${task.id}`}
+          href={`/my/tasks/board/${task.id}`}
           className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
           aria-label={`Open task: ${task.title}`}
         >
