@@ -14,15 +14,8 @@ import type {
   clientMembers,
   activityLogs,
   oauthConnections,
-  threads,
-  messages,
   githubRepoLinks,
   githubAppInstallations,
-  suggestions,
-  emailDrafts,
-  emailTemplates,
-  meetings,
-  proposals,
   taskDeployments,
   planningSessions,
   planThreads,
@@ -31,7 +24,6 @@ import type {
   contacts,
   contactClients,
   contactLeads,
-  transcripts,
   invoices,
   invoiceLineItems,
   productCatalogItems,
@@ -39,7 +31,6 @@ import type {
   timeLogTasks,
   leadStageHistory,
   activityOverviewCache,
-  proposalTemplates,
 } from './schema'
 
 // Select types (for reading from DB)
@@ -57,15 +48,8 @@ export type TaskAssigneeMetadata = InferSelectModel<typeof taskAssigneeMetadata>
 export type ClientMember = InferSelectModel<typeof clientMembers>
 export type ActivityLog = InferSelectModel<typeof activityLogs>
 export type OauthConnection = InferSelectModel<typeof oauthConnections>
-export type Thread = InferSelectModel<typeof threads>
-export type Message = InferSelectModel<typeof messages>
 export type GithubAppInstallation = InferSelectModel<typeof githubAppInstallations>
 export type GithubRepoLink = InferSelectModel<typeof githubRepoLinks>
-export type Suggestion = InferSelectModel<typeof suggestions>
-export type EmailDraft = InferSelectModel<typeof emailDrafts>
-export type EmailTemplate = InferSelectModel<typeof emailTemplates>
-export type Meeting = InferSelectModel<typeof meetings>
-export type Proposal = InferSelectModel<typeof proposals>
 export type TaskDeployment = InferSelectModel<typeof taskDeployments>
 export type PlanningSession = InferSelectModel<typeof planningSessions>
 export type PlanThread = InferSelectModel<typeof planThreads>
@@ -74,7 +58,6 @@ export type PlanMessage = InferSelectModel<typeof planMessages>
 export type Contact = InferSelectModel<typeof contacts>
 export type ContactClient = InferSelectModel<typeof contactClients>
 export type ContactLead = InferSelectModel<typeof contactLeads>
-export type Transcript = InferSelectModel<typeof transcripts>
 export type Invoice = InferSelectModel<typeof invoices>
 export type InvoiceLineItem = InferSelectModel<typeof invoiceLineItems>
 export type ProductCatalogItem = InferSelectModel<typeof productCatalogItems>
@@ -82,7 +65,6 @@ export type TaxRate = InferSelectModel<typeof taxRates>
 export type TimeLogTask = InferSelectModel<typeof timeLogTasks>
 export type LeadStageHistory = InferSelectModel<typeof leadStageHistory>
 export type ActivityOverviewCache = InferSelectModel<typeof activityOverviewCache>
-export type ProposalTemplate = InferSelectModel<typeof proposalTemplates>
 
 // Insert types (for writing to DB)
 export type NewUser = InferInsertModel<typeof users>
@@ -98,17 +80,10 @@ export type NewTaskAssignee = InferInsertModel<typeof taskAssignees>
 export type NewClientMember = InferInsertModel<typeof clientMembers>
 export type NewActivityLog = InferInsertModel<typeof activityLogs>
 export type NewOauthConnection = InferInsertModel<typeof oauthConnections>
-export type NewThread = InferInsertModel<typeof threads>
-export type NewMessage = InferInsertModel<typeof messages>
 export type NewGithubAppInstallation = InferInsertModel<typeof githubAppInstallations>
 export type NewGithubRepoLink = InferInsertModel<typeof githubRepoLinks>
-export type NewSuggestion = InferInsertModel<typeof suggestions>
-export type NewEmailDraft = InferInsertModel<typeof emailDrafts>
-export type NewMeeting = InferInsertModel<typeof meetings>
-export type NewProposal = InferInsertModel<typeof proposals>
 export type NewTaskDeployment = InferInsertModel<typeof taskDeployments>
 export type NewPlanningSession = InferInsertModel<typeof planningSessions>
 export type NewContact = InferInsertModel<typeof contacts>
 export type NewInvoice = InferInsertModel<typeof invoices>
 export type NewInvoiceLineItem = InferInsertModel<typeof invoiceLineItems>
-export type NewTranscript = InferInsertModel<typeof transcripts>
