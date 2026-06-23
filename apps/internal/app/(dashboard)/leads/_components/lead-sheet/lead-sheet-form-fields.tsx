@@ -34,9 +34,7 @@ import {
   type LeadStatusValue,
 } from '@/lib/leads/constants'
 import type { LeadAssigneeOption } from '@/lib/leads/types'
-import type { PriorityTier } from '@/lib/leads/intelligence-types'
 
-import { PriorityBadge } from '../priority-badge'
 import type { LeadFormValues } from './types'
 
 type LeadSheetFormFieldsProps = {
@@ -228,123 +226,61 @@ export function LeadSheetFormFields({
           )}
         />
       </div>
-      <FormField
-        control={control}
-        name='status'
-        render={({ field }) => {
-          const selectedStatus = leadStatuses.find(
-            status => status.value === field.value
-          )
+      <div className='grid gap-4 sm:grid-cols-2'>
+        <FormField
+          control={control}
+          name='status'
+          render={({ field }) => {
+            const selectedStatus = leadStatuses.find(
+              status => status.value === field.value
+            )
 
-          return (
-            <FormItem>
-              <FormLabel>Status</FormLabel>
-              <Select
-                value={field.value}
-                onValueChange={(value: LeadStatusValue) =>
-                  field.onChange(value)
-                }
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder='Select status'>
-                      {selectedStatus ? (
+            return (
+              <FormItem>
+                <FormLabel>Status</FormLabel>
+                <Select
+                  value={field.value}
+                  onValueChange={(value: LeadStatusValue) =>
+                    field.onChange(value)
+                  }
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder='Select status'>
+                        {selectedStatus ? (
+                          <Badge
+                            variant='outline'
+                            className={cn(
+                              'text-xs font-semibold tracking-wide uppercase',
+                              selectedStatus.token
+                            )}
+                          >
+                            {selectedStatus.label}
+                          </Badge>
+                        ) : null}
+                      </SelectValue>
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {leadStatuses.map(status => (
+                      <SelectItem key={status.value} value={status.value}>
                         <Badge
                           variant='outline'
                           className={cn(
                             'text-xs font-semibold tracking-wide uppercase',
-                            selectedStatus.token
+                            status.token
                           )}
                         >
-                          {selectedStatus.label}
+                          {status.label}
                         </Badge>
-                      ) : null}
-                    </SelectValue>
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {leadStatuses.map(status => (
-                    <SelectItem key={status.value} value={status.value}>
-                      <Badge
-                        variant='outline'
-                        className={cn(
-                          'text-xs font-semibold tracking-wide uppercase',
-                          status.token
-                        )}
-                      >
-                        {status.label}
-                      </Badge>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )
-        }}
-      />
-      <FormField
-        control={control}
-        name='estimatedValue'
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Estimated Value</FormLabel>
-            <FormControl>
-              <Input
-                {...field}
-                value={field.value ?? ''}
-                type='number'
-                min='0'
-                step='0.01'
-                placeholder='10000'
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <div className='grid gap-4 sm:grid-cols-2'>
-        <FormField
-          control={control}
-          name='priorityTier'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Priority</FormLabel>
-              <Select
-                value={field.value ?? 'none'}
-                onValueChange={(value) =>
-                  field.onChange(value === 'none' ? null : value as PriorityTier)
-                }
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder='Set priority'>
-                      {field.value ? (
-                        <PriorityBadge tier={field.value} />
-                      ) : (
-                        <span className='text-muted-foreground'>Not set</span>
-                      )}
-                    </SelectValue>
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value='none'>
-                    <span className='text-muted-foreground'>Not set</span>
-                  </SelectItem>
-                  <SelectItem value='hot'>
-                    <PriorityBadge tier='hot' />
-                  </SelectItem>
-                  <SelectItem value='warm'>
-                    <PriorityBadge tier='warm' />
-                  </SelectItem>
-                  <SelectItem value='cold'>
-                    <PriorityBadge tier='cold' />
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )
+          }}
         />
         <FormField
           control={control}

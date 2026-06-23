@@ -95,32 +95,6 @@ export function InvoicesManagementTable({
     }
   }, [invoices, selectedInvoice])
 
-  // Check for proposal-to-invoice pre-fill on mount
-  const prefillCheckedRef = useRef(false)
-  useEffect(() => {
-    if (prefillCheckedRef.current || mode !== 'active') return
-    prefillCheckedRef.current = true
-
-    const from = searchParams.get('from')
-    if (from !== 'proposal') return
-
-    const raw = sessionStorage.getItem('invoice-prefill')
-    if (!raw) return
-
-    sessionStorage.removeItem('invoice-prefill')
-    // Clean URL
-    const params = new URLSearchParams(searchParams.toString())
-    params.delete('from')
-    const query = params.toString()
-    router.replace(query ? `${pathname}?${query}` : pathname)
-
-    // Open sheet in create mode (pre-fill will be handled by the sheet via sessionStorage)
-    // Re-set for the sheet to read
-    sessionStorage.setItem('invoice-prefill', raw)
-    setSelectedInvoice(null)
-    setSheetOpen(true)
-  }, [mode, pathname, router, searchParams])
-
   // -------------------------------------------------------------------------
   // Sheet handlers
   // -------------------------------------------------------------------------

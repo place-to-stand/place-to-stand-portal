@@ -28,10 +28,12 @@ import { composeIssueBody } from '@/lib/github/compose-issue-body'
 import { serverEnv } from '@/lib/env.server'
 import { customAlphabet } from 'nanoid'
 import { getRevisionByVersion } from '@/lib/queries/planning'
+import { PLANNING_MODEL_TIERS, type PlanningModelTier } from '@/lib/planning/models'
 
 const generatePlanId = customAlphabet('0123456789abcdefghijklmnopqrstuvwxyz', 6)
 
-const modelSchema = z.enum(['opus', 'sonnet', 'haiku'])
+// Worker accepts the same generic model tiers used across the planning UI.
+const modelSchema = z.enum(PLANNING_MODEL_TIERS)
 
 const deployModeSchema = z.enum(['plan', 'execute'])
 
@@ -62,7 +64,7 @@ type ImplementResult =
 export async function triggerWorkerPlan(input: {
   taskId: string
   repoLinkId: string
-  model: 'opus' | 'sonnet' | 'haiku'
+  model: PlanningModelTier
   mode?: 'plan' | 'execute'
 }): Promise<TriggerResult> {
   const user = await requireUser()
@@ -244,7 +246,7 @@ export async function triggerWorkerPlan(input: {
  */
 export async function triggerWorkerImplement(input: {
   deploymentId: string
-  model: 'opus' | 'sonnet' | 'haiku'
+  model: PlanningModelTier
   customPrompt?: string
 }): Promise<ImplementResult> {
   const user = await requireUser()
@@ -578,7 +580,7 @@ export async function deployPlan(input: {
   version: number
   taskId: string
   repoLinkId: string
-  model: 'opus' | 'sonnet' | 'haiku'
+  model: PlanningModelTier
 }): Promise<DeployPlanResult> {
   const user = await requireUser()
 
@@ -787,7 +789,7 @@ export async function deployPlan(input: {
  * Compose the worker comment for a plan deployment with PRD instructions.
  */
 function composePlanDeployComment(params: {
-  model: 'opus' | 'sonnet' | 'haiku'
+  model: PlanningModelTier
   planContent: string
   prdPath: string
   planId: string

@@ -33,7 +33,6 @@ const invoiceSelection = {
   status: invoices.status,
   clientId: invoices.clientId,
   createdBy: invoices.createdBy,
-  proposalId: invoices.proposalId,
   issuedDate: invoices.issuedDate,
   dueDate: invoices.dueDate,
   subtotal: invoices.subtotal,
@@ -89,7 +88,6 @@ type InvoiceSelectionRow = {
     status: string
     clientId: string
     createdBy: string | null
-    proposalId: string | null
     issuedDate: string | null
     dueDate: string | null
     subtotal: string
@@ -431,7 +429,6 @@ function mapInvoiceWithClient(row: InvoiceSelectionRow): InvoiceWithClient {
     status: row.invoice.status,
     client_id: row.invoice.clientId,
     created_by: row.invoice.createdBy,
-    proposal_id: row.invoice.proposalId,
     issued_date: row.invoice.issuedDate,
     due_date: row.invoice.dueDate,
     subtotal: row.invoice.subtotal,

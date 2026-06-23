@@ -5,7 +5,6 @@ import {
   LEAD_STATUS_VALUES,
   type LeadStatusValue,
 } from '@/lib/leads/constants'
-import { PRIORITY_TIERS } from '@/lib/leads/intelligence-types'
 import type { LeadAssigneeOption, LeadRecord } from '@/lib/leads/types'
 
 export const leadFormSchema = z.object({
@@ -26,14 +25,7 @@ export const leadFormSchema = z.object({
   sourceDetail: z.string().trim().max(160).optional().nullable(),
   status: z.enum(LEAD_STATUS_VALUES),
   assigneeId: z.string().uuid().optional().nullable(),
-  estimatedValue: z
-    .string()
-    .trim()
-    .transform(val => (val === '' ? null : val))
-    .optional()
-    .nullable(),
   notes: z.string().optional(),
-  priorityTier: z.enum(PRIORITY_TIERS).optional().nullable(),
 })
 
 export type LeadFormValues = z.infer<typeof leadFormSchema>

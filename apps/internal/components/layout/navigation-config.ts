@@ -8,10 +8,8 @@ import {
   ListTodo,
   Handshake,
   Plug,
-  MessagesSquare,
   Contact,
   FileText,
-  ScrollText,
   Receipt,
 } from 'lucide-react'
 import type { UserRole } from '@/lib/auth/session'
@@ -45,12 +43,6 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: ListTodo,
         matchHrefs: ['/my/tasks', '/my/tasks/calendar'],
       },
-      {
-        href: '/my/communications/triage',
-        label: 'Communications',
-        icon: MessagesSquare,
-        matchHrefs: ['/my/communications'],
-      },
     ],
   },
   {
@@ -62,11 +54,6 @@ export const NAV_GROUPS: NavGroup[] = [
         label: 'Leads',
         icon: Handshake,
         matchHrefs: ['/leads'],
-      },
-      {
-        href: '/proposals',
-        label: 'Proposals',
-        icon: ScrollText,
       },
       {
         href: '/invoices',
@@ -127,12 +114,6 @@ export const NAV_GROUPS: NavGroup[] = [
         href: '/settings/integrations',
         label: 'Integrations',
         icon: Plug,
-      },
-      {
-        href: '/settings/templates',
-        label: 'Templates',
-        icon: FileText,
-        matchHrefs: ['/settings/templates'],
       },
     ],
   },

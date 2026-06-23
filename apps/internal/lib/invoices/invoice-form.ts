@@ -12,7 +12,6 @@ export type InvoiceRow = {
   status: string
   client_id: string
   created_by: string | null
-  proposal_id: string | null
   issued_date: string | null
   due_date: string | null
   subtotal: string

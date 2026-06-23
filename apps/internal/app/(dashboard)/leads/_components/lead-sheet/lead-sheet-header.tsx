@@ -6,8 +6,6 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { LeadRecord } from '@/lib/leads/types'
 
-import { PriorityBadge, ScoreBadge } from '../priority-badge'
-
 type LeadSheetHeaderProps = {
   lead: LeadRecord
   canConvert: boolean
@@ -16,39 +14,14 @@ type LeadSheetHeaderProps = {
 }
 
 export function LeadSheetHeader({
-  lead,
   canConvert,
   isConverted,
   onConvertToClient,
 }: LeadSheetHeaderProps) {
-  const showHeader = lead.overallScore !== null || lead.priorityTier !== null || canConvert || isConverted
-
-  if (!showHeader) return null
+  if (!canConvert && !isConverted) return null
 
   return (
-    <div className='flex items-center justify-between py-2'>
-      <div className='flex items-center gap-3'>
-        {lead.overallScore !== null && (
-          <div className='flex items-center gap-2'>
-            <span className='text-sm text-muted-foreground'>Score:</span>
-            <ScoreBadge score={lead.overallScore} signals={lead.signals} />
-          </div>
-        )}
-        {lead.priorityTier && (
-          <PriorityBadge tier={lead.priorityTier} showTooltip />
-        )}
-        {lead.predictedCloseProbability !== null && (
-          <div className='flex items-center gap-2'>
-            <span className='text-muted-foreground text-sm'>Close:</span>
-            <Badge
-              variant='outline'
-              className='border-indigo-500/20 bg-indigo-500/10 text-[10px] font-mono font-medium tabular-nums text-indigo-600 dark:text-indigo-400'
-            >
-              {Math.round(lead.predictedCloseProbability * 100)}%
-            </Badge>
-          </div>
-        )}
-      </div>
+    <div className='flex items-center justify-end py-2'>
       <div className='flex items-center gap-2'>
         {isConverted && (
           <Badge variant='outline' className='gap-1 bg-green-500/10 text-green-600 border-green-500/20'>

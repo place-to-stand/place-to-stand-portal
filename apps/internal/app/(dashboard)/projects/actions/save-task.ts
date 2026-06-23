@@ -186,6 +186,38 @@ export async function saveTask(input: BaseTaskInput): Promise<ActionResult> {
       return { error: 'Task not found.' }
     }
 
+    const projectChanged = existingTask.projectId !== projectId
+    let targetClientId = existingTask.clientId ?? null
+
+    // When moving the task to a different project, authorize access to the
+    // destination project (mirrors the create path) and resolve its client.
+    if (projectChanged) {
+      try {
+        await ensureClientAccessByProjectId(user, projectId)
+      } catch (error) {
+        if (error instanceof NotFoundError) {
+          return { error: 'Selected project is unavailable.' }
+        }
+        if (error instanceof ForbiddenError) {
+          return { error: 'You do not have permission to use this project.' }
+        }
+        console.error('Failed to authorize project access', error)
+        return { error: 'Unable to resolve project for task.' }
+      }
+
+      const newProjectContext = await db
+        .select({ clientId: projects.clientId })
+        .from(projects)
+        .where(and(eq(projects.id, projectId), isNull(projects.deletedAt)))
+        .limit(1)
+
+      if (!newProjectContext.length) {
+        return { error: 'Selected project is unavailable.' }
+      }
+
+      targetClientId = newProjectContext[0].clientId ?? null
+    }
+
     const existingAssignees = await db
       .select({
         userId: taskAssignees.userId,
@@ -204,10 +236,12 @@ export async function saveTask(input: BaseTaskInput): Promise<ActionResult> {
 
     let nextRank = existingTask.rank
 
-    if (existingTask.status !== status) {
+    // Recompute ordering when the status changes, or when the task moves to a
+    // new project (so it lands correctly in the destination column).
+    if (existingTask.status !== status || projectChanged) {
       try {
         nextRank = await resolveNextTaskRank(
-          existingTask.projectId,
+          projectId,
           status
         )
       } catch (rankError) {
@@ -223,6 +257,8 @@ export async function saveTask(input: BaseTaskInput): Promise<ActionResult> {
       await db
         .update(tasks)
         .set({
+          projectId,
+          leadId: leadId ?? null,
           title,
           description,
           status,
@@ -278,6 +314,12 @@ export async function saveTask(input: BaseTaskInput): Promise<ActionResult> {
       nextDetails.status = status
     }
 
+    if (projectChanged) {
+      changedFields.push('project')
+      previousDetails.projectId = existingTask.projectId
+      nextDetails.projectId = projectId
+    }
+
     const previousDueOn = existingTask.dueOn ?? null
     const nextDueOn = dueOn ?? null
 
@@ -327,8 +369,8 @@ export async function saveTask(input: BaseTaskInput): Promise<ActionResult> {
         summary: event.summary,
         targetType: 'TASK',
         targetId: id,
-        targetProjectId: existingTask.projectId,
-        targetClientId: existingTask.clientId ?? null,
+        targetProjectId: projectId,
+        targetClientId: targetClientId,
         metadata: event.metadata,
       })
     }

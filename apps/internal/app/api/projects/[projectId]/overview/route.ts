@@ -2,13 +2,14 @@ import { NextResponse } from 'next/server'
 
 import { getCurrentUser } from '@/lib/auth/session'
 import { ensureClientAccessByProjectId, isAdmin } from '@/lib/auth/permissions'
-import { listThreadsForUser, getThreadCountsForUser } from '@/lib/queries/threads'
-import { listTranscripts, getTranscriptTotalCount } from '@/lib/queries/transcripts'
 
 type RouteParams = {
   params: Promise<{ projectId: string }>
 }
 
+// Communications (email threads + transcripts) were removed from the project
+// overview. The endpoint is retained for project-scoped overview data; it
+// currently returns an empty payload until non-comms overview data is added.
 export async function GET(_req: Request, { params }: RouteParams) {
   const user = await getCurrentUser()
 
@@ -26,38 +27,5 @@ export async function GET(_req: Request, { params }: RouteParams) {
     }
   }
 
-  const [threads, threadCounts, transcripts, transcriptCount] = await Promise.all([
-    listThreadsForUser(user.id, {
-      projectId,
-      limit: 5,
-    }),
-    getThreadCountsForUser(user.id, { projectId }),
-    listTranscripts({
-      projectId,
-      classification: 'CLASSIFIED',
-      limit: 5,
-    }),
-    getTranscriptTotalCount({ projectId, classification: 'CLASSIFIED' }),
-  ])
-
-  return NextResponse.json({
-    ok: true,
-    data: {
-      threads: threads.map(t => ({
-        id: t.id,
-        subject: t.subject,
-        lastMessageAt: t.lastMessageAt,
-        messageCount: t.messageCount,
-        participantEmails: t.participantEmails,
-      })),
-      threadCount: threadCounts.total,
-      transcripts: transcripts.map(t => ({
-        id: t.id,
-        title: t.title,
-        meetingDate: t.meetingDate,
-        driveFileUrl: t.driveFileUrl,
-      })),
-      transcriptCount,
-    },
-  })
+  return NextResponse.json({ ok: true, data: {} })
 }

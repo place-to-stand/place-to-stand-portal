@@ -6,13 +6,9 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import type { LeadRecord } from '@/lib/leads/types'
 
 import { ConvertLeadDialog } from '../convert-lead-dialog'
-import { ProposalBuilderSheet, type EditableProposal } from '../proposal-builder/proposal-builder-sheet'
-import { ScheduleMeetingDialog } from '../schedule-meeting-dialog'
-import { SendEmailDialog } from '../send-email-dialog'
 
 type LeadSheetDialogsProps = {
   lead: LeadRecord | null
-  senderName: string
   // Archive dialog
   isArchiveDialogOpen: boolean
   isArchiving: boolean
@@ -21,19 +17,6 @@ type LeadSheetDialogsProps = {
   // Convert dialog
   isConvertDialogOpen: boolean
   onConvertOpenChange: (open: boolean) => void
-  // Email dialog
-  isEmailDialogOpen: boolean
-  onEmailOpenChange: (open: boolean) => void
-  // Meeting dialog (AI-triggered)
-  isMeetingDialogOpen: boolean
-  meetingInitialTitle?: string
-  onMeetingOpenChange: (open: boolean) => void
-  onMeetingSuccess: () => void
-  // Build proposal dialog
-  isBuildProposalDialogOpen: boolean
-  editingProposal?: EditableProposal
-  onBuildProposalOpenChange: (open: boolean) => void
-  onProposalSuccess: () => void
   // General success callback
   onSuccess: () => void
   // Unsaved changes dialog
@@ -42,23 +25,12 @@ type LeadSheetDialogsProps = {
 
 export function LeadSheetDialogs({
   lead,
-  senderName,
   isArchiveDialogOpen,
   isArchiving,
   onArchiveCancel,
   onArchiveConfirm,
   isConvertDialogOpen,
   onConvertOpenChange,
-  isEmailDialogOpen,
-  onEmailOpenChange,
-  isMeetingDialogOpen,
-  meetingInitialTitle,
-  onMeetingOpenChange,
-  onMeetingSuccess,
-  isBuildProposalDialogOpen,
-  editingProposal,
-  onBuildProposalOpenChange,
-  onProposalSuccess,
   onSuccess,
   unsavedChangesDialog,
 }: LeadSheetDialogsProps) {
@@ -80,33 +52,6 @@ export function LeadSheetDialogs({
           open={isConvertDialogOpen}
           onOpenChange={onConvertOpenChange}
           onSuccess={onSuccess}
-        />
-      )}
-      {lead && lead.contactEmail && senderName && (
-        <SendEmailDialog
-          lead={lead}
-          senderName={senderName}
-          open={isEmailDialogOpen}
-          onOpenChange={onEmailOpenChange}
-          onSuccess={onSuccess}
-        />
-      )}
-      {lead && (
-        <ScheduleMeetingDialog
-          lead={lead}
-          open={isMeetingDialogOpen}
-          onOpenChange={onMeetingOpenChange}
-          initialTitle={meetingInitialTitle}
-          onSuccess={onMeetingSuccess}
-        />
-      )}
-      {lead && (
-        <ProposalBuilderSheet
-          lead={lead}
-          existingProposal={editingProposal}
-          open={isBuildProposalDialogOpen}
-          onOpenChange={onBuildProposalOpenChange}
-          onSuccess={onProposalSuccess}
         />
       )}
       {unsavedChangesDialog}

@@ -1,5 +1,4 @@
 import { ActivityVerbs, type ActivityEvent } from '@/lib/activity/types'
-import type { PriorityTier } from '@/lib/leads/intelligence-types'
 
 import { toMetadata } from './shared'
 
@@ -52,38 +51,6 @@ export const leadStatusChangedEvent = (args: {
   }),
 })
 
-export const leadScoredEvent = (args: {
-  contactName: string
-  previousScore: number | null
-  newScore: number
-  signalCount: number
-}): ActivityEvent => ({
-  verb: ActivityVerbs.LEAD_SCORED,
-  summary: `Lead "${args.contactName}" score updated to ${args.newScore}`,
-  metadata: toMetadata({
-    scoring: {
-      previousScore: args.previousScore,
-      newScore: args.newScore,
-      signalCount: args.signalCount,
-    },
-  }),
-})
-
-export const leadPriorityChangedEvent = (args: {
-  contactName: string
-  previousTier: PriorityTier | null
-  newTier: PriorityTier
-}): ActivityEvent => ({
-  verb: ActivityVerbs.LEAD_PRIORITY_CHANGED,
-  summary: `Lead "${args.contactName}" priority changed to ${args.newTier}`,
-  metadata: toMetadata({
-    priority: {
-      previousTier: args.previousTier,
-      newTier: args.newTier,
-    },
-  }),
-})
-
 export const leadConvertedEvent = (args: {
   leadId: string
   leadName: string
@@ -113,26 +80,4 @@ export const leadRestoredEvent = (args: {
 }): ActivityEvent => ({
   verb: ActivityVerbs.LEAD_RESTORED,
   summary: `Restored lead "${args.contactName}"`,
-})
-
-export const leadSuggestionApprovedEvent = (args: {
-  contactName: string
-  suggestionType: string
-}): ActivityEvent => ({
-  verb: ActivityVerbs.LEAD_SUGGESTION_APPROVED,
-  summary: `Approved ${args.suggestionType} suggestion for lead "${args.contactName}"`,
-  metadata: toMetadata({
-    suggestionType: args.suggestionType,
-  }),
-})
-
-export const leadSuggestionDismissedEvent = (args: {
-  contactName: string
-  suggestionType: string
-}): ActivityEvent => ({
-  verb: ActivityVerbs.LEAD_SUGGESTION_DISMISSED,
-  summary: `Dismissed ${args.suggestionType} suggestion for lead "${args.contactName}"`,
-  metadata: toMetadata({
-    suggestionType: args.suggestionType,
-  }),
 })
