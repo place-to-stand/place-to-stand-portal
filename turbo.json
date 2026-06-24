@@ -34,6 +34,7 @@
         "GITHUB_APP_WEBHOOK_SECRET",
         "GITHUB_APP_CLIENT_ID",
         "GITHUB_APP_CLIENT_SECRET",
+        "GOOGLE_CHAT_SALES_WEBHOOK_URL",
         "CLIENT_PORTAL_URL"
       ]
     },

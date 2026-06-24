@@ -11,6 +11,7 @@ import {
 import { invoicePaidEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
 import { createHourBlocksFromInvoice } from '@/lib/data/invoices'
+import { notifyInvoicePaid } from '@/lib/notifications/google-chat'
 
 /**
  * Mark an invoice as paid, log activity, and create hour blocks.
@@ -54,6 +55,14 @@ async function markInvoicePaid(
         metadata: paidEvent.metadata,
       }).catch(console.error)
     }
+
+    // Notify the team in Google Chat (fire-and-forget — non-critical).
+    // Guarded by status !== 'PAID' so retried webhooks don't re-notify.
+    notifyInvoicePaid({
+      invoiceNumber: invoice.invoice_number,
+      total: invoice.total,
+      clientName: invoice.client?.name,
+    }).catch(console.error)
   }
 
   // Always attempt hour block creation — must be awaited so it completes

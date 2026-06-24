@@ -26,6 +26,7 @@ const schema = z.object({
   STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
   GITHUB_APP_ID: z.string().min(1).optional(),
   GITHUB_APP_PRIVATE_KEY: z.string().min(1).optional(),
+  GOOGLE_CHAT_SALES_WEBHOOK_URL: z.string().url().optional(),
   CLIENT_PORTAL_URL: z.url(),
 })
 
@@ -56,5 +57,8 @@ export const serverEnv = schema.parse({
   STRIPE_WEBHOOK_SECRET: emptyToUndefined(process.env.STRIPE_WEBHOOK_SECRET),
   GITHUB_APP_ID: emptyToUndefined(process.env.GITHUB_APP_ID),
   GITHUB_APP_PRIVATE_KEY: emptyToUndefined(process.env.GITHUB_APP_PRIVATE_KEY),
+  GOOGLE_CHAT_SALES_WEBHOOK_URL: emptyToUndefined(
+    process.env.GOOGLE_CHAT_SALES_WEBHOOK_URL
+  ),
   CLIENT_PORTAL_URL: process.env.CLIENT_PORTAL_URL,
 })
