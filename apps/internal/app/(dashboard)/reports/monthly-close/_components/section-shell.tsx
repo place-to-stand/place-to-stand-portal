@@ -122,15 +122,26 @@ export function SectionShell({
   )
 }
 
-const currencyFormatter = new Intl.NumberFormat('en-US', {
+const wholeCurrencyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
   minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+})
+
+const centsCurrencyFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 })
 
 export function formatCurrency(amount: number): string {
-  return currencyFormatter.format(amount)
+  // Keep whole dollars clean ($15,950) but always pad cents to two digits
+  // so fractional values read as $7,492.50 rather than $7,492.5.
+  return Number.isInteger(amount)
+    ? wholeCurrencyFormatter.format(amount)
+    : centsCurrencyFormatter.format(amount)
 }
 
 export function formatHours(hours: number): string {

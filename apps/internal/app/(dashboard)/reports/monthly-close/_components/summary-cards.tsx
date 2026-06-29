@@ -15,16 +15,7 @@ import { cn } from '@/lib/utils'
 
 import type { PartnerRateSchedule } from '@/lib/billing/partner-rates'
 
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 2,
-})
-
-function formatCurrency(amount: number): string {
-  return currencyFormatter.format(amount)
-}
+import { formatCurrency } from './section-shell'
 
 function formatPercent(part: number, whole: number): string {
   if (whole <= 0) return '0%'
