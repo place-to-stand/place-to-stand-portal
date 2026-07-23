@@ -278,9 +278,14 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
       }
 
       // Seed optimistic status
+      const seededStatus: WorkerStatusResult = {
+        comments: [],
+        prUrl: null,
+        latestStatus: 'working',
+      }
       queryClient.setQueryData<WorkerStatusResult>(
         [WORKER_STATUS_KEY, result.deploymentId],
-        { comments: [], prUrl: null, latestStatus: 'working' }
+        seededStatus
       )
 
       toast({ title: 'Plan dispatched', description: 'GitHub issue created with PRD instructions.' })

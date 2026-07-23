@@ -41,7 +41,7 @@ type RollupCardProps = {
   icon: Icon
   total: number
   caption: string
-  children: RollupChild[]
+  rows: RollupChild[]
   accent: 'emerald' | 'violet'
   action?: ReactNode
   /** When true, the card stretches to fill its parent and pins the action to the bottom. */
@@ -53,7 +53,7 @@ function RollupCard({
   icon: Icon,
   total,
   caption,
-  children,
+  rows,
   accent,
   action,
   stretch,
@@ -103,9 +103,9 @@ function RollupCard({
         </p>
 
         {/* Breakdown rows — thin rule + stacked label/value pairs */}
-        {children.length > 0 ? (
+        {rows.length > 0 ? (
           <div className='border-border/60 mt-5 space-y-2.5 border-t pt-4'>
-            {children.map(child => (
+            {rows.map(child => (
               <div
                 key={child.label}
                 className='flex items-center justify-between gap-4'
@@ -170,7 +170,7 @@ export function BillingInCard({
       caption='Cash collected this month — prepaid invoices plus net 30 hours logged.'
       accent='emerald'
       action={action}
-      children={[
+      rows={[
         {
           label: 'Prepaid',
           sublabel: `${prepaidHours.toFixed(2)} hrs`,
@@ -250,7 +250,7 @@ export function TotalPayoutsCard({
       accent='violet'
       action={action}
       stretch
-      children={children}
+      rows={children}
     />
   )
 }

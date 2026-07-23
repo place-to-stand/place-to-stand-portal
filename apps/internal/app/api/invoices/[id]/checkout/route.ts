@@ -86,7 +86,9 @@ export async function POST(
 
     // Create Stripe Checkout Session (embedded mode)
     const session = await getStripe().checkout.sessions.create({
-      ui_mode: 'embedded',
+      // Stripe API v22 renamed 'embedded' to 'embedded_page'; behavior is
+      // unchanged (session.client_secret still drives the embedded form).
+      ui_mode: 'embedded_page',
       mode: 'payment',
       line_items: stripeLineItems,
       return_url: `${appBaseUrl}/share/invoices/${invoice.shareToken}?payment=success&session_id={CHECKOUT_SESSION_ID}`,
