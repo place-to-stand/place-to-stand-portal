@@ -15,6 +15,11 @@ export type UserRowState = {
   isDeleting: boolean
   isRestoring: boolean
   isDestroying: boolean
+  isTogglingAccess: boolean
+  accessEnabled: boolean
+  accessToggleDisabled: boolean
+  accessToggleDisabledReason: string | null
+  onToggleAccess: (enabled: boolean) => void
   deleteDisabled: boolean
   deleteDisabledReason: string | null
   restoreDisabled: boolean

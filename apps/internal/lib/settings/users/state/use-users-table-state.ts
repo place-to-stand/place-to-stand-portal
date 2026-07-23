@@ -26,10 +26,12 @@ export const useUsersTableState = ({
     pendingDeleteId: mutationState.pendingDeleteId,
     pendingRestoreId: mutationState.pendingRestoreId,
     pendingDestroyId: mutationState.pendingDestroyId,
+    pendingDisableId: mutationState.pendingDisableId,
     editUser,
     restoreUser: mutationState.restore,
     requestDelete: mutationState.requestDelete,
     requestDestroy: mutationState.requestDestroy,
+    setUserDisabled: mutationState.setDisabled,
     selfDeleteReason: mutationState.selfDeleteReason,
   })
 

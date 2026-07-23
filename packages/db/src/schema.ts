@@ -136,6 +136,9 @@ export const users = pgTable(
       .default(sql`timezone('utc'::text, now())`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+    // Blocks portal sign-in without archiving: the user stays in active lists
+    // and historical reports, but auth rejects them while this is set.
+    disabledAt: timestamp('disabled_at', { withTimezone: true, mode: 'string' }),
     onboardingCompletedAt: timestamp('onboarding_completed_at', {
       withTimezone: true,
       mode: 'string',

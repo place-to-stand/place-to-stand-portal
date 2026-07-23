@@ -8,6 +8,7 @@ import { TableCell, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import { getStatusBadgeToken } from '@/lib/constants'
 import type { UserRoleValue } from '@/lib/types'
@@ -71,6 +72,33 @@ export function UsersTableRow({
         <Badge className={cn('text-xs', getStatusBadgeToken(row.status.tone))}>
           {row.status.label}
         </Badge>
+      </TableCell>
+      <TableCell>
+        {mode === 'active' ? (
+          <DisabledFieldTooltip
+            disabled={row.accessToggleDisabled}
+            reason={row.accessToggleDisabledReason}
+            className='w-auto'
+          >
+            <div className='flex items-center gap-2'>
+              <Switch
+                checked={row.accessEnabled}
+                onCheckedChange={row.onToggleAccess}
+                disabled={row.accessToggleDisabled}
+                aria-label={
+                  row.accessEnabled
+                    ? `Disable sign-in for ${displayName}`
+                    : `Enable sign-in for ${displayName}`
+                }
+              />
+              <span className='text-muted-foreground text-xs'>
+                {row.accessEnabled ? 'Enabled' : 'Disabled'}
+              </span>
+            </div>
+          </DisabledFieldTooltip>
+        ) : (
+          <span className='text-muted-foreground text-xs'>—</span>
+        )}
       </TableCell>
       <TableCell className='text-muted-foreground text-sm'>
         {format(new Date(user.created_at), 'MMM d, yyyy')}

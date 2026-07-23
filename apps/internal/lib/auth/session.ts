@@ -100,7 +100,15 @@ async function fetchUserProfile(userId: string): Promise<UserProfile | null> {
       deletedAt: users.deletedAt,
     })
     .from(users)
-    .where(and(eq(users.id, userId), isNull(users.deletedAt)))
+    .where(
+      and(
+        eq(users.id, userId),
+        isNull(users.deletedAt),
+        // Disabled users are rejected on every request, which also ends any
+        // session that existed before the account was disabled.
+        isNull(users.disabledAt)
+      )
+    )
     .limit(1)
 
   return profileRows[0] ?? null
@@ -120,7 +128,15 @@ async function fetchUserProfileUncached(userId: string): Promise<UserProfile | n
       deletedAt: users.deletedAt,
     })
     .from(users)
-    .where(and(eq(users.id, userId), isNull(users.deletedAt)))
+    .where(
+      and(
+        eq(users.id, userId),
+        isNull(users.deletedAt),
+        // Disabled users are rejected on every request, which also ends any
+        // session that existed before the account was disabled.
+        isNull(users.disabledAt)
+      )
+    )
     .limit(1)
 
   return profileRows[0] ?? null

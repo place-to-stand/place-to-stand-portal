@@ -65,7 +65,15 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
         onboardingCompletedAt: users.onboardingCompletedAt,
       })
       .from(users)
-      .where(and(eq(users.id, authUser.id), isNull(users.deletedAt)))
+      .where(
+        and(
+          eq(users.id, authUser.id),
+          isNull(users.deletedAt),
+          // Disabled users are rejected on every request, which also ends any
+          // session that existed before the account was disabled.
+          isNull(users.disabledAt)
+        )
+      )
       .limit(1)
 
     if (!profile) {

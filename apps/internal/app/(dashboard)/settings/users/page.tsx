@@ -62,6 +62,7 @@ export default async function UsersPage({
     created_at: user.createdAt,
     updated_at: user.updatedAt,
     deleted_at: user.deletedAt,
+    disabled_at: user.disabledAt,
   }))
 
   return (

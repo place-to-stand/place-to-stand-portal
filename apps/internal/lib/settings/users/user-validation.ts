@@ -30,8 +30,14 @@ export const destroyUserSchema = z.object({
   id: z.string().uuid(),
 })
 
+export const setUserDisabledSchema = z.object({
+  id: z.string().uuid(),
+  disabled: z.boolean(),
+})
+
 export type CreateUserInput = z.infer<typeof createUserSchema>
 export type UpdateUserInput = z.infer<typeof updateUserSchema>
 export type DeleteUserInput = z.infer<typeof deleteUserSchema>
 export type RestoreUserInput = z.infer<typeof restoreUserSchema>
 export type DestroyUserInput = z.infer<typeof destroyUserSchema>
+export type SetUserDisabledInput = z.infer<typeof setUserDisabledSchema>

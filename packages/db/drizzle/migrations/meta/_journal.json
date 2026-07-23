@@ -365,6 +365,13 @@
       "when": 1781829786436,
       "tag": "0051_remove_comms_proposals_meetings_scoring",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1784767975364,
+      "tag": "0052_user_disabled_at",
+      "breakpoints": true
     }
   ]
 }

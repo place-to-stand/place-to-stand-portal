@@ -2,9 +2,12 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { ensureUserProfile } from "@/lib/auth/profile";
+import { db } from "@/lib/db";
+import { users } from "@/lib/db/schema";
 import { serverEnv } from "@/lib/env.server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -61,6 +64,21 @@ export async function signInWithPassword(
   if (error || !data.user) {
     return {
       error: error?.message ?? "Unable to sign in. Please try again.",
+    };
+  }
+
+  // Supabase bans disabled users, but the DB flag is the source of truth —
+  // reject here too so a manually flagged account never gets a session.
+  const [profile] = await db
+    .select({ disabledAt: users.disabledAt })
+    .from(users)
+    .where(eq(users.id, data.user.id))
+    .limit(1);
+
+  if (profile?.disabledAt) {
+    await supabase.auth.signOut();
+    return {
+      error: "This account has been disabled. Contact an administrator.",
     };
   }
 

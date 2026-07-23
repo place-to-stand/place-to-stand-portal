@@ -13,6 +13,7 @@ export const userFields = {
   createdAt: users.createdAt,
   updatedAt: users.updatedAt,
   deletedAt: users.deletedAt,
+  disabledAt: users.disabledAt,
   onboardingCompletedAt: users.onboardingCompletedAt,
 }
 
