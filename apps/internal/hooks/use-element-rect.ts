@@ -144,7 +144,6 @@ export function useElementRect({
       })
     },
     throttleMs,
-    [enabled, getTargetElement],
     { leading: true, trailing: true }
   )
 

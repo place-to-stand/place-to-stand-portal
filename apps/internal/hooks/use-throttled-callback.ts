@@ -1,7 +1,7 @@
 import throttle from "lodash.throttle"
 
 import { useUnmount } from "@/hooks/use-unmount"
-import { useMemo } from "react"
+import { useEffect, useMemo, useRef } from "react"
 
 interface ThrottleSettings {
   leading?: boolean | undefined
@@ -13,36 +13,59 @@ const defaultOptions: ThrottleSettings = {
   trailing: true,
 }
 
+type Throttled<T extends (...args: never[]) => unknown> = ReturnType<
+  typeof throttle<T>
+>
+
 /**
  * A hook that returns a throttled callback function.
  *
+ * The returned wrapper is stable across renders and always invokes the
+ * latest `fn`; the underlying throttle is recreated only when `wait` or the
+ * throttle options change, so callers don't need to pass a dependency list.
+ *
  * @param fn The function to throttle
  * @param wait The time in ms to wait before calling the function
- * @param dependencies The dependencies to watch for changes
  * @param options The throttle options
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function useThrottledCallback<T extends (...args: any[]) => any>(
   fn: T,
   wait = 250,
-  dependencies: React.DependencyList = [],
   options: ThrottleSettings = defaultOptions
 ): {
   (this: ThisParameterType<T>, ...args: Parameters<T>): ReturnType<T>
   cancel: () => void
   flush: () => void
 } {
-  const handler = useMemo(
-    () => throttle<T>(fn, wait, options),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    dependencies
-  )
+  const fnRef = useRef(fn)
+  const throttledRef = useRef<Throttled<T> | null>(null)
 
-  useUnmount(() => {
-    handler.cancel()
+  useEffect(() => {
+    fnRef.current = fn
   })
 
-  return handler
+  const { leading, trailing } = options
+  useEffect(() => {
+    throttledRef.current?.cancel()
+    throttledRef.current = throttle(
+      ((...args: Parameters<T>) => fnRef.current(...args)) as T,
+      wait,
+      { leading, trailing }
+    )
+  }, [wait, leading, trailing])
+
+  useUnmount(() => {
+    throttledRef.current?.cancel()
+  })
+
+  return useMemo(() => {
+    const wrapper = (...args: Parameters<T>) =>
+      throttledRef.current?.(...args) as ReturnType<T>
+    wrapper.cancel = () => throttledRef.current?.cancel()
+    wrapper.flush = () => throttledRef.current?.flush()
+    return wrapper
+  }, [])
 }
 
 export default useThrottledCallback

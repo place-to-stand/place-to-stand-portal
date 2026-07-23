@@ -84,16 +84,28 @@ export function MyTasksPage({
   const [entries, setEntries] =
     useState<MyTasksInitialEntry[]>(sanitizedEntries)
 
-  useEffect(() => {
+  // Reset local copies when their inputs change, using the
+  // adjust-state-during-render pattern instead of resync effects.
+  const [prevSanitizedEntries, setPrevSanitizedEntries] =
+    useState(sanitizedEntries)
+  if (prevSanitizedEntries !== sanitizedEntries) {
+    setPrevSanitizedEntries(sanitizedEntries)
     setEntries(sanitizedEntries)
-  }, [sanitizedEntries])
+  }
 
-  useEffect(() => {
-    if (createTaskContext) {
-      return
+  const [prevSheetSync, setPrevSheetSync] = useState({
+    activeTaskId,
+    createTaskContext,
+  })
+  if (
+    prevSheetSync.activeTaskId !== activeTaskId ||
+    prevSheetSync.createTaskContext !== createTaskContext
+  ) {
+    setPrevSheetSync({ activeTaskId, createTaskContext })
+    if (!createTaskContext) {
+      setIsSheetOpen(Boolean(activeTaskId))
     }
-    setIsSheetOpen(Boolean(activeTaskId))
-  }, [activeTaskId, createTaskContext])
+  }
 
   const memberDirectory = useMemo(
     () => buildMemberDirectory(projects, admins),
@@ -153,9 +165,14 @@ export function MyTasksPage({
     shouldKeepTaskSheetMounted
   )
 
+  // Mounting happens immediately (adjusted during render); the effect only
+  // handles the delayed unmount that lets the close animation finish.
+  if (shouldKeepTaskSheetMounted && !shouldRenderTaskSheet) {
+    setShouldRenderTaskSheet(true)
+  }
+
   useEffect(() => {
     if (shouldKeepTaskSheetMounted) {
-      setShouldRenderTaskSheet(true)
       return
     }
 

@@ -88,10 +88,13 @@ export function LeadsBoard({
     columnsRef.current = columns
   }, [columns])
 
-  useEffect(() => {
-    // Reset board when server data refreshes
+  // Reset board when server data refreshes, using the
+  // adjust-state-during-render pattern instead of a resync effect.
+  const [prevInitialColumns, setPrevInitialColumns] = useState(initialColumns)
+  if (prevInitialColumns !== initialColumns) {
+    setPrevInitialColumns(initialColumns)
     setColumns(cloneColumns(initialColumns))
-  }, [initialColumns])
+  }
 
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {

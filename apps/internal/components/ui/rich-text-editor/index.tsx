@@ -236,13 +236,15 @@ export function RichTextEditor({
     overlayHeight: toolbarHeight,
   })
 
-  useEffect(() => {
+  // Reset mobile view when switching to desktop, using the
+  // adjust-state-during-render pattern instead of a resync effect.
+  const [prevIsMobile, setPrevIsMobile] = useState(isMobile)
+  if (prevIsMobile !== isMobile) {
+    setPrevIsMobile(isMobile)
     if (!isMobile && mobileView !== 'main') {
-      // Reset mobile view when switching to desktop
       setMobileView('main')
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMobile])
+  }
 
   const wrapperClasses = useMemo(
     () =>

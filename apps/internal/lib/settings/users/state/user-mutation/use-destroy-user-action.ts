@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
+import { useCallback, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { useToast } from '@/components/ui/use-toast'
@@ -27,8 +27,14 @@ export function useDestroyUserAction(): UseDestroyUserActionReturn {
   const { toast } = useToast()
   const [pendingDestroyId, setPendingDestroyId] = useState<string | null>(null)
   const [destroyTarget, setDestroyTarget] = useState<UserRow | null>(null)
-  const destroyTargetRef = useRef<UserRow | null>(null)
+  // Retains the last non-null target so the dialog copy stays stable while
+  // the close animation plays after destroyTarget is cleared.
+  const [lastDestroyTarget, setLastDestroyTarget] = useState<UserRow | null>(null)
   const [isPending, startTransition] = useTransition()
+
+  if (destroyTarget && lastDestroyTarget !== destroyTarget) {
+    setLastDestroyTarget(destroyTarget)
+  }
 
   const handleCancelDestroy = useCallback(() => {
     if (isPending) {
@@ -36,7 +42,7 @@ export function useDestroyUserAction(): UseDestroyUserActionReturn {
     }
 
     setDestroyTarget(null)
-    destroyTargetRef.current = null
+    setLastDestroyTarget(null)
   }, [isPending])
 
   const handleRequestDestroy = useCallback(
@@ -55,7 +61,7 @@ export function useDestroyUserAction(): UseDestroyUserActionReturn {
       return
     }
 
-    const target = destroyTarget ?? destroyTargetRef.current
+    const target = destroyTarget ?? lastDestroyTarget
 
     if (!target) {
       return
@@ -63,7 +69,7 @@ export function useDestroyUserAction(): UseDestroyUserActionReturn {
 
     if (!target.deleted_at) {
       setDestroyTarget(null)
-      destroyTargetRef.current = null
+      setLastDestroyTarget(null)
       return
     }
 
@@ -121,18 +127,12 @@ export function useDestroyUserAction(): UseDestroyUserActionReturn {
         })
       } finally {
         setPendingDestroyId(null)
-        destroyTargetRef.current = null
+        setLastDestroyTarget(null)
       }
     })
-  }, [destroyTarget, isPending, router, startTransition, toast])
+  }, [destroyTarget, lastDestroyTarget, isPending, router, startTransition, toast])
 
-  useEffect(() => {
-    if (destroyTarget && destroyTargetRef.current !== destroyTarget) {
-      destroyTargetRef.current = destroyTarget
-    }
-  }, [destroyTarget])
-
-  const destroyDialogTarget = destroyTarget ?? destroyTargetRef.current
+  const destroyDialogTarget = destroyTarget ?? lastDestroyTarget
 
   const destroyDialog: DeleteDialogState = {
     open: Boolean(destroyTarget),

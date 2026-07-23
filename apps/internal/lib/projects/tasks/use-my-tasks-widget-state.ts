@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useMemo } from 'react'
 
 import type { AssignedTaskSummary } from '@/lib/data/tasks'
 
@@ -13,11 +13,7 @@ type UseMyTasksWidgetStateOptions = {
 export function useMyTasksWidgetState({
   initialTasks,
 }: UseMyTasksWidgetStateOptions) {
-  const [items, setItems] = useState(() => buildVisibleTasks(initialTasks))
-
-  useEffect(() => {
-    setItems(buildVisibleTasks(initialTasks))
-  }, [initialTasks])
+  const items = useMemo(() => buildVisibleTasks(initialTasks), [initialTasks])
 
   return { items }
 }

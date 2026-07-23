@@ -5,18 +5,6 @@ import nextTypescript from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextCoreWebVitals,
   ...nextTypescript,
-  {
-    // eslint-plugin-react-hooks v7 promoted React Compiler diagnostics to
-    // errors. Existing code predates them — keep them visible as warnings
-    // until the flagged effects are refactored.
-    rules: {
-      "react-hooks/set-state-in-effect": "warn",
-      "react-hooks/refs": "warn",
-      "react-hooks/purity": "warn",
-      "react-hooks/use-memo": "warn",
-      "react-hooks/exhaustive-deps": "warn",
-    },
-  },
   globalIgnores([
     "node_modules/**",
     ".next/**",

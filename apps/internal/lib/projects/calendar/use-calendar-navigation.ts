@@ -1,6 +1,5 @@
 import {
   useCallback,
-  useEffect,
   useState,
   type Dispatch,
   type SetStateAction,
@@ -36,14 +35,13 @@ export function useCalendarNavigation({
   )
   const [yearValue, setYearValue] = useState(() => String(getYear(baseMonth)))
 
-  useEffect(() => {
-    setMonthValue(String(getMonth(currentMonth)))
-    setYearValue(String(getYear(currentMonth)))
-  }, [currentMonth])
-
+  // Every month change flows through here, so the select/input values are
+  // updated alongside the month instead of resyncing in an effect.
   const notifyChange = useCallback(
     (nextMonth: Date) => {
       setCurrentMonth(nextMonth)
+      setMonthValue(String(getMonth(nextMonth)))
+      setYearValue(String(getYear(nextMonth)))
       onMonthChange?.(nextMonth)
     },
     [onMonthChange]

@@ -61,9 +61,16 @@ export function InvoicesManagementTable({
   const searchParams = useSearchParams()
   const { toast } = useToast()
 
-  const [sheetOpen, setSheetOpen] = useState(false)
+  // Open the sheet directly from a ?invoiceId= URL param on first render.
+  const [initialUrlInvoice] = useState<InvoiceWithClient | null>(() => {
+    if (mode !== 'active') return null
+    const invoiceId = searchParams.get('invoiceId')
+    if (!invoiceId) return null
+    return invoices.find(inv => inv.id === invoiceId) ?? null
+  })
+  const [sheetOpen, setSheetOpen] = useState(Boolean(initialUrlInvoice))
   const [selectedInvoice, setSelectedInvoice] =
-    useState<InvoiceWithClient | null>(null)
+    useState<InvoiceWithClient | null>(initialUrlInvoice)
   const [deleteTarget, setDeleteTarget] = useState<InvoiceWithClient | null>(
     null
   )
@@ -85,14 +92,12 @@ export function InvoicesManagementTable({
 
   const emptyMessage = EMPTY_MESSAGES[mode]
 
-  // Keep selectedInvoice in sync when server data refreshes (e.g. after
-  // send/unsend/void actions that call router.refresh() without closing the sheet)
-  useEffect(() => {
-    if (!selectedInvoice) return
-    const updated = invoices.find(inv => inv.id === selectedInvoice.id)
-    if (updated && updated !== selectedInvoice) {
-      setSelectedInvoice(updated)
-    }
+  // Resolve the freshest copy of the selected invoice when server data
+  // refreshes (e.g. after send/unsend/void actions that call
+  // router.refresh() without closing the sheet).
+  const resolvedSelectedInvoice = useMemo(() => {
+    if (!selectedInvoice) return null
+    return invoices.find(inv => inv.id === selectedInvoice.id) ?? selectedInvoice
   }, [invoices, selectedInvoice])
 
   // -------------------------------------------------------------------------
@@ -116,21 +121,15 @@ export function InvoicesManagementTable({
     [pathname, router, searchParams]
   )
 
-  // Open invoice from URL param on mount
+  // The URL-driven sheet open happens in the useState initializers above;
+  // this effect only strips an invalid ?invoiceId= from the URL.
   const urlOpenCheckedRef = useRef(false)
   useEffect(() => {
     if (urlOpenCheckedRef.current || mode !== 'active') return
     urlOpenCheckedRef.current = true
 
     const invoiceId = searchParams.get('invoiceId')
-    if (!invoiceId) return
-
-    const invoice = invoices.find(inv => inv.id === invoiceId)
-    if (invoice) {
-      setSelectedInvoice(invoice)
-      setSheetOpen(true)
-    } else {
-      // Invalid ID — clean URL
+    if (invoiceId && !invoices.some(inv => inv.id === invoiceId)) {
       syncUrlWithInvoice(null)
     }
   }, [mode, invoices, searchParams, syncUrlWithInvoice])
@@ -382,7 +381,7 @@ export function InvoicesManagementTable({
         open={sheetOpen}
         onOpenChange={handleSheetOpenChange}
         onComplete={handleComplete}
-        invoice={selectedInvoice}
+        invoice={resolvedSelectedInvoice}
         clients={sortedClients}
         productCatalog={productCatalog}
         taxRates={taxRates}

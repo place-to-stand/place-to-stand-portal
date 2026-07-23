@@ -52,13 +52,25 @@ export function useRecentActivitySummary(
   const [selectedTimeframe, setSelectedTimeframe] =
     useState<TimeframeValue>(initialTimeframe)
   const [refreshKey, setRefreshKey] = useState(0)
+  // Starts in "loading": the fetch effect always kicks off on mount.
   const [state, setState] = useState<SummaryState>({
-    status: "idle",
+    status: "loading",
     metrics: null,
     highlight: "",
     error: null,
   })
   const [cacheMeta, setCacheMeta] = useState<CacheMeta>(null)
+
+  // Reset to loading whenever the fetch inputs change, using the
+  // adjust-state-during-render pattern instead of a sync setState in the
+  // fetch effect below.
+  const fetchKey = `${selectedTimeframe}:${refreshKey}`
+  const [prevFetchKey, setPrevFetchKey] = useState(fetchKey)
+  if (prevFetchKey !== fetchKey) {
+    setPrevFetchKey(fetchKey)
+    setState({ status: "loading", metrics: null, highlight: "", error: null })
+    setCacheMeta(null)
+  }
 
   const controllerRef = useRef<AbortController | null>(null)
   const lastRefreshKeyRef = useRef(refreshKey)
@@ -125,9 +137,6 @@ export function useRecentActivitySummary(
     const controller = new AbortController()
     controllerRef.current?.abort()
     controllerRef.current = controller
-
-    setState({ status: "loading", metrics: null, highlight: "", error: null })
-    setCacheMeta(null)
 
     const shouldForceRefresh = refreshKey !== lastRefreshKeyRef.current
     lastRefreshKeyRef.current = refreshKey

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useState, useEffect } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { addMonths, getMonth, getYear, startOfMonth } from 'date-fns'
 
@@ -104,12 +104,15 @@ export function useReportNavigation({
     String(getYear(initialMonth))
   )
 
-  // Sync local state when URL changes
-  useEffect(() => {
+  // Sync local state when the URL-derived month changes, using the
+  // adjust-state-during-render pattern instead of a resync effect.
+  const [prevInitialMonth, setPrevInitialMonth] = useState(initialMonth)
+  if (prevInitialMonth !== initialMonth) {
+    setPrevInitialMonth(initialMonth)
     setCurrentMonth(initialMonth)
     setMonthValue(String(getMonth(initialMonth)))
     setYearValue(String(getYear(initialMonth)))
-  }, [initialMonth])
+  }
 
   // Compute navigation bounds
   const currentCursor = useMemo(() => dateToCursor(currentMonth), [currentMonth])

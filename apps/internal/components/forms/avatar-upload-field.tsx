@@ -34,7 +34,7 @@ export function AvatarUploadField({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { toast } = useToast();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [cacheBuster, setCacheBuster] = useState<string>(String(Date.now()));
+  const [cacheBuster, setCacheBuster] = useState<string>(() => String(Date.now()));
   const [isUploading, setIsUploading] = useState(false);
 
   const avatarLabel = useMemo(() => displayName ?? initials, [displayName, initials]);

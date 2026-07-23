@@ -107,18 +107,37 @@ export const useTaskAttachments = ({
     [attachments, attachmentsToRemove, baselineAttachments],
   )
 
-  useEffect(() => {
-    pendingPathsRef.current.clear()
-    clearPreviewUrls()
+  // When the sheet switches tasks, reset editing state during render
+  // (adjust-state-during-render pattern); the effect below keeps only the
+  // non-state side effects (refs and object-URL revocation).
+  const [prevResetKey, setPrevResetKey] = useState({
+    defaultAttachments,
+    taskId: task?.id ?? null,
+    attachmentCount: task?.attachments?.length ?? 0,
+  })
+  if (
+    prevResetKey.defaultAttachments !== defaultAttachments ||
+    prevResetKey.taskId !== (task?.id ?? null) ||
+    prevResetKey.attachmentCount !== (task?.attachments?.length ?? 0)
+  ) {
+    setPrevResetKey({
+      defaultAttachments,
+      taskId: task?.id ?? null,
+      attachmentCount: task?.attachments?.length ?? 0,
+    })
     setBaselineAttachments(defaultAttachments)
     setAttachments(defaultAttachments)
     setAttachmentsToRemove([])
     resetPendingUploads()
+  }
+
+  useEffect(() => {
+    pendingPathsRef.current.clear()
+    clearPreviewUrls()
     loadedTaskIdRef.current = task?.attachments?.length ? task.id ?? null : null
   }, [
     clearPreviewUrls,
     defaultAttachments,
-    resetPendingUploads,
     task?.attachments?.length,
     task?.id,
   ])

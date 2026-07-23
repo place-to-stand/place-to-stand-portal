@@ -34,18 +34,22 @@ export function LeadTasksSection({
   const [tasks, setTasks] = useState<LeadTask[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  const fetchTasks = useCallback(async () => {
-    try {
-      const response = await fetch(`/api/leads/${lead.id}/tasks`)
-      if (response.ok) {
-        const data = await response.json()
-        setTasks(data.tasks ?? [])
-      }
-    } catch (error) {
-      console.error('Failed to fetch lead tasks:', error)
-    } finally {
-      setIsLoading(false)
-    }
+  const fetchTasks = useCallback(() => {
+    // Promise-chained (not awaited inline) so every setState runs
+    // asynchronously, even if fetch itself throws synchronously.
+    return fetch(`/api/leads/${lead.id}/tasks`)
+      .then(async response => {
+        if (response.ok) {
+          const data = await response.json()
+          setTasks(data.tasks ?? [])
+        }
+      })
+      .catch(error => {
+        console.error('Failed to fetch lead tasks:', error)
+      })
+      .finally(() => {
+        setIsLoading(false)
+      })
   }, [lead.id])
 
   useEffect(() => {

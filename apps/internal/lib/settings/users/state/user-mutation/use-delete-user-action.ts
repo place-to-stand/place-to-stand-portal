@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
+import { useCallback, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { useToast } from '@/components/ui/use-toast'
@@ -41,8 +41,14 @@ export function useDeleteUserAction({
   const { toast } = useToast()
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<UserRow | null>(null)
-  const deleteTargetRef = useRef<UserRow | null>(null)
+  // Retains the last non-null target so the dialog copy stays stable while
+  // the close animation plays after deleteTarget is cleared.
+  const [lastDeleteTarget, setLastDeleteTarget] = useState<UserRow | null>(null)
   const [isPending, startTransition] = useTransition()
+
+  if (deleteTarget && lastDeleteTarget !== deleteTarget) {
+    setLastDeleteTarget(deleteTarget)
+  }
 
   const notifySelfDeleteBlocked = useCallback(() => {
     toast({
@@ -58,7 +64,7 @@ export function useDeleteUserAction({
     }
 
     setDeleteTarget(null)
-    deleteTargetRef.current = null
+    setLastDeleteTarget(null)
   }, [isPending])
 
   const handleRequestDelete = useCallback(
@@ -82,7 +88,7 @@ export function useDeleteUserAction({
       return
     }
 
-    const target = deleteTarget ?? deleteTargetRef.current
+    const target = deleteTarget ?? lastDeleteTarget
 
     if (!target) {
       return
@@ -91,13 +97,13 @@ export function useDeleteUserAction({
     if (target.id === currentUserId) {
       notifySelfDeleteBlocked()
       setDeleteTarget(null)
-      deleteTargetRef.current = null
+      setLastDeleteTarget(null)
       return
     }
 
     if (target.deleted_at) {
       setDeleteTarget(null)
-      deleteTargetRef.current = null
+      setLastDeleteTarget(null)
       return
     }
 
@@ -155,18 +161,12 @@ export function useDeleteUserAction({
         })
       } finally {
         setPendingDeleteId(null)
-        deleteTargetRef.current = null
+        setLastDeleteTarget(null)
       }
     })
-  }, [currentUserId, deleteTarget, isPending, notifySelfDeleteBlocked, router, startTransition, toast])
+  }, [currentUserId, deleteTarget, lastDeleteTarget, isPending, notifySelfDeleteBlocked, router, startTransition, toast])
 
-  useEffect(() => {
-    if (deleteTarget && deleteTargetRef.current !== deleteTarget) {
-      deleteTargetRef.current = deleteTarget
-    }
-  }, [deleteTarget])
-
-  const dialogTarget = deleteTarget ?? deleteTargetRef.current
+  const dialogTarget = deleteTarget ?? lastDeleteTarget
 
   const deleteDialog: DeleteDialogState = {
     open: Boolean(deleteTarget),

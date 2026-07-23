@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import { buildAssigneeItems } from '@/lib/projects/task-sheet/task-sheet-utils'
 import { UNASSIGNED_ASSIGNEE_VALUE } from '@/lib/projects/task-sheet/task-sheet-constants'
@@ -70,9 +70,13 @@ export function useTimeLogFormState(
   const [selectedUserId, setSelectedUserId] = useState(currentUserId)
   const [formErrors, setFormErrors] = useState<TimeLogFormErrors>({})
 
-  useEffect(() => {
+  // Reset the selection if the signed-in user changes, using the
+  // adjust-state-during-render pattern instead of a resync effect.
+  const [prevUserId, setPrevUserId] = useState(currentUserId)
+  if (prevUserId !== currentUserId) {
+    setPrevUserId(currentUserId)
     setSelectedUserId(currentUserId)
-  }, [currentUserId])
+  }
 
   const clearFieldErrors = useCallback((fields: TimeLogFormField[]) => {
     setFormErrors(prev => {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import { useOptimistic, useState, useTransition } from 'react'
 import { ChevronDown, Loader2 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
@@ -32,12 +32,10 @@ export function SowStatusCell({
   disabled,
 }: SowStatusCellProps) {
   const [isPending, startTransition] = useTransition()
-  const [optimisticStatus, setOptimisticStatus] = useState(status)
+  // Tracks the prop while a change is in flight and reverts automatically if
+  // the transition fails, so no prop-sync effect is needed.
+  const [optimisticStatus, setOptimisticStatus] = useOptimistic(status)
   const [isOpen, setIsOpen] = useState(false)
-
-  useEffect(() => {
-    setOptimisticStatus(status)
-  }, [status])
 
   const handleSelect = (value: SowStatusValue) => {
     if (value === optimisticStatus) {
@@ -45,14 +43,15 @@ export function SowStatusCell({
       return
     }
 
-    setOptimisticStatus(value)
     setIsOpen(false)
 
     startTransition(async () => {
+      setOptimisticStatus(value)
       try {
         await onStatusChange(sowId, value)
       } catch {
-        setOptimisticStatus(status)
+        // useOptimistic reverts to the `status` prop when the transition
+        // settles without the underlying value changing.
       }
     })
   }

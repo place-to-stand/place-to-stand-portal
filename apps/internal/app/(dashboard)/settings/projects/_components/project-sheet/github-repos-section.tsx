@@ -74,7 +74,8 @@ export function GitHubReposSection({
   onDirtyChange,
 }: GitHubReposSectionProps) {
   const [repos, setRepos] = useState<GitHubRepoLink[]>([])
-  const [loading, setLoading] = useState(true)
+  // Create mode has no repos to load, so it never enters the loading state.
+  const [loading, setLoading] = useState(() => Boolean(projectId))
   const [isGitHubConnected, setIsGitHubConnected] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [availableRepos, setAvailableRepos] = useState<RepoOption[]>([])
@@ -101,29 +102,31 @@ export function GitHubReposSection({
       .catch(() => setIsGitHubConnected(false))
   }, [])
 
-  // Load linked repos (only in edit mode)
-  const loadLinkedRepos = useCallback(async () => {
+  // Load linked repos (only in edit mode). Promise-chained so every
+  // setState runs asynchronously when invoked from the effect below.
+  const loadLinkedRepos = useCallback(() => {
     if (!projectId) {
-      setLoading(false)
       return
     }
 
-    try {
-      const res = await fetch(`/api/projects/${projectId}/github-repos`)
-      if (res.ok) {
-        const data = await res.json()
-        const loadedRepos = data.repos || []
-        setRepos(loadedRepos)
-        // Track initial count for dirty state comparison
-        if (initialRepoCountRef.current === null) {
-          initialRepoCountRef.current = loadedRepos.length
+    return fetch(`/api/projects/${projectId}/github-repos`)
+      .then(async res => {
+        if (res.ok) {
+          const data = await res.json()
+          const loadedRepos = data.repos || []
+          setRepos(loadedRepos)
+          // Track initial count for dirty state comparison
+          if (initialRepoCountRef.current === null) {
+            initialRepoCountRef.current = loadedRepos.length
+          }
         }
-      }
-    } catch {
-      // Ignore errors for now
-    } finally {
-      setLoading(false)
-    }
+      })
+      .catch(() => {
+        // Ignore errors for now
+      })
+      .finally(() => {
+        setLoading(false)
+      })
   }, [projectId])
 
   useEffect(() => {
@@ -146,10 +149,10 @@ export function GitHubReposSection({
     onDirtyChange(hasPending || hasRemoved)
   }, [isCreateMode, onDirtyChange, pendingRepos.length, removedRepoIds.size])
 
-  // Load available repos when dialog opens
+  // Opening the dialog flips loadingRepos in the event handler below; this
+  // effect only performs the fetch (all its setStates are async).
   useEffect(() => {
     if (dialogOpen && isGitHubConnected) {
-      setLoadingRepos(true)
       fetch('/api/integrations/github/repos')
         .then(r => r.json())
         .then(data => {
@@ -184,6 +187,16 @@ export function GitHubReposSection({
         .finally(() => setLoadingRepos(false))
     }
   }, [dialogOpen, isGitHubConnected, repos, pendingRepos])
+
+  const handleDialogOpenChange = useCallback(
+    (open: boolean) => {
+      setDialogOpen(open)
+      if (open && isGitHubConnected) {
+        setLoadingRepos(true)
+      }
+    },
+    [isGitHubConnected]
+  )
 
   const handleLink = () => {
     if (!selectedRepo) return
@@ -273,7 +286,7 @@ export function GitHubReposSection({
           type='button'
           variant='ghost'
           size='xs'
-          onClick={() => setDialogOpen(true)}
+          onClick={() => handleDialogOpenChange(true)}
           disabled={disabled}
           aria-label='Link repository'
         >
@@ -392,7 +405,7 @@ export function GitHubReposSection({
       )}
 
       {/* Link Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add GitHub Repository</DialogTitle>
