@@ -6,7 +6,6 @@ import type { UseUsersTableStateArgs, UsersTableState } from './types'
 export type {
   UserAssignments,
   UserRowState,
-  UserStatus,
   DeleteDialogState,
   SheetState,
 } from './types'

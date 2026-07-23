@@ -5,12 +5,9 @@ import { Archive, Pencil, RefreshCw, Trash2 } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { TableCell, TableRow } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Switch } from '@/components/ui/switch'
-import { cn } from '@/lib/utils'
-import { getStatusBadgeToken } from '@/lib/constants'
 import type { UserRoleValue } from '@/lib/types'
 
 import type { UserRowState } from '@/lib/settings/users/state/use-users-table-state'
@@ -69,11 +66,6 @@ export function UsersTableRow({
       </TableCell>
       <TableCell className='text-sm'>{ROLE_LABELS[user.role]}</TableCell>
       <TableCell>
-        <Badge className={cn('text-xs', getStatusBadgeToken(row.status.tone))}>
-          {row.status.label}
-        </Badge>
-      </TableCell>
-      <TableCell>
         {mode === 'active' ? (
           <DisabledFieldTooltip
             disabled={row.accessToggleDisabled}
@@ -85,6 +77,7 @@ export function UsersTableRow({
                 checked={row.accessEnabled}
                 onCheckedChange={row.onToggleAccess}
                 disabled={row.accessToggleDisabled}
+                className='data-[state=checked]:bg-emerald-500 dark:data-[state=checked]:bg-emerald-500'
                 aria-label={
                   row.accessEnabled
                     ? `Disable sign-in for ${displayName}`

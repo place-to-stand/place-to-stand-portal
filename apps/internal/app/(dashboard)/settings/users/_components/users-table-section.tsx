@@ -33,7 +33,6 @@ export function UsersTableSection({
             <TableHead>Name</TableHead>
             <TableHead>Email</TableHead>
             <TableHead>Role</TableHead>
-            <TableHead>Status</TableHead>
             <TableHead>Access</TableHead>
             <TableHead>Joined</TableHead>
             <TableHead className='w-32 text-right'>Actions</TableHead>
@@ -51,7 +50,7 @@ export function UsersTableSection({
           {rows.length === 0 ? (
             <TableRow>
               <TableCell
-                colSpan={7}
+                colSpan={6}
                 className='text-muted-foreground py-10 text-center text-sm'
               >
                 {emptyMessage}

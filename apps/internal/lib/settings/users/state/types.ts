@@ -7,11 +7,8 @@ export type UserAssignments = Record<
   { clients: number; projects: number; tasks: number }
 >
 
-export type UserStatus = { label: string; tone: 'active' | 'inactive' }
-
 export type UserRowState = {
   user: UserRow
-  status: UserStatus
   isDeleting: boolean
   isRestoring: boolean
   isDestroying: boolean

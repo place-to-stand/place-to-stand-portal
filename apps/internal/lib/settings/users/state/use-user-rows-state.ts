@@ -66,12 +66,6 @@ export const useUserRowsState = ({
             : PENDING_REASON
           : null
 
-        const status = user.deleted_at
-          ? ({ label: 'Inactive', tone: 'inactive' } as const)
-          : user.disabled_at
-            ? ({ label: 'Disabled', tone: 'inactive' } as const)
-            : ({ label: 'Active', tone: 'active' } as const)
-
         const accessToggleDisabled = rowBusy || user.id === currentUserId
         const accessToggleDisabledReason = accessToggleDisabled
           ? rowBusy
@@ -81,7 +75,6 @@ export const useUserRowsState = ({
 
         return {
           user,
-          status,
           isDeleting,
           isRestoring,
           isDestroying,
