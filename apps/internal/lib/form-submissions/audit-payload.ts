@@ -156,7 +156,13 @@ export function toAuditSubmissionRow(
     screenWidth: client.screenWidth,
     timezone: client.timezone,
     language: client.language,
-    // The request header wins — the payload value is a client-side fallback.
-    userAgent: requestUserAgent ?? client.userAgent,
+    // The payload value wins. Beacons reach us via the marketing site's own
+    // proxy route (sendBeacon cannot set an Authorization header), so OUR
+    // request header is that proxy's Node fetch agent, not the visitor's
+    // browser. Their route already sets `client.userAgent` server-side from
+    // the real browser request, so it is both trustworthy and the only place
+    // the visitor's UA survives. The request header is a fallback for a
+    // hypothetical direct caller.
+    userAgent: client.userAgent ?? requestUserAgent,
   }
 }

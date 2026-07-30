@@ -98,7 +98,9 @@ export function toContactSubmissionRow(
     screenWidth: client.screenWidth,
     timezone: client.timezone,
     language: client.language,
-    // The request header wins — the payload value is a client-side fallback.
-    userAgent: requestUserAgent ?? client.userAgent,
+    // The payload value wins — see the note in audit-payload.ts. The contact
+    // form posts from the marketing site's server action, so our request
+    // header is its Node fetch agent, not the visitor's browser.
+    userAgent: client.userAgent ?? requestUserAgent,
   }
 }

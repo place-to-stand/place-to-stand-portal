@@ -262,10 +262,14 @@ async function main() {
   check('phase denormalized', captured?.phaseId === 'growth', captured?.phaseId)
   check('contact captured', captured?.contactName === 'Dana Reed', captured?.contactName)
   check('captured_at set', captured?.capturedAt !== null)
+  // Real beacons arrive via the marketing site's proxy route, so OUR request
+  // header is that proxy's Node fetch agent. The visitor's browser UA only
+  // survives in the payload, which their route sets server-side. This script
+  // posts directly, so its own request header is whatever tsx's fetch sends —
+  // asserting the payload value wins is exactly the production behaviour.
   check(
-    'user agent set from the request header, not the payload',
-    Boolean(captured?.userAgent) &&
-      captured?.userAgent !== 'Mozilla/5.0 (test-form-intake)',
+    'user agent taken from the payload, not our request header',
+    captured?.userAgent === ENVELOPE.client.userAgent,
     captured?.userAgent
   )
 

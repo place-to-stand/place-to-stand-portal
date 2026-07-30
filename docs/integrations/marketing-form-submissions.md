@@ -73,7 +73,10 @@ Notes:
 - The marketing → portal hop is an ordinary server-side `fetch`, so the token stays on the
   server.
 - Set `client.userAgent` from the incoming request header in that route handler rather than
-  from `navigator.userAgent`. (The portal prefers its own request header regardless.)
+  from `navigator.userAgent`. **This is the only place the visitor's browser UA survives** —
+  by the time the request reaches the portal, the `User-Agent` header belongs to your server's
+  fetch client, so the portal takes `client.userAgent` from the payload and only falls back to
+  its own header if that is null.
 - The contact form is already a server action — it just changes its POST target and payload.
 
 ---
