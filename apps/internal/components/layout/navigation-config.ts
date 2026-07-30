@@ -11,6 +11,7 @@ import {
   Contact,
   FileText,
   Receipt,
+  Inbox,
 } from 'lucide-react'
 import type { UserRole } from '@/lib/auth/session'
 
@@ -49,6 +50,12 @@ export const NAV_GROUPS: NavGroup[] = [
     title: 'Sales',
     roles: ['ADMIN', 'CLIENT'],
     items: [
+      {
+        href: '/submissions',
+        label: 'Submissions',
+        icon: Inbox,
+        matchHrefs: ['/submissions'],
+      },
       {
         href: '/leads/board',
         label: 'Leads',

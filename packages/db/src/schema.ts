@@ -1602,6 +1602,138 @@ export const invoiceLineItems = pgTable(
 )
 
 // =============================================================================
+// MARKETING FORM SUBMISSIONS
+// =============================================================================
+
+export const formSubmissionKind = pgEnum('form_submission_kind', [
+  'audit',
+  'contact',
+])
+
+/**
+ * Declaration order IS the rank order. The intake upsert uses
+ * `GREATEST(form_submissions.status, excluded.status)` to enforce "status only
+ * advances, never downgrades" — Postgres compares enum values by declaration
+ * order, so reordering these values silently breaks that guarantee.
+ *
+ * Do not reorder. Append only.
+ */
+export const formSubmissionStatus = pgEnum('form_submission_status', [
+  'in_progress',
+  'abandoned',
+  'completed',
+  'captured',
+])
+
+/**
+ * Raw inbox for marketing-site form submissions — both the multi-step
+ * Opportunity Audit (including partial and abandoned attempts) and the contact
+ * form. Rows are promoted to `leads` manually from the Submissions view.
+ *
+ * Audit sessions are upserted many times as beacons arrive; contact
+ * submissions are one-shot. Both share `session_key` as the idempotency key.
+ * See `apps/internal/lib/queries/form-submissions.ts` for the upsert rules.
+ */
+export const formSubmissions = pgTable(
+  'form_submissions',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    kind: formSubmissionKind().notNull(),
+    // Client-generated idempotency key: audit sessionId or contact submissionId
+    sessionKey: text('session_key').notNull(),
+    status: formSubmissionStatus().notNull(),
+    // Diagnostic only (which beacon wrote last) — text, not an enum
+    lastTrigger: text('last_trigger'),
+    sourceDetail: text('source_detail').notNull(),
+
+    // Timing. `last_activity_at` is the client-side ordering key used to
+    // discard stale beacons — distinct from the `updated_at` row audit column.
+    startedAt: timestamp('started_at', { withTimezone: true, mode: 'string' })
+      .notNull(),
+    lastActivityAt: timestamp('last_activity_at', {
+      withTimezone: true,
+      mode: 'string',
+    }).notNull(),
+    completedAt: timestamp('completed_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
+    capturedAt: timestamp('captured_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
+    durationMs: integer('duration_ms'),
+
+    // Audit progress
+    furthestStepIndex: integer('furthest_step_index'),
+    stepsTotal: integer('steps_total'),
+    answeredCount: integer('answered_count'),
+    questionsTotal: integer('questions_total'),
+    percentComplete: integer('percent_complete'),
+
+    // Audit payload
+    responses: jsonb('responses'),
+    result: jsonb('result'),
+    phaseId: text('phase_id'),
+    topServiceId: text('top_service_id'),
+
+    // Contact details (populated on capture, or immediately for contact forms)
+    contactName: text('contact_name'),
+    contactEmail: text('contact_email'),
+    contactCompany: text('contact_company'),
+    contactWebsite: text('contact_website'),
+    message: text('message'),
+    marketingConsent: boolean('marketing_consent'),
+
+    // Analytics
+    posthogDistinctId: text('posthog_distinct_id'),
+    posthogSessionId: text('posthog_session_id'),
+    posthogReplayUrl: text('posthog_replay_url'),
+
+    // Attribution
+    utmSource: text('utm_source'),
+    utmMedium: text('utm_medium'),
+    utmCampaign: text('utm_campaign'),
+    utmTerm: text('utm_term'),
+    utmContent: text('utm_content'),
+    gclid: text('gclid'),
+    referrer: text('referrer'),
+    landingPath: text('landing_path'),
+
+    // Client environment
+    viewport: text('viewport'),
+    screenWidth: integer('screen_width'),
+    timezone: text('timezone'),
+    language: text('language'),
+    userAgent: text('user_agent'),
+
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    unique('form_submissions_session_key_key').on(table.sessionKey),
+    index('idx_form_submissions_kind_status')
+      .using(
+        'btree',
+        table.kind.asc().nullsLast().op('enum_ops'),
+        table.status.asc().nullsLast().op('enum_ops')
+      )
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_form_submissions_last_activity_at')
+      .using('btree', table.lastActivityAt.desc().nullsLast())
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_form_submissions_contact_email')
+      .using('btree', table.contactEmail.asc().nullsLast().op('text_ops'))
+      .where(sql`(deleted_at IS NULL AND contact_email IS NOT NULL)`),
+  ]
+)
+
+// =============================================================================
 // VIEWS
 // =============================================================================
 
