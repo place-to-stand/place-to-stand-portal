@@ -10,6 +10,8 @@ const PUBLIC_PATHS = new Set([
   '/reset-password',
   '/share/',
   '/api/integrations/leads-intake',
+  '/api/integrations/audit-responses',
+  '/api/integrations/contact-submissions',
   '/api/integrations/stripe',
   '/api/cron/',
   '/api/public/',

@@ -31,6 +31,7 @@ import type {
   timeLogTasks,
   leadStageHistory,
   activityOverviewCache,
+  formSubmissions,
 } from './schema'
 
 // Select types (for reading from DB)
@@ -65,6 +66,7 @@ export type TaxRate = InferSelectModel<typeof taxRates>
 export type TimeLogTask = InferSelectModel<typeof timeLogTasks>
 export type LeadStageHistory = InferSelectModel<typeof leadStageHistory>
 export type ActivityOverviewCache = InferSelectModel<typeof activityOverviewCache>
+export type FormSubmission = InferSelectModel<typeof formSubmissions>
 
 // Insert types (for writing to DB)
 export type NewUser = InferInsertModel<typeof users>
@@ -87,3 +89,4 @@ export type NewPlanningSession = InferInsertModel<typeof planningSessions>
 export type NewContact = InferInsertModel<typeof contacts>
 export type NewInvoice = InferInsertModel<typeof invoices>
 export type NewInvoiceLineItem = InferInsertModel<typeof invoiceLineItems>
+export type NewFormSubmission = InferInsertModel<typeof formSubmissions>

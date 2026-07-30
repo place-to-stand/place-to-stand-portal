@@ -1,0 +1,62 @@
+import { formSubmissionKind, formSubmissionStatus } from '@/lib/db/schema'
+
+export const FORM_SUBMISSION_KIND_VALUES = formSubmissionKind.enumValues
+export const FORM_SUBMISSION_STATUS_VALUES = formSubmissionStatus.enumValues
+
+export type FormSubmissionKind = (typeof FORM_SUBMISSION_KIND_VALUES)[number]
+export type FormSubmissionStatus =
+  (typeof FORM_SUBMISSION_STATUS_VALUES)[number]
+
+export const FORM_SUBMISSION_KIND_LABELS: Record<FormSubmissionKind, string> = {
+  audit: 'Audit',
+  contact: 'Contact',
+}
+
+export const FORM_SUBMISSION_STATUS_LABELS: Record<
+  FormSubmissionStatus,
+  string
+> = {
+  in_progress: 'In Progress',
+  abandoned: 'Abandoned',
+  completed: 'Completed',
+  captured: 'Captured',
+}
+
+export const FORM_SUBMISSION_STATUS_TOKENS: Record<
+  FormSubmissionStatus,
+  string
+> = {
+  in_progress:
+    'border-transparent bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200',
+  abandoned:
+    'border-transparent bg-slate-200 text-slate-700 dark:bg-slate-700/60 dark:text-slate-200',
+  completed:
+    'border-transparent bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200',
+  captured:
+    'border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200',
+}
+
+export const FORM_SUBMISSION_KIND_TOKENS: Record<FormSubmissionKind, string> = {
+  audit:
+    'border-transparent bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-200',
+  contact:
+    'border-transparent bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200',
+}
+
+export function isFormSubmissionKind(
+  value: string | undefined
+): value is FormSubmissionKind {
+  return (
+    value !== undefined &&
+    (FORM_SUBMISSION_KIND_VALUES as readonly string[]).includes(value)
+  )
+}
+
+export function isFormSubmissionStatus(
+  value: string | undefined
+): value is FormSubmissionStatus {
+  return (
+    value !== undefined &&
+    (FORM_SUBMISSION_STATUS_VALUES as readonly string[]).includes(value)
+  )
+}

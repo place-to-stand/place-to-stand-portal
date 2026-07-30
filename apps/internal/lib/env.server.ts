@@ -28,6 +28,8 @@ const schema = z.object({
   GITHUB_APP_PRIVATE_KEY: z.string().min(1).optional(),
   GOOGLE_CHAT_SALES_WEBHOOK_URL: z.string().url().optional(),
   CLIENT_PORTAL_URL: z.url(),
+  AUDIT_INTAKE_TOKEN: z.string().min(1).optional(),
+  CONTACT_INTAKE_TOKEN: z.string().min(1).optional(),
 })
 
 // Helper to convert empty strings to undefined for optional env vars
@@ -61,4 +63,6 @@ export const serverEnv = schema.parse({
     process.env.GOOGLE_CHAT_SALES_WEBHOOK_URL
   ),
   CLIENT_PORTAL_URL: process.env.CLIENT_PORTAL_URL,
+  AUDIT_INTAKE_TOKEN: emptyToUndefined(process.env.AUDIT_INTAKE_TOKEN),
+  CONTACT_INTAKE_TOKEN: emptyToUndefined(process.env.CONTACT_INTAKE_TOKEN),
 })
