@@ -12,14 +12,26 @@ import {
   FileText,
   Receipt,
   Inbox,
+  Palette,
 } from 'lucide-react'
 import type { UserRole } from '@/lib/auth/session'
+
+/**
+ * Canvas Playground — collaborative workspace with Claude. Lives on its own
+ * domain with its own Google-scoped auth and deployment pipeline; the portal
+ * only links out to it.
+ */
+export const CANVAS_PLAYGROUND_URL = 'https://canvas-playground-orpin.vercel.app/'
 
 export type NavItem = {
   href: string
   label: string
   icon: LucideIcon
   matchHrefs?: string[]
+  /** Render as an <a target="_blank"> instead of a Next.js <Link>. */
+  external?: boolean
+  /** Restrict this item further than its group's roles. Defaults to the group's roles. */
+  roles?: UserRole[]
 }
 
 export type NavGroup = {
@@ -43,6 +55,13 @@ export const NAV_GROUPS: NavGroup[] = [
         label: 'Tasks',
         icon: ListTodo,
         matchHrefs: ['/my/tasks', '/my/tasks/calendar'],
+      },
+      {
+        href: CANVAS_PLAYGROUND_URL,
+        label: 'Canvas',
+        icon: Palette,
+        external: true,
+        roles: ['ADMIN'],
       },
     ],
   },

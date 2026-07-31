@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { ExternalLink } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import type { AppUser } from '@/lib/auth/session'
@@ -74,37 +75,64 @@ export function Sidebar({ user }: Props) {
                     </p>
                   ) : null}
                   <div className='space-y-0.5'>
-                    {group.items.map(item => {
-                      const Icon = item.icon
-                      const matchCandidates = [
-                        item.href,
-                        ...(item.matchHrefs ?? []),
-                      ]
-                      const isActive = matchCandidates.some(matchHref => {
-                        if (!matchHref) return false
-                        return (
-                          pathname === matchHref ||
-                          pathname.startsWith(`${matchHref}/`)
+                    {group.items
+                      .filter(item => !item.roles || item.roles.includes(role))
+                      .map(item => {
+                        const Icon = item.icon
+                        const matchCandidates = [
+                          item.href,
+                          ...(item.matchHrefs ?? []),
+                        ]
+                        const isActive =
+                          !item.external &&
+                          matchCandidates.some(matchHref => {
+                            if (!matchHref) return false
+                            return (
+                              pathname === matchHref ||
+                              pathname.startsWith(`${matchHref}/`)
+                            )
+                          })
+                        const linkClassName = cn(
+                          'focus-visible:ring-primary focus-visible:ring-offset-background flex items-center gap-2 rounded px-2 py-1.5 text-[12px] transition focus-visible:ring-2 focus-visible:ring-offset-2',
+                          isActive
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                         )
-                      })
 
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          className={cn(
-                            'focus-visible:ring-primary focus-visible:ring-offset-background flex items-center gap-2 rounded px-2 py-1.5 text-[12px] transition focus-visible:ring-2 focus-visible:ring-offset-2',
-                            isActive
-                              ? 'bg-primary text-primary-foreground'
-                              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                          )}
-                          aria-current={isActive ? 'page' : undefined}
-                        >
-                          <Icon className='size-3.5 shrink-0' />
-                          <span>{item.label}</span>
-                        </Link>
-                      )
-                    })}
+                        if (item.external) {
+                          return (
+                            <a
+                              key={item.href}
+                              href={item.href}
+                              target='_blank'
+                              rel='noopener noreferrer'
+                              className={linkClassName}
+                            >
+                              <Icon className='size-3.5 shrink-0' />
+                              <span>{item.label}</span>
+                              <ExternalLink
+                                className='ml-auto size-3 shrink-0 opacity-60'
+                                aria-hidden='true'
+                              />
+                              <span className='sr-only'>
+                                (opens in a new tab)
+                              </span>
+                            </a>
+                          )
+                        }
+
+                        return (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            className={linkClassName}
+                            aria-current={isActive ? 'page' : undefined}
+                          >
+                            <Icon className='size-3.5 shrink-0' />
+                            <span>{item.label}</span>
+                          </Link>
+                        )
+                      })}
                   </div>
                 </div>
               )
