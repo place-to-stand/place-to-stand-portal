@@ -43,6 +43,35 @@ export const FORM_SUBMISSION_KIND_TOKENS: Record<FormSubmissionKind, string> = {
     'border-transparent bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200',
 }
 
+/**
+ * D1 (PRD 001): only rows that warrant attention count as unread — contact
+ * submissions (any status) and audits that reached `completed`/`captured`.
+ * In-progress and abandoned audits are noise at ad volume and never flag.
+ *
+ * Must stay in sync with the SQL predicates in
+ * `apps/internal/lib/queries/form-submissions.ts` (`buildFilters` unreadOnly
+ * + `countUnreadFormSubmissions`).
+ */
+export const ATTENTION_AUDIT_STATUSES = [
+  'completed',
+  'captured',
+] as const satisfies readonly FormSubmissionStatus[]
+
+export function isUnreadSubmission(submission: {
+  kind: FormSubmissionKind
+  status: FormSubmissionStatus
+  acknowledgedAt: string | null
+  deletedAt: string | null
+}): boolean {
+  if (submission.acknowledgedAt !== null || submission.deletedAt !== null) {
+    return false
+  }
+  return (
+    submission.kind === 'contact' ||
+    (ATTENTION_AUDIT_STATUSES as readonly string[]).includes(submission.status)
+  )
+}
+
 export function isFormSubmissionKind(
   value: string | undefined
 ): value is FormSubmissionKind {

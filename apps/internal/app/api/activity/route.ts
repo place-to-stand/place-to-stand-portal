@@ -15,6 +15,10 @@ const VALID_TARGET_TYPES: ActivityTargetType[] = [
   'CLIENT',
   'CONTACT',
   'LEAD',
+  // C1 (PRD 001): SUBMISSION is valid but NOT in
+  // CLIENT_VISIBLE_ACTIVITY_TARGET_TYPES — the role gate below (and the
+  // scoping inside fetchActivityLogs) keeps it admin-only (W1).
+  'SUBMISSION',
   'PROPOSAL',
   'COMMENT',
   'TIME_LOG',

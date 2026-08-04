@@ -1707,6 +1707,19 @@ export const formSubmissions = pgTable(
     language: text('language'),
     userAgent: text('user_agent'),
 
+    // Acknowledgement — a human has reviewed this row from the Submissions
+    // screen. NULL = unread (for rows that warrant attention; see the unread
+    // predicate in apps/internal/lib/form-submissions/constants.ts). Cleared
+    // by the intake upsert when status advances, so an acknowledged
+    // `completed` audit that later becomes `captured` re-flags as unread.
+    acknowledgedAt: timestamp('acknowledged_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
+    acknowledgedBy: uuid('acknowledged_by').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
       .notNull(),
@@ -1717,6 +1730,13 @@ export const formSubmissions = pgTable(
   },
   table => [
     unique('form_submissions_session_key_key').on(table.sessionKey),
+    index('idx_form_submissions_unread')
+      .using(
+        'btree',
+        table.kind.asc().nullsLast().op('enum_ops'),
+        table.status.asc().nullsLast().op('enum_ops')
+      )
+      .where(sql`(deleted_at IS NULL AND acknowledged_at IS NULL)`),
     index('idx_form_submissions_kind_status')
       .using(
         'btree',

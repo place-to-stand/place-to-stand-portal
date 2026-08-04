@@ -1,6 +1,6 @@
 # PRD 001 — Submissions Organization (Unread, Acknowledge, Archive, Activity)
 
-**Status:** Approved — ready for implementation
+**Status:** Implemented (2026-08-03) — manual UI test pass pending (see [TEST-PLAN.md](TEST-PLAN.md))
 **Depends on:** Nothing (first PRD in this repo)
 **Blocks:** Nothing
 **App:** `apps/internal/` (admin portal) + one migration in `packages/db/`

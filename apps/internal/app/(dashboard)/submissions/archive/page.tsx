@@ -8,17 +8,17 @@ import {
   isFormSubmissionStatus,
 } from '@/lib/form-submissions/constants'
 
-import { SubmissionsFilters } from './_components/submissions-filters'
-import { SubmissionsTable } from './_components/submissions-table'
-import { SubmissionsTabsNav } from './_components/submissions-tabs-nav'
+import { SubmissionsFilters } from '../_components/submissions-filters'
+import { SubmissionsTable } from '../_components/submissions-table'
+import { SubmissionsTabsNav } from '../_components/submissions-tabs-nav'
 
 export const metadata: Metadata = {
-  title: 'Submissions',
+  title: 'Submissions Archive',
 }
 
 const PAGE_SIZE = 25
 
-type SubmissionsPageProps = {
+type SubmissionsArchivePageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 }
 
@@ -28,9 +28,9 @@ function firstParam(
   return Array.isArray(value) ? value[0] : value
 }
 
-export default async function SubmissionsPage({
+export default async function SubmissionsArchivePage({
   searchParams,
-}: SubmissionsPageProps) {
+}: SubmissionsArchivePageProps) {
   const currentUser = await requireRole('ADMIN')
   const params = searchParams ? await searchParams : {}
 
@@ -43,11 +43,10 @@ export default async function SubmissionsPage({
   const statusParam = firstParam(params.status)
   const kind = isFormSubmissionKind(kindParam) ? kindParam : undefined
   const status = isFormSubmissionStatus(statusParam) ? statusParam : undefined
-  const unreadOnly = firstParam(params.unread) === '1'
 
   const { items, totalCount, totalPages } = await fetchFormSubmissions(
     currentUser,
-    { page: currentPage, pageSize: PAGE_SIZE, kind, status, unreadOnly }
+    { page: currentPage, pageSize: PAGE_SIZE, kind, status, archived: true }
   )
 
   return (
@@ -56,8 +55,7 @@ export default async function SubmissionsPage({
         <div className='flex flex-col'>
           <h1 className='text-2xl font-semibold tracking-tight'>Submissions</h1>
           <p className='text-muted-foreground text-sm'>
-            Every form submission from the marketing site, including partial and
-            abandoned audits.
+            Review archived submissions and restore them when needed.
           </p>
         </div>
       </AppShellHeader>
@@ -65,19 +63,17 @@ export default async function SubmissionsPage({
         {/* Tabs Row - Above the main container */}
         <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
           <SubmissionsTabsNav
-            activeTab='submissions'
+            activeTab='archive'
             className='flex-1 sm:flex-none'
           />
           <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6'>
             <SubmissionsFilters
               activeKind={kind}
               activeStatus={status}
-              activeUnread={unreadOnly}
-              showUnreadFilter
-              basePath='/submissions'
+              basePath='/submissions/archive'
             />
             <span className='text-muted-foreground text-sm whitespace-nowrap'>
-              Total submissions: {totalCount}
+              Total archived: {totalCount}
             </span>
           </div>
         </div>
@@ -89,8 +85,8 @@ export default async function SubmissionsPage({
             currentPage={currentPage}
             totalPages={totalPages}
             pageSize={PAGE_SIZE}
-            mode='active'
-            basePath='/submissions'
+            mode='archive'
+            basePath='/submissions/archive'
           />
         </section>
       </div>

@@ -4,21 +4,21 @@ Update after each coding session. Check items only after verifying in the runnin
 
 ## Prerequisites
 
-- [ ] Migration `form_submission_acknowledgement` applied to the local DB (`npm run db:migrate` with `DATABASE_URL` set)
-- [ ] Internal app running on **:3000** (`npm run dev` from repo root or `apps/internal/`); client app (:3001) not required for this PRD
-- [ ] Admin account available; one CLIENT-role account available for permission checks
-- [ ] Seed rows in `form_submissions` covering every cell of the matrix: contact; audit `in_progress`; audit `abandoned`; audit `completed`; audit `captured` — plus at least one of each in unacknowledged state (clear `acknowledged_at` manually post-backfill: `UPDATE form_submissions SET acknowledged_at = NULL WHERE id IN (…)`)
-- [ ] A way to fire the intake webhook locally for beacon tests (POST to `/api/integrations/audit-responses` with the bearer token from env) — needed for D8 and archive-beacon cases
+- [x] Migration `form_submission_acknowledgement` (`0054`) applied to the local DB (`npm run db:migrate` with `DATABASE_URL` set)
+- [x] Internal app running on **:3000**; client app (:3001) not required for this PRD
+- [ ] Admin account available; one CLIENT-role account available for permission checks <!-- seeded locally: autotest@local.test (ADMIN), client@test.local (CLIENT) — sign-in is a human step -->
+- [x] Seed rows in `form_submissions` covering every cell of the matrix (6 rows: contact; audit in_progress/abandoned/completed/captured unacked; captured acked)
+- [ ] A way to fire the intake webhook locally for beacon tests (POST to `/api/integrations/audit-responses` with the bearer token from env) — needed for D8 and archive-beacon cases <!-- MANUAL STEP for the user: AUDIT_INTAKE_TOKEN is not in apps/internal/.env.local — add it (any value, matching the request header) to exercise the HTTP intake path; D8 semantics were already verified at the SQL level -->
 
 ## 01 — Schema & migration (7)
 
-- [ ] Migration applies cleanly on a DB at baseline `0053`; re-running `db:migrate` is a no-op
-- [ ] All pre-existing non-deleted rows have `acknowledged_at` set post-migration (badge starts at 0)
-- [ ] `idx_form_submissions_unread` exists (`\d form_submissions`) with predicate `deleted_at IS NULL AND acknowledged_at IS NULL`
-- [ ] Generated SQL contains no `POLICY` / `ROW LEVEL SECURITY` statements
-- [ ] D8: acknowledge a `completed` audit, then POST a `captured` beacon for its `session_key` → `acknowledged_at` is NULL again
-- [ ] Stale beacon (older `last_activity_at`) against an acknowledged row → acknowledgement unchanged
-- [ ] Same-status beacon (no advance) against an acknowledged row → acknowledgement unchanged
+- [x] Migration applies cleanly on a DB at baseline `0053`; re-running `db:migrate` is a no-op (verified 2026-08-03)
+- [x] All pre-existing non-deleted rows have `acknowledged_at` set post-migration (badge starts at 0) — vacuously true locally (table was empty); backfill statement present in `0054`
+- [x] `idx_form_submissions_unread` exists (`\d form_submissions`) with predicate `deleted_at IS NULL AND acknowledged_at IS NULL` (verified)
+- [x] Generated SQL contains no `POLICY` / `ROW LEVEL SECURITY` statements (verified)
+- [x] D8: acknowledge a `completed` audit, then advance it to `captured` → `acknowledged_at` is NULL again (verified via SQL replication of the upsert; HTTP-path re-check needs AUDIT_INTAKE_TOKEN, see prerequisites)
+- [x] Stale beacon (older `last_activity_at`) against an acknowledged row → acknowledgement unchanged (verified — setWhere gate discarded the write entirely)
+- [x] Same-status beacon (no advance) against an acknowledged row → acknowledgement unchanged (verified)
 
 ## 02 — Page shell & tabs (8)
 

@@ -74,6 +74,9 @@ export const NAV_GROUPS: NavGroup[] = [
         label: 'Submissions',
         icon: Inbox,
         matchHrefs: ['/submissions'],
+        // D10 (PRD 001): the page requireRole('ADMIN')s — don't show CLIENT
+        // users a link that 401s them.
+        roles: ['ADMIN'],
       },
       {
         href: '/leads/board',
