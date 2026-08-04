@@ -69,6 +69,22 @@ The sidebar is `hidden md:flex`; there is no mobile nav to badge. Pre-existing l
 
 The completed-submission email alert (future scope) is the likeliest next ask (the transcript opens with "I didn't get an email"), but the owner explicitly deferred it; the D8 re-flag partially compensates. Already documented in 07.
 
+## Post-implementation review pass (2026-08-04, multi-reviewer on the full PR)
+
+Second `/review-and-fix` run after the implementation + design revision landed. Seven unique findings (Claude ×1 below-bar, Codex standard ×2, Codex adversarial ×5, one overlap):
+
+| Code | Finding | Resolution |
+|------|---------|------------|
+| F1 (Codex P1 + adversarial high) | "Delete forever" left prospect PII in prior activity summaries and embedded PII in the destruction event itself | **Fixed** — destroy transactionally purges the row's `SUBMISSION` activity logs and emits a PII-free event ("Permanently deleted an audit/contact submission") |
+| F2 (Codex P2) | Row actions on the last row of page > 1 stranded the user on an empty out-of-range page | **Fixed** — `refreshAfterAction` steps pagination back when the acted row was the page's only row (row actions and sheet actions both route through it) |
+| F3 (adversarial high) | Stale-view acknowledge race: a beacon advancing the row between render and click let an admin acknowledge data they never saw, defeating D8 | **Fixed** — acknowledge carries `expectedLastActivityAt` as a version token; the conditional UPDATE misses on mismatch and the action returns "changed since you viewed it" |
+| F4 (adversarial medium) | Optimistic `ackOverride` never reconciled; sheet held stale row snapshots across refreshes | **Fixed** — table selection is by id and derived from fresh props; the override is dropped via render-time state adjustment when the sheet closes, the row changes, or the server confirms |
+| F5 (adversarial high) | Hard delete freed the unique `session_key`, so a late intake beacon could resurrect a "deleted" submission | **Fixed** — destroy is now a PII-stripping tombstone (`destroyed_at`, migration `0055`): the row keeps its `session_key`, the intake `setWhere` rejects all beacons for tombstones, tombstones are excluded from every list/count and can never be restored |
+| F6 (adversarial medium) | `logActivity` swallows failures app-wide — audit trail is best-effort, mutations succeed even when the event is lost | **Skipped** — pre-existing systemic pattern shared by every domain; a transactional-outbox redesign is out of scope for this PR. Candidate for a dedicated task. |
+| F7 (Claude, below-bar) | Migration `0054` backfill skips already-archived rows; a pre-feature archived row restored later reappears unacknowledged | **Skipped** — arguably desirable (restore resurfaces for review); no archived submissions exist in production yet |
+
+All fixes were verified live: tombstone destroy + failed beacon resurrection over real HTTP, stale-acknowledge conflict toast, page back-step, and the override-replay scenario.
+
 ## Summary
 
 | Code | Severity | Status | Landed in |

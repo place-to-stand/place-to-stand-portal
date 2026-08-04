@@ -76,7 +76,12 @@ export function SubmissionsTable({
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
-  const [selected, setSelected] = useState<FormSubmissionRecord | null>(null)
+  // Selection by id, derived from fresh props: after router.refresh() the
+  // open sheet re-renders with the server's latest row instead of a stale
+  // snapshot (and closes itself if the row left the current list).
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const selected =
+    submissions.find(submission => submission.id === selectedId) ?? null
   const [archiveTarget, setArchiveTarget] =
     useState<FormSubmissionRecord | null>(null)
   const [destroyTarget, setDestroyTarget] =
@@ -104,15 +109,33 @@ export function SubmissionsTable({
     [basePath, router, searchParams]
   )
 
+  // After an action removes the last row of a page > 1, plain refresh would
+  // strand the user on an empty out-of-range page — step back instead.
+  const refreshAfterAction = useCallback(
+    (removesRow: boolean) => {
+      if (removesRow && submissions.length === 1 && currentPage > 1) {
+        const previousPage = currentPage - 1
+        updateParams({
+          page: previousPage === 1 ? undefined : String(previousPage),
+        })
+        return
+      }
+
+      router.refresh()
+    },
+    [currentPage, router, submissions.length, updateParams]
+  )
+
   const runRowAction = useCallback(
     (
       submission: FormSubmissionRecord,
-      action: (input: { id: string }) => Promise<{ error?: string }>,
-      errorTitle: string
+      run: () => Promise<{ error?: string }>,
+      errorTitle: string,
+      removesRow: boolean
     ) => {
       setPendingId(submission.id)
       startTransition(async () => {
-        const result = await action({ id: submission.id })
+        const result = await run()
 
         setPendingId(null)
 
@@ -122,23 +145,33 @@ export function SubmissionsTable({
             description: result.error,
             variant: 'destructive',
           })
+          // The row may have changed underneath us — show the latest.
+          router.refresh()
           return
         }
 
-        router.refresh()
+        refreshAfterAction(removesRow)
       })
     },
-    [router, toast]
+    [refreshAfterAction, router, toast]
   )
 
   const handleAcknowledge = useCallback(
     (submission: FormSubmissionRecord) =>
       runRowAction(
         submission,
-        acknowledgeSubmission,
-        'Unable to acknowledge submission'
+        () =>
+          acknowledgeSubmission({
+            id: submission.id,
+            // Version token: the row as rendered (F3 stale-view guard).
+            expectedLastActivityAt: submission.lastActivityAt,
+          }),
+        'Unable to acknowledge submission',
+        // Acknowledging only removes the row when the unacknowledged
+        // filter is narrowing the list.
+        searchParams.get('unacknowledged') === '1'
       ),
-    [runRowAction]
+    [runRowAction, searchParams]
   )
 
   const handleArchiveConfirm = useCallback(() => {
@@ -148,15 +181,21 @@ export function SubmissionsTable({
 
     const target = archiveTarget
     setArchiveTarget(null)
-    runRowAction(target, archiveSubmission, 'Unable to archive submission')
+    runRowAction(
+      target,
+      () => archiveSubmission({ id: target.id }),
+      'Unable to archive submission',
+      true
+    )
   }, [archiveTarget, runRowAction])
 
   const handleRestore = useCallback(
     (submission: FormSubmissionRecord) =>
       runRowAction(
         submission,
-        restoreSubmission,
-        'Unable to restore submission'
+        () => restoreSubmission({ id: submission.id }),
+        'Unable to restore submission',
+        true
       ),
     [runRowAction]
   )
@@ -170,8 +209,9 @@ export function SubmissionsTable({
     setDestroyTarget(null)
     runRowAction(
       target,
-      destroySubmission,
-      'Unable to permanently delete submission'
+      () => destroySubmission({ id: target.id }),
+      'Unable to permanently delete submission',
+      true
     )
   }, [destroyTarget, runRowAction])
 
@@ -213,7 +253,7 @@ export function SubmissionsTable({
                 return (
                   <TableRow
                     key={submission.id}
-                    onClick={() => setSelected(submission)}
+                    onClick={() => setSelectedId(submission.id)}
                     className={cn(
                       'cursor-pointer',
                       unacknowledged && 'font-medium',
@@ -418,9 +458,10 @@ export function SubmissionsTable({
       <SubmissionDetailSheet
         submission={selected}
         mode={mode}
+        onRowRemoved={() => refreshAfterAction(true)}
         onOpenChange={open => {
           if (!open) {
-            setSelected(null)
+            setSelectedId(null)
           }
         }}
       />

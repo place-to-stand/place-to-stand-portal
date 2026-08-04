@@ -46,6 +46,8 @@ type SubmissionDetailSheetProps = {
   submission: FormSubmissionRecord | null
   mode: 'active' | 'archive'
   onOpenChange: (open: boolean) => void
+  /** Called instead of a plain refresh when an action removed the row from the current list (pagination back-step). */
+  onRowRemoved?: () => void
 }
 
 function Section({
@@ -102,12 +104,14 @@ export function SubmissionDetailSheet({
   submission,
   mode,
   onOpenChange,
+  onRowRemoved,
 }: SubmissionDetailSheetProps) {
   const router = useRouter()
   const { toast } = useToast()
   // D9: acknowledge/unacknowledge keep the sheet open, so the state is
-  // lifted optimistically — the `submission` prop is stale until the parent
-  // re-renders from router.refresh().
+  // lifted optimistically — the `submission` prop is stale only until the
+  // parent re-renders from router.refresh() (selection is derived from
+  // fresh props in the table).
   const [ackOverride, setAckOverride] = useState<{
     id: string
     acknowledged: boolean
@@ -116,10 +120,25 @@ export function SubmissionDetailSheet({
   const [destroyConfirmOpen, setDestroyConfirmOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
 
+  // Reconcile the optimistic override: drop it when the sheet closes, a
+  // different row is opened, or the refreshed server state confirms it.
+  // Without this, re-opening a row after an external change (e.g. a D8
+  // beacon reset) would replay a stale "acknowledged" override. Uses the
+  // adjust-state-during-render pattern (not an effect) so React restarts
+  // the render immediately instead of cascading a second commit.
+  if (
+    ackOverride &&
+    (!submission ||
+      submission.id !== ackOverride.id ||
+      (submission.acknowledgedAt !== null) === ackOverride.acknowledged)
+  ) {
+    setAckOverride(null)
+  }
+
   // Keep-open actions: run, then refresh underneath the open sheet.
   const runInlineAction = useCallback(
     (
-      action: (input: { id: string }) => Promise<{ error?: string }>,
+      run: () => Promise<{ error?: string }>,
       errorTitle: string,
       onSuccess: () => void
     ) => {
@@ -128,7 +147,7 @@ export function SubmissionDetailSheet({
       }
 
       startTransition(async () => {
-        const result = await action({ id: submission.id })
+        const result = await run()
 
         if (result.error) {
           toast({
@@ -136,6 +155,8 @@ export function SubmissionDetailSheet({
             description: result.error,
             variant: 'destructive',
           })
+          // The row may have changed underneath us — show the latest.
+          router.refresh()
           return
         }
 
@@ -151,7 +172,12 @@ export function SubmissionDetailSheet({
       return
     }
     runInlineAction(
-      acknowledgeSubmission,
+      () =>
+        acknowledgeSubmission({
+          id: submission.id,
+          // Version token: the row as rendered (F3 stale-view guard).
+          expectedLastActivityAt: submission.lastActivityAt,
+        }),
       'Unable to acknowledge submission',
       () => setAckOverride({ id: submission.id, acknowledged: true })
     )
@@ -162,7 +188,7 @@ export function SubmissionDetailSheet({
       return
     }
     runInlineAction(
-      unacknowledgeSubmission,
+      () => unacknowledgeSubmission({ id: submission.id }),
       'Unable to unacknowledge submission',
       () => setAckOverride({ id: submission.id, acknowledged: false })
     )
@@ -192,10 +218,17 @@ export function SubmissionDetailSheet({
         }
 
         onOpenChange(false)
-        router.refresh()
+
+        // The row left this tab's list — let the parent step pagination
+        // back if that emptied the page.
+        if (onRowRemoved) {
+          onRowRemoved()
+        } else {
+          router.refresh()
+        }
       })
     },
-    [onOpenChange, router, submission, toast]
+    [onOpenChange, onRowRemoved, router, submission, toast]
   )
 
   const handleArchiveConfirm = useCallback(() => {

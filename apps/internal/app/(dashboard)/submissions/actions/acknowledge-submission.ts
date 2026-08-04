@@ -11,19 +11,19 @@ import {
   getFormSubmissionById,
 } from '@/lib/queries/form-submissions'
 
-import { submissionIdSchema } from './schemas'
-import type { ActionResult, SubmissionActionInput } from './types'
+import { acknowledgeSubmissionSchema } from './schemas'
+import type { ActionResult, AcknowledgeSubmissionInput } from './types'
 
 // W2 (PRD 001 architecture review): deliberately no PostHog server tracking —
 // trackSettingsServerInteraction's SettingsEntity union has no submissions
 // value and its SETTINGS_SAVE event would misclassify inbox actions.
 export async function acknowledgeSubmission(
-  input: SubmissionActionInput
+  input: AcknowledgeSubmissionInput
 ): Promise<ActionResult> {
   const user = await requireUser()
   assertAdmin(user)
 
-  const parsed = submissionIdSchema.safeParse(input)
+  const parsed = acknowledgeSubmissionSchema.safeParse(input)
 
   if (!parsed.success) {
     return { error: 'Invalid request.' }
@@ -39,7 +39,11 @@ export async function acknowledgeSubmission(
     let updated
 
     try {
-      updated = await acknowledgeFormSubmission(parsed.data.id, user.id)
+      updated = await acknowledgeFormSubmission(
+        parsed.data.id,
+        user.id,
+        parsed.data.expectedLastActivityAt
+      )
     } catch (error) {
       console.error('Failed to acknowledge submission', error)
 
@@ -51,9 +55,9 @@ export async function acknowledgeSubmission(
       }
     }
 
-    // Log only on real state change — the idempotent no-op path (a racing
-    // admin acknowledged first) must not emit a duplicate event.
     if (updated) {
+      // Log only on real state change — the no-op paths below must not
+      // emit duplicate events.
       const event = submissionAcknowledgedEvent({
         kind: existing.kind,
         contactName: existing.contactName,
@@ -72,6 +76,20 @@ export async function acknowledgeSubmission(
         targetClientId: null,
         metadata: event.metadata,
       })
+    } else {
+      // The conditional UPDATE missed. Distinguish "a racing admin got
+      // there first" (fine, idempotent) from "the row changed since it was
+      // rendered" — acknowledging data the admin never saw would defeat
+      // the D8 re-flag, so that becomes an explicit error.
+      const fresh = await getFormSubmissionById(parsed.data.id)
+
+      if (fresh && fresh.acknowledgedAt === null) {
+        revalidatePath('/', 'layout')
+        return {
+          error:
+            'This submission changed since you viewed it. Review the latest details and try again.',
+        }
+      }
     }
   }
 

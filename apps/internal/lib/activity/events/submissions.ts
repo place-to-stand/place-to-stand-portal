@@ -41,11 +41,19 @@ export const submissionUnacknowledgedEvent = (
   metadata: toMetadata({ status: args.status }),
 })
 
-export const submissionDestroyedEvent = (
-  args: SubmissionEventArgs
-): ActivityEvent => ({
+/**
+ * Deliberately PII-free, unlike the other builders: "Delete forever"
+ * promises the prospect's data is gone, so the surviving audit event must
+ * not re-embed their name/email in its summary.
+ */
+export const submissionDestroyedEvent = (args: {
+  kind: 'audit' | 'contact'
+  status: string
+}): ActivityEvent => ({
   verb: ActivityVerbs.SUBMISSION_DESTROYED,
-  summary: `Permanently deleted ${describeSubmission(args)}`,
+  summary: `Permanently deleted ${
+    args.kind === 'contact' ? 'a contact submission' : 'an audit submission'
+  }`,
   metadata: toMetadata({ status: args.status }),
 })
 

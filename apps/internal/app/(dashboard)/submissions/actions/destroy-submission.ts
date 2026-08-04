@@ -39,6 +39,12 @@ export async function destroySubmission(
     return { error: 'Submission not found.' }
   }
 
+  if (existing.destroyedAt !== null) {
+    // Already tombstoned — idempotent no-op (double-click / racing admins).
+    revalidatePath('/', 'layout')
+    return {}
+  }
+
   if (existing.deletedAt === null) {
     return { error: 'Archive the submission before deleting it permanently.' }
   }
@@ -59,10 +65,9 @@ export async function destroySubmission(
   }
 
   if (destroyed) {
+    // PII-free on purpose — see submissionDestroyedEvent.
     const event = submissionDestroyedEvent({
       kind: existing.kind,
-      contactName: existing.contactName,
-      contactEmail: existing.contactEmail,
       status: existing.status,
     })
 

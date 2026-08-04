@@ -35,6 +35,10 @@ export async function restoreSubmission(
     return { error: 'Submission not found.' }
   }
 
+  if (existing.destroyedAt !== null) {
+    return { error: 'Submission was permanently deleted and cannot be restored.' }
+  }
+
   if (existing.deletedAt === null) {
     return { error: 'Submission is not archived.' }
   }

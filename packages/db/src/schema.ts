@@ -1720,6 +1720,16 @@ export const formSubmissions = pgTable(
       onDelete: 'set null',
     }),
 
+    // Tombstone for "Delete forever": the row is PII-stripped rather than
+    // DELETEd so its unique session_key stays occupied — a late intake
+    // beacon conflicts with the tombstone and is discarded instead of
+    // resurrecting the "deleted" submission as a fresh row. Tombstones are
+    // excluded from every list/count and can never be restored.
+    destroyedAt: timestamp('destroyed_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
+
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
       .notNull(),

@@ -11,7 +11,7 @@ import {
 } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { formSubmissions } from '@/lib/db/schema'
+import { activityLogs, formSubmissions } from '@/lib/db/schema'
 import type { FormSubmission, NewFormSubmission } from '@pts/db/types'
 
 type FormSubmissionFilters = {
@@ -37,6 +37,8 @@ function buildFilters({
     archived
       ? isNotNull(formSubmissions.deletedAt)
       : isNull(formSubmissions.deletedAt),
+    // Tombstones never appear anywhere, including the archive.
+    isNull(formSubmissions.destroyedAt),
     kind ? eq(formSubmissions.kind, kind) : undefined,
     status ? eq(formSubmissions.status, status) : undefined,
     unacknowledgedOnly
@@ -179,7 +181,10 @@ export async function upsertFormSubmission(row: NewFormSubmission) {
       },
       // Rule 2: a beacon older than what we already stored is a no-op. The
       // route still returns 200 — discarding it is the expected outcome.
-      setWhere: sql`excluded.last_activity_at >= ${formSubmissions.lastActivityAt}`,
+      // Tombstones (destroyed_at set) additionally reject EVERY beacon: the
+      // PII-stripped row keeps the session_key occupied precisely so a late
+      // beacon can't repopulate or resurrect a permanently deleted session.
+      setWhere: sql`excluded.last_activity_at >= ${formSubmissions.lastActivityAt} AND ${formSubmissions.destroyedAt} IS NULL`,
     })
 }
 
@@ -234,11 +239,20 @@ export async function countFormSubmissions(filters: FormSubmissionFilters) {
 /**
  * Idempotent: only sets acknowledgement if not already acknowledged, so a
  * double-click or two admins racing never overwrites the first reviewer.
- * Returns the updated row, or null when nothing changed (unknown id,
- * archived, or already acknowledged) — callers distinguish those by
- * re-fetching, not by treating null as an error.
+ *
+ * `expectedLastActivityAt` is the version token the admin actually SAW: if
+ * a beacon advanced the row between render and click (the D8 re-flag case),
+ * the UPDATE misses and the caller surfaces "changed since you viewed it"
+ * instead of marking never-reviewed data as acknowledged.
+ *
+ * Returns the updated row, or null when nothing changed — callers
+ * distinguish already-acknowledged from stale-version by re-fetching.
  */
-export async function acknowledgeFormSubmission(id: string, userId: string) {
+export async function acknowledgeFormSubmission(
+  id: string,
+  userId: string,
+  expectedLastActivityAt: string
+) {
   const [row] = await db
     .update(formSubmissions)
     .set({
@@ -250,7 +264,8 @@ export async function acknowledgeFormSubmission(id: string, userId: string) {
       and(
         eq(formSubmissions.id, id),
         isNull(formSubmissions.deletedAt),
-        isNull(formSubmissions.acknowledgedAt)
+        isNull(formSubmissions.acknowledgedAt),
+        eq(formSubmissions.lastActivityAt, expectedLastActivityAt)
       )
     )
     .returning()
@@ -274,6 +289,9 @@ export async function setFormSubmissionArchived(id: string, archived: boolean) {
     .where(
       and(
         eq(formSubmissions.id, id),
+        // Tombstones are terminal — they can be neither archived nor
+        // restored.
+        isNull(formSubmissions.destroyedAt),
         archived
           ? isNull(formSubmissions.deletedAt)
           : isNotNull(formSubmissions.deletedAt)
@@ -309,22 +327,83 @@ export async function unacknowledgeFormSubmission(id: string) {
 }
 
 /**
- * Hard delete — the ONE exception to the soft-delete convention, restricted
- * to rows that are already archived (mirrors contacts/hour-blocks destroy:
- * archive first, then permanently delete from the Archive tab).
+ * "Delete forever" — restricted to rows that are already archived (mirrors
+ * the contacts archive-then-destroy flow). NOT a SQL DELETE: the row is
+ * PII-stripped and tombstoned (`destroyed_at`) in the same transaction that
+ * purges its SUBMISSION activity logs, because:
+ *   1. Deleting the row would free its unique `session_key`, letting a late
+ *      intake beacon resurrect the "deleted" session as a fresh row.
+ *   2. The confirm dialog promises the history goes too — prior activity
+ *      summaries embed the prospect's name/email.
+ * The tombstone is invisible to every list/count, rejects all future
+ * beacons, and can never be restored.
  */
 export async function destroyFormSubmission(id: string) {
-  const [row] = await db
-    .delete(formSubmissions)
-    .where(
-      and(
-        eq(formSubmissions.id, id),
-        isNotNull(formSubmissions.deletedAt)
-      )
-    )
-    .returning()
+  return db.transaction(async tx => {
+    const [row] = await tx
+      .update(formSubmissions)
+      .set({
+        destroyedAt: sql`timezone('utc'::text, now())`,
+        updatedAt: sql`timezone('utc'::text, now())`,
 
-  return row ?? null
+        // Strip every PII / payload field; only the skeleton (id,
+        // session_key, kind, status, timing, source_detail) remains.
+        lastTrigger: null,
+        contactName: null,
+        contactEmail: null,
+        contactCompany: null,
+        contactWebsite: null,
+        message: null,
+        marketingConsent: null,
+        responses: null,
+        result: null,
+        phaseId: null,
+        topServiceId: null,
+        posthogDistinctId: null,
+        posthogSessionId: null,
+        posthogReplayUrl: null,
+        utmSource: null,
+        utmMedium: null,
+        utmCampaign: null,
+        utmTerm: null,
+        utmContent: null,
+        gclid: null,
+        referrer: null,
+        landingPath: null,
+        viewport: null,
+        screenWidth: null,
+        timezone: null,
+        language: null,
+        userAgent: null,
+        acknowledgedAt: null,
+        acknowledgedBy: null,
+      })
+      .where(
+        and(
+          eq(formSubmissions.id, id),
+          isNotNull(formSubmissions.deletedAt),
+          isNull(formSubmissions.destroyedAt)
+        )
+      )
+      .returning()
+
+    if (!row) {
+      return null
+    }
+
+    // The promised "and its history": hard-delete the submission's activity
+    // rows — their summaries carry the prospect's name/email.
+    await tx
+      .delete(activityLogs)
+      .where(
+        and(
+          eq(activityLogs.targetType, 'SUBMISSION'),
+          eq(activityLogs.targetId, id)
+        )
+      )
+
+    return row
+  })
 }
 
 export async function getFormSubmissionById(
