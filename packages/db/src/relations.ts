@@ -34,6 +34,7 @@ import {
   projectSows,
   sowSnapshots,
   sowSections,
+  formSubmissions,
 } from './schema'
 
 export const clientsRelations = relations(clients, ({ one, many }) => ({
@@ -551,5 +552,12 @@ export const sowSectionsRelations = relations(sowSections, ({ one }) => ({
   sow: one(projectSows, {
     fields: [sowSections.sowId],
     references: [projectSows.id],
+  }),
+}))
+
+export const formSubmissionsRelations = relations(formSubmissions, ({ one }) => ({
+  acknowledgedByUser: one(users, {
+    fields: [formSubmissions.acknowledgedBy],
+    references: [users.id],
   }),
 }))

@@ -43,6 +43,52 @@ export const FORM_SUBMISSION_KIND_TOKENS: Record<FormSubmissionKind, string> = {
     'border-transparent bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200',
 }
 
+/**
+ * D1 (PRD 001): only rows that warrant attention count as unacknowledged —
+ * contact submissions (any status) and audits that reached
+ * `completed`/`captured`. In-progress and abandoned audits are noise at ad
+ * volume and never flag.
+ *
+ * Terminology (2026-08-04 revision): the UI converges on the
+ * "acknowledge" family everywhere — indicator/badge/filter say
+ * "Unacknowledged", the actions are Acknowledge/Unacknowledge.
+ *
+ * Must stay in sync with the SQL predicates in
+ * `apps/internal/lib/queries/form-submissions.ts` (`buildFilters`
+ * unacknowledgedOnly + `countUnacknowledgedFormSubmissions`).
+ */
+export const ATTENTION_AUDIT_STATUSES = [
+  'completed',
+  'captured',
+] as const satisfies readonly FormSubmissionStatus[]
+
+/**
+ * Whether acknowledgement is meaningful for this row at all. In-progress and
+ * abandoned audits never flag, so they get no acknowledge/unacknowledge
+ * affordances anywhere in the UI.
+ */
+export function submissionWarrantsAttention(submission: {
+  kind: FormSubmissionKind
+  status: FormSubmissionStatus
+}): boolean {
+  return (
+    submission.kind === 'contact' ||
+    (ATTENTION_AUDIT_STATUSES as readonly string[]).includes(submission.status)
+  )
+}
+
+export function isUnacknowledgedSubmission(submission: {
+  kind: FormSubmissionKind
+  status: FormSubmissionStatus
+  acknowledgedAt: string | null
+  deletedAt: string | null
+}): boolean {
+  if (submission.acknowledgedAt !== null || submission.deletedAt !== null) {
+    return false
+  }
+  return submissionWarrantsAttention(submission)
+}
+
 export function isFormSubmissionKind(
   value: string | undefined
 ): value is FormSubmissionKind {

@@ -21,9 +21,11 @@ const isDev = process.env.NODE_ENV === 'development'
 
 type Props = {
   user: AppUser
+  /** Count pills keyed by nav item href (e.g. unread submissions). */
+  badges?: Record<string, number>
 }
 
-export function Sidebar({ user }: Props) {
+export function Sidebar({ user, badges }: Props) {
   const pathname = usePathname()
   const role = user.role
   const { theme, mounted: themeMounted } = useTheme()
@@ -121,6 +123,8 @@ export function Sidebar({ user }: Props) {
                           )
                         }
 
+                        const badgeCount = badges?.[item.href]
+
                         return (
                           <Link
                             key={item.href}
@@ -130,6 +134,24 @@ export function Sidebar({ user }: Props) {
                           >
                             <Icon className='size-3.5 shrink-0' />
                             <span>{item.label}</span>
+                            {badgeCount ? (
+                              <>
+                                <span
+                                  className={cn(
+                                    'ml-auto inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold tabular-nums',
+                                    isActive
+                                      ? 'bg-primary-foreground/20 text-primary-foreground'
+                                      : 'bg-primary text-primary-foreground'
+                                  )}
+                                  aria-hidden='true'
+                                >
+                                  {badgeCount > 99 ? '99+' : badgeCount}
+                                </span>
+                                <span className='sr-only'>
+                                  ({badgeCount} unacknowledged)
+                                </span>
+                              </>
+                            ) : null}
                           </Link>
                         )
                       })}

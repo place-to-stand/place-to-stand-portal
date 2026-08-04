@@ -10,11 +10,8 @@ import {
   loadActivityOverviewCache,
   upsertActivityOverviewCache,
 } from '@/lib/activity/overview-cache'
-import { getCurrentUser, type AppUser } from '@/lib/auth/session'
-import {
-  listAccessibleClientIds,
-  listAccessibleProjectIds,
-} from '@/lib/auth/permissions'
+import { getCurrentUser } from '@/lib/auth/session'
+import { isAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { clients, leads, projects, tasks } from '@/lib/db/schema'
 
@@ -55,6 +52,13 @@ export async function POST(request: Request) {
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  // Admin-only: the briefing is built from UNSCOPED activity logs
+  // (fetchActivityLogsSince) plus global lead/task metrics — internal
+  // operations data. The home dashboard hides the widget for non-admins.
+  if (!isAdmin(user)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   let timeframeDays: number
@@ -111,7 +115,7 @@ export async function POST(request: Request) {
     }
 
     const since = new Date(now.getTime() - timeframeDays * 24 * 60 * 60 * 1000)
-    const logs = await fetchActivityLogsSince({
+    const logs = await fetchActivityLogsSince(user, {
       since: since.toISOString(),
       limit: MAX_LOG_LINES_IN_PROMPT,
     })
@@ -120,7 +124,7 @@ export async function POST(request: Request) {
 
     const [metrics, context] = await Promise.all([
       computeMetrics(logs, since),
-      buildActivityContext(user, logs),
+      buildActivityContext(logs),
     ])
 
     if (!logs.length) {
@@ -512,17 +516,16 @@ function formatActivityLog(
   return JSON.stringify(record)
 }
 
+/**
+ * Resolves project/client display names for the AI prompt. No per-user
+ * filtering: this route is admin-only (403 above), so the caller may see
+ * every referenced project and client.
+ */
 async function buildActivityContext(
-  user: AppUser,
   logs: ActivityLogWithActor[]
 ): Promise<ActivityContext> {
-  const projectIds = dedupeIds(logs.map(log => log.target_project_id))
-  const clientIds = dedupeIds(logs.map(log => log.target_client_id))
-
-  const [allowedProjectIds, allowedClientIds] = await Promise.all([
-    resolveAllowedProjects(user, projectIds),
-    resolveAllowedClients(user, clientIds),
-  ])
+  const allowedProjectIds = dedupeIds(logs.map(log => log.target_project_id))
+  const allowedClientIds = dedupeIds(logs.map(log => log.target_client_id))
 
   const [projectRows, clientRows] = await Promise.all([
     allowedProjectIds.length
@@ -589,42 +592,6 @@ function dedupeIds(values: Array<string | null>): string[] {
   return Array.from(
     new Set(values.filter((value): value is string => Boolean(value)))
   )
-}
-
-async function resolveAllowedProjects(
-  user: AppUser,
-  projectIds: string[]
-): Promise<string[]> {
-  if (!projectIds.length) {
-    return []
-  }
-
-  if (user.role === 'ADMIN') {
-    return projectIds
-  }
-
-  const accessible = await listAccessibleProjectIds(user)
-  const accessibleSet = new Set(accessible)
-
-  return projectIds.filter(id => accessibleSet.has(id))
-}
-
-async function resolveAllowedClients(
-  user: AppUser,
-  clientIds: string[]
-): Promise<string[]> {
-  if (!clientIds.length) {
-    return []
-  }
-
-  if (user.role === 'ADMIN') {
-    return clientIds
-  }
-
-  const accessible = await listAccessibleClientIds(user)
-  const accessibleSet = new Set(accessible)
-
-  return clientIds.filter(id => accessibleSet.has(id))
 }
 
 function resolveProjectClientLabels(

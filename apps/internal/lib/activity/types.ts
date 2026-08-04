@@ -34,6 +34,7 @@ export type ActivityTargetType =
   | 'CLIENT'
   | 'CONTACT'
   | 'LEAD'
+  | 'SUBMISSION'
   | 'PROPOSAL'
   | 'COMMENT'
   | 'TIME_LOG'
@@ -42,6 +43,19 @@ export type ActivityTargetType =
   | 'USER'
   | 'SETTINGS'
   | 'GENERAL'
+
+/**
+ * Target types whose activity non-admin (CLIENT) users may read — always
+ * additionally row-scoped to their client memberships in
+ * `fetchActivityLogs`. Every other type (LEAD, INVOICE, HOUR_BLOCK, USER, …)
+ * is internal operations data and admin-only.
+ */
+export const CLIENT_VISIBLE_ACTIVITY_TARGET_TYPES = [
+  'TASK',
+  'PROJECT',
+  'COMMENT',
+  'TIME_LOG',
+] as const satisfies readonly ActivityTargetType[]
 
 export const ActivityVerbs = {
   TASK_CREATED: 'TASK_CREATED',
@@ -136,6 +150,12 @@ export const ActivityVerbs = {
   LEAD_RESTORED: 'LEAD_RESTORED',
   LEAD_SUGGESTION_APPROVED: 'LEAD_SUGGESTION_APPROVED',
   LEAD_SUGGESTION_DISMISSED: 'LEAD_SUGGESTION_DISMISSED',
+  // Submission events
+  SUBMISSION_ACKNOWLEDGED: 'SUBMISSION_ACKNOWLEDGED',
+  SUBMISSION_UNACKNOWLEDGED: 'SUBMISSION_UNACKNOWLEDGED',
+  SUBMISSION_ARCHIVED: 'SUBMISSION_ARCHIVED',
+  SUBMISSION_RESTORED: 'SUBMISSION_RESTORED',
+  SUBMISSION_DESTROYED: 'SUBMISSION_DESTROYED',
   // Worker deployment events
   WORKER_PLAN_REQUESTED: 'WORKER_PLAN_REQUESTED',
   WORKER_IMPLEMENT_REQUESTED: 'WORKER_IMPLEMENT_REQUESTED',

@@ -1707,6 +1707,29 @@ export const formSubmissions = pgTable(
     language: text('language'),
     userAgent: text('user_agent'),
 
+    // Acknowledgement — a human has reviewed this row from the Submissions
+    // screen. NULL = unread (for rows that warrant attention; see the unread
+    // predicate in apps/internal/lib/form-submissions/constants.ts). Cleared
+    // by the intake upsert when status advances, so an acknowledged
+    // `completed` audit that later becomes `captured` re-flags as unread.
+    acknowledgedAt: timestamp('acknowledged_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
+    acknowledgedBy: uuid('acknowledged_by').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+
+    // Tombstone for "Delete forever": the row is PII-stripped rather than
+    // DELETEd so its unique session_key stays occupied — a late intake
+    // beacon conflicts with the tombstone and is discarded instead of
+    // resurrecting the "deleted" submission as a fresh row. Tombstones are
+    // excluded from every list/count and can never be restored.
+    destroyedAt: timestamp('destroyed_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
+
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
       .notNull(),
@@ -1717,6 +1740,13 @@ export const formSubmissions = pgTable(
   },
   table => [
     unique('form_submissions_session_key_key').on(table.sessionKey),
+    index('idx_form_submissions_unread')
+      .using(
+        'btree',
+        table.kind.asc().nullsLast().op('enum_ops'),
+        table.status.asc().nullsLast().op('enum_ops')
+      )
+      .where(sql`(deleted_at IS NULL AND acknowledged_at IS NULL)`),
     index('idx_form_submissions_kind_status')
       .using(
         'btree',

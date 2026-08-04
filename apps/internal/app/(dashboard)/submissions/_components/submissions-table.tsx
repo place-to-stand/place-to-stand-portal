@@ -1,19 +1,15 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
+import { Archive, Check, RefreshCw, Trash2 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 import { Progress } from '@/components/ui/progress'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import {
   Table,
   TableBody,
@@ -22,22 +18,40 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { useToast } from '@/components/ui/use-toast'
 import { cn } from '@/lib/utils'
 import {
   FORM_SUBMISSION_KIND_LABELS,
   FORM_SUBMISSION_KIND_TOKENS,
-  FORM_SUBMISSION_KIND_VALUES,
   FORM_SUBMISSION_STATUS_LABELS,
   FORM_SUBMISSION_STATUS_TOKENS,
-  FORM_SUBMISSION_STATUS_VALUES,
-  type FormSubmissionKind,
-  type FormSubmissionStatus,
+  isUnacknowledgedSubmission,
 } from '@/lib/form-submissions/constants'
 import type { FormSubmissionRecord } from '@/lib/form-submissions/types'
+import {
+  acknowledgeSubmission,
+  archiveSubmission,
+  destroySubmission,
+  restoreSubmission,
+} from '../actions'
 
+import { SubmissionArchiveDialog } from './submission-archive-dialog'
 import { SubmissionDetailSheet } from './submission-detail-sheet'
 
-const ALL = 'all'
+export type SubmissionsTableMode = 'active' | 'archive'
+
+const EMPTY_STATE_COPY: Record<SubmissionsTableMode, string> = {
+  active: 'No submissions yet.',
+  archive: 'No archived submissions.',
+}
+
+function describeSubmission(submission: FormSubmissionRecord): string {
+  return (
+    submission.contactName ||
+    submission.contactEmail ||
+    'this anonymous submission'
+  )
+}
 
 type SubmissionsTableProps = {
   submissions: FormSubmissionRecord[]
@@ -45,8 +59,9 @@ type SubmissionsTableProps = {
   currentPage: number
   totalPages: number
   pageSize: number
-  activeKind?: FormSubmissionKind
-  activeStatus?: FormSubmissionStatus
+  mode: SubmissionsTableMode
+  /** Base path pagination pushes to — '/submissions' or '/submissions/archive'. */
+  basePath: string
 }
 
 export function SubmissionsTable({
@@ -55,12 +70,27 @@ export function SubmissionsTable({
   currentPage,
   totalPages,
   pageSize,
-  activeKind,
-  activeStatus,
+  mode,
+  basePath,
 }: SubmissionsTableProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [selected, setSelected] = useState<FormSubmissionRecord | null>(null)
+  const { toast } = useToast()
+  // Selection by id, derived from fresh props: after router.refresh() the
+  // open sheet re-renders with the server's latest row instead of a stale
+  // snapshot (and closes itself if the row left the current list).
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const selected =
+    submissions.find(submission => submission.id === selectedId) ?? null
+  const [archiveTarget, setArchiveTarget] =
+    useState<FormSubmissionRecord | null>(null)
+  const [destroyTarget, setDestroyTarget] =
+    useState<FormSubmissionRecord | null>(null)
+  const [pendingId, setPendingId] = useState<string | null>(null)
+  const [, startTransition] = useTransition()
+
+  // The archive tab shows when each row was archived; active mode doesn't.
+  const columnCount = mode === 'archive' ? 10 : 9
 
   const updateParams = useCallback(
     (updates: Record<string, string | undefined>) => {
@@ -74,160 +104,321 @@ export function SubmissionsTable({
         }
       }
 
-      router.push(`/submissions?${next.toString()}`)
+      router.push(`${basePath}?${next.toString()}`)
     },
-    [router, searchParams]
+    [basePath, router, searchParams]
   )
+
+  // After an action removes the last row of a page > 1, plain refresh would
+  // strand the user on an empty out-of-range page — step back instead.
+  const refreshAfterAction = useCallback(
+    (removesRow: boolean) => {
+      if (removesRow && submissions.length === 1 && currentPage > 1) {
+        const previousPage = currentPage - 1
+        updateParams({
+          page: previousPage === 1 ? undefined : String(previousPage),
+        })
+        return
+      }
+
+      router.refresh()
+    },
+    [currentPage, router, submissions.length, updateParams]
+  )
+
+  const runRowAction = useCallback(
+    (
+      submission: FormSubmissionRecord,
+      run: () => Promise<{ error?: string }>,
+      errorTitle: string,
+      removesRow: boolean
+    ) => {
+      setPendingId(submission.id)
+      startTransition(async () => {
+        const result = await run()
+
+        setPendingId(null)
+
+        if (result.error) {
+          toast({
+            title: errorTitle,
+            description: result.error,
+            variant: 'destructive',
+          })
+          // The row may have changed underneath us — show the latest.
+          router.refresh()
+          return
+        }
+
+        refreshAfterAction(removesRow)
+      })
+    },
+    [refreshAfterAction, router, toast]
+  )
+
+  const handleAcknowledge = useCallback(
+    (submission: FormSubmissionRecord) =>
+      runRowAction(
+        submission,
+        () =>
+          acknowledgeSubmission({
+            id: submission.id,
+            // Version token: the row as rendered (F3 stale-view guard).
+            expectedLastActivityAt: submission.lastActivityAt,
+          }),
+        'Unable to acknowledge submission',
+        // Acknowledging only removes the row when the unacknowledged
+        // filter is narrowing the list.
+        searchParams.get('unacknowledged') === '1'
+      ),
+    [runRowAction, searchParams]
+  )
+
+  const handleArchiveConfirm = useCallback(() => {
+    if (!archiveTarget) {
+      return
+    }
+
+    const target = archiveTarget
+    setArchiveTarget(null)
+    runRowAction(
+      target,
+      () => archiveSubmission({ id: target.id }),
+      'Unable to archive submission',
+      true
+    )
+  }, [archiveTarget, runRowAction])
+
+  const handleRestore = useCallback(
+    (submission: FormSubmissionRecord) =>
+      runRowAction(
+        submission,
+        () => restoreSubmission({ id: submission.id }),
+        'Unable to restore submission',
+        true
+      ),
+    [runRowAction]
+  )
+
+  const handleDestroyConfirm = useCallback(() => {
+    if (!destroyTarget) {
+      return
+    }
+
+    const target = destroyTarget
+    setDestroyTarget(null)
+    runRowAction(
+      target,
+      () => destroySubmission({ id: target.id }),
+      'Unable to permanently delete submission',
+      true
+    )
+  }, [destroyTarget, runRowAction])
 
   return (
     <div className='space-y-4'>
-      <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-        <div className='flex flex-col gap-2 sm:flex-row sm:items-center'>
-          <Select
-            value={activeKind ?? ALL}
-            onValueChange={value =>
-              // Filters reset to page 1 - staying on page 7 of a smaller
-              // result set would render an empty table.
-              updateParams({
-                kind: value === ALL ? undefined : value,
-                page: undefined,
-              })
-            }
-          >
-            <SelectTrigger className='w-[160px]'>
-              <SelectValue placeholder='All forms' />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>All forms</SelectItem>
-              {FORM_SUBMISSION_KIND_VALUES.map(kind => (
-                <SelectItem key={kind} value={kind}>
-                  {FORM_SUBMISSION_KIND_LABELS[kind]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={activeStatus ?? ALL}
-            onValueChange={value =>
-              updateParams({
-                status: value === ALL ? undefined : value,
-                page: undefined,
-              })
-            }
-          >
-            <SelectTrigger className='w-[180px]'>
-              <SelectValue placeholder='All statuses' />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>All statuses</SelectItem>
-              {FORM_SUBMISSION_STATUS_VALUES.map(status => (
-                <SelectItem key={status} value={status}>
-                  {FORM_SUBMISSION_STATUS_LABELS[status]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <span className='text-muted-foreground text-sm whitespace-nowrap'>
-          Total submissions: {totalCount}
-        </span>
-      </div>
-
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Received</TableHead>
-            <TableHead>Form</TableHead>
-            <TableHead>Contact</TableHead>
-            <TableHead>Company</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Progress</TableHead>
-            <TableHead>Phase</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {submissions.length === 0 ? (
-            <TableRow>
-              <TableCell
-                colSpan={7}
-                className='text-muted-foreground py-10 text-center'
-              >
-                No submissions yet.
-              </TableCell>
+      <div className='overflow-hidden rounded-xl border'>
+        <Table>
+          <TableHeader>
+            <TableRow className='bg-muted/40'>
+              <TableHead className='w-6'>
+                <span className='sr-only'>Unacknowledged</span>
+              </TableHead>
+              <TableHead>Received</TableHead>
+              <TableHead>Form</TableHead>
+              <TableHead>Contact</TableHead>
+              <TableHead>Company</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Progress</TableHead>
+              <TableHead>Phase</TableHead>
+              {mode === 'archive' ? <TableHead>Archived</TableHead> : null}
+              <TableHead className='w-32 text-right'>Actions</TableHead>
             </TableRow>
-          ) : (
-            submissions.map(submission => (
-              <TableRow
-                key={submission.id}
-                onClick={() => setSelected(submission)}
-                className='cursor-pointer'
-              >
-                <TableCell className='whitespace-nowrap'>
-                  {formatDistanceToNow(new Date(submission.lastActivityAt), {
-                    addSuffix: true,
-                  })}
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    variant='outline'
-                    className={cn(FORM_SUBMISSION_KIND_TOKENS[submission.kind])}
-                  >
-                    {FORM_SUBMISSION_KIND_LABELS[submission.kind]}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {submission.contactName || submission.contactEmail ? (
-                    <div className='flex flex-col'>
-                      <span>{submission.contactName ?? '—'}</span>
-                      <span className='text-muted-foreground text-xs'>
-                        {submission.contactEmail}
-                      </span>
-                    </div>
-                  ) : (
-                    <span className='text-muted-foreground italic'>
-                      Anonymous
-                    </span>
-                  )}
-                </TableCell>
-                <TableCell>{submission.contactCompany ?? '—'}</TableCell>
-                <TableCell>
-                  <Badge
-                    variant='outline'
-                    className={cn(
-                      FORM_SUBMISSION_STATUS_TOKENS[submission.status]
-                    )}
-                  >
-                    {FORM_SUBMISSION_STATUS_LABELS[submission.status]}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {submission.percentComplete === null ? (
-                    <span className='text-muted-foreground'>—</span>
-                  ) : (
-                    <div className='flex items-center gap-2'>
-                      <Progress
-                        value={submission.percentComplete}
-                        className='w-16'
-                      />
-                      <span className='text-muted-foreground text-xs'>
-                        {submission.percentComplete}%
-                      </span>
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {submission.result?.phaseName ??
-                    submission.phaseId ?? (
-                      <span className='text-muted-foreground'>—</span>
-                    )}
+          </TableHeader>
+          <TableBody>
+            {submissions.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columnCount}
+                  className='text-muted-foreground py-10 text-center text-sm'
+                >
+                  {EMPTY_STATE_COPY[mode]}
                 </TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            ) : (
+              submissions.map(submission => {
+                const unacknowledged =
+                  mode === 'active' && isUnacknowledgedSubmission(submission)
+
+                return (
+                  <TableRow
+                    key={submission.id}
+                    onClick={() => setSelectedId(submission.id)}
+                    className={cn(
+                      'cursor-pointer',
+                      unacknowledged && 'font-medium',
+                      submission.deletedAt && 'opacity-60'
+                    )}
+                  >
+                    <TableCell className='w-6'>
+                      {unacknowledged ? (
+                        <>
+                          <span
+                            className='bg-primary block size-2 rounded-full'
+                            aria-hidden='true'
+                          />
+                          <span className='sr-only'>Unacknowledged</span>
+                        </>
+                      ) : null}
+                    </TableCell>
+                    <TableCell className='whitespace-nowrap'>
+                      {formatDistanceToNow(
+                        new Date(submission.lastActivityAt),
+                        { addSuffix: true }
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant='outline'
+                        className={cn(
+                          FORM_SUBMISSION_KIND_TOKENS[submission.kind]
+                        )}
+                      >
+                        {FORM_SUBMISSION_KIND_LABELS[submission.kind]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {submission.contactName || submission.contactEmail ? (
+                        <div className='flex flex-col'>
+                          <span>{submission.contactName ?? '—'}</span>
+                          <span className='text-muted-foreground text-xs'>
+                            {submission.contactEmail}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className='text-muted-foreground italic'>
+                          Anonymous
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>{submission.contactCompany ?? '—'}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant='outline'
+                        className={cn(
+                          FORM_SUBMISSION_STATUS_TOKENS[submission.status]
+                        )}
+                      >
+                        {FORM_SUBMISSION_STATUS_LABELS[submission.status]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {submission.percentComplete === null ? (
+                        <span className='text-muted-foreground'>—</span>
+                      ) : (
+                        <div className='flex items-center gap-2'>
+                          <Progress
+                            value={submission.percentComplete}
+                            className='w-16'
+                          />
+                          <span className='text-muted-foreground text-xs'>
+                            {submission.percentComplete}%
+                          </span>
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {submission.result?.phaseName ??
+                        submission.phaseId ?? (
+                          <span className='text-muted-foreground'>—</span>
+                        )}
+                    </TableCell>
+                    {mode === 'archive' ? (
+                      <TableCell className='text-muted-foreground text-sm whitespace-nowrap'>
+                        {submission.deletedAt
+                          ? formatDistanceToNow(
+                              new Date(submission.deletedAt),
+                              { addSuffix: true }
+                            )
+                          : '—'}
+                      </TableCell>
+                    ) : null}
+                    <TableCell className='text-right'>
+                      <div className='flex justify-end gap-2'>
+                        {unacknowledged ? (
+                          <Button
+                            variant='outline'
+                            size='icon'
+                            title='Acknowledge submission'
+                            aria-label='Acknowledge submission'
+                            disabled={pendingId === submission.id}
+                            onClick={event => {
+                              event.stopPropagation()
+                              handleAcknowledge(submission)
+                            }}
+                          >
+                            <Check className='h-4 w-4' />
+                            <span className='sr-only'>Acknowledge</span>
+                          </Button>
+                        ) : null}
+                        {mode === 'active' ? (
+                          <Button
+                            variant='destructive'
+                            size='icon'
+                            title='Archive submission'
+                            aria-label='Archive submission'
+                            disabled={pendingId === submission.id}
+                            onClick={event => {
+                              event.stopPropagation()
+                              setArchiveTarget(submission)
+                            }}
+                          >
+                            <Archive className='h-4 w-4' />
+                            <span className='sr-only'>Archive</span>
+                          </Button>
+                        ) : (
+                          <>
+                            <Button
+                              variant='secondary'
+                              size='icon'
+                              title='Restore submission'
+                              aria-label='Restore submission'
+                              disabled={pendingId === submission.id}
+                              onClick={event => {
+                                event.stopPropagation()
+                                handleRestore(submission)
+                              }}
+                            >
+                              <RefreshCw className='h-4 w-4' />
+                              <span className='sr-only'>Restore</span>
+                            </Button>
+                            <Button
+                              variant='destructive'
+                              size='icon'
+                              title='Permanently delete submission'
+                              aria-label='Permanently delete submission'
+                              disabled={pendingId === submission.id}
+                              onClick={event => {
+                                event.stopPropagation()
+                                setDestroyTarget(submission)
+                              }}
+                            >
+                              <Trash2 className='h-4 w-4' />
+                              <span className='sr-only'>
+                                Delete permanently
+                              </span>
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )
+              })
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
       {totalPages > 1 && (
         <PaginationControls
@@ -242,11 +433,35 @@ export function SubmissionsTable({
         />
       )}
 
+      <SubmissionArchiveDialog
+        open={archiveTarget !== null}
+        confirmDisabled={pendingId !== null}
+        onCancel={() => setArchiveTarget(null)}
+        onConfirm={handleArchiveConfirm}
+      />
+
+      <ConfirmDialog
+        open={destroyTarget !== null}
+        title='Permanently delete submission?'
+        description={
+          destroyTarget
+            ? `Permanently deleting the submission from ${describeSubmission(destroyTarget)} removes it and its history. This action cannot be undone.`
+            : 'Permanently deleting this submission removes it and its history. This action cannot be undone.'
+        }
+        confirmLabel='Delete forever'
+        confirmVariant='destructive'
+        confirmDisabled={pendingId !== null}
+        onCancel={() => setDestroyTarget(null)}
+        onConfirm={handleDestroyConfirm}
+      />
+
       <SubmissionDetailSheet
         submission={selected}
+        mode={mode}
+        onRowRemoved={() => refreshAfterAction(true)}
         onOpenChange={open => {
           if (!open) {
-            setSelected(null)
+            setSelectedId(null)
           }
         }}
       />

@@ -1,9 +1,20 @@
 'use client'
 
-import { ExternalLink } from 'lucide-react'
-import { format } from 'date-fns'
+import { useCallback, useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import {
+  Archive,
+  Check,
+  ExternalLink,
+  RefreshCw,
+  Trash2,
+  Undo2,
+} from 'lucide-react'
+import { format, formatDistanceToNow } from 'date-fns'
 
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Separator } from '@/components/ui/separator'
 import {
   Sheet,
@@ -12,17 +23,31 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import { useToast } from '@/components/ui/use-toast'
 import { cn } from '@/lib/utils'
 import {
   FORM_SUBMISSION_KIND_LABELS,
   FORM_SUBMISSION_STATUS_LABELS,
   FORM_SUBMISSION_STATUS_TOKENS,
+  submissionWarrantsAttention,
 } from '@/lib/form-submissions/constants'
 import type { FormSubmissionRecord } from '@/lib/form-submissions/types'
+import {
+  acknowledgeSubmission,
+  archiveSubmission,
+  destroySubmission,
+  restoreSubmission,
+  unacknowledgeSubmission,
+} from '../actions'
+
+import { SubmissionArchiveDialog } from './submission-archive-dialog'
 
 type SubmissionDetailSheetProps = {
   submission: FormSubmissionRecord | null
+  mode: 'active' | 'archive'
   onOpenChange: (open: boolean) => void
+  /** Called instead of a plain refresh when an action removed the row from the current list (pagination back-step). */
+  onRowRemoved?: () => void
 }
 
 function Section({
@@ -77,11 +102,166 @@ function formatAnswer(
 
 export function SubmissionDetailSheet({
   submission,
+  mode,
   onOpenChange,
+  onRowRemoved,
 }: SubmissionDetailSheetProps) {
+  const router = useRouter()
+  const { toast } = useToast()
+  // D9: acknowledge/unacknowledge keep the sheet open, so the state is
+  // lifted optimistically — the `submission` prop is stale only until the
+  // parent re-renders from router.refresh() (selection is derived from
+  // fresh props in the table).
+  const [ackOverride, setAckOverride] = useState<{
+    id: string
+    acknowledged: boolean
+  } | null>(null)
+  const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false)
+  const [destroyConfirmOpen, setDestroyConfirmOpen] = useState(false)
+  const [isPending, startTransition] = useTransition()
+
+  // Reconcile the optimistic override: drop it when the sheet closes, a
+  // different row is opened, or the refreshed server state confirms it.
+  // Without this, re-opening a row after an external change (e.g. a D8
+  // beacon reset) would replay a stale "acknowledged" override. Uses the
+  // adjust-state-during-render pattern (not an effect) so React restarts
+  // the render immediately instead of cascading a second commit.
+  if (
+    ackOverride &&
+    (!submission ||
+      submission.id !== ackOverride.id ||
+      (submission.acknowledgedAt !== null) === ackOverride.acknowledged)
+  ) {
+    setAckOverride(null)
+  }
+
+  // Keep-open actions: run, then refresh underneath the open sheet.
+  const runInlineAction = useCallback(
+    (
+      run: () => Promise<{ error?: string }>,
+      errorTitle: string,
+      onSuccess: () => void
+    ) => {
+      if (!submission) {
+        return
+      }
+
+      startTransition(async () => {
+        const result = await run()
+
+        if (result.error) {
+          toast({
+            title: errorTitle,
+            description: result.error,
+            variant: 'destructive',
+          })
+          // The row may have changed underneath us — show the latest.
+          router.refresh()
+          return
+        }
+
+        onSuccess()
+        router.refresh()
+      })
+    },
+    [router, submission, toast]
+  )
+
+  const handleAcknowledge = useCallback(() => {
+    if (!submission) {
+      return
+    }
+    runInlineAction(
+      () =>
+        acknowledgeSubmission({
+          id: submission.id,
+          // Version token: the row as rendered (F3 stale-view guard).
+          expectedLastActivityAt: submission.lastActivityAt,
+        }),
+      'Unable to acknowledge submission',
+      () => setAckOverride({ id: submission.id, acknowledged: true })
+    )
+  }, [runInlineAction, submission])
+
+  const handleUnacknowledge = useCallback(() => {
+    if (!submission) {
+      return
+    }
+    runInlineAction(
+      () => unacknowledgeSubmission({ id: submission.id }),
+      'Unable to unacknowledge submission',
+      () => setAckOverride({ id: submission.id, acknowledged: false })
+    )
+  }, [runInlineAction, submission])
+
+  // D9: archive/restore/destroy CLOSE the sheet — the row leaves the
+  // current tab's list.
+  const runClosingAction = useCallback(
+    (
+      action: (input: { id: string }) => Promise<{ error?: string }>,
+      errorTitle: string
+    ) => {
+      if (!submission) {
+        return
+      }
+
+      startTransition(async () => {
+        const result = await action({ id: submission.id })
+
+        if (result.error) {
+          toast({
+            title: errorTitle,
+            description: result.error,
+            variant: 'destructive',
+          })
+          return
+        }
+
+        onOpenChange(false)
+
+        // The row left this tab's list — let the parent step pagination
+        // back if that emptied the page.
+        if (onRowRemoved) {
+          onRowRemoved()
+        } else {
+          router.refresh()
+        }
+      })
+    },
+    [onOpenChange, onRowRemoved, router, submission, toast]
+  )
+
+  const handleArchiveConfirm = useCallback(() => {
+    setArchiveConfirmOpen(false)
+    runClosingAction(archiveSubmission, 'Unable to archive submission')
+  }, [runClosingAction])
+
+  const handleRestore = useCallback(() => {
+    runClosingAction(restoreSubmission, 'Unable to restore submission')
+  }, [runClosingAction])
+
+  const handleDestroyConfirm = useCallback(() => {
+    setDestroyConfirmOpen(false)
+    runClosingAction(
+      destroySubmission,
+      'Unable to permanently delete submission'
+    )
+  }, [runClosingAction])
+
   if (!submission) {
     return null
   }
+
+  const override = ackOverride?.id === submission.id ? ackOverride : null
+  const acknowledged = override
+    ? override.acknowledged
+    : submission.acknowledgedAt !== null
+  // Acknowledgement only exists as a concept for rows that can flag —
+  // in-progress/abandoned audits get no acknowledge-family UI at all.
+  const warrantsAttention = submissionWarrantsAttention(submission)
+  const unacknowledged =
+    mode === 'active' && warrantsAttention && !acknowledged
+  const acknowledgedAt = submission.acknowledgedAt
 
   const isAudit = submission.kind === 'audit'
   const hasAttribution = Boolean(
@@ -107,19 +287,50 @@ export function SubmissionDetailSheet({
             >
               {FORM_SUBMISSION_STATUS_LABELS[submission.status]}
             </Badge>
+            {unacknowledged ? (
+              <Badge variant='secondary'>Unacknowledged</Badge>
+            ) : null}
           </SheetTitle>
           <SheetDescription>
             {format(new Date(submission.startedAt), "d MMM yyyy 'at' HH:mm")}
             {submission.durationMs !== null &&
               ` · ${Math.round(submission.durationMs / 1000)}s on page`}
+            {mode === 'active' && warrantsAttention && acknowledged
+              ? ` · ${
+                  override
+                    ? 'Acknowledged just now'
+                    : acknowledgedAt
+                      ? `Acknowledged ${formatDistanceToNow(
+                          new Date(acknowledgedAt),
+                          { addSuffix: true }
+                        )}`
+                      : 'Acknowledged'
+                }`
+              : null}
           </SheetDescription>
         </SheetHeader>
 
-        <div className='space-y-6 px-4 pb-8'>
+        <div className='space-y-6 px-4 pb-24'>
           <Section title='Contact'>
             <dl className='space-y-2'>
               <Field label='Name' value={value(submission.contactName)} />
-              <Field label='Email' value={value(submission.contactEmail)} />
+              <Field
+                label='Email'
+                value={
+                  submission.contactEmail ? (
+                    // PW2: the natural post-triage action is emailing the
+                    // prospect — make the address actionable.
+                    <a
+                      href={`mailto:${submission.contactEmail}`}
+                      className='text-primary hover:underline'
+                    >
+                      {submission.contactEmail}
+                    </a>
+                  ) : (
+                    '—'
+                  )
+                }
+              />
               <Field label='Company' value={value(submission.contactCompany)} />
               <Field label='Website' value={value(submission.contactWebsite)} />
               <Field
@@ -263,6 +474,98 @@ export function SubmissionDetailSheet({
             )}
           </Section>
         </div>
+
+        {/* Fixed footer, matching the house sheet pattern (hour-block sheet):
+            primary actions left, destructive icon-only action right. */}
+        <div className='border-border/40 bg-muted/95 supports-backdrop-filter:bg-muted/90 fixed right-0 bottom-0 z-50 w-full border-t shadow-lg backdrop-blur sm:max-w-xl'>
+          <div className='flex w-full items-center justify-between gap-3 px-6 py-4'>
+            <div className='flex items-center gap-2'>
+              {mode === 'active' ? (
+                warrantsAttention ? (
+                  unacknowledged ? (
+                    <Button
+                      type='button'
+                      disabled={isPending}
+                      onClick={handleAcknowledge}
+                    >
+                      <Check className='mr-1 h-4 w-4' />
+                      {isPending ? 'Acknowledging…' : 'Acknowledge'}
+                    </Button>
+                  ) : (
+                    <Button
+                      type='button'
+                      variant='outline'
+                      disabled={isPending}
+                      onClick={handleUnacknowledge}
+                    >
+                      <Undo2 className='mr-1 h-4 w-4' />
+                      Unacknowledge
+                    </Button>
+                  )
+                ) : null
+              ) : (
+                <Button
+                  type='button'
+                  variant='secondary'
+                  disabled={isPending}
+                  onClick={handleRestore}
+                >
+                  <RefreshCw className='mr-1 h-4 w-4' />
+                  Restore
+                </Button>
+              )}
+            </div>
+            {mode === 'active' ? (
+              <Button
+                type='button'
+                variant='destructive'
+                size='icon'
+                title='Archive submission'
+                aria-label='Archive submission'
+                disabled={isPending}
+                onClick={() => setArchiveConfirmOpen(true)}
+              >
+                <Archive className='h-4 w-4' />
+                <span className='sr-only'>Archive</span>
+              </Button>
+            ) : (
+              <Button
+                type='button'
+                variant='destructive'
+                size='icon'
+                title='Permanently delete submission'
+                aria-label='Permanently delete submission'
+                disabled={isPending}
+                onClick={() => setDestroyConfirmOpen(true)}
+              >
+                <Trash2 className='h-4 w-4' />
+                <span className='sr-only'>Delete permanently</span>
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <SubmissionArchiveDialog
+          open={archiveConfirmOpen}
+          confirmDisabled={isPending}
+          onCancel={() => setArchiveConfirmOpen(false)}
+          onConfirm={handleArchiveConfirm}
+        />
+
+        <ConfirmDialog
+          open={destroyConfirmOpen}
+          title='Permanently delete submission?'
+          description={`Permanently deleting the submission from ${
+            submission.contactName ||
+            submission.contactEmail ||
+            'this anonymous visitor'
+          } removes it and its history. This action cannot be undone.`}
+          confirmLabel='Delete forever'
+          confirmVariant='destructive'
+          confirmDisabled={isPending}
+          onCancel={() => setDestroyConfirmOpen(false)}
+          onConfirm={handleDestroyConfirm}
+        />
       </SheetContent>
     </Sheet>
   )

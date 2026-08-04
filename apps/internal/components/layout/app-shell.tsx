@@ -20,6 +20,7 @@ import { NAV_GROUPS } from './navigation-config'
 interface Props {
   user: AppUser
   children: ReactNode
+  unacknowledgedSubmissionsCount?: number
 }
 
 type HeaderContextValue = {
@@ -52,9 +53,22 @@ export function AppShellHeader({ children }: { children: ReactNode }) {
   return null
 }
 
-export function AppShell({ user, children }: Props) {
+export function AppShell({
+  user,
+  children,
+  unacknowledgedSubmissionsCount,
+}: Props) {
   const [headerContent, setHeaderContent] = useState<ReactNode>(null)
   const pathname = usePathname()
+
+  // Keyed by nav href so future counts (e.g. leads) reuse the same channel.
+  const navBadges = useMemo(
+    () =>
+      unacknowledgedSubmissionsCount
+        ? { '/submissions': unacknowledgedSubmissionsCount }
+        : undefined,
+    [unacknowledgedSubmissionsCount]
+  )
 
   const currentNav = useMemo(() => {
     const matchesPath = (target: string) =>
@@ -94,7 +108,7 @@ export function AppShell({ user, children }: Props) {
 
   return (
       <div className='bg-muted flex h-screen overflow-hidden'>
-        <Sidebar user={user} />
+        <Sidebar user={user} badges={navBadges} />
         <HeaderContext.Provider value={headerContextValue}>
           <div className='flex min-h-0 min-w-0 flex-1 flex-col'>
             <header className='bg-background flex flex-wrap items-center gap-4 border-b px-4 py-4 sm:px-6'>
