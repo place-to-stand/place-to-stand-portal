@@ -62,6 +62,21 @@ export const ATTENTION_AUDIT_STATUSES = [
   'captured',
 ] as const satisfies readonly FormSubmissionStatus[]
 
+/**
+ * Whether acknowledgement is meaningful for this row at all. In-progress and
+ * abandoned audits never flag, so they get no acknowledge/unacknowledge
+ * affordances anywhere in the UI.
+ */
+export function submissionWarrantsAttention(submission: {
+  kind: FormSubmissionKind
+  status: FormSubmissionStatus
+}): boolean {
+  return (
+    submission.kind === 'contact' ||
+    (ATTENTION_AUDIT_STATUSES as readonly string[]).includes(submission.status)
+  )
+}
+
 export function isUnacknowledgedSubmission(submission: {
   kind: FormSubmissionKind
   status: FormSubmissionStatus
@@ -71,10 +86,7 @@ export function isUnacknowledgedSubmission(submission: {
   if (submission.acknowledgedAt !== null || submission.deletedAt !== null) {
     return false
   }
-  return (
-    submission.kind === 'contact' ||
-    (ATTENTION_AUDIT_STATUSES as readonly string[]).includes(submission.status)
-  )
+  return submissionWarrantsAttention(submission)
 }
 
 export function isFormSubmissionKind(

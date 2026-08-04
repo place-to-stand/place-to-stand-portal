@@ -29,7 +29,7 @@ import {
   FORM_SUBMISSION_KIND_LABELS,
   FORM_SUBMISSION_STATUS_LABELS,
   FORM_SUBMISSION_STATUS_TOKENS,
-  isUnacknowledgedSubmission,
+  submissionWarrantsAttention,
 } from '@/lib/form-submissions/constants'
 import type { FormSubmissionRecord } from '@/lib/form-submissions/types'
 import {
@@ -223,10 +223,11 @@ export function SubmissionDetailSheet({
   const acknowledged = override
     ? override.acknowledged
     : submission.acknowledgedAt !== null
+  // Acknowledgement only exists as a concept for rows that can flag —
+  // in-progress/abandoned audits get no acknowledge-family UI at all.
+  const warrantsAttention = submissionWarrantsAttention(submission)
   const unacknowledged =
-    mode === 'active' &&
-    !acknowledged &&
-    isUnacknowledgedSubmission({ ...submission, acknowledgedAt: null })
+    mode === 'active' && warrantsAttention && !acknowledged
   const acknowledgedAt = submission.acknowledgedAt
 
   const isAudit = submission.kind === 'audit'
@@ -261,7 +262,7 @@ export function SubmissionDetailSheet({
             {format(new Date(submission.startedAt), "d MMM yyyy 'at' HH:mm")}
             {submission.durationMs !== null &&
               ` · ${Math.round(submission.durationMs / 1000)}s on page`}
-            {mode === 'active' && acknowledged
+            {mode === 'active' && warrantsAttention && acknowledged
               ? ` · ${
                   override
                     ? 'Acknowledged just now'
@@ -447,25 +448,27 @@ export function SubmissionDetailSheet({
           <div className='flex w-full items-center justify-between gap-3 px-6 py-4'>
             <div className='flex items-center gap-2'>
               {mode === 'active' ? (
-                unacknowledged ? (
-                  <Button
-                    type='button'
-                    disabled={isPending}
-                    onClick={handleAcknowledge}
-                  >
-                    <Check className='mr-1 h-4 w-4' />
-                    {isPending ? 'Acknowledging…' : 'Acknowledge'}
-                  </Button>
-                ) : acknowledged ? (
-                  <Button
-                    type='button'
-                    variant='outline'
-                    disabled={isPending}
-                    onClick={handleUnacknowledge}
-                  >
-                    <Undo2 className='mr-1 h-4 w-4' />
-                    Unacknowledge
-                  </Button>
+                warrantsAttention ? (
+                  unacknowledged ? (
+                    <Button
+                      type='button'
+                      disabled={isPending}
+                      onClick={handleAcknowledge}
+                    >
+                      <Check className='mr-1 h-4 w-4' />
+                      {isPending ? 'Acknowledging…' : 'Acknowledge'}
+                    </Button>
+                  ) : (
+                    <Button
+                      type='button'
+                      variant='outline'
+                      disabled={isPending}
+                      onClick={handleUnacknowledge}
+                    >
+                      <Undo2 className='mr-1 h-4 w-4' />
+                      Unacknowledge
+                    </Button>
+                  )
                 ) : null
               ) : (
                 <Button
