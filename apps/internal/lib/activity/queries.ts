@@ -19,7 +19,11 @@ import {
 import { db } from '@/lib/db'
 import { activityLogs, projects, users } from '@/lib/db/schema'
 import type { AppUser } from '@/lib/auth/session'
-import { isAdmin, listAccessibleClientIds } from '@/lib/auth/permissions'
+import {
+  assertAdmin,
+  isAdmin,
+  listAccessibleClientIds,
+} from '@/lib/auth/permissions'
 import type { UserRoleValue } from '@/lib/types'
 import type { Json } from '@/lib/types/json'
 
@@ -149,21 +153,28 @@ export async function fetchActivityLogs(
 }
 
 /**
- * UNSCOPED — returns every log in the window regardless of caller. Only call
- * from admin-gated code paths (currently the dashboard recent-activity
- * summary route, which 403s non-admins before reaching this).
+ * Returns every log in the window with NO row scoping — admin-only, enforced
+ * structurally: the caller must pass the current user and non-admins throw
+ * ForbiddenError, so a future non-admin call site fails loudly instead of
+ * silently leaking. (Sole caller today: the dashboard recent-activity
+ * summary route, which additionally 403s non-admins up front.)
  */
-export async function fetchActivityLogsSince({
-  since,
-  until,
-  limit,
-  includeDeleted,
-}: {
-  since: string
-  until?: string
-  limit?: number
-  includeDeleted?: boolean
-}): Promise<ActivityLogWithActor[]> {
+export async function fetchActivityLogsSince(
+  user: AppUser,
+  {
+    since,
+    until,
+    limit,
+    includeDeleted,
+  }: {
+    since: string
+    until?: string
+    limit?: number
+    includeDeleted?: boolean
+  }
+): Promise<ActivityLogWithActor[]> {
+  assertAdmin(user)
+
   const effectiveLimit = Math.min(
     Math.max(limit ?? DEFAULT_RECENT_ACTIVITY_LIMIT, 1),
     DEFAULT_RECENT_ACTIVITY_LIMIT
@@ -237,9 +248,12 @@ function buildFilterConditions(filters: ActivityQueryFilters) {
  *      caller explicitly requested only types outside that set, short-circuit
  *      to 'no-access' rather than running a query that matches nothing.
  *   2. Row scope: the log must point at a client they belong to, or a project
- *      they can access (their clients' projects, or their own PERSONAL
- *      projects — mirroring ensureClientAccessByProjectId, except INTERNAL
- *      projects, which are deliberately excluded from non-admin list feeds).
+ *      they can access — their clients' projects, their own PERSONAL
+ *      projects, or any INTERNAL project. INTERNAL is included because that
+ *      mirrors access everywhere else (ensureClientAccessByProjectId,
+ *      scopeProjects, the My Tasks query all grant INTERNAL to every
+ *      authenticated user); excluding it here empties the activity panel of
+ *      internal-project tasks that non-admins legitimately work on.
  */
 async function buildAccessScopeConditions(
   user: AppUser,
@@ -275,9 +289,9 @@ async function buildNonAdminRowScope(
 ): Promise<SqlExpression | 'no-access'> {
   const clientIds = await listAccessibleClientIds(user)
 
-  const ownPersonalProjects = and(
-    eq(projects.type, 'PERSONAL'),
-    eq(projects.createdBy, user.id)
+  const nonClientProjectAccess = or(
+    and(eq(projects.type, 'PERSONAL'), eq(projects.createdBy, user.id)),
+    eq(projects.type, 'INTERNAL')
   )
 
   const projectRows = await db
@@ -287,8 +301,8 @@ async function buildNonAdminRowScope(
       and(
         isNull(projects.deletedAt),
         clientIds.length
-          ? or(inArray(projects.clientId, clientIds), ownPersonalProjects)
-          : ownPersonalProjects
+          ? or(inArray(projects.clientId, clientIds), nonClientProjectAccess)
+          : nonClientProjectAccess
       )
     )
 
