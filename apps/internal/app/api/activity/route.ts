@@ -2,8 +2,12 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 import { fetchActivityLogs } from '@/lib/activity/queries'
-import type { ActivityTargetType } from '@/lib/activity/types'
+import {
+  CLIENT_VISIBLE_ACTIVITY_TARGET_TYPES,
+  type ActivityTargetType,
+} from '@/lib/activity/types'
 import { getCurrentUser } from '@/lib/auth/session'
+import { isAdmin } from '@/lib/auth/permissions'
 
 const VALID_TARGET_TYPES: ActivityTargetType[] = [
   'TASK',
@@ -82,6 +86,23 @@ export async function GET(request: NextRequest) {
         : (requestedTargetTypes as ActivityTargetType[])
   }
 
+  // Role gate: non-admins may only request client-visible target types.
+  // fetchActivityLogs re-enforces this (plus row scoping) — this check just
+  // turns a would-be silent empty result into an explicit 403.
+  if (!isAdmin(user) && requestedTargetTypes.length) {
+    const clientVisible: readonly string[] = CLIENT_VISIBLE_ACTIVITY_TARGET_TYPES
+    const forbidden = requestedTargetTypes.filter(
+      value => !clientVisible.includes(value)
+    )
+
+    if (forbidden.length) {
+      return NextResponse.json(
+        { error: 'Insufficient permissions for the requested activity.' },
+        { status: 403 }
+      )
+    }
+  }
+
   let limit: number | undefined
 
   if (limitParam) {
@@ -98,7 +119,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const result = await fetchActivityLogs({
+    const result = await fetchActivityLogs(user, {
       targetType,
       targetId: targetId ?? undefined,
       projectId: projectId ?? undefined,

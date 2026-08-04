@@ -48,7 +48,11 @@ export function HomeDashboard({
             initialSnapshot={initialHoursSnapshot}
             className='mb-6'
           />
-          <RecentActivityOverviewWidget className='mb-6' />
+          {/* Team briefing is built from unscoped internal activity — the
+              backing route 403s non-admins, so don't render it for them. */}
+          {user.role === 'ADMIN' ? (
+            <RecentActivityOverviewWidget className='mb-6' />
+          ) : null}
         </div>
       </div>
     </div>

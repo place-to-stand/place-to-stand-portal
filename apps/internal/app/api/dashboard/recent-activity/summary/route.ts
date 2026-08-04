@@ -12,6 +12,7 @@ import {
 } from '@/lib/activity/overview-cache'
 import { getCurrentUser, type AppUser } from '@/lib/auth/session'
 import {
+  isAdmin,
   listAccessibleClientIds,
   listAccessibleProjectIds,
 } from '@/lib/auth/permissions'
@@ -55,6 +56,13 @@ export async function POST(request: Request) {
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  // Admin-only: the briefing is built from UNSCOPED activity logs
+  // (fetchActivityLogsSince) plus global lead/task metrics — internal
+  // operations data. The home dashboard hides the widget for non-admins.
+  if (!isAdmin(user)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   let timeframeDays: number
