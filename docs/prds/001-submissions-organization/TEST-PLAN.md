@@ -84,7 +84,7 @@ Update after each coding session. Check items only after verifying in the runnin
 - [ ] Screen reader (VoiceOver) announces "Submissions … unread" on the nav link
 - [ ] Admin sidebar still shows Submissions with correct active state after the D10 roles change (regression on the roles filter)
 
-## Regression checks — adjacent features (6)
+## Regression checks — adjacent features (7)
 
 - [ ] Intake webhook: full audit beacon lifecycle (in_progress → completed → captured) still upserts one row with correct field coalescing
 - [ ] Contact-form intake still creates a one-shot row
@@ -92,6 +92,7 @@ Update after each coding session. Check items only after verifying in the runnin
 - [ ] Leads board and leads archive unaffected
 - [ ] Sidebar renders correctly for both roles on unrelated routes (badge plumbing didn't break nav)
 - [ ] `activity_overview_cache` / dashboard activity highlights still render (new SUBMISSION verbs don't break aggregation)
+- [ ] Activity tenant isolation after reassignment: as admin, move a project from client A to client B (settings → projects); a client-A member can no longer read that project's task/project activity via `/api/activity` (old rows carry A's stale `target_client_id` — project-first authorization must win); a client-B member now can
 
 ## Summary
 
@@ -103,5 +104,5 @@ Update after each coding session. Check items only after verifying in the runnin
 | 04 Archive & restore | 10 |
 | 05 Activity | 9 |
 | 06 Nav badge | 9 |
-| Regression | 6 |
-| **Total** | **62** |
+| Regression | 7 |
+| **Total** | **63** |
