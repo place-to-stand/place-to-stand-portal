@@ -19,7 +19,8 @@ place-to-stand-portal/
 │   └── client/            # Client portal (Next.js, deployed to Vercel, port 3001)
 │       ├── app/           # Next.js App Router routes
 │       ├── components/    # React components
-│       └── lib/           # Auth, data fetching, utilities
+│       ├── lib/           # Auth, data fetching, utilities
+│       └── styles/        # Global CSS
 ├── packages/
 │   ├── db/                # Shared database schema, relations, and migrations (@pts/db)
 │   └── github/            # GitHub App auth and API utilities (@pts/github)
@@ -73,7 +74,7 @@ Turbo v2 uses strict mode by default — only env vars listed in `turbo.json` ar
 - **Framework**: Next.js 16 (App Router) with Turbopack
 - **Database**: PostgreSQL via Supabase with Drizzle ORM (schema in `packages/db`)
 - **Auth**: Supabase Auth with session-based authentication
-- **Storage**: Supabase Storage (buckets: `user-avatars`, `task-attachments`)
+- **Storage**: Supabase Storage (buckets: `user-avatars`, `task-attachments`, `email-attachments`)
 - **State**: React Server Components + TanStack React Query
 - **Styling**: Tailwind CSS v4, Radix UI, shadcn/ui components
 - **Analytics**: PostHog (client and server-side)
@@ -84,31 +85,34 @@ Turbo v2 uses strict mode by default — only env vars listed in `turbo.json` ar
 
 **Internal admin portal** (`apps/internal/app/`):
 ```
-├── (auth)/           # Sign-in, password reset (unauthenticated)
+├── (auth)/           # Sign-in, forgot/force-reset password (unauthenticated)
 ├── (dashboard)/      # Protected routes
-│   ├── clients/      # Client management (archive, activity)
-│   ├── contacts/     # Contact management, portal user promotion
-│   ├── projects/     # Project boards (board, backlog, calendar, review, time-logs, archive, activity)
-│   ├── leads/        # Lead kanban board
-│   ├── my-tasks/     # User's assigned tasks
-│   └── settings/     # Users, projects, hour blocks, integrations
-├── api/              # API routes
-│   ├── v1/           # Versioned endpoints
-│   ├── my-tasks/     # Task management
-│   ├── projects/     # Project operations
-│   ├── uploads/      # File uploads
-│   ├── storage/      # File serving
-│   └── integrations/ # External webhooks (lead intake)
+│   ├── clients/      # Client management ([clientSlug] detail, archive, activity)
+│   ├── contacts/     # Contact management, portal user promotion (archive, activity)
+│   ├── hour-blocks/  # Prepaid hour block management (archive, activity)
+│   ├── invoices/     # Invoicing (settings, archive, activity)
+│   ├── leads/        # Lead kanban board (board, archive, activity)
+│   ├── my/           # Current user's pages (home, tasks)
+│   ├── projects/     # Project workspace (tabbed, see below; archive, activity)
+│   ├── reports/      # Reports (monthly-close)
+│   ├── settings/     # Users, projects, integrations
+│   └── submissions/  # Website form submissions
+├── (public)/         # Publicly shared pages (e.g. share/invoices/[token])
+├── api/              # API routes: v1/, tasks/, task-comments/, my-tasks/, projects/,
+│                     #   clients/, contacts/, leads/, invoices/, dashboard/, activity/,
+│                     #   planning/, uploads/, storage/, public/, auth/, github/, google/,
+│                     #   integrations/ (leads-intake, stripe, github, google, ...)
+├── auth/             # Supabase auth callback
 └── unauthorized/     # Access denied page
 ```
 
-Routes use slug-based patterns: `/projects/[clientSlug]/[projectSlug]/board/[[...taskId]]/`
+The project workspace is tabbed: `/projects/[clientSlug]/[projectSlug]/{tasks,overview,scope,review,time-logs,activity,archive}`. The task board lives on the `tasks` tab, with the task sheet as an optional catch-all: `/projects/[clientSlug]/[projectSlug]/tasks/[[...taskId]]`
 
 **Client portal** (`apps/client/app/`):
 ```
-├── (auth)/           # Sign-in (unauthenticated)
+├── (auth)/           # Sign-in, forgot/force-reset password (unauthenticated)
 ├── (portal)/         # Protected routes (force-dynamic)
-│   ├── projects/     # Project detail with GitHub integration
+│   ├── projects/     # Project detail with GitHub integration ([projectId])
 │   └── github/       # GitHub App setup and management
 ├── api/github/       # GitHub App install, callback, webhook, repos, link
 ├── onboarding/       # First-time setup wizard
@@ -124,15 +128,24 @@ Portal access is controlled via `client_members` table. Contacts promoted to por
 - `clients` - Client records with billing types (prepaid, net_30)
 - `contacts` - Contact records (may have a `userId` for portal access)
 - `contact_clients` - Contact-to-client links
+- `contact_leads` - Contact-to-lead links
 - `client_members` - Client-to-user portal memberships (auto-synced when contacts are linked/promoted)
-- `projects` - Projects with types: CLIENT (tied to clients), PERSONAL (individual), INTERNAL (team)
-- `tasks` - Tasks with workflow: BACKLOG → ON_DECK → IN_PROGRESS → IN_REVIEW → BLOCKED → DONE → ARCHIVED
-- `leads` - Lead pipeline: NEW_OPPORTUNITIES → ACTIVE → PROPOSAL_SENT → ON_ICE → CLOSED_WON/LOST/UNQUALIFIED
+- `projects` - Projects with types: CLIENT (tied to clients), PERSONAL (individual), INTERNAL (team); status: ONBOARDING → ACTIVE → ON_HOLD → COMPLETED
+- `tasks` - Tasks with workflow: ON_DECK → IN_PROGRESS → BLOCKED → DONE → ARCHIVED
+- `leads` - Lead pipeline: NEW_OPPORTUNITIES → ACTIVE_OPPORTUNITIES → PROPOSAL_SENT → ON_ICE → CLOSED_WON/CLOSED_LOST/UNQUALIFIED
+- `lead_stage_history` - Lead stage transition history
 - `time_logs` + `time_log_tasks` - Time tracking linked to tasks/projects
 - `hour_blocks` - Prepaid hour contracts
 - `task_comments` - Task discussions
 - `task_attachments` - File attachments
 - `task_assignees` + `task_assignee_metadata` - Task assignments with custom sort order
+- `task_deployments` - Deployments linked to tasks
+- `invoices` + `invoice_line_items` - Invoicing
+- `product_catalog_items` + `tax_rates` - Invoice line-item catalog and tax configuration
+- `project_sows` + `sow_snapshots` + `sow_sections` - Scope-of-work documents
+- `planning_sessions` + `plan_threads` + `plan_revisions` + `plan_messages` - AI planning sessions
+- `form_submissions` - Website form submissions
+- `oauth_connections` - Google/GitHub OAuth connections
 - `github_app_installations` - GitHub App installs per client
 - `github_repo_links` - Repository links per project
 - `activity_logs` + `activity_overview_cache` - Activity audit trail
@@ -196,12 +209,14 @@ This project does NOT use PostgreSQL Row Level Security. All access control is h
 - `requireUser()` - Guard protected routes (throws if unauthenticated)
 - `requireRole()` - Role-based access control
 
-**Permission helpers** (`apps/internal/lib/auth/permissions.ts`):
+**Permission helpers** (`apps/internal/lib/auth/permissions.ts`) — all take the `AppUser` object, not a bare user id:
 - `isAdmin(user)` - Boolean role check
 - `assertAdmin(user)` - Throws ForbiddenError if not admin
-- `ensureClientAccess(userId, clientId)` - Verify client membership
-- `ensureClientAccessByProjectId(userId, projectId)` - Verify project access
-- `listAccessibleTaskIds(userId)` - Scope tasks by user memberships
+- `assertIsSelf(user, targetUserId)` - Verify acting on own record
+- `ensureClientAccess(user, clientId)` - Verify client membership
+- `ensureClientAccessBy{ProjectId,TaskId,TaskCommentId,TaskAttachmentId,TimeLogId,TimeLogTaskId}(user, id)` - Verify access via the related entity
+- `listAccessible{ClientIds,ProjectIds,TaskIds}(user)` - Scope queries by user memberships
+- `ensureTaskAssigneeAccess(...)` - Verify task assignee operations
 
 **Roles:**
 - `ADMIN` - Full access to all data
@@ -247,16 +262,18 @@ API responses follow `{ ok: boolean, data?: T, error?: string }` pattern.
 **Supabase Storage setup:**
 - **Bucket: `user-avatars`** - Private bucket with authenticated access (must be created manually)
 - **Bucket: `task-attachments`** - Task files
+- **Bucket: `email-attachments`** - Email attachments (Gmail integration)
 
 **Storage utilities:**
 - `apps/internal/lib/storage/avatar.ts` - Upload/delete user avatars
 - `apps/internal/lib/storage/task-attachments.ts` - Upload/delete task files
+- `apps/internal/lib/storage/email-attachments.ts` - Email attachment storage
 - Signed URLs generated for secure access
 
 ### Activity System
 
 **Event tracking** (`apps/internal/lib/activity/events/`):
-- Domain-specific event handlers: `tasks.ts`, `projects.ts`, `clients.ts`, `time-logs.ts`, `users.ts`, `hour-blocks.ts`
+- Domain-specific event handlers: `tasks.ts`, `projects.ts`, `clients.ts`, `contacts.ts`, `leads.ts`, `invoices.ts`, `time-logs.ts`, `users.ts`, `hour-blocks.ts`
 - Centralized in `apps/internal/lib/activity/events.ts`
 - Activity feed with highlights computation
 - Overview cache for performance (`activity_overview_cache` table)
