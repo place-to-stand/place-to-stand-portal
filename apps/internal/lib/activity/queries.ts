@@ -100,9 +100,10 @@ const EMPTY_RESULT: ActivityQueryResult = {
 /**
  * Access control lives here, not in the callers (this project has NO RLS):
  * admins see everything; non-admins are restricted to
- * CLIENT_VISIBLE_ACTIVITY_TARGET_TYPES AND rows attached to a client they
- * belong to (via client_members) or a project they can access. Requested
- * filters narrow within that scope — they can never widen it.
+ * CLIENT_VISIBLE_ACTIVITY_TARGET_TYPES AND rows they can reach project-first
+ * — project-linked rows require current access to that project, and only
+ * project-less rows fall back to client membership (via client_members).
+ * Requested filters narrow within that scope — they can never widen it.
  */
 export async function fetchActivityLogs(
   user: AppUser,
@@ -247,13 +248,17 @@ function buildFilterConditions(filters: ActivityQueryFilters) {
  *   1. targetType restricted to CLIENT_VISIBLE_ACTIVITY_TARGET_TYPES — if the
  *      caller explicitly requested only types outside that set, short-circuit
  *      to 'no-access' rather than running a query that matches nothing.
- *   2. Row scope: the log must point at a client they belong to, or a project
- *      they can access — their clients' projects, their own PERSONAL
- *      projects, or any INTERNAL project. INTERNAL is included because that
- *      mirrors access everywhere else (ensureClientAccessByProjectId,
- *      scopeProjects, the My Tasks query all grant INTERNAL to every
- *      authenticated user); excluding it here empties the activity panel of
- *      internal-project tasks that non-admins legitimately work on.
+ *   2. Row scope, project-first: a log tied to a project (target_project_id
+ *      set) is authorized ONLY through current access to that project —
+ *      their clients' projects, their own PERSONAL projects, or any INTERNAL
+ *      project (INTERNAL mirrors access everywhere else:
+ *      ensureClientAccessByProjectId, scopeProjects, and the My Tasks query
+ *      all grant it to every authenticated user). The log's denormalized
+ *      target_client_id is deliberately NOT consulted for project-linked
+ *      rows: it is a snapshot from log time, and honoring it would let
+ *      members of a project's FORMER client keep reading its history after
+ *      reassignment. target_client_id only authorizes rows with no project
+ *      association.
  */
 async function buildAccessScopeConditions(
   user: AppUser,
@@ -310,12 +315,23 @@ async function buildNonAdminRowScope(
 
   const scopes: SqlExpression[] = []
 
-  if (clientIds.length) {
-    scopes.push(inArray(activityLogs.targetClientId, clientIds))
-  }
-
   if (projectIds.length) {
     scopes.push(inArray(activityLogs.targetProjectId, projectIds))
+  }
+
+  // Client membership only authorizes rows with NO project association —
+  // project-linked rows must qualify via current project access above, or
+  // stale target_client_id snapshots would leak reassigned-project history
+  // to the former client's members.
+  if (clientIds.length) {
+    const clientOnlyRows = and(
+      isNull(activityLogs.targetProjectId),
+      inArray(activityLogs.targetClientId, clientIds)
+    )
+
+    if (clientOnlyRows) {
+      scopes.push(clientOnlyRows)
+    }
   }
 
   if (!scopes.length) {
