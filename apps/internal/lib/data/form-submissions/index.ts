@@ -7,7 +7,7 @@ import { assertAdmin, isAdmin } from '@/lib/auth/permissions'
 import { NotFoundError } from '@/lib/errors/http'
 import {
   countFormSubmissions,
-  countUnreadFormSubmissions,
+  countUnacknowledgedFormSubmissions,
   getFormSubmissionById,
   listFormSubmissions,
 } from '@/lib/queries/form-submissions'
@@ -31,8 +31,8 @@ type FetchOptions = {
   pageSize: number
   kind?: FormSubmissionKindValue
   status?: FormSubmissionStatusValue
-  /** D1 unread predicate (PW1 quick filter) — active rows only. */
-  unreadOnly?: boolean
+  /** D1 unacknowledged predicate (PW1 quick filter) — active rows only. */
+  unacknowledgedOnly?: boolean
   /** true: archived rows (Archive tab). Default: active rows. */
   archived?: boolean
 }
@@ -48,7 +48,7 @@ function toRecord(row: FormSubmission): FormSubmissionRecord {
 export const fetchFormSubmissions = cache(
   async (
     user: AppUser,
-    { page, pageSize, kind, status, unreadOnly, archived }: FetchOptions
+    { page, pageSize, kind, status, unacknowledgedOnly, archived }: FetchOptions
   ): Promise<FormSubmissionsPage> => {
     // Submissions are admin-only - enforce at data layer for defense in depth
     assertAdmin(user)
@@ -59,10 +59,10 @@ export const fetchFormSubmissions = cache(
         limit: pageSize,
         kind,
         status,
-        unreadOnly,
+        unacknowledgedOnly,
         archived,
       }),
-      countFormSubmissions({ kind, status, unreadOnly, archived }),
+      countFormSubmissions({ kind, status, unacknowledgedOnly, archived }),
     ])
 
     return {
@@ -78,13 +78,13 @@ export const fetchFormSubmissions = cache(
  * the shared dashboard layout for every role. Non-admins get 0 (their
  * sidebar shows no badge; the Submissions page itself still hard-gates).
  */
-export const fetchUnreadSubmissionCount = cache(
+export const fetchUnacknowledgedSubmissionCount = cache(
   async (user: AppUser): Promise<number> => {
     if (!isAdmin(user)) {
       return 0
     }
 
-    return countUnreadFormSubmissions()
+    return countUnacknowledgedFormSubmissions()
   }
 )
 

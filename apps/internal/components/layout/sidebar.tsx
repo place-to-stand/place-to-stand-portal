@@ -148,7 +148,7 @@ export function Sidebar({ user, badges }: Props) {
                                   {badgeCount > 99 ? '99+' : badgeCount}
                                 </span>
                                 <span className='sr-only'>
-                                  ({badgeCount} unread)
+                                  ({badgeCount} unacknowledged)
                                 </span>
                               </>
                             ) : null}

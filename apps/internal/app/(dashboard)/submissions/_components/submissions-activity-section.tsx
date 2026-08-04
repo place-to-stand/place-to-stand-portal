@@ -23,8 +23,8 @@ export function SubmissionsActivitySection() {
       <div>
         <h3 className='text-lg font-semibold'>Recent activity</h3>
         <p className='text-muted-foreground text-sm'>
-          Audit submission acknowledgements, archives, and restores in one
-          place.
+          Audit submission acknowledgement changes, archives, restores, and
+          deletions in one place.
         </p>
       </div>
       <SubmissionsActivityFeed

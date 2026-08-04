@@ -66,19 +66,17 @@ export default async function SubmissionsArchivePage({
             activeTab='archive'
             className='flex-1 sm:flex-none'
           />
-          <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6'>
-            <SubmissionsFilters
-              activeKind={kind}
-              activeStatus={status}
-              basePath='/submissions/archive'
-            />
-            <span className='text-muted-foreground text-sm whitespace-nowrap'>
-              Total archived: {totalCount}
-            </span>
-          </div>
+          <span className='text-muted-foreground text-sm whitespace-nowrap'>
+            Total archived: {totalCount}
+          </span>
         </div>
         {/* Main Container with Background */}
-        <section className='bg-background rounded-xl border p-6 shadow-sm'>
+        <section className='bg-background rounded-xl border p-6 shadow-sm space-y-4'>
+          <SubmissionsFilters
+            activeKind={kind}
+            activeStatus={status}
+            basePath='/submissions/archive'
+          />
           <SubmissionsTable
             submissions={items}
             totalCount={totalCount}

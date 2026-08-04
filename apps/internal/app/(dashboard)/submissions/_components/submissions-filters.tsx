@@ -20,17 +20,17 @@ import {
 } from '@/lib/form-submissions/constants'
 
 const ALL = 'all'
-const UNREAD = 'unread'
+const UNACKNOWLEDGED = 'unacknowledged'
 
 type SubmissionsFiltersProps = {
   activeKind?: FormSubmissionKind
   activeStatus?: FormSubmissionStatus
   /**
-   * PW1 unread quick filter — List tab only (archived rows are never
-   * unread, so the archive page omits the prop entirely).
+   * PW1 unacknowledged quick filter — List tab only (archived rows are
+   * never unacknowledged, so the archive page omits the prop entirely).
    */
-  activeUnread?: boolean
-  showUnreadFilter?: boolean
+  activeUnacknowledged?: boolean
+  showUnacknowledgedFilter?: boolean
   /** Base path to push filter changes to — '/submissions' or '/submissions/archive'. */
   basePath: string
 }
@@ -38,8 +38,8 @@ type SubmissionsFiltersProps = {
 export function SubmissionsFilters({
   activeKind,
   activeStatus,
-  activeUnread,
-  showUnreadFilter = false,
+  activeUnacknowledged,
+  showUnacknowledgedFilter = false,
   basePath,
 }: SubmissionsFiltersProps) {
   const router = useRouter()
@@ -64,22 +64,22 @@ export function SubmissionsFilters({
 
   return (
     <div className='flex flex-col gap-2 sm:flex-row sm:items-center'>
-      {showUnreadFilter ? (
+      {showUnacknowledgedFilter ? (
         <Select
-          value={activeUnread ? UNREAD : ALL}
+          value={activeUnacknowledged ? UNACKNOWLEDGED : ALL}
           onValueChange={value =>
             updateParams({
-              unread: value === UNREAD ? '1' : undefined,
+              unacknowledged: value === UNACKNOWLEDGED ? '1' : undefined,
               page: undefined,
             })
           }
         >
-          <SelectTrigger className='w-[140px]'>
+          <SelectTrigger className='w-[170px]'>
             <SelectValue placeholder='All' />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL}>All</SelectItem>
-            <SelectItem value={UNREAD}>Unread</SelectItem>
+            <SelectItem value={UNACKNOWLEDGED}>Unacknowledged</SelectItem>
           </SelectContent>
         </Select>
       ) : null}

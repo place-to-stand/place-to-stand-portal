@@ -33,6 +33,22 @@ export const submissionAcknowledgedEvent = (
   metadata: toMetadata({ status: args.status }),
 })
 
+export const submissionUnacknowledgedEvent = (
+  args: SubmissionEventArgs
+): ActivityEvent => ({
+  verb: ActivityVerbs.SUBMISSION_UNACKNOWLEDGED,
+  summary: `Marked ${describeSubmission(args)} as unacknowledged`,
+  metadata: toMetadata({ status: args.status }),
+})
+
+export const submissionDestroyedEvent = (
+  args: SubmissionEventArgs
+): ActivityEvent => ({
+  verb: ActivityVerbs.SUBMISSION_DESTROYED,
+  summary: `Permanently deleted ${describeSubmission(args)}`,
+  metadata: toMetadata({ status: args.status }),
+})
+
 export const submissionArchivedEvent = (
   args: SubmissionEventArgs
 ): ActivityEvent => ({

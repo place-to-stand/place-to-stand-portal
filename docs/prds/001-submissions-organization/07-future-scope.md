@@ -22,8 +22,8 @@ Submissions actions ship with no server tracking — `trackSettingsServerInterac
 ### Pin unread rows to the top of the list
 03 keeps `last_activity_at DESC` ordering. Revisit if the team asks for unread-first sorting.
 
-### Permanent destroy of archived submissions
-Hour blocks has `destroy-hour-block.ts`; this PRD deliberately stops at soft delete (project convention: preserve historical data; test rows are harmless in the archive). Revisit only with a data-hygiene or compliance driver.
+### ~~Permanent destroy of archived submissions~~ (DONE — 2026-08-04 revision)
+Originally deferred; implemented at the owner's request during post-implementation fine-tuning. `destroySubmission` (Archive tab only — the query layer refuses to destroy active rows) with a "Delete forever" confirm dialog, following the contacts archive pattern, logging `SUBMISSION_DESTROYED`.
 
 ### Promote submission → lead
 Kris explicitly declined statuses/promotion for now: "I'm trying to keep as little manual work as possible" (00:50:00). The schema comment on `formSubmissions` anticipates manual promotion. If built later, wire `targetClientId`/lead linkage into the activity events from section 05.

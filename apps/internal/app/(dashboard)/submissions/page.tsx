@@ -43,11 +43,17 @@ export default async function SubmissionsPage({
   const statusParam = firstParam(params.status)
   const kind = isFormSubmissionKind(kindParam) ? kindParam : undefined
   const status = isFormSubmissionStatus(statusParam) ? statusParam : undefined
-  const unreadOnly = firstParam(params.unread) === '1'
+  const unacknowledgedOnly = firstParam(params.unacknowledged) === '1'
 
   const { items, totalCount, totalPages } = await fetchFormSubmissions(
     currentUser,
-    { page: currentPage, pageSize: PAGE_SIZE, kind, status, unreadOnly }
+    {
+      page: currentPage,
+      pageSize: PAGE_SIZE,
+      kind,
+      status,
+      unacknowledgedOnly,
+    }
   )
 
   return (
@@ -68,21 +74,19 @@ export default async function SubmissionsPage({
             activeTab='submissions'
             className='flex-1 sm:flex-none'
           />
-          <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6'>
-            <SubmissionsFilters
-              activeKind={kind}
-              activeStatus={status}
-              activeUnread={unreadOnly}
-              showUnreadFilter
-              basePath='/submissions'
-            />
-            <span className='text-muted-foreground text-sm whitespace-nowrap'>
-              Total submissions: {totalCount}
-            </span>
-          </div>
+          <span className='text-muted-foreground text-sm whitespace-nowrap'>
+            Total submissions: {totalCount}
+          </span>
         </div>
         {/* Main Container with Background */}
-        <section className='bg-background rounded-xl border p-6 shadow-sm'>
+        <section className='bg-background rounded-xl border p-6 shadow-sm space-y-4'>
+          <SubmissionsFilters
+            activeKind={kind}
+            activeStatus={status}
+            activeUnacknowledged={unacknowledgedOnly}
+            showUnacknowledgedFilter
+            basePath='/submissions'
+          />
           <SubmissionsTable
             submissions={items}
             totalCount={totalCount}

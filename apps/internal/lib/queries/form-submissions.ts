@@ -18,10 +18,11 @@ type FormSubmissionFilters = {
   kind?: FormSubmission['kind']
   status?: FormSubmission['status']
   /**
-   * D1 unread predicate (PW1 filter) — MUST stay in sync with
-   * `isUnreadSubmission` in apps/internal/lib/form-submissions/constants.ts.
+   * D1 unacknowledged predicate (PW1 filter) — MUST stay in sync with
+   * `isUnacknowledgedSubmission` in
+   * apps/internal/lib/form-submissions/constants.ts.
    */
-  unreadOnly?: boolean
+  unacknowledgedOnly?: boolean
   /** false/undefined: active rows (deleted_at IS NULL). true: archived rows. */
   archived?: boolean
 }
@@ -29,7 +30,7 @@ type FormSubmissionFilters = {
 function buildFilters({
   kind,
   status,
-  unreadOnly,
+  unacknowledgedOnly,
   archived,
 }: FormSubmissionFilters) {
   return and(
@@ -38,7 +39,7 @@ function buildFilters({
       : isNull(formSubmissions.deletedAt),
     kind ? eq(formSubmissions.kind, kind) : undefined,
     status ? eq(formSubmissions.status, status) : undefined,
-    unreadOnly
+    unacknowledgedOnly
       ? and(
           isNull(formSubmissions.acknowledgedAt),
           or(
@@ -197,12 +198,13 @@ export async function listFormSubmissions({
 }
 
 /**
- * D1 unread predicate — MUST stay in sync with `isUnreadSubmission` in
+ * D1 unacknowledged predicate — MUST stay in sync with
+ * `isUnacknowledgedSubmission` in
  * apps/internal/lib/form-submissions/constants.ts. Served by the partial
  * index idx_form_submissions_unread (deleted_at IS NULL AND
  * acknowledged_at IS NULL), which covers the kind/status residual filter.
  */
-export async function countUnreadFormSubmissions() {
+export async function countUnacknowledgedFormSubmissions() {
   const [row] = await db
     .select({ value: count() })
     .from(formSubmissions)
@@ -275,6 +277,49 @@ export async function setFormSubmissionArchived(id: string, archived: boolean) {
         archived
           ? isNull(formSubmissions.deletedAt)
           : isNotNull(formSubmissions.deletedAt)
+      )
+    )
+    .returning()
+
+  return row ?? null
+}
+
+/**
+ * Reverse of `acknowledgeFormSubmission`, same idempotency contract: only
+ * clears acknowledgement when one exists on an active row.
+ */
+export async function unacknowledgeFormSubmission(id: string) {
+  const [row] = await db
+    .update(formSubmissions)
+    .set({
+      acknowledgedAt: null,
+      acknowledgedBy: null,
+      updatedAt: sql`timezone('utc'::text, now())`,
+    })
+    .where(
+      and(
+        eq(formSubmissions.id, id),
+        isNull(formSubmissions.deletedAt),
+        isNotNull(formSubmissions.acknowledgedAt)
+      )
+    )
+    .returning()
+
+  return row ?? null
+}
+
+/**
+ * Hard delete — the ONE exception to the soft-delete convention, restricted
+ * to rows that are already archived (mirrors contacts/hour-blocks destroy:
+ * archive first, then permanently delete from the Archive tab).
+ */
+export async function destroyFormSubmission(id: string) {
+  const [row] = await db
+    .delete(formSubmissions)
+    .where(
+      and(
+        eq(formSubmissions.id, id),
+        isNotNull(formSubmissions.deletedAt)
       )
     )
     .returning()

@@ -3,10 +3,11 @@
 import { useCallback, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
-import { Archive, Check, RefreshCw } from 'lucide-react'
+import { Archive, Check, RefreshCw, Trash2 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 import { Progress } from '@/components/ui/progress'
 import {
@@ -24,12 +25,13 @@ import {
   FORM_SUBMISSION_KIND_TOKENS,
   FORM_SUBMISSION_STATUS_LABELS,
   FORM_SUBMISSION_STATUS_TOKENS,
-  isUnreadSubmission,
+  isUnacknowledgedSubmission,
 } from '@/lib/form-submissions/constants'
 import type { FormSubmissionRecord } from '@/lib/form-submissions/types'
 import {
   acknowledgeSubmission,
   archiveSubmission,
+  destroySubmission,
   restoreSubmission,
 } from '../actions'
 
@@ -43,6 +45,13 @@ const EMPTY_STATE_COPY: Record<SubmissionsTableMode, string> = {
   archive: 'No archived submissions.',
 }
 
+function describeSubmission(submission: FormSubmissionRecord): string {
+  return (
+    submission.contactName ||
+    submission.contactEmail ||
+    'this anonymous submission'
+  )
+}
 
 type SubmissionsTableProps = {
   submissions: FormSubmissionRecord[]
@@ -69,6 +78,8 @@ export function SubmissionsTable({
   const { toast } = useToast()
   const [selected, setSelected] = useState<FormSubmissionRecord | null>(null)
   const [archiveTarget, setArchiveTarget] =
+    useState<FormSubmissionRecord | null>(null)
+  const [destroyTarget, setDestroyTarget] =
     useState<FormSubmissionRecord | null>(null)
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [, startTransition] = useTransition()
@@ -150,184 +161,224 @@ export function SubmissionsTable({
     [runRowAction]
   )
 
+  const handleDestroyConfirm = useCallback(() => {
+    if (!destroyTarget) {
+      return
+    }
+
+    const target = destroyTarget
+    setDestroyTarget(null)
+    runRowAction(
+      target,
+      destroySubmission,
+      'Unable to permanently delete submission'
+    )
+  }, [destroyTarget, runRowAction])
+
   return (
     <div className='space-y-4'>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className='w-6'>
-              <span className='sr-only'>Unread</span>
-            </TableHead>
-            <TableHead>Received</TableHead>
-            <TableHead>Form</TableHead>
-            <TableHead>Contact</TableHead>
-            <TableHead>Company</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Progress</TableHead>
-            <TableHead>Phase</TableHead>
-            {mode === 'archive' ? <TableHead>Archived</TableHead> : null}
-            <TableHead className='text-right'>
-              <span className='sr-only'>Actions</span>
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {submissions.length === 0 ? (
-            <TableRow>
-              <TableCell
-                colSpan={columnCount}
-                className='text-muted-foreground py-10 text-center'
-              >
-                {EMPTY_STATE_COPY[mode]}
-              </TableCell>
+      <div className='overflow-hidden rounded-xl border'>
+        <Table>
+          <TableHeader>
+            <TableRow className='bg-muted/40'>
+              <TableHead className='w-6'>
+                <span className='sr-only'>Unacknowledged</span>
+              </TableHead>
+              <TableHead>Received</TableHead>
+              <TableHead>Form</TableHead>
+              <TableHead>Contact</TableHead>
+              <TableHead>Company</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Progress</TableHead>
+              <TableHead>Phase</TableHead>
+              {mode === 'archive' ? <TableHead>Archived</TableHead> : null}
+              <TableHead className='w-32 text-right'>Actions</TableHead>
             </TableRow>
-          ) : (
-            submissions.map(submission => {
-              const unread =
-                mode === 'active' && isUnreadSubmission(submission)
-
-              return (
-                <TableRow
-                  key={submission.id}
-                  onClick={() => setSelected(submission)}
-                  className={cn('cursor-pointer', unread && 'font-medium')}
+          </TableHeader>
+          <TableBody>
+            {submissions.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columnCount}
+                  className='text-muted-foreground py-10 text-center text-sm'
                 >
-                  <TableCell className='w-6'>
-                    {unread ? (
-                      <span
-                        className='bg-primary block size-2 rounded-full'
-                        aria-hidden='true'
-                      />
-                    ) : null}
-                    {unread ? <span className='sr-only'>Unread</span> : null}
-                  </TableCell>
-                  <TableCell className='whitespace-nowrap'>
-                    {formatDistanceToNow(new Date(submission.lastActivityAt), {
-                      addSuffix: true,
-                    })}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant='outline'
-                      className={cn(
-                        FORM_SUBMISSION_KIND_TOKENS[submission.kind]
-                      )}
-                    >
-                      {FORM_SUBMISSION_KIND_LABELS[submission.kind]}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {submission.contactName || submission.contactEmail ? (
-                      <div className='flex flex-col'>
-                        <span>{submission.contactName ?? '—'}</span>
-                        <span className='text-muted-foreground text-xs'>
-                          {submission.contactEmail}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className='text-muted-foreground italic'>
-                        Anonymous
-                      </span>
+                  {EMPTY_STATE_COPY[mode]}
+                </TableCell>
+              </TableRow>
+            ) : (
+              submissions.map(submission => {
+                const unacknowledged =
+                  mode === 'active' && isUnacknowledgedSubmission(submission)
+
+                return (
+                  <TableRow
+                    key={submission.id}
+                    onClick={() => setSelected(submission)}
+                    className={cn(
+                      'cursor-pointer',
+                      unacknowledged && 'font-medium',
+                      submission.deletedAt && 'opacity-60'
                     )}
-                  </TableCell>
-                  <TableCell>{submission.contactCompany ?? '—'}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant='outline'
-                      className={cn(
-                        FORM_SUBMISSION_STATUS_TOKENS[submission.status]
-                      )}
-                    >
-                      {FORM_SUBMISSION_STATUS_LABELS[submission.status]}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {submission.percentComplete === null ? (
-                      <span className='text-muted-foreground'>—</span>
-                    ) : (
-                      <div className='flex items-center gap-2'>
-                        <Progress
-                          value={submission.percentComplete}
-                          className='w-16'
-                        />
-                        <span className='text-muted-foreground text-xs'>
-                          {submission.percentComplete}%
-                        </span>
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {submission.result?.phaseName ??
-                      submission.phaseId ?? (
-                        <span className='text-muted-foreground'>—</span>
-                      )}
-                  </TableCell>
-                  {mode === 'archive' ? (
-                    <TableCell className='text-muted-foreground whitespace-nowrap text-sm'>
-                      {submission.deletedAt
-                        ? formatDistanceToNow(new Date(submission.deletedAt), {
-                            addSuffix: true,
-                          })
-                        : '—'}
-                    </TableCell>
-                  ) : null}
-                  <TableCell className='text-right'>
-                    <div className='flex justify-end gap-2'>
-                      {unread ? (
-                        <Button
-                          variant='outline'
-                          size='icon'
-                          title='Acknowledge submission'
-                          aria-label='Acknowledge submission'
-                          disabled={pendingId === submission.id}
-                          onClick={event => {
-                            event.stopPropagation()
-                            handleAcknowledge(submission)
-                          }}
-                        >
-                          <Check className='h-4 w-4' />
-                          <span className='sr-only'>Acknowledge</span>
-                        </Button>
+                  >
+                    <TableCell className='w-6'>
+                      {unacknowledged ? (
+                        <>
+                          <span
+                            className='bg-primary block size-2 rounded-full'
+                            aria-hidden='true'
+                          />
+                          <span className='sr-only'>Unacknowledged</span>
+                        </>
                       ) : null}
-                      {mode === 'active' ? (
-                        <Button
-                          variant='destructive'
-                          size='icon'
-                          title='Archive submission'
-                          aria-label='Archive submission'
-                          disabled={pendingId === submission.id}
-                          onClick={event => {
-                            event.stopPropagation()
-                            setArchiveTarget(submission)
-                          }}
-                        >
-                          <Archive className='h-4 w-4' />
-                          <span className='sr-only'>Archive</span>
-                        </Button>
-                      ) : (
-                        <Button
-                          variant='secondary'
-                          size='icon'
-                          title='Restore submission'
-                          aria-label='Restore submission'
-                          disabled={pendingId === submission.id}
-                          onClick={event => {
-                            event.stopPropagation()
-                            handleRestore(submission)
-                          }}
-                        >
-                          <RefreshCw className='h-4 w-4' />
-                          <span className='sr-only'>Restore</span>
-                        </Button>
+                    </TableCell>
+                    <TableCell className='whitespace-nowrap'>
+                      {formatDistanceToNow(
+                        new Date(submission.lastActivityAt),
+                        { addSuffix: true }
                       )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )
-            })
-          )}
-        </TableBody>
-      </Table>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant='outline'
+                        className={cn(
+                          FORM_SUBMISSION_KIND_TOKENS[submission.kind]
+                        )}
+                      >
+                        {FORM_SUBMISSION_KIND_LABELS[submission.kind]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {submission.contactName || submission.contactEmail ? (
+                        <div className='flex flex-col'>
+                          <span>{submission.contactName ?? '—'}</span>
+                          <span className='text-muted-foreground text-xs'>
+                            {submission.contactEmail}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className='text-muted-foreground italic'>
+                          Anonymous
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>{submission.contactCompany ?? '—'}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant='outline'
+                        className={cn(
+                          FORM_SUBMISSION_STATUS_TOKENS[submission.status]
+                        )}
+                      >
+                        {FORM_SUBMISSION_STATUS_LABELS[submission.status]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {submission.percentComplete === null ? (
+                        <span className='text-muted-foreground'>—</span>
+                      ) : (
+                        <div className='flex items-center gap-2'>
+                          <Progress
+                            value={submission.percentComplete}
+                            className='w-16'
+                          />
+                          <span className='text-muted-foreground text-xs'>
+                            {submission.percentComplete}%
+                          </span>
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {submission.result?.phaseName ??
+                        submission.phaseId ?? (
+                          <span className='text-muted-foreground'>—</span>
+                        )}
+                    </TableCell>
+                    {mode === 'archive' ? (
+                      <TableCell className='text-muted-foreground text-sm whitespace-nowrap'>
+                        {submission.deletedAt
+                          ? formatDistanceToNow(
+                              new Date(submission.deletedAt),
+                              { addSuffix: true }
+                            )
+                          : '—'}
+                      </TableCell>
+                    ) : null}
+                    <TableCell className='text-right'>
+                      <div className='flex justify-end gap-2'>
+                        {unacknowledged ? (
+                          <Button
+                            variant='outline'
+                            size='icon'
+                            title='Acknowledge submission'
+                            aria-label='Acknowledge submission'
+                            disabled={pendingId === submission.id}
+                            onClick={event => {
+                              event.stopPropagation()
+                              handleAcknowledge(submission)
+                            }}
+                          >
+                            <Check className='h-4 w-4' />
+                            <span className='sr-only'>Acknowledge</span>
+                          </Button>
+                        ) : null}
+                        {mode === 'active' ? (
+                          <Button
+                            variant='destructive'
+                            size='icon'
+                            title='Archive submission'
+                            aria-label='Archive submission'
+                            disabled={pendingId === submission.id}
+                            onClick={event => {
+                              event.stopPropagation()
+                              setArchiveTarget(submission)
+                            }}
+                          >
+                            <Archive className='h-4 w-4' />
+                            <span className='sr-only'>Archive</span>
+                          </Button>
+                        ) : (
+                          <>
+                            <Button
+                              variant='secondary'
+                              size='icon'
+                              title='Restore submission'
+                              aria-label='Restore submission'
+                              disabled={pendingId === submission.id}
+                              onClick={event => {
+                                event.stopPropagation()
+                                handleRestore(submission)
+                              }}
+                            >
+                              <RefreshCw className='h-4 w-4' />
+                              <span className='sr-only'>Restore</span>
+                            </Button>
+                            <Button
+                              variant='destructive'
+                              size='icon'
+                              title='Permanently delete submission'
+                              aria-label='Permanently delete submission'
+                              disabled={pendingId === submission.id}
+                              onClick={event => {
+                                event.stopPropagation()
+                                setDestroyTarget(submission)
+                              }}
+                            >
+                              <Trash2 className='h-4 w-4' />
+                              <span className='sr-only'>
+                                Delete permanently
+                              </span>
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )
+              })
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
       {totalPages > 1 && (
         <PaginationControls
@@ -347,6 +398,21 @@ export function SubmissionsTable({
         confirmDisabled={pendingId !== null}
         onCancel={() => setArchiveTarget(null)}
         onConfirm={handleArchiveConfirm}
+      />
+
+      <ConfirmDialog
+        open={destroyTarget !== null}
+        title='Permanently delete submission?'
+        description={
+          destroyTarget
+            ? `Permanently deleting the submission from ${describeSubmission(destroyTarget)} removes it and its history. This action cannot be undone.`
+            : 'Permanently deleting this submission removes it and its history. This action cannot be undone.'
+        }
+        confirmLabel='Delete forever'
+        confirmVariant='destructive'
+        confirmDisabled={pendingId !== null}
+        onCancel={() => setDestroyTarget(null)}
+        onConfirm={handleDestroyConfirm}
       />
 
       <SubmissionDetailSheet

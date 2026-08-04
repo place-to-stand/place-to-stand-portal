@@ -20,7 +20,7 @@ import { NAV_GROUPS } from './navigation-config'
 interface Props {
   user: AppUser
   children: ReactNode
-  unreadSubmissionsCount?: number
+  unacknowledgedSubmissionsCount?: number
 }
 
 type HeaderContextValue = {
@@ -53,17 +53,21 @@ export function AppShellHeader({ children }: { children: ReactNode }) {
   return null
 }
 
-export function AppShell({ user, children, unreadSubmissionsCount }: Props) {
+export function AppShell({
+  user,
+  children,
+  unacknowledgedSubmissionsCount,
+}: Props) {
   const [headerContent, setHeaderContent] = useState<ReactNode>(null)
   const pathname = usePathname()
 
   // Keyed by nav href so future counts (e.g. leads) reuse the same channel.
   const navBadges = useMemo(
     () =>
-      unreadSubmissionsCount
-        ? { '/submissions': unreadSubmissionsCount }
+      unacknowledgedSubmissionsCount
+        ? { '/submissions': unacknowledgedSubmissionsCount }
         : undefined,
-    [unreadSubmissionsCount]
+    [unacknowledgedSubmissionsCount]
   )
 
   const currentNav = useMemo(() => {
