@@ -89,10 +89,14 @@ export const fetchUnacknowledgedSubmissionCount = cache(
 )
 
 export const fetchFormSubmissionById = cache(
-  async (user: AppUser, id: string): Promise<FormSubmissionRecord> => {
+  async (
+    user: AppUser,
+    id: string,
+    includeArchived = false
+  ): Promise<FormSubmissionRecord> => {
     assertAdmin(user)
 
-    const row = await getFormSubmissionById(id)
+    const row = await getFormSubmissionById(id, { includeArchived })
 
     if (!row) {
       throw new NotFoundError('Submission not found')
