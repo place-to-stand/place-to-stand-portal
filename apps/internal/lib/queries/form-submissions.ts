@@ -237,6 +237,45 @@ export async function countFormSubmissions(filters: FormSubmissionFilters) {
 }
 
 /**
+ * Cron sweep (/api/cron/abandon-stale-submissions): audits stuck at
+ * `in_progress` whose last beacon is older than the cutoff flip to
+ * `abandoned`. The client-side abandoned beacon rides `pagehide` and is
+ * inherently lossy (killed tabs, mobile backgrounding, network loss), so
+ * stale rows are expected, not exceptional.
+ *
+ * Race-free against late beacons by the same enum-rank rules as
+ * `upsertFormSubmission`: `abandoned` outranks `in_progress` but sits below
+ * `completed`/`captured`, so a delayed genuine beacon still advances the row
+ * past this sweep, and a stale `in_progress` beacon can't regress it.
+ *
+ * `last_trigger: 'timeout'` distinguishes swept rows from beacon-reported
+ * abandons in diagnostics. Deliberately does NOT touch `last_activity_at`
+ * (the client-side beacon ordering key) or acknowledgement (in_progress rows
+ * never flag).
+ */
+export async function abandonStaleFormSubmissions(cutoffHours: number) {
+  const rows = await db
+    .update(formSubmissions)
+    .set({
+      status: 'abandoned',
+      lastTrigger: 'timeout',
+      updatedAt: sql`timezone('utc'::text, now())`,
+    })
+    .where(
+      and(
+        eq(formSubmissions.kind, 'audit'),
+        eq(formSubmissions.status, 'in_progress'),
+        isNull(formSubmissions.deletedAt),
+        isNull(formSubmissions.destroyedAt),
+        sql`${formSubmissions.lastActivityAt} < timezone('utc'::text, now()) - make_interval(hours => ${cutoffHours})`
+      )
+    )
+    .returning({ id: formSubmissions.id })
+
+  return rows.length
+}
+
+/**
  * Idempotent: only sets acknowledgement if not already acknowledged, so a
  * double-click or two admins racing never overwrites the first reviewer.
  *

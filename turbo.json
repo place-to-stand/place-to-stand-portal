@@ -37,7 +37,8 @@
         "GITHUB_APP_CLIENT_ID",
         "GITHUB_APP_CLIENT_SECRET",
         "GOOGLE_CHAT_SALES_WEBHOOK_URL",
-        "CLIENT_PORTAL_URL"
+        "CLIENT_PORTAL_URL",
+        "CRON_SECRET"
       ]
     },
     "dev": {

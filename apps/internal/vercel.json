@@ -11,6 +11,10 @@
   ],
   "crons": [
     {
+      "path": "/api/cron/abandon-stale-submissions",
+      "schedule": "30 6 * * *"
+    },
+    {
       "path": "/api/cron/gmail-sync",
       "schedule": "*/15 * * * *"
     },
