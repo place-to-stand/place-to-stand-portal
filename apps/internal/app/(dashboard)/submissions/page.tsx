@@ -11,6 +11,7 @@ import {
 import { SubmissionsFilters } from './_components/submissions-filters'
 import { SubmissionsTable } from './_components/submissions-table'
 import { SubmissionsTabsNav } from './_components/submissions-tabs-nav'
+import { resolveSubmissionDeepLink } from './_lib/submission-deep-link'
 
 export const metadata: Metadata = {
   title: 'Submissions',
@@ -44,6 +45,14 @@ export default async function SubmissionsPage({
   const kind = isFormSubmissionKind(kindParam) ? kindParam : undefined
   const status = isFormSubmissionStatus(statusParam) ? statusParam : undefined
   const unacknowledgedOnly = firstParam(params.unacknowledged) === '1'
+
+  // Share links: ?submission=<id> opens the detail sheet directly (redirects
+  // to the archive tab when the row is archived).
+  const deepLink = await resolveSubmissionDeepLink(
+    currentUser,
+    firstParam(params.submission),
+    'active'
+  )
 
   const { items, totalCount, totalPages } = await fetchFormSubmissions(
     currentUser,
@@ -95,6 +104,8 @@ export default async function SubmissionsPage({
             pageSize={PAGE_SIZE}
             mode='active'
             basePath='/submissions'
+            deepLinkedSubmission={deepLink.submission}
+            deepLinkNotFound={deepLink.notFound}
           />
         </section>
       </div>

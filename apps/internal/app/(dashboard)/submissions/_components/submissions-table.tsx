@@ -62,6 +62,13 @@ type SubmissionsTableProps = {
   mode: SubmissionsTableMode
   /** Base path pagination pushes to — '/submissions' or '/submissions/archive'. */
   basePath: string
+  /**
+   * Row resolved server-side from the `?submission=` share link. May not be
+   * in `submissions` when it sits on another page or is filtered out.
+   */
+  deepLinkedSubmission?: FormSubmissionRecord | null
+  /** True when the `?submission=` share link points at a row that no longer exists. */
+  deepLinkNotFound?: boolean
 }
 
 export function SubmissionsTable({
@@ -72,16 +79,32 @@ export function SubmissionsTable({
   pageSize,
   mode,
   basePath,
+  deepLinkedSubmission,
+  deepLinkNotFound,
 }: SubmissionsTableProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
+  const submissionParam = searchParams.get('submission')
   // Selection by id, derived from fresh props: after router.refresh() the
   // open sheet re-renders with the server's latest row instead of a stale
-  // snapshot (and closes itself if the row left the current list).
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  // snapshot. Selection is mirrored to `?submission=` so open sheets are
+  // shareable links; local state keeps the sheet opening instantly while
+  // the URL catches up.
+  const [selectedId, setSelectedId] = useState<string | null>(submissionParam)
+  // Adopt external URL changes (back/forward, shared-link navigation) via
+  // the adjust-state-during-render pattern rather than an effect.
+  const [lastSubmissionParam, setLastSubmissionParam] =
+    useState(submissionParam)
+  if (submissionParam !== lastSubmissionParam) {
+    setLastSubmissionParam(submissionParam)
+    setSelectedId(submissionParam)
+  }
   const selected =
-    submissions.find(submission => submission.id === selectedId) ?? null
+    submissions.find(submission => submission.id === selectedId) ??
+    (deepLinkedSubmission && deepLinkedSubmission.id === selectedId
+      ? deepLinkedSubmission
+      : null)
   const [archiveTarget, setArchiveTarget] =
     useState<FormSubmissionRecord | null>(null)
   const [destroyTarget, setDestroyTarget] =
@@ -93,7 +116,10 @@ export function SubmissionsTable({
   const columnCount = mode === 'archive' ? 10 : 9
 
   const updateParams = useCallback(
-    (updates: Record<string, string | undefined>) => {
+    (
+      updates: Record<string, string | undefined>,
+      options?: { scroll?: boolean }
+    ) => {
       const next = new URLSearchParams(searchParams.toString())
 
       for (const [key, value] of Object.entries(updates)) {
@@ -104,9 +130,29 @@ export function SubmissionsTable({
         }
       }
 
-      router.push(`${basePath}?${next.toString()}`)
+      router.push(`${basePath}?${next.toString()}`, {
+        scroll: options?.scroll ?? true,
+      })
     },
     [basePath, router, searchParams]
+  )
+
+  const handleSelect = useCallback(
+    (id: string) => {
+      setSelectedId(id)
+      updateParams({ submission: id }, { scroll: false })
+    },
+    [updateParams]
+  )
+
+  const handleSheetOpenChange = useCallback(
+    (open: boolean) => {
+      if (!open) {
+        setSelectedId(null)
+        updateParams({ submission: undefined }, { scroll: false })
+      }
+    },
+    [updateParams]
   )
 
   // After an action removes the last row of a page > 1, plain refresh would
@@ -115,8 +161,12 @@ export function SubmissionsTable({
     (removesRow: boolean) => {
       if (removesRow && submissions.length === 1 && currentPage > 1) {
         const previousPage = currentPage - 1
+        // Also drop the share-link param: `searchParams` may still carry it
+        // (sheet-close navigation in flight), and re-pushing it would reopen
+        // the sheet for the removed row.
         updateParams({
           page: previousPage === 1 ? undefined : String(previousPage),
+          submission: undefined,
         })
         return
       }
@@ -217,6 +267,26 @@ export function SubmissionsTable({
 
   return (
     <div className='space-y-4'>
+      {deepLinkNotFound && submissionParam ? (
+        <div
+          role='status'
+          className='border-destructive/30 bg-destructive/5 flex items-center justify-between gap-3 rounded-md border px-4 py-3 text-sm'
+        >
+          <span>
+            The linked submission could not be found. It may have been
+            permanently deleted.
+          </span>
+          <Button
+            variant='ghost'
+            size='sm'
+            onClick={() =>
+              updateParams({ submission: undefined }, { scroll: false })
+            }
+          >
+            Dismiss
+          </Button>
+        </div>
+      ) : null}
       <div className='overflow-hidden rounded-xl border'>
         <Table>
           <TableHeader>
@@ -253,7 +323,7 @@ export function SubmissionsTable({
                 return (
                   <TableRow
                     key={submission.id}
-                    onClick={() => setSelectedId(submission.id)}
+                    onClick={() => handleSelect(submission.id)}
                     className={cn(
                       'cursor-pointer',
                       unacknowledged && 'font-medium',
@@ -459,11 +529,7 @@ export function SubmissionsTable({
         submission={selected}
         mode={mode}
         onRowRemoved={() => refreshAfterAction(true)}
-        onOpenChange={open => {
-          if (!open) {
-            setSelectedId(null)
-          }
-        }}
+        onOpenChange={handleSheetOpenChange}
       />
     </div>
   )
