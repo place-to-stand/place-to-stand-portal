@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { getCurrentUser } from '@/lib/auth/session'
+import { closedMonthWarning } from '@/lib/data/reports/close'
 import { HttpError } from '@/lib/errors/http'
 import { softDeleteTimeLog, updateTimeLog } from '@/lib/queries/time-logs'
 
@@ -35,8 +36,12 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
   const { projectId, timeLogId } = await context.params
 
   try {
-    await softDeleteTimeLog(user, projectId, timeLogId)
-    return new NextResponse(null, { status: 204 })
+    const { loggedOn } = await softDeleteTimeLog(user, projectId, timeLogId)
+
+    // PRD 002 section 05: non-blocking, admin-only closed-month warning.
+    // (JSON 200 instead of 204 so the warning can ride the response.)
+    const warning = await closedMonthWarning(user, [loggedOn])
+    return NextResponse.json(warning ? { ok: true, warning } : { ok: true })
   } catch (error) {
     if (error instanceof HttpError) {
       return NextResponse.json({ error: error.message }, { status: error.status })
@@ -102,7 +107,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   const payload = parsed.data
 
   try {
-    await updateTimeLog(user, {
+    // F6: capture the pre-mutation date via the mutation's return value — a
+    // move OUT of a closed month must warn too, and the request only carries
+    // the new date.
+    const { previousLoggedOn } = await updateTimeLog(user, {
       projectId,
       timeLogId,
       userId: payload.userId,
@@ -112,7 +120,13 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       taskIds: payload.taskIds ?? [],
     })
 
-    return NextResponse.json({ timeLogId })
+    // PRD 002 section 05: non-blocking, admin-only closed-month warning.
+    const warning = await closedMonthWarning(user, [
+      previousLoggedOn,
+      payload.loggedOn,
+    ])
+
+    return NextResponse.json(warning ? { timeLogId, warning } : { timeLogId })
   } catch (error) {
     if (error instanceof HttpError) {
       return NextResponse.json({ error: error.message }, { status: error.status })

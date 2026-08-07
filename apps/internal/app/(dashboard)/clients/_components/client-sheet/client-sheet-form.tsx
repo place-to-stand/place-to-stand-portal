@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type React from 'react'
 import { Archive, Redo2, Undo2 } from 'lucide-react'
-import type { UseFormReturn } from 'react-hook-form'
+import { useWatch, type UseFormReturn } from 'react-hook-form'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -46,11 +46,24 @@ import { ClientOriginationPicker } from './client-origination-picker'
 const FEEDBACK_CLASSES =
   'border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm'
 
+/** "Sep 1, 2026"-style label for the first of the month `offset` months out. */
+function formatMonthStart(offset: number): string {
+  const now = new Date()
+  const target = new Date(now.getFullYear(), now.getMonth() + offset, 1)
+  return target.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
 type ClientSheetFormProps = {
   form: UseFormReturn<ClientSheetFormValues>
   feedback: string | null
   isPending: boolean
   isEditing: boolean
+  /** The saved billing type — reveals the boundary select when it differs. */
+  initialBillingType: string | null
   pendingReason: string
   submitDisabled: boolean
   submitDisabledReason: string | null
@@ -103,6 +116,7 @@ export function ClientSheetForm({
   feedback,
   isPending,
   isEditing,
+  initialBillingType,
   pendingReason,
   submitDisabled,
   submitDisabledReason,
@@ -146,6 +160,13 @@ export function ClientSheetForm({
   onSelectCloser,
   onClearCloser,
 }: ClientSheetFormProps) {
+  // Subscribed value (not form.watch in JSX — that read proved unreliable
+  // across the form-prop boundary): drives the boundary-select visibility.
+  const watchedBillingType = useWatch({
+    control: form.control,
+    name: 'billingType',
+  })
+
   const handleSave = useCallback(
     () => form.handleSubmit(onSubmit)(),
     [form, onSubmit]
@@ -302,6 +323,49 @@ export function ClientSheetForm({
             )
           }}
         />
+        {isEditing &&
+        initialBillingType !== null &&
+        watchedBillingType !== initialBillingType ? (
+          <FormField
+            control={form.control}
+            name='billingEffective'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>New billing starts</FormLabel>
+                <Select
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  disabled={isPending}
+                >
+                  <FormControl>
+                    <DisabledFieldTooltip
+                      disabled={isPending}
+                      reason={isPending ? pendingReason : null}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </DisabledFieldTooltip>
+                  </FormControl>
+                  <SelectContent align='start'>
+                    <SelectItem value='next_month'>
+                      Next month ({formatMonthStart(1)})
+                    </SelectItem>
+                    <SelectItem value='current_month'>
+                      This month ({formatMonthStart(0)})
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormDescription>
+                  {field.value === 'current_month'
+                    ? "This month's close will re-derive under the new billing type."
+                    : 'The new type applies to invoices right away; the Monthly Close switches this client at the boundary.'}
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        ) : null}
         <FormField
           control={form.control}
           name='state'

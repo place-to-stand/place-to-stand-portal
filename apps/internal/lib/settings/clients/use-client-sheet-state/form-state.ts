@@ -91,6 +91,7 @@ export function useClientSheetFormState({
       name: client?.name ?? '',
       slug: client?.slug ?? '',
       billingType: client?.billing_type ?? 'prepaid',
+      billingEffective: 'next_month',
       state: client?.state ?? '',
       website: client?.website ?? '',
       notes: client?.notes ?? '',
@@ -195,6 +196,7 @@ export function useClientSheetFormState({
       name: client?.name ?? '',
       slug: client?.slug ?? '',
       billingType: client?.billing_type ?? 'prepaid',
+      billingEffective: 'next_month' as const,
       state: client?.state ?? '',
       website: client?.website ?? '',
       notes: client?.notes ?? '',
@@ -493,6 +495,7 @@ export function useClientSheetFormState({
               : null
             : null,
           billingType: values.billingType,
+          billingEffective: values.billingEffective,
           state: values.state?.trim() ? values.state.trim() : null,
           website: values.website?.trim() ? values.website.trim() : null,
           originationContactId:
@@ -568,6 +571,7 @@ export function useClientSheetFormState({
             name: payload.name,
             slug: payload.slug ?? '',
             billingType: payload.billingType,
+            billingEffective: 'next_month',
             state: payload.state ?? '',
             website: payload.website ?? '',
             notes: payload.notes ?? '',

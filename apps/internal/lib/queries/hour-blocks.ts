@@ -38,6 +38,7 @@ type HourBlockSelection = {
     createdAt: string
     updatedAt: string
     deletedAt: string | null
+    billingMonth: string
   }
   client: {
     id: string
@@ -62,6 +63,7 @@ const hourBlockSelection = {
   createdAt: hourBlocks.createdAt,
   updatedAt: hourBlocks.updatedAt,
   deletedAt: hourBlocks.deletedAt,
+  billingMonth: hourBlocks.billingMonth,
 } as const
 
 const clientSelection = {
@@ -299,6 +301,7 @@ function mapHourBlockWithClient(row: HourBlockSelection): HourBlockWithClient {
     created_at: row.block.createdAt,
     updated_at: row.block.updatedAt,
     deleted_at: row.block.deletedAt,
+    billing_month: row.block.billingMonth,
     client,
   }
 }

@@ -657,8 +657,18 @@ export const hourBlocks = pgTable(
     clientId: uuid('client_id').notNull(),
     invoiceId: uuid('invoice_id'),
     invoiceLineItemId: uuid('invoice_line_item_id'),
+    /**
+     * Month this block's hours are billed in (always the 1st). Defaults to the
+     * creation month but is clamped forward to the client's first prepaid
+     * month when the block is created before a billing-type cutover — a block
+     * attributed to a net_30-resolving month would never count in Billing In.
+     */
+    billingMonth: date('billing_month').notNull(),
   },
   table => [
+    index('idx_hour_blocks_billing_month')
+      .using('btree', table.billingMonth.asc())
+      .where(sql`(deleted_at IS NULL)`),
     index('idx_hour_blocks_client_id')
       .using('btree', table.clientId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
@@ -685,9 +695,97 @@ export const hourBlocks = pgTable(
       'hour_blocks_invoice_number_format',
       sql`(invoice_number IS NULL) OR (invoice_number ~ '^[A-Za-z0-9-]+$'::text)`
     ),
+    check(
+      'chk_hour_blocks_billing_month_month_start',
+      sql`billing_month = date_trunc('month', billing_month)::date`
+    ),
     // Note: FK constraints for invoiceId -> invoices.id and
     // invoiceLineItemId -> invoice_line_items.id added in migration
     // to avoid forward reference (invoices table defined later in this file)
+  ]
+)
+
+export const monthlyCloseSnapshots = pgTable(
+  'monthly_close_snapshots',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    year: integer().notNull(),
+    month: integer().notNull(), // 1-indexed (1 = January)
+    /** Fully assembled MonthlyCloseReport wrapped as { schemaVersion, report }. */
+    report: jsonb().notNull(),
+    /**
+     * Cutoff captured BEFORE report derivation, so any record committed after
+     * it is by definition detectable as late (created_at > closed_at).
+     */
+    closedAt: timestamp('closed_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    closedBy: uuid('closed_by'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    // One ACTIVE close per month; reopen soft-deletes, re-close inserts.
+    uniqueIndex('uq_monthly_close_snapshots_period')
+      .on(table.year, table.month)
+      .where(sql`(deleted_at IS NULL)`),
+    foreignKey({
+      columns: [table.closedBy],
+      foreignColumns: [users.id],
+      name: 'monthly_close_snapshots_closed_by_fkey',
+    }).onDelete('set null'),
+    check(
+      'chk_monthly_close_snapshots_month_range',
+      sql`month BETWEEN 1 AND 12`
+    ),
+  ]
+)
+
+export const clientBillingTerms = pgTable(
+  'client_billing_terms',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    clientId: uuid('client_id').notNull(),
+    billingType: clientBillingType('billing_type').notNull(),
+    /** First day of the month this billing type takes effect (month-start CHECK). */
+    effectiveFrom: date('effective_from').notNull(),
+    createdBy: uuid('created_by'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    // One active term per client per boundary; re-editing a boundary upserts.
+    uniqueIndex('uq_client_billing_terms_client_effective')
+      .on(table.clientId, table.effectiveFrom)
+      .where(sql`(deleted_at IS NULL)`),
+    // Resolution path: latest effective_from <= period start for a client.
+    index('idx_client_billing_terms_resolution')
+      .using('btree', table.clientId.asc(), table.effectiveFrom.desc())
+      .where(sql`(deleted_at IS NULL)`),
+    foreignKey({
+      columns: [table.clientId],
+      foreignColumns: [clients.id],
+      name: 'client_billing_terms_client_id_fkey',
+    }).onDelete('restrict'),
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [users.id],
+      name: 'client_billing_terms_created_by_fkey',
+    }).onDelete('set null'),
+    check(
+      'chk_client_billing_terms_month_start',
+      sql`effective_from = date_trunc('month', effective_from)::date`
+    ),
   ]
 )
 

@@ -28,12 +28,15 @@ type ReportHeaderProps = {
   displayMonth: string
   minCursor: MonthCursor
   maxCursor: MonthCursor
+  /** Close/reopen controls + status chip (PRD 002 section 04). */
+  closeControls?: React.ReactNode
 }
 
 export function ReportHeader({
   displayMonth,
   minCursor,
   maxCursor,
+  closeControls,
 }: ReportHeaderProps) {
   const {
     monthValue,
@@ -60,8 +63,9 @@ export function ReportHeader({
 
   return (
     <div className='bg-card flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 shadow-sm'>
-      <div className='flex items-center'>
+      <div className='flex items-center gap-3'>
         <p className='text-lg font-semibold'>{displayMonth}</p>
+        {closeControls}
       </div>
       <div className='flex grow items-center justify-end gap-4'>
         <Button type='button' variant='outline' onClick={goToThisMonth}>

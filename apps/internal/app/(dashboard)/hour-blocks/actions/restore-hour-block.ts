@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm'
 
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
+import { closedMonthWarning } from '@/lib/data/reports/close'
 import { logActivity } from '@/lib/activity/logger'
 import { hourBlockRestoredEvent } from '@/lib/activity/events'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
@@ -86,5 +87,10 @@ async function performRestoreHourBlock(
 
   revalidatePath(HOUR_BLOCKS_PATH)
 
-  return {}
+  // PRD 002 section 05: restoring a closed-month block shows as drift.
+  const warning = await closedMonthWarning(user, [
+    existingHourBlock.billing_month,
+  ])
+
+  return warning ? { warning } : {}
 }

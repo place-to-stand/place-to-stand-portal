@@ -40,6 +40,7 @@ export type ActivityTargetType =
   | 'TIME_LOG'
   | 'HOUR_BLOCK'
   | 'INVOICE'
+  | 'MONTHLY_CLOSE'
   | 'USER'
   | 'SETTINGS'
   | 'GENERAL'
@@ -160,6 +161,9 @@ export const ActivityVerbs = {
   WORKER_PLAN_REQUESTED: 'WORKER_PLAN_REQUESTED',
   WORKER_IMPLEMENT_REQUESTED: 'WORKER_IMPLEMENT_REQUESTED',
   WORKER_CANCELLED: 'WORKER_CANCELLED',
+  // Monthly close events
+  MONTHLY_CLOSE_CLOSED: 'MONTHLY_CLOSE_CLOSED',
+  MONTHLY_CLOSE_REOPENED: 'MONTHLY_CLOSE_REOPENED',
 } as const
 
 export type ActivityVerb = (typeof ActivityVerbs)[keyof typeof ActivityVerbs]

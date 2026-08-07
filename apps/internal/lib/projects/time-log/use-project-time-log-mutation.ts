@@ -195,12 +195,27 @@ export function useProjectTimeLogMutation(
           metadata: JSON.parse(JSON.stringify(metadata)) as Json,
         })
       }
+
+      // PRD 002 section 05: closed-month warning riding the API response.
+      const warning =
+        typeof result === 'object' && result && 'warning' in result
+          ? String((result as { warning?: unknown }).warning ?? '').trim()
+          : ''
+
+      return { warning: warning || null }
     },
-    onSuccess: async () => {
+    onSuccess: async data => {
       await queryClient.invalidateQueries({ queryKey: baseQueryKey })
       onSuccessReset()
       onClose()
       toast(successToast ?? SUCCESS_TOAST)
+      if (data?.warning) {
+        toast({
+          title: 'Closed month',
+          description: data.warning,
+          variant: 'destructive',
+        })
+      }
       router.refresh()
     },
     onError: error => {

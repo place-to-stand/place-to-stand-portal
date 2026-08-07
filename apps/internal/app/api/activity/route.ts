@@ -24,6 +24,9 @@ const VALID_TARGET_TYPES: ActivityTargetType[] = [
   'TIME_LOG',
   'HOUR_BLOCK',
   'INVOICE',
+  // I1 (PRD 002): admin-filterable; the role gate keeps it out of CLIENT
+  // feeds — it must never join CLIENT_VISIBLE_ACTIVITY_TARGET_TYPES (D11).
+  'MONTHLY_CLOSE',
   'USER',
   'SETTINGS',
   'GENERAL',
