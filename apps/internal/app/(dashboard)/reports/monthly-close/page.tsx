@@ -114,8 +114,6 @@ export default async function MonthlyClosePage({
               month={closeMonthNumber}
               displayMonth={displayMonth}
               status={close.status}
-              closedAt={close.closedAt}
-              closedByName={close.closedByName}
               isCurrentMonth={isCurrentMonth}
             />
           }

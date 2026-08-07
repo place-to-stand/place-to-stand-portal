@@ -3,7 +3,6 @@
 import { useState, useTransition } from 'react'
 import { Lock, LockOpen } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { toast } from '@/components/ui/use-toast'
@@ -17,8 +16,6 @@ type CloseControlsProps = {
   month: number
   displayMonth: string
   status: 'open' | 'closed'
-  closedAt?: string
-  closedByName?: string | null
   isCurrentMonth: boolean
 }
 
@@ -27,8 +24,6 @@ export function CloseControls({
   month,
   displayMonth,
   status,
-  closedAt,
-  closedByName,
   isCurrentMonth,
 }: CloseControlsProps) {
   const [confirming, setConfirming] = useState<'close' | 'reopen' | null>(null)
@@ -62,21 +57,10 @@ export function CloseControls({
   }
 
   if (status === 'closed') {
-    const closedLabel = closedAt
-      ? new Date(closedAt).toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-        })
-      : null
-
+    // No status chip here — the ClosedNotice banner below the header already
+    // carries the closed-by/when message; duplicating it reads as clutter.
     return (
       <div className='flex items-center gap-2'>
-        <Badge variant='outline' className='gap-1 text-xs'>
-          <Lock className='h-3 w-3' />
-          Closed
-          {closedLabel ? ` ${closedLabel}` : ''}
-          {closedByName ? ` by ${closedByName}` : ''}
-        </Badge>
         <Button
           type='button'
           variant='outline'
@@ -101,9 +85,14 @@ export function CloseControls({
     )
   }
 
-  const closeDescription = isCurrentMonth
-    ? `${displayMonth} isn't over — you usually close after month end. Snapshot billing, payouts, and commissions now? Late changes will be flagged as drift.`
-    : `Snapshot billing, payouts, and commissions for ${displayMonth}. Late changes will be flagged as drift.`
+  // The in-progress month can't be closed from the UI — closing implies the
+  // period is over. (The server still allows re-close so a drift fix on an
+  // already-closed current month keeps working.)
+  if (isCurrentMonth) {
+    return null
+  }
+
+  const closeDescription = `Snapshot billing, payouts, and commissions for ${displayMonth}. Late changes will be flagged as drift.`
 
   return (
     <>

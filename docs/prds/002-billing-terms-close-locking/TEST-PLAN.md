@@ -41,7 +41,7 @@ All tests run as an ADMIN user in `apps/internal/`. "The report" = `/reports/mon
 - [ ] **04.3c Failed re-close keeps the snapshot (F3)**: force a re-close derivation failure (e.g. temporarily throw) → original snapshot still active, month still closed <!-- manual: requires fault injection into recloseMonth derivation — see MANUAL-TEST-PLAN Section B -->
 - [x] **04.4 Reopen & re-close**: one click clears the banner; new frozen numbers include the change <!-- auto-tested -->
 - [x] **04.5 Clean closed month**: no post-close mutations → quiet closed notice, no drift banner <!-- auto-tested -->
-- [x] **04.6 Current-month close warning**: closing the in-progress month shows the extra warning line <!-- auto-tested -->
+- [x] **04.6 Current-month close control**: ~~closing the in-progress month shows the extra warning line~~ superseded post-launch: the current month renders no Close button at all (owner decision); verified the button is absent <!-- auto-tested -->
 - [x] **04.7 Navigation**: month arrows work on closed months; open months render live with the Close button <!-- auto-tested -->
 
 ## Section 05 — Guardrails

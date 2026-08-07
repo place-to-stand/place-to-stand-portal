@@ -56,8 +56,8 @@ export type CloseDrift = {
 
 **`close-controls.tsx`** (client component, in `report-header.tsx`'s row):
 
-- Open month → `Close August 2026` button → confirm dialog stating the freeze ("Snapshot billing, payouts, and commissions for August 2026. Late changes will be flagged as drift."). Closing the in-progress current month adds a warning line ("August isn't over — you usually close after month end.").
-- Closed month → status chip `Closed Sep 2 by Jason` + `Reopen…` button → confirm dialog ("Reopening discards the frozen numbers and re-derives live. Close again when you're done.").
+- Open **past** month → `Close August 2026` button → confirm dialog stating the freeze ("Snapshot billing, payouts, and commissions for August 2026. Late changes will be flagged as drift."). The in-progress current month renders **no close control at all** (post-launch owner decision — the server still permits re-close for drift fixes on an already-closed current month).
+- Closed month → `Reopen…` button → confirm dialog ("Reopening discards the frozen numbers and re-derives live. Close again when you're done."). No status chip in the header — the ClosedNotice banner below it already carries the closed-by/when message (post-launch polish: the duplicate chip was removed).
 - Errors surface via the existing toast pattern.
 - The page's `month` search param is 0-indexed — convert to 1-indexed before calling the actions (W4, see section 03).
 
@@ -80,5 +80,5 @@ export type CloseDrift = {
 - [ ] Editing a closed-month time log or hour block produces drift with `change: 'modified'`; soft-deleting produces `change: 'deleted'`
 - [ ] Reassigning a closed month's hours between users (or swapping the client's closer) produces drift even though section hour totals are unchanged (F2)
 - [ ] Reopen & re-close clears drift and updates the frozen numbers
-- [ ] Current-month close shows the extra warning; month navigation still works on closed months
+- [ ] The current month shows no close control; month navigation still works on closed months
 - [ ] `npm run build`, `npm run lint`, `npm run type-check` pass from repo root
