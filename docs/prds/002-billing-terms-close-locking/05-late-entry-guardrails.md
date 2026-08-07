@@ -6,8 +6,8 @@ Catch closed-month collisions **at write time** instead of leaving discovery to 
 
 A write "touches a closed month" when:
 
-- **Time log create/update/delete**: `logged_on` (new or existing value) falls in a month with an active snapshot. An update that *moves* a log across a closed boundary trips on either side.
-- **Hour block edit/archive/restore**: the block's `created_at` month is closed. (Creates can't trip — `created_at` is now, and future months can't be closed.)
+- **Time log create/update/delete**: `logged_on` (new or existing value) falls in a month with an active snapshot. An update that *moves* a log across a closed boundary trips on either side — **the route must read the existing `logged_on` before mutating** (F6): the PATCH body only carries the new date and `updateTimeLog` overwrites in place, so a move *out of* a closed month is undetectable after the fact.
+- **Hour block create/edit/archive/restore**: the block's `billing_month` is closed. Creates can trip only when the current month was closed early (billing_month never points backward).
 
 Check via `isMonthClosed(date)` from the section 03 data layer — one indexed `getClosedMonthSet` lookup per action.
 
@@ -24,13 +24,9 @@ Check via `isMonthClosed(date)` from the section 03 data layer — one indexed `
 
 The mutation always **proceeds** — no confirm-before-save dialog; a blocking dialog would punish the normal workflow.
 
-## Pre-boundary purchase warning
+## Pre-boundary purchases: no warning needed
 
-A second warning on **hour block create**, unrelated to closes: if the block's client resolves to `net_30` for the *current* month (`billingTypeAsOfSql`, section 02), the block will never appear in Billing In — its creation month counts it under the wrong basis, and later months don't include its `created_at` (edge documented in section 01). Warn on save:
-
-> 'Acme is on Net 30 until Sep 1 — a block purchased now won't count toward any month's Billing In. Record it on or after Sep 1.'
-
-Same `warning` plumbing; the save proceeds.
+The pre-boundary purchase warning this section previously specified is **replaced by `hour_blocks.billing_month`** (section 01, F7): a block created before the client's prepaid boundary — manually or by the Stripe webhook — is attributed to the first prepaid month and counts there. The manual save can still show an informational note ("This block will be billed in September") when `billing_month` lands ahead of the current month, but nothing is at risk if it doesn't.
 
 ## Hard block (from section 01, restated)
 
@@ -40,8 +36,8 @@ Billing-type changes whose `effective_from` lands in a closed month are **reject
 
 - [ ] Creating a time log dated inside a closed month saves and shows the warning toast; the drift banner subsequently appears on that month
 - [ ] Editing hours on / archiving a closed-month time log or hour block warns; open-month writes never warn
-- [ ] Moving a log's `logged_on` between a closed and an open month warns once; open → open never warns
-- [ ] Creating an hour block for a client whose current month resolves `net_30` warns with the pre-boundary message; a prepaid-resolved client's block create never warns
+- [ ] Moving a log's `logged_on` between a closed and an open month warns once **in both directions** (prior date captured before mutation); open → open never warns
+- [ ] Creating an hour block for a client with a future prepaid boundary saves with `billing_month` = the boundary month and the informational note; no closed-month warning unless that month is closed
 - [ ] A billing change targeting a closed month is blocked with the reopen-first error
 - [ ] A CLIENT-role user logging time into a closed month gets no warning (admin-only), and the log still shows as drift on the closed month
 - [ ] No warning plumbing leaks into `apps/client/`

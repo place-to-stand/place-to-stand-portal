@@ -43,7 +43,9 @@ In [apps/internal/lib/queries/reports/monthly-close.ts](../../../apps/internal/l
 
 The hardcoded `clientBillingType: 'prepaid' | 'net_30'` literals stamped onto `OriginationQueryRow` / `CloserQueryRow` in the row-mapping loops remain correct — each sub-query's population is *defined* by its resolved type.
 
-`fetchEmployeePayroll`, `fetchBillableWorkHours`, and `fetchReportDateBounds` don't read billing type — unchanged.
+**Prepaid attribution switches to `billing_month` (F7, defined in section 01):** the four hour-block-sourced queries (`fetchPrepaidBilling`, both prepaid origination sub-queries, the prepaid closer sub-query) currently range on `DATE(hour_blocks.created_at AT TIME ZONE 'UTC')` — they change to `hourBlocks.billingMonth >= startDate AND <= endDate` (equivalently `billingMonth = startDate`, since both are month-start dates). `fetchReportDateBounds` likewise switches its hour-block bound from `MIN(created_at)` to `MIN(billing_month)`. Backfill sets `billing_month` = creation month, so pre-migration output is unchanged.
+
+`fetchEmployeePayroll` and `fetchBillableWorkHours` don't read billing type — unchanged.
 
 ## Semantics worth spelling out
 
@@ -64,5 +66,6 @@ Correlated subquery per client row against `idx_client_billing_terms_resolution`
 - [ ] With only backfill rows present, every historical month renders **byte-identical** report data to pre-change output (spot-check 2–3 months against production values before/after deploy)
 - [ ] Insert a terms row for a test client (`prepaid`, effective first of next month): current and past months still show the client under Net 30; next month shows them under Prepaid
 - [ ] Origination and closer sections move the client between billing bases on the same boundary
+- [ ] A block created before the boundary (with `billing_month` = the boundary month) appears in the boundary month's Prepaid billing, not the creation month's
 - [ ] No remaining `clients.billingType` reads under `apps/internal/lib/queries/reports/` or `apps/internal/lib/data/reports/`
 - [ ] `npm run build`, `npm run lint`, `npm run type-check` pass from repo root

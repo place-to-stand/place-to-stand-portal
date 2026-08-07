@@ -28,25 +28,27 @@ export type MonthlyCloseView = {
 export type CloseDrift = {
   hasDrift: boolean
   deltas: Array<{
-    section: 'prepaidBilling' | 'net30Billing' | 'payroll' | 'origination' | 'closer'
-    snapshotHours: number
-    liveHours: number
-  }>                              // only sections whose hours differ
+    section: 'prepaidBilling' | 'net30Billing' | 'payroll' | 'origination' | 'closer' | 'partnerPayouts'
+    label: string                 // section, or "section · payee/client" for row-level diffs
+    snapshotValue: number         // hours or dollars, per the row
+    liveValue: number
+  }>
   lateRecords: Array<{
     kind: 'time_log' | 'hour_block'
     id: string
     clientName: string | null
     hours: number
-    eventDate: string             // logged_on / created_at date
-    recordedAt: string            // created_at or updated_at, whichever tripped
-    change: 'added' | 'modified'  // created after close vs touched after close
+    eventDate: string             // logged_on / billing_month date
+    recordedAt: string            // created_at, updated_at, or deleted_at — whichever tripped
+    change: 'added' | 'modified' | 'deleted'
   }>
 }
 ```
 
-- **Deltas**: compare section `totalHours` (snapshot vs live), rounded to 2 decimals (hours are NUMERIC(8,2)). Hours, not dollars — rate math is deterministic given hours.
-- **Late records** (new query in `apps/internal/lib/queries/reports/close-snapshots.ts`): time logs with `logged_on` in the month AND (`created_at > closed_at` OR `updated_at > closed_at` — the latter catches edits *and* soft-deletes); hour blocks with `created_at` in the month AND `updated_at > closed_at`.
-- `hasDrift` is driven by the **deltas**; `lateRecords` is best-effort attribution. A delta with no matching records (e.g. a billing-term or partner reassignment) renders as "cause unknown — compare sections manually".
+- **Canonical comparison (F2)** — hours-only totals miss real drift (hours moved between users, a closer swap, offsetting ±edits all change *who gets paid* with section totals unchanged). Compare a canonical projection of snapshot vs live: per-section `totalHours` **and** `totalAmount`; per-client rows of the two billing sections; per-payee `partnerPayouts` rows (keyed `kind:id`, comparing each amount column). Any difference (numbers rounded to 2 decimals — hours are NUMERIC(8,2)) → `hasDrift`, with row-level deltas labeled "Origination · Acme" / "Payouts · Jane".
+- **Late records** (new query in `apps/internal/lib/queries/reports/close-snapshots.ts`): time logs with `logged_on` in the month AND (`created_at > closed_at` OR `updated_at > closed_at` OR `deleted_at > closed_at`); hour blocks with `billing_month` in the month (F7) AND (`created_at > closed_at` OR `updated_at > closed_at` OR `deleted_at > closed_at`). A webhook-created block can land in an early-closed current month, so hour blocks can now be `'added'` too.
+- **Prerequisite (F1)**: `updateTimeLog` and `softDeleteTimeLog` in [apps/internal/lib/queries/time-logs/mutations.ts](../../../apps/internal/lib/queries/time-logs/mutations.ts) do **not** currently set `updatedAt` — both must add `updatedAt: new Date().toISOString()` to their `.set()` calls (matching the hour-block actions' existing pattern) or the `updated_at` predicate never fires. The `deleted_at > closed_at` check covers soft-deletes independently as belt-and-braces.
+- `hasDrift` is driven by the **comparison**; `lateRecords` is best-effort attribution. A delta with no matching records (e.g. a billing-term change or partner reassignment) renders as "cause unknown — compare sections manually".
 
 ## Page + components
 
@@ -59,7 +61,7 @@ export type CloseDrift = {
 - Errors surface via the existing toast pattern.
 - The page's `month` search param is 0-indexed — convert to 1-indexed before calling the actions (W4, see section 03).
 
-**`closed-notice.tsx`**: quiet banner on closed, drift-free months — "This month is closed. Numbers are frozen as of Sep 2, 2026." (Visual language of `formula-notice.tsx`.)
+**`closed-notice.tsx`**: quiet banner on closed, drift-free months — "This month is closed. Numbers are frozen as of Sep 2, 2026." (Visual language of `formula-notice.tsx`.) If `parseSnapshotReport` rejects the payload (F9), render the explicit "snapshot unreadable — reopen to re-derive" state from section 03 instead of the report.
 
 **`drift-banner.tsx`**: prominent (destructive-tinted) banner on closed months with drift:
 
@@ -75,7 +77,8 @@ export type CloseDrift = {
 - [ ] Open months render live with a Close button; closing swaps the page to snapshot rendering with the closed chip
 - [ ] Closed months render identical data before/after unrelated DB changes (mutate a time log → sections don't move, only the banner appears)
 - [ ] Backdating a time log into a closed month produces the drift banner with correct delta and record attribution
-- [ ] Editing/soft-deleting a closed-month time log or hour block produces drift with `change: 'modified'`
+- [ ] Editing a closed-month time log or hour block produces drift with `change: 'modified'`; soft-deleting produces `change: 'deleted'`
+- [ ] Reassigning a closed month's hours between users (or swapping the client's closer) produces drift even though section hour totals are unchanged (F2)
 - [ ] Reopen & re-close clears drift and updates the frozen numbers
 - [ ] Current-month close shows the extra warning; month navigation still works on closed months
 - [ ] `npm run build`, `npm run lint`, `npm run type-check` pass from repo root

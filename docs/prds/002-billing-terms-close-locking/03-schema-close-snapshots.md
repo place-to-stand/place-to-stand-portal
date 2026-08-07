@@ -41,7 +41,7 @@ Migration: `npm run db:generate -- --name monthly_close_snapshots` from `package
 `report` stores the exact `MonthlyCloseReport` object from [apps/internal/lib/data/reports/monthly-close.ts](../../../apps/internal/lib/data/reports/monthly-close.ts) — sections, totals, per-client rows, and the `rates` block — wrapped as `{ schemaVersion: 1, report }`:
 
 - `minCursor`/`maxCursor` are **excluded** (global navigation bounds, always computed live).
-- `parseSnapshotReport(jsonb): MonthlyCloseReport` in the data layer is the single decode point; version 1 is identity. Future report-shape changes bump the version and migrate on read.
+- `parseSnapshotReport(jsonb): MonthlyCloseReport` in the data layer is the single decode point, and it **zod-validates** the payload (F9): a versioned discriminated schema — version 1 validates the current `MonthlyCloseReport` shape; an unknown `schemaVersion` or failed parse throws a typed error that section 04 renders as an explicit "snapshot unreadable — reopen to re-derive" state, never a crash or silent misread. Future report-shape changes bump the version and add a migrate-on-read branch.
 - The snapshot must render **without running any live queries** (D12).
 
 ## Queries + data layer
@@ -55,13 +55,14 @@ New `apps/internal/lib/queries/reports/close-snapshots.ts` (`server-only`):
 
 New `apps/internal/lib/data/reports/close.ts` (`server-only`):
 
-- `closeMonth(user, { year, month })` — `assertAdmin`; reject future months (`'Cannot close a month that has not started.'`); derive live via `fetchMonthlyCloseReport`; `insertSnapshot`; log activity. Closing the in-progress current month is allowed — the UI confirms with a warning (04).
+- `closeMonth(user, { year, month })` — `assertAdmin`; reject future months (`'Cannot close a month that has not started.'`). **Cutoff-first, transactional (F4):** capture `closedAt = now()` *before* deriving, run the derivation + `insertSnapshot` inside one `db.transaction` (Postgres default read-committed within a single transaction gives every report query one consistent view), and store the pre-captured `closedAt` — so any record committed after the cutoff is, by definition, detectable as late (`created_at > closed_at`). Closing the in-progress current month is allowed — the UI confirms with a warning (04). Log activity after commit.
 - `reopenMonth(user, { year, month })` — `assertAdmin`; `softDeleteSnapshot`; log activity.
+- `recloseMonth(user, { year, month })` — **atomic swap, not sequential reopen→close (F3):** derive the replacement report first (same cutoff-first rule), then in one transaction soft-delete the active snapshot and insert the new one. A derivation or insert failure leaves the original snapshot untouched — the month never transiently loses its close.
 - `isMonthClosed(date)` — convenience over `getClosedMonthSet` for 01/05 (accepts `yyyy-MM-dd`, checks its month).
 
 ## Server actions
 
-`apps/internal/app/(dashboard)/reports/monthly-close/actions/` (`'use server'`, mirroring the submissions actions structure): `close-month.ts`, `reopen-month.ts`, `reclose-month.ts` (sequential reopen + close — backs section 04's one-click drift fix), plus `schemas.ts` (zod: `year` int, `month` 1–12) and `types.ts` (`{ error?: string }` results). All call the data layer, then `revalidatePath('/reports/monthly-close')`.
+`apps/internal/app/(dashboard)/reports/monthly-close/actions/` (`'use server'`, mirroring the submissions actions structure): `close-month.ts`, `reopen-month.ts`, `reclose-month.ts` (calls the atomic `recloseMonth` — backs section 04's one-click drift fix), plus `schemas.ts` (zod: `year` int, `month` 1–12) and `types.ts` (`{ error?: string }` results). All call the data layer, then `revalidatePath('/reports/monthly-close')`.
 
 Race-safe by construction: concurrent close hits the unique partial index → `'This month is already closed.'`; reopen of a not-closed month → `'This month is not closed.'`
 

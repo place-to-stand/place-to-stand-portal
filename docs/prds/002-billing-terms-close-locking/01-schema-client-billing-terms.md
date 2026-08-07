@@ -50,6 +50,16 @@ Relations in `packages/db/src/relations.ts`: `clientBillingTerms` → one `clien
 `npm run db:generate -- --name client_billing_terms` from `packages/db/`, then hand-add:
 
 ```sql
+-- Preflight (F10): the sentinel must predate all report-driving data.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM "time_logs" WHERE "logged_on" < DATE '2000-01-01')
+     OR EXISTS (SELECT 1 FROM "hour_blocks" WHERE "created_at" < TIMESTAMPTZ '2000-01-01')
+  THEN
+    RAISE EXCEPTION 'client_billing_terms backfill sentinel 2000-01-01 does not predate existing data';
+  END IF;
+END $$;
+
 -- Month-start cutovers only (D3): each month is single-basis per client.
 ALTER TABLE "client_billing_terms"
   ADD CONSTRAINT "chk_client_billing_terms_month_start"
@@ -64,6 +74,34 @@ FROM "clients";
 ```
 
 Do **not** backfill with each client's `created_at` — clients created mid-history would fail to resolve for months where they already have time logs. Soft-deleted clients are included so a restored client resolves correctly.
+
+## `hour_blocks.billing_month` (F7 — prepaid attribution)
+
+The monthly close attributes prepaid blocks by **creation month**, but blocks can legitimately be created before the client's prepaid boundary — most dangerously by the **Stripe webhook** ([apps/internal/app/api/integrations/stripe/route.ts](../../../apps/internal/app/api/integrations/stripe/route.ts) → `createHourBlocksFromInvoice` in [apps/internal/lib/data/invoices.ts](../../../apps/internal/lib/data/invoices.ts)), which no UI warning can reach. A block created in a net_30-resolving month would never count in any month's Billing In (D13).
+
+Add to the existing `hourBlocks` table in the **same migration**:
+
+```sql
+ALTER TABLE "hour_blocks" ADD COLUMN "billing_month" date;
+UPDATE "hour_blocks"
+  SET "billing_month" = date_trunc('month', "created_at" AT TIME ZONE 'UTC')::date;
+ALTER TABLE "hour_blocks" ALTER COLUMN "billing_month" SET NOT NULL;
+ALTER TABLE "hour_blocks"
+  ADD CONSTRAINT "chk_hour_blocks_billing_month_month_start"
+  CHECK ("billing_month" = date_trunc('month', "billing_month")::date);
+CREATE INDEX "idx_hour_blocks_billing_month" ON "hour_blocks" ("billing_month")
+  WHERE ("deleted_at" IS NULL);
+```
+
+(Backfill = creation month, so pre-migration blocks report exactly as today — same zero-drift rule as D5.) Add the column to the `hourBlocks` pgTable in `packages/db/src/schema.ts`.
+
+**Write rule** — shared helper `resolveHourBlockBillingMonth(clientId)` in `apps/internal/lib/queries/clients/billing-terms.ts`, used by **both** write paths (`createHourBlocksFromInvoice` and the manual `save-hour-block.ts` action):
+
+- If the client resolves `prepaid` for the current month → `billing_month = date_trunc('month', now())`.
+- Else → the client's earliest prepaid term with `effective_from` > today (i.e. the upcoming boundary) — the block lands in the first month it can actually be billed.
+- No prepaid term at all (defensive; shouldn't happen for a block-creating flow) → current month, and log an error.
+
+This **replaces** the pre-boundary purchase warning that section 05 previously specified — the block is simply attributed to the right month instead of warning about the wrong one. Section 02's prepaid queries count by `billing_month` instead of creation month.
 
 ## Query module
 
@@ -93,12 +131,11 @@ Insert the term **in the same transaction** as the client insert, with `effectiv
 **Update action** ([apps/internal/lib/settings/clients/actions/update-client.ts](../../../apps/internal/lib/settings/clients/actions/update-client.ts)), when `billingType` differs from `existingClient.billingType`:
 
 1. Compute `effectiveFrom` from `billingEffective` (`date_trunc('month', now())` or `+ 1 month`), in UTC.
-2. Closed-month guard: if the target month is closed, fail with `'That month's books are closed. Reopen [Month] before changing its billing basis.'` (D9 hard block; only reachable via "This month"). Uses `isMonthClosed` from section 03 — ship behind a stub returning "open" if 03 hasn't landed.
-3. In one transaction: `upsertBillingTerm(…)` + the existing `db.update(clients)` set-clause, which keeps writing `billingType` unconditionally — that write *is* the cache flip.
+2. In one transaction: closed-month guard **inside the transaction** (F5 — checking before it leaves a TOCTOU window where a concurrent close slips between check and write), then `upsertBillingTerm(…)` + the existing `db.update(clients)` set-clause, which keeps writing `billingType` unconditionally — that write *is* the cache flip. Guard failure: `'That month's books are closed. Reopen [Month] before changing its billing basis.'` (D9 hard block; only reachable via "This month"). Uses `isMonthClosed` from section 03 — ship behind a stub returning "open" if 03 hasn't landed.
 
 **Activity**: the existing `clientUpdatedEvent` "billing type" diff entry ([apps/internal/lib/activity/events/clients.ts](../../../apps/internal/lib/activity/events/clients.ts) via `calculateDiff` in update-client.ts) gains the boundary in details: `{ billingType: { from, to, effectiveFrom } }`. One event, actor = the saving admin.
 
-**Known edge → guardrail in section 05**: an hour block created *before* a next-month boundary never appears in Billing In (its creation month resolves net_30; later months don't include its `created_at`). Section 05 warns at block-create time.
+**Known edge → solved by `billing_month`** (above, F7): blocks created before a next-month boundary — manually or by the Stripe webhook on invoice payment — are attributed to the client's first prepaid month instead of being lost.
 
 ## Deliberately unchanged
 
@@ -116,4 +153,6 @@ Insert the term **in the same transaction** as the client insert, with `effectiv
 - [ ] Switching the type back before the boundary overwrites the same boundary row cleanly
 - [ ] "This month" targeting a closed month is blocked with the reopen-first error
 - [ ] Activity shows one billing-type change entry with before/after and `effectiveFrom`
+- [ ] Every existing hour block backfills `billing_month` = its creation month; a block created (manually or via paid invoice) for a client with a future prepaid boundary gets `billing_month` = the boundary month
+- [ ] Migration preflight fails loudly if any data predates the sentinel
 - [ ] `npm run build`, `npm run lint`, `npm run type-check` pass from repo root

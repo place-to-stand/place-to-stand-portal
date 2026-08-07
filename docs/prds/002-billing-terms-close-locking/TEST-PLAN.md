@@ -20,6 +20,7 @@ All tests run as an ADMIN user in `apps/internal/`. "The report" = `/reports/mon
 - [ ] **02.2 The real switch**: give the switching client a `prepaid` term effective first of next month. Past + current months: still Net 30, hours unchanged. Next month: under Prepaid (0h until a block is purchased)
 - [ ] **02.3 Basis follows everywhere**: origination and closer breakdowns show the client under the correct basis on both sides of the boundary
 - [ ] **02.4 Purchased block after cutover**: create an hour block in the cutover month → appears in that month's Prepaid billing; earlier months unaffected
+- [ ] **02.5 Pre-boundary purchase (F7)**: with a next-month boundary saved, create a block before the boundary (manual save, and simulated webhook via a paid prepaid invoice) → `billing_month` = boundary month; block appears in the boundary month's Billing In, not the creation month's
 
 ## Section 03 — Close snapshots
 
@@ -33,7 +34,9 @@ All tests run as an ADMIN user in `apps/internal/`. "The report" = `/reports/mon
 
 - [ ] **04.1 Frozen rendering**: close a month, modify a time log in it → section numbers do NOT move; drift banner appears with correct delta + record attribution
 - [ ] **04.2 Late backdated log**: with the month closed, create a log dated inside it → drift `change: 'added'`, hours match
-- [ ] **04.3 Soft-delete drift**: archive a closed-month time log → drift `change: 'modified'`, negative delta
+- [ ] **04.3 Soft-delete drift**: archive a closed-month time log → drift `change: 'deleted'`, negative delta (requires the F1 `updatedAt`/`deleted_at` fixes)
+- [ ] **04.3b Payee drift (F2)**: in a closed month, reassign hours between users or swap the client's closer → drift banner appears even though section hour totals are unchanged
+- [ ] **04.3c Failed re-close keeps the snapshot (F3)**: force a re-close derivation failure (e.g. temporarily throw) → original snapshot still active, month still closed
 - [ ] **04.4 Reopen & re-close**: one click clears the banner; new frozen numbers include the change
 - [ ] **04.5 Clean closed month**: no post-close mutations → quiet closed notice, no drift banner
 - [ ] **04.6 Current-month close warning**: closing the in-progress month shows the extra warning line
@@ -45,7 +48,7 @@ All tests run as an ADMIN user in `apps/internal/`. "The report" = `/reports/mon
 - [ ] **05.2 Edit/archive warns**: edit hours on / archive a closed-month log; edit/archive a closed-month hour block → warning each time
 - [ ] **05.3 Boundary move**: change a log's date from closed month → open month → warns once; open → open never warns
 - [ ] **05.4 No false positives**: normal current-month logging shows no warnings anywhere
-- [ ] **05.5 Pre-boundary block purchase**: with a next-month boundary saved (01.5), create an hour block for that client before the boundary → saves with the "won't count toward Billing In" warning; after the boundary month starts, block creates don't warn
+- [ ] **05.5 Pre-boundary block purchase**: with a next-month boundary saved (01.5), create an hour block for that client → saves with `billing_month` = boundary month and the informational "billed in [Month]" note; no warning after the boundary month starts
 - [ ] **05.6 Admin-only warnings**: as a CLIENT-role user in the internal app, log time into a closed month → saves with **no** warning toast; the log still appears as drift on the closed month for admins
 
 ## Cross-cutting

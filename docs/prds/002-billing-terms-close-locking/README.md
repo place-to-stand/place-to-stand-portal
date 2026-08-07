@@ -49,7 +49,8 @@ This is one instance of a class (any mutable field the close depends on rewrites
 | D9 | **Time-log/hour-block writes touching a closed month warn, not block; billing-term changes into closed months are hard-blocked.** | Late logging is legitimate; rewriting a closed month's billing basis never is. |
 | D10 | **Billing changes apply at save — no pending state, no cron.** Cache flips in the save transaction; the terms row's boundary (this/next month radio) controls only report basis per month. | One-way prepaid migration; scheduling infrastructure isn't warranted. Cache and report intentionally disagree for the rest of the cutover month. |
 | D11 | **New activity target `MONTHLY_CLOSE`** (text column, no migration); stays out of `CLIENT_VISIBLE_ACTIVITY_TARGET_TYPES`. Billing-term changes log under `CLIENT`. | Admin-only, same guard rationale as PRD 001 D10. |
-| D12 | **Snapshot = fully assembled `MonthlyCloseReport` as JSONB** with `schemaVersion`, plus `closed_at`/`closed_by`. Renders without live queries. | The snapshot must survive future schema/logic changes — that's its purpose. |
+| D12 | **Snapshot = fully assembled `MonthlyCloseReport` as JSONB** with `schemaVersion`, plus `closed_at`/`closed_by`. Renders without live queries; decode is zod-validated with an explicit unreadable-snapshot state. | The snapshot must survive future schema/logic changes — that's its purpose. |
+| D13 | **Prepaid blocks are attributed by `hour_blocks.billing_month`** (default = creation month, clamped forward to the client's first prepaid month), not by creation month. | A block created before the boundary — manually or by the **Stripe webhook** on invoice payment, which no UI warning can reach — would otherwise never count in any month's Billing In. Attribution beats warnings. |
 
 ## What already exists
 
@@ -63,7 +64,9 @@ This is one instance of a class (any mutable field the close depends on rewrites
 | [apps/internal/lib/leads/actions/convert-lead.ts](../../../apps/internal/lib/leads/actions/convert-lead.ts) | Creates client with `billingType` | Inserts initial term (01) |
 | [apps/internal/app/(dashboard)/reports/monthly-close/](<../../../apps/internal/app/(dashboard)/reports/monthly-close/>) | `page.tsx` month params → date range → fetch; `report-header.tsx`, summary cards, section sheets, `formula-notice.tsx` | Close controls, snapshot rendering, drift banner (04) |
 | Time-log API routes (`apps/internal/app/api/projects/[projectId]/time-logs/`) over [apps/internal/lib/queries/time-logs/mutations.ts](../../../apps/internal/lib/queries/time-logs/mutations.ts) | No month-close awareness | Admin-only closed-month `warning` in the route JSON responses (05) |
-| [apps/internal/app/(dashboard)/hour-blocks/actions/](<../../../apps/internal/app/(dashboard)/hour-blocks/actions/>) | Hour block create/edit/archive | Closed-month + pre-boundary purchase warnings (05) |
+| [apps/internal/app/(dashboard)/hour-blocks/actions/](<../../../apps/internal/app/(dashboard)/hour-blocks/actions/>) | Hour block create/edit/archive | Sets `billing_month` on create (01); closed-month warnings (05) |
+| Stripe webhook → [apps/internal/lib/data/invoices.ts](../../../apps/internal/lib/data/invoices.ts) `createHourBlocksFromInvoice` | Auto-creates hour blocks when a prepaid invoice is paid | Sets `billing_month` via the shared resolver (01, D13) |
+| [apps/internal/lib/queries/time-logs/mutations.ts](../../../apps/internal/lib/queries/time-logs/mutations.ts) | `updateTimeLog`/`softDeleteTimeLog` do **not** set `updatedAt` | Both add `updatedAt` to `.set()` — required for drift attribution (04, F1) |
 | [apps/internal/lib/activity/](../../../apps/internal/lib/activity/) | `types.ts` target union, `events/clients.ts`, `logger.ts` | `MONTHLY_CLOSE` target + events (03); `effectiveFrom` in billing-type diff (01) |
 | `apps/internal/lib/types.ts` | `DbClient` snake-case twin of `clients` | Unchanged — `clients` untouched; new tables use Drizzle-inferred types |
 
@@ -76,7 +79,7 @@ npm run db:generate -- --name client_billing_terms
 npm run db:generate -- --name monthly_close_snapshots
 ```
 
-**`client_billing_terms`** (01): `id` PK · `client_id` → clients RESTRICT · `billing_type` enum · `effective_from` date · `created_by` → users SET NULL · timestamps + `deleted_at`. Hand-added: month-start CHECK, unique partial `(client_id, effective_from)`, resolution index `(client_id, effective_from DESC)`, backfill INSERT.
+**`client_billing_terms`** (01): `id` PK · `client_id` → clients RESTRICT · `billing_type` enum · `effective_from` date · `created_by` → users SET NULL · timestamps + `deleted_at`. Hand-added: sentinel preflight assert, month-start CHECK, unique partial `(client_id, effective_from)`, resolution index `(client_id, effective_from DESC)`, backfill INSERT. **Same migration** also adds `hour_blocks.billing_month` (date NOT NULL, month-start CHECK, partial index; backfill = creation month) per D13.
 
 **`monthly_close_snapshots`** (03): `id` PK · `year`/`month` ints (CHECK 1–12) · `report` jsonb · `closed_at` · `closed_by` → users SET NULL · timestamps + `deleted_at`. Hand-added: unique partial `(year, month)`.
 
@@ -86,7 +89,7 @@ npm run db:generate -- --name monthly_close_snapshots
 
 | Type | Path | Section |
 |------|------|---------|
-| New | `packages/db/src/schema.ts` → `clientBillingTerms`, `monthlyCloseSnapshots` + relations | 01/03 |
+| New | `packages/db/src/schema.ts` → `clientBillingTerms`, `monthlyCloseSnapshots` + relations; `billingMonth` column on `hourBlocks` | 01/03 |
 | New | `apps/internal/lib/queries/clients/billing-terms.ts` | 01/02 |
 | New | `apps/internal/lib/queries/reports/close-snapshots.ts` | 03/04 |
 | New | `apps/internal/lib/data/reports/close.ts` | 03 |
@@ -96,7 +99,8 @@ npm run db:generate -- --name monthly_close_snapshots
 | Modified | `apps/internal/lib/queries/reports/monthly-close.ts` (8 filter sites) | 02 |
 | Modified | `apps/internal/lib/data/reports/monthly-close.ts`, `types.ts` | 02/04 |
 | Modified | `apps/internal/lib/settings/clients/client-service.ts`, `actions/create-client.ts`, `actions/update-client.ts`, client sheet components | 01 |
-| Modified | `apps/internal/lib/leads/actions/convert-lead.ts` | 01 |
+| Modified | `apps/internal/lib/data/invoices.ts` (`createHourBlocksFromInvoice` sets `billing_month`), hour-block `save-hour-block.ts` (same) | 01 |
+| Modified | `apps/internal/lib/queries/time-logs/mutations.ts` (`updatedAt` bumps in update/soft-delete) | 04 |
 | Modified | `apps/internal/lib/activity/types.ts`, `events.ts`, `events/clients.ts` | 01/03 |
 | Modified | `apps/internal/app/(dashboard)/reports/monthly-close/page.tsx`, `_components/report-header.tsx` | 04 |
 | Modified | time-log API routes (`app/api/projects/[projectId]/time-logs/`) + hour-block actions (warning plumbing) | 05 |
