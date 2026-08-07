@@ -2,7 +2,7 @@
 
 import { z } from 'zod'
 import { requireUser } from '@/lib/auth/session'
-import { ensureClientAccessByTaskId } from '@/lib/auth/permissions'
+import { ensureTaskAccess } from '@/lib/auth/permissions'
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
 import {
   getActiveSessionByTaskId,
@@ -46,7 +46,7 @@ export async function getOrCreatePlanningSession(input: {
   const { taskId, repoLinkId } = parsed.data
 
   try {
-    await ensureClientAccessByTaskId(user, taskId)
+    await ensureTaskAccess(user, taskId)
   } catch (error) {
     if (error instanceof NotFoundError) return { error: 'Task not found.' }
     if (error instanceof ForbiddenError) return { error: 'Permission denied.' }

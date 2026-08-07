@@ -34,7 +34,6 @@ type ReviewDoneSectionProps = {
   activeSheetTaskId: string | null
   reviewActionTaskId: string | null
   reviewActionType: ReviewActionKind | null
-  reviewActionDisabledReason: string | null
   isReviewActionPending: boolean
 }
 
@@ -52,7 +51,6 @@ export function ReviewDoneSection({
   activeSheetTaskId,
   reviewActionTaskId,
   reviewActionType,
-  reviewActionDisabledReason,
   isReviewActionPending,
 }: ReviewDoneSectionProps) {
   return (
@@ -137,13 +135,11 @@ export function ReviewDoneSection({
                   reviewActionType === 'accept'
                 const blockOtherActions =
                   isReviewActionPending && reviewActionTaskId !== task.id
-                const disabledReason =
-                  reviewActionDisabledReason ??
-                  (isAcceptingDone
-                    ? 'Accepting all Done tasks…'
-                    : blockOtherActions
-                      ? 'Please wait for the current task update to finish.'
-                      : null)
+                const disabledReason = isAcceptingDone
+                  ? 'Accepting all Done tasks…'
+                  : blockOtherActions
+                    ? 'Please wait for the current task update to finish.'
+                    : null
 
                 const buttonDisabled =
                   Boolean(disabledReason) || isCurrentAction || isAcceptingDone

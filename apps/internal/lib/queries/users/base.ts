@@ -3,7 +3,7 @@ import 'server-only'
 import { and, desc, eq, isNull, sql } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
-import { assertAdmin, assertIsSelf, isAdmin } from '@/lib/auth/permissions'
+import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { clientMembers, taskAssignees, users } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
@@ -16,20 +16,16 @@ export type UserWithAssignmentCounts = SelectUser & {
 }
 
 export async function listUsers(user: AppUser): Promise<SelectUser[]> {
-  const baseQuery = db.select(userFields).from(users)
+  assertAdmin(user)
 
-  if (isAdmin(user)) {
-    return baseQuery.orderBy(desc(users.createdAt))
-  }
-
-  return baseQuery.where(eq(users.id, user.id)).orderBy(desc(users.createdAt))
+  return db.select(userFields).from(users).orderBy(desc(users.createdAt))
 }
 
 export async function getUserById(
   user: AppUser,
   userId: string,
 ): Promise<SelectUser> {
-  assertIsSelf(user, userId)
+  assertAdmin(user)
 
   const result = await db
     .select(userFields)

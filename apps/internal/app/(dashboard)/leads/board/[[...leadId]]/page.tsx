@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { redirect } from 'next/navigation'
 
 import { requireUser } from '@/lib/auth/session'
 import { fetchLeadAssignees, fetchLeadsBoard } from '@/lib/data/leads'
@@ -24,11 +23,7 @@ export default async function LeadsBoardPage({ params }: PageProps) {
   const actionSegment = resolvedParams.leadId?.[1] ?? null
   const user = await requireUser()
 
-  if (requestedLeadId && user.role !== 'ADMIN') {
-    redirect('/leads/board')
-  }
-
-  const activeLeadId = user.role === 'ADMIN' ? requestedLeadId : null
+  const activeLeadId = requestedLeadId
 
   // Derive activeAction from URL segments
   let activeAction: string | null = null
@@ -45,7 +40,7 @@ export default async function LeadsBoardPage({ params }: PageProps) {
     <LeadsWorkspace
       initialColumns={board}
       assignees={assignees}
-      canManage={user.role === 'ADMIN'}
+      canManage
       activeLeadId={activeLeadId}
       activeAction={activeAction}
       senderName={user.full_name ?? user.email ?? ''}

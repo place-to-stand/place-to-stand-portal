@@ -3,7 +3,7 @@ import 'server-only'
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
-import { ensureClientAccessByProjectId } from '@/lib/auth/permissions'
+import { ensureProjectAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import {
   taskAssignees,
@@ -52,7 +52,7 @@ export async function listProjectTasksWithRelations(
   projectId: string,
   options: { includeArchived?: boolean } = {}
 ): Promise<RawTaskWithRelations[]> {
-  await ensureClientAccessByProjectId(user, projectId)
+  await ensureProjectAccess(user, projectId)
 
   const whereClause = options.includeArchived
     ? eq(tasks.projectId, projectId)

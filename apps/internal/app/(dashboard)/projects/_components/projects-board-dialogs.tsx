@@ -5,7 +5,6 @@ import type {
   ProjectWithRelations,
   TaskWithRelations,
 } from '@/lib/types'
-import type { UserRole } from '@/lib/auth/session'
 import type { BoardColumnId } from '@/lib/projects/board/board-constants'
 import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 
@@ -19,7 +18,6 @@ type SheetState = {
   canManage: boolean
   admins: DbUser[]
   currentUserId: string
-  currentUserRole: UserRole
   defaultStatus: BoardColumnId
   defaultDueOn: string | null
 }
@@ -27,11 +25,9 @@ type SheetState = {
 type TimeLogState = {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
-  canLogTime: boolean
   timeLogProjectId: string | null
   tasks: TaskWithRelations[]
   currentUserId: string
-  currentUserRole: UserRole
   admins: DbUser[]
   mode: 'create' | 'edit'
   editingEntry: TimeLogEntry | null
@@ -61,7 +57,6 @@ export function ProjectsBoardDialogs({
     canManage,
     admins,
     currentUserId,
-    currentUserRole,
     defaultStatus,
     defaultDueOn,
   } = sheetState
@@ -69,18 +64,16 @@ export function ProjectsBoardDialogs({
   const {
     isOpen: isTimeLogOpen,
     onOpenChange: onTimeLogOpenChange,
-    canLogTime,
     timeLogProjectId,
     tasks,
     currentUserId: timeLogUserId,
-    currentUserRole: timeLogUserRole,
     admins: timeLogAdmins,
     mode: timeLogMode,
     editingEntry,
   } = timeLogState
 
   const timeLogDialogOpen =
-    canLogTime && isTimeLogOpen && timeLogProjectId === activeProject.id
+    isTimeLogOpen && timeLogProjectId === activeProject.id
 
   return (
     <>
@@ -91,7 +84,6 @@ export function ProjectsBoardDialogs({
         canManage={canManage}
         admins={admins}
         currentUserId={currentUserId}
-        currentUserRole={currentUserRole}
         defaultStatus={defaultStatus}
         defaultDueOn={defaultDueOn}
         projects={projects}
@@ -111,7 +103,6 @@ export function ProjectsBoardDialogs({
         clientRemainingHours={activeProject.burndown.totalClientRemainingHours}
         tasks={tasks}
         currentUserId={timeLogUserId}
-        currentUserRole={timeLogUserRole}
         projectMembers={activeProject.members}
         admins={timeLogAdmins}
         mode={timeLogMode}

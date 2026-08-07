@@ -12,16 +12,12 @@ type BuildBurndownArgs = {
       projectMonthToDateLoggedHours: number
     }
   } | null
-  canLogTime: boolean
-  addTimeLogDisabledReason: ProjectsBoardBurndownProps['addTimeLogDisabledReason']
   onAddTimeLog: () => void
   viewTimeLogsHref: string | null
 }
 
 export function buildProjectsBoardBurndown({
   activeProject,
-  canLogTime,
-  addTimeLogDisabledReason,
   onAddTimeLog,
   viewTimeLogsHref,
 }: BuildBurndownArgs): ProjectsBoardBurndownProps {
@@ -41,8 +37,6 @@ export function buildProjectsBoardBurndown({
       activeProject?.burndown.totalProjectLoggedHours ?? 0,
     projectMonthToDateLoggedHours:
       activeProject?.burndown.projectMonthToDateLoggedHours ?? 0,
-    canLogTime,
-    addTimeLogDisabledReason,
     onAddTimeLog,
     viewTimeLogsHref,
     showClientRemainingCard: !isNetThirtyClient,

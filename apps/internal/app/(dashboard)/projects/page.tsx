@@ -1,14 +1,12 @@
 import type { Metadata } from 'next'
 
 import { AppShellHeader } from '@/components/layout/app-shell'
-import { ProjectsLanding } from './_components/projects-landing'
 import type { ClientHoursData } from './_components/projects-landing'
 import { ProjectsLandingAdminSection } from './_components/projects-landing-admin-section'
 import { ProjectsLandingHeader } from './_components/projects-landing-header'
 import { fetchProjectsWithRelations } from '@/lib/data/projects'
 import { fetchClientsWithMetrics } from '@/lib/data/clients'
 import { fetchAdminUsers } from '@/lib/data/users'
-import { isAdmin } from '@/lib/auth/permissions'
 import { requireUser } from '@/lib/auth/session'
 import {
   listProjectsForSettings,
@@ -27,17 +25,12 @@ export default async function ProjectsPage() {
   const [projects, clientsWithMetrics] = await Promise.all([
     fetchProjectsWithRelations({
       forUserId: user.id,
-      forRole: user.role,
     }),
     fetchClientsWithMetrics(user),
   ])
   const landingClients = buildLandingClients(projects)
   const visibleProjectCount = countVisibleProjects(projects, user.id)
   const clientHoursMap = buildClientHoursMap(clientsWithMetrics)
-
-  if (!isAdmin(user)) {
-    return renderProjectLanding({ user, projects, landingClients, clientHoursMap, userIsAdmin: false })
-  }
 
   const [managementResult, adminUsersResult]: [ProjectsSettingsResult, Awaited<ReturnType<typeof fetchAdminUsers>>] =
     await Promise.all([
@@ -84,43 +77,6 @@ export default async function ProjectsPage() {
 }
 
 type LandingClient = { id: string; name: string; slug: string | null }
-
-function renderProjectLanding({
-  user,
-  projects,
-  landingClients,
-  clientHoursMap,
-  userIsAdmin,
-}: {
-  user: Awaited<ReturnType<typeof requireUser>>
-  projects: ProjectWithRelations[]
-  landingClients: LandingClient[]
-  clientHoursMap: Record<string, ClientHoursData>
-  userIsAdmin: boolean
-}) {
-  const sortableProjects = [...projects]
-
-  return (
-    <>
-      <AppShellHeader>
-        <ProjectsLandingHeader
-          projects={sortableProjects}
-          clients={landingClients}
-          currentUserId={user.id}
-        />
-      </AppShellHeader>
-      <div className='space-y-6'>
-        <ProjectsLanding
-          projects={sortableProjects}
-          clients={landingClients}
-          currentUserId={user.id}
-          isAdmin={userIsAdmin}
-          clientHoursMap={clientHoursMap}
-        />
-      </div>
-    </>
-  )
-}
 
 function buildLandingClients(
   projects: ProjectWithRelations[]

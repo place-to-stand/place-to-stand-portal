@@ -1,25 +1,12 @@
 import 'server-only'
 
 import { cache } from 'react'
-import {
-  and,
-  asc,
-  desc,
-  eq,
-  inArray,
-  isNull,
-  ne,
-  or,
-  sql,
-  type SQL,
-} from 'drizzle-orm'
+import { and, asc, desc, eq, isNull, ne, sql } from 'drizzle-orm'
 
-import type { UserRole } from '@/lib/auth/session'
 import type { ProjectTypeValue } from '@/lib/types'
 import { db } from '@/lib/db'
 import {
   clients as clientsTable,
-  clientMembers as clientMembersTable,
   projects as projectsTable,
   taskAssigneeMetadata as taskAssigneeMetadataTable,
   taskAssignees as taskAssigneesTable,
@@ -68,43 +55,21 @@ const STATUS_PRIORITY_SQL = sql`
 
 type FetchAssignedTasksSummaryOptions = {
   userId: string
-  role: UserRole
   limit?: number | null
   includeCompletedStatuses?: boolean
 }
 
 async function loadAssignedTaskSummaries({
   userId,
-  role,
   limit = DEFAULT_LIMIT,
   includeCompletedStatuses = true,
 }: FetchAssignedTasksSummaryOptions): Promise<AssignedTaskSummaryResult> {
-  const shouldScopeToUser = role !== 'ADMIN'
-
   const normalizedLimit =
     typeof limit === 'number' && Number.isFinite(limit)
       ? Math.max(1, limit)
       : limit === null
         ? null
         : DEFAULT_LIMIT
-
-  let accessibleClientIds: string[] = []
-
-  if (shouldScopeToUser) {
-    const memberships = await db
-      .select({ clientId: clientMembersTable.clientId })
-      .from(clientMembersTable)
-      .where(
-        and(
-          eq(clientMembersTable.userId, userId),
-          isNull(clientMembersTable.deletedAt)
-        )
-      )
-
-    accessibleClientIds = memberships
-      .map(entry => entry.clientId)
-      .filter((value): value is string => Boolean(value))
-  }
 
   const baseConditions = [
     eq(taskAssigneesTable.userId, userId),
@@ -117,25 +82,6 @@ async function loadAssignedTaskSummaries({
 
   if (!includeCompletedStatuses) {
     baseConditions.push(ne(tasksTable.status, 'DONE'))
-  }
-
-  if (shouldScopeToUser) {
-    let accessCondition: SQL<unknown> = or(
-      eq(projectsTable.type, 'INTERNAL'),
-      and(
-        eq(projectsTable.type, 'PERSONAL'),
-        eq(projectsTable.createdBy, userId)
-      )
-    )!
-
-    if (accessibleClientIds.length > 0) {
-      accessCondition = or(
-        accessCondition,
-        inArray(projectsTable.clientId, accessibleClientIds)
-      )!
-    }
-
-    baseConditions.push(accessCondition as SQL)
   }
 
   const whereClause = and(...baseConditions)

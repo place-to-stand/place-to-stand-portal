@@ -15,7 +15,6 @@ export type ReviewActionKind = 'accept' | 'unaccept' | 'restore' | 'destroy'
 export type ReviewActionState = { type: ReviewActionKind; taskId: string }
 
 export type UseProjectsBoardReviewActionsArgs = {
-  canAcceptTasks: boolean
   activeProjectId: string | null
   toast: (options: ToastOptions) => void
 }
@@ -32,7 +31,6 @@ export type UseProjectsBoardReviewActionsResult = {
 }
 
 export function useProjectsBoardReviewActions({
-  canAcceptTasks,
   activeProjectId,
   toast,
 }: UseProjectsBoardReviewActionsArgs): UseProjectsBoardReviewActionsResult {
@@ -41,31 +39,8 @@ export function useProjectsBoardReviewActions({
   const [pendingReviewAction, setPendingReviewAction] =
     useState<ReviewActionState | null>(null)
 
-  const ensureCanAccept = useCallback(() => {
-    if (canAcceptTasks) {
-      return true
-    }
-
-    toast({
-      variant: 'destructive',
-      title: 'Action not allowed',
-      description: 'Only administrators can manage review tasks.',
-    })
-
-    return false
-  }, [canAcceptTasks, toast])
-
   const handleAcceptAllDone = useCallback(() => {
     if (!activeProjectId) {
-      return
-    }
-
-    if (!canAcceptTasks) {
-      toast({
-        variant: 'destructive',
-        title: 'Action not allowed',
-        description: 'Only administrators can accept tasks.',
-      })
       return
     }
 
@@ -95,7 +70,7 @@ export function useProjectsBoardReviewActions({
         description: 'All tasks in Done are already accepted.',
       })
     })
-  }, [activeProjectId, canAcceptTasks, startAcceptingDone, toast])
+  }, [activeProjectId, startAcceptingDone, toast])
 
   const performReviewAction = useCallback(
     (
@@ -105,10 +80,6 @@ export function useProjectsBoardReviewActions({
       success: { title: string; description?: string },
       errorTitle: string
     ) => {
-      if (!ensureCanAccept()) {
-        return
-      }
-
       if (
         pendingReviewAction &&
         pendingReviewAction.taskId === taskId &&
@@ -147,7 +118,7 @@ export function useProjectsBoardReviewActions({
         }
       })
     },
-    [ensureCanAccept, pendingReviewAction, startReviewAction, toast]
+    [pendingReviewAction, startReviewAction, toast]
   )
 
   const handleAcceptTask = useCallback(

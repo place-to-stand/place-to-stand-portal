@@ -13,6 +13,7 @@ import {
   sendMagicLink,
   type SignInState,
 } from "./actions";
+import { ClientPortalNotice } from "./client-portal-notice";
 
 const INITIAL_STATE: SignInState = {};
 
@@ -81,6 +82,9 @@ export function SignInForm({ redirectTo }: Props) {
         </div>
         {state.error ? (
           <p className="text-sm text-destructive">{state.error}</p>
+        ) : null}
+        {state.clientPortalUrl ? (
+          <ClientPortalNotice clientPortalUrl={state.clientPortalUrl} />
         ) : null}
         <Button type="submit" className="w-full" disabled={isPending}>
           {isPendingPassword ? (

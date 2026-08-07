@@ -10,7 +10,6 @@ export type ProjectsBoardDerivedStateArgs = {
   tasksByColumn: Map<string, TaskWithRelations[]>
   onlyAssignedToMe: boolean
   currentUserId: string | null
-  canAcceptTasks: boolean
 }
 
 export type ProjectsBoardDerivedState = {
@@ -28,7 +27,6 @@ export function useProjectsBoardDerivedState({
   tasksByColumn,
   onlyAssignedToMe,
   currentUserId,
-  canAcceptTasks,
 }: ProjectsBoardDerivedStateArgs): ProjectsBoardDerivedState {
   const tasksByColumnToRender = useMemo(() => {
     if (!onlyAssignedToMe || !currentUserId) {
@@ -44,12 +42,10 @@ export function useProjectsBoardDerivedState({
   )
 
   const hasAcceptableTasks = doneColumnTasks.length > 0
-  const acceptAllDisabled = !canAcceptTasks || !hasAcceptableTasks
-  const acceptAllDisabledReason = !canAcceptTasks
-    ? 'Only administrators can accept tasks.'
-    : !hasAcceptableTasks
-      ? 'No tasks are ready for acceptance.'
-      : null
+  const acceptAllDisabled = !hasAcceptableTasks
+  const acceptAllDisabledReason = !hasAcceptableTasks
+    ? 'No tasks are ready for acceptance.'
+    : null
 
   return {
     tasksByColumnToRender,

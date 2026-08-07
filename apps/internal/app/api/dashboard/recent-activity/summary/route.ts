@@ -11,7 +11,7 @@ import {
   upsertActivityOverviewCache,
 } from '@/lib/activity/overview-cache'
 import { getCurrentUser } from '@/lib/auth/session'
-import { isAdmin } from '@/lib/auth/permissions'
+import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { clients, leads, projects, tasks } from '@/lib/db/schema'
 
@@ -54,12 +54,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Admin-only: the briefing is built from UNSCOPED activity logs
-  // (fetchActivityLogsSince) plus global lead/task metrics — internal
-  // operations data. The home dashboard hides the widget for non-admins.
-  if (!isAdmin(user)) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
+  // Defense-in-depth: the internal portal is admin-only, and the briefing is
+  // built from UNSCOPED activity logs (fetchActivityLogsSince) plus global
+  // lead/task metrics — internal operations data.
+  assertAdmin(user)
 
   let timeframeDays: number
   let forceRefresh = false
@@ -518,8 +516,8 @@ function formatActivityLog(
 
 /**
  * Resolves project/client display names for the AI prompt. No per-user
- * filtering: this route is admin-only (403 above), so the caller may see
- * every referenced project and client.
+ * filtering: this route is admin-only (assertAdmin above), so the caller may
+ * see every referenced project and client.
  */
 async function buildActivityContext(
   logs: ActivityLogWithActor[]

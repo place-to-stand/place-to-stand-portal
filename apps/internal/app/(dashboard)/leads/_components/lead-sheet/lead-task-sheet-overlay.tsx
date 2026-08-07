@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { DbUser, ProjectWithRelations } from '@/lib/types'
 import type { LeadRecord } from '@/lib/leads/types'
-import type { UserRole } from '@/lib/auth/session'
 
 import { TaskSheet } from '@/app/(dashboard)/projects/task-sheet'
 
@@ -13,7 +12,6 @@ type TaskSheetInitData = {
   projects: ProjectWithRelations[]
   salesProjectId: string
   currentUserId: string
-  currentUserRole: UserRole
 }
 
 type LeadTaskSheetOverlayProps = {
@@ -95,7 +93,6 @@ export function LeadTaskSheetOverlay({
       canManage={canManage}
       admins={initData.admins}
       currentUserId={initData.currentUserId}
-      currentUserRole={initData.currentUserRole}
       defaultStatus='ON_DECK'
       defaultDueOn={null}
       projects={initData.projects}

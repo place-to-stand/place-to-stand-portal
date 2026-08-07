@@ -26,7 +26,6 @@ export const useProjectsBoardState = ({
   projects,
   clients,
   currentUserId,
-  currentUserRole,
   admins,
   activeProjectId,
   activeTaskId,
@@ -122,14 +121,7 @@ export const useProjectsBoardState = ({
     )
   }, [acceptedTasksByProject, activeProject])
 
-  const canManageTasks = useMemo(() => {
-    if (!activeProject) return false
-    if (currentUserRole === 'ADMIN') return true
-
-    return activeProject.members.some(
-      member => member.user_id === currentUserId
-    )
-  }, [activeProject, currentUserId, currentUserRole])
+  const canManageTasks = activeProject !== null
 
   const memberDirectory = useMemo(() => {
     const directory = new Map<string, MemberDirectoryEntry>()
@@ -197,12 +189,10 @@ export const useProjectsBoardState = ({
     setFeedback,
   })
 
-  const addTaskDisabled = !activeProject || !canManageTasks
+  const addTaskDisabled = !activeProject
   const addTaskDisabledReason = !activeProject
     ? 'Select a project to add tasks.'
-    : !canManageTasks
-      ? 'You need manage permissions to add tasks.'
-      : null
+    : null
 
   return {
     isPending,

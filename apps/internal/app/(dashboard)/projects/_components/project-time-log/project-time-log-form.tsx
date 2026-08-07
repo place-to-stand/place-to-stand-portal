@@ -13,8 +13,6 @@ import { TaskSelector } from './task-selector'
 import { UserSelectField } from './user-select-field'
 
 export type ProjectTimeLogFormProps = {
-  canLogTime: boolean
-  canSelectUser: boolean
   isMutating: boolean
   disableSubmit: boolean
   formErrors: TimeLogFormErrors
@@ -50,8 +48,6 @@ export type ProjectTimeLogFormProps = {
 
 export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
   const {
-    canLogTime,
-    canSelectUser,
     isMutating,
     disableSubmit,
     formErrors,
@@ -79,11 +75,9 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
     isEditMode,
   } = props
 
-  const submitTooltipReason = canLogTime
-    ? disableSubmit
-      ? 'Complete the form before submitting.'
-      : null
-    : 'Only internal teammates can log time.'
+  const submitTooltipReason = disableSubmit
+    ? 'Complete the form before submitting.'
+    : null
 
   const SubmitIcon = isEditMode ? Pencil : PlusCircle
 
@@ -142,16 +136,14 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
           </p>
         ) : null}
       </div>
-      {canSelectUser ? (
-        <UserSelectField
-          selectedUserId={selectedUserId}
-          onSelectUser={onSelectUser}
-          items={userComboboxItems}
-          disabled={isMutating}
-          fieldErrorId={fieldErrorIds.user}
-          errorMessage={formErrors.user}
-        />
-      ) : null}
+      <UserSelectField
+        selectedUserId={selectedUserId}
+        onSelectUser={onSelectUser}
+        items={userComboboxItems}
+        disabled={isMutating}
+        fieldErrorId={fieldErrorIds.user}
+        errorMessage={formErrors.user}
+      />
       <div className='space-y-2 sm:col-span-2'>
         <label htmlFor='time-log-task' className='text-sm font-medium'>
           Link to tasks (optional)

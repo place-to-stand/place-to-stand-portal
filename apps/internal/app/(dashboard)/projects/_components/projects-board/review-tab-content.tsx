@@ -38,7 +38,6 @@ export type ReviewTabContentProps = {
   onDestroyTask: (taskId: string) => void
   reviewActionTaskId: string | null
   reviewActionType: ReviewActionKind | null
-  reviewActionDisabledReason: string | null
   isReviewActionPending: boolean
 }
 
@@ -63,7 +62,6 @@ export function ReviewTabContent(props: ReviewTabContentProps) {
     onDestroyTask,
     reviewActionTaskId,
     reviewActionType,
-    reviewActionDisabledReason,
     isReviewActionPending,
   } = props
 
@@ -139,7 +137,6 @@ export function ReviewTabContent(props: ReviewTabContentProps) {
             activeSheetTaskId={activeSheetTaskId}
             reviewActionTaskId={reviewActionTaskId}
             reviewActionType={reviewActionType}
-            reviewActionDisabledReason={reviewActionDisabledReason}
             isReviewActionPending={isReviewActionPending}
           />
 
@@ -151,7 +148,6 @@ export function ReviewTabContent(props: ReviewTabContentProps) {
             activeSheetTaskId={activeSheetTaskId}
             reviewActionTaskId={reviewActionTaskId}
             reviewActionType={reviewActionType}
-            reviewActionDisabledReason={reviewActionDisabledReason}
             isReviewActionPending={isReviewActionPending}
           />
 
@@ -163,7 +159,6 @@ export function ReviewTabContent(props: ReviewTabContentProps) {
             activeSheetTaskId={activeSheetTaskId}
             reviewActionTaskId={reviewActionTaskId}
             reviewActionType={reviewActionType}
-            reviewActionDisabledReason={reviewActionDisabledReason}
             isReviewActionPending={isReviewActionPending}
             onRequestDestroy={task => setDestroyTarget(task)}
           />

@@ -3,7 +3,6 @@
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { cn } from '@/lib/utils'
 import { Eye, Plus } from 'lucide-react'
 
@@ -21,8 +20,6 @@ type ProjectBurndownWidgetProps = {
   totalProjectLoggedHours: number
   projectMonthToDateLoggedHours?: number
   className?: string
-  canLogTime: boolean
-  addTimeLogDisabledReason?: string | null
   viewTimeLogsHref: string | null
   onAddTimeLog: () => void
   showClientRemainingCard?: boolean
@@ -34,8 +31,6 @@ export function ProjectBurndownWidget({
   totalProjectLoggedHours,
   projectMonthToDateLoggedHours = 0,
   className,
-  canLogTime,
-  addTimeLogDisabledReason,
   viewTimeLogsHref,
   onAddTimeLog,
   showClientRemainingCard = true,
@@ -97,26 +92,15 @@ export function ProjectBurndownWidget({
             View
           </Button>
         )}
-        <DisabledFieldTooltip
-          disabled={!canLogTime}
-          reason={
-            !canLogTime
-              ? (addTimeLogDisabledReason ??
-                'Only internal teammates can add new time logs.')
-              : null
-          }
+        <Button
+          type='button'
+          size='xs'
+          onClick={onAddTimeLog}
+          className='h-6 items-center justify-start gap-1 px-1.5 text-[10px]'
         >
-          <Button
-            type='button'
-            size='xs'
-            onClick={onAddTimeLog}
-            disabled={!canLogTime}
-            className='h-6 items-center justify-start gap-1 px-1.5 text-[10px]'
-          >
-            <Plus className='h-2.5! w-2.5!' />
-            Add
-          </Button>
-        </DisabledFieldTooltip>
+          <Plus className='h-2.5! w-2.5!' />
+          Add
+        </Button>
       </div>
     </section>
   )

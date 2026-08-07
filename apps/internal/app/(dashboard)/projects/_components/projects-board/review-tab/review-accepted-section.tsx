@@ -30,7 +30,6 @@ type ReviewAcceptedSectionProps = {
   activeSheetTaskId: string | null
   reviewActionTaskId: string | null
   reviewActionType: ReviewActionKind | null
-  reviewActionDisabledReason: string | null
   isReviewActionPending: boolean
 }
 
@@ -44,7 +43,6 @@ export function ReviewAcceptedSection({
   activeSheetTaskId,
   reviewActionTaskId,
   reviewActionType,
-  reviewActionDisabledReason,
   isReviewActionPending,
 }: ReviewAcceptedSectionProps) {
   return (
@@ -114,11 +112,9 @@ export function ReviewAcceptedSection({
                   reviewActionType === 'unaccept'
                 const blockOtherActions =
                   isReviewActionPending && reviewActionTaskId !== task.id
-                const disabledReason =
-                  reviewActionDisabledReason ??
-                  (blockOtherActions
-                    ? 'Please wait for the current task update to finish.'
-                    : null)
+                const disabledReason = blockOtherActions
+                  ? 'Please wait for the current task update to finish.'
+                  : null
                 const isActive = task.id === activeSheetTaskId
                 const updatedOverride =
                   task.accepted_at ?? task.updated_at ?? null

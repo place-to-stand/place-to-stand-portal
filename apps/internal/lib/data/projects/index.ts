@@ -3,8 +3,8 @@ import 'server-only'
 import { cache } from 'react'
 import { and, eq, isNull } from 'drizzle-orm'
 
-import type { AppUser, UserRole } from '@/lib/auth/session'
-import { ensureClientAccessByProjectId } from '@/lib/auth/permissions'
+import type { AppUser } from '@/lib/auth/session'
+import { ensureProjectAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { projects } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
@@ -37,24 +37,23 @@ export type ProjectDetail = {
 
 export type FetchProjectsWithRelationsOptions = {
   forUserId?: string
-  forRole?: UserRole
 }
 
 export const fetchProjectsWithRelations = cache(
   async (
     options: FetchProjectsWithRelationsOptions = {}
   ): Promise<ProjectWithRelations[]> => {
-    const baseProjects = await fetchBaseProjects()
+    // The internal portal is admin-only, so results are no longer scoped to
+    // the requesting user; the options bag is kept for call-site
+    // compatibility.
+    void options
 
-    const shouldScopeToUser =
-      options.forRole !== 'ADMIN' && Boolean(options.forUserId)
+    const baseProjects = await fetchBaseProjects()
 
     const relations = await fetchProjectRelations({
       projectIds: baseProjects.projectIds,
       clientIds: baseProjects.clientIds,
       ownerIds: baseProjects.ownerIds,
-      shouldScopeToUser,
-      userId: options.forUserId,
     })
 
     const timeLogSummaries = await getTimeLogSummariesForProjects(
@@ -64,8 +63,6 @@ export const fetchProjectsWithRelations = cache(
     return assembleProjectsWithRelations({
       projects: baseProjects.projects,
       projectClientLookup: baseProjects.projectClientLookup,
-      options,
-      shouldScopeToUser,
       relations,
       timeLogSummaries,
     })
@@ -84,7 +81,6 @@ export async function fetchProjectsWithRelationsByIds(
     projectIds: baseProjects.projectIds,
     clientIds: baseProjects.clientIds,
     ownerIds: baseProjects.ownerIds,
-    shouldScopeToUser: false,
   })
 
   const timeLogSummaries = await getTimeLogSummariesForProjects(
@@ -94,8 +90,6 @@ export async function fetchProjectsWithRelationsByIds(
   return assembleProjectsWithRelations({
     projects: baseProjects.projects,
     projectClientLookup: baseProjects.projectClientLookup,
-    options: {},
-    shouldScopeToUser: false,
     relations,
     timeLogSummaries,
   })
@@ -110,7 +104,7 @@ export async function fetchProjectsWithRelationsByIds(
  */
 export const fetchProjectById = cache(
   async (user: AppUser, projectId: string): Promise<ProjectDetail> => {
-    await ensureClientAccessByProjectId(user, projectId)
+    await ensureProjectAccess(user, projectId)
 
     const rows = await db
       .select({

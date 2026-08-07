@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { eq } from 'drizzle-orm'
 
 import { ensureUserProfile } from '@/lib/auth/profile'
+import { db } from '@/lib/db'
+import { users } from '@/lib/db/schema'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 
 /**
@@ -37,6 +40,21 @@ export async function GET(request: NextRequest) {
   // Sync the updated user profile to the database
   if (data.user) {
     await ensureUserProfile(data.user)
+
+    // The internal portal is admin-only. Portal (CLIENT) users belong on the
+    // client portal — drop the session and send them there.
+    const [profile] = await db
+      .select({ role: users.role })
+      .from(users)
+      .where(eq(users.id, data.user.id))
+      .limit(1)
+
+    if (profile?.role !== 'ADMIN') {
+      await supabase.auth.signOut()
+      return NextResponse.redirect(
+        new URL('/sign-in?notice=client-portal', request.url)
+      )
+    }
   }
 
   // For email changes, redirect to a success page or the dashboard

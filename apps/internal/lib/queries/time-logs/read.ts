@@ -4,8 +4,8 @@ import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import {
-  ensureClientAccessByProjectId,
-  ensureClientAccessByTimeLogId,
+  ensureProjectAccess,
+  ensureTimeLogAccess,
 } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import {
@@ -79,7 +79,7 @@ export async function listProjectTimeLogs(
   projectId: string,
   limit = DEFAULT_HISTORY_LIMIT,
 ): Promise<ProjectTimeLogList> {
-  await ensureClientAccessByProjectId(user, projectId)
+  await ensureProjectAccess(user, projectId)
 
   const effectiveLimit = Math.max(1, Math.min(limit, 200))
 
@@ -192,7 +192,7 @@ export async function getTimeLogById(
   user: AppUser,
   timeLogId: string,
 ): Promise<DbTimeLog> {
-  await ensureClientAccessByTimeLogId(user, timeLogId)
+  await ensureTimeLogAccess(user, timeLogId)
 
   const rows = (await db
     .select({

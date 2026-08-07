@@ -5,7 +5,6 @@ import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 
 import type {
-  ClientMembership,
   MemberWithUser,
   RawHourBlock,
   RawTaskWithRelations,
@@ -15,15 +14,12 @@ import {
   loadClientRows,
   loadMemberRows,
   loadHourBlockRows,
-  loadClientMembershipRows,
   mapClientRows,
   mapMemberRows,
   mapHourBlockRows,
-  mapClientMembershipRows,
   type ClientRow,
   type MemberRow,
   type HourBlockRow,
-  type ClientMembershipRow,
 } from './relations/clients'
 import {
   buildAssigneeMap,
@@ -38,8 +34,6 @@ export type ProjectRelationsFetchArgs = {
   projectIds: string[]
   clientIds: string[]
   ownerIds: string[]
-  shouldScopeToUser: boolean
-  userId?: string
 }
 
 export type ProjectRelationsFetchResult = {
@@ -49,7 +43,6 @@ export type ProjectRelationsFetchResult = {
   tasks: RawTaskWithRelations[]
   archivedTasks: RawTaskWithRelations[]
   hourBlocks: RawHourBlock[]
-  clientMemberships: ClientMembership[]
   githubReposByProject: Map<string, GitHubRepoLinkSummary[]>
 }
 
@@ -78,8 +71,6 @@ export async function fetchProjectRelations({
   projectIds,
   clientIds,
   ownerIds,
-  shouldScopeToUser,
-  userId,
 }: ProjectRelationsFetchArgs): Promise<ProjectRelationsFetchResult> {
   const clientDataPromise: Promise<[ClientRow[], MemberRow[], HourBlockRow[]]> =
     Promise.all([
@@ -93,24 +84,17 @@ export async function fetchProjectRelations({
     loadTaskRows(projectIds, { archived: true }),
   ])
 
-  const clientMembershipPromise: Promise<ClientMembershipRow[]> =
-    shouldScopeToUser && userId
-      ? loadClientMembershipRows(userId)
-      : Promise.resolve([])
-
   const githubReposPromise = getReposForProjects(projectIds)
   const ownersPromise = loadOwners(ownerIds)
 
   const [
     [clientRows, memberRows, hourBlockRows],
     [activeTaskRows, archivedTaskRows],
-    clientMembershipRows,
     githubReposMap,
     owners,
   ] = await Promise.all([
     clientDataPromise,
     taskDataPromise,
-    clientMembershipPromise,
     githubReposPromise,
     ownersPromise,
   ])
@@ -122,8 +106,6 @@ export async function fetchProjectRelations({
   const clients: DbClient[] = mapClientRows(clientRows)
   const members: MemberWithUser[] = mapMemberRows(memberRows)
   const hourBlocks: RawHourBlock[] = mapHourBlockRows(hourBlockRows)
-  const clientMemberships: ClientMembership[] =
-    mapClientMembershipRows(clientMembershipRows)
 
   const tasks: RawTaskWithRelations[] = mapTaskRowsToRaw(
     activeTaskRows,
@@ -154,7 +136,6 @@ export async function fetchProjectRelations({
     tasks,
     archivedTasks,
     hourBlocks,
-    clientMemberships,
     githubReposByProject,
   }
 }

@@ -29,8 +29,6 @@ export type UseProjectTimeLogDialogOptions = ProjectTimeLogDialogParams & {
 }
 
 export type ProjectTimeLogDialogState = {
-  canLogTime: boolean
-  canSelectUser: boolean
   projectLabel: string
   isEditMode: boolean
   isMutating: boolean
@@ -94,15 +92,12 @@ export function useProjectTimeLogDialog(
     clientRemainingHours,
     tasks,
     currentUserId,
-    currentUserRole,
     projectMembers,
     admins,
     mode,
     timeLogEntry,
   } = options
 
-  const canLogTime = currentUserRole !== 'CLIENT'
-  const canSelectUser = currentUserRole === 'ADMIN'
   const isEditMode = mode === 'edit' && Boolean(timeLogEntry)
 
   const router = useRouter()
@@ -138,7 +133,6 @@ export function useProjectTimeLogDialog(
     setFormValues,
   } = useTimeLogFormState({
     currentUserId,
-    canSelectUser,
     admins,
     projectMembers,
     getToday,
@@ -278,8 +272,6 @@ export function useProjectTimeLogDialog(
       name: projectName,
       clientId,
     },
-    currentUserId,
-    canSelectUser,
     formValues: {
       hoursInput,
       loggedOnInput,
@@ -299,11 +291,10 @@ export function useProjectTimeLogDialog(
   const isMutating = timeLogMutation.isPending
 
   const disableSubmit =
-    !canLogTime ||
     isMutating ||
     !hoursInput.trim() ||
     !loggedOnInput.trim() ||
-    (canSelectUser && !selectedUserId)
+    !selectedUserId
 
   const taskPickerButtonDisabled = isMutating || availableTasks.length === 0
 
@@ -337,7 +328,7 @@ export function useProjectTimeLogDialog(
   const handleSubmit = useCallback(
     (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault()
-      if (!canLogTime || isMutating) {
+      if (isMutating) {
         return
       }
 
@@ -358,7 +349,7 @@ export function useProjectTimeLogDialog(
         nextErrors.loggedOn = 'Select the date these hours were worked.'
       }
 
-      if (canSelectUser && !selectedUserId) {
+      if (!selectedUserId) {
         nextErrors.user = 'Pick a teammate before logging time.'
       }
 
@@ -387,8 +378,6 @@ export function useProjectTimeLogDialog(
       runMutation()
     },
     [
-      canLogTime,
-      canSelectUser,
       hoursInput,
       isMutating,
       loggedOnInput,
@@ -545,8 +534,6 @@ export function useProjectTimeLogDialog(
   }, [showDiscardDialog, handleDiscardConfirm, handleDiscardCancel])
 
   return {
-    canLogTime,
-    canSelectUser,
     projectLabel,
     isEditMode,
     isMutating,
