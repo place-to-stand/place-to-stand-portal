@@ -46,6 +46,17 @@ import { ClientOriginationPicker } from './client-origination-picker'
 const FEEDBACK_CLASSES =
   'border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm'
 
+/** "Sep 1, 2026"-style label for the first of the month `offset` months out. */
+function formatMonthStart(offset: number): string {
+  const now = new Date()
+  const target = new Date(now.getFullYear(), now.getMonth() + offset, 1)
+  return target.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
 type ClientSheetFormProps = {
   form: UseFormReturn<ClientSheetFormValues>
   feedback: string | null
@@ -302,6 +313,48 @@ export function ClientSheetForm({
             )
           }}
         />
+        {isEditing &&
+        form.watch('billingType') !== form.formState.defaultValues?.billingType ? (
+          <FormField
+            control={form.control}
+            name='billingEffective'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>New billing starts</FormLabel>
+                <Select
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  disabled={isPending}
+                >
+                  <FormControl>
+                    <DisabledFieldTooltip
+                      disabled={isPending}
+                      reason={isPending ? pendingReason : null}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </DisabledFieldTooltip>
+                  </FormControl>
+                  <SelectContent align='start'>
+                    <SelectItem value='next_month'>
+                      Next month ({formatMonthStart(1)})
+                    </SelectItem>
+                    <SelectItem value='current_month'>
+                      This month ({formatMonthStart(0)})
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormDescription>
+                  {field.value === 'current_month'
+                    ? "This month's close will re-derive under the new billing type."
+                    : 'The new type applies to invoices right away; the Monthly Close switches this client at the boundary.'}
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        ) : null}
         <FormField
           control={form.control}
           name='state'

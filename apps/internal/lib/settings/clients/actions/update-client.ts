@@ -7,6 +7,12 @@ import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { clientMembers, clients } from '@/lib/db/schema'
 import type { ClientBillingTypeValue } from '@/lib/types'
+import { isMonthClosed } from '@/lib/data/reports/close'
+import {
+  currentMonthStartUtc,
+  nextMonthStartUtc,
+  upsertBillingTerm,
+} from '@/lib/queries/clients/billing-terms'
 import {
   assertClientPartnerUserRoles,
   clientSlugExists,
@@ -25,6 +31,8 @@ type UpdateClientPayload = {
   name: string
   providedSlug: string | null
   billingType: ClientBillingTypeValue
+  /** Month boundary the report basis switches at when billingType changes. */
+  billingEffective: 'current_month' | 'next_month'
   state: string | null
   website: string | null
   originationContactId: string | null
@@ -32,6 +40,19 @@ type UpdateClientPayload = {
   closerUserId: string | null
   notes: string | null
   memberIds?: string[]
+}
+
+class ClosedMonthError extends Error {
+  constructor(effectiveFrom: string) {
+    const label = new Date(`${effectiveFrom}T00:00:00Z`).toLocaleDateString(
+      'en-US',
+      { month: 'long', year: 'numeric', timeZone: 'UTC' }
+    )
+    super(
+      `That month's books are closed. Reopen ${label} before changing its billing basis.`
+    )
+    this.name = 'ClosedMonthError'
+  }
 }
 
 type ExistingClientRecord = {
@@ -56,6 +77,7 @@ export async function updateClient(
     name,
     providedSlug,
     billingType,
+    billingEffective,
     state,
     website,
     originationContactId,
@@ -137,22 +159,51 @@ export async function updateClient(
     }
   }
 
+  const billingTypeChanged = existingClient.billingType !== billingType
+  const billingEffectiveFrom = billingTypeChanged
+    ? billingEffective === 'current_month'
+      ? currentMonthStartUtc()
+      : nextMonthStartUtc()
+    : null
+
   try {
-    await db
-      .update(clients)
-      .set({
-        name,
-        slug: slugToUpdate,
-        billingType,
-        state,
-        website,
-        originationContactId,
-        originationUserId,
-        closerUserId,
-        notes,
-      })
-      .where(eq(clients.id, id))
+    await db.transaction(async tx => {
+      if (billingTypeChanged && billingEffectiveFrom) {
+        // Guard inside the transaction — a check-then-write outside it would
+        // let a concurrent close slip between the check and the term upsert.
+        if (await isMonthClosed(billingEffectiveFrom)) {
+          throw new ClosedMonthError(billingEffectiveFrom)
+        }
+
+        await upsertBillingTerm(tx, {
+          clientId: id,
+          billingType,
+          effectiveFrom: billingEffectiveFrom,
+          createdBy: user.id,
+        })
+      }
+
+      // The billingType write below is the current-value cache flip; the
+      // terms row's effective_from controls only report-basis resolution.
+      await tx
+        .update(clients)
+        .set({
+          name,
+          slug: slugToUpdate,
+          billingType,
+          state,
+          website,
+          originationContactId,
+          originationUserId,
+          closerUserId,
+          notes,
+        })
+        .where(eq(clients.id, id))
+    })
   } catch (error) {
+    if (error instanceof ClosedMonthError) {
+      return buildMutationResult({ error: error.message })
+    }
     console.error('Failed to update client', error)
     return buildMutationResult({
       error:
@@ -176,6 +227,7 @@ export async function updateClient(
       notes,
       slugToUpdate,
       billingType,
+      billingEffectiveFrom,
       originationContactId,
       originationUserId,
       closerUserId,
@@ -198,6 +250,7 @@ type RecordUpdateActivityArgs = {
     notes: string | null
     slugToUpdate: string | null
     billingType: ClientBillingTypeValue
+    billingEffectiveFrom: string | null
     originationContactId: string | null
     originationUserId: string | null
     closerUserId: string | null
@@ -290,6 +343,8 @@ function calculateDiff({
     changedFields.push('billing type')
     previousDetails.billingType = previousBillingType
     nextDetails.billingType = nextBillingType
+    // Month boundary the report basis switches at (the cache flips at save).
+    nextDetails.billingTypeEffectiveFrom = updatedValues.billingEffectiveFrom
   }
 
   // Origination — treat both sides (user + contact) as a single logical

@@ -11,8 +11,13 @@ import {
   hourBlockUpdatedEvent,
 } from '@/lib/activity/events'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
+import { closedMonthWarning } from '@/lib/data/reports/close'
 import { db } from '@/lib/db'
 import { hourBlocks } from '@/lib/db/schema'
+import {
+  currentMonthStartUtc,
+  resolveHourBlockBillingMonth,
+} from '@/lib/queries/clients/billing-terms'
 import {
   getActiveClientSummary,
   getHourBlockWithClientById,
@@ -71,9 +76,14 @@ async function performSaveHourBlock(
 
   const targetClientName = client.name
   const nowIso = new Date().toISOString()
+  let warning: string | undefined
 
   if (!id) {
     try {
+      // Attribute the block to the first month it can be billed in — clamped
+      // forward past a pending prepaid cutover (PRD 002 D13).
+      const billingMonth = await resolveHourBlockBillingMonth(clientId)
+
       const [inserted] = await db
         .insert(hourBlocks)
         .values({
@@ -81,6 +91,7 @@ async function performSaveHourBlock(
           hoursPurchased: hoursPurchasedValue,
           invoiceNumber: normalizedInvoiceNumber,
           createdBy: user.id,
+          billingMonth,
         })
         .returning({ id: hourBlocks.id })
 
@@ -104,6 +115,18 @@ async function performSaveHourBlock(
         targetClientId: clientId,
         metadata: event.metadata,
       })
+
+      // PRD 002 section 05: closed-month warning (current month closed
+      // early), or informational note when the block bills ahead of a
+      // pending prepaid cutover. Non-blocking either way.
+      warning = await closedMonthWarning(user, [billingMonth])
+      if (!warning && billingMonth > currentMonthStartUtc()) {
+        const label = new Date(`${billingMonth}T00:00:00Z`).toLocaleDateString(
+          'en-US',
+          { month: 'long', year: 'numeric', timeZone: 'UTC' }
+        )
+        warning = `${targetClientName} switches to prepaid later — this block will be billed in ${label}.`
+      }
     } catch (error) {
       console.error('Failed to create hour block', error)
 
@@ -188,9 +211,13 @@ async function performSaveHourBlock(
         metadata: event.metadata,
       })
     }
+
+    // PRD 002 section 05: editing a block whose billing month is closed
+    // shows as drift until the month is re-closed.
+    warning = await closedMonthWarning(user, [existingHourBlock.billing_month])
   }
 
   revalidatePath(HOUR_BLOCKS_PATH)
 
-  return {}
+  return warning ? { warning } : {}
 }

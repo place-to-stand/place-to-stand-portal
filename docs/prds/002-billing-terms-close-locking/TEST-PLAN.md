@@ -4,10 +4,12 @@ All tests run as an ADMIN user in `apps/internal/`. "The report" = `/reports/mon
 
 ## Section 01 — Terms schema + billing change flow
 
-- [ ] **01.1 Backfill integrity**: after migration, every client (active + archived) has exactly one terms row at `effective_from = '2000-01-01'`
+- [x] **01.1 Backfill integrity**: after migration, every client (active + archived) has exactly one terms row at `effective_from = '2000-01-01'` <!-- verified locally 2026-08-07: 1 client → 1 backfill row -->
+
 - [ ] **01.2 New client (settings sheet)**: create a client → terms row with `effective_from` = first of current month, `created_by` = you
 - [ ] **01.3 New client (lead conversion)**: convert a lead → same as 01.2
-- [ ] **01.4 Constraints**: direct SQL insert with `effective_from = '2026-08-15'` fails the CHECK; duplicate active `(client_id, effective_from)` fails the unique index
+- [x] **01.4 Constraints**: direct SQL insert with `effective_from = '2026-08-15'` fails the CHECK; duplicate active `(client_id, effective_from)` fails the unique index <!-- verified locally 2026-08-07 via SQL probes -->
+
 - [ ] **01.5 Next-month boundary (default)**: change billing type, keep "Next month" → sheet, client list, and invoice defaults show the new type **immediately**; current month's report keeps the old basis; next month uses the new basis; the change appears in the activity feed with `effectiveFrom`
 - [ ] **01.6 This-month boundary**: choose "This month" → current month's report re-derives on the new basis
 - [ ] **01.7 Change of mind**: before the boundary, switch the type back → same boundary row overwritten, report and cache match the original state
@@ -53,7 +55,9 @@ All tests run as an ADMIN user in `apps/internal/`. "The report" = `/reports/mon
 
 ## Cross-cutting
 
-- [ ] **X.1** `npm run build && npm run lint && npm run type-check` from repo root pass after each section
+- [x] **X.1** `npm run build && npm run lint && npm run type-check` from repo root pass after each section <!-- verified 2026-08-07: all three green on the final tree -->
+
 - [ ] **X.2** CLIENT-role user: no new surfaces leak (report stays admin-only; no warnings in portal)
 - [ ] **X.3** End-to-end for the real switch: change billing type with next-month boundary (01) → log time this month (counts as Net 30) → close this month (03) → next month, buy a 5h block (counts as Prepaid) → prior closed month untouched, no drift
-- [ ] **X.4** Grep check: no `clients.billingType` reads remain under `apps/internal/lib/queries/reports/` or `apps/internal/lib/data/reports/` (02 acceptance criterion)
+- [x] **X.4** Grep check: no `clients.billingType` reads remain under `apps/internal/lib/queries/reports/` or `apps/internal/lib/data/reports/` (02 acceptance criterion) <!-- verified 2026-08-07: zero matches -->
+

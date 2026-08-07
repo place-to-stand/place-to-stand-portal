@@ -4,6 +4,7 @@ import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { clients } from '@/lib/db/schema'
 import type { ClientBillingTypeValue } from '@/lib/types'
+import { insertInitialBillingTerm } from '@/lib/queries/clients/billing-terms'
 import {
   assertClientPartnerUserRoles,
   generateUniqueClientSlug,
@@ -67,23 +68,40 @@ export async function createClient(
 
   while (attempt < INSERT_RETRY_LIMIT) {
     try {
-      const inserted = await db
-        .insert(clients)
-        .values({
-          name,
-          slug: slugCandidate,
+      // Client + initial billing term are atomic: a client without a terms
+      // row is invisible to every monthly close. A slug unique-violation
+      // aborts the transaction and the loop retries with a fresh slug.
+      const clientId = await db.transaction(async tx => {
+        const inserted = await tx
+          .insert(clients)
+          .values({
+            name,
+            slug: slugCandidate,
+            billingType,
+            state,
+            website,
+            originationContactId,
+            originationUserId,
+            closerUserId,
+            notes,
+            createdBy: user.id,
+          })
+          .returning({ id: clients.id })
+
+        const insertedId = inserted[0]?.id
+
+        if (!insertedId) {
+          return null
+        }
+
+        await insertInitialBillingTerm(tx, {
+          clientId: insertedId,
           billingType,
-          state,
-          website,
-          originationContactId,
-          originationUserId,
-          closerUserId,
-          notes,
           createdBy: user.id,
         })
-        .returning({ id: clients.id })
 
-      const clientId = inserted[0]?.id
+        return insertedId
+      })
 
       if (!clientId) {
         console.error('Client created without returning identifier')

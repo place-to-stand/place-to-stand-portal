@@ -118,6 +118,9 @@ export function useHourBlocksTableState({
           description:
             'The hour block is hidden from active tracking but remains in history.',
         })
+        if (result.warning) {
+          toast({ title: 'Heads up', description: result.warning })
+        }
         router.refresh()
       } finally {
         setPendingDeleteId(null)
@@ -149,6 +152,9 @@ export function useHourBlocksTableState({
           title: 'Hour block restored',
           description: 'The hour block is active again.',
         })
+        if (result.warning) {
+          toast({ title: 'Heads up', description: result.warning })
+        }
         router.refresh()
       } finally {
         setPendingRestoreId(null)

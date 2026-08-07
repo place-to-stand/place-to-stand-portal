@@ -9,6 +9,8 @@ import {
 
 export type ActionResult = {
   error?: string
+  /** Non-blocking notice (closed-month drift, future billing month). */
+  warning?: string
   fieldErrors?: Record<string, string[]>
 }
 

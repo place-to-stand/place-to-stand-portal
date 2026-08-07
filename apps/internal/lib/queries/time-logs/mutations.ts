@@ -80,12 +80,13 @@ export async function softDeleteTimeLog(
   user: AppUser,
   projectId: string,
   timeLogId: string,
-): Promise<void> {
+): Promise<{ loggedOn: string }> {
   const rows = await db
     .select({
       id: timeLogs.id,
       projectId: timeLogs.projectId,
       userId: timeLogs.userId,
+      loggedOn: timeLogs.loggedOn,
       deletedAt: timeLogs.deletedAt,
     })
     .from(timeLogs)
@@ -109,19 +110,24 @@ export async function softDeleteTimeLog(
   }
 
   if (timeLog.deletedAt) {
-    return
+    return { loggedOn: timeLog.loggedOn }
   }
 
+  // updatedAt must move too (PRD 002 F1): the monthly close drift detector
+  // finds post-close changes via record timestamps > closed_at.
+  const nowIso = new Date().toISOString()
   await db
     .update(timeLogs)
-    .set({ deletedAt: new Date().toISOString() })
+    .set({ deletedAt: nowIso, updatedAt: nowIso })
     .where(eq(timeLogs.id, timeLogId))
+
+  return { loggedOn: timeLog.loggedOn }
 }
 
 export async function updateTimeLog(
   user: AppUser,
   input: UpdateTimeLogInput,
-): Promise<void> {
+): Promise<{ previousLoggedOn: string }> {
   const { projectId, timeLogId, userId, hours, loggedOn, note, taskIds } = input
 
   const rows = await db
@@ -129,6 +135,7 @@ export async function updateTimeLog(
       id: timeLogs.id,
       projectId: timeLogs.projectId,
       userId: timeLogs.userId,
+      loggedOn: timeLogs.loggedOn,
       deletedAt: timeLogs.deletedAt,
     })
     .from(timeLogs)
@@ -168,6 +175,8 @@ export async function updateTimeLog(
         hours: hoursValue,
         loggedOn,
         note: noteValue,
+        // PRD 002 F1: drift detection keys on record timestamps > closed_at.
+        updatedAt: new Date().toISOString(),
       })
       .where(eq(timeLogs.id, timeLogId))
 
@@ -181,5 +190,9 @@ export async function updateTimeLog(
       await tx.insert(timeLogTasks).values(values)
     }
   })
+
+  // F6: the caller needs the pre-mutation date — a move OUT of a closed month
+  // is undetectable once loggedOn is overwritten.
+  return { previousLoggedOn: existing.loggedOn }
 }
 

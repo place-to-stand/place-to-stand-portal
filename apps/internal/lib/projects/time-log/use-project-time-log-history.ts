@@ -113,14 +113,14 @@ export function useProjectTimeLogHistory(
         { method: 'DELETE' }
       )
 
-      if (!response.ok) {
-        let payload: unknown = null
-        try {
-          payload = await response.json()
-        } catch {
-          payload = null
-        }
+      let payload: unknown = null
+      try {
+        payload = await response.json()
+      } catch {
+        payload = null
+      }
 
+      if (!response.ok) {
         const message =
           typeof payload === 'object' && payload && 'error' in payload
             ? String((payload as { error?: unknown }).error ?? '').trim()
@@ -128,13 +128,28 @@ export function useProjectTimeLogHistory(
 
         throw new Error(message || 'Unable to delete time log.')
       }
+
+      // PRD 002 section 05: closed-month warning riding the API response.
+      const warning =
+        typeof payload === 'object' && payload && 'warning' in payload
+          ? String((payload as { warning?: unknown }).warning ?? '').trim()
+          : ''
+
+      return { warning: warning || null }
     },
-    onSuccess: async () => {
+    onSuccess: async data => {
       await queryClient.invalidateQueries({ queryKey: baseQueryKey })
       toast({
         title: 'Time entry removed',
         description: 'The log no longer counts toward the burndown total.',
       })
+      if (data?.warning) {
+        toast({
+          title: 'Closed month',
+          description: data.warning,
+          variant: 'destructive',
+        })
+      }
       setPendingDelete(null)
       router.refresh()
     },

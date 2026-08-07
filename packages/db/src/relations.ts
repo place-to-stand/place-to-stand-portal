@@ -2,6 +2,8 @@ import { relations } from 'drizzle-orm/relations'
 import {
   users,
   clients,
+  clientBillingTerms,
+  monthlyCloseSnapshots,
   tasks,
   githubAppInstallations,
   taskAssignees,
@@ -58,6 +60,7 @@ export const clientsRelations = relations(clients, ({ one, many }) => ({
     relationName: 'clients_closerUser_users_id',
   }),
   hourBlocks: many(hourBlocks),
+  billingTerms: many(clientBillingTerms),
   clientMembers: many(clientMembers),
   projects: many(projects),
   contactClients: many(contactClients),
@@ -201,6 +204,30 @@ export const hourBlocksRelations = relations(hourBlocks, ({ one }) => ({
     references: [invoices.id],
   }),
 }))
+
+export const monthlyCloseSnapshotsRelations = relations(
+  monthlyCloseSnapshots,
+  ({ one }) => ({
+    closedByUser: one(users, {
+      fields: [monthlyCloseSnapshots.closedBy],
+      references: [users.id],
+    }),
+  })
+)
+
+export const clientBillingTermsRelations = relations(
+  clientBillingTerms,
+  ({ one }) => ({
+    client: one(clients, {
+      fields: [clientBillingTerms.clientId],
+      references: [clients.id],
+    }),
+    createdByUser: one(users, {
+      fields: [clientBillingTerms.createdBy],
+      references: [users.id],
+    }),
+  })
+)
 
 export const clientMembersRelations = relations(clientMembers, ({ one }) => ({
   client: one(clients, {
