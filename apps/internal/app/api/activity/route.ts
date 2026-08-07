@@ -2,12 +2,8 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 import { fetchActivityLogs } from '@/lib/activity/queries'
-import {
-  CLIENT_VISIBLE_ACTIVITY_TARGET_TYPES,
-  type ActivityTargetType,
-} from '@/lib/activity/types'
+import type { ActivityTargetType } from '@/lib/activity/types'
 import { getCurrentUser } from '@/lib/auth/session'
-import { isAdmin } from '@/lib/auth/permissions'
 
 const VALID_TARGET_TYPES: ActivityTargetType[] = [
   'TASK',
@@ -15,17 +11,12 @@ const VALID_TARGET_TYPES: ActivityTargetType[] = [
   'CLIENT',
   'CONTACT',
   'LEAD',
-  // C1 (PRD 001): SUBMISSION is valid but NOT in
-  // CLIENT_VISIBLE_ACTIVITY_TARGET_TYPES — the role gate below (and the
-  // scoping inside fetchActivityLogs) keeps it admin-only (W1).
   'SUBMISSION',
   'PROPOSAL',
   'COMMENT',
   'TIME_LOG',
   'HOUR_BLOCK',
   'INVOICE',
-  // I1 (PRD 002): admin-filterable; the role gate keeps it out of CLIENT
-  // feeds — it must never join CLIENT_VISIBLE_ACTIVITY_TARGET_TYPES (D11).
   'MONTHLY_CLOSE',
   'USER',
   'SETTINGS',
@@ -91,23 +82,6 @@ export async function GET(request: NextRequest) {
       requestedTargetTypes.length === 1
         ? (requestedTargetTypes[0] as ActivityTargetType)
         : (requestedTargetTypes as ActivityTargetType[])
-  }
-
-  // Role gate: non-admins may only request client-visible target types.
-  // fetchActivityLogs re-enforces this (plus row scoping) — this check just
-  // turns a would-be silent empty result into an explicit 403.
-  if (!isAdmin(user) && requestedTargetTypes.length) {
-    const clientVisible: readonly string[] = CLIENT_VISIBLE_ACTIVITY_TARGET_TYPES
-    const forbidden = requestedTargetTypes.filter(
-      value => !clientVisible.includes(value)
-    )
-
-    if (forbidden.length) {
-      return NextResponse.json(
-        { error: 'Insufficient permissions for the requested activity.' },
-        { status: 403 }
-      )
-    }
   }
 
   let limit: number | undefined

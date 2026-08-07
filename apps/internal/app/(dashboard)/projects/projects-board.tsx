@@ -115,7 +115,7 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
   )
 
   const projectActions =
-    activeProjectForSheet && props.currentUserRole === 'ADMIN'
+    activeProjectForSheet
       ? {
           canEdit: !projectMutationPending,
           canArchive: !projectMutationPending,
@@ -171,10 +171,6 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
                 viewModel.burndown.projectMonthToDateLoggedHours
               }
               className='w-full sm:w-auto'
-              canLogTime={viewModel.burndown.canLogTime}
-              addTimeLogDisabledReason={
-                viewModel.burndown.addTimeLogDisabledReason
-              }
               viewTimeLogsHref={viewModel.burndown.viewTimeLogsHref}
               onAddTimeLog={viewModel.burndown.onAddTimeLog}
               showClientRemainingCard={

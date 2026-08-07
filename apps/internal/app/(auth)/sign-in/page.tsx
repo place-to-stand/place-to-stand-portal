@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/auth/session";
+import { serverEnv } from "@/lib/env.server";
 
+import { ClientPortalNotice } from "./client-portal-notice";
 import { SignInForm } from "./sign-in-form";
 
 type PageProps = {
-  searchParams?: Promise<{ redirect?: string }>;
+  searchParams?: Promise<{ redirect?: string; notice?: string }>;
 };
 
 export const metadata: Metadata = {
@@ -21,6 +23,8 @@ export default async function SignInPage({ searchParams }: PageProps) {
 
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const redirectTo = resolvedSearchParams?.redirect;
+  const showClientPortalNotice =
+    resolvedSearchParams?.notice === "client-portal";
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 px-6 py-12">
@@ -31,6 +35,9 @@ export default async function SignInPage({ searchParams }: PageProps) {
             Sign in with your work email to manage your projects.
           </p>
         </div>
+        {showClientPortalNotice ? (
+          <ClientPortalNotice clientPortalUrl={serverEnv.CLIENT_PORTAL_URL} />
+        ) : null}
         <SignInForm redirectTo={redirectTo} />
       </div>
     </div>

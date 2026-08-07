@@ -47,8 +47,6 @@ export function ProjectTimeLogDialog(props: ProjectTimeLogDialogProps) {
             <DialogDescription>{dialogDescription}</DialogDescription>
           </DialogHeader>
           <ProjectTimeLogForm
-            canLogTime={state.canLogTime}
-            canSelectUser={state.canSelectUser}
             isMutating={state.isMutating}
             disableSubmit={state.disableSubmit}
             formErrors={state.formErrors}

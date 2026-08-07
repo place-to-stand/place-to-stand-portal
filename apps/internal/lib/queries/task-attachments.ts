@@ -3,7 +3,7 @@ import 'server-only'
 import { and, asc, eq, isNull } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
-import { ensureClientAccessByTaskId } from '@/lib/auth/permissions'
+import { ensureTaskAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { projects, taskAttachments, tasks } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
@@ -75,7 +75,7 @@ export async function getTaskAttachmentForDownload(
     throw new NotFoundError('Attachment not found')
   }
 
-  await ensureClientAccessByTaskId(user, attachment.task.id)
+  await ensureTaskAccess(user, attachment.task.id)
 
   return {
     id: attachment.id,
@@ -89,7 +89,7 @@ export async function listTaskAttachments(
   user: AppUser,
   taskId: string,
 ): Promise<DbTaskAttachment[]> {
-  await ensureClientAccessByTaskId(user, taskId)
+  await ensureTaskAccess(user, taskId)
 
   const rows = (await db
     .select({

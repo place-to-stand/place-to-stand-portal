@@ -22,7 +22,6 @@ export async function GET(request: Request) {
   try {
     const result = await listAssignedTaskSummaries({
       userId: user.id,
-      role: user.role,
       limit,
     })
 

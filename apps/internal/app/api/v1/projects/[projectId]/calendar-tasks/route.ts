@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server'
 import { differenceInCalendarDays, isValid, parseISO } from 'date-fns'
 
 import { getCurrentUser } from '@/lib/auth/session'
-import { ensureClientAccessByProjectId } from '@/lib/auth/permissions'
+import { ensureProjectAccess } from '@/lib/auth/permissions'
 import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
 import { fetchProjectCalendarTasks } from '@/lib/data/projects'
 
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
 
   try {
-    await ensureClientAccessByProjectId(user, projectId)
+    await ensureProjectAccess(user, projectId)
   } catch (error) {
     if (error instanceof NotFoundError) {
       return NextResponse.json({ error: 'Project not found.' }, { status: 404 })

@@ -100,7 +100,6 @@ type ProjectsLandingProps = {
   projects: ProjectWithRelations[]
   clients: Array<{ id: string; name: string; slug: string | null }>
   currentUserId: string
-  isAdmin: boolean
   clientHoursMap?: Record<string, ClientHoursData>
 }
 
@@ -116,7 +115,6 @@ export function ProjectsLanding({
   projects,
   clients,
   currentUserId,
-  isAdmin,
   clientHoursMap = {},
 }: ProjectsLandingProps) {
   const router = useRouter()
@@ -362,7 +360,6 @@ export function ProjectsLanding({
             projectId={project.id}
             status={project.status}
             onStatusChange={handleProjectStatusChange}
-            disabled={!isAdmin}
           />
         </TableCell>
         <TableCell>

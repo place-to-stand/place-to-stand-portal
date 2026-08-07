@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 
 import { AppShellHeader } from '@/components/layout/app-shell'
-import { isAdmin } from '@/lib/auth/permissions'
 import { requireUser } from '@/lib/auth/session'
 import { listContactsForSettings, listAllActiveClients } from '@/lib/queries/contacts'
 
@@ -23,22 +22,6 @@ type ContactsPageProps = {
 export default async function ContactsPage({ searchParams }: ContactsPageProps) {
   const user = await requireUser()
   const params = searchParams ? await searchParams : {}
-  const canManageContacts = isAdmin(user)
-
-  if (!canManageContacts) {
-    return (
-      <>
-        <AppShellHeader>
-          <div className='flex flex-col'>
-            <h1 className='text-2xl font-semibold tracking-tight'>Contacts</h1>
-            <p className='text-muted-foreground text-sm'>
-              You don&apos;t have permission to view contacts.
-            </p>
-          </div>
-        </AppShellHeader>
-      </>
-    )
-  }
 
   const searchQuery =
     typeof params.q === 'string'

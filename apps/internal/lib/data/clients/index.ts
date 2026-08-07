@@ -4,11 +4,7 @@ import { cache } from 'react'
 import { aliasedTable, and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
-import {
-  isAdmin,
-  listAccessibleClientIds,
-  ensureClientAccess,
-} from '@/lib/auth/permissions'
+import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import {
   clients,
@@ -74,15 +70,9 @@ export type ClientDetail = {
 
 export const fetchClientsWithMetrics = cache(
   async (user: AppUser): Promise<ClientWithMetrics[]> => {
-    const baseConditions = [isNull(clients.deletedAt)]
+    assertAdmin(user)
 
-    if (!isAdmin(user)) {
-      const clientIds = await listAccessibleClientIds(user)
-      if (!clientIds.length) {
-        return []
-      }
-      baseConditions.push(inArray(clients.id, clientIds))
-    }
+    const baseConditions = [isNull(clients.deletedAt)]
 
     // Aliased user joins: the clients table references users three times
     // (createdBy, origination, closer) so we need distinct table aliases for
@@ -288,7 +278,7 @@ export const fetchClientsWithMetrics = cache(
 
 export const fetchClientById = cache(
   async (user: AppUser, clientId: string): Promise<ClientDetail> => {
-    await ensureClientAccess(user, clientId)
+    assertAdmin(user)
 
     const rows = await db
       .select({
@@ -349,7 +339,7 @@ export type ClientProject = {
 
 export const fetchProjectsForClient = cache(
   async (user: AppUser, clientId: string): Promise<ClientProject[]> => {
-    await ensureClientAccess(user, clientId)
+    assertAdmin(user)
 
     const rows = await db
       .select({

@@ -50,15 +50,12 @@ export default async function MyTasksViewRoute({
     fetchAdminUsers(),
     fetchProjectsWithRelations({
       forUserId: user.id,
-      forRole: user.role,
     }),
   ])
 
-  // For admins, allow viewing other admin's tasks via the assignee param
-  const isAdmin = user.role === 'ADMIN'
+  // Allow viewing another admin's tasks via the assignee param
   const requestedAssigneeId = resolvedSearchParams.assignee ?? user.id
   const selectedAssigneeId =
-    isAdmin &&
     requestedAssigneeId !== user.id &&
     admins.some(admin => admin.id === requestedAssigneeId)
       ? requestedAssigneeId
@@ -66,7 +63,6 @@ export default async function MyTasksViewRoute({
 
   const assignedSummaries = await listAssignedTaskSummaries({
     userId: selectedAssigneeId,
-    role: user.role,
     limit: null,
   })
 

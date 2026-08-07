@@ -6,7 +6,6 @@ import type { DndContextProps } from '@dnd-kit/core'
 import type { RenderAssigneeFn } from '../../../../../lib/projects/board/board-selectors'
 import type { BoardColumnId } from '@/lib/projects/board/board-constants'
 import { completeBoardTabInteraction } from '@/lib/projects/board/board-tab-interaction'
-import type { UserRole } from '@/lib/auth/session'
 import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 import type { ProjectStatusValue } from '@/lib/constants'
 
@@ -78,14 +77,11 @@ export type ProjectsBoardTabsProps = {
   onDestroyTask: (taskId: string) => void
   reviewActionTaskId: string | null
   reviewActionType: ReviewActionKind | null
-  reviewActionDisabledReason: string | null
   isReviewActionPending: boolean
   activeDropColumnId: BoardColumnId | null
   dropPreview: { columnId: BoardColumnId; index: number } | null
   recentlyMovedTaskId: string | null
   currentUserId: string
-  currentUserRole: UserRole
-  canLogTime: boolean
   onEditTimeLogEntry: (entry: TimeLogEntry) => void
   projectActions: ProjectActionControls
   onProjectStatusChange: (
@@ -137,14 +133,11 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
     onDestroyTask,
     reviewActionTaskId,
     reviewActionType,
-    reviewActionDisabledReason,
     isReviewActionPending,
     activeDropColumnId,
     dropPreview,
     recentlyMovedTaskId,
     currentUserId,
-    currentUserRole,
-    canLogTime,
     onEditTimeLogEntry,
     projectActions,
     onProjectStatusChange,
@@ -218,7 +211,6 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
         onDestroyTask={onDestroyTask}
         reviewActionTaskId={reviewActionTaskId}
         reviewActionType={reviewActionType}
-        reviewActionDisabledReason={reviewActionDisabledReason}
         isReviewActionPending={isReviewActionPending}
       />
       <TimeLogsTabContent
@@ -226,8 +218,6 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
         isActive={initialTab === 'timeLogs'}
         activeProject={activeProject}
         currentUserId={currentUserId}
-        currentUserRole={currentUserRole}
-        canLogTime={canLogTime}
         onEditEntry={onEditTimeLogEntry}
       />
       <ScopeTabContent

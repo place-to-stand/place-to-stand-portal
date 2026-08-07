@@ -10,6 +10,7 @@ import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { ensureUserProfile } from '@/lib/auth/profile'
+import { serverEnv } from '@/lib/env.server'
 
 export type AppUser = Database['public']['Tables']['users']['Row']
 export type UserRole = Database['public']['Enums']['user_role']
@@ -169,6 +170,12 @@ export const requireUser = async () => {
 
   if (!user) {
     redirect('/sign-in')
+  }
+
+  // The internal portal is admin-only. Portal (CLIENT) users belong in the
+  // client portal — send any lingering session there rather than to a 403.
+  if (user.role !== 'ADMIN') {
+    redirect(serverEnv.CLIENT_PORTAL_URL)
   }
 
   return user

@@ -27,7 +27,6 @@ import { TaskSheetForm } from './_components/task-sheet/task-sheet-form'
 import { TaskSheetFormFooter } from './_components/task-sheet/form/task-sheet-form-footer'
 import { TaskSheetHeader } from './_components/task-sheet/task-sheet-header'
 import { PlanningPanel } from './_components/task-sheet/planning-panel'
-import type { UserRole } from '@/lib/auth/session'
 import { TaskCommentsPanel } from './_components/task-sheet/task-comments-panel'
 import { TaskActivityPanel } from './_components/task-sheet/task-activity-panel'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -40,7 +39,6 @@ type TaskSheetProps = {
   canManage: boolean
   admins: DbUser[]
   currentUserId: string
-  currentUserRole: UserRole
   defaultStatus: BoardColumnId
   defaultDueOn: string | null
   projects: ProjectWithRelations[]

@@ -3,7 +3,6 @@
 import { useMemo } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ExternalLink } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import type { AppUser } from '@/lib/auth/session'
@@ -27,7 +26,6 @@ type Props = {
 
 export function Sidebar({ user, badges }: Props) {
   const pathname = usePathname()
-  const role = user.role
   const { theme, mounted: themeMounted } = useTheme()
 
   // Compute logo source - always start with black to match SSR, then update after mount
@@ -65,100 +63,72 @@ export function Sidebar({ user, badges }: Props) {
             <Separator className='w-full' />
           )}
           <nav className='space-y-6'>
-            {NAV_GROUPS.filter(group => group.roles.includes(role)).map(
-              (group, index) => (
-                <div
-                  key={group.title ?? `group-${index}`}
-                  className='space-y-0.5'
-                >
-                  {group.title ? (
-                    <p className='text-muted-foreground/60 mb-1 px-1 text-[11px] font-semibold tracking-wide uppercase'>
-                      {group.title}
-                    </p>
-                  ) : null}
-                  <div className='space-y-0.5'>
-                    {group.items
-                      .filter(item => !item.roles || item.roles.includes(role))
-                      .map(item => {
-                        const Icon = item.icon
-                        const matchCandidates = [
-                          item.href,
-                          ...(item.matchHrefs ?? []),
-                        ]
-                        const isActive =
-                          !item.external &&
-                          matchCandidates.some(matchHref => {
-                            if (!matchHref) return false
-                            return (
-                              pathname === matchHref ||
-                              pathname.startsWith(`${matchHref}/`)
-                            )
-                          })
-                        const linkClassName = cn(
-                          'focus-visible:ring-primary focus-visible:ring-offset-background flex items-center gap-2 rounded px-2 py-1.5 text-[12px] transition focus-visible:ring-2 focus-visible:ring-offset-2',
-                          isActive
-                            ? 'bg-primary text-primary-foreground'
-                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                        )
+            {NAV_GROUPS.map((group, index) => (
+              <div
+                key={group.title ?? `group-${index}`}
+                className='space-y-0.5'
+              >
+                {group.title ? (
+                  <p className='text-muted-foreground/60 mb-1 px-1 text-[11px] font-semibold tracking-wide uppercase'>
+                    {group.title}
+                  </p>
+                ) : null}
+                <div className='space-y-0.5'>
+                  {group.items.map(item => {
+                    const Icon = item.icon
+                    const matchCandidates = [
+                      item.href,
+                      ...(item.matchHrefs ?? []),
+                    ]
+                    const isActive = matchCandidates.some(matchHref => {
+                      if (!matchHref) return false
+                      return (
+                        pathname === matchHref ||
+                        pathname.startsWith(`${matchHref}/`)
+                      )
+                    })
+                    const linkClassName = cn(
+                      'focus-visible:ring-primary focus-visible:ring-offset-background flex items-center gap-2 rounded px-2 py-1.5 text-[12px] transition focus-visible:ring-2 focus-visible:ring-offset-2',
+                      isActive
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    )
 
-                        if (item.external) {
-                          return (
-                            <a
-                              key={item.href}
-                              href={item.href}
-                              target='_blank'
-                              rel='noopener noreferrer'
-                              className={linkClassName}
+                    const badgeCount = badges?.[item.href]
+
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={linkClassName}
+                        aria-current={isActive ? 'page' : undefined}
+                      >
+                        <Icon className='size-3.5 shrink-0' />
+                        <span>{item.label}</span>
+                        {badgeCount ? (
+                          <>
+                            <span
+                              className={cn(
+                                'ml-auto inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold tabular-nums',
+                                isActive
+                                  ? 'bg-primary-foreground/20 text-primary-foreground'
+                                  : 'bg-primary text-primary-foreground'
+                              )}
+                              aria-hidden='true'
                             >
-                              <Icon className='size-3.5 shrink-0' />
-                              <span>{item.label}</span>
-                              <ExternalLink
-                                className='ml-auto size-3 shrink-0 opacity-60'
-                                aria-hidden='true'
-                              />
-                              <span className='sr-only'>
-                                (opens in a new tab)
-                              </span>
-                            </a>
-                          )
-                        }
-
-                        const badgeCount = badges?.[item.href]
-
-                        return (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            className={linkClassName}
-                            aria-current={isActive ? 'page' : undefined}
-                          >
-                            <Icon className='size-3.5 shrink-0' />
-                            <span>{item.label}</span>
-                            {badgeCount ? (
-                              <>
-                                <span
-                                  className={cn(
-                                    'ml-auto inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold tabular-nums',
-                                    isActive
-                                      ? 'bg-primary-foreground/20 text-primary-foreground'
-                                      : 'bg-primary text-primary-foreground'
-                                  )}
-                                  aria-hidden='true'
-                                >
-                                  {badgeCount > 99 ? '99+' : badgeCount}
-                                </span>
-                                <span className='sr-only'>
-                                  ({badgeCount} unacknowledged)
-                                </span>
-                              </>
-                            ) : null}
-                          </Link>
-                        )
-                      })}
-                  </div>
+                              {badgeCount > 99 ? '99+' : badgeCount}
+                            </span>
+                            <span className='sr-only'>
+                              ({badgeCount} unacknowledged)
+                            </span>
+                          </>
+                        ) : null}
+                      </Link>
+                    )
+                  })}
                 </div>
-              )
-            )}
+              </div>
+            ))}
           </nav>
         </div>
         <div className='mt-auto px-3 py-3'>

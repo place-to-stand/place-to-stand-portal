@@ -3,11 +3,8 @@ import 'server-only'
 import { eq } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
-import {
-  ensureClientAccessByProjectId,
-  isAdmin,
-} from '@/lib/auth/permissions'
-import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
+import { ensureProjectAccess } from '@/lib/auth/permissions'
+import { NotFoundError } from '@/lib/errors/http'
 import { db } from '@/lib/db'
 import {
   timeLogTasks,
@@ -39,11 +36,7 @@ export async function createTimeLog(
 ): Promise<string> {
   const { projectId, userId, hours, loggedOn, note, taskIds } = input
 
-  await ensureClientAccessByProjectId(user, projectId)
-
-  if (!isAdmin(user) && user.id !== userId) {
-    throw new ForbiddenError('Insufficient permissions to log time for this user')
-  }
+  await ensureProjectAccess(user, projectId)
 
   const hoursValue = hours.toString()
   const noteValue = note && note.trim().length ? note.trim() : null
@@ -103,11 +96,7 @@ export async function softDeleteTimeLog(
     throw new NotFoundError('Time log not found for project')
   }
 
-  await ensureClientAccessByProjectId(user, projectId)
-
-  if (!isAdmin(user) && timeLog.userId !== user.id) {
-    throw new ForbiddenError('Insufficient permissions to delete this time log')
-  }
+  await ensureProjectAccess(user, projectId)
 
   if (timeLog.deletedAt) {
     return { loggedOn: timeLog.loggedOn }
@@ -156,13 +145,9 @@ export async function updateTimeLog(
     throw new NotFoundError('Time log has been removed')
   }
 
-  await ensureClientAccessByProjectId(user, projectId)
+  await ensureProjectAccess(user, projectId)
 
-  const targetUserId = isAdmin(user) ? userId : user.id
-
-  if (!isAdmin(user) && existing.userId !== user.id) {
-    throw new ForbiddenError('Insufficient permissions to edit this time log')
-  }
+  const targetUserId = userId
 
   const hoursValue = hours.toString()
   const noteValue = note && note.trim().length ? note.trim() : null

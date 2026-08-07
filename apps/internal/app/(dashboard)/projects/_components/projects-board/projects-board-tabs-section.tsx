@@ -57,7 +57,6 @@ type ReviewProps = Pick<
   | 'onDestroyTask'
   | 'reviewActionTaskId'
   | 'reviewActionType'
-  | 'reviewActionDisabledReason'
   | 'isReviewActionPending'
 >
 
@@ -68,7 +67,7 @@ type DropProps = Pick<
 
 type TimeLogsProps = Pick<
   ProjectsBoardTabsProps,
-  'currentUserId' | 'currentUserRole' | 'canLogTime' | 'onEditTimeLogEntry'
+  'currentUserId' | 'onEditTimeLogEntry'
 >
 
 type ScopeProps = Pick<

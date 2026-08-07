@@ -10,34 +10,23 @@ import {
 import type { ProjectsBoardActiveProject } from './board-tab-content'
 import { ProjectTimeLogHistoryContent } from '../project-time-log/project-time-log-history-content'
 import { useProjectTimeLogHistory } from '@/lib/projects/time-log/use-project-time-log-history'
-import type { UserRole } from '@/lib/auth/session'
 import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 
 type TimeLogsTabContentProps = {
   isActive: boolean
   activeProject: ProjectsBoardActiveProject
   currentUserId: string | null
-  currentUserRole: UserRole
-  canLogTime: boolean
   onEditEntry: (entry: TimeLogEntry) => void
 }
 
 export function TimeLogsTabContent(props: TimeLogsTabContentProps) {
-  const {
-    isActive,
-    activeProject,
-    currentUserId,
-    currentUserRole,
-    canLogTime,
-    onEditEntry,
-  } = props
+  const { isActive, activeProject, currentUserId, onEditEntry } = props
 
   const historyState = useProjectTimeLogHistory({
     projectId: activeProject?.id ?? '',
     projectName: activeProject?.name ?? '',
     clientName: activeProject?.client?.name ?? null,
     currentUserId: currentUserId ?? '',
-    currentUserRole,
     enabled: Boolean(isActive && activeProject && currentUserId),
   })
 
@@ -74,9 +63,6 @@ export function TimeLogsTabContent(props: TimeLogsTabContentProps) {
         <div className='mt-4'>
           <ProjectTimeLogHistoryContent
             state={historyState}
-            currentUserId={currentUserId}
-            currentUserRole={currentUserRole}
-            canLogTime={canLogTime}
             onEditEntry={onEditEntry}
           />
         </div>

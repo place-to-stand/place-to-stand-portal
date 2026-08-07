@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 
 import { AppShellHeader } from '@/components/layout/app-shell'
-import { isAdmin } from '@/lib/auth/permissions'
 import { requireUser } from '@/lib/auth/session'
 import { fetchClientsWithMetrics } from '@/lib/data/clients'
 import { listClientsForSettings } from '@/lib/queries/clients'
@@ -22,7 +21,6 @@ type ClientsPageProps = {
 export default async function ClientsPage({ searchParams }: ClientsPageProps) {
   const user = await requireUser()
   const params = searchParams ? await searchParams : {}
-  const canManageClients = isAdmin(user)
   const searchQuery =
     typeof params.q === 'string'
       ? params.q
@@ -51,19 +49,15 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
         : undefined
   const limitParam = Number.parseInt(limitParamRaw ?? '', 10)
 
-  const managementDataPromise = canManageClients
-    ? listClientsForSettings(user, {
-        status: 'active',
-        search: searchQuery,
-        cursor,
-        direction,
-        limit: Number.isFinite(limitParam) ? limitParam : undefined,
-      })
-    : Promise.resolve(null)
-
   const [clients, managementData] = await Promise.all([
     fetchClientsWithMetrics(user),
-    managementDataPromise,
+    listClientsForSettings(user, {
+      status: 'active',
+      search: searchQuery,
+      cursor,
+      direction,
+      limit: Number.isFinite(limitParam) ? limitParam : undefined,
+    }),
   ])
   return (
     <>
@@ -77,14 +71,12 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
             activeTab='clients'
             className='flex-1 sm:flex-none'
           />
-          {canManageClients && managementData ? (
-            <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6'>
-              <span className='text-muted-foreground text-sm whitespace-nowrap'>
-                Total clients: {managementData.totalCount}
-              </span>
-              <ClientsAddButton />
-            </div>
-          ) : null}
+          <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6'>
+            <span className='text-muted-foreground text-sm whitespace-nowrap'>
+              Total clients: {managementData.totalCount}
+            </span>
+            <ClientsAddButton />
+          </div>
         </div>
         {/* Main Container with Background */}
         <section className='bg-background rounded-xl border p-6 shadow-sm'>

@@ -64,7 +64,6 @@ type ClientDetailProps = {
   client: HydratedClientDetail
   projects: ClientProject[]
   contacts: ContactWithClientLink[]
-  canManageClients: boolean
   clientRow: ClientRow
   currentUserId: string
   originationContact: OriginationContactInfo
@@ -76,7 +75,6 @@ export function ClientDetail({
   client,
   projects,
   contacts,
-  canManageClients,
   clientRow,
   currentUserId,
   originationContact,
@@ -99,15 +97,13 @@ export function ClientDetail({
       />
 
       {/* Action bar */}
-      {canManageClients ? (
-        <div className='flex items-center justify-end'>
-          <ClientOverviewActions
-            client={client}
-            clientRow={clientRow}
-            contacts={contacts}
-          />
-        </div>
-      ) : null}
+      <div className='flex items-center justify-end'>
+        <ClientOverviewActions
+          client={client}
+          clientRow={clientRow}
+          contacts={contacts}
+        />
+      </div>
 
       {/* Two-column layout */}
       <div className='grid gap-4 lg:grid-cols-2'>

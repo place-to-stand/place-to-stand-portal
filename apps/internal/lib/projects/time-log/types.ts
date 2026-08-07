@@ -1,4 +1,3 @@
-import type { UserRole } from '@/lib/auth/session'
 import type {
   ClientBillingTypeValue,
   DbUser,
@@ -18,7 +17,6 @@ export type ProjectTimeLogDialogParams = {
   clientRemainingHours: number | null
   tasks: TaskWithRelations[]
   currentUserId: string
-  currentUserRole: UserRole
   projectMembers: ProjectMemberWithUser[]
   admins: DbUser[]
 }
@@ -41,7 +39,6 @@ export type ProjectTimeLogHistoryDialogParams = {
   projectName: string
   clientName: string | null
   currentUserId: string
-  currentUserRole: UserRole
 }
 
 export type TimeLogEntry = TimeLogWithUser & {

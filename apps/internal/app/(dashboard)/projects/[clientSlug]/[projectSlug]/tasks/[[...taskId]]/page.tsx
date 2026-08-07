@@ -29,7 +29,6 @@ export default async function ProjectBoardRoute({ params }: PageProps) {
   const [projects, admins, clientDirectory] = await Promise.all([
     fetchProjectsWithRelations({
       forUserId: user.id,
-      forRole: user.role,
     }),
     fetchAdminUsers(),
     fetchClientDirectory(),
@@ -96,7 +95,6 @@ export default async function ProjectBoardRoute({ params }: PageProps) {
       projects={projects}
       clients={clients}
       currentUserId={user.id}
-      currentUserRole={user.role}
       admins={admins}
       adminUsers={adminUsers}
       allClients={allClients}

@@ -7,7 +7,6 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { AppShellHeader } from '@/components/layout/app-shell'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import type { AppUser } from '@/lib/auth/session'
 import type {
   DbUser,
@@ -150,9 +149,7 @@ export function MyTasksPage({
   )
 
   const description =
-    user.role === 'CLIENT'
-      ? 'All tasks currently assigned to you across every client and project.'
-      : 'Every task across the portfolio that currently needs your attention.'
+    'Every task across the portfolio that currently needs your attention.'
 
   const activeTaskMeta = activeTaskId
     ? (taskLookup.get(activeTaskId) ?? null)
@@ -243,18 +240,10 @@ export function MyTasksPage({
     [reorderMutation, router, startRefresh]
   )
 
-  const canManageTasks = user.role === 'ADMIN'
   const totalTaskCount = entries.length
-  const creationDisabledReason = canManageTasks
-    ? null
-    : 'Admin access is required to create tasks.'
 
   const handleStartCreateTask = useCallback(
     (status: MyTaskStatus = 'ON_DECK') => {
-      if (!canManageTasks) {
-        return
-      }
-
       setCreateTaskContext({
         status,
         assigneeId: user.id,
@@ -262,10 +251,8 @@ export function MyTasksPage({
       })
       setIsSheetOpen(true)
     },
-    [canManageTasks, user.id]
+    [user.id]
   )
-
-  const isAdmin = user.role === 'ADMIN'
 
   return (
     <div className='flex h-full min-h-0 flex-col gap-6'>
@@ -275,15 +262,13 @@ export function MyTasksPage({
             <h1 className='text-2xl font-semibold tracking-tight'>My Tasks</h1>
             <p className='text-muted-foreground text-sm'>{description}</p>
           </div>
-          {isAdmin && (
-            <div className='pr-1'>
-              <PersonSelector
-                admins={admins}
-                selectedUserId={selectedAssigneeId}
-                currentUserId={user.id}
-              />
-            </div>
-          )}
+          <div className='pr-1'>
+            <PersonSelector
+              admins={admins}
+              selectedUserId={selectedAssigneeId}
+              currentUserId={user.id}
+            />
+          </div>
         </div>
       </AppShellHeader>
       <Tabs value={view} className='flex min-h-0 flex-1 flex-col gap-3'>
@@ -308,20 +293,14 @@ export function MyTasksPage({
             <span className='text-muted-foreground text-sm'>
               Total tasks: {totalTaskCount}
             </span>
-            <DisabledFieldTooltip
-              disabled={!canManageTasks}
-              reason={creationDisabledReason}
+            <Button
+              type='button'
+              size='sm'
+              onClick={() => handleStartCreateTask('ON_DECK')}
             >
-              <Button
-                type='button'
-                size='sm'
-                onClick={() => handleStartCreateTask('ON_DECK')}
-                disabled={!canManageTasks}
-              >
-                <Plus className='h-4 w-4' />
-                Add task
-              </Button>
-            </DisabledFieldTooltip>
+              <Plus className='h-4 w-4' />
+              Add task
+            </Button>
           </div>
         </div>
         <TabsContent
@@ -344,7 +323,6 @@ export function MyTasksPage({
               activeTaskId={activeTaskId}
               scrollStorageKey={boardScrollStorageKey}
               onCreateTask={handleStartCreateTask}
-              canCreateTasks={canManageTasks}
             />
           )}
         </TabsContent>
@@ -369,10 +347,9 @@ export function MyTasksPage({
           open={isSheetOpen}
           onOpenChange={handleSheetChange}
           task={editingTaskMeta?.task}
-          canManage={canManageTasks}
+          canManage
           admins={admins}
           currentUserId={user.id}
-          currentUserRole={user.role}
           defaultStatus={createTaskContext?.status ?? 'ON_DECK'}
           defaultDueOn={null}
           projects={projects}

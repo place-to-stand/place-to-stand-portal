@@ -3,7 +3,7 @@ import 'server-only'
 import { cache } from 'react'
 
 import type { AppUser } from '@/lib/auth/session'
-import { assertAdmin, isAdmin } from '@/lib/auth/permissions'
+import { assertAdmin } from '@/lib/auth/permissions'
 import { NotFoundError } from '@/lib/errors/http'
 import {
   countFormSubmissions,
@@ -73,16 +73,9 @@ export const fetchFormSubmissions = cache(
   }
 )
 
-/**
- * Unlike the other fetchers this does NOT assertAdmin-throw: it renders in
- * the shared dashboard layout for every role. Non-admins get 0 (their
- * sidebar shows no badge; the Submissions page itself still hard-gates).
- */
 export const fetchUnacknowledgedSubmissionCount = cache(
   async (user: AppUser): Promise<number> => {
-    if (!isAdmin(user)) {
-      return 0
-    }
+    assertAdmin(user)
 
     return countUnacknowledgedFormSubmissions()
   }

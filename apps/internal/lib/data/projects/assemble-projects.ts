@@ -1,4 +1,3 @@
-import type { UserRole } from '@/lib/auth/session'
 import type {
   DbClient,
   DbProject,
@@ -9,7 +8,6 @@ import type {
 } from '@/lib/types'
 
 import type {
-  ClientMembership,
   MemberWithUser,
   ProjectBurndown,
   RawHourBlock,
@@ -22,8 +20,6 @@ import { normalizeRawTask } from './normalize-task'
 export type AssembleProjectsArgs = {
   projects: DbProject[]
   projectClientLookup: Map<string, string | null>
-  options: { forUserId?: string; forRole?: UserRole }
-  shouldScopeToUser: boolean
   relations: ProjectRelationsFetchResult
   timeLogSummaries: Map<string, TimeLogSummary>
 }
@@ -31,8 +27,6 @@ export type AssembleProjectsArgs = {
 export function assembleProjectsWithRelations({
   projects,
   projectClientLookup,
-  options,
-  shouldScopeToUser,
   relations,
   timeLogSummaries,
 }: AssembleProjectsArgs): ProjectWithRelations[] {
@@ -41,9 +35,6 @@ export function assembleProjectsWithRelations({
   const membersByProject = organizeMembers(
     relations.members,
     projectClientLookup
-  )
-  const accessibleClientIds = buildAccessibleClientIds(
-    relations.clientMemberships
   )
   const purchasedHoursByClient = tallyPurchasedHours(relations.hourBlocks)
   const timeLogTotalsByProject = timeLogSummaries
@@ -56,12 +47,7 @@ export function assembleProjectsWithRelations({
   sortArchivedTasksByDeletedAt(archivedTasksByProject)
   const acceptedTasksByProject = buildAcceptedTasksLookup(activeTasksByProject)
 
-  const scopedProjects =
-    shouldScopeToUser && options.forUserId
-      ? scopeProjects(projects, accessibleClientIds, options.forUserId)
-      : projects
-
-  return scopedProjects.map(project => ({
+  return projects.map(project => ({
     ...project,
     client: project.client_id
       ? (clientLookup.get(project.client_id) ?? null)
@@ -150,19 +136,6 @@ function organizeMembers(
   return membersByProject
 }
 
-function buildAccessibleClientIds(
-  clientMemberships: ClientMembership[]
-): Set<string> {
-  const accessibleClientIds = new Set<string>()
-  clientMemberships.forEach(entry => {
-    if (!entry || entry.deleted_at || !entry.client_id) {
-      return
-    }
-    accessibleClientIds.add(entry.client_id)
-  })
-  return accessibleClientIds
-}
-
 function tallyPurchasedHours(blocks: RawHourBlock[]): Map<string, number> {
   const purchasedHoursByClient = new Map<string, number>()
   blocks.forEach(block => {
@@ -229,28 +202,6 @@ function buildAcceptedTasksLookup(
   })
 
   return lookup
-}
-
-function scopeProjects(
-  projects: DbProject[],
-  accessibleClientIds: Set<string>,
-  currentUserId: string
-): DbProject[] {
-  return projects.filter(project => {
-    if (project.type === 'INTERNAL') {
-      return true
-    }
-
-    if (project.type === 'PERSONAL') {
-      return project.created_by !== null && project.created_by === currentUserId
-    }
-
-    if (project.client_id && accessibleClientIds.has(project.client_id)) {
-      return true
-    }
-
-    return false
-  })
 }
 
 function buildProjectBurndown(

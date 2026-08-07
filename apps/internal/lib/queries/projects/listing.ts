@@ -1,24 +1,9 @@
 import 'server-only'
 
-import {
-  and,
-  asc,
-  desc,
-  eq,
-  inArray,
-  isNull,
-  sql,
-  type SQL,
-} from 'drizzle-orm'
+import { and, asc, desc, eq, isNull, sql, type SQL } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
-import {
-  assertAdmin,
-  ensureClientAccess,
-  ensureClientAccessByProjectId,
-  isAdmin,
-  listAccessibleProjectIds,
-} from '@/lib/auth/permissions'
+import { assertAdmin, ensureProjectAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { clients, projects, users } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
@@ -49,7 +34,7 @@ export async function listProjectsForClient(
   user: AppUser,
   clientId: string,
 ): Promise<SelectProject[]> {
-  await ensureClientAccess(user, clientId)
+  assertAdmin(user)
 
   return db
     .select(projectFields)
@@ -61,24 +46,12 @@ export async function listProjectsForClient(
 export async function listProjectsForUser(
   user: AppUser,
 ): Promise<SelectProject[]> {
-  if (isAdmin(user)) {
-    return db
-      .select(projectFields)
-      .from(projects)
-      .where(isNull(projects.deletedAt))
-      .orderBy(asc(projects.name))
-  }
-
-  const projectIds = await listAccessibleProjectIds(user)
-
-  if (!projectIds.length) {
-    return []
-  }
+  assertAdmin(user)
 
   return db
     .select(projectFields)
     .from(projects)
-    .where(and(inArray(projects.id, projectIds), isNull(projects.deletedAt)))
+    .where(isNull(projects.deletedAt))
     .orderBy(asc(projects.name))
 }
 
@@ -86,7 +59,7 @@ export async function getProjectById(
   user: AppUser,
   projectId: string,
 ): Promise<SelectProject> {
-  await ensureClientAccessByProjectId(user, projectId)
+  await ensureProjectAccess(user, projectId)
 
   const result = await db
     .select(projectFields)

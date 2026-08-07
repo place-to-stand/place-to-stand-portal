@@ -7,7 +7,7 @@ import {
   monthlyCloseClosedEvent,
   monthlyCloseReopenedEvent,
 } from '@/lib/activity/events'
-import { assertAdmin, isAdmin } from '@/lib/auth/permissions'
+import { assertAdmin } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import {
@@ -425,18 +425,13 @@ export async function isMonthClosed(date: string): Promise<boolean> {
 
 /**
  * Non-blocking closed-month warning for time-log/hour-block writes (D9).
- * Admin-only (I4): CLIENT-role users can log time in the internal app, and
- * "drift on the Monthly Close Report" is internal-ops language — their late
- * logs are still caught by the drift banner. Checks every provided date and
- * warns on the first closed month found.
+ * Checks every provided date and warns on the first closed month found.
  */
 export async function closedMonthWarning(
   user: AppUser,
   dates: Array<string | null | undefined>
 ): Promise<string | undefined> {
-  if (!isAdmin(user)) {
-    return undefined
-  }
+  assertAdmin(user)
 
   const months = new Set<string>()
   for (const date of dates) {

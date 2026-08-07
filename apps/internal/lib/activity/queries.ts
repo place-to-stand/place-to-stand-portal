@@ -12,26 +12,20 @@ import {
   isNull,
   lt,
   lte,
-  or,
   type SQL,
 } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { activityLogs, projects, users } from '@/lib/db/schema'
+import { activityLogs, users } from '@/lib/db/schema'
 import type { AppUser } from '@/lib/auth/session'
-import {
-  assertAdmin,
-  isAdmin,
-  listAccessibleClientIds,
-} from '@/lib/auth/permissions'
+import { assertAdmin } from '@/lib/auth/permissions'
 import type { UserRoleValue } from '@/lib/types'
 import type { Json } from '@/lib/types/json'
 
-import {
-  CLIENT_VISIBLE_ACTIVITY_TARGET_TYPES,
-  type ActivityLogWithActor,
-  type ActivityQueryFilters,
-  type ActivityQueryResult,
+import type {
+  ActivityLogWithActor,
+  ActivityQueryFilters,
+  ActivityQueryResult,
 } from './types'
 
 const DEFAULT_PAGE_SIZE = 25
@@ -91,39 +85,23 @@ const actorSelection = {
   avatarUrl: users.avatarUrl,
 } as const
 
-const EMPTY_RESULT: ActivityQueryResult = {
-  logs: [],
-  hasMore: false,
-  nextCursor: null,
-}
-
 /**
  * Access control lives here, not in the callers (this project has NO RLS):
- * admins see everything; non-admins are restricted to
- * CLIENT_VISIBLE_ACTIVITY_TARGET_TYPES AND rows they can reach project-first
- * — project-linked rows require current access to that project, and only
- * project-less rows fall back to client membership (via client_members).
- * Requested filters narrow within that scope — they can never widen it.
+ * the internal portal is admin-only, so callers must be admins and see
+ * everything. Requested filters narrow the result set.
  */
 export async function fetchActivityLogs(
   user: AppUser,
   filters: ActivityQueryFilters
 ): Promise<ActivityQueryResult> {
+  assertAdmin(user)
+
   const limit = Math.min(
     Math.max(filters.limit ?? DEFAULT_PAGE_SIZE, 1),
     MAX_PAGE_SIZE
   )
 
-  const scope = await buildAccessScopeConditions(user, filters)
-
-  if (scope === 'no-access') {
-    return EMPTY_RESULT
-  }
-
-  const whereClause = combineConditions([
-    buildFilterConditions(filters),
-    ...scope,
-  ])
+  const whereClause = combineConditions([buildFilterConditions(filters)])
 
   const baseQuery = db
     .select({
@@ -240,111 +218,6 @@ function buildFilterConditions(filters: ActivityQueryFilters) {
   }
 
   return combineConditions(conditions)
-}
-
-/**
- * Extra WHERE conditions enforcing the caller's access. Admins get none.
- * Non-admins get:
- *   1. targetType restricted to CLIENT_VISIBLE_ACTIVITY_TARGET_TYPES — if the
- *      caller explicitly requested only types outside that set, short-circuit
- *      to 'no-access' rather than running a query that matches nothing.
- *   2. Row scope, project-first: a log tied to a project (target_project_id
- *      set) is authorized ONLY through current access to that project —
- *      their clients' projects, their own PERSONAL projects, or any INTERNAL
- *      project (INTERNAL mirrors access everywhere else:
- *      ensureClientAccessByProjectId, scopeProjects, and the My Tasks query
- *      all grant it to every authenticated user). The log's denormalized
- *      target_client_id is deliberately NOT consulted for project-linked
- *      rows: it is a snapshot from log time, and honoring it would let
- *      members of a project's FORMER client keep reading its history after
- *      reassignment. target_client_id only authorizes rows with no project
- *      association.
- */
-async function buildAccessScopeConditions(
-  user: AppUser,
-  filters: ActivityQueryFilters
-): Promise<SqlExpression[] | 'no-access'> {
-  if (isAdmin(user)) {
-    return []
-  }
-
-  const allowedTypes: string[] = [...CLIENT_VISIBLE_ACTIVITY_TARGET_TYPES]
-
-  if (filters.targetType) {
-    const requested = Array.isArray(filters.targetType)
-      ? filters.targetType
-      : [filters.targetType]
-
-    if (!requested.some(type => allowedTypes.includes(type))) {
-      return 'no-access'
-    }
-  }
-
-  const rowScope = await buildNonAdminRowScope(user)
-
-  if (rowScope === 'no-access') {
-    return 'no-access'
-  }
-
-  return [inArray(activityLogs.targetType, allowedTypes), rowScope]
-}
-
-async function buildNonAdminRowScope(
-  user: AppUser
-): Promise<SqlExpression | 'no-access'> {
-  const clientIds = await listAccessibleClientIds(user)
-
-  const nonClientProjectAccess = or(
-    and(eq(projects.type, 'PERSONAL'), eq(projects.createdBy, user.id)),
-    eq(projects.type, 'INTERNAL')
-  )
-
-  const projectRows = await db
-    .select({ id: projects.id })
-    .from(projects)
-    .where(
-      and(
-        isNull(projects.deletedAt),
-        clientIds.length
-          ? or(inArray(projects.clientId, clientIds), nonClientProjectAccess)
-          : nonClientProjectAccess
-      )
-    )
-
-  const projectIds = projectRows.map(row => row.id)
-
-  const scopes: SqlExpression[] = []
-
-  if (projectIds.length) {
-    scopes.push(inArray(activityLogs.targetProjectId, projectIds))
-  }
-
-  // Client membership only authorizes rows with NO project association —
-  // project-linked rows must qualify via current project access above, or
-  // stale target_client_id snapshots would leak reassigned-project history
-  // to the former client's members.
-  if (clientIds.length) {
-    const clientOnlyRows = and(
-      isNull(activityLogs.targetProjectId),
-      inArray(activityLogs.targetClientId, clientIds)
-    )
-
-    if (clientOnlyRows) {
-      scopes.push(clientOnlyRows)
-    }
-  }
-
-  if (!scopes.length) {
-    return 'no-access'
-  }
-
-  if (scopes.length === 1) {
-    return scopes[0]
-  }
-
-  const combined = or(...scopes)
-
-  return combined ?? 'no-access'
 }
 
 function combineConditions(conditions: Array<SqlExpression | undefined>) {

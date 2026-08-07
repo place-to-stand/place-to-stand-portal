@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation'
 import { and, eq, isNull, desc } from 'drizzle-orm'
 
 import { AppShellHeader } from '@/components/layout/app-shell'
-import { isAdmin } from '@/lib/auth/permissions'
 import { requireUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { contacts, contactClients, users } from '@/lib/db/schema'
@@ -54,8 +53,6 @@ export default async function ClientDetailPage({
   } catch {
     notFound()
   }
-
-  const canManageClients = isAdmin(user)
 
   // Build origination and closer lookups. Origination may be either a
   // contact (external referrer) or an admin user (internal partner);
@@ -164,7 +161,6 @@ export default async function ClientDetailPage({
           client={client}
           projects={projects}
           contacts={clientContacts}
-          canManageClients={canManageClients}
           clientRow={mapClientDetailToRow(client)}
           currentUserId={user.id}
           originationContact={originationContact}

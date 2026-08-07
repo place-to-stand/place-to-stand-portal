@@ -4,8 +4,8 @@ import { and, eq, isNull } from 'drizzle-orm'
 
 import { requireUser } from '@/lib/auth/session'
 import {
-  ensureClientAccessByProjectId,
-  ensureClientAccessByTaskId,
+  ensureProjectAccess,
+  ensureTaskAccess,
 } from '@/lib/auth/permissions'
 import { logActivity } from '@/lib/activity/logger'
 import { taskCreatedEvent, taskUpdatedEvent } from '@/lib/activity/events'
@@ -52,7 +52,7 @@ export async function saveTask(input: BaseTaskInput): Promise<ActionResult> {
 
   if (!id) {
     try {
-      await ensureClientAccessByProjectId(user, projectId)
+      await ensureProjectAccess(user, projectId)
     } catch (error) {
       if (error instanceof NotFoundError) {
         return { error: 'Selected project is unavailable.' }
@@ -152,7 +152,7 @@ export async function saveTask(input: BaseTaskInput): Promise<ActionResult> {
     })
   } else {
     try {
-      await ensureClientAccessByTaskId(user, id)
+      await ensureTaskAccess(user, id)
     } catch (error) {
       if (error instanceof NotFoundError) {
         return { error: 'Task not found.' }
@@ -193,7 +193,7 @@ export async function saveTask(input: BaseTaskInput): Promise<ActionResult> {
     // destination project (mirrors the create path) and resolve its client.
     if (projectChanged) {
       try {
-        await ensureClientAccessByProjectId(user, projectId)
+        await ensureProjectAccess(user, projectId)
       } catch (error) {
         if (error instanceof NotFoundError) {
           return { error: 'Selected project is unavailable.' }

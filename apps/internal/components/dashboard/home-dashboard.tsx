@@ -38,7 +38,6 @@ export function HomeDashboard({
         <div>
           <MyTasksWidget
             tasks={tasks}
-            role={user.role}
             totalCount={totalTaskCount}
             className='mb-6'
           />
@@ -48,11 +47,7 @@ export function HomeDashboard({
             initialSnapshot={initialHoursSnapshot}
             className='mb-6'
           />
-          {/* Team briefing is built from unscoped internal activity — the
-              backing route 403s non-admins, so don't render it for them. */}
-          {user.role === 'ADMIN' ? (
-            <RecentActivityOverviewWidget className='mb-6' />
-          ) : null}
+          <RecentActivityOverviewWidget className='mb-6' />
         </div>
       </div>
     </div>

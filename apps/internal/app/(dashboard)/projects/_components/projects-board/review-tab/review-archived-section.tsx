@@ -30,7 +30,6 @@ type ReviewArchivedSectionProps = {
   activeSheetTaskId: string | null
   reviewActionTaskId: string | null
   reviewActionType: ReviewActionKind | null
-  reviewActionDisabledReason: string | null
   isReviewActionPending: boolean
   onRequestDestroy: (task: TaskWithRelations) => void
 }
@@ -45,7 +44,6 @@ export function ReviewArchivedSection({
   activeSheetTaskId,
   reviewActionTaskId,
   reviewActionType,
-  reviewActionDisabledReason,
   isReviewActionPending,
   onRequestDestroy,
 }: ReviewArchivedSectionProps) {
@@ -121,11 +119,9 @@ export function ReviewArchivedSection({
                   reviewActionType === 'destroy'
                 const blockOtherActions =
                   isReviewActionPending && reviewActionTaskId !== task.id
-                const disabledReason =
-                  reviewActionDisabledReason ??
-                  (blockOtherActions
-                    ? 'Please wait for the current task update to finish.'
-                    : null)
+                const disabledReason = blockOtherActions
+                  ? 'Please wait for the current task update to finish.'
+                  : null
                 const isActive = task.id === activeSheetTaskId
                 const updatedOverride =
                   task.deleted_at ?? task.updated_at ?? null

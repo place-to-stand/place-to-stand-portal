@@ -30,8 +30,6 @@ export type UseProjectTimeLogMutationOptions = {
     name: string
     clientId: string | null
   }
-  currentUserId: string
-  canSelectUser: boolean
   formValues: {
     hoursInput: string
     loggedOnInput: string
@@ -56,8 +54,6 @@ export function useProjectTimeLogMutation(
     toast,
     baseQueryKey,
     project,
-    currentUserId,
-    canSelectUser,
     formValues,
     selectedTaskIds,
     onSuccessReset,
@@ -84,9 +80,7 @@ export function useProjectTimeLogMutation(
         )
       }
 
-      const logUserId = canSelectUser
-        ? formValues.selectedUserId
-        : currentUserId
+      const logUserId = formValues.selectedUserId
 
       if (!logUserId) {
         throw makeFieldError('user', 'Select a teammate before logging time.')

@@ -1,13 +1,12 @@
 import 'server-only'
 
-import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
+import { and, asc, eq, isNull } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import {
-  ensureClientAccessByProjectId,
-  ensureClientAccessByTaskId,
-  isAdmin,
-  listAccessibleTaskIds,
+  assertAdmin,
+  ensureProjectAccess,
+  ensureTaskAccess,
 } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { tasks } from '@/lib/db/schema'
@@ -19,7 +18,7 @@ export async function listTasksForProject(
   user: AppUser,
   projectId: string,
 ): Promise<SelectTask[]> {
-  await ensureClientAccessByProjectId(user, projectId)
+  await ensureProjectAccess(user, projectId)
 
   return db
     .select(taskFields)
@@ -31,24 +30,12 @@ export async function listTasksForProject(
 export async function listTasksForUser(
   user: AppUser,
 ): Promise<SelectTask[]> {
-  if (isAdmin(user)) {
-    return db
-      .select(taskFields)
-      .from(tasks)
-      .where(isNull(tasks.deletedAt))
-      .orderBy(asc(tasks.rank))
-  }
-
-  const taskIds = await listAccessibleTaskIds(user)
-
-  if (!taskIds.length) {
-    return []
-  }
+  assertAdmin(user)
 
   return db
     .select(taskFields)
     .from(tasks)
-    .where(and(inArray(tasks.id, taskIds), isNull(tasks.deletedAt)))
+    .where(isNull(tasks.deletedAt))
     .orderBy(asc(tasks.rank))
 }
 
@@ -56,7 +43,7 @@ export async function getTaskById(
   user: AppUser,
   taskId: string,
 ): Promise<SelectTask> {
-  await ensureClientAccessByTaskId(user, taskId)
+  await ensureTaskAccess(user, taskId)
 
   const result = await db
     .select(taskFields)
@@ -79,9 +66,7 @@ export async function listTasksForLead(
   user: AppUser,
   leadId: string,
 ): Promise<SelectTask[]> {
-  if (!isAdmin(user)) {
-    return []
-  }
+  assertAdmin(user)
 
   return db
     .select(taskFields)

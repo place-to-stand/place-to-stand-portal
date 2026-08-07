@@ -21,11 +21,6 @@ export type RawTaskWithRelations = DbTask & {
   attachments?: RawTaskAttachment[] | null
 }
 
-export type ClientMembership = {
-  client_id: string | null
-  deleted_at: string | null
-}
-
 export type RawHourBlock = {
   id: string
   client_id: string | null

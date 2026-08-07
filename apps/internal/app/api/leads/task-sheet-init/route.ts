@@ -68,7 +68,7 @@ export async function GET() {
 
     const [admins, allProjects, salesProjectId] = await Promise.all([
       fetchAdminUsers(),
-      fetchProjectsWithRelations({ forUserId: user.id, forRole: user.role }),
+      fetchProjectsWithRelations({ forUserId: user.id }),
       getOrCreateSalesProject(user.id),
     ])
 
@@ -79,7 +79,6 @@ export async function GET() {
         projects: allProjects,
         salesProjectId,
         currentUserId: user.id,
-        currentUserRole: user.role,
       },
     })
   } catch (error) {

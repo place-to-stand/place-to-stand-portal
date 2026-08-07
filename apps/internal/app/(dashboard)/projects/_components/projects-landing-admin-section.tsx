@@ -96,7 +96,6 @@ export function ProjectsLandingAdminSection({
           projects={projects}
           clients={landingClients}
           currentUserId={currentUserId}
-          isAdmin={true}
           clientHoursMap={clientHoursMap}
         />
       </section>

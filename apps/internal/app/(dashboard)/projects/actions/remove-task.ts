@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { logActivity } from '@/lib/activity/logger'
 import { taskArchivedEvent } from '@/lib/activity/events'
 import { requireUser } from '@/lib/auth/session'
-import { ensureClientAccessByTaskId } from '@/lib/auth/permissions'
+import { ensureTaskAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { projects, taskAttachments, tasks } from '@/lib/db/schema'
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
@@ -34,7 +34,7 @@ export async function removeTask(input: {
   const { taskId } = parsed.data
 
   try {
-    await ensureClientAccessByTaskId(user, taskId)
+    await ensureTaskAccess(user, taskId)
   } catch (error) {
     if (error instanceof NotFoundError) {
       return { error: 'Task not found.' }

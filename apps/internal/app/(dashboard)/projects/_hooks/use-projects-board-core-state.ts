@@ -26,8 +26,6 @@ export function useProjectsBoardCoreState({
   const storageNamespace = props.currentUserId
     ? `projects-board-assigned-filter:${props.currentUserId}`
     : null
-  const canAcceptTasks = props.currentUserRole === "ADMIN"
-  const canLogTime = props.currentUserRole !== "CLIENT"
 
   const { onlyAssignedToMe, handleAssignedFilterChange } = useBoardAssignedFilter({
     activeProjectId,
@@ -40,7 +38,6 @@ export function useProjectsBoardCoreState({
 
   const timeLogDialogs = useBoardTimeLogDialogs({
     activeProject: boardState.activeProject,
-    canLogTime,
   })
 
   const derivedState = useProjectsBoardDerivedState({
@@ -50,11 +47,9 @@ export function useProjectsBoardCoreState({
     tasksByColumn: boardState.tasksByColumn,
     onlyAssignedToMe,
     currentUserId: props.currentUserId ?? null,
-    canAcceptTasks,
   })
 
   const reviewActions = useProjectsBoardReviewActions({
-    canAcceptTasks,
     activeProjectId,
     toast,
   })
@@ -74,8 +69,6 @@ export function useProjectsBoardCoreState({
     boardViewportRef,
     handleBoardScroll,
     timeLogDialogs,
-    canAcceptTasks,
-    canLogTime,
   }
 }
 

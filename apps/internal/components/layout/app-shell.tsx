@@ -76,8 +76,6 @@ export function AppShell({
 
     for (const group of NAV_GROUPS) {
       for (const item of group.items) {
-        if (item.external) continue
-
         const matchTargets = [item.href, ...(item.matchHrefs ?? [])]
 
         if (matchTargets.some(matchesPath)) {
