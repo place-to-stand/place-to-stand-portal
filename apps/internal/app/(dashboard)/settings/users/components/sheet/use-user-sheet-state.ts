@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState, useTransition } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 
-import { PENDING_REASON } from './constants'
+import { useSetUserDisabledAction } from '@/lib/settings/users/state/user-mutation/use-set-user-disabled-action'
+
+import { PENDING_REASON, SELF_DISABLE_RESTRICTION } from './constants'
 import type { UserFormValues } from './form-schema'
 import {
   createDeleteCancelHandler,
@@ -32,6 +34,10 @@ export type UseUserSheetStateReturn = {
   submitDisabledReason: string | null
   deleteDisabled: boolean
   deleteDisabledReason: string | null
+  accessEnabled: boolean
+  accessToggleDisabled: boolean
+  accessToggleDisabledReason: string | null
+  handleToggleAccess: (enabled: boolean) => void
   isDeleteDialogOpen: boolean
   pendingReason: string
   unsavedChangesDialog: UseUserSheetFormReturn['unsavedChangesDialog']
@@ -55,6 +61,27 @@ export const useUserSheetState = ({
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+
+  // The sheet's `user` prop is a snapshot from when Edit was clicked, so the
+  // toggle tracks access locally and re-syncs whenever the sheet (re)opens.
+  const accessKey = `${user?.id ?? 'new'}:${open}`
+  const [prevAccessKey, setPrevAccessKey] = useState(accessKey)
+  const [accessEnabled, setAccessEnabled] = useState(!user?.disabled_at)
+
+  if (prevAccessKey !== accessKey) {
+    setPrevAccessKey(accessKey)
+    setAccessEnabled(!user?.disabled_at)
+  }
+
+  const handleAccessChanged = useCallback(
+    (_user: NonNullable<UserSheetProps['user']>, disabled: boolean) => {
+      setAccessEnabled(!disabled)
+    },
+    []
+  )
+  const disableAction = useSetUserDisabledAction({
+    onSuccess: handleAccessChanged,
+  })
 
   const {
     form,
@@ -183,25 +210,45 @@ export const useUserSheetState = ({
     ]
   )
 
-  const emailDisabled = isPending || isEditing
-  const emailDisabledReason = getEmailDisabledReason(isPending, isEditing)
+  const handleToggleAccess = useCallback(
+    (enabled: boolean) => {
+      if (!user) {
+        return
+      }
 
-  const roleDisabled = isPending || editingSelf
-  const roleDisabledReason = getRoleDisabledReason(isPending, editingSelf)
+      disableAction.setDisabled(user, !enabled)
+    },
+    [disableAction, user]
+  )
 
-  const submitDisabled = isPending
-  const submitDisabledReason = getSubmitDisabledReason(isPending)
+  const isBusy = isPending || disableAction.isPending
 
-  const deleteDisabled = isPending || user?.id === currentUserId
+  const emailDisabled = isBusy || isEditing
+  const emailDisabledReason = getEmailDisabledReason(isBusy, isEditing)
+
+  const roleDisabled = isBusy || editingSelf
+  const roleDisabledReason = getRoleDisabledReason(isBusy, editingSelf)
+
+  const submitDisabled = isBusy
+  const submitDisabledReason = getSubmitDisabledReason(isBusy)
+
+  const deleteDisabled = isBusy || user?.id === currentUserId
   const deleteDisabledReason = getDeleteDisabledReason(
-    isPending,
+    isBusy,
     deleteDisabled
   )
+
+  const accessToggleDisabled = isBusy || editingSelf
+  const accessToggleDisabledReason = accessToggleDisabled
+    ? isBusy
+      ? PENDING_REASON
+      : SELF_DISABLE_RESTRICTION
+    : null
 
   return {
     form,
     isEditing,
-    isPending,
+    isPending: isBusy,
     feedback,
     avatarFieldKey,
     avatarInitials,
@@ -214,6 +261,10 @@ export const useUserSheetState = ({
     submitDisabledReason,
     deleteDisabled,
     deleteDisabledReason,
+    accessEnabled,
+    accessToggleDisabled,
+    accessToggleDisabledReason,
+    handleToggleAccess,
     isDeleteDialogOpen,
     pendingReason: PENDING_REASON,
     unsavedChangesDialog,
