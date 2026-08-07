@@ -8,6 +8,9 @@ const PUBLIC_PATHS = new Set([
   '/unauthorized',
   '/forgot-password',
   '/reset-password',
+  // Email-based auth callbacks (magic link token_hash, PKCE code exchange).
+  // These arrive unauthenticated by definition and verify their own tokens.
+  '/auth/',
   '/share/',
   '/api/integrations/leads-intake',
   '/api/integrations/audit-responses',

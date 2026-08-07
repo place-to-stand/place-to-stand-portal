@@ -38,6 +38,10 @@ export function UserSheet(props: UserSheetProps) {
     submitDisabledReason,
     deleteDisabled,
     deleteDisabledReason,
+    accessEnabled,
+    accessToggleDisabled,
+    accessToggleDisabledReason,
+    handleToggleAccess,
     isDeleteDialogOpen,
     pendingReason,
     unsavedChangesDialog,
@@ -91,6 +95,10 @@ export function UserSheet(props: UserSheetProps) {
                 emailDisabledReason={emailDisabledReason}
                 roleDisabled={roleDisabled}
                 roleDisabledReason={roleDisabledReason}
+                accessEnabled={accessEnabled}
+                accessToggleDisabled={accessToggleDisabled}
+                accessToggleDisabledReason={accessToggleDisabledReason}
+                onToggleAccess={handleToggleAccess}
                 avatarFieldKey={avatarFieldKey}
                 avatarInitials={avatarInitials}
                 avatarDisplayName={avatarDisplayName}
