@@ -89,6 +89,7 @@ export function ClientSheet(props: ClientSheetProps) {
             feedback={feedback}
             isPending={isPending}
             isEditing={isEditing}
+            initialBillingType={props.client?.billing_type ?? null}
             pendingReason={pendingReason}
             submitDisabled={submitDisabled}
             submitDisabledReason={submitDisabledReason}

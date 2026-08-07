@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type React from 'react'
 import { Archive, Redo2, Undo2 } from 'lucide-react'
-import type { UseFormReturn } from 'react-hook-form'
+import { useWatch, type UseFormReturn } from 'react-hook-form'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -62,6 +62,8 @@ type ClientSheetFormProps = {
   feedback: string | null
   isPending: boolean
   isEditing: boolean
+  /** The saved billing type — reveals the boundary select when it differs. */
+  initialBillingType: string | null
   pendingReason: string
   submitDisabled: boolean
   submitDisabledReason: string | null
@@ -114,6 +116,7 @@ export function ClientSheetForm({
   feedback,
   isPending,
   isEditing,
+  initialBillingType,
   pendingReason,
   submitDisabled,
   submitDisabledReason,
@@ -157,6 +160,13 @@ export function ClientSheetForm({
   onSelectCloser,
   onClearCloser,
 }: ClientSheetFormProps) {
+  // Subscribed value (not form.watch in JSX — that read proved unreliable
+  // across the form-prop boundary): drives the boundary-select visibility.
+  const watchedBillingType = useWatch({
+    control: form.control,
+    name: 'billingType',
+  })
+
   const handleSave = useCallback(
     () => form.handleSubmit(onSubmit)(),
     [form, onSubmit]
@@ -314,7 +324,8 @@ export function ClientSheetForm({
           }}
         />
         {isEditing &&
-        form.watch('billingType') !== form.formState.defaultValues?.billingType ? (
+        initialBillingType !== null &&
+        watchedBillingType !== initialBillingType ? (
           <FormField
             control={form.control}
             name='billingEffective'

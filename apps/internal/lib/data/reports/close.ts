@@ -236,11 +236,19 @@ function isFuturePeriod(year: number, month: number): boolean {
 }
 
 function isUniqueViolation(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) {
+    return false
+  }
+  if ((error as { code?: string }).code === '23505') {
+    return true
+  }
+  // drizzle-orm wraps driver errors (DrizzleQueryError) with the original
+  // PostgresError on `cause`.
+  const cause = (error as { cause?: unknown }).cause
   return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    (error as { code?: string }).code === '23505'
+    typeof cause === 'object' &&
+    cause !== null &&
+    (cause as { code?: string }).code === '23505'
   )
 }
 
