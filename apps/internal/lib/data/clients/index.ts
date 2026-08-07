@@ -12,6 +12,7 @@ import {
 import { db } from '@/lib/db'
 import {
   clients,
+  clientBillingTerms,
   contacts,
   projects,
   hourBlocks,
@@ -181,7 +182,12 @@ export const fetchClientsWithMetrics = cache(
       hourBlocksData.map(hb => [hb.clientId, Number(hb.totalHoursPurchased ?? 0)])
     )
 
-    // Fetch time logs data separately (only for active projects)
+    // Fetch time logs data separately (only for active projects). The prepaid
+    // burndown starts at the client's latest prepaid boundary
+    // (client_billing_terms) — hours logged under an earlier net_30 era were
+    // invoiced then and must not draw down purchased blocks. Always-prepaid
+    // clients resolve their sentinel term (predates all data) and net_30-only
+    // clients fall back to counting everything, so both are unchanged.
     const timeLogsData = await db
       .select({
         clientId: projects.clientId,
@@ -195,7 +201,14 @@ export const fetchClientsWithMetrics = cache(
         and(
           inArray(projects.clientId, clientIds),
           isNull(timeLogs.deletedAt),
-          isNull(projects.deletedAt)
+          isNull(projects.deletedAt),
+          sql`${timeLogs.loggedOn} >= COALESCE((
+            SELECT max(${clientBillingTerms.effectiveFrom})
+            FROM ${clientBillingTerms}
+            WHERE ${clientBillingTerms.clientId} = ${projects.clientId}
+              AND ${clientBillingTerms.billingType} = 'prepaid'
+              AND ${clientBillingTerms.deletedAt} IS NULL
+          ), DATE '0001-01-01')`
         )
       )
       .groupBy(projects.clientId)

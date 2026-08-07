@@ -47,7 +47,7 @@ Automation exercised 32 of 38 test items end-to-end in a real browser session (p
 ### 03/04 — Close workflow
 - [ ] **C7. (03.1/04.5)** Close a month; the confirm dialog, closed chip ("Closed Aug 7 by …"), and quiet frozen-numbers notice.
 - [ ] **C8. (04.1–04.4)** Make a late edit on a closed month and look at the drift banner: per-section deltas, per-payee rows, the "Late/Edited/Removed" record lines, and the one-click **Reopen & re-close**.
-- [ ] **C9. (04.6/04.7)** Current-month close warning wording; month arrows on closed months.
+- [ ] **C9. (04.6/04.7)** The current month shows no Close button (removed post-launch); month arrows on closed months.
 - [ ] **C10. (03.2)** Two tabs open, close in both — the loser's error toast.
 
 ### 05 — Guardrails
