@@ -37,27 +37,6 @@ export async function ensureClientAccess(user: AppUser, clientId: string) {
   }
 }
 
-/**
- * Get all client IDs accessible to a user.
- */
-export async function listAccessibleClientIds(
-  user: AppUser
-): Promise<string[]> {
-  if (isAdmin(user)) {
-    // Admins could see all, but in client portal context, return empty
-    // since admin-specific views are in the internal app
-    return []
-  }
-
-  const memberships = await db
-    .select({ clientId: clientMembers.clientId })
-    .from(clientMembers)
-    .where(
-      and(
-        eq(clientMembers.userId, user.id),
-        isNull(clientMembers.deletedAt)
-      )
-    )
-
-  return memberships.map(m => m.clientId)
-}
+// Client scoping lives in `@/lib/auth/view-as` (`resolvePortalScope`), which is
+// the single place that answers "which clients may this request touch?".
+// Do not add a second scoping path here.

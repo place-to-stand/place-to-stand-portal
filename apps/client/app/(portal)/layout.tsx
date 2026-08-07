@@ -4,7 +4,10 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 import { requireClientUser } from '@/lib/auth/session'
+import { isAdmin } from '@/lib/auth/permissions'
+import { resolvePortalScope } from '@/lib/auth/view-as'
 import { UserMenu } from '@/components/layout/user-menu'
+import { ViewAsBanner } from '@/components/layout/view-as-banner'
 
 export default async function PortalLayout({
   children,
@@ -19,37 +22,31 @@ export default async function PortalLayout({
     redirect('/onboarding')
   }
 
+  // cache()-wrapped, so the pages below reuse this same resolution.
+  const scope = await resolvePortalScope(user)
+
   return (
     <div className="min-h-screen bg-background">
+      {isAdmin(user) && (
+        <ViewAsBanner
+          availableClients={scope.availableClients}
+          viewingAsClientId={scope.viewingAsClientId}
+        />
+      )}
       <header className="border-b border-foreground/10">
-        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-semibold text-foreground">
-              Place to Stand
-            </span>
-            <nav className="flex items-center gap-2">
-              <Link
-                href="/"
-                className="rounded-md px-3 py-1.5 text-sm text-foreground/70 hover:bg-foreground/5 hover:text-foreground"
-              >
-                Projects
-              </Link>
-              <Link
-                href="/github/setup"
-                className="rounded-md px-3 py-1.5 text-sm text-foreground/70 hover:bg-foreground/5 hover:text-foreground"
-              >
-                GitHub
-              </Link>
-            </nav>
-          </div>
-          <UserMenu
-            email={user.email}
-            fullName={user.full_name}
-            avatarUrl={user.avatar_url}
-          />
+        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-2 px-4">
+          {/* Doubles as the way back to the portal home now that the nav
+              links are gone. */}
+          <Link
+            href="/"
+            className="shrink-0 rounded-md text-base font-semibold whitespace-nowrap text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Place to Stand
+          </Link>
+          <UserMenu email={user.email} scopedClients={scope.scopedClients} />
         </div>
       </header>
-      <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+      <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8">{children}</main>
     </div>
   )
 }

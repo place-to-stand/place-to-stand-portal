@@ -3,7 +3,7 @@ import '@/styles/globals.css'
 
 export const metadata: Metadata = {
   title: 'Place to Stand - Client Portal',
-  description: 'Manage your projects and GitHub integrations',
+  description: 'View your projects and remaining hours',
 }
 
 export default function RootLayout({
