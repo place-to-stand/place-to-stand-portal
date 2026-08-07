@@ -158,7 +158,16 @@ function mapProfileToAppUser(profile: UserProfile): AppUser {
 async function syncUserProfile(authUser: User, previousEmail: string): Promise<void> {
   try {
     console.log(`Syncing user profile: email changed from ${previousEmail} to ${authUser.email}`)
-    await ensureUserProfile(authUser)
+    const result = await ensureUserProfile(authUser)
+
+    // Log only — never sign out mid-request. This runs while rendering an
+    // authenticated page, and the caller only reaches it after loading a profile
+    // row, so 'not_provisioned' here means the row vanished underneath us.
+    if (result === 'not_provisioned') {
+      console.error('User profile disappeared during email-change sync', {
+        userId: authUser.id,
+      })
+    }
   } catch (syncError) {
     console.error('Failed to sync user profile after email change', syncError)
   }

@@ -1,17 +1,40 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+
+import { GoogleSignInButton } from '@/components/auth/google-sign-in-button'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
+
+/**
+ * Hosted Supabase enforces an emails-per-hour limit. Without a visible cooldown a
+ * user who clicks twice hits an opaque failure and assumes the feature is broken.
+ */
+const MAGIC_LINK_COOLDOWN_SECONDS = 30
+
+const INPUT_CLASS =
+  'w-full rounded-md border border-foreground/20 bg-background px-3 py-2 text-sm text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-foreground/20'
 
 export default function SignInPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [magicLinkLoading, setMagicLinkLoading] = useState(false)
+  const [cooldown, setCooldown] = useState(0)
+
+  const busy = loading || magicLinkLoading
+
+  useEffect(() => {
+    if (cooldown <= 0) return
+    const timer = setTimeout(() => setCooldown(value => value - 1), 1000)
+    return () => clearTimeout(timer)
+  }, [cooldown])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    setNotice(null)
     setLoading(true)
 
     try {
@@ -26,11 +49,56 @@ export default function SignInPage() {
         return
       }
 
+      // Hard navigation rather than router.push so the server picks up the new
+      // session cookie. Switching to a client transition produces a stale-session
+      // bug that looks like sign-in silently failing.
       window.location.href = '/'
     } catch {
       setError('An unexpected error occurred')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleMagicLink() {
+    const trimmed = email.trim()
+
+    if (!trimmed) {
+      setError('Enter your email above first.')
+      return
+    }
+
+    setError(null)
+    setNotice(null)
+    setMagicLinkLoading(true)
+
+    try {
+      const supabase = getSupabaseBrowserClient()
+      const { error: otpError } = await supabase.auth.signInWithOtp({
+        email: trimmed,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          // Defaults to true, which would mint an `auth.users` row for any
+          // address typed into the box. Portal accounts are admin-created.
+          shouldCreateUser: false,
+        },
+      })
+
+      // Logged, never surfaced. With shouldCreateUser: false, Supabase errors on
+      // unknown addresses — reporting that difference would turn this form into
+      // an account-enumeration oracle, so the copy below is identical either way.
+      if (otpError) {
+        console.error('Failed to send magic link', otpError)
+      }
+
+      setNotice(
+        "If an account exists for that email, we've sent a sign-in link. Check your inbox."
+      )
+      setCooldown(MAGIC_LINK_COOLDOWN_SECONDS)
+    } catch {
+      setError('An unexpected error occurred')
+    } finally {
+      setMagicLinkLoading(false)
     }
   }
 
@@ -46,13 +114,48 @@ export default function SignInPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="rounded-md bg-red-50 p-3 text-sm text-red-600 dark:bg-red-950 dark:text-red-400">
-              {error}
-            </div>
-          )}
+        {error && (
+          <div className="rounded-md bg-red-50 p-3 text-sm text-red-600 dark:bg-red-950 dark:text-red-400">
+            {error}
+          </div>
+        )}
 
+        {notice && (
+          <div className="rounded-md border border-foreground/15 p-3 text-sm text-foreground/70">
+            {notice}
+          </div>
+        )}
+
+        <div className="space-y-3">
+          <GoogleSignInButton
+            disabled={busy}
+            onError={message => setError(message)}
+          />
+
+          <button
+            type="button"
+            onClick={handleMagicLink}
+            disabled={busy || cooldown > 0}
+            className="w-full rounded-md border border-foreground/20 bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-foreground/5 disabled:opacity-50"
+          >
+            {magicLinkLoading
+              ? 'Sending...'
+              : cooldown > 0
+                ? `Resend in ${cooldown}s`
+                : 'Email me a sign-in link'}
+          </button>
+        </div>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-foreground/10" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-foreground/50">or</span>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label
               htmlFor="email"
@@ -63,10 +166,11 @@ export default function SignInPage() {
             <input
               id="email"
               type="email"
+              autoComplete="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
-              className="w-full rounded-md border border-foreground/20 bg-background px-3 py-2 text-sm text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-foreground/20"
+              className={INPUT_CLASS}
               placeholder="you@example.com"
             />
           </div>
@@ -81,16 +185,17 @@ export default function SignInPage() {
             <input
               id="password"
               type="password"
+              autoComplete="current-password"
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
-              className="w-full rounded-md border border-foreground/20 bg-background px-3 py-2 text-sm text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-foreground/20"
+              className={INPUT_CLASS}
             />
           </div>
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={busy}
             className="w-full rounded-md bg-foreground px-3 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {loading ? 'Signing in...' : 'Sign in'}

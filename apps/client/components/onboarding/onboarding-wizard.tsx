@@ -1,12 +1,11 @@
 'use client'
 
-import { useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
+
 import { Button } from '@/components/ui/button'
+import { GoogleSignInButton } from '@/components/auth/google-sign-in-button'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import { completeOnboarding } from '@/app/onboarding/_actions/complete-onboarding'
-import { OnboardingProjectCard } from './onboarding-project-card'
-import type { ClientProject } from '@/lib/data/projects'
 
 type OnboardingUser = {
   id: string
@@ -16,29 +15,34 @@ type OnboardingUser = {
 
 type OnboardingWizardProps = {
   user: OnboardingUser
-  projects: ClientProject[]
+  /** Invite-time flag. Means "hasn't chosen a sign-in method yet". */
   mustResetPassword: boolean
+  hasGoogleIdentity: boolean
+  /** True when the browser just came back from the Google linking redirect. */
+  returnedFromGoogle: boolean
 }
+
+const STEP_WELCOME = 0
+const STEP_CHOOSE = 1
+const STEP_DONE = 2
 
 export function OnboardingWizard({
   user,
-  projects,
   mustResetPassword,
+  hasGoogleIdentity,
+  returnedFromGoogle,
 }: OnboardingWizardProps) {
-  const [step, setStep] = useState(0)
-  const searchParams = useSearchParams()
-  const githubJustInstalled = searchParams.get('github') === 'installed'
+  // Returning from Google lands mid-flow, so the opening step is derived rather
+  // than always 0.
+  const [step, setStep] = useState(() =>
+    returnedFromGoogle ? STEP_CHOOSE : STEP_WELCOME
+  )
+  const [error, setError] = useState<string | null>(null)
 
   const firstName = user.fullName?.split(' ')[0] ?? user.email.split('@')[0]
 
-  // Step mapping: welcome → password (conditional) → projects → done
-  const STEP_WELCOME = 0
-  const STEP_PASSWORD = 1
-  const STEP_PROJECTS = 2
-  const STEP_DONE = 3
-
   function advanceFromWelcome() {
-    setStep(mustResetPassword ? STEP_PASSWORD : STEP_PROJECTS)
+    setStep(mustResetPassword ? STEP_CHOOSE : STEP_DONE)
   }
 
   if (step === STEP_WELCOME) {
@@ -60,66 +64,25 @@ export function OnboardingWizard({
     )
   }
 
-  if (step === STEP_PASSWORD) {
+  if (step === STEP_CHOOSE) {
     return (
-      <SetPasswordStep onComplete={() => setStep(STEP_PROJECTS)} />
+      <ChooseSignInStep
+        hasGoogleIdentity={hasGoogleIdentity}
+        returnedFromGoogle={returnedFromGoogle}
+        error={error}
+        onError={setError}
+        onComplete={() => setStep(STEP_DONE)}
+      />
     )
   }
 
-  if (step === STEP_PROJECTS) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Your Projects</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Here are the projects you have access to. You can optionally connect
-            GitHub to enable automated workflows.
-          </p>
-        </div>
-
-        {githubJustInstalled && (
-          <div className="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200">
-            GitHub App installed successfully! Select a repository below to link
-            it.
-          </div>
-        )}
-
-        {projects.length === 0 ? (
-          <div className="rounded-lg border border-border p-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              No projects yet. Your account manager will set these up for you.
-            </p>
-          </div>
-        ) : (
-          <div className="grid gap-3">
-            {projects.map(project => (
-              <OnboardingProjectCard key={project.id} project={project} />
-            ))}
-          </div>
-        )}
-
-        <div className="flex items-center justify-between gap-3 pt-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setStep(STEP_DONE)}
-          >
-            Skip for now
-          </Button>
-          <Button onClick={() => setStep(STEP_DONE)}>Continue</Button>
-        </div>
-      </div>
-    )
-  }
-
-  // Step 3 — Done
   return (
     <div className="space-y-6 text-center">
       <div className="space-y-2">
         <h1 className="text-2xl font-bold text-foreground">You&apos;re all set!</h1>
         <p className="text-sm text-muted-foreground">
-          Your workspace is ready. You can manage your projects and GitHub
-          integrations from the dashboard.
+          Your portal is ready. You can see your projects and the hours
+          remaining on your account from the dashboard.
         </p>
       </div>
       <form action={completeOnboarding}>
@@ -132,10 +95,184 @@ export function OnboardingWizard({
 }
 
 /* ------------------------------------------------------------------ */
+/*  Choose sign-in method                                             */
+/* ------------------------------------------------------------------ */
+
+type ChooseProps = {
+  hasGoogleIdentity: boolean
+  returnedFromGoogle: boolean
+  error: string | null
+  onError: (message: string | null) => void
+  onComplete: () => void
+}
+
+/**
+ * All three options attach to the *same* auth user — the one created at invite
+ * time, which the invite link already signed them into. They are not exclusive:
+ * whichever they pick here, the others stay available from the sign-in page.
+ */
+function ChooseSignInStep({
+  hasGoogleIdentity,
+  returnedFromGoogle,
+  error,
+  onError,
+  onComplete,
+}: ChooseProps) {
+  const [mode, setMode] = useState<'menu' | 'password'>('menu')
+
+  // Google sent the browser back but no identity attached — knowable at render
+  // time, so it needs no effect. Say so rather than silently showing the menu
+  // again as though nothing happened.
+  const linkFailed = returnedFromGoogle && !hasGoogleIdentity
+  const [settling, setSettling] = useState(
+    returnedFromGoogle && hasGoogleIdentity
+  )
+
+  const shownError =
+    error ??
+    (linkFailed
+      ? "Google linking didn't complete. Pick an option to continue."
+      : null)
+
+  useEffect(() => {
+    if (!returnedFromGoogle || !hasGoogleIdentity) return
+
+    // The identity attached, so the choice is made — record it and move on.
+    void clearMustResetPassword()
+      .then(onComplete)
+      .catch(() => {
+        onError('Your Google account is linked, but we hit a snag saving it.')
+        setSettling(false)
+      })
+    // Runs once, on the return leg of the redirect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  if (settling) {
+    return (
+      <p className="text-center text-sm text-muted-foreground">
+        Finishing up...
+      </p>
+    )
+  }
+
+  if (mode === 'password') {
+    return (
+      <SetPasswordStep
+        onBack={() => setMode('menu')}
+        onComplete={onComplete}
+      />
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">
+          How would you like to sign in?
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Pick whichever is easiest. You can use the others later too — they all
+          get you into the same account.
+        </p>
+      </div>
+
+      {shownError && (
+        <div className="rounded-md bg-red-50 p-3 text-sm text-red-600 dark:bg-red-950 dark:text-red-400">
+          {shownError}
+        </div>
+      )}
+
+      <div className="space-y-3">
+        <GoogleSignInButton
+          label="Connect your Google account"
+          redirectTo="/onboarding?step=link-return"
+          onError={onError}
+          linkExisting
+        />
+
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={() => {
+            onError(null)
+            setMode('password')
+          }}
+        >
+          Set a password
+        </Button>
+
+        <MagicLinkOnlyButton onError={onError} onComplete={onComplete} />
+      </div>
+
+      <p className="text-xs text-muted-foreground">
+        However you sign in, you can always use &ldquo;forgot password&rdquo; to
+        get back in from your email.
+      </p>
+    </div>
+  )
+}
+
+function MagicLinkOnlyButton({
+  onError,
+  onComplete,
+}: {
+  onError: (message: string | null) => void
+  onComplete: () => void
+}) {
+  const [loading, setLoading] = useState(false)
+
+  async function handleClick() {
+    setLoading(true)
+    onError(null)
+
+    try {
+      await clearMustResetPassword()
+      onComplete()
+    } catch {
+      onError('Something went wrong saving your choice. Please try again.')
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Button
+      variant="outline"
+      className="w-full"
+      disabled={loading}
+      onClick={handleClick}
+    >
+      {loading ? 'Saving...' : 'Just email me a link each time'}
+    </Button>
+  )
+}
+
+/**
+ * Marks the sign-in method as chosen. Every option calls this — leaving the flag
+ * set would strand passwordless clients on this step forever.
+ */
+async function clearMustResetPassword(): Promise<void> {
+  const supabase = getSupabaseBrowserClient()
+  const { error } = await supabase.auth.updateUser({
+    data: { must_reset_password: false },
+  })
+
+  if (error) {
+    throw error
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /*  Set Password Step                                                 */
 /* ------------------------------------------------------------------ */
 
-function SetPasswordStep({ onComplete }: { onComplete: () => void }) {
+function SetPasswordStep({
+  onComplete,
+  onBack,
+}: {
+  onComplete: () => void
+  onBack: () => void
+}) {
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -237,6 +374,14 @@ function SetPasswordStep({ onComplete }: { onComplete: () => void }) {
           {loading ? 'Updating...' : 'Set password & continue'}
         </Button>
       </form>
+
+      <button
+        type="button"
+        onClick={onBack}
+        className="w-full text-center text-sm text-muted-foreground underline hover:text-foreground"
+      >
+        Choose a different way to sign in
+      </button>
     </div>
   )
 }

@@ -33,7 +33,16 @@ export async function GET(request: NextRequest) {
   }
 
   if (data.user) {
-    await ensureUserProfile(data.user);
+    const result = await ensureUserProfile(data.user);
+
+    if (result === "not_provisioned") {
+      // Sign out rather than leaving a valid session that resolves to no profile —
+      // otherwise every subsequent request re-runs this redirect.
+      await supabase.auth.signOut();
+      return NextResponse.redirect(
+        new URL("/account-not-set-up", request.url)
+      );
+    }
   }
 
   // Only allow relative redirects to prevent open redirect attacks

@@ -19,12 +19,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/sign-in?error=invalid_link', request.url))
   }
 
+  // Only accept the types we actually issue, rather than casting whatever arrives.
+  if (!isSupportedOtpType(type)) {
+    return NextResponse.redirect(new URL('/sign-in?error=invalid_link', request.url))
+  }
+
   const supabase = getSupabaseServerClient()
 
   // Exchange the token hash for a session
   const { data, error } = await supabase.auth.verifyOtp({
     token_hash: tokenHash,
-    type: type as 'email_change' | 'signup' | 'recovery' | 'invite' | 'magiclink' | 'email',
+    type,
   })
 
   if (error) {
@@ -36,7 +41,12 @@ export async function GET(request: NextRequest) {
 
   // Sync the updated user profile to the database
   if (data.user) {
-    await ensureUserProfile(data.user)
+    const result = await ensureUserProfile(data.user)
+
+    if (result === 'not_provisioned') {
+      await supabase.auth.signOut()
+      return NextResponse.redirect(new URL('/account-not-set-up', request.url))
+    }
   }
 
   // For email changes, redirect to a success page or the dashboard
@@ -51,5 +61,25 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/reset-password', request.url))
   }
 
-  return NextResponse.redirect(new URL(redirectTo, request.url))
+  // Relative paths only. Without this, `?redirect_to=//evil.com` resolves to an
+  // absolute off-site URL — the same guard the sibling callback route already applies.
+  const safePath =
+    redirectTo.startsWith('/') && !redirectTo.startsWith('//') ? redirectTo : '/'
+
+  return NextResponse.redirect(new URL(safePath, request.url))
+}
+
+const SUPPORTED_OTP_TYPES = [
+  'email_change',
+  'signup',
+  'recovery',
+  'invite',
+  'magiclink',
+  'email',
+] as const
+
+type SupportedOtpType = (typeof SUPPORTED_OTP_TYPES)[number]
+
+function isSupportedOtpType(value: string): value is SupportedOtpType {
+  return (SUPPORTED_OTP_TYPES as readonly string[]).includes(value)
 }
