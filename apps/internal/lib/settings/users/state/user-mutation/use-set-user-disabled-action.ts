@@ -10,19 +10,13 @@ import {
 
 import type { UserRow } from '../types'
 
-type UseSetUserDisabledActionArgs = {
-  onSuccess?: (user: UserRow, disabled: boolean) => void
-}
-
 type UseSetUserDisabledActionReturn = {
   setDisabled: (user: UserRow, disabled: boolean) => void
   pendingDisableId: string | null
   isPending: boolean
 }
 
-export function useSetUserDisabledAction({
-  onSuccess,
-}: UseSetUserDisabledActionArgs = {}): UseSetUserDisabledActionReturn {
+export function useSetUserDisabledAction(): UseSetUserDisabledActionReturn {
   const router = useRouter()
   const { toast } = useToast()
   const [pendingDisableId, setPendingDisableId] = useState<string | null>(null)
@@ -65,8 +59,6 @@ export function useSetUserDisabledAction({
             targetId: user.id,
           })
 
-          onSuccess?.(user, disabled)
-
           const displayName = user.full_name ?? user.email
           toast({
             title: disabled ? 'Access disabled' : 'Access enabled',
@@ -92,7 +84,7 @@ export function useSetUserDisabledAction({
         }
       })
     },
-    [onSuccess, router, startTransition, toast],
+    [router, startTransition, toast],
   )
 
   return {
