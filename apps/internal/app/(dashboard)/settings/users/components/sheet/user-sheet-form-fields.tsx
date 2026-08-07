@@ -13,7 +13,6 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -34,10 +33,8 @@ type UserSheetFormFieldsProps = {
   emailDisabledReason: string | null
   roleDisabled: boolean
   roleDisabledReason: string | null
-  accessEnabled: boolean
   accessToggleDisabled: boolean
   accessToggleDisabledReason: string | null
-  onToggleAccess: (enabled: boolean) => void
   avatarFieldKey: number
   avatarInitials: string
   avatarDisplayName: string | null
@@ -54,10 +51,8 @@ export function UserSheetFormFields({
   emailDisabledReason,
   roleDisabled,
   roleDisabledReason,
-  accessEnabled,
   accessToggleDisabled,
   accessToggleDisabledReason,
-  onToggleAccess,
   avatarFieldKey,
   avatarInitials,
   avatarDisplayName,
@@ -205,35 +200,44 @@ export function UserSheetFormFields({
         )}
       />
       {isEditing ? (
-        <div className='flex flex-col gap-2'>
-          <Label htmlFor='user-sheet-access-toggle'>Access</Label>
-          <DisabledFieldTooltip
-            disabled={accessToggleDisabled}
-            reason={accessToggleDisabledReason}
-            className='w-auto'
-          >
-            <div className='flex items-center gap-2'>
-              <Switch
-                id='user-sheet-access-toggle'
-                checked={accessEnabled}
-                onCheckedChange={onToggleAccess}
-                disabled={accessToggleDisabled}
-                className='data-[state=checked]:bg-emerald-500 dark:data-[state=checked]:bg-emerald-500'
-                aria-label={
-                  accessEnabled
-                    ? `Disable sign-in for ${avatarDisplayName ?? 'this user'}`
-                    : `Enable sign-in for ${avatarDisplayName ?? 'this user'}`
-                }
-              />
-              <span className='text-muted-foreground text-xs'>
-                {accessEnabled ? 'Enabled' : 'Disabled'}
-              </span>
-            </div>
-          </DisabledFieldTooltip>
-          <p className='text-muted-foreground text-sm'>
-            Changes apply immediately and control whether they can sign in.
-          </p>
-        </div>
+        <FormField
+          control={form.control}
+          name='accessEnabled'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel htmlFor='user-sheet-access-toggle'>Access</FormLabel>
+              <FormControl>
+                <DisabledFieldTooltip
+                  disabled={accessToggleDisabled}
+                  reason={accessToggleDisabledReason}
+                  className='w-auto'
+                >
+                  <div className='flex items-center gap-2'>
+                    <Switch
+                      id='user-sheet-access-toggle'
+                      checked={field.value ?? true}
+                      onCheckedChange={field.onChange}
+                      disabled={accessToggleDisabled}
+                      className='data-[state=checked]:bg-emerald-500 dark:data-[state=checked]:bg-emerald-500'
+                      aria-label={
+                        (field.value ?? true)
+                          ? `Disable sign-in for ${avatarDisplayName ?? 'this user'}`
+                          : `Enable sign-in for ${avatarDisplayName ?? 'this user'}`
+                      }
+                    />
+                    <span className='text-muted-foreground text-xs'>
+                      {(field.value ?? true) ? 'Enabled' : 'Disabled'}
+                    </span>
+                  </div>
+                </DisabledFieldTooltip>
+              </FormControl>
+              <FormDescription>
+                Controls whether they can sign in. Applies when you save.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
       ) : null}
       {isEditing ? (
         <FormField
