@@ -73,7 +73,7 @@ export function PersonSelector({
       emptyMessage="No team members found."
       disabled={disabled}
       className="w-auto min-w-[200px]"
-      triggerClassName="h-7 py-0 text-sm"
+      triggerClassName="h-8 py-0 text-sm"
     />
   )
 }

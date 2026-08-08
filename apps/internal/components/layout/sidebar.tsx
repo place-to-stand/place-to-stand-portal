@@ -165,7 +165,7 @@ export function Sidebar({ user, badges }: Props) {
                           <SidebarMenuBadge
                             aria-hidden='true'
                             className={cn(
-                              'h-4 min-w-4 rounded-full px-1 text-[10px] font-semibold tabular-nums',
+                              'right-1.5 h-4 min-w-4 rounded-full px-1 text-[10px] font-semibold tabular-nums',
                               // The primitive swaps badge text to the accent
                               // color on hover/active — unreadable on our
                               // bg-primary pill; pin it in every state.

@@ -285,25 +285,25 @@ export function MyTasksPage({
   return (
     <PageShell
       breadcrumbs={crumbsForNav('/my/tasks/board')}
-      headerRight={
-        <PersonSelector
-          admins={admins}
-          selectedUserId={selectedAssigneeId}
-          currentUserId={user.id}
-        />
-      }
       tabs={viewTabs}
       activeTab={view}
       count={{ label: 'tasks', total: totalTaskCount }}
       primaryAction={
-        <Button
-          type='button'
-          size='sm'
-          onClick={() => handleStartCreateTask('ON_DECK')}
-        >
-          <Plus className='h-4 w-4' />
-          Add task
-        </Button>
+        <div className='flex items-center gap-2'>
+          <Button
+            type='button'
+            size='sm'
+            onClick={() => handleStartCreateTask('ON_DECK')}
+          >
+            <Plus className='h-4 w-4' />
+            Add task
+          </Button>
+          <PersonSelector
+            admins={admins}
+            selectedUserId={selectedAssigneeId}
+            currentUserId={user.id}
+          />
+        </div>
       }
       contentClassName='flex flex-col gap-4 sm:gap-6'
     >

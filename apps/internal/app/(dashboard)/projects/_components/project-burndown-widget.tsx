@@ -45,9 +45,6 @@ export function ProjectBurndownWidget({
     ? projectMonthToDateLogged
     : projectLogged
   const projectHoursLabel = showProjectMonthToDate
-    ? 'Logged (month)'
-    : 'Logged'
-  const projectHoursTitle = showProjectMonthToDate
     ? 'Project hours logged this month'
     : 'Project hours logged'
   const clientRemaining = totalClientRemainingHours
@@ -60,15 +57,13 @@ export function ProjectBurndownWidget({
       <dl className='hidden items-center gap-3 md:flex'>
         <Metric
           label={projectHoursLabel}
-          title={projectHoursTitle}
           value={`${formatHours(projectLoggedValue)} hrs`}
         />
         {showClientRemainingCard ? (
           <>
             <Separator orientation='vertical' className='h-4' />
             <Metric
-              label='Remaining'
-              title='Client hours remaining'
+              label='Client hours remaining'
               value={`${formatHours(clientRemaining)} hrs`}
               tone={clientRemaining < 0 ? 'destructive' : 'default'}
             />
@@ -91,14 +86,13 @@ export function ProjectBurndownWidget({
 
 type MetricProps = {
   label: string
-  title: string
   value: string
   tone?: 'default' | 'destructive'
 }
 
-function Metric({ label, title, value, tone = 'default' }: MetricProps) {
+function Metric({ label, value, tone = 'default' }: MetricProps) {
   return (
-    <div className='flex items-baseline gap-1.5' title={title}>
+    <div className='flex items-baseline gap-1.5'>
       <dt className='text-muted-foreground text-[10px] font-semibold tracking-wider uppercase'>
         {label}
       </dt>
