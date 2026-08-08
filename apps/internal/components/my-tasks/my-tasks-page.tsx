@@ -290,6 +290,11 @@ export function MyTasksPage({
       count={{ label: 'tasks', total: totalTaskCount }}
       primaryAction={
         <div className='flex items-center gap-2'>
+          <PersonSelector
+            admins={admins}
+            selectedUserId={selectedAssigneeId}
+            currentUserId={user.id}
+          />
           <Button
             type='button'
             size='sm'
@@ -298,11 +303,6 @@ export function MyTasksPage({
             <Plus className='h-4 w-4' />
             Add task
           </Button>
-          <PersonSelector
-            admins={admins}
-            selectedUserId={selectedAssigneeId}
-            currentUserId={user.id}
-          />
         </div>
       }
       contentClassName='flex flex-col gap-4 sm:gap-6'

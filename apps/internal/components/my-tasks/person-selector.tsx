@@ -64,16 +64,38 @@ export function PersonSelector({
   )
 
   return (
-    <SearchableCombobox
-      items={items}
-      value={selectedUserId}
-      onChange={handleChange}
-      placeholder="Select person"
-      searchPlaceholder="Search team members..."
-      emptyMessage="No team members found."
-      disabled={disabled}
-      className="w-auto min-w-[200px]"
-      triggerClassName="h-8 py-0 text-sm"
-    />
+    // Grid-stacked invisible sizers pin the trigger width to the widest
+    // option (mimicking the trigger's avatar + padding + chevron chrome),
+    // so switching people never shifts the toolbar.
+    <div className="grid">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none invisible col-start-1 row-start-1 overflow-hidden"
+      >
+        {items.map(item => (
+          <span
+            key={item.value}
+            className="flex h-0 items-center gap-2 border border-transparent px-3 text-sm whitespace-nowrap"
+          >
+            <span className="size-5 shrink-0" />
+            {item.label}
+            <span className="size-4 shrink-0" />
+          </span>
+        ))}
+      </div>
+      <div className="col-start-1 row-start-1">
+        <SearchableCombobox
+          items={items}
+          value={selectedUserId}
+          onChange={handleChange}
+          placeholder="Select person"
+          searchPlaceholder="Search team members..."
+          emptyMessage="No team members found."
+          disabled={disabled}
+          className="w-full"
+          triggerClassName="h-8 py-0 text-sm"
+        />
+      </div>
+    </div>
   )
 }
