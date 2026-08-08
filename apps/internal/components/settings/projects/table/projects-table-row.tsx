@@ -10,9 +10,9 @@ import {
 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import { TableCell, TableRow } from '@/components/ui/table'
+import { TableCell, TableRow } from '@pts/ui/table'
 import {
   getProjectStatusLabel,
   getProjectStatusToken,

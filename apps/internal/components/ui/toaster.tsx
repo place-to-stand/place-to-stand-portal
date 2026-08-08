@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { cn } from '@/lib/utils'
 
 import { subscribe, type ToastMessage } from './toast'

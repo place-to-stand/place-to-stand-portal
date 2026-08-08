@@ -15,7 +15,7 @@ import {
 import { PaginationControls } from '@/components/ui/pagination-controls'
 import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
-import { Skeleton } from '@/components/ui/skeleton'
+import { Skeleton } from '@pts/ui/skeleton'
 import {
   Table,
   TableBody,
@@ -23,13 +23,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@pts/ui/table'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@/components/ui/tabs'
+} from '@pts/ui/tabs'
 
 import { DesignSection, Specimen } from './specimen'
 

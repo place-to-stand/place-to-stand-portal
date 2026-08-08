@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { toast } from '@/components/ui/use-toast'
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import {
   Card,
   CardContent,

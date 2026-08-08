@@ -5,7 +5,7 @@ import { useDroppable, useDraggable } from '@dnd-kit/core'
 import { format } from 'date-fns'
 import { Plus } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import {
   Tooltip,
   TooltipContent,

@@ -4,9 +4,9 @@ import { useState } from 'react'
 import { Loader2, Trash2, Plus, RefreshCw } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 
 export interface ConnectedAccount {
   id: string

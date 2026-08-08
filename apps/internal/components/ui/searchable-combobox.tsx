@@ -5,7 +5,7 @@ import { CheckIcon, ChevronsUpDownIcon } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import {
   Popover,
   PopoverContent,

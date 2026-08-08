@@ -4,9 +4,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { format } from 'date-fns'
 import { ListTodo, Plus, Calendar, ExternalLink, CheckCircle2, Circle } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
+import { Skeleton } from '@pts/ui/skeleton'
 import type { LeadRecord } from '@/lib/leads/types'
 
 import { LeadTaskSheetOverlay } from './lead-task-sheet-overlay'

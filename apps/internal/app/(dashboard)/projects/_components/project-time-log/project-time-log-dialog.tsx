@@ -7,7 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { ProjectTimeLogForm } from './project-time-log-form'
 import { useProjectTimeLogDialog } from '@/lib/projects/time-log/use-project-time-log-dialog'
 import type {

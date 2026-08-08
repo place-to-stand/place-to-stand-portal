@@ -2,8 +2,8 @@
 
 import { Loader2 } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { Button } from '@pts/ui/button'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 
 import { useTaskComments } from '@/lib/projects/task-sheet/use-task-comments'
 

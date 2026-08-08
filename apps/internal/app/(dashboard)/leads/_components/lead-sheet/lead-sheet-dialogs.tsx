@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react'
 
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import type { LeadRecord } from '@/lib/leads/types'
 
 import { ConvertLeadDialog } from '../convert-lead-dialog'

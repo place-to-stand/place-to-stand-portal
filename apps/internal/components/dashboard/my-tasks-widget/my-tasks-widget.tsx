@@ -6,7 +6,7 @@ import type { AssignedTaskSummary } from '@/lib/data/tasks'
 
 import { cn } from '@/lib/utils'
 import { useMyTasksWidgetState } from '@/lib/projects/tasks/use-my-tasks-widget-state'
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 
 import { EmptyState } from './empty-state'
 import { TaskList } from './task-list'

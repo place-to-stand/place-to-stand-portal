@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 
-import { cn } from '@/lib/utils'
+import { cn } from './cn'
 
 // PRD 004 §04 (D10): density variant. 'compact' = h-8 text-xs heads +
 // py-1.5 cells, promoted from the monthly-close tableClasses experiment.

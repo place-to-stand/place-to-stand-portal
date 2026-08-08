@@ -3,7 +3,7 @@
 import { Plus } from 'lucide-react'
 
 import { TabsNav, type TabsNavTab } from '@/components/layout/tabs-nav'
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 
 import { DesignSection, Specimen } from './specimen'
 

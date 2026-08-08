@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 
 import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import type { AppUser } from '@/lib/auth/session'
 import type {
   DbUser,

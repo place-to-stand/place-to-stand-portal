@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { ProjectSheet } from '@/app/(dashboard)/settings/projects/project-sheet'
 import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'

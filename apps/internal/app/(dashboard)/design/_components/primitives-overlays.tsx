@@ -12,9 +12,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+} from '@pts/ui/alert-dialog'
+import { Button } from '@pts/ui/button'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import {
   Dialog,
   DialogContent,

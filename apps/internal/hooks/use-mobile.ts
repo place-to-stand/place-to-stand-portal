@@ -1,21 +1,4 @@
 "use client"
 
-import { useEffect, useState } from "react"
-
-export function useIsMobile(breakpoint = 768) {
-  const [isMobile, setIsMobile] = useState<boolean | undefined>(() => {
-    if (typeof window === "undefined") return undefined
-    return window.innerWidth < breakpoint
-  })
-
-  useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${breakpoint - 1}px)`)
-    const onChange = () => {
-      setIsMobile(window.innerWidth < breakpoint)
-    }
-    mql.addEventListener("change", onChange)
-    return () => mql.removeEventListener("change", onChange)
-  }, [breakpoint])
-
-  return !!isMobile
-}
+// Moved to @pts/ui (PRD 004 D15); shim kept for the migration window.
+export { useIsMobile } from "@pts/ui/hooks/use-mobile"

@@ -1,14 +1,14 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
+import { Button } from './button'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './alert-dialog'
 
 type ButtonVariant =
   | 'default'
@@ -26,6 +26,12 @@ type ConfirmDialogProps = {
   cancelLabel?: string
   confirmVariant?: ButtonVariant
   confirmDisabled?: boolean
+  /**
+   * Kept for API compatibility (D16/R6 — 31 call sites unchanged). The
+   * alert-dialog primitive renders no close button; explicit Cancel and
+   * Esc are the dismiss paths, and outside-click no longer dismisses —
+   * the correct semantics for destructive confirms.
+   */
   showCloseButton?: boolean
   onConfirm: () => void
   onCancel: () => void
@@ -39,12 +45,13 @@ export function ConfirmDialog({
   cancelLabel = 'Cancel',
   confirmVariant = 'default',
   confirmDisabled = false,
-  showCloseButton = false,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  showCloseButton: _showCloseButton = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
   return (
-    <Dialog
+    <AlertDialog
       open={open}
       onOpenChange={next => {
         if (!next) {
@@ -52,14 +59,14 @@ export function ConfirmDialog({
         }
       }}
     >
-      <DialogContent showCloseButton={showCloseButton}>
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
           {description ? (
-            <DialogDescription>{description}</DialogDescription>
+            <AlertDialogDescription>{description}</AlertDialogDescription>
           ) : null}
-        </DialogHeader>
-        <DialogFooter>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
           <Button type='button' variant='outline' onClick={onCancel}>
             {cancelLabel}
           </Button>
@@ -71,8 +78,8 @@ export function ConfirmDialog({
           >
             {confirmLabel}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }

@@ -6,7 +6,7 @@ import { siGithub } from 'simple-icons/icons'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { TabsContent } from '@/components/ui/tabs'
+import { TabsContent } from '@pts/ui/tabs'
 import { getProjectStatusLabel, getProjectStatusToken } from '@/lib/constants'
 import { formatProjectDateRange } from '@/lib/settings/projects/project-formatters'
 import { cn } from '@/lib/utils'

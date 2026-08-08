@@ -4,7 +4,7 @@ import { format } from 'date-fns'
 import Link from 'next/link'
 import { Archive, Building2, Pencil, RefreshCw, Trash2 } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
@@ -16,7 +16,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@pts/ui/table'
 import type { HourBlockWithClient } from '@/lib/settings/hour-blocks/hour-block-form'
 
 export type HourBlocksTableMode = 'active' | 'archive'
@@ -72,8 +72,8 @@ export function HourBlocksTableSection({
   const sort = rawSort && isHourBlockSortValue(rawSort) ? rawSort : undefined
 
   return (
-    <div className='overflow-hidden rounded-xl border'>
-      <Table>
+    <div className='overflow-hidden rounded-lg border'>
+      <Table density='compact'>
         <TableHeader>
           <TableRow className='bg-muted/40'>
             <TableHead>Client</TableHead>

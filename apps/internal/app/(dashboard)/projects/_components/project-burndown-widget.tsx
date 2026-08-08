@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { cn } from '@/lib/utils'
 import { Eye, Plus } from 'lucide-react'
 

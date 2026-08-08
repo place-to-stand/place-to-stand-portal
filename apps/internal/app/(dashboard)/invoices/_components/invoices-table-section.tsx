@@ -18,8 +18,8 @@ import {
 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { Button } from '@pts/ui/button'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
@@ -31,7 +31,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@pts/ui/table'
 import { useToast } from '@/components/ui/use-toast'
 import type { InvoiceWithClient } from '@/lib/invoices/invoice-form'
 
@@ -297,8 +297,8 @@ export function InvoicesTableSection({
   const sort = rawSort && isInvoiceSortValue(rawSort) ? rawSort : undefined
 
   return (
-    <div className='overflow-hidden rounded-xl border'>
-      <Table>
+    <div className='overflow-hidden rounded-lg border'>
+      <Table density='compact'>
         <TableHeader>
           <TableRow className='bg-muted/40'>
             <SortableTableHead

@@ -17,9 +17,9 @@ import {
 } from 'lucide-react'
 import { format } from 'date-fns'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Progress } from '@/components/ui/progress'
 import { useToast } from '@/components/ui/use-toast'

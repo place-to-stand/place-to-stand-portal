@@ -8,6 +8,7 @@ import { PrimitivesDisplay } from './_components/primitives-display'
 import { PrimitivesForms } from './_components/primitives-forms'
 import { PrimitivesOverlays } from './_components/primitives-overlays'
 import { ShellSpecimens } from './_components/shell-specimens'
+import { ToolbarTableLab } from './_components/toolbar-table-lab'
 
 export const metadata: Metadata = {
   title: 'Design',
@@ -20,6 +21,8 @@ const SECTIONS = [
   { id: 'overlays', label: 'Overlays' },
   { id: 'display', label: 'Display & data' },
   { id: 'shell', label: 'Shell specimens' },
+  { id: 'toolbar-lab', label: 'Toolbar lab' },
+  { id: 'table-lab', label: 'Table lab' },
 ] as const
 
 /**
@@ -52,6 +55,7 @@ export default function DesignPage() {
         <PrimitivesOverlays />
         <PrimitivesDisplay />
         <ShellSpecimens />
+        <ToolbarTableLab />
       </div>
     </PageShell>
   )

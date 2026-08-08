@@ -5,7 +5,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@pts/ui/table'
 
 import type { ProjectWithClient, ProjectsTableMode } from './types'
 import { ProjectsTableRow } from './projects-table-row'

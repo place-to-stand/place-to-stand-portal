@@ -6,7 +6,7 @@ import { Plus } from 'lucide-react'
 
 import { ProjectSheet } from '@/app/(dashboard)/settings/projects/project-sheet'
 import { useProjectsSettingsController } from '@/components/settings/projects/table/use-projects-settings-controller'
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { useToast } from '@/components/ui/use-toast'
 import { sortClientsByName } from '@/lib/settings/projects/project-sheet-form'

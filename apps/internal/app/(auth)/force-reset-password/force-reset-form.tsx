@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { completePasswordReset } from "@/app/(auth)/_actions/update-password";
-import { Button } from "@/components/ui/button";
+import { Button } from "@pts/ui/button";
 import { DisabledFieldTooltip } from "@/components/ui/disabled-field-tooltip";
 import {
   Form,

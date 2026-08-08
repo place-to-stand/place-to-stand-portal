@@ -12,8 +12,8 @@ import { useQueryClient } from '@tanstack/react-query'
 
 import { ClipboardList, HelpCircle, X } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { Button } from '@pts/ui/button'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { Sheet, SheetClose, SheetContent } from '@/components/ui/sheet'
 import {
   Tooltip,
@@ -42,7 +42,7 @@ import { TaskSheetHeader } from './_components/task-sheet/task-sheet-header'
 import { PlanningPanel } from './_components/task-sheet/planning-panel'
 import { TaskCommentsPanel } from './_components/task-sheet/task-comments-panel'
 import { TaskActivityPanel } from './_components/task-sheet/task-activity-panel'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@pts/ui/tabs'
 import type { BoardColumnId } from '@/lib/projects/board/board-constants'
 
 // Survives page remounts (module scope): navigating to a task URL changes a

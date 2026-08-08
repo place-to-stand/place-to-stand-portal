@@ -35,32 +35,32 @@ Update this file after each coding session. Mark items as they land; note deviat
 
 ## 05 — Style guide ([05-style-guide-route.md](05-style-guide-route.md))
 
-- [ ] `/design` route (admin-gated, not in nav); foundations + all primitives + shell specimens (initial build)
-- [ ] Toolbar lab added during 03; table lab during 03/04; Base UI side-by-sides during 04
-- [ ] Light/dark verified
-- [ ] Build / lint / type-check pass
+- [x] `/design` route (admin-gated via dashboard layout, not in nav); foundations (31 tokens, radius/type scales, entity colors) + all primitives (buttons/forms/overlays/display across 5 files) + shell specimens
+- [x] Toolbar lab (FilterBar/FilterSelect single+multi/SearchInput, local-state) + table lab (default vs compact side-by-side, SortableTableHead cycle, filtered empty state). Base UI side-by-sides n/a — migration deferred (see §04)
+- [ ] Light/dark verified <!-- MANUAL STEP for the user: open /design in both themes (TEST-PLAN §05.3) — browser session required -->
+- [x] Build / lint / type-check pass
 
 ## 03 — Table toolbar ([03-table-toolbar-filters-sort-search.md](03-table-toolbar-filters-sort-search.md))
 
-- [ ] `useListParams` (filters declared separately from sort; defaults-aware `hasActiveFilters` — R2) + `FilterBar`/`FilterSelect`/`SortableTableHead`/`SearchInput`
-- [ ] Users + submissions converted (behavior-equal); old filter components deleted
-- [ ] Projects: multi-select server-side status filter; defaults + `none` sentinel preserved
-- [ ] Search: clients/contacts/projects wired; extended to users/invoices/hour-blocks
-- [ ] Sort: per-sort descriptors (orderBy + field-tagged cursor encode/decode + null policy + id tie-breaker — R5) per view; sortable column headers on all management tables (`aria-sort`, cursor reset, default-sort arrow visible on load — PW3)
-- [ ] Counts → toolbar row; `Showing N of M` when filtered; filtered empty states everywhere
-- [ ] Palette record search extended (contacts + new entities)
-- [ ] Build / lint / type-check pass
+- [x] `useListParams` (filters declared separately from sort; defaults-aware `hasActiveFilters` — R2) + `FilterBar`/`FilterSelect`(single+multi)/`SortableTableHead`/`SearchInput` in `components/table-toolbar/`
+- [x] Users + submissions converted (behavior-equal URL semantics; users gained search); old `users-filters`/`submissions-filters` rebuilt on the shared system, `project-status-filter.tsx` deleted
+- [x] Projects: multi-select **server-side** status filter above the section stack; defaults + `none` sentinel + clean-URL-until-interaction preserved; landing search (name/slug/client name); count suppresses `Showing N of M` on the implicit default (R2/03.E5)
+- [x] Search: clients (landing + archive)/contacts/projects wired; extended to users (name/email), invoices (number/client), hour-blocks (client — incl. a latent missing-join count bug fixed)
+- [x] Sort: R5 descriptors (field-tagged cursors, effectiveAsc, id tie-breaker; invoices `number` declares NULLS LAST) on users/clients/contacts/hour-blocks keyset paths; offset views (submissions/invoices/hour-blocks pages, leads-archive in-memory) via orderBy swap; `SortableTableHead` on every allowlisted column (`aria-sort`, cursor/page reset, default arrow on load — PW3). *Note: clients/contacts tables have no Created column, so `created` is deep-link-only there*
+- [x] Counts → PageShell (`Showing N of M` exactly when filtered); filtered empty states on every filtered view (guard-validated, R4-lesson)
+- [x] Palette record search extended: Contacts group (name/email → `/contacts?q=`, no detail route exists)
+- [x] Build / lint / type-check pass
 
 ## 04 — Component refresh ([04-component-refresh-density-base-ui.md](04-component-refresh-density-base-ui.md))
 
-- [ ] `@pts/ui` scaffolded (exports map, `cn` + `use-mobile` moved with shims, `transpilePackages`, `@source`, workspace dep); client portal NOT wired
-- [ ] Radix consolidation codemod (16 → 1 `radix-ui`)
-- [ ] `tabs.tsx` regenerated (h-9); `button.tsx` fixed heights incl. `lg: h-10` (W4); `skeleton.tsx` refreshed
-- [ ] Table `density='compact'` variant; chrome standardized; monthly-close local classes deleted
-- [ ] `components.json` → Base UI; 14 stock components migrated incl. breadcrumb (individually verified on `/design`; per-component consumer inventory + `asChild` composition contract — R6)
-- [ ] Refreshed/migrated components moved into `@pts/ui` in their refresh commits; imports flipped (package = checklist)
-- [ ] `confirm-dialog` rebased on alert-dialog (API unchanged, 31 importers untouched)
-- [ ] `hover-card` port trial resolved (official primitive w/ tap parity, or documented keep-custom)
-- [ ] Dead code deleted: `scroll-area.tsx`, `alert.tsx`, `use-board-assigned-filter.ts` (+ plumbing)
-- [ ] Sheet handoff + toast dismissal regression-checked
-- [ ] Build / lint / type-check pass
+- [x] `@pts/ui` scaffolded (per-component source exports matching `@pts/db` convention, own `components.json`, `cn` + `use-mobile` moved with re-export shims, `transpilePackages`, `@source` in globals.css, workspace dep); client portal NOT wired; turbo type-checks the package
+- [x] Radix consolidation (16 `@radix-ui/react-*` → 1 `radix-ui` via `shadcn migrate radix`; tiptap primitives' two direct imports rewritten; deps pruned)
+- [x] `tabs.tsx` regenerated (h-9, v4 pattern, hover affordance kept); `button.tsx` fixed heights `h-9/h-8/h-7/h-10` incl. `lg` (W4); `skeleton.tsx` refreshed (bg-accent)
+- [x] Table `density='compact'` variant (context-based); chrome standardized (one `bg-muted/40` header, `rounded-lg` containers, compact on all management tables + review tab + invoice settings + monthly close; `tableClasses` deleted; one justified exception: monthly-close `first:pl-5 last:pr-5` gutter for card alignment)
+- [ ] `components.json` → Base UI; 14 stock components migrated <!-- deferred: R6's own contract requires per-component keyboard/focus verification on /design, which needs an authenticated browser session this environment doesn't have (dev server port occupied; seeded users can't authenticate). An unverifiable bulk migration would violate the R6 acceptance gate. All prep is done (Radix consolidated, density refreshed, style guide ready as the acceptance surface) — the migration is mechanical once run with a browser: flip components.json, regenerate per component, verify on /design. -->
+- [x] Refreshed components moved into `@pts/ui`: `button`, `tabs`, `skeleton`, `table`, `alert-dialog`, `confirm-dialog` (+ `cn`, `use-mobile`); 120 files' imports flipped (package = checklist: `@pts/ui/*` = refreshed)
+- [x] `confirm-dialog` rebased on alert-dialog primitives (API unchanged — 31 importers untouched; outside-click no longer dismisses; `showCloseButton` kept as a documented no-op)
+- [x] `hover-card` port trial resolved: **keep custom** — the trial's tap-to-open parity gate (touch behavior) is unverifiable without a browser session, and the spec's fail-safe is keeping the popover-based custom build. Revisit alongside the deferred Base UI step (06)
+- [x] Dead code deleted: `scroll-area.tsx`, `alert.tsx`, `use-board-assigned-filter.ts` + `board-filters.ts` + all plumbing through core/derived board state
+- [ ] Sheet handoff + toast dismissal regression-checked <!-- MANUAL STEP for the user: TEST-PLAN §04.7 browser walk (sheet.tsx itself was NOT modified this session — its imports were consolidated to the radix-ui package only) -->
+- [x] Build / lint / type-check pass (77 routes)

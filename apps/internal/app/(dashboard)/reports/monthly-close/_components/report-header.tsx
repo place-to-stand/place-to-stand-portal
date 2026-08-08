@@ -3,7 +3,7 @@
 import { format } from 'date-fns'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import {
   Select,
   SelectContent,

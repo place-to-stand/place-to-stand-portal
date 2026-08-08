@@ -6,7 +6,7 @@ import { Archive, Redo2, Undo2 } from 'lucide-react'
 import { useWatch, type UseFormReturn } from 'react-hook-form'
 
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
   Form,

@@ -2,7 +2,7 @@
 
 import { Archive, Building2, Pencil, RefreshCw, Trash2 } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
@@ -15,7 +15,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@pts/ui/table'
 
 import { cn } from '@/lib/utils'
 import { getStatusBadgeToken } from '@/lib/constants'
@@ -72,8 +72,8 @@ export function ClientsTableSection({
   const sort = rawSort && isClientSortValue(rawSort) ? rawSort : undefined
 
   return (
-    <div className='overflow-hidden rounded-xl border'>
-      <Table>
+    <div className='overflow-hidden rounded-lg border'>
+      <Table density='compact'>
         <TableHeader>
           <TableRow className='bg-muted/40'>
             <SortableTableHead

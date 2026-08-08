@@ -11,7 +11,7 @@ import {
   UserPlus,
 } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
@@ -23,7 +23,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@pts/ui/table'
 
 import type { ContactsTableContact } from '@/lib/settings/contacts/use-contacts-table-state'
 
@@ -73,8 +73,8 @@ export function ContactsTableSection({
   const sort = rawSort && isContactSortValue(rawSort) ? rawSort : undefined
 
   return (
-    <div className='overflow-hidden rounded-xl border'>
-      <Table>
+    <div className='overflow-hidden rounded-lg border'>
+      <Table density='compact'>
         <TableHeader>
           <TableRow className='bg-muted/40'>
             <SortableTableHead

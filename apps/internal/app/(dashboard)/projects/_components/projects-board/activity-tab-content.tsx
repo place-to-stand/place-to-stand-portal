@@ -1,4 +1,4 @@
-import { TabsContent } from '@/components/ui/tabs'
+import { TabsContent } from '@pts/ui/tabs'
 import { ActivityFeed } from '@/components/activity/activity-feed'
 import { ProjectsBoardEmpty } from '../projects-board-empty'
 import {

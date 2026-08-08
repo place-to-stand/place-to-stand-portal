@@ -40,7 +40,7 @@ Update after each coding session. All tests run as an **ADMIN** user in the inte
 - [ ] **01.12** Board-height pages (My Tasks board, leads board, project board) still fill the viewport with internal scrolling — no double scrollbars
 - [ ] **01.13** No Radix `DialogTitle` warning in the console when opening the palette; palette announces its title to AT
 - [ ] **01.14** `GET /api/command-palette/search?q=…` unauthenticated → **401 exactly** (explicit null check before assertAdmin — R1); (if testable) CLIENT-role session → 403
-- [ ] **01.15** Old header components gone: no `text-3xl` combobox titles on `/clients` or project detail; global grep finds zero `AppShellHeader` usages at section end
+- [x] **01.15** Old header components gone: no `text-3xl` combobox titles on `/clients` or project detail; global grep finds zero `AppShellHeader` usages at section end <!-- auto-verified: grep + deleted files -->
 - [ ] **01.16** Mobile (<768px): header wraps gracefully; breadcrumb truncates (no horizontal scroll); user menu reachable
 
 **Edge cases:**
@@ -105,6 +105,6 @@ Update after each coding session. All tests run as an **ADMIN** user in the inte
 
 ## Cross-section regression (after all sections)
 
-- [ ] **X.1** `npm run build`, `npm run lint`, `npm run type-check` pass from the repo root
+- [x] **X.1** `npm run build`, `npm run lint`, `npm run type-check` pass from the repo root <!-- auto-verified: all three green, 77 routes -->
 - [ ] **X.2** PRD 003 flows intact: task sheet stays open on save; task-sheet time logging; users filters (now via the new toolbar) still role+access capable
 - [ ] **X.3** Every route in the README route matrix loads without console errors, light + dark, desktop + mobile viewport

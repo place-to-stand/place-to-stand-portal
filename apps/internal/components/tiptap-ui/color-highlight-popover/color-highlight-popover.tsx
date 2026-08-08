@@ -5,7 +5,7 @@ import { type Editor } from "@tiptap/react"
 
 // --- Hooks ---
 import { useMenuNavigation } from "@/hooks/use-menu-navigation"
-import { useIsMobile } from "@/hooks/use-mobile"
+import { useIsMobile } from "@pts/ui/hooks/use-mobile"
 import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
 
 // --- Icons ---

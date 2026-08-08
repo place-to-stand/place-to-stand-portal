@@ -1,6 +1,6 @@
 import { Archive, Loader2, PlusCircle, Pencil } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Input } from '@/components/ui/input'
 import { type SearchableComboboxItem } from '@/components/ui/searchable-combobox'

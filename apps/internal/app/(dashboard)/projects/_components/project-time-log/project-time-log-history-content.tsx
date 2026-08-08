@@ -2,7 +2,7 @@ import { format } from 'date-fns'
 import { Archive, Loader2, Pencil, RotateCcw } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
   Table,
@@ -11,7 +11,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@pts/ui/table'
 import { cn } from '@/lib/utils'
 import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 import type { ProjectTimeLogHistoryState } from '@/lib/projects/time-log/use-project-time-log-history'

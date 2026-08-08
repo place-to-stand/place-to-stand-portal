@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import type { ClientOption } from '@/lib/queries/contacts'
 
 import { ContactsSheet } from './contacts-sheet'

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ImagePlus, Loader2, Trash2 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { Button } from "@pts/ui/button";
 import { DisabledFieldTooltip } from "@/components/ui/disabled-field-tooltip";
 import { useToast } from "@/components/ui/use-toast";
 

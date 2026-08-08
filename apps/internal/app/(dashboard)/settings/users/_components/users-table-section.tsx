@@ -9,7 +9,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@pts/ui/table'
 import { isUserSortValue } from '@/lib/settings/users/filters'
 import type { UserRowState } from '@/lib/settings/users/state/use-users-table-state'
 
@@ -39,8 +39,8 @@ export function UsersTableSection({
   const sort = rawSort && isUserSortValue(rawSort) ? rawSort : undefined
 
   return (
-    <div className='overflow-hidden rounded-xl border'>
-      <Table>
+    <div className='overflow-hidden rounded-lg border'>
+      <Table density='compact'>
         <TableHeader>
           <TableRow className='bg-muted/40'>
             <SortableTableHead

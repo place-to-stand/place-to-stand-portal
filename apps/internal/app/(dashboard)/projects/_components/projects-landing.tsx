@@ -23,7 +23,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@pts/ui/table'
 import { useToast } from '@/components/ui/use-toast'
 import { ProjectStatusCell } from '@/components/projects/project-status-cell'
 import type { ProjectStatusValue } from '@/lib/constants'

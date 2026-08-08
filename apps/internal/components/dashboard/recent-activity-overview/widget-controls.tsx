@@ -2,8 +2,8 @@
 
 import { RefreshCw } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
-import { TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@pts/ui/button'
+import { TabsList, TabsTrigger } from '@pts/ui/tabs'
 import { cn } from '@/lib/utils'
 
 import { TIMEFRAME_OPTIONS, type TimeframeOption } from './constants'

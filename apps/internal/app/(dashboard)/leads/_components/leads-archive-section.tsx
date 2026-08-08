@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation'
 import { RefreshCw, Trash2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
-import { Button } from '@/components/ui/button'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { Button } from '@pts/ui/button'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { FilterBar } from '@/components/table-toolbar/filter-bar'
 import { FilterSelect } from '@/components/table-toolbar/filter-select'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
@@ -17,7 +17,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@pts/ui/table'
 import { useToast } from '@/components/ui/use-toast'
 import { useListParams } from '@/hooks/use-list-params'
 import type { ArchivedLead } from '@/lib/data/leads'
@@ -201,7 +201,7 @@ export function LeadsArchiveSection({ leads }: LeadsArchiveSectionProps) {
         />
       </FilterBar>
       <div className='rounded-lg border'>
-        <Table>
+        <Table density='compact'>
           <TableHeader>
             <TableRow className='bg-muted/40'>
               <SortableTableHead

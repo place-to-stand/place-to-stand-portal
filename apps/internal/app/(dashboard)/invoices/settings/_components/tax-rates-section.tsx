@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Pencil, Plus } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -32,7 +32,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@pts/ui/table'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import type { TaxRateRow } from '@/lib/queries/tax-rates'
 import { US_STATES } from '@/lib/settings/clients/us-states'
@@ -207,9 +207,9 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
       </div>
 
       <div className='rounded-lg border'>
-        <Table>
+        <Table density='compact'>
           <TableHeader>
-            <TableRow>
+            <TableRow className='bg-muted/40'>
               <TableHead>State</TableHead>
               <TableHead>Rate (%)</TableHead>
               <TableHead>Label</TableHead>

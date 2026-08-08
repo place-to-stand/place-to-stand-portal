@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Pencil, Plus } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
@@ -26,7 +26,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@pts/ui/table'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import type { ProductCatalogItemRow } from '@/lib/queries/product-catalog'
 
@@ -295,9 +295,9 @@ export function ProductCatalogSection({
       </div>
 
       <div className='rounded-lg border'>
-        <Table>
+        <Table density='compact'>
           <TableHeader>
-            <TableRow>
+            <TableRow className='bg-muted/40'>
               <TableHead>Name</TableHead>
               <TableHead>Unit Price</TableHead>
               <TableHead>Unit Label</TableHead>

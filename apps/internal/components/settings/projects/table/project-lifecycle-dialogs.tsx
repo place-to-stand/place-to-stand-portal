@@ -1,4 +1,4 @@
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 
 import type { ProjectWithClient } from './types'
 

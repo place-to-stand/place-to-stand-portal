@@ -1,7 +1,7 @@
 'use client'
 
-import { TabsContent } from '@/components/ui/tabs'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { TabsContent } from '@pts/ui/tabs'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { ProjectsBoardEmpty } from '../projects-board-empty'
 import {
   NO_SELECTION_DESCRIPTION,

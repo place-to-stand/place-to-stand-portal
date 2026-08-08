@@ -10,11 +10,15 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@pts/ui/table'
 import { cn } from '@/lib/utils'
 import type { PartnerPayoutData } from '@/lib/data/reports/types'
 
-import { SectionShell, formatCurrency, tableClasses } from './section-shell'
+import { SectionShell, formatCurrency } from './section-shell'
+
+// Extra horizontal padding on the first/last cells so table content aligns
+// with the SectionShell card's px-5 gutter instead of butting the edge.
+const gutter = 'first:pl-5 last:pr-5'
 
 type PartnerPayoutsSectionProps = {
   data: PartnerPayoutData
@@ -54,18 +58,22 @@ export function PartnerPayoutsSection({ data }: PartnerPayoutsSectionProps) {
       totalLabel='to distribute'
     >
       {hasData ? (
-        <Table>
+        <Table density='compact'>
           <TableHeader>
-            <TableRow className={tableClasses.headRow}>
-              <TableHead className={tableClasses.head}>Payee</TableHead>
-              <TableHead className={tableClasses.headRight}>Payroll</TableHead>
-              <TableHead className={tableClasses.headRight}>
+            <TableRow className='bg-muted/40'>
+              <TableHead className={gutter}>Payee</TableHead>
+              <TableHead className={cn(gutter, 'text-right')}>
+                Payroll
+              </TableHead>
+              <TableHead className={cn(gutter, 'text-right')}>
                 Origination
               </TableHead>
               {hasCloserColumn ? (
-                <TableHead className={tableClasses.headRight}>Closer</TableHead>
+                <TableHead className={cn(gutter, 'text-right')}>
+                  Closer
+                </TableHead>
               ) : null}
-              <TableHead className={tableClasses.headRight}>Total</TableHead>
+              <TableHead className={cn(gutter, 'text-right')}>Total</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -76,8 +84,8 @@ export function PartnerPayoutsSection({ data }: PartnerPayoutsSectionProps) {
                   ? `/api/storage/user-avatar/${row.id}?v=${encodeURIComponent(row.avatarUpdatedAt)}`
                   : null
               return (
-                <TableRow key={row.key} className={tableClasses.row}>
-                  <TableCell className={cn(tableClasses.cell, 'font-medium')}>
+                <TableRow key={row.key}>
+                  <TableCell className={cn(gutter, 'font-medium')}>
                     <div className='flex items-center gap-3'>
                       {isInternal ? (
                         <Avatar className='h-9 w-9'>
@@ -106,20 +114,20 @@ export function PartnerPayoutsSection({ data }: PartnerPayoutsSectionProps) {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className={cn(tableClasses.cell, 'text-right')}>
+                  <TableCell className={cn(gutter, 'text-right')}>
                     <Amount value={row.payrollAmount} muted />
                   </TableCell>
-                  <TableCell className={cn(tableClasses.cell, 'text-right')}>
+                  <TableCell className={cn(gutter, 'text-right')}>
                     <Amount value={row.originationAmount} muted />
                   </TableCell>
                   {hasCloserColumn ? (
-                    <TableCell className={cn(tableClasses.cell, 'text-right')}>
+                    <TableCell className={cn(gutter, 'text-right')}>
                       <Amount value={row.closerAmount} muted />
                     </TableCell>
                   ) : null}
                   <TableCell
                     className={cn(
-                      tableClasses.cell,
+                      gutter,
                       'text-right text-base font-semibold tabular-nums'
                     )}
                   >
@@ -133,7 +141,7 @@ export function PartnerPayoutsSection({ data }: PartnerPayoutsSectionProps) {
             <TableRow className='border-t bg-transparent hover:bg-transparent'>
               <TableCell
                 className={cn(
-                  tableClasses.footerCell,
+                  gutter,
                   'text-muted-foreground text-[10px] font-semibold tracking-[0.14em] uppercase'
                 )}
               >
@@ -141,7 +149,7 @@ export function PartnerPayoutsSection({ data }: PartnerPayoutsSectionProps) {
               </TableCell>
               <TableCell
                 className={cn(
-                  tableClasses.footerCell,
+                  gutter,
                   'text-muted-foreground text-right text-xs tabular-nums'
                 )}
               >
@@ -151,7 +159,7 @@ export function PartnerPayoutsSection({ data }: PartnerPayoutsSectionProps) {
               </TableCell>
               <TableCell
                 className={cn(
-                  tableClasses.footerCell,
+                  gutter,
                   'text-muted-foreground text-right text-xs tabular-nums'
                 )}
               >
@@ -162,7 +170,7 @@ export function PartnerPayoutsSection({ data }: PartnerPayoutsSectionProps) {
               {hasCloserColumn ? (
                 <TableCell
                   className={cn(
-                    tableClasses.footerCell,
+                    gutter,
                     'text-muted-foreground text-right text-xs tabular-nums'
                   )}
                 >
@@ -171,7 +179,7 @@ export function PartnerPayoutsSection({ data }: PartnerPayoutsSectionProps) {
               ) : null}
               <TableCell
                 className={cn(
-                  tableClasses.footerCell,
+                  gutter,
                   'text-right text-base font-bold tabular-nums'
                 )}
               >

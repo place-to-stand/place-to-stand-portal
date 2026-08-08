@@ -7,8 +7,8 @@ import { Archive, Check, RefreshCw, Trash2 } from 'lucide-react'
 
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { Button } from '@pts/ui/button'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 import { Progress } from '@/components/ui/progress'
 import {
@@ -18,7 +18,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@pts/ui/table'
 import { useToast } from '@/components/ui/use-toast'
 import { useListParams } from '@/hooks/use-list-params'
 import { cn } from '@/lib/utils'
@@ -314,8 +314,8 @@ export function SubmissionsTable({
           </Button>
         </div>
       ) : null}
-      <div className='overflow-hidden rounded-xl border'>
-        <Table>
+      <div className='overflow-hidden rounded-lg border'>
+        <Table density='compact'>
           <TableHeader>
             <TableRow className='bg-muted/40'>
               <TableHead className='w-6'>

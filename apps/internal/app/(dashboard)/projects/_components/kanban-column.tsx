@@ -4,7 +4,7 @@ import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { BoardDropPlaceholder } from '@/components/board/drop-placeholder'
 import type { BoardColumnId } from '@/lib/projects/board/board-constants'
 import { cn } from '@/lib/utils'

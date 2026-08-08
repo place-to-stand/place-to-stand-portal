@@ -1,6 +1,6 @@
 'use client'
 
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 
 import {

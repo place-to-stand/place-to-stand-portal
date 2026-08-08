@@ -9,7 +9,7 @@ import {
   rectIntersection,
 } from '@dnd-kit/core'
 
-import { TabsContent } from '@/components/ui/tabs'
+import { TabsContent } from '@pts/ui/tabs'
 import { KanbanColumn } from '../kanban-column'
 import { ProjectsBoardEmpty } from '../projects-board-empty'
 import { TaskDragOverlay } from '../task-drag-overlay'
