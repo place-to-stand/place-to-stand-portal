@@ -1,5 +1,6 @@
 import {
   and,
+  asc,
   count,
   desc,
   eq,
@@ -12,6 +13,11 @@ import {
 
 import { db } from '@/lib/db'
 import { activityLogs, formSubmissions } from '@/lib/db/schema'
+import {
+  DEFAULT_SUBMISSIONS_SORT,
+  type SubmissionSortField,
+} from '@/lib/form-submissions/filters'
+import type { ParsedSort } from '@/lib/pagination/sort'
 import type { FormSubmission, NewFormSubmission } from '@pts/db/types'
 
 type FormSubmissionFilters = {
@@ -188,16 +194,30 @@ export async function upsertFormSubmission(row: NewFormSubmission) {
     })
 }
 
+// R5 (offset variant): each allowlisted sort field maps to its ORDER BY
+// column — offset pagination needs no cursor descriptors.
+const SORT_COLUMNS = {
+  received: formSubmissions.lastActivityAt,
+} as const satisfies Record<SubmissionSortField, unknown>
+
 export async function listFormSubmissions({
   offset,
   limit,
+  sort = DEFAULT_SUBMISSIONS_SORT,
   ...filters
-}: FormSubmissionFilters & { offset: number; limit: number }) {
+}: FormSubmissionFilters & {
+  offset: number
+  limit: number
+  sort?: ParsedSort<SubmissionSortField>
+}) {
+  const direction = sort.direction === 'asc' ? asc : desc
+
   return db
     .select()
     .from(formSubmissions)
     .where(buildFilters(filters))
-    .orderBy(desc(formSubmissions.lastActivityAt))
+    // Id tie-breaker keeps offset pages stable when timestamps collide.
+    .orderBy(direction(SORT_COLUMNS[sort.field]), direction(formSubmissions.id))
     .limit(limit)
     .offset(offset)
 }

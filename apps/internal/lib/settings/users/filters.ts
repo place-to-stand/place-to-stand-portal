@@ -1,5 +1,6 @@
 import { userRole } from '@/lib/db/schema'
 import type { UserRoleValue } from '@/lib/types'
+import { parseSortParam, type ParsedSort } from '@/lib/pagination/sort'
 
 export const USER_ROLE_VALUES = userRole.enumValues
 
@@ -35,6 +36,24 @@ export function isUserAccess(
   )
 }
 
+// PRD 004 §03: per-view sort allowlist (D6/R5). Each field here has a
+// matching descriptor (order expr + cursor encode/compare) in the query.
+export const USER_SORT_FIELDS = ['name', 'created'] as const
+export type UserSortField = (typeof USER_SORT_FIELDS)[number]
+
+export const DEFAULT_USERS_SORT = {
+  field: 'name',
+  direction: 'asc',
+} as const satisfies ParsedSort<UserSortField>
+
+export function isUserSortValue(value: string): boolean {
+  const [field, direction] = value.split(':')
+  return (
+    (USER_SORT_FIELDS as readonly string[]).includes(field) &&
+    (direction === 'asc' || direction === 'desc')
+  )
+}
+
 type RawSearchParams = Record<string, string | string[] | undefined>
 
 export type UsersSearchParams = {
@@ -43,6 +62,10 @@ export type UsersSearchParams = {
   limit: number | undefined
   role: UserRoleValue | undefined
   access: UserAccessFilter | undefined
+  search: string | undefined
+  sort: ParsedSort<UserSortField>
+  /** Raw validated `?sort=` value for the client controls (undefined = default). */
+  sortParam: string | undefined
 }
 
 function firstParam(value: string | string[] | undefined): string | undefined {
@@ -68,6 +91,9 @@ export function parseUsersSearchParams(params: RawSearchParams): UsersSearchPara
   const limitParam = Number.parseInt(firstParam(params.limit) ?? '', 10)
   const roleParam = firstParam(params.role)
   const accessParam = firstParam(params.access)
+  const searchParam = firstParam(params.q)?.trim()
+  const rawSort = firstParam(params.sort)
+  const sort = parseSortParam(rawSort, USER_SORT_FIELDS, DEFAULT_USERS_SORT)
 
   return {
     cursor,
@@ -75,5 +101,8 @@ export function parseUsersSearchParams(params: RawSearchParams): UsersSearchPara
     limit: Number.isFinite(limitParam) ? limitParam : undefined,
     role: isUserRole(roleParam) ? roleParam : undefined,
     access: isUserAccess(accessParam) ? accessParam : undefined,
+    search: searchParam || undefined,
+    sort,
+    sortParam: rawSort && isUserSortValue(rawSort) ? rawSort : undefined,
   }
 }

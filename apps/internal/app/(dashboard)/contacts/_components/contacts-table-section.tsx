@@ -13,6 +13,9 @@ import {
 
 import { Button } from '@/components/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
+import { useListParams } from '@/hooks/use-list-params'
+import { isContactSortValue } from '@/lib/settings/contacts/filters'
 import {
   Table,
   TableBody,
@@ -40,11 +43,14 @@ export type ContactsTableSectionProps = {
   pendingRestoreId: string | null
   pendingDestroyId: string | null
   emptyMessage: string
+  /** Route the sort/filter params live on (PRD 004 §03). */
+  basePath: string
 }
 
 export function ContactsTableSection({
   contacts,
   mode,
+  basePath,
   onEdit,
   onRequestDelete,
   onRestore,
@@ -57,12 +63,28 @@ export function ContactsTableSection({
   pendingDestroyId,
   emptyMessage,
 }: ContactsTableSectionProps) {
+  // Contacts tables paginate by offset — `page` is the pagination key
+  // cleared on sort changes (not cursor/dir).
+  const { update, getParam } = useListParams({
+    basePath,
+    resetKeys: ['page'],
+  })
+  const rawSort = getParam('sort')
+  const sort = rawSort && isContactSortValue(rawSort) ? rawSort : undefined
+
   return (
     <div className='overflow-hidden rounded-xl border'>
       <Table>
         <TableHeader>
           <TableRow className='bg-muted/40'>
-            <TableHead>Name</TableHead>
+            <SortableTableHead
+              field='name'
+              sort={sort}
+              defaultSort='name:asc'
+              onSortChange={next => update({ sort: next })}
+            >
+              Name
+            </SortableTableHead>
             <TableHead>Email</TableHead>
             <TableHead>Phone</TableHead>
             <TableHead>Linked Clients</TableHead>

@@ -3,11 +3,15 @@ import type { Metadata } from 'next'
 import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { requireUser } from '@/lib/auth/session'
-import { fetchClientsWithMetrics } from '@/lib/data/clients'
+import { fetchClientsWithMetrics, type ClientWithMetrics } from '@/lib/data/clients'
 import { listClientsForSettings } from '@/lib/queries/clients'
+import { parseClientsSearchParams } from '@/lib/settings/clients/filters'
+import type { ParsedSort } from '@/lib/pagination/sort'
+import type { ClientSortField } from '@/lib/settings/clients/filters'
 
 import { ClientsLanding } from './_components/clients-landing'
 import { ClientsAddButton } from './_components/clients-add-button'
+import { ClientsFilters } from './_components/clients-filters'
 import { CLIENTS_TABS } from './_lib/tabs'
 
 export const metadata: Metadata = {
@@ -18,57 +22,59 @@ type ClientsPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 }
 
+/**
+ * The landing table is unpaginated (fetchClientsWithMetrics), so sorting is
+ * a plain in-memory sort of the fetched array (PRD 004 §03 — no keyset
+ * cursor concerns on this view).
+ */
+function sortLandingClients(
+  clients: ClientWithMetrics[],
+  sort: ParsedSort<ClientSortField>
+): ClientWithMetrics[] {
+  const factor = sort.direction === 'asc' ? 1 : -1
+  return [...clients].sort((a, b) => {
+    if (sort.field === 'created') {
+      return a.createdAt.localeCompare(b.createdAt) * factor
+    }
+    return a.name.localeCompare(b.name) * factor
+  })
+}
+
 export default async function ClientsPage({ searchParams }: ClientsPageProps) {
   const user = await requireUser()
   const params = searchParams ? await searchParams : {}
-  const searchQuery =
-    typeof params.q === 'string'
-      ? params.q
-      : Array.isArray(params.q)
-        ? (params.q[0] ?? '')
-        : ''
-  const cursor =
-    typeof params.cursor === 'string'
-      ? params.cursor
-      : Array.isArray(params.cursor)
-        ? (params.cursor[0] ?? null)
-        : null
-  const directionParam =
-    typeof params.dir === 'string'
-      ? params.dir
-      : Array.isArray(params.dir)
-        ? (params.dir[0] ?? null)
-        : null
-  const direction =
-    directionParam === 'backward' ? 'backward' : ('forward' as const)
-  const limitParamRaw =
-    typeof params.limit === 'string'
-      ? params.limit
-      : Array.isArray(params.limit)
-        ? params.limit[0]
-        : undefined
-  const limitParam = Number.parseInt(limitParamRaw ?? '', 10)
+  const { cursor, direction, limit, search, sort } =
+    parseClientsSearchParams(params)
 
   const [clients, managementData] = await Promise.all([
-    fetchClientsWithMetrics(user),
+    fetchClientsWithMetrics(user, search),
     listClientsForSettings(user, {
       status: 'active',
-      search: searchQuery,
+      search,
       cursor,
       direction,
-      limit: Number.isFinite(limitParam) ? limitParam : undefined,
+      limit,
+      sort,
     }),
   ])
+
+  const sortedClients = sortLandingClients(clients, sort)
+
   return (
     <PageShell
       breadcrumbs={crumbsForNav('/clients')}
       tabs={CLIENTS_TABS}
       activeTab='clients'
-      count={{ label: 'clients', total: managementData.totalCount }}
+      count={{
+        label: 'clients',
+        total: managementData.unfilteredTotalCount,
+        filteredTotal: managementData.totalCount,
+      }}
       primaryAction={<ClientsAddButton />}
     >
-      <section className='bg-background rounded-xl border p-6 shadow-sm'>
-        <ClientsLanding clients={clients} />
+      <section className='bg-background space-y-4 rounded-xl border p-6 shadow-sm'>
+        <ClientsFilters basePath='/clients' search={search} />
+        <ClientsLanding clients={sortedClients} />
       </section>
     </PageShell>
   )

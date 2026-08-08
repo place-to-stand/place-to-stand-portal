@@ -19,6 +19,8 @@ type ClientsManagementTableProps = {
   clients: ClientsTableClient[]
   pageInfo: PageInfo
   mode: 'active' | 'archive'
+  /** Route the sort/filter params live on (PRD 004 §03). */
+  basePath: string
 }
 
 const EMPTY_MESSAGES = {
@@ -30,6 +32,7 @@ export function ClientsManagementTable({
   clients,
   pageInfo,
   mode,
+  basePath,
 }: ClientsManagementTableProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -57,7 +60,12 @@ export function ClientsManagementTable({
     handleConfirmDestroy,
   } = useClientsTableState()
 
-  const emptyMessage = EMPTY_MESSAGES[mode]
+  // Guard-validated active search (R4): an empty list under a live `?q=`
+  // shows the filtered message, not the tab's default empty state.
+  const hasActiveFilter = Boolean(searchParams.get('q')?.trim())
+  const emptyMessage = hasActiveFilter
+    ? 'No clients match the current filters.'
+    : EMPTY_MESSAGES[mode]
 
   const handlePaginate = (direction: 'forward' | 'backward') => {
     const cursor =
@@ -114,6 +122,7 @@ export function ClientsManagementTable({
       />
       <ClientsTableSection
         clients={clients}
+        basePath={basePath}
         mode={mode === 'archive' ? 'archive' : 'active'}
         onEdit={openEdit}
         onRequestDelete={handleRequestDelete}

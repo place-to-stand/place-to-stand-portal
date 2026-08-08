@@ -23,6 +23,7 @@ type UsersManagementTableProps = {
   assignments: UserAssignments
   pageInfo: PageInfo
   mode: 'active' | 'archive'
+  basePath: string
 }
 
 const EMPTY_MESSAGES = {
@@ -36,6 +37,7 @@ export function UsersManagementTable({
   assignments,
   pageInfo,
   mode,
+  basePath,
 }: UsersManagementTableProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -63,7 +65,8 @@ export function UsersManagementTable({
   // empty list would otherwise show the wrong message.
   const hasActiveFilter =
     isUserRole(searchParams.get('role') ?? undefined) ||
-    isUserAccess(searchParams.get('access') ?? undefined)
+    isUserAccess(searchParams.get('access') ?? undefined) ||
+    Boolean(searchParams.get('q')?.trim())
 
   const emptyMessage = hasActiveFilter
     ? 'No users match the current filters.'
@@ -115,6 +118,7 @@ export function UsersManagementTable({
         onConfirm={destroyDialog.onConfirm}
       />
       <UsersTableSection
+        basePath={basePath}
         rows={filteredRows}
         mode={mode}
         emptyMessage={emptyMessage}

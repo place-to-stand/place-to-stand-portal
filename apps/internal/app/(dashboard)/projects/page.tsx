@@ -2,7 +2,11 @@ import type { Metadata } from 'next'
 
 import type { ClientHoursData } from './_components/projects-landing'
 import { ProjectsLandingAdminSection } from './_components/projects-landing-admin-section'
-import { fetchProjectsWithRelations } from '@/lib/data/projects'
+import { parseProjectsLandingSearchParams } from './_lib/parse-projects-search-params'
+import {
+  fetchLandingProjectCounts,
+  fetchProjectsWithRelations,
+} from '@/lib/data/projects'
 import { fetchClientsWithMetrics } from '@/lib/data/clients'
 import { fetchAdminUsers } from '@/lib/data/users'
 import { requireUser } from '@/lib/auth/session'
@@ -18,16 +22,29 @@ export const metadata: Metadata = {
   title: 'Projects | Place to Stand Portal',
 }
 
-export default async function ProjectsPage() {
+type ProjectsPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>
+}
+
+export default async function ProjectsPage({
+  searchParams,
+}: ProjectsPageProps) {
   const user = await requireUser()
-  const [projects, clientsWithMetrics] = await Promise.all([
+  const params = searchParams ? await searchParams : {}
+  const { statuses, search, filtersActive } =
+    parseProjectsLandingSearchParams(params)
+
+  const [projects, unfilteredCounts, clientsWithMetrics] = await Promise.all([
     fetchProjectsWithRelations({
       forUserId: user.id,
+      statuses,
+      search: search ?? undefined,
     }),
+    fetchLandingProjectCounts(user.id),
     fetchClientsWithMetrics(user),
   ])
   const landingClients = buildLandingClients(projects)
-  const visibleProjectCount = countVisibleProjects(projects, user.id)
+  const filteredProjectCount = countVisibleProjects(projects, user.id)
   const clientHoursMap = buildClientHoursMap(clientsWithMetrics)
 
   const [managementResult, adminUsersResult]: [ProjectsSettingsResult, Awaited<ReturnType<typeof fetchAdminUsers>>] =
@@ -59,7 +76,12 @@ export default async function ProjectsPage() {
         clients={clientRows}
         adminUsers={adminUsers}
         currentUserId={user.id}
-        totalProjectCount={visibleProjectCount}
+        totalProjectCount={unfilteredCounts.total}
+        filteredProjectCount={filteredProjectCount}
+        statuses={statuses}
+        search={search ?? undefined}
+        filtersActive={filtersActive}
+        unfilteredCounts={unfilteredCounts}
         clientHoursMap={clientHoursMap}
       />
   )

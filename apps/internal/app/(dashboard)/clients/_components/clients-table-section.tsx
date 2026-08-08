@@ -5,6 +5,9 @@ import { Archive, Building2, Pencil, RefreshCw, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
+import { useListParams } from '@/hooks/use-list-params'
+import { isClientSortValue } from '@/lib/settings/clients/filters'
 import {
   Table,
   TableBody,
@@ -42,11 +45,14 @@ export type ClientsTableSectionProps = {
   pendingRestoreId: string | null
   pendingDestroyId: string | null
   emptyMessage: string
+  /** Route the sort/filter params live on (PRD 004 §03). */
+  basePath: string
 }
 
 export function ClientsTableSection({
   clients,
   mode,
+  basePath,
   onEdit,
   onRequestDelete,
   onRestore,
@@ -58,12 +64,26 @@ export function ClientsTableSection({
   pendingDestroyId,
   emptyMessage,
 }: ClientsTableSectionProps) {
+  const { update, getParam } = useListParams({
+    basePath,
+    resetKeys: ['cursor', 'dir'],
+  })
+  const rawSort = getParam('sort')
+  const sort = rawSort && isClientSortValue(rawSort) ? rawSort : undefined
+
   return (
     <div className='overflow-hidden rounded-xl border'>
       <Table>
         <TableHeader>
           <TableRow className='bg-muted/40'>
-            <TableHead>Name</TableHead>
+            <SortableTableHead
+              field='name'
+              sort={sort}
+              defaultSort='name:asc'
+              onSortChange={next => update({ sort: next })}
+            >
+              Name
+            </SortableTableHead>
             <TableHead>Billing type</TableHead>
             <TableHead>Active projects</TableHead>
             <TableHead>Status</TableHead>

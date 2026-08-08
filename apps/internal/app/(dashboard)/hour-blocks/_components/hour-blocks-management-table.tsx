@@ -24,6 +24,8 @@ type HourBlocksManagementTableProps = {
   totalPages: number
   pageSize: number
   mode: 'active' | 'archive'
+  /** Route the list params live on — '/hour-blocks' or '/hour-blocks/archive'. */
+  basePath: string
 }
 
 const EMPTY_MESSAGES = {
@@ -39,6 +41,7 @@ export function HourBlocksManagementTable({
   totalPages,
   pageSize,
   mode,
+  basePath,
 }: HourBlocksManagementTableProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -63,7 +66,11 @@ export function HourBlocksManagementTable({
     handleRequestDestroy,
   } = useHourBlocksTableState({ clients })
 
-  const emptyMessage = EMPTY_MESSAGES[mode]
+  const hasActiveFilter = Boolean(searchParams.get('q')?.trim())
+
+  const emptyMessage = hasActiveFilter
+    ? 'No hour blocks match the current search.'
+    : EMPTY_MESSAGES[mode]
 
   const handlePageChange = useCallback(
     (page: number) => {
@@ -110,6 +117,7 @@ export function HourBlocksManagementTable({
         pendingRestoreId={pendingRestoreId}
         pendingDestroyId={pendingDestroyId}
         emptyMessage={emptyMessage}
+        basePath={basePath}
       />
       <PaginationControls
         mode='paged'

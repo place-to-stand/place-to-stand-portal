@@ -21,6 +21,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
+import { useListParams } from '@/hooks/use-list-params'
+import { isInvoiceSortValue } from '@/lib/invoices/filters'
 import {
   Table,
   TableBody,
@@ -49,6 +52,8 @@ export type InvoicesTableSectionProps = {
   onSendInvoice: (invoiceId: string) => void
   onRefresh: () => void
   emptyMessage: string
+  /** Route the sort/filter params live on (PRD 004 §03). */
+  basePath: string
 }
 
 const NON_EDITABLE_STATUSES = new Set(['PAID', 'VOID'])
@@ -282,17 +287,39 @@ export function InvoicesTableSection({
   onSendInvoice,
   onRefresh,
   emptyMessage,
+  basePath,
 }: InvoicesTableSectionProps) {
+  const { update, getParam } = useListParams({
+    basePath,
+    resetKeys: ['page'],
+  })
+  const rawSort = getParam('sort')
+  const sort = rawSort && isInvoiceSortValue(rawSort) ? rawSort : undefined
+
   return (
     <div className='overflow-hidden rounded-xl border'>
       <Table>
         <TableHeader>
           <TableRow className='bg-muted/40'>
-            <TableHead>Invoice #</TableHead>
+            <SortableTableHead
+              field='number'
+              sort={sort}
+              defaultSort='created:desc'
+              onSortChange={next => update({ sort: next })}
+            >
+              Invoice #
+            </SortableTableHead>
             <TableHead>Client</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Total</TableHead>
-            <TableHead>Issued</TableHead>
+            <SortableTableHead
+              field='created'
+              sort={sort}
+              defaultSort='created:desc'
+              onSortChange={next => update({ sort: next })}
+            >
+              Issued
+            </SortableTableHead>
             <TableHead>Share Link</TableHead>
             <TableHead className='w-28 text-right'>Actions</TableHead>
           </TableRow>

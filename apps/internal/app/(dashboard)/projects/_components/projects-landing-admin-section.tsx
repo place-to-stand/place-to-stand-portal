@@ -17,8 +17,11 @@ import type { ProjectWithRelations } from '@/lib/types'
 import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 
+import type { ProjectStatusValue } from '@/lib/constants'
+
 import { ProjectsLanding } from './projects-landing'
-import type { ClientHoursData } from './projects-landing'
+import type { ClientHoursData, LandingUnfilteredCounts } from './projects-landing'
+import { ProjectsLandingFilters } from './projects-landing-filters'
 import { PROJECTS_TABS } from '../_lib/tabs'
 
 export type ProjectsLandingAdminSectionProps = {
@@ -27,7 +30,14 @@ export type ProjectsLandingAdminSectionProps = {
   clients: ClientRow[]
   adminUsers: AdminUserForOwner[]
   currentUserId: string
+  /** Unfiltered visible-project total (pre status/search filter). */
   totalProjectCount: number
+  /** Visible-project total after the active status/search filter. */
+  filteredProjectCount: number
+  statuses: ProjectStatusValue[]
+  search?: string
+  filtersActive: boolean
+  unfilteredCounts: LandingUnfilteredCounts
   clientHoursMap?: Record<string, ClientHoursData>
 }
 
@@ -38,6 +48,11 @@ export function ProjectsLandingAdminSection({
   adminUsers,
   currentUserId,
   totalProjectCount,
+  filteredProjectCount,
+  statuses,
+  search,
+  filtersActive,
+  unfilteredCounts,
   clientHoursMap = {},
 }: ProjectsLandingAdminSectionProps) {
   const router = useRouter()
@@ -65,7 +80,17 @@ export function ProjectsLandingAdminSection({
       breadcrumbs={crumbsForNav('/projects')}
       tabs={PROJECTS_TABS}
       activeTab='projects'
-      count={{ label: 'projects', total: totalProjectCount }}
+      count={
+        // R2/03.E5: the implicit default status view must not read as
+        // filtered — show a plain visible-count until a filter is active.
+        filtersActive
+          ? {
+              label: 'projects',
+              total: totalProjectCount,
+              filteredTotal: filteredProjectCount,
+            }
+          : { label: 'projects', total: filteredProjectCount }
+      }
       primaryAction={
         <DisabledFieldTooltip
           disabled={createDisabled}
@@ -84,14 +109,19 @@ export function ProjectsLandingAdminSection({
         </DisabledFieldTooltip>
       }
     >
-      <section className='bg-background rounded-xl border p-6 shadow-sm'>
-        <ProjectsLanding
-          projects={projects}
-          clients={landingClients}
-          currentUserId={currentUserId}
-          clientHoursMap={clientHoursMap}
-        />
-      </section>
+      <div className='space-y-4'>
+        <ProjectsLandingFilters statuses={statuses} search={search} />
+        <section className='bg-background rounded-xl border p-6 shadow-sm'>
+          <ProjectsLanding
+            projects={projects}
+            clients={landingClients}
+            currentUserId={currentUserId}
+            clientHoursMap={clientHoursMap}
+            unfilteredCounts={unfilteredCounts}
+            filtersActive={filtersActive}
+          />
+        </section>
+      </div>
       <ProjectSheet
         open={sheetOpen}
         onOpenChange={handleSheetOpenChange}

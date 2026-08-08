@@ -7,6 +7,7 @@ import {
   isFormSubmissionKind,
   isFormSubmissionStatus,
 } from '@/lib/form-submissions/constants'
+import { parseSubmissionsSort } from '@/lib/form-submissions/filters'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 
 import { SubmissionsFilters } from './_components/submissions-filters'
@@ -46,6 +47,7 @@ export default async function SubmissionsPage({
   const kind = isFormSubmissionKind(kindParam) ? kindParam : undefined
   const status = isFormSubmissionStatus(statusParam) ? statusParam : undefined
   const unacknowledgedOnly = firstParam(params.unacknowledged) === '1'
+  const sort = parseSubmissionsSort(firstParam(params.sort))
 
   // Share links: ?submission=<id> opens the detail sheet directly (redirects
   // to the archive tab when the row is archived).
@@ -55,23 +57,26 @@ export default async function SubmissionsPage({
     'active'
   )
 
-  const { items, totalCount, totalPages } = await fetchFormSubmissions(
-    currentUser,
-    {
+  const { items, totalCount, unfilteredTotalCount, totalPages } =
+    await fetchFormSubmissions(currentUser, {
       page: currentPage,
       pageSize: PAGE_SIZE,
       kind,
       status,
       unacknowledgedOnly,
-    }
-  )
+      sort,
+    })
 
   return (
     <PageShell
       breadcrumbs={crumbsForNav('/submissions')}
       tabs={SUBMISSIONS_TABS}
       activeTab='submissions'
-      count={{ label: 'submissions', total: totalCount }}
+      count={{
+        label: 'submissions',
+        total: unfilteredTotalCount,
+        filteredTotal: totalCount,
+      }}
     >
       <section className='bg-background rounded-xl border p-6 shadow-sm space-y-4'>
         <SubmissionsFilters

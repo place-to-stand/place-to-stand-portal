@@ -13,6 +13,7 @@ import type {
   ProductCatalogItemRow,
 } from '@/lib/invoices/invoice-form'
 import type { TaxRateData } from '@/lib/invoices/use-invoice-sheet-state'
+import { isInvoiceStatus } from '@/lib/invoices/filters'
 import {
   archiveInvoice,
   restoreInvoice,
@@ -34,6 +35,8 @@ type InvoicesManagementTableProps = {
   totalPages: number
   pageSize: number
   mode: 'active' | 'archive'
+  /** Route the list params live on — '/invoices' or '/invoices/archive'. */
+  basePath: string
 }
 
 const EMPTY_MESSAGES = {
@@ -55,6 +58,7 @@ export function InvoicesManagementTable({
   totalPages,
   pageSize,
   mode,
+  basePath,
 }: InvoicesManagementTableProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -90,7 +94,15 @@ export function InvoicesManagementTable({
     [clients]
   )
 
-  const emptyMessage = EMPTY_MESSAGES[mode]
+  // Run raw params through the type guard (R4): an invalid ?status= is
+  // ignored by the server, so it must not count as an active filter.
+  const hasActiveFilter =
+    isInvoiceStatus(searchParams.get('status') ?? undefined) ||
+    Boolean(searchParams.get('q')?.trim())
+
+  const emptyMessage = hasActiveFilter
+    ? 'No invoices match the current filters.'
+    : EMPTY_MESSAGES[mode]
 
   // Resolve the freshest copy of the selected invoice when server data
   // refreshes (e.g. after send/unsend/void actions that call
@@ -368,6 +380,7 @@ export function InvoicesManagementTable({
         pendingRestoreId={pendingRestoreId}
         pendingDestroyId={pendingDestroyId}
         emptyMessage={emptyMessage}
+        basePath={basePath}
       />
       <PaginationControls
         mode='paged'

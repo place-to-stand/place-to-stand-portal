@@ -25,10 +25,10 @@ export default async function UsersPage({
 }: UsersPageProps) {
   const currentUser = await requireRole('ADMIN')
   const params = searchParams ? await searchParams : {}
-  const { cursor, direction, limit, role, access } =
+  const { cursor, direction, limit, role, access, search, sort } =
     parseUsersSearchParams(params)
 
-  const { items, assignments, totalCount, pageInfo } =
+  const { items, assignments, totalCount, unfilteredTotalCount, pageInfo } =
     await listUsersForSettings(currentUser, {
       status: 'active',
       cursor,
@@ -36,6 +36,8 @@ export default async function UsersPage({
       limit,
       role,
       access,
+      search,
+      sort,
     })
 
   const users: DbUser[] = items.map(user => ({
@@ -55,7 +57,7 @@ export default async function UsersPage({
       breadcrumbs={crumbsForNav('/settings/users')}
       tabs={USERS_TABS}
       activeTab='users'
-      count={{ label: 'users', total: totalCount }}
+      count={{ label: 'users', total: unfilteredTotalCount, filteredTotal: totalCount }}
       primaryAction={
         <UsersAddButton
           currentUserId={currentUser.id}
@@ -68,6 +70,7 @@ export default async function UsersPage({
           basePath='/settings/users'
           role={role}
           access={access}
+          search={search}
           showAccessFilter
         />
         <UsersManagementTable
@@ -76,6 +79,7 @@ export default async function UsersPage({
           assignments={assignments}
           pageInfo={pageInfo}
           mode='active'
+          basePath='/settings/users'
         />
       </section>
     </PageShell>

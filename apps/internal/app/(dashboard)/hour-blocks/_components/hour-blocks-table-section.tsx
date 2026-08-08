@@ -1,9 +1,14 @@
+'use client'
+
 import { format } from 'date-fns'
 import Link from 'next/link'
 import { Archive, Building2, Pencil, RefreshCw, Trash2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
+import { useListParams } from '@/hooks/use-list-params'
+import { isHourBlockSortValue } from '@/lib/settings/hour-blocks/filters'
 import {
   Table,
   TableBody,
@@ -29,6 +34,8 @@ export type HourBlocksTableSectionProps = {
   onRestore: (block: HourBlockWithClient) => void
   onRequestDestroy: (block: HourBlockWithClient) => void
   emptyMessage: string
+  /** Route the sort/filter params live on (PRD 004 §03). */
+  basePath: string
 }
 
 const toHours = (value: number) => `${value.toLocaleString()}h`
@@ -55,7 +62,15 @@ export function HourBlocksTableSection({
   onRestore,
   onRequestDestroy,
   emptyMessage,
+  basePath,
 }: HourBlocksTableSectionProps) {
+  const { update, getParam } = useListParams({
+    basePath,
+    resetKeys: ['page'],
+  })
+  const rawSort = getParam('sort')
+  const sort = rawSort && isHourBlockSortValue(rawSort) ? rawSort : undefined
+
   return (
     <div className='overflow-hidden rounded-xl border'>
       <Table>
@@ -64,7 +79,14 @@ export function HourBlocksTableSection({
             <TableHead>Client</TableHead>
             <TableHead>Invoice #</TableHead>
             <TableHead>Hours purchased</TableHead>
-            <TableHead>Created on</TableHead>
+            <SortableTableHead
+              field='created'
+              sort={sort}
+              defaultSort='created:desc'
+              onSortChange={next => update({ sort: next })}
+            >
+              Created on
+            </SortableTableHead>
             <TableHead className='w-32 text-right'>Actions</TableHead>
           </TableRow>
         </TableHeader>

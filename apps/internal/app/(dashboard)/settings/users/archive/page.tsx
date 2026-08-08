@@ -25,15 +25,18 @@ export default async function UsersArchivePage({
 }: UsersArchivePageProps) {
   const currentUser = await requireRole('ADMIN')
   const params = searchParams ? await searchParams : {}
-  const { cursor, direction, limit, role } = parseUsersSearchParams(params)
+  const { cursor, direction, limit, role, search, sort } =
+    parseUsersSearchParams(params)
 
-  const { items, assignments, totalCount, pageInfo } =
+  const { items, assignments, totalCount, unfilteredTotalCount, pageInfo } =
     await listUsersForSettings(currentUser, {
       status: 'archived',
       cursor,
       direction,
       limit,
       role,
+      search,
+      sort,
     })
 
   const users: DbUser[] = items.map(user => ({
@@ -53,7 +56,7 @@ export default async function UsersArchivePage({
       breadcrumbs={[...crumbsForNav('/settings/users'), { label: 'Archive' }]}
       tabs={USERS_TABS}
       activeTab='archive'
-      count={{ label: 'archived', total: totalCount }}
+      count={{ label: 'archived', total: unfilteredTotalCount, filteredTotal: totalCount }}
       primaryAction={
         <UsersAddButton
           currentUserId={currentUser.id}
@@ -65,6 +68,7 @@ export default async function UsersArchivePage({
         <UsersFilters
           basePath='/settings/users/archive'
           role={role}
+          search={search}
           showAccessFilter={false}
         />
         <UsersManagementTable
@@ -73,6 +77,7 @@ export default async function UsersArchivePage({
           assignments={assignments}
           pageInfo={pageInfo}
           mode='archive'
+          basePath='/settings/users/archive'
         />
       </section>
     </PageShell>

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
 import { Archive, Check, RefreshCw, Trash2 } from 'lucide-react'
 
+import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -19,14 +20,18 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useToast } from '@/components/ui/use-toast'
+import { useListParams } from '@/hooks/use-list-params'
 import { cn } from '@/lib/utils'
 import {
   FORM_SUBMISSION_KIND_LABELS,
   FORM_SUBMISSION_KIND_TOKENS,
   FORM_SUBMISSION_STATUS_LABELS,
   FORM_SUBMISSION_STATUS_TOKENS,
+  isFormSubmissionKind,
+  isFormSubmissionStatus,
   isUnacknowledgedSubmission,
 } from '@/lib/form-submissions/constants'
+import { isSubmissionSortValue } from '@/lib/form-submissions/filters'
 import type { FormSubmissionRecord } from '@/lib/form-submissions/types'
 import {
   acknowledgeSubmission,
@@ -114,6 +119,28 @@ export function SubmissionsTable({
 
   // The archive tab shows when each row was archived; active mode doesn't.
   const columnCount = mode === 'archive' ? 10 : 9
+
+  // Sort changes route through useListParams so they reset offset paging
+  // (PRD 004 §03); row-selection and page pushes keep the local helper.
+  const { update: updateListParams, getParam } = useListParams({
+    basePath,
+    resetKeys: ['page'],
+  })
+  const rawSort = getParam('sort')
+  const sort = rawSort && isSubmissionSortValue(rawSort) ? rawSort : undefined
+
+  // Run raw params through the type guards (R4): ?kind=bogus is ignored by
+  // the server, so it must not count as an active filter — an unfiltered
+  // empty list would otherwise show the wrong message. The unacknowledged
+  // quick filter only exists on the active tab.
+  const hasActiveFilter =
+    isFormSubmissionKind(searchParams.get('kind') ?? undefined) ||
+    isFormSubmissionStatus(searchParams.get('status') ?? undefined) ||
+    (mode === 'active' && searchParams.get('unacknowledged') === '1')
+
+  const emptyMessage = hasActiveFilter
+    ? 'No submissions match the current filters.'
+    : EMPTY_STATE_COPY[mode]
 
   const updateParams = useCallback(
     (
@@ -294,7 +321,14 @@ export function SubmissionsTable({
               <TableHead className='w-6'>
                 <span className='sr-only'>Unacknowledged</span>
               </TableHead>
-              <TableHead>Received</TableHead>
+              <SortableTableHead
+                field='received'
+                sort={sort}
+                defaultSort='received:desc'
+                onSortChange={next => updateListParams({ sort: next })}
+              >
+                Received
+              </SortableTableHead>
               <TableHead>Form</TableHead>
               <TableHead>Contact</TableHead>
               <TableHead>Company</TableHead>
@@ -312,7 +346,7 @@ export function SubmissionsTable({
                   colSpan={columnCount}
                   className='text-muted-foreground py-10 text-center text-sm'
                 >
-                  {EMPTY_STATE_COPY[mode]}
+                  {emptyMessage}
                 </TableCell>
               </TableRow>
             ) : (

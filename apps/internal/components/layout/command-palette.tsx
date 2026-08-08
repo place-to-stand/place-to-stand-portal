@@ -11,7 +11,7 @@ import {
 } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
-import { Building2, FolderKanban } from 'lucide-react'
+import { Building2, Contact, FolderKanban } from 'lucide-react'
 
 import {
   CommandDialog,
@@ -139,6 +139,7 @@ function CommandPalette() {
 
   const clients = recordSearchEnabled ? (records?.clients ?? []) : []
   const projects = recordSearchEnabled ? (records?.projects ?? []) : []
+  const contactResults = recordSearchEnabled ? (records?.contacts ?? []) : []
 
   return (
     <CommandDialog
@@ -212,6 +213,27 @@ function CommandPalette() {
                     </span>
                   ) : null}
                   {project.name}
+                </span>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        ) : null}
+        {contactResults.length > 0 ? (
+          <CommandGroup heading='Contacts'>
+            {contactResults.map(contact => (
+              <CommandItem
+                key={contact.id}
+                value={`contact-${contact.id}`}
+                onSelect={() =>
+                  // Contacts have no detail route — land on the contacts list
+                  // pre-filtered to the record.
+                  navigate(`/contacts?q=${encodeURIComponent(contact.name)}`)
+                }
+              >
+                <Contact className='size-4' />
+                <span>
+                  {contact.name}{' '}
+                  <span className='text-muted-foreground'>{contact.email}</span>
                 </span>
               </CommandItem>
             ))}

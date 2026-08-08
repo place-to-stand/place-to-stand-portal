@@ -4,8 +4,10 @@ import { PageShell } from '@/components/layout/page-shell'
 import { requireRole } from '@/lib/auth/session'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { listInvoices } from '@/lib/queries/invoices'
+import { parseInvoicesSearchParams } from '@/lib/invoices/filters'
 
 import { InvoicesAddButton } from '../_components/invoices-add-button'
+import { InvoicesFilters } from '../_components/invoices-filters'
 import { InvoicesManagementTable } from '../_components/invoices-management-table'
 import { INVOICES_TABS } from '../_lib/tabs'
 
@@ -25,21 +27,25 @@ export default async function InvoicesArchivePage({
   const currentUser = await requireRole('ADMIN')
   const params = searchParams ? await searchParams : {}
 
-  const pageParam =
-    typeof params.page === 'string'
-      ? params.page
-      : Array.isArray(params.page)
-        ? params.page[0] ?? '1'
-        : '1'
-  const currentPage = Math.max(1, Number.parseInt(pageParam, 10) || 1)
+  const { page: currentPage, status, search, sort } =
+    parseInvoicesSearchParams(params)
   const offset = (currentPage - 1) * PAGE_SIZE
 
-  const { items, clients, productCatalog, taxRates, totalCount } =
-    await listInvoices(currentUser, {
-      status: 'archived',
-      offset,
-      limit: PAGE_SIZE,
-    })
+  const {
+    items,
+    clients,
+    productCatalog,
+    taxRates,
+    totalCount,
+    unfilteredTotalCount,
+  } = await listInvoices(currentUser, {
+    status: 'archived',
+    offset,
+    limit: PAGE_SIZE,
+    invoiceStatus: status,
+    search,
+    sort,
+  })
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
 
@@ -48,7 +54,11 @@ export default async function InvoicesArchivePage({
       breadcrumbs={[...crumbsForNav('/invoices'), { label: 'Archive' }]}
       tabs={INVOICES_TABS}
       activeTab='archive'
-      count={{ label: 'archived', total: totalCount }}
+      count={{
+        label: 'archived',
+        total: unfilteredTotalCount,
+        filteredTotal: totalCount,
+      }}
       primaryAction={
         <InvoicesAddButton
           clients={clients}
@@ -57,7 +67,12 @@ export default async function InvoicesArchivePage({
         />
       }
     >
-      <section className='bg-background rounded-xl border p-6 shadow-sm'>
+      <section className='bg-background space-y-4 rounded-xl border p-6 shadow-sm'>
+        <InvoicesFilters
+          basePath='/invoices/archive'
+          status={status}
+          search={search}
+        />
         <InvoicesManagementTable
           invoices={items}
           clients={clients}
@@ -68,6 +83,7 @@ export default async function InvoicesArchivePage({
           totalPages={totalPages}
           pageSize={PAGE_SIZE}
           mode='archive'
+          basePath='/invoices/archive'
         />
       </section>
     </PageShell>

@@ -5,7 +5,7 @@ import { and, asc, eq, isNull, ne, or, sql, type SQL } from 'drizzle-orm'
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, projects } from '@/lib/db/schema'
+import { clients, contacts, projects } from '@/lib/db/schema'
 import { createSearchPattern } from '@/lib/pagination/cursor'
 
 const RESULT_LIMIT = 8
@@ -26,9 +26,16 @@ export type PaletteProjectResult = {
   clientLabel: string | null
 }
 
+export type PaletteContactResult = {
+  id: string
+  name: string
+  email: string
+}
+
 export type PaletteSearchResult = {
   clients: PaletteClientResult[]
   projects: PaletteProjectResult[]
+  contacts: PaletteContactResult[]
 }
 
 /**
@@ -67,7 +74,17 @@ export async function searchCommandPalette(
     )
   )
 
-  const [clientRows, projectRows] = await Promise.all([
+  // Contacts (03 extension): same per-entity predicate the contacts list
+  // uses — name/email, no additional visibility rules (admin-only surface).
+  const contactCondition = and(
+    isNull(contacts.deletedAt),
+    or(
+      sql`${contacts.name} ILIKE ${pattern}`,
+      sql`${contacts.email} ILIKE ${pattern}`
+    )
+  )
+
+  const [clientRows, projectRows, contactRows] = await Promise.all([
     db
       .select({ id: clients.id, name: clients.name, slug: clients.slug })
       .from(clients)
@@ -87,6 +104,12 @@ export async function searchCommandPalette(
       .leftJoin(clients, eq(projects.clientId, clients.id))
       .where(projectCondition)
       .orderBy(asc(clients.name), asc(projects.name))
+      .limit(RESULT_LIMIT),
+    db
+      .select({ id: contacts.id, name: contacts.name, email: contacts.email })
+      .from(contacts)
+      .where(contactCondition)
+      .orderBy(asc(contacts.name))
       .limit(RESULT_LIMIT),
   ])
 
@@ -118,5 +141,6 @@ export async function searchCommandPalette(
   return {
     clients: clientRows,
     projects: projectResults,
+    contacts: contactRows,
   }
 }
