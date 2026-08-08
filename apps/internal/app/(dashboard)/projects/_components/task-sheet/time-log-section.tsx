@@ -33,7 +33,13 @@ export function TimeLogSection({
   const logTimeDisabled = Boolean(logTimeDisabledReason)
 
   return (
-    <section className='space-y-3 px-6' aria-label='Time logged on this task'>
+    // pb-4 mirrors the form's internal bottom padding above this section, so
+    // the visual gap below matches the one above (the flex gap alone reads
+    // 16px tighter).
+    <section
+      className='space-y-3 px-6 pb-4'
+      aria-label='Time logged on this task'
+    >
       <div className='flex items-center justify-between gap-3'>
         <div className='flex items-center gap-2'>
           <Clock className='text-muted-foreground h-4 w-4' />

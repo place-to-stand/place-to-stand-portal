@@ -1,6 +1,13 @@
 'use client'
 
-import { useCallback, useMemo, useRef, useState, type DragEvent } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type DragEvent,
+} from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 
 import { ClipboardList, HelpCircle, X } from 'lucide-react'
@@ -37,6 +44,13 @@ import { TaskCommentsPanel } from './_components/task-sheet/task-comments-panel'
 import { TaskActivityPanel } from './_components/task-sheet/task-activity-panel'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { BoardColumnId } from '@/lib/projects/board/board-constants'
+
+// Survives page remounts (module scope): navigating to a task URL changes a
+// dynamic route param, which remounts the whole page — including this sheet.
+// When the outgoing page had the sheet open (the create→edit transition, or
+// switching tasks with the sheet up), the incoming instance skips its mount
+// animation so the swap doesn't read as the sheet closing and reopening.
+let sheetOpenBeforePageSwap = false
 
 type TaskSheetProps = {
   open: boolean
@@ -107,6 +121,22 @@ export function TaskSheet(props: TaskSheetProps) {
   })
 
   const [isDragActive, setIsDragActive] = useState(false)
+  // Frozen at mount: skip the slide-in only when this instance mounts
+  // already-open right after a page swap that also had the sheet open.
+  const [skipMountAnimation] = useState(
+    () => props.open && sheetOpenBeforePageSwap
+  )
+
+  useEffect(() => {
+    sheetOpenBeforePageSwap = props.open
+    return () => {
+      // Reset after unmount so an unrelated later mount (e.g. the lead task
+      // overlay) doesn't inherit a stale "was open" flag. A page-swap
+      // replacement reads the flag during render, before this cleanup runs.
+      sheetOpenBeforePageSwap = false
+    }
+  }, [props.open])
+
   // Planning panel is collapsed by default; user expands it on demand.
   const [isPlanningOpen, setIsPlanningOpen] = useState(false)
   const dragCounterRef = useRef(0)
@@ -311,6 +341,7 @@ export function TaskSheet(props: TaskSheetProps) {
       <Sheet open={props.open} onOpenChange={handleSheetOpenChange}>
         <SheetContent
           hideCloseButton
+          skipMountAnimation={skipMountAnimation}
           className={cn(
             'flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-[676px]',
             // Widen to fit the 560px planning panel when it is expanded.
