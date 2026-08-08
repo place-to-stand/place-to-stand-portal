@@ -407,6 +407,13 @@
       "when": 1786127108661,
       "tag": "0057_monthly_close_snapshots",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1786166051076,
+      "tag": "0058_remove_sow_tables",
+      "breakpoints": true
     }
   ]
 }

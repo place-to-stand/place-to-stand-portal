@@ -97,6 +97,36 @@ export default async function MyTasksViewRoute({
     project => !project.deleted_at
   )
 
+  // Resolve the URL's active task by id. The assigned set only contains
+  // projects with tasks assigned to the selected assignee, so a task created
+  // outside it (or a deep link) must have its project merged in — otherwise
+  // the sheet silently renders create mode and a second save duplicates.
+  // Invalid or unresolvable ids are treated as no active task; the raw
+  // segment is UUID-validated so it never reaches a Postgres UUID comparison.
+  let resolvedActiveTaskId: string | null = null
+
+  if (activeTaskId && UUID_PATTERN.test(activeTaskId)) {
+    const isInAssignedSet = relevantProjects.some(project =>
+      project.tasks.some(task => task.id === activeTaskId)
+    )
+
+    if (isInAssignedSet) {
+      resolvedActiveTaskId = activeTaskId
+    } else {
+      const holdingProject = accessibleProjects.find(project =>
+        project.tasks.some(task => task.id === activeTaskId)
+      )
+
+      if (holdingProject) {
+        if (!includedProjectIds.has(holdingProject.id)) {
+          includedProjectIds.add(holdingProject.id)
+          relevantProjects.push(holdingProject)
+        }
+        resolvedActiveTaskId = activeTaskId
+      }
+    }
+  }
+
   return (
     <MyTasksPage
       user={user}
@@ -104,12 +134,15 @@ export default async function MyTasksViewRoute({
       projects={relevantProjects}
       projectSelectionProjects={selectionProjects}
       initialEntries={initialEntries}
-      activeTaskId={activeTaskId}
+      activeTaskId={resolvedActiveTaskId}
       view={viewParam}
       selectedAssigneeId={selectedAssigneeId}
     />
   )
 }
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 function isMyTasksView(value: string): value is MyTasksView {
   return value === 'board' || value === 'calendar'

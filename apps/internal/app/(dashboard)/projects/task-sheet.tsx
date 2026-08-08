@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useMemo, useRef, useState, type DragEvent } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 
 import { ClipboardList, HelpCircle, X } from 'lucide-react'
 
@@ -22,7 +23,12 @@ import type {
   TaskWithRelations,
 } from '@/lib/types'
 import { useTaskSheetState } from '@/lib/projects/task-sheet/use-task-sheet-state'
+import { buildProjectTimeLogDialogParams } from '@/lib/projects/time-log/dialog-params'
+import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 
+import { ProjectTimeLogDialog } from './_components/project-time-log/project-time-log-dialog'
+import { TimeLogSection } from './_components/task-sheet/time-log-section'
+import { TASK_TIME_LOGS_KEY } from './_components/task-sheet/use-task-time-logs'
 import { TaskSheetForm } from './_components/task-sheet/task-sheet-form'
 import { TaskSheetFormFooter } from './_components/task-sheet/form/task-sheet-form-footer'
 import { TaskSheetHeader } from './_components/task-sheet/task-sheet-header'
@@ -46,6 +52,8 @@ type TaskSheetProps = {
   defaultProjectId: string | null
   defaultAssigneeId: string | null
   defaultLeadId?: string | null
+  closeOnSave?: boolean
+  onTaskCreated?: (taskId: string, projectId: string) => void
 }
 
 export function TaskSheet(props: TaskSheetProps) {
@@ -94,6 +102,8 @@ export function TaskSheet(props: TaskSheetProps) {
     defaultAssigneeId: props.defaultAssigneeId,
     defaultLeadId: props.defaultLeadId ?? null,
     currentUserId: props.currentUserId,
+    closeOnSave: props.closeOnSave,
+    onTaskCreated: props.onTaskCreated,
   })
 
   const [isDragActive, setIsDragActive] = useState(false)
@@ -225,6 +235,63 @@ export function TaskSheet(props: TaskSheetProps) {
     return props.projects.find(project => project.id === props.task?.project_id)
   }, [props.projects, props.task])
 
+  // ---- Time section + time-log dialog (edit mode only) ----
+  const queryClient = useQueryClient()
+  const [isTimeLogDialogOpen, setIsTimeLogDialogOpen] = useState(false)
+  const [timeLogDialogMode, setTimeLogDialogMode] = useState<'create' | 'edit'>(
+    'create'
+  )
+  const [editingTimeLogEntry, setEditingTimeLogEntry] =
+    useState<TimeLogEntry | null>(null)
+
+  const taskId = props.task?.id ?? null
+
+  const initialLinkedTaskIds = useMemo(
+    () => (taskId ? [taskId] : []),
+    [taskId]
+  )
+
+  const handleLogTime = useCallback(() => {
+    setTimeLogDialogMode('create')
+    setEditingTimeLogEntry(null)
+    setIsTimeLogDialogOpen(true)
+  }, [])
+
+  const handleEditTimeLogEntry = useCallback((entry: TimeLogEntry) => {
+    setTimeLogDialogMode('edit')
+    setEditingTimeLogEntry(entry)
+    setIsTimeLogDialogOpen(true)
+  }, [])
+
+  const handleTimeLogDialogOpenChange = useCallback((open: boolean) => {
+    setIsTimeLogDialogOpen(open)
+    if (!open) {
+      setTimeLogDialogMode('create')
+      setEditingTimeLogEntry(null)
+    }
+  }, [])
+
+  const handleTimeLogMutationSuccess = useCallback(() => {
+    if (taskId) {
+      queryClient.invalidateQueries({ queryKey: [TASK_TIME_LOGS_KEY, taskId] })
+    }
+  }, [queryClient, taskId])
+
+  // The DB check `time_log_tasks_project_match` makes the PERSISTED project
+  // authoritative — an unsaved project change must block logging until saved.
+  const watchedProjectId = form.watch('projectId') ?? null
+  const taskUnavailableForTime = Boolean(
+    props.task && (props.task.deleted_at || props.task.status === 'ARCHIVED')
+  )
+  const projectFieldUnsaved = Boolean(
+    props.task && watchedProjectId !== props.task.project_id
+  )
+  const logTimeDisabledReason = taskUnavailableForTime
+    ? 'Time cannot be logged on an archived task.'
+    : projectFieldUnsaved
+      ? 'Save or revert the project change before logging time.'
+      : null
+
   const taskPanelProjectId = props.task?.project_id ?? null
   const taskPanelClientId = taskProject?.client?.id ?? null
   const canDeploy = Boolean(
@@ -336,6 +403,15 @@ export function TaskSheet(props: TaskSheetProps) {
                   attachmentsDisabledReason={attachmentsDisabledReason}
                   isDragActive={!dropDisabled && isDragActive}
                 />
+                {props.task && taskProject ? (
+                  <TimeLogSection
+                    taskId={props.task.id}
+                    enabled={props.open}
+                    logTimeDisabledReason={logTimeDisabledReason}
+                    onLogTime={handleLogTime}
+                    onEditEntry={handleEditTimeLogEntry}
+                  />
+                ) : null}
                 {props.task && taskPanelProjectId ? (
                   <div className='px-6'>
                     <Tabs defaultValue='comments' className='w-full'>
@@ -394,6 +470,26 @@ export function TaskSheet(props: TaskSheetProps) {
           </div>
         </SheetContent>
       </Sheet>
+      {/* Params are built lazily inside this branch (W4): the lead overlay's
+          init payload doesn't guarantee the full ProjectWithRelations shape,
+          and it never renders the section (create-only). */}
+      {props.task && taskProject ? (
+        <ProjectTimeLogDialog
+          open={isTimeLogDialogOpen}
+          onOpenChange={handleTimeLogDialogOpenChange}
+          {...buildProjectTimeLogDialogParams(taskProject, {
+            tasks: taskProject.tasks,
+            currentUserId: props.currentUserId,
+            admins: props.admins,
+          })}
+          mode={timeLogDialogMode}
+          timeLogEntry={editingTimeLogEntry}
+          initialLinkedTaskIds={
+            timeLogDialogMode === 'create' ? initialLinkedTaskIds : undefined
+          }
+          onMutationSuccess={handleTimeLogMutationSuccess}
+        />
+      ) : null}
       <ConfirmDialog
         open={isDeleteDialogOpen}
         title='Archive task?'

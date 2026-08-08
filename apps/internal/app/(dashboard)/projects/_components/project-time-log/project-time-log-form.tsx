@@ -1,4 +1,4 @@
-import { Loader2, PlusCircle, Pencil } from 'lucide-react'
+import { Loader2, PlusCircle, Pencil, Trash2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
@@ -44,6 +44,7 @@ export type ProjectTimeLogFormProps = {
   requestTaskRemoval: (task: TaskWithRelations) => void
   submitLabel: string
   isEditMode: boolean
+  onRequestDelete?: () => void
 }
 
 export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
@@ -73,6 +74,7 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
     requestTaskRemoval,
     submitLabel,
     isEditMode,
+    onRequestDelete,
   } = props
 
   const submitTooltipReason = disableSubmit
@@ -201,6 +203,18 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
         </div>
       ) : null}
       <div className='flex items-center justify-end gap-3 sm:col-span-2'>
+        {isEditMode && onRequestDelete ? (
+          <Button
+            type='button'
+            variant='destructive'
+            disabled={isMutating}
+            onClick={onRequestDelete}
+            className='mr-auto inline-flex items-center gap-2'
+          >
+            <Trash2 className='size-4' />
+            Delete
+          </Button>
+        ) : null}
         <DisabledFieldTooltip
           disabled={disableSubmit}
           reason={submitTooltipReason}

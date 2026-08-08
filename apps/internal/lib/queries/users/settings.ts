@@ -1,11 +1,13 @@
 import 'server-only'
 
-import { and, asc, isNull, sql, type SQL } from 'drizzle-orm'
+import { and, asc, eq, isNotNull, isNull, sql, type SQL } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
+import type { UserAccessFilter } from '@/lib/settings/users/filters'
+import type { UserRoleValue } from '@/lib/types'
 import {
   clampLimit,
   decodeCursor,
@@ -28,6 +30,8 @@ export type ListUsersForSettingsInput = {
   cursor?: string | null
   direction?: CursorDirection | null
   limit?: number | null
+  role?: UserRoleValue
+  access?: UserAccessFilter
 }
 
 export type UsersSettingsResult = {
@@ -75,6 +79,17 @@ export async function listUsersForSettings(
     baseConditions.push(isNull(users.deletedAt))
   } else {
     baseConditions.push(sql`${users.deletedAt} IS NOT NULL`)
+  }
+
+  // Role/access filters live in baseConditions so totalCount follows them.
+  if (input.role) {
+    baseConditions.push(eq(users.role, input.role))
+  }
+  if (input.access === 'enabled') {
+    baseConditions.push(isNull(users.disabledAt))
+  }
+  if (input.access === 'disabled') {
+    baseConditions.push(isNotNull(users.disabledAt))
   }
 
   const cursorPayload = decodeCursor<{ name?: string; id?: string }>(

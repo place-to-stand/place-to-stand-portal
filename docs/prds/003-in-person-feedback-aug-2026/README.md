@@ -1,6 +1,6 @@
 # PRD 003 — In-Person Feedback: Task Sheet Time Logging, Scope Removal, List Polish
 
-**Status:** Draft (2026-08-07) — not yet implemented
+**Status:** Implemented (2026-08-08) — pending manual test-plan walk + staging/production migration
 **Depends on:** Nothing
 **Blocks:** Nothing
 **App:** `apps/internal/` (admin portal) + one drop migration in `packages/db/`

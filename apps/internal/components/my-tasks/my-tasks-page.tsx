@@ -92,6 +92,13 @@ export function MyTasksPage({
     setEntries(sanitizedEntries)
   }
 
+  // Set when a create just succeeded: the sheet must stay open (and the
+  // create context must survive, so defaultProjectId doesn't flash null)
+  // until the new task id lands in the URL and resolves from props.
+  const [justCreatedTaskId, setJustCreatedTaskId] = useState<string | null>(
+    null
+  )
+
   const [prevSheetSync, setPrevSheetSync] = useState({
     activeTaskId,
     createTaskContext,
@@ -101,7 +108,14 @@ export function MyTasksPage({
     prevSheetSync.createTaskContext !== createTaskContext
   ) {
     setPrevSheetSync({ activeTaskId, createTaskContext })
-    if (!createTaskContext) {
+    if (justCreatedTaskId) {
+      if (activeTaskId === justCreatedTaskId) {
+        setJustCreatedTaskId(null)
+        setCreateTaskContext(null)
+        setIsSheetOpen(true)
+      }
+      // While the created task is still resolving, keep the sheet as-is.
+    } else if (!createTaskContext) {
       setIsSheetOpen(Boolean(activeTaskId))
     }
   }
@@ -196,6 +210,14 @@ export function MyTasksPage({
 
   const handleOpenTask = useCallback(
     (taskId: string) => {
+      router.push(buildViewPath(view, taskId), { scroll: false })
+    },
+    [buildViewPath, router, view]
+  )
+
+  const handleTaskCreated = useCallback(
+    (taskId: string) => {
+      setJustCreatedTaskId(taskId)
       router.push(buildViewPath(view, taskId), { scroll: false })
     },
     [buildViewPath, router, view]
@@ -358,6 +380,7 @@ export function MyTasksPage({
             createTaskContext?.projectId ?? editingTaskMeta?.project.id ?? null
           }
           defaultAssigneeId={createTaskContext?.assigneeId ?? null}
+          onTaskCreated={handleTaskCreated}
         />
       ) : null}
     </div>

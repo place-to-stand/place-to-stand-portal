@@ -55,6 +55,7 @@ export type ProjectsBoardState = {
   handleDragEnd: ReturnType<typeof useBoardDnDState>['handleDragEnd']
   openCreateSheet: ReturnType<typeof useBoardSheetState>['openCreateSheet']
   handleEditTask: ReturnType<typeof useBoardSheetState>['handleEditTask']
+  handleTaskCreated: ReturnType<typeof useBoardSheetState>['handleTaskCreated']
   handleSheetOpenChange: ReturnType<
     typeof useBoardSheetState
   >['handleSheetOpenChange']

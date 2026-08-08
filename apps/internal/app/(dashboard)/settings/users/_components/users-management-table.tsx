@@ -7,6 +7,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 
 import { UserSheet } from '../users-sheet'
+import { isUserAccess, isUserRole } from '@/lib/settings/users/filters'
 import {
   useUsersTableState,
   type UserAssignments,
@@ -57,7 +58,16 @@ export function UsersManagementTable({
     [rows, mode]
   )
 
-  const emptyMessage = EMPTY_MESSAGES[mode]
+  // Run raw params through the type guards (R4): ?role=SUPERADMIN is ignored
+  // by the server, so it must not count as an active filter — an unfiltered
+  // empty list would otherwise show the wrong message.
+  const hasActiveFilter =
+    isUserRole(searchParams.get('role') ?? undefined) ||
+    isUserAccess(searchParams.get('access') ?? undefined)
+
+  const emptyMessage = hasActiveFilter
+    ? 'No users match the current filters.'
+    : EMPTY_MESSAGES[mode]
 
   const handlePaginate = (direction: 'forward' | 'backward') => {
     const cursor =

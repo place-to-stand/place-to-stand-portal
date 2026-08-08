@@ -43,6 +43,8 @@ export type UseProjectTimeLogMutationOptions = {
   mode: 'create' | 'edit'
   timeLogId: string | null
   successToast?: ToastOptions
+  /** Extra invalidation hook (e.g. the task sheet's task-time-logs query). */
+  onMutationSuccess?: () => void
 }
 
 export function useProjectTimeLogMutation(
@@ -62,6 +64,7 @@ export function useProjectTimeLogMutation(
     mode,
     timeLogId,
     successToast,
+    onMutationSuccess,
   } = options
 
   return useMutation({
@@ -200,6 +203,7 @@ export function useProjectTimeLogMutation(
     },
     onSuccess: async data => {
       await queryClient.invalidateQueries({ queryKey: baseQueryKey })
+      onMutationSuccess?.()
       onSuccessReset()
       onClose()
       toast(successToast ?? SUCCESS_TOAST)

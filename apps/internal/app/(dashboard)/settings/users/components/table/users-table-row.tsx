@@ -8,14 +8,9 @@ import { TableCell, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Switch } from '@/components/ui/switch'
-import type { UserRoleValue } from '@/lib/types'
+import { USER_ROLE_LABELS } from '@/lib/settings/users/filters'
 
 import type { UserRowState } from '@/lib/settings/users/state/use-users-table-state'
-
-const ROLE_LABELS: Record<UserRoleValue, string> = {
-  ADMIN: 'Admin',
-  CLIENT: 'Client',
-}
 
 type UsersTableRowProps = {
   row: UserRowState
@@ -64,7 +59,7 @@ export function UsersTableRow({
       <TableCell className='text-muted-foreground text-sm'>
         {user.email}
       </TableCell>
-      <TableCell className='text-sm'>{ROLE_LABELS[user.role]}</TableCell>
+      <TableCell className='text-sm'>{USER_ROLE_LABELS[user.role]}</TableCell>
       <TableCell>
         {mode === 'active' ? (
           <DisabledFieldTooltip

@@ -3,10 +3,12 @@ import type { Metadata } from 'next'
 import { AppShellHeader } from '@/components/layout/app-shell'
 import { requireRole } from '@/lib/auth/session'
 import { listUsersForSettings } from '@/lib/queries/users'
+import { parseUsersSearchParams } from '@/lib/settings/users/filters'
 import type { DbUser } from '@/lib/types'
 
 import { UsersTabsNav } from './_components/users-tabs-nav'
 import { UsersAddButton } from './_components/users-add-button'
+import { UsersFilters } from './_components/users-filters'
 import { UsersManagementTable } from './_components/users-management-table'
 
 export const metadata: Metadata = {
@@ -22,35 +24,17 @@ export default async function UsersPage({
 }: UsersPageProps) {
   const currentUser = await requireRole('ADMIN')
   const params = searchParams ? await searchParams : {}
-
-  const cursor =
-    typeof params.cursor === 'string'
-      ? params.cursor
-      : Array.isArray(params.cursor)
-        ? (params.cursor[0] ?? null)
-        : null
-  const directionParam =
-    typeof params.dir === 'string'
-      ? params.dir
-      : Array.isArray(params.dir)
-        ? (params.dir[0] ?? null)
-        : null
-  const direction =
-    directionParam === 'backward' ? 'backward' : ('forward' as const)
-  const limitParamRaw =
-    typeof params.limit === 'string'
-      ? params.limit
-      : Array.isArray(params.limit)
-        ? params.limit[0]
-        : undefined
-  const limitParam = Number.parseInt(limitParamRaw ?? '', 10)
+  const { cursor, direction, limit, role, access } =
+    parseUsersSearchParams(params)
 
   const { items, assignments, totalCount, pageInfo } =
     await listUsersForSettings(currentUser, {
       status: 'active',
       cursor,
       direction,
-      limit: Number.isFinite(limitParam) ? limitParam : undefined,
+      limit,
+      role,
+      access,
     })
 
   const users: DbUser[] = items.map(user => ({
@@ -90,7 +74,13 @@ export default async function UsersPage({
           </div>
         </div>
         {/* Main Container with Background */}
-        <section className='bg-background rounded-xl border p-6 shadow-sm'>
+        <section className='bg-background space-y-4 rounded-xl border p-6 shadow-sm'>
+          <UsersFilters
+            basePath='/settings/users'
+            role={role}
+            access={access}
+            showAccessFilter
+          />
           <UsersManagementTable
             users={users}
             currentUserId={currentUser.id}

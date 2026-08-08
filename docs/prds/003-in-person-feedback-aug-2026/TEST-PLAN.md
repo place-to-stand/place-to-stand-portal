@@ -63,16 +63,16 @@ portal at sign-in — application-layer access control, no RLS).
 
 - [ ] **03.1** Project workspace shows tabs without Scope; switching every remaining tab works
 - [ ] **03.2** Direct URL `/projects/{client}/{project}/scope` → redirects to `.../tasks`
-- [ ] **03.3** Grep sweep clean: no references to `ScopeTabContent`, `sow-status`, `picker-token`, `use-google-picker` outside migrations/PRD docs
-- [ ] **03.4** DB after migrate: `project_sows`, `sow_snapshots`, `sow_sections` tables and `sow_status`, `sow_snapshot_status` types absent; migration ran without FK errors
+- [x] **03.3** Grep sweep clean: no references to `ScopeTabContent`, `sow-status`, `picker-token`, `use-google-picker` outside migrations/PRD docs <!-- verified 2026-08-08, zero hits in apps/ + packages/ .ts/.tsx -->
+- [x] **03.4** DB after migrate: `project_sows`, `sow_snapshots`, `sow_sections` tables and `sow_status`, `sow_snapshot_status` types absent; migration ran without FK errors <!-- verified 2026-08-08 against local DB via information_schema/pg_type: 0 tables, 0 types remaining -->
 - [ ] **03.5** Google OAuth connect + reconnect (Gmail/Calendar integration settings) still works
 - [ ] **03.6** Gmail features (email attachments sync) unaffected (shared `lib/gmail/client.ts` untouched)
 - [ ] **03.7** Deep links to `/tasks/{taskId}`, `/review`, `/time-logs`, `/activity`, `/archive` all load
-- [ ] **03.8** Build/lint/type-check pass — no orphan imports anywhere (this is the real deletion test)
+- [x] **03.8** Build/lint/type-check pass — no orphan imports anywhere (this is the real deletion test) <!-- verified 2026-08-08: npm run build / lint / type-check all green from repo root -->
 
 **Edge cases:**
 - [ ] **03.E1** Old bookmark with query string `/scope?x=y` → still redirects (params may drop; no 404)
-- [ ] **03.E2** `npm run db:migrate` re-run → idempotent, no error
+- [x] **03.E2** `npm run db:migrate` re-run → idempotent, no error <!-- verified 2026-08-08: second run exits clean -->
 
 ## §04 — Total-projects hover (7)
 

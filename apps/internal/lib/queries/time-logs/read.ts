@@ -5,6 +5,7 @@ import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import type { AppUser } from '@/lib/auth/session'
 import {
   ensureProjectAccess,
+  ensureTaskAccess,
   ensureTimeLogAccess,
 } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
@@ -74,45 +75,45 @@ export type ProjectTimeLogList = {
   totalCount: number
 }
 
-export async function listProjectTimeLogs(
-  user: AppUser,
-  projectId: string,
-  limit = DEFAULT_HISTORY_LIMIT,
-): Promise<ProjectTimeLogList> {
-  await ensureProjectAccess(user, projectId)
+export type TaskTimeLogList = {
+  entries: TimeLogEntry[]
+  totalHours: number
+}
 
-  const effectiveLimit = Math.max(1, Math.min(limit, 200))
+const TIME_LOG_SELECTION = {
+  log: {
+    id: timeLogs.id,
+    projectId: timeLogs.projectId,
+    userId: timeLogs.userId,
+    hours: timeLogs.hours,
+    loggedOn: timeLogs.loggedOn,
+    note: timeLogs.note,
+    createdAt: timeLogs.createdAt,
+    updatedAt: timeLogs.updatedAt,
+    deletedAt: timeLogs.deletedAt,
+  },
+  user: {
+    id: users.id,
+    email: users.email,
+    fullName: users.fullName,
+    avatarUrl: users.avatarUrl,
+    role: users.role,
+    createdAt: users.createdAt,
+    updatedAt: users.updatedAt,
+    deletedAt: users.deletedAt,
+  },
+}
 
-  const timeLogRows = (await db
-    .select({
-      log: {
-        id: timeLogs.id,
-        projectId: timeLogs.projectId,
-        userId: timeLogs.userId,
-        hours: timeLogs.hours,
-        loggedOn: timeLogs.loggedOn,
-        note: timeLogs.note,
-        createdAt: timeLogs.createdAt,
-        updatedAt: timeLogs.updatedAt,
-        deletedAt: timeLogs.deletedAt,
-      },
-      user: {
-        id: users.id,
-        email: users.email,
-        fullName: users.fullName,
-        avatarUrl: users.avatarUrl,
-        role: users.role,
-        createdAt: users.createdAt,
-        updatedAt: users.updatedAt,
-        deletedAt: users.deletedAt,
-      },
-    })
-    .from(timeLogs)
-    .leftJoin(users, eq(timeLogs.userId, users.id))
-    .where(and(eq(timeLogs.projectId, projectId), isNull(timeLogs.deletedAt)))
-    .orderBy(desc(timeLogs.loggedOn), desc(timeLogs.createdAt))
-    .limit(effectiveLimit)) as TimeLogSelection[]
-
+/**
+ * Shared hydration for time-log rows: fetches each log's linked tasks and
+ * maps everything into `TimeLogEntry` shape. Soft-deleted links are filtered
+ * out here (`timeLogTasks.deletedAt IS NULL`) — the previous inline query in
+ * `listProjectTimeLogs` missed that filter, so the edit dialog re-selected
+ * previously unlinked tasks.
+ */
+async function hydrateTimeLogEntries(
+  timeLogRows: TimeLogSelection[],
+): Promise<TimeLogEntry[]> {
   const timeLogIds = timeLogRows.map(row => row.log.id)
 
   const linkedTaskRows: TimeLogTaskSelection[] = timeLogIds.length
@@ -130,7 +131,12 @@ export async function listProjectTimeLogs(
         })
         .from(timeLogTasks)
         .leftJoin(tasks, eq(timeLogTasks.taskId, tasks.id))
-        .where(inArray(timeLogTasks.timeLogId, timeLogIds))
+        .where(
+          and(
+            inArray(timeLogTasks.timeLogId, timeLogIds),
+            isNull(timeLogTasks.deletedAt),
+          ),
+        )
     : []
 
   const linkedTasksByLog = new Map<string, TimeLogEntry['linked_tasks']>()
@@ -152,7 +158,7 @@ export async function listProjectTimeLogs(
     linkedTasksByLog.set(link.timeLogId, existing)
   }
 
-  const logs = timeLogRows.map(row => ({
+  return timeLogRows.map(row => ({
     id: row.log.id,
     project_id: row.log.projectId,
     user_id: row.log.userId,
@@ -176,6 +182,26 @@ export async function listProjectTimeLogs(
       : null,
     linked_tasks: linkedTasksByLog.get(row.log.id) ?? [],
   }))
+}
+
+export async function listProjectTimeLogs(
+  user: AppUser,
+  projectId: string,
+  limit = DEFAULT_HISTORY_LIMIT,
+): Promise<ProjectTimeLogList> {
+  await ensureProjectAccess(user, projectId)
+
+  const effectiveLimit = Math.max(1, Math.min(limit, 200))
+
+  const timeLogRows = (await db
+    .select(TIME_LOG_SELECTION)
+    .from(timeLogs)
+    .leftJoin(users, eq(timeLogs.userId, users.id))
+    .where(and(eq(timeLogs.projectId, projectId), isNull(timeLogs.deletedAt)))
+    .orderBy(desc(timeLogs.loggedOn), desc(timeLogs.createdAt))
+    .limit(effectiveLimit)) as TimeLogSelection[]
+
+  const logs = await hydrateTimeLogEntries(timeLogRows)
 
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)` })
@@ -185,6 +211,58 @@ export async function listProjectTimeLogs(
   return {
     logs,
     totalCount: Number(count ?? 0),
+  }
+}
+
+/**
+ * All non-deleted time logs linked to a task, newest first, with a SQL-summed
+ * total. The admin guard lives inside the query (`ensureTaskAccess`, which
+ * asserts admin transitively via `ensureProjectAccess`) so any future
+ * server-side caller inherits it rather than relying on the route.
+ */
+export async function listTaskTimeLogs(
+  user: AppUser,
+  taskId: string,
+): Promise<TaskTimeLogList> {
+  await ensureTaskAccess(user, taskId, { includeArchived: true })
+
+  const timeLogRows = (await db
+    .select(TIME_LOG_SELECTION)
+    .from(timeLogTasks)
+    .innerJoin(timeLogs, eq(timeLogTasks.timeLogId, timeLogs.id))
+    .leftJoin(users, eq(timeLogs.userId, users.id))
+    .where(
+      and(
+        eq(timeLogTasks.taskId, taskId),
+        isNull(timeLogTasks.deletedAt),
+        isNull(timeLogs.deletedAt),
+      ),
+    )
+    .orderBy(
+      desc(timeLogs.loggedOn),
+      desc(timeLogs.createdAt),
+    )) as TimeLogSelection[]
+
+  const entries = await hydrateTimeLogEntries(timeLogRows)
+
+  // numeric(8,2) values arrive as strings — sum in SQL, not JS floats.
+  const [{ totalHours }] = await db
+    .select({
+      totalHours: sql<string>`coalesce(sum(${timeLogs.hours}), 0)`,
+    })
+    .from(timeLogTasks)
+    .innerJoin(timeLogs, eq(timeLogTasks.timeLogId, timeLogs.id))
+    .where(
+      and(
+        eq(timeLogTasks.taskId, taskId),
+        isNull(timeLogTasks.deletedAt),
+        isNull(timeLogs.deletedAt),
+      ),
+    )
+
+  return {
+    entries,
+    totalHours: Number(totalHours ?? 0),
   }
 }
 
