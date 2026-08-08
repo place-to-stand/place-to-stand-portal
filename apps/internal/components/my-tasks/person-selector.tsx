@@ -72,8 +72,8 @@ export function PersonSelector({
       searchPlaceholder="Search team members..."
       emptyMessage="No team members found."
       disabled={disabled}
-      className="w-auto min-w-[240px]"
-      triggerClassName="h-9 text-sm"
+      className="w-auto min-w-[200px]"
+      triggerClassName="h-7 py-0 text-sm"
     />
   )
 }

@@ -174,8 +174,6 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
             projectMonthToDateLoggedHours={
               viewModel.burndown.projectMonthToDateLoggedHours
             }
-            className='w-full sm:w-auto'
-            viewTimeLogsHref={viewModel.burndown.viewTimeLogsHref}
             onAddTimeLog={viewModel.burndown.onAddTimeLog}
             showClientRemainingCard={viewModel.burndown.showClientRemainingCard}
             showProjectMonthToDate={viewModel.burndown.showProjectMonthToDate}

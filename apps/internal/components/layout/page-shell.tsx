@@ -1,7 +1,6 @@
 'use client'
 
 import { Fragment, type ReactNode } from 'react'
-import { Search } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import type { Crumb } from '@/lib/navigation/breadcrumbs'
@@ -13,9 +12,9 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@pts/ui/breadcrumb'
+import { Separator } from '@pts/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 
-import { useCommandPalette } from './command-palette'
 import { TabsNav, type TabsNavTab } from './tabs-nav'
 
 export type PageShellCount = {
@@ -57,14 +56,13 @@ export function PageShell({
   contentClassName,
   children,
 }: PageShellProps) {
-  const { setOpen: setPaletteOpen } = useCommandPalette()
-
   const hasToolbar = Boolean(tabs?.length || count || primaryAction)
 
   return (
     <div className='flex min-h-0 flex-1 flex-col'>
-      <header className='bg-background flex items-center gap-3 border-b px-4 py-2 sm:px-6'>
+      <header className='bg-background flex items-center gap-3 border-b px-3 py-2 sm:px-4'>
         <SidebarTrigger className='text-muted-foreground -ml-1 shrink-0' />
+        <Separator orientation='vertical' className='h-4 shrink-0' />
         <Breadcrumb className='min-w-0 flex-1'>
           <BreadcrumbList className='flex-nowrap overflow-hidden text-sm'>
             {breadcrumbs.map((crumb, index) => {
@@ -96,26 +94,13 @@ export function PageShell({
             })}
           </BreadcrumbList>
         </Breadcrumb>
-        {/* PW1: visible palette entry point with kbd hint. */}
-        <button
-          type='button'
-          onClick={() => setPaletteOpen(true)}
-          className='text-muted-foreground hover:bg-muted hover:text-foreground hidden shrink-0 cursor-pointer items-center gap-2 rounded-md border px-2 py-1 text-xs transition sm:flex'
-          aria-label='Open command palette'
-        >
-          <Search className='size-3.5' />
-          <span>Search</span>
-          <kbd className='bg-muted text-muted-foreground pointer-events-none rounded border px-1 font-mono text-[10px]'>
-            ⌘K
-          </kbd>
-        </button>
         {headerRight ? (
           <div className='flex min-w-0 shrink-0 items-center'>{headerRight}</div>
         ) : null}
       </header>
-      <main className='flex min-h-0 flex-1 flex-col overflow-y-auto p-4 sm:p-6'>
+      <main className='flex min-h-0 flex-1 flex-col overflow-y-auto p-3 sm:p-4'>
         {hasToolbar ? (
-          <div className='mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+          <div className='mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
             {tabs?.length && activeTab ? (
               <TabsNav
                 tabs={tabs}

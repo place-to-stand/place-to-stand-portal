@@ -1,5 +1,6 @@
 'use client'
 
+import * as React from 'react'
 import { useMemo, type ReactNode } from 'react'
 
 import type { AppUser } from '@/lib/auth/session'
@@ -37,16 +38,19 @@ export function AppShell({
   )
 
   return (
-    <SidebarProvider
-      defaultOpen={sidebarDefaultOpen}
-      className='bg-muted h-screen min-h-0 overflow-hidden'
-    >
-      <Sidebar user={user} badges={navBadges} />
-      <CommandPaletteProvider>
+    // Palette provider wraps the sidebar too — the search affordance lives
+    // there (user-revised placement of PW1).
+    <CommandPaletteProvider>
+      <SidebarProvider
+        defaultOpen={sidebarDefaultOpen}
+        style={{ '--sidebar-width': '13rem' } as React.CSSProperties}
+        className='bg-muted h-screen min-h-0 overflow-hidden'
+      >
+        <Sidebar user={user} badges={navBadges} />
         <div className='flex h-screen min-h-0 min-w-0 flex-1 flex-col'>
           {children}
         </div>
-      </CommandPaletteProvider>
-    </SidebarProvider>
+      </SidebarProvider>
+    </CommandPaletteProvider>
   )
 }

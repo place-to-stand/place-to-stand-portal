@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
+import { Search } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import type { AppUser } from '@/lib/auth/session'
@@ -21,15 +22,16 @@ import {
   SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from '@/components/ui/sidebar'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@pts/ui/tooltip'
-import { Separator } from '@pts/ui/separator'
 
 import { UserMenu } from './user-menu'
+import { useCommandPalette } from './command-palette'
 import { NAV_GROUPS } from './navigation-config'
 import PTSLogoBlackTransparent from '../../public/pts-logo-black-transparent.png'
 import PTSLogoWhiteTransparent from '../../public/pts-logo-white-transparent.png'
@@ -45,6 +47,8 @@ type Props = {
 export function Sidebar({ user, badges }: Props) {
   const pathname = usePathname()
   const { theme, mounted: themeMounted } = useTheme()
+  const { state: sidebarState } = useSidebar()
+  const { setOpen: setPaletteOpen } = useCommandPalette()
 
   // Always start with black to match SSR; theme provider updates after mount.
   const logoSrc = useMemo(() => {
@@ -56,8 +60,11 @@ export function Sidebar({ user, badges }: Props) {
 
   return (
     <SidebarRoot collapsible='icon' className='border-r'>
-      <SidebarHeader className='space-y-4 px-3 pt-6'>
-        <div suppressHydrationWarning className='flex flex-col items-center'>
+      <SidebarHeader className='space-y-4 px-3 pt-6 pb-3 group-data-[collapsible=icon]:space-y-3 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:pt-4'>
+        <div
+          suppressHydrationWarning
+          className='flex flex-col items-center group-data-[collapsible=icon]:px-0'
+        >
           <Link href='/my/home' className='block'>
             <Image
               key={logoSrc.src}
@@ -67,7 +74,7 @@ export function Sidebar({ user, badges }: Props) {
             />
             <span
               aria-hidden='true'
-              className='bg-primary text-primary-foreground hidden size-7 items-center justify-center rounded-md text-sm font-bold group-data-[collapsible=icon]:flex'
+              className='bg-primary text-primary-foreground mx-auto hidden size-7 items-center justify-center rounded-md text-sm font-bold group-data-[collapsible=icon]:flex'
             >
               P
             </span>
@@ -83,18 +90,40 @@ export function Sidebar({ user, badges }: Props) {
               <TooltipTrigger asChild>
                 <span className='mx-auto hidden size-2 animate-pulse rounded-full bg-amber-500 group-data-[collapsible=icon]:block' />
               </TooltipTrigger>
-              <TooltipContent side='right'>Development</TooltipContent>
+              <TooltipContent side='right' hidden={sidebarState !== 'collapsed'}>
+                Development
+              </TooltipContent>
             </Tooltip>
           </>
-        ) : (
-          <Separator className='w-full' />
-        )}
+        ) : null}
+        {/* Palette entry point (PW1, user-revised placement: sidebar, above Portal). */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type='button'
+              onClick={() => setPaletteOpen(true)}
+              aria-label='Open command palette'
+              className='text-muted-foreground hover:bg-muted hover:text-foreground border-input flex w-full cursor-pointer items-center gap-2 rounded-md border px-2 py-1.5 text-[12px] transition group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:p-0'
+            >
+              <Search className='size-3.5 shrink-0' />
+              <span className='group-data-[collapsible=icon]:hidden'>
+                Search
+              </span>
+              <kbd className='bg-muted text-muted-foreground pointer-events-none ml-auto rounded border px-1 font-mono text-[10px] group-data-[collapsible=icon]:hidden'>
+                ⌘K
+              </kbd>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side='right' hidden={sidebarState !== 'collapsed'}>
+            Search <kbd className='ml-1 font-mono text-[10px]'>⌘K</kbd>
+          </TooltipContent>
+        </Tooltip>
       </SidebarHeader>
-      <SidebarContent className='px-1'>
+      <SidebarContent className='px-1 group-data-[collapsible=icon]:px-0'>
         {NAV_GROUPS.map((group, index) => (
           <SidebarGroup key={group.title ?? `group-${index}`} className='py-1'>
             {group.title ? (
-              <SidebarGroupLabel className='text-muted-foreground/60 h-auto px-1 pb-1 text-[11px] font-semibold tracking-wide uppercase'>
+              <SidebarGroupLabel className='text-muted-foreground/60 h-auto px-1 pb-1 text-[11px] font-semibold tracking-wide uppercase group-data-[collapsible=icon]:hidden'>
                 {group.title}
               </SidebarGroupLabel>
             ) : null}
@@ -158,7 +187,7 @@ export function Sidebar({ user, badges }: Props) {
           </SidebarGroup>
         ))}
       </SidebarContent>
-      <SidebarFooter className='px-3 py-3'>
+      <SidebarFooter className='px-3 py-3 group-data-[collapsible=icon]:px-1'>
         <UserMenu user={user} align='start' inSidebar />
       </SidebarFooter>
     </SidebarRoot>
