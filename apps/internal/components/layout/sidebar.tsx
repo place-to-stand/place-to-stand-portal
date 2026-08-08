@@ -166,6 +166,10 @@ export function Sidebar({ user, badges }: Props) {
                             aria-hidden='true'
                             className={cn(
                               'h-4 min-w-4 rounded-full px-1 text-[10px] font-semibold tabular-nums',
+                              // The primitive swaps badge text to the accent
+                              // color on hover/active — unreadable on our
+                              // bg-primary pill; pin it in every state.
+                              'peer-hover/menu-button:text-primary-foreground peer-data-[active=true]/menu-button:text-primary-foreground',
                               isActive
                                 ? 'bg-primary-foreground/20 text-primary-foreground'
                                 : 'bg-primary text-primary-foreground'

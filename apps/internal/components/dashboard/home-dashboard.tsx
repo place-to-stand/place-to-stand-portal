@@ -21,20 +21,14 @@ export function HomeDashboard({
 }: HomeDashboardProps) {
   return (
     <PageShell breadcrumbs={[{ label: 'Home' }]}>
-      <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
+      {/* Widget gutters match the shell's content padding (p-3 sm:p-4). */}
+      <div className='grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2'>
         <div>
-          <MyTasksWidget
-            tasks={tasks}
-            totalCount={totalTaskCount}
-            className='mb-6'
-          />
+          <MyTasksWidget tasks={tasks} totalCount={totalTaskCount} />
         </div>
-        <div>
-          <HoursWidget
-            initialSnapshot={initialHoursSnapshot}
-            className='mb-6'
-          />
-          <RecentActivityOverviewWidget className='mb-6' />
+        <div className='flex flex-col gap-3 sm:gap-4'>
+          <HoursWidget initialSnapshot={initialHoursSnapshot} />
+          <RecentActivityOverviewWidget />
         </div>
       </div>
     </PageShell>
