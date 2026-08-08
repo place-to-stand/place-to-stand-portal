@@ -1,4 +1,4 @@
-import { Loader2, PlusCircle, Pencil, Trash2 } from 'lucide-react'
+import { Archive, Loader2, PlusCircle, Pencil } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
@@ -211,8 +211,8 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
             onClick={onRequestDelete}
             className='mr-auto inline-flex items-center gap-2'
           >
-            <Trash2 className='size-4' />
-            Delete
+            <Archive className='size-4' />
+            Archive
           </Button>
         ) : null}
         <DisabledFieldTooltip
