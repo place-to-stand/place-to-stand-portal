@@ -2,10 +2,7 @@
 
 import { useMemo } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { Plus } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 import { useToast } from '@/components/ui/use-toast'
 import type { PageInfo } from '@/lib/pagination/cursor'
@@ -25,7 +22,6 @@ import {
 } from '@/components/settings/projects/table/types'
 import { useProjectsSettingsController } from '@/components/settings/projects/table/use-projects-settings-controller'
 
-import { ProjectsTabsNav } from './projects-tabs-nav'
 
 type ProjectsManagementSectionProps = {
   tab: ProjectsTab
@@ -37,6 +33,10 @@ type ProjectsManagementSectionProps = {
   membersByProject: Record<string, ContractorUserSummary[]>
   pageInfo: PageInfo
   listTotalCount: number
+  /**
+   * PRD 004 §01: pages converted to PageShell render tabs/count/action in the
+   * shell toolbar; they pass false so the section renders only the table.
+   */
 }
 
 export function ProjectsManagementSection({
@@ -71,7 +71,6 @@ export function ProjectsManagementSection({
     pendingRestoreId,
     pendingDestroyId,
     isPending,
-    openCreate,
     openEdit,
     handleSheetOpenChange,
     handleSheetComplete,
@@ -115,30 +114,6 @@ export function ProjectsManagementSection({
 
   return (
     <div className='space-y-4'>
-      {/* Tabs Row - Above the main container */}
-      <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-        <ProjectsTabsNav activeTab={tab} className='flex-1 sm:flex-none' />
-        <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6'>
-          <span className='text-muted-foreground text-sm whitespace-nowrap'>
-            Total projects: {listTotalCount}
-          </span>
-          <DisabledFieldTooltip
-            disabled={createDisabled}
-            reason={createDisabledReason}
-          >
-            <Button
-              type='button'
-              size='sm'
-              onClick={openCreate}
-              disabled={createDisabled}
-              className='gap-2'
-            >
-              <Plus className='h-4 w-4' />
-              Add project
-            </Button>
-          </DisabledFieldTooltip>
-        </div>
-      </div>
       {/* Main Container with Background */}
       <section className='bg-background rounded-xl border p-6 shadow-sm space-y-4'>
         <ProjectLifecycleDialogs

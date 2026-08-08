@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
 
-import { AppShellHeader } from '@/components/layout/app-shell'
+import { PageShell } from '@/components/layout/page-shell'
+import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { requireRole } from '@/lib/auth/session'
 import { listContactsForSettings, listAllActiveClients } from '@/lib/queries/contacts'
 
-import { ContactsTabsNav } from '../_components/contacts-tabs-nav'
+import { CONTACTS_TABS } from '../_lib/tabs'
 import { ContactsAddButton } from '../_components/contacts-add-button'
 import { ContactsManagementTable } from '../_components/contacts-management-table'
 import { mapContactToTableRow } from '../_lib/map-contact-to-table-row'
@@ -55,39 +56,24 @@ export default async function ContactsArchivePage({
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
 
   return (
-    <>
-      <AppShellHeader>
-        <div className='flex flex-col'>
-          <h1 className='text-2xl font-semibold tracking-tight'>Contacts</h1>
-          <p className='text-muted-foreground text-sm'>
-            Review archived contacts and restore them when needed.
-          </p>
-        </div>
-      </AppShellHeader>
-      <div className='space-y-4'>
-        {/* Tabs Row - Above the main container */}
-        <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-          <ContactsTabsNav activeTab='archive' className='flex-1 sm:flex-none' />
-          <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6'>
-            <span className='text-muted-foreground text-sm whitespace-nowrap'>
-              Total archived: {totalCount}
-            </span>
-            <ContactsAddButton allClients={allClients} />
-          </div>
-        </div>
-        {/* Main Container with Background */}
-        <section className='bg-background rounded-xl border p-6 shadow-sm space-y-4'>
-          <ContactsManagementTable
-            contacts={contactsForTable}
-            totalCount={totalCount}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            pageSize={PAGE_SIZE}
-            mode='archive'
-            allClients={allClients}
-          />
-        </section>
-      </div>
-    </>
+    <PageShell
+      breadcrumbs={[...crumbsForNav('/contacts'), { label: 'Archive' }]}
+      tabs={CONTACTS_TABS}
+      activeTab='archive'
+      count={{ label: 'archived contacts', total: totalCount }}
+      primaryAction={<ContactsAddButton allClients={allClients} />}
+    >
+      <section className='bg-background rounded-xl border p-6 shadow-sm space-y-4'>
+        <ContactsManagementTable
+          contacts={contactsForTable}
+          totalCount={totalCount}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          pageSize={PAGE_SIZE}
+          mode='archive'
+          allClients={allClients}
+        />
+      </section>
+    </PageShell>
   )
 }

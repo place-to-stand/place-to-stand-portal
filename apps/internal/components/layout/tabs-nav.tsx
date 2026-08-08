@@ -6,30 +6,34 @@ import { useRouter } from 'next/navigation'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 
-type ClientsNavTab = 'clients' | 'archive' | 'activity'
+export type TabsNavTab = {
+  value: string
+  label: string
+  href: string
+}
 
-type ClientsTabsNavProps = {
-  activeTab: ClientsNavTab
+type TabsNavProps = {
+  tabs: readonly TabsNavTab[]
+  activeTab: string
   className?: string
 }
 
-const CLIENT_TABS: Array<{ label: string; value: ClientsNavTab; href: string }> = [
-  { label: 'All Clients', value: 'clients', href: '/clients' },
-  { label: 'Archive', value: 'archive', href: '/clients/archive' },
-  { label: 'Activity', value: 'activity', href: '/clients/activity' },
-]
-
-export function ClientsTabsNav({ activeTab, className }: ClientsTabsNavProps) {
+/**
+ * Config-driven tab strip for section navigation (PRD 004 §01, D11).
+ * Replaces the nine per-feature `*TabsNav` copies; tab arrays live in
+ * colocated `_lib/tabs.ts` files per feature.
+ */
+export function TabsNav({ tabs, activeTab, className }: TabsNavProps) {
   const router = useRouter()
 
   const handleValueChange = useCallback(
     (nextValue: string) => {
-      const target = CLIENT_TABS.find(tab => tab.value === nextValue)
+      const target = tabs.find(tab => tab.value === nextValue)
       if (target) {
         router.push(target.href)
       }
     },
-    [router]
+    [router, tabs]
   )
 
   return (
@@ -39,8 +43,12 @@ export function ClientsTabsNav({ activeTab, className }: ClientsTabsNavProps) {
       className={cn('w-full sm:w-auto', className)}
     >
       <TabsList className='bg-muted/40 h-10 w-full justify-start gap-2 rounded-lg p-1 sm:w-auto'>
-        {CLIENT_TABS.map(tab => (
-          <TabsTrigger key={tab.value} value={tab.value} className='px-3 py-1.5 text-sm'>
+        {tabs.map(tab => (
+          <TabsTrigger
+            key={tab.value}
+            value={tab.value}
+            className='px-3 py-1.5 text-sm'
+          >
             {tab.label}
           </TabsTrigger>
         ))}

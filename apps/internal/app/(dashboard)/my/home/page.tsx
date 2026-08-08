@@ -28,7 +28,7 @@ export default async function HomePage() {
 
   return (
     <HomeDashboard
-      user={user}
+
       tasks={tasksResult.items}
       totalTaskCount={tasksResult.totalCount}
       initialHoursSnapshot={hoursSnapshot}

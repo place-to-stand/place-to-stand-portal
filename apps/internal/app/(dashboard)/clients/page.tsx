@@ -1,14 +1,14 @@
 import type { Metadata } from 'next'
 
-import { AppShellHeader } from '@/components/layout/app-shell'
+import { PageShell } from '@/components/layout/page-shell'
+import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { requireUser } from '@/lib/auth/session'
 import { fetchClientsWithMetrics } from '@/lib/data/clients'
 import { listClientsForSettings } from '@/lib/queries/clients'
 
 import { ClientsLanding } from './_components/clients-landing'
-import { ClientsLandingHeader } from './_components/clients-landing-header'
-import { ClientsTabsNav } from './_components/clients-tabs-nav'
 import { ClientsAddButton } from './_components/clients-add-button'
+import { CLIENTS_TABS } from './_lib/tabs'
 
 export const metadata: Metadata = {
   title: 'Clients | Place to Stand Portal',
@@ -60,29 +60,16 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
     }),
   ])
   return (
-    <>
-      <AppShellHeader>
-        <ClientsLandingHeader clients={clients} />
-      </AppShellHeader>
-      <div className='space-y-4'>
-        {/* Tabs Row - Above the main container */}
-        <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-          <ClientsTabsNav
-            activeTab='clients'
-            className='flex-1 sm:flex-none'
-          />
-          <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6'>
-            <span className='text-muted-foreground text-sm whitespace-nowrap'>
-              Total clients: {managementData.totalCount}
-            </span>
-            <ClientsAddButton />
-          </div>
-        </div>
-        {/* Main Container with Background */}
-        <section className='bg-background rounded-xl border p-6 shadow-sm'>
-          <ClientsLanding clients={clients} />
-        </section>
-      </div>
-    </>
+    <PageShell
+      breadcrumbs={crumbsForNav('/clients')}
+      tabs={CLIENTS_TABS}
+      activeTab='clients'
+      count={{ label: 'clients', total: managementData.totalCount }}
+      primaryAction={<ClientsAddButton />}
+    >
+      <section className='bg-background rounded-xl border p-6 shadow-sm'>
+        <ClientsLanding clients={clients} />
+      </section>
+    </PageShell>
   )
 }

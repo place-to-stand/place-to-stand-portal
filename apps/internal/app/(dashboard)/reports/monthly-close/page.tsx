@@ -3,7 +3,8 @@ import { format, getMonth, getYear } from 'date-fns'
 
 import { ArrowRight } from 'lucide-react'
 
-import { AppShellHeader } from '@/components/layout/app-shell'
+import { PageShell } from '@/components/layout/page-shell'
+import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { requireRole } from '@/lib/auth/session'
 import { getLatestPartnerRates } from '@/lib/billing/partner-rates'
 import { fetchMonthlyCloseView } from '@/lib/data/reports/close'
@@ -90,19 +91,7 @@ export default async function MonthlyClosePage({
     report.rates.effectiveFrom !== latestRates.effectiveFrom
 
   return (
-    <>
-      <AppShellHeader>
-        <div className='flex flex-col'>
-          <h1 className='text-2xl font-semibold tracking-tight'>
-            Monthly Close Report
-          </h1>
-          <p className='text-muted-foreground text-sm'>
-            End-of-month reconciliation for billing, payroll, origination, and
-            closer commissions.
-          </p>
-        </div>
-      </AppShellHeader>
-
+    <PageShell breadcrumbs={crumbsForNav('/reports/monthly-close')}>
       <div className='space-y-8'>
         <ReportHeader
           displayMonth={displayMonth}
@@ -197,6 +186,6 @@ export default async function MonthlyClosePage({
 
         <PartnerPayoutsSection data={report.partnerPayouts} />
       </div>
-    </>
+    </PageShell>
   )
 }

@@ -1,9 +1,7 @@
 import type { Metadata } from 'next'
 
-import { AppShellHeader } from '@/components/layout/app-shell'
 import type { ClientHoursData } from './_components/projects-landing'
 import { ProjectsLandingAdminSection } from './_components/projects-landing-admin-section'
-import { ProjectsLandingHeader } from './_components/projects-landing-header'
 import { fetchProjectsWithRelations } from '@/lib/data/projects'
 import { fetchClientsWithMetrics } from '@/lib/data/clients'
 import { fetchAdminUsers } from '@/lib/data/users'
@@ -55,15 +53,7 @@ export default async function ProjectsPage() {
   }))
 
   return (
-    <>
-      <AppShellHeader>
-        <ProjectsLandingHeader
-          projects={projects}
-          clients={landingClients}
-          currentUserId={user.id}
-        />
-      </AppShellHeader>
-      <ProjectsLandingAdminSection
+    <ProjectsLandingAdminSection
         projects={projects}
         landingClients={landingClients}
         clients={clientRows}
@@ -72,7 +62,6 @@ export default async function ProjectsPage() {
         totalProjectCount={visibleProjectCount}
         clientHoursMap={clientHoursMap}
       />
-    </>
   )
 }
 

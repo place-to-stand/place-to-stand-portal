@@ -11,15 +11,15 @@ import {
 import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 
-import { AppShellHeader } from '@/components/layout/app-shell'
+import { PageShell } from '@/components/layout/page-shell'
+import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { Button } from '@/components/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import type { LeadAssigneeOption, LeadBoardColumnData } from '@/lib/leads/types'
 import type { LeadRecord } from '@/lib/leads/types'
 import type { LeadStatusValue } from '@/lib/leads/constants'
 
-import { LeadsHeader } from './leads-header'
-import { LeadsTabsNav } from './leads-tabs-nav'
+import { LEADS_TABS } from '../_lib/tabs'
 import { LeadsBoard } from './leads-board'
 import { LeadSheet } from './lead-sheet'
 import { ConvertLeadDialog } from './convert-lead-dialog'
@@ -182,10 +182,30 @@ export function LeadsWorkspace({
     isCreatingLead || closingLeadId === activeLeadId ? null : activeLeadId
 
   return (
-    <div className='flex h-full min-h-0 flex-col gap-6'>
-      <AppShellHeader>
-        <LeadsHeader />
-      </AppShellHeader>
+    <PageShell
+      breadcrumbs={crumbsForNav('/leads/board')}
+      tabs={LEADS_TABS}
+      activeTab='board'
+      count={{ label: 'leads', total: totalLeads }}
+      primaryAction={
+        <DisabledFieldTooltip
+          disabled={!canManage}
+          reason='Admin access is required to create leads.'
+        >
+          <Button
+            type='button'
+            size='sm'
+            disabled={!canManage}
+            onClick={() => handleCreateLead()}
+            className='gap-2'
+          >
+            <Plus className='h-4 w-4' />
+            Add lead
+          </Button>
+        </DisabledFieldTooltip>
+      }
+      contentClassName='flex flex-col gap-4 sm:gap-6'
+    >
       {shouldRenderSheet ? (
         <LeadSheet
           open={isSheetOpen}
@@ -214,42 +234,15 @@ export function LeadsWorkspace({
           }}
         />
       )}
-      <div className='flex min-h-0 flex-1 flex-col gap-3'>
-        <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-          <LeadsTabsNav activeTab='board' />
-          <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6'>
-            <span className='text-muted-foreground text-sm'>
-              Total leads: {totalLeads}
-            </span>
-            <DisabledFieldTooltip
-              disabled={!canManage}
-              reason='Admin access is required to create leads.'
-            >
-              <Button
-                type='button'
-                size='sm'
-                disabled={!canManage}
-                onClick={() => handleCreateLead()}
-                className='gap-2'
-              >
-                <Plus className='h-4 w-4' />
-                Add lead
-              </Button>
-            </DisabledFieldTooltip>
-          </div>
-        </div>
-        <div className='flex min-h-0 flex-1 flex-col gap-4 sm:gap-6'>
-          <LeadsBoard
-            initialColumns={initialColumns}
-            canManage={canManage}
-            onEditLead={handleEditLead}
-            onCreateLead={handleCreateLead}
-            onLeadClosedWon={handleLeadClosedWon}
-            activeLeadId={boardActiveLeadId}
-          />
-        </div>
-      </div>
-    </div>
+      <LeadsBoard
+        initialColumns={initialColumns}
+        canManage={canManage}
+        onEditLead={handleEditLead}
+        onCreateLead={handleCreateLead}
+        onLeadClosedWon={handleLeadClosedWon}
+        activeLeadId={boardActiveLeadId}
+      />
+    </PageShell>
   )
 }
 

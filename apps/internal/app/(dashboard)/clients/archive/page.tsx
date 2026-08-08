@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
 
-import { AppShellHeader } from '@/components/layout/app-shell'
+import { PageShell } from '@/components/layout/page-shell'
+import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { requireRole } from '@/lib/auth/session'
 import { listClientsForSettings } from '@/lib/queries/clients'
 
-import { ClientsTabsNav } from '../_components/clients-tabs-nav'
+import { CLIENTS_TABS } from '../_lib/tabs'
 import { ClientsAddButton } from '../_components/clients-add-button'
 import { ClientsManagementTable } from '../_components/clients-management-table'
 import { mapClientToTableRow } from '../_lib/map-client-to-table-row'
@@ -63,35 +64,20 @@ export default async function ClientsArchivePage({
   const clientsForTable = items.map(mapClientToTableRow)
 
   return (
-    <>
-      <AppShellHeader>
-        <div className='flex flex-col'>
-          <h1 className='text-2xl font-semibold tracking-tight'>Clients</h1>
-          <p className='text-muted-foreground text-sm'>
-            Review archived organizations and restore them when work resumes.
-          </p>
-        </div>
-      </AppShellHeader>
-      <div className='space-y-4'>
-        {/* Tabs Row - Above the main container */}
-        <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-          <ClientsTabsNav activeTab='archive' className='flex-1 sm:flex-none' />
-          <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6'>
-            <span className='text-muted-foreground text-sm whitespace-nowrap'>
-              Total archived: {totalCount}
-            </span>
-            <ClientsAddButton />
-          </div>
-        </div>
-        {/* Main Container with Background */}
-        <section className='bg-background rounded-xl border p-6 shadow-sm space-y-4'>
-          <ClientsManagementTable
-            clients={clientsForTable}
-            pageInfo={pageInfo}
-            mode='archive'
-          />
-        </section>
-      </div>
-    </>
+    <PageShell
+      breadcrumbs={[...crumbsForNav('/clients'), { label: 'Archive' }]}
+      tabs={CLIENTS_TABS}
+      activeTab='archive'
+      count={{ label: 'archived clients', total: totalCount }}
+      primaryAction={<ClientsAddButton />}
+    >
+      <section className='bg-background rounded-xl border p-6 shadow-sm space-y-4'>
+        <ClientsManagementTable
+          clients={clientsForTable}
+          pageInfo={pageInfo}
+          mode='archive'
+        />
+      </section>
+    </PageShell>
   )
 }

@@ -54,7 +54,6 @@ type SearchableComboboxProps = {
   ariaLabelledBy?: string
   ariaDescribedBy?: string
   ariaInvalid?: boolean
-  variant?: 'default' | 'heading'
 }
 
 const baseTriggerClasses =
@@ -85,7 +84,6 @@ export const SearchableCombobox = React.forwardRef<
       ariaLabelledBy,
       ariaDescribedBy,
       ariaInvalid,
-      variant = 'default',
     },
     forwardedRef
   ) => {
@@ -187,12 +185,8 @@ export const SearchableCombobox = React.forwardRef<
       }
     }, [contentWidth])
 
-    const selectedTextClasses =
-      variant === 'heading' ? 'text-foreground font-semibold' : 'font-medium'
-    const placeholderTextClasses =
-      variant === 'heading'
-        ? 'text-foreground/60 font-semibold'
-        : 'text-muted-foreground'
+    const selectedTextClasses = 'font-medium'
+    const placeholderTextClasses = 'text-muted-foreground'
 
     return (
       <div className={cn('w-full', className)}>
@@ -213,12 +207,7 @@ export const SearchableCombobox = React.forwardRef<
               disabled={disabled}
               data-placeholder={selectedItem ? undefined : true}
               id={id}
-              className={cn(
-                baseTriggerClasses,
-                variant === 'heading' &&
-                  'hover:bg-accent/50 hover:text-accent-foreground data-[state=open]:bg-accent/50 dark:hover:bg-accent/50 dark:data-[state=open]:bg-accent/50 -ml-2 h-auto cursor-pointer border-none bg-transparent px-2 py-2 text-left text-3xl font-semibold tracking-tight shadow-none transition-colors dark:bg-transparent',
-                triggerClassName
-              )}
+              className={cn(baseTriggerClasses, triggerClassName)}
             >
               <div className='flex flex-1 items-center gap-2'>
                 {selectedItem?.userId ? (
@@ -241,7 +230,7 @@ export const SearchableCombobox = React.forwardRef<
                 ) : null}
                 <span
                   className={cn(
-                    variant !== 'heading' && 'line-clamp-1',
+                    'line-clamp-1',
                     selectedItem ? selectedTextClasses : placeholderTextClasses
                   )}
                 >

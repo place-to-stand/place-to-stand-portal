@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 
-import { AppShellHeader } from '@/components/layout/app-shell'
+import { PageShell } from '@/components/layout/page-shell'
+import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
+
 import { IntegrationsPanel } from './integrations-panel'
 
 export const metadata: Metadata = {
@@ -9,18 +11,10 @@ export const metadata: Metadata = {
 
 export default function IntegrationsSettingsPage() {
   return (
-    <>
-      <AppShellHeader>
-        <div className='flex flex-col'>
-          <h1 className='text-2xl font-semibold tracking-tight'>Integrations</h1>
-          <p className='text-muted-foreground text-sm'>
-            Manage your external account connections.
-          </p>
-        </div>
-      </AppShellHeader>
+    <PageShell breadcrumbs={crumbsForNav('/settings/integrations')}>
       <section className='bg-background rounded-xl border p-6 shadow-sm'>
         <IntegrationsPanel />
       </section>
-    </>
+    </PageShell>
   )
 }
