@@ -9,7 +9,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@pts/ui/dropdown-menu'
 import {
   getProjectStatusLabel,
   getProjectStatusToken,

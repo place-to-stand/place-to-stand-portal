@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Calendar, Info } from 'lucide-react'
 import { siGithub } from 'simple-icons/icons'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { TabsContent } from '@pts/ui/tabs'
 import { getProjectStatusLabel, getProjectStatusToken } from '@/lib/constants'

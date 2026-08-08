@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@pts/ui/button";
 import { DisabledFieldTooltip } from "@/components/ui/disabled-field-tooltip";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Label } from "@pts/ui/label";
 
 import {
   requestPasswordReset,

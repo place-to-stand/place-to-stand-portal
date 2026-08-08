@@ -19,8 +19,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
+} from '@pts/ui/select'
+import { Switch } from '@pts/ui/switch'
 
 import { USER_ROLES } from '@/lib/settings/users/user-validation'
 import type { UserFormValues } from './form-schema'

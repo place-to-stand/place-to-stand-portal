@@ -16,7 +16,7 @@ import { format, formatDistanceToNow } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
-import { Separator } from '@/components/ui/separator'
+import { Separator } from '@pts/ui/separator'
 import {
   Sheet,
   SheetContent,

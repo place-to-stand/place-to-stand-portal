@@ -8,7 +8,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '@pts/ui/dialog'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { toast } from '@/components/ui/use-toast'

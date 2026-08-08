@@ -9,7 +9,7 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@/components/ui/collapsible'
+} from '@pts/ui/collapsible'
 import type { PartnerRateSchedule } from '@/lib/billing/partner-rates'
 
 type FormulaNoticeProps = {

@@ -20,7 +20,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip'
+} from '@pts/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 

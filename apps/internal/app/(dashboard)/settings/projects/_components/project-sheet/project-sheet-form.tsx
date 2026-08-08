@@ -23,7 +23,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@pts/ui/select'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import { Badge } from '@/components/ui/badge'
 import {

@@ -10,7 +10,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@pts/ui/select'
 import { Input } from '@/components/ui/input'
 
 type CalendarHeaderProps = {

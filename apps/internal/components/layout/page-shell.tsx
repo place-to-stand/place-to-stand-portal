@@ -12,7 +12,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb'
+} from '@pts/ui/breadcrumb'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 
 import { useCommandPalette } from './command-palette'

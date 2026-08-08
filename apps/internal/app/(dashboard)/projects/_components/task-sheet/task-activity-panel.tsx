@@ -1,7 +1,7 @@
 'use client'
 
 import { ActivityFeed } from '@/components/activity/activity-feed'
-import { Separator } from '@/components/ui/separator'
+import { Separator } from '@pts/ui/separator'
 
 type TaskActivityPanelProps = {
   taskId: string | null

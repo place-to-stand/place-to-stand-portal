@@ -16,7 +16,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover'
+} from '@pts/ui/popover'
 import { cn } from '@/lib/utils'
 
 import type {

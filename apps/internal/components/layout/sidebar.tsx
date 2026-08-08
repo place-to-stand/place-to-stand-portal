@@ -26,8 +26,8 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@/components/ui/tooltip'
-import { Separator } from '@/components/ui/separator'
+} from '@pts/ui/tooltip'
+import { Separator } from '@pts/ui/separator'
 
 import { UserMenu } from './user-menu'
 import { NAV_GROUPS } from './navigation-config'

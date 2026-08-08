@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
 import { Button } from '@pts/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Checkbox } from '@pts/ui/checkbox'
 import {
   Form,
   FormControl,
@@ -17,7 +17,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Label } from '@pts/ui/label'
 import { PhoneInput } from '@/components/ui/phone-input'
 import {
   SearchableCombobox,
@@ -29,8 +29,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
+} from '@pts/ui/select'
+import { Switch } from '@pts/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 
 import { DesignSection, Specimen } from './specimen'

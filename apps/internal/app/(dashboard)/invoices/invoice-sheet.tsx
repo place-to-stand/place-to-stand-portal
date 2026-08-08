@@ -52,7 +52,7 @@ import {
   type SearchableComboboxGroup,
 } from '@/components/ui/searchable-combobox'
 import { Textarea } from '@/components/ui/textarea'
-import { Separator } from '@/components/ui/separator'
+import { Separator } from '@pts/ui/separator'
 import { useToast } from '@/components/ui/use-toast'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import { computeLineItemAmount } from '@/lib/invoices/invoice-form'

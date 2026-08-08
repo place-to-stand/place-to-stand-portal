@@ -6,7 +6,7 @@ import { Ban, Calendar, Eye, Hash, Send, Undo2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import { Separator } from '@/components/ui/separator'
+import { Separator } from '@pts/ui/separator'
 import type { InvoiceWithClient } from '@/lib/invoices/invoice-form'
 
 import { InvoiceShareSection } from './invoice-share-section'

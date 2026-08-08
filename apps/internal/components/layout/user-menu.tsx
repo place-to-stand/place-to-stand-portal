@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Loader2, LogOut, Moon, Sun, UserCog } from 'lucide-react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +12,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@pts/ui/dropdown-menu'
 
 import { cn } from '@/lib/utils'
 import type { AppUser } from '@/lib/auth/session'

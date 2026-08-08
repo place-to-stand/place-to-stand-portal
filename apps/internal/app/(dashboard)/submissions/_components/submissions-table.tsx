@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { PaginationControls } from '@/components/ui/pagination-controls'
-import { Progress } from '@/components/ui/progress'
+import { Progress } from '@pts/ui/progress'
 import {
   Table,
   TableBody,

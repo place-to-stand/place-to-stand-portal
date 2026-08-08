@@ -14,7 +14,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover'
+} from '@pts/ui/popover'
 import type { TaskWithRelations } from '@/lib/types'
 
 import { formatTaskStatusLabel } from './task-status-utils'

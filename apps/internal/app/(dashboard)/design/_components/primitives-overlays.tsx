@@ -23,7 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
+} from '@pts/ui/dialog'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
   DropdownMenu,
@@ -32,7 +32,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@pts/ui/dropdown-menu'
 import {
   HoverCard,
   HoverCardContent,
@@ -43,7 +43,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover'
+} from '@pts/ui/popover'
 import {
   Sheet,
   SheetContent,
@@ -56,7 +56,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@/components/ui/tooltip'
+} from '@pts/ui/tooltip'
 import { useToast } from '@/components/ui/use-toast'
 
 import { DesignSection, Specimen } from './specimen'

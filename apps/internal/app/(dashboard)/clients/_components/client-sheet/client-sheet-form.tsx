@@ -24,7 +24,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@pts/ui/select'
 
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import type {

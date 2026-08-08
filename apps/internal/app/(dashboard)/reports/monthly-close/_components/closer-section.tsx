@@ -1,6 +1,6 @@
 import { UserCheck } from 'lucide-react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import type { CloserData } from '@/lib/data/reports/types'
 
 import {

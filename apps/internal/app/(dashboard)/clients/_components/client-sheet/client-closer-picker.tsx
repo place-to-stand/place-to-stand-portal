@@ -16,7 +16,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover'
+} from '@pts/ui/popover'
 
 import type { PartnerUserOption } from '@/lib/settings/clients/use-client-sheet-state'
 

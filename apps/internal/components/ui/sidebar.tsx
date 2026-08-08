@@ -9,7 +9,7 @@ import { useIsMobile } from "@pts/ui/hooks/use-mobile"
 import { cn } from "@/lib/utils"
 import { Button } from "@pts/ui/button"
 import { Input } from "@/components/ui/input"
-import { Separator } from "@/components/ui/separator"
+import { Separator } from "@pts/ui/separator"
 import {
   Sheet,
   SheetContent,
@@ -23,7 +23,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
+} from "@pts/ui/tooltip"
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
