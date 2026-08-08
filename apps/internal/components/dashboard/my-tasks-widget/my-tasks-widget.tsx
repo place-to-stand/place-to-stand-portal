@@ -22,7 +22,6 @@ export function MyTasksWidget({
   totalCount,
   className,
 }: MyTasksWidgetProps) {
-  const description = 'Assigned work from every active project.'
 
   const { items } = useMyTasksWidgetState({
     initialTasks: tasks,
@@ -42,7 +41,6 @@ export function MyTasksWidget({
           <h2 id='my-tasks-heading' className='text-base font-semibold'>
             My Tasks
           </h2>
-          <p className='text-muted-foreground text-xs'>{description}</p>
         </div>
         <div className='flex items-center gap-3'>
           <p className='text-muted-foreground text-xs font-medium'>

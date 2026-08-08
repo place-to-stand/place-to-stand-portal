@@ -109,19 +109,17 @@ export function ProjectsLandingAdminSection({
         </DisabledFieldTooltip>
       }
     >
-      <div className='space-y-4'>
+      <section className='bg-background space-y-4 rounded-xl border p-6 shadow-sm'>
         <ProjectsLandingFilters statuses={statuses} search={search} />
-        <section className='bg-background rounded-xl border p-6 shadow-sm'>
-          <ProjectsLanding
-            projects={projects}
-            clients={landingClients}
-            currentUserId={currentUserId}
-            clientHoursMap={clientHoursMap}
-            unfilteredCounts={unfilteredCounts}
-            filtersActive={filtersActive}
-          />
-        </section>
-      </div>
+        <ProjectsLanding
+          projects={projects}
+          clients={landingClients}
+          currentUserId={currentUserId}
+          clientHoursMap={clientHoursMap}
+          unfilteredCounts={unfilteredCounts}
+          filtersActive={filtersActive}
+        />
+      </section>
       <ProjectSheet
         open={sheetOpen}
         onOpenChange={handleSheetOpenChange}

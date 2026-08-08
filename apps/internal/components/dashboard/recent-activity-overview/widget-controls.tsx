@@ -28,9 +28,6 @@ export function WidgetControls({
         >
           Recent Activity Overview
         </h2>
-        <p className='text-muted-foreground text-xs'>
-          AI-generated summary of the activity logs so everyone stays aligned.
-        </p>
       </div>
       <div className='flex items-center gap-2'>
         <TabsList className='h-9'>
