@@ -3,7 +3,7 @@
 **Depends on:** [01-task-sheet-stay-open.md](01-task-sheet-stay-open.md) (create→edit transition makes the section available right after create)
 **App:** `apps/internal/`
 **Decisions:** D4, D5 (see [README.md](README.md))
-**Review codes:** C4, C5, C6, W3, W4, W5, W6, W14, I5 (see [ARCHITECTURE-REVIEW.md](ARCHITECTURE-REVIEW.md))
+**Review codes:** C4, C5, C6, W3, W4, W5, W6, W14, I5, R3, R6 (see [ARCHITECTURE-REVIEW.md](ARCHITECTURE-REVIEW.md))
 
 ## Problem
 
@@ -51,8 +51,11 @@ including the log's *other* linked tasks.
 hydration helper today: the linked-task fetch, `linkedTasksByLog` map, and row→`TimeLogEntry`
 mapping are all inline inside `listProjectTimeLogs` (~L118–178). Extract a
 `hydrateTimeLogEntries(logIds)` helper, refactor `listProjectTimeLogs` to call it, then implement
-`listTaskTimeLogs` as: fetch matching log ids via `time_log_tasks` (`taskId = ?`,
-`deletedAt IS NULL` on both join and log) → hydrate via the shared helper.
+`listTaskTimeLogs(user, taskId)` as: `ensureTaskAccess(user, taskId)` **inside the query, first
+line** — matching the sibling convention (`listProjectTimeLogs` opens with `ensureProjectAccess`),
+so any future server-side caller inherits the guard rather than relying on the route (R3) — then
+fetch matching log ids via `time_log_tasks` (`taskId = ?`, `deletedAt IS NULL` on both join and
+log) → hydrate via the shared helper.
 
 **(C6, deliberate bug fix)** the current inline linked-tasks query filters only by
 `inArray(timeLogTasks.timeLogId, …)` — it is **missing `isNull(timeLogTasks.deletedAt)`**, so
@@ -71,10 +74,10 @@ payloads, NOT an `{ ok, data }` envelope)**:
 
 - `const user = await getCurrentUser()` → 401 `{ error: 'Unauthorized' }`
 - zod `paramsSchema = z.object({ taskId: z.string().uuid() })` over `await context.params` → 400
-- `ensureTaskAccess(user, taskId)` — **(I5)** note the admin assert is transitive via
-  `ensureProjectAccess`, and it can throw `NotFoundError` for the task *or* project; catch
-  `HttpError` generically and map `error.status` (as the sibling routes do), don't assume a fixed
-  403/404 pair
+- Calls `listTaskTimeLogs(user, taskId)` — the guard (`ensureTaskAccess`) lives **inside the
+  query** (R3). **(I5)** the admin assert is transitive via `ensureProjectAccess`, and it can throw
+  `NotFoundError` for the task *or* project; catch `HttpError` generically and map `error.status`
+  (as the sibling routes do), don't assume a fixed 403/404 pair
 - Returns bare `{ entries, totalHours }`
 
 ### 3. Client hook — `use-task-time-logs.ts`
@@ -169,7 +172,15 @@ non-optional), which both My Tasks (`projects` prop) and the board already hold 
 ## Architecture notes
 
 - No schema changes. The `time_log_tasks` unique-per-`(timeLogId, taskId)` + project-match check
-  constraints are the invariants this UI leans on; nothing new to enforce.
+  constraints are the invariants this UI leans on.
+- **(R6) Server-side task-eligibility validation.** The button-disable and eligibility filter are
+  client-only; the write API accepts arbitrary `taskIds` and `createTimeLog` checks only project
+  access — a task archived or soft-deleted *after* the dialog opens (or a hand-crafted request)
+  could still be linked. Add in-transaction validation to `createTimeLog`/`updateTimeLog`
+  (`apps/internal/lib/queries/time-logs/mutations.ts`): every linked task must exist, belong to the
+  log's project, have `deletedAt IS NULL`, and not be status `ARCHIVED`; **accepted tasks are
+  explicitly allowed** (matching the C5 pre-link exception). Violations return a 400 with a
+  field-level message so the dialog can surface "task no longer available".
 - Logging time for **another user** stays possible — the dialog's "Log hours for" combobox is
   unchanged.
 - The lead task overlay never shows the section (create-only + `closeOnSave`; a task never persists
@@ -187,6 +198,7 @@ non-optional), which both My Tasks (`projects` prop) and the board already hold 
 - [ ] "Log time" works on an **accepted** task (pre-linked chip present, C5); disabled on an archived task
 - [ ] Opening the pre-linked create dialog and closing it untouched does NOT prompt to discard (C5 baseline seeding)
 - [ ] Logging time while the task form has unsaved edits does NOT wipe those edits (C4)
+- [ ] The time-log API rejects linking soft-deleted or ARCHIVED tasks server-side; accepted tasks are allowed (R6)
 - [ ] Works identically from My Tasks and from the project board task sheet
 - [ ] A log linked to multiple tasks appears on each linked task's sheet; editing from one is visible from the other
 - [ ] Activity events for create/edit/delete still fire (existing hook path)
@@ -201,7 +213,8 @@ non-optional), which both My Tasks (`projects` prop) and the board already hold 
 - `apps/internal/app/(dashboard)/projects/_components/task-sheet/use-task-time-logs.ts`
 
 **Modified:**
-- `apps/internal/lib/queries/time-logs/read.ts` — extract `hydrateTimeLogEntries` (+ `deletedAt` bug fix, C6), add `listTaskTimeLogs`
+- `apps/internal/lib/queries/time-logs/read.ts` — extract `hydrateTimeLogEntries` (+ `deletedAt` bug fix, C6), add `listTaskTimeLogs` (guard inside, R3)
+- `apps/internal/lib/queries/time-logs/mutations.ts` — in-transaction linked-task eligibility validation (R6)
 - `apps/internal/lib/projects/time-log/use-project-time-log-dialog.ts` (+ `types.ts`) — `initialLinkedTaskIds` seeding effect + baseline (C5), delete wiring (W5)
 - `apps/internal/lib/projects/time-log/time-log-task-selection.ts` — pre-linked eligibility exception (C5)
 - `apps/internal/lib/projects/time-log/use-project-time-log-mutation.ts` — `onSuccess` callback (W6)

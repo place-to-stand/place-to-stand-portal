@@ -4,7 +4,7 @@
 **Blocked by this:** [02-task-sheet-time-logs.md](02-task-sheet-time-logs.md)
 **App:** `apps/internal/`
 **Decisions:** D1, D2, D3 (see [README.md](README.md))
-**Review codes:** C1, C2, C3, C4, C7, W1, W2, W13, W15, I2 (see [ARCHITECTURE-REVIEW.md](ARCHITECTURE-REVIEW.md))
+**Review codes:** C1, C2, C3, C4, C7, W1, W2, W13, W15, I2, R1, R2 (see [ARCHITECTURE-REVIEW.md](ARCHITECTURE-REVIEW.md))
 
 ## Problem
 
@@ -48,6 +48,12 @@ policy: PRD 001 §04 (Acknowledge keeps the submission sheet open; Archive close
 - Create path: `return { taskId: insertedId }` (assigned ~L108, null-checked ~L117). Edit path:
   `return { taskId: id }` (harmless, keeps the shape uniform). The terminal `return {}` is ~L381,
   after `revalidateProjectTaskViews()`.
+- **(R1) Partial-failure contract:** the create flow inserts the task before syncing
+  assignees/attachments; if a post-insert step fails, the action currently returns a bare error
+  while the row exists — a client retry would insert a **duplicate**. Change the contract: any
+  error thrown **after** the insert returns `{ taskId: insertedId, error }`. The client treats a
+  result carrying `taskId` as "created" (transitions to edit mode, surfaces the error toast for the
+  failed sub-step) and never re-runs the create path for it.
 
 ### 2. `use-task-sheet-state.ts` — the core change (D1, D3)
 
@@ -98,12 +104,15 @@ Specifics:
   leaves the discard prompt armed. Also call `resetAttachmentsState({ preservePending: true })` on
   save success; verify `useTaskAttachments` behavior across the create→edit transition (it's keyed
   on the `task` prop).
-- **(W1) Double-submit guard — there is NO existing `isSubmitting` guard.** The only protection
-  today is `submitDisabled = isPending || !canManage || isUploading` (~L328) gating the button and
-  ⌘S (`canSave`). Add an explicit `isPending` early-return at the top of `handleFormSubmit`, plus a
-  `createdTaskIdRef` that ignores further submits once `onTaskCreated` has fired for this create
-  (cleared when `task?.id` arrives or the sheet closes). Without both, a fast ⌘S double-tap creates
-  duplicates.
+- **(W1, R1) Double-submit guard — there is NO existing `isSubmitting` guard, and `isPending` is
+  NOT sufficient.** The only protection today is `submitDisabled = isPending || !canManage ||
+  isUploading` (~L328) gating the button and ⌘S (`canSave`) — but `isPending` is **render state**:
+  two submit callbacks firing in the same render window both observe it as `false`, and
+  `createdTaskIdRef` is set only after the first request succeeds — too late to stop a second
+  in-flight request. Use a **synchronous in-flight ref**: set `submitLockRef.current = true` as the
+  first statement of `handleFormSubmit` (early-return if already true), clear it when the save
+  settles (success or failure). Keep `createdTaskIdRef` as the second layer: once set, further
+  submits are ignored until `task?.id` arrives or the sheet closes.
 - **(W13) Create→edit remounts the editor:** `editorKey` goes `'new-task'` → `task.id`
   (`use-task-sheet-form.ts` ~L69–71) and `historyKey` likewise (`task-sheet.tsx` ~L108), so the
   TipTap editor remounts and the undo/redo history resets at the transition. Content is preserved
@@ -132,7 +141,10 @@ never resolves: the sheet silently renders create mode with the new id in the UR
 save duplicates. Fix in the server page: when `activeTaskId` is set and its project isn't in the
 assigned set, fetch the task's project (with relations, same shape as `fetchProjectsWithRelations`
 rows) by the task id and merge it into the `projects` payload. This also future-proofs deep links
-to any task URL from My Tasks.
+to any task URL from My Tasks. **(R2)** Validate the raw segment with `z.string().uuid()` (or
+equivalent) **before** the lookup — `/my/tasks/board/not-a-uuid` must not reach a Postgres UUID
+comparison (500); an invalid or unresolvable id is treated as no active task (sheet closed, board
+renders normally).
 
 **(C2) Transition ordering** — do NOT clear the create context before navigation; the render-time
 re-sync (~L99–107) runs `setIsSheetOpen(Boolean(activeTaskId))` when `createTaskContext` is null,

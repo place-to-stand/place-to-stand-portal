@@ -47,6 +47,23 @@ and TEST-PLAN.md.
 | I4 | 05 | `eq` must be added to the `drizzle-orm` import in `settings.ts` (currently absent); `isNotNull(users.disabledAt)` is cleaner than raw SQL (either matches file style). The searchParams parse block is already duplicated verbatim across the two pages — extract a shared `parseUsersSearchParams` helper rather than triplicating. Filtered-empty detection: `users-management-table.tsx` already calls `useSearchParams()` (L41) — read `role`/`access` there; **no prop drilling**. Stale-cursor + filter via bookmark can yield a legitimately empty page with `hasPreviousPage: true` — acceptable, no fix. Pages import the query via the `@/lib/queries/users` barrel (types re-exported; no barrel edit needed). |
 | I5 | 02 | `ensureTaskAccess(user, taskId, { includeArchived? })` asserts admin **transitively** via `ensureProjectAccess`; it can throw `NotFoundError` for task or project. Map `HttpError.status` generically in the route (as `api/tasks/*` siblings do). |
 
+## Multi-reviewer pass (2026-08-08, post-PR)
+
+PR #110 was reviewed by three independent reviewers (Claude code-reviewer: verified ~45 code
+citations, 0 findings; Codex standard: 4; Codex adversarial: 5; one overlap → 8 unique). Owner
+triaged 2026-08-08. R# codes below are referenced from the section files.
+
+| # | Source | Finding | Resolution |
+|---|--------|---------|------------|
+| R1 | Codex std P1 + adv high | `isPending` is render state — same-render double submits both pass; `createdTaskIdRef` is set too late to stop an in-flight second request. Separately, a post-insert failure (assignee/attachment sync) leaves a row while returning a bare error — retry duplicates. Adversarial also wanted a server-side idempotency key + unique constraint. | **Fixed** in 01: synchronous `submitLockRef` set before `startTransition`, cleared on settle; partial-failure contract — post-insert errors return `{ taskId, error }`, client treats as created. **Skipped**: idempotency-key schema — disproportionate for an internal admin tool once the sync lock + result contract exist. |
+| R2 | Codex std P2 | Raw URL segment reaching a Postgres UUID comparison → 500 on `/my/tasks/board/not-a-uuid`. | **Fixed** in 01: UUID-validate before the C1 lookup; invalid → no active task. Test 01.E5. |
+| R3 | Codex std P2 | `listTaskTimeLogs` specced ID-only left auth to the route; future server-side reuse could bypass. | **Fixed** in 02: signature is `listTaskTimeLogs(user, taskId)` with `ensureTaskAccess` first-line inside the query (sibling `listProjectTimeLogs` convention). |
+| R4 | Codex std P2 | Active-filter detection from raw params counts invalid values (`?role=SUPERADMIN`) as filters → wrong empty-state message. | **Fixed** in 05: run values through `isUserRole`/`isUserAccess` when deriving the flag. |
+| R5 | Codex adv high | SOW drop irreversibility: wants phased two-deploy removal, exported project→doc manifest, verified backup restore, rollback runbook. | **Skipped — contradicts the owner's explicit D6 decision** (drop with data; the export option was offered and rejected during structuring). Supabase automated backups provide the recovery window; the feature is unused and source docs remain in Google Drive. |
+| R6 | Codex adv med | Task-lifecycle eligibility was client-only; the write API accepts arbitrary `taskIds` — a task archived after the dialog opens could still be linked. | **Fixed** in 02: `createTimeLog`/`updateTimeLog` validate linked tasks in-transaction (exists, same project, not deleted, not ARCHIVED; accepted allowed) with a field-level 400. Test 02.E7. |
+| R7 | Codex adv med | Keyset cursors not bound to the filter set — pasted/bookmarked URL mixing old cursor + new filter can skip rows; wants filter signatures encoded in cursors. | **Skipped** — disproportionate for an internal admin list; benign failure that self-heals on any filter interaction; consistent with the app's existing pagination conventions (documented as accepted edge I4, test 05.E3). |
+| R8 | Codex adv med | Controlled hover-card contract lacked timer semantics — the active card's stale 200ms close timer can wipe the just-opened total card; controlled/uncontrolled behavior could diverge between implementers. | **Fixed** in 04: controlled opens cancel that instance's pending timers; close callbacks clear shared state only via owner-checked functional update. |
+
 ## Product review
 
 | # | Finding | Resolution |

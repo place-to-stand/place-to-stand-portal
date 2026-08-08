@@ -3,7 +3,7 @@
 **Depends on:** Nothing (parallelizable)
 **App:** `apps/internal/`
 **Decisions:** D9 (see [README.md](README.md))
-**Review codes:** W8, W9, I3, PW2 (see [ARCHITECTURE-REVIEW.md](ARCHITECTURE-REVIEW.md))
+**Review codes:** W8, W9, I3, PW2, R8 (see [ARCHITECTURE-REVIEW.md](ARCHITECTURE-REVIEW.md))
 
 ## Problem
 
@@ -71,6 +71,12 @@ when `totalProjectCount > activeCount` (D9).
   ~150ms. Extend the wrapper with **optional controlled props** (`open?: boolean`,
   `onOpenChange?: (open: boolean) => void`, backward-compatible — uncontrolled when absent), then
   hold `openCard: 'active' | 'total' | null` in the cell so opening one force-closes the other.
+  **(R8) Timer semantics are part of the contract, not an implementation detail:** when the wrapper
+  is controlled, entering a controlled-open state must **cancel that instance's pending
+  open/close timers**, and a close callback may clear the shared state **only if it is still the
+  owner** — use a functional update (`setOpenCard(cur => cur === 'active' ? null : cur)`), never a
+  bare `setOpenCard(null)`. Otherwise the active card's stale 200ms close timer fires after the
+  total card opens and wipes it.
   Keyboard note **(I3)**: the wrapper has no focus handler — cards open on pointer-enter or
   click-activation (Enter/Space), not on focus; parity with the active trigger is the bar.
 - Reference for a second implementation of the same pattern:

@@ -29,8 +29,9 @@ portal at sign-in — application-layer access control, no RLS).
 **Edge cases:**
 - [ ] **01.E1** Create a task from My Tasks assigned to someone else (not self) → sheet transitions to edit mode showing the task (C1: server page resolves it by id); a second save updates, not duplicates
 - [ ] **01.E2** Create with a validation error (e.g. empty title) → sheet stays open, errors shown, no navigation
-- [ ] **01.E3** Server error on save (kill network) → toast/error state, sheet open, form intact, retry works
+- [ ] **01.E3** Server error on save (kill network) → toast/error state, sheet open, form intact, retry works; if the failure happened **after** the insert (partial failure), the result carries `taskId` and the sheet transitions to edit — retry never creates a second task (R1)
 - [ ] **01.E4** Deep link directly to `/my/tasks/board/{taskId}` for a task in a project with none of your assignments → sheet opens in edit mode (C1 by-id resolution)
+- [ ] **01.E5** Deep link `/my/tasks/board/not-a-uuid` → no 500; page renders normally with no sheet (R2)
 
 ## §02 — Time logs on the task sheet (14)
 
@@ -56,6 +57,7 @@ portal at sign-in — application-layer access control, no RLS).
 - [ ] **02.E4** Log time for another user via "Log hours for" → appears in list attributed to them
 - [ ] **02.E5** Another admin edits/deletes a linked log elsewhere → reopening the sheet (or refetch-on-open) shows fresh data
 - [ ] **02.E6** With unsaved task-form edits (e.g. changed title), log time via the dialog → after save, the unsaved title edit is still present in the form (C4)
+- [ ] **02.E7** Archive a linked task in another tab, then save a time log linking it → API rejects with a clear field-level error (R6 server-side validation); accepted tasks still link fine
 
 ## §03 — Scope removal (8)
 
@@ -126,11 +128,11 @@ portal at sign-in — application-layer access control, no RLS).
 
 | Section | Core | Edge | Total |
 |---------|------|------|-------|
-| §01 Stay open | 12 | 4 | 16 |
-| §02 Time logs | 14 | 6 | 20 |
+| §01 Stay open | 12 | 5 | 17 |
+| §02 Time logs | 14 | 7 | 21 |
 | §03 Scope removal | 8 | 2 | 10 |
 | §04 Total hover | 7 | 4 | 11 |
 | §05 User filters | 9 | 3 | 12 |
 | Permissions | 3 | — | 3 |
 | Regressions | 8 | — | 8 |
-| **Total** | **61** | **19** | **80** |
+| **Total** | **61** | **21** | **82** |

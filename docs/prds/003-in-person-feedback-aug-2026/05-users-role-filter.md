@@ -3,7 +3,7 @@
 **Depends on:** Nothing (parallelizable)
 **App:** `apps/internal/`
 **Decisions:** D10 (see [README.md](README.md))
-**Review codes:** W10, W11, W12, I4 (see [ARCHITECTURE-REVIEW.md](ARCHITECTURE-REVIEW.md))
+**Review codes:** W10, W11, W12, I4, R4 (see [ARCHITECTURE-REVIEW.md](ARCHITECTURE-REVIEW.md))
 
 ## Problem
 
@@ -120,7 +120,10 @@ pagination automatically — verified, no change needed. Add a filtered-empty-st
 users match the current filters") when a filter is active and rows are empty, alongside the existing
 `EMPTY_MESSAGES` (L27–30). **(I4)** The component already calls `useSearchParams()` (L41) — read
 `role`/`access` from there to detect an active filter; **no prop drilling** through
-`UsersTableSection` or the pages.
+`UsersTableSection` or the pages. **(R4)** Run the raw values through the same `isUserRole` /
+`isUserAccess` guards when deriving that flag — `?role=SUPERADMIN` is ignored by the server, so it
+must not count as an active filter (an empty unfiltered list would otherwise show the wrong
+"no users match the current filters" message).
 
 ## Architecture notes
 

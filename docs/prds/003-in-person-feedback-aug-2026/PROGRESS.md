@@ -17,8 +17,9 @@ Update this file after each coding session. Mark items as they land; note deviat
 - [ ] `pendingRefreshRef` pathname-wait mechanism deleted; direct `router.refresh()` (D3)
 - [ ] Consolidated re-baseline rule: reset fires only on `open` flip or `task?.id` CHANGE — never on same-id prop identity changes; no competing second effect (C4)
 - [ ] Edit save re-baselines form AND attachments (`resetAttachmentsState({ preservePending: true })`) — no discard prompt after save (C7)
-- [ ] Double-submit guard: `isPending` early-return in `handleFormSubmit` + `createdTaskIdRef` (W1)
-- [ ] My Tasks server page resolves the active task by id when outside the assigned set and merges its project into the payload (C1)
+- [ ] Double-submit guard: **synchronous** `submitLockRef` set before `startTransition` (cleared on settle) + `createdTaskIdRef` (W1, R1)
+- [ ] Partial-failure contract: post-insert errors return `{ taskId, error }`; client treats as created, never re-inserts on retry (R1)
+- [ ] My Tasks server page validates `activeTaskId` as UUID (invalid → no active task), then resolves it by id when outside the assigned set and merges its project into the payload (C1, R2)
 - [ ] My Tasks: `handleTaskCreated` pushes URL first; `justCreatedTaskIdRef` gates the re-sync; create context cleared only once the task resolves (C2, W15)
 - [ ] Board: `handleTaskCreated` mirrors `handleEditTask` — `setRouteTaskId` + `setPendingTaskId` + `navigateToProject` (C3)
 - [ ] Lead overlay passes `closeOnSave`; behavior unchanged
@@ -28,7 +29,8 @@ Update this file after each coding session. Mark items as they land; note deviat
 ## 02 — Time logs on the task sheet ([02-task-sheet-time-logs.md](02-task-sheet-time-logs.md))
 
 - [ ] `hydrateTimeLogEntries` extracted from `listProjectTimeLogs`, including the missing `timeLogTasks.deletedAt` filter (deliberate live-bug fix) (C6)
-- [ ] `listTaskTimeLogs` query (log ids via `time_log_tasks` → shared hydration; SQL-summed total) (D5)
+- [ ] `listTaskTimeLogs(user, taskId)` query — `ensureTaskAccess` inside the query, first line (log ids via `time_log_tasks` → shared hydration; SQL-summed total) (D5, R3)
+- [ ] `createTimeLog`/`updateTimeLog`: in-transaction linked-task eligibility validation (not deleted, not ARCHIVED; accepted allowed) (R6)
 - [ ] `GET /api/tasks/[taskId]/time-logs` with `ensureTaskAccess`; **bare payload** per `api/tasks/` convention, generic `HttpError` mapping (W3, I5)
 - [ ] `use-task-time-logs.ts` React Query hook (`['task-time-logs', taskId]`, explicit `staleTime: 0`) (W14)
 - [ ] `time-log-section.tsx`: list + total + empty/loading/error states; edit-mode only
@@ -59,7 +61,7 @@ Update this file after each coding session. Mark items as they land; note deviat
 - [ ] Data layer: `ClientProjectSummary` (+`status: ProjectStatusValue`), widened query (status filter dropped), `allProjects` + derived `activeProjects` (D9, I3)
 - [ ] `apps/internal/components/ui/hover-card.tsx`: optional controlled `open`/`onOpenChange` (backward-compatible) (W8)
 - [ ] Cell: total span → second HoverCard with status badges (Badge + `getProjectStatusToken`); both branches with per-branch tones (`/60`, `/50`) (I3)
-- [ ] Cell coordination: opening one card force-closes the other (W8)
+- [ ] Cell coordination: opening one card force-closes the other; controlled opens cancel pending timers; close callbacks clear state via owner-checked functional update (W8, R8)
 - [ ] Total card list scrolls (`max-h-80 overflow-y-auto`) (W9)
 - [ ] Links `/projects/.../tasks` for all statuses; slug/id fallbacks
 - [ ] `clients-landing.tsx` passes `allProjects`; contacts linked-clients hover regression-checked
@@ -72,7 +74,7 @@ Update this file after each coding session. Mark items as they land; note deviat
 - [ ] `listUsersForSettings` role/access predicates in `baseConditions` (`eq`/`isNotNull` added to drizzle import); count follows (I4)
 - [ ] Active page: both filters + `space-y-4`; archive page: role only; both use the shared parse helper
 - [ ] Pagination preserves filters; filter change resets pagination
-- [ ] Filtered empty-state message (detect via existing `useSearchParams()` — no prop drilling) (I4)
+- [ ] Filtered empty-state message (detect via existing `useSearchParams()`, values run through `isUserRole`/`isUserAccess` guards — no prop drilling) (I4, R4)
 - [ ] Build / lint / type-check pass; TEST-PLAN §05 walked
 
 ## Post-implementation
