@@ -33,6 +33,12 @@ Every load-bearing PRD claim was checked against the actual codebase. Confirmed:
 | PI2 | Info | Deferred priorities are right; the mobile-nav fix riding on sidebar adoption is the biggest hidden product win. | No change. |
 | PI3 | Info | Guardrail: while `@pts/ui` exists with the client portal unadopted, no *new* component copies into `apps/client/` — the five existing copies are frozen. | Noted in 04 + 06. |
 
+## Post-implementation findings (UF)
+
+| # | Sev | Finding | Resolution |
+|---|-----|---------|------------|
+| UF1 | Critical (shipped broken) | The Base UI migration crashed every dashboard page at runtime: `DropdownMenuLabel` mapped to `Menu.GroupLabel`, which Base UI **runtime-enforces** must sit inside `<Menu.Group>` — Radix's `Label` was free-standing, and user-menu's `forceMount` meant the invalid composition rendered during SSR of the layout. Compile-time gates (tsc/lint/`next build`) cannot see Base UI's context invariants, and the implementation session stopped at those gates. | Both label wrappers (`DropdownMenuLabel`, `SelectLabel` — same trap) rebuilt as plain styled divs (Radix-equivalent semantics, valid anywhere). Full sweep of Base UI's `"Context is missing"` invariants run against every wrapper/consumer composition. **New regression harness:** `apps/internal/scripts/smoke-render-ui.tsx` SSR-renders all 21 ported-component compositions (open/forceMount states included) — catches this entire error class without a browser; run it after any `@pts/ui` primitive change. Also surfaced by the harness: four package files missing the conventional `import * as React` (breaks non-Next consumers) and a misplaced `'use client'` directive. |
+
 ## Decisions taken during audit
 
 1. **W3 → accept fuzzy search semantics** (no wildcard escaping); keep all three surfaces identical.

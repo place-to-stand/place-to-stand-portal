@@ -216,9 +216,12 @@ function SelectContent({
   )
 }
 
-function SelectLabel({ className, ...props }: SelectPrimitive.GroupLabel.Props) {
+function SelectLabel({ className, ...props }: React.ComponentProps<'div'>) {
+  // Plain div, not Select.GroupLabel: Base UI's GroupLabel throws unless
+  // nested in <Select.Group>; Radix's SelectLabel worked free-standing.
+  // Same runtime-invariant trap as DropdownMenuLabel — presentation only.
   return (
-    <SelectPrimitive.GroupLabel
+    <div
       data-slot='select-label'
       className={cn('text-muted-foreground px-2 py-1.5 text-xs', className)}
       {...props}
