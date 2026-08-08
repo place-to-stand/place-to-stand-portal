@@ -137,6 +137,9 @@ export async function saveTask(input: BaseTaskInput): Promise<SaveTaskResult> {
       })
     } catch (assigneeError) {
       console.error('Failed to sync task assignees', assigneeError)
+      // The row exists and the client will navigate to it — cached task
+      // views must include it even though a sub-step failed.
+      await revalidateProjectTaskViews()
       return {
         taskId: insertedId,
         error: 'Task saved but assignees could not be updated.',
@@ -164,6 +167,7 @@ export async function saveTask(input: BaseTaskInput): Promise<SaveTaskResult> {
       })
     } catch (activityError) {
       console.error('Failed to log task creation activity', activityError)
+      await revalidateProjectTaskViews()
       return {
         taskId: insertedId,
         error: 'Task saved but activity could not be recorded.',

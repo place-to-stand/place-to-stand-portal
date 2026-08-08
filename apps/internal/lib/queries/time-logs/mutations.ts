@@ -31,6 +31,9 @@ async function assertLinkedTasksEligible(
     return
   }
 
+  // FOR UPDATE locks the task rows through the link write, so a concurrent
+  // archive/soft-delete between this check and the insert can't slip an
+  // ineligible link through (READ COMMITTED TOCTOU).
   const rows = await tx
     .select({
       id: tasks.id,
@@ -40,6 +43,7 @@ async function assertLinkedTasksEligible(
     })
     .from(tasks)
     .where(inArray(tasks.id, taskIds))
+    .for('update')
 
   const rowsById = new Map(rows.map(row => [row.id, row]))
 
