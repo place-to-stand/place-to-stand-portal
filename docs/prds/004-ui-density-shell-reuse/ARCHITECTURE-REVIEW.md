@@ -37,3 +37,17 @@ Every load-bearing PRD claim was checked against the actual codebase. Confirmed:
 
 1. **W3 → accept fuzzy search semantics** (no wildcard escaping); keep all three surfaces identical.
 2. **PW3 → always-visible sort arrow** on the default-sorted column.
+
+## Multi-reviewer pass (post-submission, PR #112)
+
+Three reviewers ran against the PR: Claude code-reviewer (0 findings — verified all prior claims), Codex standard (2), Codex adversarial (5). All 7 triaged as Fix by Jason; resolutions folded into the section files with R# codes.
+
+| # | Source | Sev | Finding | Resolution |
+|---|--------|-----|---------|------------|
+| R1 | Codex std | P2 | Palette route spec said `getCurrentUser()` + `assertAdmin()`, but `getCurrentUser()` returns `AppUser \| null` — fails type-check or returns 403 where 401 is required. | 01: explicit null → 401 before `assertAdmin(user)`, matching the existing route convention. |
+| R2 | Codex std | P2 | `sort` in the `useListParams` schema fed `hasActiveFilters` — sort-only changes would fake "Showing N of M"/filtered-empty; projects' implicit clean-URL status default would be missed. | 03: filter/search keys declared separately from `sort` with per-key normalized defaults; `sort` excluded from `hasActiveFilters` by construction. |
+| R3 | Codex adv | High | Palette project search would expose other admins' PERSONAL projects — verified: today's switcher excludes them (`projects-landing-header.tsx:63`); the raw listing search does not. | 01: explicit visibility predicate (PERSONAL → own only) inside the palette query; two-admin test added; every 03-added entity must state its visibility predicate. |
+| R4 | Codex adv | High | Legacy/PageShell coexistence inferred shell mode from portal content — post-hydration state (`headerContent` set in `useEffect`) → SSR-headerless unconverted pages, CLS, no header on hydration failure. | 01: mechanical commit converts all `AppShellHeader` uses to a page-owned `LegacyPageHeader` and deletes the portal + shared row up front; header ownership server-known in every intermediate state. |
+| R5 | Codex adv | High | Sort spec omitted the cursor **encoding** contract — cursors carry fixed payloads (`{name,id}`); new sort fields without matching encode/decode produce duplicate/skipped/empty pages; null policy + tie-breaker unspecified. | 03: full per-sort descriptor (orderBy both directions, typed field-tagged encode/decode with mismatch rejection, null policy, mandatory `id` tie-breaker) + tests for duplicates/nulls/both directions/stale cursors. |
+| R6 | Codex adv | Medium | "Only additive API changes" is false for Base UI migrations — Base UI composes via render-prop, not Radix `asChild`; many `*Trigger asChild` consumers exist. | 04: per-component consumer inventory; wrapper preserves the current public API (incl. `asChild` composition) or all call-site changes ship in the same commit; keyboard/focus verification required; impractical preservation → component moves to stay-Radix list. |
+| R7 | Codex adv | Medium | Palette parity gap: the retired switcher searches client *and* project names with grouped labels; the spec searched project name/slug only, capped at 8. | 01: project palette query matches client name (join), results labeled `Client · Project`, alphabetical ranking, per-group cap. **Partial skip:** the reviewer's "keep combobox headers until parity tests pass" was rejected — it contradicts locked D2/D13; parity ships in the same section instead. |

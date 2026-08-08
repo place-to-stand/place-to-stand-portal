@@ -39,7 +39,7 @@ Create a real `PageShell` in `components/layout/` that owns everything between t
 - **Right-side header slot** stays: My Tasks mounts `PersonSelector`, project detail mounts `ProjectBurndownWidget` (with its View/Add time-log buttons), exactly as today (D3).
 - Fix the incidental inconsistencies while in there: header icon no longer nav-derived (breadcrumb replaces it), `/invoices/settings` mislabeled title, the duplicated route-match logic between `sidebar.tsx` and `app-shell.tsx`.
 
-**Migration mechanics:** `PageShell` lands alongside the existing slot; pages convert route-group by route-group (each conversion is a small, reviewable PR-sized chunk); `AppShellHeader` is deleted when the last page converts.
+**Migration mechanics:** one mechanical commit converts every `AppShellHeader` usage to a temporary page-owned `LegacyPageHeader` and deletes the portal + shared header row (header ownership becomes server-known everywhere — no hydration-dependent shell switching, R4); pages then convert `LegacyPageHeader` → `PageShell` route-group by route-group (small, reviewable chunks); `LegacyPageHeader` is deleted when the last page converts.
 
 ### 02 — Sidebar: adopt shadcn sidebar with icon collapse (Medium)
 

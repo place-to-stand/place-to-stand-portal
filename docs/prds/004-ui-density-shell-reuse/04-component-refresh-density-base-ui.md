@@ -3,7 +3,7 @@
 **Depends on:** 05 (the style guide is the acceptance surface — every change here is verified on `/design`) and 03 (the table-chrome standardization in step 2 applies to the toolbars/tables 03 converts; steps 0–1 can start any time after 05)
 **App:** `apps/internal/` + new `packages/ui/`
 **Decisions:** D8, D10, D15, D16 (see [README.md](README.md))
-**Review codes:** W4, I2, PI3 (see [ARCHITECTURE-REVIEW.md](ARCHITECTURE-REVIEW.md))
+**Review codes:** W4, I2, PI3, R6 (see [ARCHITECTURE-REVIEW.md](ARCHITECTURE-REVIEW.md))
 
 ## Problem
 
@@ -46,6 +46,7 @@ Run the official codemod (`npx shadcn@latest migrate radix`): rewrites `@radix-u
 
 - Set `components.json` → Base UI (`--base`); registry adds/regenerations now emit Base UI variants.
 - **Migrate now** (stock, unmodified — regenerate and diff), **14 components**: `alert-dialog`, `avatar`, `breadcrumb` (added in 01, stock), `checkbox`, `collapsible`, `dialog` (re-apply `showCloseButton`), `dropdown-menu`, `label`, `popover`, `progress`, `select` (re-apply the two small deltas), `separator`, `switch` (re-apply `sm` size), `tooltip`. Per-component PR-sized commits, each verified on `/design` + primary consumers.
+- **Composition contract per migration (R6):** "stock component" does NOT mean "import-only flip" — Base UI's composition model differs from Radix (render-prop instead of `asChild`), and the repo has many `asChild` trigger consumers (`PopoverTrigger`, `DropdownMenuTrigger`, `TooltipTrigger`, `AlertDialogTrigger`, …). Each migration commit must: (1) inventory that component's consumers first (grep its exports); (2) either have the regenerated wrapper **preserve the current public API** — including `asChild`-style composition, prop names, and event/focus behavior — or include every affected call-site change in the same commit; (3) verify keyboard/focus behavior on `/design` and the primary consumer, not just visuals. If a wrapper can't cheaply preserve the API, that component moves to the stay-Radix list instead — API-preserving wrappers are the default, call-site churn is the exception.
 - **Stay Radix until deliberately ported** (custom behavior = porting risk): `sheet.tsx` (`skipMountAnimation`, toast-aware `onInteractOutside`, size prop — the flicker-handoff pattern in project memory depends on it), `searchable-combobox.tsx`, `hover-card.tsx` (pending the step-4 port trial — stays only if the trial fails), `command.tsx` (cmdk, not Radix anyway), `form.tsx`, `sidebar.tsx` (fresh from 02 — don't churn it), `tabs.tsx`/`button.tsx`/`badge.tsx` (just touched in step 2; port opportunistically later).
 - Radix + Base UI coexist; the unified `radix-ui` package stays until the last Radix consumer ports (future scope).
 
@@ -63,7 +64,7 @@ Run the official codemod (`npx shadcn@latest migrate radix`): rewrites `@radix-u
 
 ## Architecture notes
 
-- Nothing here changes component APIs except additive props (`density`); feature-component call sites change only where table chrome standardizes or an import flips to `@pts/ui/*`.
+- Public component APIs are preserved by default — additive props (`density`) aside, feature-component call sites change only where table chrome standardizes or an import flips to `@pts/ui/*`. The exception is a Base UI migration where API preservation proves impractical: then the call-site changes ship in that component's own commit per the R6 contract (never spread across commits).
 - The `dark:` classes and theming are untouched — Base UI components consume the same CSS variables, and the package is theme-agnostic (tokens live in each app's globals).
 - `apps/client/`'s five copied components are **not** touched and it does not import `@pts/ui` yet (D12/D15); adoption is future scope.
 - Two import roots coexist during this section by design (`@/components/ui/*` pending, `@pts/ui/*` done); PROGRESS.md tracks the set, and the section ends with `components/ui/` holding only the deliberately-unmoved set (the stay-Radix components and any bespoke holdouts).
@@ -74,6 +75,7 @@ Run the official codemod (`npx shadcn@latest migrate radix`): rewrites `@radix-u
 - [ ] Tabs render at `h-9` everywhere; buttons at exact `h-9/h-8/h-7`; no layout breakage on the style guide or key views
 - [ ] Management tables render `density='compact'`; one header treatment + one container radius across all tables; invoice-settings tables gain the header fill
 - [ ] The 14 migrated components are Base UI (verify imports); sheet/combobox/form/sidebar still Radix (hover-card per its trial outcome); zero visual regressions on `/design` side-by-sides
+- [ ] Every Base UI migration commit carries its consumer inventory; `asChild` trigger call sites (Popover/DropdownMenu/Tooltip/AlertDialog) compose and focus correctly post-migration (R6)
 - [ ] Sheet `skipMountAnimation` handoff (create→edit) and toast-click dismissal still work
 - [ ] `scroll-area.tsx`, `alert.tsx`, `use-board-assigned-filter.ts` deleted; board unaffected
 - [ ] `@pts/ui` exists with per-component exports; every refreshed/migrated component lives there with internal imports flipped; `turbo` builds/type-checks the package; client portal has no `@pts/ui` dependency

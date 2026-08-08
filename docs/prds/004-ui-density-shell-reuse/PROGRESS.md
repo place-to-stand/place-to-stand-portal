@@ -5,7 +5,7 @@ Update this file after each coding session. Mark items as they land; note deviat
 ## Pre-implementation checklist
 
 - [ ] Read [README.md](README.md) decisions D1–D16
-- [ ] Read [ARCHITECTURE-REVIEW.md](ARCHITECTURE-REVIEW.md) — all W#/I#/PW#/PI# findings are resolved and folded into the section files; the codes there reference it
+- [ ] Read [ARCHITECTURE-REVIEW.md](ARCHITECTURE-REVIEW.md) — all W#/I#/PW#/PI# findings **and the multi-reviewer R1–R7 findings** are resolved and folded into the section files; the codes there reference it
 - [ ] Worktree note: fresh worktrees need `.env.local` copied and a build to generate `next-env.d.ts` (see project memory)
 - [ ] Confirm implementation order: 02 → 01 → 05 → 03 → 04 (per the README dependency graph; the 05 labs land during 03/04)
 
@@ -25,7 +25,8 @@ Update this file after each coding session. Mark items as they land; note deviat
 
 - [ ] `command.tsx` a11y fix (DialogTitle inside DialogContent)
 - [ ] `breadcrumb.tsx` added; `PageShell` + `TabsNav` + `lib/navigation/breadcrumbs.ts` built
-- [ ] ⌘K palette: nav entries + clients/projects record jump; ⌘K + Ctrl+K (PW2); visible header affordance w/ kbd hint (PW1); `GET /api/command-palette/search` (admin-gated, zod-validated `q` — W5)
+- [ ] ⌘K palette: nav entries + clients/projects record jump; ⌘K + Ctrl+K (PW2); visible header affordance w/ kbd hint (PW1); `GET /api/command-palette/search` (null→401 then assertAdmin — R1; zod-validated `q` — W5; PERSONAL-project visibility predicate — R3; client-name match + `Client · Project` labels — R7)
+- [ ] Mechanical commit: all `AppShellHeader` uses → page-owned `LegacyPageHeader`; portal + shared header row deleted (server-known header ownership — R4)
 - [ ] `hooks/use-record-cycle.ts` extracted; `⌘[`/`⌘]` verified on clients + project detail
 - [ ] Pages converted (~22): settings/integrations · reports · submissions ×3 · hour-blocks ×3 · invoices ×4 · contacts ×3 · clients ×4 · leads ×3 · my/home · my/tasks · projects landing/archive/activity · project detail ×6
 - [ ] Legacy path deleted: `AppShellHeader` portal, icon tile, 4 header components, 9 `*TabsNav` files, combobox `heading` variant
@@ -41,11 +42,11 @@ Update this file after each coding session. Mark items as they land; note deviat
 
 ## 03 — Table toolbar ([03-table-toolbar-filters-sort-search.md](03-table-toolbar-filters-sort-search.md))
 
-- [ ] `useListParams` + `FilterBar`/`FilterSelect`/`SortableTableHead`/`SearchInput`
+- [ ] `useListParams` (filters declared separately from sort; defaults-aware `hasActiveFilters` — R2) + `FilterBar`/`FilterSelect`/`SortableTableHead`/`SearchInput`
 - [ ] Users + submissions converted (behavior-equal); old filter components deleted
 - [ ] Projects: multi-select server-side status filter; defaults + `none` sentinel preserved
 - [ ] Search: clients/contacts/projects wired; extended to users/invoices/hour-blocks
-- [ ] Sort: allowlists + cursor variants per view; sortable column headers on all management tables (`aria-sort`, cursor reset, default-sort arrow visible on load — PW3)
+- [ ] Sort: per-sort descriptors (orderBy + field-tagged cursor encode/decode + null policy + id tie-breaker — R5) per view; sortable column headers on all management tables (`aria-sort`, cursor reset, default-sort arrow visible on load — PW3)
 - [ ] Counts → toolbar row; `Showing N of M` when filtered; filtered empty states everywhere
 - [ ] Palette record search extended (contacts + new entities)
 - [ ] Build / lint / type-check pass
@@ -56,7 +57,7 @@ Update this file after each coding session. Mark items as they land; note deviat
 - [ ] Radix consolidation codemod (16 → 1 `radix-ui`)
 - [ ] `tabs.tsx` regenerated (h-9); `button.tsx` fixed heights incl. `lg: h-10` (W4); `skeleton.tsx` refreshed
 - [ ] Table `density='compact'` variant; chrome standardized; monthly-close local classes deleted
-- [ ] `components.json` → Base UI; 14 stock components migrated incl. breadcrumb (individually verified on `/design`)
+- [ ] `components.json` → Base UI; 14 stock components migrated incl. breadcrumb (individually verified on `/design`; per-component consumer inventory + `asChild` composition contract — R6)
 - [ ] Refreshed/migrated components moved into `@pts/ui` in their refresh commits; imports flipped (package = checklist)
 - [ ] `confirm-dialog` rebased on alert-dialog (API unchanged, 31 importers untouched)
 - [ ] `hover-card` port trial resolved (official primitive w/ tap parity, or documented keep-custom)

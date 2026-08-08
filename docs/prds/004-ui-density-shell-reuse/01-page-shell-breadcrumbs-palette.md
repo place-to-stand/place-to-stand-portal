@@ -3,7 +3,7 @@
 **Depends on:** 02 (sidebar — supplies `SidebarTrigger` and the shadcn `SidebarProvider` shell)
 **App:** `apps/internal/`
 **Decisions:** D1, D2, D3, D10, D11, D13, D14 (see [README.md](README.md))
-**Review codes:** W1, W2, W3, W5, I3, I5, PW1, PW2, PI1 (see [ARCHITECTURE-REVIEW.md](ARCHITECTURE-REVIEW.md))
+**Review codes:** W1, W2, W3, W5, I3, I5, PW1, PW2, PI1, R1, R3, R4, R7 (see [ARCHITECTURE-REVIEW.md](ARCHITECTURE-REVIEW.md))
 
 ## Problem
 
@@ -47,8 +47,8 @@ Group crumbs (`Work`) have no href (not navigable — no landing pages exist); s
 `components/layout/command-palette.tsx`, mounted once inside `AppShell`, opened via `⌘K` **and `Ctrl+K`** (`metaKey || ctrlKey`, matching the existing `⌘[`/`⌘]` handlers — PW2; no conflict: sidebar uses `⌘B`) **and a visible search affordance in the `PageShell` header row** — a muted search button showing a `⌘K` kbd hint; it replaces a visible control, so the visible entry point is part of the contract, not optional chrome (PW1).
 
 - **Navigate group** — static, from `NAV_GROUPS`: all 12 nav items + named tabs of the current section. Selecting `router.push`es.
-- **Clients / Projects groups** — record jump. Debounced (~200ms) fetch to the new route below once the query is ≥2 chars; clients navigate to `/clients/[clientSlug]`, projects to `/projects/[clientSlug]/[projectSlug]/tasks`. These two ship **in this section** because it retires their combobox headers (D13). Empty state: `CommandEmpty` renders "No results for '…'" (PI1).
-- New route `GET /api/command-palette/search?q=` — `getCurrentUser()` + `assertAdmin()`, then **zod-parse `q` (trim, 2–100 chars) before querying** (W5, matching the `api/tasks/` route convention), then parallel `Promise.all` of two small queries reusing the existing search predicates — `buildSearchCondition` in [pagination.ts](../../../apps/internal/lib/queries/clients/settings/pagination.ts) for clients, and the `createSearchPattern` (`lib/pagination/cursor.ts:73`) condition inlined in [listing.ts](../../../apps/internal/lib/queries/projects/listing.ts) ~L86–97 for projects (W2 — there is no single shared helper) — with `limit 8` each, returning `{ ok, data: { clients: [...], projects: [...] } }` (I3: `{ok,data}` per CLAUDE.md; consistent within this new namespace). Search inherits the fuzzy `%`-join semantics of `createSearchPattern` by design (W3 decision — no wildcard escaping). Section 03 extends this route with more entities.
+- **Clients / Projects groups** — record jump. Debounced (~200ms) fetch to the new route below once the query is ≥2 chars; clients navigate to `/clients/[clientSlug]`, projects to `/projects/[clientSlug]/[projectSlug]/tasks`. These two ship **in this section** because it retires their combobox headers (D13). **Switcher parity (R7):** the combobox being replaced searches "clients or projects" — so the palette's project query must match on **client name as well as project name/slug** (join to `clients`, same `createSearchPattern` treatment), and project results render disambiguating `Client · Project` labels exactly as the combobox did. Ranking: alphabetical by label within each group; the 8-per-group cap is acceptable for a type-ahead palette (narrowing the query is the pagination), but the cap must be per-group, never global. Empty state: `CommandEmpty` renders "No results for '…'" (PI1).
+- New route `GET /api/command-palette/search?q=` — `getCurrentUser()`, **explicit null check → 401** (R1: `getCurrentUser()` returns `AppUser | null`; the null branch must return 401 before `assertAdmin(user)` runs, matching the existing route convention — calling `assertAdmin` on a possibly-null user fails type-check, and forcing it through would return 403 where 401 is required), then `assertAdmin(user)`, then **zod-parse `q` (trim, 2–100 chars) before querying** (W5, matching the `api/tasks/` route convention), then parallel `Promise.all` of two small queries reusing the existing search predicates — `buildSearchCondition` in [pagination.ts](../../../apps/internal/lib/queries/clients/settings/pagination.ts) for clients, and the `createSearchPattern` (`lib/pagination/cursor.ts:73`) condition inlined in [listing.ts](../../../apps/internal/lib/queries/projects/listing.ts) ~L86–97 for projects (W2 — there is no single shared helper) — with `limit 8` each, returning `{ ok, data: { clients: [...], projects: [...] } }` (I3: `{ok,data}` per CLAUDE.md; consistent within this new namespace). Search inherits the fuzzy `%`-join semantics of `createSearchPattern` by design (W3 decision — no wildcard escaping). **Visibility rule (R3):** the project query must apply the same predicate today's switcher applies — **PERSONAL projects are excluded unless `createdBy` = the current user** ([projects-landing-header.tsx:63](<../../../apps/internal/app/(dashboard)/projects/_components/projects-landing-header.tsx>) is the precedent); the raw listing search alone would leak other admins' personal project names into the palette. The predicate lives inside the palette query in `lib/queries/command-palette.ts`, not in the client. Section 03 extends this route with more entities, and every added entity states its visibility predicate explicitly.
 
 ### `⌘[` / `⌘]` extraction (D14)
 
@@ -63,7 +63,8 @@ In [command.tsx](../../../apps/internal/components/ui/command.tsx), `CommandDial
 ### 2. Build `PageShell` + `TabsNav` + breadcrumb
 
 - `npx shadcn@latest add breadcrumb` → `components/ui/breadcrumb.tsx`.
-- `components/layout/page-shell.tsx` as designed above. It does **not** use the `AppShellHeader` portal — it renders the header row itself as the first child of the content column; `AppShell` keeps the portal alive for unconverted pages during migration (both header paths must not render simultaneously — `AppShell` renders its legacy header row only when the portal has content).
+- `components/layout/page-shell.tsx` as designed above. It does **not** use the `AppShellHeader` portal — it renders the header row itself as the first child of the content column.
+- **Coexistence mechanism (R4)** — do NOT infer shell mode from portal content: `headerContent` is populated from `useEffect`, so any "render the legacy row only when the portal has content" rule is post-hydration state — unconverted pages would server-render headerless and pop the header in on hydration (CLS on every unconverted page, and no header at all if hydration fails). Instead, header ownership is **server-known on every page from the start**: add a temporary `components/layout/legacy-page-header.tsx` that renders the current chrome-row markup (border, padding, icon tile) inline at the top of page content, and in **one mechanical commit** convert every `<AppShellHeader>…</AppShellHeader>` usage to `<LegacyPageHeader>…</LegacyPageHeader>` and delete the portal (`HeaderContext`/`AppShellHeader`/`useAppShellHeader`) and the shared header row from `app-shell.tsx`. After that commit, every page owns its header in the server-rendered tree; pages then convert `LegacyPageHeader` → `PageShell` at leisure, each intermediate state SSR-correct with zero hydration inference. (This also removes today's existing post-hydration slot-fill behavior as a side effect.)
 - `components/layout/tabs-nav.tsx` — lift the markup from [clients-tabs-nav.tsx](<../../../apps/internal/app/(dashboard)/clients/_components/clients-tabs-nav.tsx>) (~L41–45); navigation via `router.push(tab.href)` as today.
 - `lib/navigation/breadcrumbs.ts` + extract the duplicated route-match logic (`sidebar.tsx` ~L79–89 / `app-shell.tsx` ~L74–87) into `lib/navigation/active-route.ts` — single source, both consumers import it (02 may land this first; coordinate).
 
@@ -73,7 +74,7 @@ As designed. Files: `components/layout/command-palette.tsx`, `app/api/command-pa
 
 ### 4. Convert pages, route-group by route-group
 
-Order (simple → complex): settings/integrations → reports → submissions → hour-blocks → invoices → contacts → clients → leads → my (home, tasks) → projects (landing + detail). Per page: delete the `AppShellHeader` block + hand-rolled toolbar row, wrap content in `PageShell` with props, delete the local `*TabsNav`.
+Order (simple → complex): settings/integrations → reports → submissions → hour-blocks → invoices → contacts → clients → leads → my (home, tasks) → projects (landing + detail). Per page: delete the `LegacyPageHeader` block (post-R4 mechanical commit) + hand-rolled toolbar row, wrap content in `PageShell` with props, delete the local `*TabsNav`. (`LegacyPageHeader` carries the `SidebarTrigger` from 02 during the transition; `PageShell` owns it after conversion.)
 
 Special cases:
 - **My Tasks** ([my-tasks-page.tsx](../../../apps/internal/components/my-tasks/my-tasks-page.tsx)): `headerRight={<PersonSelector …>}` (D3); its inline tabs (~L296–314) move to the `tabs` prop; count + Add task to `count`/`primaryAction`.
@@ -84,12 +85,12 @@ Special cases:
 
 ### 5. Delete the legacy path
 
-When the last page converts: remove `HeaderContext`/`AppShellHeader`/`useAppShellHeader` from `app-shell.tsx`, the legacy header row, the icon tile, `ClientsLandingHeader`, `ProjectsBoardHeader`, `ProjectsLandingHeader`, `LeadsHeader`, the `heading` variant of `searchable-combobox.tsx`, and the nine `*TabsNav` files.
+The portal (`HeaderContext`/`AppShellHeader`/`useAppShellHeader`) and the shared header row are already gone (step 2's mechanical commit, R4). When the last page converts: delete `LegacyPageHeader`, `ClientsLandingHeader`, `ProjectsBoardHeader`, `ProjectsLandingHeader`, `LeadsHeader`, the `heading` variant of `searchable-combobox.tsx`, and the nine `*TabsNav` files.
 
 ## Architecture notes
 
 - `PageShell` is a client component (tabs/palette interactivity) but takes serializable props — server pages can render it directly.
-- Migration is incremental and shippable at any intermediate point; the legacy portal and `PageShell` coexist until step 5.
+- Migration is incremental and shippable at any intermediate point; after step 2's mechanical commit, `LegacyPageHeader` and `PageShell` coexist page-by-page with header ownership server-known everywhere (R4) until step 5.
 - The description strings are deleted, not relocated (D1). Any genuinely load-bearing copy (none found in audit) would move into page content.
 
 ## Acceptance criteria
@@ -101,7 +102,9 @@ When the last page converts: remove `HeaderContext`/`AppShellHeader`/`useAppShel
 - [ ] Tabs/count/action row identical across all list views; nine `*TabsNav` files deleted
 - [ ] ⌘K **and Ctrl+K** open the palette anywhere; typing filters nav items; ≥2 chars surfaces matching clients + projects; selection navigates; `Esc` closes; empty state shows "No results" (PW2, PI1)
 - [ ] A visible search affordance with a `⌘K` hint sits in the header row and opens the palette on click (PW1)
-- [ ] Palette API rejects non-admin sessions and zod-validates `q` (W5)
+- [ ] Palette API returns 401 unauthenticated (explicit null check, R1), rejects non-admin sessions, and zod-validates `q` (W5)
+- [ ] Palette never surfaces another admin's PERSONAL projects (R3); project search matches client names and shows `Client · Project` labels (R7)
+- [ ] During migration, unconverted pages render their header in the server response (no post-hydration header pop-in) (R4)
 - [ ] `⌘[`/`⌘]` still cycle records on clients and project detail pages
 - [ ] No Radix `DialogTitle` warning from the palette
 - [ ] `npm run build`, `npm run lint`, `npm run type-check` pass from the repo root
@@ -110,7 +113,7 @@ When the last page converts: remove `HeaderContext`/`AppShellHeader`/`useAppShel
 
 All paths under `apps/internal/` unless noted.
 
-**New:** `components/ui/breadcrumb.tsx` · `components/layout/page-shell.tsx` · `components/layout/tabs-nav.tsx` · `components/layout/command-palette.tsx` · `lib/navigation/breadcrumbs.ts` · `lib/navigation/active-route.ts` · `hooks/use-record-cycle.ts` · `app/api/command-palette/search/route.ts` · `lib/queries/command-palette.ts` · per-feature `_lib/tabs.ts` configs
+**New:** `components/ui/breadcrumb.tsx` · `components/layout/page-shell.tsx` · `components/layout/legacy-page-header.tsx` (temporary — deleted in step 5, R4) · `components/layout/tabs-nav.tsx` · `components/layout/command-palette.tsx` · `lib/navigation/breadcrumbs.ts` · `lib/navigation/active-route.ts` · `hooks/use-record-cycle.ts` · `app/api/command-palette/search/route.ts` · `lib/queries/command-palette.ts` · per-feature `_lib/tabs.ts` configs
 
 **Modified:** `components/layout/app-shell.tsx` (portal removal at end) · every `app/(dashboard)/**` page with a header (~22) · `components/ui/command.tsx` (a11y fix) · `components/ui/searchable-combobox.tsx` (heading variant removed)
 

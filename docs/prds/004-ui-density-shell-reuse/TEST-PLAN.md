@@ -22,7 +22,7 @@ Update after each coding session. All tests run as an **ADMIN** user in the inte
 - [ ] **02.9** Body never scrolls: long pages scroll their inner pane only, both collapsed and expanded, desktop and mobile
 - [ ] **02.10** Trigger has an accessible name (inspect or screen reader); `aria-expanded`/state reflected
 
-## §01 — Page shell, breadcrumbs, ⌘K palette (17)
+## §01 — Page shell, breadcrumbs, ⌘K palette (18)
 
 - [ ] **01.1** Visit every top-level view (Home, My Tasks, Submissions, Leads board, Invoices, Hour Blocks, Projects, Clients, Contacts, Monthly Close, Users, Integrations): identical single-line header (trigger · breadcrumb · right slot) — **no description lines anywhere**, no icon tile
 - [ ] **01.2** Header height is visibly reduced vs pre-PRD and **identical** across sibling navigations: `/clients` ↔ `/clients/archive` ↔ `/clients/activity`; all six project-detail tabs
@@ -33,12 +33,13 @@ Update after each coding session. All tests run as an **ADMIN** user in the inte
 - [ ] **01.7** Toolbar row consistent on every list view: tabs left; count + primary action right; counts/actions match the pre-PRD matrix (activity tabs keep action, no count)
 - [ ] **01.8** `⌘K` **and `Ctrl+K`** open the palette from any page (PW2); typing filters nav entries; `Esc` closes; selecting navigates; no-match query shows the "No results" empty state (PI1)
 - [ ] **01.8b** The header row shows a visible search affordance with a `⌘K` hint; clicking it opens the palette (PW1)
-- [ ] **01.9** Palette: type ≥2 chars of a client name → client appears under Clients → selecting lands on `/clients/{slug}`; same for a project → `/projects/{clientSlug}/{projectSlug}/tasks`
+- [ ] **01.9** Palette: type ≥2 chars of a client name → client appears under Clients → selecting lands on `/clients/{slug}`; same for a project → `/projects/{clientSlug}/{projectSlug}/tasks`; **typing a client's name also surfaces that client's projects** with `Client · Project` labels (R7)
+- [ ] **01.9b** Two-admin check: admin A's PERSONAL project never appears in admin B's palette results (R3); own PERSONAL projects do appear
 - [ ] **01.10** Palette: >8 matches → results capped at 8 per group; 1 char → no record fetch; nonsense query → nav items filter to none, no error
 - [ ] **01.11** `⌘[` / `⌘]` still cycle prev/next records on `/clients/{slug}` and project detail; disabled at list ends as before
 - [ ] **01.12** Board-height pages (My Tasks board, leads board, project board) still fill the viewport with internal scrolling — no double scrollbars
 - [ ] **01.13** No Radix `DialogTitle` warning in the console when opening the palette; palette announces its title to AT
-- [ ] **01.14** `GET /api/command-palette/search?q=…` unauthenticated → 401; (if testable) CLIENT-role session → 403/redirect
+- [ ] **01.14** `GET /api/command-palette/search?q=…` unauthenticated → **401 exactly** (explicit null check before assertAdmin — R1); (if testable) CLIENT-role session → 403
 - [ ] **01.15** Old header components gone: no `text-3xl` combobox titles on `/clients` or project detail; global grep finds zero `AppShellHeader` usages at section end
 - [ ] **01.16** Mobile (<768px): header wraps gracefully; breadcrumb truncates (no horizontal scroll); user menu reachable
 
@@ -46,6 +47,7 @@ Update after each coding session. All tests run as an **ADMIN** user in the inte
 - [ ] **01.E1** Deep-link an invalid client slug → existing 404/redirect behavior unchanged (breadcrumb doesn't crash on missing record)
 - [ ] **01.E2** Palette search with a `%`/`_` in the query → no error/500; results may broaden (fuzzy `createSearchPattern` semantics are intentional — W3 decision); a >100-char query is rejected cleanly by validation (W5)
 - [ ] **01.E3** `⌘K` while the palette is open → closes (toggle), no stacking
+- [ ] **01.E4** Mid-migration state (some pages on `LegacyPageHeader`, some on `PageShell`): an unconverted page's header is present in the server-rendered HTML (view-source), no header pop-in or layout shift on load (R4)
 
 ## §05 — Style guide `/design` (6)
 
@@ -56,7 +58,7 @@ Update after each coding session. All tests run as an **ADMIN** user in the inte
 - [ ] **05.5** (By end of 03) Toolbar lab: FilterBar with single + multi FilterSelect and SearchInput, local-state wired; SortableTableHead states visible in the table lab
 - [ ] **05.6** (By end of 04) Table lab shows `default` vs `compact` side by side with the standardized chrome; Base UI side-by-side blocks removed once migrations land
 
-## §03 — Table toolbar: filters, sort, search (15)
+## §03 — Table toolbar: filters, sort, search (16)
 
 - [ ] **03.1** Users: role + access filters behave exactly as pre-PRD (URL `?role=&access=`, archive tab role-only, count follows, cursor cleared on change, filters survive pagination)
 - [ ] **03.2** Submissions: unack/kind/status filters behave as pre-PRD on both tabs; `page` resets on filter change
@@ -66,6 +68,7 @@ Update after each coding session. All tests run as an **ADMIN** user in the inte
 - [ ] **03.6** Sort: on each management table, allowlisted column headers show the sort affordance; click → `asc` with ↑, click again → `desc` with ↓, again → default order; URL carries `?sort=field:dir`
 - [ ] **03.6b** On first load (no `?sort=`), the default-sorted column already shows its direction arrow (PW3); cycling back to default clears the URL param but keeps the arrow
 - [ ] **03.7** Sort × keyset pagination: sort by name on users, paginate forward AND backward → order stable, no skipped/duplicated rows; changing sort resets the cursor
+- [ ] **03.7b** Sort by created/updated with duplicate timestamp values across a page boundary → no duplicated or skipped rows (id tie-breaker, R5); a nullable sort column places nulls last consistently in both directions
 - [ ] **03.8** Non-sortable headers: no button affordance, no cursor change, clicking does nothing
 - [ ] **03.9** `aria-sort` present on the active sorted header (inspect)
 - [ ] **03.10** Counts: unfiltered → `N <things>`; any filter/search active → `Showing N of M`; submissions no longer double-renders its total
@@ -78,6 +81,8 @@ Update after each coding session. All tests run as an **ADMIN** user in the inte
 - [ ] **03.E1** Combine search + filter + sort + pagination on one view (users) → all four round-trip through the URL together; reload reproduces the exact view
 - [ ] **03.E2** Filter change while on page N of results → returns to first page (no stale-cursor 500/empty)
 - [ ] **03.E3** Rapid typing then immediate navigation away → no state bleed into the next view
+- [ ] **03.E4** Deep-link a URL pairing a cursor minted under one sort with a different `?sort=` (stale bookmark) → server rejects the mismatched cursor payload and serves page one; no 500, no garbage page (R5)
+- [ ] **03.E5** Change only the sort on a filtered-capable view → count stays `N <things>` (no `Showing N of M`), no filtered-empty message (R2); projects with the clean-URL default status → not treated as filtered
 
 ## §04 — Component refresh, `@pts/ui`, Base UI (12)
 

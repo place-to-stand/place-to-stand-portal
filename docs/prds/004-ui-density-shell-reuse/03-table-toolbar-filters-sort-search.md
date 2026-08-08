@@ -3,7 +3,7 @@
 **Depends on:** 01 (toolbar composes into `PageShell`'s content area; palette route exists for record-search extension)
 **App:** `apps/internal/`
 **Decisions:** D5, D6, D7, D13 (see [README.md](README.md))
-**Review codes:** W2, W3, I1, PW3 (see [ARCHITECTURE-REVIEW.md](ARCHITECTURE-REVIEW.md))
+**Review codes:** W2, W3, I1, PW3, R2, R5 (see [ARCHITECTURE-REVIEW.md](ARCHITECTURE-REVIEW.md))
 
 ## Problem
 
@@ -29,14 +29,21 @@ One toolbar system, one URL-state hook, rolled out to every management table. Th
 ### `useListParams` — `hooks/use-list-params.ts`
 
 ```ts
-const { params, update, hasActiveFilters } = useListParams({
+const { filters, sort, update, hasActiveFilters } = useListParams({
   basePath: '/settings/users',
   resetKeys: ['cursor', 'dir'],          // or ['page'] for offset views
-  schema: { role: isUserRole, access: isUserAccess, q: 'string', sort: isUserSort },
+  filters: {                              // R2: filter/search keys are declared SEPARATELY from sort
+    role:   { guard: isUserRole },        // no default → default = unset
+    access: { guard: isUserAccess },
+    q:      { guard: 'string' },
+    // projects example — an IMPLICIT default that must not count as "active":
+    // status: { guard: isProjectStatusList, default: ['ONBOARDING', 'ACTIVE'] },
+  },
+  sort: { guard: isUserSort, default: 'name:asc' },   // never contributes to hasActiveFilters
 })
 ```
 
-Collapses the duplicated `updateParams` closures; `update({ role })` clones `URLSearchParams`, sets/deletes, clears `resetKeys`, `router.push`es. `hasActiveFilters` runs raw values through the type-guard schema (invalid values don't count — the users R4 lesson). Consumed by the toolbar *and* by tables for filtered empty states.
+Collapses the duplicated `updateParams` closures; `update({ role })` clones `URLSearchParams`, sets/deletes, clears `resetKeys`, `router.push`es. **`hasActiveFilters` (R2):** derived from the `filters` map only — a key is active iff its guard-validated value differs from its declared (or unset) default. `sort` is excluded by construction: changing only the sort must never trigger `Showing N of M` or filtered-empty messaging. Implicit defaults (projects' clean-URL ONBOARDING+ACTIVE) normalize to inactive; explicitly choosing a *different* status set is active. Invalid values fail the guard and don't count (the PRD-003 R4 lesson). Consumed by the toolbar *and* by tables for filtered empty states.
 
 ### Components — `components/table-toolbar/`
 
@@ -50,6 +57,20 @@ Collapses the duplicated `updateParams` closures; `update({ role })` clones `URL
 `?sort=field:dir` parsed against a **per-view allowlist**, feeding the existing `orderBy` arrays. The seam is `userSortExpression` — defined in [fields.ts](../../../apps/internal/lib/queries/users/fields.ts) and consumed in [settings.ts](../../../apps/internal/lib/queries/users/settings.ts) for both the `orderBy` (~L108) **and** both cursor conditions (~L61–64) — the pattern spans the two files (I1). Generalize per query: each sortable field supplies its order expression **and** its keyset cursor-condition variant (this is why the allowlist stays small: name, created, updated to start). Invalid/absent `?sort=` falls back to today's hardcoded default per view. Offset-paged views (invoices, submissions) need only the `orderBy` swap.
 
 The control is the column header itself (`SortableTableHead`, above) — the per-field server cost is identical to any other control, and the allowlist is expressed by which columns receive the sortable affordance. Columns without a cursor variant simply stay plain `TableHead`.
+
+**Per-sort descriptor contract (R5).** An order expression + cursor condition is not enough: keyset cursors also **encode the active sort field's value** (existing cursors carry fixed payloads like `{name, id}` — `lib/pagination/cursor.ts`), so sorting by created/updated without changing cursor *generation* compares against absent or unrelated values, producing duplicated, skipped, or empty pages. Each allowlisted sort field therefore supplies a complete descriptor:
+
+```ts
+type SortDescriptor = {
+  field: string                          // 'name' | 'created' | …
+  orderBy(dir: 'asc' | 'desc'): SQL[]    // includes the id tie-breaker, both directions
+  encodeCursor(row): CursorPayload       // carries { <field value>, id } — typed per field
+  cursorCondition(payload, dir): SQL     // comparison predicate incl. tie-breaker
+  nullable?: boolean                     // if true: explicit NULLS LAST + null-aware condition
+}
+```
+
+Rules: (a) the deterministic `id` tie-breaker is mandatory in both `orderBy` and the condition; (b) nullable sort columns declare an explicit null policy (`NULLS LAST`, with the condition handling the null partition); (c) cursor payloads are **tagged with their sort field** — decoding a cursor minted under a different sort (or an unknown/legacy shape) rejects and falls back to page one rather than comparing mismatched values. `useListParams` clearing the cursor on sort change is the first line of defense; the tagged-payload rejection is the server-side backstop against stale deep-linked URLs.
 
 ## Implementation / rollout order
 
