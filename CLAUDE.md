@@ -106,7 +106,7 @@ Turbo v2 uses strict mode by default — only env vars listed in `turbo.json` ar
 └── unauthorized/     # Access denied page
 ```
 
-The project workspace is tabbed: `/projects/[clientSlug]/[projectSlug]/{tasks,overview,scope,review,time-logs,activity,archive}`. The task board lives on the `tasks` tab, with the task sheet as an optional catch-all: `/projects/[clientSlug]/[projectSlug]/tasks/[[...taskId]]`
+The project workspace is tabbed: `/projects/[clientSlug]/[projectSlug]/{tasks,overview,review,time-logs,activity,archive}`. The task board lives on the `tasks` tab, with the task sheet as an optional catch-all: `/projects/[clientSlug]/[projectSlug]/tasks/[[...taskId]]`
 
 **Client portal** (`apps/client/app/`):
 ```
@@ -142,7 +142,6 @@ Portal access is controlled via `client_members` table. Contacts promoted to por
 - `task_deployments` - Deployments linked to tasks
 - `invoices` + `invoice_line_items` - Invoicing
 - `product_catalog_items` + `tax_rates` - Invoice line-item catalog and tax configuration
-- `project_sows` + `sow_snapshots` + `sow_sections` - Scope-of-work documents
 - `planning_sessions` + `plan_threads` + `plan_revisions` + `plan_messages` - AI planning sessions
 - `form_submissions` - Website form submissions
 - `oauth_connections` - Google/GitHub OAuth connections

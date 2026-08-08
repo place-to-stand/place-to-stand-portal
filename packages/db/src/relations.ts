@@ -33,9 +33,6 @@ import {
   taxRates,
   invoices,
   invoiceLineItems,
-  projectSows,
-  sowSnapshots,
-  sowSections,
   formSubmissions,
 } from './schema'
 
@@ -257,7 +254,6 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   timeLogs: many(timeLogs),
   tasks: many(tasks),
   githubRepos: many(githubRepoLinks),
-  sows: many(projectSows),
 }))
 
 export const taskCommentsRelations = relations(taskComments, ({ one }) => ({
@@ -535,52 +531,6 @@ export const productCatalogItemsRelations = relations(
     lineItems: many(invoiceLineItems),
   })
 )
-
-// =============================================================================
-// SOW (SCOPE OF WORK) INTEGRATION
-// =============================================================================
-
-export const projectSowsRelations = relations(
-  projectSows,
-  ({ one, many }) => ({
-    project: one(projects, {
-      fields: [projectSows.projectId],
-      references: [projects.id],
-    }),
-    linkedByUser: one(users, {
-      fields: [projectSows.linkedBy],
-      references: [users.id],
-    }),
-    snapshots: many(sowSnapshots),
-    sections: many(sowSections),
-  })
-)
-
-export const sowSnapshotsRelations = relations(
-  sowSnapshots,
-  ({ one, many }) => ({
-    sow: one(projectSows, {
-      fields: [sowSnapshots.sowId],
-      references: [projectSows.id],
-    }),
-    snappedByUser: one(users, {
-      fields: [sowSnapshots.snappedBy],
-      references: [users.id],
-    }),
-    sections: many(sowSections),
-  })
-)
-
-export const sowSectionsRelations = relations(sowSections, ({ one }) => ({
-  snapshot: one(sowSnapshots, {
-    fields: [sowSections.snapshotId],
-    references: [sowSnapshots.id],
-  }),
-  sow: one(projectSows, {
-    fields: [sowSections.sowId],
-    references: [projectSows.id],
-  }),
-}))
 
 export const formSubmissionsRelations = relations(formSubmissions, ({ one }) => ({
   acknowledgedByUser: one(users, {

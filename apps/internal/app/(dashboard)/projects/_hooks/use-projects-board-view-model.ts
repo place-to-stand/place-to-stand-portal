@@ -26,13 +26,7 @@ const NO_PROJECTS_DESCRIPTION =
 type BaseProps = Omit<UseProjectsBoardCoreStateArgs, 'currentView'>
 
 export type ProjectsBoardProps = BaseProps & {
-  initialTab?:
-    | 'overview'
-    | 'board'
-    | 'activity'
-    | 'review'
-    | 'timeLogs'
-    | 'scope'
+  initialTab?: 'overview' | 'board' | 'activity' | 'review' | 'timeLogs'
 }
 
 export type ProjectsBoardHeaderProps = {
@@ -70,7 +64,7 @@ export function useProjectsBoardViewModel({
   initialTab = 'board',
   ...props
 }: ProjectsBoardProps): ProjectsBoardViewModel {
-  const currentBoardView = initialTab === 'timeLogs' || initialTab === 'overview' || initialTab === 'scope' ? 'board' : initialTab
+  const currentBoardView = initialTab === 'timeLogs' || initialTab === 'overview' ? 'board' : initialTab
   const { sensors } = useProjectsBoardSensors()
   const {
     boardState,
@@ -181,9 +175,6 @@ export function useProjectsBoardViewModel({
       currentUserId: props.currentUserId,
       onEditTimeLogEntry: timeLogDialogs.openEditTimeLogDialog,
     },
-    scope: {
-      scopeProjectId: boardState.activeProject?.id ?? null,
-    },
   })
 
   const dialogs = buildProjectsBoardDialogs({
@@ -197,6 +188,7 @@ export function useProjectsBoardViewModel({
       currentUserId: props.currentUserId,
       defaultStatus: boardState.defaultTaskStatus,
       defaultDueOn: boardState.defaultTaskDueOn,
+      onTaskCreated: boardState.handleTaskCreated,
     },
     timeLogState: {
       isOpen: timeLogDialogs.isTimeLogDialogOpen,

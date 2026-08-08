@@ -16,11 +16,13 @@ import {
   users,
 } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
+import type { ProjectStatusValue } from '@/lib/constants'
 
-export type ClientActiveProject = {
+export type ClientProjectSummary = {
   id: string
   name: string
   slug: string | null
+  status: ProjectStatusValue
 }
 
 export type ClientWithMetrics = {
@@ -46,7 +48,8 @@ export type ClientWithMetrics = {
   deletedAt: string | null
   projectCount: number
   activeProjectCount: number
-  activeProjects: ClientActiveProject[]
+  activeProjects: ClientProjectSummary[]
+  allProjects: ClientProjectSummary[]
   totalHoursPurchased: number
   totalHoursUsed: number
   hoursRemaining: number
@@ -207,41 +210,45 @@ export const fetchClientsWithMetrics = cache(
       timeLogsData.map(tl => [tl.clientId, Number(tl.totalHoursUsed ?? 0)])
     )
 
-    // Fetch active projects for each client (includes ONBOARDING)
-    const activeProjectsData = await db
+    // Fetch every non-deleted project per client (any status). The active
+    // list is derived below — the definition of "active" (ACTIVE/ONBOARDING)
+    // is unchanged; "total" is any status, deletedAt IS NULL.
+    const projectsData = await db
       .select({
         id: projects.id,
         name: projects.name,
         slug: projects.slug,
+        status: projects.status,
         clientId: projects.clientId,
       })
       .from(projects)
       .where(
-        and(
-          inArray(projects.clientId, clientIds),
-          isNull(projects.deletedAt),
-          sql`lower(${projects.status}::text) in ('active', 'onboarding')`
-        )
+        and(inArray(projects.clientId, clientIds), isNull(projects.deletedAt))
       )
       .orderBy(asc(projects.name))
 
     // Group projects by client ID
-    const activeProjectsMap = new Map<string, ClientActiveProject[]>()
-    for (const project of activeProjectsData) {
+    const projectsMap = new Map<string, ClientProjectSummary[]>()
+    for (const project of projectsData) {
       if (!project.clientId) continue
-      const existing = activeProjectsMap.get(project.clientId) ?? []
+      const existing = projectsMap.get(project.clientId) ?? []
       existing.push({
         id: project.id,
         name: project.name,
         slug: project.slug,
+        status: project.status,
       })
-      activeProjectsMap.set(project.clientId, existing)
+      projectsMap.set(project.clientId, existing)
     }
 
     return rows.map(row => {
       const totalHoursPurchased = hourBlocksMap.get(row.id) ?? 0
       const totalHoursUsed = timeLogsMap.get(row.id) ?? 0
       const hoursRemaining = totalHoursPurchased - totalHoursUsed
+      const allProjects = projectsMap.get(row.id) ?? []
+      const activeProjects = allProjects.filter(
+        project => project.status === 'ACTIVE' || project.status === 'ONBOARDING'
+      )
 
       return {
         id: row.id,
@@ -267,7 +274,8 @@ export const fetchClientsWithMetrics = cache(
         deletedAt: row.deletedAt,
         projectCount: Number(row.projectCount ?? 0),
         activeProjectCount: Number(row.activeProjectCount ?? 0),
-        activeProjects: activeProjectsMap.get(row.id) ?? [],
+        activeProjects,
+        allProjects,
         totalHoursPurchased,
         totalHoursUsed,
         hoursRemaining,

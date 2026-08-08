@@ -99,6 +99,7 @@ export function LeadTaskSheetOverlay({
       defaultProjectId={initData.salesProjectId}
       defaultAssigneeId={lead.assigneeId ?? null}
       defaultLeadId={lead.id}
+      closeOnSave
     />
   )
 }

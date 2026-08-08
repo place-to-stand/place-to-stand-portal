@@ -29,19 +29,43 @@ type HoverCardProps = {
   children: React.ReactNode
   openDelay?: number
   closeDelay?: number
+  /**
+   * Optional controlled mode (backward-compatible: uncontrolled when absent).
+   * Timer semantics are part of the contract: when the controlled `open`
+   * flips true, this instance's pending open/close timers are cancelled — a
+   * stale close timer from a previous hover must never fire after the parent
+   * opened the card.
+   */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 function HoverCard({
   children,
   openDelay = OPEN_DELAY,
   closeDelay = CLOSE_DELAY,
+  open: controlledOpen,
+  onOpenChange,
 }: HoverCardProps) {
-  const [open, setOpen] = React.useState(false)
+  const isControlled = controlledOpen !== undefined
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(false)
+  const open = isControlled ? controlledOpen : uncontrolledOpen
   const openTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(
     null
   )
   const closeTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(
     null
+  )
+
+  const setOpenState = React.useCallback(
+    (nextOpen: boolean) => {
+      if (isControlled) {
+        onOpenChange?.(nextOpen)
+      } else {
+        setUncontrolledOpen(nextOpen)
+      }
+    },
+    [isControlled, onOpenChange]
   )
 
   const handleOpenChange = React.useCallback(
@@ -52,7 +76,7 @@ function HoverCard({
           closeTimeoutRef.current = null
         }
         openTimeoutRef.current = setTimeout(() => {
-          setOpen(true)
+          setOpenState(true)
         }, openDelay)
       } else {
         if (openTimeoutRef.current) {
@@ -60,12 +84,28 @@ function HoverCard({
           openTimeoutRef.current = null
         }
         closeTimeoutRef.current = setTimeout(() => {
-          setOpen(false)
+          setOpenState(false)
         }, closeDelay)
       }
     },
-    [openDelay, closeDelay]
+    [openDelay, closeDelay, setOpenState]
   )
+
+  // Controlled-open cancels this instance's pending timers (R8): without
+  // this, sliding from another trigger leaves a stale close timer that fires
+  // ~200ms after the parent force-opened this card and wipes it.
+  React.useEffect(() => {
+    if (isControlled && controlledOpen) {
+      if (openTimeoutRef.current) {
+        clearTimeout(openTimeoutRef.current)
+        openTimeoutRef.current = null
+      }
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current)
+        closeTimeoutRef.current = null
+      }
+    }
+  }, [controlledOpen, isControlled])
 
   React.useEffect(() => {
     return () => {
@@ -83,7 +123,7 @@ function HoverCard({
         closeTimeoutRef,
       }}
     >
-      <PopoverPrimitive.Root open={open} onOpenChange={setOpen}>
+      <PopoverPrimitive.Root open={open} onOpenChange={setOpenState}>
         {children}
       </PopoverPrimitive.Root>
     </HoverCardContext.Provider>

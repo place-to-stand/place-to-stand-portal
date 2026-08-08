@@ -20,16 +20,29 @@ export type ProjectTimeLogDialogProps = ProjectTimeLogDialogParams & {
   onOpenChange: (open: boolean) => void
   mode: 'create' | 'edit'
   timeLogEntry: TimeLogEntry | null
+  initialLinkedTaskIds?: string[]
+  onMutationSuccess?: () => void
 }
 
 export function ProjectTimeLogDialog(props: ProjectTimeLogDialogProps) {
-  const { open, onOpenChange, mode, timeLogEntry, ...rest } = props
-
-  const state = useProjectTimeLogDialog({
-    ...(rest as ProjectTimeLogDialogParams),
+  const {
+    open,
     onOpenChange,
     mode,
     timeLogEntry,
+    initialLinkedTaskIds,
+    onMutationSuccess,
+    ...rest
+  } = props
+
+  const state = useProjectTimeLogDialog({
+    ...(rest as ProjectTimeLogDialogParams),
+    open,
+    onOpenChange,
+    mode,
+    timeLogEntry,
+    initialLinkedTaskIds,
+    onMutationSuccess,
   })
 
   const dialogTitle = state.isEditMode ? 'Edit time log' : 'Add time log'
@@ -72,6 +85,9 @@ export function ProjectTimeLogDialog(props: ProjectTimeLogDialogProps) {
             requestTaskRemoval={state.requestTaskRemoval}
             submitLabel={submitLabel}
             isEditMode={state.isEditMode}
+            onRequestDelete={
+              state.isEditMode ? state.deleteDialog.request : undefined
+            }
           />
         </DialogContent>
       </Dialog>
@@ -105,6 +121,16 @@ export function ProjectTimeLogDialog(props: ProjectTimeLogDialogProps) {
         confirmDisabled={state.isMutating}
         onCancel={state.discardDialog.cancel}
         onConfirm={state.discardDialog.confirm}
+      />
+      <ConfirmDialog
+        open={state.deleteDialog.isOpen}
+        title='Delete time log?'
+        description='The entry will no longer count toward the burndown total.'
+        confirmLabel='Delete'
+        confirmVariant='destructive'
+        confirmDisabled={state.deleteDialog.isDeleting}
+        onCancel={state.deleteDialog.cancel}
+        onConfirm={state.deleteDialog.confirm}
       />
     </>
   )

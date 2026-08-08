@@ -6,6 +6,7 @@ import type {
   TaskWithRelations,
 } from '@/lib/types'
 import type { BoardColumnId } from '@/lib/projects/board/board-constants'
+import { buildProjectTimeLogDialogParams } from '@/lib/projects/time-log/dialog-params'
 import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 
 import { TaskSheet } from '../task-sheet'
@@ -20,6 +21,7 @@ type SheetState = {
   currentUserId: string
   defaultStatus: BoardColumnId
   defaultDueOn: string | null
+  onTaskCreated: (taskId: string, projectId: string) => void
 }
 
 type TimeLogState = {
@@ -59,6 +61,7 @@ export function ProjectsBoardDialogs({
     currentUserId,
     defaultStatus,
     defaultDueOn,
+    onTaskCreated,
   } = sheetState
 
   const {
@@ -89,22 +92,17 @@ export function ProjectsBoardDialogs({
         projects={projects}
         defaultProjectId={activeProject.id}
         defaultAssigneeId={null}
+        onTaskCreated={onTaskCreated}
       />
 
       <ProjectTimeLogDialog
         open={timeLogDialogOpen}
         onOpenChange={onTimeLogOpenChange}
-        projectId={activeProject.id}
-        projectName={activeProject.name}
-        projectType={activeProject.type}
-        clientId={activeProject.client?.id ?? null}
-        clientName={activeProject.client?.name ?? null}
-        clientBillingType={activeProject.client?.billing_type ?? null}
-        clientRemainingHours={activeProject.burndown.totalClientRemainingHours}
-        tasks={tasks}
-        currentUserId={timeLogUserId}
-        projectMembers={activeProject.members}
-        admins={timeLogAdmins}
+        {...buildProjectTimeLogDialogParams(activeProject, {
+          tasks,
+          currentUserId: timeLogUserId,
+          admins: timeLogAdmins,
+        })}
         mode={timeLogMode}
         timeLogEntry={editingEntry}
       />

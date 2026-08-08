@@ -36,12 +36,6 @@ export const GOOGLE_CALENDAR_SCOPES = [
   'https://www.googleapis.com/auth/calendar.events',
 ]
 
-// Scopes required for Drive/Docs proposal functionality
-export const GOOGLE_DOCS_SCOPES = [
-  'https://www.googleapis.com/auth/drive',
-  'https://www.googleapis.com/auth/documents',
-]
-
 // Scopes required for Meet functionality (transcripts, recordings)
 export const GOOGLE_MEET_SCOPES = [
   'https://www.googleapis.com/auth/meetings.space.readonly',
@@ -67,14 +61,6 @@ export function hasComposeScopes(grantedScopes: string[]): boolean {
  */
 export function hasCalendarScopes(grantedScopes: string[]): boolean {
   return GOOGLE_CALENDAR_SCOPES.every((scope) => grantedScopes.includes(scope))
-}
-
-/**
- * Check if a connection has the required scopes for Drive/Docs.
- * Returns true if all docs scopes are present.
- */
-export function hasDocsScopes(grantedScopes: string[]): boolean {
-  return GOOGLE_DOCS_SCOPES.every((scope) => grantedScopes.includes(scope))
 }
 
 /**

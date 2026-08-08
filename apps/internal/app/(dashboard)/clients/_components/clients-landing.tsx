@@ -108,6 +108,7 @@ export function ClientsLanding({ clients }: ClientsLandingProps) {
               <TableCell>
                 <ActiveProjectsCell
                   projects={client.activeProjects}
+                  allProjects={client.allProjects}
                   clientSlug={client.slug}
                   clientId={client.id}
                   totalProjectCount={client.projectCount}

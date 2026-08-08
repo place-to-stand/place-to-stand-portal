@@ -17,7 +17,6 @@ import type { ReviewActionKind } from './review-tab/review-tab.types'
 import { ProjectsBoardTabsHeader } from './projects-board-tabs-header'
 import type { ProjectsBoardActiveProject } from './board-tab-content'
 import { TimeLogsTabContent } from './time-logs-tab-content'
-import { ScopeTabContent } from '../scope/scope-tab-content'
 
 export type ProjectActionControls = {
   canEdit: boolean
@@ -29,24 +28,15 @@ export type ProjectActionControls = {
 } | null
 
 export type ProjectsBoardTabsProps = {
-  initialTab:
-    | 'overview'
-    | 'board'
-    | 'activity'
-    | 'review'
-    | 'timeLogs'
-    | 'scope'
+  initialTab: 'overview' | 'board' | 'activity' | 'review' | 'timeLogs'
   overviewHref: string
   boardHref: string
   activityHref: string
   reviewHref: string
   timeLogsHref: string
-  scopeHref: string
   activityDisabled: boolean
   reviewDisabled: boolean
   timeLogsDisabled: boolean
-  scopeDisabled: boolean
-  scopeProjectId: string | null
   feedback: string | null
   activeProject: ProjectsBoardActiveProject
   canManageTasks: boolean
@@ -98,12 +88,9 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
     activityHref,
     reviewHref,
     timeLogsHref,
-    scopeHref,
     activityDisabled,
     reviewDisabled,
     timeLogsDisabled,
-    scopeDisabled,
-    scopeProjectId,
     feedback,
     activeProject,
     canManageTasks,
@@ -156,11 +143,9 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
         activityHref={activityHref}
         reviewHref={reviewHref}
         timeLogsHref={timeLogsHref}
-        scopeHref={scopeHref}
         activityDisabled={activityDisabled}
         reviewDisabled={reviewDisabled}
         timeLogsDisabled={timeLogsDisabled}
-        scopeDisabled={scopeDisabled}
         projectActions={projectActions}
         activeProjectId={activeProject?.id ?? null}
         activeProjectStatus={activeProject?.status ?? null}
@@ -219,10 +204,6 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
         activeProject={activeProject}
         currentUserId={currentUserId}
         onEditEntry={onEditTimeLogEntry}
-      />
-      <ScopeTabContent
-        isActive={initialTab === 'scope'}
-        projectId={scopeProjectId}
       />
       <ActivityTabContent
         isActive={initialTab === 'activity'}

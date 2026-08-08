@@ -10,11 +10,9 @@ type NavigationProps = Pick<
   | 'activityHref'
   | 'reviewHref'
   | 'timeLogsHref'
-  | 'scopeHref'
   | 'activityDisabled'
   | 'reviewDisabled'
   | 'timeLogsDisabled'
-  | 'scopeDisabled'
 >
 
 type BoardProps = Pick<
@@ -70,11 +68,6 @@ type TimeLogsProps = Pick<
   'currentUserId' | 'onEditTimeLogEntry'
 >
 
-type ScopeProps = Pick<
-  ProjectsBoardTabsProps,
-  'scopeProjectId'
->
-
 export type ProjectsBoardTabsSectionProps = {
   initialTab: ProjectsBoardTabsProps['initialTab']
   navigation: NavigationProps
@@ -83,7 +76,6 @@ export type ProjectsBoardTabsSectionProps = {
   review: ReviewProps
   drop: DropProps
   timeLogs: TimeLogsProps
-  scope: ScopeProps
 }
 
 type ProjectsBoardTabsSectionComponentProps = ProjectsBoardTabsSectionProps & {
@@ -99,7 +91,6 @@ export function ProjectsBoardTabsSection({
   review,
   drop,
   timeLogs,
-  scope,
   projectActions,
   onProjectStatusChange,
 }: ProjectsBoardTabsSectionComponentProps) {
@@ -112,7 +103,6 @@ export function ProjectsBoardTabsSection({
       {...review}
       {...drop}
       {...timeLogs}
-      {...scope}
       projectActions={projectActions}
       onProjectStatusChange={onProjectStatusChange}
     />

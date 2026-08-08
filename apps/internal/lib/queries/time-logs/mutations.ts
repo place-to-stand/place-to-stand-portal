@@ -1,15 +1,68 @@
 import 'server-only'
 
-import { eq } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { ensureProjectAccess } from '@/lib/auth/permissions'
-import { NotFoundError } from '@/lib/errors/http'
+import { HttpError, NotFoundError } from '@/lib/errors/http'
 import { db } from '@/lib/db'
 import {
+  tasks,
   timeLogTasks,
   timeLogs,
 } from '@/lib/db/schema'
+
+type TransactionClient = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+/**
+ * Server-side eligibility check for linked tasks (the client-side filter and
+ * disabled button are advisory only): every linked task must exist, belong to
+ * the log's project, not be soft-deleted, and not be status ARCHIVED.
+ * Accepted tasks are explicitly allowed — the task sheet pre-links them.
+ * Runs inside the mutation transaction so a task archived after the dialog
+ * opened still fails cleanly with a 400.
+ */
+async function assertLinkedTasksEligible(
+  tx: TransactionClient,
+  projectId: string,
+  taskIds: string[],
+): Promise<void> {
+  if (!taskIds.length) {
+    return
+  }
+
+  // FOR UPDATE locks the task rows through the link write, so a concurrent
+  // archive/soft-delete between this check and the insert can't slip an
+  // ineligible link through (READ COMMITTED TOCTOU).
+  const rows = await tx
+    .select({
+      id: tasks.id,
+      projectId: tasks.projectId,
+      status: tasks.status,
+      deletedAt: tasks.deletedAt,
+    })
+    .from(tasks)
+    .where(inArray(tasks.id, taskIds))
+    .for('update')
+
+  const rowsById = new Map(rows.map(row => [row.id, row]))
+
+  for (const taskId of taskIds) {
+    const row = rowsById.get(taskId)
+
+    if (
+      !row ||
+      row.projectId !== projectId ||
+      row.deletedAt !== null ||
+      row.status === 'ARCHIVED'
+    ) {
+      throw new HttpError(
+        'One or more linked tasks are no longer available.',
+        400,
+      )
+    }
+  }
+}
 
 export type CreateTimeLogInput = {
   projectId: string
@@ -42,6 +95,8 @@ export async function createTimeLog(
   const noteValue = note && note.trim().length ? note.trim() : null
 
   return db.transaction(async tx => {
+    await assertLinkedTasksEligible(tx, projectId, taskIds)
+
     const [inserted] = await tx
       .insert(timeLogs)
       .values({
@@ -153,6 +208,8 @@ export async function updateTimeLog(
   const noteValue = note && note.trim().length ? note.trim() : null
 
   await db.transaction(async tx => {
+    await assertLinkedTasksEligible(tx, projectId, taskIds)
+
     await tx
       .update(timeLogs)
       .set({

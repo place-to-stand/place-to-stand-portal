@@ -63,8 +63,15 @@ const SheetContent = React.forwardRef<
     size?: SheetSize
     showOverlay?: boolean
     hideCloseButton?: boolean
+    /**
+     * Skip the open (mount) animation for this instance — for sheets that
+     * remount already-open (e.g. a route-param change swapping the page while
+     * the sheet is up), where replaying the slide-in reads as a flicker.
+     * Close animations still play.
+     */
+    skipMountAnimation?: boolean
   }
->(({ className, children, side = 'right', size = 'sm', showOverlay = true, hideCloseButton = false, onInteractOutside, ...props }, ref) => {
+>(({ className, children, side = 'right', size = 'sm', showOverlay = true, hideCloseButton = false, skipMountAnimation = false, onInteractOutside, ...props }, ref) => {
   const isHorizontal = side === 'left' || side === 'right'
 
   const handleInteractOutside = React.useCallback(
@@ -81,13 +88,22 @@ const SheetContent = React.forwardRef<
 
   return (
     <SheetPortal>
-      {showOverlay && <SheetOverlay />}
+      {showOverlay && (
+        <SheetOverlay
+          className={
+            skipMountAnimation
+              ? 'data-[state=open]:animate-none'
+              : undefined
+          }
+        />
+      )}
       <SheetPrimitive.Content
         ref={ref}
         data-slot='sheet-content'
         onInteractOutside={handleInteractOutside}
         className={cn(
           'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col gap-4 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500',
+          skipMountAnimation && 'data-[state=open]:animate-none',
           side === 'right' &&
             'data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 h-full w-3/4 border-l',
           side === 'left' &&

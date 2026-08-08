@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 
 import type { SearchableComboboxItem } from '@/components/ui/searchable-combobox'
@@ -23,9 +23,20 @@ import type {
 import { TIME_LOGS_QUERY_KEY } from './types'
 
 export type UseProjectTimeLogDialogOptions = ProjectTimeLogDialogParams & {
+  open: boolean
   onOpenChange: (open: boolean) => void
   mode: 'create' | 'edit'
   timeLogEntry: TimeLogEntry | null
+  /**
+   * Create-mode pre-link (task sheet): seeds the selection AND the dirty
+   * baseline via a dedicated effect — Radix never fires `onOpenChange` for a
+   * programmatic open, and seeding only the selection would make an untouched
+   * dialog instantly dirty. Pre-linked ids also bypass the eligibility filter
+   * (accepted tasks stay linkable from their own sheet).
+   */
+  initialLinkedTaskIds?: string[]
+  /** Extra invalidation hook fired after any save or delete. */
+  onMutationSuccess?: () => void
 }
 
 export type ProjectTimeLogDialogState = {
@@ -76,12 +87,20 @@ export type ProjectTimeLogDialogState = {
     confirm: () => void
     cancel: () => void
   }
+  deleteDialog: {
+    isOpen: boolean
+    request: () => void
+    confirm: () => void
+    cancel: () => void
+    isDeleting: boolean
+  }
 }
 
 export function useProjectTimeLogDialog(
   options: UseProjectTimeLogDialogOptions
 ): ProjectTimeLogDialogState {
   const {
+    open,
     onOpenChange,
     projectId,
     projectName,
@@ -96,6 +115,8 @@ export function useProjectTimeLogDialog(
     admins,
     mode,
     timeLogEntry,
+    initialLinkedTaskIds,
+    onMutationSuccess,
   } = options
 
   const isEditMode = mode === 'edit' && Boolean(timeLogEntry)
@@ -151,7 +172,7 @@ export function useProjectTimeLogDialog(
     taskRemovalCandidate,
     initializeSelection,
     resetSelection,
-  } = useTimeLogTaskSelection(tasks)
+  } = useTimeLogTaskSelection(tasks, { pinnedTaskIds: initialLinkedTaskIds })
 
   // Skip overage check for internal/personal projects (no prepaid hours)
   // and for net_30 billing type clients
@@ -215,6 +236,49 @@ export function useProjectTimeLogDialog(
       .map(link => link?.task?.id ?? null)
       .filter((taskId): taskId is string => Boolean(taskId))
   }, [timeLogEntry])
+
+  // Create-mode pre-link seeding (C5). A dedicated effect because Radix only
+  // fires onOpenChange for user interaction, never a programmatic `open` —
+  // handleDialogOpenChange(true) never runs for a parent-opened dialog. Seeds
+  // BOTH the selection and the baseline so an untouched dialog stays clean
+  // (no discard confirm on plain close).
+  useEffect(() => {
+    if (!open || isEditMode) {
+      return
+    }
+
+    const seedTaskIds = initialLinkedTaskIds ?? []
+
+    if (!seedTaskIds.length) {
+      return
+    }
+
+    initializeSelection(seedTaskIds)
+
+    const nextBaselineState = {
+      hours: '',
+      note: '',
+      loggedOn: getToday(),
+      taskIds: seedTaskIds,
+    }
+    let cancelled = false
+    const scheduleBaselineUpdate =
+      typeof queueMicrotask === 'function'
+        ? queueMicrotask
+        : (callback: () => void) => {
+            Promise.resolve().then(callback)
+          }
+
+    scheduleBaselineUpdate(() => {
+      if (!cancelled) {
+        setBaselineState(nextBaselineState)
+      }
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [getToday, initialLinkedTaskIds, initializeSelection, isEditMode, open])
 
   useEffect(() => {
     if (!isEditMode || !timeLogEntry) {
@@ -285,10 +349,81 @@ export function useProjectTimeLogDialog(
     mode,
     timeLogId: timeLogEntry?.id ?? null,
     successToast,
+    onMutationSuccess,
   }
 
   const timeLogMutation = useProjectTimeLogMutation(mutationOptions)
-  const isMutating = timeLogMutation.isPending
+
+  // Edit-mode delete (W5): confirm-guarded, reusing the existing DELETE
+  // endpoint + activity event (same flow as the Time Logs tab's list delete).
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      if (!timeLogEntry?.id) {
+        throw new Error('Missing time log identifier for delete.')
+      }
+
+      const response = await fetch(
+        `/api/projects/${projectId}/time-logs/${timeLogEntry.id}`,
+        { method: 'DELETE' }
+      )
+
+      let payload: unknown = null
+      try {
+        payload = await response.json()
+      } catch {
+        payload = null
+      }
+
+      if (!response.ok) {
+        const message =
+          typeof payload === 'object' && payload && 'error' in payload
+            ? String((payload as { error?: unknown }).error ?? '').trim()
+            : ''
+
+        throw new Error(message || 'Unable to delete time log.')
+      }
+
+      // PRD 002 section 05: closed-month warning riding the API response.
+      const warning =
+        typeof payload === 'object' && payload && 'warning' in payload
+          ? String((payload as { warning?: unknown }).warning ?? '').trim()
+          : ''
+
+      return { warning: warning || null }
+    },
+    onSuccess: async data => {
+      await queryClient.invalidateQueries({ queryKey: baseQueryKey })
+      onMutationSuccess?.()
+      setIsDeleteConfirmOpen(false)
+      handleSuccessReset()
+      handleClose()
+      toast({
+        title: 'Time entry removed',
+        description: 'The log no longer counts toward the burndown total.',
+      })
+      if (data?.warning) {
+        toast({
+          title: 'Closed month',
+          description: data.warning,
+          variant: 'destructive',
+        })
+      }
+      router.refresh()
+    },
+    onError: error => {
+      console.error('Failed to delete time log', error)
+      setIsDeleteConfirmOpen(false)
+      toast({
+        title: 'Could not delete time log',
+        description: 'Please try again. If the issue persists contact support.',
+        variant: 'destructive',
+      })
+    },
+  })
+
+  const isMutating = timeLogMutation.isPending || deleteMutation.isPending
 
   const disableSubmit =
     isMutating ||
@@ -533,6 +668,43 @@ export function useProjectTimeLogDialog(
     }
   }, [showDiscardDialog, handleDiscardConfirm, handleDiscardCancel])
 
+  const requestDelete = useCallback(() => {
+    if (deleteMutation.isPending) {
+      return
+    }
+    setIsDeleteConfirmOpen(true)
+  }, [deleteMutation.isPending])
+
+  const cancelDelete = useCallback(() => {
+    if (deleteMutation.isPending) {
+      return
+    }
+    setIsDeleteConfirmOpen(false)
+  }, [deleteMutation.isPending])
+
+  const confirmDelete = useCallback(() => {
+    if (deleteMutation.isPending || !timeLogEntry?.id) {
+      return
+    }
+    deleteMutation.mutate()
+  }, [deleteMutation, timeLogEntry?.id])
+
+  const deleteDialog = useMemo(() => {
+    return {
+      isOpen: isDeleteConfirmOpen,
+      request: requestDelete,
+      confirm: confirmDelete,
+      cancel: cancelDelete,
+      isDeleting: deleteMutation.isPending,
+    }
+  }, [
+    cancelDelete,
+    confirmDelete,
+    deleteMutation.isPending,
+    isDeleteConfirmOpen,
+    requestDelete,
+  ])
+
   return {
     projectLabel,
     isEditMode,
@@ -565,5 +737,6 @@ export function useProjectTimeLogDialog(
     cancelTaskRemoval,
     overageDialog: guardedOverageDialog,
     discardDialog,
+    deleteDialog,
   }
 }
