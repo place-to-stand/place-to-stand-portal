@@ -16,7 +16,7 @@ Automation exercised 73 of 82 test items end-to-end against the local dev stack 
 
 ## 🟥 Section A — Highest priority (failed/flaky/observed issues)
 
-- [ ] **A1. (05.E2) Access-toggle row removal lags one refresh behind under a filter.** Toggling a user's access switch while viewing `?access=enabled` succeeds (server action runs, DB updates, toast fires), but the row did NOT disappear in place — the table (and once, the count) served data one mutation behind; a hard reload always showed the correct filtered list. The user-sheet save on the same page DID refresh the table correctly, so this is specific to the toggle flow's `router.refresh()` timing (possibly a dev-server/Turbopack RSC artifact). **Verify by hand in a normal browser:** disable a user under Access=Enabled and watch whether the row vanishes without reloading. If it reproduces, the toggle likely needs the same revalidate-then-refresh sequencing the sheet save uses.
+- [x] **A1. (05.E2) RESOLVED — diagnosed + fixed (F2).** The "refresh lag" was not a refresh bug: the seeded bulk users had no Supabase auth records, so the fail-closed disable flow set the DB flag but failed the auth-ban step, returned a partial-failure error, and the hook's error branch returned **before** `router.refresh()` — leaving a row whose displayed state contradicted the toast. Fix: the error branch now also refreshes (a refresh after an unchanged failure is harmless; after a partial failure it's required). Verified both paths live: real-auth user (jason@placetostandagency.com) → success toast + instant row removal + `_rsc` refresh fetch; no-auth fixture user → partial-failure toast + row still updates in place. The happy path never had a lag.
 - [ ] **A2. (04.E2) Null-slug project links dead-end at `/projects` — pre-existing.** The total-projects hover builds `slug ?? id` fallback hrefs (same as the active hover always has), but the project tasks route resolves by slug only (`projects.find(item => item.slug === projectSlug)` in `tasks/[[...taskId]]/page.tsx`) and redirects unknown segments to `/projects`. So a slugless project's hover item navigates to the projects index rather than the project. Not a PRD-003 regression (slugs are auto-generated in practice, and the active hover behaved identically before), but decide: accept, or teach the route to resolve UUID segments.
 
 ## 🟧 Section B — Not automatable (require human/external context)
@@ -72,7 +72,8 @@ Automation exercised 73 of 82 test items end-to-end against the local dev stack 
 
 | # | Issue | File | Commit |
 |---|-------|------|--------|
-| F1 | `listTaskTimeLogs` used `ensureTaskAccess(..., { includeArchived: true })`, so `GET /api/tasks/{id}/time-logs` returned 200 for soft-deleted tasks; P.2 requires 404. Dropped the option (status-ARCHIVED tasks still pass — they aren't soft-deleted). | `apps/internal/lib/queries/time-logs/read.ts` | (this commit) |
+| F1 | `listTaskTimeLogs` used `ensureTaskAccess(..., { includeArchived: true })`, so `GET /api/tasks/{id}/time-logs` returned 200 for soft-deleted tasks; P.2 requires 404. Dropped the option (status-ARCHIVED tasks still pass — they aren't soft-deleted). | `apps/internal/lib/queries/time-logs/read.ts` | b4522fa |
+| F2 | Access toggle: on a partial failure (DB flag set, auth-ban step failed) the hook returned before `router.refresh()`, so a filtered list kept showing the stale row while the toast said access changed. Error branch now refreshes too. | `apps/internal/lib/settings/users/state/user-mutation/use-set-user-disabled-action.ts` | (this commit) |
 
 ---
 

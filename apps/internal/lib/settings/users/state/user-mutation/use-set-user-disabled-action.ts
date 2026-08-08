@@ -57,6 +57,11 @@ export function useSetUserDisabledAction({
               description: result.error,
               variant: 'destructive',
             })
+            // The service is fail-closed: on a partial failure the DB flag
+            // may already have changed (e.g. "Access disabled, but blocking
+            // sign-in attempts failed"). Refresh so a filtered list never
+            // shows a row whose access state contradicts the toast.
+            router.refresh()
             return
           }
 
