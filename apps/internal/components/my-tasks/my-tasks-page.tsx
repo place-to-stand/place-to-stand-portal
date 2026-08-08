@@ -249,14 +249,17 @@ export function MyTasksPage({
 
       startRefresh(async () => {
         try {
-          await reorderMutation.mutateAsync(update.payload)
+          await reorderMutation.mutateAsync({
+            ...update.payload,
+            assigneeId: selectedAssigneeId,
+          })
           router.refresh()
         } catch {
           setEntries(update.previousEntries)
         }
       })
     },
-    [reorderMutation, router, startRefresh]
+    [reorderMutation, router, selectedAssigneeId, startRefresh]
   )
 
   const totalTaskCount = entries.length

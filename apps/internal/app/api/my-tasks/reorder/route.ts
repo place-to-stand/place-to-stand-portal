@@ -17,6 +17,7 @@ import {
 
 const reorderPayloadSchema = z.object({
   taskId: z.string().uuid(),
+  assigneeId: z.string().uuid().optional(),
   targetStatus: z.enum(MY_TASK_STATUS_VALUES),
   targetOrder: z.array(z.string().uuid()).min(1),
   sourceStatus: z.enum(MY_TASK_STATUS_VALUES).optional(),
@@ -80,12 +81,16 @@ export async function POST(request: Request) {
     )
   }
 
+  // Admins may reorder any board (the internal portal is admin-only);
+  // ordering persists under the VIEWED assignee's rows, defaulting to self.
+  const boardOwnerId = payload.assigneeId ?? user.id
+
   const assigneeRows = await db
     .select({ taskId: taskAssigneesTable.taskId })
     .from(taskAssigneesTable)
     .where(
       and(
-        eq(taskAssigneesTable.userId, user.id),
+        eq(taskAssigneesTable.userId, boardOwnerId),
         isNull(taskAssigneesTable.deletedAt),
         inArray(taskAssigneesTable.taskId, uniqueTaskIds)
       )
@@ -93,7 +98,7 @@ export async function POST(request: Request) {
 
   if (assigneeRows.length !== uniqueTaskIds.length) {
     return NextResponse.json(
-      { error: 'You can only reorder tasks assigned to you.' },
+      { error: "All tasks must be assigned to the viewed person's board." },
       { status: 403 }
     )
   }
@@ -128,7 +133,7 @@ export async function POST(request: Request) {
     await db.transaction(async tx => {
       await upsertSortOrders({
         client: tx,
-        userId: user.id,
+        userId: boardOwnerId,
         taskIds: payload.targetOrder,
       })
 
@@ -139,7 +144,7 @@ export async function POST(request: Request) {
       ) {
         await upsertSortOrders({
           client: tx,
-          userId: user.id,
+          userId: boardOwnerId,
           taskIds: payload.sourceOrder,
         })
       }

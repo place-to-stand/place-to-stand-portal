@@ -60,7 +60,7 @@ export function Sidebar({ user, badges }: Props) {
 
   return (
     <SidebarRoot collapsible='icon' className='border-r'>
-      <SidebarHeader className='space-y-4 px-3 pt-6 pb-3 group-data-[collapsible=icon]:space-y-3 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:pt-4'>
+      <SidebarHeader className='space-y-4 px-3 pt-6 pb-4 group-data-[collapsible=icon]:space-y-3 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:pt-4'>
         <div
           suppressHydrationWarning
           className='flex flex-col items-center group-data-[collapsible=icon]:px-0'
