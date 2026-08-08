@@ -124,9 +124,9 @@ export function ProjectTimeLogDialog(props: ProjectTimeLogDialogProps) {
       />
       <ConfirmDialog
         open={state.deleteDialog.isOpen}
-        title='Delete time log?'
-        description='The entry will no longer count toward the burndown total.'
-        confirmLabel='Delete'
+        title='Archive time entry?'
+        description='This removes the log from the project burndown.'
+        confirmLabel='Archive'
         confirmVariant='destructive'
         confirmDisabled={state.deleteDialog.isDeleting}
         onCancel={state.deleteDialog.cancel}
