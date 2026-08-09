@@ -289,7 +289,7 @@ export function LeadsArchiveSection({ leads }: LeadsArchiveSectionProps) {
                   <TableCell className='text-right'>
                     <div className='flex justify-end gap-2'>
                       <Button
-                        variant='secondary'
+                        variant='outline'
                         size='icon-sm'
                         onClick={() => handleRestore(lead)}
                         disabled={rowDisabled}

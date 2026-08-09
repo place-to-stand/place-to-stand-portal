@@ -486,7 +486,7 @@ export function InvoicesTableSection({
                         reason={restoreDisabledReason}
                       >
                         <Button
-                          variant='secondary'
+                          variant='outline'
                           size='icon-sm'
                           onClick={() => onRestore(invoice)}
                           title='Restore invoice'

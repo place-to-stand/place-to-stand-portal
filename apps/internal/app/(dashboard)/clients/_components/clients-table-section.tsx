@@ -180,7 +180,7 @@ export function ClientsTableSection({
                         reason={restoreDisabledReason}
                       >
                         <Button
-                          variant='secondary'
+                          variant='outline'
                           size='icon-sm'
                           onClick={() => onRestore(client)}
                           title='Restore client'

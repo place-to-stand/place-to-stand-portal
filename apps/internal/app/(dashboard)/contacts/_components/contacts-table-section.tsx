@@ -212,7 +212,7 @@ export function ContactsTableSection({
                         reason={restoreDisabledReason}
                       >
                         <Button
-                          variant='secondary'
+                          variant='outline'
                           size='icon-sm'
                           onClick={() => onRestore(contact)}
                           title='Restore contact'

@@ -485,7 +485,7 @@ export function SubmissionsTable({
                         ) : (
                           <>
                             <Button
-                              variant='secondary'
+                              variant='outline'
                               size='icon-sm'
                               title='Restore submission'
                               aria-label='Restore submission'

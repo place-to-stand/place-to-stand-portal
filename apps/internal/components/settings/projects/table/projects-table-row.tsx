@@ -150,7 +150,7 @@ export function ProjectsTableRow({
               reason={restoreDisabledReason}
             >
               <Button
-                variant='secondary'
+                variant='outline'
                 size='icon-sm'
                 onClick={() => onRestore(project)}
                 title='Restore project'

@@ -518,11 +518,11 @@ export function SubmissionDetailSheet({
               ) : (
                 <Button
                   type='button'
-                  variant='secondary'
+                  variant='outline'
                   disabled={isPending}
                   onClick={handleRestore}
                 >
-                  <RefreshCw className='mr-1 h-4 w-4' />
+                  <RefreshCw className='h-4 w-4' />
                   Restore
                 </Button>
               )}

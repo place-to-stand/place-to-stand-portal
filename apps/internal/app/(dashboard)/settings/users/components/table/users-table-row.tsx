@@ -116,7 +116,7 @@ export function UsersTableRow({
               reason={row.restoreDisabledReason}
             >
               <Button
-                variant='secondary'
+                variant='outline'
                 size='icon-sm'
                 onClick={row.onRestore}
                 title='Restore user'

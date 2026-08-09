@@ -192,7 +192,7 @@ export function HourBlocksTableSection({
                         reason={restoreDisabledReason}
                       >
                         <Button
-                          variant='secondary'
+                          variant='outline'
                           size='icon-sm'
                           onClick={() => onRestore(block)}
                           title='Restore hour block'
