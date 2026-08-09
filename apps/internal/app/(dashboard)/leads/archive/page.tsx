@@ -24,6 +24,7 @@ export default async function LeadsArchivePage() {
       breadcrumbs={[...crumbsForNav('/leads'), { label: 'Archive' }]}
       tabs={LEADS_TABS}
       activeTab='archive'
+      count={{ label: 'archived leads', total: archivedLeads.length }}
     >
       <section className='bg-background rounded-xl border p-6 shadow-sm space-y-3'>
         <LeadsArchiveSection leads={archivedLeads} />
