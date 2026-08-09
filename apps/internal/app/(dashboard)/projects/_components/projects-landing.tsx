@@ -37,7 +37,7 @@ import {
   createClientSlugLookup,
 } from '@/lib/projects/board/board-utils'
 import { updateProjectStatus } from '@/lib/settings/projects/actions/update-project-status'
-import type { ProjectWithRelations } from '@/lib/types'
+import type { LandingProject } from '@/lib/data/projects'
 import { cn } from '@/lib/utils'
 
 // PRD 004 §03: per-view sort allowlist. One shared `?sort` drives the Name
@@ -104,7 +104,7 @@ export type ClientHoursData =
 
 type ClientProjectSection = {
   client: { id: string; name: string; slug: string | null }
-  projects: ProjectWithRelations[]
+  projects: LandingProject[]
 }
 
 export type LandingUnfilteredCounts = {
@@ -117,7 +117,7 @@ export type LandingUnfilteredCounts = {
 
 type ProjectsLandingProps = {
   /** Already filtered server-side (status + search); this component only groups/renders. */
-  projects: ProjectWithRelations[]
+  projects: LandingProject[]
   clients: Array<{ id: string; name: string; slug: string | null }>
   currentUserId: string
   clientHoursMap?: Record<string, ClientHoursData>
@@ -175,8 +175,8 @@ export function ProjectsLanding({
 
   const { clientSections, internalProjects, personalProjects } = useMemo(() => {
     const clientMap = new Map<string, ClientProjectSection>()
-    const internal: ProjectWithRelations[] = []
-    const personal: ProjectWithRelations[] = []
+    const internal: LandingProject[] = []
+    const personal: LandingProject[] = []
 
     projects.forEach(project => {
       if (project.type === 'INTERNAL') {
@@ -242,7 +242,7 @@ export function ProjectsLanding({
     [clients]
   )
 
-  const getProjectHref = (project: ProjectWithRelations) => {
+  const getProjectHref = (project: LandingProject) => {
     const path = buildBoardPath(
       project.id,
       {
@@ -291,15 +291,13 @@ export function ProjectsLanding({
   )
 
   const renderProjectRow = (
-    project: ProjectWithRelations,
+    project: LandingProject,
     options?: { indent?: boolean; isLast?: boolean }
   ) => {
     const href = getProjectHref(project)
     const dateRange = formatProjectDateRange(project.starts_on, project.ends_on)
 
-    const activeTasks = project.tasks.filter(task => task.status !== 'ARCHIVED')
-    const doneCount = activeTasks.filter(task => task.status === 'DONE').length
-    const totalCount = activeTasks.length
+    const { done: doneCount, total: totalCount } = project.taskProgress
     const progressPercentage =
       totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0
 
@@ -400,7 +398,7 @@ export function ProjectsLanding({
     links: 'w-[12%]',
   }
 
-  const renderProjectTable = (items: ProjectWithRelations[]) => (
+  const renderProjectTable = (items: LandingProject[]) => (
     <div className='rounded-lg border'>
       <Table density='compact' className='table-fixed'>
         <TableHeader>

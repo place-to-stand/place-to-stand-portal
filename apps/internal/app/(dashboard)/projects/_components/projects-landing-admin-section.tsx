@@ -12,7 +12,7 @@ import { useToast } from '@/components/ui/use-toast'
 import { sortClientsByName } from '@/lib/settings/projects/project-sheet-form'
 import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
 import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
-import type { ProjectWithRelations } from '@/lib/types'
+import type { LandingProject } from '@/lib/data/projects'
 
 import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
@@ -25,7 +25,7 @@ import { ProjectsLandingFilters } from './projects-landing-filters'
 import { PROJECTS_TABS } from '../_lib/tabs'
 
 export type ProjectsLandingAdminSectionProps = {
-  projects: ProjectWithRelations[]
+  projects: LandingProject[]
   landingClients: Array<{ id: string; name: string; slug: string | null }>
   clients: ClientRow[]
   adminUsers: AdminUserForOwner[]

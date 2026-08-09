@@ -186,6 +186,16 @@ export const clients = pgTable(
       'btree',
       table.name.asc().nullsLast().op('text_ops')
     ),
+    // Clients landing/settings and the command palette search with
+    // ILIKE '%…%' over name and slug.
+    index('idx_clients_name_trgm').using(
+      'gin',
+      table.name.op('gin_trgm_ops')
+    ),
+    index('idx_clients_slug_trgm').using(
+      'gin',
+      table.slug.op('gin_trgm_ops')
+    ),
     index('idx_clients_origination_contact_id')
       .using('btree', table.originationContactId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL AND origination_contact_id IS NOT NULL)`),
@@ -243,6 +253,16 @@ export const contacts = pgTable(
     index('idx_contacts_email')
       .using('btree', table.email.asc().nullsLast().op('text_ops'))
       .where(sql`(deleted_at IS NULL)`),
+    // Contacts settings and the command palette search with ILIKE '%…%'
+    // over name and email.
+    index('idx_contacts_name_trgm').using(
+      'gin',
+      table.name.op('gin_trgm_ops')
+    ),
+    index('idx_contacts_email_trgm').using(
+      'gin',
+      table.email.op('gin_trgm_ops')
+    ),
     index('idx_contacts_email_domain')
       .using('btree', sql`split_part(email, '@', 2)`)
       .where(sql`(deleted_at IS NULL)`),
@@ -393,6 +413,16 @@ export const projects = pgTable(
     index('idx_projects_name').using(
       'btree',
       table.name.asc().nullsLast().op('text_ops')
+    ),
+    // Landing/settings search runs ILIKE '%…%' over name and slug —
+    // trigram GIN is the only index shape that serves infix matches.
+    index('idx_projects_name_trgm').using(
+      'gin',
+      table.name.op('gin_trgm_ops')
+    ),
+    index('idx_projects_slug_trgm').using(
+      'gin',
+      table.slug.op('gin_trgm_ops')
     ),
     index('idx_projects_created_by')
       .using('btree', table.createdBy.asc().nullsLast().op('uuid_ops'))

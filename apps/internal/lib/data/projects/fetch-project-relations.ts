@@ -51,7 +51,7 @@ export type ProjectRelationsFetchResult = {
   githubReposByProject: Map<string, GitHubRepoLinkSummary[]>
 }
 
-async function loadOwners(ownerIds: string[]): Promise<ProjectOwner[]> {
+export async function loadOwners(ownerIds: string[]): Promise<ProjectOwner[]> {
   if (ownerIds.length === 0) {
     return []
   }

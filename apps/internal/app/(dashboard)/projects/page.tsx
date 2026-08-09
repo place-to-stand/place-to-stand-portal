@@ -5,7 +5,7 @@ import { ProjectsLandingAdminSection } from './_components/projects-landing-admi
 import { parseProjectsLandingSearchParams } from './_lib/parse-projects-search-params'
 import {
   fetchLandingProjectCounts,
-  fetchProjectsWithRelations,
+  fetchProjectsForLanding,
 } from '@/lib/data/projects'
 import { fetchClientsWithMetrics } from '@/lib/data/clients'
 import { fetchAdminUsers } from '@/lib/data/users'
@@ -40,8 +40,7 @@ export default async function ProjectsPage({
     clientDirectory,
     adminUsersResult,
   ] = await Promise.all([
-    fetchProjectsWithRelations({
-      forUserId: user.id,
+    fetchProjectsForLanding({
       statuses,
       search: search ?? undefined,
     }),
