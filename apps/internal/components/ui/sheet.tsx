@@ -76,9 +76,15 @@ const SheetContent = React.forwardRef<
 
   const handleInteractOutside = React.useCallback(
     (e: Parameters<NonNullable<typeof onInteractOutside>>[0]) => {
-      // Don't close the sheet when interacting with toasts
+      // Don't close the sheet when interacting with toasts, or with Base UI
+      // popups (select/dropdown/popover/dialog portals render outside the
+      // Radix sheet content and would otherwise read as outside clicks).
       const target = e.target as HTMLElement | null
-      if (target?.closest('[data-toast]')) {
+      if (
+        target?.closest(
+          '[data-toast], [data-slot="select-content"], [data-slot="dropdown-menu-content"], [data-slot="popover-content"], [data-slot="tooltip-content"], [data-slot="dialog-content"], [data-slot="dialog-overlay"], [data-slot="alert-dialog-content"], [data-slot="alert-dialog-overlay"]'
+        )
+      ) {
         e.preventDefault()
       }
       onInteractOutside?.(e)

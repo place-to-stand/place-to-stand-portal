@@ -121,6 +121,7 @@ export function SubmissionDetailSheet({
   } | null>(null)
   const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false)
   const [destroyConfirmOpen, setDestroyConfirmOpen] = useState(false)
+  const [retainedSubmission, setRetainedSubmission] = useState(submission)
   const [isPending, startTransition] = useTransition()
 
   // Reconcile the optimistic override: drop it when the sheet closes, a
@@ -251,53 +252,61 @@ export function SubmissionDetailSheet({
     )
   }, [runClosingAction])
 
-  if (!submission) {
+  // Retain the last row through the close animation — the parent nulls
+  // `submission` on close, and unmounting instantly would skip the sheet's
+  // exit transition (adjust-during-render retention).
+  if (submission && submission !== retainedSubmission) {
+    setRetainedSubmission(submission)
+  }
+  const displaySubmission = submission ?? retainedSubmission
+
+  if (!displaySubmission) {
     return null
   }
 
-  const override = ackOverride?.id === submission.id ? ackOverride : null
+  const override = ackOverride?.id === displaySubmission.id ? ackOverride : null
   const acknowledged = override
     ? override.acknowledged
-    : submission.acknowledgedAt !== null
+    : displaySubmission.acknowledgedAt !== null
   // Acknowledgement only exists as a concept for rows that can flag —
   // in-progress/abandoned audits get no acknowledge-family UI at all.
-  const warrantsAttention = submissionWarrantsAttention(submission)
+  const warrantsAttention = submissionWarrantsAttention(displaySubmission)
   const unacknowledged =
     mode === 'active' && warrantsAttention && !acknowledged
-  const acknowledgedAt = submission.acknowledgedAt
+  const acknowledgedAt = displaySubmission.acknowledgedAt
 
-  const isAudit = submission.kind === 'audit'
+  const isAudit = displaySubmission.kind === 'audit'
   const hasAttribution = Boolean(
-    submission.utmSource ||
-      submission.utmMedium ||
-      submission.utmCampaign ||
-      submission.utmTerm ||
-      submission.utmContent ||
-      submission.gclid ||
-      submission.referrer ||
-      submission.landingPath
+    displaySubmission.utmSource ||
+      displaySubmission.utmMedium ||
+      displaySubmission.utmCampaign ||
+      displaySubmission.utmTerm ||
+      displaySubmission.utmContent ||
+      displaySubmission.gclid ||
+      displaySubmission.referrer ||
+      displaySubmission.landingPath
   )
 
   return (
-    <Sheet open onOpenChange={onOpenChange}>
+    <Sheet open={Boolean(submission)} onOpenChange={onOpenChange}>
       <SheetContent size='xl' className='overflow-y-auto'>
         <SheetHeader>
           <SheetTitle className='flex items-center gap-2'>
-            {FORM_SUBMISSION_KIND_LABELS[submission.kind]} submission
+            {FORM_SUBMISSION_KIND_LABELS[displaySubmission.kind]} submission
             <Badge
               variant='outline'
-              className={cn(FORM_SUBMISSION_STATUS_TOKENS[submission.status])}
+              className={cn(FORM_SUBMISSION_STATUS_TOKENS[displaySubmission.status])}
             >
-              {FORM_SUBMISSION_STATUS_LABELS[submission.status]}
+              {FORM_SUBMISSION_STATUS_LABELS[displaySubmission.status]}
             </Badge>
             {unacknowledged ? (
               <Badge variant='secondary'>Unacknowledged</Badge>
             ) : null}
           </SheetTitle>
           <SheetDescription>
-            {format(new Date(submission.startedAt), "d MMM yyyy 'at' HH:mm")}
-            {submission.durationMs !== null &&
-              ` · ${Math.round(submission.durationMs / 1000)}s on page`}
+            {format(new Date(displaySubmission.startedAt), "d MMM yyyy 'at' HH:mm")}
+            {displaySubmission.durationMs !== null &&
+              ` · ${Math.round(displaySubmission.durationMs / 1000)}s on page`}
             {mode === 'active' && warrantsAttention && acknowledged
               ? ` · ${
                   override
@@ -316,34 +325,34 @@ export function SubmissionDetailSheet({
         <div className='space-y-6 px-4 pb-24'>
           <Section title='Contact'>
             <dl className='space-y-2'>
-              <Field label='Name' value={value(submission.contactName)} />
+              <Field label='Name' value={value(displaySubmission.contactName)} />
               <Field
                 label='Email'
                 value={
-                  submission.contactEmail ? (
+                  displaySubmission.contactEmail ? (
                     // PW2: the natural post-triage action is emailing the
                     // prospect — make the address actionable.
                     <a
-                      href={`mailto:${submission.contactEmail}`}
+                      href={`mailto:${displaySubmission.contactEmail}`}
                       className='text-primary hover:underline'
                     >
-                      {submission.contactEmail}
+                      {displaySubmission.contactEmail}
                     </a>
                   ) : (
                     '—'
                   )
                 }
               />
-              <Field label='Company' value={value(submission.contactCompany)} />
-              <Field label='Website' value={value(submission.contactWebsite)} />
+              <Field label='Company' value={value(displaySubmission.contactCompany)} />
+              <Field label='Website' value={value(displaySubmission.contactWebsite)} />
               <Field
                 label='Marketing consent'
-                value={value(submission.marketingConsent)}
+                value={value(displaySubmission.marketingConsent)}
               />
             </dl>
-            {submission.message && (
+            {displaySubmission.message && (
               <p className='bg-muted/50 rounded-md p-3 text-sm whitespace-pre-wrap'>
-                {submission.message}
+                {displaySubmission.message}
               </p>
             )}
           </Section>
@@ -351,14 +360,14 @@ export function SubmissionDetailSheet({
           {isAudit && (
             <>
               <Separator />
-              <Section title={`Answers (${submission.answeredCount ?? 0} of ${submission.questionsTotal ?? 0})`}>
-                {submission.responses.length === 0 ? (
+              <Section title={`Answers (${displaySubmission.answeredCount ?? 0} of ${displaySubmission.questionsTotal ?? 0})`}>
+                {displaySubmission.responses.length === 0 ? (
                   <p className='text-muted-foreground text-sm'>
                     No answers recorded.
                   </p>
                 ) : (
                   <ol className='space-y-3'>
-                    {submission.responses.map((response, index) => (
+                    {displaySubmission.responses.map((response, index) => (
                       <li
                         key={`${response.questionId}-${index}`}
                         className='space-y-1'
@@ -376,24 +385,24 @@ export function SubmissionDetailSheet({
             </>
           )}
 
-          {submission.result && (
+          {displaySubmission.result && (
             <>
               <Separator />
               <Section title='Result'>
                 <dl className='space-y-2'>
                   <Field
                     label='Phase'
-                    value={value(submission.result.phaseName)}
+                    value={value(displaySubmission.result.phaseName)}
                   />
                   <Field
                     label='Generated by'
-                    value={value(submission.result.generatedBy)}
+                    value={value(displaySubmission.result.generatedBy)}
                   />
                 </dl>
-                <p className='text-sm'>{submission.result.summary}</p>
-                {submission.result.recommendations.length > 0 && (
+                <p className='text-sm'>{displaySubmission.result.summary}</p>
+                {displaySubmission.result.recommendations.length > 0 && (
                   <ul className='space-y-3'>
-                    {submission.result.recommendations.map(rec => (
+                    {displaySubmission.result.recommendations.map(rec => (
                       <li
                         key={rec.serviceId}
                         className='rounded-md border p-3 text-sm'
@@ -424,19 +433,19 @@ export function SubmissionDetailSheet({
               <Separator />
               <Section title='Attribution'>
                 <dl className='space-y-2'>
-                  <Field label='Source' value={value(submission.utmSource)} />
-                  <Field label='Medium' value={value(submission.utmMedium)} />
+                  <Field label='Source' value={value(displaySubmission.utmSource)} />
+                  <Field label='Medium' value={value(displaySubmission.utmMedium)} />
                   <Field
                     label='Campaign'
-                    value={value(submission.utmCampaign)}
+                    value={value(displaySubmission.utmCampaign)}
                   />
-                  <Field label='Term' value={value(submission.utmTerm)} />
-                  <Field label='Content' value={value(submission.utmContent)} />
-                  <Field label='GCLID' value={value(submission.gclid)} />
-                  <Field label='Referrer' value={value(submission.referrer)} />
+                  <Field label='Term' value={value(displaySubmission.utmTerm)} />
+                  <Field label='Content' value={value(displaySubmission.utmContent)} />
+                  <Field label='GCLID' value={value(displaySubmission.gclid)} />
+                  <Field label='Referrer' value={value(displaySubmission.referrer)} />
                   <Field
                     label='Landing path'
-                    value={value(submission.landingPath)}
+                    value={value(displaySubmission.landingPath)}
                   />
                 </dl>
               </Section>
@@ -446,27 +455,27 @@ export function SubmissionDetailSheet({
           <Separator />
           <Section title='Session'>
             <dl className='space-y-2'>
-              <Field label='Source' value={value(submission.sourceDetail)} />
-              <Field label='Viewport' value={value(submission.viewport)} />
+              <Field label='Source' value={value(displaySubmission.sourceDetail)} />
+              <Field label='Viewport' value={value(displaySubmission.viewport)} />
               <Field
                 label='Screen width'
                 value={
-                  submission.screenWidth ? `${submission.screenWidth}px` : '—'
+                  displaySubmission.screenWidth ? `${displaySubmission.screenWidth}px` : '—'
                 }
               />
-              <Field label='Timezone' value={value(submission.timezone)} />
-              <Field label='Language' value={value(submission.language)} />
-              <Field label='User agent' value={value(submission.userAgent)} />
+              <Field label='Timezone' value={value(displaySubmission.timezone)} />
+              <Field label='Language' value={value(displaySubmission.language)} />
+              <Field label='User agent' value={value(displaySubmission.userAgent)} />
               <Field
                 label='Session key'
                 value={
-                  <code className='text-xs'>{submission.sessionKey}</code>
+                  <code className='text-xs'>{displaySubmission.sessionKey}</code>
                 }
               />
             </dl>
-            {submission.posthogReplayUrl && (
+            {displaySubmission.posthogReplayUrl && (
               <a
-                href={submission.posthogReplayUrl}
+                href={displaySubmission.posthogReplayUrl}
                 target='_blank'
                 rel='noopener noreferrer'
                 className='text-primary inline-flex items-center gap-1 text-sm hover:underline'
@@ -559,8 +568,8 @@ export function SubmissionDetailSheet({
           open={destroyConfirmOpen}
           title='Permanently delete submission?'
           description={`Permanently deleting the submission from ${
-            submission.contactName ||
-            submission.contactEmail ||
+            displaySubmission.contactName ||
+            displaySubmission.contactEmail ||
             'this anonymous visitor'
           } removes it and its history. This action cannot be undone.`}
           confirmLabel='Delete forever'

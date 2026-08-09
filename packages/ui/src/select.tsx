@@ -186,7 +186,7 @@ function SelectContent({
         side={side}
         sideOffset={sideOffset}
         alignItemWithTrigger={position === 'item-aligned'}
-        className='isolate z-50'
+        className='pointer-events-auto isolate z-50'
       >
         <SelectPrimitive.Popup
           data-slot='select-content'
