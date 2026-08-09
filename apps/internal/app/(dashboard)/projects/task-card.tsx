@@ -298,19 +298,18 @@ export function TaskCard({
         }
       }}
       className={cn(
-        'group bg-card rounded-lg border-y border-r border-l-4 p-4 text-left shadow-sm transition',
-        isCompleted ? 'border-l-muted-foreground/30' : 'border-l-violet-500',
+        'group bg-card rounded-lg border p-4 text-left shadow-sm transition',
         draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
         isDragging && 'ring-primary ring-2',
         (isActive || isDragging) && 'border-primary/50 bg-primary/5 shadow-md',
         !isActive &&
           !isDragging &&
           !isCompleted &&
-          'hover:border-y-violet-500/50 hover:border-r-violet-500/50 hover:bg-violet-500/5 hover:shadow-md',
+          'border-violet-500/60 hover:border-violet-500 hover:bg-violet-500/5 hover:shadow-md',
         !isActive &&
           !isDragging &&
           isCompleted &&
-          'hover:border-r-muted-foreground/30 hover:border-y-muted-foreground/30 hover:bg-muted/20 hover:shadow-md'
+          'hover:border-muted-foreground/30 hover:bg-muted/20 hover:shadow-md'
       )}
     >
       <CardContent
@@ -338,10 +337,8 @@ export function TaskCardPreview({
   return (
     <div
       className={cn(
-        'bg-card w-80 rounded-lg border-y border-r border-l-4 p-4 shadow-sm',
-        isCompleted
-          ? 'border-l-muted-foreground/30 opacity-65'
-          : 'border-l-violet-500'
+        'bg-card w-80 rounded-lg border p-4 shadow-sm',
+        isCompleted ? 'opacity-65' : 'border-violet-500/60'
       )}
     >
       <CardContent

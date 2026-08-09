@@ -39,6 +39,10 @@ import {
 import { updateProjectStatus } from '@/lib/settings/projects/actions/update-project-status'
 import type { LandingProject } from '@/lib/data/projects'
 import { cn } from '@/lib/utils'
+import {
+  CLICKABLE_ROW_CLASS,
+  getClickableRowProps,
+} from '@/lib/table/clickable-row'
 
 // PRD 004 §03: per-view sort allowlist. One shared `?sort` drives the Name
 // column in all three section tables; grouping semantics stay unchanged —
@@ -305,7 +309,13 @@ export function ProjectsLanding({
     const firstRepo = project.githubRepos[0]
 
     return (
-      <TableRow key={project.id}>
+      <TableRow
+        key={project.id}
+        {...(href !== '#'
+          ? getClickableRowProps(() => router.push(href))
+          : {})}
+        className={href !== '#' ? CLICKABLE_ROW_CLASS : undefined}
+      >
         <TableCell>
           <div className='flex items-center'>
             {treeLine && (

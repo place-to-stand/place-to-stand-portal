@@ -115,13 +115,13 @@ export const LeadCard = memo(function LeadCard({
         }
       }}
       className={cn(
-        'group bg-card focus-visible:ring-ring focus-visible:ring-offset-background rounded-lg border-y border-r border-l-4 border-l-amber-500 p-4 text-left shadow-sm transition focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+        'group bg-card focus-visible:ring-ring focus-visible:ring-offset-background rounded-lg border p-4 text-left shadow-sm transition focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
         canManage ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
         isDragging && 'ring-primary ring-2',
         (isActive || isDragging) && 'border-primary/50 bg-primary/5 shadow-md',
         !isActive &&
           !isDragging &&
-          'hover:border-r-amber-500/50 hover:border-y-amber-500/50 hover:bg-amber-500/5 hover:shadow-md'
+          'border-amber-500/60 hover:border-amber-500 hover:bg-amber-500/5 hover:shadow-md'
       )}
     >
       <LeadCardContent lead={lead} />
@@ -246,7 +246,7 @@ function AnchorRow({ icon: Icon, value, href }: AnchorRowProps) {
 
 export function LeadCardPreview({ lead }: { lead: LeadRecord }) {
   return (
-    <div className='bg-card border-l-amber-500 w-80 rounded-lg border-y border-r border-l-4 p-4 shadow-sm'>
+    <div className='bg-card border-amber-500/60 w-80 rounded-lg border p-4 shadow-sm'>
       <LeadCardContent lead={lead} />
     </div>
   )

@@ -43,6 +43,10 @@ import {
 import { SubmissionArchiveDialog } from './submission-archive-dialog'
 import { SubmissionDetailSheet } from './submission-detail-sheet'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
+import {
+  CLICKABLE_ROW_CLASS,
+  getClickableRowProps,
+} from '@/lib/table/clickable-row'
 
 export type SubmissionsTableMode = 'active' | 'archive'
 
@@ -359,9 +363,11 @@ export function SubmissionsTable({
                 return (
                   <TableRow
                     key={submission.id}
-                    onClick={() => handleSelect(submission.id)}
+                    {...getClickableRowProps(() =>
+                      handleSelect(submission.id)
+                    )}
                     className={cn(
-                      'cursor-pointer',
+                      CLICKABLE_ROW_CLASS,
                       unacknowledged && 'font-medium',
                       submission.deletedAt && ARCHIVED_ROW_CLASS
                     )}

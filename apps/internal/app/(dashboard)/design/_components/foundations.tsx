@@ -70,37 +70,37 @@ const ENTITY_CARDS: Array<{ name: string; color: string; className: string }> =
       name: 'Task',
       color: 'violet',
       className:
-        'border-l-violet-500 hover:border-r-violet-500/50 hover:border-y-violet-500/50 hover:bg-violet-500/5',
+        'border-violet-500/60 hover:border-violet-500 hover:bg-violet-500/5',
     },
     {
       name: 'Lead',
       color: 'amber',
       className:
-        'border-l-amber-500 hover:border-r-amber-500/50 hover:border-y-amber-500/50 hover:bg-amber-500/5',
+        'border-amber-500/60 hover:border-amber-500 hover:bg-amber-500/5',
     },
     {
       name: 'Project',
       color: 'emerald',
       className:
-        'border-l-emerald-500 hover:border-r-emerald-500/50 hover:border-y-emerald-500/50 hover:bg-emerald-500/5',
+        'border-emerald-500/60 hover:border-emerald-500 hover:bg-emerald-500/5',
     },
     {
       name: 'Client',
       color: 'blue',
       className:
-        'border-l-blue-500 hover:border-r-blue-500/50 hover:border-y-blue-500/50 hover:bg-blue-500/5',
+        'border-blue-500/60 hover:border-blue-500 hover:bg-blue-500/5',
     },
     {
       name: 'Contact',
       color: 'cyan',
       className:
-        'border-l-cyan-500 hover:border-r-cyan-500/50 hover:border-y-cyan-500/50 hover:bg-cyan-500/5',
+        'border-cyan-500/60 hover:border-cyan-500 hover:bg-cyan-500/5',
     },
     {
       name: 'Suggestion',
       color: 'fuchsia',
       className:
-        'border-l-fuchsia-500 hover:border-r-fuchsia-500/50 hover:border-y-fuchsia-500/50 hover:bg-fuchsia-500/5',
+        'border-fuchsia-500/60 hover:border-fuchsia-500 hover:bg-fuchsia-500/5',
     },
   ]
 
@@ -152,14 +152,14 @@ export function Foundations() {
 
       <Specimen
         label='Object identity'
-        note='entity accent cards — border-l-4 + hover tint (docs/design-system.md)'
+        note='entity accent cards — tinted border + hover tint (docs/design-system.md)'
         className='gap-4'
       >
         {ENTITY_CARDS.map(entity => (
           <div
             key={entity.name}
             className={cn(
-              'bg-card w-44 rounded-lg border-y border-r border-l-4 p-4 shadow-sm transition-all hover:shadow-md',
+              'bg-card w-44 rounded-lg border p-4 shadow-sm transition-all hover:shadow-md',
               entity.className
             )}
           >

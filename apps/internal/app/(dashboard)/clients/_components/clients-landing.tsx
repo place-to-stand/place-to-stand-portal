@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Building2, CheckCircle2, Clock, ExternalLink } from 'lucide-react'
 
 import {
@@ -28,6 +29,10 @@ import type { ClientWithMetrics } from '@/lib/data/clients'
 import { getBillingTypeOption } from '@/lib/settings/clients/billing-types'
 import { isClientSortValue } from '@/lib/settings/clients/filters'
 import { cn } from '@/lib/utils'
+import {
+  CLICKABLE_ROW_CLASS,
+  getClickableRowProps,
+} from '@/lib/table/clickable-row'
 
 import { ActiveProjectsCell } from './active-projects-cell'
 
@@ -52,6 +57,7 @@ function getInitials(name: string | null): string {
 }
 
 export function ClientsLanding({ clients }: ClientsLandingProps) {
+  const router = useRouter()
   const { update, getParam } = useListParams({
     basePath: '/clients',
     resetKeys: ['cursor', 'dir'],
@@ -105,7 +111,13 @@ export function ClientsLanding({ clients }: ClientsLandingProps) {
         </TableHeader>
         <TableBody>
           {clients.map(client => (
-            <TableRow key={client.id}>
+            <TableRow
+              key={client.id}
+              {...getClickableRowProps(() =>
+                router.push(getClientHref(client))
+              )}
+              className={CLICKABLE_ROW_CLASS}
+            >
               <TableCell>
                 <Link
                   href={getClientHref(client)}
