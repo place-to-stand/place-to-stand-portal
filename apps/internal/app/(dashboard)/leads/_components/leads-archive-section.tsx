@@ -272,7 +272,7 @@ export function LeadsArchiveSection({ leads }: LeadsArchiveSectionProps) {
                     <div className='flex justify-end gap-2'>
                       <Button
                         variant='secondary'
-                        size='icon'
+                        size='icon-sm'
                         onClick={() => handleRestore(lead)}
                         disabled={rowDisabled}
                         title='Restore lead'
@@ -283,7 +283,7 @@ export function LeadsArchiveSection({ leads }: LeadsArchiveSectionProps) {
                       </Button>
                       <Button
                         variant='destructive'
-                        size='icon'
+                        size='icon-sm'
                         onClick={() => handleRequestDestroy(lead)}
                         disabled={rowDisabled}
                         title='Permanently delete lead'

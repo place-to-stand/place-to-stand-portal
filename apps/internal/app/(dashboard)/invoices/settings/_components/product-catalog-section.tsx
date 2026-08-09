@@ -92,7 +92,7 @@ function ProductRow({
       <TableCell>
         <Button
           variant='ghost'
-          size='icon'
+          size='icon-sm'
           className='h-7 w-7'
           onClick={() => onEdit(item)}
         >

@@ -100,7 +100,7 @@ export function UsersTableRow({
             >
               <Button
                 variant='outline'
-                size='icon'
+                size='icon-sm'
                 onClick={row.onEdit}
                 title='Edit user'
                 disabled={row.editDisabled}
@@ -116,7 +116,7 @@ export function UsersTableRow({
             >
               <Button
                 variant='secondary'
-                size='icon'
+                size='icon-sm'
                 onClick={row.onRestore}
                 title='Restore user'
                 aria-label='Restore user'
@@ -135,7 +135,7 @@ export function UsersTableRow({
             >
               <Button
                 variant='destructive'
-                size='icon'
+                size='icon-sm'
                 onClick={row.onRequestDelete}
                 title={deleteTitle}
                 aria-label='Archive user'
@@ -154,7 +154,7 @@ export function UsersTableRow({
             >
               <Button
                 variant='destructive'
-                size='icon'
+                size='icon-sm'
                 onClick={row.onRequestDestroy}
                 title='Permanently delete user'
                 aria-label='Permanently delete user'

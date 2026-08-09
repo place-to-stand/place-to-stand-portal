@@ -452,7 +452,7 @@ export function SubmissionsTable({
                         {unacknowledged ? (
                           <Button
                             variant='outline'
-                            size='icon'
+                            size='icon-sm'
                             title='Acknowledge submission'
                             aria-label='Acknowledge submission'
                             disabled={pendingId === submission.id}
@@ -468,7 +468,7 @@ export function SubmissionsTable({
                         {mode === 'active' ? (
                           <Button
                             variant='destructive'
-                            size='icon'
+                            size='icon-sm'
                             title='Archive submission'
                             aria-label='Archive submission'
                             disabled={pendingId === submission.id}
@@ -484,7 +484,7 @@ export function SubmissionsTable({
                           <>
                             <Button
                               variant='secondary'
-                              size='icon'
+                              size='icon-sm'
                               title='Restore submission'
                               aria-label='Restore submission'
                               disabled={pendingId === submission.id}
@@ -498,7 +498,7 @@ export function SubmissionsTable({
                             </Button>
                             <Button
                               variant='destructive'
-                              size='icon'
+                              size='icon-sm'
                               title='Permanently delete submission'
                               aria-label='Permanently delete submission'
                               disabled={pendingId === submission.id}

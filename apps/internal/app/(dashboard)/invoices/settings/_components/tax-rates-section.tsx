@@ -246,7 +246,7 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
                   <TableCell>
                     <Button
                       variant='ghost'
-                      size='icon'
+                      size='icon-sm'
                       className='h-7 w-7'
                       onClick={() => openEditDialog(rate)}
                     >

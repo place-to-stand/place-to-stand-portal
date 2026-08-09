@@ -164,7 +164,7 @@ export function ClientsTableSection({
                       >
                         <Button
                           variant='outline'
-                          size='icon'
+                          size='icon-sm'
                           onClick={() => onEdit(client)}
                           title='Edit client'
                           disabled={editDisabled}
@@ -180,7 +180,7 @@ export function ClientsTableSection({
                       >
                         <Button
                           variant='secondary'
-                          size='icon'
+                          size='icon-sm'
                           onClick={() => onRestore(client)}
                           title='Restore client'
                           aria-label='Restore client'
@@ -198,7 +198,7 @@ export function ClientsTableSection({
                       >
                         <Button
                           variant='destructive'
-                          size='icon'
+                          size='icon-sm'
                           onClick={() => onRequestDelete(client)}
                           title='Delete client'
                           aria-label='Delete client'
@@ -216,7 +216,7 @@ export function ClientsTableSection({
                       >
                         <Button
                           variant='destructive'
-                          size='icon'
+                          size='icon-sm'
                           onClick={() => onRequestDestroy(client)}
                           title='Permanently delete client'
                           aria-label='Permanently delete client'

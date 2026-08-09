@@ -134,7 +134,7 @@ export function ProjectsTableRow({
             >
               <Button
                 variant='outline'
-                size='icon'
+                size='icon-sm'
                 onClick={() => onEdit(project)}
                 title='Edit project'
                 disabled={editDisabled}
@@ -150,7 +150,7 @@ export function ProjectsTableRow({
             >
               <Button
                 variant='secondary'
-                size='icon'
+                size='icon-sm'
                 onClick={() => onRestore(project)}
                 title='Restore project'
                 aria-label='Restore project'
@@ -168,7 +168,7 @@ export function ProjectsTableRow({
             >
               <Button
                 variant='destructive'
-                size='icon'
+                size='icon-sm'
                 onClick={() => onRequestDelete(project)}
                 title='Archive project'
                 aria-label='Archive project'
@@ -186,7 +186,7 @@ export function ProjectsTableRow({
             >
               <Button
                 variant='destructive'
-                size='icon'
+                size='icon-sm'
                 onClick={() => onRequestDestroy(project)}
                 title='Permanently delete project'
                 aria-label='Permanently delete project'

@@ -248,7 +248,7 @@ function ShareLinkCell({
       </span>
       <Button
         variant='ghost'
-        size='icon'
+        size='icon-sm'
         className='h-6 w-6 flex-shrink-0'
         onClick={handleCopy}
         title='Copy share link'
@@ -261,7 +261,7 @@ function ShareLinkCell({
       </Button>
       <Button
         variant='ghost'
-        size='icon'
+        size='icon-sm'
         className='h-6 w-6 flex-shrink-0'
         onClick={() => window.open(shareUrl, '_blank')}
         title='Open share link'
@@ -438,7 +438,7 @@ export function InvoicesTableSection({
                       isViewOnly ? (
                         <Button
                           variant='outline'
-                          size='icon'
+                          size='icon-sm'
                           onClick={() => onEdit(invoice)}
                           title='View invoice'
                         >
@@ -451,7 +451,7 @@ export function InvoicesTableSection({
                         >
                           <Button
                             variant='outline'
-                            size='icon'
+                            size='icon-sm'
                             onClick={() => onEdit(invoice)}
                             title='Edit invoice'
                             disabled={editDisabled}
@@ -468,7 +468,7 @@ export function InvoicesTableSection({
                       >
                         <Button
                           variant='destructive'
-                          size='icon'
+                          size='icon-sm'
                           onClick={() => onRequestDelete(invoice)}
                           title='Archive invoice'
                           aria-label='Archive invoice'
@@ -486,7 +486,7 @@ export function InvoicesTableSection({
                       >
                         <Button
                           variant='secondary'
-                          size='icon'
+                          size='icon-sm'
                           onClick={() => onRestore(invoice)}
                           title='Restore invoice'
                           aria-label='Restore invoice'
@@ -504,7 +504,7 @@ export function InvoicesTableSection({
                       >
                         <Button
                           variant='destructive'
-                          size='icon'
+                          size='icon-sm'
                           onClick={() => onRequestDestroy(invoice)}
                           title='Permanently delete invoice'
                           aria-label='Permanently delete invoice'

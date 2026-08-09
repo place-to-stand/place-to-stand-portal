@@ -180,7 +180,7 @@ export function ContactsTableSection({
                       >
                         <Button
                           variant='outline'
-                          size='icon'
+                          size='icon-sm'
                           onClick={() => onEdit(contact)}
                           title='Edit contact'
                           disabled={editDisabled}
@@ -196,7 +196,7 @@ export function ContactsTableSection({
                       >
                         <Button
                           variant='outline'
-                          size='icon'
+                          size='icon-sm'
                           onClick={() => onRequestPromote(contact)}
                           title='Create portal account'
                           disabled={promoteDisabled}
@@ -212,7 +212,7 @@ export function ContactsTableSection({
                       >
                         <Button
                           variant='secondary'
-                          size='icon'
+                          size='icon-sm'
                           onClick={() => onRestore(contact)}
                           title='Restore contact'
                           aria-label='Restore contact'
@@ -230,7 +230,7 @@ export function ContactsTableSection({
                       >
                         <Button
                           variant='destructive'
-                          size='icon'
+                          size='icon-sm'
                           onClick={() => onRequestDelete(contact)}
                           title='Archive contact'
                           aria-label='Archive contact'
@@ -248,7 +248,7 @@ export function ContactsTableSection({
                       >
                         <Button
                           variant='destructive'
-                          size='icon'
+                          size='icon-sm'
                           onClick={() => onRequestDestroy(contact)}
                           title='Permanently delete contact'
                           aria-label='Permanently delete contact'

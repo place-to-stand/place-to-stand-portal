@@ -145,7 +145,7 @@ export function ReviewArchivedSection({
                         >
                           <Button
                             type='button'
-                            size='icon'
+                            size='icon-sm'
                             variant='secondary'
                             onClick={event => {
                               event.preventDefault()
@@ -171,7 +171,7 @@ export function ReviewArchivedSection({
                         >
                           <Button
                             type='button'
-                            size='icon'
+                            size='icon-sm'
                             variant='destructive'
                             onClick={event => {
                               event.preventDefault()

@@ -176,7 +176,7 @@ export function HourBlocksTableSection({
                       >
                         <Button
                           variant='outline'
-                          size='icon'
+                          size='icon-sm'
                           onClick={() => onEdit(block)}
                           title='Edit hour block'
                           disabled={editDisabled}
@@ -192,7 +192,7 @@ export function HourBlocksTableSection({
                       >
                         <Button
                           variant='secondary'
-                          size='icon'
+                          size='icon-sm'
                           onClick={() => onRestore(block)}
                           title='Restore hour block'
                           aria-label='Restore hour block'
@@ -210,7 +210,7 @@ export function HourBlocksTableSection({
                       >
                         <Button
                           variant='destructive'
-                          size='icon'
+                          size='icon-sm'
                           onClick={() => onRequestDelete(block)}
                           title='Archive hour block'
                           aria-label='Archive hour block'
@@ -228,7 +228,7 @@ export function HourBlocksTableSection({
                       >
                         <Button
                           variant='destructive'
-                          size='icon'
+                          size='icon-sm'
                           onClick={() => onRequestDestroy(block)}
                           title='Permanently delete hour block'
                           aria-label='Permanently delete hour block'
