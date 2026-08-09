@@ -184,7 +184,9 @@ export const SearchableCombobox = React.forwardRef<
         maxHeight,
         overflowY: 'auto',
         overscrollBehavior: 'contain',
-        ...(contentWidth ? { width: contentWidth } : {}),
+        // Min-width (not width): the popover never shrinks below the
+        // trigger but grows to fit no-wrap options (My Tasks person list).
+        ...(contentWidth ? { minWidth: contentWidth } : {}),
       }
     }, [contentWidth])
 
