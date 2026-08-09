@@ -33,6 +33,8 @@ type LeadsWorkspaceProps = {
   activeLeadId: string | null
   activeAction?: string | null
   senderName?: string
+  /** True on the /leads/new deep link — opens the create sheet on mount. */
+  startCreating?: boolean
 }
 
 export function LeadsWorkspace({
@@ -42,9 +44,10 @@ export function LeadsWorkspace({
   activeLeadId,
   activeAction = null,
   senderName,
+  startCreating = false,
 }: LeadsWorkspaceProps) {
   const router = useRouter()
-  const [isCreatingLead, setIsCreatingLead] = useState(false)
+  const [isCreatingLead, setIsCreatingLead] = useState(startCreating)
   const [initialStatus, setInitialStatus] = useState<LeadStatusValue | null>(
     null
   )
@@ -136,6 +139,8 @@ export function LeadsWorkspace({
       if (isCreatingLead) {
         setIsCreatingLead(false)
         setInitialStatus(null)
+        // Leave /leads/new so a refresh doesn't reopen the create sheet.
+        router.push('/leads', { scroll: false })
         startRefresh(() => {
           router.refresh()
         })

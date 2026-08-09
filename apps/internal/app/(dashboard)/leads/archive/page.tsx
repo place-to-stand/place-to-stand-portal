@@ -1,5 +1,9 @@
 import type { Metadata } from 'next'
 
+import Link from 'next/link'
+import { Plus } from 'lucide-react'
+
+import { Button } from '@pts/ui/button'
 import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { requireUser } from '@/lib/auth/session'
@@ -25,6 +29,14 @@ export default async function LeadsArchivePage() {
       tabs={LEADS_TABS}
       activeTab='archive'
       count={{ label: 'archived leads', total: archivedLeads.length }}
+      primaryAction={
+        <Button asChild size='sm' className='gap-2'>
+          <Link href='/leads/new'>
+            <Plus className='h-4 w-4' />
+            Add lead
+          </Link>
+        </Button>
+      }
     >
       <section className='bg-background rounded-xl border p-6 shadow-sm space-y-3'>
         <LeadsArchiveSection leads={archivedLeads} />

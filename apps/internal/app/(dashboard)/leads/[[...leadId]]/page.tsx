@@ -23,7 +23,9 @@ export default async function LeadsBoardPage({ params }: PageProps) {
   const actionSegment = resolvedParams.leadId?.[1] ?? null
   const user = await requireUser()
 
-  const activeLeadId = requestedLeadId
+  // /leads/new: create deep link (archive's Add lead button lands here).
+  const startCreating = requestedLeadId === 'new'
+  const activeLeadId = startCreating ? null : requestedLeadId
 
   // Derive activeAction from URL segments
   let activeAction: string | null = null
@@ -43,6 +45,7 @@ export default async function LeadsBoardPage({ params }: PageProps) {
       canManage
       activeLeadId={activeLeadId}
       activeAction={activeAction}
+      startCreating={startCreating}
       senderName={user.full_name ?? user.email ?? ''}
     />
   )
