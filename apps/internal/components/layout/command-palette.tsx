@@ -182,7 +182,11 @@ function CommandPalette() {
             {clients.map(client => (
               <CommandItem
                 key={client.id}
-                value={`client-${client.id}`}
+                // cmdk filters items by `value` even for server-fetched
+                // results — the visible label must be part of it or typing
+                // the name hides the match. The id suffix keeps values
+                // unique across same-named records.
+                value={`${client.name} ${client.slug ?? ''} client-${client.id}`}
                 onSelect={() =>
                   navigate(`/clients/${client.slug ?? client.id}`)
                 }
@@ -198,7 +202,7 @@ function CommandPalette() {
             {projects.map(project => (
               <CommandItem
                 key={project.id}
-                value={`project-${project.id}`}
+                value={`${project.clientLabel ?? ''} ${project.name} project-${project.id}`}
                 onSelect={() =>
                   navigate(
                     `/projects/${project.clientSegment}/${project.projectSlug}/tasks`
@@ -223,11 +227,12 @@ function CommandPalette() {
             {contactResults.map(contact => (
               <CommandItem
                 key={contact.id}
-                value={`contact-${contact.id}`}
+                value={`${contact.name} ${contact.email} contact-${contact.id}`}
                 onSelect={() =>
                   // Contacts have no detail route — land on the contacts list
-                  // pre-filtered to the record.
-                  navigate(`/contacts?q=${encodeURIComponent(contact.name)}`)
+                  // pre-filtered to the record. Email is unique where names
+                  // are not, so it isolates the selected contact.
+                  navigate(`/contacts?q=${encodeURIComponent(contact.email)}`)
                 }
               >
                 <Contact className='size-4' />

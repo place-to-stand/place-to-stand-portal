@@ -11,6 +11,7 @@ import {
   decodeSortCursor,
   encodeSortCursor,
   type SortCursorPayload,
+  type SortDirection,
 } from '@/lib/pagination/sort'
 import { DEFAULT_CONTACTS_SORT } from '@/lib/settings/contacts/filters'
 
@@ -145,6 +146,7 @@ function buildPageInfo(
   items: ContactsSettingsListItem[],
   hasExtraRecord: boolean,
   sortField: string,
+  sortDirection: SortDirection,
   descriptor: ContactSortDescriptor
 ): PageInfo {
   const firstItem = items[0] ?? null
@@ -161,6 +163,7 @@ function buildPageInfo(
     startCursor: firstItem
       ? encodeSortCursor({
           sortField,
+          sortDirection,
           value: descriptor.encode(firstItem),
           id: firstItem.id,
         })
@@ -168,6 +171,7 @@ function buildPageInfo(
     endCursor: lastItem
       ? encodeSortCursor({
           sortField,
+          sortDirection,
           value: descriptor.encode(lastItem),
           id: lastItem.id,
         })
@@ -208,7 +212,11 @@ export async function listContactsForSettings(
   } else {
     // Field-tagged cursor: payloads minted under a different sort are
     // rejected and we serve page one (R5 backstop for stale deep links).
-    cursorPayloadForPageInfo = decodeSortCursor(input.cursor, sort.field)
+    cursorPayloadForPageInfo = decodeSortCursor(
+      input.cursor,
+      sort.field,
+      sort.direction
+    )
 
     // Effective ordering combines the sort direction with the pagination
     // direction (backward pages scan the reversed order, then re-reverse).
@@ -257,6 +265,7 @@ export async function listContactsForSettings(
         mappedItems,
         cursorHasExtraRecord,
         sort.field,
+        sort.direction,
         descriptor
       )
 

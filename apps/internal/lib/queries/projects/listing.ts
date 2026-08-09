@@ -10,8 +10,6 @@ import { NotFoundError } from '@/lib/errors/http'
 import {
   clampLimit,
   createSearchPattern,
-  decodeCursor,
-  encodeCursor,
   resolveDirection,
   type PageInfo,
 } from '@/lib/pagination/cursor'
@@ -144,7 +142,11 @@ export async function listProjectsForSettings(
 
   // Field-tagged cursor (R5): payloads minted under a different sort are
   // rejected and we serve page one.
-  const cursorPayload = decodeSortCursor(input.cursor, sort.field)
+  const cursorPayload = decodeSortCursor(
+    input.cursor,
+    sort.field,
+    sort.direction
+  )
 
   const effectiveAsc = (sort.direction === 'asc') === (direction === 'forward')
   const cursorCondition = cursorPayload
@@ -257,6 +259,7 @@ export async function listProjectsForSettings(
     startCursor: firstItem
       ? encodeSortCursor({
           sortField: sort.field,
+          sortDirection: sort.direction,
           value: descriptor.encode(firstItem),
           id: firstItem.id,
         })
@@ -264,6 +267,7 @@ export async function listProjectsForSettings(
     endCursor: lastItem
       ? encodeSortCursor({
           sortField: sort.field,
+          sortDirection: sort.direction,
           value: descriptor.encode(lastItem),
           id: lastItem.id,
         })

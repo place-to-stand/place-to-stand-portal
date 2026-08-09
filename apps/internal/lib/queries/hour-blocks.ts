@@ -187,7 +187,11 @@ export async function listHourBlocksForSettings(
   } else {
     // Field-tagged cursor: payloads minted under a different sort are
     // rejected and we serve page one (R5 backstop for stale deep links).
-    const cursorPayload = decodeSortCursor(input.cursor, sort.field)
+    const cursorPayload = decodeSortCursor(
+      input.cursor,
+      sort.field,
+      sort.direction
+    )
     cursorPayloadPresent = Boolean(cursorPayload)
 
     // Effective ordering combines the sort direction with the pagination
@@ -261,6 +265,7 @@ export async function listHourBlocksForSettings(
     startCursor: firstItem
       ? encodeSortCursor({
           sortField: sort.field,
+          sortDirection: sort.direction,
           value: descriptor.encode(firstItem),
           id: firstItem.id,
         })
@@ -268,6 +273,7 @@ export async function listHourBlocksForSettings(
     endCursor: lastItem
       ? encodeSortCursor({
           sortField: sort.field,
+          sortDirection: sort.direction,
           value: descriptor.encode(lastItem),
           id: lastItem.id,
         })

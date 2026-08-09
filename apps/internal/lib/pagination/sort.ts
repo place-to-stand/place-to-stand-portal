@@ -44,15 +44,19 @@ export function serializeSort(sort: ParsedSort): string {
 }
 
 /**
- * Field-tagged cursor payload: the active sort field's value + the id
- * tie-breaker. `value: null` marks a row in the null partition of a
- * nullable sort column (NULLS LAST policy).
+ * Field-tagged cursor payload: the active sort identity (field + direction)
+ * plus the boundary row's value and id tie-breaker. `value: null` marks a
+ * row in the null partition of a nullable sort column (NULLS LAST policy).
  */
 export type SortCursorPayload = {
   sortField: string
+  sortDirection: SortDirection
   value: string | null
   id: string
 }
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export function encodeSortCursor(payload: SortCursorPayload): string {
   return encodeCursor(payload)
@@ -60,17 +64,24 @@ export function encodeSortCursor(payload: SortCursorPayload): string {
 
 /**
  * Decode + validate: rejects legacy/foreign payload shapes and payloads
- * minted under a different sort field (stale deep-linked URLs) — callers
- * treat null as "no cursor" and serve page one (R5).
+ * minted under a different sort identity — field OR direction (stale
+ * deep-linked URLs) — callers treat null as "no cursor" and serve page
+ * one (R5). The id tie-breaker must be a UUID: it is compared against
+ * uuid-typed columns, and a hostile payload would otherwise surface a
+ * Postgres cast error instead of falling back to page one.
  */
 export function decodeSortCursor(
   cursor: string | null | undefined,
-  expectedField: string
+  expectedField: string,
+  expectedDirection: SortDirection
 ): SortCursorPayload | null {
   const payload = decodeCursor<Partial<SortCursorPayload>>(cursor)
   if (!payload) return null
   if (payload.sortField !== expectedField) return null
-  if (typeof payload.id !== 'string' || payload.id.length === 0) return null
+  if (payload.sortDirection !== expectedDirection) return null
+  if (typeof payload.id !== 'string' || !UUID_PATTERN.test(payload.id)) {
+    return null
+  }
   if (payload.value !== null && typeof payload.value !== 'string') return null
 
   return payload as SortCursorPayload

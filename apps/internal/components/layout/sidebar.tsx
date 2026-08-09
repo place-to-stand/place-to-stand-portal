@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
@@ -47,8 +47,14 @@ type Props = {
 export function Sidebar({ user, badges }: Props) {
   const pathname = usePathname()
   const { theme, mounted: themeMounted } = useTheme()
-  const { state: sidebarState } = useSidebar()
+  const { state: sidebarState, setOpenMobile } = useSidebar()
   const { setOpen: setPaletteOpen } = useCommandPalette()
+
+  // The dashboard layout persists across client navigation, so the mobile
+  // sheet stays open over the new page unless we close it on route change.
+  useEffect(() => {
+    setOpenMobile(false)
+  }, [pathname, setOpenMobile])
 
   // Always start with black to match SSR; theme provider updates after mount.
   const logoSrc = useMemo(() => {

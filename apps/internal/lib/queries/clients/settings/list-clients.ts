@@ -11,6 +11,7 @@ import {
   decodeSortCursor,
   encodeSortCursor,
   type SortCursorPayload,
+  type SortDirection,
 } from '@/lib/pagination/sort'
 import { DEFAULT_CLIENTS_SORT } from '@/lib/settings/clients/filters'
 
@@ -130,6 +131,7 @@ function buildPageInfo(
   items: ClientsSettingsListItem[],
   hasExtraRecord: boolean,
   sortField: string,
+  sortDirection: SortDirection,
   descriptor: ClientSortDescriptor,
 ): PageInfo {
   const firstItem = items[0] ?? null
@@ -150,6 +152,7 @@ function buildPageInfo(
     startCursor: firstItem
       ? encodeSortCursor({
           sortField,
+          sortDirection,
           value: descriptor.encode(firstItem),
           id: firstItem.id,
         })
@@ -157,6 +160,7 @@ function buildPageInfo(
     endCursor: lastItem
       ? encodeSortCursor({
           sortField,
+          sortDirection,
           value: descriptor.encode(lastItem),
           id: lastItem.id,
         })
@@ -187,7 +191,7 @@ export async function listClientsForSettings(
 
   // Field-tagged cursor: payloads minted under a different sort are
   // rejected and we serve page one (R5 backstop for stale deep links).
-  const cursorPayload = decodeSortCursor(input.cursor, sort.field)
+  const cursorPayload = decodeSortCursor(input.cursor, sort.field, sort.direction)
 
   // Effective ordering combines the sort direction with the pagination
   // direction (backward pages scan the reversed order, then re-reverse).
@@ -222,6 +226,7 @@ export async function listClientsForSettings(
     mappedItems,
     hasExtraRecord,
     sort.field,
+    sort.direction,
     descriptor,
   )
 
