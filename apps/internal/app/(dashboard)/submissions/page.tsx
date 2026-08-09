@@ -46,7 +46,10 @@ export default async function SubmissionsPage({
   const statusParam = firstParam(params.status)
   const kind = isFormSubmissionKind(kindParam) ? kindParam : undefined
   const status = isFormSubmissionStatus(statusParam) ? statusParam : undefined
-  const unacknowledgedOnly = firstParam(params.unacknowledged) === '1'
+  // One param, two states: '1' = needs attention, '0' = already cleared.
+  const ackParam = firstParam(params.unacknowledged)
+  const unacknowledgedOnly = ackParam === '1'
+  const acknowledgedOnly = ackParam === '0'
   const search = firstParam(params.q)?.trim() || undefined
   const sort = parseSubmissionsSort(firstParam(params.sort))
 
@@ -65,6 +68,7 @@ export default async function SubmissionsPage({
       kind,
       status,
       unacknowledgedOnly,
+      acknowledgedOnly,
       search,
       sort,
     })
@@ -85,7 +89,9 @@ export default async function SubmissionsPage({
           search={search}
           activeKind={kind}
           activeStatus={status}
-          activeUnacknowledged={unacknowledgedOnly}
+          activeAcknowledgement={
+            unacknowledgedOnly ? 'unacknowledged' : acknowledgedOnly ? 'acknowledged' : undefined
+          }
           showUnacknowledgedFilter
           basePath='/submissions'
         />

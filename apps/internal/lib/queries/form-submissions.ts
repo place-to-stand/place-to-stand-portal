@@ -31,6 +31,8 @@ type FormSubmissionFilters = {
    * apps/internal/lib/form-submissions/constants.ts.
    */
   unacknowledgedOnly?: boolean
+  /** Complement of the quick filter: rows an admin has already cleared. */
+  acknowledgedOnly?: boolean
   /** false/undefined: active rows (deleted_at IS NULL). true: archived rows. */
   archived?: boolean
   /** Fuzzy identity search (PRD 004 §03) — name, email, company. */
@@ -41,6 +43,7 @@ function buildFilters({
   kind,
   status,
   unacknowledgedOnly,
+  acknowledgedOnly,
   archived,
   search,
 }: FormSubmissionFilters) {
@@ -64,6 +67,7 @@ function buildFilters({
           )
         )
       : undefined,
+    acknowledgedOnly ? isNotNull(formSubmissions.acknowledgedAt) : undefined,
     searchPattern
       ? or(
           ilike(formSubmissions.contactName, searchPattern),

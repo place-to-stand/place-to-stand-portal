@@ -15,11 +15,21 @@ import {
   type FormSubmissionStatus,
 } from '@/lib/form-submissions/constants'
 
-const UNACKNOWLEDGED = 'unacknowledged'
+export const ACKNOWLEDGEMENT_VALUES = ['unacknowledged', 'acknowledged'] as const
 
-const UNACKNOWLEDGED_OPTIONS = [
-  { value: UNACKNOWLEDGED, label: 'Unacknowledged' },
+export type AcknowledgementFilter = (typeof ACKNOWLEDGEMENT_VALUES)[number]
+
+const ACKNOWLEDGEMENT_OPTIONS = [
+  { value: 'unacknowledged', label: 'Unacknowledged' },
+  { value: 'acknowledged', label: 'Acknowledged' },
 ]
+
+// The URL keeps the original `?unacknowledged=` key so existing links still
+// work; '0' now selects the complement rather than meaning "unset".
+const ACK_PARAM: Record<AcknowledgementFilter, string> = {
+  unacknowledged: '1',
+  acknowledged: '0',
+}
 
 const KIND_OPTIONS = FORM_SUBMISSION_KIND_VALUES.map(kind => ({
   value: kind,
@@ -36,10 +46,10 @@ type SubmissionsFiltersProps = {
   activeKind?: FormSubmissionKind
   activeStatus?: FormSubmissionStatus
   /**
-   * PW1 unacknowledged quick filter — List tab only (archived rows are
+   * PW1 acknowledgement quick filter — List tab only (archived rows are
    * never unacknowledged, so the archive page omits the prop entirely).
    */
-  activeUnacknowledged?: boolean
+  activeAcknowledgement?: AcknowledgementFilter
   showUnacknowledgedFilter?: boolean
   /** Base path to push filter changes to — '/submissions' or '/submissions/archive'. */
   basePath: string
@@ -49,7 +59,7 @@ export function SubmissionsFilters({
   search,
   activeKind,
   activeStatus,
-  activeUnacknowledged,
+  activeAcknowledgement,
   showUnacknowledgedFilter = false,
   basePath,
 }: SubmissionsFiltersProps) {
@@ -60,7 +70,7 @@ export function SubmissionsFilters({
     resetKeys: ['page'],
     filters: {
       q: {},
-      unacknowledged: { isValid: value => value === '1' },
+      unacknowledged: { isValid: value => value === '1' || value === '0' },
       kind: { isValid: value => isFormSubmissionKind(value) },
       status: { isValid: value => isFormSubmissionStatus(value) },
     },
@@ -75,12 +85,16 @@ export function SubmissionsFilters({
       />
       {showUnacknowledgedFilter ? (
         <FilterSelect
-          value={activeUnacknowledged ? UNACKNOWLEDGED : undefined}
+          value={activeAcknowledgement}
           onChange={value =>
-            update({ unacknowledged: value ? '1' : undefined })
+            update({
+              unacknowledged: value
+                ? ACK_PARAM[value as AcknowledgementFilter]
+                : undefined,
+            })
           }
-          placeholder='All'
-          options={UNACKNOWLEDGED_OPTIONS}
+          placeholder='All submissions'
+          options={ACKNOWLEDGEMENT_OPTIONS}
         />
       ) : null}
       <FilterSelect

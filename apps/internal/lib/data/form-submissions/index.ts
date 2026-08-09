@@ -38,6 +38,8 @@ type FetchOptions = {
   status?: FormSubmissionStatusValue
   /** D1 unacknowledged predicate (PW1 quick filter) — active rows only. */
   unacknowledgedOnly?: boolean
+  /** Complement of the quick filter: rows already acknowledged. */
+  acknowledgedOnly?: boolean
   /** true: archived rows (Archive tab). Default: active rows. */
   archived?: boolean
   /** Fuzzy identity search (PRD 004 §03) — name, email, company. */
@@ -63,6 +65,7 @@ export const fetchFormSubmissions = cache(
       kind,
       status,
       unacknowledgedOnly,
+      acknowledgedOnly,
       archived,
       search,
       sort,
@@ -78,6 +81,7 @@ export const fetchFormSubmissions = cache(
         kind,
         status,
         unacknowledgedOnly,
+        acknowledgedOnly,
         archived,
         search,
         sort,
@@ -86,6 +90,7 @@ export const fetchFormSubmissions = cache(
         kind,
         status,
         unacknowledgedOnly,
+        acknowledgedOnly,
         archived,
         search,
       }),
