@@ -50,6 +50,8 @@ type SearchableComboboxProps = {
   disabled?: boolean
   className?: string
   triggerClassName?: string
+  /** Extra classes for each option's label wrapper (e.g. whitespace-nowrap). */
+  itemClassName?: string
   ariaLabel?: string
   ariaLabelledBy?: string
   ariaDescribedBy?: string
@@ -80,6 +82,7 @@ export const SearchableCombobox = React.forwardRef<
       disabled,
       className,
       triggerClassName,
+      itemClassName,
       ariaLabel,
       ariaLabelledBy,
       ariaDescribedBy,
@@ -304,7 +307,7 @@ export const SearchableCombobox = React.forwardRef<
                                 </AvatarFallback>
                               </Avatar>
                             ) : null}
-                            <div className={itemWrapperClasses}>
+                            <div className={cn(itemWrapperClasses, itemClassName)}>
                               <span className='font-medium'>{item.label}</span>
                               {item.description ? (
                                 <span className='text-muted-foreground text-xs'>
@@ -360,7 +363,7 @@ export const SearchableCombobox = React.forwardRef<
                               </AvatarFallback>
                             </Avatar>
                           ) : null}
-                          <div className={itemWrapperClasses}>
+                          <div className={cn(itemWrapperClasses, itemClassName)}>
                             <span className='font-medium'>{item.label}</span>
                             {item.description ? (
                               <span className='text-muted-foreground text-xs'>

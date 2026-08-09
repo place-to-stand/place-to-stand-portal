@@ -94,6 +94,7 @@ export function PersonSelector({
           disabled={disabled}
           className="w-full"
           triggerClassName="h-8 py-0 text-sm"
+          itemClassName="whitespace-nowrap"
         />
       </div>
     </div>
