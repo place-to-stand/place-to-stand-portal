@@ -1,20 +1,21 @@
 import 'server-only'
 
 import { cache } from 'react'
-import { and, count, eq, isNull, ne, or } from 'drizzle-orm'
+import { and, count, eq, inArray, isNull, ne, or, sql } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { ensureProjectAccess } from '@/lib/auth/permissions'
 import type { ProjectStatusValue } from '@/lib/constants'
 import { db } from '@/lib/db'
-import { projects } from '@/lib/db/schema'
+import { projects, tasks } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 import type { ProjectWithRelations } from '@/lib/types'
 
 import { getTimeLogSummariesForProjects } from '@/lib/queries/time-logs'
 import { assembleProjectsWithRelations } from './assemble-projects'
 import { fetchBaseProjects } from './fetch-base-projects'
-import { fetchProjectRelations } from './fetch-project-relations'
+import { fetchProjectRelations, loadOwners } from './fetch-project-relations'
+import { getReposForProjects } from '@/lib/data/github-repos'
 import { loadClientRows, mapClientRows } from './relations/clients'
 export { fetchProjectCalendarTasks } from './fetch-project-calendar-tasks'
 
@@ -112,6 +113,87 @@ export const fetchProjectsLite = cache(
     })
   }
 )
+
+export type LandingTaskProgress = { done: number; total: number }
+
+export type LandingProject = ProjectWithRelations & {
+  taskProgress: LandingTaskProgress
+}
+
+/**
+ * Landing table needs progress numbers, owner, client, and first repo per
+ * project — never the task rows themselves. One grouped aggregate replaces
+ * hydrating every task (with description, counts, assignees) per request.
+ */
+export async function fetchProjectsForLanding(
+  options: Pick<FetchProjectsWithRelationsOptions, 'statuses' | 'search'> = {}
+): Promise<LandingProject[]> {
+  const baseProjects = await fetchBaseProjects({
+    statuses: options.statuses,
+    search: options.search,
+  })
+
+  const [clients, owners, reposMap, progressRows] = await Promise.all([
+    loadClientRows(baseProjects.clientIds),
+    loadOwners(baseProjects.ownerIds),
+    getReposForProjects(baseProjects.projectIds),
+    baseProjects.projectIds.length
+      ? db
+          .select({
+            projectId: tasks.projectId,
+            total: sql<number>`count(*)`,
+            done: sql<number>`count(*) filter (where ${tasks.status} = 'DONE')`,
+          })
+          .from(tasks)
+          .where(
+            and(
+              inArray(tasks.projectId, baseProjects.projectIds),
+              isNull(tasks.deletedAt),
+              ne(tasks.status, 'ARCHIVED')
+            )
+          )
+          .groupBy(tasks.projectId)
+      : Promise.resolve([]),
+  ])
+
+  const githubReposByProject = new Map(
+    Array.from(reposMap.entries(), ([projectId, repos]) => [
+      projectId,
+      repos.map(repo => ({
+        id: repo.id,
+        repoFullName: repo.repoFullName,
+        defaultBranch: repo.defaultBranch,
+      })),
+    ])
+  )
+
+  const progressByProject = new Map(
+    progressRows.map(row => [
+      row.projectId,
+      { done: Number(row.done), total: Number(row.total) },
+    ])
+  )
+
+  const assembled = assembleProjectsWithRelations({
+    projects: baseProjects.projects,
+    projectClientLookup: baseProjects.projectClientLookup,
+    relations: {
+      clients: mapClientRows(clients),
+      owners,
+      members: [],
+      tasks: [],
+      archivedTasks: [],
+      hourBlocks: [],
+      githubReposByProject,
+    },
+    timeLogSummaries: new Map(),
+  })
+
+  return assembled.map(project => ({
+    ...project,
+    taskProgress: progressByProject.get(project.id) ?? { done: 0, total: 0 },
+  }))
+}
 
 export async function fetchProjectsWithRelationsByIds(
   projectIds: string[],

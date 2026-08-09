@@ -421,6 +421,13 @@
       "when": 1786291961224,
       "tag": "0059_perf_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1786292644335,
+      "tag": "0060_trgm_search_indexes",
+      "breakpoints": true
     }
   ]
 }
