@@ -1,6 +1,6 @@
 'use client'
 
-import { Archive, Building2, Pencil, RefreshCw, Trash2 } from 'lucide-react'
+import { Archive, Building2, RefreshCw, Trash2 } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -25,6 +25,10 @@ import {
   type ClientBillingTypeValue,
 } from '@/lib/settings/clients/billing-types'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
+import {
+  CLICKABLE_ROW_CLASS,
+  getClickableRowProps,
+} from '@/lib/table/clickable-row'
 
 const BILLING_TYPE_LABELS = CLIENT_BILLING_TYPE_SELECT_OPTIONS.reduce<
   Record<ClientBillingTypeValue, string>
@@ -126,10 +130,6 @@ export function ClientsTableSection({
                 : pendingReason
               : null
 
-            const editDisabled = isDeleting || isRestoring || isDestroying
-            const editDisabledReason = editDisabled ? pendingReason : null
-
-            const showEdit = mode === 'active'
             const showSoftDelete = mode === 'active'
             const showRestore = mode === 'archive'
             const showDestroy = mode === 'archive'
@@ -137,7 +137,11 @@ export function ClientsTableSection({
             return (
               <TableRow
                 key={client.id}
-                className={client.deleted_at ? ARCHIVED_ROW_CLASS : undefined}
+                {...getClickableRowProps(() => onEdit(client))}
+                className={cn(
+                  CLICKABLE_ROW_CLASS,
+                  client.deleted_at && ARCHIVED_ROW_CLASS
+                )}
               >
                 <TableCell>
                   <div className='flex items-center gap-2'>
@@ -158,22 +162,6 @@ export function ClientsTableSection({
                 </TableCell>
                 <TableCell className='text-right'>
                   <div className='flex justify-end gap-2'>
-                    {showEdit ? (
-                      <DisabledFieldTooltip
-                        disabled={editDisabled}
-                        reason={editDisabledReason}
-                      >
-                        <Button
-                          variant='outline'
-                          size='icon-sm'
-                          onClick={() => onEdit(client)}
-                          title='Edit client'
-                          disabled={editDisabled}
-                        >
-                          <Pencil className='h-4 w-4' />
-                        </Button>
-                      </DisabledFieldTooltip>
-                    ) : null}
                     {showRestore ? (
                       <DisabledFieldTooltip
                         disabled={restoreDisabled}

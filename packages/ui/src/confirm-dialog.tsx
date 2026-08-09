@@ -30,9 +30,8 @@ type ConfirmDialogProps = {
   confirmDisabled?: boolean
   /**
    * Kept for API compatibility (D16/R6 — 31 call sites unchanged). The
-   * alert-dialog primitive renders no close button; explicit Cancel and
-   * Esc are the dismiss paths, and outside-click no longer dismisses —
-   * the correct semantics for destructive confirms.
+   * alert-dialog primitive renders no close button; Cancel, Esc, and
+   * backdrop click all route through `onCancel` — never through confirm.
    */
   showCloseButton?: boolean
   onConfirm: () => void
@@ -61,7 +60,7 @@ export function ConfirmDialog({
         }
       }}
     >
-      <AlertDialogContent>
+      <AlertDialogContent onBackdropClick={onCancel}>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           {description ? (

@@ -19,9 +19,9 @@ Each primary object type is assigned a distinct color from the Tailwind CSS pale
 
 The color identity is primarily applied to **Cards** using the following pattern:
 
-1.  **Left Border:** A thick (4px) left border in the object's primary color (`-500` shade).
+1.  **Border:** A uniform 1px border in a semi-transparent shade of the object's primary color (`-500/60`). The border is symmetric on all sides so the card geometry stays centered — do **not** use a thick colored left border (`border-l-4`), a widely-disliked style that also shifts card content off-center.
 2.  **Hover State:**
-    *   **Right/Top/Bottom Borders:** A semi-transparent version of the color (`/50`) appears on hover.
+    *   **Border:** The border strengthens to the full `-500` color.
     *   **Background:** A very subtle tint (`/5`) of the color appears on hover.
 3.  **Icons:** In some contexts (like headers or lists), the object's icon may be colored with the `-500` shade.
 
@@ -32,14 +32,13 @@ Apply these utility classes to the main container (e.g., `Card` or `div`):
 ```tsx
 className={cn(
   // Base layout and border
-  'border-l-4 border-y border-r shadow-sm transition-all',
+  'border shadow-sm transition-all',
 
-  // 1. Identity Color (Left Border)
-  'border-l-[COLOR]-500',
+  // 1. Identity Color (tinted border)
+  'border-[COLOR]-500/60',
 
   // 2. Hover States
-  'hover:border-r-[COLOR]-500/50',
-  'hover:border-y-[COLOR]-500/50',
+  'hover:border-[COLOR]-500',
   'hover:bg-[COLOR]-500/5',
   'hover:shadow-md'
 )}
@@ -71,15 +70,14 @@ export function InvoiceCard({ invoice }) {
     <div
       className={cn(
         'group bg-card rounded-lg p-4 text-left shadow-sm transition',
-        // Base borders
-        'border-y border-r border-l-4',
+        // Base border
+        'border',
 
         // Identity: Orange
-        'border-l-orange-500',
+        'border-orange-500/60',
 
         // Hover States
-        'hover:border-r-orange-500/50',
-        'hover:border-y-orange-500/50',
+        'hover:border-orange-500',
         'hover:bg-orange-500/5',
         'hover:shadow-md'
       )}

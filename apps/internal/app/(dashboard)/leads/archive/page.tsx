@@ -8,7 +8,7 @@ import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
-import { fetchArchivedLeads } from '@/lib/data/leads'
+import { fetchArchivedLeads, fetchLeadAssignees } from '@/lib/data/leads'
 
 import { LEADS_TABS } from '../_lib/tabs'
 import { LeadsArchiveSection } from '../_components/leads-archive-section'
@@ -21,7 +21,10 @@ export default async function LeadsArchivePage() {
   const user = await requireUser()
   assertAdmin(user)
 
-  const archivedLeads = await fetchArchivedLeads(user)
+  const [archivedLeads, assignees] = await Promise.all([
+    fetchArchivedLeads(user),
+    fetchLeadAssignees(),
+  ])
 
   return (
     <PageShell
@@ -39,7 +42,11 @@ export default async function LeadsArchivePage() {
       }
     >
       <section className='bg-background rounded-xl border p-4 shadow-sm space-y-3'>
-        <LeadsArchiveSection leads={archivedLeads} />
+        <LeadsArchiveSection
+          leads={archivedLeads}
+          assignees={assignees}
+          senderName={user.full_name ?? user.email ?? ''}
+        />
       </section>
     </PageShell>
   )

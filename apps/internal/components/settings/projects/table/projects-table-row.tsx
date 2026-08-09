@@ -2,7 +2,6 @@ import {
   Archive,
   Building2,
   FolderKanban,
-  Pencil,
   RefreshCw,
   Trash2,
   User,
@@ -24,6 +23,10 @@ import { cn } from '@/lib/utils'
 import type { ProjectWithClient, ProjectsTableMode } from './types'
 import type { LucideIcon } from 'lucide-react'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
+import {
+  CLICKABLE_ROW_CLASS,
+  getClickableRowProps,
+} from '@/lib/table/clickable-row'
 
 type ProjectsTableRowProps = {
   project: ProjectWithClient
@@ -77,10 +80,6 @@ export function ProjectsTableRow({
       : pendingReason
     : null
 
-  const editDisabled = isDeleting || isRestoring || isDestroying
-  const editDisabledReason = editDisabled ? pendingReason : null
-
-  const showEdit = mode === 'active'
   const showArchive = mode === 'active'
   const showRestore = mode === 'archive'
   const showDestroy = mode === 'archive'
@@ -95,7 +94,10 @@ export function ProjectsTableRow({
     : getProjectStatusToken(project.status)
 
   return (
-    <TableRow className={isArchived ? ARCHIVED_ROW_CLASS : undefined}>
+    <TableRow
+      {...getClickableRowProps(() => onEdit(project))}
+      className={cn(CLICKABLE_ROW_CLASS, isArchived && ARCHIVED_ROW_CLASS)}
+    >
       <TableCell>
         <div className='flex items-center gap-2'>
           <FolderKanban className='text-muted-foreground h-4 w-4' />
@@ -128,22 +130,6 @@ export function ProjectsTableRow({
       </TableCell>
       <TableCell className='text-right'>
         <div className='flex justify-end gap-2'>
-          {showEdit ? (
-            <DisabledFieldTooltip
-              disabled={editDisabled}
-              reason={editDisabledReason}
-            >
-              <Button
-                variant='outline'
-                size='icon-sm'
-                onClick={() => onEdit(project)}
-                title='Edit project'
-                disabled={editDisabled}
-              >
-                <Pencil className='h-4 w-4' />
-              </Button>
-            </DisabledFieldTooltip>
-          ) : null}
           {showRestore ? (
             <DisabledFieldTooltip
               disabled={restoreDisabled}

@@ -22,6 +22,7 @@ import {
 import { useToast } from '@/components/ui/use-toast'
 import { useListParams } from '@/hooks/use-list-params'
 import type { ArchivedLead } from '@/lib/data/leads'
+import type { LeadAssigneeOption } from '@/lib/leads/types'
 import {
   LEAD_STATUS_LABELS,
   LEAD_STATUS_VALUES,
@@ -30,9 +31,17 @@ import {
 import { parseSortParam } from '@/lib/pagination/sort'
 import { restoreLead, destroyLead } from '../_actions'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
+import {
+  CLICKABLE_ROW_CLASS,
+  getClickableRowProps,
+} from '@/lib/table/clickable-row'
+import { cn } from '@/lib/utils'
+import { LeadSheet } from './lead-sheet'
 
 type LeadsArchiveSectionProps = {
   leads: ArchivedLead[]
+  assignees: LeadAssigneeOption[]
+  senderName: string
 }
 
 // PRD 004 §03: per-view sort allowlist (D6). The table is in-memory, so the
@@ -59,7 +68,11 @@ function isLeadArchiveSortValue(value: string): boolean {
   )
 }
 
-export function LeadsArchiveSection({ leads }: LeadsArchiveSectionProps) {
+export function LeadsArchiveSection({
+  leads,
+  assignees,
+  senderName,
+}: LeadsArchiveSectionProps) {
   const router = useRouter()
   const { toast } = useToast()
   const { update, getParam } = useListParams({
@@ -74,6 +87,24 @@ export function LeadsArchiveSection({ leads }: LeadsArchiveSectionProps) {
   const [pendingRestoreId, setPendingRestoreId] = useState<string | null>(null)
   const [pendingDestroyId, setPendingDestroyId] = useState<string | null>(null)
   const [destroyTarget, setDestroyTarget] = useState<ArchivedLead | null>(null)
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null)
+  const [sheetOpen, setSheetOpen] = useState(false)
+
+  // Re-resolve from fresh props so the sheet reflects server refreshes.
+  const selectedLead = selectedLeadId
+    ? (leads.find(lead => lead.id === selectedLeadId) ?? null)
+    : null
+
+  // Keep the last-selected lead mounted after close so the sheet's exit
+  // animation can play; only `open` toggles.
+  const handleSheetOpenChange = (open: boolean) => {
+    setSheetOpen(open)
+  }
+
+  const handleSheetSuccess = () => {
+    setSheetOpen(false)
+    router.refresh()
+  }
 
   const handleRestore = (lead: ArchivedLead) => {
     setPendingRestoreId(lead.id)
@@ -191,6 +222,17 @@ export function LeadsArchiveSection({ leads }: LeadsArchiveSectionProps) {
 
   return (
     <>
+      {selectedLead ? (
+        <LeadSheet
+          open={sheetOpen}
+          onOpenChange={handleSheetOpenChange}
+          lead={selectedLead}
+          assignees={assignees}
+          canManage
+          senderName={senderName}
+          onSuccess={handleSheetSuccess}
+        />
+      ) : null}
       <ConfirmDialog
         open={Boolean(destroyTarget)}
         title='Permanently delete lead?'
@@ -256,7 +298,14 @@ export function LeadsArchiveSection({ leads }: LeadsArchiveSectionProps) {
                 .replace(/\b\w/g, c => c.toUpperCase())
 
               return (
-                <TableRow key={lead.id} className={ARCHIVED_ROW_CLASS}>
+                <TableRow
+                  key={lead.id}
+                  {...getClickableRowProps(() => {
+                    setSelectedLeadId(lead.id)
+                    setSheetOpen(true)
+                  })}
+                  className={cn(CLICKABLE_ROW_CLASS, ARCHIVED_ROW_CLASS)}
+                >
                   <TableCell className='font-medium'>
                     {lead.contactName}
                   </TableCell>

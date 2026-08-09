@@ -56,11 +56,18 @@ function AlertDialogOverlay({
 
 function AlertDialogContent({
   className,
+  onBackdropClick,
   ...props
-}: AlertDialogPrimitive.Popup.Props) {
+}: AlertDialogPrimitive.Popup.Props & {
+  /**
+   * Base UI alert dialogs are not dismissible by outside click. Pass this to
+   * opt a dialog into backdrop-click handling (e.g. treat it as Cancel).
+   */
+  onBackdropClick?: () => void
+}) {
   return (
     <AlertDialogPortal>
-      <AlertDialogOverlay />
+      <AlertDialogOverlay onClick={onBackdropClick} />
       <AlertDialogPrimitive.Popup
         data-slot="alert-dialog-content"
         className={cn(

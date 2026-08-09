@@ -8,11 +8,9 @@ import {
   Building2,
   Check,
   Copy,
-  Eye,
   ExternalLink,
   Link2,
   Loader2,
-  Pencil,
   RefreshCw,
   Trash2,
 } from 'lucide-react'
@@ -33,8 +31,13 @@ import {
   TableRow,
 } from '@pts/ui/table'
 import { useToast } from '@/components/ui/use-toast'
+import { cn } from '@/lib/utils'
 import type { InvoiceWithClient } from '@/lib/invoices/invoice-form'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
+import {
+  CLICKABLE_ROW_CLASS,
+  getClickableRowProps,
+} from '@/lib/table/clickable-row'
 
 export type InvoicesTableMode = 'active' | 'archive'
 
@@ -56,8 +59,6 @@ export type InvoicesTableSectionProps = {
   /** Route the sort/filter params live on (PRD 004 §03). */
   basePath: string
 }
-
-const NON_EDITABLE_STATUSES = new Set(['PAID', 'VOID'])
 
 const formatCurrency = (value: string) => {
   try {
@@ -334,18 +335,13 @@ export function InvoicesTableSection({
             const isDestroying = isPending && pendingDestroyId === invoice.id
             const isBusy = isDeleting || isRestoring || isDestroying
 
-            const isViewOnly = NON_EDITABLE_STATUSES.has(invoice.status)
-            const showEditOrView = mode === 'active'
             const showArchive = mode === 'active'
             const showRestore = mode === 'archive'
             const showDestroy = mode === 'archive'
 
-            const editDisabled = isBusy
             const archiveDisabled = isBusy || isArchived
             const restoreDisabled = isBusy || !isArchived
             const destroyDisabled = isBusy || !isArchived
-
-            const editDisabledReason = editDisabled ? pendingReason : null
 
             const archiveDisabledReason = archiveDisabled
               ? isArchived
@@ -368,7 +364,11 @@ export function InvoicesTableSection({
             return (
               <TableRow
                 key={invoice.id}
-                className={isArchived ? ARCHIVED_ROW_CLASS : undefined}
+                {...getClickableRowProps(() => onEdit(invoice))}
+                className={cn(
+                  CLICKABLE_ROW_CLASS,
+                  isArchived && ARCHIVED_ROW_CLASS
+                )}
               >
                 <TableCell className='text-sm font-medium'>
                   <div className='flex items-center gap-2'>
@@ -435,33 +435,6 @@ export function InvoicesTableSection({
                 </TableCell>
                 <TableCell className='text-right'>
                   <div className='flex justify-end gap-2'>
-                    {showEditOrView ? (
-                      isViewOnly ? (
-                        <Button
-                          variant='outline'
-                          size='icon-sm'
-                          onClick={() => onEdit(invoice)}
-                          title='View invoice'
-                        >
-                          <Eye className='h-4 w-4' />
-                        </Button>
-                      ) : (
-                        <DisabledFieldTooltip
-                          disabled={editDisabled}
-                          reason={editDisabledReason}
-                        >
-                          <Button
-                            variant='outline'
-                            size='icon-sm'
-                            onClick={() => onEdit(invoice)}
-                            title='Edit invoice'
-                            disabled={editDisabled}
-                          >
-                            <Pencil className='h-4 w-4' />
-                          </Button>
-                        </DisabledFieldTooltip>
-                      )
-                    ) : null}
                     {showArchive ? (
                       <DisabledFieldTooltip
                         disabled={archiveDisabled}

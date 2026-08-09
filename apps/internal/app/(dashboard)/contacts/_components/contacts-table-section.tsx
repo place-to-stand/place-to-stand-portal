@@ -4,7 +4,6 @@ import {
   Archive,
   Contact,
   Mail,
-  Pencil,
   Phone,
   RefreshCw,
   Trash2,
@@ -28,7 +27,12 @@ import {
 import type { ContactsTableContact } from '@/lib/settings/contacts/use-contacts-table-state'
 
 import { LinkedClientsCell } from './linked-clients-cell'
+import { cn } from '@/lib/utils'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
+import {
+  CLICKABLE_ROW_CLASS,
+  getClickableRowProps,
+} from '@/lib/table/clickable-row'
 
 export type ContactsTableSectionProps = {
   contacts: ContactsTableContact[]
@@ -122,10 +126,6 @@ export function ContactsTableSection({
                 : pendingReason
               : null
 
-            const editDisabled = isDeleting || isRestoring || isDestroying
-            const editDisabledReason = editDisabled ? pendingReason : null
-
-            const showEdit = mode === 'active'
             const showSoftDelete = mode === 'active'
             const showRestore = mode === 'archive'
             const showDestroy = mode === 'archive'
@@ -139,7 +139,11 @@ export function ContactsTableSection({
             return (
               <TableRow
                 key={contact.id}
-                className={contact.deletedAt ? ARCHIVED_ROW_CLASS : undefined}
+                {...getClickableRowProps(() => onEdit(contact))}
+                className={cn(
+                  CLICKABLE_ROW_CLASS,
+                  contact.deletedAt && ARCHIVED_ROW_CLASS
+                )}
               >
                 <TableCell>
                   <div className='flex items-center gap-2'>
@@ -174,22 +178,6 @@ export function ContactsTableSection({
                 </TableCell>
                 <TableCell className='text-right'>
                   <div className='flex justify-end gap-2'>
-                    {showEdit ? (
-                      <DisabledFieldTooltip
-                        disabled={editDisabled}
-                        reason={editDisabledReason}
-                      >
-                        <Button
-                          variant='outline'
-                          size='icon-sm'
-                          onClick={() => onEdit(contact)}
-                          title='Edit contact'
-                          disabled={editDisabled}
-                        >
-                          <Pencil className='h-4 w-4' />
-                        </Button>
-                      </DisabledFieldTooltip>
-                    ) : null}
                     {showPromote ? (
                       <DisabledFieldTooltip
                         disabled={promoteDisabled}

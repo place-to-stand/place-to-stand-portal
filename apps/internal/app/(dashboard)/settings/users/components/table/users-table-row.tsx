@@ -1,7 +1,7 @@
 'use client'
 
 import { format } from 'date-fns'
-import { Archive, Pencil, RefreshCw, Trash2 } from 'lucide-react'
+import { Archive, RefreshCw, Trash2 } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { TableCell, TableRow } from '@pts/ui/table'
@@ -11,7 +11,12 @@ import { Switch } from '@pts/ui/switch'
 import { USER_ROLE_LABELS } from '@/lib/settings/users/filters'
 
 import type { UserRowState } from '@/lib/settings/users/state/use-users-table-state'
+import { cn } from '@/lib/utils'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
+import {
+  CLICKABLE_ROW_CLASS,
+  getClickableRowProps,
+} from '@/lib/table/clickable-row'
 
 type UsersTableRowProps = {
   row: UserRowState
@@ -29,7 +34,6 @@ export function UsersTableRow({
     row.deleteDisabled && row.deleteDisabledReason === selfDeleteReason
       ? 'Cannot archive your own account'
       : 'Archive user'
-  const showEdit = mode === 'active'
   const showSoftDelete = mode === 'active'
   const showRestore = mode === 'archive'
   const showDestroy = mode === 'archive'
@@ -45,7 +49,10 @@ export function UsersTableRow({
     : user.email.slice(0, 2).toUpperCase()
 
   return (
-    <TableRow className={user.deleted_at ? ARCHIVED_ROW_CLASS : undefined}>
+    <TableRow
+      {...getClickableRowProps(row.onEdit)}
+      className={cn(CLICKABLE_ROW_CLASS, user.deleted_at && ARCHIVED_ROW_CLASS)}
+    >
       <TableCell>
         <div className='flex items-center gap-2'>
           <Avatar className='h-6 w-6'>
@@ -93,22 +100,6 @@ export function UsersTableRow({
       </TableCell>
       <TableCell className='text-right'>
         <div className='flex justify-end gap-2'>
-          {showEdit ? (
-            <DisabledFieldTooltip
-              disabled={row.editDisabled}
-              reason={row.editDisabledReason}
-            >
-              <Button
-                variant='outline'
-                size='icon-sm'
-                onClick={row.onEdit}
-                title='Edit user'
-                disabled={row.editDisabled}
-              >
-                <Pencil className='h-4 w-4' />
-              </Button>
-            </DisabledFieldTooltip>
-          ) : null}
           {showRestore ? (
             <DisabledFieldTooltip
               disabled={row.restoreDisabled}

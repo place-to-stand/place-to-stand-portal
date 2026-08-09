@@ -2,7 +2,7 @@
 
 import { format } from 'date-fns'
 import Link from 'next/link'
-import { Archive, Building2, Pencil, RefreshCw, Trash2 } from 'lucide-react'
+import { Archive, Building2, RefreshCw, Trash2 } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
@@ -18,7 +18,12 @@ import {
   TableRow,
 } from '@pts/ui/table'
 import type { HourBlockWithClient } from '@/lib/settings/hour-blocks/hour-block-form'
+import { cn } from '@/lib/utils'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
+import {
+  CLICKABLE_ROW_CLASS,
+  getClickableRowProps,
+} from '@/lib/table/clickable-row'
 
 export type HourBlocksTableMode = 'active' | 'archive'
 
@@ -103,12 +108,10 @@ export function HourBlocksTableSection({
             const isRestoring = isPending && pendingRestoreId === block.id
             const isDestroying = isPending && pendingDestroyId === block.id
 
-            const showEdit = mode === 'active'
             const showArchive = mode === 'active'
             const showRestore = mode === 'archive'
             const showDestroy = mode === 'archive'
 
-            const editDisabled = isDeleting || isRestoring || isDestroying
             const archiveDisabled =
               isDeleting || isRestoring || isDestroying || isArchived
             const restoreDisabled =
@@ -134,12 +137,14 @@ export function HourBlocksTableSection({
                 : pendingReason
               : null
 
-            const editDisabledReason = editDisabled ? pendingReason : null
-
             return (
               <TableRow
                 key={block.id}
-                className={isArchived ? ARCHIVED_ROW_CLASS : undefined}
+                {...getClickableRowProps(() => onEdit(block))}
+                className={cn(
+                  CLICKABLE_ROW_CLASS,
+                  isArchived && ARCHIVED_ROW_CLASS
+                )}
               >
                 <TableCell>
                   <div className='flex items-center gap-2 text-sm'>
@@ -170,22 +175,6 @@ export function HourBlocksTableSection({
                 </TableCell>
                 <TableCell className='text-right'>
                   <div className='flex justify-end gap-2'>
-                    {showEdit ? (
-                      <DisabledFieldTooltip
-                        disabled={editDisabled}
-                        reason={editDisabledReason}
-                      >
-                        <Button
-                          variant='outline'
-                          size='icon-sm'
-                          onClick={() => onEdit(block)}
-                          title='Edit hour block'
-                          disabled={editDisabled}
-                        >
-                          <Pencil className='h-4 w-4' />
-                        </Button>
-                      </DisabledFieldTooltip>
-                    ) : null}
                     {showRestore ? (
                       <DisabledFieldTooltip
                         disabled={restoreDisabled}
