@@ -194,7 +194,7 @@ export const SearchableCombobox = React.forwardRef<
     const placeholderTextClasses = 'text-muted-foreground'
 
     return (
-      <div className={cn('w-full', className)}>
+      <div className={cn('w-full min-w-0', className)}>
         <input type='hidden' name={name} value={value ?? ''} />
         <Popover open={open} onOpenChange={handleOpenChange} modal>
           <PopoverTrigger asChild>
@@ -214,7 +214,7 @@ export const SearchableCombobox = React.forwardRef<
               id={id}
               className={cn(baseTriggerClasses, triggerClassName)}
             >
-              <div className='flex flex-1 items-center gap-2'>
+              <div className='flex min-w-0 flex-1 items-center gap-2'>
                 {selectedItem?.userId ? (
                   <Avatar className='h-5 w-5 shrink-0'>
                     {selectedItem.avatarUrl && (
@@ -235,7 +235,7 @@ export const SearchableCombobox = React.forwardRef<
                 ) : null}
                 <span
                   className={cn(
-                    'line-clamp-1',
+                    'min-w-0 truncate',
                     selectedItem ? selectedTextClasses : placeholderTextClasses
                   )}
                 >
