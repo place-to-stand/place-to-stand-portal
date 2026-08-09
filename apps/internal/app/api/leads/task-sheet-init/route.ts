@@ -6,7 +6,7 @@ import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { projects } from '@/lib/db/schema'
 import { fetchAdminUsers } from '@/lib/data/users'
-import { fetchProjectsWithRelations } from '@/lib/data/projects'
+import { fetchProjectsLite } from '@/lib/data/projects'
 
 const SALES_PROJECT_SLUG = 'sales-strategy'
 const SALES_PROJECT_NAME = 'Sales Strategy'
@@ -66,9 +66,11 @@ export async function GET() {
     const user = await requireUser()
     assertAdmin(user)
 
+    // The sheet only reads project identity fields for its selector —
+    // no need to hydrate every project's task graph here.
     const [admins, allProjects, salesProjectId] = await Promise.all([
       fetchAdminUsers(),
-      fetchProjectsWithRelations({ forUserId: user.id }),
+      fetchProjectsLite(),
       getOrCreateSalesProject(user.id),
     ])
 

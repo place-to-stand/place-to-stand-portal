@@ -10,10 +10,7 @@ import {
 import { fetchClientsWithMetrics } from '@/lib/data/clients'
 import { fetchAdminUsers } from '@/lib/data/users'
 import { requireUser } from '@/lib/auth/session'
-import {
-  listProjectsForSettings,
-  type ProjectsSettingsResult,
-} from '@/lib/queries/projects'
+import { fetchClientDirectory } from '@/lib/queries/clients'
 import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
 import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
 import type { ProjectWithRelations } from '@/lib/types'
@@ -34,7 +31,15 @@ export default async function ProjectsPage({
   const { statuses, search, filtersActive } =
     parseProjectsLandingSearchParams(params)
 
-  const [projects, unfilteredCounts, clientsWithMetrics] = await Promise.all([
+  // One wave: nothing below depends on anything else here, and the old
+  // second Promise.all added a full serial round-trip level per request.
+  const [
+    projects,
+    unfilteredCounts,
+    clientsWithMetrics,
+    clientDirectory,
+    adminUsersResult,
+  ] = await Promise.all([
     fetchProjectsWithRelations({
       forUserId: user.id,
       statuses,
@@ -42,21 +47,14 @@ export default async function ProjectsPage({
     }),
     fetchLandingProjectCounts(user.id),
     fetchClientsWithMetrics(user),
+    fetchClientDirectory(),
+    fetchAdminUsers(),
   ])
   const landingClients = buildLandingClients(projects)
   const filteredProjectCount = countVisibleProjects(projects, user.id)
   const clientHoursMap = buildClientHoursMap(clientsWithMetrics)
 
-  const [managementResult, adminUsersResult]: [ProjectsSettingsResult, Awaited<ReturnType<typeof fetchAdminUsers>>] =
-    await Promise.all([
-      listProjectsForSettings(user, {
-        status: 'active',
-        limit: 1,
-      }),
-      fetchAdminUsers(),
-    ])
-
-  const clientRows: ClientRow[] = managementResult.clients.map(client => ({
+  const clientRows: ClientRow[] = clientDirectory.map(client => ({
     id: client.id,
     name: client.name,
     deleted_at: client.deletedAt,

@@ -414,6 +414,13 @@
       "when": 1786166051076,
       "tag": "0058_remove_sow_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1786291961224,
+      "tag": "0059_perf_indexes",
+      "breakpoints": true
     }
   ]
 }

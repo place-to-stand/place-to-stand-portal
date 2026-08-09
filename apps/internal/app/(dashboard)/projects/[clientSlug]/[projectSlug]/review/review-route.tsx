@@ -3,7 +3,10 @@ import type { Metadata } from 'next'
 import type { ReactElement } from 'react'
 
 import { ProjectsBoard } from '../../../projects-board'
-import { fetchProjectsWithRelations } from '@/lib/data/projects'
+import {
+  fetchProjectsLite,
+  fetchProjectsWithRelationsByIds,
+} from '@/lib/data/projects'
 import { fetchAdminUsers } from '@/lib/data/users'
 import { requireUser } from '@/lib/auth/session'
 import { getProjectClientSegment } from '@/lib/projects/board/board-utils'
@@ -22,7 +25,7 @@ export const reviewMetadata: Metadata = {
 }
 
 const buildClientList = (
-  projects: Awaited<ReturnType<typeof fetchProjectsWithRelations>>
+  projects: Awaited<ReturnType<typeof fetchProjectsLite>>
 ) =>
   projects
     .map(project => project.client)
@@ -49,10 +52,8 @@ export const renderReviewRoute = async ({
   taskId = null,
 }: ReviewRouteArgs): Promise<ReactElement> => {
   const user = await requireUser()
-  const [projects, admins, clientDirectory] = await Promise.all([
-    fetchProjectsWithRelations({
-      forUserId: user.id,
-    }),
+  const [liteProjects, admins, clientDirectory] = await Promise.all([
+    fetchProjectsLite(),
     fetchAdminUsers(),
     fetchClientDirectory(),
   ])
@@ -63,7 +64,7 @@ export const renderReviewRoute = async ({
     deleted_at: c.deletedAt,
   }))
 
-  const clients = buildClientList(projects)
+  const clients = buildClientList(liteProjects)
   const clientSlugById = buildClientSlugLookup(clients)
 
   const adminUsers: AdminUserForOwner[] = admins.map(admin => ({
@@ -73,7 +74,7 @@ export const renderReviewRoute = async ({
     avatar_url: admin.avatar_url,
   }))
 
-  const project = projects.find(item => item.slug === projectSlug)
+  const project = liteProjects.find(item => item.slug === projectSlug)
 
   if (!project) {
     redirect('/projects')
@@ -93,6 +94,15 @@ export const renderReviewRoute = async ({
   const activeClientId = project.client_id ?? null
   const activeProjectId = project.id
   const activeTaskId = taskId ?? null
+
+  // The review tab renders archived tasks, so hydrate them here.
+  const [hydratedProject] = await fetchProjectsWithRelationsByIds(
+    [project.id],
+    { includeArchivedTasks: true }
+  )
+  const projects = liteProjects.map(item =>
+    item.id === project.id && hydratedProject ? hydratedProject : item
+  )
 
   return (
     <ProjectsBoard

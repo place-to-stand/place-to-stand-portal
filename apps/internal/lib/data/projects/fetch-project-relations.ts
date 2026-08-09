@@ -34,6 +34,11 @@ export type ProjectRelationsFetchArgs = {
   projectIds: string[]
   clientIds: string[]
   ownerIds: string[]
+  /**
+   * Archived tasks grow without bound and only the project review/archive
+   * tabs render them — every other surface skips the query entirely.
+   */
+  includeArchivedTasks?: boolean
 }
 
 export type ProjectRelationsFetchResult = {
@@ -71,6 +76,7 @@ export async function fetchProjectRelations({
   projectIds,
   clientIds,
   ownerIds,
+  includeArchivedTasks = false,
 }: ProjectRelationsFetchArgs): Promise<ProjectRelationsFetchResult> {
   const clientDataPromise: Promise<[ClientRow[], MemberRow[], HourBlockRow[]]> =
     Promise.all([
@@ -81,7 +87,9 @@ export async function fetchProjectRelations({
 
   const taskDataPromise: Promise<[TaskRow[], TaskRow[]]> = Promise.all([
     loadTaskRows(projectIds, { archived: false }),
-    loadTaskRows(projectIds, { archived: true }),
+    includeArchivedTasks
+      ? loadTaskRows(projectIds, { archived: true })
+      : Promise.resolve([]),
   ])
 
   const githubReposPromise = getReposForProjects(projectIds)
