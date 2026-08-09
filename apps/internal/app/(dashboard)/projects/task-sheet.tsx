@@ -434,7 +434,9 @@ export function TaskSheet(props: TaskSheetProps) {
                   attachmentsDisabledReason={attachmentsDisabledReason}
                   isDragActive={!dropDisabled && isDragActive}
                 />
-                {props.task && taskProject ? (
+                {/* Time is only tracked against client work — internal and
+                    personal projects have no billing target for it. */}
+                {props.task && taskProject?.type === 'CLIENT' ? (
                   <TimeLogSection
                     taskId={props.task.id}
                     enabled={props.open}
