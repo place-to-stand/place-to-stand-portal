@@ -26,6 +26,9 @@ export default function SignInPage() {
         return
       }
 
+      // Full reload so middleware and server components see the fresh
+      // session cookies.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.href = '/'
     } catch {
       setError('An unexpected error occurred')

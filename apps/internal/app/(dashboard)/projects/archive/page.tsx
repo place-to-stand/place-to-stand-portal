@@ -74,7 +74,6 @@ export default async function ProjectsArchivePage({
       primaryAction={<ProjectsAddButton clients={clientRows} />}
     >
       <ProjectsManagementSection
-        tab='archive'
         mode='archive'
         projects={hydratedProjects}
         clients={clientRows}
@@ -82,7 +81,6 @@ export default async function ProjectsArchivePage({
         contractorUsers={[]}
         membersByProject={{}}
         pageInfo={archiveResult.pageInfo}
-        listTotalCount={archiveResult.totalCount}
         filters={
           <ProjectsArchiveFilters search={searchQuery ?? undefined} />
         }

@@ -83,6 +83,9 @@ export function SupabaseListener({ initialSession }: Props) {
             window.location.pathname !== '/sign-in' &&
             !window.location.pathname.startsWith('/share/')
           ) {
+            // Full reload on session loss drops all client state and
+            // re-runs middleware — router.push would keep stale trees.
+            // eslint-disable-next-line @next/next/no-location-assign-relative-destination
             window.location.href = '/sign-in';
           }
         });

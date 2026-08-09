@@ -41,6 +41,9 @@ export default async function RootLayout({
   return (
     <html lang='en' suppressHydrationWarning>
       <head>
+        {/* Synchronous theme init — must run before first paint to avoid a
+            light-mode flash. Safe to render raw: hydration only re-renders
+            this tree if something else mismatches (see use-mobile). */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
