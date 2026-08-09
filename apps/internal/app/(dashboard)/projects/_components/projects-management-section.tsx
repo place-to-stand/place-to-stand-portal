@@ -16,15 +16,11 @@ import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui
 import { ProjectSheet } from '@/app/(dashboard)/settings/projects/project-sheet'
 import { ProjectLifecycleDialogs } from '@/components/settings/projects/table/project-lifecycle-dialogs'
 import { ProjectsTableSection } from '@/components/settings/projects/table/projects-table-section'
-import {
-  type ContractorUserSummary,
-  type ProjectsTab,
-} from '@/components/settings/projects/table/types'
+import { type ContractorUserSummary } from '@/components/settings/projects/table/types'
 import { useProjectsSettingsController } from '@/components/settings/projects/table/use-projects-settings-controller'
 
 
 type ProjectsManagementSectionProps = {
-  tab: ProjectsTab
   mode: 'active' | 'archive'
   projects: ProjectWithClient[]
   clients: ClientRow[]
@@ -32,7 +28,6 @@ type ProjectsManagementSectionProps = {
   contractorUsers: ContractorUserSummary[]
   membersByProject: Record<string, ContractorUserSummary[]>
   pageInfo: PageInfo
-  listTotalCount: number
   /** Toolbar row (FilterBar) rendered inside the card, above the table. */
   filters?: ReactNode
   /**
@@ -42,7 +37,6 @@ type ProjectsManagementSectionProps = {
 }
 
 export function ProjectsManagementSection({
-  tab,
   mode,
   projects,
   clients,
@@ -50,7 +44,6 @@ export function ProjectsManagementSection({
   contractorUsers,
   membersByProject,
   pageInfo,
-  listTotalCount,
   filters,
 }: ProjectsManagementSectionProps) {
   const router = useRouter()
@@ -86,10 +79,6 @@ export function ProjectsManagementSection({
     confirmDestroy,
   } = controller
 
-  const createDisabled = sortedClients.length === 0
-  const createDisabledReason = createDisabled
-    ? 'Add a client before creating a project.'
-    : null
   const pendingReason = 'Please wait for the current request to finish.'
 
   const handlePaginate = (direction: 'forward' | 'backward') => {

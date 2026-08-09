@@ -222,11 +222,14 @@ export function IntegrationsPanel() {
 
   const handleConnectGoogle = () => {
     setIsRedirectingGoogle(true)
+    // API route redirecting to external OAuth — not a Next.js page.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = '/api/auth/google'
   }
 
   const handleConnectGitHub = () => {
     setIsRedirectingGitHub(true)
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = '/api/auth/github'
   }
 

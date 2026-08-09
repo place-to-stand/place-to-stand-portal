@@ -73,7 +73,6 @@ export function UsersTableRow({
                 checked={row.accessEnabled}
                 onCheckedChange={row.onToggleAccess}
                 disabled={row.accessToggleDisabled}
-                className='data-[state=checked]:bg-emerald-500 dark:data-[state=checked]:bg-emerald-500'
                 aria-label={
                   row.accessEnabled
                     ? `Disable sign-in for ${displayName}`
