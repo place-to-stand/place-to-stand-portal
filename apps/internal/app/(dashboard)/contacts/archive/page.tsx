@@ -57,7 +57,7 @@ export default async function ContactsArchivePage({
       }}
       primaryAction={<ContactsAddButton allClients={allClients} />}
     >
-      <section className='bg-background rounded-xl border p-6 shadow-sm space-y-4'>
+      <section className='bg-background rounded-xl border p-4 shadow-sm space-y-4'>
         <ContactsFilters basePath='/contacts/archive' search={search} />
         <ContactsManagementTable
           contacts={contactsForTable}

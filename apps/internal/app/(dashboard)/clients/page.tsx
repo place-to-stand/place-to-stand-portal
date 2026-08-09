@@ -73,7 +73,7 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
       }}
       primaryAction={<ClientsAddButton />}
     >
-      <section className='bg-background space-y-4 rounded-xl border p-6 shadow-sm'>
+      <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
         <ClientsFilters basePath='/clients' search={search} billing={billing} />
         <ClientsLanding clients={sortedClients} />
       </section>

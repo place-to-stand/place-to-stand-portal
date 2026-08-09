@@ -67,7 +67,7 @@ export default async function InvoicesPage({
         />
       }
     >
-      <section className='bg-background space-y-4 rounded-xl border p-6 shadow-sm'>
+      <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
         <InvoicesFilters basePath='/invoices' status={status} search={search} />
         <InvoicesManagementTable
           invoices={items}

@@ -9,18 +9,8 @@ import { users } from '@/lib/db/schema'
 import type { UserAccessFilter, UserSortField } from '@/lib/settings/users/filters'
 import { DEFAULT_USERS_SORT } from '@/lib/settings/users/filters'
 import type { UserRoleValue } from '@/lib/types'
-import {
-  clampLimit,
-  createSearchPattern,
-  resolveDirection,
-  type CursorDirection,
-  type PageInfo,
-} from '@/lib/pagination/cursor'
-import {
-  decodeSortCursor,
-  encodeSortCursor,
-  type ParsedSort,
-} from '@/lib/pagination/sort'
+import { clampLimit, createSearchPattern } from '@/lib/pagination/cursor'
+import type { ParsedSort } from '@/lib/pagination/sort'
 
 import { userSortExpression, type SelectUser } from './fields'
 import {
@@ -32,8 +22,8 @@ export type UsersSettingsListItem = SelectUser
 
 export type ListUsersForSettingsInput = {
   status?: 'active' | 'archived'
-  cursor?: string | null
-  direction?: CursorDirection | null
+  /** 1-based page number; out-of-range values clamp to the last page. */
+  page?: number | null
   limit?: number | null
   role?: UserRoleValue
   access?: UserAccessFilter
@@ -48,41 +38,28 @@ export type UsersSettingsResult = {
   totalCount: number
   /** Rows on the tab regardless of filters/search (the `M`). */
   unfilteredTotalCount: number
-  pageInfo: PageInfo
+  /** The page actually served (after clamping). */
+  page: number
+  pageSize: number
+  totalPages: number
 }
 
 /**
- * Per-sort descriptor (PRD 004 §03, R5): order expression + cursor value
- * encoding + comparison predicates per field. Both fields are non-nullable
- * so no null partition applies; a nullable field added here must declare
- * NULLS LAST ordering and null-aware conditions.
+ * Per-sort descriptor (PRD 004 §03, R5): order expressions per field. Both
+ * fields are non-nullable so no null partition applies; a nullable field
+ * added here must declare NULLS LAST ordering.
  */
 type UserSortDescriptor = {
-  encode: (row: UsersSettingsListItem) => string
-  compare: (op: 'gt' | 'lt', value: string) => SQL
-  equals: (value: string) => SQL
   orderAsc: SQL
   orderDesc: SQL
 }
 
 const USER_SORT_DESCRIPTORS: Record<UserSortField, UserSortDescriptor> = {
   name: {
-    encode: row => row.fullName ?? row.email ?? '',
-    compare: (op, value) =>
-      op === 'gt'
-        ? sql`${userSortExpression} > ${value}`
-        : sql`${userSortExpression} < ${value}`,
-    equals: value => sql`${userSortExpression} = ${value}`,
     orderAsc: sql`${userSortExpression} ASC`,
     orderDesc: sql`${userSortExpression} DESC`,
   },
   created: {
-    encode: row => String(row.createdAt),
-    compare: (op, value) =>
-      op === 'gt'
-        ? sql`${users.createdAt} > ${value}::timestamptz`
-        : sql`${users.createdAt} < ${value}::timestamptz`,
-    equals: value => sql`${users.createdAt} = ${value}::timestamptz`,
     orderAsc: sql`${users.createdAt} ASC`,
     orderDesc: sql`${users.createdAt} DESC`,
   },
@@ -94,7 +71,6 @@ export async function listUsersForSettings(
 ): Promise<UsersSettingsResult> {
   assertAdmin(user)
 
-  const direction = resolveDirection(input.direction)
   const limit = clampLimit(input.limit, { defaultLimit: 20, maxLimit: 100 })
   const normalizedStatus = input.status === 'archived' ? 'archived' : 'active'
   const sort = input.sort ?? DEFAULT_USERS_SORT
@@ -125,29 +101,33 @@ export async function listUsersForSettings(
     )
   }
 
-  // Field-tagged cursor: payloads minted under a different sort are
-  // rejected and we serve page one (R5 backstop for stale deep links).
-  const cursorPayload = decodeSortCursor(input.cursor, sort.field)
+  const whereClause = and(...baseConditions)
 
-  // Effective ordering combines the sort direction with the pagination
-  // direction (backward pages scan the reversed order, then re-reverse).
-  const effectiveAsc = (sort.direction === 'asc') === (direction === 'forward')
-  const cursorCondition = cursorPayload
-    ? sql`(${descriptor.compare(effectiveAsc ? 'gt' : 'lt', cursorPayload.value ?? '')} OR (${descriptor.equals(cursorPayload.value ?? '')} AND ${effectiveAsc ? sql`${users.id} > ${cursorPayload.id}` : sql`${users.id} < ${cursorPayload.id}`}))`
-    : null
+  // Counts come first so an out-of-range ?page= (stale link, rows deleted)
+  // clamps to the real last page instead of serving an empty list.
+  const [totalResult, unfilteredTotalResult] = await Promise.all([
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(whereClause),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(statusCondition),
+  ])
 
-  const paginatedConditions = cursorCondition
-    ? [...baseConditions, cursorCondition]
-    : baseConditions
+  const totalCount = Number(totalResult[0]?.count ?? 0)
+  const unfilteredTotalCount = Number(unfilteredTotalResult[0]?.count ?? 0)
+  const totalPages = Math.max(1, Math.ceil(totalCount / limit))
+  const requestedPage = Math.floor(input.page ?? 1)
+  const page = Math.min(Math.max(1, requestedPage), totalPages)
 
-  const whereClause =
-    paginatedConditions.length > 0 ? and(...paginatedConditions) : undefined
+  const ordering =
+    sort.direction === 'asc'
+      ? [descriptor.orderAsc, asc(users.id)]
+      : [descriptor.orderDesc, sql`${users.id} DESC`]
 
-  const ordering = effectiveAsc
-    ? [descriptor.orderAsc, asc(users.id)]
-    : [descriptor.orderDesc, sql`${users.id} DESC`]
-
-  const rows = (await db
+  const items = (await db
     .select({
       id: users.id,
       email: users.email,
@@ -163,65 +143,19 @@ export async function listUsersForSettings(
     .from(users)
     .where(whereClause)
     .orderBy(...ordering)
-    .limit(limit + 1)) as UsersSettingsListItem[]
+    .limit(limit)
+    .offset((page - 1) * limit)) as UsersSettingsListItem[]
 
-  const hasExtraRecord = rows.length > limit
-  const slicedRows = hasExtraRecord ? rows.slice(0, limit) : rows
-  const normalizedRows =
-    direction === 'backward' ? [...slicedRows].reverse() : slicedRows
-
-  const mappedItems = normalizedRows.map(row => ({
-    ...row,
-  }))
-
-  const [totalResult, unfilteredTotalResult] = await Promise.all([
-    db
-      .select({ count: sql<number>`count(*)` })
-      .from(users)
-      .where(and(...baseConditions)),
-    db
-      .select({ count: sql<number>`count(*)` })
-      .from(users)
-      .where(statusCondition),
-  ])
-
-  const totalCount = Number(totalResult[0]?.count ?? 0)
-  const unfilteredTotalCount = Number(unfilteredTotalResult[0]?.count ?? 0)
-  const firstItem = mappedItems[0] ?? null
-  const lastItem = mappedItems[mappedItems.length - 1] ?? null
-
-  const hasPreviousPage =
-    direction === 'forward' ? Boolean(cursorPayload) : hasExtraRecord
-  const hasNextPage =
-    direction === 'forward' ? hasExtraRecord : Boolean(cursorPayload)
-
-  const pageInfo: PageInfo = {
-    hasPreviousPage,
-    hasNextPage,
-    startCursor: firstItem
-      ? encodeSortCursor({
-          sortField: sort.field,
-          value: descriptor.encode(firstItem),
-          id: firstItem.id,
-        })
-      : null,
-    endCursor: lastItem
-      ? encodeSortCursor({
-          sortField: sort.field,
-          value: descriptor.encode(lastItem),
-          id: lastItem.id,
-        })
-      : null,
-  }
-
-  const userIds = mappedItems.map(item => item.id)
+  const userIds = items.map(item => item.id)
   const assignments = await buildAssignmentsForUsers(userIds)
 
   return {
-    items: mappedItems,
+    items,
     assignments,
     totalCount,
     unfilteredTotalCount,
-    pageInfo,
+    page,
+    pageSize: limit,
+    totalPages,
   }
 }

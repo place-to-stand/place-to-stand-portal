@@ -55,7 +55,7 @@ export default async function ContactsPage({ searchParams }: ContactsPageProps) 
       }}
       primaryAction={<ContactsAddButton allClients={allClients} />}
     >
-      <section className='bg-background rounded-xl border p-6 shadow-sm space-y-4'>
+      <section className='bg-background rounded-xl border p-4 shadow-sm space-y-4'>
         <ContactsFilters basePath='/contacts' search={search} />
         <ContactsManagementTable
           contacts={contactsForTable}

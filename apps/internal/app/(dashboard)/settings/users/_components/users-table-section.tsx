@@ -33,7 +33,7 @@ export function UsersTableSection({
 }: UsersTableSectionProps) {
   const { update, getParam } = useListParams({
     basePath,
-    resetKeys: ['cursor', 'dir'],
+    resetKeys: ['page'],
   })
   const rawSort = getParam('sort')
   const sort = rawSort && isUserSortValue(rawSort) ? rawSort : undefined

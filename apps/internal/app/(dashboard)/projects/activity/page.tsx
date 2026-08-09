@@ -35,7 +35,7 @@ export default async function ProjectsActivityPage() {
       activeTab='activity'
       primaryAction={<ProjectsAddButton clients={clientRows} />}
     >
-      <section className='bg-background rounded-xl border p-6 shadow-sm'>
+      <section className='bg-background rounded-xl border p-4 shadow-sm'>
         <ProjectsActivitySection />
       </section>
     </PageShell>

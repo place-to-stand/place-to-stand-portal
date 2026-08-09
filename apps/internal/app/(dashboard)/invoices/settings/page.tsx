@@ -28,7 +28,7 @@ export default async function InvoiceSettingsPage() {
       tabs={INVOICES_TABS}
       activeTab='settings'
     >
-      <section className='bg-background rounded-xl border p-6 shadow-sm'>
+      <section className='bg-background rounded-xl border p-4 shadow-sm'>
         <div className='space-y-10'>
           <ProductCatalogSection initialItems={products} />
           <TaxRatesSection initialRates={taxRates} />

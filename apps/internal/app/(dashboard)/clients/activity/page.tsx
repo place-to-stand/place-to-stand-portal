@@ -22,7 +22,7 @@ export default async function ClientsActivityPage() {
       activeTab='activity'
       primaryAction={<ClientsAddButton />}
     >
-      <section className='bg-background rounded-xl border p-6 shadow-sm'>
+      <section className='bg-background rounded-xl border p-4 shadow-sm'>
         <ClientsActivitySection />
       </section>
     </PageShell>

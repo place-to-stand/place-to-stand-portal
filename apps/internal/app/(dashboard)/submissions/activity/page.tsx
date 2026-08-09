@@ -20,7 +20,7 @@ export default async function SubmissionsActivityPage() {
       tabs={SUBMISSIONS_TABS}
       activeTab='activity'
     >
-      <section className='bg-background rounded-xl border p-6 shadow-sm'>
+      <section className='bg-background rounded-xl border p-4 shadow-sm'>
         <SubmissionsActivitySection />
       </section>
     </PageShell>

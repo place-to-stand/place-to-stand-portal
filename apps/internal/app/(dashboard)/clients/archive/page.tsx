@@ -53,7 +53,7 @@ export default async function ClientsArchivePage({
       }}
       primaryAction={<ClientsAddButton />}
     >
-      <section className='bg-background rounded-xl border p-6 shadow-sm space-y-4'>
+      <section className='bg-background rounded-xl border p-4 shadow-sm space-y-4'>
         <ClientsFilters
           basePath='/clients/archive'
           search={search}

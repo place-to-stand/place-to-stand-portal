@@ -33,7 +33,7 @@ export default async function UsersActivityPage() {
         />
       }
     >
-      <section className='bg-background rounded-xl border p-6 shadow-sm'>
+      <section className='bg-background rounded-xl border p-4 shadow-sm'>
         <UsersActivitySection />
       </section>
     </PageShell>

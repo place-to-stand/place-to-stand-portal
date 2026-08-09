@@ -44,7 +44,7 @@ export function UsersFilters({
 }: UsersFiltersProps) {
   const { update } = useListParams({
     basePath,
-    resetKeys: ['cursor', 'dir'],
+    resetKeys: ['page'],
     filters: {
       role: { isValid: value => isUserRole(value) },
       access: { isValid: value => isUserAccess(value) },

@@ -13,7 +13,6 @@ import {
   type UserAssignments,
 } from '@/lib/settings/users/state/use-users-table-state'
 import type { UserRow } from '@/lib/settings/users/state/types'
-import type { PageInfo } from '@/lib/pagination/cursor'
 
 import { UsersTableSection } from './users-table-section'
 
@@ -21,7 +20,10 @@ type UsersManagementTableProps = {
   users: UserRow[]
   currentUserId: string
   assignments: UserAssignments
-  pageInfo: PageInfo
+  page: number
+  pageSize: number
+  totalPages: number
+  totalCount: number
   mode: 'active' | 'archive'
   basePath: string
 }
@@ -35,7 +37,10 @@ export function UsersManagementTable({
   users,
   currentUserId,
   assignments,
-  pageInfo,
+  page,
+  pageSize,
+  totalPages,
+  totalCount,
   mode,
   basePath,
 }: UsersManagementTableProps) {
@@ -49,7 +54,6 @@ export function UsersManagementTable({
     deleteDialog,
     destroyDialog,
     selfDeleteReason,
-    isPending,
   } = useUsersTableState({ users, currentUserId, assignments })
 
   const filteredRows = useMemo(
@@ -72,28 +76,16 @@ export function UsersManagementTable({
     ? 'No users match the current filters.'
     : EMPTY_MESSAGES[mode]
 
-  const handlePaginate = (direction: 'forward' | 'backward') => {
-    const cursor =
-      direction === 'forward' ? pageInfo.endCursor : pageInfo.startCursor
-
-    if (!cursor) {
-      return
-    }
-
+  const handlePageChange = (nextPage: number) => {
     const params = new URLSearchParams(searchParams.toString())
-    params.set('cursor', cursor)
-    params.set('dir', direction)
+    if (nextPage <= 1) {
+      params.delete('page')
+    } else {
+      params.set('page', String(nextPage))
+    }
     const query = params.toString()
     router.push(query ? `${pathname}?${query}` : pathname)
   }
-
-  const paginationState = useMemo(
-    () => ({
-      hasNextPage: pageInfo.hasNextPage,
-      hasPreviousPage: pageInfo.hasPreviousPage,
-    }),
-    [pageInfo.hasNextPage, pageInfo.hasPreviousPage]
-  )
 
   return (
     <div className='space-y-6'>
@@ -125,11 +117,12 @@ export function UsersManagementTable({
         selfDeleteReason={selfDeleteReason}
       />
       <PaginationControls
-        hasNextPage={paginationState.hasNextPage}
-        hasPreviousPage={paginationState.hasPreviousPage}
-        onNext={() => handlePaginate('forward')}
-        onPrevious={() => handlePaginate('backward')}
-        disableAll={isPending}
+        mode='paged'
+        currentPage={page}
+        totalPages={totalPages}
+        totalItems={totalCount}
+        pageSize={pageSize}
+        onPageChange={handlePageChange}
       />
       <UserSheet
         open={sheet.open}

@@ -53,7 +53,7 @@ export default async function HourBlocksPage({
       }}
       primaryAction={<HourBlocksAddButton clients={clients} />}
     >
-      <section className='bg-background space-y-4 rounded-xl border p-6 shadow-sm'>
+      <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
         <HourBlocksFilters basePath='/hour-blocks' search={search} />
         <HourBlocksManagementTable
           hourBlocks={items}

@@ -22,7 +22,7 @@ export default async function LeadsActivityPage() {
       tabs={LEADS_TABS}
       activeTab='activity'
     >
-      <section className='bg-background rounded-xl border p-6 shadow-sm space-y-3'>
+      <section className='bg-background rounded-xl border p-4 shadow-sm space-y-3'>
         <div>
           <h3 className='text-lg font-semibold'>Recent activity</h3>
           <p className='text-muted-foreground text-sm'>

@@ -53,7 +53,7 @@ export function TimeLogsTabContent(props: TimeLogsTabContentProps) {
       value='timeLogs'
       className='flex min-h-0 flex-1 flex-col gap-4 sm:gap-6'
     >
-      <section className='bg-background rounded-xl border p-6 shadow-sm'>
+      <section className='bg-background rounded-xl border p-4 shadow-sm'>
         <div className='space-y-1'>
           <h3 className='text-lg font-semibold'>Project time logs</h3>
           <p className='text-muted-foreground text-sm'>

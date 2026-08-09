@@ -22,7 +22,7 @@ export default async function ContactsActivityPage() {
       activeTab='activity'
       primaryAction={<ContactsAddButton />}
     >
-      <section className='bg-background rounded-xl border p-6 shadow-sm'>
+      <section className='bg-background rounded-xl border p-4 shadow-sm'>
         <ContactsActivitySection />
       </section>
     </PageShell>

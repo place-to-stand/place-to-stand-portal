@@ -57,8 +57,8 @@ export function isUserSortValue(value: string): boolean {
 type RawSearchParams = Record<string, string | string[] | undefined>
 
 export type UsersSearchParams = {
-  cursor: string | null
-  direction: 'forward' | 'backward'
+  /** 1-based page number from `?page=`; invalid values fall back to 1. */
+  page: number
   limit: number | undefined
   role: UserRoleValue | undefined
   access: UserAccessFilter | undefined
@@ -85,9 +85,7 @@ function firstParam(value: string | string[] | undefined): string | undefined {
  * and are treated as unset, matching the submissions convention.
  */
 export function parseUsersSearchParams(params: RawSearchParams): UsersSearchParams {
-  const cursor = firstParam(params.cursor) ?? null
-  const direction =
-    firstParam(params.dir) === 'backward' ? 'backward' : ('forward' as const)
+  const pageParam = Number.parseInt(firstParam(params.page) ?? '', 10)
   const limitParam = Number.parseInt(firstParam(params.limit) ?? '', 10)
   const roleParam = firstParam(params.role)
   const accessParam = firstParam(params.access)
@@ -96,8 +94,7 @@ export function parseUsersSearchParams(params: RawSearchParams): UsersSearchPara
   const sort = parseSortParam(rawSort, USER_SORT_FIELDS, DEFAULT_USERS_SORT)
 
   return {
-    cursor,
-    direction,
+    page: Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1,
     limit: Number.isFinite(limitParam) ? limitParam : undefined,
     role: isUserRole(roleParam) ? roleParam : undefined,
     access: isUserAccess(accessParam) ? accessParam : undefined,

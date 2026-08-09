@@ -34,7 +34,7 @@ export default async function InvoicesActivityPage() {
         />
       }
     >
-      <section className='bg-background rounded-xl border p-6 shadow-sm'>
+      <section className='bg-background rounded-xl border p-4 shadow-sm'>
         <InvoicesActivitySection />
       </section>
     </PageShell>

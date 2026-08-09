@@ -121,7 +121,7 @@ export function ProjectsManagementSection({
   return (
     <div className='space-y-4'>
       {/* Main Container with Background */}
-      <section className='bg-background rounded-xl border p-6 shadow-sm space-y-4'>
+      <section className='bg-background rounded-xl border p-4 shadow-sm space-y-4'>
         <ProjectLifecycleDialogs
           deleteTarget={deleteTarget}
           destroyTarget={destroyTarget}

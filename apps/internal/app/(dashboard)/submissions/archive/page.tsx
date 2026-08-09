@@ -79,7 +79,7 @@ export default async function SubmissionsArchivePage({
         filteredTotal: totalCount,
       }}
     >
-      <section className='bg-background rounded-xl border p-6 shadow-sm space-y-4'>
+      <section className='bg-background rounded-xl border p-4 shadow-sm space-y-4'>
         <SubmissionsFilters
           search={search}
           activeKind={kind}

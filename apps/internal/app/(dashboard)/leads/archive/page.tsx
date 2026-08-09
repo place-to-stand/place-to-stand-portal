@@ -38,7 +38,7 @@ export default async function LeadsArchivePage() {
         </Button>
       }
     >
-      <section className='bg-background rounded-xl border p-6 shadow-sm space-y-3'>
+      <section className='bg-background rounded-xl border p-4 shadow-sm space-y-3'>
         <LeadsArchiveSection leads={archivedLeads} />
       </section>
     </PageShell>

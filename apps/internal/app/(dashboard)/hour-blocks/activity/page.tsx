@@ -28,7 +28,7 @@ export default async function HourBlocksActivityPage() {
       activeTab='activity'
       primaryAction={<HourBlocksAddButton clients={clients} />}
     >
-      <section className='bg-background rounded-xl border p-6 shadow-sm'>
+      <section className='bg-background rounded-xl border p-4 shadow-sm'>
         <HourBlocksActivitySection />
       </section>
     </PageShell>
