@@ -121,7 +121,7 @@ export const LeadCard = memo(function LeadCard({
         (isActive || isDragging) && 'border-primary/50 bg-primary/5 shadow-md',
         !isActive &&
           !isDragging &&
-          'border-amber-500/60 hover:border-amber-500 hover:bg-amber-500/5 hover:shadow-md'
+          'border-amber-500/35 hover:border-amber-500/60 hover:bg-amber-500/5 hover:shadow-md'
       )}
     >
       <LeadCardContent lead={lead} />
@@ -246,7 +246,7 @@ function AnchorRow({ icon: Icon, value, href }: AnchorRowProps) {
 
 export function LeadCardPreview({ lead }: { lead: LeadRecord }) {
   return (
-    <div className='bg-card border-amber-500/60 w-80 rounded-lg border p-4 shadow-sm'>
+    <div className='bg-card border-amber-500/35 w-80 rounded-lg border p-4 shadow-sm'>
       <LeadCardContent lead={lead} />
     </div>
   )

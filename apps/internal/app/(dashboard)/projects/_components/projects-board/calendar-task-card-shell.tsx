@@ -49,7 +49,7 @@ export const CalendarTaskCardShell = forwardRef<
         !isActive &&
           !isDragging &&
           !isCompleted &&
-          'border-violet-500/60 hover:border-violet-500 hover:bg-violet-500/5 hover:shadow-md',
+          'border-violet-500/35 hover:border-violet-500/60 hover:bg-violet-500/5 hover:shadow-md',
         !isActive &&
           !isDragging &&
           isCompleted &&

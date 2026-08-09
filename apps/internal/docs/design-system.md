@@ -19,9 +19,9 @@ Each primary object type is assigned a distinct color from the Tailwind CSS pale
 
 The color identity is primarily applied to **Cards** using the following pattern:
 
-1.  **Border:** A uniform 1px border in a semi-transparent shade of the object's primary color (`-500/60`). The border is symmetric on all sides so the card geometry stays centered — do **not** use a thick colored left border (`border-l-4`), a widely-disliked style that also shifts card content off-center.
+1.  **Border:** A uniform 1px border in a semi-transparent shade of the object's primary color (`-500/35`). The border is symmetric on all sides so the card geometry stays centered — do **not** use a thick colored left border (`border-l-4`), a widely-disliked style that also shifts card content off-center.
 2.  **Hover State:**
-    *   **Border:** The border strengthens to the full `-500` color.
+    *   **Border:** The border strengthens to `/60`.
     *   **Background:** A very subtle tint (`/5`) of the color appears on hover.
 3.  **Icons:** In some contexts (like headers or lists), the object's icon may be colored with the `-500` shade.
 
@@ -35,10 +35,10 @@ className={cn(
   'border shadow-sm transition-all',
 
   // 1. Identity Color (tinted border)
-  'border-[COLOR]-500/60',
+  'border-[COLOR]-500/35',
 
   // 2. Hover States
-  'hover:border-[COLOR]-500',
+  'hover:border-[COLOR]-500/60',
   'hover:bg-[COLOR]-500/5',
   'hover:shadow-md'
 )}
@@ -74,10 +74,10 @@ export function InvoiceCard({ invoice }) {
         'border',
 
         // Identity: Orange
-        'border-orange-500/60',
+        'border-orange-500/35',
 
         // Hover States
-        'hover:border-orange-500',
+        'hover:border-orange-500/60',
         'hover:bg-orange-500/5',
         'hover:shadow-md'
       )}
