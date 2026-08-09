@@ -29,7 +29,12 @@ function collectSelectItems(
       children?: React.ReactNode
     }
 
-    if (child.type === SelectItem && typeof props.value === 'string') {
+    // Structural match (any element carrying a string `value` inside the
+    // Select subtree is an item) rather than `child.type === SelectItem`:
+    // identity comparison breaks when the element was created by a second
+    // module instance of this file (observed as trigger labels degrading
+    // to raw values after hydration).
+    if (typeof props.value === 'string') {
       acc.push({ value: props.value, label: props.children })
       return
     }
