@@ -252,7 +252,7 @@ export function IntegrationsPanel() {
 
   return (
     <div className='relative'>
-      <div className='grid grid-cols-2 gap-6'>
+      <div className='grid grid-cols-2 gap-4'>
         {/* Google Card */}
         <Card>
           <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>

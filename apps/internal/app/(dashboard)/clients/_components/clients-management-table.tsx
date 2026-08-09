@@ -94,7 +94,7 @@ export function ClientsManagementTable({
   )
 
   return (
-    <div className='space-y-6'>
+    <div className='space-y-4'>
       <ConfirmDialog
         open={Boolean(deleteTarget)}
         title='Archive client?'

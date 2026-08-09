@@ -88,7 +88,7 @@ export function UsersManagementTable({
   }
 
   return (
-    <div className='space-y-6'>
+    <div className='space-y-4'>
       <ConfirmDialog
         open={deleteDialog.open}
         title='Archive user?'

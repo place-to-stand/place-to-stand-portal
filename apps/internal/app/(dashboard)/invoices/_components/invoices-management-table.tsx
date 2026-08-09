@@ -348,7 +348,7 @@ export function InvoicesManagementTable({
   )
 
   return (
-    <div className='space-y-6'>
+    <div className='space-y-4'>
       <InvoiceArchiveDialog
         open={Boolean(deleteTarget)}
         confirmDisabled={isPending}

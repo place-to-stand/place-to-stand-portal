@@ -17,6 +17,15 @@ import { SidebarTrigger } from '@/components/ui/sidebar'
 
 import { TabsNav, type TabsNavTab } from './tabs-nav'
 
+/**
+ * Count labels are declared as plural nouns ('users', 'archived leads');
+ * all current labels pluralize with a plain trailing s, so a count of 1
+ * just drops it. An irregular noun added later needs explicit handling.
+ */
+function singularizeLabel(label: string) {
+  return label.endsWith('s') ? label.slice(0, -1) : label
+}
+
 export type PageShellCount = {
   /** Plural noun, e.g. 'clients'. */
   label: string
@@ -116,7 +125,7 @@ export function PageShell({
                   {count.filteredTotal !== undefined &&
                   count.filteredTotal !== count.total
                     ? `Showing ${count.filteredTotal} of ${count.total}`
-                    : `${count.total} ${count.label}`}
+                    : `${count.total} ${count.total === 1 ? singularizeLabel(count.label) : count.label}`}
                 </span>
               ) : null}
               {primaryAction}
