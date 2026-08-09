@@ -2,7 +2,10 @@ import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 
 import { ProjectsBoard } from '../../../projects-board'
-import { fetchProjectsWithRelations } from '@/lib/data/projects'
+import {
+  fetchProjectsLite,
+  fetchProjectsWithRelationsByIds,
+} from '@/lib/data/projects'
 import { fetchAdminUsers } from '@/lib/data/users'
 import { requireUser } from '@/lib/auth/session'
 import { getProjectClientSegment } from '@/lib/projects/board/board-utils'
@@ -25,10 +28,8 @@ export default async function ProjectReviewRoute({ params }: PageProps) {
   const resolvedParams = await params
   const { clientSlug, projectSlug } = resolvedParams
   const user = await requireUser()
-  const [projects, admins, clientDirectory] = await Promise.all([
-    fetchProjectsWithRelations({
-      forUserId: user.id,
-    }),
+  const [liteProjects, admins, clientDirectory] = await Promise.all([
+    fetchProjectsLite(),
     fetchAdminUsers(),
     fetchClientDirectory(),
   ])
@@ -39,7 +40,7 @@ export default async function ProjectReviewRoute({ params }: PageProps) {
     deleted_at: c.deletedAt,
   }))
 
-  const clients = projects
+  const clients = liteProjects
     .map(project => project.client)
     .filter((client): client is NonNullable<typeof client> => Boolean(client))
     .reduce(
@@ -64,7 +65,7 @@ export default async function ProjectReviewRoute({ params }: PageProps) {
     avatar_url: admin.avatar_url,
   }))
 
-  const project = projects.find(item => item.slug === projectSlug)
+  const project = liteProjects.find(item => item.slug === projectSlug)
 
   if (!project) {
     redirect('/projects')
@@ -82,6 +83,15 @@ export default async function ProjectReviewRoute({ params }: PageProps) {
 
   const activeClientId = project.client_id ?? null
   const activeProjectId = project.id
+
+  const [hydratedProject] = await fetchProjectsWithRelationsByIds([
+    project.id,
+  ], {
+    includeArchivedTasks: true,
+  })
+  const projects = liteProjects.map(item =>
+    item.id === project.id && hydratedProject ? hydratedProject : item
+  )
 
   return (
     <ProjectsBoard

@@ -139,16 +139,21 @@ async function loadAssignedTaskSummaries({
       ? await baseQuery.limit(normalizedLimit)
       : await baseQuery
 
-  const totalResult = await db
-    .select({
-      count: sql<number>`count(*)`,
-    })
-    .from(taskAssigneesTable)
-    .innerJoin(tasksTable, eq(taskAssigneesTable.taskId, tasksTable.id))
-    .innerJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
-    .where(whereClause)
+  // An unbounded query already returned every match — counting again
+  // would repeat the full three-table join for a number we have.
+  let totalCount = rows.length
+  if (normalizedLimit !== null) {
+    const totalResult = await db
+      .select({
+        count: sql<number>`count(*)`,
+      })
+      .from(taskAssigneesTable)
+      .innerJoin(tasksTable, eq(taskAssigneesTable.taskId, tasksTable.id))
+      .innerJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
+      .where(whereClause)
 
-  const totalCount = Number(totalResult[0]?.count ?? 0)
+    totalCount = Number(totalResult[0]?.count ?? 0)
+  }
 
   const items: AssignedTaskSummary[] = rows.map(row => {
     const updatedSource = row.updatedAt ?? row.createdAt ?? null
@@ -190,4 +195,22 @@ export function listAssignedTaskSummaries(
   options: FetchAssignedTasksSummaryOptions
 ) {
   return loadAssignedTaskSummaries(options)
+}
+
+/**
+ * Resolve a task's project without hydrating any project graph — used by
+ * the My Tasks deep-link path to merge in a project outside the assigned
+ * set. Soft-deleted tasks resolve to null (matches the previous behavior
+ * of searching active task arrays only).
+ */
+export async function getActiveTaskProjectId(
+  taskId: string
+): Promise<string | null> {
+  const rows = await db
+    .select({ projectId: tasksTable.projectId })
+    .from(tasksTable)
+    .where(and(eq(tasksTable.id, taskId), isNull(tasksTable.deletedAt)))
+    .limit(1)
+
+  return rows[0]?.projectId ?? null
 }

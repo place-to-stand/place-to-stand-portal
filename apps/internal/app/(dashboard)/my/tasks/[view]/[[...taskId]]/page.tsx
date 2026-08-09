@@ -7,9 +7,15 @@ import {
   type MyTasksView,
 } from '@/components/my-tasks/my-tasks-page'
 import { requireUser } from '@/lib/auth/session'
-import { fetchProjectsWithRelations } from '@/lib/data/projects'
+import {
+  fetchProjectsLite,
+  fetchProjectsWithRelationsByIds,
+} from '@/lib/data/projects'
 import { fetchAdminUsers } from '@/lib/data/users'
-import { listAssignedTaskSummaries } from '@/lib/data/tasks'
+import {
+  getActiveTaskProjectId,
+  listAssignedTaskSummaries,
+} from '@/lib/data/tasks'
 
 export const metadata: Metadata = {
   title: 'My Tasks | Place to Stand Portal',
@@ -46,11 +52,11 @@ export default async function MyTasksViewRoute({
     redirect(`/my/tasks/${DEFAULT_VIEW}${suffix}`)
   }
 
-  const [admins, accessibleProjects] = await Promise.all([
+  // Lite projects feed only the sheet's project selector; the task graph is
+  // hydrated below for just the projects that hold assigned tasks.
+  const [admins, liteProjects] = await Promise.all([
     fetchAdminUsers(),
-    fetchProjectsWithRelations({
-      forUserId: user.id,
-    }),
+    fetchProjectsLite(),
   ])
 
   // Allow viewing another admin's tasks via the assignee param
@@ -66,24 +72,15 @@ export default async function MyTasksViewRoute({
     limit: null,
   })
 
-  const projectLookup = new Map(
-    accessibleProjects.map(project => [project.id, project])
-  )
   const includedProjectIds = new Set<string>()
+  const orderedProjectIds: string[] = []
 
   const initialEntries: MyTasksInitialEntry[] = []
 
-  const relevantProjects: typeof accessibleProjects = []
-
   assignedSummaries.items.forEach(item => {
-    const project = projectLookup.get(item.project.id)
-    if (!project) {
-      return
-    }
-
-    if (!includedProjectIds.has(project.id)) {
-      includedProjectIds.add(project.id)
-      relevantProjects.push(project)
+    if (!includedProjectIds.has(item.project.id)) {
+      includedProjectIds.add(item.project.id)
+      orderedProjectIds.push(item.project.id)
     }
 
     initialEntries.push({
@@ -93,39 +90,38 @@ export default async function MyTasksViewRoute({
     })
   })
 
-  const selectionProjects = accessibleProjects.filter(
-    project => !project.deleted_at
-  )
-
-  // Resolve the URL's active task by id. The assigned set only contains
-  // projects with tasks assigned to the selected assignee, so a task created
-  // outside it (or a deep link) must have its project merged in — otherwise
-  // the sheet silently renders create mode and a second save duplicates.
-  // Invalid or unresolvable ids are treated as no active task; the raw
-  // segment is UUID-validated so it never reaches a Postgres UUID comparison.
+  // Deep-linked task outside the assigned set: resolve its project by id so
+  // the sheet opens in edit mode instead of silently creating a duplicate.
   let resolvedActiveTaskId: string | null = null
 
   if (activeTaskId && UUID_PATTERN.test(activeTaskId)) {
-    const isInAssignedSet = relevantProjects.some(project =>
-      project.tasks.some(task => task.id === activeTaskId)
-    )
-
-    if (isInAssignedSet) {
+    const holdingProjectId = await getActiveTaskProjectId(activeTaskId)
+    if (holdingProjectId) {
       resolvedActiveTaskId = activeTaskId
-    } else {
-      const holdingProject = accessibleProjects.find(project =>
-        project.tasks.some(task => task.id === activeTaskId)
-      )
-
-      if (holdingProject) {
-        if (!includedProjectIds.has(holdingProject.id)) {
-          includedProjectIds.add(holdingProject.id)
-          relevantProjects.push(holdingProject)
-        }
-        resolvedActiveTaskId = activeTaskId
+      if (!includedProjectIds.has(holdingProjectId)) {
+        includedProjectIds.add(holdingProjectId)
+        orderedProjectIds.push(holdingProjectId)
       }
     }
   }
+
+  // Hydrate the task graph for only the projects that hold assigned (or
+  // deep-linked) tasks — previously this loaded every project in the DB.
+  const hydratedProjects = await fetchProjectsWithRelationsByIds(
+    orderedProjectIds
+  )
+  const hydratedById = new Map(
+    hydratedProjects.map(project => [project.id, project])
+  )
+  const relevantProjects = orderedProjectIds
+    .map(id => hydratedById.get(id))
+    .filter((project): project is NonNullable<typeof project> =>
+      Boolean(project)
+    )
+
+  const selectionProjects = liteProjects.filter(
+    project => !project.deleted_at
+  )
 
   return (
     <MyTasksPage

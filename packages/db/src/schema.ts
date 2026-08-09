@@ -181,6 +181,11 @@ export const clients = pgTable(
     index('idx_clients_created_by')
       .using('btree', table.createdBy.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
+    // Client pickers and metrics listings all order by name.
+    index('idx_clients_name').using(
+      'btree',
+      table.name.asc().nullsLast().op('text_ops')
+    ),
     index('idx_clients_origination_contact_id')
       .using('btree', table.originationContactId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL AND origination_contact_id IS NOT NULL)`),
@@ -383,6 +388,12 @@ export const projects = pgTable(
     index('idx_projects_client')
       .using('btree', table.clientId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
+    // Every projects listing sorts by name; without this the full table is
+    // sorted per request.
+    index('idx_projects_name').using(
+      'btree',
+      table.name.asc().nullsLast().op('text_ops')
+    ),
     index('idx_projects_created_by')
       .using('btree', table.createdBy.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
@@ -455,6 +466,11 @@ export const tasks = pgTable(
     index('idx_tasks_project')
       .using('btree', table.projectId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
+    // Archived-task lookups (review/archive tabs) — the active-task partial
+    // above can't serve deleted_at IS NOT NULL scans.
+    index('idx_tasks_project_archived')
+      .using('btree', table.projectId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NOT NULL)`),
     index('idx_tasks_project_status_rank').using(
       'btree',
       table.projectId.asc().nullsLast().op('uuid_ops'),

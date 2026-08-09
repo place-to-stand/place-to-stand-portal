@@ -15,6 +15,7 @@ import { getTimeLogSummariesForProjects } from '@/lib/queries/time-logs'
 import { assembleProjectsWithRelations } from './assemble-projects'
 import { fetchBaseProjects } from './fetch-base-projects'
 import { fetchProjectRelations } from './fetch-project-relations'
+import { loadClientRows, mapClientRows } from './relations/clients'
 export { fetchProjectCalendarTasks } from './fetch-project-calendar-tasks'
 
 // ============================================================
@@ -45,6 +46,11 @@ export type FetchProjectsWithRelationsOptions = {
   statuses?: ProjectStatusValue[]
   /** ILIKE search over project name/slug and client name. */
   search?: string
+  /**
+   * Hydrate archived tasks (unbounded, monotonically growing set). Only the
+   * review and archive tabs render them; default false skips the query.
+   */
+  includeArchivedTasks?: boolean
 }
 
 export const fetchProjectsWithRelations = cache(
@@ -62,6 +68,7 @@ export const fetchProjectsWithRelations = cache(
       projectIds: baseProjects.projectIds,
       clientIds: baseProjects.clientIds,
       ownerIds: baseProjects.ownerIds,
+      includeArchivedTasks: options.includeArchivedTasks,
     })
 
     const timeLogSummaries = await getTimeLogSummariesForProjects(
@@ -77,8 +84,38 @@ export const fetchProjectsWithRelations = cache(
   }
 )
 
+/**
+ * All non-deleted projects with clients hydrated but NO task/member/repo
+ * relations — for project switchers and sheet selectors, which only read
+ * identity fields. Shapes as ProjectWithRelations (empty relation arrays)
+ * so existing consumers type-check; pair with
+ * `fetchProjectsWithRelationsByIds` to hydrate the active project(s).
+ */
+export const fetchProjectsLite = cache(
+  async (): Promise<ProjectWithRelations[]> => {
+    const baseProjects = await fetchBaseProjects({})
+    const clients = await loadClientRows(baseProjects.clientIds)
+
+    return assembleProjectsWithRelations({
+      projects: baseProjects.projects,
+      projectClientLookup: baseProjects.projectClientLookup,
+      relations: {
+        clients: mapClientRows(clients),
+        owners: [],
+        members: [],
+        tasks: [],
+        archivedTasks: [],
+        hourBlocks: [],
+        githubReposByProject: new Map(),
+      },
+      timeLogSummaries: new Map(),
+    })
+  }
+)
+
 export async function fetchProjectsWithRelationsByIds(
-  projectIds: string[]
+  projectIds: string[],
+  options: { includeArchivedTasks?: boolean } = {}
 ): Promise<ProjectWithRelations[]> {
   if (!projectIds.length) {
     return []
@@ -89,6 +126,7 @@ export async function fetchProjectsWithRelationsByIds(
     projectIds: baseProjects.projectIds,
     clientIds: baseProjects.clientIds,
     ownerIds: baseProjects.ownerIds,
+    includeArchivedTasks: options.includeArchivedTasks,
   })
 
   const timeLogSummaries = await getTimeLogSummariesForProjects(
