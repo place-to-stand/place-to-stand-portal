@@ -123,7 +123,7 @@ export function Sidebar({ user, badges }: Props) {
         {NAV_GROUPS.map((group, index) => (
           <SidebarGroup key={group.title ?? `group-${index}`} className='py-1'>
             {group.title ? (
-              <SidebarGroupLabel className='text-muted-foreground/60 h-auto px-1 pb-1 text-[11px] font-semibold tracking-wide uppercase group-data-[collapsible=icon]:hidden'>
+              <SidebarGroupLabel className='text-muted-foreground/60 h-6 px-1 pb-1 text-[11px] font-semibold tracking-wide uppercase duration-300 ease-in-out group-data-[collapsible=icon]:-mt-6 group-data-[collapsible=icon]:opacity-0'>
                 {group.title}
               </SidebarGroupLabel>
             ) : null}
