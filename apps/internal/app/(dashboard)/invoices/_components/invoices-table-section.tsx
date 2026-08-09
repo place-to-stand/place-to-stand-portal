@@ -34,6 +34,7 @@ import {
 } from '@pts/ui/table'
 import { useToast } from '@/components/ui/use-toast'
 import type { InvoiceWithClient } from '@/lib/invoices/invoice-form'
+import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
 
 export type InvoicesTableMode = 'active' | 'archive'
 
@@ -367,7 +368,7 @@ export function InvoicesTableSection({
             return (
               <TableRow
                 key={invoice.id}
-                className={isArchived ? 'opacity-60' : undefined}
+                className={isArchived ? ARCHIVED_ROW_CLASS : undefined}
               >
                 <TableCell className='text-sm font-medium'>
                   <div className='flex items-center gap-2'>

@@ -42,6 +42,7 @@ import {
 
 import { SubmissionArchiveDialog } from './submission-archive-dialog'
 import { SubmissionDetailSheet } from './submission-detail-sheet'
+import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
 
 export type SubmissionsTableMode = 'active' | 'archive'
 
@@ -362,7 +363,7 @@ export function SubmissionsTable({
                     className={cn(
                       'cursor-pointer',
                       unacknowledged && 'font-medium',
-                      submission.deletedAt && 'opacity-60'
+                      submission.deletedAt && ARCHIVED_ROW_CLASS
                     )}
                   >
                     <TableCell className='w-6'>

@@ -18,6 +18,7 @@ import {
   TableRow,
 } from '@pts/ui/table'
 import type { HourBlockWithClient } from '@/lib/settings/hour-blocks/hour-block-form'
+import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
 
 export type HourBlocksTableMode = 'active' | 'archive'
 
@@ -138,7 +139,7 @@ export function HourBlocksTableSection({
             return (
               <TableRow
                 key={block.id}
-                className={isArchived ? 'opacity-60' : undefined}
+                className={isArchived ? ARCHIVED_ROW_CLASS : undefined}
               >
                 <TableCell>
                   <div className='flex items-center gap-2 text-sm'>

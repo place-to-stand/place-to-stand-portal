@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils'
 
 import type { ProjectWithClient, ProjectsTableMode } from './types'
 import type { LucideIcon } from 'lucide-react'
+import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
 
 type ProjectsTableRowProps = {
   project: ProjectWithClient
@@ -94,7 +95,7 @@ export function ProjectsTableRow({
     : getProjectStatusToken(project.status)
 
   return (
-    <TableRow className={isArchived ? 'opacity-60' : undefined}>
+    <TableRow className={isArchived ? ARCHIVED_ROW_CLASS : undefined}>
       <TableCell>
         <div className='flex items-center gap-2'>
           <FolderKanban className='text-muted-foreground h-4 w-4' />

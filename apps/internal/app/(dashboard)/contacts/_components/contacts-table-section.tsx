@@ -28,6 +28,7 @@ import {
 import type { ContactsTableContact } from '@/lib/settings/contacts/use-contacts-table-state'
 
 import { LinkedClientsCell } from './linked-clients-cell'
+import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
 
 export type ContactsTableSectionProps = {
   contacts: ContactsTableContact[]
@@ -138,7 +139,7 @@ export function ContactsTableSection({
             return (
               <TableRow
                 key={contact.id}
-                className={contact.deletedAt ? 'opacity-60' : undefined}
+                className={contact.deletedAt ? ARCHIVED_ROW_CLASS : undefined}
               >
                 <TableCell>
                   <div className='flex items-center gap-2'>

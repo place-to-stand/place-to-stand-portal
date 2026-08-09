@@ -29,6 +29,7 @@ import {
 } from '@/lib/leads/constants'
 import { parseSortParam } from '@/lib/pagination/sort'
 import { restoreLead, destroyLead } from '../_actions'
+import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
 
 type LeadsArchiveSectionProps = {
   leads: ArchivedLead[]
@@ -255,7 +256,7 @@ export function LeadsArchiveSection({ leads }: LeadsArchiveSectionProps) {
                 .replace(/\b\w/g, c => c.toUpperCase())
 
               return (
-                <TableRow key={lead.id} className='opacity-60'>
+                <TableRow key={lead.id} className={ARCHIVED_ROW_CLASS}>
                   <TableCell className='font-medium'>
                     {lead.contactName}
                   </TableCell>

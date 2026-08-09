@@ -24,6 +24,7 @@ import {
   CLIENT_BILLING_TYPE_SELECT_OPTIONS,
   type ClientBillingTypeValue,
 } from '@/lib/settings/clients/billing-types'
+import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
 
 const BILLING_TYPE_LABELS = CLIENT_BILLING_TYPE_SELECT_OPTIONS.reduce<
   Record<ClientBillingTypeValue, string>
@@ -136,7 +137,7 @@ export function ClientsTableSection({
             return (
               <TableRow
                 key={client.id}
-                className={client.deleted_at ? 'opacity-60' : undefined}
+                className={client.deleted_at ? ARCHIVED_ROW_CLASS : undefined}
               >
                 <TableCell>
                   <div className='flex items-center gap-2'>

@@ -11,6 +11,7 @@ import { Switch } from '@pts/ui/switch'
 import { USER_ROLE_LABELS } from '@/lib/settings/users/filters'
 
 import type { UserRowState } from '@/lib/settings/users/state/use-users-table-state'
+import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
 
 type UsersTableRowProps = {
   row: UserRowState
@@ -44,7 +45,7 @@ export function UsersTableRow({
     : user.email.slice(0, 2).toUpperCase()
 
   return (
-    <TableRow className={user.deleted_at ? 'opacity-60' : undefined}>
+    <TableRow className={user.deleted_at ? ARCHIVED_ROW_CLASS : undefined}>
       <TableCell>
         <div className='flex items-center gap-2'>
           <Avatar className='h-6 w-6'>
