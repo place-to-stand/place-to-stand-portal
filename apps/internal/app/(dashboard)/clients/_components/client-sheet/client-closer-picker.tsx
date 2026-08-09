@@ -2,7 +2,7 @@
 
 import { ChevronsUpDown, Handshake, X } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
   Command,
@@ -16,7 +16,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover'
+} from '@pts/ui/popover'
 
 import type { PartnerUserOption } from '@/lib/settings/clients/use-client-sheet-state'
 

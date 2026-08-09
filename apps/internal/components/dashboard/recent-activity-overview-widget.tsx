@@ -3,7 +3,7 @@
 import { useCallback } from 'react'
 
 import { Badge } from '@/components/ui/badge'
-import { Tabs } from '@/components/ui/tabs'
+import { Tabs } from '@pts/ui/tabs'
 import { cn } from '@/lib/utils'
 
 import { SummaryContent } from '@/components/dashboard/recent-activity-overview/summary-content'

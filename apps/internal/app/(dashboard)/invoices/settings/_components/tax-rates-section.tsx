@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useCallback, useTransition } from 'react'
+import { useState, useCallback, useMemo, useTransition } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Pencil, Plus } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -14,17 +14,17 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '@pts/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Label } from '@pts/ui/label'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
+} from '@pts/ui/select'
+import { Switch } from '@pts/ui/switch'
 import {
   Table,
   TableBody,
@@ -32,7 +32,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@pts/ui/table'
+import {
+  SortableTableHead,
+  type SortValue,
+} from '@/components/table-toolbar/sortable-table-head'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import type { TaxRateRow } from '@/lib/queries/tax-rates'
 import { US_STATES } from '@/lib/settings/clients/us-states'
@@ -73,6 +77,18 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingRate, setEditingRate] = useState<TaxRateRow | null>(null)
   const [isPending, startTransition] = useTransition()
+  // Local sort state (PRD 004 §03): two small config tables share this page,
+  // so sort stays out of the URL. undefined = the 'label:asc' default.
+  const [sort, setSort] = useState<SortValue | undefined>(undefined)
+
+  const sortedRates = useMemo(() => {
+    const factor = sort === 'label:desc' ? -1 : 1
+    return [...rates].sort(
+      (a, b) =>
+        a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }) *
+        factor
+    )
+  }, [rates, sort])
 
   const form = useForm<TaxRateFormValues>({
     resolver: zodResolver(taxRateFormSchema),
@@ -207,18 +223,25 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
       </div>
 
       <div className='rounded-lg border'>
-        <Table>
+        <Table density='compact'>
           <TableHeader>
-            <TableRow>
+            <TableRow className='bg-muted/40'>
               <TableHead>State</TableHead>
               <TableHead>Rate (%)</TableHead>
-              <TableHead>Label</TableHead>
+              <SortableTableHead
+                field='label'
+                sort={sort}
+                defaultSort='label:asc'
+                onSortChange={setSort}
+              >
+                Label
+              </SortableTableHead>
               <TableHead>Active</TableHead>
               <TableHead className='w-10' />
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rates.length === 0 ? (
+            {sortedRates.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={5}
@@ -229,7 +252,7 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
                 </TableCell>
               </TableRow>
             ) : (
-              rates.map(rate => (
+              sortedRates.map(rate => (
                 <TableRow key={rate.id}>
                   <TableCell className='font-medium'>{rate.state}</TableCell>
                   <TableCell>{(Number(rate.rate) * 100).toFixed(2).replace(/\.?0+$/, '')}%</TableCell>
@@ -246,7 +269,7 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
                   <TableCell>
                     <Button
                       variant='ghost'
-                      size='icon'
+                      size='icon-sm'
                       className='h-7 w-7'
                       onClick={() => openEditDialog(rate)}
                     >

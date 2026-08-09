@@ -39,7 +39,7 @@ import { HighlighterIcon } from '@/components/tiptap-icons/highlighter-icon'
 import { LinkIcon } from '@/components/tiptap-icons/link-icon'
 
 // --- Hooks ---
-import { useIsMobile } from '@/hooks/use-mobile'
+import { useIsMobile } from '@pts/ui/hooks/use-mobile'
 import { useWindowSize } from '@/hooks/use-window-size'
 import { useCursorVisibility } from '@/hooks/use-cursor-visibility'
 import { useTiptapEditor } from '@/hooks/use-tiptap-editor'

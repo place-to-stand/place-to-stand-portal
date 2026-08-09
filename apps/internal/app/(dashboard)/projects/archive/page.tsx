@@ -1,9 +1,13 @@
 import type { Metadata } from 'next'
 
-import { AppShellHeader } from '@/components/layout/app-shell'
+import { PageShell } from '@/components/layout/page-shell'
+import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
+import { ProjectsArchiveFilters } from '../_components/projects-archive-filters'
 import { ProjectsManagementSection } from '../_components/projects-management-section'
+import { ProjectsAddButton } from '../_components/projects-add-button'
 import { mapProjectToTableRow } from '../_lib/map-project-to-table-row'
 import { parseProjectsSearchParams } from '../_lib/parse-projects-search-params'
+import { PROJECTS_TABS } from '../_lib/tabs'
 import { fetchAdminUsers } from '@/lib/data/users'
 import { requireRole } from '@/lib/auth/session'
 import { listProjectsForSettings } from '@/lib/queries/projects'
@@ -26,7 +30,8 @@ export default async function ProjectsArchivePage({
 }: ProjectsArchivePageProps) {
   const admin = await requireRole('ADMIN')
   const params = searchParams ? await searchParams : {}
-  const { searchQuery, cursor, direction, limit } = parseProjectsSearchParams(params)
+  const { searchQuery, cursor, direction, limit, sort } =
+    parseProjectsSearchParams(params)
 
   const [archiveResult, adminUsersResult] = await Promise.all([
     listProjectsForSettings(admin, {
@@ -35,6 +40,7 @@ export default async function ProjectsArchivePage({
       cursor,
       direction,
       limit,
+      sort,
     }),
     fetchAdminUsers(),
   ])
@@ -56,28 +62,31 @@ export default async function ProjectsArchivePage({
     archiveResult.items.map(mapProjectToTableRow)
 
   return (
-    <>
-      <AppShellHeader>
-        <div className='flex flex-col'>
-          <h1 className='text-2xl font-semibold tracking-tight'>Projects</h1>
-          <p className='text-muted-foreground text-sm'>
-            Review archived projects and restore them when work resumes.
-          </p>
-        </div>
-      </AppShellHeader>
-      <div className='space-y-6'>
-        <ProjectsManagementSection
-          tab='archive'
-          mode='archive'
-          projects={hydratedProjects}
-          clients={clientRows}
-          adminUsers={adminUsers}
-          contractorUsers={[]}
-          membersByProject={{}}
-          pageInfo={archiveResult.pageInfo}
-          listTotalCount={archiveResult.totalCount}
-        />
-      </div>
-    </>
+    <PageShell
+      breadcrumbs={[...crumbsForNav('/projects'), { label: 'Archive' }]}
+      tabs={PROJECTS_TABS}
+      activeTab='archive'
+      count={{
+        label: 'archived projects',
+        total: archiveResult.unfilteredTotalCount,
+        filteredTotal: archiveResult.totalCount,
+      }}
+      primaryAction={<ProjectsAddButton clients={clientRows} />}
+    >
+      <ProjectsManagementSection
+        tab='archive'
+        mode='archive'
+        projects={hydratedProjects}
+        clients={clientRows}
+        adminUsers={adminUsers}
+        contractorUsers={[]}
+        membersByProject={{}}
+        pageInfo={archiveResult.pageInfo}
+        listTotalCount={archiveResult.totalCount}
+        filters={
+          <ProjectsArchiveFilters search={searchQuery ?? undefined} />
+        }
+      />
+    </PageShell>
   )
 }

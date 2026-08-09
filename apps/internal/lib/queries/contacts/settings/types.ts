@@ -1,4 +1,6 @@
 import type { CursorDirection, PageInfo } from '@/lib/pagination/cursor'
+import type { ParsedSort } from '@/lib/pagination/sort'
+import type { ContactSortField } from '@/lib/settings/contacts/filters'
 
 import type { SelectContact } from '../selectors'
 
@@ -19,7 +21,10 @@ export type ContactsSettingsListItem = SelectContact & {
 
 export type ContactsSettingsResult = {
   items: ContactsSettingsListItem[]
+  /** Rows matching the active filters/search (drives `Showing N of M`). */
   totalCount: number
+  /** Rows on the tab regardless of filters/search (the `M`). */
+  unfilteredTotalCount: number
   pageInfo: PageInfo
 }
 
@@ -30,4 +35,5 @@ export type ListContactsForSettingsInput = {
   direction?: CursorDirection | null
   limit?: number | null
   offset?: number | null
+  sort?: ParsedSort<ContactSortField>
 }

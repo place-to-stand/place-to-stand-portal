@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  revalidatePath('/leads/board')
+  revalidatePath('/leads')
   return NextResponse.json({ ok: true }, { status: 201 })
 }
 

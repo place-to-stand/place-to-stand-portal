@@ -10,9 +10,9 @@ import {
 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import { TableCell, TableRow } from '@/components/ui/table'
+import { TableCell, TableRow } from '@pts/ui/table'
 import {
   getProjectStatusLabel,
   getProjectStatusToken,
@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils'
 
 import type { ProjectWithClient, ProjectsTableMode } from './types'
 import type { LucideIcon } from 'lucide-react'
+import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
 
 type ProjectsTableRowProps = {
   project: ProjectWithClient
@@ -94,7 +95,7 @@ export function ProjectsTableRow({
     : getProjectStatusToken(project.status)
 
   return (
-    <TableRow className={isArchived ? 'opacity-60' : undefined}>
+    <TableRow className={isArchived ? ARCHIVED_ROW_CLASS : undefined}>
       <TableCell>
         <div className='flex items-center gap-2'>
           <FolderKanban className='text-muted-foreground h-4 w-4' />
@@ -134,7 +135,7 @@ export function ProjectsTableRow({
             >
               <Button
                 variant='outline'
-                size='icon'
+                size='icon-sm'
                 onClick={() => onEdit(project)}
                 title='Edit project'
                 disabled={editDisabled}
@@ -149,8 +150,8 @@ export function ProjectsTableRow({
               reason={restoreDisabledReason}
             >
               <Button
-                variant='secondary'
-                size='icon'
+                variant='outline'
+                size='icon-sm'
                 onClick={() => onRestore(project)}
                 title='Restore project'
                 aria-label='Restore project'
@@ -168,7 +169,7 @@ export function ProjectsTableRow({
             >
               <Button
                 variant='destructive'
-                size='icon'
+                size='icon-sm'
                 onClick={() => onRequestDelete(project)}
                 title='Archive project'
                 aria-label='Archive project'
@@ -186,7 +187,7 @@ export function ProjectsTableRow({
             >
               <Button
                 variant='destructive'
-                size='icon'
+                size='icon-sm'
                 onClick={() => onRequestDestroy(project)}
                 title='Permanently delete project'
                 aria-label='Permanently delete project'

@@ -3,7 +3,7 @@
 import { useTransition } from 'react'
 import { TriangleAlert } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { toast } from '@/components/ui/use-toast'
 import type { CloseDrift } from '@/lib/data/reports/close'
 

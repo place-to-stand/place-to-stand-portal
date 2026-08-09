@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react'
 import { Loader2 } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { ActivityFeedItem } from '@/components/activity/activity-feed-item'
 import {
   useActivityFeed,

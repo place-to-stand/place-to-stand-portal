@@ -3,7 +3,6 @@
 import { useMemo } from "react"
 
 import { useProjectsBoardState } from "@/lib/projects/board/use-projects-board-state"
-import { useBoardAssignedFilter } from "@/lib/projects/board/state/use-board-assigned-filter"
 import { useBoardScrollPersistence } from "@/lib/projects/board/state/use-board-scroll-persistence"
 import { useBoardTimeLogDialogs } from "@/lib/projects/board/state/use-board-time-log-dialogs"
 import { useProjectsBoardDerivedState } from "@/lib/projects/board/state/use-projects-board-derived-state"
@@ -23,15 +22,6 @@ export function useProjectsBoardCoreState({
   const boardState = useProjectsBoardState({ ...props, currentView })
 
   const activeProjectId = boardState.activeProject?.id ?? null
-  const storageNamespace = props.currentUserId
-    ? `projects-board-assigned-filter:${props.currentUserId}`
-    : null
-
-  const { onlyAssignedToMe, handleAssignedFilterChange } = useBoardAssignedFilter({
-    activeProjectId,
-    storageNamespace,
-  })
-
   const { boardViewportRef, handleBoardScroll } = useBoardScrollPersistence({
     activeProjectId,
   })
@@ -45,8 +35,6 @@ export function useProjectsBoardCoreState({
     activeProjectArchivedTasks: boardState.activeProjectArchivedTasks,
     activeProjectAcceptedTasks: boardState.activeProjectAcceptedTasks,
     tasksByColumn: boardState.tasksByColumn,
-    onlyAssignedToMe,
-    currentUserId: props.currentUserId ?? null,
   })
 
   const reviewActions = useProjectsBoardReviewActions({
@@ -64,8 +52,6 @@ export function useProjectsBoardCoreState({
     derivedState,
     reviewActions,
     renderAssignees,
-    handleAssignedFilterChange,
-    onlyAssignedToMe,
     boardViewportRef,
     handleBoardScroll,
     timeLogDialogs,

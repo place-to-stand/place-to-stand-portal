@@ -1,21 +1,21 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useMemo, useTransition } from 'react'
+import { useCallback, useMemo } from 'react'
 import type { ReactNode } from 'react'
-import { useRouter, useSearchParams, usePathname } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { Building2, Clock, FolderKanban, UserRound, Users } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { siGithub } from 'simple-icons/icons'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Progress } from '@/components/ui/progress'
+import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
+import { Progress } from '@pts/ui/progress'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip'
+} from '@pts/ui/tooltip'
 import {
   Table,
   TableBody,
@@ -23,12 +23,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@pts/ui/table'
 import { useToast } from '@/components/ui/use-toast'
-import {
-  ProjectStatusFilter,
-  DEFAULT_STATUS_FILTER,
-} from '@/components/projects/project-status-filter'
+import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
+import { useListParams } from '@/hooks/use-list-params'
 import { ProjectStatusCell } from '@/components/projects/project-status-cell'
 import type { ProjectStatusValue } from '@/lib/constants'
 import { formatProjectDateRange } from '@/lib/settings/projects/project-formatters'
@@ -41,6 +39,19 @@ import {
 import { updateProjectStatus } from '@/lib/settings/projects/actions/update-project-status'
 import type { ProjectWithRelations } from '@/lib/types'
 import { cn } from '@/lib/utils'
+
+// PRD 004 §03: per-view sort allowlist. One shared `?sort` drives the Name
+// column in all three section tables; grouping semantics stay unchanged —
+// only the project ordering within each section/client group flips.
+const PROJECT_SORT_FIELDS = ['name'] as const
+
+function isProjectSortValue(value: string): boolean {
+  const [field, direction] = value.split(':')
+  return (
+    (PROJECT_SORT_FIELDS as readonly string[]).includes(field) &&
+    (direction === 'asc' || direction === 'desc')
+  )
+}
 
 const HOURS_FORMATTER = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2,
@@ -96,11 +107,24 @@ type ClientProjectSection = {
   projects: ProjectWithRelations[]
 }
 
+export type LandingUnfilteredCounts = {
+  /** All projects visible to this user, pre-filter. */
+  total: number
+  clientCount: number
+  internalCount: number
+  personalCount: number
+}
+
 type ProjectsLandingProps = {
+  /** Already filtered server-side (status + search); this component only groups/renders. */
   projects: ProjectWithRelations[]
   clients: Array<{ id: string; name: string; slug: string | null }>
   currentUserId: string
   clientHoursMap?: Record<string, ClientHoursData>
+  /** Pre-filter counts — drive the empty-state wording per section. */
+  unfilteredCounts: LandingUnfilteredCounts
+  /** True when the URL deviates from the clean landing (status or search). */
+  filtersActive: boolean
 }
 
 type SectionConfig = {
@@ -116,60 +140,19 @@ export function ProjectsLanding({
   clients,
   currentUserId,
   clientHoursMap = {},
+  unfilteredCounts,
+  filtersActive,
 }: ProjectsLandingProps) {
   const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
   const { toast } = useToast()
-  const [, startTransition] = useTransition()
 
-  // Parse status filter from URL params
-  const selectedStatuses = useMemo<ProjectStatusValue[]>(() => {
-    const statusParam = searchParams.get('status')
-    // No param = use default, 'none' = explicitly cleared
-    if (!statusParam) {
-      return DEFAULT_STATUS_FILTER
-    }
-    if (statusParam === 'none') {
-      return []
-    }
-    const statuses = statusParam
-      .split(',')
-      .filter(Boolean) as ProjectStatusValue[]
-    return statuses.length > 0 ? statuses : DEFAULT_STATUS_FILTER
-  }, [searchParams])
-
-  // Handle filter change - update URL
-  const handleStatusFilterChange = useCallback(
-    (statuses: ProjectStatusValue[]) => {
-      const params = new URLSearchParams(searchParams.toString())
-      const hasInteracted = searchParams.has('status')
-
-      // Check if this matches the default
-      const isDefault =
-        statuses.length === DEFAULT_STATUS_FILTER.length &&
-        DEFAULT_STATUS_FILTER.every(s => statuses.includes(s))
-
-      if (statuses.length === 0) {
-        // Use 'none' to represent explicitly cleared state
-        params.set('status', 'none')
-      } else if (isDefault && !hasInteracted) {
-        // Only omit from URL if user hasn't interacted yet (clean landing)
-        params.delete('status')
-      } else {
-        // Always include in URL once user has started interacting
-        params.set('status', statuses.join(','))
-      }
-
-      const queryString = params.toString()
-      const newUrl = queryString ? `${pathname}?${queryString}` : pathname
-
-      startTransition(() => {
-        router.push(newUrl, { scroll: false })
-      })
-    },
-    [pathname, router, searchParams]
-  )
+  const { update, getParam } = useListParams({
+    basePath: '/projects',
+    resetKeys: [],
+  })
+  const rawSort = getParam('sort')
+  const sort = rawSort && isProjectSortValue(rawSort) ? rawSort : undefined
+  const sortFactor = sort === 'name:desc' ? -1 : 1
 
   // Handle status change for a project
   const handleProjectStatusChange = useCallback(
@@ -190,44 +173,12 @@ export function ProjectsLanding({
     [router, toast]
   )
 
-  // Filter projects by selected statuses
-  const filteredProjects = useMemo(() => {
-    // When no statuses selected, show no projects
-    if (selectedStatuses.length === 0) {
-      return []
-    }
-    return projects.filter(p =>
-      selectedStatuses.includes(p.status as ProjectStatusValue)
-    )
-  }, [projects, selectedStatuses])
-
-  // Track unfiltered counts for empty state messaging
-  const unfilteredCounts = useMemo(() => {
-    let clientCount = 0
-    let internalCount = 0
-    let personalCount = 0
-
-    projects.forEach(project => {
-      if (project.type === 'INTERNAL') {
-        internalCount++
-      } else if (project.type === 'PERSONAL') {
-        if (project.created_by === currentUserId) {
-          personalCount++
-        }
-      } else if (project.client_id && project.client) {
-        clientCount++
-      }
-    })
-
-    return { clientCount, internalCount, personalCount }
-  }, [projects, currentUserId])
-
   const { clientSections, internalProjects, personalProjects } = useMemo(() => {
     const clientMap = new Map<string, ClientProjectSection>()
     const internal: ProjectWithRelations[] = []
     const personal: ProjectWithRelations[] = []
 
-    filteredProjects.forEach(project => {
+    projects.forEach(project => {
       if (project.type === 'INTERNAL') {
         internal.push(project)
         return
@@ -259,12 +210,16 @@ export function ProjectsLanding({
       }
     })
 
+    // Sort flips asc/desc per `?sort`; client groups stay alphabetical (asc)
+    // so only project ordering within each section/group changes.
     clientMap.forEach(entry => {
-      entry.projects.sort((a, b) => a.name.localeCompare(b.name))
+      entry.projects.sort(
+        (a, b) => a.name.localeCompare(b.name) * sortFactor
+      )
     })
 
-    internal.sort((a, b) => a.name.localeCompare(b.name))
-    personal.sort((a, b) => a.name.localeCompare(b.name))
+    internal.sort((a, b) => a.name.localeCompare(b.name) * sortFactor)
+    personal.sort((a, b) => a.name.localeCompare(b.name) * sortFactor)
 
     const sortedClientSections = Array.from(clientMap.values()).sort((a, b) =>
       a.client.name.localeCompare(b.client.name)
@@ -275,7 +230,7 @@ export function ProjectsLanding({
       internalProjects: internal,
       personalProjects: personal,
     }
-  }, [filteredProjects, currentUserId])
+  }, [projects, currentUserId, sortFactor])
 
   const projectLookup = useMemo(() => createProjectLookup(projects), [projects])
   const projectsByClientId = useMemo(
@@ -300,9 +255,12 @@ export function ProjectsLanding({
     return path ?? '#'
   }
 
-  const hasAnyProjects = projects.length > 0
+  const allSectionsEmpty =
+    clientSections.length === 0 &&
+    internalProjects.length === 0 &&
+    personalProjects.length === 0
 
-  if (!hasAnyProjects) {
+  if (unfilteredCounts.total === 0) {
     return (
       <div className='grid h-full w-full place-items-center rounded-xl border border-dashed p-12 text-center'>
         <div className='space-y-2'>
@@ -311,6 +269,17 @@ export function ProjectsLanding({
             Projects will appear here once they are created.
           </p>
         </div>
+      </div>
+    )
+  }
+
+  // Filtered-empty: an active filter/search left all three sections empty.
+  if (allSectionsEmpty && filtersActive) {
+    return (
+      <div className='grid h-full w-full place-items-center rounded-xl border border-dashed p-12 text-center'>
+        <p className='text-muted-foreground text-sm'>
+          No projects match the current filters.
+        </p>
       </div>
     )
   }
@@ -433,10 +402,18 @@ export function ProjectsLanding({
 
   const renderProjectTable = (items: ProjectWithRelations[]) => (
     <div className='rounded-lg border'>
-      <Table className='table-fixed'>
+      <Table density='compact' className='table-fixed'>
         <TableHeader>
           <TableRow className='bg-muted/40'>
-            <TableHead className={tableColumnWidths.project}>Project</TableHead>
+            <SortableTableHead
+              field='name'
+              sort={sort}
+              defaultSort='name:asc'
+              onSortChange={next => update({ sort: next })}
+              className={tableColumnWidths.project}
+            >
+              Project
+            </SortableTableHead>
             <TableHead className={tableColumnWidths.status}>Status</TableHead>
             <TableHead className={tableColumnWidths.progress}>
               Progress
@@ -521,12 +498,18 @@ export function ProjectsLanding({
   const clientSectionContent =
     clientSections.length > 0 ? (
       <div className='rounded-lg border'>
-        <Table className='table-fixed'>
+        <Table density='compact' className='table-fixed'>
           <TableHeader>
             <TableRow className='bg-muted/40'>
-              <TableHead className={tableColumnWidths.project}>
+              <SortableTableHead
+                field='name'
+                sort={sort}
+                defaultSort='name:asc'
+                onSortChange={next => update({ sort: next })}
+                className={tableColumnWidths.project}
+              >
                 Project
-              </TableHead>
+              </SortableTableHead>
               <TableHead className={tableColumnWidths.status}>Status</TableHead>
               <TableHead className={tableColumnWidths.progress}>
                 Progress
@@ -552,21 +535,21 @@ export function ProjectsLanding({
     ) : (
       renderSectionEmptyState(
         unfilteredCounts.clientCount > 0
-          ? 'No client projects match the selected status filter.'
+          ? 'No client projects match the current filters.'
           : 'Client projects will appear here once they are created.'
       )
     )
 
   const getInternalEmptyMessage = () => {
     if (unfilteredCounts.internalCount > 0) {
-      return 'No internal projects match the selected status filter.'
+      return 'No internal projects match the current filters.'
     }
     return 'There are no internal projects yet.'
   }
 
   const getPersonalEmptyMessage = () => {
     if (unfilteredCounts.personalCount > 0) {
-      return 'No personal projects match the selected status filter.'
+      return 'No personal projects match the current filters.'
     }
     return 'You have not created any personal projects yet.'
   }
@@ -596,13 +579,7 @@ export function ProjectsLanding({
 
   return (
     <div className='space-y-12'>
-      <div className='space-y-6'>
-        <ProjectStatusFilter
-          selectedStatuses={selectedStatuses}
-          onSelectionChange={handleStatusFilterChange}
-        />
-        {clientSectionContent}
-      </div>
+      <div className='space-y-6'>{clientSectionContent}</div>
       {sectionConfigs.map(
         ({ key, title, icon: Icon, count, content, className }) => (
           <div key={key} className={cn('space-y-4', className)}>

@@ -1,12 +1,11 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
-import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 
-import { AppShellHeader } from '@/components/layout/app-shell'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Button } from '@/components/ui/button'
+import { PageShell } from '@/components/layout/page-shell'
+import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
+import { Button } from '@pts/ui/button'
 import type { AppUser } from '@/lib/auth/session'
 import type {
   DbUser,
@@ -162,8 +161,6 @@ export function MyTasksPage({
     [taskContexts, selectedAssigneeId, user.id]
   )
 
-  const description =
-    'Every task across the portfolio that currently needs your attention.'
 
   const activeTaskMeta = activeTaskId
     ? (taskLookup.get(activeTaskId) ?? null)
@@ -252,14 +249,17 @@ export function MyTasksPage({
 
       startRefresh(async () => {
         try {
-          await reorderMutation.mutateAsync(update.payload)
+          await reorderMutation.mutateAsync({
+            ...update.payload,
+            assigneeId: selectedAssigneeId,
+          })
           router.refresh()
         } catch {
           setEntries(update.previousEntries)
         }
       })
     },
-    [reorderMutation, router, startRefresh]
+    [reorderMutation, router, selectedAssigneeId, startRefresh]
   )
 
   const totalTaskCount = entries.length
@@ -276,94 +276,71 @@ export function MyTasksPage({
     [user.id]
   )
 
+  const viewTabs = [
+    { value: 'board', label: 'Board', href: buildViewPath('board', activeTaskId) },
+    {
+      value: 'calendar',
+      label: 'Calendar',
+      href: buildViewPath('calendar', activeTaskId),
+    },
+  ]
+
   return (
-    <div className='flex h-full min-h-0 flex-col gap-6'>
-      <AppShellHeader>
-        <div className='flex items-center justify-between gap-4'>
-          <div>
-            <h1 className='text-2xl font-semibold tracking-tight'>My Tasks</h1>
-            <p className='text-muted-foreground text-sm'>{description}</p>
-          </div>
-          <div className='pr-1'>
-            <PersonSelector
-              admins={admins}
-              selectedUserId={selectedAssigneeId}
-              currentUserId={user.id}
-            />
-          </div>
+    <PageShell
+      breadcrumbs={crumbsForNav('/my/tasks/board')}
+      tabs={viewTabs}
+      activeTab={view}
+      count={{ label: 'tasks', total: totalTaskCount }}
+      primaryAction={
+        <div className='flex items-center gap-2'>
+          <PersonSelector
+            admins={admins}
+            selectedUserId={selectedAssigneeId}
+            currentUserId={user.id}
+          />
+          <Button
+            type='button'
+            size='sm'
+            onClick={() => handleStartCreateTask('ON_DECK')}
+          >
+            <Plus className='h-4 w-4' />
+            Add task
+          </Button>
         </div>
-      </AppShellHeader>
-      <Tabs value={view} className='flex min-h-0 flex-1 flex-col gap-3'>
-        <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-          <TabsList className='bg-muted/40 h-10 w-full justify-start gap-2 rounded-lg p-1 sm:w-auto'>
-            <TabsTrigger value='board' className='px-3 py-1.5 text-sm' asChild>
-              <Link href={buildViewPath('board', activeTaskId)} prefetch>
-                Board
-              </Link>
-            </TabsTrigger>
-            <TabsTrigger
-              value='calendar'
-              className='px-3 py-1.5 text-sm'
-              asChild
-            >
-              <Link href={buildViewPath('calendar', activeTaskId)} prefetch>
-                Calendar
-              </Link>
-            </TabsTrigger>
-          </TabsList>
-          <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6'>
-            <span className='text-muted-foreground text-sm'>
-              Total tasks: {totalTaskCount}
-            </span>
-            <Button
-              type='button'
-              size='sm'
-              onClick={() => handleStartCreateTask('ON_DECK')}
-            >
-              <Plus className='h-4 w-4' />
-              Add task
-            </Button>
-          </div>
-        </div>
-        <TabsContent
-          value='board'
-          className='mt-0 flex min-h-0 flex-1 flex-col gap-4 focus-visible:outline-none sm:gap-6'
-        >
-          {entries.length === 0 ? (
-            <ProjectsBoardEmpty
-              title='No tasks assigned'
-              description='Once a task is assigned to you, it will appear here.'
-            />
-          ) : (
-            <MyTasksBoard
-              entries={entries}
-              taskLookup={taskLookup}
-              renderAssignees={renderAssignees}
-              getTaskCardOptions={getTaskCardOptions}
-              onOpenTask={handleOpenTask}
-              onReorder={handleReorder}
-              activeTaskId={activeTaskId}
-              scrollStorageKey={boardScrollStorageKey}
-              onCreateTask={handleStartCreateTask}
-            />
-          )}
-        </TabsContent>
-        <TabsContent
-          value='calendar'
-          className='mt-0 flex min-h-0 flex-1 flex-col gap-4 focus-visible:outline-none sm:gap-6'
-        >
-          <MyTasksCalendar
+      }
+      contentClassName='flex flex-col gap-4 sm:gap-6'
+    >
+      {view === 'board' ? (
+        entries.length === 0 ? (
+          <ProjectsBoardEmpty
+            title='No tasks assigned'
+            description='Once a task is assigned to you, it will appear here.'
+          />
+        ) : (
+          <MyTasksBoard
             entries={entries}
             taskLookup={taskLookup}
             renderAssignees={renderAssignees}
+            getTaskCardOptions={getTaskCardOptions}
             onOpenTask={handleOpenTask}
+            onReorder={handleReorder}
             activeTaskId={activeTaskId}
-            onDueDateChange={handleDueDateChange}
-            onRefresh={handleCalendarRefresh}
-            scrollStorageKey={calendarScrollStorageKey}
+            scrollStorageKey={boardScrollStorageKey}
+            onCreateTask={handleStartCreateTask}
           />
-        </TabsContent>
-      </Tabs>
+        )
+      ) : (
+        <MyTasksCalendar
+          entries={entries}
+          taskLookup={taskLookup}
+          renderAssignees={renderAssignees}
+          onOpenTask={handleOpenTask}
+          activeTaskId={activeTaskId}
+          onDueDateChange={handleDueDateChange}
+          onRefresh={handleCalendarRefresh}
+          scrollStorageKey={calendarScrollStorageKey}
+        />
+      )}
       {shouldRenderTaskSheet ? (
         <TaskSheet
           open={isSheetOpen}
@@ -383,7 +360,7 @@ export function MyTasksPage({
           onTaskCreated={handleTaskCreated}
         />
       ) : null}
-    </div>
+    </PageShell>
   )
 }
 

@@ -1,14 +1,18 @@
 import type { Metadata } from 'next'
 
-import { AppShellHeader } from '@/components/layout/app-shell'
+import { PageShell } from '@/components/layout/page-shell'
+import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { requireUser } from '@/lib/auth/session'
-import { fetchClientsWithMetrics } from '@/lib/data/clients'
+import { fetchClientsWithMetrics, type ClientWithMetrics } from '@/lib/data/clients'
 import { listClientsForSettings } from '@/lib/queries/clients'
+import { parseClientsSearchParams } from '@/lib/settings/clients/filters'
+import type { ParsedSort } from '@/lib/pagination/sort'
+import type { ClientSortField } from '@/lib/settings/clients/filters'
 
 import { ClientsLanding } from './_components/clients-landing'
-import { ClientsLandingHeader } from './_components/clients-landing-header'
-import { ClientsTabsNav } from './_components/clients-tabs-nav'
 import { ClientsAddButton } from './_components/clients-add-button'
+import { ClientsFilters } from './_components/clients-filters'
+import { CLIENTS_TABS } from './_lib/tabs'
 
 export const metadata: Metadata = {
   title: 'Clients | Place to Stand Portal',
@@ -18,71 +22,61 @@ type ClientsPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 }
 
+/**
+ * The landing table is unpaginated (fetchClientsWithMetrics), so sorting is
+ * a plain in-memory sort of the fetched array (PRD 004 §03 — no keyset
+ * cursor concerns on this view).
+ */
+function sortLandingClients(
+  clients: ClientWithMetrics[],
+  sort: ParsedSort<ClientSortField>
+): ClientWithMetrics[] {
+  const factor = sort.direction === 'asc' ? 1 : -1
+  return [...clients].sort((a, b) => {
+    if (sort.field === 'created') {
+      return a.createdAt.localeCompare(b.createdAt) * factor
+    }
+    return a.name.localeCompare(b.name) * factor
+  })
+}
+
 export default async function ClientsPage({ searchParams }: ClientsPageProps) {
   const user = await requireUser()
   const params = searchParams ? await searchParams : {}
-  const searchQuery =
-    typeof params.q === 'string'
-      ? params.q
-      : Array.isArray(params.q)
-        ? (params.q[0] ?? '')
-        : ''
-  const cursor =
-    typeof params.cursor === 'string'
-      ? params.cursor
-      : Array.isArray(params.cursor)
-        ? (params.cursor[0] ?? null)
-        : null
-  const directionParam =
-    typeof params.dir === 'string'
-      ? params.dir
-      : Array.isArray(params.dir)
-        ? (params.dir[0] ?? null)
-        : null
-  const direction =
-    directionParam === 'backward' ? 'backward' : ('forward' as const)
-  const limitParamRaw =
-    typeof params.limit === 'string'
-      ? params.limit
-      : Array.isArray(params.limit)
-        ? params.limit[0]
-        : undefined
-  const limitParam = Number.parseInt(limitParamRaw ?? '', 10)
+  const { cursor, direction, limit, billing, search, sort } =
+    parseClientsSearchParams(params)
 
   const [clients, managementData] = await Promise.all([
-    fetchClientsWithMetrics(user),
+    fetchClientsWithMetrics(user, search, billing),
     listClientsForSettings(user, {
       status: 'active',
-      search: searchQuery,
+      billing,
+      search,
       cursor,
       direction,
-      limit: Number.isFinite(limitParam) ? limitParam : undefined,
+      limit,
+      sort,
     }),
   ])
+
+  const sortedClients = sortLandingClients(clients, sort)
+
   return (
-    <>
-      <AppShellHeader>
-        <ClientsLandingHeader clients={clients} />
-      </AppShellHeader>
-      <div className='space-y-4'>
-        {/* Tabs Row - Above the main container */}
-        <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-          <ClientsTabsNav
-            activeTab='clients'
-            className='flex-1 sm:flex-none'
-          />
-          <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6'>
-            <span className='text-muted-foreground text-sm whitespace-nowrap'>
-              Total clients: {managementData.totalCount}
-            </span>
-            <ClientsAddButton />
-          </div>
-        </div>
-        {/* Main Container with Background */}
-        <section className='bg-background rounded-xl border p-6 shadow-sm'>
-          <ClientsLanding clients={clients} />
-        </section>
-      </div>
-    </>
+    <PageShell
+      breadcrumbs={crumbsForNav('/clients')}
+      tabs={CLIENTS_TABS}
+      activeTab='clients'
+      count={{
+        label: 'clients',
+        total: managementData.unfilteredTotalCount,
+        filteredTotal: managementData.totalCount,
+      }}
+      primaryAction={<ClientsAddButton />}
+    >
+      <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
+        <ClientsFilters basePath='/clients' search={search} billing={billing} />
+        <ClientsLanding clients={sortedClients} />
+      </section>
+    </PageShell>
   )
 }

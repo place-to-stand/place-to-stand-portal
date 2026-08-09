@@ -6,8 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
 import { Link2, UserPlus } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@pts/ui/button'
+import { Checkbox } from '@pts/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '@pts/ui/dialog'
 import {
   Form,
   FormControl,
@@ -32,8 +32,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+} from '@pts/ui/select'
+import { Tabs, TabsList, TabsTrigger } from '@pts/ui/tabs'
 import { useToast } from '@/components/ui/use-toast'
 import {
   leadConversionSchema,

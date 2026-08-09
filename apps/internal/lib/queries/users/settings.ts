@@ -6,16 +6,11 @@ import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
-import type { UserAccessFilter } from '@/lib/settings/users/filters'
+import type { UserAccessFilter, UserSortField } from '@/lib/settings/users/filters'
+import { DEFAULT_USERS_SORT } from '@/lib/settings/users/filters'
 import type { UserRoleValue } from '@/lib/types'
-import {
-  clampLimit,
-  decodeCursor,
-  encodeCursor,
-  resolveDirection,
-  type CursorDirection,
-  type PageInfo,
-} from '@/lib/pagination/cursor'
+import { clampLimit, createSearchPattern } from '@/lib/pagination/cursor'
+import type { ParsedSort } from '@/lib/pagination/sort'
 
 import { userSortExpression, type SelectUser } from './fields'
 import {
@@ -27,41 +22,47 @@ export type UsersSettingsListItem = SelectUser
 
 export type ListUsersForSettingsInput = {
   status?: 'active' | 'archived'
-  cursor?: string | null
-  direction?: CursorDirection | null
+  /** 1-based page number; out-of-range values clamp to the last page. */
+  page?: number | null
   limit?: number | null
   role?: UserRoleValue
   access?: UserAccessFilter
+  search?: string
+  sort?: ParsedSort<UserSortField>
 }
 
 export type UsersSettingsResult = {
   items: UsersSettingsListItem[]
   assignments: UsersSettingsAssignments
+  /** Rows matching the active filters/search (drives `Showing N of M`). */
   totalCount: number
-  pageInfo: PageInfo
+  /** Rows on the tab regardless of filters/search (the `M`). */
+  unfilteredTotalCount: number
+  /** The page actually served (after clamping). */
+  page: number
+  pageSize: number
+  totalPages: number
 }
 
-function buildUserCursorCondition(
-  direction: CursorDirection,
-  cursor: { name?: string | null; id?: string | null } | null,
-): SQL | null {
-  if (!cursor) {
-    return null
-  }
+/**
+ * Per-sort descriptor (PRD 004 §03, R5): order expressions per field. Both
+ * fields are non-nullable so no null partition applies; a nullable field
+ * added here must declare NULLS LAST ordering.
+ */
+type UserSortDescriptor = {
+  orderAsc: SQL
+  orderDesc: SQL
+}
 
-  const idValue = typeof cursor.id === 'string' ? cursor.id : ''
-  const nameValue =
-    typeof cursor.name === 'string' ? cursor.name : cursor.name ?? ''
-
-  if (!idValue) {
-    return null
-  }
-
-  if (direction === 'forward') {
-    return sql`${userSortExpression} > ${nameValue} OR (${userSortExpression} = ${nameValue} AND ${users.id} > ${idValue})`
-  }
-
-  return sql`${userSortExpression} < ${nameValue} OR (${userSortExpression} = ${nameValue} AND ${users.id} < ${idValue})`
+const USER_SORT_DESCRIPTORS: Record<UserSortField, UserSortDescriptor> = {
+  name: {
+    orderAsc: sql`${userSortExpression} ASC`,
+    orderDesc: sql`${userSortExpression} DESC`,
+  },
+  created: {
+    orderAsc: sql`${users.createdAt} ASC`,
+    orderDesc: sql`${users.createdAt} DESC`,
+  },
 }
 
 export async function listUsersForSettings(
@@ -70,18 +71,19 @@ export async function listUsersForSettings(
 ): Promise<UsersSettingsResult> {
   assertAdmin(user)
 
-  const direction = resolveDirection(input.direction)
   const limit = clampLimit(input.limit, { defaultLimit: 20, maxLimit: 100 })
   const normalizedStatus = input.status === 'archived' ? 'archived' : 'active'
-  const baseConditions: SQL[] = []
+  const sort = input.sort ?? DEFAULT_USERS_SORT
+  const descriptor = USER_SORT_DESCRIPTORS[sort.field]
 
-  if (normalizedStatus === 'active') {
-    baseConditions.push(isNull(users.deletedAt))
-  } else {
-    baseConditions.push(sql`${users.deletedAt} IS NOT NULL`)
-  }
+  const statusCondition =
+    normalizedStatus === 'active'
+      ? isNull(users.deletedAt)
+      : sql`${users.deletedAt} IS NOT NULL`
 
-  // Role/access filters live in baseConditions so totalCount follows them.
+  const baseConditions: SQL[] = [statusCondition]
+
+  // Role/access/search filters live in baseConditions so totalCount follows.
   if (input.role) {
     baseConditions.push(eq(users.role, input.role))
   }
@@ -91,24 +93,41 @@ export async function listUsersForSettings(
   if (input.access === 'disabled') {
     baseConditions.push(isNotNull(users.disabledAt))
   }
+  const searchQuery = input.search?.trim() ?? ''
+  if (searchQuery) {
+    const pattern = createSearchPattern(searchQuery)
+    baseConditions.push(
+      sql`(${userSortExpression} ILIKE ${pattern} OR ${users.email} ILIKE ${pattern})`,
+    )
+  }
 
-  const cursorPayload = decodeCursor<{ name?: string; id?: string }>(
-    input.cursor,
-  )
-  const cursorCondition = buildUserCursorCondition(direction, cursorPayload)
-  const paginatedConditions = cursorCondition
-    ? [...baseConditions, cursorCondition]
-    : baseConditions
+  const whereClause = and(...baseConditions)
 
-  const whereClause =
-    paginatedConditions.length > 0 ? and(...paginatedConditions) : undefined
+  // Counts come first so an out-of-range ?page= (stale link, rows deleted)
+  // clamps to the real last page instead of serving an empty list.
+  const [totalResult, unfilteredTotalResult] = await Promise.all([
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(whereClause),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(statusCondition),
+  ])
+
+  const totalCount = Number(totalResult[0]?.count ?? 0)
+  const unfilteredTotalCount = Number(unfilteredTotalResult[0]?.count ?? 0)
+  const totalPages = Math.max(1, Math.ceil(totalCount / limit))
+  const requestedPage = Math.floor(input.page ?? 1)
+  const page = Math.min(Math.max(1, requestedPage), totalPages)
 
   const ordering =
-    direction === 'forward'
-      ? [asc(userSortExpression), asc(users.id)]
-      : [sql`${userSortExpression} DESC`, sql`${users.id} DESC`]
+    sort.direction === 'asc'
+      ? [descriptor.orderAsc, asc(users.id)]
+      : [descriptor.orderDesc, sql`${users.id} DESC`]
 
-  const rows = (await db
+  const items = (await db
     .select({
       id: users.id,
       email: users.email,
@@ -124,56 +143,19 @@ export async function listUsersForSettings(
     .from(users)
     .where(whereClause)
     .orderBy(...ordering)
-    .limit(limit + 1)) as UsersSettingsListItem[]
+    .limit(limit)
+    .offset((page - 1) * limit)) as UsersSettingsListItem[]
 
-  const hasExtraRecord = rows.length > limit
-  const slicedRows = hasExtraRecord ? rows.slice(0, limit) : rows
-  const normalizedRows =
-    direction === 'backward' ? [...slicedRows].reverse() : slicedRows
-
-  const mappedItems = normalizedRows.map(row => ({
-    ...row,
-  }))
-
-  const totalResult = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(users)
-    .where(baseConditions.length ? and(...baseConditions) : undefined)
-
-  const totalCount = Number(totalResult[0]?.count ?? 0)
-  const firstItem = mappedItems[0] ?? null
-  const lastItem = mappedItems[mappedItems.length - 1] ?? null
-
-  const hasPreviousPage =
-    direction === 'forward' ? Boolean(cursorPayload) : hasExtraRecord
-  const hasNextPage =
-    direction === 'forward' ? hasExtraRecord : Boolean(cursorPayload)
-
-  const pageInfo: PageInfo = {
-    hasPreviousPage,
-    hasNextPage,
-    startCursor: firstItem
-      ? encodeCursor({
-          name: firstItem.fullName ?? firstItem.email ?? '',
-          id: firstItem.id,
-        })
-      : null,
-    endCursor: lastItem
-      ? encodeCursor({
-          name: lastItem.fullName ?? lastItem.email ?? '',
-          id: lastItem.id,
-        })
-      : null,
-  }
-
-  const userIds = mappedItems.map(item => item.id)
+  const userIds = items.map(item => item.id)
   const assignments = await buildAssignmentsForUsers(userIds)
 
   return {
-    items: mappedItems,
+    items,
     assignments,
     totalCount,
-    pageInfo,
+    unfilteredTotalCount,
+    page,
+    pageSize: limit,
+    totalPages,
   }
 }
-

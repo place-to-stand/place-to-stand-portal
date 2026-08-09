@@ -4,9 +4,9 @@ import { useCallback, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { FileText, Loader2, Paperclip, Plus, X } from 'lucide-react'
 import clsx from 'clsx'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 
 import type { AttachmentItem } from '@/lib/projects/task-sheet/use-task-sheet-state'
 

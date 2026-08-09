@@ -13,6 +13,13 @@ import type {
   InvoiceWithClient,
   InvoiceWithLineItems,
 } from '@/lib/invoices/invoice-form'
+import {
+  DEFAULT_INVOICES_SORT,
+  type InvoiceSortField,
+  type InvoiceStatusValue,
+} from '@/lib/invoices/filters'
+import { createSearchPattern } from '@/lib/pagination/cursor'
+import type { ParsedSort } from '@/lib/pagination/sort'
 
 import {
   listProductCatalogItems,
@@ -149,6 +156,11 @@ export type ListInvoicesInput = {
   status?: 'active' | 'archived'
   offset?: number | null
   limit?: number | null
+  /** Invoice status filter (DRAFT/SENT/…), distinct from the tab `status`. */
+  invoiceStatus?: InvoiceStatusValue
+  /** Fuzzy search on invoice number + client name (PRD 004 §03). */
+  search?: string
+  sort?: ParsedSort<InvoiceSortField>
 }
 
 export type ListInvoicesResult = {
@@ -156,7 +168,29 @@ export type ListInvoicesResult = {
   clients: ClientRow[]
   productCatalog: ProductCatalogItemRow[]
   taxRates: TaxRateRow[]
+  /** Rows matching the active filters/search (drives `Showing N of M`). */
   totalCount: number
+  /** Rows on the tab regardless of filters/search (the `M`). */
+  unfilteredTotalCount: number
+}
+
+/**
+ * Per-sort ORDER BY expressions (PRD 004 §03, offset pagination — no cursor
+ * descriptors needed). `number` is nullable (drafts), so it declares NULLS
+ * LAST in both directions; the id tie-breaker keeps ordering stable.
+ */
+const INVOICE_SORT_ORDERINGS: Record<
+  InvoiceSortField,
+  { asc: SQL; desc: SQL }
+> = {
+  created: {
+    asc: sql`${invoices.createdAt} ASC`,
+    desc: sql`${invoices.createdAt} DESC`,
+  },
+  number: {
+    asc: sql`${invoices.invoiceNumber} ASC NULLS LAST`,
+    desc: sql`${invoices.invoiceNumber} DESC NULLS LAST`,
+  },
 }
 
 export async function listInvoices(
@@ -168,17 +202,35 @@ export async function listInvoices(
   const limit = Math.min(Math.max(input.limit ?? 20, 1), 100)
   const offset = Math.max(input.offset ?? 0, 0)
   const normalizedStatus = input.status === 'archived' ? 'archived' : 'active'
+  const sort = input.sort ?? DEFAULT_INVOICES_SORT
 
-  const baseConditions: SQL[] = []
+  const statusCondition =
+    normalizedStatus === 'active'
+      ? isNull(invoices.deletedAt)
+      : sql`${invoices.deletedAt} IS NOT NULL`
 
-  if (normalizedStatus === 'active') {
-    baseConditions.push(isNull(invoices.deletedAt))
-  } else {
-    baseConditions.push(sql`${invoices.deletedAt} IS NOT NULL`)
+  // Filters/search live in baseConditions so totalCount follows them; the
+  // unfiltered count only applies the tab condition.
+  const baseConditions: SQL[] = [statusCondition]
+
+  if (input.invoiceStatus) {
+    baseConditions.push(eq(invoices.status, input.invoiceStatus))
+  }
+  const searchQuery = input.search?.trim() ?? ''
+  if (searchQuery) {
+    const pattern = createSearchPattern(searchQuery)
+    baseConditions.push(
+      sql`(${invoices.invoiceNumber} ILIKE ${pattern} OR ${clients.name} ILIKE ${pattern})`
+    )
   }
 
-  const baseWhere =
-    baseConditions.length > 0 ? and(...baseConditions) : undefined
+  const baseWhere = and(...baseConditions)
+
+  const sortOrdering = INVOICE_SORT_ORDERINGS[sort.field]
+  const ordering =
+    sort.direction === 'asc'
+      ? [sortOrdering.asc, asc(invoices.id)]
+      : [sortOrdering.desc, desc(invoices.id)]
 
   const rows = (await db
     .select({
@@ -188,27 +240,40 @@ export async function listInvoices(
     .from(invoices)
     .leftJoin(clients, eq(invoices.clientId, clients.id))
     .where(baseWhere)
-    .orderBy(desc(invoices.createdAt), desc(invoices.id))
+    .orderBy(...ordering)
     .limit(limit)
     .offset(offset)) as InvoiceSelectionRow[]
 
   const invoicesList = rows.map(mapInvoiceWithClient)
 
-  const [totalResult, clientDirectory, productCatalog, activeTaxRates] =
-    await Promise.all([
-      db
-        .select({ count: sql<number>`count(*)` })
-        .from(invoices)
-        .where(baseWhere),
-      db
-        .select(clientSelection)
-        .from(clients)
-        .orderBy(asc(clients.name)) as Promise<ClientSelectionRow[]>,
-      listProductCatalogItems(),
-      listTaxRates(),
-    ])
+  const [
+    totalResult,
+    unfilteredTotalResult,
+    clientDirectory,
+    productCatalog,
+    activeTaxRates,
+  ] = await Promise.all([
+    // Search touches the joined client name, so the filtered count needs
+    // the same join as the page query.
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(invoices)
+      .leftJoin(clients, eq(invoices.clientId, clients.id))
+      .where(baseWhere),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(invoices)
+      .where(statusCondition),
+    db
+      .select(clientSelection)
+      .from(clients)
+      .orderBy(asc(clients.name)) as Promise<ClientSelectionRow[]>,
+    listProductCatalogItems(),
+    listTaxRates(),
+  ])
 
   const totalCount = Number(totalResult[0]?.count ?? 0)
+  const unfilteredTotalCount = Number(unfilteredTotalResult[0]?.count ?? 0)
 
   return {
     items: invoicesList,
@@ -216,6 +281,7 @@ export async function listInvoices(
     productCatalog,
     taxRates: activeTaxRates,
     totalCount,
+    unfilteredTotalCount,
   }
 }
 

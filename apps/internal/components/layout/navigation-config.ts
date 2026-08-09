@@ -53,10 +53,10 @@ export const NAV_GROUPS: NavGroup[] = [
         matchHrefs: ['/submissions'],
       },
       {
-        href: '/leads/board',
+        href: '/leads',
         label: 'Leads',
         icon: Handshake,
-        matchHrefs: ['/leads'],
+        matchHrefs: ['/leads/board'],
       },
       {
         href: '/invoices',

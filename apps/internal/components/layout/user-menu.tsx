@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Loader2, LogOut, Moon, Sun, UserCog } from 'lucide-react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,8 +12,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@pts/ui/dropdown-menu'
 
+import { cn } from '@/lib/utils'
 import type { AppUser } from '@/lib/auth/session'
 import { signOut } from '@/app/(dashboard)/_actions/sign-out'
 import { useTheme } from '@/components/providers/theme-provider'
@@ -23,9 +24,11 @@ import { EditProfileDialog } from './edit-profile-dialog'
 type Props = {
   user: AppUser
   align?: 'start' | 'center' | 'end'
+  /** Sidebar-footer mode: collapses to a square avatar trigger in icon mode (PRD 004 §02). */
+  inSidebar?: boolean
 }
 
-export function UserMenu({ user, align = 'end' }: Props) {
+export function UserMenu({ user, align = 'end', inSidebar = false }: Props) {
   const [isPending, startTransition] = useTransition()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false)
@@ -53,14 +56,25 @@ export function UserMenu({ user, align = 'end' }: Props) {
   return (
     <>
       <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-        <DropdownMenuTrigger className='hover:bg-muted flex w-full items-center gap-2 rounded border px-2 py-1.5 text-[13px] font-medium transition'>
+        <DropdownMenuTrigger
+          className={cn(
+            'hover:bg-muted flex w-full items-center gap-2 rounded border px-2 py-1.5 text-[13px] font-medium transition',
+            inSidebar &&
+              'group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:px-0'
+          )}
+        >
           <Avatar className='h-6 w-6'>
             {avatarSrc ? (
               <AvatarImage src={avatarSrc} alt={user.full_name ?? user.email} />
             ) : null}
             <AvatarFallback className='text-[10px]'>{initials}</AvatarFallback>
           </Avatar>
-          <div className='hidden min-w-0 flex-1 flex-col text-left leading-tight sm:flex'>
+          <div
+            className={cn(
+              'hidden min-w-0 flex-1 flex-col text-left leading-tight sm:flex',
+              inSidebar && 'group-data-[collapsible=icon]:hidden'
+            )}
+          >
             <span className='truncate text-[13px] font-medium'>
               {user.full_name ?? user.email}
             </span>

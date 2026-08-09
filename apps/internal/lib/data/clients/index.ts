@@ -16,6 +16,7 @@ import {
   users,
 } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
+import { createSearchPattern } from '@/lib/pagination/cursor'
 import type { ProjectStatusValue } from '@/lib/constants'
 
 export type ClientProjectSummary = {
@@ -72,10 +73,31 @@ export type ClientDetail = {
 }
 
 export const fetchClientsWithMetrics = cache(
-  async (user: AppUser): Promise<ClientWithMetrics[]> => {
+  async (
+    user: AppUser,
+    search?: string,
+    billingType?: 'prepaid' | 'net_30'
+  ): Promise<ClientWithMetrics[]> => {
     assertAdmin(user)
 
     const baseConditions = [isNull(clients.deletedAt)]
+
+    // PRD 004 §03: server-side `?q=` search on the clients landing table.
+    // Must match name OR slug — the shell header count comes from
+    // `listClientsForSettings`, whose predicate searches both; a narrower
+    // predicate here shows a nonzero count with zero rows.
+    const trimmedSearch = search?.trim()
+    if (trimmedSearch) {
+      const pattern = createSearchPattern(trimmedSearch)
+      baseConditions.push(
+        sql`(${clients.name} ILIKE ${pattern} OR ${clients.slug} ILIKE ${pattern})`
+      )
+    }
+
+    // PRD 004 §03: `?billing=` filter shares the landing table's conditions.
+    if (billingType) {
+      baseConditions.push(eq(clients.billingType, billingType))
+    }
 
     // Aliased user joins: the clients table references users three times
     // (createdBy, origination, closer) so we need distinct table aliases for

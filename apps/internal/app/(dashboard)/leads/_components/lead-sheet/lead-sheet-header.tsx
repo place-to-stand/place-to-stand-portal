@@ -3,7 +3,7 @@
 import { CheckCircle, UserPlus } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import type { LeadRecord } from '@/lib/leads/types'
 
 type LeadSheetHeaderProps = {

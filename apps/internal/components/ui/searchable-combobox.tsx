@@ -3,14 +3,14 @@
 import * as React from 'react'
 import { CheckIcon, ChevronsUpDownIcon } from 'lucide-react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover'
+} from '@pts/ui/popover'
 import {
   Command,
   CommandEmpty,
@@ -50,11 +50,12 @@ type SearchableComboboxProps = {
   disabled?: boolean
   className?: string
   triggerClassName?: string
+  /** Extra classes for each option's label wrapper (e.g. whitespace-nowrap). */
+  itemClassName?: string
   ariaLabel?: string
   ariaLabelledBy?: string
   ariaDescribedBy?: string
   ariaInvalid?: boolean
-  variant?: 'default' | 'heading'
 }
 
 const baseTriggerClasses =
@@ -81,11 +82,11 @@ export const SearchableCombobox = React.forwardRef<
       disabled,
       className,
       triggerClassName,
+      itemClassName,
       ariaLabel,
       ariaLabelledBy,
       ariaDescribedBy,
       ariaInvalid,
-      variant = 'default',
     },
     forwardedRef
   ) => {
@@ -183,19 +184,17 @@ export const SearchableCombobox = React.forwardRef<
         maxHeight,
         overflowY: 'auto',
         overscrollBehavior: 'contain',
-        ...(contentWidth ? { width: contentWidth } : {}),
+        // Min-width (not width): the popover never shrinks below the
+        // trigger but grows to fit no-wrap options (My Tasks person list).
+        ...(contentWidth ? { minWidth: contentWidth } : {}),
       }
     }, [contentWidth])
 
-    const selectedTextClasses =
-      variant === 'heading' ? 'text-foreground font-semibold' : 'font-medium'
-    const placeholderTextClasses =
-      variant === 'heading'
-        ? 'text-foreground/60 font-semibold'
-        : 'text-muted-foreground'
+    const selectedTextClasses = 'font-medium'
+    const placeholderTextClasses = 'text-muted-foreground'
 
     return (
-      <div className={cn('w-full', className)}>
+      <div className={cn('w-full min-w-0', className)}>
         <input type='hidden' name={name} value={value ?? ''} />
         <Popover open={open} onOpenChange={handleOpenChange} modal>
           <PopoverTrigger asChild>
@@ -213,14 +212,9 @@ export const SearchableCombobox = React.forwardRef<
               disabled={disabled}
               data-placeholder={selectedItem ? undefined : true}
               id={id}
-              className={cn(
-                baseTriggerClasses,
-                variant === 'heading' &&
-                  'hover:bg-accent/50 hover:text-accent-foreground data-[state=open]:bg-accent/50 dark:hover:bg-accent/50 dark:data-[state=open]:bg-accent/50 -ml-2 h-auto cursor-pointer border-none bg-transparent px-2 py-2 text-left text-3xl font-semibold tracking-tight shadow-none transition-colors dark:bg-transparent',
-                triggerClassName
-              )}
+              className={cn(baseTriggerClasses, triggerClassName)}
             >
-              <div className='flex flex-1 items-center gap-2'>
+              <div className='flex min-w-0 flex-1 items-center gap-2'>
                 {selectedItem?.userId ? (
                   <Avatar className='h-5 w-5 shrink-0'>
                     {selectedItem.avatarUrl && (
@@ -241,7 +235,7 @@ export const SearchableCombobox = React.forwardRef<
                 ) : null}
                 <span
                   className={cn(
-                    variant !== 'heading' && 'line-clamp-1',
+                    'min-w-0 truncate',
                     selectedItem ? selectedTextClasses : placeholderTextClasses
                   )}
                 >
@@ -315,7 +309,7 @@ export const SearchableCombobox = React.forwardRef<
                                 </AvatarFallback>
                               </Avatar>
                             ) : null}
-                            <div className={itemWrapperClasses}>
+                            <div className={cn(itemWrapperClasses, itemClassName)}>
                               <span className='font-medium'>{item.label}</span>
                               {item.description ? (
                                 <span className='text-muted-foreground text-xs'>
@@ -371,7 +365,7 @@ export const SearchableCombobox = React.forwardRef<
                               </AvatarFallback>
                             </Avatar>
                           ) : null}
-                          <div className={itemWrapperClasses}>
+                          <div className={cn(itemWrapperClasses, itemClassName)}>
                             <span className='font-medium'>{item.label}</span>
                             {item.description ? (
                               <span className='text-muted-foreground text-xs'>

@@ -8,6 +8,8 @@ import type { MyTaskStatus } from './my-tasks-constants'
 
 export type MyTasksReorderPayload = {
   taskId: string
+  /** Board owner being viewed — ordering persists under their rows (admins may reorder any board). */
+  assigneeId?: string
   targetStatus: MyTaskStatus
   targetOrder: string[]
   sourceStatus?: MyTaskStatus

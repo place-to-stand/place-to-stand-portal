@@ -1,4 +1,4 @@
-import { TabsContent } from '@/components/ui/tabs'
+import { TabsContent } from '@pts/ui/tabs'
 import { ActivityFeed } from '@/components/activity/activity-feed'
 import { ProjectsBoardEmpty } from '../projects-board-empty'
 import {
@@ -31,7 +31,7 @@ export function ActivityTabContent(props: ActivityTabContentProps) {
           description={NO_SELECTION_DESCRIPTION}
         />
       ) : (
-        <section className='bg-background rounded-xl border p-6 shadow-sm'>
+        <section className='bg-background rounded-xl border p-4 shadow-sm'>
           <div className='space-y-1'>
             <h3 className='text-lg font-semibold'>Project activity</h3>
             <p className='text-muted-foreground text-sm'>

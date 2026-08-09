@@ -4,9 +4,9 @@ import { useActionState, useRef, useState, useTransition } from "react";
 import { Loader2, Mail } from "lucide-react";
 import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@pts/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Label } from "@pts/ui/label";
 
 import {
   signInWithPassword,

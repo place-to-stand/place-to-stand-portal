@@ -1,7 +1,9 @@
-import { and, asc, inArray, isNull } from 'drizzle-orm'
+import { and, asc, eq, ilike, inArray, isNull, or } from 'drizzle-orm'
 
+import type { ProjectStatusValue } from '@/lib/constants'
 import { db } from '@/lib/db'
-import { projects } from '@/lib/db/schema'
+import { clients, projects } from '@/lib/db/schema'
+import { createSearchPattern } from '@/lib/pagination/cursor'
 import type { DbProject } from '@/lib/types'
 
 export type BaseProjectFetchResult = {
@@ -12,16 +14,59 @@ export type BaseProjectFetchResult = {
   projectClientLookup: Map<string, string | null>
 }
 
+export type FetchBaseProjectsOptions = {
+  projectIds?: string[]
+  /**
+   * Status predicate. Undefined = no status filtering; an empty array means
+   * an explicitly cleared selection and matches nothing.
+   */
+  statuses?: ProjectStatusValue[]
+  /** ILIKE search over project name/slug and the joined client name. */
+  search?: string
+}
+
+const EMPTY_RESULT: BaseProjectFetchResult = {
+  projects: [],
+  projectIds: [],
+  clientIds: [],
+  ownerIds: [],
+  projectClientLookup: new Map(),
+}
+
 export async function fetchBaseProjects(
-  filterProjectIds?: string[]
+  options: FetchBaseProjectsOptions = {}
 ): Promise<BaseProjectFetchResult> {
+  const { projectIds: filterProjectIds, statuses, search } = options
+
+  // Explicitly cleared status selection matches nothing.
+  if (statuses && statuses.length === 0) {
+    return EMPTY_RESULT
+  }
+
   const conditions = [isNull(projects.deletedAt)]
 
   if (filterProjectIds?.length) {
     conditions.push(inArray(projects.id, filterProjectIds))
   }
 
-  const rows = await db
+  if (statuses?.length) {
+    conditions.push(inArray(projects.status, statuses))
+  }
+
+  const trimmedSearch = search?.trim()
+  if (trimmedSearch) {
+    const pattern = createSearchPattern(trimmedSearch)
+    const searchCondition = or(
+      ilike(projects.name, pattern),
+      ilike(projects.slug, pattern),
+      ilike(clients.name, pattern)
+    )
+    if (searchCondition) {
+      conditions.push(searchCondition)
+    }
+  }
+
+  const baseQuery = db
     .select({
       id: projects.id,
       name: projects.name,
@@ -38,6 +83,12 @@ export async function fetchBaseProjects(
       ownerId: projects.ownerId,
     })
     .from(projects)
+
+  // Join clients only when searching — the client name is a search target.
+  const rows = await (trimmedSearch
+    ? baseQuery.leftJoin(clients, eq(projects.clientId, clients.id))
+    : baseQuery
+  )
     .where(and(...conditions))
     .orderBy(asc(projects.name))
 

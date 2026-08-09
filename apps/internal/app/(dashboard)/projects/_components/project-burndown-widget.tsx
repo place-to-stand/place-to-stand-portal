@@ -1,10 +1,10 @@
 'use client'
 
-import Link from 'next/link'
+import { Plus } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
+import { Separator } from '@pts/ui/separator'
 import { cn } from '@/lib/utils'
-import { Eye, Plus } from 'lucide-react'
 
 const HOURS_FORMATTER = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2,
@@ -20,112 +20,90 @@ type ProjectBurndownWidgetProps = {
   totalProjectLoggedHours: number
   projectMonthToDateLoggedHours?: number
   className?: string
-  viewTimeLogsHref: string | null
   onAddTimeLog: () => void
   showClientRemainingCard?: boolean
   showProjectMonthToDate?: boolean
 }
 
+/**
+ * Slim single-line burndown strip sized to fit inside the PageShell header
+ * without stretching it (user feedback on §01). The "View" link was dropped —
+ * the Time Logs tab covers navigation.
+ */
 export function ProjectBurndownWidget({
   totalClientRemainingHours,
   totalProjectLoggedHours,
   projectMonthToDateLoggedHours = 0,
   className,
-  viewTimeLogsHref,
   onAddTimeLog,
   showClientRemainingCard = true,
   showProjectMonthToDate = false,
 }: ProjectBurndownWidgetProps) {
   const projectLogged = Math.max(totalProjectLoggedHours, 0)
   const projectMonthToDateLogged = Math.max(projectMonthToDateLoggedHours, 0)
-  const shouldShowMonthToDate = showProjectMonthToDate
-  const projectLoggedValue = shouldShowMonthToDate
+  const projectLoggedValue = showProjectMonthToDate
     ? projectMonthToDateLogged
     : projectLogged
-  const projectHoursLabel = shouldShowMonthToDate
+  const projectHoursLabel = showProjectMonthToDate
     ? 'Project hours logged this month'
     : 'Project hours logged'
   const clientRemaining = totalClientRemainingHours
-  const remainingTone = clientRemaining < 0 ? 'destructive' : 'default'
 
   return (
     <section
-      className={cn('flex gap-1 text-[11px]', className)}
+      className={cn('flex items-center gap-3', className)}
       aria-label='Burndown overview'
     >
-      <dl className='flex flex-col gap-1 text-[10px] font-medium md:flex-row md:items-stretch'>
-        <MetricRow
+      <dl className='hidden items-center gap-3 md:flex'>
+        <Metric
           label={projectHoursLabel}
           value={`${formatHours(projectLoggedValue)} hrs`}
         />
         {showClientRemainingCard ? (
-          <MetricRow
-            label='Client hours remaining'
-            value={`${formatHours(clientRemaining)} hrs`}
-            tone={remainingTone}
-          />
+          <>
+            <Separator orientation='vertical' className='h-4' />
+            <Metric
+              label='Client hours remaining'
+              value={`${formatHours(clientRemaining)} hrs`}
+              tone={clientRemaining < 0 ? 'destructive' : 'default'}
+            />
+          </>
         ) : null}
       </dl>
-      <div className='flex flex-col gap-1'>
-        {viewTimeLogsHref ? (
-          <Button
-            type='button'
-            size='xs'
-            variant='outline'
-            asChild
-            className='h-6 justify-start gap-1 px-1.5 text-[10px]'
-          >
-            <Link href={viewTimeLogsHref} prefetch={false}>
-              <Eye className='h-2.5! w-2.5!' />
-              View
-            </Link>
-          </Button>
-        ) : (
-          <Button
-            type='button'
-            size='xs'
-            variant='outline'
-            disabled
-            className='h-6 justify-start gap-1 px-1.5 text-[10px]'
-          >
-            <Eye className='h-2.5! w-2.5!' />
-            View
-          </Button>
-        )}
-        <Button
-          type='button'
-          size='xs'
-          onClick={onAddTimeLog}
-          className='h-6 items-center justify-start gap-1 px-1.5 text-[10px]'
-        >
-          <Plus className='h-2.5! w-2.5!' />
-          Add
-        </Button>
-      </div>
+      <Button
+        type='button'
+        size='xs'
+        variant='outline'
+        onClick={onAddTimeLog}
+        className='gap-1'
+      >
+        <Plus className='size-3' />
+        Log time
+      </Button>
     </section>
   )
 }
 
-type MetricRowProps = {
+type MetricProps = {
   label: string
   value: string
   tone?: 'default' | 'destructive'
 }
 
-function MetricRow({ label, value, tone = 'default' }: MetricRowProps) {
+function Metric({ label, value, tone = 'default' }: MetricProps) {
   return (
-    <div
-      className={cn(
-        'flex min-w-[180px] flex-1 items-center justify-between gap-1 rounded-md border px-2.5 py-1.5 md:flex-col md:items-start',
-        tone === 'destructive'
-          ? 'border-destructive/40 bg-destructive/10 text-destructive'
-          : 'border-border bg-background text-foreground'
-      )}
-    >
-      <span className='text-muted-foreground text-[10px] font-semibold tracking-wider text-nowrap uppercase'>
+    <div className='flex items-baseline gap-1.5'>
+      <dt className='text-muted-foreground text-[10px] font-semibold tracking-wider uppercase'>
         {label}
-      </span>
-      <span className='text-foreground text-sm font-semibold'>{value}</span>
+      </dt>
+      <dd
+        className={cn(
+          'text-xs font-semibold tabular-nums',
+          tone === 'destructive' ? 'text-destructive' : 'text-foreground'
+        )}
+      >
+        {value}
+      </dd>
     </div>
   )
 }

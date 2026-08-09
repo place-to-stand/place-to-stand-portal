@@ -1,23 +1,29 @@
 'use server'
 
-import { and, asc, desc, eq, inArray, sql, type SQL } from 'drizzle-orm'
+import { and, asc, eq, inArray, sql, type SQL } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { clients, contacts, contactClients } from '@/lib/db/schema'
 import { type PageInfo } from '@/lib/pagination/cursor'
+import {
+  decodeSortCursor,
+  encodeSortCursor,
+  type SortCursorPayload,
+  type SortDirection,
+} from '@/lib/pagination/sort'
+import { DEFAULT_CONTACTS_SORT } from '@/lib/settings/contacts/filters'
 
 import { contactFields, contactGroupByColumns, type SelectContact } from '../selectors'
 import {
-  buildContactCursorCondition,
   buildSearchCondition,
   buildStatusCondition,
-  decodeContactCursor,
-  encodeContactCursor,
+  CONTACT_SORT_DESCRIPTORS,
   normalizeStatus,
   resolveContactDirection,
   resolvePaginationLimit,
+  type ContactSortDescriptor,
   type StatusFilter,
 } from './pagination'
 import type {
@@ -125,7 +131,7 @@ function mapContactMetrics(
   }))
 }
 
-async function resolveTotalCount(conditions: SQL[]) {
+async function resolveCount(conditions: SQL[]) {
   const result = await db
     .select({ count: sql<number>`count(*)` })
     .from(contacts)
@@ -136,9 +142,12 @@ async function resolveTotalCount(conditions: SQL[]) {
 
 function buildPageInfo(
   direction: 'forward' | 'backward',
-  cursorPayload: ReturnType<typeof decodeContactCursor>,
+  cursorPayload: SortCursorPayload | null,
   items: ContactsSettingsListItem[],
-  hasExtraRecord: boolean
+  hasExtraRecord: boolean,
+  sortField: string,
+  sortDirection: SortDirection,
+  descriptor: ContactSortDescriptor
 ): PageInfo {
   const firstItem = items[0] ?? null
   const lastItem = items[items.length - 1] ?? null
@@ -151,12 +160,22 @@ function buildPageInfo(
   return {
     hasPreviousPage,
     hasNextPage,
-    startCursor: encodeContactCursor(
-      firstItem ? { email: firstItem.email ?? '', id: firstItem.id } : null
-    ),
-    endCursor: encodeContactCursor(
-      lastItem ? { email: lastItem.email ?? '', id: lastItem.id } : null
-    ),
+    startCursor: firstItem
+      ? encodeSortCursor({
+          sortField,
+          sortDirection,
+          value: descriptor.encode(firstItem),
+          id: firstItem.id,
+        })
+      : null,
+    endCursor: lastItem
+      ? encodeSortCursor({
+          sortField,
+          sortDirection,
+          value: descriptor.encode(lastItem),
+          id: lastItem.id,
+        })
+      : null,
   }
 }
 
@@ -170,32 +189,50 @@ export async function listContactsForSettings(
   const limit = resolvePaginationLimit(input.limit)
   const normalizedStatus = normalizeStatus(input.status)
   const searchQuery = input.search?.trim() ?? ''
+  const sort = input.sort ?? DEFAULT_CONTACTS_SORT
+  const descriptor = CONTACT_SORT_DESCRIPTORS[sort.field]
 
+  const statusCondition = buildStatusCondition(normalizedStatus)
   const baseConditions = buildBaseConditions(normalizedStatus, searchQuery)
   const useOffset = typeof input.offset === 'number' && input.offset >= 0
 
   let normalizedRows: ContactMetricsResult[]
   let cursorHasExtraRecord = false
-  let cursorPayloadForPageInfo: ReturnType<typeof decodeContactCursor> = null
+  let cursorPayloadForPageInfo: SortCursorPayload | null = null
 
   if (useOffset) {
     const baseWhere = and(...baseConditions)
-    const ordering = [asc(contacts.email), asc(contacts.id)]
+    const ordering =
+      sort.direction === 'asc'
+        ? [descriptor.orderAsc, asc(contacts.id)]
+        : [descriptor.orderDesc, sql`${contacts.id} DESC`]
     normalizedRows = await queryContactRows(baseWhere, ordering, limit, {
       offset: input.offset!,
     })
   } else {
-    cursorPayloadForPageInfo = decodeContactCursor(input.cursor)
-    const cursorCondition = buildContactCursorCondition(direction, cursorPayloadForPageInfo)
+    // Field-tagged cursor: payloads minted under a different sort are
+    // rejected and we serve page one (R5 backstop for stale deep links).
+    cursorPayloadForPageInfo = decodeSortCursor(
+      input.cursor,
+      sort.field,
+      sort.direction
+    )
+
+    // Effective ordering combines the sort direction with the pagination
+    // direction (backward pages scan the reversed order, then re-reverse).
+    const effectiveAsc =
+      (sort.direction === 'asc') === (direction === 'forward')
+    const cursorCondition = cursorPayloadForPageInfo
+      ? sql`(${descriptor.compare(effectiveAsc ? 'gt' : 'lt', cursorPayloadForPageInfo.value ?? '')} OR (${descriptor.equals(cursorPayloadForPageInfo.value ?? '')} AND ${effectiveAsc ? sql`${contacts.id} > ${cursorPayloadForPageInfo.id}` : sql`${contacts.id} < ${cursorPayloadForPageInfo.id}`}))`
+      : null
 
     const whereClause = cursorCondition
       ? and(...baseConditions, cursorCondition)
       : and(...baseConditions)
 
-    const ordering =
-      direction === 'forward'
-        ? [asc(contacts.email), asc(contacts.id)]
-        : [desc(contacts.email), desc(contacts.id)]
+    const ordering = effectiveAsc
+      ? [descriptor.orderAsc, asc(contacts.id)]
+      : [descriptor.orderDesc, sql`${contacts.id} DESC`]
 
     const rows = await queryContactRows(whereClause, ordering, limit)
 
@@ -205,11 +242,12 @@ export async function listContactsForSettings(
       direction === 'backward' ? [...slicedRows].reverse() : slicedRows
   }
 
-  // Fetch client details for all contacts in parallel with total count
+  // Fetch client details for all contacts in parallel with the counts
   const contactIds = normalizedRows.map(row => row.id)
-  const [clientsMap, totalCount] = await Promise.all([
+  const [clientsMap, totalCount, unfilteredTotalCount] = await Promise.all([
     fetchClientDetails(contactIds),
-    resolveTotalCount(baseConditions),
+    resolveCount(baseConditions),
+    resolveCount([statusCondition]),
   ])
 
   const mappedItems = mapContactMetrics(normalizedRows, clientsMap)
@@ -225,12 +263,16 @@ export async function listContactsForSettings(
         direction,
         cursorPayloadForPageInfo,
         mappedItems,
-        cursorHasExtraRecord
+        cursorHasExtraRecord,
+        sort.field,
+        sort.direction,
+        descriptor
       )
 
   return {
     items: mappedItems,
     totalCount,
+    unfilteredTotalCount,
     pageInfo,
   }
 }

@@ -18,11 +18,16 @@ import {
   type FormSubmissionRecord,
   type FormSubmissionStatusValue,
 } from '@/lib/form-submissions/types'
+import type { SubmissionSortField } from '@/lib/form-submissions/filters'
+import type { ParsedSort } from '@/lib/pagination/sort'
 import type { FormSubmission } from '@pts/db/types'
 
 export type FormSubmissionsPage = {
   items: FormSubmissionRecord[]
+  /** Rows matching the active filters (drives paging + `Showing N of M`). */
   totalCount: number
+  /** Tab-scoped total ignoring filters (the PageShell count denominator). */
+  unfilteredTotalCount: number
   totalPages: number
 }
 
@@ -33,8 +38,14 @@ type FetchOptions = {
   status?: FormSubmissionStatusValue
   /** D1 unacknowledged predicate (PW1 quick filter) — active rows only. */
   unacknowledgedOnly?: boolean
+  /** Complement of the quick filter: rows already acknowledged. */
+  acknowledgedOnly?: boolean
   /** true: archived rows (Archive tab). Default: active rows. */
   archived?: boolean
+  /** Fuzzy identity search (PRD 004 §03) — name, email, company. */
+  search?: string
+  /** Validated `?sort=` (PRD 004 §03) — defaults to received desc. */
+  sort?: ParsedSort<SubmissionSortField>
 }
 
 function toRecord(row: FormSubmission): FormSubmissionRecord {
@@ -48,26 +59,49 @@ function toRecord(row: FormSubmission): FormSubmissionRecord {
 export const fetchFormSubmissions = cache(
   async (
     user: AppUser,
-    { page, pageSize, kind, status, unacknowledgedOnly, archived }: FetchOptions
+    {
+      page,
+      pageSize,
+      kind,
+      status,
+      unacknowledgedOnly,
+      acknowledgedOnly,
+      archived,
+      search,
+      sort,
+    }: FetchOptions
   ): Promise<FormSubmissionsPage> => {
     // Submissions are admin-only - enforce at data layer for defense in depth
     assertAdmin(user)
 
-    const [rows, totalCount] = await Promise.all([
+    const [rows, totalCount, unfilteredTotalCount] = await Promise.all([
       listFormSubmissions({
         offset: (page - 1) * pageSize,
         limit: pageSize,
         kind,
         status,
         unacknowledgedOnly,
+        acknowledgedOnly,
         archived,
+        search,
+        sort,
       }),
-      countFormSubmissions({ kind, status, unacknowledgedOnly, archived }),
+      countFormSubmissions({
+        kind,
+        status,
+        unacknowledgedOnly,
+        acknowledgedOnly,
+        archived,
+        search,
+      }),
+      // Tab-scoped only: same active/archive slice, filters stripped.
+      countFormSubmissions({ archived }),
     ])
 
     return {
       items: rows.map(toRecord),
       totalCount,
+      unfilteredTotalCount,
       totalPages: Math.max(1, Math.ceil(totalCount / pageSize)),
     }
   }

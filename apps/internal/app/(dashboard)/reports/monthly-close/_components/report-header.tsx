@@ -3,14 +3,14 @@
 import { format } from 'date-fns'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@pts/ui/select'
 import { Input } from '@/components/ui/input'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { useReportNavigation } from '@/lib/reports/use-report-navigation'

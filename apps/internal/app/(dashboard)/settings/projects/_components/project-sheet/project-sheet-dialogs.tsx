@@ -1,4 +1,4 @@
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 export type ProjectSheetDialogsProps = {
   isDeleteDialogOpen: boolean
   isPending: boolean

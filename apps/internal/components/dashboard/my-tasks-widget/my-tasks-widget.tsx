@@ -6,7 +6,7 @@ import type { AssignedTaskSummary } from '@/lib/data/tasks'
 
 import { cn } from '@/lib/utils'
 import { useMyTasksWidgetState } from '@/lib/projects/tasks/use-my-tasks-widget-state'
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 
 import { EmptyState } from './empty-state'
 import { TaskList } from './task-list'
@@ -22,7 +22,6 @@ export function MyTasksWidget({
   totalCount,
   className,
 }: MyTasksWidgetProps) {
-  const description = 'Assigned work from every active project.'
 
   const { items } = useMyTasksWidgetState({
     initialTasks: tasks,
@@ -42,7 +41,6 @@ export function MyTasksWidget({
           <h2 id='my-tasks-heading' className='text-base font-semibold'>
             My Tasks
           </h2>
-          <p className='text-muted-foreground text-xs'>{description}</p>
         </div>
         <div className='flex items-center gap-3'>
           <p className='text-muted-foreground text-xs font-medium'>

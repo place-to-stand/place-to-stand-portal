@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 
 import { updateProfile } from '@/app/(dashboard)/_actions/update-profile'
 import { AvatarUploadField } from '@/components/forms/avatar-upload-field'
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
   Dialog,
@@ -17,7 +17,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '@pts/ui/dialog'
 import {
   Form,
   FormControl,

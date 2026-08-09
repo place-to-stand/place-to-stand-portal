@@ -22,7 +22,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@pts/ui/select'
 import { cn } from '@/lib/utils'
 import {
   LEAD_SOURCE_LABELS,

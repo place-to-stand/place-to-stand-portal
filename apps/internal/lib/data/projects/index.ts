@@ -1,10 +1,11 @@
 import 'server-only'
 
 import { cache } from 'react'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, count, eq, isNull, ne, or } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { ensureProjectAccess } from '@/lib/auth/permissions'
+import type { ProjectStatusValue } from '@/lib/constants'
 import { db } from '@/lib/db'
 import { projects } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
@@ -37,6 +38,13 @@ export type ProjectDetail = {
 
 export type FetchProjectsWithRelationsOptions = {
   forUserId?: string
+  /**
+   * Status predicate. Undefined = no status filtering; an empty array means
+   * an explicitly cleared selection and matches nothing.
+   */
+  statuses?: ProjectStatusValue[]
+  /** ILIKE search over project name/slug and client name. */
+  search?: string
 }
 
 export const fetchProjectsWithRelations = cache(
@@ -44,11 +52,11 @@ export const fetchProjectsWithRelations = cache(
     options: FetchProjectsWithRelationsOptions = {}
   ): Promise<ProjectWithRelations[]> => {
     // The internal portal is admin-only, so results are no longer scoped to
-    // the requesting user; the options bag is kept for call-site
-    // compatibility.
-    void options
-
-    const baseProjects = await fetchBaseProjects()
+    // the requesting user; `forUserId` is kept for call-site compatibility.
+    const baseProjects = await fetchBaseProjects({
+      statuses: options.statuses,
+      search: options.search,
+    })
 
     const relations = await fetchProjectRelations({
       projectIds: baseProjects.projectIds,
@@ -76,7 +84,7 @@ export async function fetchProjectsWithRelationsByIds(
     return []
   }
 
-  const baseProjects = await fetchBaseProjects(projectIds)
+  const baseProjects = await fetchBaseProjects({ projectIds })
   const relations = await fetchProjectRelations({
     projectIds: baseProjects.projectIds,
     clientIds: baseProjects.clientIds,
@@ -94,6 +102,54 @@ export async function fetchProjectsWithRelationsByIds(
     timeLogSummaries,
   })
 }
+
+// ============================================================
+// LANDING COUNTS
+// ============================================================
+
+export type LandingProjectCounts = {
+  /** All projects visible to this user, pre-filter. */
+  total: number
+  clientCount: number
+  internalCount: number
+  personalCount: number
+}
+
+/**
+ * Unfiltered per-type counts for the projects landing (PRD 004 §03):
+ * powers the `total` in `Showing N of M` and the per-section
+ * "match the current filters" empty-state wording. PERSONAL projects only
+ * count for their creator, mirroring the landing's visibility rules.
+ */
+export const fetchLandingProjectCounts = cache(
+  async (currentUserId: string): Promise<LandingProjectCounts> => {
+    const rows = await db
+      .select({ type: projects.type, count: count() })
+      .from(projects)
+      .where(
+        and(
+          isNull(projects.deletedAt),
+          or(
+            ne(projects.type, 'PERSONAL'),
+            eq(projects.createdBy, currentUserId)
+          )
+        )
+      )
+      .groupBy(projects.type)
+
+    const byType = new Map(rows.map(row => [row.type, row.count]))
+    const clientCount = byType.get('CLIENT') ?? 0
+    const internalCount = byType.get('INTERNAL') ?? 0
+    const personalCount = byType.get('PERSONAL') ?? 0
+
+    return {
+      total: clientCount + internalCount + personalCount,
+      clientCount,
+      internalCount,
+      personalCount,
+    }
+  }
+)
 
 // ============================================================
 // SIMPLE PROJECT LOOKUPS

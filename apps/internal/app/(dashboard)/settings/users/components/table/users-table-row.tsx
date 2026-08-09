@@ -3,14 +3,15 @@
 import { format } from 'date-fns'
 import { Archive, Pencil, RefreshCw, Trash2 } from 'lucide-react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { TableCell, TableRow } from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
+import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
+import { TableCell, TableRow } from '@pts/ui/table'
+import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import { Switch } from '@/components/ui/switch'
+import { Switch } from '@pts/ui/switch'
 import { USER_ROLE_LABELS } from '@/lib/settings/users/filters'
 
 import type { UserRowState } from '@/lib/settings/users/state/use-users-table-state'
+import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
 
 type UsersTableRowProps = {
   row: UserRowState
@@ -44,7 +45,7 @@ export function UsersTableRow({
     : user.email.slice(0, 2).toUpperCase()
 
   return (
-    <TableRow className={user.deleted_at ? 'opacity-60' : undefined}>
+    <TableRow className={user.deleted_at ? ARCHIVED_ROW_CLASS : undefined}>
       <TableCell>
         <div className='flex items-center gap-2'>
           <Avatar className='h-6 w-6'>
@@ -100,7 +101,7 @@ export function UsersTableRow({
             >
               <Button
                 variant='outline'
-                size='icon'
+                size='icon-sm'
                 onClick={row.onEdit}
                 title='Edit user'
                 disabled={row.editDisabled}
@@ -115,8 +116,8 @@ export function UsersTableRow({
               reason={row.restoreDisabledReason}
             >
               <Button
-                variant='secondary'
-                size='icon'
+                variant='outline'
+                size='icon-sm'
                 onClick={row.onRestore}
                 title='Restore user'
                 aria-label='Restore user'
@@ -135,7 +136,7 @@ export function UsersTableRow({
             >
               <Button
                 variant='destructive'
-                size='icon'
+                size='icon-sm'
                 onClick={row.onRequestDelete}
                 title={deleteTitle}
                 aria-label='Archive user'
@@ -154,7 +155,7 @@ export function UsersTableRow({
             >
               <Button
                 variant='destructive'
-                size='icon'
+                size='icon-sm'
                 onClick={row.onRequestDestroy}
                 title='Permanently delete user'
                 aria-label='Permanently delete user'

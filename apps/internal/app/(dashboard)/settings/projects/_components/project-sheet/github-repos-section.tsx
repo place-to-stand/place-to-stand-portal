@@ -2,15 +2,15 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Plus, Trash2, ExternalLink, Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '@pts/ui/dialog'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { toast } from '@/components/ui/use-toast'
 import type { GitHubRepoLink } from '@/lib/types/github'
 import { siGithub } from 'simple-icons/icons'

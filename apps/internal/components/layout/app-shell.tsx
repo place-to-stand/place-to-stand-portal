@@ -1,66 +1,33 @@
 'use client'
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react'
-import { usePathname } from 'next/navigation'
+import * as React from 'react'
+import { useMemo, type ReactNode } from 'react'
 
 import type { AppUser } from '@/lib/auth/session'
+import { SidebarProvider } from '@/components/ui/sidebar'
 
 import { Sidebar } from './sidebar'
-import { UserMenu } from './user-menu'
-import { NAV_GROUPS } from './navigation-config'
+import { CommandPaletteProvider } from './command-palette'
 
 interface Props {
   user: AppUser
   children: ReactNode
   unacknowledgedSubmissionsCount?: number
+  /** Server-read `sidebar_state` cookie value (PRD 004 §02). */
+  sidebarDefaultOpen?: boolean
 }
 
-type HeaderContextValue = {
-  setHeader: (content: ReactNode) => void
-  clearHeader: () => void
-}
-
-const HeaderContext = createContext<HeaderContextValue | null>(null)
-
-export function useAppShellHeader() {
-  const context = useContext(HeaderContext)
-
-  if (!context) {
-    throw new Error('useAppShellHeader must be used within AppShell')
-  }
-
-  return context
-}
-
-export function AppShellHeader({ children }: { children: ReactNode }) {
-  const { setHeader, clearHeader } = useAppShellHeader()
-
-  useEffect(() => {
-    setHeader(children)
-    return () => {
-      clearHeader()
-    }
-  }, [children, clearHeader, setHeader])
-
-  return null
-}
-
+/**
+ * Dashboard chrome (PRD 004 §01/§02): sidebar + command palette + content
+ * column. Pages own their header via `PageShell` — the shell renders no
+ * header row of its own, so header ownership is server-known everywhere (R4).
+ */
 export function AppShell({
   user,
   children,
   unacknowledgedSubmissionsCount,
+  sidebarDefaultOpen = true,
 }: Props) {
-  const [headerContent, setHeaderContent] = useState<ReactNode>(null)
-  const pathname = usePathname()
-
   // Keyed by nav href so future counts (e.g. leads) reuse the same channel.
   const navBadges = useMemo(
     () =>
@@ -70,59 +37,20 @@ export function AppShell({
     [unacknowledgedSubmissionsCount]
   )
 
-  const currentNav = useMemo(() => {
-    const matchesPath = (target: string) =>
-      pathname === target || pathname.startsWith(target + '/')
-
-    for (const group of NAV_GROUPS) {
-      for (const item of group.items) {
-        const matchTargets = [item.href, ...(item.matchHrefs ?? [])]
-
-        if (matchTargets.some(matchesPath)) {
-          return item
-        }
-      }
-    }
-    return null
-  }, [pathname])
-
-  const Icon = currentNav?.icon
-
-  const setHeader = useCallback((content: ReactNode) => {
-    setHeaderContent(content)
-  }, [])
-
-  const clearHeader = useCallback(() => {
-    setHeaderContent(null)
-  }, [])
-
-  const headerContextValue = useMemo(
-    () => ({
-      setHeader,
-      clearHeader,
-    }),
-    [clearHeader, setHeader]
-  )
-
   return (
-      <div className='bg-muted flex h-screen overflow-hidden'>
+    // Palette provider wraps the sidebar too — the search affordance lives
+    // there (user-revised placement of PW1).
+    <CommandPaletteProvider>
+      <SidebarProvider
+        defaultOpen={sidebarDefaultOpen}
+        style={{ '--sidebar-width': '13rem' } as React.CSSProperties}
+        className='bg-muted h-screen min-h-0 overflow-hidden'
+      >
         <Sidebar user={user} badges={navBadges} />
-        <HeaderContext.Provider value={headerContextValue}>
-          <div className='flex min-h-0 min-w-0 flex-1 flex-col'>
-            <header className='bg-background flex flex-wrap items-center gap-4 border-b px-4 py-4 sm:px-6'>
-              {Icon && (
-                <div className='bg-muted flex items-center justify-center rounded-md border p-2'>
-                  <Icon className='text-muted-foreground h-5 w-5' />
-                </div>
-              )}
-              <div className='min-w-0 flex-1'>{headerContent}</div>
-              <div className='md:hidden'>
-                <UserMenu user={user} />
-              </div>
-            </header>
-            <main className='flex-1 overflow-y-auto p-4 sm:p-6'>{children}</main>
-          </div>
-        </HeaderContext.Provider>
-      </div>
+        <div className='flex h-screen min-h-0 min-w-0 flex-1 flex-col'>
+          {children}
+        </div>
+      </SidebarProvider>
+    </CommandPaletteProvider>
   )
 }

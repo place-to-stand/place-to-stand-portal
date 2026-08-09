@@ -1,8 +1,10 @@
 import {
   and,
+  asc,
   count,
   desc,
   eq,
+  ilike,
   inArray,
   isNotNull,
   isNull,
@@ -12,6 +14,12 @@ import {
 
 import { db } from '@/lib/db'
 import { activityLogs, formSubmissions } from '@/lib/db/schema'
+import {
+  DEFAULT_SUBMISSIONS_SORT,
+  type SubmissionSortField,
+} from '@/lib/form-submissions/filters'
+import { createSearchPattern } from '@/lib/pagination/cursor'
+import type { ParsedSort } from '@/lib/pagination/sort'
 import type { FormSubmission, NewFormSubmission } from '@pts/db/types'
 
 type FormSubmissionFilters = {
@@ -23,16 +31,25 @@ type FormSubmissionFilters = {
    * apps/internal/lib/form-submissions/constants.ts.
    */
   unacknowledgedOnly?: boolean
+  /** Complement of the quick filter: rows an admin has already cleared. */
+  acknowledgedOnly?: boolean
   /** false/undefined: active rows (deleted_at IS NULL). true: archived rows. */
   archived?: boolean
+  /** Fuzzy identity search (PRD 004 §03) — name, email, company. */
+  search?: string
 }
 
 function buildFilters({
   kind,
   status,
   unacknowledgedOnly,
+  acknowledgedOnly,
   archived,
+  search,
 }: FormSubmissionFilters) {
+  const searchQuery = search?.trim() ?? ''
+  const searchPattern = searchQuery ? createSearchPattern(searchQuery) : null
+
   return and(
     archived
       ? isNotNull(formSubmissions.deletedAt)
@@ -48,6 +65,14 @@ function buildFilters({
             eq(formSubmissions.kind, 'contact'),
             inArray(formSubmissions.status, ['completed', 'captured'])
           )
+        )
+      : undefined,
+    acknowledgedOnly ? isNotNull(formSubmissions.acknowledgedAt) : undefined,
+    searchPattern
+      ? or(
+          ilike(formSubmissions.contactName, searchPattern),
+          ilike(formSubmissions.contactEmail, searchPattern),
+          ilike(formSubmissions.contactCompany, searchPattern)
         )
       : undefined
   )
@@ -188,16 +213,30 @@ export async function upsertFormSubmission(row: NewFormSubmission) {
     })
 }
 
+// R5 (offset variant): each allowlisted sort field maps to its ORDER BY
+// column — offset pagination needs no cursor descriptors.
+const SORT_COLUMNS = {
+  received: formSubmissions.lastActivityAt,
+} as const satisfies Record<SubmissionSortField, unknown>
+
 export async function listFormSubmissions({
   offset,
   limit,
+  sort = DEFAULT_SUBMISSIONS_SORT,
   ...filters
-}: FormSubmissionFilters & { offset: number; limit: number }) {
+}: FormSubmissionFilters & {
+  offset: number
+  limit: number
+  sort?: ParsedSort<SubmissionSortField>
+}) {
+  const direction = sort.direction === 'asc' ? asc : desc
+
   return db
     .select()
     .from(formSubmissions)
     .where(buildFilters(filters))
-    .orderBy(desc(formSubmissions.lastActivityAt))
+    // Id tie-breaker keeps offset pages stable when timestamps collide.
+    .orderBy(direction(SORT_COLUMNS[sort.field]), direction(formSubmissions.id))
     .limit(limit)
     .offset(offset)
 }

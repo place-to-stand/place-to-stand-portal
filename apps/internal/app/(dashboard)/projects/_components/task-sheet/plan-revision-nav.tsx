@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { cn } from '@/lib/utils'
 
 export type VersionDeployStatus = 'none' | 'dispatched' | 'pr_created'

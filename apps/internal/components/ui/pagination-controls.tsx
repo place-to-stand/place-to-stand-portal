@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 
 type CursorPaginationProps = {
   mode?: 'cursor'
@@ -205,7 +205,7 @@ function PagedPagination({
 
   return (
     <div className='flex items-center justify-between'>
-      <p className='text-muted-foreground text-sm tabular-nums'>
+      <p className='text-muted-foreground pl-2 text-xs tabular-nums'>
         {(currentPage - 1) * pageSize + 1}–
         {Math.min(currentPage * pageSize, totalItems)} of {totalItems}
       </p>

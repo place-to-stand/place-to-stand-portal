@@ -18,9 +18,12 @@ import {
 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { Button } from '@pts/ui/button'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
+import { useListParams } from '@/hooks/use-list-params'
+import { isInvoiceSortValue } from '@/lib/invoices/filters'
 import {
   Table,
   TableBody,
@@ -28,9 +31,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@pts/ui/table'
 import { useToast } from '@/components/ui/use-toast'
 import type { InvoiceWithClient } from '@/lib/invoices/invoice-form'
+import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
 
 export type InvoicesTableMode = 'active' | 'archive'
 
@@ -49,6 +53,8 @@ export type InvoicesTableSectionProps = {
   onSendInvoice: (invoiceId: string) => void
   onRefresh: () => void
   emptyMessage: string
+  /** Route the sort/filter params live on (PRD 004 §03). */
+  basePath: string
 }
 
 const NON_EDITABLE_STATUSES = new Set(['PAID', 'VOID'])
@@ -243,7 +249,7 @@ function ShareLinkCell({
       </span>
       <Button
         variant='ghost'
-        size='icon'
+        size='icon-sm'
         className='h-6 w-6 flex-shrink-0'
         onClick={handleCopy}
         title='Copy share link'
@@ -256,7 +262,7 @@ function ShareLinkCell({
       </Button>
       <Button
         variant='ghost'
-        size='icon'
+        size='icon-sm'
         className='h-6 w-6 flex-shrink-0'
         onClick={() => window.open(shareUrl, '_blank')}
         title='Open share link'
@@ -282,17 +288,39 @@ export function InvoicesTableSection({
   onSendInvoice,
   onRefresh,
   emptyMessage,
+  basePath,
 }: InvoicesTableSectionProps) {
+  const { update, getParam } = useListParams({
+    basePath,
+    resetKeys: ['page'],
+  })
+  const rawSort = getParam('sort')
+  const sort = rawSort && isInvoiceSortValue(rawSort) ? rawSort : undefined
+
   return (
-    <div className='overflow-hidden rounded-xl border'>
-      <Table>
+    <div className='overflow-hidden rounded-lg border'>
+      <Table density='compact'>
         <TableHeader>
           <TableRow className='bg-muted/40'>
-            <TableHead>Invoice #</TableHead>
+            <SortableTableHead
+              field='number'
+              sort={sort}
+              defaultSort='created:desc'
+              onSortChange={next => update({ sort: next })}
+            >
+              Invoice #
+            </SortableTableHead>
             <TableHead>Client</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Total</TableHead>
-            <TableHead>Issued</TableHead>
+            <SortableTableHead
+              field='created'
+              sort={sort}
+              defaultSort='created:desc'
+              onSortChange={next => update({ sort: next })}
+            >
+              Issued
+            </SortableTableHead>
             <TableHead>Share Link</TableHead>
             <TableHead className='w-28 text-right'>Actions</TableHead>
           </TableRow>
@@ -340,7 +368,7 @@ export function InvoicesTableSection({
             return (
               <TableRow
                 key={invoice.id}
-                className={isArchived ? 'opacity-60' : undefined}
+                className={isArchived ? ARCHIVED_ROW_CLASS : undefined}
               >
                 <TableCell className='text-sm font-medium'>
                   <div className='flex items-center gap-2'>
@@ -411,7 +439,7 @@ export function InvoicesTableSection({
                       isViewOnly ? (
                         <Button
                           variant='outline'
-                          size='icon'
+                          size='icon-sm'
                           onClick={() => onEdit(invoice)}
                           title='View invoice'
                         >
@@ -424,7 +452,7 @@ export function InvoicesTableSection({
                         >
                           <Button
                             variant='outline'
-                            size='icon'
+                            size='icon-sm'
                             onClick={() => onEdit(invoice)}
                             title='Edit invoice'
                             disabled={editDisabled}
@@ -441,7 +469,7 @@ export function InvoicesTableSection({
                       >
                         <Button
                           variant='destructive'
-                          size='icon'
+                          size='icon-sm'
                           onClick={() => onRequestDelete(invoice)}
                           title='Archive invoice'
                           aria-label='Archive invoice'
@@ -458,8 +486,8 @@ export function InvoicesTableSection({
                         reason={restoreDisabledReason}
                       >
                         <Button
-                          variant='secondary'
-                          size='icon'
+                          variant='outline'
+                          size='icon-sm'
                           onClick={() => onRestore(invoice)}
                           title='Restore invoice'
                           aria-label='Restore invoice'
@@ -477,7 +505,7 @@ export function InvoicesTableSection({
                       >
                         <Button
                           variant='destructive'
-                          size='icon'
+                          size='icon-sm'
                           onClick={() => onRequestDestroy(invoice)}
                           title='Permanently delete invoice'
                           aria-label='Permanently delete invoice'

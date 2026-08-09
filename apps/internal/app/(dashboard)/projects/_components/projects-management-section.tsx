@@ -1,11 +1,8 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { Plus } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 import { useToast } from '@/components/ui/use-toast'
 import type { PageInfo } from '@/lib/pagination/cursor'
@@ -25,7 +22,6 @@ import {
 } from '@/components/settings/projects/table/types'
 import { useProjectsSettingsController } from '@/components/settings/projects/table/use-projects-settings-controller'
 
-import { ProjectsTabsNav } from './projects-tabs-nav'
 
 type ProjectsManagementSectionProps = {
   tab: ProjectsTab
@@ -37,6 +33,12 @@ type ProjectsManagementSectionProps = {
   membersByProject: Record<string, ContractorUserSummary[]>
   pageInfo: PageInfo
   listTotalCount: number
+  /** Toolbar row (FilterBar) rendered inside the card, above the table. */
+  filters?: ReactNode
+  /**
+   * PRD 004 §01: pages converted to PageShell render tabs/count/action in the
+   * shell toolbar; they pass false so the section renders only the table.
+   */
 }
 
 export function ProjectsManagementSection({
@@ -49,6 +51,7 @@ export function ProjectsManagementSection({
   membersByProject,
   pageInfo,
   listTotalCount,
+  filters,
 }: ProjectsManagementSectionProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -71,7 +74,6 @@ export function ProjectsManagementSection({
     pendingRestoreId,
     pendingDestroyId,
     isPending,
-    openCreate,
     openEdit,
     handleSheetOpenChange,
     handleSheetComplete,
@@ -108,39 +110,18 @@ export function ProjectsManagementSection({
   const hasNextPage = pageInfo.hasNextPage
   const hasPreviousPage = pageInfo.hasPreviousPage
 
-  const emptyMessage =
-    mode === 'active'
+  // Active `?q=` flips the empty state to the filtered message (R4).
+  const hasActiveFilter = Boolean(searchParams.get('q')?.trim())
+  const emptyMessage = hasActiveFilter
+    ? 'No projects match the current filters.'
+    : mode === 'active'
       ? 'No projects yet. Create one to begin tracking work.'
       : 'No archived projects. Archived projects appear here after deletion.'
 
   return (
     <div className='space-y-4'>
-      {/* Tabs Row - Above the main container */}
-      <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-        <ProjectsTabsNav activeTab={tab} className='flex-1 sm:flex-none' />
-        <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6'>
-          <span className='text-muted-foreground text-sm whitespace-nowrap'>
-            Total projects: {listTotalCount}
-          </span>
-          <DisabledFieldTooltip
-            disabled={createDisabled}
-            reason={createDisabledReason}
-          >
-            <Button
-              type='button'
-              size='sm'
-              onClick={openCreate}
-              disabled={createDisabled}
-              className='gap-2'
-            >
-              <Plus className='h-4 w-4' />
-              Add project
-            </Button>
-          </DisabledFieldTooltip>
-        </div>
-      </div>
       {/* Main Container with Background */}
-      <section className='bg-background rounded-xl border p-6 shadow-sm space-y-4'>
+      <section className='bg-background rounded-xl border p-4 shadow-sm space-y-4'>
         <ProjectLifecycleDialogs
           deleteTarget={deleteTarget}
           destroyTarget={destroyTarget}
@@ -150,6 +131,7 @@ export function ProjectsManagementSection({
           onCancelDestroy={cancelDestroy}
           onConfirmDestroy={confirmDestroy}
         />
+        {filters}
         <ProjectsTableSection
           projects={projects}
           mode={mode}

@@ -3,8 +3,8 @@
 import { useCallback, useMemo } from 'react'
 import { Archive, Redo2, Undo2 } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { Button } from '@pts/ui/button'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Form } from '@/components/ui/form'
 import {

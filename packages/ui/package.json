@@ -1,0 +1,48 @@
+{
+  "name": "@pts/ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./alert-dialog": "./src/alert-dialog.tsx",
+    "./avatar": "./src/avatar.tsx",
+    "./breadcrumb": "./src/breadcrumb.tsx",
+    "./button": "./src/button.tsx",
+    "./checkbox": "./src/checkbox.tsx",
+    "./cn": "./src/cn.ts",
+    "./collapsible": "./src/collapsible.tsx",
+    "./confirm-dialog": "./src/confirm-dialog.tsx",
+    "./dialog": "./src/dialog.tsx",
+    "./dropdown-menu": "./src/dropdown-menu.tsx",
+    "./hooks/use-mobile": "./src/hooks/use-mobile.ts",
+    "./label": "./src/label.tsx",
+    "./popover": "./src/popover.tsx",
+    "./progress": "./src/progress.tsx",
+    "./select": "./src/select.tsx",
+    "./separator": "./src/separator.tsx",
+    "./skeleton": "./src/skeleton.tsx",
+    "./switch": "./src/switch.tsx",
+    "./table": "./src/table.tsx",
+    "./tabs": "./src/tabs.tsx",
+    "./tooltip": "./src/tooltip.tsx"
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@base-ui/react": "^1.7.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.28.0",
+    "radix-ui": "^1.6.7",
+    "tailwind-merge": "^3.6.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.7",
+    "typescript": "^6.0.3"
+  }
+}

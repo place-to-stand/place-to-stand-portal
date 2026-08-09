@@ -6,13 +6,12 @@ import { contacts } from '@/lib/db/schema'
 import {
   clampLimit,
   createSearchPattern,
-  decodeCursor,
-  encodeCursor,
   resolveDirection,
   type CursorDirection,
 } from '@/lib/pagination/cursor'
+import type { ContactSortField } from '@/lib/settings/contacts/filters'
 
-export type ContactCursorPayload = { email?: string; id?: string }
+import type { ContactsSettingsListItem } from './types'
 
 export type StatusFilter = 'active' | 'archived'
 
@@ -38,47 +37,50 @@ export function buildSearchCondition(search: string | null | undefined): SQL | n
   return sql`(${contacts.email} ILIKE ${pattern} OR ${contacts.name} ILIKE ${pattern})`
 }
 
-export function buildContactCursorCondition(
-  direction: CursorDirection,
-  cursor: ContactCursorPayload | null
-) {
-  if (!cursor) {
-    return null
-  }
+/**
+ * Per-sort descriptor (PRD 004 §03, R5): order expression + cursor value
+ * encoding + comparison predicates per field, mirroring
+ * `USER_SORT_DESCRIPTORS`. Both fields are non-nullable so no null
+ * partition applies.
+ */
+export type ContactSortDescriptor = {
+  encode: (row: ContactsSettingsListItem) => string
+  compare: (op: 'gt' | 'lt', value: string) => SQL
+  equals: (value: string) => SQL
+  orderAsc: SQL
+  orderDesc: SQL
+}
 
-  const emailValue =
-    typeof cursor.email === 'string' ? cursor.email : (cursor.email ?? '')
-  const idValue = typeof cursor.id === 'string' ? cursor.id : ''
-
-  if (!idValue) {
-    return null
-  }
-
-  const normalizedEmail = sql`coalesce(${contacts.email}, '')`
-
-  if (direction === 'forward') {
-    return sql`${normalizedEmail} > ${emailValue} OR (${normalizedEmail} = ${emailValue} AND ${contacts.id} > ${idValue})`
-  }
-
-  return sql`${normalizedEmail} < ${emailValue} OR (${normalizedEmail} = ${emailValue} AND ${contacts.id} < ${idValue})`
+export const CONTACT_SORT_DESCRIPTORS: Record<
+  ContactSortField,
+  ContactSortDescriptor
+> = {
+  name: {
+    encode: row => row.name ?? '',
+    compare: (op, value) =>
+      op === 'gt'
+        ? sql`${contacts.name} > ${value}`
+        : sql`${contacts.name} < ${value}`,
+    equals: value => sql`${contacts.name} = ${value}`,
+    orderAsc: sql`${contacts.name} ASC`,
+    orderDesc: sql`${contacts.name} DESC`,
+  },
+  created: {
+    encode: row => String(row.createdAt),
+    compare: (op, value) =>
+      op === 'gt'
+        ? sql`${contacts.createdAt} > ${value}::timestamptz`
+        : sql`${contacts.createdAt} < ${value}::timestamptz`,
+    equals: value => sql`${contacts.createdAt} = ${value}::timestamptz`,
+    orderAsc: sql`${contacts.createdAt} ASC`,
+    orderDesc: sql`${contacts.createdAt} DESC`,
+  },
 }
 
 export const DEFAULT_LIMITS = { defaultLimit: 20, maxLimit: 100 } as const
 
 export function resolvePaginationLimit(limit: number | null | undefined) {
   return clampLimit(limit, DEFAULT_LIMITS)
-}
-
-export function decodeContactCursor(cursor: string | null | undefined) {
-  return decodeCursor<ContactCursorPayload>(cursor)
-}
-
-export function encodeContactCursor(payload: ContactCursorPayload | null) {
-  if (!payload) return null
-  return encodeCursor({
-    email: payload.email ?? '',
-    id: payload.id ?? '',
-  })
 }
 
 export function resolveContactDirection(direction: CursorDirection | null | undefined) {

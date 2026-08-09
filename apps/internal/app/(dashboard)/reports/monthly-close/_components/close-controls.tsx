@@ -3,8 +3,8 @@
 import { useState, useTransition } from 'react'
 import { Lock, LockOpen } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { Button } from '@pts/ui/button'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { toast } from '@/components/ui/use-toast'
 
 import { closeMonthAction } from '../actions/close-month'

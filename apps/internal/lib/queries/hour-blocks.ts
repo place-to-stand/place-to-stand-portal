@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, asc, desc, eq, isNull, sql, type SQL } from 'drizzle-orm'
+import { and, asc, eq, isNull, sql, type SQL } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
@@ -15,12 +15,19 @@ import type {
 import {
   clampLimit,
   createSearchPattern,
-  decodeCursor,
-  encodeCursor,
   resolveDirection,
   type CursorDirection,
   type PageInfo,
 } from '@/lib/pagination/cursor'
+import {
+  decodeSortCursor,
+  encodeSortCursor,
+  type ParsedSort,
+} from '@/lib/pagination/sort'
+import {
+  DEFAULT_HOUR_BLOCKS_SORT,
+  type HourBlockSortField,
+} from '@/lib/settings/hour-blocks/filters'
 
 export type HourBlockClientSummary = {
   id: string
@@ -79,35 +86,46 @@ export type ListHourBlocksForSettingsInput = {
   direction?: CursorDirection | null
   limit?: number | null
   offset?: number | null
+  sort?: ParsedSort<HourBlockSortField>
 }
 
 export type HourBlocksSettingsResult = {
   items: HourBlockWithClient[]
   clients: ClientRow[]
+  /** Rows matching the active filters/search (drives `Showing N of M`). */
   totalCount: number
+  /** Rows on the tab regardless of filters/search (the `M`). */
+  unfilteredTotalCount: number
   pageInfo: PageInfo
 }
 
-function buildHourBlocksCursorCondition(
-  direction: CursorDirection,
-  cursor: { createdAt?: string | null; id?: string | null } | null
-) {
-  if (!cursor) {
-    return null
-  }
+/**
+ * Per-sort descriptor (PRD 004 §03, R5): order expression + field-tagged
+ * cursor value encoding + comparison predicates. `createdAt` is
+ * non-nullable so no null partition applies.
+ */
+type HourBlockSortDescriptor = {
+  encode: (row: HourBlockWithClient) => string
+  compare: (op: 'gt' | 'lt', value: string) => SQL
+  equals: (value: string) => SQL
+  orderAsc: SQL
+  orderDesc: SQL
+}
 
-  const createdAt = cursor.createdAt ?? null
-  const idValue = typeof cursor.id === 'string' ? cursor.id : ''
-
-  if (!createdAt || !idValue) {
-    return null
-  }
-
-  if (direction === 'forward') {
-    return sql`${hourBlocks.createdAt} < ${createdAt} OR (${hourBlocks.createdAt} = ${createdAt} AND ${hourBlocks.id} < ${idValue})`
-  }
-
-  return sql`${hourBlocks.createdAt} > ${createdAt} OR (${hourBlocks.createdAt} = ${createdAt} AND ${hourBlocks.id} > ${idValue})`
+const HOUR_BLOCK_SORT_DESCRIPTORS: Record<
+  HourBlockSortField,
+  HourBlockSortDescriptor
+> = {
+  created: {
+    encode: row => String(row.created_at),
+    compare: (op, value) =>
+      op === 'gt'
+        ? sql`${hourBlocks.createdAt} > ${value}::timestamptz`
+        : sql`${hourBlocks.createdAt} < ${value}::timestamptz`,
+    equals: value => sql`${hourBlocks.createdAt} = ${value}::timestamptz`,
+    orderAsc: sql`${hourBlocks.createdAt} ASC`,
+    orderDesc: sql`${hourBlocks.createdAt} DESC`,
+  },
 }
 
 export async function listHourBlocksForSettings(
@@ -120,14 +138,17 @@ export async function listHourBlocksForSettings(
   const limit = clampLimit(input.limit, { defaultLimit: 20, maxLimit: 100 })
   const normalizedStatus = input.status === 'archived' ? 'archived' : 'active'
   const searchQuery = input.search?.trim() ?? ''
+  const sort = input.sort ?? DEFAULT_HOUR_BLOCKS_SORT
+  const descriptor = HOUR_BLOCK_SORT_DESCRIPTORS[sort.field]
 
-  const baseConditions: SQL[] = []
+  const statusCondition =
+    normalizedStatus === 'active'
+      ? isNull(hourBlocks.deletedAt)
+      : sql`${hourBlocks.deletedAt} IS NOT NULL`
 
-  if (normalizedStatus === 'active') {
-    baseConditions.push(isNull(hourBlocks.deletedAt))
-  } else {
-    baseConditions.push(sql`${hourBlocks.deletedAt} IS NOT NULL`)
-  }
+  // Filters/search live in baseConditions so totalCount follows them; the
+  // unfiltered count only applies the tab condition.
+  const baseConditions: SQL[] = [statusCondition]
 
   if (searchQuery) {
     const pattern = createSearchPattern(searchQuery)
@@ -139,10 +160,16 @@ export async function listHourBlocksForSettings(
   const useOffset = typeof input.offset === 'number' && input.offset >= 0
 
   let hourBlocksList: HourBlockWithClient[]
+  let hasExtraRecord = false
+  let cursorPayloadPresent = false
 
   if (useOffset) {
-    const baseWhere =
-      baseConditions.length > 0 ? and(...baseConditions) : undefined
+    const baseWhere = and(...baseConditions)
+
+    const ordering =
+      sort.direction === 'asc'
+        ? [descriptor.orderAsc, asc(hourBlocks.id)]
+        : [descriptor.orderDesc, sql`${hourBlocks.id} DESC`]
 
     const rows = (await db
       .select({
@@ -152,31 +179,37 @@ export async function listHourBlocksForSettings(
       .from(hourBlocks)
       .leftJoin(clients, eq(hourBlocks.clientId, clients.id))
       .where(baseWhere)
-      .orderBy(desc(hourBlocks.createdAt), desc(hourBlocks.id))
+      .orderBy(...ordering)
       .limit(limit)
       .offset(input.offset!)) as HourBlockSelection[]
 
     hourBlocksList = rows.map(mapHourBlockWithClient)
   } else {
-    const cursorPayload = decodeCursor<{ createdAt?: string; id?: string }>(
-      input.cursor
+    // Field-tagged cursor: payloads minted under a different sort are
+    // rejected and we serve page one (R5 backstop for stale deep links).
+    const cursorPayload = decodeSortCursor(
+      input.cursor,
+      sort.field,
+      sort.direction
     )
-    const cursorCondition = buildHourBlocksCursorCondition(
-      direction,
-      cursorPayload
-    )
+    cursorPayloadPresent = Boolean(cursorPayload)
+
+    // Effective ordering combines the sort direction with the pagination
+    // direction (backward pages scan the reversed order, then re-reverse).
+    const effectiveAsc = (sort.direction === 'asc') === (direction === 'forward')
+    const cursorCondition = cursorPayload
+      ? sql`(${descriptor.compare(effectiveAsc ? 'gt' : 'lt', cursorPayload.value ?? '')} OR (${descriptor.equals(cursorPayload.value ?? '')} AND ${effectiveAsc ? sql`${hourBlocks.id} > ${cursorPayload.id}` : sql`${hourBlocks.id} < ${cursorPayload.id}`}))`
+      : null
 
     const paginatedConditions = cursorCondition
       ? [...baseConditions, cursorCondition]
       : baseConditions
 
-    const whereClause =
-      paginatedConditions.length > 0 ? and(...paginatedConditions) : undefined
+    const whereClause = and(...paginatedConditions)
 
-    const ordering =
-      direction === 'forward'
-        ? [desc(hourBlocks.createdAt), desc(hourBlocks.id)]
-        : [asc(hourBlocks.createdAt), asc(hourBlocks.id)]
+    const ordering = effectiveAsc
+      ? [descriptor.orderAsc, asc(hourBlocks.id)]
+      : [descriptor.orderDesc, sql`${hourBlocks.id} DESC`]
 
     const rows = (await db
       .select({
@@ -189,7 +222,7 @@ export async function listHourBlocksForSettings(
       .orderBy(...ordering)
       .limit(limit + 1)) as HourBlockSelection[]
 
-    const hasExtraRecord = rows.length > limit
+    hasExtraRecord = rows.length > limit
     const slicedRows = hasExtraRecord ? rows.slice(0, limit) : rows
     const normalizedRows =
       direction === 'backward' ? [...slicedRows].reverse() : slicedRows
@@ -197,32 +230,51 @@ export async function listHourBlocksForSettings(
     hourBlocksList = normalizedRows.map(mapHourBlockWithClient)
   }
 
-  const [totalResult, clientDirectory] = await Promise.all([
-    db
-      .select({ count: sql<number>`count(*)` })
-      .from(hourBlocks)
-      .where(baseConditions.length ? and(...baseConditions) : undefined),
-    db.select(clientSelection).from(clients).orderBy(asc(clients.name)),
-  ])
+  const [totalResult, unfilteredTotalResult, clientDirectory] =
+    await Promise.all([
+      // Search touches the joined client name, so the filtered count needs
+      // the same join as the page query.
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(hourBlocks)
+        .leftJoin(clients, eq(hourBlocks.clientId, clients.id))
+        .where(and(...baseConditions)),
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(hourBlocks)
+        .where(statusCondition),
+      db.select(clientSelection).from(clients).orderBy(asc(clients.name)),
+    ])
 
   const totalCount = Number(totalResult[0]?.count ?? 0)
+  const unfilteredTotalCount = Number(unfilteredTotalResult[0]?.count ?? 0)
   const firstItem = hourBlocksList[0] ?? null
   const lastItem = hourBlocksList[hourBlocksList.length - 1] ?? null
 
   const pageInfo: PageInfo = {
-    hasPreviousPage: useOffset ? input.offset! > 0 : false,
+    hasPreviousPage: useOffset
+      ? input.offset! > 0
+      : direction === 'forward'
+        ? cursorPayloadPresent
+        : hasExtraRecord,
     hasNextPage: useOffset
       ? input.offset! + limit < totalCount
-      : false,
+      : direction === 'forward'
+        ? hasExtraRecord
+        : cursorPayloadPresent,
     startCursor: firstItem
-      ? encodeCursor({
-          createdAt: firstItem.created_at,
+      ? encodeSortCursor({
+          sortField: sort.field,
+          sortDirection: sort.direction,
+          value: descriptor.encode(firstItem),
           id: firstItem.id,
         })
       : null,
     endCursor: lastItem
-      ? encodeCursor({
-          createdAt: lastItem.created_at,
+      ? encodeSortCursor({
+          sortField: sort.field,
+          sortDirection: sort.direction,
+          value: descriptor.encode(lastItem),
           id: lastItem.id,
         })
       : null,
@@ -232,6 +284,7 @@ export async function listHourBlocksForSettings(
     items: hourBlocksList,
     clients: clientDirectory.map(mapClientRow),
     totalCount,
+    unfilteredTotalCount,
     pageInfo,
   }
 }

@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 
 import { UserSheet } from '../users-sheet'
@@ -13,7 +13,6 @@ import {
   type UserAssignments,
 } from '@/lib/settings/users/state/use-users-table-state'
 import type { UserRow } from '@/lib/settings/users/state/types'
-import type { PageInfo } from '@/lib/pagination/cursor'
 
 import { UsersTableSection } from './users-table-section'
 
@@ -21,8 +20,12 @@ type UsersManagementTableProps = {
   users: UserRow[]
   currentUserId: string
   assignments: UserAssignments
-  pageInfo: PageInfo
+  page: number
+  pageSize: number
+  totalPages: number
+  totalCount: number
   mode: 'active' | 'archive'
+  basePath: string
 }
 
 const EMPTY_MESSAGES = {
@@ -34,8 +37,12 @@ export function UsersManagementTable({
   users,
   currentUserId,
   assignments,
-  pageInfo,
+  page,
+  pageSize,
+  totalPages,
+  totalCount,
   mode,
+  basePath,
 }: UsersManagementTableProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -47,7 +54,6 @@ export function UsersManagementTable({
     deleteDialog,
     destroyDialog,
     selfDeleteReason,
-    isPending,
   } = useUsersTableState({ users, currentUserId, assignments })
 
   const filteredRows = useMemo(
@@ -63,37 +69,26 @@ export function UsersManagementTable({
   // empty list would otherwise show the wrong message.
   const hasActiveFilter =
     isUserRole(searchParams.get('role') ?? undefined) ||
-    isUserAccess(searchParams.get('access') ?? undefined)
+    isUserAccess(searchParams.get('access') ?? undefined) ||
+    Boolean(searchParams.get('q')?.trim())
 
   const emptyMessage = hasActiveFilter
     ? 'No users match the current filters.'
     : EMPTY_MESSAGES[mode]
 
-  const handlePaginate = (direction: 'forward' | 'backward') => {
-    const cursor =
-      direction === 'forward' ? pageInfo.endCursor : pageInfo.startCursor
-
-    if (!cursor) {
-      return
-    }
-
+  const handlePageChange = (nextPage: number) => {
     const params = new URLSearchParams(searchParams.toString())
-    params.set('cursor', cursor)
-    params.set('dir', direction)
+    if (nextPage <= 1) {
+      params.delete('page')
+    } else {
+      params.set('page', String(nextPage))
+    }
     const query = params.toString()
     router.push(query ? `${pathname}?${query}` : pathname)
   }
 
-  const paginationState = useMemo(
-    () => ({
-      hasNextPage: pageInfo.hasNextPage,
-      hasPreviousPage: pageInfo.hasPreviousPage,
-    }),
-    [pageInfo.hasNextPage, pageInfo.hasPreviousPage]
-  )
-
   return (
-    <div className='space-y-6'>
+    <div className='space-y-4'>
       <ConfirmDialog
         open={deleteDialog.open}
         title='Archive user?'
@@ -115,17 +110,19 @@ export function UsersManagementTable({
         onConfirm={destroyDialog.onConfirm}
       />
       <UsersTableSection
+        basePath={basePath}
         rows={filteredRows}
         mode={mode}
         emptyMessage={emptyMessage}
         selfDeleteReason={selfDeleteReason}
       />
       <PaginationControls
-        hasNextPage={paginationState.hasNextPage}
-        hasPreviousPage={paginationState.hasPreviousPage}
-        onNext={() => handlePaginate('forward')}
-        onPrevious={() => handlePaginate('backward')}
-        disableAll={isPending}
+        mode='paged'
+        currentPage={page}
+        totalPages={totalPages}
+        totalItems={totalCount}
+        pageSize={pageSize}
+        onPageChange={handlePageChange}
       />
       <UserSheet
         open={sheet.open}

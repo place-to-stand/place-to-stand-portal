@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, useWatch } from 'react-hook-form'
 import { Archive, Redo2, Undo2 } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Form } from '@/components/ui/form'
 import {
@@ -49,14 +49,14 @@ export function LeadSheet({
   const pushActionUrl = useCallback(
     (action: string) => {
       if (!lead) return
-      window.history.replaceState(null, '', `/leads/board/${lead.id}/${action}`)
+      window.history.replaceState(null, '', `/leads/${lead.id}/${action}`)
     },
     [lead]
   )
 
   const pushLeadUrl = useCallback(() => {
     if (!lead) return
-    window.history.replaceState(null, '', `/leads/board/${lead.id}`)
+    window.history.replaceState(null, '', `/leads/${lead.id}`)
   }, [lead])
 
   const canConvert = lead?.status === 'CLOSED_WON' && !lead?.convertedToClientId

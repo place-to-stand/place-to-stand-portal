@@ -5,11 +5,12 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
 import { Archive, Check, RefreshCw, Trash2 } from 'lucide-react'
 
+import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { Button } from '@pts/ui/button'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { PaginationControls } from '@/components/ui/pagination-controls'
-import { Progress } from '@/components/ui/progress'
+import { Progress } from '@pts/ui/progress'
 import {
   Table,
   TableBody,
@@ -17,16 +18,20 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@pts/ui/table'
 import { useToast } from '@/components/ui/use-toast'
+import { useListParams } from '@/hooks/use-list-params'
 import { cn } from '@/lib/utils'
 import {
   FORM_SUBMISSION_KIND_LABELS,
   FORM_SUBMISSION_KIND_TOKENS,
   FORM_SUBMISSION_STATUS_LABELS,
   FORM_SUBMISSION_STATUS_TOKENS,
+  isFormSubmissionKind,
+  isFormSubmissionStatus,
   isUnacknowledgedSubmission,
 } from '@/lib/form-submissions/constants'
+import { isSubmissionSortValue } from '@/lib/form-submissions/filters'
 import type { FormSubmissionRecord } from '@/lib/form-submissions/types'
 import {
   acknowledgeSubmission,
@@ -37,6 +42,7 @@ import {
 
 import { SubmissionArchiveDialog } from './submission-archive-dialog'
 import { SubmissionDetailSheet } from './submission-detail-sheet'
+import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
 
 export type SubmissionsTableMode = 'active' | 'archive'
 
@@ -114,6 +120,29 @@ export function SubmissionsTable({
 
   // The archive tab shows when each row was archived; active mode doesn't.
   const columnCount = mode === 'archive' ? 10 : 9
+
+  // Sort changes route through useListParams so they reset offset paging
+  // (PRD 004 §03); row-selection and page pushes keep the local helper.
+  const { update: updateListParams, getParam } = useListParams({
+    basePath,
+    resetKeys: ['page'],
+  })
+  const rawSort = getParam('sort')
+  const sort = rawSort && isSubmissionSortValue(rawSort) ? rawSort : undefined
+
+  // Run raw params through the type guards (R4): ?kind=bogus is ignored by
+  // the server, so it must not count as an active filter — an unfiltered
+  // empty list would otherwise show the wrong message. The unacknowledged
+  // quick filter only exists on the active tab.
+  const hasActiveFilter =
+    (searchParams.get('q') ?? '').trim().length > 0 ||
+    isFormSubmissionKind(searchParams.get('kind') ?? undefined) ||
+    isFormSubmissionStatus(searchParams.get('status') ?? undefined) ||
+    (mode === 'active' && searchParams.get('unacknowledged') === '1')
+
+  const emptyMessage = hasActiveFilter
+    ? 'No submissions match the current filters.'
+    : EMPTY_STATE_COPY[mode]
 
   const updateParams = useCallback(
     (
@@ -287,14 +316,21 @@ export function SubmissionsTable({
           </Button>
         </div>
       ) : null}
-      <div className='overflow-hidden rounded-xl border'>
-        <Table>
+      <div className='overflow-hidden rounded-lg border'>
+        <Table density='compact'>
           <TableHeader>
             <TableRow className='bg-muted/40'>
               <TableHead className='w-6'>
                 <span className='sr-only'>Unacknowledged</span>
               </TableHead>
-              <TableHead>Received</TableHead>
+              <SortableTableHead
+                field='received'
+                sort={sort}
+                defaultSort='received:desc'
+                onSortChange={next => updateListParams({ sort: next })}
+              >
+                Received
+              </SortableTableHead>
               <TableHead>Form</TableHead>
               <TableHead>Contact</TableHead>
               <TableHead>Company</TableHead>
@@ -312,7 +348,7 @@ export function SubmissionsTable({
                   colSpan={columnCount}
                   className='text-muted-foreground py-10 text-center text-sm'
                 >
-                  {EMPTY_STATE_COPY[mode]}
+                  {emptyMessage}
                 </TableCell>
               </TableRow>
             ) : (
@@ -327,7 +363,7 @@ export function SubmissionsTable({
                     className={cn(
                       'cursor-pointer',
                       unacknowledged && 'font-medium',
-                      submission.deletedAt && 'opacity-60'
+                      submission.deletedAt && ARCHIVED_ROW_CLASS
                     )}
                   >
                     <TableCell className='w-6'>
@@ -418,7 +454,7 @@ export function SubmissionsTable({
                         {unacknowledged ? (
                           <Button
                             variant='outline'
-                            size='icon'
+                            size='icon-sm'
                             title='Acknowledge submission'
                             aria-label='Acknowledge submission'
                             disabled={pendingId === submission.id}
@@ -434,7 +470,7 @@ export function SubmissionsTable({
                         {mode === 'active' ? (
                           <Button
                             variant='destructive'
-                            size='icon'
+                            size='icon-sm'
                             title='Archive submission'
                             aria-label='Archive submission'
                             disabled={pendingId === submission.id}
@@ -449,8 +485,8 @@ export function SubmissionsTable({
                         ) : (
                           <>
                             <Button
-                              variant='secondary'
-                              size='icon'
+                              variant='outline'
+                              size='icon-sm'
                               title='Restore submission'
                               aria-label='Restore submission'
                               disabled={pendingId === submission.id}
@@ -464,7 +500,7 @@ export function SubmissionsTable({
                             </Button>
                             <Button
                               variant='destructive'
-                              size='icon'
+                              size='icon-sm'
                               title='Permanently delete submission'
                               aria-label='Permanently delete submission'
                               disabled={pendingId === submission.id}
