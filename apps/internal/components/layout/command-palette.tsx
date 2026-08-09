@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from 'react'
 import { useRouter } from 'next/navigation'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Building2, Contact, FolderKanban } from 'lucide-react'
 
 import {
@@ -109,14 +109,26 @@ function CommandPalette() {
   const [query, setQuery] = useState('')
   const debouncedQuery = useDebouncedValue(query.trim(), DEBOUNCE_MS)
 
+  const trimmedQuery = query.trim()
   const recordSearchEnabled = open && debouncedQuery.length >= MIN_QUERY_LENGTH
 
-  const { data: records } = useQuery({
+  const { data: records, isFetching } = useQuery({
     queryKey: ['command-palette-search', debouncedQuery],
     queryFn: () => fetchPaletteResults(debouncedQuery),
     enabled: recordSearchEnabled,
     staleTime: 30_000,
+    // Keep the previous query's results on screen while the next one
+    // fetches — results morph in place instead of vanishing per keystroke.
+    placeholderData: keepPreviousData,
   })
+
+  // True from the first keystroke of a searchable query until its results
+  // land: the debounce window (trimmed !== debounced) plus the fetch
+  // itself. While true, the empty state must not claim "No results".
+  const isSearchPending =
+    open &&
+    trimmedQuery.length >= MIN_QUERY_LENGTH &&
+    (trimmedQuery !== debouncedQuery || isFetching)
 
   const navigate = useCallback(
     (href: string) => {
@@ -155,7 +167,9 @@ function CommandPalette() {
       />
       <CommandList>
         <CommandEmpty>
-          No results{query.trim() ? ` for “${query.trim()}”` : ''}.
+          {isSearchPending
+            ? 'Searching…'
+            : `No results${trimmedQuery ? ` for “${trimmedQuery}”` : ''}.`}
         </CommandEmpty>
         {NAV_GROUPS.map((group, index) => (
           <CommandGroup
