@@ -6,7 +6,6 @@ import {
   Archive,
   Check,
   ExternalLink,
-  Link2,
   RefreshCw,
   Trash2,
   Undo2,
@@ -234,31 +233,6 @@ export function SubmissionDetailSheet({
     },
     [onOpenChange, onRowRemoved, router, submission, toast]
   )
-
-  const handleCopyLink = useCallback(() => {
-    if (!submission) {
-      return
-    }
-
-    // Canonical share link: just the id, no filter/pagination params — the
-    // server resolves the row (and the right tab) from the id alone.
-    const base = mode === 'archive' ? '/submissions/archive' : '/submissions'
-    const url = `${window.location.origin}${base}?submission=${submission.id}`
-
-    navigator.clipboard.writeText(url).then(
-      () =>
-        toast({
-          title: 'Link copied',
-          description: 'The link opens this submission directly.',
-        }),
-      () =>
-        toast({
-          title: 'Unable to copy link',
-          description: url,
-          variant: 'destructive',
-        })
-    )
-  }, [mode, submission, toast])
 
   const handleArchiveConfirm = useCallback(() => {
     setArchiveConfirmOpen(false)
@@ -509,17 +483,6 @@ export function SubmissionDetailSheet({
         <div className='border-border/40 bg-muted/95 supports-backdrop-filter:bg-muted/90 fixed right-0 bottom-0 z-50 w-full border-t shadow-lg backdrop-blur sm:max-w-xl'>
           <div className='flex w-full items-center justify-between gap-3 px-6 py-4'>
             <div className='flex items-center gap-2'>
-              <Button
-                type='button'
-                variant='outline'
-                size='icon'
-                title='Copy link to submission'
-                aria-label='Copy link to submission'
-                onClick={handleCopyLink}
-              >
-                <Link2 className='h-4 w-4' />
-                <span className='sr-only'>Copy link</span>
-              </Button>
               {mode === 'active' ? (
                 warrantsAttention ? (
                   unacknowledged ? (
