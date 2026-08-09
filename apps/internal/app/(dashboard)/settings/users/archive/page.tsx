@@ -56,7 +56,7 @@ export default async function UsersArchivePage({
       breadcrumbs={[...crumbsForNav('/settings/users'), { label: 'Archive' }]}
       tabs={USERS_TABS}
       activeTab='archive'
-      count={{ label: 'archived', total: unfilteredTotalCount, filteredTotal: totalCount }}
+      count={{ label: 'archived users', total: unfilteredTotalCount, filteredTotal: totalCount }}
       primaryAction={
         <UsersAddButton
           currentUserId={currentUser.id}

@@ -1,50 +1,13 @@
-import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 
-import { requireUser } from '@/lib/auth/session'
-import { fetchLeadAssignees, fetchLeadsBoard } from '@/lib/data/leads'
-
-import { LeadsWorkspace } from '../../_components/leads-workspace'
-
-export const metadata: Metadata = {
-  title: 'Leads | Place to Stand Portal',
+type LegacyBoardPageProps = {
+  params: Promise<{ leadId?: string[] }>
 }
 
-type PageParams = {
-  leadId?: string[]
+/** Legacy path: the board moved to /leads (PRD 004 polish). */
+export default async function LegacyLeadsBoardPage({
+  params,
+}: LegacyBoardPageProps) {
+  const { leadId } = await params
+  redirect(leadId?.length ? `/leads/${leadId.join('/')}` : '/leads')
 }
-
-type PageProps = {
-  params: Promise<PageParams>
-}
-
-export default async function LeadsBoardPage({ params }: PageProps) {
-  const resolvedParams = await params
-  const requestedLeadId = resolvedParams.leadId?.[0] ?? null
-  const actionSegment = resolvedParams.leadId?.[1] ?? null
-  const user = await requireUser()
-
-  const activeLeadId = requestedLeadId
-
-  // Derive activeAction from URL segments
-  let activeAction: string | null = null
-  if (activeLeadId && actionSegment === 'convert') {
-    activeAction = 'convert'
-  }
-
-  const [board, assignees] = await Promise.all([
-    fetchLeadsBoard(user),
-    fetchLeadAssignees(),
-  ])
-
-  return (
-    <LeadsWorkspace
-      initialColumns={board}
-      assignees={assignees}
-      canManage
-      activeLeadId={activeLeadId}
-      activeAction={activeAction}
-      senderName={user.full_name ?? user.email ?? ''}
-    />
-  )
-}
-

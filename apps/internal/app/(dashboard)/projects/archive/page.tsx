@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 
 import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
+import { ProjectsArchiveFilters } from '../_components/projects-archive-filters'
 import { ProjectsManagementSection } from '../_components/projects-management-section'
 import { ProjectsAddButton } from '../_components/projects-add-button'
 import { mapProjectToTableRow } from '../_lib/map-project-to-table-row'
@@ -29,7 +30,8 @@ export default async function ProjectsArchivePage({
 }: ProjectsArchivePageProps) {
   const admin = await requireRole('ADMIN')
   const params = searchParams ? await searchParams : {}
-  const { searchQuery, cursor, direction, limit } = parseProjectsSearchParams(params)
+  const { searchQuery, cursor, direction, limit, sort } =
+    parseProjectsSearchParams(params)
 
   const [archiveResult, adminUsersResult] = await Promise.all([
     listProjectsForSettings(admin, {
@@ -38,6 +40,7 @@ export default async function ProjectsArchivePage({
       cursor,
       direction,
       limit,
+      sort,
     }),
     fetchAdminUsers(),
   ])
@@ -63,7 +66,11 @@ export default async function ProjectsArchivePage({
       breadcrumbs={[...crumbsForNav('/projects'), { label: 'Archive' }]}
       tabs={PROJECTS_TABS}
       activeTab='archive'
-      count={{ label: 'projects', total: archiveResult.totalCount }}
+      count={{
+        label: 'archived projects',
+        total: archiveResult.unfilteredTotalCount,
+        filteredTotal: archiveResult.totalCount,
+      }}
       primaryAction={<ProjectsAddButton clients={clientRows} />}
     >
       <ProjectsManagementSection
@@ -76,6 +83,9 @@ export default async function ProjectsArchivePage({
         membersByProject={{}}
         pageInfo={archiveResult.pageInfo}
         listTotalCount={archiveResult.totalCount}
+        filters={
+          <ProjectsArchiveFilters search={searchQuery ?? undefined} />
+        }
       />
     </PageShell>
   )

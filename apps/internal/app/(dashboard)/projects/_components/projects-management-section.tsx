@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { PaginationControls } from '@/components/ui/pagination-controls'
@@ -33,6 +33,8 @@ type ProjectsManagementSectionProps = {
   membersByProject: Record<string, ContractorUserSummary[]>
   pageInfo: PageInfo
   listTotalCount: number
+  /** Toolbar row (FilterBar) rendered inside the card, above the table. */
+  filters?: ReactNode
   /**
    * PRD 004 §01: pages converted to PageShell render tabs/count/action in the
    * shell toolbar; they pass false so the section renders only the table.
@@ -49,6 +51,7 @@ export function ProjectsManagementSection({
   membersByProject,
   pageInfo,
   listTotalCount,
+  filters,
 }: ProjectsManagementSectionProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -107,8 +110,11 @@ export function ProjectsManagementSection({
   const hasNextPage = pageInfo.hasNextPage
   const hasPreviousPage = pageInfo.hasPreviousPage
 
-  const emptyMessage =
-    mode === 'active'
+  // Active `?q=` flips the empty state to the filtered message (R4).
+  const hasActiveFilter = Boolean(searchParams.get('q')?.trim())
+  const emptyMessage = hasActiveFilter
+    ? 'No projects match the current filters.'
+    : mode === 'active'
       ? 'No projects yet. Create one to begin tracking work.'
       : 'No archived projects. Archived projects appear here after deletion.'
 
@@ -125,6 +131,7 @@ export function ProjectsManagementSection({
           onCancelDestroy={cancelDestroy}
           onConfirmDestroy={confirmDestroy}
         />
+        {filters}
         <ProjectsTableSection
           projects={projects}
           mode={mode}

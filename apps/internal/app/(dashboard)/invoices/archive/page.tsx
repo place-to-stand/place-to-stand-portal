@@ -55,7 +55,7 @@ export default async function InvoicesArchivePage({
       tabs={INVOICES_TABS}
       activeTab='archive'
       count={{
-        label: 'archived',
+        label: 'archived invoices',
         total: unfilteredTotalCount,
         filteredTotal: totalCount,
       }}

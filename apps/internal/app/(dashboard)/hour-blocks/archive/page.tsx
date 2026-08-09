@@ -47,7 +47,7 @@ export default async function HourBlocksArchivePage({
       tabs={HOUR_BLOCKS_TABS}
       activeTab='archive'
       count={{
-        label: 'archived',
+        label: 'archived hour blocks',
         total: unfilteredTotalCount,
         filteredTotal: totalCount,
       }}

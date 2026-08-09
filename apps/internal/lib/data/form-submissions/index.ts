@@ -40,6 +40,8 @@ type FetchOptions = {
   unacknowledgedOnly?: boolean
   /** true: archived rows (Archive tab). Default: active rows. */
   archived?: boolean
+  /** Fuzzy identity search (PRD 004 §03) — name, email, company. */
+  search?: string
   /** Validated `?sort=` (PRD 004 §03) — defaults to received desc. */
   sort?: ParsedSort<SubmissionSortField>
 }
@@ -62,6 +64,7 @@ export const fetchFormSubmissions = cache(
       status,
       unacknowledgedOnly,
       archived,
+      search,
       sort,
     }: FetchOptions
   ): Promise<FormSubmissionsPage> => {
@@ -76,9 +79,16 @@ export const fetchFormSubmissions = cache(
         status,
         unacknowledgedOnly,
         archived,
+        search,
         sort,
       }),
-      countFormSubmissions({ kind, status, unacknowledgedOnly, archived }),
+      countFormSubmissions({
+        kind,
+        status,
+        unacknowledgedOnly,
+        archived,
+        search,
+      }),
       // Tab-scoped only: same active/archive slice, filters stripped.
       countFormSubmissions({ archived }),
     ])

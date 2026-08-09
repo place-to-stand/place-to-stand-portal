@@ -1,6 +1,9 @@
 import type { CursorDirection, PageInfo } from '@/lib/pagination/cursor'
 import type { ParsedSort } from '@/lib/pagination/sort'
-import type { ClientSortField } from '@/lib/settings/clients/filters'
+import type {
+  ClientBillingFilter,
+  ClientSortField,
+} from '@/lib/settings/clients/filters'
 
 import type { SelectClient } from '../selectors'
 
@@ -39,6 +42,7 @@ export type ClientsSettingsResult = {
 
 export type ListClientsForSettingsInput = {
   status?: 'active' | 'archived'
+  billing?: ClientBillingFilter | null
   search?: string | null
   cursor?: string | null
   direction?: CursorDirection | null

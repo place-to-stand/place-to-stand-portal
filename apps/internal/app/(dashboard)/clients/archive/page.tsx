@@ -25,12 +25,13 @@ export default async function ClientsArchivePage({
 }: ClientsArchivePageProps) {
   const admin = await requireRole('ADMIN')
   const params = searchParams ? await searchParams : {}
-  const { cursor, direction, limit, search, sort } =
+  const { cursor, direction, limit, billing, search, sort } =
     parseClientsSearchParams(params)
 
   const { items, totalCount, unfilteredTotalCount, pageInfo } =
     await listClientsForSettings(admin, {
       status: 'archived',
+      billing,
       search,
       cursor,
       direction,
@@ -53,7 +54,11 @@ export default async function ClientsArchivePage({
       primaryAction={<ClientsAddButton />}
     >
       <section className='bg-background rounded-xl border p-6 shadow-sm space-y-4'>
-        <ClientsFilters basePath='/clients/archive' search={search} />
+        <ClientsFilters
+          basePath='/clients/archive'
+          search={search}
+          billing={billing}
+        />
         <ClientsManagementTable
           clients={clientsForTable}
           pageInfo={pageInfo}

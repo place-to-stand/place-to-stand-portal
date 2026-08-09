@@ -23,6 +23,7 @@ import {
 import { buildMembersByClient } from './members'
 import { listClientUsers } from './users'
 import {
+  buildBillingCondition,
   buildSearchCondition,
   buildStatusCondition,
   CLIENT_SORT_DESCRIPTORS,
@@ -46,8 +47,14 @@ type ClientMetricsResult = SelectClient & {
 function buildBaseConditions(
   status: StatusFilter,
   searchQuery: string,
+  billing: ListClientsForSettingsInput['billing'],
 ): SQL[] {
   const conditions: SQL[] = [buildStatusCondition(status)]
+
+  const billingCondition = buildBillingCondition(billing)
+  if (billingCondition) {
+    conditions.push(billingCondition)
+  }
 
   const searchCondition = buildSearchCondition(searchQuery)
   if (searchCondition) {
@@ -172,7 +179,11 @@ export async function listClientsForSettings(
   const descriptor = CLIENT_SORT_DESCRIPTORS[sort.field]
 
   const statusCondition = buildStatusCondition(normalizedStatus)
-  const baseConditions = buildBaseConditions(normalizedStatus, searchQuery)
+  const baseConditions = buildBaseConditions(
+    normalizedStatus,
+    searchQuery,
+    input.billing,
+  )
 
   // Field-tagged cursor: payloads minted under a different sort are
   // rejected and we serve page one (R5 backstop for stale deep links).

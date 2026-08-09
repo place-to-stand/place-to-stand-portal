@@ -2,6 +2,7 @@
 
 import { FilterBar } from '@/components/table-toolbar/filter-bar'
 import { FilterSelect } from '@/components/table-toolbar/filter-select'
+import { SearchInput } from '@/components/table-toolbar/search-input'
 import { useListParams } from '@/hooks/use-list-params'
 import {
   FORM_SUBMISSION_KIND_LABELS,
@@ -31,6 +32,7 @@ const STATUS_OPTIONS = FORM_SUBMISSION_STATUS_VALUES.map(status => ({
 }))
 
 type SubmissionsFiltersProps = {
+  search?: string
   activeKind?: FormSubmissionKind
   activeStatus?: FormSubmissionStatus
   /**
@@ -44,6 +46,7 @@ type SubmissionsFiltersProps = {
 }
 
 export function SubmissionsFilters({
+  search,
   activeKind,
   activeStatus,
   activeUnacknowledged,
@@ -56,6 +59,7 @@ export function SubmissionsFilters({
     basePath,
     resetKeys: ['page'],
     filters: {
+      q: {},
       unacknowledged: { isValid: value => value === '1' },
       kind: { isValid: value => isFormSubmissionKind(value) },
       status: { isValid: value => isFormSubmissionStatus(value) },
@@ -64,6 +68,11 @@ export function SubmissionsFilters({
 
   return (
     <FilterBar>
+      <SearchInput
+        value={search}
+        onCommit={value => update({ q: value })}
+        placeholder='Search submissions…'
+      />
       {showUnacknowledgedFilter ? (
         <FilterSelect
           value={activeUnacknowledged ? UNACKNOWLEDGED : undefined}

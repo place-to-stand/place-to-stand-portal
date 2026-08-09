@@ -27,6 +27,10 @@ import {
   TableHeader,
   TableRow,
 } from '@pts/ui/table'
+import {
+  SortableTableHead,
+  type SortValue,
+} from '@/components/table-toolbar/sortable-table-head'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import type { ProductCatalogItemRow } from '@/lib/queries/product-catalog'
 
@@ -120,11 +124,18 @@ export function ProductCatalogSection({
     null
   )
   const [isPending, startTransition] = useTransition()
+  // Local sort state (PRD 004 §03): two small config tables share this page,
+  // so sort stays out of the URL. undefined = the 'name:asc' default.
+  const [sort, setSort] = useState<SortValue | undefined>(undefined)
 
-  const sortedItems = useMemo(
-    () => [...items].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
-    [items],
-  )
+  const sortedItems = useMemo(() => {
+    const factor = sort === 'name:desc' ? -1 : 1
+    return [...items].sort(
+      (a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) *
+        factor
+    )
+  }, [items, sort])
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
@@ -298,7 +309,14 @@ export function ProductCatalogSection({
         <Table density='compact'>
           <TableHeader>
             <TableRow className='bg-muted/40'>
-              <TableHead>Name</TableHead>
+              <SortableTableHead
+                field='name'
+                sort={sort}
+                defaultSort='name:asc'
+                onSortChange={setSort}
+              >
+                Name
+              </SortableTableHead>
               <TableHead>Unit Price</TableHead>
               <TableHead>Unit Label</TableHead>
               <TableHead>Min Qty</TableHead>

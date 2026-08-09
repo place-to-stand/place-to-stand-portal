@@ -73,7 +73,11 @@ export type ClientDetail = {
 }
 
 export const fetchClientsWithMetrics = cache(
-  async (user: AppUser, search?: string): Promise<ClientWithMetrics[]> => {
+  async (
+    user: AppUser,
+    search?: string,
+    billingType?: 'prepaid' | 'net_30'
+  ): Promise<ClientWithMetrics[]> => {
     assertAdmin(user)
 
     const baseConditions = [isNull(clients.deletedAt)]
@@ -83,6 +87,11 @@ export const fetchClientsWithMetrics = cache(
     if (trimmedSearch) {
       const pattern = createSearchPattern(trimmedSearch)
       baseConditions.push(sql`${clients.name} ILIKE ${pattern}`)
+    }
+
+    // PRD 004 §03: `?billing=` filter shares the landing table's conditions.
+    if (billingType) {
+      baseConditions.push(eq(clients.billingType, billingType))
     }
 
     // Aliased user joins: the clients table references users three times

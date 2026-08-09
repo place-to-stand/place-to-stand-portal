@@ -92,7 +92,7 @@ export function LeadsWorkspace({
       setClosingLeadId(null)
       setInitialStatus(status ?? null)
       setIsCreatingLead(true)
-      router.push('/leads/board', { scroll: false })
+      router.push('/leads', { scroll: false })
     },
     [canManage, cancelPendingClose, router]
   )
@@ -106,7 +106,7 @@ export function LeadsWorkspace({
       cancelPendingClose()
       setClosingLeadId(null)
       setIsCreatingLead(false)
-      router.push(`/leads/board/${lead.id}`, { scroll: false })
+      router.push(`/leads/${lead.id}`, { scroll: false })
     },
     [canManage, cancelPendingClose, router]
   )
@@ -144,7 +144,7 @@ export function LeadsWorkspace({
 
       if (activeLeadId) {
         setClosingLeadId(activeLeadId)
-        router.push('/leads/board', { scroll: false })
+        router.push('/leads', { scroll: false })
       }
       startRefresh(() => {
         router.refresh()
@@ -183,7 +183,7 @@ export function LeadsWorkspace({
 
   return (
     <PageShell
-      breadcrumbs={crumbsForNav('/leads/board')}
+      breadcrumbs={crumbsForNav('/leads')}
       tabs={LEADS_TABS}
       activeTab='board'
       count={{ label: 'leads', total: totalLeads }}

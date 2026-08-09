@@ -9,6 +9,7 @@ import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { FilterBar } from '@/components/table-toolbar/filter-bar'
 import { FilterSelect } from '@/components/table-toolbar/filter-select'
+import { SearchInput } from '@/components/table-toolbar/search-input'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import {
   Table,
@@ -65,6 +66,7 @@ export function LeadsArchiveSection({ leads }: LeadsArchiveSectionProps) {
     resetKeys: [],
     filters: {
       status: { isValid: value => isLeadStatus(value) },
+      q: {},
     },
   })
   const [isPending, startTransition] = useTransition()
@@ -133,6 +135,7 @@ export function LeadsArchiveSection({ leads }: LeadsArchiveSectionProps) {
 
   const rawStatus = getParam('status')
   const statusFilter = isLeadStatus(rawStatus) ? rawStatus : undefined
+  const searchQuery = getParam('q')?.trim() || undefined
   const rawSort = getParam('sort')
   const sortParam = rawSort && isLeadArchiveSortValue(rawSort) ? rawSort : undefined
   const sort = parseSortParam(
@@ -151,9 +154,18 @@ export function LeadsArchiveSection({ leads }: LeadsArchiveSectionProps) {
   }, [leads])
 
   const visibleLeads = useMemo(() => {
-    const filtered = statusFilter
+    let filtered = statusFilter
       ? leads.filter(lead => lead.status === statusFilter)
       : leads
+    // In-memory `?q=` search over the fields the table shows (PRD 004 §03).
+    if (searchQuery) {
+      const needle = searchQuery.toLowerCase()
+      filtered = filtered.filter(lead =>
+        [lead.contactName, lead.companyName, lead.contactEmail].some(field =>
+          field?.toLowerCase().includes(needle)
+        )
+      )
+    }
     const factor = sort.direction === 'asc' ? 1 : -1
     return [...filtered].sort((a, b) => {
       if (sort.field === 'name') {
@@ -166,7 +178,7 @@ export function LeadsArchiveSection({ leads }: LeadsArchiveSectionProps) {
       }
       return factor * a.deletedAt.localeCompare(b.deletedAt)
     })
-  }, [leads, sort.direction, sort.field, statusFilter])
+  }, [leads, searchQuery, sort.direction, sort.field, statusFilter])
 
   if (leads.length === 0) {
     return (
@@ -193,6 +205,11 @@ export function LeadsArchiveSection({ leads }: LeadsArchiveSectionProps) {
         onConfirm={handleConfirmDestroy}
       />
       <FilterBar>
+        <SearchInput
+          value={searchQuery}
+          onCommit={value => update({ q: value })}
+          placeholder='Search leads…'
+        />
         <FilterSelect
           value={statusFilter}
           onChange={value => update({ status: value })}

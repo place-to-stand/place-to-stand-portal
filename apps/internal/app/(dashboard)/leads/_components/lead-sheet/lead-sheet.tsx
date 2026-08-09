@@ -49,14 +49,14 @@ export function LeadSheet({
   const pushActionUrl = useCallback(
     (action: string) => {
       if (!lead) return
-      window.history.replaceState(null, '', `/leads/board/${lead.id}/${action}`)
+      window.history.replaceState(null, '', `/leads/${lead.id}/${action}`)
     },
     [lead]
   )
 
   const pushLeadUrl = useCallback(() => {
     if (!lead) return
-    window.history.replaceState(null, '', `/leads/board/${lead.id}`)
+    window.history.replaceState(null, '', `/leads/${lead.id}`)
   }, [lead])
 
   const canConvert = lead?.status === 'CLOSED_WON' && !lead?.convertedToClientId

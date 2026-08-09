@@ -83,7 +83,7 @@ export function ClientsLanding({ clients }: ClientsLandingProps) {
 
   return (
     <div className='rounded-lg border'>
-      <Table>
+      <Table density='compact'>
         <TableHeader>
           <TableRow className='bg-muted/40'>
             <SortableTableHead

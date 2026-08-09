@@ -21,17 +21,11 @@ export default async function LeadsArchivePage() {
 
   return (
     <PageShell
-      breadcrumbs={[...crumbsForNav('/leads/board'), { label: 'Archive' }]}
+      breadcrumbs={[...crumbsForNav('/leads'), { label: 'Archive' }]}
       tabs={LEADS_TABS}
       activeTab='archive'
     >
       <section className='bg-background rounded-xl border p-6 shadow-sm space-y-3'>
-        <div>
-          <h3 className='text-lg font-semibold'>Archived leads</h3>
-          <p className='text-muted-foreground text-sm'>
-            Review archived leads and restore them when opportunities reopen.
-          </p>
-        </div>
         <LeadsArchiveSection leads={archivedLeads} />
       </section>
     </PageShell>

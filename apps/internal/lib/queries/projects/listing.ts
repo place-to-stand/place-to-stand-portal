@@ -15,9 +15,16 @@ import {
   resolveDirection,
   type PageInfo,
 } from '@/lib/pagination/cursor'
+import {
+  decodeSortCursor,
+  encodeSortCursor,
+} from '@/lib/pagination/sort'
+import {
+  DEFAULT_PROJECTS_SORT,
+  type ProjectSortField,
+} from './sort'
 
 import {
-  buildProjectCursorCondition,
   projectFields,
   type ListProjectsForSettingsInput,
   projectGroupByColumns,
@@ -74,6 +81,39 @@ export async function getProjectById(
   return result[0]
 }
 
+
+// PRD 004 §03 (R5): per-sort descriptors for the settings/archive list.
+type ProjectSortDescriptor = {
+  encode: (row: { name: string | null; createdAt: string | Date | null }) => string
+  compare: (op: 'gt' | 'lt', value: string) => SQL
+  equals: (value: string) => SQL
+  orderAsc: SQL
+  orderDesc: SQL
+}
+
+const PROJECT_SORT_DESCRIPTORS: Record<ProjectSortField, ProjectSortDescriptor> = {
+  name: {
+    encode: row => row.name ?? '',
+    compare: (op, value) =>
+      op === 'gt'
+        ? sql`${projects.name} > ${value}`
+        : sql`${projects.name} < ${value}`,
+    equals: value => sql`${projects.name} = ${value}`,
+    orderAsc: sql`${projects.name} ASC`,
+    orderDesc: sql`${projects.name} DESC`,
+  },
+  created: {
+    encode: row => String(row.createdAt ?? ''),
+    compare: (op, value) =>
+      op === 'gt'
+        ? sql`${projects.createdAt} > ${value}::timestamptz`
+        : sql`${projects.createdAt} < ${value}::timestamptz`,
+    equals: value => sql`${projects.createdAt} = ${value}::timestamptz`,
+    orderAsc: sql`${projects.createdAt} ASC`,
+    orderDesc: sql`${projects.createdAt} DESC`,
+  },
+}
+
 export async function listProjectsForSettings(
   user: AppUser,
   input: ListProjectsForSettingsInput = {},
@@ -85,13 +125,12 @@ export async function listProjectsForSettings(
   const normalizedStatus = input.status === 'archived' ? 'archived' : 'active'
   const searchQuery = input.search?.trim() ?? ''
 
-  const baseConditions: SQL[] = []
+  const statusCondition: SQL =
+    normalizedStatus === 'active'
+      ? sql`${projects.deletedAt} IS NULL`
+      : sql`${projects.deletedAt} IS NOT NULL`
 
-  if (normalizedStatus === 'active') {
-    baseConditions.push(isNull(projects.deletedAt))
-  } else {
-    baseConditions.push(sql`${projects.deletedAt} IS NOT NULL`)
-  }
+  const baseConditions: SQL[] = [statusCondition]
 
   if (searchQuery) {
     const pattern = createSearchPattern(searchQuery)
@@ -100,10 +139,17 @@ export async function listProjectsForSettings(
     )
   }
 
-  const cursorPayload = decodeCursor<{ name?: string; id?: string }>(
-    input.cursor,
-  )
-  const cursorCondition = buildProjectCursorCondition(direction, cursorPayload)
+  const sort = input.sort ?? DEFAULT_PROJECTS_SORT
+  const descriptor = PROJECT_SORT_DESCRIPTORS[sort.field]
+
+  // Field-tagged cursor (R5): payloads minted under a different sort are
+  // rejected and we serve page one.
+  const cursorPayload = decodeSortCursor(input.cursor, sort.field)
+
+  const effectiveAsc = (sort.direction === 'asc') === (direction === 'forward')
+  const cursorCondition = cursorPayload
+    ? sql`(${descriptor.compare(effectiveAsc ? 'gt' : 'lt', cursorPayload.value ?? '')} OR (${descriptor.equals(cursorPayload.value ?? '')} AND ${effectiveAsc ? sql`${projects.id} > ${cursorPayload.id}` : sql`${projects.id} < ${cursorPayload.id}`}))`
+    : null
 
   const paginatedConditions = cursorCondition
     ? [...baseConditions, cursorCondition]
@@ -112,10 +158,9 @@ export async function listProjectsForSettings(
   const whereClause =
     paginatedConditions.length > 0 ? and(...paginatedConditions) : undefined
 
-  const ordering =
-    direction === 'forward'
-      ? [asc(projects.name), asc(projects.id)]
-      : [desc(projects.name), desc(projects.id)]
+  const ordering = effectiveAsc
+    ? [descriptor.orderAsc, asc(projects.id)]
+    : [descriptor.orderDesc, desc(projects.id)]
 
   const rawRows = await db
     .select({
@@ -176,11 +221,16 @@ export async function listProjectsForSettings(
           : null,
   }))
 
-  const [totalResult, clientDirectory] = await Promise.all([
+  const [totalResult, unfilteredTotalResult, clientDirectory] = await Promise.all([
     db
       .select({ count: sql<number>`count(*)` })
       .from(projects)
       .where(baseConditions.length ? and(...baseConditions) : undefined),
+    // Status-scoped only — the `M` in `Showing N of M` (PRD 004 §03).
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(projects)
+      .where(statusCondition),
     db
       .select({
         id: clients.id,
@@ -192,6 +242,7 @@ export async function listProjectsForSettings(
   ])
 
   const totalCount = Number(totalResult[0]?.count ?? 0)
+  const unfilteredTotalCount = Number(unfilteredTotalResult[0]?.count ?? 0)
   const firstItem = mappedItems[0] ?? null
   const lastItem = mappedItems[mappedItems.length - 1] ?? null
 
@@ -204,14 +255,16 @@ export async function listProjectsForSettings(
     hasPreviousPage,
     hasNextPage,
     startCursor: firstItem
-      ? encodeCursor({
-          name: firstItem.name ?? '',
+      ? encodeSortCursor({
+          sortField: sort.field,
+          value: descriptor.encode(firstItem),
           id: firstItem.id,
         })
       : null,
     endCursor: lastItem
-      ? encodeCursor({
-          name: lastItem.name ?? '',
+      ? encodeSortCursor({
+          sortField: sort.field,
+          value: descriptor.encode(lastItem),
           id: lastItem.id,
         })
       : null,
@@ -220,6 +273,7 @@ export async function listProjectsForSettings(
   return {
     items: mappedItems,
     totalCount,
+    unfilteredTotalCount,
     pageInfo,
     clients: clientDirectory.map(client => ({
       id: client.id,

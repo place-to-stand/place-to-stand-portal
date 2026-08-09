@@ -7,6 +7,7 @@ import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 
 import type { PageInfo } from '@/lib/pagination/cursor'
+import { isClientBilling } from '@/lib/settings/clients/filters'
 import {
   type ClientsTableClient,
   useClientsTableState,
@@ -60,9 +61,11 @@ export function ClientsManagementTable({
     handleConfirmDestroy,
   } = useClientsTableState()
 
-  // Guard-validated active search (R4): an empty list under a live `?q=`
-  // shows the filtered message, not the tab's default empty state.
-  const hasActiveFilter = Boolean(searchParams.get('q')?.trim())
+  // Guard-validated active filters (R4): an empty list under a live `?q=` or
+  // `?billing=` shows the filtered message, not the tab's default empty state.
+  const hasActiveFilter =
+    Boolean(searchParams.get('q')?.trim()) ||
+    isClientBilling(searchParams.get('billing') ?? undefined)
   const emptyMessage = hasActiveFilter
     ? 'No clients match the current filters.'
     : EMPTY_MESSAGES[mode]

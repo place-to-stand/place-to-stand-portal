@@ -134,6 +134,7 @@ export function SubmissionsTable({
   // empty list would otherwise show the wrong message. The unacknowledged
   // quick filter only exists on the active tab.
   const hasActiveFilter =
+    (searchParams.get('q') ?? '').trim().length > 0 ||
     isFormSubmissionKind(searchParams.get('kind') ?? undefined) ||
     isFormSubmissionStatus(searchParams.get('status') ?? undefined) ||
     (mode === 'active' && searchParams.get('unacknowledged') === '1')

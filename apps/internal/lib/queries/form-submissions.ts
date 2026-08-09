@@ -4,6 +4,7 @@ import {
   count,
   desc,
   eq,
+  ilike,
   inArray,
   isNotNull,
   isNull,
@@ -17,6 +18,7 @@ import {
   DEFAULT_SUBMISSIONS_SORT,
   type SubmissionSortField,
 } from '@/lib/form-submissions/filters'
+import { createSearchPattern } from '@/lib/pagination/cursor'
 import type { ParsedSort } from '@/lib/pagination/sort'
 import type { FormSubmission, NewFormSubmission } from '@pts/db/types'
 
@@ -31,6 +33,8 @@ type FormSubmissionFilters = {
   unacknowledgedOnly?: boolean
   /** false/undefined: active rows (deleted_at IS NULL). true: archived rows. */
   archived?: boolean
+  /** Fuzzy identity search (PRD 004 §03) — name, email, company. */
+  search?: string
 }
 
 function buildFilters({
@@ -38,7 +42,11 @@ function buildFilters({
   status,
   unacknowledgedOnly,
   archived,
+  search,
 }: FormSubmissionFilters) {
+  const searchQuery = search?.trim() ?? ''
+  const searchPattern = searchQuery ? createSearchPattern(searchQuery) : null
+
   return and(
     archived
       ? isNotNull(formSubmissions.deletedAt)
@@ -54,6 +62,13 @@ function buildFilters({
             eq(formSubmissions.kind, 'contact'),
             inArray(formSubmissions.status, ['completed', 'captured'])
           )
+        )
+      : undefined,
+    searchPattern
+      ? or(
+          ilike(formSubmissions.contactName, searchPattern),
+          ilike(formSubmissions.contactEmail, searchPattern),
+          ilike(formSubmissions.contactCompany, searchPattern)
         )
       : undefined
   )

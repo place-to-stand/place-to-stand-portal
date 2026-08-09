@@ -3,12 +3,19 @@ import {
   type ProjectStatusValue,
 } from '@/lib/constants'
 import type { CursorDirection } from '@/lib/pagination/cursor'
+import { parseSortParam, type ParsedSort } from '@/lib/pagination/sort'
+import {
+  DEFAULT_PROJECTS_SORT,
+  PROJECT_SORT_FIELDS,
+  type ProjectSortField,
+} from '@/lib/queries/projects/sort'
 
 type RawParams = Record<string, string | string[] | undefined>
 
 type ParsedProjectsSearchParams = {
   searchQuery: string | null
   cursor: string | null
+  sort: ParsedSort<ProjectSortField>
   direction: CursorDirection
   limit: number | undefined
 }
@@ -84,6 +91,11 @@ export function parseProjectsSearchParams(
 ): ParsedProjectsSearchParams {
   const searchQuery = extractParam(params.q)
   const cursor = extractParam(params.cursor)
+  const sort = parseSortParam(
+    extractParam(params.sort) ?? undefined,
+    PROJECT_SORT_FIELDS,
+    DEFAULT_PROJECTS_SORT
+  )
   const directionParam = extractParam(params.dir)
   const direction: CursorDirection =
     directionParam === 'backward' ? 'backward' : 'forward'
@@ -93,6 +105,7 @@ export function parseProjectsSearchParams(
   return {
     searchQuery,
     cursor,
+    sort,
     direction,
     limit: Number.isFinite(limit) ? limit : undefined,
   }

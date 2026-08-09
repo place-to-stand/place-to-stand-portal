@@ -49,17 +49,29 @@ export function SortableTableHead({
   const defaultParsed = parseSort(undefined, defaultSort)
 
   const handleClick = () => {
-    if (!isActive) {
-      onSortChange(`${field}:asc`)
-      return
+    let next: SortValue | undefined = !isActive
+      ? `${field}:asc`
+      : current.direction === 'asc'
+        ? `${field}:desc`
+        : undefined
+
+    // The click must always change the effective order:
+    // - desc → clear would land right back on desc when this field IS the
+    //   default-desc column (single-sort tables like submissions/hour
+    //   blocks would be stuck) — flip to asc instead.
+    // - an explicit value identical to the view default normalizes to a
+    //   clean URL (param cleared).
+    if (
+      next === undefined &&
+      defaultParsed.field === field &&
+      defaultParsed.direction === 'desc'
+    ) {
+      next = `${field}:asc`
+    } else if (next === defaultSort) {
+      next = undefined
     }
-    if (current.direction === 'asc') {
-      onSortChange(`${field}:desc`)
-      return
-    }
-    // desc → back to the view default (clears the param). If this field IS
-    // the default field, that lands on its default direction.
-    onSortChange(undefined)
+
+    onSortChange(next)
   }
 
   // When the param is unset, the default column reads as sorted (PW3) —

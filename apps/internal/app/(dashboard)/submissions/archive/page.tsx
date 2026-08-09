@@ -46,6 +46,7 @@ export default async function SubmissionsArchivePage({
   const statusParam = firstParam(params.status)
   const kind = isFormSubmissionKind(kindParam) ? kindParam : undefined
   const status = isFormSubmissionStatus(statusParam) ? statusParam : undefined
+  const search = firstParam(params.q)?.trim() || undefined
   const sort = parseSubmissionsSort(firstParam(params.sort))
 
   // Share links: ?submission=<id> opens the detail sheet directly (redirects
@@ -63,6 +64,7 @@ export default async function SubmissionsArchivePage({
       kind,
       status,
       archived: true,
+      search,
       sort,
     })
 
@@ -72,13 +74,14 @@ export default async function SubmissionsArchivePage({
       tabs={SUBMISSIONS_TABS}
       activeTab='archive'
       count={{
-        label: 'archived',
+        label: 'archived submissions',
         total: unfilteredTotalCount,
         filteredTotal: totalCount,
       }}
     >
       <section className='bg-background rounded-xl border p-6 shadow-sm space-y-4'>
         <SubmissionsFilters
+          search={search}
           activeKind={kind}
           activeStatus={status}
           basePath='/submissions/archive'

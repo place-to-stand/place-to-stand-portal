@@ -9,7 +9,10 @@ import {
   resolveDirection,
   type CursorDirection,
 } from '@/lib/pagination/cursor'
-import type { ClientSortField } from '@/lib/settings/clients/filters'
+import type {
+  ClientBillingFilter,
+  ClientSortField,
+} from '@/lib/settings/clients/filters'
 
 import type { ClientsSettingsListItem } from './types'
 
@@ -25,6 +28,16 @@ export function buildStatusCondition(status: StatusFilter): SQL {
   }
 
   return sql`${clients.deletedAt} IS NULL`
+}
+
+export function buildBillingCondition(
+  billing: ClientBillingFilter | null | undefined
+): SQL | null {
+  if (!billing) {
+    return null
+  }
+
+  return sql`${clients.billingType} = ${billing}`
 }
 
 export function buildSearchCondition(search: string | null | undefined): SQL | null {

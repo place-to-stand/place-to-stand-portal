@@ -18,7 +18,7 @@ export default async function LeadsActivityPage() {
 
   return (
     <PageShell
-      breadcrumbs={[...crumbsForNav('/leads/board'), { label: 'Activity' }]}
+      breadcrumbs={[...crumbsForNav('/leads'), { label: 'Activity' }]}
       tabs={LEADS_TABS}
       activeTab='activity'
     >

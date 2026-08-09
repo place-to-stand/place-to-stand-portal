@@ -25,6 +25,8 @@ import {
   TableRow,
 } from '@pts/ui/table'
 import { useToast } from '@/components/ui/use-toast'
+import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
+import { useListParams } from '@/hooks/use-list-params'
 import { ProjectStatusCell } from '@/components/projects/project-status-cell'
 import type { ProjectStatusValue } from '@/lib/constants'
 import { formatProjectDateRange } from '@/lib/settings/projects/project-formatters'
@@ -37,6 +39,19 @@ import {
 import { updateProjectStatus } from '@/lib/settings/projects/actions/update-project-status'
 import type { ProjectWithRelations } from '@/lib/types'
 import { cn } from '@/lib/utils'
+
+// PRD 004 §03: per-view sort allowlist. One shared `?sort` drives the Name
+// column in all three section tables; grouping semantics stay unchanged —
+// only the project ordering within each section/client group flips.
+const PROJECT_SORT_FIELDS = ['name'] as const
+
+function isProjectSortValue(value: string): boolean {
+  const [field, direction] = value.split(':')
+  return (
+    (PROJECT_SORT_FIELDS as readonly string[]).includes(field) &&
+    (direction === 'asc' || direction === 'desc')
+  )
+}
 
 const HOURS_FORMATTER = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2,
@@ -131,6 +146,14 @@ export function ProjectsLanding({
   const router = useRouter()
   const { toast } = useToast()
 
+  const { update, getParam } = useListParams({
+    basePath: '/projects',
+    resetKeys: [],
+  })
+  const rawSort = getParam('sort')
+  const sort = rawSort && isProjectSortValue(rawSort) ? rawSort : undefined
+  const sortFactor = sort === 'name:desc' ? -1 : 1
+
   // Handle status change for a project
   const handleProjectStatusChange = useCallback(
     async (projectId: string, status: ProjectStatusValue) => {
@@ -187,12 +210,16 @@ export function ProjectsLanding({
       }
     })
 
+    // Sort flips asc/desc per `?sort`; client groups stay alphabetical (asc)
+    // so only project ordering within each section/group changes.
     clientMap.forEach(entry => {
-      entry.projects.sort((a, b) => a.name.localeCompare(b.name))
+      entry.projects.sort(
+        (a, b) => a.name.localeCompare(b.name) * sortFactor
+      )
     })
 
-    internal.sort((a, b) => a.name.localeCompare(b.name))
-    personal.sort((a, b) => a.name.localeCompare(b.name))
+    internal.sort((a, b) => a.name.localeCompare(b.name) * sortFactor)
+    personal.sort((a, b) => a.name.localeCompare(b.name) * sortFactor)
 
     const sortedClientSections = Array.from(clientMap.values()).sort((a, b) =>
       a.client.name.localeCompare(b.client.name)
@@ -203,7 +230,7 @@ export function ProjectsLanding({
       internalProjects: internal,
       personalProjects: personal,
     }
-  }, [projects, currentUserId])
+  }, [projects, currentUserId, sortFactor])
 
   const projectLookup = useMemo(() => createProjectLookup(projects), [projects])
   const projectsByClientId = useMemo(
@@ -375,10 +402,18 @@ export function ProjectsLanding({
 
   const renderProjectTable = (items: ProjectWithRelations[]) => (
     <div className='rounded-lg border'>
-      <Table className='table-fixed'>
+      <Table density='compact' className='table-fixed'>
         <TableHeader>
           <TableRow className='bg-muted/40'>
-            <TableHead className={tableColumnWidths.project}>Project</TableHead>
+            <SortableTableHead
+              field='name'
+              sort={sort}
+              defaultSort='name:asc'
+              onSortChange={next => update({ sort: next })}
+              className={tableColumnWidths.project}
+            >
+              Project
+            </SortableTableHead>
             <TableHead className={tableColumnWidths.status}>Status</TableHead>
             <TableHead className={tableColumnWidths.progress}>
               Progress
@@ -463,12 +498,18 @@ export function ProjectsLanding({
   const clientSectionContent =
     clientSections.length > 0 ? (
       <div className='rounded-lg border'>
-        <Table className='table-fixed'>
+        <Table density='compact' className='table-fixed'>
           <TableHeader>
             <TableRow className='bg-muted/40'>
-              <TableHead className={tableColumnWidths.project}>
+              <SortableTableHead
+                field='name'
+                sort={sort}
+                defaultSort='name:asc'
+                onSortChange={next => update({ sort: next })}
+                className={tableColumnWidths.project}
+              >
                 Project
-              </TableHead>
+              </SortableTableHead>
               <TableHead className={tableColumnWidths.status}>Status</TableHead>
               <TableHead className={tableColumnWidths.progress}>
                 Progress

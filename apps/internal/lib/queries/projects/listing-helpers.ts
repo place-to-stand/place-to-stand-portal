@@ -9,6 +9,8 @@ import {
   type CursorDirection,
   type PageInfo,
 } from '@/lib/pagination/cursor'
+import type { ParsedSort } from '@/lib/pagination/sort'
+import type { ProjectSortField } from './sort'
 
 export type SelectProject = typeof projects.$inferSelect
 
@@ -45,11 +47,15 @@ export type ListProjectsForSettingsInput = {
   cursor?: string | null
   direction?: CursorDirection | null
   limit?: number | null
+  sort?: ParsedSort<ProjectSortField>
 }
 
 export type ProjectsSettingsResult = {
   items: ProjectsSettingsListItem[]
+  /** Rows matching the active filters/search (drives `Showing N of M`). */
   totalCount: number
+  /** Rows on the tab regardless of filters/search (the `M`). */
+  unfilteredTotalCount: number
   pageInfo: PageInfo
   clients: ProjectClientSummary[]
 }

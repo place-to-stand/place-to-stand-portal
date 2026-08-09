@@ -43,13 +43,14 @@ function sortLandingClients(
 export default async function ClientsPage({ searchParams }: ClientsPageProps) {
   const user = await requireUser()
   const params = searchParams ? await searchParams : {}
-  const { cursor, direction, limit, search, sort } =
+  const { cursor, direction, limit, billing, search, sort } =
     parseClientsSearchParams(params)
 
   const [clients, managementData] = await Promise.all([
-    fetchClientsWithMetrics(user, search),
+    fetchClientsWithMetrics(user, search, billing),
     listClientsForSettings(user, {
       status: 'active',
+      billing,
       search,
       cursor,
       direction,
@@ -73,7 +74,7 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
       primaryAction={<ClientsAddButton />}
     >
       <section className='bg-background space-y-4 rounded-xl border p-6 shadow-sm'>
-        <ClientsFilters basePath='/clients' search={search} />
+        <ClientsFilters basePath='/clients' search={search} billing={billing} />
         <ClientsLanding clients={sortedClients} />
       </section>
     </PageShell>
