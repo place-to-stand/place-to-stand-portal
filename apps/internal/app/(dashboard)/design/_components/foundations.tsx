@@ -70,37 +70,37 @@ const ENTITY_CARDS: Array<{ name: string; color: string; className: string }> =
       name: 'Task',
       color: 'violet',
       className:
-        'border-violet-500/60 hover:border-violet-500 hover:bg-violet-500/5',
+        'border-violet-500/35 hover:border-violet-500/60 hover:bg-violet-500/5',
     },
     {
       name: 'Lead',
       color: 'amber',
       className:
-        'border-amber-500/60 hover:border-amber-500 hover:bg-amber-500/5',
+        'border-amber-500/35 hover:border-amber-500/60 hover:bg-amber-500/5',
     },
     {
       name: 'Project',
       color: 'emerald',
       className:
-        'border-emerald-500/60 hover:border-emerald-500 hover:bg-emerald-500/5',
+        'border-emerald-500/35 hover:border-emerald-500/60 hover:bg-emerald-500/5',
     },
     {
       name: 'Client',
       color: 'blue',
       className:
-        'border-blue-500/60 hover:border-blue-500 hover:bg-blue-500/5',
+        'border-blue-500/35 hover:border-blue-500/60 hover:bg-blue-500/5',
     },
     {
       name: 'Contact',
       color: 'cyan',
       className:
-        'border-cyan-500/60 hover:border-cyan-500 hover:bg-cyan-500/5',
+        'border-cyan-500/35 hover:border-cyan-500/60 hover:bg-cyan-500/5',
     },
     {
       name: 'Suggestion',
       color: 'fuchsia',
       className:
-        'border-fuchsia-500/60 hover:border-fuchsia-500 hover:bg-fuchsia-500/5',
+        'border-fuchsia-500/35 hover:border-fuchsia-500/60 hover:bg-fuchsia-500/5',
     },
   ]
 
