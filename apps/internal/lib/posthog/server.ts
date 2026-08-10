@@ -46,6 +46,9 @@ function createPostHogClient() {
     host: serverEnv.NEXT_PUBLIC_POSTHOG_HOST,
     flushAt: 1,
     flushInterval: 0,
+    // Keep dev traffic out of the production PostHog project (mirrors the
+    // NODE_ENV gate in instrumentation-client.ts).
+    disabled: process.env.NODE_ENV !== 'production',
   })
 }
 

@@ -1,6 +1,5 @@
 'use client'
 
-import { format } from 'date-fns'
 import Link from 'next/link'
 import { Archive, Building2, RefreshCw, Trash2 } from 'lucide-react'
 
@@ -8,6 +7,7 @@ import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
+import { formatCalendarDate } from '@/lib/dates'
 import { isHourBlockSortValue } from '@/lib/settings/hour-blocks/filters'
 import {
   Table,
@@ -46,14 +46,7 @@ export type HourBlocksTableSectionProps = {
 
 const toHours = (value: number) => `${value.toLocaleString()}h`
 
-const formatTimestamp = (value: string) => {
-  try {
-    return format(new Date(value), 'MMM d, yyyy')
-  } catch (error) {
-    console.warn('Unable to format hour block timestamp', { value, error })
-    return '—'
-  }
-}
+const formatTimestamp = (value: string) => formatCalendarDate(value) ?? '—'
 
 export function HourBlocksTableSection({
   hourBlocks,

@@ -1,13 +1,13 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { format } from 'date-fns'
 import { ListTodo, Plus, Calendar, ExternalLink, CheckCircle2, Circle } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@pts/ui/skeleton'
 import type { LeadRecord } from '@/lib/leads/types'
+import { formatCalendarDate } from '@/lib/dates'
 
 import { LeadTaskSheetOverlay } from './lead-task-sheet-overlay'
 
@@ -186,7 +186,7 @@ function TaskCard({
             {task.dueOn && (
               <span className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Calendar className="h-3 w-3" aria-hidden="true" />
-                {format(new Date(task.dueOn), 'MMM d')}
+                {formatCalendarDate(task.dueOn, { month: 'short', day: 'numeric' })}
               </span>
             )}
           </div>
