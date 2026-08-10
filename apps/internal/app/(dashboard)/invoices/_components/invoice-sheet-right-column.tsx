@@ -8,6 +8,7 @@ import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Separator } from '@pts/ui/separator'
 import type { InvoiceWithClient } from '@/lib/invoices/invoice-form'
+import { formatCalendarDate } from '@/lib/dates'
 
 import { InvoiceShareSection } from './invoice-share-section'
 
@@ -76,20 +77,8 @@ function StatusBadge({ status }: { status: string }) {
 // Date helpers
 // ---------------------------------------------------------------------------
 
-const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/
-
-const formatDate = (dateStr: string | null): string | null => {
-  if (!dateStr) return null
-  // For date-only strings (e.g. "2026-03-10"), append T00:00:00 to prevent
-  // timezone shifts. Full timestamps (e.g. "2026-03-10 15:30:00+00") parse fine.
-  const d = new Date(DATE_ONLY_RE.test(dateStr) ? `${dateStr}T00:00:00` : dateStr)
-  if (isNaN(d.getTime())) return null
-  return d.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
-}
+const formatDate = (dateStr: string | null): string | null =>
+  formatCalendarDate(dateStr)
 
 // ---------------------------------------------------------------------------
 // Status-aware action buttons

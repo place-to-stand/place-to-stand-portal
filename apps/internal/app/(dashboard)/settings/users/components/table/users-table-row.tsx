@@ -1,6 +1,5 @@
 'use client'
 
-import { format } from 'date-fns'
 import { Archive, RefreshCw, Trash2 } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
@@ -12,6 +11,7 @@ import { USER_ROLE_LABELS } from '@/lib/settings/users/filters'
 
 import type { UserRowState } from '@/lib/settings/users/state/use-users-table-state'
 import { cn } from '@/lib/utils'
+import { formatCalendarDate } from '@/lib/dates'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
 import {
   CLICKABLE_ROW_CLASS,
@@ -96,7 +96,7 @@ export function UsersTableRow({
         )}
       </TableCell>
       <TableCell className='text-muted-foreground text-sm'>
-        {format(new Date(user.created_at), 'MMM d, yyyy')}
+        {formatCalendarDate(user.created_at)}
       </TableCell>
       <TableCell className='text-right'>
         <div className='flex justify-end gap-2'>

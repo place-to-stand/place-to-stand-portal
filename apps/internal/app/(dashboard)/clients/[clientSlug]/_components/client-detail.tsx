@@ -15,7 +15,7 @@ import {
   Pencil,
   UserPlus,
 } from 'lucide-react'
-import { format } from 'date-fns'
+import { formatCalendarDate } from '@/lib/dates'
 
 import { Button } from '@pts/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -199,7 +199,7 @@ function ClientDetailsWidget({
         <DetailRow
           icon={Calendar}
           label='Created'
-          value={format(new Date(client.createdAt), 'MMM d, yyyy')}
+          value={formatCalendarDate(client.createdAt) ?? '—'}
         />
         {client.website ? (
           <div className='flex items-center gap-3 px-4 py-2.5'>

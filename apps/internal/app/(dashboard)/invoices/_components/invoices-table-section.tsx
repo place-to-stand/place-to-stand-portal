@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import Link from 'next/link'
-import { format } from 'date-fns'
+import { formatCalendarDate } from '@/lib/dates'
 import {
   Archive,
   Building2,
@@ -71,15 +71,7 @@ const formatCurrency = (value: string) => {
   }
 }
 
-const formatDate = (value: string | null) => {
-  if (!value) return '\u2014'
-  try {
-    return format(new Date(value), 'MMM d, yyyy')
-  } catch (error) {
-    console.warn('Unable to format invoice date', { value, error })
-    return '\u2014'
-  }
-}
+const formatDate = (value: string | null) => formatCalendarDate(value) ?? '\u2014'
 
 function StatusBadge({ status, dueDate }: { status: string; dueDate: string | null }) {
   const isOverdue =
