@@ -1,19 +1,22 @@
 import 'server-only'
 
 import { cache } from 'react'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, count, eq, inArray, isNull, ne, or, sql } from 'drizzle-orm'
 
-import type { AppUser, UserRole } from '@/lib/auth/session'
-import { ensureClientAccessByProjectId } from '@/lib/auth/permissions'
+import type { AppUser } from '@/lib/auth/session'
+import { ensureProjectAccess } from '@/lib/auth/permissions'
+import type { ProjectStatusValue } from '@/lib/constants'
 import { db } from '@/lib/db'
-import { projects } from '@/lib/db/schema'
+import { projects, tasks } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 import type { ProjectWithRelations } from '@/lib/types'
 
 import { getTimeLogSummariesForProjects } from '@/lib/queries/time-logs'
 import { assembleProjectsWithRelations } from './assemble-projects'
 import { fetchBaseProjects } from './fetch-base-projects'
-import { fetchProjectRelations } from './fetch-project-relations'
+import { fetchProjectRelations, loadOwners } from './fetch-project-relations'
+import { getReposForProjects } from '@/lib/data/github-repos'
+import { loadClientRows, mapClientRows } from './relations/clients'
 export { fetchProjectCalendarTasks } from './fetch-project-calendar-tasks'
 
 // ============================================================
@@ -37,24 +40,36 @@ export type ProjectDetail = {
 
 export type FetchProjectsWithRelationsOptions = {
   forUserId?: string
-  forRole?: UserRole
+  /**
+   * Status predicate. Undefined = no status filtering; an empty array means
+   * an explicitly cleared selection and matches nothing.
+   */
+  statuses?: ProjectStatusValue[]
+  /** ILIKE search over project name/slug and client name. */
+  search?: string
+  /**
+   * Hydrate archived tasks (unbounded, monotonically growing set). Only the
+   * review and archive tabs render them; default false skips the query.
+   */
+  includeArchivedTasks?: boolean
 }
 
 export const fetchProjectsWithRelations = cache(
   async (
     options: FetchProjectsWithRelationsOptions = {}
   ): Promise<ProjectWithRelations[]> => {
-    const baseProjects = await fetchBaseProjects()
-
-    const shouldScopeToUser =
-      options.forRole !== 'ADMIN' && Boolean(options.forUserId)
+    // The internal portal is admin-only, so results are no longer scoped to
+    // the requesting user; `forUserId` is kept for call-site compatibility.
+    const baseProjects = await fetchBaseProjects({
+      statuses: options.statuses,
+      search: options.search,
+    })
 
     const relations = await fetchProjectRelations({
       projectIds: baseProjects.projectIds,
       clientIds: baseProjects.clientIds,
       ownerIds: baseProjects.ownerIds,
-      shouldScopeToUser,
-      userId: options.forUserId,
+      includeArchivedTasks: options.includeArchivedTasks,
     })
 
     const timeLogSummaries = await getTimeLogSummariesForProjects(
@@ -64,27 +79,136 @@ export const fetchProjectsWithRelations = cache(
     return assembleProjectsWithRelations({
       projects: baseProjects.projects,
       projectClientLookup: baseProjects.projectClientLookup,
-      options,
-      shouldScopeToUser,
       relations,
       timeLogSummaries,
     })
   }
 )
 
+/**
+ * All non-deleted projects with clients hydrated but NO task/member/repo
+ * relations — for project switchers and sheet selectors, which only read
+ * identity fields. Shapes as ProjectWithRelations (empty relation arrays)
+ * so existing consumers type-check; pair with
+ * `fetchProjectsWithRelationsByIds` to hydrate the active project(s).
+ */
+export const fetchProjectsLite = cache(
+  async (): Promise<ProjectWithRelations[]> => {
+    const baseProjects = await fetchBaseProjects({})
+    const clients = await loadClientRows(baseProjects.clientIds)
+
+    return assembleProjectsWithRelations({
+      projects: baseProjects.projects,
+      projectClientLookup: baseProjects.projectClientLookup,
+      relations: {
+        clients: mapClientRows(clients),
+        owners: [],
+        members: [],
+        tasks: [],
+        archivedTasks: [],
+        hourBlocks: [],
+        githubReposByProject: new Map(),
+      },
+      timeLogSummaries: new Map(),
+    })
+  }
+)
+
+export type LandingTaskProgress = { done: number; total: number }
+
+export type LandingProject = ProjectWithRelations & {
+  taskProgress: LandingTaskProgress
+}
+
+/**
+ * Landing table needs progress numbers, owner, client, and first repo per
+ * project — never the task rows themselves. One grouped aggregate replaces
+ * hydrating every task (with description, counts, assignees) per request.
+ */
+export async function fetchProjectsForLanding(
+  options: Pick<FetchProjectsWithRelationsOptions, 'statuses' | 'search'> = {}
+): Promise<LandingProject[]> {
+  const baseProjects = await fetchBaseProjects({
+    statuses: options.statuses,
+    search: options.search,
+  })
+
+  const [clients, owners, reposMap, progressRows] = await Promise.all([
+    loadClientRows(baseProjects.clientIds),
+    loadOwners(baseProjects.ownerIds),
+    getReposForProjects(baseProjects.projectIds),
+    baseProjects.projectIds.length
+      ? db
+          .select({
+            projectId: tasks.projectId,
+            total: sql<number>`count(*)`,
+            done: sql<number>`count(*) filter (where ${tasks.status} = 'DONE')`,
+          })
+          .from(tasks)
+          .where(
+            and(
+              inArray(tasks.projectId, baseProjects.projectIds),
+              isNull(tasks.deletedAt),
+              ne(tasks.status, 'ARCHIVED')
+            )
+          )
+          .groupBy(tasks.projectId)
+      : Promise.resolve([]),
+  ])
+
+  const githubReposByProject = new Map(
+    Array.from(reposMap.entries(), ([projectId, repos]) => [
+      projectId,
+      repos.map(repo => ({
+        id: repo.id,
+        repoFullName: repo.repoFullName,
+        defaultBranch: repo.defaultBranch,
+      })),
+    ])
+  )
+
+  const progressByProject = new Map(
+    progressRows.map(row => [
+      row.projectId,
+      { done: Number(row.done), total: Number(row.total) },
+    ])
+  )
+
+  const assembled = assembleProjectsWithRelations({
+    projects: baseProjects.projects,
+    projectClientLookup: baseProjects.projectClientLookup,
+    relations: {
+      clients: mapClientRows(clients),
+      owners,
+      members: [],
+      tasks: [],
+      archivedTasks: [],
+      hourBlocks: [],
+      githubReposByProject,
+    },
+    timeLogSummaries: new Map(),
+  })
+
+  return assembled.map(project => ({
+    ...project,
+    taskProgress: progressByProject.get(project.id) ?? { done: 0, total: 0 },
+  }))
+}
+
 export async function fetchProjectsWithRelationsByIds(
-  projectIds: string[]
+  projectIds: string[],
+  options: { includeArchivedTasks?: boolean } = {}
 ): Promise<ProjectWithRelations[]> {
   if (!projectIds.length) {
     return []
   }
 
-  const baseProjects = await fetchBaseProjects(projectIds)
+  const baseProjects = await fetchBaseProjects({ projectIds })
   const relations = await fetchProjectRelations({
     projectIds: baseProjects.projectIds,
     clientIds: baseProjects.clientIds,
     ownerIds: baseProjects.ownerIds,
-    shouldScopeToUser: false,
+    includeArchivedTasks: options.includeArchivedTasks,
   })
 
   const timeLogSummaries = await getTimeLogSummariesForProjects(
@@ -94,12 +218,58 @@ export async function fetchProjectsWithRelationsByIds(
   return assembleProjectsWithRelations({
     projects: baseProjects.projects,
     projectClientLookup: baseProjects.projectClientLookup,
-    options: {},
-    shouldScopeToUser: false,
     relations,
     timeLogSummaries,
   })
 }
+
+// ============================================================
+// LANDING COUNTS
+// ============================================================
+
+export type LandingProjectCounts = {
+  /** All projects visible to this user, pre-filter. */
+  total: number
+  clientCount: number
+  internalCount: number
+  personalCount: number
+}
+
+/**
+ * Unfiltered per-type counts for the projects landing (PRD 004 §03):
+ * powers the `total` in `Showing N of M` and the per-section
+ * "match the current filters" empty-state wording. PERSONAL projects only
+ * count for their creator, mirroring the landing's visibility rules.
+ */
+export const fetchLandingProjectCounts = cache(
+  async (currentUserId: string): Promise<LandingProjectCounts> => {
+    const rows = await db
+      .select({ type: projects.type, count: count() })
+      .from(projects)
+      .where(
+        and(
+          isNull(projects.deletedAt),
+          or(
+            ne(projects.type, 'PERSONAL'),
+            eq(projects.createdBy, currentUserId)
+          )
+        )
+      )
+      .groupBy(projects.type)
+
+    const byType = new Map(rows.map(row => [row.type, row.count]))
+    const clientCount = byType.get('CLIENT') ?? 0
+    const internalCount = byType.get('INTERNAL') ?? 0
+    const personalCount = byType.get('PERSONAL') ?? 0
+
+    return {
+      total: clientCount + internalCount + personalCount,
+      clientCount,
+      internalCount,
+      personalCount,
+    }
+  }
+)
 
 // ============================================================
 // SIMPLE PROJECT LOOKUPS
@@ -110,7 +280,7 @@ export async function fetchProjectsWithRelationsByIds(
  */
 export const fetchProjectById = cache(
   async (user: AppUser, projectId: string): Promise<ProjectDetail> => {
-    await ensureClientAccessByProjectId(user, projectId)
+    await ensureProjectAccess(user, projectId)
 
     const rows = await db
       .select({

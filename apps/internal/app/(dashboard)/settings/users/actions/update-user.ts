@@ -7,7 +7,10 @@ import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { getUserById } from '@/lib/queries/users'
 import { NotFoundError } from '@/lib/errors/http'
 
-import { updatePortalUser } from '@/lib/settings/users/services'
+import {
+  setPortalUserDisabled,
+  updatePortalUser,
+} from '@/lib/settings/users/services'
 import {
   updateUserSchema,
   type UpdateUserInput,
@@ -51,6 +54,24 @@ export async function updateUser(
       }
 
       const result = await updatePortalUser(actor, payload)
+
+      const previousDisabled = Boolean(existingUser.disabledAt)
+      const accessChanged =
+        payload.disabled !== undefined && payload.disabled !== previousDisabled
+
+      if (!result.error && accessChanged) {
+        const accessResult = await setPortalUserDisabled(actor, {
+          id: payload.id,
+          disabled: payload.disabled ?? false,
+        })
+
+        if (accessResult.error) {
+          revalidateUsers()
+          return {
+            error: `Profile saved, but updating access failed: ${accessResult.error}`,
+          }
+        }
+      }
 
       if (!result.error) {
         let updatedUser: Awaited<ReturnType<typeof getUserById>> | null = null
@@ -98,6 +119,14 @@ export async function updateUser(
 
         if (payload.password) {
           changedFields.push('password')
+        }
+
+        if (accessChanged) {
+          changedFields.push(
+            payload.disabled ? 'access disabled' : 'access enabled'
+          )
+          previousDetails.disabled = previousDisabled
+          nextDetails.disabled = payload.disabled
         }
 
         if (changedFields.length > 0) {

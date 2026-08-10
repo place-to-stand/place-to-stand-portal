@@ -40,22 +40,10 @@ export type ActivityTargetType =
   | 'TIME_LOG'
   | 'HOUR_BLOCK'
   | 'INVOICE'
+  | 'MONTHLY_CLOSE'
   | 'USER'
   | 'SETTINGS'
   | 'GENERAL'
-
-/**
- * Target types whose activity non-admin (CLIENT) users may read — always
- * additionally row-scoped to their client memberships in
- * `fetchActivityLogs`. Every other type (LEAD, INVOICE, HOUR_BLOCK, USER, …)
- * is internal operations data and admin-only.
- */
-export const CLIENT_VISIBLE_ACTIVITY_TARGET_TYPES = [
-  'TASK',
-  'PROJECT',
-  'COMMENT',
-  'TIME_LOG',
-] as const satisfies readonly ActivityTargetType[]
 
 export const ActivityVerbs = {
   TASK_CREATED: 'TASK_CREATED',
@@ -160,6 +148,9 @@ export const ActivityVerbs = {
   WORKER_PLAN_REQUESTED: 'WORKER_PLAN_REQUESTED',
   WORKER_IMPLEMENT_REQUESTED: 'WORKER_IMPLEMENT_REQUESTED',
   WORKER_CANCELLED: 'WORKER_CANCELLED',
+  // Monthly close events
+  MONTHLY_CLOSE_CLOSED: 'MONTHLY_CLOSE_CLOSED',
+  MONTHLY_CLOSE_REOPENED: 'MONTHLY_CLOSE_REOPENED',
 } as const
 
 export type ActivityVerb = (typeof ActivityVerbs)[keyof typeof ActivityVerbs]

@@ -1,13 +1,11 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
-import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 
-import { AppShellHeader } from '@/components/layout/app-shell'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Button } from '@/components/ui/button'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { PageShell } from '@/components/layout/page-shell'
+import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
+import { Button } from '@pts/ui/button'
 import type { AppUser } from '@/lib/auth/session'
 import type {
   DbUser,
@@ -93,6 +91,13 @@ export function MyTasksPage({
     setEntries(sanitizedEntries)
   }
 
+  // Set when a create just succeeded: the sheet must stay open (and the
+  // create context must survive, so defaultProjectId doesn't flash null)
+  // until the new task id lands in the URL and resolves from props.
+  const [justCreatedTaskId, setJustCreatedTaskId] = useState<string | null>(
+    null
+  )
+
   const [prevSheetSync, setPrevSheetSync] = useState({
     activeTaskId,
     createTaskContext,
@@ -102,7 +107,14 @@ export function MyTasksPage({
     prevSheetSync.createTaskContext !== createTaskContext
   ) {
     setPrevSheetSync({ activeTaskId, createTaskContext })
-    if (!createTaskContext) {
+    if (justCreatedTaskId) {
+      if (activeTaskId === justCreatedTaskId) {
+        setJustCreatedTaskId(null)
+        setCreateTaskContext(null)
+        setIsSheetOpen(true)
+      }
+      // While the created task is still resolving, keep the sheet as-is.
+    } else if (!createTaskContext) {
       setIsSheetOpen(Boolean(activeTaskId))
     }
   }
@@ -149,10 +161,6 @@ export function MyTasksPage({
     [taskContexts, selectedAssigneeId, user.id]
   )
 
-  const description =
-    user.role === 'CLIENT'
-      ? 'All tasks currently assigned to you across every client and project.'
-      : 'Every task across the portfolio that currently needs your attention.'
 
   const activeTaskMeta = activeTaskId
     ? (taskLookup.get(activeTaskId) ?? null)
@@ -204,6 +212,14 @@ export function MyTasksPage({
     [buildViewPath, router, view]
   )
 
+  const handleTaskCreated = useCallback(
+    (taskId: string) => {
+      setJustCreatedTaskId(taskId)
+      router.push(buildViewPath(view, taskId), { scroll: false })
+    },
+    [buildViewPath, router, view]
+  )
+
   const handleSheetChange = useCallback(
     (open: boolean) => {
       if (!open) {
@@ -233,28 +249,23 @@ export function MyTasksPage({
 
       startRefresh(async () => {
         try {
-          await reorderMutation.mutateAsync(update.payload)
+          await reorderMutation.mutateAsync({
+            ...update.payload,
+            assigneeId: selectedAssigneeId,
+          })
           router.refresh()
         } catch {
           setEntries(update.previousEntries)
         }
       })
     },
-    [reorderMutation, router, startRefresh]
+    [reorderMutation, router, selectedAssigneeId, startRefresh]
   )
 
-  const canManageTasks = user.role === 'ADMIN'
   const totalTaskCount = entries.length
-  const creationDisabledReason = canManageTasks
-    ? null
-    : 'Admin access is required to create tasks.'
 
   const handleStartCreateTask = useCallback(
     (status: MyTaskStatus = 'ON_DECK') => {
-      if (!canManageTasks) {
-        return
-      }
-
       setCreateTaskContext({
         status,
         assigneeId: user.id,
@@ -262,117 +273,82 @@ export function MyTasksPage({
       })
       setIsSheetOpen(true)
     },
-    [canManageTasks, user.id]
+    [user.id]
   )
 
-  const isAdmin = user.role === 'ADMIN'
+  const viewTabs = [
+    { value: 'board', label: 'Board', href: buildViewPath('board', activeTaskId) },
+    {
+      value: 'calendar',
+      label: 'Calendar',
+      href: buildViewPath('calendar', activeTaskId),
+    },
+  ]
 
   return (
-    <div className='flex h-full min-h-0 flex-col gap-6'>
-      <AppShellHeader>
-        <div className='flex items-center justify-between gap-4'>
-          <div>
-            <h1 className='text-2xl font-semibold tracking-tight'>My Tasks</h1>
-            <p className='text-muted-foreground text-sm'>{description}</p>
-          </div>
-          {isAdmin && (
-            <div className='pr-1'>
-              <PersonSelector
-                admins={admins}
-                selectedUserId={selectedAssigneeId}
-                currentUserId={user.id}
-              />
-            </div>
-          )}
+    <PageShell
+      breadcrumbs={crumbsForNav('/my/tasks/board')}
+      tabs={viewTabs}
+      activeTab={view}
+      count={{ label: 'tasks', total: totalTaskCount }}
+      primaryAction={
+        <div className='flex items-center gap-2'>
+          <PersonSelector
+            admins={admins}
+            selectedUserId={selectedAssigneeId}
+            currentUserId={user.id}
+          />
+          <Button
+            type='button'
+            size='sm'
+            onClick={() => handleStartCreateTask('ON_DECK')}
+          >
+            <Plus className='h-4 w-4' />
+            Add task
+          </Button>
         </div>
-      </AppShellHeader>
-      <Tabs value={view} className='flex min-h-0 flex-1 flex-col gap-3'>
-        <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-          <TabsList className='bg-muted/40 h-10 w-full justify-start gap-2 rounded-lg p-1 sm:w-auto'>
-            <TabsTrigger value='board' className='px-3 py-1.5 text-sm' asChild>
-              <Link href={buildViewPath('board', activeTaskId)} prefetch>
-                Board
-              </Link>
-            </TabsTrigger>
-            <TabsTrigger
-              value='calendar'
-              className='px-3 py-1.5 text-sm'
-              asChild
-            >
-              <Link href={buildViewPath('calendar', activeTaskId)} prefetch>
-                Calendar
-              </Link>
-            </TabsTrigger>
-          </TabsList>
-          <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6'>
-            <span className='text-muted-foreground text-sm'>
-              Total tasks: {totalTaskCount}
-            </span>
-            <DisabledFieldTooltip
-              disabled={!canManageTasks}
-              reason={creationDisabledReason}
-            >
-              <Button
-                type='button'
-                size='sm'
-                onClick={() => handleStartCreateTask('ON_DECK')}
-                disabled={!canManageTasks}
-              >
-                <Plus className='h-4 w-4' />
-                Add task
-              </Button>
-            </DisabledFieldTooltip>
-          </div>
-        </div>
-        <TabsContent
-          value='board'
-          className='mt-0 flex min-h-0 flex-1 flex-col gap-4 focus-visible:outline-none sm:gap-6'
-        >
-          {entries.length === 0 ? (
-            <ProjectsBoardEmpty
-              title='No tasks assigned'
-              description='Once a task is assigned to you, it will appear here.'
-            />
-          ) : (
-            <MyTasksBoard
-              entries={entries}
-              taskLookup={taskLookup}
-              renderAssignees={renderAssignees}
-              getTaskCardOptions={getTaskCardOptions}
-              onOpenTask={handleOpenTask}
-              onReorder={handleReorder}
-              activeTaskId={activeTaskId}
-              scrollStorageKey={boardScrollStorageKey}
-              onCreateTask={handleStartCreateTask}
-              canCreateTasks={canManageTasks}
-            />
-          )}
-        </TabsContent>
-        <TabsContent
-          value='calendar'
-          className='mt-0 flex min-h-0 flex-1 flex-col gap-4 focus-visible:outline-none sm:gap-6'
-        >
-          <MyTasksCalendar
+      }
+      contentClassName='flex flex-col gap-4 sm:gap-6'
+    >
+      {view === 'board' ? (
+        entries.length === 0 ? (
+          <ProjectsBoardEmpty
+            title='No tasks assigned'
+            description='Once a task is assigned to you, it will appear here.'
+          />
+        ) : (
+          <MyTasksBoard
             entries={entries}
             taskLookup={taskLookup}
             renderAssignees={renderAssignees}
+            getTaskCardOptions={getTaskCardOptions}
             onOpenTask={handleOpenTask}
+            onReorder={handleReorder}
             activeTaskId={activeTaskId}
-            onDueDateChange={handleDueDateChange}
-            onRefresh={handleCalendarRefresh}
-            scrollStorageKey={calendarScrollStorageKey}
+            scrollStorageKey={boardScrollStorageKey}
+            onCreateTask={handleStartCreateTask}
           />
-        </TabsContent>
-      </Tabs>
+        )
+      ) : (
+        <MyTasksCalendar
+          entries={entries}
+          taskLookup={taskLookup}
+          renderAssignees={renderAssignees}
+          onOpenTask={handleOpenTask}
+          activeTaskId={activeTaskId}
+          onDueDateChange={handleDueDateChange}
+          onRefresh={handleCalendarRefresh}
+          scrollStorageKey={calendarScrollStorageKey}
+        />
+      )}
       {shouldRenderTaskSheet ? (
         <TaskSheet
           open={isSheetOpen}
           onOpenChange={handleSheetChange}
           task={editingTaskMeta?.task}
-          canManage={canManageTasks}
+          canManage
           admins={admins}
           currentUserId={user.id}
-          currentUserRole={user.role}
           defaultStatus={createTaskContext?.status ?? 'ON_DECK'}
           defaultDueOn={null}
           projects={projects}
@@ -381,9 +357,10 @@ export function MyTasksPage({
             createTaskContext?.projectId ?? editingTaskMeta?.project.id ?? null
           }
           defaultAssigneeId={createTaskContext?.assigneeId ?? null}
+          onTaskCreated={handleTaskCreated}
         />
       ) : null}
-    </div>
+    </PageShell>
   )
 }
 

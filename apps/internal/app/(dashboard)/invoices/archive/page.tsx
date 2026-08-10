@@ -1,12 +1,15 @@
 import type { Metadata } from 'next'
 
-import { AppShellHeader } from '@/components/layout/app-shell'
+import { PageShell } from '@/components/layout/page-shell'
 import { requireRole } from '@/lib/auth/session'
+import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { listInvoices } from '@/lib/queries/invoices'
+import { parseInvoicesSearchParams } from '@/lib/invoices/filters'
 
-import { InvoicesTabsNav } from '../_components/invoices-tabs-nav'
 import { InvoicesAddButton } from '../_components/invoices-add-button'
+import { InvoicesFilters } from '../_components/invoices-filters'
 import { InvoicesManagementTable } from '../_components/invoices-management-table'
+import { INVOICES_TABS } from '../_lib/tabs'
 
 export const metadata: Metadata = {
   title: 'Invoices Archive',
@@ -24,60 +27,65 @@ export default async function InvoicesArchivePage({
   const currentUser = await requireRole('ADMIN')
   const params = searchParams ? await searchParams : {}
 
-  const pageParam =
-    typeof params.page === 'string'
-      ? params.page
-      : Array.isArray(params.page)
-        ? params.page[0] ?? '1'
-        : '1'
-  const currentPage = Math.max(1, Number.parseInt(pageParam, 10) || 1)
+  const { page: currentPage, status, search, sort } =
+    parseInvoicesSearchParams(params)
   const offset = (currentPage - 1) * PAGE_SIZE
 
-  const { items, clients, productCatalog, taxRates, totalCount } =
-    await listInvoices(currentUser, {
-      status: 'archived',
-      offset,
-      limit: PAGE_SIZE,
-    })
+  const {
+    items,
+    clients,
+    productCatalog,
+    taxRates,
+    totalCount,
+    unfilteredTotalCount,
+  } = await listInvoices(currentUser, {
+    status: 'archived',
+    offset,
+    limit: PAGE_SIZE,
+    invoiceStatus: status,
+    search,
+    sort,
+  })
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
 
   return (
-    <>
-      <AppShellHeader>
-        <div className='flex flex-col'>
-          <h1 className='text-2xl font-semibold tracking-tight'>Invoices</h1>
-          <p className='text-muted-foreground text-sm'>
-            Review archived invoices and restore them when needed.
-          </p>
-        </div>
-      </AppShellHeader>
-      <div className='space-y-4'>
-        {/* Tabs Row - Above the main container */}
-        <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-          <InvoicesTabsNav activeTab='archive' className='flex-1 sm:flex-none' />
-          <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6'>
-            <span className='text-muted-foreground text-sm whitespace-nowrap'>
-              Total archived: {totalCount}
-            </span>
-            <InvoicesAddButton clients={clients} productCatalog={productCatalog} taxRates={taxRates} />
-          </div>
-        </div>
-        {/* Main Container with Background */}
-        <section className='bg-background rounded-xl border p-6 shadow-sm'>
-          <InvoicesManagementTable
-            invoices={items}
-            clients={clients}
-            productCatalog={productCatalog}
-            taxRates={taxRates}
-            totalCount={totalCount}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            pageSize={PAGE_SIZE}
-            mode='archive'
-          />
-        </section>
-      </div>
-    </>
+    <PageShell
+      breadcrumbs={[...crumbsForNav('/invoices'), { label: 'Archive' }]}
+      tabs={INVOICES_TABS}
+      activeTab='archive'
+      count={{
+        label: 'archived invoices',
+        total: unfilteredTotalCount,
+        filteredTotal: totalCount,
+      }}
+      primaryAction={
+        <InvoicesAddButton
+          clients={clients}
+          productCatalog={productCatalog}
+          taxRates={taxRates}
+        />
+      }
+    >
+      <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
+        <InvoicesFilters
+          basePath='/invoices/archive'
+          status={status}
+          search={search}
+        />
+        <InvoicesManagementTable
+          invoices={items}
+          clients={clients}
+          productCatalog={productCatalog}
+          taxRates={taxRates}
+          totalCount={totalCount}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          pageSize={PAGE_SIZE}
+          mode='archive'
+          basePath='/invoices/archive'
+        />
+      </section>
+    </PageShell>
   )
 }

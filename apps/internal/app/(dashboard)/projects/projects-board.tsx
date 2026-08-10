@@ -3,7 +3,9 @@
 import { useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { AppShellHeader } from '@/components/layout/app-shell'
+import { PageShell } from '@/components/layout/page-shell'
+import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
+import { useRecordCycle } from '@/hooks/use-record-cycle'
 import { ProjectSheet } from '@/app/(dashboard)/settings/projects/project-sheet'
 import { useToast } from '@/components/ui/use-toast'
 import { ProjectLifecycleDialogs } from '@/components/settings/projects/table/project-lifecycle-dialogs'
@@ -21,7 +23,6 @@ import { ActivityVerbs } from '@/lib/activity/types'
 import { updateProjectStatus } from '@/lib/settings/projects/actions/update-project-status'
 import type { ProjectStatusValue } from '@/lib/constants'
 import { ProjectsBoardEmpty } from './_components/projects-board-empty'
-import { ProjectsBoardHeader } from './_components/projects-board-header'
 import { ProjectBurndownWidget } from './_components/project-burndown-widget'
 import { ProjectsBoardTabsSection } from './_components/projects-board/projects-board-tabs-section'
 import { ProjectsBoardDialogs } from './_components/projects-board-dialogs'
@@ -115,7 +116,7 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
   )
 
   const projectActions =
-    activeProjectForSheet && props.currentUserRole === 'ADMIN'
+    activeProjectForSheet
       ? {
           canEdit: !projectMutationPending,
           canArchive: !projectMutationPending,
@@ -126,24 +127,69 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
         }
       : null
 
+  // D2/D14: the combobox header is retired; the breadcrumb carries the
+  // active project label and ⌘[/⌘] cycling moves to the shared hook.
+  const activeProjectLabel =
+    viewModel.header.projectItems.find(
+      item => item.value === viewModel.header.selectedProjectId
+    )?.label ??
+    activeProject?.name ??
+    null
+
+  useRecordCycle({
+    canPrevious: viewModel.header.canSelectPrevious,
+    canNext: viewModel.header.canSelectNext,
+    onPrevious: viewModel.header.onSelectPreviousProject,
+    onNext: viewModel.header.onSelectNextProject,
+  })
+
+  const boardBreadcrumbs = activeProjectLabel
+    ? [...crumbsForNav('/projects'), { label: activeProjectLabel }]
+    : crumbsForNav('/projects')
+
   if (viewModel.isEmpty) {
     return (
-      <>
-        <AppShellHeader>
-          <ProjectsBoardHeader {...viewModel.header} />
-        </AppShellHeader>
-        <div className='flex h-full flex-col gap-6'>
-          <ProjectsBoardEmpty
-            title={viewModel.emptyState.title}
-            description={viewModel.emptyState.description}
-          />
-        </div>
-      </>
+      <PageShell
+        breadcrumbs={boardBreadcrumbs}
+        contentClassName='flex h-full flex-col gap-6'
+      >
+        <ProjectsBoardEmpty
+          title={viewModel.emptyState.title}
+          description={viewModel.emptyState.description}
+        />
+      </PageShell>
     )
   }
 
   return (
-    <>
+    <PageShell
+      breadcrumbs={boardBreadcrumbs}
+      headerRight={
+        viewModel.burndown.visible ? (
+          <ProjectBurndownWidget
+            totalClientRemainingHours={
+              viewModel.burndown.totalClientRemainingHours
+            }
+            totalProjectLoggedHours={viewModel.burndown.totalProjectLoggedHours}
+            projectMonthToDateLoggedHours={
+              viewModel.burndown.projectMonthToDateLoggedHours
+            }
+            onAddTimeLog={viewModel.burndown.onAddTimeLog}
+            showClientRemainingCard={viewModel.burndown.showClientRemainingCard}
+            showProjectMonthToDate={viewModel.burndown.showProjectMonthToDate}
+          />
+        ) : undefined
+      }
+      // Only the kanban board pins to the viewport (columns scroll
+      // internally). Document-flow tabs (review, overview, …) need
+      // min-h-fit to defeat the shell wrapper's min-h-0 clamp so the box
+      // grows with content and main's bottom padding is honored.
+      contentClassName={
+        props.initialTab === 'board'
+          ? 'flex h-full min-h-0 flex-col gap-4 sm:gap-6'
+          : 'flex min-h-fit flex-col gap-4 sm:gap-6'
+      }
+    >
       {activeProject ? (
         <ViewLogger
           actorId={props.currentUserId}
@@ -156,45 +202,12 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
           metadata={{ tab: props.initialTab }}
         />
       ) : null}
-      <AppShellHeader>
-        <div className='flex items-center justify-between'>
-          <ProjectsBoardHeader {...viewModel.header} />
-          {viewModel.burndown.visible ? (
-            <ProjectBurndownWidget
-              totalClientRemainingHours={
-                viewModel.burndown.totalClientRemainingHours
-              }
-              totalProjectLoggedHours={
-                viewModel.burndown.totalProjectLoggedHours
-              }
-              projectMonthToDateLoggedHours={
-                viewModel.burndown.projectMonthToDateLoggedHours
-              }
-              className='w-full sm:w-auto'
-              canLogTime={viewModel.burndown.canLogTime}
-              addTimeLogDisabledReason={
-                viewModel.burndown.addTimeLogDisabledReason
-              }
-              viewTimeLogsHref={viewModel.burndown.viewTimeLogsHref}
-              onAddTimeLog={viewModel.burndown.onAddTimeLog}
-              showClientRemainingCard={
-                viewModel.burndown.showClientRemainingCard
-              }
-              showProjectMonthToDate={
-                viewModel.burndown.showProjectMonthToDate
-              }
-            />
-          ) : null}
-        </div>
-      </AppShellHeader>
-      <div className='flex h-full min-h-0 flex-col gap-4 sm:gap-6'>
-        <ProjectsBoardTabsSection
-          {...viewModel.tabs}
-          projectActions={projectActions}
-          onProjectStatusChange={handleProjectStatusChange}
-        />
-        <ProjectsBoardDialogs {...viewModel.dialogs} />
-      </div>
+      <ProjectsBoardTabsSection
+        {...viewModel.tabs}
+        projectActions={projectActions}
+        onProjectStatusChange={handleProjectStatusChange}
+      />
+      <ProjectsBoardDialogs {...viewModel.dialogs} />
       <ProjectLifecycleDialogs
         deleteTarget={deleteTarget}
         destroyTarget={destroyTarget}
@@ -214,7 +227,7 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
         contractorDirectory={[]}
         projectContractors={projectContractors}
       />
-    </>
+    </PageShell>
   )
 }
 

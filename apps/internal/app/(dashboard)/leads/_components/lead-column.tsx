@@ -10,7 +10,7 @@ import type { LeadRecord } from '@/lib/leads/types'
 import type { LeadStatusValue } from '@/lib/leads/constants'
 import { getLeadStatusToken } from '@/lib/leads/constants'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 
 import { BoardDropPlaceholder } from '@/components/board/drop-placeholder'
 
@@ -72,7 +72,7 @@ export function LeadColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        'bg-background/80 flex min-h-0 w-80 shrink-0 flex-col gap-4 overflow-hidden rounded-xl border p-4 shadow-sm transition',
+        'bg-background/80 flex min-h-0 w-80 shrink-0 flex-col gap-3 overflow-hidden rounded-xl border p-3 shadow-sm transition',
         highlight && 'ring-primary ring-2'
       )}
     >
@@ -109,7 +109,7 @@ export function LeadColumn({
       <div
         ref={columnScrollRef}
         onScroll={onColumnScroll}
-        className='flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1'
+        className='flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto'
       >
         <SortableContext
           id={columnId}

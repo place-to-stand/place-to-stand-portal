@@ -106,7 +106,7 @@ Turbo v2 uses strict mode by default — only env vars listed in `turbo.json` ar
 └── unauthorized/     # Access denied page
 ```
 
-The project workspace is tabbed: `/projects/[clientSlug]/[projectSlug]/{tasks,overview,scope,review,time-logs,activity,archive}`. The task board lives on the `tasks` tab, with the task sheet as an optional catch-all: `/projects/[clientSlug]/[projectSlug]/tasks/[[...taskId]]`
+The project workspace is tabbed: `/projects/[clientSlug]/[projectSlug]/{tasks,overview,review,time-logs,activity,archive}`. The task board lives on the `tasks` tab, with the task sheet as an optional catch-all: `/projects/[clientSlug]/[projectSlug]/tasks/[[...taskId]]`
 
 **Client portal** (`apps/client/app/`):
 ```
@@ -142,7 +142,6 @@ Portal access is controlled via `client_members` table. Contacts promoted to por
 - `task_deployments` - Deployments linked to tasks
 - `invoices` + `invoice_line_items` - Invoicing
 - `product_catalog_items` + `tax_rates` - Invoice line-item catalog and tax configuration
-- `project_sows` + `sow_snapshots` + `sow_sections` - Scope-of-work documents
 - `planning_sessions` + `plan_threads` + `plan_revisions` + `plan_messages` - AI planning sessions
 - `form_submissions` - Website form submissions
 - `oauth_connections` - Google/GitHub OAuth connections
@@ -175,11 +174,10 @@ Portal access is controlled via `client_members` table. Contacts promoted to por
    - Uses React `cache()` for automatic deduplication
 
 **Access control:**
-- All queries enforce permission checks
-- Admin sees all data
-- Non-admins scoped via `client_members` table
-- Personal projects only visible to creator
-- Internal projects visible to all team members
+- The internal portal is **admin-only**: CLIENT-role users are rejected at sign-in and any non-ADMIN session is redirected to the client portal (`CLIENT_PORTAL_URL`) by `requireUser()`
+- Mutations and API routes still guard with `assertAdmin()`/`requireRole('ADMIN')` as defense-in-depth
+- `ensure*Access` helpers verify the target entity exists (NotFound) before mutations
+- Client-scoped access lives exclusively in `apps/client/` (via `client_members`)
 
 **CRITICAL: No Row Level Security (RLS)**
 
@@ -206,21 +204,17 @@ This project does NOT use PostgreSQL Row Level Security. All access control is h
 **Session management** (`apps/internal/lib/auth/session.ts`):
 - `getSession()` - Retrieve Supabase session
 - `getCurrentUser()` - Combine Supabase auth with database user record
-- `requireUser()` - Guard protected routes (throws if unauthenticated)
-- `requireRole()` - Role-based access control
+- `requireUser()` - Guard protected routes; redirects unauthenticated users to `/sign-in` and non-ADMIN sessions to the client portal
+- `requireRole()` - Role-based access control (defense-in-depth on admin pages)
 
 **Permission helpers** (`apps/internal/lib/auth/permissions.ts`) — all take the `AppUser` object, not a bare user id:
 - `isAdmin(user)` - Boolean role check
 - `assertAdmin(user)` - Throws ForbiddenError if not admin
-- `assertIsSelf(user, targetUserId)` - Verify acting on own record
-- `ensureClientAccess(user, clientId)` - Verify client membership
-- `ensureClientAccessBy{ProjectId,TaskId,TaskCommentId,TaskAttachmentId,TimeLogId,TimeLogTaskId}(user, id)` - Verify access via the related entity
-- `listAccessible{ClientIds,ProjectIds,TaskIds}(user)` - Scope queries by user memberships
-- `ensureTaskAssigneeAccess(...)` - Verify task assignee operations
+- `ensure{Project,Task,TaskComment,TaskAttachment,TimeLog,TimeLogTask}Access(user, id)` - Assert admin + verify the entity exists and is not soft-deleted (NotFoundError)
 
 **Roles:**
-- `ADMIN` - Full access to all data
-- `CLIENT` - Scoped access based on client memberships
+- `ADMIN` - Full access to the internal portal
+- `CLIENT` - Client-portal users only; blocked from the internal portal at sign-in (redirected to `CLIENT_PORTAL_URL`). The role still exists so the internal portal can create/manage portal users.
 
 ### State Management
 
@@ -373,7 +367,7 @@ Leads are inserted with `WEBSITE` source and appear on `/leads/board` immediatel
 1. Create route in `apps/internal/app/api/your-endpoint/route.ts`
 2. Export handler: `export async function POST(req: Request) { ... }`
 3. Use `getCurrentUser()` for auth
-4. Apply permission checks with `ensureClientAccess()` or `assertAdmin()`
+4. Apply permission checks with `assertAdmin()` (plus `ensure*Access()` for entity existence)
 5. Return standardized responses: `{ ok: true, data }` or `{ ok: false, error }`
 
 ### Creating a new table

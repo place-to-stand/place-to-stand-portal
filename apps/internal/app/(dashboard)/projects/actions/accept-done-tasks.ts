@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { logActivity } from '@/lib/activity/logger'
 import { tasksAcceptedEvent } from '@/lib/activity/events'
 import { requireUser } from '@/lib/auth/session'
-import { ensureClientAccessByProjectId } from '@/lib/auth/permissions'
+import { ensureProjectAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { projects, tasks } from '@/lib/db/schema'
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
@@ -40,7 +40,7 @@ export async function acceptDoneTasks(input: {
   const { projectId } = parsed.data
 
   try {
-    await ensureClientAccessByProjectId(user, projectId)
+    await ensureProjectAccess(user, projectId)
   } catch (error) {
     if (error instanceof NotFoundError) {
       return { error: 'Project not found.', acceptedCount: 0 }

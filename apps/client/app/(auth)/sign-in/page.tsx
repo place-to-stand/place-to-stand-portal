@@ -52,6 +52,7 @@ export default function SignInPage() {
       // Hard navigation rather than router.push so the server picks up the new
       // session cookie. Switching to a client transition produces a stale-session
       // bug that looks like sign-in silently failing.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.href = '/'
     } catch {
       setError('An unexpected error occurred')

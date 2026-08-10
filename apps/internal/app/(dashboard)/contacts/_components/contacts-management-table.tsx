@@ -3,7 +3,7 @@
 import { useCallback, useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 import { useToast } from '@/components/ui/use-toast'
 
@@ -26,6 +26,8 @@ type ContactsManagementTableProps = {
   pageSize: number
   mode: 'active' | 'archive'
   allClients?: ClientOption[]
+  /** Route the sort/filter params live on (PRD 004 §03). */
+  basePath: string
 }
 
 const EMPTY_MESSAGES = {
@@ -41,6 +43,7 @@ export function ContactsManagementTable({
   pageSize,
   mode,
   allClients = [],
+  basePath,
 }: ContactsManagementTableProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -72,7 +75,12 @@ export function ContactsManagementTable({
     handleConfirmDestroy,
   } = useContactsTableState()
 
-  const emptyMessage = EMPTY_MESSAGES[mode]
+  // Guard-validated active search (R4): an empty list under a live `?q=`
+  // shows the filtered message, not the tab's default empty state.
+  const hasActiveFilter = Boolean(searchParams.get('q')?.trim())
+  const emptyMessage = hasActiveFilter
+    ? 'No contacts match the current filters.'
+    : EMPTY_MESSAGES[mode]
 
   const handleRequestPromote = useCallback(
     (contact: ContactsTableContact) => {
@@ -123,7 +131,7 @@ export function ContactsManagementTable({
   )
 
   return (
-    <div className='space-y-6'>
+    <div className='space-y-4'>
       <ConfirmDialog
         open={Boolean(deleteTarget)}
         title='Archive contact?'
@@ -154,6 +162,7 @@ export function ContactsManagementTable({
       />
       <ContactsTableSection
         contacts={contacts}
+        basePath={basePath}
         mode={mode === 'archive' ? 'archive' : 'active'}
         onEdit={openEdit}
         onRequestDelete={handleRequestDelete}

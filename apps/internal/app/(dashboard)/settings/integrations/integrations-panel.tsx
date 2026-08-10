@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { toast } from '@/components/ui/use-toast'
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import {
   Card,
   CardContent,
@@ -18,7 +18,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip'
+} from '@pts/ui/tooltip'
 import {
   ConnectedAccountsList,
   type ConnectedAccount,
@@ -222,11 +222,14 @@ export function IntegrationsPanel() {
 
   const handleConnectGoogle = () => {
     setIsRedirectingGoogle(true)
+    // API route redirecting to external OAuth — not a Next.js page.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = '/api/auth/google'
   }
 
   const handleConnectGitHub = () => {
     setIsRedirectingGitHub(true)
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = '/api/auth/github'
   }
 
@@ -252,7 +255,7 @@ export function IntegrationsPanel() {
 
   return (
     <div className='relative'>
-      <div className='grid grid-cols-2 gap-6'>
+      <div className='grid grid-cols-2 gap-4'>
         {/* Google Card */}
         <Card>
           <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>

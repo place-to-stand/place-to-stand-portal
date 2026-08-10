@@ -181,6 +181,21 @@ export const clients = pgTable(
     index('idx_clients_created_by')
       .using('btree', table.createdBy.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
+    // Client pickers and metrics listings all order by name.
+    index('idx_clients_name').using(
+      'btree',
+      table.name.asc().nullsLast().op('text_ops')
+    ),
+    // Clients landing/settings and the command palette search with
+    // ILIKE '%…%' over name and slug.
+    index('idx_clients_name_trgm').using(
+      'gin',
+      table.name.op('gin_trgm_ops')
+    ),
+    index('idx_clients_slug_trgm').using(
+      'gin',
+      table.slug.op('gin_trgm_ops')
+    ),
     index('idx_clients_origination_contact_id')
       .using('btree', table.originationContactId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL AND origination_contact_id IS NOT NULL)`),
@@ -238,6 +253,16 @@ export const contacts = pgTable(
     index('idx_contacts_email')
       .using('btree', table.email.asc().nullsLast().op('text_ops'))
       .where(sql`(deleted_at IS NULL)`),
+    // Contacts settings and the command palette search with ILIKE '%…%'
+    // over name and email.
+    index('idx_contacts_name_trgm').using(
+      'gin',
+      table.name.op('gin_trgm_ops')
+    ),
+    index('idx_contacts_email_trgm').using(
+      'gin',
+      table.email.op('gin_trgm_ops')
+    ),
     index('idx_contacts_email_domain')
       .using('btree', sql`split_part(email, '@', 2)`)
       .where(sql`(deleted_at IS NULL)`),
@@ -383,6 +408,22 @@ export const projects = pgTable(
     index('idx_projects_client')
       .using('btree', table.clientId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
+    // Every projects listing sorts by name; without this the full table is
+    // sorted per request.
+    index('idx_projects_name').using(
+      'btree',
+      table.name.asc().nullsLast().op('text_ops')
+    ),
+    // Landing/settings search runs ILIKE '%…%' over name and slug —
+    // trigram GIN is the only index shape that serves infix matches.
+    index('idx_projects_name_trgm').using(
+      'gin',
+      table.name.op('gin_trgm_ops')
+    ),
+    index('idx_projects_slug_trgm').using(
+      'gin',
+      table.slug.op('gin_trgm_ops')
+    ),
     index('idx_projects_created_by')
       .using('btree', table.createdBy.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
@@ -455,6 +496,11 @@ export const tasks = pgTable(
     index('idx_tasks_project')
       .using('btree', table.projectId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
+    // Archived-task lookups (review/archive tabs) — the active-task partial
+    // above can't serve deleted_at IS NOT NULL scans.
+    index('idx_tasks_project_archived')
+      .using('btree', table.projectId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NOT NULL)`),
     index('idx_tasks_project_status_rank').using(
       'btree',
       table.projectId.asc().nullsLast().op('uuid_ops'),
@@ -657,8 +703,18 @@ export const hourBlocks = pgTable(
     clientId: uuid('client_id').notNull(),
     invoiceId: uuid('invoice_id'),
     invoiceLineItemId: uuid('invoice_line_item_id'),
+    /**
+     * Month this block's hours are billed in (always the 1st). Defaults to the
+     * creation month but is clamped forward to the client's first prepaid
+     * month when the block is created before a billing-type cutover — a block
+     * attributed to a net_30-resolving month would never count in Billing In.
+     */
+    billingMonth: date('billing_month').notNull(),
   },
   table => [
+    index('idx_hour_blocks_billing_month')
+      .using('btree', table.billingMonth.asc())
+      .where(sql`(deleted_at IS NULL)`),
     index('idx_hour_blocks_client_id')
       .using('btree', table.clientId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
@@ -685,9 +741,97 @@ export const hourBlocks = pgTable(
       'hour_blocks_invoice_number_format',
       sql`(invoice_number IS NULL) OR (invoice_number ~ '^[A-Za-z0-9-]+$'::text)`
     ),
+    check(
+      'chk_hour_blocks_billing_month_month_start',
+      sql`billing_month = date_trunc('month', billing_month)::date`
+    ),
     // Note: FK constraints for invoiceId -> invoices.id and
     // invoiceLineItemId -> invoice_line_items.id added in migration
     // to avoid forward reference (invoices table defined later in this file)
+  ]
+)
+
+export const monthlyCloseSnapshots = pgTable(
+  'monthly_close_snapshots',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    year: integer().notNull(),
+    month: integer().notNull(), // 1-indexed (1 = January)
+    /** Fully assembled MonthlyCloseReport wrapped as { schemaVersion, report }. */
+    report: jsonb().notNull(),
+    /**
+     * Cutoff captured BEFORE report derivation, so any record committed after
+     * it is by definition detectable as late (created_at > closed_at).
+     */
+    closedAt: timestamp('closed_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    closedBy: uuid('closed_by'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    // One ACTIVE close per month; reopen soft-deletes, re-close inserts.
+    uniqueIndex('uq_monthly_close_snapshots_period')
+      .on(table.year, table.month)
+      .where(sql`(deleted_at IS NULL)`),
+    foreignKey({
+      columns: [table.closedBy],
+      foreignColumns: [users.id],
+      name: 'monthly_close_snapshots_closed_by_fkey',
+    }).onDelete('set null'),
+    check(
+      'chk_monthly_close_snapshots_month_range',
+      sql`month BETWEEN 1 AND 12`
+    ),
+  ]
+)
+
+export const clientBillingTerms = pgTable(
+  'client_billing_terms',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    clientId: uuid('client_id').notNull(),
+    billingType: clientBillingType('billing_type').notNull(),
+    /** First day of the month this billing type takes effect (month-start CHECK). */
+    effectiveFrom: date('effective_from').notNull(),
+    createdBy: uuid('created_by'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    // One active term per client per boundary; re-editing a boundary upserts.
+    uniqueIndex('uq_client_billing_terms_client_effective')
+      .on(table.clientId, table.effectiveFrom)
+      .where(sql`(deleted_at IS NULL)`),
+    // Resolution path: latest effective_from <= period start for a client.
+    index('idx_client_billing_terms_resolution')
+      .using('btree', table.clientId.asc(), table.effectiveFrom.desc())
+      .where(sql`(deleted_at IS NULL)`),
+    foreignKey({
+      columns: [table.clientId],
+      foreignColumns: [clients.id],
+      name: 'client_billing_terms_client_id_fkey',
+    }).onDelete('restrict'),
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [users.id],
+      name: 'client_billing_terms_created_by_fkey',
+    }).onDelete('set null'),
+    check(
+      'chk_client_billing_terms_month_start',
+      sql`effective_from = date_trunc('month', effective_from)::date`
+    ),
   ]
 )
 
@@ -1198,129 +1342,6 @@ export const taskDeployments = pgTable(
       foreignColumns: [users.id],
       name: 'task_deployments_created_by_fkey',
     }),
-  ]
-)
-
-// =============================================================================
-// SOW (SCOPE OF WORK) INTEGRATION
-// =============================================================================
-
-export const sowSnapshotStatus = pgEnum('sow_snapshot_status', [
-  'CURRENT',
-  'SUPERSEDED',
-])
-
-export const sowStatus = pgEnum('sow_status', [
-  'DRAFT',
-  'ACCEPTED',
-  'IN_PROGRESS',
-  'BLOCKED',
-  'FINISHED',
-])
-
-export const projectSows = pgTable(
-  'project_sows',
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    projectId: uuid('project_id').notNull(),
-    googleDocId: text('google_doc_id').notNull(),
-    googleDocUrl: text('google_doc_url').notNull(),
-    googleDocTitle: text('google_doc_title'),
-    status: sowStatus('status').default('DRAFT').notNull(),
-    linkedBy: uuid('linked_by').notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
-      .notNull(),
-    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
-      .notNull(),
-    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
-  },
-  table => [
-    index('idx_project_sows_project_active')
-      .using('btree', table.projectId.asc().nullsLast().op('uuid_ops'))
-      .where(sql`(deleted_at IS NULL)`),
-    index('idx_project_sows_google_doc')
-      .using('btree', table.googleDocId.asc().nullsLast().op('text_ops')),
-    foreignKey({
-      columns: [table.projectId],
-      foreignColumns: [projects.id],
-      name: 'project_sows_project_id_fkey',
-    }).onDelete('cascade'),
-    foreignKey({
-      columns: [table.linkedBy],
-      foreignColumns: [users.id],
-      name: 'project_sows_linked_by_fkey',
-    }),
-  ]
-)
-
-export const sowSnapshots = pgTable(
-  'sow_snapshots',
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    sowId: uuid('sow_id').notNull(),
-    version: integer().notNull(),
-    status: sowSnapshotStatus().default('CURRENT').notNull(),
-    rawContent: jsonb('raw_content'),
-    textContent: text('text_content'),
-    docModifiedAt: timestamp('doc_modified_at', {
-      withTimezone: true,
-      mode: 'string',
-    }),
-    snappedBy: uuid('snapped_by').notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
-      .notNull(),
-  },
-  table => [
-    index('idx_sow_snapshots_sow')
-      .using('btree', table.sowId.asc().nullsLast().op('uuid_ops')),
-    unique('sow_snapshots_sow_version_key').on(table.sowId, table.version),
-    foreignKey({
-      columns: [table.sowId],
-      foreignColumns: [projectSows.id],
-      name: 'sow_snapshots_sow_id_fkey',
-    }).onDelete('cascade'),
-    foreignKey({
-      columns: [table.snappedBy],
-      foreignColumns: [users.id],
-      name: 'sow_snapshots_snapped_by_fkey',
-    }),
-  ]
-)
-
-export const sowSections = pgTable(
-  'sow_sections',
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    snapshotId: uuid('snapshot_id').notNull(),
-    sowId: uuid('sow_id').notNull(),
-    headingLevel: smallint('heading_level').notNull(),
-    headingText: text('heading_text').notNull(),
-    bodyText: text('body_text'),
-    sectionOrder: integer('section_order').notNull(),
-    contentHash: text('content_hash').notNull(),
-    firstSeenInVersion: integer('first_seen_in_version').notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
-      .notNull(),
-  },
-  table => [
-    index('idx_sow_sections_snapshot')
-      .using('btree', table.snapshotId.asc().nullsLast().op('uuid_ops')),
-    index('idx_sow_sections_sow')
-      .using('btree', table.sowId.asc().nullsLast().op('uuid_ops')),
-    foreignKey({
-      columns: [table.snapshotId],
-      foreignColumns: [sowSnapshots.id],
-      name: 'sow_sections_snapshot_id_fkey',
-    }).onDelete('cascade'),
-    foreignKey({
-      columns: [table.sowId],
-      foreignColumns: [projectSows.id],
-      name: 'sow_sections_sow_id_fkey',
-    }).onDelete('cascade'),
   ]
 )
 

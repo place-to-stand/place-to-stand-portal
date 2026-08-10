@@ -6,8 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Pencil, Plus } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@pts/ui/button'
+import { Checkbox } from '@pts/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -15,10 +15,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '@pts/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
+import { Label } from '@pts/ui/label'
+import { Switch } from '@pts/ui/switch'
 import {
   Table,
   TableBody,
@@ -26,7 +26,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@pts/ui/table'
+import {
+  SortableTableHead,
+  type SortValue,
+} from '@/components/table-toolbar/sortable-table-head'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import type { ProductCatalogItemRow } from '@/lib/queries/product-catalog'
 
@@ -92,7 +96,7 @@ function ProductRow({
       <TableCell>
         <Button
           variant='ghost'
-          size='icon'
+          size='icon-sm'
           className='h-7 w-7'
           onClick={() => onEdit(item)}
         >
@@ -120,11 +124,18 @@ export function ProductCatalogSection({
     null
   )
   const [isPending, startTransition] = useTransition()
+  // Local sort state (PRD 004 §03): two small config tables share this page,
+  // so sort stays out of the URL. undefined = the 'name:asc' default.
+  const [sort, setSort] = useState<SortValue | undefined>(undefined)
 
-  const sortedItems = useMemo(
-    () => [...items].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
-    [items],
-  )
+  const sortedItems = useMemo(() => {
+    const factor = sort === 'name:desc' ? -1 : 1
+    return [...items].sort(
+      (a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) *
+        factor
+    )
+  }, [items, sort])
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
@@ -295,10 +306,17 @@ export function ProductCatalogSection({
       </div>
 
       <div className='rounded-lg border'>
-        <Table>
+        <Table density='compact'>
           <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
+            <TableRow className='bg-muted/40'>
+              <SortableTableHead
+                field='name'
+                sort={sort}
+                defaultSort='name:asc'
+                onSortChange={setSort}
+              >
+                Name
+              </SortableTableHead>
               <TableHead>Unit Price</TableHead>
               <TableHead>Unit Label</TableHead>
               <TableHead>Min Qty</TableHead>

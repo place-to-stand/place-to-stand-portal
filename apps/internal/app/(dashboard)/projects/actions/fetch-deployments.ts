@@ -4,7 +4,7 @@ import { eq, desc } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { requireUser } from '@/lib/auth/session'
-import { ensureClientAccessByTaskId } from '@/lib/auth/permissions'
+import { ensureTaskAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { taskDeployments } from '@/lib/db/schema'
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
@@ -32,7 +32,7 @@ export async function fetchTaskDeployments(input: {
   const { taskId } = parsed.data
 
   try {
-    await ensureClientAccessByTaskId(user, taskId)
+    await ensureTaskAccess(user, taskId)
   } catch (error) {
     if (error instanceof NotFoundError) return { error: 'Task not found.' }
     if (error instanceof ForbiddenError) return { error: 'Permission denied.' }

@@ -4,14 +4,11 @@ import { cache } from 'react'
 import { aliasedTable, and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
-import {
-  isAdmin,
-  listAccessibleClientIds,
-  ensureClientAccess,
-} from '@/lib/auth/permissions'
+import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import {
   clients,
+  clientBillingTerms,
   contacts,
   projects,
   hourBlocks,
@@ -19,11 +16,14 @@ import {
   users,
 } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
+import { createSearchPattern } from '@/lib/pagination/cursor'
+import type { ProjectStatusValue } from '@/lib/constants'
 
-export type ClientActiveProject = {
+export type ClientProjectSummary = {
   id: string
   name: string
   slug: string | null
+  status: ProjectStatusValue
 }
 
 export type ClientWithMetrics = {
@@ -49,7 +49,8 @@ export type ClientWithMetrics = {
   deletedAt: string | null
   projectCount: number
   activeProjectCount: number
-  activeProjects: ClientActiveProject[]
+  activeProjects: ClientProjectSummary[]
+  allProjects: ClientProjectSummary[]
   totalHoursPurchased: number
   totalHoursUsed: number
   hoursRemaining: number
@@ -72,15 +73,30 @@ export type ClientDetail = {
 }
 
 export const fetchClientsWithMetrics = cache(
-  async (user: AppUser): Promise<ClientWithMetrics[]> => {
+  async (
+    user: AppUser,
+    search?: string,
+    billingType?: 'prepaid' | 'net_30'
+  ): Promise<ClientWithMetrics[]> => {
+    assertAdmin(user)
+
     const baseConditions = [isNull(clients.deletedAt)]
 
-    if (!isAdmin(user)) {
-      const clientIds = await listAccessibleClientIds(user)
-      if (!clientIds.length) {
-        return []
-      }
-      baseConditions.push(inArray(clients.id, clientIds))
+    // PRD 004 §03: server-side `?q=` search on the clients landing table.
+    // Must match name OR slug — the shell header count comes from
+    // `listClientsForSettings`, whose predicate searches both; a narrower
+    // predicate here shows a nonzero count with zero rows.
+    const trimmedSearch = search?.trim()
+    if (trimmedSearch) {
+      const pattern = createSearchPattern(trimmedSearch)
+      baseConditions.push(
+        sql`(${clients.name} ILIKE ${pattern} OR ${clients.slug} ILIKE ${pattern})`
+      )
+    }
+
+    // PRD 004 §03: `?billing=` filter shares the landing table's conditions.
+    if (billingType) {
+      baseConditions.push(eq(clients.billingType, billingType))
     }
 
     // Aliased user joins: the clients table references users three times
@@ -181,7 +197,12 @@ export const fetchClientsWithMetrics = cache(
       hourBlocksData.map(hb => [hb.clientId, Number(hb.totalHoursPurchased ?? 0)])
     )
 
-    // Fetch time logs data separately (only for active projects)
+    // Fetch time logs data separately (only for active projects). The prepaid
+    // burndown starts at the client's latest prepaid boundary
+    // (client_billing_terms) — hours logged under an earlier net_30 era were
+    // invoiced then and must not draw down purchased blocks. Always-prepaid
+    // clients resolve their sentinel term (predates all data) and net_30-only
+    // clients fall back to counting everything, so both are unchanged.
     const timeLogsData = await db
       .select({
         clientId: projects.clientId,
@@ -195,7 +216,14 @@ export const fetchClientsWithMetrics = cache(
         and(
           inArray(projects.clientId, clientIds),
           isNull(timeLogs.deletedAt),
-          isNull(projects.deletedAt)
+          isNull(projects.deletedAt),
+          sql`${timeLogs.loggedOn} >= COALESCE((
+            SELECT max(${clientBillingTerms.effectiveFrom})
+            FROM ${clientBillingTerms}
+            WHERE ${clientBillingTerms.clientId} = ${projects.clientId}
+              AND ${clientBillingTerms.billingType} = 'prepaid'
+              AND ${clientBillingTerms.deletedAt} IS NULL
+          ), DATE '0001-01-01')`
         )
       )
       .groupBy(projects.clientId)
@@ -204,41 +232,45 @@ export const fetchClientsWithMetrics = cache(
       timeLogsData.map(tl => [tl.clientId, Number(tl.totalHoursUsed ?? 0)])
     )
 
-    // Fetch active projects for each client (includes ONBOARDING)
-    const activeProjectsData = await db
+    // Fetch every non-deleted project per client (any status). The active
+    // list is derived below — the definition of "active" (ACTIVE/ONBOARDING)
+    // is unchanged; "total" is any status, deletedAt IS NULL.
+    const projectsData = await db
       .select({
         id: projects.id,
         name: projects.name,
         slug: projects.slug,
+        status: projects.status,
         clientId: projects.clientId,
       })
       .from(projects)
       .where(
-        and(
-          inArray(projects.clientId, clientIds),
-          isNull(projects.deletedAt),
-          sql`lower(${projects.status}::text) in ('active', 'onboarding')`
-        )
+        and(inArray(projects.clientId, clientIds), isNull(projects.deletedAt))
       )
       .orderBy(asc(projects.name))
 
     // Group projects by client ID
-    const activeProjectsMap = new Map<string, ClientActiveProject[]>()
-    for (const project of activeProjectsData) {
+    const projectsMap = new Map<string, ClientProjectSummary[]>()
+    for (const project of projectsData) {
       if (!project.clientId) continue
-      const existing = activeProjectsMap.get(project.clientId) ?? []
+      const existing = projectsMap.get(project.clientId) ?? []
       existing.push({
         id: project.id,
         name: project.name,
         slug: project.slug,
+        status: project.status,
       })
-      activeProjectsMap.set(project.clientId, existing)
+      projectsMap.set(project.clientId, existing)
     }
 
     return rows.map(row => {
       const totalHoursPurchased = hourBlocksMap.get(row.id) ?? 0
       const totalHoursUsed = timeLogsMap.get(row.id) ?? 0
       const hoursRemaining = totalHoursPurchased - totalHoursUsed
+      const allProjects = projectsMap.get(row.id) ?? []
+      const activeProjects = allProjects.filter(
+        project => project.status === 'ACTIVE' || project.status === 'ONBOARDING'
+      )
 
       return {
         id: row.id,
@@ -264,7 +296,8 @@ export const fetchClientsWithMetrics = cache(
         deletedAt: row.deletedAt,
         projectCount: Number(row.projectCount ?? 0),
         activeProjectCount: Number(row.activeProjectCount ?? 0),
-        activeProjects: activeProjectsMap.get(row.id) ?? [],
+        activeProjects,
+        allProjects,
         totalHoursPurchased,
         totalHoursUsed,
         hoursRemaining,
@@ -275,7 +308,7 @@ export const fetchClientsWithMetrics = cache(
 
 export const fetchClientById = cache(
   async (user: AppUser, clientId: string): Promise<ClientDetail> => {
-    await ensureClientAccess(user, clientId)
+    assertAdmin(user)
 
     const rows = await db
       .select({
@@ -336,7 +369,7 @@ export type ClientProject = {
 
 export const fetchProjectsForClient = cache(
   async (user: AppUser, clientId: string): Promise<ClientProject[]> => {
-    await ensureClientAccess(user, clientId)
+    assertAdmin(user)
 
     const rows = await db
       .select({

@@ -1,6 +1,5 @@
 import { useMemo } from 'react'
 
-import { filterTasksByAssignee } from '@/lib/projects/board/board-filters'
 import type { TaskWithRelations } from '@/lib/types'
 
 export type ProjectsBoardDerivedStateArgs = {
@@ -8,9 +7,6 @@ export type ProjectsBoardDerivedStateArgs = {
   activeProjectArchivedTasks: TaskWithRelations[]
   activeProjectAcceptedTasks: TaskWithRelations[]
   tasksByColumn: Map<string, TaskWithRelations[]>
-  onlyAssignedToMe: boolean
-  currentUserId: string | null
-  canAcceptTasks: boolean
 }
 
 export type ProjectsBoardDerivedState = {
@@ -26,17 +22,8 @@ export function useProjectsBoardDerivedState({
   activeProjectArchivedTasks,
   activeProjectAcceptedTasks,
   tasksByColumn,
-  onlyAssignedToMe,
-  currentUserId,
-  canAcceptTasks,
 }: ProjectsBoardDerivedStateArgs): ProjectsBoardDerivedState {
-  const tasksByColumnToRender = useMemo(() => {
-    if (!onlyAssignedToMe || !currentUserId) {
-      return tasksByColumn
-    }
-
-    return filterTasksByAssignee(tasksByColumn, currentUserId)
-  }, [onlyAssignedToMe, currentUserId, tasksByColumn])
+  const tasksByColumnToRender = tasksByColumn
 
   const doneColumnTasks = useMemo(
     () => tasksByColumnToRender.get('DONE') ?? [],
@@ -44,12 +31,10 @@ export function useProjectsBoardDerivedState({
   )
 
   const hasAcceptableTasks = doneColumnTasks.length > 0
-  const acceptAllDisabled = !canAcceptTasks || !hasAcceptableTasks
-  const acceptAllDisabledReason = !canAcceptTasks
-    ? 'Only administrators can accept tasks.'
-    : !hasAcceptableTasks
-      ? 'No tasks are ready for acceptance.'
-      : null
+  const acceptAllDisabled = !hasAcceptableTasks
+  const acceptAllDisabledReason = !hasAcceptableTasks
+    ? 'No tasks are ready for acceptance.'
+    : null
 
   return {
     tasksByColumnToRender,

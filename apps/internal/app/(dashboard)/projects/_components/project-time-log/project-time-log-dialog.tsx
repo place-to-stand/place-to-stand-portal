@@ -6,8 +6,8 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+} from '@pts/ui/dialog'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { ProjectTimeLogForm } from './project-time-log-form'
 import { useProjectTimeLogDialog } from '@/lib/projects/time-log/use-project-time-log-dialog'
 import type {
@@ -20,16 +20,29 @@ export type ProjectTimeLogDialogProps = ProjectTimeLogDialogParams & {
   onOpenChange: (open: boolean) => void
   mode: 'create' | 'edit'
   timeLogEntry: TimeLogEntry | null
+  initialLinkedTaskIds?: string[]
+  onMutationSuccess?: () => void
 }
 
 export function ProjectTimeLogDialog(props: ProjectTimeLogDialogProps) {
-  const { open, onOpenChange, mode, timeLogEntry, ...rest } = props
-
-  const state = useProjectTimeLogDialog({
-    ...(rest as ProjectTimeLogDialogParams),
+  const {
+    open,
     onOpenChange,
     mode,
     timeLogEntry,
+    initialLinkedTaskIds,
+    onMutationSuccess,
+    ...rest
+  } = props
+
+  const state = useProjectTimeLogDialog({
+    ...(rest as ProjectTimeLogDialogParams),
+    open,
+    onOpenChange,
+    mode,
+    timeLogEntry,
+    initialLinkedTaskIds,
+    onMutationSuccess,
   })
 
   const dialogTitle = state.isEditMode ? 'Edit time log' : 'Add time log'
@@ -47,8 +60,6 @@ export function ProjectTimeLogDialog(props: ProjectTimeLogDialogProps) {
             <DialogDescription>{dialogDescription}</DialogDescription>
           </DialogHeader>
           <ProjectTimeLogForm
-            canLogTime={state.canLogTime}
-            canSelectUser={state.canSelectUser}
             isMutating={state.isMutating}
             disableSubmit={state.disableSubmit}
             formErrors={state.formErrors}
@@ -74,6 +85,9 @@ export function ProjectTimeLogDialog(props: ProjectTimeLogDialogProps) {
             requestTaskRemoval={state.requestTaskRemoval}
             submitLabel={submitLabel}
             isEditMode={state.isEditMode}
+            onRequestDelete={
+              state.isEditMode ? state.deleteDialog.request : undefined
+            }
           />
         </DialogContent>
       </Dialog>
@@ -107,6 +121,16 @@ export function ProjectTimeLogDialog(props: ProjectTimeLogDialogProps) {
         confirmDisabled={state.isMutating}
         onCancel={state.discardDialog.cancel}
         onConfirm={state.discardDialog.confirm}
+      />
+      <ConfirmDialog
+        open={state.deleteDialog.isOpen}
+        title='Archive time entry?'
+        description='This removes the log from the project burndown.'
+        confirmLabel='Archive'
+        confirmVariant='destructive'
+        confirmDisabled={state.deleteDialog.isDeleting}
+        onCancel={state.deleteDialog.cancel}
+        onConfirm={state.deleteDialog.confirm}
       />
     </>
   )

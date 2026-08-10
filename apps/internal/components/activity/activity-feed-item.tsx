@@ -1,6 +1,6 @@
 import { formatDistanceToNow } from 'date-fns'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import type { ActivityLogWithActor } from '@/lib/activity/types'
 import {

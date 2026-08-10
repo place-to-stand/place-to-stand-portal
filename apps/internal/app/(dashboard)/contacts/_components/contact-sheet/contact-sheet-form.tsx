@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type React from 'react'
-import { Archive, Check, Redo2, Undo2, UserPlus } from 'lucide-react'
+import { Check, UserPlus } from 'lucide-react'
 import type { UseFormReturn } from 'react-hook-form'
 
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import {
   Form,
   FormControl,
@@ -28,6 +29,8 @@ import {
 
 const FEEDBACK_CLASSES =
   'border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm'
+
+export const CONTACT_FORM_ID = 'contact-form'
 
 type ContactFormValues = {
   email: string
@@ -127,194 +130,153 @@ export function ContactSheetForm({
 
   return (
     <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className='flex flex-1 flex-col gap-5 px-6 pb-32'
-      >
-        <FormField
-          control={form.control}
-          name='name'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Full Name</FormLabel>
-              <FormControl>
-                <DisabledFieldTooltip
-                  disabled={isPending}
-                  reason={isPending ? pendingReason : null}
-                >
-                  <Input
-                    {...field}
-                    ref={node => {
-                      firstFieldRef.current = node
-                      if (typeof field.ref === 'function') {
-                        field.ref(node)
-                      } else if (field.ref) {
-                        ;(
-                          field.ref as React.MutableRefObject<HTMLInputElement | null>
-                        ).current = node
-                      }
-                    }}
-                    value={field.value ?? ''}
-                    placeholder='John Doe'
+      <div className='flex-1 overflow-y-auto'>
+        <form
+          id={CONTACT_FORM_ID}
+          onSubmit={form.handleSubmit(onSubmit)}
+          className='flex flex-col gap-5 px-6 pt-6 pb-8'
+        >
+          <FormField
+            control={form.control}
+            name='name'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Full Name</FormLabel>
+                <FormControl>
+                  <DisabledFieldTooltip
                     disabled={isPending}
-                  />
-                </DisabledFieldTooltip>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name='email'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <DisabledFieldTooltip
-                  disabled={isPending}
-                  reason={isPending ? pendingReason : null}
-                >
-                  <Input
-                    {...field}
-                    type='email'
-                    placeholder='contact@example.com'
-                    disabled={isPending}
-                  />
-                </DisabledFieldTooltip>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name='phone'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Phone (optional)</FormLabel>
-              <FormControl>
-                <DisabledFieldTooltip
-                  disabled={isPending}
-                  reason={isPending ? pendingReason : null}
-                >
-                  <PhoneInput
-                    value={field.value ?? ''}
-                    onChange={field.onChange}
-                    disabled={isPending}
-                  />
-                </DisabledFieldTooltip>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <div className='space-y-2'>
-          <FormLabel>Clients</FormLabel>
-          <ContactClientPicker
-            selectedClients={selectedClients}
-            availableClients={availableClients}
-            addButtonDisabled={addClientButtonDisabled}
-            addButtonDisabledReason={addClientButtonDisabledReason}
-            isPickerOpen={isClientPickerOpen}
-            isPending={isPending}
-            pendingReason={pendingReason}
-            onPickerOpenChange={onClientPickerOpenChange}
-            onAddClient={onAddClient}
-            onRequestRemoval={onRemoveClient}
-          />
-        </div>
-        {isEditing ? (
-          <div className='space-y-2'>
-            <FormLabel>Portal Access</FormLabel>
-            {hasPortalAccess ? (
-              <Badge variant='secondary' className='gap-1.5'>
-                <Check className='h-3 w-3' />
-                Portal access
-              </Badge>
-            ) : (
-              <div>
-                <DisabledFieldTooltip
-                  disabled={promoteDisabled}
-                  reason={promoteDisabledReason}
-                >
-                  <Button
-                    type='button'
-                    variant='outline'
-                    size='sm'
-                    disabled={promoteDisabled}
-                    onClick={onRequestPromote}
-                    className='gap-1.5'
+                    reason={isPending ? pendingReason : null}
                   >
-                    <UserPlus className='h-3.5 w-3.5' />
-                    Create Portal Account
-                  </Button>
-                </DisabledFieldTooltip>
-              </div>
+                    <Input
+                      {...field}
+                      ref={node => {
+                        firstFieldRef.current = node
+                        if (typeof field.ref === 'function') {
+                          field.ref(node)
+                        } else if (field.ref) {
+                          ;(
+                            field.ref as React.MutableRefObject<HTMLInputElement | null>
+                          ).current = node
+                        }
+                      }}
+                      value={field.value ?? ''}
+                      placeholder='John Doe'
+                      disabled={isPending}
+                    />
+                  </DisabledFieldTooltip>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
+          />
+          <FormField
+            control={form.control}
+            name='email'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <DisabledFieldTooltip
+                    disabled={isPending}
+                    reason={isPending ? pendingReason : null}
+                  >
+                    <Input
+                      {...field}
+                      type='email'
+                      placeholder='contact@example.com'
+                      disabled={isPending}
+                    />
+                  </DisabledFieldTooltip>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name='phone'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Phone (optional)</FormLabel>
+                <FormControl>
+                  <DisabledFieldTooltip
+                    disabled={isPending}
+                    reason={isPending ? pendingReason : null}
+                  >
+                    <PhoneInput
+                      value={field.value ?? ''}
+                      onChange={field.onChange}
+                      disabled={isPending}
+                    />
+                  </DisabledFieldTooltip>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <div className='space-y-2'>
+            <FormLabel>Clients</FormLabel>
+            <ContactClientPicker
+              selectedClients={selectedClients}
+              availableClients={availableClients}
+              addButtonDisabled={addClientButtonDisabled}
+              addButtonDisabledReason={addClientButtonDisabledReason}
+              isPickerOpen={isClientPickerOpen}
+              isPending={isPending}
+              pendingReason={pendingReason}
+              onPickerOpenChange={onClientPickerOpenChange}
+              onAddClient={onAddClient}
+              onRequestRemoval={onRemoveClient}
+            />
           </div>
-        ) : null}
-        {feedback ? <p className={FEEDBACK_CLASSES}>{feedback}</p> : null}
-        <div className='border-border/40 bg-muted/95 supports-backdrop-filter:bg-muted/90 fixed right-0 bottom-0 z-50 w-full border-t shadow-lg backdrop-blur sm:max-w-lg'>
-          <div className='flex w-full items-center justify-between gap-3 px-6 py-4'>
-            <div className='flex items-center gap-2'>
-              <DisabledFieldTooltip
-                disabled={submitDisabled}
-                reason={submitDisabledReason}
-              >
-                <Button
-                  type='submit'
-                  disabled={submitDisabled}
-                  aria-label={`${saveLabel} (⌘S / Ctrl+S)`}
-                  title={`${saveLabel} (⌘S / Ctrl+S)`}
-                >
-                  {saveLabel}
-                </Button>
-              </DisabledFieldTooltip>
-              <Button
-                type='button'
-                variant='outline'
-                size='icon'
-                onClick={undo}
-                disabled={!canUndo}
-                aria-label='Undo (⌘Z / Ctrl+Z)'
-                title='Undo (⌘Z / Ctrl+Z)'
-              >
-                <Undo2 className='h-4 w-4' />
-              </Button>
-              <Button
-                type='button'
-                variant='outline'
-                size='icon'
-                onClick={redo}
-                disabled={!canRedo}
-                aria-label='Redo (⇧⌘Z / Ctrl+Shift+Z)'
-                title='Redo (⇧⌘Z / Ctrl+Shift+Z)'
-              >
-                <Redo2 className='h-4 w-4' />
-              </Button>
+          {isEditing ? (
+            <div className='space-y-2'>
+              <FormLabel>Portal Access</FormLabel>
+              {hasPortalAccess ? (
+                <Badge variant='secondary' className='gap-1.5'>
+                  <Check className='h-3 w-3' />
+                  Portal access
+                </Badge>
+              ) : (
+                <div>
+                  <DisabledFieldTooltip
+                    disabled={promoteDisabled}
+                    reason={promoteDisabledReason}
+                  >
+                    <Button
+                      type='button'
+                      variant='outline'
+                      size='sm'
+                      disabled={promoteDisabled}
+                      onClick={onRequestPromote}
+                      className='gap-1.5'
+                    >
+                      <UserPlus className='h-3.5 w-3.5' />
+                      Create Portal Account
+                    </Button>
+                  </DisabledFieldTooltip>
+                </div>
+              )}
             </div>
-            {isEditing ? (
-              <DisabledFieldTooltip
-                disabled={deleteDisabled}
-                reason={deleteDisabledReason}
-              >
-                <Button
-                  type='button'
-                  variant='destructive'
-                  onClick={onRequestDelete}
-                  disabled={deleteDisabled}
-                  aria-label='Archive contact'
-                  title='Archive contact'
-                  size='icon'
-                >
-                  <Archive className='h-4 w-4' />
-                </Button>
-              </DisabledFieldTooltip>
-            ) : null}
-          </div>
-        </div>
-      </form>
+          ) : null}
+          {feedback ? <p className={FEEDBACK_CLASSES}>{feedback}</p> : null}
+        </form>
+      </div>
+      <SheetFormFooter
+        formId={CONTACT_FORM_ID}
+        saveLabel={saveLabel}
+        submitDisabled={submitDisabled}
+        submitDisabledReason={submitDisabledReason}
+        undo={undo}
+        redo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        isEditing={isEditing}
+        deleteDisabled={deleteDisabled}
+        deleteDisabledReason={deleteDisabledReason}
+        onRequestDelete={onRequestDelete}
+        deleteAriaLabel='Archive contact'
+      />
     </Form>
   )
 }

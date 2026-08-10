@@ -143,42 +143,54 @@ export const fetchLeadById = cache(
   }
 )
 
-export type ArchivedLead = {
-  id: string
-  contactName: string
-  companyName: string | null
-  contactEmail: string | null
-  status: string
-  deletedAt: string
-  createdAt: string
-}
+/**
+ * Full lead record so the archive view can open leads in the LeadSheet,
+ * plus the archive timestamp the table sorts/displays by.
+ */
+export type ArchivedLead = LeadRecord & { deletedAt: string }
 
 export const fetchArchivedLeads = cache(
   async (user: AppUser): Promise<ArchivedLead[]> => {
     assertAdmin(user)
+    let rows: LeadRow[]
 
-    const rows = await db
-      .select({
-        id: leads.id,
-        contactName: leads.contactName,
-        companyName: leads.companyName,
-        contactEmail: leads.contactEmail,
-        status: leads.status,
-        deletedAt: leads.deletedAt,
-        createdAt: leads.createdAt,
-      })
-      .from(leads)
-      .where(isNotNull(leads.deletedAt))
-      .orderBy(desc(leads.deletedAt))
+    try {
+      rows = await selectLeadRows({ includeRank: true, archived: true })
+    } catch (error) {
+      if (isMissingRankColumnError(error)) {
+        rows = await selectLeadRows({ includeRank: false, archived: true })
+      } else {
+        throw error
+      }
+    }
 
     return rows.map(row => ({
       id: row.id,
       contactName: row.contactName,
-      companyName: row.companyName ?? null,
+      status: row.status as LeadStatusValue,
+      sourceType: (row.sourceType as LeadRecord['sourceType']) ?? null,
+      sourceDetail: row.sourceDetail ?? null,
+      assigneeId: row.assigneeId ?? null,
+      assigneeName: row.assigneeName ?? null,
+      assigneeEmail: row.assigneeEmail ?? null,
+      assigneeAvatarUrl: row.assigneeAvatarUrl ?? null,
       contactEmail: row.contactEmail ?? null,
-      status: row.status,
-      deletedAt: row.deletedAt!,
+      contactPhone: row.contactPhone ?? null,
+      companyName: row.companyName ?? null,
+      companyWebsite: row.companyWebsite ?? null,
+      notesHtml: extractLeadNotes(row.notes),
+      rank: row.rank,
       createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      // Activity Tracking
+      lastContactAt: row.lastContactAt ?? null,
+      awaitingReply: row.awaitingReply ?? false,
+      // Predictions
+      expectedCloseDate: row.expectedCloseDate ?? null,
+      // Conversion
+      convertedAt: row.convertedAt ?? null,
+      convertedToClientId: row.convertedToClientId ?? null,
+      deletedAt: row.deletedAt!,
     }))
   }
 )
@@ -197,11 +209,14 @@ export const fetchLeadAssignees = cache(async (): Promise<LeadAssigneeOption[]> 
 async function selectLeadRows({
   includeRank,
   where,
+  archived = false,
 }: {
   includeRank: boolean
   where?: ReturnType<typeof eq>
+  archived?: boolean
 }) {
   const selection = {
+    deletedAt: leads.deletedAt,
     id: leads.id,
     contactName: leads.contactName,
     status: leads.status,
@@ -229,16 +244,22 @@ async function selectLeadRows({
     convertedToClientId: leads.convertedToClientId,
   }
 
+  const deletedFilter = archived
+    ? isNotNull(leads.deletedAt)
+    : isNull(leads.deletedAt)
+
   return db
     .select(selection)
     .from(leads)
     .leftJoin(users, eq(users.id, leads.assigneeId))
-    .where(
-      where ? and(where, isNull(leads.deletedAt)) : isNull(leads.deletedAt)
-    )
+    .where(where ? and(where, deletedFilter) : deletedFilter)
     .orderBy(
-      asc(leads.status),
-      includeRank ? asc(leads.rank) : asc(leads.createdAt)
+      ...(archived
+        ? [desc(leads.deletedAt)]
+        : [
+            asc(leads.status),
+            includeRank ? asc(leads.rank) : asc(leads.createdAt),
+          ])
     )
 }
 

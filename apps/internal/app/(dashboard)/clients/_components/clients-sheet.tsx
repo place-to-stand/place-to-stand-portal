@@ -1,6 +1,6 @@
 'use client'
 
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 
 import {
@@ -13,7 +13,7 @@ import type { UseClientSheetStateArgs } from '@/lib/settings/clients/use-client-
 import { useClientSheetState } from '@/lib/settings/clients/use-client-sheet-state'
 
 import { ClientSheetForm } from './client-sheet/client-sheet-form'
-import { ClientSheetHeader } from './client-sheet/client-sheet-header'
+import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 
 type ClientSheetProps = UseClientSheetStateArgs
 
@@ -31,7 +31,6 @@ export function ClientSheet(props: ClientSheetProps) {
     isDeleteDialogOpen,
     clientDisplayName,
     sheetTitle,
-    sheetDescription,
     unsavedChangesDialog,
     handleSheetOpenChange,
     handleFormSubmit,
@@ -79,16 +78,18 @@ export function ClientSheet(props: ClientSheetProps) {
   return (
     <>
       <Sheet open={props.open} onOpenChange={handleSheetOpenChange}>
-        <SheetContent className='flex w-full flex-col gap-6 overflow-y-auto pb-32 sm:max-w-lg'>
-          <ClientSheetHeader
-            title={sheetTitle}
-            description={sheetDescription}
-          />
+        <SheetContent
+          hideCloseButton
+          size='lg'
+          className='flex w-full flex-col gap-0 overflow-hidden p-0'
+        >
+          <SheetFormHeader entity='client' title={sheetTitle} />
           <ClientSheetForm
             form={form}
             feedback={feedback}
             isPending={isPending}
             isEditing={isEditing}
+            initialBillingType={props.client?.billing_type ?? null}
             pendingReason={pendingReason}
             submitDisabled={submitDisabled}
             submitDisabledReason={submitDisabledReason}

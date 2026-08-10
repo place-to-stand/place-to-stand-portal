@@ -1,12 +1,17 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { RefreshCw, Trash2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
-import { Button } from '@/components/ui/button'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { Button } from '@pts/ui/button'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { FilterBar } from '@/components/table-toolbar/filter-bar'
+import { FilterSelect } from '@/components/table-toolbar/filter-select'
+import { ResetFiltersButton } from '@/components/table-toolbar/reset-filters-button'
+import { SearchInput } from '@/components/table-toolbar/search-input'
+import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import {
   Table,
   TableBody,
@@ -14,22 +19,93 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@pts/ui/table'
 import { useToast } from '@/components/ui/use-toast'
+import { useListParams } from '@/hooks/use-list-params'
 import type { ArchivedLead } from '@/lib/data/leads'
+import type { LeadAssigneeOption } from '@/lib/leads/types'
+import {
+  LEAD_STATUS_LABELS,
+  LEAD_STATUS_VALUES,
+  type LeadStatusValue,
+} from '@/lib/leads/constants'
+import { parseSortParam } from '@/lib/pagination/sort'
 import { restoreLead, destroyLead } from '../_actions'
+import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
+import {
+  CLICKABLE_ROW_CLASS,
+  getClickableRowProps,
+} from '@/lib/table/clickable-row'
+import { cn } from '@/lib/utils'
+import { LeadSheet } from './lead-sheet'
 
 type LeadsArchiveSectionProps = {
   leads: ArchivedLead[]
+  assignees: LeadAssigneeOption[]
+  senderName: string
 }
 
-export function LeadsArchiveSection({ leads }: LeadsArchiveSectionProps) {
+// PRD 004 §03: per-view sort allowlist (D6). The table is in-memory, so the
+// parsed `?sort=` drives a client-side sort of the fetched array.
+const LEAD_ARCHIVE_SORT_FIELDS = ['name', 'archived'] as const
+
+const DEFAULT_LEAD_ARCHIVE_SORT = {
+  field: 'archived',
+  direction: 'desc',
+} as const
+
+function isLeadStatus(value: string | undefined): value is LeadStatusValue {
+  return (
+    typeof value === 'string' &&
+    (LEAD_STATUS_VALUES as readonly string[]).includes(value)
+  )
+}
+
+function isLeadArchiveSortValue(value: string): boolean {
+  const [field, direction] = value.split(':')
+  return (
+    (LEAD_ARCHIVE_SORT_FIELDS as readonly string[]).includes(field) &&
+    (direction === 'asc' || direction === 'desc')
+  )
+}
+
+export function LeadsArchiveSection({
+  leads,
+  assignees,
+  senderName,
+}: LeadsArchiveSectionProps) {
   const router = useRouter()
   const { toast } = useToast()
+  const { update, getParam, hasActiveFilters, reset } = useListParams({
+    basePath: '/leads/archive',
+    resetKeys: [],
+    filters: {
+      status: { isValid: value => isLeadStatus(value) },
+      q: {},
+    },
+  })
   const [isPending, startTransition] = useTransition()
   const [pendingRestoreId, setPendingRestoreId] = useState<string | null>(null)
   const [pendingDestroyId, setPendingDestroyId] = useState<string | null>(null)
   const [destroyTarget, setDestroyTarget] = useState<ArchivedLead | null>(null)
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null)
+  const [sheetOpen, setSheetOpen] = useState(false)
+
+  // Re-resolve from fresh props so the sheet reflects server refreshes.
+  const selectedLead = selectedLeadId
+    ? (leads.find(lead => lead.id === selectedLeadId) ?? null)
+    : null
+
+  // Keep the last-selected lead mounted after close so the sheet's exit
+  // animation can play; only `open` toggles.
+  const handleSheetOpenChange = (open: boolean) => {
+    setSheetOpen(open)
+  }
+
+  const handleSheetSuccess = () => {
+    setSheetOpen(false)
+    router.refresh()
+  }
 
   const handleRestore = (lead: ArchivedLead) => {
     setPendingRestoreId(lead.id)
@@ -90,6 +166,53 @@ export function LeadsArchiveSection({ leads }: LeadsArchiveSectionProps) {
     })
   }
 
+  const rawStatus = getParam('status')
+  const statusFilter = isLeadStatus(rawStatus) ? rawStatus : undefined
+  const searchQuery = getParam('q')?.trim() || undefined
+  const rawSort = getParam('sort')
+  const sortParam = rawSort && isLeadArchiveSortValue(rawSort) ? rawSort : undefined
+  const sort = parseSortParam(
+    sortParam,
+    LEAD_ARCHIVE_SORT_FIELDS,
+    DEFAULT_LEAD_ARCHIVE_SORT
+  )
+
+  // Only offer statuses actually present in the archive — leads keep their
+  // last board status when archived, so any status can appear here.
+  const statusOptions = useMemo(() => {
+    const present = new Set(leads.map(lead => lead.status))
+    return LEAD_STATUS_VALUES.filter(value => present.has(value)).map(
+      value => ({ value, label: LEAD_STATUS_LABELS[value] })
+    )
+  }, [leads])
+
+  const visibleLeads = useMemo(() => {
+    let filtered = statusFilter
+      ? leads.filter(lead => lead.status === statusFilter)
+      : leads
+    // In-memory `?q=` search over the fields the table shows (PRD 004 §03).
+    if (searchQuery) {
+      const needle = searchQuery.toLowerCase()
+      filtered = filtered.filter(lead =>
+        [lead.contactName, lead.companyName, lead.contactEmail].some(field =>
+          field?.toLowerCase().includes(needle)
+        )
+      )
+    }
+    const factor = sort.direction === 'asc' ? 1 : -1
+    return [...filtered].sort((a, b) => {
+      if (sort.field === 'name') {
+        return (
+          factor *
+          a.contactName.localeCompare(b.contactName, undefined, {
+            sensitivity: 'base',
+          })
+        )
+      }
+      return factor * a.deletedAt.localeCompare(b.deletedAt)
+    })
+  }, [leads, searchQuery, sort.direction, sort.field, statusFilter])
+
   if (leads.length === 0) {
     return (
       <div className='text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm'>
@@ -100,6 +223,17 @@ export function LeadsArchiveSection({ leads }: LeadsArchiveSectionProps) {
 
   return (
     <>
+      {selectedLead ? (
+        <LeadSheet
+          open={sheetOpen}
+          onOpenChange={handleSheetOpenChange}
+          lead={selectedLead}
+          assignees={assignees}
+          canManage
+          senderName={senderName}
+          onSuccess={handleSheetSuccess}
+        />
+      ) : null}
       <ConfirmDialog
         open={Boolean(destroyTarget)}
         title='Permanently delete lead?'
@@ -114,20 +248,49 @@ export function LeadsArchiveSection({ leads }: LeadsArchiveSectionProps) {
         onCancel={handleCancelDestroy}
         onConfirm={handleConfirmDestroy}
       />
+      <FilterBar>
+        <SearchInput
+          value={searchQuery}
+          onCommit={value => update({ q: value })}
+          placeholder='Search leads…'
+        />
+        <FilterSelect
+          value={statusFilter}
+          onChange={value => update({ status: value })}
+          placeholder='All statuses'
+          options={statusOptions}
+        />
+        <ResetFiltersButton show={hasActiveFilters} onReset={reset} />
+      </FilterBar>
       <div className='rounded-lg border'>
-        <Table>
+        <Table density='compact'>
           <TableHeader>
             <TableRow className='bg-muted/40'>
-              <TableHead className='w-[30%]'>Contact</TableHead>
+              <SortableTableHead
+                field='name'
+                sort={sortParam}
+                defaultSort='archived:desc'
+                onSortChange={next => update({ sort: next })}
+                className='w-[30%]'
+              >
+                Contact
+              </SortableTableHead>
               <TableHead>Company</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Last Status</TableHead>
-              <TableHead>Archived</TableHead>
+              <SortableTableHead
+                field='archived'
+                sort={sortParam}
+                defaultSort='archived:desc'
+                onSortChange={next => update({ sort: next })}
+              >
+                Archived
+              </SortableTableHead>
               <TableHead className='w-28 text-right'>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {leads.map(lead => {
+            {visibleLeads.map(lead => {
               const isRestoring = isPending && pendingRestoreId === lead.id
               const isDestroying = isPending && pendingDestroyId === lead.id
               const rowDisabled = isRestoring || isDestroying
@@ -137,7 +300,14 @@ export function LeadsArchiveSection({ leads }: LeadsArchiveSectionProps) {
                 .replace(/\b\w/g, c => c.toUpperCase())
 
               return (
-                <TableRow key={lead.id} className='opacity-60'>
+                <TableRow
+                  key={lead.id}
+                  {...getClickableRowProps(() => {
+                    setSelectedLeadId(lead.id)
+                    setSheetOpen(true)
+                  })}
+                  className={cn(CLICKABLE_ROW_CLASS, ARCHIVED_ROW_CLASS)}
+                >
                   <TableCell className='font-medium'>
                     {lead.contactName}
                   </TableCell>
@@ -170,8 +340,8 @@ export function LeadsArchiveSection({ leads }: LeadsArchiveSectionProps) {
                   <TableCell className='text-right'>
                     <div className='flex justify-end gap-2'>
                       <Button
-                        variant='secondary'
-                        size='icon'
+                        variant='outline'
+                        size='icon-sm'
                         onClick={() => handleRestore(lead)}
                         disabled={rowDisabled}
                         title='Restore lead'
@@ -182,7 +352,7 @@ export function LeadsArchiveSection({ leads }: LeadsArchiveSectionProps) {
                       </Button>
                       <Button
                         variant='destructive'
-                        size='icon'
+                        size='icon-sm'
                         onClick={() => handleRequestDestroy(lead)}
                         disabled={rowDisabled}
                         title='Permanently delete lead'
@@ -196,6 +366,16 @@ export function LeadsArchiveSection({ leads }: LeadsArchiveSectionProps) {
                 </TableRow>
               )
             })}
+            {visibleLeads.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  className='text-muted-foreground py-10 text-center text-sm'
+                >
+                  No archived leads match the current filters.
+                </TableCell>
+              </TableRow>
+            ) : null}
           </TableBody>
         </Table>
       </div>

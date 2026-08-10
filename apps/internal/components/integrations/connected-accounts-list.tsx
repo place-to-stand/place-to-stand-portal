@@ -3,10 +3,11 @@
 import { useState } from 'react'
 import { Loader2, Trash2, Plus, RefreshCw } from 'lucide-react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
+import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
+import { Button } from '@pts/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { formatCalendarDate } from '@/lib/dates'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 
 export interface ConnectedAccount {
   id: string
@@ -87,13 +88,8 @@ export function ConnectedAccountsList({
     return name[0].toUpperCase()
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    })
-  }
+  const formatDate = (dateString: string) =>
+    formatCalendarDate(dateString) ?? '—'
 
   const providerName = provider === 'google' ? 'Google' : 'GitHub'
   const activeAccounts = accounts.filter(a => a.status === 'ACTIVE')

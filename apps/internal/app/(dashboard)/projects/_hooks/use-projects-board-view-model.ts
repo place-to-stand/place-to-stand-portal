@@ -26,13 +26,7 @@ const NO_PROJECTS_DESCRIPTION =
 type BaseProps = Omit<UseProjectsBoardCoreStateArgs, 'currentView'>
 
 export type ProjectsBoardProps = BaseProps & {
-  initialTab?:
-    | 'overview'
-    | 'board'
-    | 'activity'
-    | 'review'
-    | 'timeLogs'
-    | 'scope'
+  initialTab?: 'overview' | 'board' | 'activity' | 'review' | 'timeLogs'
 }
 
 export type ProjectsBoardHeaderProps = {
@@ -51,8 +45,6 @@ export type ProjectsBoardBurndownProps = {
   totalClientRemainingHours: number
   totalProjectLoggedHours: number
   projectMonthToDateLoggedHours: number
-  canLogTime: boolean
-  addTimeLogDisabledReason: string | null
   onAddTimeLog: () => void
   viewTimeLogsHref: string | null
   showProjectMonthToDate: boolean
@@ -72,7 +64,7 @@ export function useProjectsBoardViewModel({
   initialTab = 'board',
   ...props
 }: ProjectsBoardProps): ProjectsBoardViewModel {
-  const currentBoardView = initialTab === 'timeLogs' || initialTab === 'overview' || initialTab === 'scope' ? 'board' : initialTab
+  const currentBoardView = initialTab === 'timeLogs' || initialTab === 'overview' ? 'board' : initialTab
   const { sensors } = useProjectsBoardSensors()
   const {
     boardState,
@@ -82,13 +74,7 @@ export function useProjectsBoardViewModel({
     boardViewportRef,
     handleBoardScroll,
     timeLogDialogs,
-    canLogTime,
-    canAcceptTasks,
   } = useProjectsBoardCoreState({ ...props, currentView: currentBoardView })
-
-  const addTimeLogDisabledReason = canLogTime
-    ? null
-    : 'Clients can review logged hours but cannot add new entries.'
 
   const navigation = useProjectsBoardNavigation({
     activeProject: boardState.activeProject,
@@ -128,9 +114,6 @@ export function useProjectsBoardViewModel({
 
   const reviewActionTaskId = reviewActions.pendingReviewAction?.taskId ?? null
   const reviewActionType = reviewActions.pendingReviewAction?.type ?? null
-  const reviewActionDisabledReason = canAcceptTasks
-    ? null
-    : 'Only administrators can manage review tasks.'
 
   const header = buildProjectsBoardHeader({
     projectItems: boardState.projectItems,
@@ -181,7 +164,6 @@ export function useProjectsBoardViewModel({
       onDestroyTask: reviewActions.handleDestroyTask,
       reviewActionTaskId,
       reviewActionType,
-      reviewActionDisabledReason,
       isReviewActionPending: reviewActions.isReviewActionPending,
     },
     drop: {
@@ -191,12 +173,7 @@ export function useProjectsBoardViewModel({
     },
     timeLogs: {
       currentUserId: props.currentUserId,
-      currentUserRole: props.currentUserRole,
       onEditTimeLogEntry: timeLogDialogs.openEditTimeLogDialog,
-      canLogTime,
-    },
-    scope: {
-      scopeProjectId: boardState.activeProject?.id ?? null,
     },
   })
 
@@ -209,18 +186,16 @@ export function useProjectsBoardViewModel({
       canManage: boardState.canManageTasks,
       admins: props.admins,
       currentUserId: props.currentUserId,
-      currentUserRole: props.currentUserRole,
       defaultStatus: boardState.defaultTaskStatus,
       defaultDueOn: boardState.defaultTaskDueOn,
+      onTaskCreated: boardState.handleTaskCreated,
     },
     timeLogState: {
       isOpen: timeLogDialogs.isTimeLogDialogOpen,
       onOpenChange: timeLogDialogs.handleTimeLogDialogOpenChange,
-      canLogTime,
       timeLogProjectId: timeLogDialogs.timeLogProjectId,
       tasks: boardState.activeProjectTasks,
       currentUserId: props.currentUserId,
-      currentUserRole: props.currentUserRole,
       admins: props.admins,
       mode: timeLogDialogs.mode,
       editingEntry: timeLogDialogs.editingEntry,
@@ -230,8 +205,6 @@ export function useProjectsBoardViewModel({
 
   const burndown = buildProjectsBoardBurndown({
     activeProject: boardState.activeProject,
-    canLogTime,
-    addTimeLogDisabledReason,
     onAddTimeLog: () => timeLogDialogs.openCreateTimeLogDialog(),
     viewTimeLogsHref: navigation.timeLogsDisabled
       ? null

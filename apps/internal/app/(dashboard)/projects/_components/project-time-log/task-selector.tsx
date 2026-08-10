@@ -1,6 +1,6 @@
 import { ChevronsUpDown, ListPlus } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
   Command,
@@ -14,7 +14,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover'
+} from '@pts/ui/popover'
 import type { TaskWithRelations } from '@/lib/types'
 
 import { formatTaskStatusLabel } from './task-status-utils'

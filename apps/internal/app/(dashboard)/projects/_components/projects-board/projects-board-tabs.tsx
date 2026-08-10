@@ -1,12 +1,11 @@
 import { useEffect } from 'react'
 import type { RefObject, UIEventHandler } from 'react'
-import { Tabs } from '@/components/ui/tabs'
+import { Tabs } from '@pts/ui/tabs'
 import type { TaskWithRelations } from '@/lib/types'
 import type { DndContextProps } from '@dnd-kit/core'
 import type { RenderAssigneeFn } from '../../../../../lib/projects/board/board-selectors'
 import type { BoardColumnId } from '@/lib/projects/board/board-constants'
 import { completeBoardTabInteraction } from '@/lib/projects/board/board-tab-interaction'
-import type { UserRole } from '@/lib/auth/session'
 import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 import type { ProjectStatusValue } from '@/lib/constants'
 
@@ -18,7 +17,6 @@ import type { ReviewActionKind } from './review-tab/review-tab.types'
 import { ProjectsBoardTabsHeader } from './projects-board-tabs-header'
 import type { ProjectsBoardActiveProject } from './board-tab-content'
 import { TimeLogsTabContent } from './time-logs-tab-content'
-import { ScopeTabContent } from '../scope/scope-tab-content'
 
 export type ProjectActionControls = {
   canEdit: boolean
@@ -30,24 +28,15 @@ export type ProjectActionControls = {
 } | null
 
 export type ProjectsBoardTabsProps = {
-  initialTab:
-    | 'overview'
-    | 'board'
-    | 'activity'
-    | 'review'
-    | 'timeLogs'
-    | 'scope'
+  initialTab: 'overview' | 'board' | 'activity' | 'review' | 'timeLogs'
   overviewHref: string
   boardHref: string
   activityHref: string
   reviewHref: string
   timeLogsHref: string
-  scopeHref: string
   activityDisabled: boolean
   reviewDisabled: boolean
   timeLogsDisabled: boolean
-  scopeDisabled: boolean
-  scopeProjectId: string | null
   feedback: string | null
   activeProject: ProjectsBoardActiveProject
   canManageTasks: boolean
@@ -78,14 +67,11 @@ export type ProjectsBoardTabsProps = {
   onDestroyTask: (taskId: string) => void
   reviewActionTaskId: string | null
   reviewActionType: ReviewActionKind | null
-  reviewActionDisabledReason: string | null
   isReviewActionPending: boolean
   activeDropColumnId: BoardColumnId | null
   dropPreview: { columnId: BoardColumnId; index: number } | null
   recentlyMovedTaskId: string | null
   currentUserId: string
-  currentUserRole: UserRole
-  canLogTime: boolean
   onEditTimeLogEntry: (entry: TimeLogEntry) => void
   projectActions: ProjectActionControls
   onProjectStatusChange: (
@@ -102,12 +88,9 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
     activityHref,
     reviewHref,
     timeLogsHref,
-    scopeHref,
     activityDisabled,
     reviewDisabled,
     timeLogsDisabled,
-    scopeDisabled,
-    scopeProjectId,
     feedback,
     activeProject,
     canManageTasks,
@@ -137,14 +120,11 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
     onDestroyTask,
     reviewActionTaskId,
     reviewActionType,
-    reviewActionDisabledReason,
     isReviewActionPending,
     activeDropColumnId,
     dropPreview,
     recentlyMovedTaskId,
     currentUserId,
-    currentUserRole,
-    canLogTime,
     onEditTimeLogEntry,
     projectActions,
     onProjectStatusChange,
@@ -163,11 +143,9 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
         activityHref={activityHref}
         reviewHref={reviewHref}
         timeLogsHref={timeLogsHref}
-        scopeHref={scopeHref}
         activityDisabled={activityDisabled}
         reviewDisabled={reviewDisabled}
         timeLogsDisabled={timeLogsDisabled}
-        scopeDisabled={scopeDisabled}
         projectActions={projectActions}
         activeProjectId={activeProject?.id ?? null}
         activeProjectStatus={activeProject?.status ?? null}
@@ -218,7 +196,6 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
         onDestroyTask={onDestroyTask}
         reviewActionTaskId={reviewActionTaskId}
         reviewActionType={reviewActionType}
-        reviewActionDisabledReason={reviewActionDisabledReason}
         isReviewActionPending={isReviewActionPending}
       />
       <TimeLogsTabContent
@@ -226,13 +203,7 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
         isActive={initialTab === 'timeLogs'}
         activeProject={activeProject}
         currentUserId={currentUserId}
-        currentUserRole={currentUserRole}
-        canLogTime={canLogTime}
         onEditEntry={onEditTimeLogEntry}
-      />
-      <ScopeTabContent
-        isActive={initialTab === 'scope'}
-        projectId={scopeProjectId}
       />
       <ActivityTabContent
         isActive={initialTab === 'activity'}

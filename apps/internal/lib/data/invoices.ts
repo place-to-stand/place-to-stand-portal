@@ -11,6 +11,7 @@ import {
 } from '@/lib/db/schema'
 import { hourBlockCreatedEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
+import { resolveHourBlockBillingMonth } from '@/lib/queries/clients/billing-terms'
 
 /**
  * Creates hour blocks for qualifying invoice line items after payment.
@@ -72,6 +73,11 @@ export async function createHourBlocksFromInvoice(
     return
   }
 
+  // Attribute webhook-created blocks to the first month they can be billed
+  // in — clamped forward past a pending prepaid cutover, since no UI warning
+  // can reach this path (PRD 002 D13).
+  const billingMonth = await resolveHourBlockBillingMonth(invoice.clientId)
+
   for (const item of qualifying) {
     const hoursPurchased = Number(item.quantity).toFixed(2)
 
@@ -85,6 +91,7 @@ export async function createHourBlocksFromInvoice(
         invoiceLineItemId: item.id,
         invoiceNumber: invoice.invoiceNumber,
         createdBy: invoice.createdBy,
+        billingMonth,
       })
       .onConflictDoNothing({
         target: hourBlocks.invoiceLineItemId,

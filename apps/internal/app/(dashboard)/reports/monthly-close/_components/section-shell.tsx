@@ -212,26 +212,3 @@ export function SectionEmpty({ message }: { message: string }) {
     <p className='text-muted-foreground py-8 text-center text-sm'>{message}</p>
   )
 }
-
-/**
- * Shared table classes. The header row gets a subtle muted fill + stronger
- * bottom border so it reads as a distinct "header zone" separate from the
- * body rows. Column labels are small-caps tracked with a slightly brighter
- * foreground tone. First/last cells get extra horizontal padding so the
- * table content doesn't butt against the card edge.
- */
-export const tableClasses = {
-  // Row-level — applied to the <TableRow> inside <TableHeader>
-  headRow: 'bg-muted/50 hover:bg-muted/50 border-b-2 border-border/80',
-  // Cell-level — applied to each <TableHead>. Tight height so the header
-  // reads as a compact masthead, not a bloated strip.
-  head: 'text-foreground/70 h-8 text-[10px] font-semibold tracking-[0.14em] uppercase first:pl-5 last:pr-5',
-  headRight:
-    'text-foreground/70 h-8 text-right text-[10px] font-semibold tracking-[0.14em] uppercase first:pl-5 last:pr-5',
-  row: 'hover:bg-muted/40 transition-colors',
-  cell: 'first:pl-5 last:pr-5',
-  cellNumeric: 'text-right tabular-nums first:pl-5 last:pr-5',
-  // Footer cells — tighter vertical padding than body rows. Used by the
-  // Partner Payouts "Column totals" row.
-  footerCell: 'py-1.5 first:pl-5 last:pr-5',
-}

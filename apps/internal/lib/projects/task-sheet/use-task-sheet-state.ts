@@ -8,7 +8,7 @@ import {
   useState,
   useTransition,
 } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import type { UseFormReturn } from 'react-hook-form'
 
 import type {
@@ -60,6 +60,14 @@ export type UseTaskSheetStateArgs = {
   defaultAssigneeId: string | null
   defaultLeadId: string | null
   currentUserId: string
+  /**
+   * Opt back into the legacy close-on-save behavior (lead task overlay).
+   * The default keeps the sheet open: an edit re-baselines in place, a create
+   * hands the new id to `onTaskCreated` so the consumer can navigate into
+   * edit mode.
+   */
+  closeOnSave?: boolean
+  onTaskCreated?: (taskId: string, projectId: string) => void
 }
 
 type UseTaskSheetStateReturn = {
@@ -109,15 +117,21 @@ export const useTaskSheetState = ({
   defaultAssigneeId,
   defaultLeadId,
   currentUserId,
+  closeOnSave = false,
+  onTaskCreated,
 }: UseTaskSheetStateArgs): UseTaskSheetStateReturn => {
   const router = useRouter()
-  const pathname = usePathname()
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const { toast } = useToast()
-  const pendingRefreshRef = useRef(false)
-  const previousPathnameRef = useRef(pathname)
+  // Synchronous in-flight lock: `isPending` is render state, so two submits
+  // in the same render window both observe it as false. This ref is checked
+  // and set before the transition starts.
+  const submitLockRef = useRef(false)
+  // Once a create succeeds, further submits are ignored until the created
+  // task arrives via props (create→edit transition) or the sheet closes.
+  const createdTaskIdRef = useRef<string | null>(null)
 
   const selectionProjects = projectSelectionProjects ?? projects
 
@@ -162,33 +176,39 @@ export const useTaskSheetState = ({
     [defaultValues, form, resetAttachmentsState]
   )
 
+  // Consolidated re-baseline rule: the reset chain fires when the sheet
+  // opens, or when `task?.id` CHANGES while open (create→edit arrival,
+  // switching tasks) — never on same-id prop identity changes (e.g. the
+  // router.refresh() a time-log save triggers), which would wipe unsaved
+  // task-form edits. `undefined` marks "closed / not yet reset".
+  const lastResetTaskIdRef = useRef<string | null | undefined>(undefined)
+
   useEffect(() => {
     if (!open) {
+      lastResetTaskIdRef.current = undefined
+      createdTaskIdRef.current = null
       return
     }
 
+    const currentTaskId = task?.id ?? null
+
+    if (currentTaskId) {
+      // The persisted task is in hand; release the post-create submit guard.
+      createdTaskIdRef.current = null
+    }
+
+    if (
+      lastResetTaskIdRef.current !== undefined &&
+      lastResetTaskIdRef.current === currentTaskId
+    ) {
+      return
+    }
+
+    lastResetTaskIdRef.current = currentTaskId
     startTransition(() => {
       resetFormState()
     })
-  }, [open, resetFormState, startTransition])
-
-  // Refresh data after sheet closes and URL has been updated (taskId removed)
-  useEffect(() => {
-    if (!open && pendingRefreshRef.current) {
-      // Check if pathname changed (navigation completed)
-      if (pathname !== previousPathnameRef.current) {
-        pendingRefreshRef.current = false
-        // Small delay to ensure navigation is fully complete
-        setTimeout(() => {
-          router.refresh()
-        }, 50)
-      }
-    }
-    // Update previous pathname to track changes
-    if (pathname !== previousPathnameRef.current) {
-      previousPathnameRef.current = pathname
-    }
-  }, [open, pathname, router])
+  }, [open, task?.id, resetFormState, startTransition])
 
   const handleSheetOpenChange = useCallback(
     (next: boolean) => {
@@ -209,60 +229,95 @@ export const useTaskSheetState = ({
 
   const handleFormSubmit = useCallback(
     (values: TaskSheetFormValues) => {
-      if (!canManage) {
+      if (!canManage || submitLockRef.current) {
         return
       }
 
+      // A create already succeeded but the task prop hasn't arrived yet —
+      // saving again would insert a duplicate.
+      if (!task && createdTaskIdRef.current) {
+        return
+      }
+
+      submitLockRef.current = true
+
       startTransition(async () => {
-        setFeedback(null)
-        const normalizedDescription = normalizeRichTextContent(
-          values.description ?? null
-        )
-        const attachmentsPayload = buildSubmissionPayload()
-        const result = await saveTask({
-          id: task?.id,
-          projectId: values.projectId,
-          leadId: values.leadId ?? null,
-          title: values.title.trim(),
-          description: normalizedDescription,
-          status: values.status,
-          dueOn: values.dueOn ? values.dueOn : null,
-          assigneeIds: values.assigneeId ? [values.assigneeId] : [],
-          attachments: attachmentsPayload,
-        })
+        try {
+          setFeedback(null)
+          const normalizedDescription = normalizeRichTextContent(
+            values.description ?? null
+          )
+          const attachmentsPayload = buildSubmissionPayload()
+          const result = await saveTask({
+            id: task?.id,
+            projectId: values.projectId,
+            leadId: values.leadId ?? null,
+            title: values.title.trim(),
+            description: normalizedDescription,
+            status: values.status,
+            dueOn: values.dueOn ? values.dueOn : null,
+            assigneeIds: values.assigneeId ? [values.assigneeId] : [],
+            attachments: attachmentsPayload,
+          })
 
-        if (result.error) {
-          setFeedback(result.error)
-          return
-        }
+          // Partial-failure contract: a create result carrying `taskId` means
+          // the row exists — treat it as created (transition to edit mode)
+          // and surface the failed sub-step, never re-run the create path.
+          const createdTaskId = !task ? (result.taskId ?? null) : null
 
-        toast({
-          title: task ? 'Task updated' : 'Task created',
-          description: task
-            ? 'Changes saved successfully.'
-            : 'The task was added to the project board.',
-        })
+          if (result.error && !createdTaskId) {
+            setFeedback(result.error)
+            return
+          }
 
-        resetFormState({ preservePending: true })
-        onOpenChange(false)
-        // If editing a task, wait for navigation to complete before refreshing
-        // If creating a new task, refresh immediately (no URL change needed)
-        if (task) {
-          // Mark that we need to refresh after navigation completes
-          pendingRefreshRef.current = true
-          // Refresh will happen in useEffect after pathname changes (navigation completes)
-        } else {
-          // For new tasks, refresh immediately since there's no URL change
-          setTimeout(() => {
+          if (result.error) {
+            toast({
+              title: 'Task created with issues',
+              description: result.error,
+              variant: 'destructive',
+            })
+          } else {
+            toast({
+              title: task ? 'Task updated' : 'Task created',
+              description: task
+                ? 'Changes saved successfully.'
+                : 'The task was added to the project board.',
+            })
+          }
+
+          if (task) {
+            // Edit: stay open; current values become the new baseline so
+            // isDirty (and the attachments dirty flag) clear.
+            form.reset(form.getValues())
+            resetAttachmentsState({ preservePending: true })
             router.refresh()
-          }, 50)
+          } else if (closeOnSave) {
+            // Lead overlay path: legacy close-on-save behavior.
+            resetFormState({ preservePending: true })
+            onOpenChange(false)
+            router.refresh()
+          } else {
+            // Create: hand the id to the consumer; it navigates into edit
+            // mode and the sheet re-baselines when the task prop arrives.
+            if (createdTaskId) {
+              createdTaskIdRef.current = createdTaskId
+              onTaskCreated?.(createdTaskId, values.projectId)
+            }
+            router.refresh()
+          }
+        } finally {
+          submitLockRef.current = false
         }
       })
     },
     [
       buildSubmissionPayload,
       canManage,
+      closeOnSave,
+      form,
       onOpenChange,
+      onTaskCreated,
+      resetAttachmentsState,
       router,
       resetFormState,
       task,

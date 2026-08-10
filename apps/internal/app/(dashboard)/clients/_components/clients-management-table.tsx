@@ -3,10 +3,11 @@
 import { useMemo } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 
 import type { PageInfo } from '@/lib/pagination/cursor'
+import { isClientBilling } from '@/lib/settings/clients/filters'
 import {
   type ClientsTableClient,
   useClientsTableState,
@@ -19,6 +20,8 @@ type ClientsManagementTableProps = {
   clients: ClientsTableClient[]
   pageInfo: PageInfo
   mode: 'active' | 'archive'
+  /** Route the sort/filter params live on (PRD 004 §03). */
+  basePath: string
 }
 
 const EMPTY_MESSAGES = {
@@ -30,6 +33,7 @@ export function ClientsManagementTable({
   clients,
   pageInfo,
   mode,
+  basePath,
 }: ClientsManagementTableProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -57,7 +61,14 @@ export function ClientsManagementTable({
     handleConfirmDestroy,
   } = useClientsTableState()
 
-  const emptyMessage = EMPTY_MESSAGES[mode]
+  // Guard-validated active filters (R4): an empty list under a live `?q=` or
+  // `?billing=` shows the filtered message, not the tab's default empty state.
+  const hasActiveFilter =
+    Boolean(searchParams.get('q')?.trim()) ||
+    isClientBilling(searchParams.get('billing') ?? undefined)
+  const emptyMessage = hasActiveFilter
+    ? 'No clients match the current filters.'
+    : EMPTY_MESSAGES[mode]
 
   const handlePaginate = (direction: 'forward' | 'backward') => {
     const cursor =
@@ -83,7 +94,7 @@ export function ClientsManagementTable({
   )
 
   return (
-    <div className='space-y-6'>
+    <div className='space-y-4'>
       <ConfirmDialog
         open={Boolean(deleteTarget)}
         title='Archive client?'
@@ -114,6 +125,7 @@ export function ClientsManagementTable({
       />
       <ClientsTableSection
         clients={clients}
+        basePath={basePath}
         mode={mode === 'archive' ? 'archive' : 'active'}
         onEdit={openEdit}
         onRequestDelete={handleRequestDelete}

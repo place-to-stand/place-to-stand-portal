@@ -36,6 +36,8 @@ const schema = z.object({
 
 export type SignInState = {
   error?: string;
+  /** Set when a client-portal (CLIENT role) account tried to sign in here. */
+  clientPortalUrl?: string;
 };
 
 export async function signInWithPassword(
@@ -70,7 +72,7 @@ export async function signInWithPassword(
   // Supabase bans disabled users, but the DB flag is the source of truth —
   // reject here too so a manually flagged account never gets a session.
   const [profile] = await db
-    .select({ disabledAt: users.disabledAt })
+    .select({ disabledAt: users.disabledAt, role: users.role })
     .from(users)
     .where(eq(users.id, data.user.id))
     .limit(1);
@@ -80,6 +82,14 @@ export async function signInWithPassword(
     return {
       error: "This account has been disabled. Contact an administrator.",
     };
+  }
+
+  // The internal portal is admin-only. Portal (CLIENT) users sign in on the
+  // client portal instead — drop the session and point them there. The `profile &&`
+  // guard matters: a missing row is "no account", handled separately below.
+  if (profile && profile.role !== "ADMIN") {
+    await supabase.auth.signOut();
+    return { clientPortalUrl: serverEnv.CLIENT_PORTAL_URL };
   }
 
   // A provisioned user can't reach this branch — password sign-in implies an

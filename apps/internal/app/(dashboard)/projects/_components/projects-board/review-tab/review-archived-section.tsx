@@ -1,7 +1,7 @@
 import { Loader2, RefreshCw, Trash2 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
   Table,
@@ -10,7 +10,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@pts/ui/table'
 import type { TaskWithRelations } from '@/lib/types'
 import {
   getTaskStatusLabel,
@@ -30,7 +30,6 @@ type ReviewArchivedSectionProps = {
   activeSheetTaskId: string | null
   reviewActionTaskId: string | null
   reviewActionType: ReviewActionKind | null
-  reviewActionDisabledReason: string | null
   isReviewActionPending: boolean
   onRequestDestroy: (task: TaskWithRelations) => void
 }
@@ -45,7 +44,6 @@ export function ReviewArchivedSection({
   activeSheetTaskId,
   reviewActionTaskId,
   reviewActionType,
-  reviewActionDisabledReason,
   isReviewActionPending,
   onRequestDestroy,
 }: ReviewArchivedSectionProps) {
@@ -76,27 +74,15 @@ export function ReviewArchivedSection({
         </div>
       </div>
       <div className='px-2 pt-1 pb-2'>
-        <Table>
+        <Table density='compact'>
           <TableHeader>
-            <TableRow className='bg-muted/30 hover:bg-muted/30'>
-              <TableHead className='text-muted-foreground text-xs font-semibold uppercase'>
-                Task
-              </TableHead>
-              <TableHead className='text-muted-foreground text-center text-xs font-semibold uppercase'>
-                Comments
-              </TableHead>
-              <TableHead className='text-muted-foreground text-center text-xs font-semibold uppercase'>
-                Files
-              </TableHead>
-              <TableHead className='text-muted-foreground text-xs font-semibold uppercase'>
-                Due
-              </TableHead>
-              <TableHead className='text-muted-foreground text-xs font-semibold uppercase'>
-                Updated
-              </TableHead>
-              <TableHead className='text-muted-foreground text-right text-xs font-semibold uppercase'>
-                Actions
-              </TableHead>
+            <TableRow className='bg-muted/40'>
+              <TableHead>Task</TableHead>
+              <TableHead className='text-center'>Comments</TableHead>
+              <TableHead className='text-center'>Files</TableHead>
+              <TableHead>Due</TableHead>
+              <TableHead>Updated</TableHead>
+              <TableHead className='text-right'>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -121,11 +107,9 @@ export function ReviewArchivedSection({
                   reviewActionType === 'destroy'
                 const blockOtherActions =
                   isReviewActionPending && reviewActionTaskId !== task.id
-                const disabledReason =
-                  reviewActionDisabledReason ??
-                  (blockOtherActions
-                    ? 'Please wait for the current task update to finish.'
-                    : null)
+                const disabledReason = blockOtherActions
+                  ? 'Please wait for the current task update to finish.'
+                  : null
                 const isActive = task.id === activeSheetTaskId
                 const updatedOverride =
                   task.deleted_at ?? task.updated_at ?? null
@@ -153,7 +137,7 @@ export function ReviewArchivedSection({
                       renderAssignees={renderAssignees}
                       updatedAtOverride={updatedOverride}
                     />
-                    <TableCell className='py-3 text-right'>
+                    <TableCell className='text-right'>
                       <div className='flex justify-end gap-2'>
                         <DisabledFieldTooltip
                           disabled={Boolean(disabledReason)}
@@ -161,7 +145,7 @@ export function ReviewArchivedSection({
                         >
                           <Button
                             type='button'
-                            size='icon'
+                            size='icon-sm'
                             variant='secondary'
                             onClick={event => {
                               event.preventDefault()
@@ -187,7 +171,7 @@ export function ReviewArchivedSection({
                         >
                           <Button
                             type='button'
-                            size='icon'
+                            size='icon-sm'
                             variant='destructive'
                             onClick={event => {
                               event.preventDefault()

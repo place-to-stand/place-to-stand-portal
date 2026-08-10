@@ -9,11 +9,7 @@ import { getSupabaseServiceClient } from "@/lib/supabase/service";
 import { db } from "@/lib/db";
 import { users as usersTable } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import {
-  deleteAvatarObject,
-  ensureAvatarBucket,
-  moveAvatarToUserFolder,
-} from "@/lib/storage/avatar";
+import { resolveAvatarUpdate } from "@/lib/settings/users/user-service";
 
 type UpdateProfileInput = {
   fullName: string;
@@ -71,51 +67,19 @@ export async function updateProfile(input: UpdateProfileInput): Promise<UpdatePr
   const supabase = getSupabaseServerClient();
   const supabaseAdmin = getSupabaseServiceClient();
 
-  let nextAvatarPath = user.avatar_url ?? null;
+  const avatarResolution = await resolveAvatarUpdate({
+    client: supabaseAdmin,
+    userId: user.id,
+    currentAvatarPath: user.avatar_url ?? null,
+    incomingAvatarPath: avatarPath ?? null,
+    removeRequested: avatarRemoved,
+  });
 
-  if (avatarRemoved) {
-    if (nextAvatarPath) {
-      try {
-        await deleteAvatarObject({ client: supabaseAdmin, path: nextAvatarPath });
-      } catch (error) {
-        console.error("Failed to remove existing avatar", error);
-        return { error: "Unable to remove avatar. Please try again." };
-      }
-    }
-
-    nextAvatarPath = null;
-  } else if (avatarPath) {
-    if (nextAvatarPath !== avatarPath) {
-      try {
-        await ensureAvatarBucket(supabaseAdmin);
-        const movedPath = await moveAvatarToUserFolder({
-          client: supabaseAdmin,
-          path: avatarPath,
-          userId: user.id,
-        });
-
-        if (nextAvatarPath && nextAvatarPath !== movedPath) {
-          try {
-            await deleteAvatarObject({ client: supabaseAdmin, path: nextAvatarPath });
-          } catch (error) {
-            console.error("Failed to delete previous avatar", error);
-          }
-        }
-
-        nextAvatarPath = movedPath ?? null;
-      } catch (error) {
-        console.error("Failed to process avatar update", error);
-        if (avatarPath) {
-          try {
-            await deleteAvatarObject({ client: supabaseAdmin, path: avatarPath });
-          } catch (cleanupError) {
-            console.error("Failed to clean up pending avatar after profile error", cleanupError);
-          }
-        }
-        return { error: "Unable to update avatar." };
-      }
-    }
+  if (avatarResolution.error) {
+    return { error: avatarResolution.error };
   }
+
+  const nextAvatarPath = avatarResolution.nextAvatarPath;
 
   try {
     await db

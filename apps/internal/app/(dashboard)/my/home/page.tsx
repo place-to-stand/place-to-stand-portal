@@ -20,7 +20,6 @@ export default async function HomePage() {
   const [tasksResult, hoursSnapshot] = await Promise.all([
     fetchAssignedTasksSummary({
       userId: user.id,
-      role: user.role,
       limit: 5,
       includeCompletedStatuses: false,
     }),
@@ -29,7 +28,7 @@ export default async function HomePage() {
 
   return (
     <HomeDashboard
-      user={user}
+
       tasks={tasksResult.items}
       totalTaskCount={tasksResult.totalCount}
       initialHoursSnapshot={hoursSnapshot}

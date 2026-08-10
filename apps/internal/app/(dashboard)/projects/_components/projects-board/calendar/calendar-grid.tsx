@@ -5,12 +5,12 @@ import { useDroppable, useDraggable } from '@dnd-kit/core'
 import { format } from 'date-fns'
 import { Plus } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@/components/ui/tooltip'
+} from '@pts/ui/tooltip'
 import { cn } from '@/lib/utils'
 import type { TaskWithRelations } from '@/lib/types'
 import type { RenderAssigneeFn } from '@/lib/projects/board/board-selectors'

@@ -147,7 +147,7 @@ async function sendInvoiceEmail(params: {
 }
 ```
 
-> **Note:** Uses the same `RESEND_FROM_EMAIL` env var as other portal emails (currently `portal@notifications.placetostandagency.com`). No additional domain verification needed. The subject line distinguishes invoice emails from other portal notifications.
+> **Note:** Uses the same `RESEND_FROM_EMAIL` env var as other portal emails (currently `portal@send.placetostandagency.com`). No additional domain verification needed. The subject line distinguishes invoice emails from other portal notifications.
 
 ## Error Handling
 

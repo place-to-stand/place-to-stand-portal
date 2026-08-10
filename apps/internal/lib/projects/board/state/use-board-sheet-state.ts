@@ -178,6 +178,22 @@ export const useBoardSheetState = ({
     [currentView, navigateToProject]
   )
 
+  // Mirrors handleEditTask: `pendingTaskId` keeps the sheet open while the
+  // navigation lands, and the sync effect swaps in the fresh task once the
+  // refreshed `projects` prop delivers it (the sheet keeps its current form
+  // values until then).
+  const handleTaskCreated = useCallback(
+    (taskId: string, projectId: string) => {
+      setRouteTaskId(taskId)
+      setPendingTaskId(taskId)
+      navigateToProject(projectId, {
+        taskId,
+        view: currentView,
+      })
+    },
+    [currentView, navigateToProject]
+  )
+
   const handleSheetOpenChange = useCallback(
     (open: boolean) => {
       setIsSheetOpen(open)
@@ -253,6 +269,7 @@ export const useBoardSheetState = ({
     sheetTask,
     openCreateSheet,
     handleEditTask,
+    handleTaskCreated,
     handleSheetOpenChange,
     defaultTaskStatus,
     defaultTaskDueOn,

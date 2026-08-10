@@ -67,24 +67,61 @@ export async function loadTaskRows(
     githubIssueNumber: tasksTable.githubIssueNumber,
     githubIssueUrl: tasksTable.githubIssueUrl,
     workerStatus: tasksTable.workerStatus,
-    commentCount: sql<number>`(
-      select coalesce(count(*), 0)
-      from ${taskCommentsTable}
-      where ${taskCommentsTable.taskId} = tasks.id
-        and ${taskCommentsTable.deletedAt} is null
-    )`,
-    attachmentCount: sql<number>`(
-      select coalesce(count(*), 0)
-      from ${taskAttachmentsTable}
-      where ${taskAttachmentsTable.taskId} = tasks.id
-        and ${taskAttachmentsTable.deletedAt} is null
-    )`,
   } satisfies Record<string, unknown>
 
-  return db
+  const rows = await db
     .select(taskSelection)
     .from(tasksTable)
     .where(and(inArray(tasksTable.projectId, projectIds), deletedPredicate))
+
+  if (!rows.length) {
+    return []
+  }
+
+  // Two grouped queries replace the old per-row correlated subqueries,
+  // which executed 2 index probes per task row per request.
+  const taskIds = rows.map(row => row.id)
+  const [commentCounts, attachmentCounts] = await Promise.all([
+    db
+      .select({
+        taskId: taskCommentsTable.taskId,
+        count: sql<number>`count(*)`,
+      })
+      .from(taskCommentsTable)
+      .where(
+        and(
+          inArray(taskCommentsTable.taskId, taskIds),
+          isNull(taskCommentsTable.deletedAt)
+        )
+      )
+      .groupBy(taskCommentsTable.taskId),
+    db
+      .select({
+        taskId: taskAttachmentsTable.taskId,
+        count: sql<number>`count(*)`,
+      })
+      .from(taskAttachmentsTable)
+      .where(
+        and(
+          inArray(taskAttachmentsTable.taskId, taskIds),
+          isNull(taskAttachmentsTable.deletedAt)
+        )
+      )
+      .groupBy(taskAttachmentsTable.taskId),
+  ])
+
+  const commentCountByTask = new Map(
+    commentCounts.map(row => [row.taskId, Number(row.count)])
+  )
+  const attachmentCountByTask = new Map(
+    attachmentCounts.map(row => [row.taskId, Number(row.count)])
+  )
+
+  return rows.map(row => ({
+    ...row,
+    commentCount: commentCountByTask.get(row.id) ?? 0,
+    attachmentCount: attachmentCountByTask.get(row.id) ?? 0,
+  }))
 }
 
 export async function loadTaskAssigneeRows(

@@ -1,6 +1,6 @@
-import { Loader2, PlusCircle, Pencil } from 'lucide-react'
+import { Archive, Loader2, PlusCircle, Pencil } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Input } from '@/components/ui/input'
 import { type SearchableComboboxItem } from '@/components/ui/searchable-combobox'
@@ -13,8 +13,6 @@ import { TaskSelector } from './task-selector'
 import { UserSelectField } from './user-select-field'
 
 export type ProjectTimeLogFormProps = {
-  canLogTime: boolean
-  canSelectUser: boolean
   isMutating: boolean
   disableSubmit: boolean
   formErrors: TimeLogFormErrors
@@ -46,12 +44,11 @@ export type ProjectTimeLogFormProps = {
   requestTaskRemoval: (task: TaskWithRelations) => void
   submitLabel: string
   isEditMode: boolean
+  onRequestDelete?: () => void
 }
 
 export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
   const {
-    canLogTime,
-    canSelectUser,
     isMutating,
     disableSubmit,
     formErrors,
@@ -77,13 +74,12 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
     requestTaskRemoval,
     submitLabel,
     isEditMode,
+    onRequestDelete,
   } = props
 
-  const submitTooltipReason = canLogTime
-    ? disableSubmit
-      ? 'Complete the form before submitting.'
-      : null
-    : 'Only internal teammates can log time.'
+  const submitTooltipReason = disableSubmit
+    ? 'Complete the form before submitting.'
+    : null
 
   const SubmitIcon = isEditMode ? Pencil : PlusCircle
 
@@ -142,16 +138,14 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
           </p>
         ) : null}
       </div>
-      {canSelectUser ? (
-        <UserSelectField
-          selectedUserId={selectedUserId}
-          onSelectUser={onSelectUser}
-          items={userComboboxItems}
-          disabled={isMutating}
-          fieldErrorId={fieldErrorIds.user}
-          errorMessage={formErrors.user}
-        />
-      ) : null}
+      <UserSelectField
+        selectedUserId={selectedUserId}
+        onSelectUser={onSelectUser}
+        items={userComboboxItems}
+        disabled={isMutating}
+        fieldErrorId={fieldErrorIds.user}
+        errorMessage={formErrors.user}
+      />
       <div className='space-y-2 sm:col-span-2'>
         <label htmlFor='time-log-task' className='text-sm font-medium'>
           Link to tasks (optional)
@@ -209,6 +203,18 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
         </div>
       ) : null}
       <div className='flex items-center justify-end gap-3 sm:col-span-2'>
+        {isEditMode && onRequestDelete ? (
+          <Button
+            type='button'
+            variant='destructive'
+            disabled={isMutating}
+            onClick={onRequestDelete}
+            className='mr-auto inline-flex items-center gap-2'
+          >
+            <Archive className='size-4' />
+            Archive
+          </Button>
+        ) : null}
         <DisabledFieldTooltip
           disabled={disableSubmit}
           reason={submitTooltipReason}

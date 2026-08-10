@@ -6,25 +6,38 @@ import { Plus } from 'lucide-react'
 
 import { ProjectSheet } from '@/app/(dashboard)/settings/projects/project-sheet'
 import { useProjectsSettingsController } from '@/components/settings/projects/table/use-projects-settings-controller'
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { useToast } from '@/components/ui/use-toast'
 import { sortClientsByName } from '@/lib/settings/projects/project-sheet-form'
 import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
 import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
-import type { ProjectWithRelations } from '@/lib/types'
+import type { LandingProject } from '@/lib/data/projects'
+
+import { PageShell } from '@/components/layout/page-shell'
+import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
+
+import type { ProjectStatusValue } from '@/lib/constants'
 
 import { ProjectsLanding } from './projects-landing'
-import type { ClientHoursData } from './projects-landing'
-import { ProjectsTabsNav } from './projects-tabs-nav'
+import type { ClientHoursData, LandingUnfilteredCounts } from './projects-landing'
+import { ProjectsLandingFilters } from './projects-landing-filters'
+import { PROJECTS_TABS } from '../_lib/tabs'
 
 export type ProjectsLandingAdminSectionProps = {
-  projects: ProjectWithRelations[]
+  projects: LandingProject[]
   landingClients: Array<{ id: string; name: string; slug: string | null }>
   clients: ClientRow[]
   adminUsers: AdminUserForOwner[]
   currentUserId: string
+  /** Unfiltered visible-project total (pre status/search filter). */
   totalProjectCount: number
+  /** Visible-project total after the active status/search filter. */
+  filteredProjectCount: number
+  statuses: ProjectStatusValue[]
+  search?: string
+  filtersActive: boolean
+  unfilteredCounts: LandingUnfilteredCounts
   clientHoursMap?: Record<string, ClientHoursData>
 }
 
@@ -35,6 +48,11 @@ export function ProjectsLandingAdminSection({
   adminUsers,
   currentUserId,
   totalProjectCount,
+  filteredProjectCount,
+  statuses,
+  search,
+  filtersActive,
+  unfilteredCounts,
   clientHoursMap = {},
 }: ProjectsLandingAdminSectionProps) {
   const router = useRouter()
@@ -57,47 +75,49 @@ export function ProjectsLandingAdminSection({
     ? 'Add a client before creating a project.'
     : null
 
-  const totalProjectsLabel = useMemo(() => {
-    return String(totalProjectCount)
-  }, [totalProjectCount])
-
   return (
-    <div className='space-y-4'>
-      {/* Tabs Row - Above the main container */}
-      <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-        <ProjectsTabsNav
-          activeTab='projects'
-          className='flex-1 sm:flex-none'
-        />
-        <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6'>
-          <span className='text-muted-foreground text-sm whitespace-nowrap'>
-            Total projects: {totalProjectsLabel}
-          </span>
-          <DisabledFieldTooltip
+    <PageShell
+      breadcrumbs={crumbsForNav('/projects')}
+      tabs={PROJECTS_TABS}
+      activeTab='projects'
+      count={
+        // R2/03.E5: the implicit default status view must not read as
+        // filtered — show a plain visible-count until a filter is active.
+        filtersActive
+          ? {
+              label: 'projects',
+              total: totalProjectCount,
+              filteredTotal: filteredProjectCount,
+            }
+          : { label: 'projects', total: filteredProjectCount }
+      }
+      primaryAction={
+        <DisabledFieldTooltip
+          disabled={createDisabled}
+          reason={createDisabledReason}
+        >
+          <Button
+            type='button'
+            size='sm'
+            onClick={openCreate}
             disabled={createDisabled}
-            reason={createDisabledReason}
+            className='gap-2'
           >
-            <Button
-              type='button'
-              size='sm'
-              onClick={openCreate}
-              disabled={createDisabled}
-              className='gap-2'
-            >
-              <Plus className='h-4 w-4' />
-              Add project
-            </Button>
-          </DisabledFieldTooltip>
-        </div>
-      </div>
-      {/* Main Container with Background */}
-      <section className='bg-background rounded-xl border p-6 shadow-sm'>
+            <Plus className='h-4 w-4' />
+            Add project
+          </Button>
+        </DisabledFieldTooltip>
+      }
+    >
+      <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
+        <ProjectsLandingFilters statuses={statuses} search={search} />
         <ProjectsLanding
           projects={projects}
           clients={landingClients}
           currentUserId={currentUserId}
-          isAdmin={true}
           clientHoursMap={clientHoursMap}
+          unfilteredCounts={unfilteredCounts}
+          filtersActive={filtersActive}
         />
       </section>
       <ProjectSheet
@@ -110,6 +130,6 @@ export function ProjectsLandingAdminSection({
         contractorDirectory={[]}
         projectContractors={{}}
       />
-    </div>
+    </PageShell>
   )
 }

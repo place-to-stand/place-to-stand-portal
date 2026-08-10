@@ -5,7 +5,7 @@ import type { FormEvent, ReactNode } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { Loader2, Pencil, Send, Trash2, X } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import {

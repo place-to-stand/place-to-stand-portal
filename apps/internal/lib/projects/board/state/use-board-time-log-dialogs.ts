@@ -5,7 +5,6 @@ import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 
 type UseBoardTimeLogDialogsOptions = {
   activeProject: ProjectWithRelations | null
-  canLogTime: boolean
 }
 
 type UseBoardTimeLogDialogsReturn = {
@@ -21,7 +20,7 @@ type UseBoardTimeLogDialogsReturn = {
 export function useBoardTimeLogDialogs(
   options: UseBoardTimeLogDialogsOptions
 ): UseBoardTimeLogDialogsReturn {
-  const { activeProject, canLogTime } = options
+  const { activeProject } = options
   const [isTimeLogDialogOpen, setIsTimeLogDialogOpen] = useState(false)
   const [timeLogProjectId, setTimeLogProjectId] = useState<string | null>(null)
   const [mode, setMode] = useState<'create' | 'edit'>('create')
@@ -41,7 +40,7 @@ export function useBoardTimeLogDialogs(
         return
       }
 
-      if (!canLogTime || !activeProject) {
+      if (!activeProject) {
         resetDialogState()
         return
       }
@@ -49,11 +48,11 @@ export function useBoardTimeLogDialogs(
       setTimeLogProjectId(activeProject.id)
       setIsTimeLogDialogOpen(true)
     },
-    [activeProject, canLogTime, resetDialogState]
+    [activeProject, resetDialogState]
   )
 
   const openCreateTimeLogDialog = useCallback(() => {
-    if (!activeProject || !canLogTime) {
+    if (!activeProject) {
       resetDialogState()
       return
     }
@@ -62,11 +61,11 @@ export function useBoardTimeLogDialogs(
     setEditingEntry(null)
     setTimeLogProjectId(activeProject.id)
     setIsTimeLogDialogOpen(true)
-  }, [activeProject, canLogTime, resetDialogState])
+  }, [activeProject, resetDialogState])
 
   const openEditTimeLogDialog = useCallback(
     (entry: TimeLogEntry) => {
-      if (!activeProject || !canLogTime) {
+      if (!activeProject) {
         resetDialogState()
         return
       }
@@ -81,7 +80,7 @@ export function useBoardTimeLogDialogs(
       setTimeLogProjectId(activeProject.id)
       setIsTimeLogDialogOpen(true)
     },
-    [activeProject, canLogTime, resetDialogState]
+    [activeProject, resetDialogState]
   )
 
   return {

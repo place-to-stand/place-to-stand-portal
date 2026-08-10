@@ -22,7 +22,6 @@ export const FORM_ERROR_IDS = {
 
 export type UseTimeLogFormStateOptions = {
   currentUserId: string
-  canSelectUser: boolean
   admins: ProjectTimeLogDialogParams['admins']
   projectMembers: ProjectTimeLogDialogParams['projectMembers']
   getToday: () => string
@@ -61,8 +60,7 @@ export type UseTimeLogFormStateResult = {
 export function useTimeLogFormState(
   options: UseTimeLogFormStateOptions
 ): UseTimeLogFormStateResult {
-  const { currentUserId, canSelectUser, admins, projectMembers, getToday } =
-    options
+  const { currentUserId, admins, projectMembers, getToday } = options
 
   const [hoursInput, setHoursInput] = useState('')
   const [noteInput, setNoteInput] = useState('')
@@ -168,16 +166,12 @@ export function useTimeLogFormState(
   )
 
   const userComboboxItems = useMemo<SearchableComboboxItem[]>(() => {
-    if (!canSelectUser) {
-      return []
-    }
-
     return buildAssigneeItems({
       admins,
       members: projectMembers,
       currentAssigneeId: selectedUserId,
     }).filter(item => item.value !== UNASSIGNED_ASSIGNEE_VALUE)
-  }, [admins, canSelectUser, projectMembers, selectedUserId])
+  }, [admins, projectMembers, selectedUserId])
 
   const fieldErrorIds = useMemo(() => {
     return {

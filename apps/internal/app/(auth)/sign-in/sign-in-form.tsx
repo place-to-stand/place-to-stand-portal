@@ -4,9 +4,9 @@ import { useActionState, useEffect, useRef, useState, useTransition } from "reac
 import { Loader2, Mail } from "lucide-react";
 import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@pts/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Label } from "@pts/ui/label";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 
 import {
@@ -14,6 +14,7 @@ import {
   sendMagicLink,
   type SignInState,
 } from "./actions";
+import { ClientPortalNotice } from "./client-portal-notice";
 
 const INITIAL_STATE: SignInState = {};
 
@@ -98,6 +99,9 @@ export function SignInForm({ redirectTo }: Props) {
         </div>
         {state.error ? (
           <p className="text-sm text-destructive">{state.error}</p>
+        ) : null}
+        {state.clientPortalUrl ? (
+          <ClientPortalNotice clientPortalUrl={state.clientPortalUrl} />
         ) : null}
         <Button type="submit" className="w-full" disabled={isPending}>
           {isPendingPassword ? (

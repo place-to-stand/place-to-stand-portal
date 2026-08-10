@@ -1,6 +1,3 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
-}
+// cn moved to @pts/ui (PRD 004 D15); re-exported here so existing
+// imports keep working during the migration window.
+export { cn } from '@pts/ui/cn'

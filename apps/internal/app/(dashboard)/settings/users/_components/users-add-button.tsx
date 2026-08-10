@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { UserPlus } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { UserSheet } from '../users-sheet'
 import type { UserAssignments } from '@/lib/settings/users/state/use-users-table-state'
 import { cn } from '@/lib/utils'

@@ -68,6 +68,10 @@ export function createSubmitHandler({
             password: trimmedPassword.length >= 8 ? trimmedPassword : undefined,
             avatarPath: normalizedAvatarPath,
             avatarRemoved,
+            disabled:
+              editingSelf || values.accessEnabled === undefined
+                ? undefined
+                : !values.accessEnabled,
           })
 
           if (result.error) {

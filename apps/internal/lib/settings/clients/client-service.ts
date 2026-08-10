@@ -23,6 +23,11 @@ export const clientSchema = z
       .nullish()
       .transform(value => (value ? value : null)),
     billingType: z.enum(CLIENT_BILLING_TYPE_VALUES).default('prepaid'),
+    // Month boundary the report basis switches at when billingType changes on
+    // an existing client. Ignored on create and when the type is unchanged.
+    billingEffective: z
+      .enum(['current_month', 'next_month'])
+      .default('next_month'),
     state: z
       .string()
       .max(2)

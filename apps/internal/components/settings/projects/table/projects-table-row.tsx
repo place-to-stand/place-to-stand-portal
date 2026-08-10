@@ -2,7 +2,6 @@ import {
   Archive,
   Building2,
   FolderKanban,
-  Pencil,
   RefreshCw,
   Trash2,
   User,
@@ -10,9 +9,9 @@ import {
 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import { TableCell, TableRow } from '@/components/ui/table'
+import { TableCell, TableRow } from '@pts/ui/table'
 import {
   getProjectStatusLabel,
   getProjectStatusToken,
@@ -23,6 +22,11 @@ import { cn } from '@/lib/utils'
 
 import type { ProjectWithClient, ProjectsTableMode } from './types'
 import type { LucideIcon } from 'lucide-react'
+import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
+import {
+  CLICKABLE_ROW_CLASS,
+  getClickableRowProps,
+} from '@/lib/table/clickable-row'
 
 type ProjectsTableRowProps = {
   project: ProjectWithClient
@@ -76,10 +80,6 @@ export function ProjectsTableRow({
       : pendingReason
     : null
 
-  const editDisabled = isDeleting || isRestoring || isDestroying
-  const editDisabledReason = editDisabled ? pendingReason : null
-
-  const showEdit = mode === 'active'
   const showArchive = mode === 'active'
   const showRestore = mode === 'archive'
   const showDestroy = mode === 'archive'
@@ -94,7 +94,10 @@ export function ProjectsTableRow({
     : getProjectStatusToken(project.status)
 
   return (
-    <TableRow className={isArchived ? 'opacity-60' : undefined}>
+    <TableRow
+      {...getClickableRowProps(() => onEdit(project))}
+      className={cn(CLICKABLE_ROW_CLASS, isArchived && ARCHIVED_ROW_CLASS)}
+    >
       <TableCell>
         <div className='flex items-center gap-2'>
           <FolderKanban className='text-muted-foreground h-4 w-4' />
@@ -127,30 +130,14 @@ export function ProjectsTableRow({
       </TableCell>
       <TableCell className='text-right'>
         <div className='flex justify-end gap-2'>
-          {showEdit ? (
-            <DisabledFieldTooltip
-              disabled={editDisabled}
-              reason={editDisabledReason}
-            >
-              <Button
-                variant='outline'
-                size='icon'
-                onClick={() => onEdit(project)}
-                title='Edit project'
-                disabled={editDisabled}
-              >
-                <Pencil className='h-4 w-4' />
-              </Button>
-            </DisabledFieldTooltip>
-          ) : null}
           {showRestore ? (
             <DisabledFieldTooltip
               disabled={restoreDisabled}
               reason={restoreDisabledReason}
             >
               <Button
-                variant='secondary'
-                size='icon'
+                variant='outline'
+                size='icon-sm'
                 onClick={() => onRestore(project)}
                 title='Restore project'
                 aria-label='Restore project'
@@ -168,7 +155,7 @@ export function ProjectsTableRow({
             >
               <Button
                 variant='destructive'
-                size='icon'
+                size='icon-sm'
                 onClick={() => onRequestDelete(project)}
                 title='Archive project'
                 aria-label='Archive project'
@@ -186,7 +173,7 @@ export function ProjectsTableRow({
             >
               <Button
                 variant='destructive'
-                size='icon'
+                size='icon-sm'
                 onClick={() => onRequestDestroy(project)}
                 title='Permanently delete project'
                 aria-label='Permanently delete project'

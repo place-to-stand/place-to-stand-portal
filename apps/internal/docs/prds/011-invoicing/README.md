@@ -114,4 +114,4 @@ Phase 7: Proposal-to-Invoice                     ← depends on Phases 1, 3
 | Due date default | **Based on client billing type** | `net_30` clients → 30 days from today. `prepaid` clients → blank (upon receipt). Admin can always override. |
 | Minimum billable hours | **5-hour minimum, soft warning** | Yellow warning if hour block line items have quantity < 5. Advisory only — does not block saving. |
 | Checkout session expiry | **Auto-recreate on expired** | Stripe's 24hr max is unavoidable. When session expires, `checkout.session.expired` clears the ID. Next "Pay Now" click seamlessly creates a fresh session. |
-| Invoice email sender | **Shared RESEND_FROM_EMAIL** | Same env var as other portal emails (`portal@notifications.placetostandagency.com`). No dedicated invoices@ address needed. |
+| Invoice email sender | **Shared RESEND_FROM_EMAIL** | Same env var as other portal emails (`portal@send.placetostandagency.com`). No dedicated invoices@ address needed. |

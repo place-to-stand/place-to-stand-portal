@@ -50,6 +50,7 @@ export function useUserSheetForm({
       password: "",
       avatarPath: user?.avatar_url ?? null,
       avatarRemoved: false,
+      accessEnabled: !user?.disabled_at,
     },
   })
 
@@ -63,6 +64,7 @@ export function useUserSheetForm({
       password: "",
       avatarPath: user?.avatar_url ?? null,
       avatarRemoved: false,
+      accessEnabled: !user?.disabled_at,
     })
     form.clearErrors()
     setAvatarFieldKey((key) => key + 1)

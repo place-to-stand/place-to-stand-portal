@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 
 import { getCurrentUser } from '@/lib/auth/session'
-import { ensureClientAccessByProjectId, isAdmin } from '@/lib/auth/permissions'
+import { assertAdmin } from '@/lib/auth/permissions'
 
 type RouteParams = {
   params: Promise<{ projectId: string }>
@@ -17,15 +17,9 @@ export async function GET(_req: Request, { params }: RouteParams) {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { projectId } = await params
+  assertAdmin(user)
 
-  if (!isAdmin(user)) {
-    try {
-      await ensureClientAccessByProjectId(user, projectId)
-    } catch {
-      return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 })
-    }
-  }
+  await params
 
   return NextResponse.json({ ok: true, data: {} })
 }

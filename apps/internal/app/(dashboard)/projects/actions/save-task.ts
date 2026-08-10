@@ -4,8 +4,8 @@ import { and, eq, isNull } from 'drizzle-orm'
 
 import { requireUser } from '@/lib/auth/session'
 import {
-  ensureClientAccessByProjectId,
-  ensureClientAccessByTaskId,
+  ensureProjectAccess,
+  ensureTaskAccess,
 } from '@/lib/auth/permissions'
 import { logActivity } from '@/lib/activity/logger'
 import { taskCreatedEvent, taskUpdatedEvent } from '@/lib/activity/events'
@@ -25,7 +25,12 @@ import { baseTaskSchema, type BaseTaskInput } from './shared-schemas'
 import type { ActionResult } from './action-types'
 import { syncAssignees, syncAttachments } from './task-helpers'
 
-export async function saveTask(input: BaseTaskInput): Promise<ActionResult> {
+// Local widening (do not touch the shared ActionResult): a result carrying
+// `taskId` means the row exists — even alongside `error`, which signals a
+// failed post-insert step. Clients must never retry the create path for it.
+export type SaveTaskResult = ActionResult & { taskId?: string }
+
+export async function saveTask(input: BaseTaskInput): Promise<SaveTaskResult> {
   const user = await requireUser()
   const parsed = baseTaskSchema.safeParse(input)
 
@@ -52,7 +57,7 @@ export async function saveTask(input: BaseTaskInput): Promise<ActionResult> {
 
   if (!id) {
     try {
-      await ensureClientAccessByProjectId(user, projectId)
+      await ensureProjectAccess(user, projectId)
     } catch (error) {
       if (error instanceof NotFoundError) {
         return { error: 'Selected project is unavailable.' }
@@ -118,6 +123,9 @@ export async function saveTask(input: BaseTaskInput): Promise<ActionResult> {
       return { error: 'Unable to create task.' }
     }
 
+    // Partial-failure contract: the row exists past this point, so any error
+    // must return `taskId` alongside it — a bare error would invite a client
+    // retry that duplicates the task.
     try {
       await syncAssignees(insertedId, normalizedAssigneeIds)
       await syncAttachments({
@@ -129,30 +137,49 @@ export async function saveTask(input: BaseTaskInput): Promise<ActionResult> {
       })
     } catch (assigneeError) {
       console.error('Failed to sync task assignees', assigneeError)
-      return { error: 'Task saved but assignees could not be updated.' }
+      // The row exists and the client will navigate to it — cached task
+      // views must include it even though a sub-step failed.
+      await revalidateProjectTaskViews()
+      return {
+        taskId: insertedId,
+        error: 'Task saved but assignees could not be updated.',
+      }
     }
 
-    const event = taskCreatedEvent({
-      title,
-      status,
-      dueOn: dueOn ?? null,
-      assigneeIds: normalizedAssigneeIds,
-    })
+    try {
+      const event = taskCreatedEvent({
+        title,
+        status,
+        dueOn: dueOn ?? null,
+        assigneeIds: normalizedAssigneeIds,
+      })
 
-    await logActivity({
-      actorId: user.id,
-      actorRole: user.role,
-      verb: event.verb,
-      summary: event.summary,
-      targetType: 'TASK',
-      targetId: insertedId,
-      targetProjectId: projectId,
-      targetClientId: projectContext[0].clientId,
-      metadata: event.metadata,
-    })
+      await logActivity({
+        actorId: user.id,
+        actorRole: user.role,
+        verb: event.verb,
+        summary: event.summary,
+        targetType: 'TASK',
+        targetId: insertedId,
+        targetProjectId: projectId,
+        targetClientId: projectContext[0].clientId,
+        metadata: event.metadata,
+      })
+    } catch (activityError) {
+      console.error('Failed to log task creation activity', activityError)
+      await revalidateProjectTaskViews()
+      return {
+        taskId: insertedId,
+        error: 'Task saved but activity could not be recorded.',
+      }
+    }
+
+    await revalidateProjectTaskViews()
+
+    return { taskId: insertedId }
   } else {
     try {
-      await ensureClientAccessByTaskId(user, id)
+      await ensureTaskAccess(user, id)
     } catch (error) {
       if (error instanceof NotFoundError) {
         return { error: 'Task not found.' }
@@ -193,7 +220,7 @@ export async function saveTask(input: BaseTaskInput): Promise<ActionResult> {
     // destination project (mirrors the create path) and resolve its client.
     if (projectChanged) {
       try {
-        await ensureClientAccessByProjectId(user, projectId)
+        await ensureProjectAccess(user, projectId)
       } catch (error) {
         if (error instanceof NotFoundError) {
           return { error: 'Selected project is unavailable.' }
@@ -378,5 +405,5 @@ export async function saveTask(input: BaseTaskInput): Promise<ActionResult> {
 
   await revalidateProjectTaskViews()
 
-  return {}
+  return { taskId: id }
 }

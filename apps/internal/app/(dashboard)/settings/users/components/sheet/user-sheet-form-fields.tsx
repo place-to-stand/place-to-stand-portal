@@ -19,7 +19,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@pts/ui/select'
+import { Switch } from '@pts/ui/switch'
 
 import { USER_ROLES } from '@/lib/settings/users/user-validation'
 import type { UserFormValues } from './form-schema'
@@ -32,8 +33,11 @@ type UserSheetFormFieldsProps = {
   emailDisabledReason: string | null
   roleDisabled: boolean
   roleDisabledReason: string | null
+  accessToggleDisabled: boolean
+  accessToggleDisabledReason: string | null
   avatarFieldKey: number
   avatarInitials: string
+  onAvatarUploadingChange: (uploading: boolean) => void
   avatarDisplayName: string | null
   targetUserId: string | null
   isEditing: boolean
@@ -48,8 +52,11 @@ export function UserSheetFormFields({
   emailDisabledReason,
   roleDisabled,
   roleDisabledReason,
+  accessToggleDisabled,
+  accessToggleDisabledReason,
   avatarFieldKey,
   avatarInitials,
+  onAvatarUploadingChange,
   avatarDisplayName,
   targetUserId,
   isEditing,
@@ -87,6 +94,7 @@ export function UserSheetFormFields({
                     shouldDirty: true,
                   })
                 }}
+                onUploadingChange={onAvatarUploadingChange}
                 initials={avatarInitials}
                 displayName={avatarDisplayName}
                 disabled={isPending}
@@ -194,6 +202,46 @@ export function UserSheetFormFields({
           </FormItem>
         )}
       />
+      {isEditing ? (
+        <FormField
+          control={form.control}
+          name='accessEnabled'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel htmlFor='user-sheet-access-toggle'>Access</FormLabel>
+              <FormControl>
+                <DisabledFieldTooltip
+                  disabled={accessToggleDisabled}
+                  reason={accessToggleDisabledReason}
+                  className='w-auto'
+                >
+                  <div className='flex items-center gap-2'>
+                    <Switch
+                      id='user-sheet-access-toggle'
+                      checked={field.value ?? true}
+                      onCheckedChange={field.onChange}
+                      disabled={accessToggleDisabled}
+                      className='data-[state=checked]:bg-emerald-500 dark:data-[state=checked]:bg-emerald-500'
+                      aria-label={
+                        (field.value ?? true)
+                          ? `Disable sign-in for ${avatarDisplayName ?? 'this user'}`
+                          : `Enable sign-in for ${avatarDisplayName ?? 'this user'}`
+                      }
+                    />
+                    <span className='text-muted-foreground text-xs'>
+                      {(field.value ?? true) ? 'Enabled' : 'Disabled'}
+                    </span>
+                  </div>
+                </DisabledFieldTooltip>
+              </FormControl>
+              <FormDescription>
+                Controls whether they can sign in. Applies when you save.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      ) : null}
       {isEditing ? (
         <FormField
           control={form.control}

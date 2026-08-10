@@ -45,7 +45,6 @@ type MyTasksBoardProps = {
   activeTaskId: string | null
   scrollStorageKey?: string | null
   onCreateTask?: (status: MyTaskStatus) => void
-  canCreateTasks?: boolean
 }
 
 type TaskRow = {
@@ -72,7 +71,6 @@ export function MyTasksBoard({
   activeTaskId,
   scrollStorageKey,
   onCreateTask,
-  canCreateTasks = false,
 }: MyTasksBoardProps) {
   const { sensors } = useProjectsBoardSensors()
   const { viewportRef: boardViewportRef, handleScroll: handleBoardScroll } =
@@ -191,10 +189,9 @@ export function MyTasksBoard({
               >
                 {MY_TASK_BOARD_COLUMNS.map(column => {
                   const rows = rowsByColumn.get(column.id) ?? []
-                  const handleCreateForColumn =
-                    canCreateTasks && onCreateTask
-                      ? () => onCreateTask(column.id)
-                      : undefined
+                  const handleCreateForColumn = onCreateTask
+                    ? () => onCreateTask(column.id)
+                    : undefined
 
                   return (
                     <KanbanColumn
@@ -207,7 +204,7 @@ export function MyTasksBoard({
                       onEditTask={task => onOpenTask(task.id)}
                       activeTaskId={activeTaskId}
                       onCreateTask={handleCreateForColumn}
-                      enableCreateButton={canCreateTasks}
+                      enableCreateButton={Boolean(onCreateTask)}
                       isDropTarget={dropPreview?.columnId === column.id}
                       dropIndicatorIndex={
                         dropPreview?.columnId === column.id

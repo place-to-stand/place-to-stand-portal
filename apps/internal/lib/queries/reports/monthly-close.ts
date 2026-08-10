@@ -11,7 +11,23 @@ import {
   timeLogs,
   users,
 } from '@/lib/db/schema'
+import { billingTypeAsOfSql } from '@/lib/queries/clients/billing-terms'
 import type { MonthCursor } from '@/lib/data/reports/types'
+
+/**
+ * Billing type is resolved AS OF the report period (PRD 002 D4) — the newest
+ * `client_billing_terms.effective_from` <= period start wins, so editing a
+ * client's billing type never rewrites already-rendered historical months.
+ * NULL resolution (no term at or before the period) fails both comparisons
+ * and excludes the client from that month.
+ */
+function isPrepaidAsOf(periodStart: string) {
+  return sql`${billingTypeAsOfSql(periodStart)} = 'prepaid'`
+}
+
+function isNet30AsOf(periodStart: string) {
+  return sql`${billingTypeAsOfSql(periodStart)} = 'net_30'`
+}
 
 type PayrollQueryRow = {
   userId: string
@@ -185,12 +201,12 @@ export async function fetchOriginationCommissions(
         .innerJoin(users, eq(clients.originationUserId, users.id))
         .where(
           and(
-            eq(clients.billingType, 'prepaid'),
+            isPrepaidAsOf(startDate),
             isNull(hourBlocks.deletedAt),
             isNull(clients.deletedAt),
             isNull(users.deletedAt),
-            sql`DATE(${hourBlocks.createdAt} AT TIME ZONE 'UTC') >= ${startDate}`,
-            sql`DATE(${hourBlocks.createdAt} AT TIME ZONE 'UTC') <= ${endDate}`
+            gte(hourBlocks.billingMonth, startDate),
+            lte(hourBlocks.billingMonth, endDate)
           )
         )
         .groupBy(
@@ -218,12 +234,12 @@ export async function fetchOriginationCommissions(
         .innerJoin(contacts, eq(clients.originationContactId, contacts.id))
         .where(
           and(
-            eq(clients.billingType, 'prepaid'),
+            isPrepaidAsOf(startDate),
             isNull(hourBlocks.deletedAt),
             isNull(clients.deletedAt),
             isNull(contacts.deletedAt),
-            sql`DATE(${hourBlocks.createdAt} AT TIME ZONE 'UTC') >= ${startDate}`,
-            sql`DATE(${hourBlocks.createdAt} AT TIME ZONE 'UTC') <= ${endDate}`
+            gte(hourBlocks.billingMonth, startDate),
+            lte(hourBlocks.billingMonth, endDate)
           )
         )
         .groupBy(
@@ -252,7 +268,7 @@ export async function fetchOriginationCommissions(
         .innerJoin(users, eq(clients.originationUserId, users.id))
         .where(
           and(
-            eq(clients.billingType, 'net_30'),
+            isNet30AsOf(startDate),
             eq(projects.type, 'CLIENT'),
             isNull(timeLogs.deletedAt),
             isNull(projects.deletedAt),
@@ -288,7 +304,7 @@ export async function fetchOriginationCommissions(
         .innerJoin(contacts, eq(clients.originationContactId, contacts.id))
         .where(
           and(
-            eq(clients.billingType, 'net_30'),
+            isNet30AsOf(startDate),
             eq(projects.type, 'CLIENT'),
             isNull(timeLogs.deletedAt),
             isNull(projects.deletedAt),
@@ -403,12 +419,12 @@ export async function fetchCloserCommissions(
       .innerJoin(closerUsers, eq(clients.closerUserId, closerUsers.id))
       .where(
         and(
-          eq(clients.billingType, 'prepaid'),
+          isPrepaidAsOf(startDate),
           isNull(hourBlocks.deletedAt),
           isNull(clients.deletedAt),
           isNull(closerUsers.deletedAt),
-          sql`DATE(${hourBlocks.createdAt} AT TIME ZONE 'UTC') >= ${startDate}`,
-          sql`DATE(${hourBlocks.createdAt} AT TIME ZONE 'UTC') <= ${endDate}`
+          gte(hourBlocks.billingMonth, startDate),
+          lte(hourBlocks.billingMonth, endDate)
         )
       )
       .groupBy(
@@ -439,7 +455,7 @@ export async function fetchCloserCommissions(
       .innerJoin(closerUsers, eq(clients.closerUserId, closerUsers.id))
       .where(
         and(
-          eq(clients.billingType, 'net_30'),
+          isNet30AsOf(startDate),
           eq(projects.type, 'CLIENT'),
           isNull(timeLogs.deletedAt),
           isNull(projects.deletedAt),
@@ -511,11 +527,11 @@ export async function fetchPrepaidBilling(
     .innerJoin(clients, eq(hourBlocks.clientId, clients.id))
     .where(
       and(
-        eq(clients.billingType, 'prepaid'),
+        isPrepaidAsOf(startDate),
         isNull(hourBlocks.deletedAt),
         isNull(clients.deletedAt),
-        sql`DATE(${hourBlocks.createdAt} AT TIME ZONE 'UTC') >= ${startDate}`,
-        sql`DATE(${hourBlocks.createdAt} AT TIME ZONE 'UTC') <= ${endDate}`
+        gte(hourBlocks.billingMonth, startDate),
+        lte(hourBlocks.billingMonth, endDate)
       )
     )
     .groupBy(clients.id, clients.name)
@@ -543,7 +559,7 @@ export async function fetchNet30Billing(
     .innerJoin(clients, eq(projects.clientId, clients.id))
     .where(
       and(
-        eq(clients.billingType, 'net_30'),
+        isNet30AsOf(startDate),
         isNull(timeLogs.deletedAt),
         isNull(projects.deletedAt),
         isNull(clients.deletedAt),
@@ -580,10 +596,10 @@ export async function fetchReportDateBounds(): Promise<{
     .where(isNull(timeLogs.deletedAt))
     .limit(1)
 
-  // Find earliest hour block date (using UTC)
+  // Find earliest hour block billing month (PRD 002 D13 attribution)
   const [hourBlockRow] = await db
     .select({
-      earliestDate: sql<string | null>`MIN(DATE(${hourBlocks.createdAt} AT TIME ZONE 'UTC'))`,
+      earliestDate: sql<string | null>`MIN(${hourBlocks.billingMonth})`,
     })
     .from(hourBlocks)
     .where(isNull(hourBlocks.deletedAt))

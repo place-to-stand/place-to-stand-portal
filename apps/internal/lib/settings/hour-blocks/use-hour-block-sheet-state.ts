@@ -191,6 +191,14 @@ export function useHourBlockSheetState({
               : 'The hour block is ready for tracking.',
           })
 
+          // PRD 002 section 05: closed-month / future-billing notice.
+          if (result.warning) {
+            toast({
+              title: 'Heads up',
+              description: result.warning,
+            })
+          }
+
           resetFormState()
           onOpenChange(false)
           onComplete()
@@ -284,6 +292,9 @@ export function useHourBlockSheetState({
           description:
             'It will be hidden from active tracking but remains available historically.',
         })
+        if (result.warning) {
+          toast({ title: 'Heads up', description: result.warning })
+        }
 
         onOpenChange(false)
         onComplete()

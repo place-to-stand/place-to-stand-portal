@@ -9,7 +9,6 @@ type BuildTabsArgs = {
   review: ProjectsBoardTabsSectionProps['review']
   drop: ProjectsBoardTabsSectionProps['drop']
   timeLogs: ProjectsBoardTabsSectionProps['timeLogs']
-  scope: ProjectsBoardTabsSectionProps['scope']
 }
 
 export function buildProjectsBoardTabs({
@@ -20,7 +19,6 @@ export function buildProjectsBoardTabs({
   review,
   drop,
   timeLogs,
-  scope,
 }: BuildTabsArgs): ProjectsBoardTabsSectionProps {
   return {
     initialTab,
@@ -30,6 +28,5 @@ export function buildProjectsBoardTabs({
     review,
     drop,
     timeLogs,
-    scope,
   }
 }

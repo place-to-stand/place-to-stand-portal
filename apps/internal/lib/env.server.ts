@@ -30,6 +30,7 @@ const schema = z.object({
   CLIENT_PORTAL_URL: z.url(),
   AUDIT_INTAKE_TOKEN: z.string().min(1).optional(),
   CONTACT_INTAKE_TOKEN: z.string().min(1).optional(),
+  CRON_SECRET: z.string().min(1).optional(),
 })
 
 // Helper to convert empty strings to undefined for optional env vars
@@ -65,4 +66,5 @@ export const serverEnv = schema.parse({
   CLIENT_PORTAL_URL: process.env.CLIENT_PORTAL_URL,
   AUDIT_INTAKE_TOKEN: emptyToUndefined(process.env.AUDIT_INTAKE_TOKEN),
   CONTACT_INTAKE_TOKEN: emptyToUndefined(process.env.CONTACT_INTAKE_TOKEN),
+  CRON_SECRET: emptyToUndefined(process.env.CRON_SECRET),
 })

@@ -1,19 +1,20 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Building2, CheckCircle2, Clock, ExternalLink } from 'lucide-react'
 
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from '@/components/ui/avatar'
+} from '@pts/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@/components/ui/tooltip'
+} from '@pts/ui/tooltip'
 import {
   Table,
   TableBody,
@@ -21,10 +22,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@pts/ui/table'
+import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
+import { useListParams } from '@/hooks/use-list-params'
 import type { ClientWithMetrics } from '@/lib/data/clients'
 import { getBillingTypeOption } from '@/lib/settings/clients/billing-types'
+import { isClientSortValue } from '@/lib/settings/clients/filters'
 import { cn } from '@/lib/utils'
+import {
+  CLICKABLE_ROW_CLASS,
+  getClickableRowProps,
+} from '@/lib/table/clickable-row'
 
 import { ActiveProjectsCell } from './active-projects-cell'
 
@@ -49,13 +57,26 @@ function getInitials(name: string | null): string {
 }
 
 export function ClientsLanding({ clients }: ClientsLandingProps) {
+  const router = useRouter()
+  const { update, getParam } = useListParams({
+    basePath: '/clients',
+    resetKeys: ['cursor', 'dir'],
+  })
+  const rawSort = getParam('sort')
+  const sort = rawSort && isClientSortValue(rawSort) ? rawSort : undefined
+  // Guard-validated active search (R4): an empty list under a live `?q=`
+  // shows the filtered message, not the default empty state.
+  const hasActiveFilter = Boolean(getParam('q')?.trim())
+
   if (clients.length === 0) {
     return (
       <div className='grid h-full w-full place-items-center rounded-xl border border-dashed p-12 text-center'>
         <div className='space-y-2'>
           <h2 className='text-lg font-semibold'>No clients found</h2>
           <p className='text-muted-foreground text-sm'>
-            Clients will appear here once they are created.
+            {hasActiveFilter
+              ? 'No clients match the current filters.'
+              : 'Clients will appear here once they are created.'}
           </p>
         </div>
       </div>
@@ -68,10 +89,18 @@ export function ClientsLanding({ clients }: ClientsLandingProps) {
 
   return (
     <div className='rounded-lg border'>
-      <Table>
+      <Table density='compact'>
         <TableHeader>
           <TableRow className='bg-muted/40'>
-            <TableHead className='w-[300px]'>Client</TableHead>
+            <SortableTableHead
+              field='name'
+              sort={sort}
+              defaultSort='name:asc'
+              onSortChange={next => update({ sort: next })}
+              className='w-[300px]'
+            >
+              Client
+            </SortableTableHead>
             <TableHead>Billing</TableHead>
             <TableHead>Projects</TableHead>
             <TableHead>Hours</TableHead>
@@ -82,11 +111,17 @@ export function ClientsLanding({ clients }: ClientsLandingProps) {
         </TableHeader>
         <TableBody>
           {clients.map(client => (
-            <TableRow key={client.id}>
+            <TableRow
+              key={client.id}
+              {...getClickableRowProps(() =>
+                router.push(getClientHref(client))
+              )}
+              className={CLICKABLE_ROW_CLASS}
+            >
               <TableCell>
                 <Link
                   href={getClientHref(client)}
-                  className='flex items-center gap-2 py-1 hover:underline'
+                  className='flex items-center gap-2 py-1'
                 >
                   <Building2 className='h-4 w-4 shrink-0 text-blue-500' />
                   <span className='font-medium'>{client.name}</span>
@@ -108,6 +143,7 @@ export function ClientsLanding({ clients }: ClientsLandingProps) {
               <TableCell>
                 <ActiveProjectsCell
                   projects={client.activeProjects}
+                  allProjects={client.allProjects}
                   clientSlug={client.slug}
                   clientId={client.id}
                   totalProjectCount={client.projectCount}

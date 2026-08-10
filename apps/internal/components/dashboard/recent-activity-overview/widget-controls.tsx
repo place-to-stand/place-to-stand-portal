@@ -2,8 +2,8 @@
 
 import { RefreshCw } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
-import { TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@pts/ui/button'
+import { TabsList, TabsTrigger } from '@pts/ui/tabs'
 import { cn } from '@/lib/utils'
 
 import { TIMEFRAME_OPTIONS, type TimeframeOption } from './constants'
@@ -28,9 +28,6 @@ export function WidgetControls({
         >
           Recent Activity Overview
         </h2>
-        <p className='text-muted-foreground text-xs'>
-          AI-generated summary of the activity logs so everyone stays aligned.
-        </p>
       </div>
       <div className='flex items-center gap-2'>
         <TabsList className='h-9'>

@@ -15,13 +15,13 @@ import {
   Pencil,
   UserPlus,
 } from 'lucide-react'
-import { format } from 'date-fns'
+import { formatCalendarDate } from '@/lib/dates'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import { Progress } from '@/components/ui/progress'
+import { Progress } from '@pts/ui/progress'
 import { useToast } from '@/components/ui/use-toast'
 import { softDeleteClient } from '@/app/(dashboard)/clients/actions'
 import { getProjectStatusLabel, getProjectStatusToken } from '@/lib/constants'
@@ -64,7 +64,6 @@ type ClientDetailProps = {
   client: HydratedClientDetail
   projects: ClientProject[]
   contacts: ContactWithClientLink[]
-  canManageClients: boolean
   clientRow: ClientRow
   currentUserId: string
   originationContact: OriginationContactInfo
@@ -76,7 +75,6 @@ export function ClientDetail({
   client,
   projects,
   contacts,
-  canManageClients,
   clientRow,
   currentUserId,
   originationContact,
@@ -99,15 +97,13 @@ export function ClientDetail({
       />
 
       {/* Action bar */}
-      {canManageClients ? (
-        <div className='flex items-center justify-end'>
-          <ClientOverviewActions
-            client={client}
-            clientRow={clientRow}
-            contacts={contacts}
-          />
-        </div>
-      ) : null}
+      <div className='flex items-center justify-end'>
+        <ClientOverviewActions
+          client={client}
+          clientRow={clientRow}
+          contacts={contacts}
+        />
+      </div>
 
       {/* Two-column layout */}
       <div className='grid gap-4 lg:grid-cols-2'>
@@ -203,7 +199,7 @@ function ClientDetailsWidget({
         <DetailRow
           icon={Calendar}
           label='Created'
-          value={format(new Date(client.createdAt), 'MMM d, yyyy')}
+          value={formatCalendarDate(client.createdAt) ?? '—'}
         />
         {client.website ? (
           <div className='flex items-center gap-3 px-4 py-2.5'>

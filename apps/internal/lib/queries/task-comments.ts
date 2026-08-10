@@ -3,10 +3,10 @@ import 'server-only'
 import { and, desc, eq, isNull, sql, type SQL } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
-import { ensureClientAccessByTaskId, isAdmin } from '@/lib/auth/permissions'
+import { ensureTaskAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { taskComments, users } from '@/lib/db/schema'
-import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
+import { NotFoundError } from '@/lib/errors/http'
 import {
   clampLimit,
   decodeCursor,
@@ -117,7 +117,7 @@ export async function listTaskComments(
   taskId: string,
   input: ListTaskCommentsInput = {},
 ): Promise<TaskCommentsPage> {
-  await ensureClientAccessByTaskId(user, taskId)
+  await ensureTaskAccess(user, taskId)
 
   const limit = clampLimit(input.limit, { defaultLimit: 20, maxLimit: 100 })
   const cursorPayload = decodeCursor<{ createdAt?: string; id?: string }>(
@@ -183,7 +183,7 @@ export async function createTaskComment(
     body: string
   },
 ): Promise<{ commentId: string }> {
-  await ensureClientAccessByTaskId(user, input.taskId)
+  await ensureTaskAccess(user, input.taskId)
 
   const result = await db
     .insert(taskComments)
@@ -216,11 +216,7 @@ export async function updateTaskComment(
     throw new NotFoundError('Task comment not found')
   }
 
-  await ensureClientAccessByTaskId(user, comment.taskId)
-
-  if (!isAdmin(user) && comment.authorId !== user.id) {
-    throw new ForbiddenError('You do not have permission to edit this comment')
-  }
+  await ensureTaskAccess(user, comment.taskId)
 
   await db
     .update(taskComments)
@@ -241,11 +237,7 @@ export async function softDeleteTaskComment(
     throw new NotFoundError('Task comment not found')
   }
 
-  await ensureClientAccessByTaskId(user, comment.taskId)
-
-  if (!isAdmin(user) && comment.authorId !== user.id) {
-    throw new ForbiddenError('You do not have permission to delete this comment')
-  }
+  await ensureTaskAccess(user, comment.taskId)
 
   const now = new Date().toISOString()
 

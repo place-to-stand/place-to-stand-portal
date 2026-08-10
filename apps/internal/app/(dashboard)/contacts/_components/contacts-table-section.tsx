@@ -4,15 +4,17 @@ import {
   Archive,
   Contact,
   Mail,
-  Pencil,
   Phone,
   RefreshCw,
   Trash2,
   UserPlus,
 } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
+import { useListParams } from '@/hooks/use-list-params'
+import { isContactSortValue } from '@/lib/settings/contacts/filters'
 import {
   Table,
   TableBody,
@@ -20,11 +22,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@pts/ui/table'
 
 import type { ContactsTableContact } from '@/lib/settings/contacts/use-contacts-table-state'
 
 import { LinkedClientsCell } from './linked-clients-cell'
+import { cn } from '@/lib/utils'
+import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
+import {
+  CLICKABLE_ROW_CLASS,
+  getClickableRowProps,
+} from '@/lib/table/clickable-row'
 
 export type ContactsTableSectionProps = {
   contacts: ContactsTableContact[]
@@ -40,11 +48,14 @@ export type ContactsTableSectionProps = {
   pendingRestoreId: string | null
   pendingDestroyId: string | null
   emptyMessage: string
+  /** Route the sort/filter params live on (PRD 004 §03). */
+  basePath: string
 }
 
 export function ContactsTableSection({
   contacts,
   mode,
+  basePath,
   onEdit,
   onRequestDelete,
   onRestore,
@@ -57,12 +68,28 @@ export function ContactsTableSection({
   pendingDestroyId,
   emptyMessage,
 }: ContactsTableSectionProps) {
+  // Contacts tables paginate by offset — `page` is the pagination key
+  // cleared on sort changes (not cursor/dir).
+  const { update, getParam } = useListParams({
+    basePath,
+    resetKeys: ['page'],
+  })
+  const rawSort = getParam('sort')
+  const sort = rawSort && isContactSortValue(rawSort) ? rawSort : undefined
+
   return (
-    <div className='overflow-hidden rounded-xl border'>
-      <Table>
+    <div className='overflow-hidden rounded-lg border'>
+      <Table density='compact'>
         <TableHeader>
           <TableRow className='bg-muted/40'>
-            <TableHead>Name</TableHead>
+            <SortableTableHead
+              field='name'
+              sort={sort}
+              defaultSort='name:asc'
+              onSortChange={next => update({ sort: next })}
+            >
+              Name
+            </SortableTableHead>
             <TableHead>Email</TableHead>
             <TableHead>Phone</TableHead>
             <TableHead>Linked Clients</TableHead>
@@ -99,10 +126,6 @@ export function ContactsTableSection({
                 : pendingReason
               : null
 
-            const editDisabled = isDeleting || isRestoring || isDestroying
-            const editDisabledReason = editDisabled ? pendingReason : null
-
-            const showEdit = mode === 'active'
             const showSoftDelete = mode === 'active'
             const showRestore = mode === 'archive'
             const showDestroy = mode === 'archive'
@@ -116,7 +139,11 @@ export function ContactsTableSection({
             return (
               <TableRow
                 key={contact.id}
-                className={contact.deletedAt ? 'opacity-60' : undefined}
+                {...getClickableRowProps(() => onEdit(contact))}
+                className={cn(
+                  CLICKABLE_ROW_CLASS,
+                  contact.deletedAt && ARCHIVED_ROW_CLASS
+                )}
               >
                 <TableCell>
                   <div className='flex items-center gap-2'>
@@ -151,22 +178,6 @@ export function ContactsTableSection({
                 </TableCell>
                 <TableCell className='text-right'>
                   <div className='flex justify-end gap-2'>
-                    {showEdit ? (
-                      <DisabledFieldTooltip
-                        disabled={editDisabled}
-                        reason={editDisabledReason}
-                      >
-                        <Button
-                          variant='outline'
-                          size='icon'
-                          onClick={() => onEdit(contact)}
-                          title='Edit contact'
-                          disabled={editDisabled}
-                        >
-                          <Pencil className='h-4 w-4' />
-                        </Button>
-                      </DisabledFieldTooltip>
-                    ) : null}
                     {showPromote ? (
                       <DisabledFieldTooltip
                         disabled={promoteDisabled}
@@ -174,7 +185,7 @@ export function ContactsTableSection({
                       >
                         <Button
                           variant='outline'
-                          size='icon'
+                          size='icon-sm'
                           onClick={() => onRequestPromote(contact)}
                           title='Create portal account'
                           disabled={promoteDisabled}
@@ -189,8 +200,8 @@ export function ContactsTableSection({
                         reason={restoreDisabledReason}
                       >
                         <Button
-                          variant='secondary'
-                          size='icon'
+                          variant='outline'
+                          size='icon-sm'
                           onClick={() => onRestore(contact)}
                           title='Restore contact'
                           aria-label='Restore contact'
@@ -208,7 +219,7 @@ export function ContactsTableSection({
                       >
                         <Button
                           variant='destructive'
-                          size='icon'
+                          size='icon-sm'
                           onClick={() => onRequestDelete(contact)}
                           title='Archive contact'
                           aria-label='Archive contact'
@@ -226,7 +237,7 @@ export function ContactsTableSection({
                       >
                         <Button
                           variant='destructive'
-                          size='icon'
+                          size='icon-sm'
                           onClick={() => onRequestDestroy(contact)}
                           title='Permanently delete contact'
                           aria-label='Permanently delete contact'

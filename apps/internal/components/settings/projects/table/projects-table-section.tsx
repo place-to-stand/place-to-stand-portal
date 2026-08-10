@@ -1,3 +1,5 @@
+import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
+import { useListParams } from '@/hooks/use-list-params'
 import {
   Table,
   TableBody,
@@ -5,7 +7,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@pts/ui/table'
 
 import type { ProjectWithClient, ProjectsTableMode } from './types'
 import { ProjectsTableRow } from './projects-table-row'
@@ -25,6 +27,14 @@ type ProjectsTableSectionProps = {
   emptyMessage: string
 }
 
+function isProjectSortValue(value: string): boolean {
+  const [field, direction] = value.split(':')
+  return (
+    (field === 'name' || field === 'created') &&
+    (direction === 'asc' || direction === 'desc')
+  )
+}
+
 export function ProjectsTableSection({
   projects,
   mode,
@@ -39,15 +49,36 @@ export function ProjectsTableSection({
   pendingDestroyId,
   emptyMessage,
 }: ProjectsTableSectionProps) {
+  const { update, getParam } = useListParams({
+    basePath: '/projects/archive',
+    resetKeys: ['cursor', 'dir'],
+  })
+  const rawSort = getParam('sort')
+  const sort = rawSort && isProjectSortValue(rawSort) ? rawSort : undefined
+
   return (
-    <div className='overflow-hidden rounded-xl border'>
-      <Table>
+    <div className='overflow-hidden rounded-lg border'>
+      <Table density='compact'>
         <TableHeader>
           <TableRow className='bg-muted/40'>
-            <TableHead>Name</TableHead>
+            <SortableTableHead
+              field='name'
+              sort={sort}
+              defaultSort='name:asc'
+              onSortChange={next => update({ sort: next })}
+            >
+              Name
+            </SortableTableHead>
             <TableHead>Owner</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Timeline</TableHead>
+            <SortableTableHead
+              field='created'
+              sort={sort}
+              defaultSort='name:asc'
+              onSortChange={next => update({ sort: next })}
+            >
+              Timeline
+            </SortableTableHead>
             <TableHead className='w-32 text-right'>Actions</TableHead>
           </TableRow>
         </TableHeader>

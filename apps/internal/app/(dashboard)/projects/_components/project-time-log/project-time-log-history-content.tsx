@@ -2,7 +2,7 @@ import { format } from 'date-fns'
 import { Archive, Loader2, Pencil, RotateCcw } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
   Table,
@@ -11,9 +11,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@pts/ui/table'
 import { cn } from '@/lib/utils'
-import type { UserRole } from '@/lib/auth/session'
 import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 import type { ProjectTimeLogHistoryState } from '@/lib/projects/time-log/use-project-time-log-history'
 
@@ -36,17 +35,13 @@ const resolveLoggedOnDate = (value: string | null) => {
 
 type ProjectTimeLogHistoryContentProps = {
   state: ProjectTimeLogHistoryState
-  currentUserId: string
-  currentUserRole: UserRole
-  canLogTime: boolean
   onEditEntry: (entry: TimeLogEntry) => void
 }
 
 export function ProjectTimeLogHistoryContent(
   props: ProjectTimeLogHistoryContentProps
 ) {
-  const { state, currentUserId, currentUserRole, canLogTime, onEditEntry } =
-    props
+  const { state, onEditEntry } = props
   const {
     logs,
     totalCount,
@@ -113,9 +108,6 @@ export function ProjectTimeLogHistoryContent(
                 <ProjectTimeLogHistoryRow
                   key={log.id}
                   log={log}
-                  currentUserId={currentUserId}
-                  currentUserRole={currentUserRole}
-                  canLogTime={canLogTime}
                   onDeleteRequest={deleteState.request}
                   onEditRequest={onEditEntry}
                   isDeleting={deleteState.isMutating}
@@ -144,9 +136,6 @@ export function ProjectTimeLogHistoryContent(
 
 type ProjectTimeLogHistoryRowProps = {
   log: TimeLogEntry
-  currentUserId: string
-  currentUserRole: UserRole
-  canLogTime: boolean
   onDeleteRequest: (entry: TimeLogEntry) => void
   onEditRequest: (entry: TimeLogEntry) => void
   isDeleting: boolean
@@ -154,24 +143,14 @@ type ProjectTimeLogHistoryRowProps = {
 }
 
 function ProjectTimeLogHistoryRow(props: ProjectTimeLogHistoryRowProps) {
-  const {
-    log,
-    currentUserId,
-    currentUserRole,
-    canLogTime,
-    onDeleteRequest,
-    onEditRequest,
-    isDeleting,
-    pendingDeleteId,
-  } = props
+  const { log, onDeleteRequest, onEditRequest, isDeleting, pendingDeleteId } =
+    props
 
   const authorName = log.user?.full_name ?? log.user?.email ?? 'Unknown user'
   const loggedOnDate = resolveLoggedOnDate(log.logged_on)
   const loggedDate = loggedOnDate
     ? format(loggedOnDate, 'MMM d, yyyy')
     : 'Unknown date'
-  const canModify =
-    canLogTime && (currentUserRole === 'ADMIN' || log.user_id === currentUserId)
   const deleteDisabled = isDeleting
   const deleteReason = deleteDisabled ? 'Removing entry...' : null
 
@@ -232,47 +211,43 @@ function ProjectTimeLogHistoryRow(props: ProjectTimeLogHistoryRowProps) {
         )}
       </TableCell>
       <TableCell className='text-right'>
-        {canModify ? (
-          <div className='flex justify-end gap-2'>
+        <div className='flex justify-end gap-2'>
+          <Button
+            type='button'
+            variant='outline'
+            size='icon'
+            className='h-8 w-8 rounded-md'
+            onClick={() => onEditRequest(log)}
+            aria-label='Edit time entry'
+          >
+            <Pencil className='size-4' />
+          </Button>
+          <DisabledFieldTooltip
+            disabled={deleteDisabled}
+            reason={deleteReason}
+          >
             <Button
               type='button'
-              variant='outline'
+              variant='destructive'
               size='icon'
-              className='h-8 w-8 rounded-md'
-              onClick={() => onEditRequest(log)}
-              aria-label='Edit time entry'
-            >
-              <Pencil className='size-4' />
-            </Button>
-            <DisabledFieldTooltip
+              className={cn(
+                'h-8 w-8 rounded-md',
+                isDeleting && pendingDeleteId === log.id
+                  ? 'pointer-events-none'
+                  : undefined
+              )}
+              onClick={() => onDeleteRequest(log)}
               disabled={deleteDisabled}
-              reason={deleteReason}
+              aria-label='Delete time entry'
             >
-              <Button
-                type='button'
-                variant='destructive'
-                size='icon'
-                className={cn(
-                  'h-8 w-8 rounded-md',
-                  isDeleting && pendingDeleteId === log.id
-                    ? 'pointer-events-none'
-                    : undefined
-                )}
-                onClick={() => onDeleteRequest(log)}
-                disabled={deleteDisabled}
-                aria-label='Delete time entry'
-              >
-                {isDeleting && pendingDeleteId === log.id ? (
-                  <Loader2 className='size-4 animate-spin' />
-                ) : (
-                  <Archive className='size-4' />
-                )}
-              </Button>
-            </DisabledFieldTooltip>
-          </div>
-        ) : (
-          <span className='text-muted-foreground text-xs'>No access</span>
-        )}
+              {isDeleting && pendingDeleteId === log.id ? (
+                <Loader2 className='size-4 animate-spin' />
+              ) : (
+                <Archive className='size-4' />
+              )}
+            </Button>
+          </DisabledFieldTooltip>
+        </div>
       </TableCell>
     </TableRow>
   )

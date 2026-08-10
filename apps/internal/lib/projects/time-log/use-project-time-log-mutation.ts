@@ -30,8 +30,6 @@ export type UseProjectTimeLogMutationOptions = {
     name: string
     clientId: string | null
   }
-  currentUserId: string
-  canSelectUser: boolean
   formValues: {
     hoursInput: string
     loggedOnInput: string
@@ -45,6 +43,8 @@ export type UseProjectTimeLogMutationOptions = {
   mode: 'create' | 'edit'
   timeLogId: string | null
   successToast?: ToastOptions
+  /** Extra invalidation hook (e.g. the task sheet's task-time-logs query). */
+  onMutationSuccess?: () => void
 }
 
 export function useProjectTimeLogMutation(
@@ -56,8 +56,6 @@ export function useProjectTimeLogMutation(
     toast,
     baseQueryKey,
     project,
-    currentUserId,
-    canSelectUser,
     formValues,
     selectedTaskIds,
     onSuccessReset,
@@ -66,6 +64,7 @@ export function useProjectTimeLogMutation(
     mode,
     timeLogId,
     successToast,
+    onMutationSuccess,
   } = options
 
   return useMutation({
@@ -84,9 +83,7 @@ export function useProjectTimeLogMutation(
         )
       }
 
-      const logUserId = canSelectUser
-        ? formValues.selectedUserId
-        : currentUserId
+      const logUserId = formValues.selectedUserId
 
       if (!logUserId) {
         throw makeFieldError('user', 'Select a teammate before logging time.')
@@ -195,12 +192,28 @@ export function useProjectTimeLogMutation(
           metadata: JSON.parse(JSON.stringify(metadata)) as Json,
         })
       }
+
+      // PRD 002 section 05: closed-month warning riding the API response.
+      const warning =
+        typeof result === 'object' && result && 'warning' in result
+          ? String((result as { warning?: unknown }).warning ?? '').trim()
+          : ''
+
+      return { warning: warning || null }
     },
-    onSuccess: async () => {
+    onSuccess: async data => {
       await queryClient.invalidateQueries({ queryKey: baseQueryKey })
+      onMutationSuccess?.()
       onSuccessReset()
       onClose()
       toast(successToast ?? SUCCESS_TOAST)
+      if (data?.warning) {
+        toast({
+          title: 'Closed month',
+          description: data.warning,
+          variant: 'destructive',
+        })
+      }
       router.refresh()
     },
     onError: error => {

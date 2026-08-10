@@ -7,7 +7,7 @@ import { eq } from 'drizzle-orm'
 
 import { logActivity } from '@/lib/activity/logger'
 import { taskStatusChangedEvent } from '@/lib/activity/events'
-import { ensureClientAccessByTaskId } from '@/lib/auth/permissions'
+import { ensureTaskAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { projects, tasks } from '@/lib/db/schema'
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
@@ -77,7 +77,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   const taskId = parsedParams.data.taskId
 
   try {
-    await ensureClientAccessByTaskId(user, taskId)
+    await ensureTaskAccess(user, taskId)
   } catch (error) {
     if (error instanceof NotFoundError) {
       return NextResponse.json({ error: 'Task not found.' }, { status: 404 })

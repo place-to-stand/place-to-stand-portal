@@ -66,7 +66,6 @@ export function useSetUserDisabledAction(): UseSetUserDisabledActionReturn {
               ? `${displayName} can no longer sign in to the portal.`
               : `${displayName} can sign in to the portal again.`,
           })
-          router.refresh()
         } catch (error) {
           finishSettingsInteraction(interaction, {
             status: 'error',
@@ -81,6 +80,13 @@ export function useSetUserDisabledAction(): UseSetUserDisabledActionReturn {
           })
         } finally {
           setPendingDisableId(null)
+          // Always refresh, on success, structured error, AND throw: the
+          // service is fail-closed and mutates the DB flag before activity
+          // logging/telemetry, so any settle state may have changed the row.
+          // A filtered access list must never show a row that contradicts
+          // the persisted state; refreshing after a no-op failure is
+          // harmless.
+          router.refresh()
         }
       })
     },

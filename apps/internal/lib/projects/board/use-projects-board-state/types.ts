@@ -3,7 +3,6 @@ import type {
   ProjectWithRelations,
   TaskWithRelations,
 } from '@/lib/types'
-import type { UserRole } from '@/lib/auth/session'
 import type {
   SearchableComboboxGroup,
   SearchableComboboxItem,
@@ -19,7 +18,6 @@ export type UseProjectsBoardStateArgs = {
   projects: ProjectWithRelations[]
   clients: Array<{ id: string; name: string; slug: string | null }>
   currentUserId: string
-  currentUserRole: UserRole
   admins: DbUser[]
   activeClientId: string | null
   activeProjectId: string | null
@@ -57,6 +55,7 @@ export type ProjectsBoardState = {
   handleDragEnd: ReturnType<typeof useBoardDnDState>['handleDragEnd']
   openCreateSheet: ReturnType<typeof useBoardSheetState>['openCreateSheet']
   handleEditTask: ReturnType<typeof useBoardSheetState>['handleEditTask']
+  handleTaskCreated: ReturnType<typeof useBoardSheetState>['handleTaskCreated']
   handleSheetOpenChange: ReturnType<
     typeof useBoardSheetState
   >['handleSheetOpenChange']

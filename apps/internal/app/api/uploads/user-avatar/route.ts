@@ -62,7 +62,10 @@ export async function POST(request: Request) {
 
   await ensureAvatarBucket(supabase);
 
-  const path = generateAvatarPath({ actorId: actor.id, targetUserId, extension });
+  // Always stage uploads in the pending folder — the save action moves them
+  // into the user's folder (finalizeUserAvatar / resolveAvatarUpdate), so a
+  // cancelled sheet never leaves the live avatar pointing at a deleted object.
+  const path = generateAvatarPath({ actorId: actor.id, targetUserId: null, extension });
   const fileBuffer = Buffer.from(await file.arrayBuffer());
   const { error: uploadError } = await supabase.storage.from(AVATAR_BUCKET).upload(path, fileBuffer, {
     cacheControl: "86400",
@@ -73,19 +76,6 @@ export async function POST(request: Request) {
   if (uploadError) {
     console.error("Failed to upload avatar", uploadError);
     return NextResponse.json({ error: "Unable to upload avatar. Please try again." }, { status: 500 });
-  }
-
-  const previousCandidate = formData.get("previousPath");
-  const previousPath = typeof previousCandidate === "string" && previousCandidate.trim().length > 0
-    ? previousCandidate
-    : null;
-
-  if (previousPath && canManageAvatarPath({ actorId: actor.id, actorRole: actor.role, path: previousPath, targetUserId })) {
-    try {
-      await deleteAvatarObject({ client: supabase, path: previousPath });
-    } catch (error) {
-      console.error("Failed to delete previous avatar", error);
-    }
   }
 
   return NextResponse.json({ path });

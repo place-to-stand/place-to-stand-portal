@@ -13,6 +13,7 @@ const baseSchema = z.object({
 })
 
 const editSchema = baseSchema.extend({
+  accessEnabled: z.boolean().optional(),
   password: z
     .string()
     .optional()

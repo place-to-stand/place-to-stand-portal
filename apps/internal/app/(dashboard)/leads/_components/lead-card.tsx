@@ -12,13 +12,14 @@ import { defaultAnimateLayoutChanges, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { CheckCircle, Mail, Phone, User } from 'lucide-react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { ENTITY_ACCENTS } from '@/lib/entity-accents'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@/components/ui/tooltip'
+} from '@pts/ui/tooltip'
 import { getLeadSourceLabel } from '@/lib/leads/constants'
 import type { LeadRecord } from '@/lib/leads/types'
 import { cn } from '@/lib/utils'
@@ -115,13 +116,11 @@ export const LeadCard = memo(function LeadCard({
         }
       }}
       className={cn(
-        'group bg-card focus-visible:ring-ring focus-visible:ring-offset-background rounded-lg border-y border-r border-l-4 border-l-amber-500 p-4 text-left shadow-sm transition focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+        'group bg-card focus-visible:ring-ring focus-visible:ring-offset-background rounded-lg border p-4 text-left shadow-sm transition focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
         canManage ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
         isDragging && 'ring-primary ring-2',
         (isActive || isDragging) && 'border-primary/50 bg-primary/5 shadow-md',
-        !isActive &&
-          !isDragging &&
-          'hover:border-r-amber-500/50 hover:border-y-amber-500/50 hover:bg-amber-500/5 hover:shadow-md'
+        !isActive && !isDragging && ENTITY_ACCENTS.lead.card
       )}
     >
       <LeadCardContent lead={lead} />
@@ -246,7 +245,12 @@ function AnchorRow({ icon: Icon, value, href }: AnchorRowProps) {
 
 export function LeadCardPreview({ lead }: { lead: LeadRecord }) {
   return (
-    <div className='bg-card border-l-amber-500 w-80 rounded-lg border-y border-r border-l-4 p-4 shadow-sm'>
+    <div
+      className={cn(
+        'bg-card w-80 rounded-lg border p-4 shadow-sm',
+        ENTITY_ACCENTS.lead.cardStatic
+      )}
+    >
       <LeadCardContent lead={lead} />
     </div>
   )

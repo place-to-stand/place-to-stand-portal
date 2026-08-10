@@ -1,7 +1,8 @@
 import { forwardRef, type ComponentPropsWithoutRef } from 'react'
 import { User } from 'lucide-react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
+import { ENTITY_ACCENTS } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 import type { TaskWithRelations } from '@/lib/types'
 
@@ -40,10 +41,8 @@ export const CalendarTaskCardShell = forwardRef<
     <div
       ref={ref}
       className={cn(
-        'bg-card rounded-md border-y border-r border-l-4 px-2 py-1 text-left text-xs shadow-sm transition',
-        isCompleted
-          ? 'border-l-muted-foreground/30 opacity-65'
-          : 'border-l-violet-500',
+        'bg-card rounded-md border px-2 py-1 text-left text-xs shadow-sm transition',
+        isCompleted && 'opacity-65',
         canManageTasks
           ? 'cursor-grab active:cursor-grabbing'
           : 'cursor-pointer',
@@ -51,11 +50,11 @@ export const CalendarTaskCardShell = forwardRef<
         !isActive &&
           !isDragging &&
           !isCompleted &&
-          'hover:border-y-violet-500/50 hover:border-r-violet-500/50 hover:bg-violet-500/5 hover:shadow-md',
+          ENTITY_ACCENTS.task.card,
         !isActive &&
           !isDragging &&
           isCompleted &&
-          'hover:border-r-muted-foreground/30 hover:border-y-muted-foreground/30 hover:bg-muted/20 hover:shadow-md',
+          'hover:border-muted-foreground/30 hover:bg-muted/20 hover:shadow-md',
         isDragging && 'ring-primary ring-2',
         hideWhileDragging && isDragging && 'pointer-events-none opacity-0',
         className

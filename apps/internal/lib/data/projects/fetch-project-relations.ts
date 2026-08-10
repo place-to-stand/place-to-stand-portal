@@ -5,7 +5,6 @@ import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 
 import type {
-  ClientMembership,
   MemberWithUser,
   RawHourBlock,
   RawTaskWithRelations,
@@ -15,15 +14,12 @@ import {
   loadClientRows,
   loadMemberRows,
   loadHourBlockRows,
-  loadClientMembershipRows,
   mapClientRows,
   mapMemberRows,
   mapHourBlockRows,
-  mapClientMembershipRows,
   type ClientRow,
   type MemberRow,
   type HourBlockRow,
-  type ClientMembershipRow,
 } from './relations/clients'
 import {
   buildAssigneeMap,
@@ -38,8 +34,11 @@ export type ProjectRelationsFetchArgs = {
   projectIds: string[]
   clientIds: string[]
   ownerIds: string[]
-  shouldScopeToUser: boolean
-  userId?: string
+  /**
+   * Archived tasks grow without bound and only the project review/archive
+   * tabs render them — every other surface skips the query entirely.
+   */
+  includeArchivedTasks?: boolean
 }
 
 export type ProjectRelationsFetchResult = {
@@ -49,11 +48,10 @@ export type ProjectRelationsFetchResult = {
   tasks: RawTaskWithRelations[]
   archivedTasks: RawTaskWithRelations[]
   hourBlocks: RawHourBlock[]
-  clientMemberships: ClientMembership[]
   githubReposByProject: Map<string, GitHubRepoLinkSummary[]>
 }
 
-async function loadOwners(ownerIds: string[]): Promise<ProjectOwner[]> {
+export async function loadOwners(ownerIds: string[]): Promise<ProjectOwner[]> {
   if (ownerIds.length === 0) {
     return []
   }
@@ -78,8 +76,7 @@ export async function fetchProjectRelations({
   projectIds,
   clientIds,
   ownerIds,
-  shouldScopeToUser,
-  userId,
+  includeArchivedTasks = false,
 }: ProjectRelationsFetchArgs): Promise<ProjectRelationsFetchResult> {
   const clientDataPromise: Promise<[ClientRow[], MemberRow[], HourBlockRow[]]> =
     Promise.all([
@@ -90,13 +87,10 @@ export async function fetchProjectRelations({
 
   const taskDataPromise: Promise<[TaskRow[], TaskRow[]]> = Promise.all([
     loadTaskRows(projectIds, { archived: false }),
-    loadTaskRows(projectIds, { archived: true }),
+    includeArchivedTasks
+      ? loadTaskRows(projectIds, { archived: true })
+      : Promise.resolve([]),
   ])
-
-  const clientMembershipPromise: Promise<ClientMembershipRow[]> =
-    shouldScopeToUser && userId
-      ? loadClientMembershipRows(userId)
-      : Promise.resolve([])
 
   const githubReposPromise = getReposForProjects(projectIds)
   const ownersPromise = loadOwners(ownerIds)
@@ -104,13 +98,11 @@ export async function fetchProjectRelations({
   const [
     [clientRows, memberRows, hourBlockRows],
     [activeTaskRows, archivedTaskRows],
-    clientMembershipRows,
     githubReposMap,
     owners,
   ] = await Promise.all([
     clientDataPromise,
     taskDataPromise,
-    clientMembershipPromise,
     githubReposPromise,
     ownersPromise,
   ])
@@ -122,8 +114,6 @@ export async function fetchProjectRelations({
   const clients: DbClient[] = mapClientRows(clientRows)
   const members: MemberWithUser[] = mapMemberRows(memberRows)
   const hourBlocks: RawHourBlock[] = mapHourBlockRows(hourBlockRows)
-  const clientMemberships: ClientMembership[] =
-    mapClientMembershipRows(clientMembershipRows)
 
   const tasks: RawTaskWithRelations[] = mapTaskRowsToRaw(
     activeTaskRows,
@@ -154,7 +144,6 @@ export async function fetchProjectRelations({
     tasks,
     archivedTasks,
     hourBlocks,
-    clientMemberships,
     githubReposByProject,
   }
 }

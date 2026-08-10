@@ -1,25 +1,12 @@
 import 'server-only'
 
 import { cache } from 'react'
-import {
-  and,
-  asc,
-  desc,
-  eq,
-  inArray,
-  isNull,
-  ne,
-  or,
-  sql,
-  type SQL,
-} from 'drizzle-orm'
+import { and, asc, desc, eq, isNull, ne, sql } from 'drizzle-orm'
 
-import type { UserRole } from '@/lib/auth/session'
 import type { ProjectTypeValue } from '@/lib/types'
 import { db } from '@/lib/db'
 import {
   clients as clientsTable,
-  clientMembers as clientMembersTable,
   projects as projectsTable,
   taskAssigneeMetadata as taskAssigneeMetadataTable,
   taskAssignees as taskAssigneesTable,
@@ -68,43 +55,21 @@ const STATUS_PRIORITY_SQL = sql`
 
 type FetchAssignedTasksSummaryOptions = {
   userId: string
-  role: UserRole
   limit?: number | null
   includeCompletedStatuses?: boolean
 }
 
 async function loadAssignedTaskSummaries({
   userId,
-  role,
   limit = DEFAULT_LIMIT,
   includeCompletedStatuses = true,
 }: FetchAssignedTasksSummaryOptions): Promise<AssignedTaskSummaryResult> {
-  const shouldScopeToUser = role !== 'ADMIN'
-
   const normalizedLimit =
     typeof limit === 'number' && Number.isFinite(limit)
       ? Math.max(1, limit)
       : limit === null
         ? null
         : DEFAULT_LIMIT
-
-  let accessibleClientIds: string[] = []
-
-  if (shouldScopeToUser) {
-    const memberships = await db
-      .select({ clientId: clientMembersTable.clientId })
-      .from(clientMembersTable)
-      .where(
-        and(
-          eq(clientMembersTable.userId, userId),
-          isNull(clientMembersTable.deletedAt)
-        )
-      )
-
-    accessibleClientIds = memberships
-      .map(entry => entry.clientId)
-      .filter((value): value is string => Boolean(value))
-  }
 
   const baseConditions = [
     eq(taskAssigneesTable.userId, userId),
@@ -117,25 +82,6 @@ async function loadAssignedTaskSummaries({
 
   if (!includeCompletedStatuses) {
     baseConditions.push(ne(tasksTable.status, 'DONE'))
-  }
-
-  if (shouldScopeToUser) {
-    let accessCondition: SQL<unknown> = or(
-      eq(projectsTable.type, 'INTERNAL'),
-      and(
-        eq(projectsTable.type, 'PERSONAL'),
-        eq(projectsTable.createdBy, userId)
-      )
-    )!
-
-    if (accessibleClientIds.length > 0) {
-      accessCondition = or(
-        accessCondition,
-        inArray(projectsTable.clientId, accessibleClientIds)
-      )!
-    }
-
-    baseConditions.push(accessCondition as SQL)
   }
 
   const whereClause = and(...baseConditions)
@@ -193,16 +139,21 @@ async function loadAssignedTaskSummaries({
       ? await baseQuery.limit(normalizedLimit)
       : await baseQuery
 
-  const totalResult = await db
-    .select({
-      count: sql<number>`count(*)`,
-    })
-    .from(taskAssigneesTable)
-    .innerJoin(tasksTable, eq(taskAssigneesTable.taskId, tasksTable.id))
-    .innerJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
-    .where(whereClause)
+  // An unbounded query already returned every match — counting again
+  // would repeat the full three-table join for a number we have.
+  let totalCount = rows.length
+  if (normalizedLimit !== null) {
+    const totalResult = await db
+      .select({
+        count: sql<number>`count(*)`,
+      })
+      .from(taskAssigneesTable)
+      .innerJoin(tasksTable, eq(taskAssigneesTable.taskId, tasksTable.id))
+      .innerJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
+      .where(whereClause)
 
-  const totalCount = Number(totalResult[0]?.count ?? 0)
+    totalCount = Number(totalResult[0]?.count ?? 0)
+  }
 
   const items: AssignedTaskSummary[] = rows.map(row => {
     const updatedSource = row.updatedAt ?? row.createdAt ?? null
@@ -244,4 +195,22 @@ export function listAssignedTaskSummaries(
   options: FetchAssignedTasksSummaryOptions
 ) {
   return loadAssignedTaskSummaries(options)
+}
+
+/**
+ * Resolve a task's project without hydrating any project graph — used by
+ * the My Tasks deep-link path to merge in a project outside the assigned
+ * set. Soft-deleted tasks resolve to null (matches the previous behavior
+ * of searching active task arrays only).
+ */
+export async function getActiveTaskProjectId(
+  taskId: string
+): Promise<string | null> {
+  const rows = await db
+    .select({ projectId: tasksTable.projectId })
+    .from(tasksTable)
+    .where(and(eq(tasksTable.id, taskId), isNull(tasksTable.deletedAt)))
+    .limit(1)
+
+  return rows[0]?.projectId ?? null
 }

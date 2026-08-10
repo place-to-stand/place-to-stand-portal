@@ -19,7 +19,7 @@ const ProjectsActivityFeed = dynamic(
 
 export function ProjectsActivitySection() {
   return (
-    <section className='bg-background rounded-xl border p-6 shadow-sm space-y-3'>
+    <div className='space-y-3'>
       <div>
         <h3 className='text-lg font-semibold'>Recent activity</h3>
         <p className='text-muted-foreground text-sm'>
@@ -32,6 +32,6 @@ export function ProjectsActivitySection() {
         emptyState='No recent project activity.'
         requireContext={false}
       />
-    </section>
+    </div>
   )
 }

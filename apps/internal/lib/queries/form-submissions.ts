@@ -1,8 +1,10 @@
 import {
   and,
+  asc,
   count,
   desc,
   eq,
+  ilike,
   inArray,
   isNotNull,
   isNull,
@@ -12,6 +14,12 @@ import {
 
 import { db } from '@/lib/db'
 import { activityLogs, formSubmissions } from '@/lib/db/schema'
+import {
+  DEFAULT_SUBMISSIONS_SORT,
+  type SubmissionSortField,
+} from '@/lib/form-submissions/filters'
+import { createSearchPattern } from '@/lib/pagination/cursor'
+import type { ParsedSort } from '@/lib/pagination/sort'
 import type { FormSubmission, NewFormSubmission } from '@pts/db/types'
 
 type FormSubmissionFilters = {
@@ -23,16 +31,25 @@ type FormSubmissionFilters = {
    * apps/internal/lib/form-submissions/constants.ts.
    */
   unacknowledgedOnly?: boolean
+  /** Complement of the quick filter: rows an admin has already cleared. */
+  acknowledgedOnly?: boolean
   /** false/undefined: active rows (deleted_at IS NULL). true: archived rows. */
   archived?: boolean
+  /** Fuzzy identity search (PRD 004 §03) — name, email, company. */
+  search?: string
 }
 
 function buildFilters({
   kind,
   status,
   unacknowledgedOnly,
+  acknowledgedOnly,
   archived,
+  search,
 }: FormSubmissionFilters) {
+  const searchQuery = search?.trim() ?? ''
+  const searchPattern = searchQuery ? createSearchPattern(searchQuery) : null
+
   return and(
     archived
       ? isNotNull(formSubmissions.deletedAt)
@@ -48,6 +65,14 @@ function buildFilters({
             eq(formSubmissions.kind, 'contact'),
             inArray(formSubmissions.status, ['completed', 'captured'])
           )
+        )
+      : undefined,
+    acknowledgedOnly ? isNotNull(formSubmissions.acknowledgedAt) : undefined,
+    searchPattern
+      ? or(
+          ilike(formSubmissions.contactName, searchPattern),
+          ilike(formSubmissions.contactEmail, searchPattern),
+          ilike(formSubmissions.contactCompany, searchPattern)
         )
       : undefined
   )
@@ -188,16 +213,30 @@ export async function upsertFormSubmission(row: NewFormSubmission) {
     })
 }
 
+// R5 (offset variant): each allowlisted sort field maps to its ORDER BY
+// column — offset pagination needs no cursor descriptors.
+const SORT_COLUMNS = {
+  received: formSubmissions.lastActivityAt,
+} as const satisfies Record<SubmissionSortField, unknown>
+
 export async function listFormSubmissions({
   offset,
   limit,
+  sort = DEFAULT_SUBMISSIONS_SORT,
   ...filters
-}: FormSubmissionFilters & { offset: number; limit: number }) {
+}: FormSubmissionFilters & {
+  offset: number
+  limit: number
+  sort?: ParsedSort<SubmissionSortField>
+}) {
+  const direction = sort.direction === 'asc' ? asc : desc
+
   return db
     .select()
     .from(formSubmissions)
     .where(buildFilters(filters))
-    .orderBy(desc(formSubmissions.lastActivityAt))
+    // Id tie-breaker keeps offset pages stable when timestamps collide.
+    .orderBy(direction(SORT_COLUMNS[sort.field]), direction(formSubmissions.id))
     .limit(limit)
     .offset(offset)
 }
@@ -234,6 +273,45 @@ export async function countFormSubmissions(filters: FormSubmissionFilters) {
     .where(buildFilters(filters))
 
   return row?.value ?? 0
+}
+
+/**
+ * Cron sweep (/api/cron/abandon-stale-submissions): audits stuck at
+ * `in_progress` whose last beacon is older than the cutoff flip to
+ * `abandoned`. The client-side abandoned beacon rides `pagehide` and is
+ * inherently lossy (killed tabs, mobile backgrounding, network loss), so
+ * stale rows are expected, not exceptional.
+ *
+ * Race-free against late beacons by the same enum-rank rules as
+ * `upsertFormSubmission`: `abandoned` outranks `in_progress` but sits below
+ * `completed`/`captured`, so a delayed genuine beacon still advances the row
+ * past this sweep, and a stale `in_progress` beacon can't regress it.
+ *
+ * `last_trigger: 'timeout'` distinguishes swept rows from beacon-reported
+ * abandons in diagnostics. Deliberately does NOT touch `last_activity_at`
+ * (the client-side beacon ordering key) or acknowledgement (in_progress rows
+ * never flag).
+ */
+export async function abandonStaleFormSubmissions(cutoffHours: number) {
+  const rows = await db
+    .update(formSubmissions)
+    .set({
+      status: 'abandoned',
+      lastTrigger: 'timeout',
+      updatedAt: sql`timezone('utc'::text, now())`,
+    })
+    .where(
+      and(
+        eq(formSubmissions.kind, 'audit'),
+        eq(formSubmissions.status, 'in_progress'),
+        isNull(formSubmissions.deletedAt),
+        isNull(formSubmissions.destroyedAt),
+        sql`${formSubmissions.lastActivityAt} < timezone('utc'::text, now()) - make_interval(hours => ${cutoffHours})`
+      )
+    )
+    .returning({ id: formSubmissions.id })
+
+  return rows.length
 }
 
 /**

@@ -14,14 +14,20 @@ Each primary object type is assigned a distinct color from the Tailwind CSS pale
 | **Client** | Blue | `blue` | `#3b82f6` |
 | **Contact** | Cyan | `cyan` | `#06b6d4` |
 | **Suggestion** | Fuchsia | `fuchsia` | `#d946ef` |
+| **Invoice** | Orange | `orange` | `#f97316` |
+| **Hour Block** | Teal | `teal` | `#14b8a6` |
+| **User** | Rose | `rose` | `#f43f5e` |
+| **Submission** | Pink | `pink` | `#ec4899` |
+
+The canonical class strings live in `lib/entity-accents.ts` (`ENTITY_ACCENTS`), which exports the card pattern, static-card pattern, and sheet-header accent per entity. Consume that module rather than re-typing the classes.
 
 ## Visual Application
 
 The color identity is primarily applied to **Cards** using the following pattern:
 
-1.  **Left Border:** A thick (4px) left border in the object's primary color (`-500` shade).
+1.  **Border:** A uniform 1px border in a semi-transparent shade of the object's primary color (`-500/35`). The border is symmetric on all sides so the card geometry stays centered — do **not** use a thick colored left border (`border-l-4`), a widely-disliked style that also shifts card content off-center.
 2.  **Hover State:**
-    *   **Right/Top/Bottom Borders:** A semi-transparent version of the color (`/50`) appears on hover.
+    *   **Border:** The border strengthens to `/60`.
     *   **Background:** A very subtle tint (`/5`) of the color appears on hover.
 3.  **Icons:** In some contexts (like headers or lists), the object's icon may be colored with the `-500` shade.
 
@@ -32,14 +38,13 @@ Apply these utility classes to the main container (e.g., `Card` or `div`):
 ```tsx
 className={cn(
   // Base layout and border
-  'border-l-4 border-y border-r shadow-sm transition-all',
+  'border shadow-sm transition-all',
 
-  // 1. Identity Color (Left Border)
-  'border-l-[COLOR]-500',
+  // 1. Identity Color (tinted border)
+  'border-[COLOR]-500/35',
 
   // 2. Hover States
-  'hover:border-r-[COLOR]-500/50',
-  'hover:border-y-[COLOR]-500/50',
+  'hover:border-[COLOR]-500/60',
   'hover:bg-[COLOR]-500/5',
   'hover:shadow-md'
 )}
@@ -51,15 +56,12 @@ When adding a new object type (e.g., "Invoice", "Ticket", "Note"), follow these 
 
 ### 1. Choose a Distinct Color
 Select a color from the Tailwind palette that is visually distinct from the existing set.
-*   *Avoid:* Violet, Amber, Emerald, Blue, Cyan, Fuchsia.
+*   *Avoid:* Violet, Amber, Emerald, Blue, Cyan, Fuchsia, Orange, Teal, Rose, Pink.
 *   *Suggested:*
-    *   **Rose** (`rose-500`) for urgent items like Tickets or Alerts.
-    *   **Orange** (`orange-500`) for financial items like Invoices (distinct enough from Amber).
     *   **Slate** (`slate-500`) for neutral or archived items.
-    *   **Pink** (`pink-500`) for social or communication items.
 
 ### 2. Apply the Pattern
-Use the standard class pattern with your chosen color.
+Add the entity to `ENTITY_ACCENTS` in `lib/entity-accents.ts` with the standard class pattern (written out literally so Tailwind's scanner picks the classes up), then consume it from there.
 
 **Example: Creating an `InvoiceCard` (using Orange)**
 
@@ -71,15 +73,14 @@ export function InvoiceCard({ invoice }) {
     <div
       className={cn(
         'group bg-card rounded-lg p-4 text-left shadow-sm transition',
-        // Base borders
-        'border-y border-r border-l-4',
+        // Base border
+        'border',
 
         // Identity: Orange
-        'border-l-orange-500',
+        'border-orange-500/35',
 
         // Hover States
-        'hover:border-r-orange-500/50',
-        'hover:border-y-orange-500/50',
+        'hover:border-orange-500/60',
         'hover:bg-orange-500/5',
         'hover:shadow-md'
       )}

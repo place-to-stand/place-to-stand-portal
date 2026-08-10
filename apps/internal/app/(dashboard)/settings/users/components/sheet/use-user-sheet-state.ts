@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, useTransition } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 
-import { PENDING_REASON } from './constants'
+import { PENDING_REASON, SELF_DISABLE_RESTRICTION } from './constants'
 import type { UserFormValues } from './form-schema'
 import {
   createDeleteCancelHandler,
@@ -32,6 +32,8 @@ export type UseUserSheetStateReturn = {
   submitDisabledReason: string | null
   deleteDisabled: boolean
   deleteDisabledReason: string | null
+  accessToggleDisabled: boolean
+  accessToggleDisabledReason: string | null
   isDeleteDialogOpen: boolean
   pendingReason: string
   unsavedChangesDialog: UseUserSheetFormReturn['unsavedChangesDialog']
@@ -198,6 +200,13 @@ export const useUserSheetState = ({
     deleteDisabled
   )
 
+  const accessToggleDisabled = isPending || editingSelf
+  const accessToggleDisabledReason = accessToggleDisabled
+    ? isPending
+      ? PENDING_REASON
+      : SELF_DISABLE_RESTRICTION
+    : null
+
   return {
     form,
     isEditing,
@@ -214,6 +223,8 @@ export const useUserSheetState = ({
     submitDisabledReason,
     deleteDisabled,
     deleteDisabledReason,
+    accessToggleDisabled,
+    accessToggleDisabledReason,
     isDeleteDialogOpen,
     pendingReason: PENDING_REASON,
     unsavedChangesDialog,

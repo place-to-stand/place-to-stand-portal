@@ -1,23 +1,8 @@
 import 'server-only'
 
-import {
-  and,
-  eq,
-  gte,
-  inArray,
-  isNull,
-  lte,
-  ne,
-  sql,
-  type SQL,
-} from 'drizzle-orm'
+import { and, eq, gte, isNull, lte, ne, sql, type SQL } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
-import {
-  isAdmin,
-  listAccessibleClientIds,
-  listAccessibleProjectIds,
-} from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { clients, hourBlocks, projects, timeLogs } from '@/lib/db/schema'
 import type { HoursSnapshot, MonthCursor } from '@/lib/dashboard/types'
@@ -49,29 +34,11 @@ export async function fetchHoursSnapshot(
     projectType: 'CLIENT',
   })
 
-  const scopedProjectIds = await resolveProjectScope(user)
   const baseFilters: SQL<unknown>[] = [
     gte(timeLogs.loggedOn, startDate),
     lte(timeLogs.loggedOn, endDate),
     isNull(timeLogs.deletedAt),
   ]
-
-  if (Array.isArray(scopedProjectIds)) {
-    if (!scopedProjectIds.length) {
-      return {
-        month,
-        year,
-        myHours,
-        companyHours: 0,
-        companyHoursPrepaid: 0,
-        internalPersonalHours: 0,
-        scopeLabel: 'Your accounts',
-        minCursor: bounds.min,
-        maxCursor: bounds.max,
-      }
-    }
-    baseFilters.push(inArray(timeLogs.projectId, scopedProjectIds))
-  }
 
   // Company hours: billable (CLIENT project) hours only
   const companyHours = await sumHoursWithProjectFilter({
@@ -90,30 +57,12 @@ export async function fetchHoursSnapshot(
     projectType: 'NON_CLIENT',
   })
 
-  const scopedClientIds = await resolveClientScope(user)
   const { startTimestamp, endTimestamp } = buildMonthTimestampRange(year, month)
   const prepaidFilters = [
     gte(hourBlocks.createdAt, startTimestamp),
     sql`${hourBlocks.createdAt} < ${endTimestamp}`,
     isNull(hourBlocks.deletedAt),
   ]
-
-  if (Array.isArray(scopedClientIds)) {
-    if (!scopedClientIds.length) {
-      return {
-        month,
-        year,
-        myHours,
-        companyHours,
-        companyHoursPrepaid: 0,
-        internalPersonalHours,
-        scopeLabel: 'Your accounts',
-        minCursor: bounds.min,
-        maxCursor: bounds.max,
-      }
-    }
-    prepaidFilters.push(inArray(hourBlocks.clientId, scopedClientIds))
-  }
 
   const companyHoursPrepaid = await sumPrepaidHours({ filters: prepaidFilters })
 
@@ -124,36 +73,10 @@ export async function fetchHoursSnapshot(
     companyHours,
     companyHoursPrepaid,
     internalPersonalHours,
-    scopeLabel: Array.isArray(scopedProjectIds)
-      ? 'Your accounts'
-      : 'All projects',
+    scopeLabel: 'All projects',
     minCursor: bounds.min,
     maxCursor: bounds.max,
   }
-}
-
-async function resolveProjectScope(user: AppUser) {
-  if (user.role === 'CLIENT') {
-    return await listAccessibleProjectIds(user)
-  }
-
-  if (isAdmin(user)) {
-    return null
-  }
-
-  return null
-}
-
-async function resolveClientScope(user: AppUser) {
-  if (user.role === 'CLIENT') {
-    return await listAccessibleClientIds(user)
-  }
-
-  if (isAdmin(user)) {
-    return null
-  }
-
-  return null
 }
 
 async function sumHoursWithProjectFilter({

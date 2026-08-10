@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { and, eq, isNull, desc } from 'drizzle-orm'
 
-import { AppShellHeader } from '@/components/layout/app-shell'
-import { isAdmin } from '@/lib/auth/permissions'
+import { PageShell } from '@/components/layout/page-shell'
+import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { requireUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { contacts, contactClients, users } from '@/lib/db/schema'
@@ -14,7 +14,7 @@ import {
 } from '@/lib/data/clients'
 import type { ClientRow } from '@/lib/settings/clients/client-sheet-utils'
 
-import { ClientsLandingHeader } from '../_components/clients-landing-header'
+import { ClientRecordCycle } from '../_components/client-record-cycle'
 import { ClientDetail } from './_components/client-detail'
 
 type Params = Promise<{ clientSlug: string }>
@@ -54,8 +54,6 @@ export default async function ClientDetailPage({
   } catch {
     notFound()
   }
-
-  const canManageClients = isAdmin(user)
 
   // Build origination and closer lookups. Origination may be either a
   // contact (external referrer) or an admin user (internal partner);
@@ -152,27 +150,25 @@ export default async function ClientDetailPage({
   ])
 
   return (
-    <>
-      <AppShellHeader>
-        <ClientsLandingHeader
-          clients={allClients}
-          selectedClientId={client.resolvedId}
-        />
-      </AppShellHeader>
-      <div className='space-y-6'>
-        <ClientDetail
-          client={client}
-          projects={projects}
-          contacts={clientContacts}
-          canManageClients={canManageClients}
-          clientRow={mapClientDetailToRow(client)}
-          currentUserId={user.id}
-          originationContact={originationContact}
-          originationUser={originationUser}
-          closerUser={closerUser}
-        />
-      </div>
-    </>
+    <PageShell
+      breadcrumbs={[...crumbsForNav('/clients'), { label: client.name }]}
+      contentClassName='space-y-6'
+    >
+      <ClientRecordCycle
+        clients={allClients.map(entry => ({ id: entry.id, slug: entry.slug }))}
+        selectedClientId={client.resolvedId}
+      />
+      <ClientDetail
+        client={client}
+        projects={projects}
+        contacts={clientContacts}
+        clientRow={mapClientDetailToRow(client)}
+        currentUserId={user.id}
+        originationContact={originationContact}
+        originationUser={originationUser}
+        closerUser={closerUser}
+      />
+    </PageShell>
   )
 }
 

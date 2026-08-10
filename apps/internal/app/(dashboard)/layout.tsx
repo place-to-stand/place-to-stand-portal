@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { cookies } from "next/headers";
 
 import { AppShell } from "@/components/layout/app-shell";
 import { requireUser } from "@/lib/auth/session";
@@ -14,11 +15,17 @@ export default async function DashboardLayout({
   // revalidatePath('/', 'layout') from the submissions actions.
   const unacknowledgedSubmissionsCount =
     await fetchUnacknowledgedSubmissionCount(user);
+  // PRD 004 §02: SSR-read collapse state so the sidebar renders in the right
+  // mode on first paint (the ui/sidebar primitive writes this cookie on toggle).
+  const cookieStore = await cookies();
+  const sidebarDefaultOpen =
+    cookieStore.get("sidebar_state")?.value !== "false";
 
   return (
     <AppShell
       user={user}
       unacknowledgedSubmissionsCount={unacknowledgedSubmissionsCount}
+      sidebarDefaultOpen={sidebarDefaultOpen}
     >
       {children}
     </AppShell>

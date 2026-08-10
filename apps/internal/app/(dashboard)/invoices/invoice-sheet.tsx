@@ -19,17 +19,10 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import {
-  AlertTriangle,
-  Archive,
-  GripVertical,
-  Plus,
-  Redo2,
-  Trash2,
-  Undo2,
-} from 'lucide-react'
+import { AlertTriangle, GripVertical, Plus, Trash2 } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
   Form,
@@ -40,19 +33,15 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
+import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
+import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import {
   SearchableCombobox,
   type SearchableComboboxGroup,
 } from '@/components/ui/searchable-combobox'
 import { Textarea } from '@/components/ui/textarea'
-import { Separator } from '@/components/ui/separator'
+import { Separator } from '@pts/ui/separator'
 import { useToast } from '@/components/ui/use-toast'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import { computeLineItemAmount } from '@/lib/invoices/invoice-form'
@@ -73,6 +62,8 @@ import { InvoiceArchiveDialog } from './_components/invoice-archive-dialog'
 import { InvoiceSheetRightColumn } from './_components/invoice-sheet-right-column'
 import { InvoiceVoidDialog } from './_components/invoice-void-dialog'
 import { sendInvoiceAction, unsendInvoice, voidInvoice } from './actions'
+
+const INVOICE_FORM_ID = 'invoice-form'
 
 type Props = {
   open: boolean
@@ -140,6 +131,22 @@ export function InvoiceSheet({
   const { toast } = useToast()
   const [voidDialogOpen, setVoidDialogOpen] = useState(false)
   const [actionPending, setActionPending] = useState(false)
+  // Status actions (send/revert/void) refresh the row and reset the form,
+  // silently discarding edits — confirm first when the form is dirty.
+  const [pendingDirtyAction, setPendingDirtyAction] = useState<
+    (() => void) | null
+  >(null)
+
+  const runGuarded = useCallback(
+    (action: () => void) => {
+      if (form.formState.isDirty) {
+        setPendingDirtyAction(() => action)
+        return
+      }
+      action()
+    },
+    [form]
+  )
 
   const handleSave = useCallback(
     () =>
@@ -318,22 +325,21 @@ export function InvoiceSheet({
     ? `Invoice ${invoice?.invoice_number ?? 'details'}`
     : isEditing
       ? 'Edit invoice'
-      : 'Create invoice'
-
-  const sheetDescription = isReadOnly
-    ? 'This invoice is view-only and cannot be modified.'
-    : isEditing
-      ? 'Update the invoice details and line items.'
-      : 'Add details and line items for the new invoice.'
+      : 'Add invoice'
 
   const combinedPending = isPending || actionPending
 
   return (
     <>
       <Sheet open={open} onOpenChange={handleSheetOpenChange}>
-        <SheetContent className='flex h-full w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl lg:max-w-5xl'>
+        <SheetContent
+          hideCloseButton
+          size='wide'
+          className='flex h-full w-full flex-col gap-0 overflow-hidden p-0'
+        >
           <Form {...form}>
             <form
+              id={INVOICE_FORM_ID}
               className='flex min-h-0 flex-1 flex-col'
               onSubmit={form.handleSubmit((values: InvoiceFormValues) =>
                 handleSubmit(values)
@@ -342,10 +348,11 @@ export function InvoiceSheet({
               {/* ────────────────────────────────────────────────────── */}
               {/* Header (full width)                                   */}
               {/* ────────────────────────────────────────────────────── */}
-              <SheetHeader className='flex-shrink-0 border-b px-6 pt-6 pb-4'>
-                <SheetTitle>{sheetTitle}</SheetTitle>
-                <SheetDescription>{sheetDescription}</SheetDescription>
-              </SheetHeader>
+              <SheetFormHeader
+                entity='invoice'
+                title={sheetTitle}
+                className='flex-shrink-0'
+              />
 
               {/* ────────────────────────────────────────────────────── */}
               {/* Two-column body                                       */}
@@ -559,6 +566,26 @@ export function InvoiceSheet({
                       ) : null}
                     </div>
                   </div>
+
+                  {/* Footer - attached to left column so the right sidebar
+                      runs the full height of the sheet */}
+                  {!isReadOnly ? (
+                    <SheetFormFooter
+                      formId={INVOICE_FORM_ID}
+                      saveLabel={submitButton.label}
+                      submitDisabled={submitButton.disabled}
+                      submitDisabledReason={submitButton.reason}
+                      undo={undo}
+                      redo={redo}
+                      canUndo={canUndo}
+                      canRedo={canRedo}
+                      isEditing={isEditing}
+                      deleteDisabled={deleteButton.disabled}
+                      deleteDisabledReason={deleteButton.reason}
+                      onRequestDelete={handleRequestDelete}
+                      deleteAriaLabel='Archive invoice'
+                    />
+                  ) : null}
                 </div>
 
                 {/* ────────────────────────────────────────────────────── */}
@@ -568,9 +595,9 @@ export function InvoiceSheet({
                   <InvoiceSheetRightColumn
                     invoice={invoice}
                     isPending={combinedPending}
-                    onSendInvoice={handleSendInvoice}
-                    onUnsendInvoice={handleUnsendInvoice}
-                    onVoidInvoice={handleRequestVoid}
+                    onSendInvoice={() => runGuarded(handleSendInvoice)}
+                    onUnsendInvoice={() => runGuarded(handleUnsendInvoice)}
+                    onVoidInvoice={() => runGuarded(handleRequestVoid)}
                   />
                 ) : (
                   <div className='bg-muted/20 w-80 flex-shrink-0 lg:w-96'>
@@ -583,72 +610,6 @@ export function InvoiceSheet({
                   </div>
                 )}
               </div>
-
-              {/* ────────────────────────────────────────────────────── */}
-              {/* Footer (full width)                                   */}
-              {/* ────────────────────────────────────────────────────── */}
-              {!isReadOnly ? (
-                <div className='bg-muted/50 flex-shrink-0 border-t px-6 py-4'>
-                  <div className='flex w-full items-center justify-between gap-3'>
-                    <div className='flex items-center gap-2'>
-                      <DisabledFieldTooltip
-                        disabled={submitButton.disabled}
-                        reason={submitButton.reason}
-                      >
-                        <Button
-                          type='submit'
-                          disabled={submitButton.disabled}
-                          aria-label={`${submitButton.label} (⌘S / Ctrl+S)`}
-                          title={`${submitButton.label} (⌘S / Ctrl+S)`}
-                        >
-                          {submitButton.label}
-                        </Button>
-                      </DisabledFieldTooltip>
-                      <Button
-                        type='button'
-                        variant='outline'
-                        size='icon'
-                        onClick={undo}
-                        disabled={!canUndo}
-                        aria-label='Undo (⌘Z / Ctrl+Z)'
-                        title='Undo (⌘Z / Ctrl+Z)'
-                      >
-                        <Undo2 className='h-4 w-4' />
-                      </Button>
-                      <Button
-                        type='button'
-                        variant='outline'
-                        size='icon'
-                        onClick={redo}
-                        disabled={!canRedo}
-                        aria-label='Redo (⇧⌘Z / Ctrl+Shift+Z)'
-                        title='Redo (⇧⌘Z / Ctrl+Shift+Z)'
-                      >
-                        <Redo2 className='h-4 w-4' />
-                      </Button>
-                    </div>
-                    {isEditing ? (
-                      <DisabledFieldTooltip
-                        disabled={deleteButton.disabled}
-                        reason={deleteButton.reason}
-                      >
-                        <Button
-                          type='button'
-                          variant='destructive'
-                          size='icon'
-                          title='Archive invoice'
-                          aria-label='Archive invoice'
-                          onClick={handleRequestDelete}
-                          disabled={deleteButton.disabled}
-                        >
-                          <Archive className='h-4 w-4' />
-                          <span className='sr-only'>Archive</span>
-                        </Button>
-                      </DisabledFieldTooltip>
-                    ) : null}
-                  </div>
-                </div>
-              ) : null}
             </form>
           </Form>
         </SheetContent>
@@ -666,6 +627,19 @@ export function InvoiceSheet({
         confirmDisabled={combinedPending}
         onCancel={handleCancelVoid}
         onConfirm={handleConfirmVoid}
+      />
+      <ConfirmDialog
+        open={pendingDirtyAction !== null}
+        title='Discard unsaved changes?'
+        description='This action reloads the invoice, so your unsaved edits will be discarded. Save the invoice first if you want to keep them.'
+        confirmLabel='Discard and continue'
+        confirmVariant='destructive'
+        onCancel={() => setPendingDirtyAction(null)}
+        onConfirm={() => {
+          const action = pendingDirtyAction
+          setPendingDirtyAction(null)
+          action?.()
+        }}
       />
       {unsavedChangesDialog}
     </>

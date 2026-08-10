@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { cn } from '@/lib/utils'
 import type { HoursSnapshot } from '@/lib/dashboard/types'
@@ -124,9 +124,6 @@ export function HoursWidget({ initialSnapshot, className }: HoursWidgetProps) {
           <h2 id='hours-widget-heading' className='text-base font-semibold'>
             Monthly Hours Snapshot
           </h2>
-          <p className='text-muted-foreground text-xs'>
-            Hours logged for you and the company.
-          </p>
         </div>
         <div className='flex items-center gap-2'>
           <p className='mr-2 text-sm font-medium whitespace-nowrap'>

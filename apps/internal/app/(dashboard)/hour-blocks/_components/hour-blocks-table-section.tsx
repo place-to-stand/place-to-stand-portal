@@ -1,9 +1,14 @@
-import { format } from 'date-fns'
-import Link from 'next/link'
-import { Archive, Building2, Pencil, RefreshCw, Trash2 } from 'lucide-react'
+'use client'
 
-import { Button } from '@/components/ui/button'
+import Link from 'next/link'
+import { Archive, Building2, RefreshCw, Trash2 } from 'lucide-react'
+
+import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
+import { useListParams } from '@/hooks/use-list-params'
+import { formatCalendarDate } from '@/lib/dates'
+import { isHourBlockSortValue } from '@/lib/settings/hour-blocks/filters'
 import {
   Table,
   TableBody,
@@ -11,8 +16,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@pts/ui/table'
 import type { HourBlockWithClient } from '@/lib/settings/hour-blocks/hour-block-form'
+import { cn } from '@/lib/utils'
+import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
+import {
+  CLICKABLE_ROW_CLASS,
+  getClickableRowProps,
+} from '@/lib/table/clickable-row'
 
 export type HourBlocksTableMode = 'active' | 'archive'
 
@@ -29,18 +40,13 @@ export type HourBlocksTableSectionProps = {
   onRestore: (block: HourBlockWithClient) => void
   onRequestDestroy: (block: HourBlockWithClient) => void
   emptyMessage: string
+  /** Route the sort/filter params live on (PRD 004 §03). */
+  basePath: string
 }
 
 const toHours = (value: number) => `${value.toLocaleString()}h`
 
-const formatTimestamp = (value: string) => {
-  try {
-    return format(new Date(value), 'MMM d, yyyy')
-  } catch (error) {
-    console.warn('Unable to format hour block timestamp', { value, error })
-    return '—'
-  }
-}
+const formatTimestamp = (value: string) => formatCalendarDate(value) ?? '—'
 
 export function HourBlocksTableSection({
   hourBlocks,
@@ -55,16 +61,31 @@ export function HourBlocksTableSection({
   onRestore,
   onRequestDestroy,
   emptyMessage,
+  basePath,
 }: HourBlocksTableSectionProps) {
+  const { update, getParam } = useListParams({
+    basePath,
+    resetKeys: ['page'],
+  })
+  const rawSort = getParam('sort')
+  const sort = rawSort && isHourBlockSortValue(rawSort) ? rawSort : undefined
+
   return (
-    <div className='overflow-hidden rounded-xl border'>
-      <Table>
+    <div className='overflow-hidden rounded-lg border'>
+      <Table density='compact'>
         <TableHeader>
           <TableRow className='bg-muted/40'>
             <TableHead>Client</TableHead>
             <TableHead>Invoice #</TableHead>
             <TableHead>Hours purchased</TableHead>
-            <TableHead>Created on</TableHead>
+            <SortableTableHead
+              field='created'
+              sort={sort}
+              defaultSort='created:desc'
+              onSortChange={next => update({ sort: next })}
+            >
+              Created on
+            </SortableTableHead>
             <TableHead className='w-32 text-right'>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -80,12 +101,10 @@ export function HourBlocksTableSection({
             const isRestoring = isPending && pendingRestoreId === block.id
             const isDestroying = isPending && pendingDestroyId === block.id
 
-            const showEdit = mode === 'active'
             const showArchive = mode === 'active'
             const showRestore = mode === 'archive'
             const showDestroy = mode === 'archive'
 
-            const editDisabled = isDeleting || isRestoring || isDestroying
             const archiveDisabled =
               isDeleting || isRestoring || isDestroying || isArchived
             const restoreDisabled =
@@ -111,12 +130,14 @@ export function HourBlocksTableSection({
                 : pendingReason
               : null
 
-            const editDisabledReason = editDisabled ? pendingReason : null
-
             return (
               <TableRow
                 key={block.id}
-                className={isArchived ? 'opacity-60' : undefined}
+                {...getClickableRowProps(() => onEdit(block))}
+                className={cn(
+                  CLICKABLE_ROW_CLASS,
+                  isArchived && ARCHIVED_ROW_CLASS
+                )}
               >
                 <TableCell>
                   <div className='flex items-center gap-2 text-sm'>
@@ -147,30 +168,14 @@ export function HourBlocksTableSection({
                 </TableCell>
                 <TableCell className='text-right'>
                   <div className='flex justify-end gap-2'>
-                    {showEdit ? (
-                      <DisabledFieldTooltip
-                        disabled={editDisabled}
-                        reason={editDisabledReason}
-                      >
-                        <Button
-                          variant='outline'
-                          size='icon'
-                          onClick={() => onEdit(block)}
-                          title='Edit hour block'
-                          disabled={editDisabled}
-                        >
-                          <Pencil className='h-4 w-4' />
-                        </Button>
-                      </DisabledFieldTooltip>
-                    ) : null}
                     {showRestore ? (
                       <DisabledFieldTooltip
                         disabled={restoreDisabled}
                         reason={restoreDisabledReason}
                       >
                         <Button
-                          variant='secondary'
-                          size='icon'
+                          variant='outline'
+                          size='icon-sm'
                           onClick={() => onRestore(block)}
                           title='Restore hour block'
                           aria-label='Restore hour block'
@@ -188,7 +193,7 @@ export function HourBlocksTableSection({
                       >
                         <Button
                           variant='destructive'
-                          size='icon'
+                          size='icon-sm'
                           onClick={() => onRequestDelete(block)}
                           title='Archive hour block'
                           aria-label='Archive hour block'
@@ -206,7 +211,7 @@ export function HourBlocksTableSection({
                       >
                         <Button
                           variant='destructive'
-                          size='icon'
+                          size='icon-sm'
                           onClick={() => onRequestDestroy(block)}
                           title='Permanently delete hour block'
                           aria-label='Permanently delete hour block'

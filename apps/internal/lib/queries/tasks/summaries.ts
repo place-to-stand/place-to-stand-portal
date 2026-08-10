@@ -3,7 +3,7 @@ import 'server-only'
 import { eq } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
-import { ensureClientAccessByTaskId } from '@/lib/auth/permissions'
+import { ensureTaskAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import {
   clients,
@@ -67,7 +67,7 @@ export async function getTaskSummaryForUser(
   user: AppUser,
   taskId: string,
 ): Promise<TaskSummaryRow | null> {
-  await ensureClientAccessByTaskId(user, taskId)
+  await ensureTaskAccess(user, taskId)
 
   const rows = (await db
     .select({

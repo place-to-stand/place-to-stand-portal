@@ -1,15 +1,19 @@
 import type { Metadata } from 'next'
-import { startOfMonth, endOfMonth, format, getMonth, getYear } from 'date-fns'
+import { format, getMonth, getYear } from 'date-fns'
 
 import { ArrowRight } from 'lucide-react'
 
-import { AppShellHeader } from '@/components/layout/app-shell'
+import { PageShell } from '@/components/layout/page-shell'
+import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { requireRole } from '@/lib/auth/session'
 import { getLatestPartnerRates } from '@/lib/billing/partner-rates'
-import { fetchMonthlyCloseReport } from '@/lib/data/reports/monthly-close'
+import { fetchMonthlyCloseView } from '@/lib/data/reports/close'
 
 import { BreakdownSheet } from './_components/breakdown-sheet'
+import { CloseControls } from './_components/close-controls'
+import { ClosedNotice } from './_components/closed-notice'
 import { CloserSection } from './_components/closer-section'
+import { DriftBanner } from './_components/drift-banner'
 import { FormulaNotice } from './_components/formula-notice'
 import { HouseSection } from './_components/house-section'
 import { Net30Section } from './_components/net30-section'
@@ -61,16 +65,22 @@ export default async function MonthlyClosePage({
       : getMonth(now)
   const validYear = Number.isFinite(parsedYear) ? parsedYear : getYear(now)
 
-  // Create Date object and calculate date range using date-fns
+  // Create Date object for display formatting
   const selectedMonth = new Date(validYear, validMonth, 1)
-  const startDate = format(startOfMonth(selectedMonth), 'yyyy-MM-dd')
-  const endDate = format(endOfMonth(selectedMonth), 'yyyy-MM-dd')
 
-  // Fetch report data
-  const report = await fetchMonthlyCloseReport(startDate, endDate)
+  // W4: the URL month param is 0-indexed; the close layer is 1-indexed.
+  const closeMonthNumber = validMonth + 1
+
+  // Fetch report data — snapshot-backed when the month is closed
+  const { report, close } = await fetchMonthlyCloseView(
+    validYear,
+    closeMonthNumber
+  )
 
   // Format month for display
   const displayMonth = format(selectedMonth, 'MMMM yyyy')
+  const isCurrentMonth =
+    validYear === getYear(now) && validMonth === getMonth(now)
 
   // Hide the closer section + column entirely when the period pre-dates the
   // closer cutover (closerPerHour === 0).
@@ -81,25 +91,37 @@ export default async function MonthlyClosePage({
     report.rates.effectiveFrom !== latestRates.effectiveFrom
 
   return (
-    <>
-      <AppShellHeader>
-        <div className='flex flex-col'>
-          <h1 className='text-2xl font-semibold tracking-tight'>
-            Monthly Close Report
-          </h1>
-          <p className='text-muted-foreground text-sm'>
-            End-of-month reconciliation for billing, payroll, origination, and
-            closer commissions.
-          </p>
-        </div>
-      </AppShellHeader>
-
+    <PageShell breadcrumbs={crumbsForNav('/reports/monthly-close')}>
       <div className='space-y-8'>
         <ReportHeader
           displayMonth={displayMonth}
           minCursor={report.minCursor}
           maxCursor={report.maxCursor}
+          closeControls={
+            <CloseControls
+              year={validYear}
+              month={closeMonthNumber}
+              displayMonth={displayMonth}
+              status={close.status}
+              isCurrentMonth={isCurrentMonth}
+            />
+          }
         />
+
+        {close.status === 'closed' && close.drift?.hasDrift ? (
+          <DriftBanner
+            year={validYear}
+            month={closeMonthNumber}
+            displayMonth={displayMonth}
+            drift={close.drift}
+          />
+        ) : close.status === 'closed' ? (
+          <ClosedNotice
+            closedAt={close.closedAt}
+            closedByName={close.closedByName}
+            snapshotError={close.snapshotError}
+          />
+        ) : null}
 
         {isOlderFormula ? (
           <FormulaNotice rates={report.rates} latestRates={latestRates} />
@@ -164,6 +186,6 @@ export default async function MonthlyClosePage({
 
         <PartnerPayoutsSection data={report.partnerPayouts} />
       </div>
-    </>
+    </PageShell>
   )
 }

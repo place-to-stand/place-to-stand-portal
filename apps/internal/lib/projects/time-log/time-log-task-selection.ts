@@ -22,16 +22,30 @@ export type UseTimeLogTaskSelectionResult = {
 }
 
 export function useTimeLogTaskSelection(
-  tasks: ProjectTimeLogDialogParams['tasks']
+  tasks: ProjectTimeLogDialogParams['tasks'],
+  options?: {
+    /**
+     * Task ids that bypass the eligibility filter (task-sheet pre-link, C5):
+     * an accepted task can take hours from its own sheet even though the
+     * picker normally hides accepted tasks. Archived/deleted tasks never
+     * reach here — the sheet disables the Log time button instead.
+     */
+    pinnedTaskIds?: string[]
+  }
 ): UseTimeLogTaskSelectionResult {
+  const pinnedTaskIds = options?.pinnedTaskIds
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([])
   const [isTaskPickerOpen, setIsTaskPickerOpen] = useState(false)
   const [taskRemovalCandidate, setTaskRemovalCandidate] =
     useState<ProjectTask | null>(null)
 
   const eligibleTasks = useMemo(() => {
+    const pinnedSet = new Set(pinnedTaskIds ?? [])
     return tasks
       .filter(task => {
+        if (pinnedSet.has(task.id)) {
+          return true
+        }
         if (task.deleted_at !== null) {
           return false
         }
@@ -49,7 +63,7 @@ export function useTimeLogTaskSelection(
         const bTime = new Date(b.updated_at).getTime()
         return bTime - aTime
       })
-  }, [tasks])
+  }, [pinnedTaskIds, tasks])
 
   const availableTasks = useMemo(() => {
     if (selectedTaskIds.length === 0) {

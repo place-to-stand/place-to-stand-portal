@@ -2,25 +2,26 @@
 
 import { useState, useCallback } from 'react'
 import Link from 'next/link'
-import { format } from 'date-fns'
+import { formatCalendarDate } from '@/lib/dates'
 import {
   Archive,
   Building2,
   Check,
   Copy,
-  Eye,
   ExternalLink,
   Link2,
   Loader2,
-  Pencil,
   RefreshCw,
   Trash2,
 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { Button } from '@pts/ui/button'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
+import { useListParams } from '@/hooks/use-list-params'
+import { isInvoiceSortValue } from '@/lib/invoices/filters'
 import {
   Table,
   TableBody,
@@ -28,9 +29,15 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@pts/ui/table'
 import { useToast } from '@/components/ui/use-toast'
+import { cn } from '@/lib/utils'
 import type { InvoiceWithClient } from '@/lib/invoices/invoice-form'
+import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
+import {
+  CLICKABLE_ROW_CLASS,
+  getClickableRowProps,
+} from '@/lib/table/clickable-row'
 
 export type InvoicesTableMode = 'active' | 'archive'
 
@@ -49,9 +56,9 @@ export type InvoicesTableSectionProps = {
   onSendInvoice: (invoiceId: string) => void
   onRefresh: () => void
   emptyMessage: string
+  /** Route the sort/filter params live on (PRD 004 §03). */
+  basePath: string
 }
-
-const NON_EDITABLE_STATUSES = new Set(['PAID', 'VOID'])
 
 const formatCurrency = (value: string) => {
   try {
@@ -64,15 +71,7 @@ const formatCurrency = (value: string) => {
   }
 }
 
-const formatDate = (value: string | null) => {
-  if (!value) return '\u2014'
-  try {
-    return format(new Date(value), 'MMM d, yyyy')
-  } catch (error) {
-    console.warn('Unable to format invoice date', { value, error })
-    return '\u2014'
-  }
-}
+const formatDate = (value: string | null) => formatCalendarDate(value) ?? '\u2014'
 
 function StatusBadge({ status, dueDate }: { status: string; dueDate: string | null }) {
   const isOverdue =
@@ -243,7 +242,7 @@ function ShareLinkCell({
       </span>
       <Button
         variant='ghost'
-        size='icon'
+        size='icon-sm'
         className='h-6 w-6 flex-shrink-0'
         onClick={handleCopy}
         title='Copy share link'
@@ -256,7 +255,7 @@ function ShareLinkCell({
       </Button>
       <Button
         variant='ghost'
-        size='icon'
+        size='icon-sm'
         className='h-6 w-6 flex-shrink-0'
         onClick={() => window.open(shareUrl, '_blank')}
         title='Open share link'
@@ -282,17 +281,39 @@ export function InvoicesTableSection({
   onSendInvoice,
   onRefresh,
   emptyMessage,
+  basePath,
 }: InvoicesTableSectionProps) {
+  const { update, getParam } = useListParams({
+    basePath,
+    resetKeys: ['page'],
+  })
+  const rawSort = getParam('sort')
+  const sort = rawSort && isInvoiceSortValue(rawSort) ? rawSort : undefined
+
   return (
-    <div className='overflow-hidden rounded-xl border'>
-      <Table>
+    <div className='overflow-hidden rounded-lg border'>
+      <Table density='compact'>
         <TableHeader>
           <TableRow className='bg-muted/40'>
-            <TableHead>Invoice #</TableHead>
+            <SortableTableHead
+              field='number'
+              sort={sort}
+              defaultSort='created:desc'
+              onSortChange={next => update({ sort: next })}
+            >
+              Invoice #
+            </SortableTableHead>
             <TableHead>Client</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Total</TableHead>
-            <TableHead>Issued</TableHead>
+            <SortableTableHead
+              field='created'
+              sort={sort}
+              defaultSort='created:desc'
+              onSortChange={next => update({ sort: next })}
+            >
+              Issued
+            </SortableTableHead>
             <TableHead>Share Link</TableHead>
             <TableHead className='w-28 text-right'>Actions</TableHead>
           </TableRow>
@@ -306,18 +327,13 @@ export function InvoicesTableSection({
             const isDestroying = isPending && pendingDestroyId === invoice.id
             const isBusy = isDeleting || isRestoring || isDestroying
 
-            const isViewOnly = NON_EDITABLE_STATUSES.has(invoice.status)
-            const showEditOrView = mode === 'active'
             const showArchive = mode === 'active'
             const showRestore = mode === 'archive'
             const showDestroy = mode === 'archive'
 
-            const editDisabled = isBusy
             const archiveDisabled = isBusy || isArchived
             const restoreDisabled = isBusy || !isArchived
             const destroyDisabled = isBusy || !isArchived
-
-            const editDisabledReason = editDisabled ? pendingReason : null
 
             const archiveDisabledReason = archiveDisabled
               ? isArchived
@@ -340,7 +356,11 @@ export function InvoicesTableSection({
             return (
               <TableRow
                 key={invoice.id}
-                className={isArchived ? 'opacity-60' : undefined}
+                {...getClickableRowProps(() => onEdit(invoice))}
+                className={cn(
+                  CLICKABLE_ROW_CLASS,
+                  isArchived && ARCHIVED_ROW_CLASS
+                )}
               >
                 <TableCell className='text-sm font-medium'>
                   <div className='flex items-center gap-2'>
@@ -407,33 +427,6 @@ export function InvoicesTableSection({
                 </TableCell>
                 <TableCell className='text-right'>
                   <div className='flex justify-end gap-2'>
-                    {showEditOrView ? (
-                      isViewOnly ? (
-                        <Button
-                          variant='outline'
-                          size='icon'
-                          onClick={() => onEdit(invoice)}
-                          title='View invoice'
-                        >
-                          <Eye className='h-4 w-4' />
-                        </Button>
-                      ) : (
-                        <DisabledFieldTooltip
-                          disabled={editDisabled}
-                          reason={editDisabledReason}
-                        >
-                          <Button
-                            variant='outline'
-                            size='icon'
-                            onClick={() => onEdit(invoice)}
-                            title='Edit invoice'
-                            disabled={editDisabled}
-                          >
-                            <Pencil className='h-4 w-4' />
-                          </Button>
-                        </DisabledFieldTooltip>
-                      )
-                    ) : null}
                     {showArchive ? (
                       <DisabledFieldTooltip
                         disabled={archiveDisabled}
@@ -441,7 +434,7 @@ export function InvoicesTableSection({
                       >
                         <Button
                           variant='destructive'
-                          size='icon'
+                          size='icon-sm'
                           onClick={() => onRequestDelete(invoice)}
                           title='Archive invoice'
                           aria-label='Archive invoice'
@@ -458,8 +451,8 @@ export function InvoicesTableSection({
                         reason={restoreDisabledReason}
                       >
                         <Button
-                          variant='secondary'
-                          size='icon'
+                          variant='outline'
+                          size='icon-sm'
                           onClick={() => onRestore(invoice)}
                           title='Restore invoice'
                           aria-label='Restore invoice'
@@ -477,7 +470,7 @@ export function InvoicesTableSection({
                       >
                         <Button
                           variant='destructive'
-                          size='icon'
+                          size='icon-sm'
                           onClick={() => onRequestDestroy(invoice)}
                           title='Permanently delete invoice'
                           aria-label='Permanently delete invoice'

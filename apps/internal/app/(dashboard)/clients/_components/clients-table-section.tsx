@@ -1,10 +1,13 @@
 'use client'
 
-import { Archive, Building2, Pencil, RefreshCw, Trash2 } from 'lucide-react'
+import { Archive, Building2, RefreshCw, Trash2 } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
+import { useListParams } from '@/hooks/use-list-params'
+import { isClientSortValue } from '@/lib/settings/clients/filters'
 import {
   Table,
   TableBody,
@@ -12,7 +15,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@pts/ui/table'
 
 import { cn } from '@/lib/utils'
 import { getStatusBadgeToken } from '@/lib/constants'
@@ -21,6 +24,11 @@ import {
   CLIENT_BILLING_TYPE_SELECT_OPTIONS,
   type ClientBillingTypeValue,
 } from '@/lib/settings/clients/billing-types'
+import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
+import {
+  CLICKABLE_ROW_CLASS,
+  getClickableRowProps,
+} from '@/lib/table/clickable-row'
 
 const BILLING_TYPE_LABELS = CLIENT_BILLING_TYPE_SELECT_OPTIONS.reduce<
   Record<ClientBillingTypeValue, string>
@@ -42,11 +50,14 @@ export type ClientsTableSectionProps = {
   pendingRestoreId: string | null
   pendingDestroyId: string | null
   emptyMessage: string
+  /** Route the sort/filter params live on (PRD 004 §03). */
+  basePath: string
 }
 
 export function ClientsTableSection({
   clients,
   mode,
+  basePath,
   onEdit,
   onRequestDelete,
   onRestore,
@@ -58,12 +69,26 @@ export function ClientsTableSection({
   pendingDestroyId,
   emptyMessage,
 }: ClientsTableSectionProps) {
+  const { update, getParam } = useListParams({
+    basePath,
+    resetKeys: ['cursor', 'dir'],
+  })
+  const rawSort = getParam('sort')
+  const sort = rawSort && isClientSortValue(rawSort) ? rawSort : undefined
+
   return (
-    <div className='overflow-hidden rounded-xl border'>
-      <Table>
+    <div className='overflow-hidden rounded-lg border'>
+      <Table density='compact'>
         <TableHeader>
           <TableRow className='bg-muted/40'>
-            <TableHead>Name</TableHead>
+            <SortableTableHead
+              field='name'
+              sort={sort}
+              defaultSort='name:asc'
+              onSortChange={next => update({ sort: next })}
+            >
+              Name
+            </SortableTableHead>
             <TableHead>Billing type</TableHead>
             <TableHead>Active projects</TableHead>
             <TableHead>Status</TableHead>
@@ -105,10 +130,6 @@ export function ClientsTableSection({
                 : pendingReason
               : null
 
-            const editDisabled = isDeleting || isRestoring || isDestroying
-            const editDisabledReason = editDisabled ? pendingReason : null
-
-            const showEdit = mode === 'active'
             const showSoftDelete = mode === 'active'
             const showRestore = mode === 'archive'
             const showDestroy = mode === 'archive'
@@ -116,7 +137,11 @@ export function ClientsTableSection({
             return (
               <TableRow
                 key={client.id}
-                className={client.deleted_at ? 'opacity-60' : undefined}
+                {...getClickableRowProps(() => onEdit(client))}
+                className={cn(
+                  CLICKABLE_ROW_CLASS,
+                  client.deleted_at && ARCHIVED_ROW_CLASS
+                )}
               >
                 <TableCell>
                   <div className='flex items-center gap-2'>
@@ -137,30 +162,14 @@ export function ClientsTableSection({
                 </TableCell>
                 <TableCell className='text-right'>
                   <div className='flex justify-end gap-2'>
-                    {showEdit ? (
-                      <DisabledFieldTooltip
-                        disabled={editDisabled}
-                        reason={editDisabledReason}
-                      >
-                        <Button
-                          variant='outline'
-                          size='icon'
-                          onClick={() => onEdit(client)}
-                          title='Edit client'
-                          disabled={editDisabled}
-                        >
-                          <Pencil className='h-4 w-4' />
-                        </Button>
-                      </DisabledFieldTooltip>
-                    ) : null}
                     {showRestore ? (
                       <DisabledFieldTooltip
                         disabled={restoreDisabled}
                         reason={restoreDisabledReason}
                       >
                         <Button
-                          variant='secondary'
-                          size='icon'
+                          variant='outline'
+                          size='icon-sm'
                           onClick={() => onRestore(client)}
                           title='Restore client'
                           aria-label='Restore client'
@@ -178,7 +187,7 @@ export function ClientsTableSection({
                       >
                         <Button
                           variant='destructive'
-                          size='icon'
+                          size='icon-sm'
                           onClick={() => onRequestDelete(client)}
                           title='Delete client'
                           aria-label='Delete client'
@@ -196,7 +205,7 @@ export function ClientsTableSection({
                       >
                         <Button
                           variant='destructive'
-                          size='icon'
+                          size='icon-sm'
                           onClick={() => onRequestDestroy(client)}
                           title='Permanently delete client'
                           aria-label='Permanently delete client'

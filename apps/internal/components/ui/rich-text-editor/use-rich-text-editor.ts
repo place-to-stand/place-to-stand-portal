@@ -14,9 +14,7 @@ import { Selection } from '@tiptap/extensions'
 import LinkExtension from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
 import Underline from '@tiptap/extension-underline'
-import { ImageUploadNode } from '@/components/tiptap-node/image-upload-node/image-upload-node-extension'
 import { HorizontalRule } from '@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node-extension'
-import { handleImageUpload, MAX_FILE_SIZE } from '@/lib/tiptap-utils'
 
 // Import node styles
 import '@/components/tiptap-node/blockquote-node/blockquote-node.scss'
@@ -163,13 +161,10 @@ const buildExtensions = (placeholder?: string) => {
     Placeholder.configure({
       placeholder: placeholder ?? 'Write a description...',
     }),
-    ImageUploadNode.configure({
-      accept: 'image/*',
-      maxSize: MAX_FILE_SIZE,
-      limit: 3,
-      upload: handleImageUpload,
-      onError: error => console.error('Upload failed:', error),
-    }),
+    // ImageUploadNode is intentionally not registered: there is no real
+    // upload backend yet (the old handler was a stub that inserted a
+    // placeholder image and silently lost the file). The Image extension
+    // above stays so previously stored images still render.
   ]
 }
 

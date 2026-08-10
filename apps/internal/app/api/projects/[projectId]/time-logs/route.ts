@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { getCurrentUser } from '@/lib/auth/session'
+import { closedMonthWarning } from '@/lib/data/reports/close'
 import { HttpError } from '@/lib/errors/http'
 import {
   createTimeLog,
@@ -144,7 +145,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
       taskIds: payload.taskIds ?? [],
     })
 
-    return NextResponse.json({ timeLogId }, { status: 201 })
+    // PRD 002 section 05: non-blocking, admin-only closed-month warning.
+    const warning = await closedMonthWarning(user, [payload.loggedOn])
+
+    return NextResponse.json(
+      warning ? { timeLogId, warning } : { timeLogId },
+      { status: 201 }
+    )
   } catch (error) {
     if (error instanceof HttpError) {
       return NextResponse.json({ error: error.message }, { status: error.status })

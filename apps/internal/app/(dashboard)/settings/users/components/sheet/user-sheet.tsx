@@ -1,25 +1,20 @@
 'use client'
 
-import { useCallback, useMemo } from 'react'
-import { Archive, Redo2, Undo2 } from 'lucide-react'
+import { useCallback, useMemo, useState } from 'react'
 
-import { Button } from '@/components/ui/button'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { Form } from '@/components/ui/form'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
+import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
+import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 
 import type { UserSheetProps } from './types'
 import { UserSheetFormFields } from './user-sheet-form-fields'
 import { useUserSheetState } from './use-user-sheet-state'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import { buildDeleteDialogDescription } from '@/lib/settings/users/state/constants'
+
+const USER_FORM_ID = 'user-form'
 
 export function UserSheet(props: UserSheetProps) {
   const {
@@ -38,6 +33,8 @@ export function UserSheet(props: UserSheetProps) {
     submitDisabledReason,
     deleteDisabled,
     deleteDisabledReason,
+    accessToggleDisabled,
+    accessToggleDisabledReason,
     isDeleteDialogOpen,
     pendingReason,
     unsavedChangesDialog,
@@ -48,6 +45,14 @@ export function UserSheet(props: UserSheetProps) {
     handleConfirmDelete,
   } = useUserSheetState(props)
 
+  // Block Save while an avatar upload is in flight — submitting mid-upload
+  // would persist the previous avatar and orphan the staged upload.
+  const [isAvatarUploading, setIsAvatarUploading] = useState(false)
+  const effectiveSubmitDisabled = submitDisabled || isAvatarUploading
+  const effectiveSubmitDisabledReason = isAvatarUploading
+    ? 'Waiting for the avatar upload to finish.'
+    : submitDisabledReason
+
   const handleSave = useCallback(
     () => form.handleSubmit(handleFormSubmit)(),
     [form, handleFormSubmit]
@@ -56,7 +61,7 @@ export function UserSheet(props: UserSheetProps) {
   const { undo, redo, canUndo, canRedo } = useSheetFormControls({
     form,
     isActive: props.open,
-    canSave: !submitDisabled,
+    canSave: !effectiveSubmitDisabled,
     onSave: handleSave,
     historyKey: props.user?.id ?? 'user:new',
   })
@@ -69,98 +74,60 @@ export function UserSheet(props: UserSheetProps) {
   return (
     <>
       <Sheet open={props.open} onOpenChange={handleSheetOpenChange}>
-        <SheetContent className='flex w-full flex-col gap-6 overflow-y-auto pb-32 sm:max-w-lg'>
-          <SheetHeader className='px-6 pt-6'>
-            <SheetTitle>{isEditing ? 'Edit user' : 'Add user'}</SheetTitle>
-            <SheetDescription>
-              {isEditing
-                ? "Update the member's access level or reset their credentials."
-                : 'Provision a new teammate with immediate access to the portal.'}
-            </SheetDescription>
-          </SheetHeader>
+        <SheetContent
+          hideCloseButton
+          size='lg'
+          className='flex w-full flex-col gap-0 overflow-hidden p-0'
+        >
+          <SheetFormHeader
+            entity='user'
+            title={isEditing ? 'Edit user' : 'Add user'}
+          />
           <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(handleFormSubmit)}
-              className='flex flex-1 flex-col gap-5 px-6 pb-32'
-            >
-              <UserSheetFormFields
-                form={form}
-                isPending={isPending}
-                pendingReason={pendingReason}
-                emailDisabled={emailDisabled}
-                emailDisabledReason={emailDisabledReason}
-                roleDisabled={roleDisabled}
-                roleDisabledReason={roleDisabledReason}
-                avatarFieldKey={avatarFieldKey}
-                avatarInitials={avatarInitials}
-                avatarDisplayName={avatarDisplayName}
-                targetUserId={props.user?.id ?? null}
-                isEditing={isEditing}
-                isSheetOpen={props.open}
-              />
-              {feedback ? (
-                <p className='text-destructive text-sm'>{feedback}</p>
-              ) : null}
-              <div className='border-border/40 bg-muted/95 supports-backdrop-filter:bg-muted/90 fixed right-0 bottom-0 z-50 w-full border-t shadow-lg backdrop-blur sm:max-w-lg'>
-                <div className='flex w-full items-center justify-between gap-3 px-6 py-4'>
-                  <div className='flex items-center gap-2'>
-                    <DisabledFieldTooltip
-                      disabled={submitDisabled}
-                      reason={submitDisabledReason}
-                    >
-                      <Button
-                        type='submit'
-                        disabled={submitDisabled}
-                        aria-label={`${isEditing ? 'Save changes' : 'Send invite'} (⌘S / Ctrl+S)`}
-                        title={`${isEditing ? 'Save changes' : 'Send invite'} (⌘S / Ctrl+S)`}
-                      >
-                        {isEditing ? 'Save changes' : 'Send invite'}
-                      </Button>
-                    </DisabledFieldTooltip>
-                    <Button
-                      type='button'
-                      variant='outline'
-                      size='icon'
-                      onClick={undo}
-                      disabled={!canUndo}
-                      aria-label='Undo (⌘Z / Ctrl+Z)'
-                      title='Undo (⌘Z / Ctrl+Z)'
-                    >
-                      <Undo2 className='h-4 w-4' />
-                    </Button>
-                    <Button
-                      type='button'
-                      variant='outline'
-                      size='icon'
-                      onClick={redo}
-                      disabled={!canRedo}
-                      aria-label='Redo (⇧⌘Z / Ctrl+Shift+Z)'
-                      title='Redo (⇧⌘Z / Ctrl+Shift+Z)'
-                    >
-                      <Redo2 className='h-4 w-4' />
-                    </Button>
-                  </div>
-                  {isEditing ? (
-                    <DisabledFieldTooltip
-                      disabled={deleteDisabled}
-                      reason={deleteDisabledReason}
-                    >
-                      <Button
-                        type='button'
-                        variant='destructive'
-                        size='icon'
-                        onClick={handleRequestDelete}
-                        disabled={deleteDisabled}
-                        aria-label='Archive user'
-                        title='Archive user'
-                      >
-                        <Archive className='h-4 w-4' />
-                      </Button>
-                    </DisabledFieldTooltip>
-                  ) : null}
-                </div>
-              </div>
-            </form>
+            <div className='flex-1 overflow-y-auto'>
+              <form
+                id={USER_FORM_ID}
+                onSubmit={form.handleSubmit(handleFormSubmit)}
+                className='flex flex-col gap-5 px-6 pt-6 pb-8'
+              >
+                <UserSheetFormFields
+                  form={form}
+                  isPending={isPending}
+                  pendingReason={pendingReason}
+                  emailDisabled={emailDisabled}
+                  emailDisabledReason={emailDisabledReason}
+                  roleDisabled={roleDisabled}
+                  roleDisabledReason={roleDisabledReason}
+                  accessToggleDisabled={accessToggleDisabled}
+                  accessToggleDisabledReason={accessToggleDisabledReason}
+                  avatarFieldKey={avatarFieldKey}
+                  avatarInitials={avatarInitials}
+                  onAvatarUploadingChange={setIsAvatarUploading}
+                  avatarDisplayName={avatarDisplayName}
+                  targetUserId={props.user?.id ?? null}
+                  isEditing={isEditing}
+                  isSheetOpen={props.open}
+                />
+                {feedback ? (
+                  <p className='text-destructive text-sm'>{feedback}</p>
+                ) : null}
+              </form>
+            </div>
+            <SheetFormFooter
+              formId={USER_FORM_ID}
+              saveLabel={isEditing ? 'Save changes' : 'Send invite'}
+              submitDisabled={effectiveSubmitDisabled}
+              submitDisabledReason={effectiveSubmitDisabledReason}
+              undo={undo}
+              redo={redo}
+              canUndo={canUndo}
+              canRedo={canRedo}
+              isEditing={isEditing}
+              deleteDisabled={deleteDisabled}
+              deleteDisabledReason={deleteDisabledReason}
+              onRequestDelete={handleRequestDelete}
+              deleteAriaLabel='Archive user'
+            />
           </Form>
         </SheetContent>
       </Sheet>

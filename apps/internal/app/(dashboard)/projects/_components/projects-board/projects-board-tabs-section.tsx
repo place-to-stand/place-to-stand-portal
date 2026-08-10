@@ -10,11 +10,9 @@ type NavigationProps = Pick<
   | 'activityHref'
   | 'reviewHref'
   | 'timeLogsHref'
-  | 'scopeHref'
   | 'activityDisabled'
   | 'reviewDisabled'
   | 'timeLogsDisabled'
-  | 'scopeDisabled'
 >
 
 type BoardProps = Pick<
@@ -57,7 +55,6 @@ type ReviewProps = Pick<
   | 'onDestroyTask'
   | 'reviewActionTaskId'
   | 'reviewActionType'
-  | 'reviewActionDisabledReason'
   | 'isReviewActionPending'
 >
 
@@ -68,12 +65,7 @@ type DropProps = Pick<
 
 type TimeLogsProps = Pick<
   ProjectsBoardTabsProps,
-  'currentUserId' | 'currentUserRole' | 'canLogTime' | 'onEditTimeLogEntry'
->
-
-type ScopeProps = Pick<
-  ProjectsBoardTabsProps,
-  'scopeProjectId'
+  'currentUserId' | 'onEditTimeLogEntry'
 >
 
 export type ProjectsBoardTabsSectionProps = {
@@ -84,7 +76,6 @@ export type ProjectsBoardTabsSectionProps = {
   review: ReviewProps
   drop: DropProps
   timeLogs: TimeLogsProps
-  scope: ScopeProps
 }
 
 type ProjectsBoardTabsSectionComponentProps = ProjectsBoardTabsSectionProps & {
@@ -100,7 +91,6 @@ export function ProjectsBoardTabsSection({
   review,
   drop,
   timeLogs,
-  scope,
   projectActions,
   onProjectStatusChange,
 }: ProjectsBoardTabsSectionComponentProps) {
@@ -113,7 +103,6 @@ export function ProjectsBoardTabsSection({
       {...review}
       {...drop}
       {...timeLogs}
-      {...scope}
       projectActions={projectActions}
       onProjectStatusChange={onProjectStatusChange}
     />
