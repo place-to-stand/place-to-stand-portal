@@ -2,6 +2,7 @@ import { forwardRef, type ComponentPropsWithoutRef } from 'react'
 import { User } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
+import { ENTITY_ACCENTS } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 import type { TaskWithRelations } from '@/lib/types'
 
@@ -49,7 +50,7 @@ export const CalendarTaskCardShell = forwardRef<
         !isActive &&
           !isDragging &&
           !isCompleted &&
-          'border-violet-500/35 hover:border-violet-500/60 hover:bg-violet-500/5 hover:shadow-md',
+          ENTITY_ACCENTS.task.card,
         !isActive &&
           !isDragging &&
           isCompleted &&

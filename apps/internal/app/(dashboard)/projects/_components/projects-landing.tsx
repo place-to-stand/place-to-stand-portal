@@ -325,7 +325,7 @@ export function ProjectsLanding({
             )}
             <Link
               href={href}
-              className='flex items-center gap-2 py-1 hover:underline'
+              className='flex items-center gap-2 py-1'
             >
               <FolderKanban className='h-4 w-4 shrink-0 text-emerald-500' />
               <span className='font-medium'>{project.name}</span>

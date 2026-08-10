@@ -2,6 +2,7 @@
 
 import { FilterBar } from '@/components/table-toolbar/filter-bar'
 import { FilterSelect } from '@/components/table-toolbar/filter-select'
+import { ResetFiltersButton } from '@/components/table-toolbar/reset-filters-button'
 import { SearchInput } from '@/components/table-toolbar/search-input'
 import { useListParams } from '@/hooks/use-list-params'
 import {
@@ -28,7 +29,7 @@ export function InvoicesFilters({
   search,
   basePath,
 }: InvoicesFiltersProps) {
-  const { update } = useListParams({
+  const { update, hasActiveFilters, reset } = useListParams({
     basePath,
     resetKeys: ['page'],
     filters: {
@@ -50,6 +51,7 @@ export function InvoicesFilters({
         placeholder='All statuses'
         options={STATUS_OPTIONS}
       />
+      <ResetFiltersButton show={hasActiveFilters} onReset={reset} />
     </FilterBar>
   )
 }

@@ -109,7 +109,7 @@ export function LeadColumn({
       <div
         ref={columnScrollRef}
         onScroll={onColumnScroll}
-        className='flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1'
+        className='flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto'
       >
         <SortableContext
           id={columnId}

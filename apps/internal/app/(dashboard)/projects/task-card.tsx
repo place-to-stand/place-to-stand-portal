@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
+import { ENTITY_ACCENTS } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 import type { ProjectTypeValue, TaskWithRelations, WorkerStatusValue } from '@/lib/types'
 import {
@@ -305,7 +306,7 @@ export function TaskCard({
         !isActive &&
           !isDragging &&
           !isCompleted &&
-          'border-violet-500/35 hover:border-violet-500/60 hover:bg-violet-500/5 hover:shadow-md',
+          ENTITY_ACCENTS.task.card,
         !isActive &&
           !isDragging &&
           isCompleted &&
@@ -338,7 +339,7 @@ export function TaskCardPreview({
     <div
       className={cn(
         'bg-card w-80 rounded-lg border p-4 shadow-sm',
-        isCompleted ? 'opacity-65' : 'border-violet-500/35'
+        isCompleted ? 'opacity-65' : ENTITY_ACCENTS.task.cardStatic
       )}
     >
       <CardContent

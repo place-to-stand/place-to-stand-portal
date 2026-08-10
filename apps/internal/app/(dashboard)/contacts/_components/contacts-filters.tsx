@@ -1,6 +1,7 @@
 'use client'
 
 import { FilterBar } from '@/components/table-toolbar/filter-bar'
+import { ResetFiltersButton } from '@/components/table-toolbar/reset-filters-button'
 import { SearchInput } from '@/components/table-toolbar/search-input'
 import { useListParams } from '@/hooks/use-list-params'
 
@@ -13,7 +14,7 @@ type ContactsFiltersProps = {
 export function ContactsFilters({ search, basePath }: ContactsFiltersProps) {
   // Contacts tables paginate by offset, so `page` is the pagination key
   // cleared on every filter change (not cursor/dir).
-  const { update } = useListParams({
+  const { update, hasActiveFilters, reset } = useListParams({
     basePath,
     resetKeys: ['page'],
     filters: {
@@ -28,6 +29,7 @@ export function ContactsFilters({ search, basePath }: ContactsFiltersProps) {
         onCommit={value => update({ q: value })}
         placeholder='Search contacts…'
       />
+      <ResetFiltersButton show={hasActiveFilters} onReset={reset} />
     </FilterBar>
   )
 }

@@ -14,6 +14,12 @@ Each primary object type is assigned a distinct color from the Tailwind CSS pale
 | **Client** | Blue | `blue` | `#3b82f6` |
 | **Contact** | Cyan | `cyan` | `#06b6d4` |
 | **Suggestion** | Fuchsia | `fuchsia` | `#d946ef` |
+| **Invoice** | Orange | `orange` | `#f97316` |
+| **Hour Block** | Teal | `teal` | `#14b8a6` |
+| **User** | Rose | `rose` | `#f43f5e` |
+| **Submission** | Pink | `pink` | `#ec4899` |
+
+The canonical class strings live in `lib/entity-accents.ts` (`ENTITY_ACCENTS`), which exports the card pattern, static-card pattern, and sheet-header accent per entity. Consume that module rather than re-typing the classes.
 
 ## Visual Application
 
@@ -50,15 +56,12 @@ When adding a new object type (e.g., "Invoice", "Ticket", "Note"), follow these 
 
 ### 1. Choose a Distinct Color
 Select a color from the Tailwind palette that is visually distinct from the existing set.
-*   *Avoid:* Violet, Amber, Emerald, Blue, Cyan, Fuchsia.
+*   *Avoid:* Violet, Amber, Emerald, Blue, Cyan, Fuchsia, Orange, Teal, Rose, Pink.
 *   *Suggested:*
-    *   **Rose** (`rose-500`) for urgent items like Tickets or Alerts.
-    *   **Orange** (`orange-500`) for financial items like Invoices (distinct enough from Amber).
     *   **Slate** (`slate-500`) for neutral or archived items.
-    *   **Pink** (`pink-500`) for social or communication items.
 
 ### 2. Apply the Pattern
-Use the standard class pattern with your chosen color.
+Add the entity to `ENTITY_ACCENTS` in `lib/entity-accents.ts` with the standard class pattern (written out literally so Tailwind's scanner picks the classes up), then consume it from there.
 
 **Example: Creating an `InvoiceCard` (using Orange)**
 

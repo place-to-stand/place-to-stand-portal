@@ -9,6 +9,7 @@ import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { FilterBar } from '@/components/table-toolbar/filter-bar'
 import { FilterSelect } from '@/components/table-toolbar/filter-select'
+import { ResetFiltersButton } from '@/components/table-toolbar/reset-filters-button'
 import { SearchInput } from '@/components/table-toolbar/search-input'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import {
@@ -75,7 +76,7 @@ export function LeadsArchiveSection({
 }: LeadsArchiveSectionProps) {
   const router = useRouter()
   const { toast } = useToast()
-  const { update, getParam } = useListParams({
+  const { update, getParam, hasActiveFilters, reset } = useListParams({
     basePath: '/leads/archive',
     resetKeys: [],
     filters: {
@@ -259,6 +260,7 @@ export function LeadsArchiveSection({
           placeholder='All statuses'
           options={statusOptions}
         />
+        <ResetFiltersButton show={hasActiveFilters} onReset={reset} />
       </FilterBar>
       <div className='rounded-lg border'>
         <Table density='compact'>

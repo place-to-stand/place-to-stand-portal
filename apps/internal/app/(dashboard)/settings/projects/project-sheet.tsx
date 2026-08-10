@@ -1,12 +1,7 @@
 'use client'
 
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
+import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { useMemo } from 'react'
 
 import {
@@ -70,17 +65,15 @@ export function ProjectSheet(props: Props) {
   return (
     <>
       <Sheet open={props.open} onOpenChange={handleSheetOpenChange}>
-        <SheetContent className='flex w-full flex-col gap-6 overflow-y-auto pb-32 sm:max-w-2xl'>
-          <SheetHeader className='border-b-2 border-b-emerald-500/60 px-6 pt-4'>
-            <SheetTitle>
-              {isEditing ? 'Edit project' : 'Add project'}
-            </SheetTitle>
-            <SheetDescription>
-              {isEditing
-                ? 'Adjust metadata, update its client, or delete the project.'
-                : 'Create a project linked to an existing client so work can be tracked.'}
-            </SheetDescription>
-          </SheetHeader>
+        <SheetContent
+          hideCloseButton
+          size='2xl'
+          className='flex w-full flex-col gap-0 overflow-hidden p-0'
+        >
+          <SheetFormHeader
+            entity='project'
+            title={isEditing ? 'Edit project' : 'Add project'}
+          />
           <ProjectSheetForm
             form={form}
             fieldState={fieldState}
