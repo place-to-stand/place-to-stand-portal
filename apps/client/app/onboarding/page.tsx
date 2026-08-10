@@ -18,9 +18,27 @@ export default async function OnboardingPage({ searchParams }: PageProps) {
   const mustResetPassword =
     authData?.user?.user_metadata?.must_reset_password === true
 
-  const hasGoogleIdentity = Boolean(
-    authData?.user?.identities?.some(identity => identity.provider === 'google')
+  // Google is only accepted when it carries the same address the account was
+  // invited under. That keeps one guaranteed email per user, and stops a Google
+  // identity from being attachable to an account it has no relationship to.
+  // Multiple addresses per user is a later feature.
+  const googleIdentity = authData?.user?.identities?.find(
+    identity => identity.provider === 'google'
   )
+  const googleEmail =
+    typeof googleIdentity?.identity_data?.email === 'string'
+      ? googleIdentity.identity_data.email
+      : null
+  const accountEmail = authData?.user?.email ?? null
+
+  const googleLink = googleIdentity
+    ? {
+        email: googleEmail,
+        matchesAccount:
+          Boolean(googleEmail) &&
+          googleEmail?.toLowerCase() === accountEmail?.toLowerCase(),
+      }
+    : null
 
   // `linkIdentity` does a full-page redirect to Google. The wizard's step lives in
   // component state, so without this the user returns to step 0 and the link looks
@@ -35,7 +53,7 @@ export default async function OnboardingPage({ searchParams }: PageProps) {
         fullName: user.full_name,
       }}
       mustResetPassword={mustResetPassword}
-      hasGoogleIdentity={hasGoogleIdentity}
+      googleLink={googleLink}
       returnedFromGoogle={resolved?.step === 'link-return'}
     />
   )

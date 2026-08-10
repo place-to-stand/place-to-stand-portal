@@ -13,11 +13,18 @@ type OnboardingUser = {
   fullName: string | null
 }
 
+/** The Google identity on this account, if one is attached. */
+type GoogleLink = {
+  email: string | null
+  /** Google auth is only honoured when its address matches the account's. */
+  matchesAccount: boolean
+}
+
 type OnboardingWizardProps = {
   user: OnboardingUser
   /** Invite-time flag. Means "hasn't chosen a sign-in method yet". */
   mustResetPassword: boolean
-  hasGoogleIdentity: boolean
+  googleLink: GoogleLink | null
   /** True when the browser just came back from the Google linking redirect. */
   returnedFromGoogle: boolean
 }
@@ -29,7 +36,7 @@ const STEP_DONE = 2
 export function OnboardingWizard({
   user,
   mustResetPassword,
-  hasGoogleIdentity,
+  googleLink,
   returnedFromGoogle,
 }: OnboardingWizardProps) {
   // Returning from Google lands mid-flow, so the opening step is derived rather
@@ -67,7 +74,8 @@ export function OnboardingWizard({
   if (step === STEP_CHOOSE) {
     return (
       <ChooseSignInStep
-        hasGoogleIdentity={hasGoogleIdentity}
+        accountEmail={user.email}
+        googleLink={googleLink}
         returnedFromGoogle={returnedFromGoogle}
         error={error}
         onError={setError}
@@ -99,7 +107,8 @@ export function OnboardingWizard({
 /* ------------------------------------------------------------------ */
 
 type ChooseProps = {
-  hasGoogleIdentity: boolean
+  accountEmail: string
+  googleLink: GoogleLink | null
   returnedFromGoogle: boolean
   error: string | null
   onError: (message: string | null) => void
@@ -112,7 +121,8 @@ type ChooseProps = {
  * whichever they pick here, the others stay available from the sign-in page.
  */
 function ChooseSignInStep({
-  hasGoogleIdentity,
+  accountEmail,
+  googleLink,
   returnedFromGoogle,
   error,
   onError,
@@ -120,24 +130,38 @@ function ChooseSignInStep({
 }: ChooseProps) {
   const [mode, setMode] = useState<'menu' | 'password'>('menu')
 
-  // Google sent the browser back but no identity attached — knowable at render
-  // time, so it needs no effect. Say so rather than silently showing the menu
-  // again as though nothing happened.
-  const linkFailed = returnedFromGoogle && !hasGoogleIdentity
+  // Both failure shapes are knowable at render time, so neither needs an effect.
+  // Google chooses which account signs in, so a mismatch can only be caught on
+  // the way back — and must then be undone, not merely reported.
+  const linkFailed = returnedFromGoogle && !googleLink
+  const linkMismatched =
+    returnedFromGoogle && Boolean(googleLink) && !googleLink?.matchesAccount
+
   const [settling, setSettling] = useState(
-    returnedFromGoogle && hasGoogleIdentity
+    returnedFromGoogle && Boolean(googleLink?.matchesAccount)
   )
 
   const shownError =
     error ??
-    (linkFailed
-      ? "Google linking didn't complete. Pick an option to continue."
-      : null)
+    (linkMismatched
+      ? `That Google account (${googleLink?.email ?? 'unknown'}) doesn't match ${accountEmail}. Sign in with Google using ${accountEmail}, or choose another option.`
+      : linkFailed
+        ? "Google linking didn't complete. Pick an option to continue."
+        : null)
 
   useEffect(() => {
-    if (!returnedFromGoogle || !hasGoogleIdentity) return
+    if (!returnedFromGoogle || !googleLink) return
 
-    // The identity attached, so the choice is made — record it and move on.
+    // A mismatched identity is detached rather than left dangling. Leaving it
+    // would let a client sign in under an address the account was never issued,
+    // which is the guarantee this check exists to hold.
+    if (!googleLink.matchesAccount) {
+      void unlinkGoogleIdentity().catch(unlinkError => {
+        console.error('Failed to detach mismatched Google identity', unlinkError)
+      })
+      return
+    }
+
     void clearMustResetPassword()
       .then(onComplete)
       .catch(() => {
@@ -184,12 +208,18 @@ function ChooseSignInStep({
       )}
 
       <div className="space-y-3">
-        <GoogleSignInButton
-          label="Connect your Google account"
-          redirectTo="/onboarding?step=link-return"
-          onError={onError}
-          linkExisting
-        />
+        <div className="space-y-1">
+          <GoogleSignInButton
+            label="Connect your Google account"
+            redirectTo="/onboarding?step=link-return"
+            onError={onError}
+            linkExisting
+            loginHint={accountEmail}
+          />
+          <p className="text-xs text-muted-foreground">
+            Use the Google account for {accountEmail}.
+          </p>
+        </div>
 
         <Button
           variant="outline"
@@ -260,6 +290,29 @@ async function clearMustResetPassword(): Promise<void> {
   if (error) {
     throw error
   }
+}
+
+/**
+ * Detaches a Google identity whose address doesn't match the account.
+ *
+ * Requires `enable_manual_linking` — the same setting `linkIdentity` needs, so
+ * if linking was possible, unlinking is too.
+ */
+async function unlinkGoogleIdentity(): Promise<void> {
+  const supabase = getSupabaseBrowserClient()
+  const { data, error } = await supabase.auth.getUserIdentities()
+
+  if (error) throw error
+
+  const google = data?.identities?.find(
+    identity => identity.provider === 'google'
+  )
+
+  if (!google) return
+
+  const { error: unlinkError } = await supabase.auth.unlinkIdentity(google)
+
+  if (unlinkError) throw unlinkError
 }
 
 /* ------------------------------------------------------------------ */

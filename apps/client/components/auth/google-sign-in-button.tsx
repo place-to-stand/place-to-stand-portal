@@ -19,6 +19,15 @@ type Props = {
    * never auto-link on an email match.
    */
   linkExisting?: boolean
+  /**
+   * Address to pre-select in Google's account chooser.
+   *
+   * A hint, not a constraint — Google lets the user switch accounts, and nothing
+   * stops them picking another. It exists so the invited address is the default
+   * rather than whichever personal account the browser happens to be signed into,
+   * which is where mismatches otherwise come from.
+   */
+  loginHint?: string
 }
 
 /**
@@ -33,6 +42,7 @@ export function GoogleSignInButton({
   onError,
   label = 'Continue with Google',
   linkExisting = false,
+  loginHint,
 }: Props) {
   const [isPending, setIsPending] = useState(false)
 
@@ -46,6 +56,10 @@ export function GoogleSignInButton({
         : '/auth/callback'
       const options = {
         redirectTo: `${window.location.origin}${callbackPath}`,
+        // Google reads `login_hint` from the authorization URL; Supabase forwards
+        // `queryParams` there verbatim. Omitted entirely when absent rather than
+        // sent empty, which Google treats as a malformed hint.
+        ...(loginHint ? { queryParams: { login_hint: loginHint } } : {}),
       }
 
       const { error } = linkExisting
