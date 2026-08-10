@@ -142,6 +142,18 @@ export function TaskSheet(props: TaskSheetProps) {
   // it only mounts on first expand — after that it stays mounted so the
   // collapse animation has content to slide away.
   const [hasPlanningMounted, setHasPlanningMounted] = useState(false)
+  const planningTaskId = props.task?.id ?? null
+  const [prevPlanningTaskId, setPrevPlanningTaskId] = useState(planningTaskId)
+
+  // The board reuses one TaskSheet instance across tasks — reset planning
+  // state on task switch so a hidden mounted panel can't create planning
+  // sessions for tasks the user never expanded planning on. Adjust-during-
+  // render (not an effect) so React restarts the render immediately.
+  if (prevPlanningTaskId !== planningTaskId) {
+    setPrevPlanningTaskId(planningTaskId)
+    setIsPlanningOpen(false)
+    setHasPlanningMounted(false)
+  }
   const dragCounterRef = useRef(0)
   const attachmentsDisabled = isPending || !props.canManage
   const dropDisabled = attachmentsDisabled || isUploadingAttachments
@@ -502,7 +514,10 @@ export function TaskSheet(props: TaskSheetProps) {
                 then kept mounted so the collapse can animate. */}
             {canDeploy ? (
               <div
-                aria-hidden={!isPlanningOpen}
+                // `inert` (not just aria-hidden) — the mounted-but-collapsed
+                // panel must not keep keyboard-focusable controls in the tab
+                // order.
+                inert={!isPlanningOpen}
                 className={cn(
                   'shrink-0 overflow-hidden transition-[width] duration-300 ease-in-out',
                   isPlanningOpen ? 'w-[560px]' : 'w-0'

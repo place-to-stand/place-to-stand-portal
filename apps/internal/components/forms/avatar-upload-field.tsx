@@ -14,6 +14,8 @@ type Props = {
   value: string | null;
   onChange: (next: string | null) => void;
   onRemovalChange: (removed: boolean) => void;
+  /** Mirror of the in-flight upload state — parents should block Save while true. */
+  onUploadingChange?: (uploading: boolean) => void;
   initials: string;
   displayName?: string | null;
   disabled?: boolean;
@@ -25,6 +27,7 @@ export function AvatarUploadField({
   value,
   onChange,
   onRemovalChange,
+  onUploadingChange,
   initials,
   displayName,
   disabled,
@@ -40,6 +43,10 @@ export function AvatarUploadField({
   // the pending storage folder; the save action moves them into the user's
   // folder, so anything still at this path when we abandon it is an orphan.
   const pendingUploadRef = useRef<string | null>(null);
+  // Set on unmount so an upload that resolves afterwards deletes its own
+  // staged object instead of orphaning it (the unmount cleanup has already
+  // run by then, with pendingUploadRef still null).
+  const isUnmountedRef = useRef(false);
 
   const deletePendingUpload = useCallback(
     (path: string) => {
@@ -74,6 +81,7 @@ export function AvatarUploadField({
       }
 
       setIsUploading(true);
+      onUploadingChange?.(true);
 
       const formData = new FormData();
       formData.append("file", file);
@@ -94,6 +102,15 @@ export function AvatarUploadField({
         }
 
         const payload = (await response.json()) as { path: string };
+
+        // The field unmounted while the upload was in flight (e.g. the form
+        // was saved or the sheet closed) — the result can no longer be
+        // applied, so delete the staged object instead of orphaning it.
+        if (isUnmountedRef.current) {
+          deletePendingUpload(payload.path);
+          return;
+        }
+
         const objectUrl = URL.createObjectURL(file);
 
         // Replacing an earlier unsaved upload — remove the superseded object.
@@ -121,12 +138,20 @@ export function AvatarUploadField({
         });
       } finally {
         setIsUploading(false);
+        onUploadingChange?.(false);
         if (fileInputRef.current) {
           fileInputRef.current.value = "";
         }
       }
     },
-    [deletePendingUpload, onChange, onRemovalChange, targetUserId, toast]
+    [
+      deletePendingUpload,
+      onChange,
+      onRemovalChange,
+      onUploadingChange,
+      targetUserId,
+      toast,
+    ]
   );
 
   const removeAvatar = useCallback(() => {
@@ -179,6 +204,7 @@ export function AvatarUploadField({
   // this delete is a harmless no-op.
   useEffect(() => {
     return () => {
+      isUnmountedRef.current = true;
       if (pendingUploadRef.current) {
         deletePendingUpload(pendingUploadRef.current);
         pendingUploadRef.current = null;

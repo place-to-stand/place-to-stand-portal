@@ -90,6 +90,9 @@ export function EditProfileDialog({ open, onOpenChange, user }: Props) {
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [avatarFieldKey, setAvatarFieldKey] = useState(0)
+  // Block Save while an avatar upload is in flight — submitting mid-upload
+  // would persist the previous avatar and orphan the staged upload.
+  const [isAvatarUploading, setIsAvatarUploading] = useState(false)
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -223,6 +226,7 @@ export function EditProfileDialog({ open, onOpenChange, user }: Props) {
                               shouldDirty: true,
                             })
                           }}
+                          onUploadingChange={setIsAvatarUploading}
                           initials={initials}
                           displayName={currentFullName ?? user.full_name}
                           disabled={disabled}
@@ -346,7 +350,15 @@ export function EditProfileDialog({ open, onOpenChange, user }: Props) {
                 >
                   Cancel
                 </Button>
-                <Button type='submit' disabled={isPending}>
+                <Button
+                  type='submit'
+                  disabled={isPending || isAvatarUploading}
+                  title={
+                    isAvatarUploading
+                      ? 'Waiting for the avatar upload to finish.'
+                      : undefined
+                  }
+                >
                   {isPending ? 'Saving...' : 'Save changes'}
                 </Button>
               </DialogFooter>

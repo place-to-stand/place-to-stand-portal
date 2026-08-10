@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { Form } from '@/components/ui/form'
@@ -45,6 +45,14 @@ export function UserSheet(props: UserSheetProps) {
     handleConfirmDelete,
   } = useUserSheetState(props)
 
+  // Block Save while an avatar upload is in flight — submitting mid-upload
+  // would persist the previous avatar and orphan the staged upload.
+  const [isAvatarUploading, setIsAvatarUploading] = useState(false)
+  const effectiveSubmitDisabled = submitDisabled || isAvatarUploading
+  const effectiveSubmitDisabledReason = isAvatarUploading
+    ? 'Waiting for the avatar upload to finish.'
+    : submitDisabledReason
+
   const handleSave = useCallback(
     () => form.handleSubmit(handleFormSubmit)(),
     [form, handleFormSubmit]
@@ -53,7 +61,7 @@ export function UserSheet(props: UserSheetProps) {
   const { undo, redo, canUndo, canRedo } = useSheetFormControls({
     form,
     isActive: props.open,
-    canSave: !submitDisabled,
+    canSave: !effectiveSubmitDisabled,
     onSave: handleSave,
     historyKey: props.user?.id ?? 'user:new',
   })
@@ -94,6 +102,7 @@ export function UserSheet(props: UserSheetProps) {
                   accessToggleDisabledReason={accessToggleDisabledReason}
                   avatarFieldKey={avatarFieldKey}
                   avatarInitials={avatarInitials}
+                  onAvatarUploadingChange={setIsAvatarUploading}
                   avatarDisplayName={avatarDisplayName}
                   targetUserId={props.user?.id ?? null}
                   isEditing={isEditing}
@@ -107,8 +116,8 @@ export function UserSheet(props: UserSheetProps) {
             <SheetFormFooter
               formId={USER_FORM_ID}
               saveLabel={isEditing ? 'Save changes' : 'Send invite'}
-              submitDisabled={submitDisabled}
-              submitDisabledReason={submitDisabledReason}
+              submitDisabled={effectiveSubmitDisabled}
+              submitDisabledReason={effectiveSubmitDisabledReason}
               undo={undo}
               redo={redo}
               canUndo={canUndo}

@@ -37,6 +37,7 @@ type UserSheetFormFieldsProps = {
   accessToggleDisabledReason: string | null
   avatarFieldKey: number
   avatarInitials: string
+  onAvatarUploadingChange: (uploading: boolean) => void
   avatarDisplayName: string | null
   targetUserId: string | null
   isEditing: boolean
@@ -55,6 +56,7 @@ export function UserSheetFormFields({
   accessToggleDisabledReason,
   avatarFieldKey,
   avatarInitials,
+  onAvatarUploadingChange,
   avatarDisplayName,
   targetUserId,
   isEditing,
@@ -92,6 +94,7 @@ export function UserSheetFormFields({
                     shouldDirty: true,
                   })
                 }}
+                onUploadingChange={onAvatarUploadingChange}
                 initials={avatarInitials}
                 displayName={avatarDisplayName}
                 disabled={isPending}
