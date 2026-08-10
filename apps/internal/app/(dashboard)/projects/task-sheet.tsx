@@ -10,11 +10,10 @@ import {
 } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 
-import { ClipboardList, HelpCircle, X } from 'lucide-react'
+import { ClipboardList, HelpCircle } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
-import { Sheet, SheetClose, SheetContent } from '@/components/ui/sheet'
+import { Sheet, SheetContent } from '@/components/ui/sheet'
 import {
   Tooltip,
   TooltipContent,
@@ -36,9 +35,10 @@ import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 import { ProjectTimeLogDialog } from './_components/project-time-log/project-time-log-dialog'
 import { TimeLogSection } from './_components/task-sheet/time-log-section'
 import { TASK_TIME_LOGS_KEY } from './_components/task-sheet/use-task-time-logs'
+import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
+import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { TaskSheetForm } from './_components/task-sheet/task-sheet-form'
-import { TaskSheetFormFooter } from './_components/task-sheet/form/task-sheet-form-footer'
-import { TaskSheetHeader } from './_components/task-sheet/task-sheet-header'
+import { TASK_FORM_ID } from './_components/task-sheet/form/task-sheet-form'
 import { PlanningPanel } from './_components/task-sheet/planning-panel'
 import { TaskCommentsPanel } from './_components/task-sheet/task-comments-panel'
 import { TaskActivityPanel } from './_components/task-sheet/task-activity-panel'
@@ -80,7 +80,6 @@ export function TaskSheet(props: TaskSheetProps) {
     projectItems,
     projectGroups,
     sheetTitle,
-    projectName,
     deleteDisabled,
     deleteDisabledReason,
     submitDisabled,
@@ -139,6 +138,10 @@ export function TaskSheet(props: TaskSheetProps) {
 
   // Planning panel is collapsed by default; user expands it on demand.
   const [isPlanningOpen, setIsPlanningOpen] = useState(false)
+  // Deferred mount: the panel creates a planning session when it mounts, so
+  // it only mounts on first expand — after that it stays mounted so the
+  // collapse animation has content to slide away.
+  const [hasPlanningMounted, setHasPlanningMounted] = useState(false)
   const dragCounterRef = useRef(0)
   const attachmentsDisabled = isPending || !props.canManage
   const dropDisabled = attachmentsDisabled || isUploadingAttachments
@@ -328,81 +331,37 @@ export function TaskSheet(props: TaskSheetProps) {
     props.task && taskProject?.githubRepos && taskProject.githubRepos.length > 0
   )
 
-  const headerDescription = projectName ? (
-    <>
-      Task belongs to <span className='font-medium'>{projectName}</span>.
-    </>
-  ) : (
-    'Select a project so we know where to track this task.'
-  )
-
   return (
     <>
       <Sheet open={props.open} onOpenChange={handleSheetOpenChange}>
         <SheetContent
           hideCloseButton
           skipMountAnimation={skipMountAnimation}
+          size='2xl'
           className={cn(
-            'flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-[676px]',
-            // Widen to fit the 560px planning panel when it is expanded.
-            canDeploy && isPlanningOpen && 'sm:max-w-[1236px]'
+            'flex w-full flex-col gap-0 overflow-hidden p-0',
+            // Widen for the planning rail (36px) and, when expanded, the
+            // 560px planning panel.
+            props.task &&
+              (canDeploy && isPlanningOpen
+                ? 'sm:max-w-[1268px]'
+                : 'sm:max-w-[708px]')
           )}
+          // Inline so it wins over the primitive's transition classes: the
+          // sheet edge glides in sync with the panel's width transition.
+          style={
+            props.task
+              ? { transition: 'max-width 300ms ease-in-out' }
+              : undefined
+          }
         >
           {/* Header — spans full width */}
-          <TaskSheetHeader
-            title={sheetTitle}
-            description={headerDescription}
-            descriptionAction={
-              canDeploy ? (
-                <Button
-                  variant='ghost'
-                  size='sm'
-                  className='h-7 shrink-0 cursor-pointer gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground'
-                  onClick={() => setIsPlanningOpen(open => !open)}
-                  aria-expanded={isPlanningOpen}
-                >
-                  <ClipboardList className='h-3.5 w-3.5' />
-                  {isPlanningOpen ? 'Hide planning' : 'Planning'}
-                </Button>
-              ) : (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span tabIndex={0} className='inline-flex shrink-0'>
-                        <Button
-                          variant='ghost'
-                          size='sm'
-                          disabled
-                          className='h-7 gap-1.5 px-2 text-xs text-muted-foreground'
-                        >
-                          <ClipboardList className='h-3.5 w-3.5' />
-                          Planning
-                          <HelpCircle className='h-3.5 w-3.5' />
-                        </Button>
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent side='bottom' className='max-w-[220px]'>
-                      Planning needs a GitHub repo linked to this task&rsquo;s
-                      project. Link one in the project&rsquo;s settings to
-                      enable it.
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )
-            }
-          >
-            <SheetClose asChild>
-              <Button variant='ghost' size='icon' className='h-7 w-7 opacity-70 hover:opacity-100'>
-                <X className='h-4 w-4' />
-                <span className='sr-only'>Close</span>
-              </Button>
-            </SheetClose>
-          </TaskSheetHeader>
+          <SheetFormHeader entity='task' title={sheetTitle} />
 
           {/* Two-column body */}
           <div className='flex flex-1 overflow-hidden'>
             {/* Left column: task content */}
-            <div className='flex h-full w-full flex-col sm:w-[676px] sm:shrink-0'>
+            <div className='flex h-full w-full flex-col sm:w-[672px] sm:shrink-0'>
               {/* Scrollable area */}
               <div
                 className='flex flex-1 flex-col gap-6 overflow-y-auto pb-4 pt-6'
@@ -475,7 +434,9 @@ export function TaskSheet(props: TaskSheetProps) {
               </div>
 
               {/* Footer — always at bottom, outside scroll area */}
-              <TaskSheetFormFooter
+              <SheetFormFooter
+                formId={TASK_FORM_ID}
+                deleteAriaLabel='Archive task'
                 saveLabel={saveLabel}
                 submitDisabled={submitDisabled}
                 submitDisabledReason={submitDisabledReason}
@@ -490,16 +451,74 @@ export function TaskSheet(props: TaskSheetProps) {
               />
             </div>
 
-            {/* Right column: planning panel — toggled from the header button */}
-            {props.task &&
-              taskProject?.githubRepos &&
-              taskProject.githubRepos.length > 0 &&
-              isPlanningOpen && (
-                <PlanningPanel
-                  task={props.task}
-                  githubRepos={taskProject.githubRepos}
-                />
-              )}
+            {/* Planning rail — vertical accordion tab, stays left of the panel */}
+            {props.task ? (
+              canDeploy ? (
+                <button
+                  type='button'
+                  onClick={() => {
+                    setHasPlanningMounted(true)
+                    setIsPlanningOpen(open => !open)
+                  }}
+                  aria-expanded={isPlanningOpen}
+                  title={isPlanningOpen ? 'Hide planning' : 'Show planning'}
+                  className={cn(
+                    'text-muted-foreground hover:text-foreground hover:bg-muted/60 flex w-9 shrink-0 cursor-pointer flex-col items-center gap-2 border-l py-3 transition-colors',
+                    isPlanningOpen ? 'bg-muted/60' : 'bg-muted/30'
+                  )}
+                >
+                  <ClipboardList className='h-4 w-4' />
+                  <span className='rotate-180 text-xs font-medium tracking-wide [writing-mode:vertical-rl]'>
+                    Planning
+                  </span>
+                </button>
+              ) : (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div
+                        tabIndex={0}
+                        className='bg-muted/30 text-muted-foreground/50 flex w-9 shrink-0 flex-col items-center gap-2 border-l py-3'
+                      >
+                        <ClipboardList className='h-4 w-4' />
+                        <span className='rotate-180 text-xs font-medium tracking-wide [writing-mode:vertical-rl]'>
+                          Planning
+                        </span>
+                        <HelpCircle className='h-3.5 w-3.5' />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side='left' className='max-w-[220px]'>
+                      Planning needs a GitHub repo linked to this task&rsquo;s
+                      project. Link one in the project&rsquo;s settings to
+                      enable it.
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )
+            ) : null}
+
+            {/* Planning panel — width-animated so it slides open from the rail.
+                Mounted on first expand only (opening a session writes rows),
+                then kept mounted so the collapse can animate. */}
+            {canDeploy ? (
+              <div
+                aria-hidden={!isPlanningOpen}
+                className={cn(
+                  'shrink-0 overflow-hidden transition-[width] duration-300 ease-in-out',
+                  isPlanningOpen ? 'w-[560px]' : 'w-0'
+                )}
+              >
+                {hasPlanningMounted &&
+                  props.task &&
+                  taskProject?.githubRepos &&
+                  taskProject.githubRepos.length > 0 && (
+                    <PlanningPanel
+                      task={props.task}
+                      githubRepos={taskProject.githubRepos}
+                    />
+                  )}
+              </div>
+            ) : null}
           </div>
         </SheetContent>
       </Sheet>

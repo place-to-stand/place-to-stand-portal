@@ -14,6 +14,7 @@ import { CheckCircle, Mail, Phone, User } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { ENTITY_ACCENTS } from '@/lib/entity-accents'
 import {
   Tooltip,
   TooltipContent,
@@ -119,9 +120,7 @@ export const LeadCard = memo(function LeadCard({
         canManage ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
         isDragging && 'ring-primary ring-2',
         (isActive || isDragging) && 'border-primary/50 bg-primary/5 shadow-md',
-        !isActive &&
-          !isDragging &&
-          'border-amber-500/35 hover:border-amber-500/60 hover:bg-amber-500/5 hover:shadow-md'
+        !isActive && !isDragging && ENTITY_ACCENTS.lead.card
       )}
     >
       <LeadCardContent lead={lead} />
@@ -246,7 +245,12 @@ function AnchorRow({ icon: Icon, value, href }: AnchorRowProps) {
 
 export function LeadCardPreview({ lead }: { lead: LeadRecord }) {
   return (
-    <div className='bg-card border-amber-500/35 w-80 rounded-lg border p-4 shadow-sm'>
+    <div
+      className={cn(
+        'bg-card w-80 rounded-lg border p-4 shadow-sm',
+        ENTITY_ACCENTS.lead.cardStatic
+      )}
+    >
       <LeadCardContent lead={lead} />
     </div>
   )

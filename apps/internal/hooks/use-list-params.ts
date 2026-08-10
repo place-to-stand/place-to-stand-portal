@@ -65,6 +65,18 @@ export function useListParams({
     [searchParams]
   )
 
+  /**
+   * Clear every declared filter key back to its default (absent) state.
+   * Removing a param restores its implicit default (e.g. projects' status
+   * filter), and `update` already clears pagination keys.
+   */
+  const reset = useCallback(() => {
+    if (!filters) return
+    update(
+      Object.fromEntries(Object.keys(filters).map(key => [key, undefined]))
+    )
+  }, [filters, update])
+
   const hasActiveFilters = useMemo(() => {
     if (!filters) return false
 
@@ -79,5 +91,5 @@ export function useListParams({
     })
   }, [filters, searchParams])
 
-  return { update, getParam, hasActiveFilters }
+  return { update, getParam, hasActiveFilters, reset }
 }

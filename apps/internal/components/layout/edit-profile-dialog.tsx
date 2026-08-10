@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/use-toast'
+import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import type { AppUser } from '@/lib/auth/session'
 
 function deriveInitials(fullName?: string | null, email?: string | null) {
@@ -127,13 +128,20 @@ export function EditProfileDialog({ open, onOpenChange, user }: Props) {
     onOpenChange(false)
   }, [onOpenChange, resetForm])
 
+  const { requestConfirmation, dialog: unsavedChangesDialog } =
+    useUnsavedChangesWarning({ isDirty: form.formState.isDirty })
+
   const handleOpenChange = (next: boolean) => {
     if (!next && isPending) {
       return
     }
 
     if (!next) {
-      resetForm()
+      requestConfirmation(() => {
+        resetForm()
+        onOpenChange(false)
+      })
+      return
     }
 
     onOpenChange(next)
@@ -179,162 +187,174 @@ export function EditProfileDialog({ open, onOpenChange, user }: Props) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Edit profile</DialogTitle>
-          <DialogDescription>
-            Update your avatar, display name, or password.
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-5'>
-            <FormField
-              control={form.control}
-              name='avatarPath'
-              render={({ field }) => {
-                const disabled = isPending
-                const currentFullName = watchedFullName ?? user.full_name
-                const initials = deriveInitials(currentFullName, user.email)
+    <>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit profile</DialogTitle>
+            <DialogDescription>
+              Update your avatar, display name, or password.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-5'>
+              <FormField
+                control={form.control}
+                name='avatarPath'
+                render={({ field }) => {
+                  const disabled = isPending
+                  const currentFullName = watchedFullName ?? user.full_name
+                  const initials = deriveInitials(currentFullName, user.email)
 
-                return (
-                  <FormItem>
-                    <FormLabel>Avatar</FormLabel>
-                    <FormControl>
-                      <AvatarUploadField
-                        key={avatarFieldKey}
-                        value={field.value ?? null}
-                        onChange={next => {
-                          form.setValue('avatarPath', next, {
-                            shouldDirty: true,
-                          })
-                        }}
-                        onRemovalChange={removed => {
-                          form.setValue('avatarRemoved', removed, {
-                            shouldDirty: true,
-                          })
-                        }}
-                        initials={initials}
-                        displayName={currentFullName ?? user.full_name}
-                        disabled={disabled}
-                        targetUserId={user.id}
-                        existingUserId={user.id}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      This image represents you across the portal.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )
-              }}
-            />
-            <FormField
-              control={form.control}
-              name='fullName'
-              render={({ field }) => {
-                const disabled = isPending
-                const reason = disabled ? pendingReason : null
-
-                return (
-                  <FormItem>
-                    <FormLabel>Full name</FormLabel>
-                    <FormControl>
-                      <DisabledFieldTooltip disabled={disabled} reason={reason}>
-                        <Input
-                          {...field}
-                          value={field.value ?? ''}
-                          placeholder='Ada Lovelace'
-                          autoComplete='name'
+                  return (
+                    <FormItem>
+                      <FormLabel>Avatar</FormLabel>
+                      <FormControl>
+                        <AvatarUploadField
+                          key={avatarFieldKey}
+                          value={field.value ?? null}
+                          onChange={next => {
+                            form.setValue('avatarPath', next, {
+                              shouldDirty: true,
+                            })
+                          }}
+                          onRemovalChange={removed => {
+                            form.setValue('avatarRemoved', removed, {
+                              shouldDirty: true,
+                            })
+                          }}
+                          initials={initials}
+                          displayName={currentFullName ?? user.full_name}
                           disabled={disabled}
+                          targetUserId={user.id}
+                          existingUserId={user.id}
                         />
-                      </DisabledFieldTooltip>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )
-              }}
-            />
-            <FormField
-              control={form.control}
-              name='email'
-              render={({ field }) => {
-                const disabled = isPending
-                const reason = disabled ? pendingReason : null
+                      </FormControl>
+                      <FormDescription>
+                        This image represents you across the portal.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )
+                }}
+              />
+              <FormField
+                control={form.control}
+                name='fullName'
+                render={({ field }) => {
+                  const disabled = isPending
+                  const reason = disabled ? pendingReason : null
 
-                return (
-                  <FormItem>
-                    <FormLabel>Email address</FormLabel>
-                    <FormControl>
-                      <DisabledFieldTooltip disabled={disabled} reason={reason}>
-                        <Input
-                          {...field}
-                          value={field.value ?? ''}
-                          type='email'
-                          placeholder={user.email}
-                          autoComplete='email'
+                  return (
+                    <FormItem>
+                      <FormLabel>Full name</FormLabel>
+                      <FormControl>
+                        <DisabledFieldTooltip
                           disabled={disabled}
-                        />
-                      </DisabledFieldTooltip>
-                    </FormControl>
-                    <FormDescription>
-                      Enter a new email to change it (requires confirmation).
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )
-              }}
-            />
-            <FormField
-              control={form.control}
-              name='password'
-              render={({ field }) => {
-                const disabled = isPending
-                const reason = disabled ? pendingReason : null
+                          reason={reason}
+                        >
+                          <Input
+                            {...field}
+                            value={field.value ?? ''}
+                            placeholder='Ada Lovelace'
+                            autoComplete='name'
+                            disabled={disabled}
+                          />
+                        </DisabledFieldTooltip>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )
+                }}
+              />
+              <FormField
+                control={form.control}
+                name='email'
+                render={({ field }) => {
+                  const disabled = isPending
+                  const reason = disabled ? pendingReason : null
 
-                return (
-                  <FormItem>
-                    <FormLabel>New password</FormLabel>
-                    <FormControl>
-                      <DisabledFieldTooltip disabled={disabled} reason={reason}>
-                        <Input
-                          {...field}
-                          value={field.value ?? ''}
-                          type='password'
-                          autoComplete='new-password'
+                  return (
+                    <FormItem>
+                      <FormLabel>Email address</FormLabel>
+                      <FormControl>
+                        <DisabledFieldTooltip
                           disabled={disabled}
-                        />
-                      </DisabledFieldTooltip>
-                    </FormControl>
-                    <FormDescription>
-                      Leave blank to keep your current password.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )
-              }}
-            />
-            {feedback ? (
-              <p className='border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm'>
-                {feedback}
-              </p>
-            ) : null}
-            <DialogFooter className='flex flex-wrap items-center justify-end gap-3'>
-              <Button
-                type='button'
-                variant='outline'
-                disabled={isPending}
-                onClick={() => handleOpenChange(false)}
-              >
-                Cancel
-              </Button>
-              <Button type='submit' disabled={isPending}>
-                {isPending ? 'Saving...' : 'Save changes'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+                          reason={reason}
+                        >
+                          <Input
+                            {...field}
+                            value={field.value ?? ''}
+                            type='email'
+                            placeholder={user.email}
+                            autoComplete='email'
+                            disabled={disabled}
+                          />
+                        </DisabledFieldTooltip>
+                      </FormControl>
+                      <FormDescription>
+                        Enter a new email to change it (requires confirmation).
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )
+                }}
+              />
+              <FormField
+                control={form.control}
+                name='password'
+                render={({ field }) => {
+                  const disabled = isPending
+                  const reason = disabled ? pendingReason : null
+
+                  return (
+                    <FormItem>
+                      <FormLabel>New password</FormLabel>
+                      <FormControl>
+                        <DisabledFieldTooltip
+                          disabled={disabled}
+                          reason={reason}
+                        >
+                          <Input
+                            {...field}
+                            value={field.value ?? ''}
+                            type='password'
+                            autoComplete='new-password'
+                            disabled={disabled}
+                          />
+                        </DisabledFieldTooltip>
+                      </FormControl>
+                      <FormDescription>
+                        Leave blank to keep your current password.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )
+                }}
+              />
+              {feedback ? (
+                <p className='border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm'>
+                  {feedback}
+                </p>
+              ) : null}
+              <DialogFooter className='flex flex-wrap items-center justify-end gap-3'>
+                <Button
+                  type='button'
+                  variant='outline'
+                  disabled={isPending}
+                  onClick={() => handleOpenChange(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type='submit' disabled={isPending}>
+                  {isPending ? 'Saving...' : 'Save changes'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      {unsavedChangesDialog}
+    </>
   )
 }

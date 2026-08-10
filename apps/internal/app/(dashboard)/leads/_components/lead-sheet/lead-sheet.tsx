@@ -1,260 +1,68 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm, useWatch } from 'react-hook-form'
-import { Archive, Redo2, Undo2 } from 'lucide-react'
-
-import { Button } from '@pts/ui/button'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Form } from '@/components/ui/form'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
-import { useToast } from '@/components/ui/use-toast'
-import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
-import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
+import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
+import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
+import { useLeadSheetState } from '@/lib/leads/use-lead-sheet-state'
+import { cn } from '@/lib/utils'
 
-import { archiveLead, saveLead } from '../../actions'
 import { LeadSheetDialogs } from './lead-sheet-dialogs'
 import { LeadSheetFormFields } from './lead-sheet-form-fields'
 import { LeadSheetHeader } from './lead-sheet-header'
 import { LeadSheetRightColumn } from './lead-sheet-right-column'
-import { leadFormSchema, type LeadFormValues, type LeadSheetProps } from './types'
+import type { LeadSheetProps } from './types'
 
-export function LeadSheet({
-  open,
-  onOpenChange,
-  lead,
-  initialStatus,
-  initialAction = null,
-  assignees,
-  canManage = false,
-  onSuccess,
-  onCreated,
-  initialValues,
-}: LeadSheetProps) {
-  const isEditing = Boolean(lead)
-  const [isSaving, startSaveTransition] = useTransition()
-  const [isArchiving, startArchiveTransition] = useTransition()
-  const hasInitialAction = Boolean(lead && initialAction)
-  const [isArchiveDialogOpen, setArchiveDialogOpen] = useState(false)
-  const [isConvertDialogOpen, setConvertDialogOpen] = useState(() => hasInitialAction && initialAction === 'convert')
-  const { toast } = useToast()
+const LEAD_FORM_ID = 'lead-form'
 
-  const pushActionUrl = useCallback(
-    (action: string) => {
-      if (!lead) return
-      window.history.replaceState(null, '', `/leads/${lead.id}/${action}`)
-    },
-    [lead]
-  )
-
-  const pushLeadUrl = useCallback(() => {
-    if (!lead) return
-    window.history.replaceState(null, '', `/leads/${lead.id}`)
-  }, [lead])
-
-  const canConvert = lead?.status === 'CLOSED_WON' && !lead?.convertedToClientId
-  const isConverted = Boolean(lead?.convertedToClientId)
-
-  const defaultValues = useMemo<LeadFormValues>(
-    () => ({
-      contactName: lead?.contactName ?? initialValues?.contactName ?? '',
-      contactEmail: lead?.contactEmail ?? initialValues?.contactEmail ?? '',
-      contactPhone: lead?.contactPhone ?? '',
-      companyName: lead?.companyName ?? initialValues?.companyName ?? '',
-      companyWebsite: lead?.companyWebsite ?? '',
-      sourceType: lead?.sourceType ?? null,
-      sourceDetail: lead?.sourceDetail ?? '',
-      status: lead?.status ?? initialStatus ?? 'NEW_OPPORTUNITIES',
-      assigneeId: lead?.assigneeId ?? null,
-      notes: lead?.notesHtml ?? initialValues?.notes ?? '',
-    }),
-    [lead, initialStatus, initialValues]
-  )
-
-  const form = useForm<LeadFormValues>({
-    resolver: zodResolver(leadFormSchema),
-    defaultValues,
-  })
-
-  useEffect(() => {
-    form.reset(defaultValues)
-  }, [defaultValues, form])
-
-  const selectedSourceType = useWatch({
-    control: form.control,
-    name: 'sourceType',
-  })
-
-  useEffect(() => {
-    if (!selectedSourceType) {
-      const currentDetail = form.getValues('sourceDetail')
-      if (currentDetail) {
-        form.setValue('sourceDetail', '')
-      }
-    }
-  }, [form, selectedSourceType])
-
-  const submitDisabled = isSaving || isArchiving
-  const historyKey = lead?.id ?? 'lead:new'
-
-  const handleFormSubmit = useCallback(
-    (values: LeadFormValues) => {
-      startSaveTransition(async () => {
-        const result = await saveLead({
-          id: lead?.id,
-          ...values,
-        })
-
-        if (!result.success) {
-          toast({
-            variant: 'destructive',
-            title: 'Unable to save lead',
-            description: result.error ?? 'Please try again.',
-          })
-          return
-        }
-
-        toast({
-          title: isEditing ? 'Lead updated' : 'Lead created',
-          description: isEditing
-            ? 'The lead has been updated successfully.'
-            : 'Your new lead has been added to the pipeline.',
-        })
-
-        form.reset({
-          ...values,
-          contactName: values.contactName ?? '',
-          contactEmail: values.contactEmail ?? '',
-          contactPhone: values.contactPhone ?? '',
-          companyName: values.companyName ?? '',
-          companyWebsite: values.companyWebsite ?? '',
-          sourceType: values.sourceType ?? null,
-          sourceDetail: values.sourceDetail ?? '',
-          status: values.status,
-          assigneeId: values.assigneeId ?? null,
-          notes: values.notes ?? '',
-        })
-
-        setArchiveDialogOpen(false)
-        onOpenChange(false)
-        onSuccess()
-        if (!isEditing && result.leadId) {
-          onCreated?.(result.leadId)
-        }
-      })
-    },
-    [form, isEditing, lead?.id, onOpenChange, onSuccess, onCreated, toast]
-  )
-
-  const handleSaveShortcut = useCallback(
-    () => form.handleSubmit(handleFormSubmit)(),
-    [form, handleFormSubmit]
-  )
-
-  const { undo, redo, canUndo, canRedo } = useSheetFormControls<LeadFormValues>(
-    {
-      form,
-      isActive: open,
-      canSave: !submitDisabled,
-      onSave: handleSaveShortcut,
-      historyKey,
-    }
-  )
-
-  const saveLabel = useMemo(() => {
-    if (isSaving) {
-      return isEditing ? 'Saving...' : 'Creating...'
-    }
-    return isEditing ? 'Save changes' : 'Create lead'
-  }, [isEditing, isSaving])
-
-  const submitDisabledReason = isSaving
-    ? 'Saving lead...'
-    : isArchiving
-      ? 'Archiving lead...'
-      : null
-
-  const archiveDisabledReason = isSaving
-    ? 'Finish saving before archiving.'
-    : isArchiving
-      ? 'Archiving lead...'
-      : null
-
-  const handleArchive = useCallback(() => {
-    if (!lead) return
-
-    startArchiveTransition(async () => {
-      const result = await archiveLead({ leadId: lead.id })
-
-      if (!result.success) {
-        toast({
-          variant: 'destructive',
-          title: 'Unable to archive lead',
-          description: result.error ?? 'Please try again.',
-        })
-        return
-      }
-
-      toast({
-        title: 'Lead archived',
-        description: 'The lead has been archived and removed from the board.',
-      })
-
-      setArchiveDialogOpen(false)
-      onOpenChange(false)
-      onSuccess()
-    })
-  }, [lead, onOpenChange, onSuccess, toast])
-
+export function LeadSheet(props: LeadSheetProps) {
+  const { open, lead, assignees, canManage = false, onSuccess } = props
   const {
-    requestConfirmation: requestCloseConfirmation,
-    dialog: unsavedChangesDialog,
-  } = useUnsavedChangesWarning({
-    isDirty: form.formState.isDirty,
-    title: 'Discard lead changes?',
-    description:
-      'You have unsaved updates for this lead. Continue without saving?',
-    confirmLabel: 'Discard',
-    cancelLabel: 'Keep editing',
-  })
-
-  const handleSheetOpenChange = useCallback(
-    (nextOpen: boolean) => {
-      if (nextOpen) {
-        onOpenChange(true)
-        return
-      }
-
-      requestCloseConfirmation(() => {
-        setArchiveDialogOpen(false)
-        onOpenChange(false)
-      })
-    },
-    [onOpenChange, requestCloseConfirmation]
-  )
+    form,
+    isEditing,
+    isArchiving,
+    isArchiveDialogOpen,
+    setArchiveDialogOpen,
+    isConvertDialogOpen,
+    setConvertDialogOpen,
+    pushActionUrl,
+    pushLeadUrl,
+    canConvert,
+    isConverted,
+    selectedSourceType,
+    submitDisabled,
+    submitDisabledReason,
+    archiveDisabledReason,
+    saveLabel,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    unsavedChangesDialog,
+    handleFormSubmit,
+    handleArchive,
+    handleSheetOpenChange,
+  } = useLeadSheetState(props)
 
   return (
     <>
       <Sheet open={open} onOpenChange={handleSheetOpenChange}>
-        <SheetContent className='flex h-full w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl lg:max-w-6xl'>
+        <SheetContent
+          hideCloseButton
+          size='2xl'
+          className={cn(
+            'flex h-full w-full flex-col gap-0 overflow-hidden p-0',
+            // Edit mode appends the fixed-width task sidebar (320px, 384px at
+            // lg) while the form column stays at the same 672px as add mode.
+            isEditing && 'sm:max-w-[992px] lg:max-w-[1056px]'
+          )}
+        >
           {/* Header */}
-          <div className='flex-shrink-0 border-b-2 border-b-amber-500/60 px-6 pt-4 pb-3'>
-            <SheetHeader className='bg-transparent p-0'>
-              <SheetTitle>{isEditing ? 'Edit lead' : 'New lead'}</SheetTitle>
-              <SheetDescription>
-                {isEditing
-                  ? 'Keep this lead up to date so the pipeline stays accurate.'
-                  : 'Capture lead context, assignees, and next steps to keep deals moving.'}
-              </SheetDescription>
-            </SheetHeader>
-
+          <SheetFormHeader
+            entity='lead'
+            title={isEditing ? 'Edit lead' : 'Add lead'}
+            className='flex-shrink-0'
+          >
             {isEditing && lead && (
               <LeadSheetHeader
                 lead={lead}
@@ -266,16 +74,22 @@ export function LeadSheet({
                 }}
               />
             )}
-          </div>
+          </SheetFormHeader>
 
           {/* Two Column Layout */}
           <Form {...form}>
             <form
+              id={LEAD_FORM_ID}
               className='flex min-h-0 flex-1'
               onSubmit={form.handleSubmit(handleFormSubmit)}
             >
               {/* Left Column - Form Fields */}
-              <div className='flex flex-1 flex-col overflow-hidden border-r'>
+              <div
+                className={cn(
+                  'flex flex-1 flex-col overflow-hidden',
+                  isEditing && lead && 'border-r'
+                )}
+              >
                 <div className='flex-1 overflow-y-auto p-6'>
                   <LeadSheetFormFields
                     control={form.control}
@@ -285,65 +99,21 @@ export function LeadSheet({
                 </div>
 
                 {/* Footer - Attached to left column */}
-                <div className='flex-shrink-0 border-t bg-muted/50 px-6 py-4'>
-                  <div className='flex w-full items-center justify-between gap-3'>
-                    <div className='flex items-center gap-2'>
-                      <DisabledFieldTooltip
-                        disabled={submitDisabled}
-                        reason={submitDisabledReason}
-                      >
-                        <Button
-                          type='submit'
-                          disabled={submitDisabled}
-                          aria-label={`${saveLabel} (⌘S / Ctrl+S)`}
-                          title={`${saveLabel} (⌘S / Ctrl+S)`}
-                        >
-                          {saveLabel}
-                        </Button>
-                      </DisabledFieldTooltip>
-                      <Button
-                        type='button'
-                        variant='outline'
-                        size='icon'
-                        onClick={undo}
-                        disabled={!canUndo}
-                        aria-label='Undo (⌘Z / Ctrl+Z)'
-                        title='Undo (⌘Z / Ctrl+Z)'
-                      >
-                        <Undo2 className='h-4 w-4' />
-                      </Button>
-                      <Button
-                        type='button'
-                        variant='outline'
-                        size='icon'
-                        onClick={redo}
-                        disabled={!canRedo}
-                        aria-label='Redo (⇧⌘Z / Ctrl+Shift+Z)'
-                        title='Redo (⇧⌘Z / Ctrl+Shift+Z)'
-                      >
-                        <Redo2 className='h-4 w-4' />
-                      </Button>
-                    </div>
-                    {isEditing && (
-                      <DisabledFieldTooltip
-                        disabled={submitDisabled}
-                        reason={archiveDisabledReason}
-                      >
-                        <Button
-                          type='button'
-                          variant='destructive'
-                          onClick={() => setArchiveDialogOpen(true)}
-                          disabled={submitDisabled}
-                          aria-label='Archive lead'
-                          title='Archive lead'
-                          size='icon'
-                        >
-                          <Archive className='h-4 w-4' />
-                        </Button>
-                      </DisabledFieldTooltip>
-                    )}
-                  </div>
-                </div>
+                <SheetFormFooter
+                  formId={LEAD_FORM_ID}
+                  saveLabel={saveLabel}
+                  submitDisabled={submitDisabled}
+                  submitDisabledReason={submitDisabledReason}
+                  undo={undo}
+                  redo={redo}
+                  canUndo={canUndo}
+                  canRedo={canRedo}
+                  isEditing={isEditing}
+                  deleteDisabled={submitDisabled}
+                  deleteDisabledReason={archiveDisabledReason}
+                  onRequestDelete={() => setArchiveDialogOpen(true)}
+                  deleteAriaLabel='Archive lead'
+                />
               </div>
 
               {/* Right Column - Tasks (only for editing) */}

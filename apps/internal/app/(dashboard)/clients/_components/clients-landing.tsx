@@ -121,7 +121,7 @@ export function ClientsLanding({ clients }: ClientsLandingProps) {
               <TableCell>
                 <Link
                   href={getClientHref(client)}
-                  className='flex items-center gap-2 py-1 hover:underline'
+                  className='flex items-center gap-2 py-1'
                 >
                   <Building2 className='h-4 w-4 shrink-0 text-blue-500' />
                   <span className='font-medium'>{client.name}</span>

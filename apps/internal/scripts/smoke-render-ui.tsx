@@ -38,6 +38,9 @@ import {
 import { Separator } from '@pts/ui/separator'
 import { Switch } from '@pts/ui/switch'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@pts/ui/tooltip'
+import {
+  Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger,
+} from '../components/ui/sheet'
 
 type Case = { name: string; element: React.ReactElement }
 
@@ -198,6 +201,38 @@ const cases: Case[] = [
           <TooltipContent side='right'>tip</TooltipContent>
         </Tooltip>
       </TooltipProvider>
+    ),
+  },
+  {
+    name: 'sheet (open, entity-sheet shape: size, hideCloseButton, skipMountAnimation)',
+    element: (
+      <Sheet open onOpenChange={noop}>
+        <SheetContent size='lg' hideCloseButton skipMountAnimation>
+          <SheetHeader>
+            <SheetTitle>Edit client</SheetTitle>
+            <SheetDescription>desc</SheetDescription>
+          </SheetHeader>
+          <SheetClose asChild>
+            <Button>close</Button>
+          </SheetClose>
+        </SheetContent>
+      </Sheet>
+    ),
+  },
+  {
+    name: 'sheet (closed, trigger asChild — read-only sheet shape)',
+    element: (
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button>open</Button>
+        </SheetTrigger>
+        <SheetContent size='xl'>
+          <SheetHeader>
+            <SheetTitle>Details</SheetTitle>
+            <SheetDescription>desc</SheetDescription>
+          </SheetHeader>
+        </SheetContent>
+      </Sheet>
     ),
   },
 ]

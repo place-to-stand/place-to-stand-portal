@@ -36,6 +36,24 @@ export function AvatarUploadField({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [cacheBuster, setCacheBuster] = useState<string>(() => String(Date.now()));
   const [isUploading, setIsUploading] = useState(false);
+  // Path of an upload staged this session but not yet saved. Uploads land in
+  // the pending storage folder; the save action moves them into the user's
+  // folder, so anything still at this path when we abandon it is an orphan.
+  const pendingUploadRef = useRef<string | null>(null);
+
+  const deletePendingUpload = useCallback(
+    (path: string) => {
+      void fetch(UPLOAD_ENDPOINT, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path, targetUserId }),
+        keepalive: true,
+      }).catch((error) => {
+        console.error("Failed to clean up pending avatar upload", error);
+      });
+    },
+    [targetUserId]
+  );
 
   const avatarLabel = useMemo(() => displayName ?? initials, [displayName, initials]);
 
@@ -64,10 +82,6 @@ export function AvatarUploadField({
         formData.append("targetUserId", targetUserId);
       }
 
-      if (value) {
-        formData.append("previousPath", value);
-      }
-
       try {
         const response = await fetch(UPLOAD_ENDPOINT, {
           method: "POST",
@@ -81,6 +95,12 @@ export function AvatarUploadField({
 
         const payload = (await response.json()) as { path: string };
         const objectUrl = URL.createObjectURL(file);
+
+        // Replacing an earlier unsaved upload — remove the superseded object.
+        if (pendingUploadRef.current && pendingUploadRef.current !== payload.path) {
+          deletePendingUpload(pendingUploadRef.current);
+        }
+        pendingUploadRef.current = payload.path;
 
         onChange(payload.path);
         onRemovalChange(false);
@@ -106,10 +126,16 @@ export function AvatarUploadField({
         }
       }
     },
-    [onChange, onRemovalChange, targetUserId, toast, value]
+    [deletePendingUpload, onChange, onRemovalChange, targetUserId, toast]
   );
 
   const removeAvatar = useCallback(() => {
+    // An unsaved staged upload can be deleted outright; removal of the saved
+    // avatar stays deferred to the save action via onRemovalChange.
+    if (pendingUploadRef.current) {
+      deletePendingUpload(pendingUploadRef.current);
+      pendingUploadRef.current = null;
+    }
     onChange(null);
     onRemovalChange(true);
     setPreviewUrl((current) => {
@@ -120,7 +146,7 @@ export function AvatarUploadField({
       return null;
     });
     setCacheBuster(String(Date.now()));
-  }, [onChange, onRemovalChange]);
+  }, [deletePendingUpload, onChange, onRemovalChange]);
 
   const remoteImage = useMemo(() => {
     if (previewUrl) {
@@ -146,6 +172,19 @@ export function AvatarUploadField({
       }
     };
   }, [previewUrl]);
+
+  // Abandoned-upload cleanup: if the field unmounts (sheet/dialog closed)
+  // while a staged upload was never saved, delete the orphaned object. After
+  // a successful save the object has been moved out of the pending folder, so
+  // this delete is a harmless no-op.
+  useEffect(() => {
+    return () => {
+      if (pendingUploadRef.current) {
+        deletePendingUpload(pendingUploadRef.current);
+        pendingUploadRef.current = null;
+      }
+    };
+  }, [deletePendingUpload]);
 
 
   return (

@@ -1,6 +1,7 @@
 'use client'
 
 import { FilterBar } from '@/components/table-toolbar/filter-bar'
+import { ResetFiltersButton } from '@/components/table-toolbar/reset-filters-button'
 import { SearchInput } from '@/components/table-toolbar/search-input'
 import { useListParams } from '@/hooks/use-list-params'
 
@@ -11,7 +12,7 @@ type HourBlocksFiltersProps = {
 }
 
 export function HourBlocksFilters({ search, basePath }: HourBlocksFiltersProps) {
-  const { update } = useListParams({
+  const { update, hasActiveFilters, reset } = useListParams({
     basePath,
     resetKeys: ['page'],
     filters: {
@@ -26,6 +27,7 @@ export function HourBlocksFilters({ search, basePath }: HourBlocksFiltersProps) 
         onCommit={value => update({ q: value })}
         placeholder='Search hour blocks…'
       />
+      <ResetFiltersButton show={hasActiveFilters} onReset={reset} />
     </FilterBar>
   )
 }
