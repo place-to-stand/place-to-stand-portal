@@ -1,18 +1,12 @@
 import 'server-only'
 
 import { cache } from 'react'
-import { and, eq, inArray, isNull } from 'drizzle-orm'
+import { and, inArray, isNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import {
-  clients,
-  projects,
-  clientMembers,
-  githubRepoLinks,
-  githubAppInstallations,
-} from '@pts/db/schema'
+import { clients, projects } from '@pts/db/schema'
 import type { AppUser } from '@/lib/auth/session'
-import { isAdmin } from '@/lib/auth/permissions'
+import { resolvePortalScope } from '@/lib/auth/view-as'
 
 export type ClientProject = {
   id: string
@@ -21,31 +15,14 @@ export type ClientProject = {
   slug: string | null
   clientId: string | null
   clientName: string | null
-  hasRepoLinked: boolean
-  repoFullName: string | null
-  hasInstallation: boolean
 }
 
 export const fetchClientProjects = cache(
   async (user: AppUser): Promise<ClientProject[]> => {
-    // Get client IDs the user has access to
-    const memberships = isAdmin(user)
-      ? []
-      : await db
-          .select({ clientId: clientMembers.clientId })
-          .from(clientMembers)
-          .where(
-            and(
-              eq(clientMembers.userId, user.id),
-              isNull(clientMembers.deletedAt)
-            )
-          )
-
-    const clientIds = memberships.map(m => m.clientId)
+    const { clientIds } = await resolvePortalScope(user)
     if (clientIds.length === 0) return []
 
-    // Fetch projects, repo links, installations, and client names in parallel
-    const [projectRows, repoLinks, installations, clientRows] = await Promise.all([
+    const [projectRows, clientRows] = await Promise.all([
       db
         .select({
           id: projects.id,
@@ -56,34 +33,7 @@ export const fetchClientProjects = cache(
         })
         .from(projects)
         .where(
-          and(
-            inArray(projects.clientId, clientIds),
-            isNull(projects.deletedAt)
-          )
-        ),
-      db
-        .select({
-          projectId: githubRepoLinks.projectId,
-          repoFullName: githubRepoLinks.repoFullName,
-        })
-        .from(githubRepoLinks)
-        .where(
-          and(
-            eq(githubRepoLinks.isActive, true),
-            isNull(githubRepoLinks.deletedAt)
-          )
-        ),
-      db
-        .select({
-          clientId: githubAppInstallations.clientId,
-        })
-        .from(githubAppInstallations)
-        .where(
-          and(
-            inArray(githubAppInstallations.clientId, clientIds),
-            eq(githubAppInstallations.status, 'ACTIVE'),
-            isNull(githubAppInstallations.deletedAt)
-          )
+          and(inArray(projects.clientId, clientIds), isNull(projects.deletedAt))
         ),
       db
         .select({ id: clients.id, name: clients.name })
@@ -91,15 +41,7 @@ export const fetchClientProjects = cache(
         .where(inArray(clients.id, clientIds)),
     ])
 
-    const repoLinkMap = new Map(
-      repoLinks.map(r => [r.projectId, r.repoFullName])
-    )
-    const clientsWithInstallation = new Set(
-      installations.map(i => i.clientId)
-    )
-    const clientNameMap = new Map(
-      clientRows.map(c => [c.id, c.name])
-    )
+    const clientNameMap = new Map(clientRows.map(c => [c.id, c.name]))
 
     return projectRows.map(p => ({
       id: p.id,
@@ -107,12 +49,7 @@ export const fetchClientProjects = cache(
       status: p.status,
       slug: p.slug,
       clientId: p.clientId,
-      clientName: p.clientId ? clientNameMap.get(p.clientId) ?? null : null,
-      hasRepoLinked: repoLinkMap.has(p.id),
-      repoFullName: repoLinkMap.get(p.id) ?? null,
-      hasInstallation: p.clientId
-        ? clientsWithInstallation.has(p.clientId)
-        : false,
+      clientName: p.clientId ? (clientNameMap.get(p.clientId) ?? null) : null,
     }))
   }
 )

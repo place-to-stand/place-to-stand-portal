@@ -9,7 +9,7 @@ export default function ProjectNotFound() {
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeftIcon className="size-4" />
-        Back to projects
+        Back to dashboard
       </Link>
       <div className="rounded-lg border border-border p-8 text-center">
         <h2 className="text-lg font-semibold text-foreground">

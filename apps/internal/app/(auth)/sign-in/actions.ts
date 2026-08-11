@@ -85,13 +85,22 @@ export async function signInWithPassword(
   }
 
   // The internal portal is admin-only. Portal (CLIENT) users sign in on the
-  // client portal instead — drop the session and point them there.
+  // client portal instead — drop the session and point them there. The `profile &&`
+  // guard matters: a missing row is "no account", handled separately below.
   if (profile && profile.role !== "ADMIN") {
     await supabase.auth.signOut();
     return { clientPortalUrl: serverEnv.CLIENT_PORTAL_URL };
   }
 
-  await ensureUserProfile(data.user);
+  // A provisioned user can't reach this branch — password sign-in implies an
+  // admin-created account. Handled rather than ignored so the strict-provisioning
+  // contract holds at every call site.
+  const profileResult = await ensureUserProfile(data.user);
+
+  if (profileResult === "not_provisioned") {
+    await supabase.auth.signOut();
+    redirect("/account-not-set-up");
+  }
 
   const mustReset = Boolean(
     (data.user.user_metadata?.must_reset_password as boolean | undefined)
@@ -137,12 +146,18 @@ export async function sendMagicLink(input: {
     email,
     options: {
       emailRedirectTo: `${origin}${callbackPath}`,
+      // Defaults to true, which would mint an `auth.users` row for any address
+      // typed into the box. Strict provisioning stops a self-provisioned user
+      // getting a `users` row; this stops them getting an auth user at all.
+      shouldCreateUser: false,
     },
   });
 
   if (error) {
+    // Logged, never surfaced. With shouldCreateUser: false, Supabase errors on
+    // unknown addresses — reporting that difference would turn this form into an
+    // account-enumeration oracle. The caller shows the same copy either way.
     console.error("Failed to send magic link", error);
-    return { error: "We couldn't send the link. Please try again." };
   }
 
   return { success: true };

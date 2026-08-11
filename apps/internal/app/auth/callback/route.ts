@@ -36,7 +36,19 @@ export async function GET(request: NextRequest) {
   }
 
   if (data.user) {
-    await ensureUserProfile(data.user);
+    const result = await ensureUserProfile(data.user);
+
+    // Two distinct rejections, deliberately not collapsed into one role check.
+    // "No account" and "wrong app" are different facts and get different pages;
+    // `profile?.role !== "ADMIN"` alone would be true for both.
+    if (result === "not_provisioned") {
+      // Sign out rather than leaving a valid session that resolves to no profile —
+      // otherwise every subsequent request re-runs this redirect.
+      await supabase.auth.signOut();
+      return NextResponse.redirect(
+        new URL("/account-not-set-up", request.url)
+      );
+    }
 
     // The internal portal is admin-only. Portal (CLIENT) users belong on the
     // client portal — drop the session and send them there.

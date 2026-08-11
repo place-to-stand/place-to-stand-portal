@@ -147,7 +147,25 @@ enabled = true
 # in emails.
 site_url = "http://127.0.0.1:3000"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["https://127.0.0.1:3000"]
+# Both `127.0.0.1` and `localhost` are listed because Supabase compares these as strings while
+# the apps are reached under either host. :3000 is internal, :3001 is the client portal.
+#
+# The `/auth/**` glob is load-bearing, not laziness. A bare entry like
+# ".../auth/callback" matches ONLY that exact string, so appending a query —
+# "/auth/callback?redirect_to=%2Fonboarding", which both the invite link and the Google
+# linking flow do — fails the match. On failure Supabase does not error: it silently
+# substitutes site_url, so a portal user lands on the internal app at :3000 holding a token
+# that app never consumes. The glob covers the query-string forms as well.
+#
+# Hosted Supabase needs these same patterns under Authentication > URL Configuration, with
+# production hosts, or production reproduces the bug exactly.
+additional_redirect_urls = [
+  "https://127.0.0.1:3000",
+  "http://127.0.0.1:3000/auth/**",
+  "http://localhost:3000/auth/**",
+  "http://127.0.0.1:3001/auth/**",
+  "http://localhost:3001/auth/**",
+]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to the local API URL (http://127.0.0.1:<port>/auth/v1).
@@ -163,8 +181,11 @@ refresh_token_reuse_interval = 10
 enable_signup = true
 # Allow/disallow anonymous sign-ins to your project.
 enable_anonymous_sign_ins = false
-# Allow/disallow testing manual linking of accounts
-enable_manual_linking = false
+# Allow/disallow testing manual linking of accounts.
+# Required by `supabase.auth.linkIdentity()`, which onboarding uses to attach a Google identity
+# to the auth user created at invite time — including when the Google address differs from the
+# invited one. Without this the call fails at runtime.
+enable_manual_linking = true
 # Passwords shorter than this value will be rejected as weak. Minimum 6, recommended 8 or more.
 minimum_password_length = 6
 # Passwords that do not meet the following requirements will be rejected as weak. Supported values
@@ -173,7 +194,10 @@ password_requirements = ""
 
 [auth.rate_limit]
 # Number of emails that can be sent per hour. Requires auth.email.smtp to be enabled.
-email_sent = 2
+# Raised for local magic-link testing only — this file does not configure hosted Supabase.
+# Do NOT mirror this value in the dashboard: the sign-in page lets an unauthenticated visitor
+# trigger mail to any address, so the hosted limit is an abuse control.
+email_sent = 30
 # Number of SMS messages that can be sent per hour. Requires auth.sms to be enabled.
 sms_sent = 30
 # Number of anonymous sign-ins that can be made per hour per IP address. Requires enable_anonymous_sign_ins = true.
@@ -296,6 +320,21 @@ max_frequency = "5s"
 # Use an external OAuth provider. The full list of providers are: `apple`, `azure`, `bitbucket`,
 # `discord`, `facebook`, `github`, `gitlab`, `google`, `keycloak`, `linkedin_oidc`, `notion`, `twitch`,
 # `twitter`, `slack`, `spotify`, `workos`, `zoom`.
+[auth.external.google]
+enabled = true
+client_id = "env(SUPABASE_AUTH_GOOGLE_CLIENT_ID)"
+# DO NOT commit your OAuth provider secret to git. Use environment variable substitution instead:
+secret = "env(SUPABASE_AUTH_GOOGLE_SECRET)"
+# Supabase's own callback, NOT an app route. Both apps send the browser to Google, Google returns
+# here, and Supabase then redirects on to the app's /auth/callback. Pointing this at an app route
+# produces a `redirect_uri_mismatch` from Google that reads like an app bug but is config.
+# The Google OAuth client must list this URL *and* the hosted equivalent:
+#   https://<project-ref>.supabase.co/auth/v1/callback
+redirect_uri = "http://127.0.0.1:54321/auth/v1/callback"
+# Required for local sign-in with Google (per Supabase's own guidance in the Apple block below).
+# Local-only: this file does not configure hosted Supabase, where the nonce check stays on.
+skip_nonce_check = true
+
 [auth.external.apple]
 enabled = false
 client_id = ""

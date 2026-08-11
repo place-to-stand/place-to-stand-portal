@@ -1,12 +1,13 @@
 "use client";
 
-import { useActionState, useRef, useState, useTransition } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { Loader2, Mail } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@pts/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@pts/ui/label";
+import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 
 import {
   signInWithPassword,
@@ -16,6 +17,12 @@ import {
 import { ClientPortalNotice } from "./client-portal-notice";
 
 const INITIAL_STATE: SignInState = {};
+
+/**
+ * Hosted Supabase enforces an emails-per-hour limit. Without a visible cooldown a
+ * user who clicks twice hits an opaque failure and assumes the feature is broken.
+ */
+const MAGIC_LINK_COOLDOWN_SECONDS = 30;
 
 type Props = {
   redirectTo?: string;
@@ -34,8 +41,15 @@ export function SignInForm({ redirectTo }: Props) {
     success?: boolean;
   }>({});
   const [isMagicLinkPending, startMagicLinkTransition] = useTransition();
+  const [cooldown, setCooldown] = useState(0);
 
   const isPending = isPendingPassword || isMagicLinkPending;
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setTimeout(() => setCooldown((value) => value - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [cooldown]);
 
   function handleMagicLink() {
     const email = emailRef.current?.value?.trim();
@@ -48,6 +62,9 @@ export function SignInForm({ redirectTo }: Props) {
       setMagicLinkFeedback({});
       const result = await sendMagicLink({ email, redirectTo });
       setMagicLinkFeedback(result);
+      if (result.success) {
+        setCooldown(MAGIC_LINK_COOLDOWN_SECONDS);
+      }
     });
   }
 
@@ -118,26 +135,41 @@ export function SignInForm({ redirectTo }: Props) {
         </div>
       </div>
 
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full"
-        disabled={isPending}
-        onClick={handleMagicLink}
-      >
-        {isMagicLinkPending ? (
-          <span className="inline-flex items-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin" /> Sending...
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-2">
-            <Mail className="h-4 w-4" /> Send magic link
-          </span>
-        )}
-      </Button>
+      <div className="space-y-3">
+        <GoogleSignInButton
+          redirectTo={redirectTo}
+          disabled={isPending}
+          onError={(message) => setMagicLinkFeedback({ error: message })}
+        />
+
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          disabled={isPending || cooldown > 0}
+          onClick={handleMagicLink}
+        >
+          {isMagicLinkPending ? (
+            <span className="inline-flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" /> Sending...
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-2">
+              <Mail className="h-4 w-4" />
+              {cooldown > 0
+                ? `Resend in ${cooldown}s`
+                : "Email me a sign-in link"}
+            </span>
+          )}
+        </Button>
+      </div>
+
       {magicLinkFeedback.success ? (
+        // Deliberately non-committal: the action returns success for unknown
+        // addresses too, so this copy can't be used to probe for accounts.
         <p className="text-center text-sm text-muted-foreground">
-          Check your email for a sign-in link.
+          If an account exists for that email, we&apos;ve sent a sign-in link.
+          Check your inbox.
         </p>
       ) : null}
       {magicLinkFeedback.error ? (

@@ -1,13 +1,16 @@
+import { headers } from 'next/headers'
 import { eq } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
+import { serverEnv } from '@/lib/env.server'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'
 
 import {
   cleanupAvatar,
+  dispatchAdminInvite,
   dispatchPortalInvite,
   finalizeUserAvatar,
   generateTemporaryPassword,
@@ -107,11 +110,30 @@ export async function createPortalUser(
   }
 
   try {
-    await dispatchPortalInvite({
-      email: input.email,
-      fullName: input.fullName,
-      temporaryPassword,
-    })
+    if (input.role === 'ADMIN') {
+      // Admin accounts keep the temp-password flow: the proxy forces a reset on
+      // first sign-in, and the sign-in-method choice is portal-only.
+      const headersList = await headers()
+      const baseUrl =
+        headersList.get('origin') ??
+        serverEnv.APP_BASE_URL ??
+        'http://localhost:3000'
+
+      await dispatchAdminInvite({
+        email: input.email,
+        fullName: input.fullName,
+        temporaryPassword,
+        baseUrl,
+      })
+    } else {
+      // Clients get a sign-in link instead. `temporaryPassword` above is still
+      // set on the account but never disclosed — it keeps /forgot-password
+      // working for clients who pick a passwordless method during onboarding.
+      await dispatchPortalInvite({
+        email: input.email,
+        fullName: input.fullName,
+      })
+    }
   } catch (error) {
     console.error('Failed to dispatch portal invite', error)
     try {

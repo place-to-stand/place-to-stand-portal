@@ -5,11 +5,9 @@ import Link from 'next/link'
 import { ArrowLeftIcon } from 'lucide-react'
 
 import { requireClientUser } from '@/lib/auth/session'
-import { ensureClientAccess, isAdmin } from '@/lib/auth/permissions'
 import { fetchProjectDetail } from '@/lib/data/project-detail'
-import { Badge } from '@/components/ui/badge'
-import { GitHubSection } from '@/components/github/github-section'
-import { GitHubSuccessBanner } from '@/components/github/github-success-banner'
+import { fetchProjectTasks } from '@/lib/data/tasks'
+import { ProjectTaskList } from '@/components/tasks/project-task-list'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -25,37 +23,31 @@ export default async function ProjectDetailPage({
   }
 
   const user = await requireClientUser()
-  const project = await fetchProjectDetail(projectId)
+
+  // fetchProjectDetail enforces access; it returns null for anything outside
+  // the caller's portal scope.
+  const project = await fetchProjectDetail(user, projectId)
 
   if (!project) {
     notFound()
   }
 
-  // Verify access
-  if (project.clientId && !isAdmin(user)) {
-    await ensureClientAccess(user, project.clientId)
-  }
+  // Re-checks access internally; the fetchProjectDetail call above is cached.
+  const tasks = await fetchProjectTasks(user, projectId)
 
   return (
     <div className="space-y-6">
-      <GitHubSuccessBanner />
-
       <Link
         href="/"
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeftIcon className="size-4" />
-        Back to projects
+        Back to dashboard
       </Link>
 
-      <div className="flex items-start justify-between gap-3">
-        <h1 className="text-2xl font-bold text-foreground">{project.name}</h1>
-        <Badge variant="secondary" className="shrink-0">
-          {project.status}
-        </Badge>
-      </div>
+      <h1 className="text-2xl font-bold text-foreground">{project.name}</h1>
 
-      <GitHubSection project={project} />
+      <ProjectTaskList tasks={tasks} />
     </div>
   )
 }

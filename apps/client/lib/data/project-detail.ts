@@ -4,11 +4,9 @@ import { cache } from 'react'
 import { and, eq, isNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import {
-  projects,
-  githubRepoLinks,
-  githubAppInstallations,
-} from '@pts/db/schema'
+import { projects } from '@pts/db/schema'
+import type { AppUser } from '@/lib/auth/session'
+import { resolvePortalScope } from '@/lib/auth/view-as'
 
 export type ProjectDetail = {
   id: string
@@ -16,24 +14,17 @@ export type ProjectDetail = {
   status: string
   slug: string | null
   clientId: string | null
-  github:
-    | { state: 'no_installation' }
-    | {
-        state: 'installed'
-        installationAccountLogin: string
-        installationAccountAvatarUrl: string | null
-      }
-    | {
-        state: 'linked'
-        repoFullName: string
-        repoOwner: string
-        repoName: string
-        defaultBranch: string
-      }
 }
 
+/**
+ * Load a project for the client portal.
+ *
+ * SECURITY: authorization lives here rather than in the calling page so a new
+ * caller cannot forget it. Returns null instead of throwing on a denied project
+ * so the caller's notFound() does not confirm that the id exists.
+ */
 export const fetchProjectDetail = cache(
-  async (projectId: string): Promise<ProjectDetail | null> => {
+  async (user: AppUser, projectId: string): Promise<ProjectDetail | null> => {
     const [project] = await db
       .select({
         id: projects.id,
@@ -48,70 +39,14 @@ export const fetchProjectDetail = cache(
 
     if (!project) return null
 
-    // Fetch repo link and installation in parallel
-    const [repoLink, installation] = await Promise.all([
-      db
-        .select({
-          repoFullName: githubRepoLinks.repoFullName,
-          repoOwner: githubRepoLinks.repoOwner,
-          repoName: githubRepoLinks.repoName,
-          defaultBranch: githubRepoLinks.defaultBranch,
-        })
-        .from(githubRepoLinks)
-        .where(
-          and(
-            eq(githubRepoLinks.projectId, projectId),
-            eq(githubRepoLinks.isActive, true),
-            isNull(githubRepoLinks.deletedAt)
-          )
-        )
-        .limit(1)
-        .then(rows => rows[0] ?? null),
-      project.clientId
-        ? db
-            .select({
-              accountLogin: githubAppInstallations.accountLogin,
-              accountAvatarUrl: githubAppInstallations.accountAvatarUrl,
-            })
-            .from(githubAppInstallations)
-            .where(
-              and(
-                eq(githubAppInstallations.clientId, project.clientId),
-                eq(githubAppInstallations.status, 'ACTIVE'),
-                isNull(githubAppInstallations.deletedAt)
-              )
-            )
-            .limit(1)
-            .then(rows => rows[0] ?? null)
-        : null,
-    ])
+    // INTERNAL and PERSONAL projects carry no client_id. They are never surfaced
+    // in the client portal, so refuse them outright — including for admins,
+    // whose preview should show exactly what a client would see.
+    if (!project.clientId) return null
 
-    let github: ProjectDetail['github']
-    if (repoLink) {
-      github = {
-        state: 'linked',
-        repoFullName: repoLink.repoFullName,
-        repoOwner: repoLink.repoOwner,
-        repoName: repoLink.repoName,
-        defaultBranch: repoLink.defaultBranch,
-      }
-    } else if (installation) {
-      github = {
-        state: 'installed',
-        installationAccountLogin: installation.accountLogin,
-        installationAccountAvatarUrl: installation.accountAvatarUrl,
-      }
-    } else {
-      github = { state: 'no_installation' }
-    }
+    const { clientIds } = await resolvePortalScope(user)
+    if (!clientIds.includes(project.clientId)) return null
 
-    return {
-      id: project.id,
-      name: project.name,
-      status: project.status,
-      slug: project.slug,
-      clientId: project.clientId,
-      github,
-    }
+    return project
   }
 )

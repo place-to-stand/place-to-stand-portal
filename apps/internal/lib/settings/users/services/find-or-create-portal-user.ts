@@ -7,10 +7,7 @@ import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'
 
-import {
-  dispatchPortalInvite,
-  generateTemporaryPassword,
-} from '../user-service'
+import { dispatchPortalInvite } from '../user-service'
 import { createPortalUser } from './create-user'
 import type { UserServiceResult } from '../types'
 
@@ -87,12 +84,16 @@ export async function findOrCreatePortalUser(
     })
   }
 
-  // 6. Reset their password and send an invite so they can sign in
+  // 6. Confirm the account and send an invite so they can sign in.
+  //
+  // Deliberately does NOT set a password. This user already exists, so they may
+  // have chosen their own — overwriting it would lock them out of a credential
+  // they believe they have, and for anyone signing in with Google it would be
+  // destroying a credential to no purpose. The invite link below is what gets
+  // them in; `/forgot-password` covers them if they want a password back.
   const adminClient = getSupabaseServiceClient()
-  const temporaryPassword = generateTemporaryPassword()
 
   const updateResult = await adminClient.auth.admin.updateUserById(authUserId, {
-    password: temporaryPassword,
     email_confirm: true,
     user_metadata: {
       full_name: input.fullName ?? input.email,
@@ -102,19 +103,20 @@ export async function findOrCreatePortalUser(
   })
 
   if (updateResult.error) {
-    console.error('Failed to reset password for existing auth user', updateResult.error)
-    return { error: 'Unable to reset credentials for existing account.' }
+    console.error('Failed to update existing auth user', updateResult.error)
+    return { error: 'Unable to update the existing account.' }
   }
 
   try {
     await dispatchPortalInvite({
       email: input.email,
       fullName: input.fullName ?? input.email,
-      temporaryPassword,
     })
   } catch (error) {
     console.error('Failed to send invite to existing auth user', error)
-    // Non-fatal: user account is linked, they just won't get the email
+    // Non-fatal: the account is linked, they just won't get the email. Unlike
+    // createPortalUser there is nothing to roll back — the contact is real and
+    // already associated. They can request a link from the sign-in page.
   }
 
   return { userId: authUserId }

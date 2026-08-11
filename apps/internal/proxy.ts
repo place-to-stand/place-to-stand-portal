@@ -8,9 +8,15 @@ const PUBLIC_PATHS = new Set([
   '/unauthorized',
   '/forgot-password',
   '/reset-password',
-  // Email-based auth callbacks (magic link token_hash, PKCE code exchange).
-  // These arrive unauthenticated by definition and verify their own tokens.
+  // Auth callbacks must run before a session exists — magic link (token_hash)
+  // and OAuth (PKCE code) both land here carrying something to exchange. Gating
+  // them on authentication bounces the visitor to /sign-in before the exchange
+  // can happen, which reads as "the link did nothing". The routes verify their
+  // own tokens.
   '/auth/',
+  // Reached only after being signed out (strict provisioning), so by definition
+  // the visitor is unauthenticated when it renders.
+  '/account-not-set-up',
   '/share/',
   '/api/integrations/leads-intake',
   '/api/integrations/audit-responses',
