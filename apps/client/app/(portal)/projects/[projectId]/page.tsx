@@ -42,7 +42,7 @@ export default async function ProjectDetailPage({
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeftIcon className="size-4" />
-        Back to projects
+        Back to dashboard
       </Link>
 
       <h1 className="text-2xl font-bold text-foreground">{project.name}</h1>
