@@ -188,7 +188,6 @@ export function useProjectsBoardViewModel({
       currentUserId: props.currentUserId,
       defaultStatus: boardState.defaultTaskStatus,
       defaultDueOn: boardState.defaultTaskDueOn,
-      onTaskCreated: boardState.handleTaskCreated,
     },
     timeLogState: {
       isOpen: timeLogDialogs.isTimeLogDialogOpen,
