@@ -1,9 +1,16 @@
 # PRD 002 — Google + Magic Link Authentication
 
-**Status:** Planned — awaiting review
+**Status:** Implemented (2026-08-10) — deployed nowhere yet; see [Deploy checklist](#deploy-checklist)
 **Apps:** `apps/client/`, `apps/internal/`, `supabase/config.toml`
 **Depends on:** A Google OAuth client + the provider enabled in hosted Supabase (Kris)
 **Blocks:** Client portal invoices — we confirm auth works before starting those
+**Branch/PR:** `feat/client-portal-billing-and-auth` — [#122](https://github.com/place-to-stand/place-to-stand-portal/pull/122)
+
+> **This document was reconciled against the code on 2026-08-11.** One decision reversed
+> during implementation — D7, and with it §5's linking rules. The test plan has been
+> rewritten in plain steps numbered 1–18; the old T-codes are gone. The reversal is
+> recorded in place rather than rewritten away; see [Reversed during implementation](#reversed-during-implementation).
+> Sections not marked otherwise describe what shipped.
 
 ---
 
@@ -25,11 +32,11 @@ The invite email stays the single entry point to every account (D6), but stops c
 | D4 | Google works in local dev via `[auth.external.google]` in `config.toml` reading env vars. |
 | D5 | **One auth user, many identities.** Password, magic link and Google are alternative doors into the *same* `auth.users` row — an OR, not a fork. A user may end up with one or several. Any flow that mints a **second** auth user for a person who already has one is a bug, not an acceptable variant. |
 | D6 | **Email is the only entry point — client portal only (O1).** Every client account starts from the invite email; the sign-in method is chosen *afterwards*, during onboarding, and can be added to later. Google and magic link are ways back in for provisioned users, never first-time entry points for a stranger. Internal admins are out of scope: their accounts already exist and their temp-password + forced-reset flow stays as-is. |
-| D7 | Mismatched Google email handled with `linkIdentity()` during onboarding, while already authenticated. |
+| D7 | ~~Mismatched Google email handled with `linkIdentity()` during onboarding, while already authenticated.~~ **Reversed 2026-08-10.** A Google account is only accepted when its address matches the address the account was invited under. One email per user; multiple addresses per user is later work. See [Reversed during implementation](#reversed-during-implementation). |
 
 ## Resolved — earlier questions
 
-- **Q1 — one auth user per person.** Settled by D5: this is now a requirement, not an assumption. What's still unknown is the *mechanism* — whether Supabase auto-links a Google identity to an existing auth user on a verified email match (our users are created `email_confirm: true`, which should satisfy it). **T1 decides which of two builds we do**, so it runs before any UI:
+- **Q1 — one auth user per person.** Settled by D5: this is now a requirement, not an assumption. What's still unknown is the *mechanism* — whether Supabase auto-links a Google identity to an existing auth user on a verified email match (our users are created `email_confirm: true`, which should satisfy it). **Still unanswered** — see "Reversed during implementation" below and **test 7**:
   - *Auto-links* → §5's linking step is convenience for the mismatched-email case only.
   - *Mints a second auth user* → auto-linking can't be relied on, `linkIdentity()` in §5 becomes the **only** way Google attaches, and §4's Google button must be presented as sign-in-for-existing-users rather than a general entry point. D6 already positions it that way, which limits the blast radius of a negative result.
 - **Q2 — `must_reset_password`.** Superseded by D6. It stops meaning "you must set a password" and starts meaning "you haven't chosen how you sign in yet." Any of the three choices in §5 clears it.
@@ -47,7 +54,37 @@ The invite email stays the single entry point to every account (D6), but stops c
 
 - §6's invite change has **no existing clients to disrupt** — no one holds an old temp-password email whose behaviour changes underneath them.
 - The `find-or-create-portal-user.ts:94` password-reset bug has **never fired against a real client**. Still fix it (it would bite the first re-promotion), but it is not an incident.
-- §2's lockout risk narrows to **admins only**. T0 still runs against production — an orphaned *admin* auth user locks out the back office, which is worse than a client lockout, not better.
+- §2's lockout risk narrows to **admins only**. Test 1 still runs against production — an orphaned *admin* auth user locks out the back office, which is worse than a client lockout, not better.
+
+## Reversed during implementation
+
+**D7 — a Google account must now carry the same address the portal account was invited under.**
+
+As planned, an admin could invite `kris@company.com` and the client could attach `kris@gmail.com`
+during onboarding; the two addresses would live on one auth user. That shipped, then was reversed
+in `cea5e750`, because it means a client can sign in under an address the account was never issued
+— and everything downstream that reads an email now has two answers for one person.
+
+What the code does instead:
+
+- Google's account chooser is pre-filled with the invited address (`login_hint`). It is a hint —
+  Google still lets them switch — so it reduces mismatches without enforcing anything.
+- The match can only be checked on the way back, since Google decides which account signs in.
+  On return, a mismatched identity is **detached** (`unlinkIdentity`), not just reported. Leaving
+  it attached would be the hole this check exists to close.
+- Onboarding is the only place identities are linked — the sign-in pages use `signInWithOAuth`
+  and there is no connected-accounts UI — so one check covers the whole surface.
+
+D5 still holds: password, magic link and Google remain doors into a single auth user. What changed
+is that every door must now carry the same address.
+
+**Still open — does Google auto-link on a matching address?** The original Q1 question was never
+recorded as answered, and the reversal makes it load-bearing in a way it wasn't before. A client who
+onboards with a password and *later* clicks "Continue with Google" at the same address never passes
+through `linkIdentity` — the sign-in page calls `signInWithOAuth`. If Supabase attaches that Google
+identity to their existing auth user, it works. If it mints a second auth user instead, that user has
+no `users` row and they get bounced to "account isn't set up" — a dead end for a legitimate client.
+Test 7 below decides this, and it should run before the Google button is trusted in production.
 
 ## Not in scope
 
@@ -126,7 +163,7 @@ Separately, the **client portal has the opposite failure**: `apps/client/lib/aut
 - `apps/internal/lib/settings/users/services/create-user.ts:60` inserts the `users` row explicitly — admin-created accounts never depended on `ensureUserProfile`.
 - `session.ts:161` (`syncUserProfile`) only fires on email change, where the row exists.
 - The password sign-in and `/auth/confirm` callers run for provisioned users.
-- `auth.users` left-joined against `public.users` → **0 orphans locally** (verified). Must also be 0 in production before deploy — see T0.
+- `auth.users` left-joined against `public.users` → **0 orphans locally** (verified). Must also be 0 in production before deploy — see test 1.
 
 **Change** — `ensureUserProfile` reports rather than creates:
 
@@ -167,7 +204,7 @@ Signing out matters: without it the visitor holds a valid session resolving to n
 
 Distinct from `/unauthorized`, which means *wrong role* rather than *no account* — don't merge them, or a real permission problem looks like a provisioning problem. **Deliberately vague**: identical copy for unknown and known-but-unprovisioned emails, so it isn't an enumeration oracle.
 
-> **Risk.** Any orphaned auth user in production becomes an immediate lockout. Run T0 against production first.
+> **Risk.** Any orphaned auth user in production becomes an immediate lockout. Run test 1 against production first.
 > **Risk.** The return value is currently ignored at all four call sites; TypeScript won't flag unhandled cases. Check each one deliberately.
 
 ---
@@ -275,7 +312,7 @@ Underneath sits the mismatched-email case: an admin invites `kris@company.com`; 
 | Choice | Action | Result |
 |---|---|---|
 | Set a password | Existing `SetPasswordStep`, unchanged | `email` identity, password they chose |
-| Connect Google | `linkIdentity({ provider: 'google' })` | `google` identity added to the **same** auth user, any address |
+| Connect Google | `linkIdentity({ provider: 'google' })`, with `login_hint` set to the account address | `google` identity added to the **same** auth user — **only if the Google address matches**; a mismatch is detached on return (D7, reversed) |
 | Email me a link each time | No credential action | `email` identity, magic link only |
 
 They are not exclusive (D5) — completing one leaves the others available later from the sign-in page. Whichever they pick, clear the flag:
@@ -297,10 +334,11 @@ await supabase.auth.linkIdentity({
 })
 ```
 
-> **The wizard's step state is `useState` with no persistence.** `linkIdentity` does a full-page redirect to Google, so on return the wizard remounts at step 0 — the exact failure the removed GitHub step had. Derive the initial step from a URL param (`?step=choose-sign-in`) or `sessionStorage`. **Don't skip this**, or linking appears to do nothing.
+> **The wizard's step state is `useState` with no persistence.** `linkIdentity` does a full-page redirect to Google, so on return the wizard remounts at step 0 — the exact failure the removed GitHub step had. **As built:** the server page reads `?step=link-return` and passes `returnedFromGoogle` down, so the wizard opens on the choice step. **Don't remove this**, or linking appears to do nothing.
 
-> **Risk.** Manual linking lets a client attach *any* Google account to their portal user. That's the intent under D6, but it means a Google identity is not evidence of who someone is — anything that later trusts email identity must read the `users` row, not the OAuth identity.
-> **Risk.** If T1 is negative, this step is the only way Google ever attaches, so it moves from "nice to have" to load-bearing — build it before shipping §4's Google button, not after.
+> **As built — the two failure shapes are both knowable at render time**, so neither needs an effect: no identity came back at all (Google was cancelled), or one came back under the wrong address. The first shows "Google linking didn't complete"; the second names both addresses and detaches the identity.
+
+> **Resolved by D7's reversal.** The original risk here was that manual linking lets a client attach *any* Google account, making a Google identity no evidence of who someone is. The match requirement removes that: an attached Google identity now always carries the account's own address.
 > **Note.** "Set a password" is genuinely optional now. A client who skips it keeps the undisclosed generated credential from §6, so `/forgot-password` remains a working way in if they later lose access to their email or Google account.
 
 ---
@@ -360,66 +398,128 @@ Clients keep using `serverEnv.CLIENT_PORTAL_URL` — that one is required, and t
 
 ## Test plan
 
-Local Supabase `127.0.0.1:54322`, internal `:3000`, portal `:3001`, Inbucket `127.0.0.1:54324`.
+**Where things run.** Internal app `:3000`, client portal `:3001`, local email inbox (Mailpit) at
+`127.0.0.1:54324`, database `127.0.0.1:54322`.
 
-Existing local accounts: `kris@placetostandagency.com` (ADMIN), `test@test.com` (ADMIN), `11crawfordk@gmail.com` (CLIENT — Acme, New Client), `kris@krismakesmusic.com` (CLIENT — Kris Music CLient).
+**Local accounts.** `kris@placetostandagency.com` and `test@test.com` are admins.
+`11crawfordk@gmail.com` (Acme, New Client) and `kris@krismakesmusic.com` (Kris Music Client) are
+portal clients.
 
-**T0 — Orphan check. Run before deploying §2.**
+Tests 1, 16 and 17 need the database. Everything else is clicking through the apps.
+
+---
+
+### Run this one before deploying anything
+
+**1. No accounts are stranded in production.** Against the **production** database:
+
 ```sql
 select a.id, a.email, a.created_at from auth.users a
 left join public.users u on u.id = a.id where u.id is null;
 ```
-Local: 0 rows (verified). Must also be 0 in **production** — any row becomes an immediate lockout.
 
-**T1 — Auto-linking on matching email. Decides which §5 we build; run before any UI.**
-Google sign-in as `11crawfordk@gmail.com`, then check `auth.users` and `auth.identities` for that email.
-*PASS* — one `auth.users` row, unchanged id, both `email` and `google` identities → D5 holds for free; §5's Google option covers the mismatched-email case only.
-*FAIL* — a second `auth.users` row with a new id → **D5 is violated by the platform.** Stop. §5's `linkIdentity()` becomes the only route, and §4's Google button ships only after it.
+Must return **0 rows**. Any row here is someone who can log in but has no profile — after this
+change they get locked out on their next sign-in. Locally this is already 0.
 
-**T2 — Magic link, provisioned client.** Link for `kris@krismakesmusic.com`, open from Inbucket, lands authenticated with hours card rendering. `auth.users` count unchanged.
+---
 
-**T3 — Magic link, unknown email.** Request for `nobody@example.com` → identical "if an account exists…" copy, **no** new `auth.users` row, no email delivered.
+### Signing in
 
-**T4 — Google, provisioned client.** Matching Google address → portal home, correct client name in header, same `users.id`.
+**2. Password still works.** Both apps: sign in with email + password. On the internal app, being
+sent to a protected page first should return you there after signing in. Check "forgot password"
+and the forced-reset screen still work. *Nothing about password sign-in was meant to change — this
+is the regression check.*
 
-**T5 — Google, unprovisioned (internal).** Google account with no `users` row → `/account-not-set-up`, **signed out** (navigating to `/` goes to `/sign-in`, not a loop), `public.users` count unchanged.
+**3. Email sign-in link, real client.** On the portal, ask for a link as
+`kris@krismakesmusic.com`. Open it from Mailpit. You land signed in, with the hours card showing.
 
-**T6 — Google, unprovisioned (portal).** Same on `:3001`. Specifically confirm **no redirect loop** between `/` and `/sign-in`.
+**4. Email sign-in link, address we don't know.** Ask for a link as `nobody@example.com`. You should
+see the **same** "if an account exists, we've sent a link" message as in test 3, no email should
+arrive, and no new account should be created. *Different messages here would let a stranger
+discover who our clients are.*
 
-**T7 — Disabled user.** Set `disabled_at`, magic-link sign-in → rejected at the callback, signed out, not half-signed-in. Clear it after.
+**5. Google, client whose Google address matches their account.** Sign in with Google as
+`11crawfordk@gmail.com` → portal home, correct client name in the header.
 
-**T8 — Password regression.** Both apps: password sign-in, `redirectTo` on internal, hard-nav on client, `/forgot-password`, `/force-reset-password`.
+**6. Google, someone with no account.** Sign in with a Google account we've never invited, on
+**both** apps. You should land on "this account isn't set up", be **signed out**, and going to `/`
+should send you to the sign-in page — not bounce back and forth in a loop.
 
-**T9 — Mismatched-email linking.** Invite a non-Google address → open the invite link → onboarding → "How would you like to sign in?" → **Connect Google** with a *different* Gmail → returns **at that step, not step 0** → `auth.identities` has both, `auth.users` count **unchanged** → sign out → "Continue with Google" with that Gmail → same `users` row and client scoping.
+**7. ⚠️ Google after onboarding with a password — the open question.** Onboard a client who chooses
+**Set a password**, so they never connect Google. Sign out, then click **Continue with Google**
+using the *same* address as their account.
 
-**T10 — All three choices clear the flag (D6).** Run onboarding three times, one choice each: set password / connect Google / email me a link. Each → `must_reset_password` false, no password step on next visit, portal loads. A choice that leaves the flag set is a fail.
+- Lands in the portal, same account → good, nothing more to do.
+- Says "account isn't set up" → Google made them a *second* account behind the scenes. Legitimate
+  clients would hit a dead end, and the Google button shouldn't ship until that's handled.
 
-**T11 — Methods are additive, not exclusive (D5).** After completing onboarding via *one* method, sign out and sign in with each of the others in turn. All land on the same `users` row. `auth.users` count never increases at any point.
+*This is the one test whose result we can't predict, and it decides whether the Google button is
+safe for clients who didn't connect Google during onboarding.*
 
-**T11b — Recovery for a passwordless client.** Complete onboarding choosing "email me a link", sign out, then run `/forgot-password`. A reset email arrives and the new password works — proving the undisclosed credential from §6 leaves recovery intact.
+---
 
-**T12 — Cross-app isolation regression.** As `11crawfordk@gmail.com`: GreenWatt project → `notFound()`; INTERNAL project `b6fc181b-b871-4fa2-ae42-1cb87af6cf18` → `notFound()`; hours show only Acme and New Client.
+### Invites and onboarding
 
-**T13 — Client invite carries no credential (§6).** Promote a contact to portal access. Read the Inbucket message **source**, both text *and* HTML parts — checking only the rendered view misses a password left in the other part. No password string anywhere; one working action link; clicking it lands authenticated on `/onboarding`.
+**8. The invite email contains no password.** Promote a contact to portal access. In Mailpit, view
+the **message source**, not just the rendered email — check the plain-text and HTML parts, since a
+password left in one is invisible in the other. There should be no password anywhere, one working
+button, and clicking it lands them signed in on the onboarding screen.
 
-**T14 — Re-promoting an existing portal user doesn't reset their password.** Promote a contact, complete onboarding with a password you choose, then promote the same contact again. Sign in with the password you chose — it still works. This is the `find-or-create-portal-user.ts:94` bug; it fails before the fix.
+**9. All three sign-in choices finish onboarding.** Run onboarding three times, picking a different
+option each time: set a password / connect Google / email me a link. Each should finish and **not**
+ask again on the next visit. *If any choice leaves them stuck on the "how do you want to sign in"
+step forever, that's the bug this test exists for.*
 
-**T15 — Expired invite link recovers (O2).** Wait out `otp_expiry` (or expire the token directly), click the invite link → a clear error, not a blank page or a redirect loop. Then "email me a sign-in link" from the sign-in page gets them in, same `users` row. The copy promising this must actually be in the T13 email.
+**10. Connecting the wrong Google account is refused.** Invite someone at a non-Gmail address. At
+the "how would you like to sign in" step choose **Connect Google**, and deliberately pick a
+*different* Google account. You should come back to that step — not the beginning — with a message
+naming both addresses, and the wrong account must **not** stay attached. Then connect the
+*matching* Google account: that should work.
 
-**T16 — Admin invite: unchanged except the URL (O1).** Create an **ADMIN** from settings. Email still carries a temp password; `apps/internal/proxy.ts` still forces `/force-reset-password`; sign-in at `:3000` works. The one difference from today: the link points at the **internal app**, not the client portal. Run after §6 — this is the regression the role branch exists to prevent.
+**11. An expired invite link recovers.** Let an invite link expire (an hour, or expire the token
+directly), then click it. You should get a clear error, not a blank page or a loop — and "email me
+a sign-in link" on the sign-in page should get them in.
 
-**T16b — Admin link with `APP_BASE_URL` unset.** Unset it locally and create an admin. The link must still resolve via the `headers()` origin, not `undefined/sign-in`. Cheap to check and the failure is invisible until someone clicks.
+**12. Re-inviting an existing client doesn't wipe their password.** Promote a contact, finish
+onboarding with a password you pick, then promote that same contact again. The password you chose
+must still work. *This was a real bug; it fails without the fix.*
 
-**Build.** From repo root: `npm run lint`, `npm run type-check`, `npm run build`.
+**13. A passwordless client can still recover.** Finish onboarding choosing "email me a link", sign
+out, then use "forgot password". A reset email should arrive and the new password should work.
+
+**14. Admin invites are unchanged — except the link.** Create an **admin** from settings. The email
+should still carry a temporary password, they should still be forced to reset it, and sign-in at
+`:3000` should work. The one difference: the link points at the **internal app**, not the client
+portal. *It used to send admins to the client portal, which was a plain bug.*
+
+**15. Admin invite link when `APP_BASE_URL` isn't set.** Unset it locally and create an admin. The
+link must still work, not read `undefined/sign-in`. *Cheap to check, and invisible until someone
+clicks it.*
+
+---
+
+### Clients can't see each other's data
+
+**16. Client scoping.** Signed in as `11crawfordk@gmail.com`: the GreenWatt project should be
+not-found, the internal project `b6fc181b-b871-4fa2-ae42-1cb87af6cf18` should be not-found, and
+hours should show only Acme and New Client.
+
+**17. A disabled account can't get in.** Set `disabled_at` on a portal user, then try the email
+sign-in link. It should be rejected and signed out — not half-signed-in. Clear the flag afterwards.
+
+---
+
+**18. Build.** From the repo root: `npm run lint`, `npm run type-check`, `npm run build`.
 
 ## Deploy checklist
 
-- [ ] T0 run against **production**, 0 rows
-- [ ] Google OAuth client has all redirect URIs (local + hosted Supabase callbacks)
+Config and ordering. None of this is caught by the tests above.
+
+- [ ] Test 1 run against **production**, 0 rows
+- [ ] Google OAuth client lists every redirect URI (local *and* hosted Supabase callbacks)
 - [ ] Hosted Supabase: Google enabled, manual linking on, production redirect URLs for **both** apps
-- [ ] `email_sent` rate limit reviewed for hosted — do **not** copy the raised local value
-- [ ] `SUPABASE_AUTH_GOOGLE_*` set wherever the Supabase CLI reads config
-- [ ] §3's `/auth/callback` + `/auth/confirm` deployed to the portal **before** §6's new invite email — otherwise every invite link 404s
-- [ ] `CLIENT_PORTAL_URL` correct in the internal app's production env — §6 builds the invite link from it, so a wrong value mails a dead link
-- [ ] T16 green — admin invites still carry a temp password and now link to the internal app
-- [ ] `APP_BASE_URL` set in the internal app's production env (it is optional in the schema, so nothing fails loudly if it's missing)
+- [ ] Hosted email rate limit reviewed — do **not** copy the raised local value; the sign-in page lets anyone trigger mail to any address
+- [ ] The portal's `/auth/callback` + `/auth/confirm` are live **before** the new invite email ships, or every invite link 404s
+- [ ] `CLIENT_PORTAL_URL` correct in the internal app's production env — the invite link is built from it, so a wrong value mails a dead link
+- [ ] `APP_BASE_URL` set in the internal app's production env (it's optional in the schema, so a missing value fails silently — see test 15)
+- [ ] Test 14 green — admin invites still carry a temp password and now link to the internal app
