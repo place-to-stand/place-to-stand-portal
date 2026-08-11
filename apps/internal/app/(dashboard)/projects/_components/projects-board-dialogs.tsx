@@ -21,7 +21,6 @@ type SheetState = {
   currentUserId: string
   defaultStatus: BoardColumnId
   defaultDueOn: string | null
-  onTaskCreated: (taskId: string, projectId: string) => void
 }
 
 type TimeLogState = {
@@ -61,7 +60,6 @@ export function ProjectsBoardDialogs({
     currentUserId,
     defaultStatus,
     defaultDueOn,
-    onTaskCreated,
   } = sheetState
 
   const {
@@ -92,7 +90,6 @@ export function ProjectsBoardDialogs({
         projects={projects}
         defaultProjectId={activeProject.id}
         defaultAssigneeId={null}
-        onTaskCreated={onTaskCreated}
       />
 
       <ProjectTimeLogDialog

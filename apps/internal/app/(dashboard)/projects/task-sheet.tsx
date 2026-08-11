@@ -66,8 +66,6 @@ type TaskSheetProps = {
   defaultProjectId: string | null
   defaultAssigneeId: string | null
   defaultLeadId?: string | null
-  closeOnSave?: boolean
-  onTaskCreated?: (taskId: string, projectId: string) => void
 }
 
 export function TaskSheet(props: TaskSheetProps) {
@@ -115,8 +113,6 @@ export function TaskSheet(props: TaskSheetProps) {
     defaultAssigneeId: props.defaultAssigneeId,
     defaultLeadId: props.defaultLeadId ?? null,
     currentUserId: props.currentUserId,
-    closeOnSave: props.closeOnSave,
-    onTaskCreated: props.onTaskCreated,
   })
 
   const [isDragActive, setIsDragActive] = useState(false)

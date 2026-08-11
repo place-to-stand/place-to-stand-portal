@@ -60,14 +60,6 @@ export type UseTaskSheetStateArgs = {
   defaultAssigneeId: string | null
   defaultLeadId: string | null
   currentUserId: string
-  /**
-   * Opt back into the legacy close-on-save behavior (lead task overlay).
-   * The default keeps the sheet open: an edit re-baselines in place, a create
-   * hands the new id to `onTaskCreated` so the consumer can navigate into
-   * edit mode.
-   */
-  closeOnSave?: boolean
-  onTaskCreated?: (taskId: string, projectId: string) => void
 }
 
 type UseTaskSheetStateReturn = {
@@ -117,8 +109,6 @@ export const useTaskSheetState = ({
   defaultAssigneeId,
   defaultLeadId,
   currentUserId,
-  closeOnSave = false,
-  onTaskCreated,
 }: UseTaskSheetStateArgs): UseTaskSheetStateReturn => {
   const router = useRouter()
   const [feedback, setFeedback] = useState<string | null>(null)
@@ -129,9 +119,6 @@ export const useTaskSheetState = ({
   // in the same render window both observe it as false. This ref is checked
   // and set before the transition starts.
   const submitLockRef = useRef(false)
-  // Once a create succeeds, further submits are ignored until the created
-  // task arrives via props (create→edit transition) or the sheet closes.
-  const createdTaskIdRef = useRef<string | null>(null)
 
   const selectionProjects = projectSelectionProjects ?? projects
 
@@ -186,16 +173,10 @@ export const useTaskSheetState = ({
   useEffect(() => {
     if (!open) {
       lastResetTaskIdRef.current = undefined
-      createdTaskIdRef.current = null
       return
     }
 
     const currentTaskId = task?.id ?? null
-
-    if (currentTaskId) {
-      // The persisted task is in hand; release the post-create submit guard.
-      createdTaskIdRef.current = null
-    }
 
     if (
       lastResetTaskIdRef.current !== undefined &&
@@ -233,12 +214,6 @@ export const useTaskSheetState = ({
         return
       }
 
-      // A create already succeeded but the task prop hasn't arrived yet —
-      // saving again would insert a duplicate.
-      if (!task && createdTaskIdRef.current) {
-        return
-      }
-
       submitLockRef.current = true
 
       startTransition(async () => {
@@ -261,8 +236,8 @@ export const useTaskSheetState = ({
           })
 
           // Partial-failure contract: a create result carrying `taskId` means
-          // the row exists — treat it as created (transition to edit mode)
-          // and surface the failed sub-step, never re-run the create path.
+          // the row exists — surface the failed sub-step via toast but still
+          // close, so the create form can't be re-submitted into a duplicate.
           const createdTaskId = !task ? (result.taskId ?? null) : null
 
           if (result.error && !createdTaskId) {
@@ -285,26 +260,9 @@ export const useTaskSheetState = ({
             })
           }
 
-          if (task) {
-            // Edit: stay open; current values become the new baseline so
-            // isDirty (and the attachments dirty flag) clear.
-            form.reset(form.getValues())
-            resetAttachmentsState({ preservePending: true })
-            router.refresh()
-          } else if (closeOnSave) {
-            // Lead overlay path: legacy close-on-save behavior.
-            resetFormState({ preservePending: true })
-            onOpenChange(false)
-            router.refresh()
-          } else {
-            // Create: hand the id to the consumer; it navigates into edit
-            // mode and the sheet re-baselines when the task prop arrives.
-            if (createdTaskId) {
-              createdTaskIdRef.current = createdTaskId
-              onTaskCreated?.(createdTaskId, values.projectId)
-            }
-            router.refresh()
-          }
+          resetFormState({ preservePending: true })
+          onOpenChange(false)
+          router.refresh()
         } finally {
           submitLockRef.current = false
         }
@@ -313,11 +271,7 @@ export const useTaskSheetState = ({
     [
       buildSubmissionPayload,
       canManage,
-      closeOnSave,
-      form,
       onOpenChange,
-      onTaskCreated,
-      resetAttachmentsState,
       router,
       resetFormState,
       task,
