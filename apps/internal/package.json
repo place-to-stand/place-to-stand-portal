@@ -25,6 +25,7 @@
     "@posthog/nextjs-config": "^1.9.68",
     "@posthog/react": "^1.10.3",
     "@pts/db": "*",
+    "@pts/email": "*",
     "@pts/github": "*",
     "@pts/ui": "*",
     "@stripe/react-stripe-js": "^6.8.0",

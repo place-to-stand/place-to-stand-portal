@@ -7,6 +7,13 @@ const schema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.url(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
   APP_BASE_URL: z.url().optional(),
+  // Optional so local development — which routes mail to Mailpit and needs no
+  // Resend credentials — boots without them, and so the unrelated GitHub routes
+  // that share this schema don't start failing on a missing mail key. The email
+  // module checks for what it actually needs and names the gap when sending.
+  RESEND_API_KEY: z.string().min(1).optional(),
+  RESEND_FROM_EMAIL: z.email().optional(),
+  RESEND_REPLY_TO_EMAIL: z.email().optional(),
   GITHUB_APP_ID: z.string().min(1),
   GITHUB_APP_PRIVATE_KEY: z.string().min(1),
   GITHUB_APP_WEBHOOK_SECRET: z.string().min(1),
@@ -24,6 +31,9 @@ function getServerEnv() {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     APP_BASE_URL: emptyToUndefined(process.env.APP_BASE_URL),
+    RESEND_API_KEY: emptyToUndefined(process.env.RESEND_API_KEY),
+    RESEND_FROM_EMAIL: emptyToUndefined(process.env.RESEND_FROM_EMAIL),
+    RESEND_REPLY_TO_EMAIL: emptyToUndefined(process.env.RESEND_REPLY_TO_EMAIL),
     GITHUB_APP_ID: process.env.GITHUB_APP_ID,
     GITHUB_APP_PRIVATE_KEY: process.env.GITHUB_APP_PRIVATE_KEY,
     GITHUB_APP_WEBHOOK_SECRET: process.env.GITHUB_APP_WEBHOOK_SECRET,

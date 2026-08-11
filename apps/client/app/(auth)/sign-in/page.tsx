@@ -2,12 +2,17 @@
 
 import { useEffect, useState } from 'react'
 
+import { requestMagicLink } from '@/app/(auth)/_actions/auth-emails'
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 
 /**
- * Hosted Supabase enforces an emails-per-hour limit. Without a visible cooldown a
- * user who clicks twice hits an opaque failure and assumes the feature is broken.
+ * Stops a user who clicks twice from mailing themselves twice.
+ *
+ * This used to be cosmetic — hosted Supabase enforced its own emails-per-hour
+ * limit underneath. Sending through the admin API bypasses that limit, so this
+ * cooldown is now the only brake on repeated sends, and it is client-side only.
+ * A server-side throttle is still owed.
  */
 const MAGIC_LINK_COOLDOWN_SECONDS = 30
 
@@ -74,23 +79,14 @@ export default function SignInPage() {
     setMagicLinkLoading(true)
 
     try {
-      const supabase = getSupabaseBrowserClient()
-      const { error: otpError } = await supabase.auth.signInWithOtp({
-        email: trimmed,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-          // Defaults to true, which would mint an `auth.users` row for any
-          // address typed into the box. Portal accounts are admin-created.
-          shouldCreateUser: false,
-        },
-      })
-
-      // Logged, never surfaced. With shouldCreateUser: false, Supabase errors on
-      // unknown addresses — reporting that difference would turn this form into
-      // an account-enumeration oracle, so the copy below is identical either way.
-      if (otpError) {
-        console.error('Failed to send magic link', otpError)
-      }
+      // Sent by us, not Supabase: the action mints the token with the admin API
+      // and mails it with our own template, from the same verified sender the
+      // invite uses. Supabase's stock template was the one landing in spam.
+      //
+      // It never creates an account for an unknown address, and never reports
+      // whether one existed — the copy below is identical either way, so this
+      // form can't be used to enumerate clients.
+      await requestMagicLink(trimmed)
 
       setNotice(
         "If an account exists for that email, we've sent a sign-in link. Check your inbox."

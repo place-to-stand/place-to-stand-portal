@@ -8,8 +8,10 @@ import { z } from "zod";
 import { ensureUserProfile } from "@/lib/auth/profile";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
+import { sendMagicLinkEmail } from "@/lib/email/auth-emails";
 import { serverEnv } from "@/lib/env.server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseServiceClient } from "@/lib/supabase/service";
 
 const schema = z.object({
   email: z.string().email(),
@@ -131,33 +133,43 @@ export async function sendMagicLink(input: {
     return { error: "Enter a valid email address." };
   }
 
-  const supabase = getSupabaseServerClient();
   const headersList = await headers();
   const origin =
     headersList.get("origin") ??
     serverEnv.APP_BASE_URL ??
     "http://localhost:3000";
 
-  const callbackPath = input.redirectTo
-    ? `/auth/callback?redirect_to=${encodeURIComponent(input.redirectTo)}`
-    : "/auth/callback";
+  try {
+    // `generateLink` never creates an account, which is what `shouldCreateUser:
+    // false` bought on the old `signInWithOtp` path — an unknown address simply
+    // errors here rather than minting an auth user.
+    const { data, error } =
+      await getSupabaseServiceClient().auth.admin.generateLink({
+        type: "magiclink",
+        email,
+      });
 
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: {
-      emailRedirectTo: `${origin}${callbackPath}`,
-      // Defaults to true, which would mint an `auth.users` row for any address
-      // typed into the box. Strict provisioning stops a self-provisioned user
-      // getting a `users` row; this stops them getting an auth user at all.
-      shouldCreateUser: false,
-    },
-  });
+    const tokenHash = data?.properties?.hashed_token;
 
-  if (error) {
-    // Logged, never surfaced. With shouldCreateUser: false, Supabase errors on
-    // unknown addresses — reporting that difference would turn this form into an
-    // account-enumeration oracle. The caller shows the same copy either way.
-    console.error("Failed to send magic link", error);
+    if (error || !tokenHash) {
+      // Logged, never surfaced: unknown addresses land here, and reporting that
+      // difference would turn this form into an account-enumeration oracle. The
+      // caller shows the same copy either way.
+      console.error("Failed to generate magic link", error);
+      return { success: true };
+    }
+
+    // Our own /auth/confirm rather than `properties.action_link`, which returns
+    // the session in a URL fragment the server never sees.
+    const params = new URLSearchParams({
+      token_hash: tokenHash,
+      type: "magiclink",
+      ...(input.redirectTo ? { redirect_to: input.redirectTo } : {}),
+    });
+
+    await sendMagicLinkEmail(email, `${origin}/auth/confirm?${params}`);
+  } catch (cause) {
+    console.error("Unable to send magic link email", cause);
   }
 
   return { success: true };
