@@ -10,6 +10,9 @@ import {
   softDeleteContact,
 } from '@/app/(dashboard)/contacts/actions'
 import type { LinkedClient } from '@/lib/queries/contacts'
+import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
+
+import type { ContactSheetInput } from './use-contact-sheet-state'
 
 export type ContactsTab = 'contacts' | 'archive' | 'activity'
 
@@ -28,11 +31,48 @@ export type ContactsTableContact = {
   }
 }
 
-export function useContactsTableState() {
+/** What the contact sheet can be handed: a table row or the minimal row. */
+type ContactSheetRecord = ContactsTableContact | ContactSheetInput
+
+type UseContactsTableStateArgs = {
+  /** The page's fresh rows — the open sheet re-resolves from them by id. */
+  contacts: ContactsTableContact[]
+  /**
+   * Row resolved server-side from `?contact=<id>`. The list is paginated, so
+   * a shared link can point at a contact this page doesn't render.
+   */
+  deepLinkedContact?: ContactSheetInput | null
+}
+
+export function useContactsTableState({
+  contacts,
+  deepLinkedContact = null,
+}: UseContactsTableStateArgs) {
   const router = useRouter()
-  const [sheetOpen, setSheetOpen] = useState(false)
-  const [selectedContact, setSelectedContact] =
-    useState<ContactsTableContact | null>(null)
+  // `?contact=` drives which sheet is open, so an open sheet is a shareable
+  // link; local state keeps it opening instantly while the URL catches up.
+  const { selectedId, isCreating, select, openCreate, clear } =
+    useSheetParamSelection('contact')
+
+  const selectedContact: ContactSheetRecord | null = selectedId
+    ? (contacts.find(contact => contact.id === selectedId) ??
+      (deepLinkedContact?.id === selectedId ? deepLinkedContact : null))
+    : null
+
+  // `?contact=new` opens the create sheet; an id that resolves to nothing (a
+  // deleted row) keeps the sheet closed — the table shows the notice instead.
+  const resolvedContact = isCreating ? null : selectedContact
+  const sheetOpen = isCreating || selectedContact !== null
+
+  // Keep the last-rendered record mounted after close so the sheet's exit
+  // animation can play; only `open` toggles.
+  const [lastContact, setLastContact] = useState<ContactSheetRecord | null>(
+    null
+  )
+  if (sheetOpen && resolvedContact !== lastContact) {
+    setLastContact(resolvedContact)
+  }
+
   const [deleteTarget, setDeleteTarget] = useState<ContactsTableContact | null>(
     null
   )
@@ -47,27 +87,29 @@ export function useContactsTableState() {
 
   const pendingReason = 'Please wait for the current request to finish.'
 
-  const openCreate = () => {
-    setSelectedContact(null)
-    setSheetOpen(true)
-  }
-
   const openEdit = (contact: ContactsTableContact) => {
-    setSelectedContact(contact)
-    setSheetOpen(true)
+    select(contact.id)
   }
 
   const handleSheetOpenChange = (open: boolean) => {
-    setSheetOpen(open)
     if (!open) {
-      setSelectedContact(null)
+      clear()
     }
   }
 
   const handleSheetComplete = () => {
-    setSheetOpen(false)
-    setSelectedContact(null)
+    clear()
     router.refresh()
+  }
+
+  /**
+   * The row is about to leave this tab — drop `?contact=` first so the
+   * refresh can't reopen a stale sheet or trip the not-found notice.
+   */
+  const clearIfSelected = (contactId: string) => {
+    if (selectedId === contactId) {
+      clear()
+    }
   }
 
   const handleRequestDelete = (contact: ContactsTableContact) => {
@@ -113,6 +155,7 @@ export function useContactsTableState() {
           title: 'Contact archived',
           description: `${contact.name || contact.email} has been archived.`,
         })
+        clearIfSelected(contact.id)
         router.refresh()
       } finally {
         setPendingDeleteId(null)
@@ -143,6 +186,7 @@ export function useContactsTableState() {
           title: 'Contact restored',
           description: `${contact.name || contact.email} is active again.`,
         })
+        clearIfSelected(contact.id)
         router.refresh()
       } finally {
         setPendingRestoreId(null)
@@ -193,6 +237,7 @@ export function useContactsTableState() {
           title: 'Contact permanently deleted',
           description: `${contact.name || contact.email} has been removed.`,
         })
+        clearIfSelected(contact.id)
         router.refresh()
       } finally {
         setPendingDestroyId(null)
@@ -202,7 +247,7 @@ export function useContactsTableState() {
 
   return {
     sheetOpen,
-    selectedContact,
+    selectedContact: sheetOpen ? resolvedContact : lastContact,
     deleteTarget,
     destroyTarget,
     isPending,
@@ -212,6 +257,7 @@ export function useContactsTableState() {
     pendingDestroyId,
     openCreate,
     openEdit,
+    clearSelection: clear,
     handleSheetOpenChange,
     handleSheetComplete,
     handleRequestDelete,

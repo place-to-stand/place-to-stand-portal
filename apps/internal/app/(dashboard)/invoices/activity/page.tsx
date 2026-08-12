@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 export default async function InvoicesActivityPage() {
   const currentUser = await requireRole('ADMIN')
 
-  const { clients, productCatalog, taxRates } = await listInvoices(currentUser, {
+  const { clients } = await listInvoices(currentUser, {
     status: 'active',
     limit: 1,
   })
@@ -26,13 +26,7 @@ export default async function InvoicesActivityPage() {
       breadcrumbs={[...crumbsForNav('/invoices'), { label: 'Activity' }]}
       tabs={INVOICES_TABS}
       activeTab='activity'
-      primaryAction={
-        <InvoicesAddButton
-          clients={clients}
-          productCatalog={productCatalog}
-          taxRates={taxRates}
-        />
-      }
+      primaryAction={<InvoicesAddButton clients={clients} />}
     >
       <section className='bg-background rounded-xl border p-4 shadow-sm'>
         <InvoicesActivitySection />

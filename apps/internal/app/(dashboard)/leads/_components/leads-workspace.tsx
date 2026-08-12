@@ -1,13 +1,6 @@
 'use client'
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useTransition,
-} from 'react'
+import { useCallback, useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 
@@ -15,6 +8,10 @@ import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import {
+  useSheetParams,
+  useSheetParamSelection,
+} from '@/lib/sheets/use-sheet-params'
 import type { LeadAssigneeOption, LeadBoardColumnData } from '@/lib/leads/types'
 import type { LeadRecord } from '@/lib/leads/types'
 import type { LeadStatusValue } from '@/lib/leads/constants'
@@ -24,37 +21,32 @@ import { LeadsBoard } from './leads-board'
 import { LeadSheet } from './lead-sheet'
 import { ConvertLeadDialog } from './convert-lead-dialog'
 
-const LEAD_SHEET_CLOSE_MS = 320
-
 type LeadsWorkspaceProps = {
   initialColumns: LeadBoardColumnData[]
   assignees: LeadAssigneeOption[]
   canManage: boolean
-  activeLeadId: string | null
-  activeAction?: string | null
   senderName?: string
-  /** True on the /leads/new deep link — opens the create sheet on mount. */
-  startCreating?: boolean
+  /** True when the `?lead=` share link points at a lead that no longer exists. */
+  leadNotFound?: boolean
 }
 
 export function LeadsWorkspace({
   initialColumns,
   assignees,
   canManage,
-  activeLeadId,
-  activeAction = null,
   senderName,
-  startCreating = false,
+  leadNotFound = false,
 }: LeadsWorkspaceProps) {
   const router = useRouter()
-  const [isCreatingLead, setIsCreatingLead] = useState(startCreating)
+  const { getAux } = useSheetParams()
+  // The `?lead=` param drives the sheet: uuid = edit, `new` = create. Local
+  // selection state opens the sheet instantly while the URL catches up.
+  const { selectedId, isCreating, select, openCreate, clear } =
+    useSheetParamSelection('lead')
   const [initialStatus, setInitialStatus] = useState<LeadStatusValue | null>(
     null
   )
-  const [closingLeadId, setClosingLeadId] = useState<string | null>(null)
   const [convertingLead, setConvertingLead] = useState<LeadRecord | null>(null)
-  const [isSheetClosing, setIsSheetClosing] = useState(false)
-  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [, startRefresh] = useTransition()
   const leadLookup = useMemo(
     () => buildLeadLookup(initialColumns),
@@ -64,26 +56,8 @@ export function LeadsWorkspace({
     () => initialColumns.reduce((sum, column) => sum + column.leads.length, 0),
     [initialColumns]
   )
-  const activeLead = activeLeadId
-    ? (leadLookup.get(activeLeadId) ?? null)
-    : null
-
-  const cancelPendingClose = useCallback(() => {
-    if (closeTimeoutRef.current) {
-      clearTimeout(closeTimeoutRef.current)
-      closeTimeoutRef.current = null
-    }
-    setIsSheetClosing(false)
-  }, [])
-
-  useEffect(() => {
-    return () => {
-      if (closeTimeoutRef.current) {
-        clearTimeout(closeTimeoutRef.current)
-        closeTimeoutRef.current = null
-      }
-    }
-  }, [])
+  const activeLead = selectedId ? (leadLookup.get(selectedId) ?? null) : null
+  const initialAction = getAux('leadMode') === 'convert' ? 'convert' : null
 
   const handleCreateLead = useCallback(
     (status?: LeadStatusValue) => {
@@ -91,13 +65,10 @@ export function LeadsWorkspace({
         return
       }
 
-      cancelPendingClose()
-      setClosingLeadId(null)
       setInitialStatus(status ?? null)
-      setIsCreatingLead(true)
-      router.push('/leads', { scroll: false })
+      openCreate()
     },
-    [canManage, cancelPendingClose, router]
+    [canManage, openCreate]
   )
 
   const handleEditLead = useCallback(
@@ -106,63 +77,25 @@ export function LeadsWorkspace({
         return
       }
 
-      cancelPendingClose()
-      setClosingLeadId(null)
-      setIsCreatingLead(false)
-      router.push(`/leads/${lead.id}`, { scroll: false })
+      setInitialStatus(null)
+      select(lead.id)
     },
-    [canManage, cancelPendingClose, router]
+    [canManage, select]
   )
-
-  const beginSheetClose = useCallback(() => {
-    if (closeTimeoutRef.current) {
-      clearTimeout(closeTimeoutRef.current)
-    }
-
-    setIsSheetClosing(true)
-    closeTimeoutRef.current = setTimeout(() => {
-      setIsSheetClosing(false)
-      closeTimeoutRef.current = null
-    }, LEAD_SHEET_CLOSE_MS)
-  }, [])
 
   const handleSheetOpenChange = useCallback(
     (next: boolean) => {
       if (next) {
-        cancelPendingClose()
-        setClosingLeadId(null)
         return
       }
 
-      beginSheetClose()
-
-      if (isCreatingLead) {
-        setIsCreatingLead(false)
-        setInitialStatus(null)
-        // Leave /leads/new so a refresh doesn't reopen the create sheet.
-        router.push('/leads', { scroll: false })
-        startRefresh(() => {
-          router.refresh()
-        })
-        return
-      }
-
-      if (activeLeadId) {
-        setClosingLeadId(activeLeadId)
-        router.push('/leads', { scroll: false })
-      }
+      setInitialStatus(null)
+      clear()
       startRefresh(() => {
         router.refresh()
       })
     },
-    [
-      activeLeadId,
-      beginSheetClose,
-      cancelPendingClose,
-      isCreatingLead,
-      router,
-      startRefresh,
-    ]
+    [clear, router, startRefresh]
   )
 
   const handleSheetSuccess = useCallback(() => {
@@ -171,20 +104,19 @@ export function LeadsWorkspace({
     })
   }, [router, startRefresh])
 
-  const handleLeadClosedWon = useCallback(
-    (lead: LeadRecord) => {
-      setConvertingLead(lead)
-    },
-    []
-  )
+  const handleLeadClosedWon = useCallback((lead: LeadRecord) => {
+    setConvertingLead(lead)
+  }, [])
 
-  const isRouteLeadOpen =
-    Boolean(activeLeadId) && activeLeadId !== closingLeadId
-  const isSheetOpen = isCreatingLead || isRouteLeadOpen
-  const sheetLead = isCreatingLead ? null : activeLead
-  const shouldRenderSheet = canManage && (isSheetOpen || isSheetClosing)
-  const boardActiveLeadId =
-    isCreatingLead || closingLeadId === activeLeadId ? null : activeLeadId
+  const isSheetOpen = canManage && (isCreating || Boolean(activeLead))
+  // Keep the last-opened lead rendered while the close animation plays so
+  // the sheet doesn't flip to create mode (narrower layout) mid-exit.
+  const [lastOpenedLead, setLastOpenedLead] = useState<LeadRecord | null>(null)
+  if (activeLead && activeLead !== lastOpenedLead) {
+    setLastOpenedLead(activeLead)
+  }
+  const sheetLead = isCreating ? null : (activeLead ?? lastOpenedLead)
+  const boardActiveLeadId = isSheetOpen && sheetLead ? sheetLead.id : null
 
   return (
     <PageShell
@@ -211,7 +143,21 @@ export function LeadsWorkspace({
       }
       contentClassName='flex flex-col gap-4 sm:gap-6'
     >
-      {shouldRenderSheet ? (
+      {leadNotFound && !isCreating ? (
+        <div
+          role='status'
+          className='border-destructive/30 bg-destructive/5 flex items-center justify-between gap-3 rounded-md border px-4 py-3 text-sm'
+        >
+          <span>
+            The linked lead could not be found. It may have been permanently
+            deleted.
+          </span>
+          <Button variant='ghost' size='sm' onClick={clear}>
+            Dismiss
+          </Button>
+        </div>
+      ) : null}
+      {canManage ? (
         <LeadSheet
           open={isSheetOpen}
           onOpenChange={handleSheetOpenChange}
@@ -220,7 +166,7 @@ export function LeadsWorkspace({
           assignees={assignees}
           canManage={canManage}
           senderName={senderName}
-          initialAction={activeAction}
+          initialAction={initialAction}
           onSuccess={handleSheetSuccess}
         />
       ) : null}

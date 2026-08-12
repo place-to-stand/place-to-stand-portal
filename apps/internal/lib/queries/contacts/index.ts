@@ -6,9 +6,16 @@ export {
   linkClientToContact,
   unlinkClientFromContact,
   getContactSheetData,
+  getContactSheetInputById,
+  getContactDeepLinkRowById,
   syncContactClients,
 } from './settings/contact-clients'
-export type { ClientOption, ContactSheetData } from './settings/contact-clients'
+export type {
+  ClientOption,
+  ContactDeepLinkRow,
+  ContactSheetData,
+  ContactSheetInputRow,
+} from './settings/contact-clients'
 export type {
   ContactsSettingsListItem,
   ContactsSettingsResult,

@@ -1,5 +1,5 @@
 import { useMemo, useState, useTransition } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import type { TaskWithRelations } from '@/lib/types'
 
@@ -33,6 +33,7 @@ export const useProjectsBoardState = ({
 }: UseProjectsBoardStateArgs): ProjectsBoardState => {
   const router = useRouter()
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [isPending, startTransition] = useTransition()
   const [feedback, setFeedback] = useState<string | null>(null)
   const routeView = getBoardViewFromPathname(pathname)
@@ -50,6 +51,7 @@ export const useProjectsBoardState = ({
   const navigateToProject = useBoardNavigation({
     router,
     pathname,
+    search: searchParams.toString(),
     projectLookup,
     projectsByClientId,
     clientSlugLookup,

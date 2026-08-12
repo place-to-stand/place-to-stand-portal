@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { useToast } from '@/components/ui/use-toast'
+import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
 import {
   destroyHourBlock,
   restoreHourBlock,
@@ -16,17 +17,42 @@ import type {
 
 type UseHourBlocksTableStateArgs = {
   clients: ClientRow[]
+  /** The page's fresh rows — the open sheet re-resolves from them by id. */
+  hourBlocks?: HourBlockWithClient[]
+  /**
+   * Row resolved server-side from `?hour-block=`, used when the paginated
+   * list doesn't contain it.
+   */
+  deepLinkedHourBlock?: HourBlockWithClient | null
 }
 
 const pendingReason = 'Please wait for the current request to finish.'
 
 export function useHourBlocksTableState({
   clients,
+  hourBlocks,
+  deepLinkedHourBlock = null,
 }: UseHourBlocksTableStateArgs) {
   const router = useRouter()
-  const [sheetOpen, setSheetOpen] = useState(false)
-  const [selectedBlock, setSelectedBlock] =
+  // `?hour-block=` drives the sheet so an open block is a shareable link.
+  const { selectedId, isCreating, select, openCreate, clear } =
+    useSheetParamSelection('hour-block')
+  const selectedBlock: HourBlockWithClient | null = selectedId
+    ? (hourBlocks?.find(block => block.id === selectedId) ??
+      (deepLinkedHourBlock?.id === selectedId ? deepLinkedHourBlock : null))
+    : null
+  // Keep the last-opened block rendered while the sheet animates closed.
+  const [lastOpenedBlock, setLastOpenedBlock] =
     useState<HourBlockWithClient | null>(null)
+  if (isCreating) {
+    if (lastOpenedBlock !== null) {
+      setLastOpenedBlock(null)
+    }
+  } else if (selectedBlock && selectedBlock !== lastOpenedBlock) {
+    setLastOpenedBlock(selectedBlock)
+  }
+  const sheetOpen = isCreating || Boolean(selectedBlock)
+  const sheetBlock = isCreating ? null : (selectedBlock ?? lastOpenedBlock)
   const [deleteTarget, setDeleteTarget] = useState<HourBlockWithClient | null>(
     null
   )
@@ -51,26 +77,18 @@ export function useHourBlocksTableState({
     ? 'Create a client before logging hour blocks.'
     : null
 
-  const openCreate = () => {
-    setSelectedBlock(null)
-    setSheetOpen(true)
-  }
-
   const openEdit = (block: HourBlockWithClient) => {
-    setSelectedBlock(block)
-    setSheetOpen(true)
+    select(block.id)
   }
 
   const handleSheetOpenChange = (open: boolean) => {
-    setSheetOpen(open)
     if (!open) {
-      setSelectedBlock(null)
+      clear()
     }
   }
 
   const handleComplete = () => {
-    setSheetOpen(false)
-    setSelectedBlock(null)
+    clear()
     router.refresh()
   }
 
@@ -214,7 +232,9 @@ export function useHourBlocksTableState({
 
   return {
     sheetOpen,
-    selectedBlock,
+    // The sheet renders `sheetBlock` (retained through the close animation);
+    // `selectedBlock` is the live selection for callers that need it.
+    selectedBlock: sheetBlock,
     sortedClients,
     createDisabled,
     createDisabledReason,
@@ -242,5 +262,7 @@ export function useHourBlocksTableState({
     handleRequestDelete,
     handleRestore,
     handleRequestDestroy,
+    /** Drop `?hour-block=` (e.g. after the open row is destroyed). */
+    clearSelection: clear,
   }
 }

@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 
-import { ProjectsBoard } from '../../../../projects-board'
+import { ProjectsBoard } from '../../../projects-board'
 import {
   fetchProjectsLite,
   fetchProjectsWithRelationsByIds,
@@ -9,6 +9,8 @@ import {
 import { fetchAdminUsers } from '@/lib/data/users'
 import { requireUser } from '@/lib/auth/session'
 import { getProjectClientSegment } from '@/lib/projects/board/board-utils'
+import { UUID_PATTERN } from '@/lib/sheets/entities'
+import { buildQuerySuffix } from '@/lib/sheets/hrefs'
 import { fetchClientDirectory } from '@/lib/queries/clients'
 import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
 import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
@@ -21,13 +23,21 @@ type PageProps = {
   params: Promise<{
     clientSlug: string
     projectSlug: string
-    taskId?: string[]
   }>
+  searchParams?: Promise<Record<string, string | string[] | undefined>>
 }
 
-export default async function ProjectBoardRoute({ params }: PageProps) {
+const firstParam = (value: string | string[] | undefined) =>
+  Array.isArray(value) ? value[0] : value
+
+export default async function ProjectBoardRoute({
+  params,
+  searchParams,
+}: PageProps) {
   const resolvedParams = await params
-  const { clientSlug, projectSlug, taskId } = resolvedParams
+  const { clientSlug, projectSlug } = resolvedParams
+  const resolvedSearchParams = searchParams ? await searchParams : {}
+  const taskParam = firstParam(resolvedSearchParams.task) ?? null
   const user = await requireUser()
   // Lite list feeds the switcher and sheet selectors; only the active
   // project (resolved below) gets its task graph hydrated.
@@ -76,22 +86,21 @@ export default async function ProjectBoardRoute({ params }: PageProps) {
 
   const canonicalClientSlug = getProjectClientSegment(project, clientSlugById)
 
-  const requestedTaskPath = Array.isArray(taskId)
-    ? taskId.filter(segment => Boolean(segment)).join('/')
-    : ''
-
   if (!canonicalClientSlug) {
     redirect('/projects')
   }
 
   if (canonicalClientSlug !== clientSlug) {
-    const suffix = requestedTaskPath ? `/${requestedTaskPath}` : ''
-    redirect(`/projects/${canonicalClientSlug}/${project.slug}/tasks${suffix}`)
+    // Carry the whole query string across the canonical redirect so a
+    // stacked sheet link (`?task=x&client=y`) survives it.
+    redirect(
+      `/projects/${canonicalClientSlug}/${project.slug}/tasks${buildQuerySuffix(resolvedSearchParams)}`
+    )
   }
 
   const activeClientId = project.client_id ?? null
   const activeProjectId = project.id
-  const activeTaskId = Array.isArray(taskId) ? (taskId[0] ?? null) : null
+  const activeTaskId = taskParam && UUID_PATTERN.test(taskParam) ? taskParam : null
 
   // Hydrate the task graph for the active project only (after the
   // canonical-slug redirects above, so redirects stay cheap).

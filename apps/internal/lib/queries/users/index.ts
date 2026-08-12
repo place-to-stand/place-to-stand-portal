@@ -13,6 +13,7 @@ export {
 } from './settings'
 export {
   type UsersSettingsAssignments,
+  buildAssignmentsForUsers,
   getActiveClientMembershipCounts,
   getActiveTaskAssignmentCounts,
 } from './assignments'

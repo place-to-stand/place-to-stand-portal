@@ -3,10 +3,12 @@
 import { useMemo } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
+import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 
 import type { PageInfo } from '@/lib/pagination/cursor'
+import type { ClientRow } from '@/lib/settings/clients/client-sheet-utils'
 import { isClientBilling } from '@/lib/settings/clients/filters'
 import {
   type ClientsTableClient,
@@ -22,6 +24,13 @@ type ClientsManagementTableProps = {
   mode: 'active' | 'archive'
   /** Route the sort/filter params live on (PRD 004 §03). */
   basePath: string
+  /**
+   * Client resolved server-side from the `?client=` share link. May not be
+   * in `clients` when it sits on another page or is filtered out.
+   */
+  deepLinkedClient?: ClientRow | null
+  /** True when `?client=` points at a client that no longer exists. */
+  clientNotFound?: boolean
 }
 
 const EMPTY_MESSAGES = {
@@ -34,6 +43,8 @@ export function ClientsManagementTable({
   pageInfo,
   mode,
   basePath,
+  deepLinkedClient = null,
+  clientNotFound = false,
 }: ClientsManagementTableProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -50,6 +61,7 @@ export function ClientsManagementTable({
     pendingRestoreId,
     pendingDestroyId,
     openEdit,
+    clearSelection,
     handleSheetOpenChange,
     handleSheetComplete,
     handleRequestDelete,
@@ -59,7 +71,7 @@ export function ClientsManagementTable({
     handleRequestDestroy,
     handleCancelDestroy,
     handleConfirmDestroy,
-  } = useClientsTableState()
+  } = useClientsTableState({ clients, deepLinkedClient })
 
   // Guard-validated active filters (R4): an empty list under a live `?q=` or
   // `?billing=` shows the filtered message, not the tab's default empty state.
@@ -95,6 +107,20 @@ export function ClientsManagementTable({
 
   return (
     <div className='space-y-4'>
+      {clientNotFound ? (
+        <div
+          role='status'
+          className='border-destructive/30 bg-destructive/5 flex items-center justify-between gap-3 rounded-md border px-4 py-3 text-sm'
+        >
+          <span>
+            The linked client could not be found. It may have been permanently
+            deleted.
+          </span>
+          <Button variant='ghost' size='sm' onClick={clearSelection}>
+            Dismiss
+          </Button>
+        </div>
+      ) : null}
       <ConfirmDialog
         open={Boolean(deleteTarget)}
         title='Archive client?'

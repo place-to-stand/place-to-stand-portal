@@ -28,7 +28,6 @@ type UseProjectsSettingsControllerReturn = {
   pendingRestoreId: string | null
   pendingDestroyId: string | null
   isPending: boolean
-  openCreate: () => void
   openEdit: (project: ProjectWithClient) => void
   handleSheetOpenChange: (open: boolean) => void
   handleSheetComplete: () => void
@@ -58,11 +57,6 @@ export function useProjectsSettingsController({
   const [pendingRestoreId, setPendingRestoreId] = useState<string | null>(null)
   const [pendingDestroyId, setPendingDestroyId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
-
-  const openCreate = () => {
-    setSelectedProject(null)
-    setSheetOpen(true)
-  }
 
   const openEdit = (project: ProjectWithClient) => {
     setSelectedProject(project)
@@ -221,7 +215,6 @@ export function useProjectsSettingsController({
     pendingRestoreId,
     pendingDestroyId,
     isPending,
-    openCreate,
     openEdit,
     handleSheetOpenChange,
     handleSheetComplete,

@@ -1,42 +1,30 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import { InvoiceSheet } from '../invoice-sheet'
-import type { ClientRow, ProductCatalogItemRow } from '@/lib/invoices/invoice-form'
-import type { TaxRateData } from '@/lib/invoices/use-invoice-sheet-state'
+import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
+import type { ClientRow } from '@/lib/invoices/invoice-form'
 import { cn } from '@/lib/utils'
 
 type InvoicesAddButtonProps = {
   clients: ClientRow[]
-  productCatalog: ProductCatalogItemRow[]
-  taxRates: TaxRateData[]
   className?: string
 }
 
+/**
+ * Create is `?invoice=new` — the URL is the shared state, so the host page's
+ * single sheet instance (or the global SheetHost elsewhere) renders it and
+ * this button owns no sheet of its own.
+ */
 export function InvoicesAddButton({
   clients,
-  productCatalog,
-  taxRates,
   className,
 }: InvoicesAddButtonProps) {
-  const router = useRouter()
-  const [open, setOpen] = useState(false)
+  const { openCreate } = useSheetParamSelection('invoice')
 
-  const handleComplete = () => {
-    setOpen(false)
-    router.refresh()
-  }
-
-  const sortedClients = [...clients].sort((a, b) =>
-    a.name.localeCompare(b.name)
-  )
-
-  const createDisabled = sortedClients.length === 0
+  const createDisabled = clients.length === 0
   const createDisabledReason = createDisabled
     ? 'Add a client before creating an invoice.'
     : null
@@ -50,7 +38,7 @@ export function InvoicesAddButton({
         <Button
           size='sm'
           type='button'
-          onClick={() => setOpen(true)}
+          onClick={openCreate}
           disabled={createDisabled}
           className='gap-2'
         >
@@ -58,15 +46,6 @@ export function InvoicesAddButton({
           Add invoice
         </Button>
       </DisabledFieldTooltip>
-      <InvoiceSheet
-        open={open}
-        onOpenChange={setOpen}
-        onComplete={handleComplete}
-        invoice={null}
-        clients={sortedClients}
-        productCatalog={productCatalog}
-        taxRates={taxRates}
-      />
     </div>
   )
 }

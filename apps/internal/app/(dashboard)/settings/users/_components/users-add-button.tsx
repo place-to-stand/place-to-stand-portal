@@ -1,52 +1,26 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { UserPlus } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
-import { UserSheet } from '../users-sheet'
-import type { UserAssignments } from '@/lib/settings/users/state/use-users-table-state'
+import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
 import { cn } from '@/lib/utils'
 
 type UsersAddButtonProps = {
-  currentUserId: string
-  assignments: UserAssignments
   className?: string
 }
 
-export function UsersAddButton({
-  currentUserId,
-  assignments,
-  className,
-}: UsersAddButtonProps) {
-  const router = useRouter()
-  const [open, setOpen] = useState(false)
-
-  const handleComplete = () => {
-    setOpen(false)
-    router.refresh()
-  }
+export function UsersAddButton({ className }: UsersAddButtonProps) {
+  // Opens `?user=new`; the table's single sheet instance renders it, so this
+  // button doesn't own a duplicate copy.
+  const { openCreate } = useSheetParamSelection('user')
 
   return (
     <div className={cn(className)}>
-      <Button
-        size='sm'
-        type='button'
-        onClick={() => setOpen(true)}
-        className='gap-2'
-      >
+      <Button size='sm' type='button' onClick={openCreate} className='gap-2'>
         <UserPlus className='h-4 w-4' />
         Add user
       </Button>
-      <UserSheet
-        open={open}
-        onOpenChange={setOpen}
-        onComplete={handleComplete}
-        user={null}
-        currentUserId={currentUserId}
-        assignments={assignments}
-      />
     </div>
   )
 }

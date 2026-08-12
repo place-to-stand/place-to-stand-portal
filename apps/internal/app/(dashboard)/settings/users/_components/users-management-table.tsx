@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
+import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 
@@ -26,6 +27,13 @@ type UsersManagementTableProps = {
   totalCount: number
   mode: 'active' | 'archive'
   basePath: string
+  /**
+   * User resolved server-side from the `?user=` share link. May not be in
+   * `users` when it sits on another page or is filtered out.
+   */
+  deepLinkedUser?: UserRow | null
+  /** True when `?user=` points at a user that no longer exists. */
+  userNotFound?: boolean
 }
 
 const EMPTY_MESSAGES = {
@@ -43,6 +51,8 @@ export function UsersManagementTable({
   totalCount,
   mode,
   basePath,
+  deepLinkedUser = null,
+  userNotFound = false,
 }: UsersManagementTableProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -54,7 +64,14 @@ export function UsersManagementTable({
     deleteDialog,
     destroyDialog,
     selfDeleteReason,
-  } = useUsersTableState({ users, currentUserId, assignments })
+  } = useUsersTableState({
+    users,
+    currentUserId,
+    assignments,
+    deepLinkedUser,
+  })
+  // Dismissing the not-found notice just drops the stale `?user=`.
+  const dismissDeepLink = () => sheet.onOpenChange(false)
 
   const filteredRows = useMemo(
     () =>
@@ -89,6 +106,20 @@ export function UsersManagementTable({
 
   return (
     <div className='space-y-4'>
+      {userNotFound ? (
+        <div
+          role='status'
+          className='border-destructive/30 bg-destructive/5 flex items-center justify-between gap-3 rounded-md border px-4 py-3 text-sm'
+        >
+          <span>
+            The linked user could not be found. They may have been permanently
+            deleted.
+          </span>
+          <Button variant='ghost' size='sm' onClick={dismissDeepLink}>
+            Dismiss
+          </Button>
+        </div>
+      ) : null}
       <ConfirmDialog
         open={deleteDialog.open}
         title='Archive user?'

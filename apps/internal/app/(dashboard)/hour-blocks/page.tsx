@@ -3,7 +3,12 @@ import type { Metadata } from 'next'
 import { PageShell } from '@/components/layout/page-shell'
 import { requireRole } from '@/lib/auth/session'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
-import { listHourBlocksForSettings } from '@/lib/queries/hour-blocks'
+import {
+  getHourBlockWithClientById,
+  listHourBlocksForSettings,
+} from '@/lib/queries/hour-blocks'
+import { resolveSheetDeepLink } from '@/lib/sheets/resolve-deep-link'
+import { hourBlockHref } from '@/lib/sheets/hrefs'
 import { parseHourBlocksSearchParams } from '@/lib/settings/hour-blocks/filters'
 
 import { HourBlocksAddButton } from './_components/hour-blocks-add-button'
@@ -16,6 +21,9 @@ export const metadata: Metadata = {
 }
 
 const PAGE_SIZE = 20
+
+const firstParam = (value: string | string[] | undefined) =>
+  Array.isArray(value) ? value[0] : value
 
 type HourBlocksPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
@@ -41,6 +49,18 @@ export default async function HourBlocksPage({
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
 
+  // The list is paginated and filterable, so resolve `?hour-block=` by id —
+  // a shared link must open even when the row isn't on this page.
+  const { record: deepLinkedHourBlock, notFound: hourBlockNotFound } =
+    await resolveSheetDeepLink({
+      idParam: firstParam(params['hour-block']),
+      fetchById: id => getHourBlockWithClientById(currentUser, id),
+      tab: 'active',
+      isArchived: block => block.deleted_at !== null,
+      archiveHref: id => `/hour-blocks/archive?hour-block=${id}`,
+      activeHref: hourBlockHref,
+    })
+
   return (
     <PageShell
       breadcrumbs={crumbsForNav('/hour-blocks')}
@@ -64,6 +84,8 @@ export default async function HourBlocksPage({
           pageSize={PAGE_SIZE}
           mode='active'
           basePath='/hour-blocks'
+          deepLinkedHourBlock={deepLinkedHourBlock}
+          hourBlockNotFound={hourBlockNotFound}
         />
       </section>
     </PageShell>

@@ -1,12 +1,10 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import { HourBlockSheet } from '../hour-block-sheet'
+import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
 import type { ClientRow } from '@/lib/settings/hour-blocks/hour-block-form'
 import { cn } from '@/lib/utils'
 
@@ -19,19 +17,11 @@ export function HourBlocksAddButton({
   clients,
   className,
 }: HourBlocksAddButtonProps) {
-  const router = useRouter()
-  const [open, setOpen] = useState(false)
+  // Opens `?hour-block=new`; the table's single sheet instance renders it,
+  // so this button doesn't own a duplicate copy.
+  const { openCreate } = useSheetParamSelection('hour-block')
 
-  const handleComplete = () => {
-    setOpen(false)
-    router.refresh()
-  }
-
-  const sortedClients = [...clients].sort((a, b) =>
-    a.name.localeCompare(b.name)
-  )
-
-  const createDisabled = sortedClients.length === 0
+  const createDisabled = clients.length === 0
   const createDisabledReason = createDisabled
     ? 'Add a client before creating an hour block.'
     : null
@@ -45,7 +35,7 @@ export function HourBlocksAddButton({
         <Button
           size='sm'
           type='button'
-          onClick={() => setOpen(true)}
+          onClick={openCreate}
           disabled={createDisabled}
           className='gap-2'
         >
@@ -53,13 +43,6 @@ export function HourBlocksAddButton({
           Add hour block
         </Button>
       </DisabledFieldTooltip>
-      <HourBlockSheet
-        open={open}
-        onOpenChange={setOpen}
-        onComplete={handleComplete}
-        hourBlock={null}
-        clients={sortedClients}
-      />
     </div>
   )
 }

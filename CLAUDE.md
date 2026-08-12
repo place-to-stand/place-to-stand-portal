@@ -330,6 +330,19 @@ Leads are inserted with `WEBSITE` source and appear on `/leads/board` immediatel
 - Slugs generated from names with uniqueness constraints
 - Redirect logic ensures canonical URLs
 
+**Sheet deep links (`lib/sheets/`):**
+
+Every entity sheet is addressed by one query param — `?client=<uuid>`, `?task=new`, `?lead=<uuid>&leadMode=convert` — never by a route segment. A param opens its sheet on *any* dashboard route: canonical list pages render their own instance (instant open), and the global `SheetHost` in `(dashboard)/layout.tsx` covers every other route by fetching `GET /api/sheets/init`. Param order in the URL is the sheet stack order, so a sheet can open another sheet (`?lead=<id>&task=new`).
+
+Conventions, all enforced by `useSheetParams`/`useSheetParamSelection` — never hand-roll sheet URL writes:
+- Value is a UUID or `new` (create sheet). UUID-guard before any DB cast.
+- Open = `router.push`, close = `router.replace`, always `{ scroll: false }`, unrelated params preserved.
+- **Save = done = close** for create *and* edit, matching every sheet: a successful save clears the entity param. Never transition a create sheet into edit mode (see `task-sheet-closes-on-save`).
+- Paginated/filtered list pages resolve the param server-side with `resolveSheetDeepLink()` so a link to a row on page 3 still opens, and cross-redirect between active/archive tabs.
+- Generate links with the builders in `lib/sheets/hrefs.ts` (board task links come from `buildBoardPath`), never string-concatenated inline.
+
+**Adding a deep-linkable entity:** add the param to `lib/sheets/entities.ts` (with `claimsPathname` for its host pages), a payload type + resolver in `lib/sheets/init/`, a wrapper in `lib/sheets/wrappers/`, and one line in `lib/sheets/registry.tsx`.
+
 **Sort order tracking:**
 - `task_assignee_metadata` table preserves assignee order
 - `rank` field on tasks for custom board ordering

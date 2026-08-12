@@ -19,6 +19,8 @@ import { ProjectsBoardEmpty } from '@/app/(dashboard)/projects/_components/proje
 import { TaskSheet } from '@/app/(dashboard)/projects/task-sheet'
 import { useMyTasksReorderMutation } from '@/lib/projects/tasks/use-my-tasks-data'
 import type { MyTaskStatus } from '@/lib/projects/tasks/my-tasks-constants'
+import { NEW_SHEET_VALUE } from '@/lib/sheets/entities'
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 
 import { MyTasksBoard } from './my-tasks-board'
 import type { MyTasksBoardReorderUpdate, TaskLookup } from './my-tasks-board'
@@ -57,7 +59,10 @@ export function MyTasksPage({
 }: MyTasksPageProps) {
   const router = useRouter()
   const reorderMutation = useMyTasksReorderMutation()
-  const [isSheetOpen, setIsSheetOpen] = useState(Boolean(activeTaskId))
+  // Raw `?task=` value — the server prop is uuid-guarded, so `new` only
+  // shows up here.
+  const { get: getSheetParam } = useSheetParams()
+  const taskParam = getSheetParam('task')
   const [createTaskContext, setCreateTaskContext] = useState<{
     status: MyTaskStatus
     assigneeId: string
@@ -91,17 +96,16 @@ export function MyTasksPage({
     setEntries(sanitizedEntries)
   }
 
-  const [prevSheetSync, setPrevSheetSync] = useState({
-    activeTaskId,
-    createTaskContext,
-  })
-  if (
-    prevSheetSync.activeTaskId !== activeTaskId ||
-    prevSheetSync.createTaskContext !== createTaskContext
-  ) {
-    setPrevSheetSync({ activeTaskId, createTaskContext })
-    if (!createTaskContext) {
-      setIsSheetOpen(Boolean(activeTaskId))
+  // The `?task=` param is the source of truth: `new` = create, uuid = edit.
+  const isCreatingTask = taskParam === NEW_SHEET_VALUE
+  const isSheetOpen = isCreatingTask || Boolean(activeTaskId)
+
+  // Drop the create seed defaults once the create sheet's param is gone.
+  const [prevTaskParam, setPrevTaskParam] = useState(taskParam)
+  if (prevTaskParam !== taskParam) {
+    setPrevTaskParam(taskParam)
+    if (taskParam !== NEW_SHEET_VALUE) {
+      setCreateTaskContext(null)
     }
   }
 
@@ -151,7 +155,7 @@ export function MyTasksPage({
   const activeTaskMeta = activeTaskId
     ? (taskLookup.get(activeTaskId) ?? null)
     : null
-  const editingTaskMeta = createTaskContext ? null : activeTaskMeta
+  const editingTaskMeta = isCreatingTask ? null : activeTaskMeta
   const shouldKeepTaskSheetMounted = Boolean(
     editingTaskMeta || createTaskContext || isSheetOpen
   )
@@ -181,12 +185,18 @@ export function MyTasksPage({
 
   const searchParams = useSearchParams()
 
+  // Task selection travels as `?task=` (sheet deep-link convention),
+  // alongside the assignee filter this view already carries.
   const buildViewPath = useCallback(
     (targetView: MyTasksView, taskId?: string | null) => {
-      const suffix = taskId ? `/${taskId}` : ''
-      const assigneeParam = searchParams.get('assignee')
-      const queryString = assigneeParam ? `?assignee=${assigneeParam}` : ''
-      return `/my/tasks/${targetView}${suffix}${queryString}`
+      const params = new URLSearchParams(searchParams.toString())
+      if (taskId) {
+        params.set('task', taskId)
+      } else {
+        params.delete('task')
+      }
+      const queryString = params.toString()
+      return `/my/tasks/${targetView}${queryString ? `?${queryString}` : ''}`
     },
     [searchParams]
   )
@@ -200,25 +210,18 @@ export function MyTasksPage({
 
   const handleSheetChange = useCallback(
     (open: boolean) => {
-      if (!open) {
-        setIsSheetOpen(false)
-        if (createTaskContext) {
-          setCreateTaskContext(null)
-          startRefresh(() => {
-            router.refresh()
-          })
-          return
-        }
-        router.push(buildViewPath(view), { scroll: false })
-        startRefresh(() => {
-          router.refresh()
-        })
+      if (open) {
         return
       }
 
-      setIsSheetOpen(true)
+      setCreateTaskContext(null)
+      // Close replaces so Back doesn't bounce straight back into the sheet.
+      router.replace(buildViewPath(view), { scroll: false })
+      startRefresh(() => {
+        router.refresh()
+      })
     },
-    [buildViewPath, createTaskContext, router, startRefresh, view]
+    [buildViewPath, router, startRefresh, view]
   )
 
   const handleReorder = useCallback(
@@ -242,6 +245,9 @@ export function MyTasksPage({
 
   const totalTaskCount = entries.length
 
+  // `?task=new` opens the create sheet (shared convention), so an "add task"
+  // link is shareable; the local context only carries the seed defaults for
+  // the column the create was started from.
   const handleStartCreateTask = useCallback(
     (status: MyTaskStatus = 'ON_DECK') => {
       setCreateTaskContext({
@@ -249,9 +255,9 @@ export function MyTasksPage({
         assigneeId: user.id,
         projectId: null,
       })
-      setIsSheetOpen(true)
+      router.push(buildViewPath(view, NEW_SHEET_VALUE), { scroll: false })
     },
-    [user.id]
+    [buildViewPath, router, user.id, view]
   )
 
   const viewTabs = [

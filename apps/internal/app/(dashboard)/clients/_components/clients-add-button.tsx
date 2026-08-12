@@ -1,41 +1,29 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
 import { cn } from '@/lib/utils'
-
-import { ClientSheet } from './clients-sheet'
 
 type ClientsAddButtonProps = {
   className?: string
 }
 
-export function ClientsAddButton({
-  className,
-}: ClientsAddButtonProps) {
-  const router = useRouter()
-  const [open, setOpen] = useState(false)
-
-  const handleComplete = () => {
-    setOpen(false)
-    router.refresh()
-  }
+/**
+ * Opens the create sheet through `?client=new` — the clients tabs render the
+ * sheet instance themselves, and every other route gets it from the global
+ * SheetHost, so the button never mounts one of its own.
+ */
+export function ClientsAddButton({ className }: ClientsAddButtonProps) {
+  const { openCreate } = useSheetParamSelection('client')
 
   return (
     <div className={cn(className)}>
-      <Button size='sm' type='button' onClick={() => setOpen(true)} className='gap-2'>
+      <Button size='sm' type='button' onClick={openCreate} className='gap-2'>
         <Plus className='h-4 w-4' />
         Add client
       </Button>
-      <ClientSheet
-        open={open}
-        onOpenChange={setOpen}
-        onComplete={handleComplete}
-        client={null}
-      />
     </div>
   )
 }

@@ -222,7 +222,7 @@ export async function convertLeadToClient(
     metadata: event.metadata,
   })
 
-  revalidatePath('/leads/board')
+  revalidatePath('/leads')
   revalidatePath('/clients')
 
   return {

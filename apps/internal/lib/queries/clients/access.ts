@@ -57,3 +57,23 @@ export async function getClientById(
 
   return result[0]
 }
+
+/**
+ * By-id fetch that keeps archived clients — the `?client=` deep-link resolver
+ * needs the soft-deleted row so a shared link can cross-redirect to the
+ * archive tab instead of reporting a dead link.
+ */
+export async function getClientByIdIncludingArchived(
+  user: AppUser,
+  clientId: string,
+): Promise<SelectClient | null> {
+  assertAdmin(user)
+
+  const result = await db
+    .select(clientFields)
+    .from(clients)
+    .where(eq(clients.id, clientId))
+    .limit(1)
+
+  return result[0] ?? null
+}

@@ -3,8 +3,10 @@ import type { Metadata } from 'next'
 import { PageShell } from '@/components/layout/page-shell'
 import { requireRole } from '@/lib/auth/session'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
-import { listInvoices } from '@/lib/queries/invoices'
+import { getInvoiceById, listInvoices } from '@/lib/queries/invoices'
 import { parseInvoicesSearchParams } from '@/lib/invoices/filters'
+import { invoiceHref } from '@/lib/sheets/hrefs'
+import { resolveSheetDeepLink } from '@/lib/sheets/resolve-deep-link'
 
 import { InvoicesAddButton } from '../_components/invoices-add-button'
 import { InvoicesFilters } from '../_components/invoices-filters'
@@ -49,6 +51,18 @@ export default async function InvoicesArchivePage({
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
 
+  // Restored invoices leave this tab, so a shared archive link cross-redirects
+  // to the active tab instead of dead-ending.
+  const { record: deepLinkedInvoice, notFound: invoiceNotFound } =
+    await resolveSheetDeepLink({
+      idParam: typeof params.invoice === 'string' ? params.invoice : undefined,
+      fetchById: id => getInvoiceById(currentUser, id),
+      tab: 'archive',
+      isArchived: invoice => Boolean(invoice.deleted_at),
+      activeHref: invoiceHref,
+      archiveHref: id => `/invoices/archive?invoice=${id}`,
+    })
+
   return (
     <PageShell
       breadcrumbs={[...crumbsForNav('/invoices'), { label: 'Archive' }]}
@@ -59,13 +73,7 @@ export default async function InvoicesArchivePage({
         total: unfilteredTotalCount,
         filteredTotal: totalCount,
       }}
-      primaryAction={
-        <InvoicesAddButton
-          clients={clients}
-          productCatalog={productCatalog}
-          taxRates={taxRates}
-        />
-      }
+      primaryAction={<InvoicesAddButton clients={clients} />}
     >
       <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
         <InvoicesFilters
@@ -84,6 +92,8 @@ export default async function InvoicesArchivePage({
           pageSize={PAGE_SIZE}
           mode='archive'
           basePath='/invoices/archive'
+          deepLinkedInvoice={deepLinkedInvoice}
+          invoiceNotFound={invoiceNotFound}
         />
       </section>
     </PageShell>

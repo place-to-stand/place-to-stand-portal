@@ -5,12 +5,25 @@ import { asc, eq, and, sql, inArray } from 'drizzle-orm'
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, contactClients } from '@/lib/db/schema'
+import { clients, contactClients, contacts } from '@/lib/db/schema'
+import { NotFoundError } from '@/lib/errors/http'
 
 export type ClientOption = {
   id: string
   name: string
   slug: string
+}
+
+export type ContactSheetInputRow = {
+  id: string
+  email: string
+  name: string
+  phone: string | null
+}
+
+/** Sheet row plus the archive flag the deep-link resolver needs. */
+export type ContactDeepLinkRow = ContactSheetInputRow & {
+  deletedAt: string | null
 }
 
 export type ContactSheetData = {
@@ -144,6 +157,60 @@ export async function getContactSheetData(
   ])
 
   return { allClients, linkedClients }
+}
+
+/**
+ * Fetches the minimal contact row the contact sheet needs — it self-fetches
+ * its client links via `getContactSheetData`.
+ */
+export async function getContactSheetInputById(
+  user: AppUser,
+  contactId: string
+): Promise<ContactSheetInputRow> {
+  assertAdmin(user)
+
+  const rows = await db
+    .select({
+      id: contacts.id,
+      email: contacts.email,
+      name: contacts.name,
+      phone: contacts.phone,
+    })
+    .from(contacts)
+    .where(and(eq(contacts.id, contactId), sql`${contacts.deletedAt} IS NULL`))
+    .limit(1)
+
+  if (!rows.length) {
+    throw new NotFoundError('Contact not found')
+  }
+
+  return rows[0]!
+}
+
+/**
+ * By-id fetch that keeps archived contacts — the `?contact=` deep-link
+ * resolver needs the soft-deleted row (and its `deletedAt`) so a shared link
+ * can cross-redirect to the archive tab instead of reporting a dead link.
+ */
+export async function getContactDeepLinkRowById(
+  user: AppUser,
+  contactId: string
+): Promise<ContactDeepLinkRow | null> {
+  assertAdmin(user)
+
+  const rows = await db
+    .select({
+      id: contacts.id,
+      email: contacts.email,
+      name: contacts.name,
+      phone: contacts.phone,
+      deletedAt: contacts.deletedAt,
+    })
+    .from(contacts)
+    .where(eq(contacts.id, contactId))
+    .limit(1)
+
+  return rows[0] ?? null
 }
 
 /**

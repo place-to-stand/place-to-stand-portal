@@ -6,6 +6,7 @@ import { useForm, useWatch } from 'react-hook-form'
 
 import { useToast } from '@/components/ui/use-toast'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import { archiveLead, saveLead } from '@/app/(dashboard)/leads/actions'
 import {
@@ -34,18 +35,18 @@ export function useLeadSheetState({
   )
   const { toast } = useToast()
 
-  const pushActionUrl = useCallback(
-    (action: string) => {
-      if (!lead) return
-      window.history.replaceState(null, '', `/leads/${lead.id}/${action}`)
-    },
-    [lead]
-  )
+  const { setAux } = useSheetParams()
 
-  const pushLeadUrl = useCallback(() => {
-    if (!lead) return
-    window.history.replaceState(null, '', `/leads/${lead.id}`)
-  }, [lead])
+  // Mirrors the convert dialog's open state into `?leadMode=convert` so the
+  // sub-state is shareable, via the router (replace) rather than raw history
+  // mutation — the Next router cache stays in sync with the URL.
+  const setActionParam = useCallback(
+    (action: string | null) => {
+      if (!lead) return
+      setAux('leadMode', action)
+    },
+    [lead, setAux]
+  )
 
   const canConvert = lead?.status === 'CLOSED_WON' && !lead?.convertedToClientId
   const isConverted = Boolean(lead?.convertedToClientId)
@@ -237,8 +238,7 @@ export function useLeadSheetState({
     setArchiveDialogOpen,
     isConvertDialogOpen,
     setConvertDialogOpen,
-    pushActionUrl,
-    pushLeadUrl,
+    setActionParam,
     canConvert,
     isConverted,
     selectedSourceType,

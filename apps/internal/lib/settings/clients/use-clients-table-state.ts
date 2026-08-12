@@ -11,6 +11,7 @@ import {
 } from '@/app/(dashboard)/clients/actions'
 
 import type { ClientRow } from './client-sheet-utils'
+import { useClientSheetSelection } from './use-client-sheet-selection'
 
 export type ClientsTab = 'clients' | 'archive' | 'activity'
 
@@ -21,11 +22,28 @@ export type ClientsTableClient = ClientRow & {
   }
 }
 
-export function useClientsTableState() {
+type UseClientsTableStateArgs = {
+  /** The page's fresh rows — the open sheet re-resolves from them by id. */
+  clients: ClientsTableClient[]
+  /** Row resolved server-side from `?client=`, used when the list misses it. */
+  deepLinkedClient?: ClientRow | null
+}
+
+export function useClientsTableState({
+  clients,
+  deepLinkedClient = null,
+}: UseClientsTableStateArgs) {
   const router = useRouter()
-  const [sheetOpen, setSheetOpen] = useState(false)
-  const [selectedClient, setSelectedClient] =
-    useState<ClientsTableClient | null>(null)
+  const {
+    selectedId,
+    sheetOpen,
+    sheetClient,
+    openCreate,
+    openEdit,
+    clear,
+    handleSheetOpenChange,
+    handleSheetComplete,
+  } = useClientSheetSelection({ clients, deepLinkedClient })
   const [deleteTarget, setDeleteTarget] = useState<ClientsTableClient | null>(
     null
   )
@@ -40,27 +58,14 @@ export function useClientsTableState() {
 
   const pendingReason = 'Please wait for the current request to finish.'
 
-  const openCreate = () => {
-    setSelectedClient(null)
-    setSheetOpen(true)
-  }
-
-  const openEdit = (client: ClientsTableClient) => {
-    setSelectedClient(client)
-    setSheetOpen(true)
-  }
-
-  const handleSheetOpenChange = (open: boolean) => {
-    setSheetOpen(open)
-    if (!open) {
-      setSelectedClient(null)
+  /**
+   * The row is about to leave this tab — drop `?client=` first so the refresh
+   * can't reopen a stale sheet or trip the not-found notice.
+   */
+  const clearIfSelected = (clientId: string) => {
+    if (selectedId === clientId) {
+      clear()
     }
-  }
-
-  const handleSheetComplete = () => {
-    setSheetOpen(false)
-    setSelectedClient(null)
-    router.refresh()
   }
 
   const handleRequestDelete = (client: ClientsTableClient) => {
@@ -106,6 +111,7 @@ export function useClientsTableState() {
           title: 'Client deleted',
           description: `${client.name} is hidden from selectors but remains available for history.`,
         })
+        clearIfSelected(client.id)
         router.refresh()
       } finally {
         setPendingDeleteId(null)
@@ -136,6 +142,7 @@ export function useClientsTableState() {
           title: 'Client restored',
           description: `${client.name} is active again.`,
         })
+        clearIfSelected(client.id)
         router.refresh()
       } finally {
         setPendingRestoreId(null)
@@ -186,6 +193,7 @@ export function useClientsTableState() {
           title: 'Client permanently deleted',
           description: `${client.name} has been removed.`,
         })
+        clearIfSelected(client.id)
         router.refresh()
       } finally {
         setPendingDestroyId(null)
@@ -195,7 +203,7 @@ export function useClientsTableState() {
 
   return {
     sheetOpen,
-    selectedClient,
+    selectedClient: sheetClient,
     deleteTarget,
     destroyTarget,
     isPending,
@@ -205,6 +213,7 @@ export function useClientsTableState() {
     pendingDestroyId,
     openCreate,
     openEdit,
+    clearSelection: clear,
     handleSheetOpenChange,
     handleSheetComplete,
     handleRequestDelete,

@@ -25,8 +25,7 @@ export function LeadSheet(props: LeadSheetProps) {
     setArchiveDialogOpen,
     isConvertDialogOpen,
     setConvertDialogOpen,
-    pushActionUrl,
-    pushLeadUrl,
+    setActionParam,
     canConvert,
     isConverted,
     selectedSourceType,
@@ -70,7 +69,7 @@ export function LeadSheet(props: LeadSheetProps) {
                 isConverted={isConverted}
                 onConvertToClient={() => {
                   setConvertDialogOpen(true)
-                  pushActionUrl('convert')
+                  setActionParam('convert')
                 }}
               />
             )}
@@ -141,7 +140,7 @@ export function LeadSheet(props: LeadSheetProps) {
         isConvertDialogOpen={isConvertDialogOpen}
         onConvertOpenChange={(next: boolean) => {
           setConvertDialogOpen(next)
-          if (!next) pushLeadUrl()
+          if (!next) setActionParam(null)
         }}
         onSuccess={onSuccess}
         unsavedChangesDialog={unsavedChangesDialog}

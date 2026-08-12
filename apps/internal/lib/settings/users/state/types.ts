@@ -35,6 +35,11 @@ export type UseUsersTableStateArgs = {
   users: UserRow[]
   currentUserId: string
   assignments: UserAssignments
+  /**
+   * User resolved server-side from `?user=`, used when the paginated list
+   * doesn't contain the linked row.
+   */
+  deepLinkedUser?: UserRow | null
 }
 
 export type DeleteDialogState = {

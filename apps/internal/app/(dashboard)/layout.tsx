@@ -1,9 +1,10 @@
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { cookies } from "next/headers";
 
 import { AppShell } from "@/components/layout/app-shell";
 import { requireUser } from "@/lib/auth/session";
 import { fetchUnacknowledgedSubmissionCount } from "@/lib/data/form-submissions";
+import { SheetHost } from "@/lib/sheets/sheet-host";
 
 export default async function DashboardLayout({
   children,
@@ -28,6 +29,11 @@ export default async function DashboardLayout({
       sidebarDefaultOpen={sidebarDefaultOpen}
     >
       {children}
+      {/* Global sheet host: renders entity sheets for `?client=`/`?task=`/…
+          params on routes that don't handle them with their own instances. */}
+      <Suspense fallback={null}>
+        <SheetHost />
+      </Suspense>
     </AppShell>
   );
 }

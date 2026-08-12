@@ -20,6 +20,8 @@ type RouterLike = {
 type BoardNavigationArgs = {
   router: RouterLike
   pathname: string
+  /** Current query string (no `?`) — task selection lives in `?task=`. */
+  search: string
   projectLookup: Map<string, ProjectWithRelations>
   projectsByClientId: Map<string, ProjectWithRelations[]>
   clientSlugLookup: Map<string, string | null>
@@ -29,6 +31,7 @@ type BoardNavigationArgs = {
 export const useBoardNavigation = ({
   router,
   pathname,
+  search,
   projectLookup,
   projectsByClientId,
   clientSlugLookup,
@@ -55,7 +58,7 @@ export const useBoardNavigation = ({
           projectsByClientId,
           clientSlugLookup,
         },
-        { taskId, view }
+        { taskId, view, search }
       )
 
       if (!path) {
@@ -69,7 +72,10 @@ export const useBoardNavigation = ({
         prev === MISSING_SLUG_MESSAGE ? null : prev
       )
 
-      if (pathname === path) {
+      // Compare the full URL — task selection lives in the query string, so
+      // a pathname-only check would treat open/close as no-ops.
+      const currentUrl = search ? `${pathname}?${search}` : pathname
+      if (currentUrl === path) {
         return
       }
 
@@ -88,6 +94,7 @@ export const useBoardNavigation = ({
       projectLookup,
       projectsByClientId,
       router,
+      search,
       setFeedback,
     ]
   )

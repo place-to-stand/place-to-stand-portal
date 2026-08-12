@@ -14,8 +14,12 @@ export const useUsersTableState = ({
   users,
   currentUserId,
   assignments,
+  deepLinkedUser = null,
 }: UseUsersTableStateArgs): UsersTableState => {
-  const { sheet, openCreate, editUser } = useUsersSheetState()
+  const { sheet, openCreate, editUser } = useUsersSheetState({
+    users,
+    deepLinkedUser,
+  })
   const mutationState = useUserMutationState({ currentUserId, assignments })
 
   const rows = useUserRowsState({

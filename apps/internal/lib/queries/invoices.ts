@@ -286,6 +286,41 @@ export async function listInvoices(
 }
 
 // ---------------------------------------------------------------------------
+// Invoice sheet reference data
+// ---------------------------------------------------------------------------
+
+export type InvoiceReferenceData = {
+  clients: ClientRow[]
+  productCatalog: ProductCatalogItemRow[]
+  taxRates: TaxRateRow[]
+}
+
+/**
+ * The reference data the invoice sheet needs (client directory, product
+ * catalog, tax rates) — the same set `listInvoices` returns alongside pages.
+ */
+export async function listInvoiceReferenceData(
+  user: AppUser
+): Promise<InvoiceReferenceData> {
+  assertAdmin(user)
+
+  const [clientDirectory, productCatalog, activeTaxRates] = await Promise.all([
+    db
+      .select(clientSelection)
+      .from(clients)
+      .orderBy(asc(clients.name)) as Promise<ClientSelectionRow[]>,
+    listProductCatalogItems(),
+    listTaxRates(),
+  ])
+
+  return {
+    clients: clientDirectory.map(mapClientRow),
+    productCatalog,
+    taxRates: activeTaxRates,
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Get invoice by ID (admin)
 // ---------------------------------------------------------------------------
 
