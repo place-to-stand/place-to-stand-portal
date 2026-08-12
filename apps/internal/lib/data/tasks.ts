@@ -1,7 +1,19 @@
 import 'server-only'
 
 import { cache } from 'react'
-import { and, asc, desc, eq, gte, isNotNull, isNull, lt, ne, or, sql } from 'drizzle-orm'
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gte,
+  isNotNull,
+  isNull,
+  lt,
+  ne,
+  or,
+  sql,
+} from 'drizzle-orm'
 
 import type { ProjectTypeValue } from '@/lib/types'
 import { db } from '@/lib/db'
@@ -48,6 +60,21 @@ export type AssignedTaskSummaryResult = {
 
 const DEFAULT_LIMIT = 12
 
+/**
+ * Shared row filter for "tasks assigned to this user that still matter":
+ * not deleted, not archived, and not yet accepted.
+ */
+function assignedTaskConditions(userId: string) {
+  return [
+    eq(taskAssigneesTable.userId, userId),
+    isNull(taskAssigneesTable.deletedAt),
+    isNull(tasksTable.deletedAt),
+    isNull(projectsTable.deletedAt),
+    isNull(tasksTable.acceptedAt),
+    ne(tasksTable.status, 'ARCHIVED'),
+  ]
+}
+
 const STATUS_PRIORITY_SQL = sql`
   CASE
     WHEN ${tasksTable.status} = 'BLOCKED' THEN 0
@@ -65,8 +92,8 @@ type FetchAssignedTasksSummaryOptions = {
   includeCompletedStatuses?: boolean
   /**
    * ISO instant. When set, DONE tasks completed before it are withheld;
-   * every other status is unaffected. Used by the My Tasks board to keep the
-   * Done column to a rolling window instead of an ever-growing archive.
+   * every other status is unaffected. Keeps the board's Done column to a
+   * rolling window instead of an ever-growing archive.
    */
   doneSince?: string | null
 }
@@ -84,14 +111,7 @@ async function loadAssignedTaskSummaries({
         ? null
         : DEFAULT_LIMIT
 
-  const baseConditions = [
-    eq(taskAssigneesTable.userId, userId),
-    isNull(taskAssigneesTable.deletedAt),
-    isNull(tasksTable.deletedAt),
-    isNull(projectsTable.deletedAt),
-    isNull(tasksTable.acceptedAt),
-    ne(tasksTable.status, 'ARCHIVED'),
-  ]
+  const baseConditions = assignedTaskConditions(userId)
 
   if (!includeCompletedStatuses) {
     baseConditions.push(ne(tasksTable.status, 'DONE'))
@@ -184,24 +204,9 @@ async function loadAssignedTaskSummaries({
     totalCount = Number(totalResult[0]?.count ?? 0)
   }
 
-  let olderDoneCount = 0
-  if (doneWindowCondition) {
-    const [olderResult] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(taskAssigneesTable)
-      .innerJoin(tasksTable, eq(taskAssigneesTable.taskId, tasksTable.id))
-      .innerJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
-      .where(
-        and(
-          ...baseConditions.filter(condition => condition !== doneWindowCondition),
-          eq(tasksTable.status, 'DONE'),
-          isNotNull(tasksTable.completedAt),
-          lt(tasksTable.completedAt, doneSince!)
-        )
-      )
-
-    olderDoneCount = Number(olderResult?.count ?? 0)
-  }
+  const olderDoneCount = doneSince
+    ? await countAssignedDoneBefore(userId, doneSince)
+    : 0
 
   const items: AssignedTaskSummary[] = rows.map(row => {
     const updatedSource = row.updatedAt ?? row.createdAt ?? null
@@ -232,6 +237,130 @@ async function loadAssignedTaskSummaries({
   })
 
   return { items, totalCount, olderDoneCount }
+}
+
+/**
+ * Assigned DONE tasks completed before `before`. Rows with a null
+ * completed_at are excluded: they're always shown, so they're never "older".
+ */
+async function countAssignedDoneBefore(
+  userId: string,
+  before: string
+): Promise<number> {
+  const [result] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(taskAssigneesTable)
+    .innerJoin(tasksTable, eq(taskAssigneesTable.taskId, tasksTable.id))
+    .innerJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
+    .where(
+      and(
+        ...assignedTaskConditions(userId),
+        eq(tasksTable.status, 'DONE'),
+        isNotNull(tasksTable.completedAt),
+        lt(tasksTable.completedAt, before)
+      )
+    )
+
+  return Number(result?.count ?? 0)
+}
+
+export type AssignedDoneSliceResult = {
+  items: AssignedTaskSummary[]
+  /** DONE tasks still older than this slice, for the next "load previous". */
+  olderDoneCount: number
+}
+
+/**
+ * One step of the board's "load previous two weeks": assigned DONE tasks
+ * completed in `[since, before)`, plus how many remain beyond it.
+ *
+ * A half-open range rather than "everything since X" so widening appends only
+ * what the client doesn't already have — the board keeps the rows it already
+ * rendered instead of re-receiving and re-reconciling them.
+ */
+export async function listAssignedDoneSlice({
+  userId,
+  since,
+  before,
+}: {
+  userId: string
+  since: string
+  before: string
+}): Promise<AssignedDoneSliceResult> {
+  const rows = await db
+    .select({
+      id: tasksTable.id,
+      title: tasksTable.title,
+      description: tasksTable.description,
+      status: tasksTable.status,
+      dueOn: tasksTable.dueOn,
+      updatedAt: tasksTable.updatedAt,
+      createdAt: tasksTable.createdAt,
+      sortOrder: taskAssigneeMetadataTable.sortOrder,
+      project: {
+        id: projectsTable.id,
+        name: projectsTable.name,
+        slug: projectsTable.slug,
+        type: projectsTable.type,
+        createdBy: projectsTable.createdBy,
+      },
+      client: {
+        id: clientsTable.id,
+        name: clientsTable.name,
+        slug: clientsTable.slug,
+      },
+    })
+    .from(taskAssigneesTable)
+    .innerJoin(tasksTable, eq(taskAssigneesTable.taskId, tasksTable.id))
+    .innerJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
+    .leftJoin(clientsTable, eq(projectsTable.clientId, clientsTable.id))
+    .leftJoin(
+      taskAssigneeMetadataTable,
+      and(
+        eq(taskAssigneeMetadataTable.taskId, tasksTable.id),
+        eq(taskAssigneeMetadataTable.userId, taskAssigneesTable.userId),
+        isNull(taskAssigneeMetadataTable.deletedAt)
+      )
+    )
+    .where(
+      and(
+        ...assignedTaskConditions(userId),
+        eq(tasksTable.status, 'DONE'),
+        isNotNull(tasksTable.completedAt),
+        gte(tasksTable.completedAt, since),
+        lt(tasksTable.completedAt, before)
+      )
+    )
+    .orderBy(desc(tasksTable.completedAt))
+
+  const items: AssignedTaskSummary[] = rows.map(row => ({
+    id: row.id,
+    title: row.title,
+    description: row.description ?? null,
+    status: row.status,
+    dueOn: row.dueOn ?? null,
+    updatedAt: row.updatedAt ?? row.createdAt ?? null,
+    sortOrder: row.sortOrder ?? null,
+    project: {
+      id: row.project.id,
+      name: row.project.name,
+      slug: row.project.slug ?? null,
+      type: row.project.type as ProjectTypeValue,
+      createdBy: row.project.createdBy ?? null,
+    },
+    client: row.client?.id
+      ? {
+          id: row.client.id,
+          name: row.client.name ?? 'Unnamed client',
+          slug: row.client.slug ?? null,
+        }
+      : null,
+  }))
+
+  return {
+    items,
+    olderDoneCount: await countAssignedDoneBefore(userId, since),
+  }
 }
 
 export const fetchAssignedTasksSummary = cache(

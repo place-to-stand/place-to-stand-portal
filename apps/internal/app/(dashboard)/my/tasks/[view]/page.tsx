@@ -18,7 +18,7 @@ import {
   listAssignedTaskSummaries,
 } from '@/lib/data/tasks'
 import {
-  parseDoneWeeks,
+  DONE_WINDOW_WEEKS,
   resolveDoneWindowStart,
 } from '@/lib/projects/tasks/done-window'
 
@@ -33,7 +33,6 @@ type PageParams = {
 type PageSearchParams = {
   assignee?: string
   task?: string
-  doneWeeks?: string
 }
 
 type PageProps = {
@@ -74,19 +73,21 @@ export default async function MyTasksViewRoute({
       ? requestedAssigneeId
       : user.id
 
-  // The Done column shows a rolling window instead of every task ever
-  // finished. The width lives in the URL so it survives a refresh and can be
-  // shared, and so widening is a plain server re-render rather than a second
-  // hydration path.
-  const doneWeeks = parseDoneWeeks(resolvedSearchParams.doneWeeks)
+  // The Done column starts at one window and widens on demand via
+  // /api/my-tasks/done-window, so the first load never carries the whole
+  // completed archive.
+  //
   // Board only. The calendar plots by due date and has no Done column, so
   // windowing there would quietly erase history from past months.
+  const now = new Date().toISOString()
   const isBoardView = viewParam === 'board'
 
   const assignedSummaries = await listAssignedTaskSummaries({
     userId: selectedAssigneeId,
     limit: null,
-    doneSince: isBoardView ? resolveDoneWindowStart(doneWeeks) : null,
+    doneSince: isBoardView
+      ? resolveDoneWindowStart(DONE_WINDOW_WEEKS, now)
+      : null,
   })
 
   const includedProjectIds = new Set<string>()
@@ -150,8 +151,8 @@ export default async function MyTasksViewRoute({
       activeTaskId={resolvedActiveTaskId}
       view={viewParam}
       selectedAssigneeId={selectedAssigneeId}
-      doneWeeks={doneWeeks}
-      olderDoneCount={assignedSummaries.olderDoneCount}
+      now={now}
+      initialOlderDoneCount={assignedSummaries.olderDoneCount}
     />
   )
 }

@@ -46,8 +46,13 @@ type MyTasksBoardProps = {
   activeTaskId: string | null
   scrollStorageKey?: string | null
   onCreateTask?: (status: MyTaskStatus) => void
+  /** Current Done window width in weeks. */
   doneWeeks: number
+  /** Assigned DONE tasks completed before the window. */
   olderDoneCount: number
+  onLoadOlderDone: () => void
+  isLoadingOlderDone: boolean
+  doneWindowError: string | null
 }
 
 type TaskRow = {
@@ -76,6 +81,9 @@ export function MyTasksBoard({
   onCreateTask,
   doneWeeks,
   olderDoneCount,
+  onLoadOlderDone,
+  isLoadingOlderDone,
+  doneWindowError,
 }: MyTasksBoardProps) {
   const { sensors } = useProjectsBoardSensors()
   const { viewportRef: boardViewportRef, handleScroll: handleBoardScroll } =
@@ -222,10 +230,17 @@ export function MyTasksBoard({
                       columnScrollRef={getColumnRef(column.id)}
                       onColumnScroll={getScrollHandler(column.id)}
                       footerSlot={
-                        column.id === 'DONE' ? (
+                        // Nothing done and nothing hidden means there's no
+                        // filtering to explain -- an empty column shouldn't
+                        // carry a caption about tasks it never had.
+                        column.id === 'DONE' &&
+                        (rows.length > 0 || olderDoneCount > 0) ? (
                           <DoneWindowFooter
                             doneWeeks={doneWeeks}
-                            olderDoneCount={olderDoneCount}
+                            hiddenCount={olderDoneCount}
+                            onWiden={onLoadOlderDone}
+                            isLoading={isLoadingOlderDone}
+                            error={doneWindowError}
                           />
                         ) : undefined
                       }
