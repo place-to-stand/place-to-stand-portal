@@ -18,6 +18,8 @@ type ReviewRouteArgs = {
   clientSlug: string
   projectSlug: string
   taskId?: string | null
+  /** Whole query string, carried across the canonical-slug redirect. */
+  querySuffix?: string
 }
 
 export const reviewMetadata: Metadata = {
@@ -50,6 +52,7 @@ export const renderReviewRoute = async ({
   clientSlug,
   projectSlug,
   taskId = null,
+  querySuffix = '',
 }: ReviewRouteArgs): Promise<ReactElement> => {
   const user = await requireUser()
   const [liteProjects, admins, clientDirectory] = await Promise.all([
@@ -87,8 +90,10 @@ export const renderReviewRoute = async ({
   }
 
   if (canonicalClientSlug !== clientSlug) {
-    const suffix = taskId ? `/${taskId}` : ''
-    redirect(`/projects/${canonicalClientSlug}/${project.slug}/review${suffix}`)
+    // Carry the whole query string so a stacked sheet link survives it.
+    redirect(
+      `/projects/${canonicalClientSlug}/${project.slug}/review${querySuffix}`
+    )
   }
 
   const activeClientId = project.client_id ?? null

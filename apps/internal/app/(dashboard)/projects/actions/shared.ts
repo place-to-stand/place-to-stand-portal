@@ -9,7 +9,7 @@ export async function revalidateProjectTaskViews() {
     revalidatePath('/projects/[clientSlug]/[projectSlug]/tasks', 'page'),
     revalidatePath('/projects/[clientSlug]/[projectSlug]/activity', 'page'),
     revalidatePath('/projects/[clientSlug]/[projectSlug]/review', 'page'),
-    revalidatePath('/my/tasks/board', 'page'),
-    revalidatePath('/my/tasks/calendar', 'page'),
+    // Route id, not a concrete path: both views share `/my/tasks/[view]`.
+    revalidatePath('/my/tasks/[view]', 'page'),
   ])
 }

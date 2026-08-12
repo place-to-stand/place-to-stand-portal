@@ -311,6 +311,23 @@ export async function getActiveClientSummary(
   }
 }
 
+/**
+ * The full client directory the hour block sheet's client picker needs —
+ * mirrors the directory `listHourBlocksForSettings` returns alongside pages.
+ */
+export async function listHourBlockClientDirectory(
+  user: AppUser
+): Promise<ClientRow[]> {
+  assertAdmin(user)
+
+  const rows = await db
+    .select(clientSelection)
+    .from(clients)
+    .orderBy(asc(clients.name))
+
+  return rows.map(mapClientRow)
+}
+
 export async function getHourBlockWithClientById(
   user: AppUser,
   hourBlockId: string

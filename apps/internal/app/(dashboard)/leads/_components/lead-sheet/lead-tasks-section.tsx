@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { ListTodo, Plus, Calendar, ExternalLink, CheckCircle2, Circle } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
@@ -8,8 +8,10 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@pts/ui/skeleton'
 import type { LeadRecord } from '@/lib/leads/types'
 import { formatCalendarDate } from '@/lib/dates'
-
-import { LeadTaskSheetOverlay } from './lead-task-sheet-overlay'
+import { NEW_SHEET_VALUE } from '@/lib/sheets/entities'
+import { myTaskHref } from '@/lib/sheets/hrefs'
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
+import { prefetchSheetInit } from '@/lib/sheets/wrappers/use-sheet-init'
 
 type LeadTask = {
   id: string
@@ -30,9 +32,10 @@ export function LeadTasksSection({
   canManage,
   onSuccess,
 }: LeadTasksSectionProps) {
-  const [isDialogOpen, setDialogOpen] = useState(false)
+  const { openNew, get } = useSheetParams()
   const [tasks, setTasks] = useState<LeadTask[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const taskParam = get('task')
 
   const fetchTasks = useCallback(() => {
     // Promise-chained (not awaited inline) so every setState runs
@@ -56,10 +59,29 @@ export function LeadTasksSection({
     fetchTasks()
   }, [fetchTasks])
 
-  const handleTaskSheetSuccess = useCallback(() => {
-    fetchTasks()
-    onSuccess?.()
-  }, [fetchTasks, onSuccess])
+  // Warm the task sheet's reference data while the user reads the lead, so
+  // "Create" opens immediately instead of after a round-trip.
+  useEffect(() => {
+    if (canManage) {
+      prefetchSheetInit('task', NEW_SHEET_VALUE)
+    }
+  }, [canManage])
+
+  // The task sheet stacks on top of this one via `?task=` (rendered by the
+  // global SheetHost). Refetch the linked tasks once that param clears, so a
+  // task created here shows up in the list. This runs in an effect, not the
+  // adjust-during-render pattern: `onSuccess` sets state in the parent, and
+  // updating another component during render is illegal.
+  const previousTaskParamRef = useRef(taskParam)
+  useEffect(() => {
+    const previous = previousTaskParamRef.current
+    previousTaskParamRef.current = taskParam
+
+    if (previous !== null && taskParam === null) {
+      void fetchTasks()
+      onSuccess?.()
+    }
+  }, [fetchTasks, onSuccess, taskParam])
 
   const completedTasks = tasks.filter(t => t.status === 'DONE' || t.status === 'ARCHIVED')
   const activeTasks = tasks.filter(t => t.status !== 'DONE' && t.status !== 'ARCHIVED')
@@ -81,7 +103,7 @@ export function LeadTasksSection({
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => setDialogOpen(true)}
+            onClick={() => openNew('task')}
           >
             <Plus className="mr-1 h-3 w-3" />
             Create
@@ -126,13 +148,6 @@ export function LeadTasksSection({
         </div>
       )}
 
-      <LeadTaskSheetOverlay
-        open={isDialogOpen}
-        onOpenChange={setDialogOpen}
-        lead={lead}
-        canManage={canManage}
-        onSuccess={handleTaskSheetSuccess}
-      />
     </div>
   )
 }
@@ -192,7 +207,7 @@ function TaskCard({
           </div>
         </div>
         <a
-          href={`/my/tasks/board/${task.id}`}
+          href={myTaskHref(task.id)}
           className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
           aria-label={`Open task: ${task.title}`}
         >

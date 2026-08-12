@@ -3,6 +3,7 @@
 import { useCallback, useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
+import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 import { useToast } from '@/components/ui/use-toast'
@@ -11,6 +12,7 @@ import {
   type ContactsTableContact,
   useContactsTableState,
 } from '@/lib/settings/contacts/use-contacts-table-state'
+import type { ContactSheetInput } from '@/lib/settings/contacts/use-contact-sheet-state'
 import type { ClientOption } from '@/lib/queries/contacts'
 
 import { promoteContactToUser } from '../actions'
@@ -28,6 +30,13 @@ type ContactsManagementTableProps = {
   allClients?: ClientOption[]
   /** Route the sort/filter params live on (PRD 004 §03). */
   basePath: string
+  /**
+   * Contact resolved server-side from the `?contact=` share link. May not be
+   * in `contacts` when it sits on another page or is filtered out.
+   */
+  deepLinkedContact?: ContactSheetInput | null
+  /** True when `?contact=` points at a contact that no longer exists. */
+  contactNotFound?: boolean
 }
 
 const EMPTY_MESSAGES = {
@@ -44,6 +53,8 @@ export function ContactsManagementTable({
   mode,
   allClients = [],
   basePath,
+  deepLinkedContact = null,
+  contactNotFound = false,
 }: ContactsManagementTableProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -64,6 +75,7 @@ export function ContactsManagementTable({
     pendingRestoreId,
     pendingDestroyId,
     openEdit,
+    clearSelection,
     handleSheetOpenChange,
     handleSheetComplete,
     handleRequestDelete,
@@ -73,7 +85,7 @@ export function ContactsManagementTable({
     handleRequestDestroy,
     handleCancelDestroy,
     handleConfirmDestroy,
-  } = useContactsTableState()
+  } = useContactsTableState({ contacts, deepLinkedContact })
 
   // Guard-validated active search (R4): an empty list under a live `?q=`
   // shows the filtered message, not the tab's default empty state.
@@ -132,6 +144,20 @@ export function ContactsManagementTable({
 
   return (
     <div className='space-y-4'>
+      {contactNotFound ? (
+        <div
+          role='status'
+          className='border-destructive/30 bg-destructive/5 flex items-center justify-between gap-3 rounded-md border px-4 py-3 text-sm'
+        >
+          <span>
+            The linked contact could not be found. It may have been permanently
+            deleted.
+          </span>
+          <Button variant='ghost' size='sm' onClick={clearSelection}>
+            Dismiss
+          </Button>
+        </div>
+      ) : null}
       <ConfirmDialog
         open={Boolean(deleteTarget)}
         title='Archive contact?'

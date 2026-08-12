@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
+import { myTaskHref } from '@/lib/sheets/hrefs'
 import type { AssignedTaskSummary } from '@/lib/data/tasks'
 import type { ProjectTypeValue } from '@/lib/types'
 import {
@@ -147,7 +148,7 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
 
 function getTaskLinkMeta(task: AssignedTaskSummary): TaskLinkMeta {
   return {
-    href: `/my/tasks/board/${task.id}`,
+    href: myTaskHref(task.id),
   }
 }
 

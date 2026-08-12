@@ -7,6 +7,7 @@ import {
   type MyTasksView,
 } from '@/components/my-tasks/my-tasks-page'
 import { requireUser } from '@/lib/auth/session'
+import { buildQuerySuffix } from '@/lib/sheets/hrefs'
 import {
   fetchProjectsLite,
   fetchProjectsWithRelationsByIds,
@@ -23,11 +24,11 @@ export const metadata: Metadata = {
 
 type PageParams = {
   view: string
-  taskId?: string[]
 }
 
 type PageSearchParams = {
   assignee?: string
+  task?: string
 }
 
 type PageProps = {
@@ -45,11 +46,12 @@ export default async function MyTasksViewRoute({
   const resolvedParams = await params
   const resolvedSearchParams = await searchParams
   const viewParam = resolvedParams.view
-  const activeTaskId = resolvedParams.taskId?.[0] ?? null
+  const activeTaskId = resolvedSearchParams.task ?? null
 
   if (!isMyTasksView(viewParam)) {
-    const suffix = activeTaskId ? `/${activeTaskId}` : ''
-    redirect(`/my/tasks/${DEFAULT_VIEW}${suffix}`)
+    // Carry the whole query string across the redirect — the sheet stack and
+    // the `?assignee=` filter both live there.
+    redirect(`/my/tasks/${DEFAULT_VIEW}${buildQuerySuffix(resolvedSearchParams)}`)
   }
 
   // Lite projects feed only the sheet's project selector; the task graph is

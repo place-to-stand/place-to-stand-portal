@@ -22,6 +22,7 @@ import {
 } from '@pts/ui/table'
 import { useToast } from '@/components/ui/use-toast'
 import { useListParams } from '@/hooks/use-list-params'
+import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
 import type { ArchivedLead } from '@/lib/data/leads'
 import type { LeadAssigneeOption } from '@/lib/leads/types'
 import {
@@ -43,6 +44,8 @@ type LeadsArchiveSectionProps = {
   leads: ArchivedLead[]
   assignees: LeadAssigneeOption[]
   senderName: string
+  /** True when the `?lead=` share link points at a lead that no longer exists. */
+  leadNotFound?: boolean
 }
 
 // PRD 004 §03: per-view sort allowlist (D6). The table is in-memory, so the
@@ -73,6 +76,7 @@ export function LeadsArchiveSection({
   leads,
   assignees,
   senderName,
+  leadNotFound = false,
 }: LeadsArchiveSectionProps) {
   const router = useRouter()
   const { toast } = useToast()
@@ -88,22 +92,33 @@ export function LeadsArchiveSection({
   const [pendingRestoreId, setPendingRestoreId] = useState<string | null>(null)
   const [pendingDestroyId, setPendingDestroyId] = useState<string | null>(null)
   const [destroyTarget, setDestroyTarget] = useState<ArchivedLead | null>(null)
-  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null)
-  const [sheetOpen, setSheetOpen] = useState(false)
+  // `?lead=` drives selection so archived leads are deep-linkable too.
+  const { selectedId, select, clear } = useSheetParamSelection('lead')
 
   // Re-resolve from fresh props so the sheet reflects server refreshes.
-  const selectedLead = selectedLeadId
-    ? (leads.find(lead => lead.id === selectedLeadId) ?? null)
+  const selectedLead = selectedId
+    ? (leads.find(lead => lead.id === selectedId) ?? null)
     : null
 
-  // Keep the last-selected lead mounted after close so the sheet's exit
+  // Keep the last-selected lead rendered after close so the sheet's exit
   // animation can play; only `open` toggles.
+  const [lastOpenedLead, setLastOpenedLead] = useState<ArchivedLead | null>(
+    null
+  )
+  if (selectedLead && selectedLead !== lastOpenedLead) {
+    setLastOpenedLead(selectedLead)
+  }
+  const sheetOpen = Boolean(selectedLead)
+  const sheetLead = selectedLead ?? lastOpenedLead
+
   const handleSheetOpenChange = (open: boolean) => {
-    setSheetOpen(open)
+    if (!open) {
+      clear()
+    }
   }
 
   const handleSheetSuccess = () => {
-    setSheetOpen(false)
+    clear()
     router.refresh()
   }
 
@@ -162,6 +177,11 @@ export function LeadsArchiveSection({
         title: 'Lead permanently deleted',
         description: `${lead.contactName} has been permanently removed.`,
       })
+      // Drop a `?lead=` pointing at the destroyed row so the refresh doesn't
+      // resolve it into a not-found notice.
+      if (selectedId === lead.id) {
+        clear()
+      }
       router.refresh()
     })
   }
@@ -223,11 +243,25 @@ export function LeadsArchiveSection({
 
   return (
     <>
-      {selectedLead ? (
+      {leadNotFound ? (
+        <div
+          role='status'
+          className='border-destructive/30 bg-destructive/5 flex items-center justify-between gap-3 rounded-md border px-4 py-3 text-sm'
+        >
+          <span>
+            The linked lead could not be found. It may have been permanently
+            deleted.
+          </span>
+          <Button variant='ghost' size='sm' onClick={clear}>
+            Dismiss
+          </Button>
+        </div>
+      ) : null}
+      {sheetLead ? (
         <LeadSheet
           open={sheetOpen}
           onOpenChange={handleSheetOpenChange}
-          lead={selectedLead}
+          lead={sheetLead}
           assignees={assignees}
           canManage
           senderName={senderName}
@@ -303,8 +337,7 @@ export function LeadsArchiveSection({
                 <TableRow
                   key={lead.id}
                   {...getClickableRowProps(() => {
-                    setSelectedLeadId(lead.id)
-                    setSheetOpen(true)
+                    select(lead.id)
                   })}
                   className={cn(CLICKABLE_ROW_CLASS, ARCHIVED_ROW_CLASS)}
                 >

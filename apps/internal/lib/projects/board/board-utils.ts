@@ -141,9 +141,15 @@ export const buildBoardPath = (
   options: {
     taskId?: string | null
     view?: BoardView
+    /**
+     * Current query string. Every other param is carried over so board
+     * navigation doesn't silently drop a stacked sheet (`?client=…`) or a
+     * filter — only `task` is rewritten.
+     */
+    search?: string
   } = {}
 ) => {
-  const { taskId = null, view = 'board' } = options
+  const { taskId = null, view = 'board', search = '' } = options
   const project = lookups.projectLookup.get(projectId)
 
   if (!project) {
@@ -162,21 +168,36 @@ export const buildBoardPath = (
 
   const rootPath = `/projects/${clientSegment}/${projectSlug}`
 
+  // Task selection travels as `?task=` (sheet deep-link convention): a query
+  // change on the same route keeps the page mounted, unlike the old
+  // trailing-segment URLs which remounted the whole board.
+  const params = new URLSearchParams(search)
+  if (taskId) {
+    if (params.has('task')) {
+      params.set('task', taskId)
+    } else {
+      // Append so a task opened over another sheet lands on top of the stack.
+      params.append('task', taskId)
+    }
+  } else {
+    params.delete('task')
+  }
+  const query = params.toString()
+  const withQuery = (path: string) => (query ? `${path}?${query}` : path)
+
   if (view === 'activity') {
-    return `${rootPath}/${BOARD_VIEW_SEGMENTS.activity}`
+    return withQuery(`${rootPath}/${BOARD_VIEW_SEGMENTS.activity}`)
   }
 
   if (view === 'timeLogs') {
-    return `${rootPath}/${BOARD_VIEW_SEGMENTS.timeLogs}`
+    return withQuery(`${rootPath}/${BOARD_VIEW_SEGMENTS.timeLogs}`)
   }
 
   if (view === 'review') {
-    const basePath = `${rootPath}/${BOARD_VIEW_SEGMENTS.review}`
-    return taskId ? `${basePath}/${taskId}` : basePath
+    return withQuery(`${rootPath}/${BOARD_VIEW_SEGMENTS.review}`)
   }
 
-  const boardPath = `${rootPath}/${BOARD_VIEW_SEGMENTS.board}`
-  return taskId ? `${boardPath}/${taskId}` : boardPath
+  return withQuery(`${rootPath}/${BOARD_VIEW_SEGMENTS.board}`)
 }
 
 export const groupTasksByColumn = (

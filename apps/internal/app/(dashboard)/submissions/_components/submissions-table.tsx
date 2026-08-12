@@ -151,7 +151,7 @@ export function SubmissionsTable({
   const updateParams = useCallback(
     (
       updates: Record<string, string | undefined>,
-      options?: { scroll?: boolean }
+      options?: { scroll?: boolean; replace?: boolean }
     ) => {
       const next = new URLSearchParams(searchParams.toString())
 
@@ -163,7 +163,8 @@ export function SubmissionsTable({
         }
       }
 
-      router.push(`${basePath}?${next.toString()}`, {
+      const navigate = options?.replace ? router.replace : router.push
+      navigate(`${basePath}?${next.toString()}`, {
         scroll: options?.scroll ?? true,
       })
     },
@@ -182,7 +183,11 @@ export function SubmissionsTable({
     (open: boolean) => {
       if (!open) {
         setSelectedId(null)
-        updateParams({ submission: undefined }, { scroll: false })
+        // Close replaces (shared convention) so Back doesn't reopen the sheet.
+        updateParams(
+          { submission: undefined },
+          { scroll: false, replace: true }
+        )
       }
     },
     [updateParams]
@@ -197,10 +202,13 @@ export function SubmissionsTable({
         // Also drop the share-link param: `searchParams` may still carry it
         // (sheet-close navigation in flight), and re-pushing it would reopen
         // the sheet for the removed row.
-        updateParams({
-          page: previousPage === 1 ? undefined : String(previousPage),
-          submission: undefined,
-        })
+        updateParams(
+          {
+            page: previousPage === 1 ? undefined : String(previousPage),
+            submission: undefined,
+          },
+          { scroll: false }
+        )
         return
       }
 

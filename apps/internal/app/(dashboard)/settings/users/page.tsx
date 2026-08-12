@@ -3,7 +3,8 @@ import type { Metadata } from 'next'
 import { PageShell } from '@/components/layout/page-shell'
 import { requireRole } from '@/lib/auth/session'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
-import { listUsersForSettings } from '@/lib/queries/users'
+import { getUserById, listUsersForSettings } from '@/lib/queries/users'
+import { resolveSheetDeepLink } from '@/lib/sheets/resolve-deep-link'
 import { parseUsersSearchParams } from '@/lib/settings/users/filters'
 import type { DbUser } from '@/lib/types'
 
@@ -15,6 +16,25 @@ import { USERS_TABS } from './_lib/tabs'
 export const metadata: Metadata = {
   title: 'Users | Settings',
 }
+
+const firstParam = (value: string | string[] | undefined) =>
+  Array.isArray(value) ? value[0] : value
+
+type UserSelection = Awaited<
+  ReturnType<typeof listUsersForSettings>
+>['items'][number]
+
+const toDbUser = (user: UserSelection): DbUser => ({
+  id: user.id,
+  email: user.email,
+  full_name: user.fullName,
+  role: user.role,
+  avatar_url: user.avatarUrl,
+  created_at: user.createdAt,
+  updated_at: user.updatedAt,
+  deleted_at: user.deletedAt,
+  disabled_at: user.disabledAt,
+})
 
 type UsersPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
@@ -46,17 +66,15 @@ export default async function UsersPage({
     sort,
   })
 
-  const users: DbUser[] = items.map(user => ({
-    id: user.id,
-    email: user.email,
-    full_name: user.fullName,
-    role: user.role,
-    avatar_url: user.avatarUrl,
-    created_at: user.createdAt,
-    updated_at: user.updatedAt,
-    deleted_at: user.deletedAt,
-    disabled_at: user.disabledAt,
-  }))
+  const users: DbUser[] = items.map(toDbUser)
+
+  // The list is paginated and filterable, so resolve `?user=` by id — a
+  // shared link must open even when the row isn't on this page.
+  const { record: deepLinkedUser, notFound: userNotFound } =
+    await resolveSheetDeepLink({
+      idParam: firstParam(params.user),
+      fetchById: async id => toDbUser(await getUserById(currentUser, id)),
+    })
 
   return (
     <PageShell
@@ -65,10 +83,7 @@ export default async function UsersPage({
       activeTab='users'
       count={{ label: 'users', total: unfilteredTotalCount, filteredTotal: totalCount }}
       primaryAction={
-        <UsersAddButton
-          currentUserId={currentUser.id}
-          assignments={assignments}
-        />
+        <UsersAddButton />
       }
     >
       <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
@@ -89,6 +104,8 @@ export default async function UsersPage({
           totalCount={totalCount}
           mode='active'
           basePath='/settings/users'
+          deepLinkedUser={deepLinkedUser}
+          userNotFound={userNotFound}
         />
       </section>
     </PageShell>

@@ -3,8 +3,10 @@ import type { Metadata } from 'next'
 import { PageShell } from '@/components/layout/page-shell'
 import { requireRole } from '@/lib/auth/session'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
-import { listInvoices } from '@/lib/queries/invoices'
+import { getInvoiceById, listInvoices } from '@/lib/queries/invoices'
 import { parseInvoicesSearchParams } from '@/lib/invoices/filters'
+import { invoiceHref } from '@/lib/sheets/hrefs'
+import { resolveSheetDeepLink } from '@/lib/sheets/resolve-deep-link'
 
 import { InvoicesAddButton } from './_components/invoices-add-button'
 import { InvoicesFilters } from './_components/invoices-filters'
@@ -49,6 +51,18 @@ export default async function InvoicesPage({
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
 
+  // The list is paginated and filtered, so a shared `?invoice=` link has to
+  // resolve server-side — the row may sit on another page or be filtered out.
+  const { record: deepLinkedInvoice, notFound: invoiceNotFound } =
+    await resolveSheetDeepLink({
+      idParam: typeof params.invoice === 'string' ? params.invoice : undefined,
+      fetchById: id => getInvoiceById(currentUser, id),
+      tab: 'active',
+      isArchived: invoice => Boolean(invoice.deleted_at),
+      activeHref: invoiceHref,
+      archiveHref: id => `/invoices/archive?invoice=${id}`,
+    })
+
   return (
     <PageShell
       breadcrumbs={crumbsForNav('/invoices')}
@@ -59,13 +73,7 @@ export default async function InvoicesPage({
         total: unfilteredTotalCount,
         filteredTotal: totalCount,
       }}
-      primaryAction={
-        <InvoicesAddButton
-          clients={clients}
-          productCatalog={productCatalog}
-          taxRates={taxRates}
-        />
-      }
+      primaryAction={<InvoicesAddButton clients={clients} />}
     >
       <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
         <InvoicesFilters basePath='/invoices' status={status} search={search} />
@@ -80,6 +88,8 @@ export default async function InvoicesPage({
           pageSize={PAGE_SIZE}
           mode='active'
           basePath='/invoices'
+          deepLinkedInvoice={deepLinkedInvoice}
+          invoiceNotFound={invoiceNotFound}
         />
       </section>
     </PageShell>

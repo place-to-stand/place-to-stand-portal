@@ -1,11 +1,13 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import { useCallback, useMemo, useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
+import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 import { useToast } from '@/components/ui/use-toast'
+import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
 
 import type {
   ClientRow,
@@ -37,6 +39,13 @@ type InvoicesManagementTableProps = {
   mode: 'active' | 'archive'
   /** Route the list params live on — '/invoices' or '/invoices/archive'. */
   basePath: string
+  /**
+   * Invoice resolved server-side from the `?invoice=` share link. May not be
+   * in `invoices` when it sits on another page or is filtered out.
+   */
+  deepLinkedInvoice?: InvoiceWithClient | null
+  /** True when `?invoice=` points at an invoice that no longer exists. */
+  invoiceNotFound?: boolean
 }
 
 const EMPTY_MESSAGES = {
@@ -59,22 +68,17 @@ export function InvoicesManagementTable({
   pageSize,
   mode,
   basePath,
+  deepLinkedInvoice,
+  invoiceNotFound = false,
 }: InvoicesManagementTableProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const { toast } = useToast()
 
-  // Open the sheet directly from a ?invoiceId= URL param on first render.
-  const [initialUrlInvoice] = useState<InvoiceWithClient | null>(() => {
-    if (mode !== 'active') return null
-    const invoiceId = searchParams.get('invoiceId')
-    if (!invoiceId) return null
-    return invoices.find(inv => inv.id === invoiceId) ?? null
-  })
-  const [sheetOpen, setSheetOpen] = useState(Boolean(initialUrlInvoice))
-  const [selectedInvoice, setSelectedInvoice] =
-    useState<InvoiceWithClient | null>(initialUrlInvoice)
+  // `?invoice=` drives the sheet so an open invoice is a shareable link.
+  const { selectedId, isCreating, select, clear } =
+    useSheetParamSelection('invoice')
   const [deleteTarget, setDeleteTarget] = useState<InvoiceWithClient | null>(
     null
   )
@@ -104,68 +108,59 @@ export function InvoicesManagementTable({
     ? 'No invoices match the current filters.'
     : EMPTY_MESSAGES[mode]
 
-  // Resolve the freshest copy of the selected invoice when server data
-  // refreshes (e.g. after send/unsend/void actions that call
-  // router.refresh() without closing the sheet).
-  const resolvedSelectedInvoice = useMemo(() => {
-    if (!selectedInvoice) return null
-    return invoices.find(inv => inv.id === selectedInvoice.id) ?? selectedInvoice
-  }, [invoices, selectedInvoice])
-
   // -------------------------------------------------------------------------
   // Sheet handlers
   // -------------------------------------------------------------------------
 
-  // Sync sheet state with URL ?invoiceId= param
-  const syncUrlWithInvoice = useCallback(
-    (invoiceId: string | null) => {
-      const params = new URLSearchParams(searchParams.toString())
-      if (invoiceId) {
-        params.set('invoiceId', invoiceId)
-      } else {
-        params.delete('invoiceId')
-      }
-      const query = params.toString()
-      router.replace(query ? `${pathname}?${query}` : pathname, {
-        scroll: false,
-      })
-    },
-    [pathname, router, searchParams]
-  )
+  // Resolve the record from the page's fresh props so router.refresh() (e.g.
+  // after send/unsend/void) re-renders the open sheet with the latest row;
+  // the deep-linked copy covers invoices on another page or behind a filter.
+  const selectedInvoice = selectedId
+    ? (invoices.find(inv => inv.id === selectedId) ??
+      (deepLinkedInvoice?.id === selectedId ? deepLinkedInvoice : null))
+    : null
 
-  // The URL-driven sheet open happens in the useState initializers above;
-  // this effect only strips an invalid ?invoiceId= from the URL.
-  const urlOpenCheckedRef = useRef(false)
-  useEffect(() => {
-    if (urlOpenCheckedRef.current || mode !== 'active') return
-    urlOpenCheckedRef.current = true
-
-    const invoiceId = searchParams.get('invoiceId')
-    if (invoiceId && !invoices.some(inv => inv.id === invoiceId)) {
-      syncUrlWithInvoice(null)
+  // Keep the last-opened invoice rendered while the sheet animates closed.
+  const [lastOpenedInvoice, setLastOpenedInvoice] =
+    useState<InvoiceWithClient | null>(null)
+  if (isCreating) {
+    if (lastOpenedInvoice !== null) {
+      setLastOpenedInvoice(null)
     }
-  }, [mode, invoices, searchParams, syncUrlWithInvoice])
+  } else if (selectedInvoice && selectedInvoice !== lastOpenedInvoice) {
+    setLastOpenedInvoice(selectedInvoice)
+  }
+
+  const sheetOpen = isCreating || Boolean(selectedInvoice)
+  const sheetInvoice = isCreating
+    ? null
+    : (selectedInvoice ?? lastOpenedInvoice)
 
   const openEdit = (invoice: InvoiceWithClient) => {
-    setSelectedInvoice(invoice)
-    setSheetOpen(true)
-    syncUrlWithInvoice(invoice.id)
+    select(invoice.id)
   }
 
   const handleSheetOpenChange = (open: boolean) => {
-    setSheetOpen(open)
     if (!open) {
-      setSelectedInvoice(null)
-      syncUrlWithInvoice(null)
+      clear()
     }
   }
 
   const handleComplete = () => {
-    setSheetOpen(false)
-    setSelectedInvoice(null)
-    syncUrlWithInvoice(null)
+    clear()
     router.refresh()
   }
+
+  // Drop a `?invoice=` pointing at a row the action just removed so the
+  // refresh doesn't resolve it into a not-found notice.
+  const clearIfSelected = useCallback(
+    (invoiceId: string) => {
+      if (selectedId === invoiceId) {
+        clear()
+      }
+    },
+    [clear, selectedId]
+  )
 
   // -------------------------------------------------------------------------
   // Archive handlers
@@ -209,6 +204,7 @@ export function InvoicesManagementTable({
           description:
             'The invoice is hidden from active views but remains in history.',
         })
+        clearIfSelected(invoice.id)
         router.refresh()
       } finally {
         setPendingDeleteId(null)
@@ -242,6 +238,7 @@ export function InvoicesManagementTable({
           title: 'Invoice restored',
           description: 'The invoice is active again.',
         })
+        clearIfSelected(invoice.id)
         router.refresh()
       } finally {
         setPendingRestoreId(null)
@@ -349,6 +346,20 @@ export function InvoicesManagementTable({
 
   return (
     <div className='space-y-4'>
+      {invoiceNotFound ? (
+        <div
+          role='status'
+          className='border-destructive/30 bg-destructive/5 flex items-center justify-between gap-3 rounded-md border px-4 py-3 text-sm'
+        >
+          <span>
+            The linked invoice could not be found. It may have been
+            permanently deleted.
+          </span>
+          <Button variant='ghost' size='sm' onClick={clear}>
+            Dismiss
+          </Button>
+        </div>
+      ) : null}
       <InvoiceArchiveDialog
         open={Boolean(deleteTarget)}
         confirmDisabled={isPending}
@@ -394,7 +405,7 @@ export function InvoicesManagementTable({
         open={sheetOpen}
         onOpenChange={handleSheetOpenChange}
         onComplete={handleComplete}
-        invoice={resolvedSelectedInvoice}
+        invoice={sheetInvoice}
         clients={sortedClients}
         productCatalog={productCatalog}
         taxRates={taxRates}

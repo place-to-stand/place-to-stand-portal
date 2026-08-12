@@ -3,7 +3,6 @@ import type { Metadata } from 'next'
 import { PageShell } from '@/components/layout/page-shell'
 import { requireRole } from '@/lib/auth/session'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
-import { listUsersForSettings } from '@/lib/queries/users'
 
 import { UsersAddButton } from '../_components/users-add-button'
 import { UsersActivitySection } from '../_components/users-activity-section'
@@ -14,12 +13,7 @@ export const metadata: Metadata = {
 }
 
 export default async function UsersActivityPage() {
-  const currentUser = await requireRole('ADMIN')
-
-  const { assignments } = await listUsersForSettings(currentUser, {
-    status: 'active',
-    limit: 1,
-  })
+  await requireRole('ADMIN')
 
   return (
     <PageShell
@@ -27,10 +21,7 @@ export default async function UsersActivityPage() {
       tabs={USERS_TABS}
       activeTab='activity'
       primaryAction={
-        <UsersAddButton
-          currentUserId={currentUser.id}
-          assignments={assignments}
-        />
+        <UsersAddButton />
       }
     >
       <section className='bg-background rounded-xl border p-4 shadow-sm'>

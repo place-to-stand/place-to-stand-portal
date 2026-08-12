@@ -3,7 +3,8 @@ import type { Metadata } from 'next'
 import { PageShell } from '@/components/layout/page-shell'
 import { requireRole } from '@/lib/auth/session'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
-import { listUsersForSettings } from '@/lib/queries/users'
+import { getUserById, listUsersForSettings } from '@/lib/queries/users'
+import { resolveSheetDeepLink } from '@/lib/sheets/resolve-deep-link'
 import { parseUsersSearchParams } from '@/lib/settings/users/filters'
 import type { DbUser } from '@/lib/types'
 
@@ -57,6 +58,27 @@ export default async function UsersArchivePage({
     disabled_at: user.disabledAt,
   }))
 
+  // Resolve `?user=` by id so a shared link opens even when the row isn't on
+  // this page of the archive.
+  const { record: deepLinkedUser, notFound: userNotFound } =
+    await resolveSheetDeepLink({
+      idParam: Array.isArray(params.user) ? params.user[0] : params.user,
+      fetchById: async id => {
+        const row = await getUserById(currentUser, id)
+        return {
+          id: row.id,
+          email: row.email,
+          full_name: row.fullName,
+          role: row.role,
+          avatar_url: row.avatarUrl,
+          created_at: row.createdAt,
+          updated_at: row.updatedAt,
+          deleted_at: row.deletedAt,
+          disabled_at: row.disabledAt,
+        } satisfies DbUser
+      },
+    })
+
   return (
     <PageShell
       breadcrumbs={[...crumbsForNav('/settings/users'), { label: 'Archive' }]}
@@ -64,10 +86,7 @@ export default async function UsersArchivePage({
       activeTab='archive'
       count={{ label: 'archived users', total: unfilteredTotalCount, filteredTotal: totalCount }}
       primaryAction={
-        <UsersAddButton
-          currentUserId={currentUser.id}
-          assignments={assignments}
-        />
+        <UsersAddButton />
       }
     >
       <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
@@ -87,6 +106,8 @@ export default async function UsersArchivePage({
           totalCount={totalCount}
           mode='archive'
           basePath='/settings/users/archive'
+          deepLinkedUser={deepLinkedUser}
+          userNotFound={userNotFound}
         />
       </section>
     </PageShell>

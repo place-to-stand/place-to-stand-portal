@@ -1,17 +1,13 @@
 'use client'
 
 import { useMemo } from 'react'
-import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 
-import { ProjectSheet } from '@/app/(dashboard)/settings/projects/project-sheet'
-import { useProjectsSettingsController } from '@/components/settings/projects/table/use-projects-settings-controller'
 import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import { useToast } from '@/components/ui/use-toast'
+import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
 import { sortClientsByName } from '@/lib/settings/projects/project-sheet-form'
 import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
-import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
 import type { LandingProject } from '@/lib/data/projects'
 
 import { PageShell } from '@/components/layout/page-shell'
@@ -28,7 +24,6 @@ export type ProjectsLandingAdminSectionProps = {
   projects: LandingProject[]
   landingClients: Array<{ id: string; name: string; slug: string | null }>
   clients: ClientRow[]
-  adminUsers: AdminUserForOwner[]
   currentUserId: string
   /** Unfiltered visible-project total (pre status/search filter). */
   totalProjectCount: number
@@ -45,7 +40,6 @@ export function ProjectsLandingAdminSection({
   projects,
   landingClients,
   clients,
-  adminUsers,
   currentUserId,
   totalProjectCount,
   filteredProjectCount,
@@ -55,20 +49,12 @@ export function ProjectsLandingAdminSection({
   unfilteredCounts,
   clientHoursMap = {},
 }: ProjectsLandingAdminSectionProps) {
-  const router = useRouter()
-  const { toast } = useToast()
   const sortedClients = useMemo(() => sortClientsByName(clients), [clients])
 
-  const {
-    sheetOpen,
-    selectedProject,
-    handleSheetOpenChange,
-    handleSheetComplete,
-    openCreate,
-  } = useProjectsSettingsController({
-    toast,
-    onRefresh: () => router.refresh(),
-  })
+  // This section only ever *creates* projects (row clicks go to the project
+  // workspace), so it opens `?project=new` and lets the global SheetHost
+  // render the sheet instead of owning a second instance.
+  const { openCreate } = useSheetParamSelection('project')
 
   const createDisabled = sortedClients.length === 0
   const createDisabledReason = createDisabled
@@ -120,16 +106,6 @@ export function ProjectsLandingAdminSection({
           filtersActive={filtersActive}
         />
       </section>
-      <ProjectSheet
-        open={sheetOpen}
-        onOpenChange={handleSheetOpenChange}
-        onComplete={handleSheetComplete}
-        project={selectedProject}
-        clients={sortedClients}
-        adminUsers={adminUsers}
-        contractorDirectory={[]}
-        projectContractors={{}}
-      />
     </PageShell>
   )
 }

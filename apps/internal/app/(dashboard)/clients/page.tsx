@@ -12,6 +12,7 @@ import type { ClientSortField } from '@/lib/settings/clients/filters'
 import { ClientsLanding } from './_components/clients-landing'
 import { ClientsAddButton } from './_components/clients-add-button'
 import { ClientsFilters } from './_components/clients-filters'
+import { resolveClientDeepLink } from './_lib/client-deep-link'
 import { CLIENTS_TABS } from './_lib/tabs'
 
 export const metadata: Metadata = {
@@ -46,6 +47,16 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
   const { cursor, direction, limit, billing, search, sort } =
     parseClientsSearchParams(params)
 
+  // Share links: `?client=<id>` opens the edit sheet even when the filtered
+  // landing list doesn't contain that row (redirects to the archive tab when
+  // the client is archived).
+  const clientParam = params.client
+  const deepLink = await resolveClientDeepLink(
+    user,
+    Array.isArray(clientParam) ? clientParam[0] : clientParam,
+    'active'
+  )
+
   const [clients, managementData] = await Promise.all([
     fetchClientsWithMetrics(user, search, billing),
     listClientsForSettings(user, {
@@ -75,7 +86,11 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
     >
       <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
         <ClientsFilters basePath='/clients' search={search} billing={billing} />
-        <ClientsLanding clients={sortedClients} />
+        <ClientsLanding
+          clients={sortedClients}
+          deepLinkedClient={deepLink.record}
+          clientNotFound={deepLink.notFound}
+        />
       </section>
     </PageShell>
   )

@@ -10,6 +10,8 @@ import type { ProjectWithRelations, TaskWithRelations } from '@/lib/types'
 import { startClientInteraction } from '@/lib/posthog/client'
 import { INTERACTION_EVENTS } from '@/lib/posthog/types'
 import type { InteractionHandle } from '@/lib/perf/interaction-marks'
+import { NEW_SHEET_VALUE } from '@/lib/sheets/entities'
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 
 import type { NavigateOptions, TaskLookup } from './types'
 
@@ -64,8 +66,31 @@ export const useBoardSheetState = ({
   const [defaultTaskDueOn, setDefaultTaskDueOn] = useState<string | null>(null)
   const taskSheetInteractionRef = useRef<InteractionHandle | null>(null)
   const previousSheetOpenRef = useRef<boolean>(Boolean(activeTaskId))
+  // Raw `?task=` value: the server prop is uuid-guarded, so `new` (the
+  // create-sheet convention) only reaches the client here.
+  const { get: getSheetParam } = useSheetParams()
+  const isCreatingTask = getSheetParam('task') === NEW_SHEET_VALUE
+
+  // Cold load of `?task=new` (shared link or refresh) must open the create
+  // sheet — the server prop is uuid-guarded, so `new` only appears here.
+  useEffect(() => {
+    if (!isCreatingTask) {
+      return
+    }
+
+    startTransition(() => {
+      setRouteTaskId(null)
+      setPendingTaskId(null)
+      setSheetTask(undefined)
+      setIsSheetOpen(true)
+    })
+  }, [isCreatingTask, startTransition])
 
   useEffect(() => {
+    if (isCreatingTask) {
+      return
+    }
+
     if (activeTaskId) {
       let nextTask: TaskWithRelations | null = null
 
@@ -111,6 +136,7 @@ export const useBoardSheetState = ({
     }
   }, [
     activeTaskId,
+    isCreatingTask,
     pendingTaskId,
     projects,
     routeTaskId,
@@ -136,10 +162,11 @@ export const useBoardSheetState = ({
         }
       )
 
+      // `?task=new` (shared create convention) so an open create sheet is a
+      // shareable link and survives a refresh.
       if (targetProjectId) {
         navigateToProject(targetProjectId, {
-          taskId: null,
-          replace: true,
+          taskId: NEW_SHEET_VALUE,
           view: currentView,
         })
       } else {

@@ -10,6 +10,7 @@ import { CLIENTS_TABS } from '../_lib/tabs'
 import { ClientsAddButton } from '../_components/clients-add-button'
 import { ClientsFilters } from '../_components/clients-filters'
 import { ClientsManagementTable } from '../_components/clients-management-table'
+import { resolveClientDeepLink } from '../_lib/client-deep-link'
 import { mapClientToTableRow } from '../_lib/map-client-to-table-row'
 
 type ClientsArchivePageProps = {
@@ -27,6 +28,15 @@ export default async function ClientsArchivePage({
   const params = searchParams ? await searchParams : {}
   const { cursor, direction, limit, billing, search, sort } =
     parseClientsSearchParams(params)
+
+  // Share links: `?client=<id>` opens the edit sheet even when the row sits
+  // on another page (redirects to the active tab when it isn't archived).
+  const clientParam = params.client
+  const deepLink = await resolveClientDeepLink(
+    admin,
+    Array.isArray(clientParam) ? clientParam[0] : clientParam,
+    'archive'
+  )
 
   const { items, totalCount, unfilteredTotalCount, pageInfo } =
     await listClientsForSettings(admin, {
@@ -64,6 +74,8 @@ export default async function ClientsArchivePage({
           pageInfo={pageInfo}
           mode='archive'
           basePath='/clients/archive'
+          deepLinkedClient={deepLink.record}
+          clientNotFound={deepLink.notFound}
         />
       </section>
     </PageShell>

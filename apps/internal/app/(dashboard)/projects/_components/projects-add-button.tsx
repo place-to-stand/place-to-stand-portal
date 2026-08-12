@@ -1,12 +1,10 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import { ProjectSheet } from '@/app/(dashboard)/settings/projects/project-sheet'
+import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
 import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
 import { cn } from '@/lib/utils'
 
@@ -19,13 +17,11 @@ export function ProjectsAddButton({
   clients,
   className,
 }: ProjectsAddButtonProps) {
-  const router = useRouter()
-  const [open, setOpen] = useState(false)
-
-  const handleComplete = () => {
-    setOpen(false)
-    router.refresh()
-  }
+  // Opens `?project=new`; the global SheetHost renders the create sheet, so
+  // this button doesn't own a duplicate instance. (Project *edit* sheets stay
+  // page-local: the board and settings tables pass contractor membership the
+  // host can't supply.)
+  const { openCreate } = useSheetParamSelection('project')
 
   const createDisabled = clients.length === 0
   const createDisabledReason = createDisabled
@@ -41,7 +37,7 @@ export function ProjectsAddButton({
         <Button
           size='sm'
           type='button'
-          onClick={() => setOpen(true)}
+          onClick={openCreate}
           disabled={createDisabled}
           className='gap-2'
         >
@@ -49,15 +45,6 @@ export function ProjectsAddButton({
           Add project
         </Button>
       </DisabledFieldTooltip>
-      <ProjectSheet
-        open={open}
-        onOpenChange={setOpen}
-        onComplete={handleComplete}
-        project={null}
-        clients={clients}
-        contractorDirectory={[]}
-        projectContractors={{}}
-      />
     </div>
   )
 }

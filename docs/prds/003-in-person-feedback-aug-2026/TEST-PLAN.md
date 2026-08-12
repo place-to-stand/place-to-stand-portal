@@ -13,7 +13,7 @@ portal at sign-in — application-layer access control, no RLS).
 
 ## §01 — Task sheet stays open (12)
 
-- [x] **01.1** My Tasks → Add task → fill → Save: sheet stays open, header flips to "Edit task", URL is `/my/tasks/board/{taskId}`, "Task created" toast fires <!-- auto-tested -->
+- [x] **01.1** My Tasks → Add task → fill → Save: sheet stays open, header flips to "Edit task", URL is `/my/tasks/board?task={taskId}`, "Task created" toast fires <!-- auto-tested -->
 - [x] **01.2** Immediately after 01.1, the Planning toggle is enabled (project has GitHub repos) and the panel opens <!-- auto-tested -->
 - [x] **01.3** Immediately after 01.1, Save again without changes → updates (no duplicate task on the board) <!-- auto-tested -->
 - [ ] **01.4** Rapid double-click Save (or ⌘S twice fast) during create → exactly one task created <!-- manual: see MANUAL-TEST-PLAN Section B -->
@@ -30,7 +30,7 @@ portal at sign-in — application-layer access control, no RLS).
 - [x] **01.E1** Create a task from My Tasks assigned to someone else (not self) → sheet transitions to edit mode showing the task (C1: server page resolves it by id); a second save updates, not duplicates <!-- auto-tested -->
 - [x] **01.E2** Create with a validation error (e.g. empty title) → sheet stays open, errors shown, no navigation <!-- auto-tested -->
 - [ ] **01.E3** Server error on save (kill network) → toast/error state, sheet open, form intact, retry works; if the failure happened **after** the insert (partial failure), the result carries `taskId` and the sheet transitions to edit — retry never creates a second task (R1) <!-- manual: see MANUAL-TEST-PLAN Section B -->
-- [x] **01.E4** Deep link directly to `/my/tasks/board/{taskId}` for a task in a project with none of your assignments → sheet opens in edit mode (C1 by-id resolution) <!-- auto-tested -->
+- [x] **01.E4** Deep link directly to `/my/tasks/board?task={taskId}` for a task in a project with none of your assignments → sheet opens in edit mode (C1 by-id resolution) <!-- auto-tested -->
 - [x] **01.E5** Deep link `/my/tasks/board/not-a-uuid` → no 500; page renders normally with no sheet (R2) <!-- auto-tested -->
 
 ## §02 — Time logs on the task sheet (14)
@@ -67,7 +67,7 @@ portal at sign-in — application-layer access control, no RLS).
 - [x] **03.4** DB after migrate: `project_sows`, `sow_snapshots`, `sow_sections` tables and `sow_status`, `sow_snapshot_status` types absent; migration ran without FK errors <!-- verified 2026-08-08 against local DB via information_schema/pg_type: 0 tables, 0 types remaining -->
 - [ ] **03.5** Google OAuth connect + reconnect (Gmail/Calendar integration settings) still works <!-- manual: see MANUAL-TEST-PLAN Section B -->
 - [ ] **03.6** Gmail features (email attachments sync) unaffected (shared `lib/gmail/client.ts` untouched) <!-- manual: see MANUAL-TEST-PLAN Section B -->
-- [x] **03.7** Deep links to `/tasks/{taskId}`, `/review`, `/time-logs`, `/activity`, `/archive` all load <!-- auto-tested -->
+- [x] **03.7** Deep links to `/tasks?task={taskId}`, `/review`, `/time-logs`, `/activity`, `/archive` all load <!-- auto-tested -->
 - [x] **03.8** Build/lint/type-check pass — no orphan imports anywhere (this is the real deletion test) <!-- verified 2026-08-08: npm run build / lint / type-check all green from repo root -->
 
 **Edge cases:**

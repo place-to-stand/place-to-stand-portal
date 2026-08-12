@@ -8,6 +8,7 @@ import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
 import { formatCalendarDate } from '@/lib/dates'
+import { invoiceHref } from '@/lib/sheets/hrefs'
 import { isHourBlockSortValue } from '@/lib/settings/hour-blocks/filters'
 import {
   Table,
@@ -151,7 +152,7 @@ export function HourBlocksTableSection({
                 <TableCell className='text-sm'>
                   {block.invoice_id && block.invoice_number ? (
                     <Link
-                      href={`/invoices?invoiceId=${block.invoice_id}`}
+                      href={invoiceHref(block.invoice_id)}
                       className='text-muted-foreground hover:text-foreground hover:underline'
                     >
                       {block.invoice_number}

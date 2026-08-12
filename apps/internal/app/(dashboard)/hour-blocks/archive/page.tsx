@@ -3,7 +3,12 @@ import type { Metadata } from 'next'
 import { PageShell } from '@/components/layout/page-shell'
 import { requireRole } from '@/lib/auth/session'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
-import { listHourBlocksForSettings } from '@/lib/queries/hour-blocks'
+import {
+  getHourBlockWithClientById,
+  listHourBlocksForSettings,
+} from '@/lib/queries/hour-blocks'
+import { resolveSheetDeepLink } from '@/lib/sheets/resolve-deep-link'
+import { hourBlockHref } from '@/lib/sheets/hrefs'
 import { parseHourBlocksSearchParams } from '@/lib/settings/hour-blocks/filters'
 
 import { HourBlocksAddButton } from '../_components/hour-blocks-add-button'
@@ -16,6 +21,9 @@ export const metadata: Metadata = {
 }
 
 const PAGE_SIZE = 20
+
+const firstParam = (value: string | string[] | undefined) =>
+  Array.isArray(value) ? value[0] : value
 
 type HourBlocksArchivePageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
@@ -41,6 +49,18 @@ export default async function HourBlocksArchivePage({
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
 
+  // Resolve `?hour-block=` by id; a link to a restored block redirects back
+  // to the active tab so shared links survive restore.
+  const { record: deepLinkedHourBlock, notFound: hourBlockNotFound } =
+    await resolveSheetDeepLink({
+      idParam: firstParam(params['hour-block']),
+      fetchById: id => getHourBlockWithClientById(currentUser, id),
+      tab: 'archive',
+      isArchived: block => block.deleted_at !== null,
+      archiveHref: id => `/hour-blocks/archive?hour-block=${id}`,
+      activeHref: hourBlockHref,
+    })
+
   return (
     <PageShell
       breadcrumbs={[...crumbsForNav('/hour-blocks'), { label: 'Archive' }]}
@@ -64,6 +84,8 @@ export default async function HourBlocksArchivePage({
           pageSize={PAGE_SIZE}
           mode='archive'
           basePath='/hour-blocks/archive'
+          deepLinkedHourBlock={deepLinkedHourBlock}
+          hourBlockNotFound={hourBlockNotFound}
         />
       </section>
     </PageShell>
