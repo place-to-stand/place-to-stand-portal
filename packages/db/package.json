@@ -14,7 +14,6 @@
     "db:generate": "drizzle-kit generate --config drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config drizzle.config.ts",
     "db:migrate:prod": "dotenv -e ../../apps/internal/.env.prod -- drizzle-kit migrate --config drizzle.config.ts",
-    "build": "tsc",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
