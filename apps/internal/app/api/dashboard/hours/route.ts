@@ -2,11 +2,17 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { requireUser } from '@/lib/auth/session'
-import { fetchHoursSnapshot } from '@/lib/data/dashboard/hours'
+import {
+  fetchHoursSnapshot,
+  fetchMyMonthTimeLogs,
+} from '@/lib/data/dashboard/hours'
 
 const schema = z.object({
   year: z.number().int().min(2000).max(3000),
   month: z.number().int().min(1).max(12),
+  // Present only when the widget is paging further into the log list. Absent
+  // means "give me the whole snapshot", which already carries page zero.
+  logOffset: z.number().int().min(0).max(10_000).optional(),
 })
 
 export async function POST(request: Request) {
@@ -21,6 +27,21 @@ export async function POST(request: Request) {
       { error: 'Invalid request payload.' },
       { status: 400 }
     )
+  }
+
+  if (payload.logOffset !== undefined) {
+    try {
+      const page = await fetchMyMonthTimeLogs(user, payload, {
+        offset: payload.logOffset,
+      })
+      return NextResponse.json(page)
+    } catch (error) {
+      console.error('Failed to load time log page', error)
+      return NextResponse.json(
+        { error: 'Unable to load more time logs right now.' },
+        { status: 500 }
+      )
+    }
   }
 
   try {

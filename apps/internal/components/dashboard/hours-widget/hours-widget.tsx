@@ -1,0 +1,289 @@
+'use client'
+
+import { useCallback, useMemo, useState } from 'react'
+import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
+
+import { Button } from '@pts/ui/button'
+import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { cn } from '@/lib/utils'
+import type {
+  DashboardTimeLogPage,
+  HoursSnapshot,
+} from '@/lib/dashboard/types'
+
+import {
+  compareMonthCursor,
+  formatHours,
+  formatMonthLabel,
+  shiftMonth,
+} from './month-cursor'
+import { TimeLogList } from './time-log-list'
+
+const API_ENDPOINT = '/api/dashboard/hours'
+
+type HoursWidgetProps = {
+  initialSnapshot: HoursSnapshot
+  className?: string
+}
+
+export function HoursWidget({ initialSnapshot, className }: HoursWidgetProps) {
+  const [snapshot, setSnapshot] = useState(initialSnapshot)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [pendingDirection, setPendingDirection] = useState<
+    'prev' | 'next' | null
+  >(null)
+  // Log paging lives beside the snapshot rather than inside it: shifting the
+  // month replaces the whole snapshot, which resets paging for free.
+  const [logs, setLogs] = useState<DashboardTimeLogPage>(
+    initialSnapshot.timeLogs
+  )
+  const [isLoadingLogs, setIsLoadingLogs] = useState(false)
+  const [logError, setLogError] = useState<string | null>(null)
+
+  const monthLabel = useMemo(
+    () => formatMonthLabel(snapshot.year, snapshot.month),
+    [snapshot.month, snapshot.year]
+  )
+
+  const minLimitLabel = useMemo(
+    () => formatMonthLabel(snapshot.minCursor.year, snapshot.minCursor.month),
+    [snapshot.minCursor.month, snapshot.minCursor.year]
+  )
+
+  const maxLimitLabel = useMemo(
+    () => formatMonthLabel(snapshot.maxCursor.year, snapshot.maxCursor.month),
+    [snapshot.maxCursor.month, snapshot.maxCursor.year]
+  )
+
+  const canGoPrev = useMemo(
+    () => compareMonthCursor(snapshot, snapshot.minCursor) > 0,
+    [snapshot]
+  )
+
+  const canGoNext = useMemo(
+    () => compareMonthCursor(snapshot, snapshot.maxCursor) < 0,
+    [snapshot]
+  )
+
+  const prevDisabled = isLoading || !canGoPrev
+  const nextDisabled = isLoading || !canGoNext
+
+  const prevTooltipReason = !canGoPrev
+    ? `No time logs before ${minLimitLabel}.`
+    : isLoading
+      ? pendingDirection === 'prev'
+        ? 'Loading previous month...'
+        : 'Please wait while we update the month.'
+      : null
+
+  const nextTooltipReason = !canGoNext
+    ? `No data beyond ${maxLimitLabel} yet.`
+    : isLoading
+      ? pendingDirection === 'next'
+        ? 'Loading next month...'
+        : 'Please wait while we update the month.'
+      : null
+
+  const handleShift = useCallback(
+    async (delta: number) => {
+      const direction: 'prev' | 'next' = delta < 0 ? 'prev' : 'next'
+
+      if (isLoading) {
+        return
+      }
+      if (direction === 'prev' && !canGoPrev) {
+        return
+      }
+      if (direction === 'next' && !canGoNext) {
+        return
+      }
+
+      setIsLoading(true)
+      setPendingDirection(direction)
+      setError(null)
+      const target = shiftMonth(snapshot, delta)
+
+      try {
+        const response = await fetch(API_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(target),
+          cache: 'no-store',
+        })
+
+        if (!response.ok) {
+          throw new Error('Request failed')
+        }
+
+        const payload = (await response.json()) as HoursSnapshot
+        setSnapshot(payload)
+        setLogs(payload.timeLogs)
+        setLogError(null)
+      } catch (requestError) {
+        console.error('Failed to load hours snapshot', requestError)
+        setError('Unable to load that month. Please try again.')
+      } finally {
+        setIsLoading(false)
+        setPendingDirection(null)
+      }
+    },
+    [canGoNext, canGoPrev, isLoading, snapshot]
+  )
+
+  const handleLoadMoreLogs = useCallback(async () => {
+    if (isLoadingLogs) {
+      return
+    }
+
+    setIsLoadingLogs(true)
+    setLogError(null)
+
+    try {
+      const response = await fetch(API_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          year: snapshot.year,
+          month: snapshot.month,
+          logOffset: logs.items.length,
+        }),
+        cache: 'no-store',
+      })
+
+      if (!response.ok) {
+        throw new Error('Request failed')
+      }
+
+      const page = (await response.json()) as DashboardTimeLogPage
+
+      setLogs(current => {
+        // A log deleted between pages would shift the offset and could
+        // re-deliver a row we already show; dedupe by id so it can't double up.
+        const seen = new Set(current.items.map(item => item.id))
+        return {
+          items: [
+            ...current.items,
+            ...page.items.filter(item => !seen.has(item.id)),
+          ],
+          totalCount: page.totalCount,
+        }
+      })
+    } catch (requestError) {
+      console.error('Failed to load more time logs', requestError)
+      setLogError('Unable to load more logs. Please try again.')
+    } finally {
+      setIsLoadingLogs(false)
+    }
+  }, [isLoadingLogs, logs.items.length, snapshot.month, snapshot.year])
+
+  return (
+    <section
+      className={cn(
+        'bg-card flex flex-col overflow-hidden rounded-xl border shadow-sm',
+        className
+      )}
+      aria-labelledby='hours-widget-heading'
+    >
+      <header className='flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4'>
+        <div>
+          <h2 id='hours-widget-heading' className='text-base font-semibold'>
+            Monthly Hours Snapshot
+          </h2>
+        </div>
+        <div className='flex items-center gap-2'>
+          <p className='mr-2 text-sm font-medium whitespace-nowrap'>
+            {monthLabel}
+          </p>
+          <DisabledFieldTooltip
+            disabled={prevDisabled}
+            reason={prevTooltipReason}
+          >
+            <Button
+              type='button'
+              variant='outline'
+              size='icon-sm'
+              onClick={() => handleShift(-1)}
+              disabled={prevDisabled}
+              aria-label='View previous month'
+            >
+              {isLoading && pendingDirection === 'prev' ? (
+                <Loader2 className='h-4 w-4 animate-spin' aria-hidden />
+              ) : (
+                <ChevronLeft className='h-4 w-4' aria-hidden />
+              )}
+            </Button>
+          </DisabledFieldTooltip>
+          <DisabledFieldTooltip
+            disabled={nextDisabled}
+            reason={nextTooltipReason}
+          >
+            <Button
+              type='button'
+              variant='outline'
+              size='icon-sm'
+              onClick={() => handleShift(1)}
+              disabled={nextDisabled}
+              aria-label='View next month'
+            >
+              {isLoading && pendingDirection === 'next' ? (
+                <Loader2 className='h-4 w-4 animate-spin' aria-hidden />
+              ) : (
+                <ChevronRight className='h-4 w-4' aria-hidden />
+              )}
+            </Button>
+          </DisabledFieldTooltip>
+        </div>
+      </header>
+      <div className='flex flex-1 flex-col gap-4 px-5 py-4'>
+        <div className='grid grid-cols-3 gap-4'>
+          <StatCard
+            label='My billable hours'
+            value={formatHours(snapshot.myHours)}
+            variant='primary'
+          />
+          <StatCard
+            label='Total billable hours'
+            value={formatHours(snapshot.companyHours)}
+            variant='muted'
+          />
+          <StatCard
+            label='Hours prepaid'
+            value={formatHours(snapshot.companyHoursPrepaid)}
+            variant='muted'
+          />
+        </div>
+        {error ? <p className='text-destructive text-xs'>{error}</p> : null}
+        <TimeLogList
+          items={logs.items}
+          totalCount={logs.totalCount}
+          isLoadingMore={isLoadingLogs}
+          onLoadMore={handleLoadMoreLogs}
+          error={logError}
+        />
+      </div>
+    </section>
+  )
+}
+
+type StatCardProps = {
+  label: string
+  value: string
+  variant?: 'primary' | 'muted'
+}
+
+function StatCard({ label, value, variant = 'primary' }: StatCardProps) {
+  return (
+    <div
+      className={cn(
+        'rounded-lg border px-4 py-3',
+        variant === 'muted' && 'bg-muted/50'
+      )}
+    >
+      <p className='text-muted-foreground text-xs font-medium tracking-wide uppercase'>
+        {label}
+      </p>
+      <p className='text-foreground mt-1 text-2xl font-semibold'>{value}</p>
+    </div>
+  )
+}

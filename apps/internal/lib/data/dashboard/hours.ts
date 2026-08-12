@@ -1,11 +1,35 @@
 import 'server-only'
 
-import { and, eq, gte, isNull, lte, ne, sql, type SQL } from 'drizzle-orm'
+import {
+  and,
+  desc,
+  eq,
+  gte,
+  inArray,
+  isNull,
+  lte,
+  ne,
+  sql,
+  type SQL,
+} from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { clients, hourBlocks, projects, timeLogs } from '@/lib/db/schema'
-import type { HoursSnapshot, MonthCursor } from '@/lib/dashboard/types'
+import {
+  clients,
+  hourBlocks,
+  projects,
+  tasks,
+  timeLogTasks,
+  timeLogs,
+} from '@/lib/db/schema'
+import {
+  HOURS_WIDGET_LOG_PAGE_SIZE,
+  type DashboardTimeLogEntry,
+  type DashboardTimeLogPage,
+  type HoursSnapshot,
+  type MonthCursor,
+} from '@/lib/dashboard/types'
 
 const HOURS_PRECISION = 2
 
@@ -66,6 +90,10 @@ export async function fetchHoursSnapshot(
 
   const companyHoursPrepaid = await sumPrepaidHours({ filters: prepaidFilters })
 
+  const timeLogPage = await fetchMyMonthTimeLogs(user, clampedCursor, {
+    offset: 0,
+  })
+
   return {
     month,
     year,
@@ -76,7 +104,128 @@ export async function fetchHoursSnapshot(
     scopeLabel: 'All projects',
     minCursor: bounds.min,
     maxCursor: bounds.max,
+    timeLogs: timeLogPage,
   }
+}
+
+/**
+ * A page of my own time logs for one month, newest first. Paged rather than
+ * loaded whole: a heavy month can run to hundreds of rows and the widget shows
+ * five at a time.
+ */
+export async function fetchMyMonthTimeLogs(
+  user: AppUser,
+  cursor: MonthCursor,
+  options: { offset?: number; limit?: number } = {}
+): Promise<DashboardTimeLogPage> {
+  const { year, month } = normalizeMonth(cursor.year, cursor.month)
+  const { startDate, endDate } = buildMonthDateRange(year, month)
+  const limit = Math.max(1, options.limit ?? HOURS_WIDGET_LOG_PAGE_SIZE)
+  const offset = Math.max(0, options.offset ?? 0)
+
+  const windowFilter = and(
+    eq(timeLogs.userId, user.id),
+    gte(timeLogs.loggedOn, startDate),
+    lte(timeLogs.loggedOn, endDate),
+    isNull(timeLogs.deletedAt),
+    isNull(projects.deletedAt)
+  )
+
+  const rows = await db
+    .select({
+      id: timeLogs.id,
+      loggedOn: timeLogs.loggedOn,
+      hours: timeLogs.hours,
+      note: timeLogs.note,
+      createdAt: timeLogs.createdAt,
+      projectId: projects.id,
+      projectName: projects.name,
+      projectSlug: projects.slug,
+      projectType: projects.type,
+      clientName: clients.name,
+      clientSlug: clients.slug,
+    })
+    .from(timeLogs)
+    .innerJoin(projects, eq(timeLogs.projectId, projects.id))
+    .leftJoin(clients, eq(projects.clientId, clients.id))
+    .where(windowFilter)
+    // createdAt breaks ties within a day; id makes the order total, so paging
+    // can't show or skip a row because two logs share a timestamp.
+    .orderBy(desc(timeLogs.loggedOn), desc(timeLogs.createdAt), desc(timeLogs.id))
+    .limit(limit)
+    .offset(offset)
+
+  const [countRow] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(timeLogs)
+    .innerJoin(projects, eq(timeLogs.projectId, projects.id))
+    .where(windowFilter)
+
+  const totalCount = Number(countRow?.count ?? 0)
+
+  if (!rows.length) {
+    return { items: [], totalCount }
+  }
+
+  const taskTitlesByLog = await fetchLinkedTaskTitles(rows.map(row => row.id))
+
+  const items: DashboardTimeLogEntry[] = rows.map(row => ({
+    id: row.id,
+    loggedOn: row.loggedOn,
+    hours: parseHours(row.hours),
+    note: row.note ?? null,
+    projectId: row.projectId,
+    projectName: row.projectName ?? 'Untitled project',
+    projectSlug: row.projectSlug ?? null,
+    projectType: row.projectType,
+    clientName: row.clientName ?? null,
+    clientSlug: row.clientSlug ?? null,
+    taskTitles: taskTitlesByLog.get(row.id) ?? [],
+  }))
+
+  return { items, totalCount }
+}
+
+async function fetchLinkedTaskTitles(
+  timeLogIds: string[]
+): Promise<Map<string, string[]>> {
+  if (!timeLogIds.length) {
+    return new Map()
+  }
+
+  const rows = await db
+    .select({
+      timeLogId: timeLogTasks.timeLogId,
+      title: tasks.title,
+    })
+    .from(timeLogTasks)
+    .innerJoin(tasks, eq(timeLogTasks.taskId, tasks.id))
+    .where(
+      and(
+        inArray(timeLogTasks.timeLogId, timeLogIds),
+        isNull(timeLogTasks.deletedAt),
+        isNull(tasks.deletedAt)
+      )
+    )
+
+  const byLog = new Map<string, string[]>()
+  rows.forEach(row => {
+    if (!row.title) {
+      return
+    }
+    const existing = byLog.get(row.timeLogId) ?? []
+    existing.push(row.title)
+    byLog.set(row.timeLogId, existing)
+  })
+
+  return byLog
+}
+
+function parseHours(value: string | null): number {
+  const parsed = Number(value ?? '0')
+  return Number.isFinite(parsed)
+    ? Number(parsed.toFixed(HOURS_PRECISION))
+    : 0
 }
 
 async function sumHoursWithProjectFilter({
