@@ -43,13 +43,15 @@ export function TimeLogList({
   return (
     <div className='flex flex-col border-t'>
       {/*
-        Full-strength foreground text and a filled count chip: at muted 11px
-        uppercase this heading read as one more row of metadata and vanished
-        when scanning the widget. It is a section break, so it looks like one.
+        The label keeps its quiet uppercase treatment; separation comes from
+        whitespace instead. Making it heavier turned a section marker into
+        something that competed with the rows beneath it.
       */}
       <div className='flex items-center justify-between pt-4 pb-2'>
-        <h3 className='text-foreground text-xs font-semibold'>My time logs</h3>
-        <span className='bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-[10px] font-medium tabular-nums'>
+        <h3 className='text-muted-foreground text-[11px] font-semibold tracking-wide uppercase'>
+          My time logs
+        </h3>
+        <span className='text-muted-foreground text-[11px] tabular-nums'>
           {items.length} of {totalCount}
         </span>
       </div>
