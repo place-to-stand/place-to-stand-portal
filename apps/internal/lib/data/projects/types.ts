@@ -21,13 +21,6 @@ export type RawTaskWithRelations = DbTask & {
   attachments?: RawTaskAttachment[] | null
 }
 
-export type RawHourBlock = {
-  id: string
-  client_id: string | null
-  hours_purchased: number
-  deleted_at: string | null
-}
-
 export type TimeLogSummary = {
   totalHours: number
   monthToDateHours: number

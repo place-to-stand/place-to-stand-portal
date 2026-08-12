@@ -6,15 +6,11 @@ import { aliasedTable, and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
+import { clients, contacts, projects, users } from '@/lib/db/schema'
 import {
-  clients,
-  clientBillingTerms,
-  contacts,
-  projects,
-  hourBlocks,
-  timeLogs,
-  users,
-} from '@/lib/db/schema'
+  clientHoursTotalsFor,
+  getClientHoursTotals,
+} from '@pts/db/hours'
 import { NotFoundError } from '@/lib/errors/http'
 import { createSearchPattern } from '@/lib/pagination/cursor'
 import type { ProjectStatusValue } from '@/lib/constants'
@@ -181,56 +177,7 @@ export const fetchClientsWithMetrics = cache(
 
     const clientIds = rows.map(r => r.id)
 
-    // Fetch hour blocks data separately
-    const hourBlocksData = await db
-      .select({
-        clientId: hourBlocks.clientId,
-        totalHoursPurchased: sql<number>`
-          coalesce(sum(${hourBlocks.hoursPurchased}), 0)
-        `.as('total_hours_purchased'),
-      })
-      .from(hourBlocks)
-      .where(and(inArray(hourBlocks.clientId, clientIds), isNull(hourBlocks.deletedAt)))
-      .groupBy(hourBlocks.clientId)
-
-    const hourBlocksMap = new Map(
-      hourBlocksData.map(hb => [hb.clientId, Number(hb.totalHoursPurchased ?? 0)])
-    )
-
-    // Fetch time logs data separately (only for active projects). The prepaid
-    // burndown starts at the client's latest prepaid boundary
-    // (client_billing_terms) — hours logged under an earlier net_30 era were
-    // invoiced then and must not draw down purchased blocks. Always-prepaid
-    // clients resolve their sentinel term (predates all data) and net_30-only
-    // clients fall back to counting everything, so both are unchanged.
-    const timeLogsData = await db
-      .select({
-        clientId: projects.clientId,
-        totalHoursUsed: sql<number>`
-          coalesce(sum(${timeLogs.hours}), 0)
-        `.as('total_hours_used'),
-      })
-      .from(timeLogs)
-      .innerJoin(projects, eq(timeLogs.projectId, projects.id))
-      .where(
-        and(
-          inArray(projects.clientId, clientIds),
-          isNull(timeLogs.deletedAt),
-          isNull(projects.deletedAt),
-          sql`${timeLogs.loggedOn} >= COALESCE((
-            SELECT max(${clientBillingTerms.effectiveFrom})
-            FROM ${clientBillingTerms}
-            WHERE ${clientBillingTerms.clientId} = ${projects.clientId}
-              AND ${clientBillingTerms.billingType} = 'prepaid'
-              AND ${clientBillingTerms.deletedAt} IS NULL
-          ), DATE '0001-01-01')`
-        )
-      )
-      .groupBy(projects.clientId)
-
-    const timeLogsMap = new Map(
-      timeLogsData.map(tl => [tl.clientId, Number(tl.totalHoursUsed ?? 0)])
-    )
+    const clientHours = await getClientHoursTotals(db, clientIds)
 
     // Fetch every non-deleted project per client (any status). The active
     // list is derived below — the definition of "active" (ACTIVE/ONBOARDING)
@@ -264,9 +211,11 @@ export const fetchClientsWithMetrics = cache(
     }
 
     return rows.map(row => {
-      const totalHoursPurchased = hourBlocksMap.get(row.id) ?? 0
-      const totalHoursUsed = timeLogsMap.get(row.id) ?? 0
-      const hoursRemaining = totalHoursPurchased - totalHoursUsed
+      const {
+        purchased: totalHoursPurchased,
+        used: totalHoursUsed,
+        remaining: hoursRemaining,
+      } = clientHoursTotalsFor(clientHours, row.id)
       const allProjects = projectsMap.get(row.id) ?? []
       const activeProjects = allProjects.filter(
         project => project.status === 'ACTIVE' || project.status === 'ONBOARDING'

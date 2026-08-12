@@ -7,10 +7,12 @@ import type {
   TaskWithRelations,
 } from '@/lib/types'
 
+import type { ClientHoursTotals } from '@pts/db/hours'
+import { clientHoursTotalsFor } from '@pts/db/hours'
+
 import type {
   MemberWithUser,
   ProjectBurndown,
-  RawHourBlock,
   RawTaskWithRelations,
   TimeLogSummary,
 } from './types'
@@ -22,6 +24,13 @@ export type AssembleProjectsArgs = {
   projectClientLookup: Map<string, string | null>
   relations: ProjectRelationsFetchResult
   timeLogSummaries: Map<string, TimeLogSummary>
+  /**
+   * Client-scoped prepaid balances from `getClientHoursTotals`. Must NOT be
+   * derived from `timeLogSummaries` — those cover only the projects this
+   * request hydrated, which on a project workspace route is a single project.
+   * Pass an empty map on surfaces that never render burndown.
+   */
+  clientHours: Map<string, ClientHoursTotals>
 }
 
 export function assembleProjectsWithRelations({
@@ -29,6 +38,7 @@ export function assembleProjectsWithRelations({
   projectClientLookup,
   relations,
   timeLogSummaries,
+  clientHours,
 }: AssembleProjectsArgs): ProjectWithRelations[] {
   const clientLookup = buildClientLookup(relations.clients)
   const ownerLookup = buildOwnerLookup(relations.owners)
@@ -36,12 +46,7 @@ export function assembleProjectsWithRelations({
     relations.members,
     projectClientLookup
   )
-  const purchasedHoursByClient = tallyPurchasedHours(relations.hourBlocks)
   const timeLogTotalsByProject = timeLogSummaries
-  const timeLogTotalsByClient = buildClientLogTotals(
-    timeLogSummaries,
-    projectClientLookup
-  )
   const activeTasksByProject = groupTasksByProject(relations.tasks)
   const archivedTasksByProject = groupTasksByProject(relations.archivedTasks)
   sortArchivedTasksByDeletedAt(archivedTasksByProject)
@@ -61,9 +66,8 @@ export function assembleProjectsWithRelations({
     acceptedTasks: acceptedTasksByProject.get(project.id) ?? [],
     burndown: buildProjectBurndown(
       project,
-      purchasedHoursByClient,
-      timeLogTotalsByProject,
-      timeLogTotalsByClient
+      clientHours,
+      timeLogTotalsByProject
     ),
     githubRepos: relations.githubReposByProject.get(project.id) ?? [],
   }))
@@ -136,21 +140,6 @@ function organizeMembers(
   return membersByProject
 }
 
-function tallyPurchasedHours(blocks: RawHourBlock[]): Map<string, number> {
-  const purchasedHoursByClient = new Map<string, number>()
-  blocks.forEach(block => {
-    if (!block || block.deleted_at || !block.client_id) {
-      return
-    }
-    const total = purchasedHoursByClient.get(block.client_id) ?? 0
-    purchasedHoursByClient.set(
-      block.client_id,
-      total + Number(block.hours_purchased)
-    )
-  })
-  return purchasedHoursByClient
-}
-
 function groupTasksByProject(
   tasks: RawTaskWithRelations[]
 ): Map<string, TaskWithRelations[]> {
@@ -206,50 +195,24 @@ function buildAcceptedTasksLookup(
 
 function buildProjectBurndown(
   project: DbProject,
-  purchasedHoursByClient: Map<string, number>,
-  timeLogTotalsByProject: Map<string, TimeLogSummary>,
-  timeLogTotalsByClient: Map<string, number>
+  clientHours: Map<string, ClientHoursTotals>,
+  timeLogTotalsByProject: Map<string, TimeLogSummary>
 ): ProjectBurndown {
   const projectLogSummary = timeLogTotalsByProject.get(project.id) ?? null
-  const clientId = project.client_id ?? null
-  const totalClientPurchasedHours = clientId
-    ? (purchasedHoursByClient.get(clientId) ?? 0)
-    : 0
+  // Client-level totals come from the shared client-scoped query — every
+  // project of the client counts toward the burndown, not just this one.
+  const clientTotals = clientHoursTotalsFor(clientHours, project.client_id)
   const totalProjectLoggedHours = projectLogSummary?.totalHours ?? 0
   const projectMonthToDateLoggedHours =
     projectLogSummary?.monthToDateHours ?? 0
-  const totalClientLoggedHours = clientId
-    ? (timeLogTotalsByClient.get(clientId) ?? 0)
-    : 0
-  const totalClientRemainingHours =
-    totalClientPurchasedHours - totalClientLoggedHours
   const lastLogAt = projectLogSummary?.lastLogAt ?? null
 
   return {
-    totalClientPurchasedHours,
-    totalClientLoggedHours,
-    totalClientRemainingHours,
+    totalClientPurchasedHours: clientTotals.purchased,
+    totalClientLoggedHours: clientTotals.used,
+    totalClientRemainingHours: clientTotals.remaining,
     totalProjectLoggedHours,
     projectMonthToDateLoggedHours,
     lastLogAt,
   }
-}
-
-function buildClientLogTotals(
-  timeLogSummaries: Map<string, TimeLogSummary>,
-  projectClientLookup: Map<string, string | null>
-): Map<string, number> {
-  const totals = new Map<string, number>()
-
-  timeLogSummaries.forEach((summary, projectId) => {
-    const clientId = projectClientLookup.get(projectId) ?? null
-    if (!clientId) {
-      return
-    }
-
-    const existingTotal = totals.get(clientId) ?? 0
-    totals.set(clientId, existingTotal + summary.totalHours)
-  })
-
-  return totals
 }

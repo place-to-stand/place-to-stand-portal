@@ -4,22 +4,15 @@ import type { DbClient, GitHubRepoLinkSummary, ProjectOwner } from '@/lib/types'
 import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 
-import type {
-  MemberWithUser,
-  RawHourBlock,
-  RawTaskWithRelations,
-} from './types'
+import type { MemberWithUser, RawTaskWithRelations } from './types'
 
 import {
   loadClientRows,
   loadMemberRows,
-  loadHourBlockRows,
   mapClientRows,
   mapMemberRows,
-  mapHourBlockRows,
   type ClientRow,
   type MemberRow,
-  type HourBlockRow,
 } from './relations/clients'
 import {
   buildAssigneeMap,
@@ -47,7 +40,6 @@ export type ProjectRelationsFetchResult = {
   members: MemberWithUser[]
   tasks: RawTaskWithRelations[]
   archivedTasks: RawTaskWithRelations[]
-  hourBlocks: RawHourBlock[]
   githubReposByProject: Map<string, GitHubRepoLinkSummary[]>
 }
 
@@ -78,12 +70,10 @@ export async function fetchProjectRelations({
   ownerIds,
   includeArchivedTasks = false,
 }: ProjectRelationsFetchArgs): Promise<ProjectRelationsFetchResult> {
-  const clientDataPromise: Promise<[ClientRow[], MemberRow[], HourBlockRow[]]> =
-    Promise.all([
-      loadClientRows(clientIds),
-      loadMemberRows(clientIds),
-      loadHourBlockRows(clientIds),
-    ])
+  const clientDataPromise: Promise<[ClientRow[], MemberRow[]]> = Promise.all([
+    loadClientRows(clientIds),
+    loadMemberRows(clientIds),
+  ])
 
   const taskDataPromise: Promise<[TaskRow[], TaskRow[]]> = Promise.all([
     loadTaskRows(projectIds, { archived: false }),
@@ -96,7 +86,7 @@ export async function fetchProjectRelations({
   const ownersPromise = loadOwners(ownerIds)
 
   const [
-    [clientRows, memberRows, hourBlockRows],
+    [clientRows, memberRows],
     [activeTaskRows, archivedTaskRows],
     githubReposMap,
     owners,
@@ -113,7 +103,6 @@ export async function fetchProjectRelations({
 
   const clients: DbClient[] = mapClientRows(clientRows)
   const members: MemberWithUser[] = mapMemberRows(memberRows)
-  const hourBlocks: RawHourBlock[] = mapHourBlockRows(hourBlockRows)
 
   const tasks: RawTaskWithRelations[] = mapTaskRowsToRaw(
     activeTaskRows,
@@ -143,7 +132,6 @@ export async function fetchProjectRelations({
     members,
     tasks,
     archivedTasks,
-    hourBlocks,
     githubReposByProject,
   }
 }
