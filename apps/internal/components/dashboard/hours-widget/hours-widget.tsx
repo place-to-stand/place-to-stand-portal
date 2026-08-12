@@ -5,11 +5,17 @@ import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { ProjectTimeLogDialog } from '@/app/(dashboard)/projects/_components/project-time-log/project-time-log-dialog'
 import { cn } from '@/lib/utils'
-import type {
-  DashboardTimeLogPage,
-  HoursSnapshot,
+import {
+  HOURS_WIDGET_LOG_PAGE_SIZE,
+  type DashboardTimeLogPage,
+  type HoursSnapshot,
 } from '@/lib/dashboard/types'
+import type {
+  ProjectTimeLogDialogParams,
+  TimeLogEntry,
+} from '@/lib/projects/time-log/types'
 
 import {
   compareMonthCursor,
@@ -40,6 +46,13 @@ export function HoursWidget({ initialSnapshot, className }: HoursWidgetProps) {
   )
   const [isLoadingLogs, setIsLoadingLogs] = useState(false)
   const [logError, setLogError] = useState<string | null>(null)
+  // Edit context is fetched per row on demand; see the route's comment for why
+  // it isn't folded into the list payload.
+  const [openingEntryId, setOpeningEntryId] = useState<string | null>(null)
+  const [editContext, setEditContext] = useState<{
+    entry: TimeLogEntry
+    params: ProjectTimeLogDialogParams
+  } | null>(null)
 
   const monthLabel = useMemo(
     () => formatMonthLabel(snapshot.year, snapshot.month),
@@ -177,6 +190,77 @@ export function HoursWidget({ initialSnapshot, className }: HoursWidgetProps) {
     }
   }, [isLoadingLogs, logs.items.length, snapshot.month, snapshot.year])
 
+  /**
+   * Re-pulls the current month after an edit so the totals and the row's own
+   * text reflect the change. Asks for however many rows are already on screen
+   * so a user who paged down three times isn't snapped back to five.
+   */
+  const refreshCurrentMonth = useCallback(async () => {
+    const loadedCount = Math.max(logs.items.length, HOURS_WIDGET_LOG_PAGE_SIZE)
+
+    try {
+      const [snapshotResponse, pageResponse] = await Promise.all([
+        fetch(API_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ year: snapshot.year, month: snapshot.month }),
+          cache: 'no-store',
+        }),
+        fetch(API_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            year: snapshot.year,
+            month: snapshot.month,
+            logOffset: 0,
+            logLimit: loadedCount,
+          }),
+          cache: 'no-store',
+        }),
+      ])
+
+      if (!snapshotResponse.ok || !pageResponse.ok) {
+        throw new Error('Request failed')
+      }
+
+      const nextSnapshot = (await snapshotResponse.json()) as HoursSnapshot
+      const nextPage = (await pageResponse.json()) as DashboardTimeLogPage
+
+      setSnapshot(nextSnapshot)
+      setLogs(nextPage)
+    } catch (requestError) {
+      console.error('Failed to refresh hours after edit', requestError)
+      setLogError('Saved, but the list is out of date. Reload to see it.')
+    }
+  }, [logs.items.length, snapshot.month, snapshot.year])
+
+  const handleOpenEntry = useCallback(async (entryId: string) => {
+    setOpeningEntryId(entryId)
+    setLogError(null)
+
+    try {
+      const response = await fetch(`/api/dashboard/time-logs/${entryId}`, {
+        cache: 'no-store',
+      })
+      const payload = (await response.json()) as {
+        ok: boolean
+        data?: { entry: TimeLogEntry; params: ProjectTimeLogDialogParams }
+        error?: string
+      }
+
+      if (!response.ok || !payload.ok || !payload.data) {
+        throw new Error(payload.error ?? 'Request failed')
+      }
+
+      setEditContext(payload.data)
+    } catch (requestError) {
+      console.error('Failed to open time log', requestError)
+      setLogError('Unable to open that log. Please try again.')
+    } finally {
+      setOpeningEntryId(null)
+    }
+  }, [])
+
   return (
     <section
       className={cn(
@@ -257,9 +341,28 @@ export function HoursWidget({ initialSnapshot, className }: HoursWidgetProps) {
           totalCount={logs.totalCount}
           isLoadingMore={isLoadingLogs}
           onLoadMore={handleLoadMoreLogs}
+          onOpenEntry={handleOpenEntry}
+          openingEntryId={openingEntryId}
           error={logError}
         />
       </div>
+      {editContext ? (
+        <ProjectTimeLogDialog
+          {...editContext.params}
+          open
+          onOpenChange={next => {
+            if (!next) {
+              setEditContext(null)
+            }
+          }}
+          mode='edit'
+          timeLogEntry={editContext.entry}
+          onMutationSuccess={() => {
+            setEditContext(null)
+            void refreshCurrentMonth()
+          }}
+        />
+      ) : null}
     </section>
   )
 }

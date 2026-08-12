@@ -5,7 +5,6 @@ import { Building2, FolderKanban, Loader2, User, Users } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { formatCalendarDate } from '@/lib/dates'
-import { cn } from '@/lib/utils'
 import { PROJECT_SPECIAL_SEGMENTS } from '@/lib/projects/board/board-utils'
 import type { DashboardTimeLogEntry } from '@/lib/dashboard/types'
 
@@ -16,6 +15,9 @@ type TimeLogListProps = {
   totalCount: number
   isLoadingMore: boolean
   onLoadMore: () => void
+  onOpenEntry: (entryId: string) => void
+  /** Id of the row whose edit context is currently being fetched. */
+  openingEntryId: string | null
   error: string | null
 }
 
@@ -24,6 +26,8 @@ export function TimeLogList({
   totalCount,
   isLoadingMore,
   onLoadMore,
+  onOpenEntry,
+  openingEntryId,
   error,
 }: TimeLogListProps) {
   const remaining = Math.max(0, totalCount - items.length)
@@ -48,7 +52,12 @@ export function TimeLogList({
       </div>
       <ul className='divide-border divide-y'>
         {items.map(entry => (
-          <TimeLogRow key={entry.id} entry={entry} />
+          <TimeLogRow
+            key={entry.id}
+            entry={entry}
+            onOpen={onOpenEntry}
+            isOpening={openingEntryId === entry.id}
+          />
         ))}
       </ul>
       {error ? <p className='text-destructive pt-2 text-xs'>{error}</p> : null}
@@ -75,7 +84,15 @@ export function TimeLogList({
   )
 }
 
-function TimeLogRow({ entry }: { entry: DashboardTimeLogEntry }) {
+function TimeLogRow({
+  entry,
+  onOpen,
+  isOpening,
+}: {
+  entry: DashboardTimeLogEntry
+  onOpen: (entryId: string) => void
+  isOpening: boolean
+}) {
   const projectHref = getProjectHref(entry)
   const contextLabel = getContextLabel(entry)
   // A log can span several tasks; the first names the row and the rest
@@ -84,49 +101,66 @@ function TimeLogRow({ entry }: { entry: DashboardTimeLogEntry }) {
   const detail = firstTask ?? entry.note ?? null
 
   return (
-    <li className='flex items-start justify-between gap-3 py-2'>
-      <div className='min-w-0 flex-1'>
-        <div className='text-muted-foreground flex flex-wrap items-center gap-x-2 text-[11px]'>
-          <span className='tabular-nums'>
-            {formatCalendarDate(entry.loggedOn, {
-              month: 'short',
-              day: 'numeric',
-            })}
-          </span>
-          {projectHref ? (
-            <Link
-              href={projectHref}
-              className='hover:text-foreground inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
-            >
-              {renderProjectTypeIcon(entry.projectType)}
-              <span className='truncate'>{contextLabel}</span>
-            </Link>
-          ) : (
-            <span className='inline-flex min-w-0 items-center gap-1'>
-              {renderProjectTypeIcon(entry.projectType)}
-              <span className='truncate'>{contextLabel}</span>
+    <li className='group relative'>
+      {/*
+        Full-bleed overlay button rather than wrapping the row: the project
+        link inside needs to stay independently clickable, which it does by
+        sitting above this on the z-axis. Same shape as the My Tasks widget.
+      */}
+      <button
+        type='button'
+        onClick={() => onOpen(entry.id)}
+        disabled={isOpening}
+        className='hover:bg-muted/60 focus-visible:ring-primary focus-visible:ring-offset-background absolute inset-0 z-0 rounded-md transition focus-visible:ring-2 focus-visible:ring-offset-1'
+        aria-label={`Edit time log from ${formatCalendarDate(entry.loggedOn, {
+          month: 'short',
+          day: 'numeric',
+        })}`}
+      />
+      <div className='pointer-events-none relative z-10 flex items-start justify-between gap-3 py-2'>
+        <div className='min-w-0 flex-1'>
+          <div className='text-muted-foreground flex flex-wrap items-center gap-x-2 text-[11px]'>
+            <span className='tabular-nums'>
+              {formatCalendarDate(entry.loggedOn, {
+                month: 'short',
+                day: 'numeric',
+              })}
             </span>
-          )}
-        </div>
-        {detail ? (
-          <p className='text-foreground mt-0.5 truncate text-xs'>
-            {detail}
-            {otherTasks.length ? (
-              <span className='text-muted-foreground'>
-                {' '}
-                +{otherTasks.length} more
+            {projectHref ? (
+              <Link
+                href={projectHref}
+                onClick={event => event.stopPropagation()}
+                className='hover:text-foreground pointer-events-auto relative z-20 inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
+              >
+                {renderProjectTypeIcon(entry.projectType)}
+                <span className='truncate'>{contextLabel}</span>
+              </Link>
+            ) : (
+              <span className='inline-flex min-w-0 items-center gap-1'>
+                {renderProjectTypeIcon(entry.projectType)}
+                <span className='truncate'>{contextLabel}</span>
               </span>
-            ) : null}
-          </p>
-        ) : null}
+            )}
+          </div>
+          {detail ? (
+            <p className='text-foreground mt-0.5 truncate text-xs'>
+              {detail}
+              {otherTasks.length ? (
+                <span className='text-muted-foreground'>
+                  {' '}
+                  +{otherTasks.length} more
+                </span>
+              ) : null}
+            </p>
+          ) : null}
+        </div>
+        <span className='text-foreground inline-flex shrink-0 items-center gap-1 text-xs font-semibold tabular-nums'>
+          {isOpening ? (
+            <Loader2 className='h-3 w-3 animate-spin' aria-hidden />
+          ) : null}
+          {formatHours(entry.hours)}h
+        </span>
       </div>
-      <span
-        className={cn(
-          'text-foreground shrink-0 text-xs font-semibold tabular-nums'
-        )}
-      >
-        {formatHours(entry.hours)}h
-      </span>
     </li>
   )
 }

@@ -13,6 +13,9 @@ const schema = z.object({
   // Present only when the widget is paging further into the log list. Absent
   // means "give me the whole snapshot", which already carries page zero.
   logOffset: z.number().int().min(0).max(10_000).optional(),
+  // Lets a refresh after an edit restore however many rows were already on
+  // screen in one request, instead of re-paging five at a time.
+  logLimit: z.number().int().min(1).max(200).optional(),
 })
 
 export async function POST(request: Request) {
@@ -33,6 +36,7 @@ export async function POST(request: Request) {
     try {
       const page = await fetchMyMonthTimeLogs(user, payload, {
         offset: payload.logOffset,
+        limit: payload.logLimit,
       })
       return NextResponse.json(page)
     } catch (error) {
