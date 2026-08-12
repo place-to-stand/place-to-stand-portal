@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
+import { notifyPasswordChanged } from '@/app/(auth)/_actions/auth-emails'
 import { completeOnboarding } from '@/app/onboarding/_actions/complete-onboarding'
 
 type OnboardingUser = {
@@ -358,6 +359,10 @@ function SetPasswordStep({
         setError(updateError.message)
         return
       }
+
+      // The password is set from the browser, so the notice has to be asked for.
+      // The action absorbs its own failures — onboarding must not stall on mail.
+      await notifyPasswordChanged()
 
       onComplete()
     } catch {

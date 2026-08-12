@@ -6,9 +6,11 @@ import { z } from 'zod'
 import {
   assertAuthEmailConfigured,
   sendMagicLinkEmail,
+  sendPasswordChangedEmail,
   sendPasswordResetEmail,
 } from '@/lib/email/auth-emails'
 import { getEnv } from '@/lib/env.server'
+import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'
 
 const emailSchema = z.email()
@@ -35,6 +37,35 @@ export async function requestMagicLink(
   email: string
 ): Promise<AuthEmailResult> {
   await dispatch(email, 'magiclink')
+  return GENERIC_RESULT
+}
+
+/**
+ * Confirms a password change the browser has already made.
+ *
+ * The reset form updates the password client-side, so the notice has to be
+ * asked for rather than sent inline. The recipient comes from the session on the
+ * server — never from the caller — so this can't be used to mail an arbitrary
+ * address. Failures are logged only: the password did change, and the form must
+ * not report otherwise.
+ */
+export async function notifyPasswordChanged(): Promise<AuthEmailResult> {
+  try {
+    const {
+      data: { user },
+      error,
+    } = await getSupabaseServerClient().auth.getUser()
+
+    if (error || !user?.email) {
+      console.error('Failed to resolve user for password changed email', error)
+      return GENERIC_RESULT
+    }
+
+    await sendPasswordChangedEmail(user.email)
+  } catch (cause) {
+    console.error('Unable to send password changed email', cause)
+  }
+
   return GENERIC_RESULT
 }
 

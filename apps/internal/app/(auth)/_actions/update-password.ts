@@ -3,6 +3,7 @@
 import { z } from "zod";
 
 import { requireUser } from "@/lib/auth/session";
+import { sendPasswordChangedEmail } from "@/lib/email/auth-emails";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 const schema = z
@@ -63,6 +64,16 @@ export async function completePasswordReset(
   if (authError) {
     console.error("Failed to update password", authError);
     return { error: authError.message };
+  }
+
+  // The password has already changed by this point, so a mail failure must not
+  // read as a failed reset — it is logged and swallowed rather than returned.
+  if (authUser.email) {
+    try {
+      await sendPasswordChangedEmail(authUser.email);
+    } catch (error) {
+      console.error("Failed to send password changed email", error);
+    }
   }
 
   return {};

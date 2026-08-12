@@ -254,11 +254,15 @@ otp_expiry = 3600
 # subject = "You have been invited"
 # content_path = "./supabase/templates/invite.html"
 
-# Uncomment to customize notification email template
-# [auth.email.notification.password_changed]
-# enabled = true
-# subject = "Your password has been changed"
-# content_path = "./templates/password_changed_notification.html"
+# Supabase's own password-changed notice is off because we send our own from
+# `@pts/email` — see `passwordChangedEmail`. Leaving both on means two messages
+# for one event, and the stock one is the unbranded, "contact support" copy this
+# replaces.
+#
+# This setting is local only. The hosted projects need the same notification
+# disabled under Authentication → Emails, or production still sends both.
+[auth.email.notification.password_changed]
+enabled = false
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.
