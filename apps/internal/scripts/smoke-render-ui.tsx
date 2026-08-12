@@ -303,25 +303,12 @@ const cases: Case[] = [
       </TiptapPopover>
     ),
   },
-  // Both portal modes: RichTextEditor passes portal={isMobile}, so desktop
-  // (inline) and mobile (portalled) are both live paths.
   {
-    name: 'tiptap dropdown (open, portal=false — desktop/inline)',
+    name: 'tiptap dropdown (open, asChild trigger + item)',
     element: (
       <TiptapDropdownMenu open>
         <TiptapDropdownMenuTrigger asChild><button type='button'>H</button></TiptapDropdownMenuTrigger>
-        <TiptapDropdownMenuContent align='start' portal={false}>
-          <TiptapDropdownMenuItem asChild><button type='button'>H1</button></TiptapDropdownMenuItem>
-        </TiptapDropdownMenuContent>
-      </TiptapDropdownMenu>
-    ),
-  },
-  {
-    name: 'tiptap dropdown (open, portal — mobile)',
-    element: (
-      <TiptapDropdownMenu open>
-        <TiptapDropdownMenuTrigger asChild><button type='button'>H</button></TiptapDropdownMenuTrigger>
-        <TiptapDropdownMenuContent align='start' portal>
+        <TiptapDropdownMenuContent align='start'>
           <TiptapDropdownMenuItem asChild><button type='button'>H1</button></TiptapDropdownMenuItem>
         </TiptapDropdownMenuContent>
       </TiptapDropdownMenu>

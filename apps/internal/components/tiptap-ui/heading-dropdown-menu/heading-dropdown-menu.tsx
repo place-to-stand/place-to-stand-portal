@@ -28,11 +28,6 @@ export interface HeadingDropdownMenuProps
   extends Omit<ButtonProps, "type">,
     UseHeadingDropdownMenuConfig {
   /**
-   * Whether to render the dropdown menu in a portal
-   * @default false
-   */
-  portal?: boolean
-  /**
    * Callback for when the dropdown opens or closes
    */
   onOpenChange?: (isOpen: boolean) => void
@@ -52,7 +47,6 @@ export const HeadingDropdownMenu = forwardRef<
       editor: providedEditor,
       levels = [1, 2, 3, 4, 5, 6],
       hideWhenUnavailable = false,
-      portal = false,
       onOpenChange,
       ...buttonProps
     },
@@ -101,7 +95,7 @@ export const HeadingDropdownMenu = forwardRef<
           </Button>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="start" portal={portal}>
+        <DropdownMenuContent align="start">
           <Card>
             <CardBody>
               <ButtonGroup>
