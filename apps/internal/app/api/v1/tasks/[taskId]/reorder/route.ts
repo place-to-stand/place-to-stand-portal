@@ -11,6 +11,7 @@ import { ensureTaskAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { projects, tasks } from '@/lib/db/schema'
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
+import { resolveCompletedAt } from '@/lib/projects/task-status'
 import { revalidateProjectTaskViews } from '@/app/(dashboard)/projects/actions/shared'
 import { statusSchema } from '@/app/(dashboard)/projects/actions/shared-schemas'
 
@@ -103,6 +104,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       title: tasks.title,
       rank: tasks.rank,
       status: tasks.status,
+      completedAt: tasks.completedAt,
       projectId: tasks.projectId,
       clientId: projects.clientId,
     })
@@ -122,13 +124,16 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
   const updatedAt = new Date().toISOString()
 
+  const nextStatus = statusChanged ? parsedPayload.status! : task.status
+
   const updatedTaskRecords = await db
     .update(tasks)
     .set({
       rank: parsedPayload.rank,
-      status: statusChanged ? parsedPayload.status! : task.status,
+      status: nextStatus,
       updatedBy: user.id,
       updatedAt,
+      ...resolveCompletedAt(nextStatus, task.completedAt),
     })
     .where(eq(tasks.id, taskId))
     .returning({

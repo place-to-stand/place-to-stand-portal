@@ -72,6 +72,7 @@ export type DbTask = {
   updated_at: string
   deleted_at: string | null
   accepted_at: string | null
+  completed_at: string | null
   rank: string
   github_issue_number: number | null
   github_issue_url: string | null

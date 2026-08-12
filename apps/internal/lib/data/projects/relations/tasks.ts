@@ -19,6 +19,7 @@ export type TaskRow = {
   status: SelectTask['status']
   rank: string
   acceptedAt: string | null
+  completedAt: string | null
   dueOn: string | null
   createdBy: string | null
   updatedBy: string | null
@@ -58,6 +59,7 @@ export async function loadTaskRows(
     status: tasksTable.status,
     rank: tasksTable.rank,
     acceptedAt: tasksTable.acceptedAt,
+    completedAt: tasksTable.completedAt,
     dueOn: tasksTable.dueOn,
     createdBy: tasksTable.createdBy,
     updatedBy: tasksTable.updatedBy,
@@ -173,6 +175,7 @@ export function mapTaskRowsToRaw(
       status: (row.status ?? 'ON_DECK') as RawTaskWithRelations['status'],
       rank: row.rank,
       accepted_at: row.acceptedAt,
+      completed_at: row.completedAt,
       due_on: row.dueOn,
       created_by: row.createdBy ?? null,
       updated_by: row.updatedBy ?? null,

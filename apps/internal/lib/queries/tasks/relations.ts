@@ -22,6 +22,7 @@ type TaskWithRelationsSelection = {
   status: RawTaskWithRelations['status']
   rank: string
   acceptedAt: string | null
+  completedAt: string | null
   dueOn: string | null
   createdBy: string | null
   updatedBy: string | null
@@ -68,6 +69,7 @@ export async function listProjectTasksWithRelations(
       status: tasks.status,
       rank: tasks.rank,
       acceptedAt: tasks.acceptedAt,
+      completedAt: tasks.completedAt,
       dueOn: tasks.dueOn,
       createdBy: tasks.createdBy,
       updatedBy: tasks.updatedBy,
@@ -130,6 +132,7 @@ export async function listProjectTasksWithRelations(
     status: row.status ?? 'ON_DECK',
     rank: row.rank,
     accepted_at: row.acceptedAt,
+    completed_at: row.completedAt,
     due_on: row.dueOn,
     created_by: row.createdBy ?? null,
     updated_by: row.updatedBy ?? null,
