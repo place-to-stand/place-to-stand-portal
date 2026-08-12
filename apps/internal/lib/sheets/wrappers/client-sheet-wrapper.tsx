@@ -5,13 +5,11 @@ import { useRouter } from 'next/navigation'
 import { ClientSheet } from '@/app/(dashboard)/clients/_components/clients-sheet'
 
 import { NEW_SHEET_VALUE } from '../entities'
-import { useSheetParams } from '../use-sheet-params'
 import { useSheetInit } from './use-sheet-init'
 import type { SheetWrapperProps } from './types'
 
-export function ClientSheetWrapper({ value }: SheetWrapperProps) {
+export function ClientSheetWrapper({ value, open, onRequestClose }: SheetWrapperProps) {
   const router = useRouter()
-  const { close } = useSheetParams()
   const data = useSheetInit('client', value)
 
   if (!data) {
@@ -20,15 +18,15 @@ export function ClientSheetWrapper({ value }: SheetWrapperProps) {
 
   return (
     <ClientSheet
-      open
-      onOpenChange={open => {
-        if (!open) {
-          close('client')
+      open={open}
+      onOpenChange={next => {
+        if (!next) {
+          onRequestClose()
         }
       }}
       onComplete={() => {
         router.refresh()
-        close('client')
+        onRequestClose()
       }}
       client={value === NEW_SHEET_VALUE ? null : data.client}
     />

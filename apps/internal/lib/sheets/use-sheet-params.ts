@@ -10,6 +10,7 @@ import {
   isValidSheetParamValue,
   type SheetEntityKey,
 } from './entities'
+import { emitSheetOpen } from './pending-open'
 
 export type SheetStackItem = {
   entity: SheetEntityKey
@@ -68,6 +69,8 @@ export function useSheetParams() {
 
   const open = useCallback(
     (entity: SheetEntityKey, value: string) => {
+      // Let the host mount now; the URL write below round-trips first.
+      emitSheetOpen(entity, value)
       router.push(
         buildUrl(params => {
           // `set` keeps an existing param's stack position; `append` puts a

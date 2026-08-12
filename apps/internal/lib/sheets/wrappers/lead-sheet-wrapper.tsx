@@ -8,9 +8,13 @@ import { useSheetParams } from '../use-sheet-params'
 import { useSheetInit } from './use-sheet-init'
 import type { SheetWrapperProps } from './types'
 
-export function LeadSheetWrapper({ value }: SheetWrapperProps) {
+export function LeadSheetWrapper({
+  value,
+  open,
+  onRequestClose,
+}: SheetWrapperProps) {
   const router = useRouter()
-  const { close, getAux } = useSheetParams()
+  const { getAux } = useSheetParams()
   const data = useSheetInit('lead', value)
 
   if (!data) {
@@ -19,10 +23,10 @@ export function LeadSheetWrapper({ value }: SheetWrapperProps) {
 
   return (
     <LeadSheet
-      open
-      onOpenChange={open => {
-        if (!open) {
-          close('lead')
+      open={open}
+      onOpenChange={next => {
+        if (!next) {
+          onRequestClose()
         }
       }}
       lead={data.lead}

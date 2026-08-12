@@ -5,13 +5,16 @@ import { useRouter } from 'next/navigation'
 import { TaskSheet } from '@/app/(dashboard)/projects/task-sheet'
 
 import { NEW_SHEET_VALUE } from '../entities'
-import { useSheetParams } from '../use-sheet-params'
 import { useSheetInit } from './use-sheet-init'
 import type { SheetWrapperProps } from './types'
 
-export function TaskSheetWrapper({ value, stack }: SheetWrapperProps) {
+export function TaskSheetWrapper({
+  value,
+  open,
+  stack,
+  onRequestClose,
+}: SheetWrapperProps) {
   const router = useRouter()
-  const { close } = useSheetParams()
   const data = useSheetInit('task', value)
 
   if (!data) {
@@ -29,10 +32,10 @@ export function TaskSheetWrapper({ value, stack }: SheetWrapperProps) {
 
   return (
     <TaskSheet
-      open
-      onOpenChange={open => {
-        if (!open) {
-          close('task')
+      open={open}
+      onOpenChange={next => {
+        if (!next) {
+          onRequestClose()
           router.refresh()
         }
       }}

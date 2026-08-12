@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { ListTodo, Plus, Calendar, ExternalLink, CheckCircle2, Circle } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
@@ -8,8 +8,10 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@pts/ui/skeleton'
 import type { LeadRecord } from '@/lib/leads/types'
 import { formatCalendarDate } from '@/lib/dates'
+import { NEW_SHEET_VALUE } from '@/lib/sheets/entities'
 import { myTaskHref } from '@/lib/sheets/hrefs'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
+import { prefetchSheetInit } from '@/lib/sheets/wrappers/use-sheet-init'
 
 type LeadTask = {
   id: string
@@ -57,17 +59,29 @@ export function LeadTasksSection({
     fetchTasks()
   }, [fetchTasks])
 
+  // Warm the task sheet's reference data while the user reads the lead, so
+  // "Create" opens immediately instead of after a round-trip.
+  useEffect(() => {
+    if (canManage) {
+      prefetchSheetInit('task', NEW_SHEET_VALUE)
+    }
+  }, [canManage])
+
   // The task sheet stacks on top of this one via `?task=` (rendered by the
   // global SheetHost). Refetch the linked tasks once that param clears, so a
-  // task created here shows up in the list.
-  const [lastTaskParam, setLastTaskParam] = useState(taskParam)
-  if (taskParam !== lastTaskParam) {
-    setLastTaskParam(taskParam)
-    if (taskParam === null) {
-      fetchTasks()
+  // task created here shows up in the list. This runs in an effect, not the
+  // adjust-during-render pattern: `onSuccess` sets state in the parent, and
+  // updating another component during render is illegal.
+  const previousTaskParamRef = useRef(taskParam)
+  useEffect(() => {
+    const previous = previousTaskParamRef.current
+    previousTaskParamRef.current = taskParam
+
+    if (previous !== null && taskParam === null) {
+      void fetchTasks()
       onSuccess?.()
     }
-  }
+  }, [fetchTasks, onSuccess, taskParam])
 
   const completedTasks = tasks.filter(t => t.status === 'DONE' || t.status === 'ARCHIVED')
   const activeTasks = tasks.filter(t => t.status !== 'DONE' && t.status !== 'ARCHIVED')

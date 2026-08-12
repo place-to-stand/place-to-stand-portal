@@ -4,13 +4,11 @@ import { useRouter } from 'next/navigation'
 
 import { ProjectSheet } from '@/app/(dashboard)/settings/projects/project-sheet'
 
-import { useSheetParams } from '../use-sheet-params'
 import { useSheetInit } from './use-sheet-init'
 import type { SheetWrapperProps } from './types'
 
-export function ProjectSheetWrapper({ value }: SheetWrapperProps) {
+export function ProjectSheetWrapper({ value, open, onRequestClose }: SheetWrapperProps) {
   const router = useRouter()
-  const { close } = useSheetParams()
   const data = useSheetInit('project', value)
 
   if (!data) {
@@ -19,15 +17,15 @@ export function ProjectSheetWrapper({ value }: SheetWrapperProps) {
 
   return (
     <ProjectSheet
-      open
-      onOpenChange={open => {
-        if (!open) {
-          close('project')
+      open={open}
+      onOpenChange={next => {
+        if (!next) {
+          onRequestClose()
         }
       }}
       onComplete={() => {
         router.refresh()
-        close('project')
+        onRequestClose()
       }}
       project={data.project}
       clients={data.clients}

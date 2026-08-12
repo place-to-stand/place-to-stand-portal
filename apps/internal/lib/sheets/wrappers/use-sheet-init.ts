@@ -8,6 +8,44 @@ import { useSheetParams } from '../use-sheet-params'
 import type { SheetEntityKey } from '../entities'
 import type { SheetInitEntity, SheetInitPayloads } from '../init/payloads'
 
+const cacheKey = (entity: string, value: string) => `${entity}:${value}`
+
+/**
+ * Payloads already fetched this page-load. A sheet's reference data (admin
+ * list, project list, client directory) barely changes within a session, so
+ * caching lets a re-open render on the first frame instead of waiting a
+ * round-trip — and lets callers warm it before the user clicks.
+ */
+const initCache = new Map<string, unknown>()
+
+const fetchSheetInit = async (entity: string, value: string) => {
+  const response = await fetch(
+    `/api/sheets/init?entity=${entity}&id=${encodeURIComponent(value)}`
+  )
+  const result = (await response.json()) as
+    | { ok: true; data: unknown }
+    | { ok: false; error?: string }
+
+  if (!result.ok) {
+    throw new Error(result.error ?? 'Unable to load sheet data')
+  }
+
+  initCache.set(cacheKey(entity, value), result.data)
+  return result.data
+}
+
+/**
+ * Warms the cache for a sheet the user is likely to open next, so the sheet
+ * can render immediately rather than after a round-trip. Failures are
+ * ignored — the real open re-requests and surfaces the error then.
+ */
+export function prefetchSheetInit(entity: SheetInitEntity, value: string) {
+  if (initCache.has(cacheKey(entity, value))) {
+    return
+  }
+  void fetchSheetInit(entity, value).catch(() => {})
+}
+
 /**
  * Fetches `/api/sheets/init` for a host-rendered sheet wrapper. While
  * loading, callers render nothing (precedent: the lead task overlay) so the
@@ -21,7 +59,10 @@ export function useSheetInit<E extends SheetInitEntity & SheetEntityKey>(
 ) {
   const { close } = useSheetParams()
   const { toast } = useToast()
-  const [data, setData] = useState<SheetInitPayloads[E] | null>(null)
+  // Seed from the cache so a warmed sheet renders on its first frame.
+  const [data, setData] = useState<SheetInitPayloads[E] | null>(
+    () => (initCache.get(cacheKey(entity, value)) as SheetInitPayloads[E]) ?? null
+  )
   // The latest requested value — guards against out-of-order responses when
   // the param changes while a fetch is in flight.
   const requestedValueRef = useRef(value)
@@ -45,22 +86,16 @@ export function useSheetInit<E extends SheetInitEntity & SheetEntityKey>(
 
     const load = async () => {
       try {
-        const response = await fetch(
-          `/api/sheets/init?entity=${entity}&id=${encodeURIComponent(value)}`
-        )
-        const result = (await response.json()) as
-          | { ok: true; data: SheetInitPayloads[E] }
-          | { ok: false; error?: string }
+        const payload = (await fetchSheetInit(
+          entity,
+          value
+        )) as SheetInitPayloads[E]
 
         if (cancelled || requestedValueRef.current !== value) {
           return
         }
 
-        if (!result.ok) {
-          throw new Error(result.error ?? 'Unable to load sheet data')
-        }
-
-        setData(result.data)
+        setData(payload)
       } catch (error) {
         if (cancelled || requestedValueRef.current !== value) {
           return

@@ -4,13 +4,11 @@ import { useRouter } from 'next/navigation'
 
 import { HourBlockSheet } from '@/app/(dashboard)/hour-blocks/hour-block-sheet'
 
-import { useSheetParams } from '../use-sheet-params'
 import { useSheetInit } from './use-sheet-init'
 import type { SheetWrapperProps } from './types'
 
-export function HourBlockSheetWrapper({ value }: SheetWrapperProps) {
+export function HourBlockSheetWrapper({ value, open, onRequestClose }: SheetWrapperProps) {
   const router = useRouter()
-  const { close } = useSheetParams()
   const data = useSheetInit('hour-block', value)
 
   if (!data) {
@@ -19,15 +17,15 @@ export function HourBlockSheetWrapper({ value }: SheetWrapperProps) {
 
   return (
     <HourBlockSheet
-      open
-      onOpenChange={open => {
-        if (!open) {
-          close('hour-block')
+      open={open}
+      onOpenChange={next => {
+        if (!next) {
+          onRequestClose()
         }
       }}
       onComplete={() => {
         router.refresh()
-        close('hour-block')
+        onRequestClose()
       }}
       hourBlock={data.hourBlock}
       clients={data.clients}

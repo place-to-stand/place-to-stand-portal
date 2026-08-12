@@ -4,13 +4,15 @@ import { useRouter } from 'next/navigation'
 
 import { SubmissionDetailSheet } from '@/app/(dashboard)/submissions/_components/submission-detail-sheet'
 
-import { useSheetParams } from '../use-sheet-params'
 import { useSheetInit } from './use-sheet-init'
 import type { SheetWrapperProps } from './types'
 
-export function SubmissionSheetWrapper({ value }: SheetWrapperProps) {
+export function SubmissionSheetWrapper({
+  value,
+  open,
+  onRequestClose,
+}: SheetWrapperProps) {
   const router = useRouter()
-  const { close } = useSheetParams()
   const data = useSheetInit('submission', value)
 
   if (!data) {
@@ -19,16 +21,18 @@ export function SubmissionSheetWrapper({ value }: SheetWrapperProps) {
 
   return (
     <SubmissionDetailSheet
-      submission={data.submission}
+      // This sheet derives `open` from the record, so clearing it is how the
+      // host closes it — the wrapper stays mounted for the exit transition.
+      submission={open ? data.submission : null}
       mode={data.submission.deletedAt ? 'archive' : 'active'}
-      onOpenChange={open => {
-        if (!open) {
-          close('submission')
+      onOpenChange={next => {
+        if (!next) {
+          onRequestClose()
         }
       }}
       onRowRemoved={() => {
         router.refresh()
-        close('submission')
+        onRequestClose()
       }}
     />
   )
