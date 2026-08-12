@@ -10,6 +10,8 @@ import {
   taskAttachments,
   taskComments,
   tasks,
+  timeLogTasks,
+  timeLogs,
 } from '@/lib/db/schema'
 import type { RawTaskWithRelations } from '@/lib/data/projects/types'
 
@@ -34,6 +36,7 @@ type TaskWithRelationsSelection = {
   workerStatus: string | null
   commentCount: number
   attachmentCount: number
+  loggedHours: string | number | null
 }
 
 type TaskAssigneeSelection = {
@@ -91,6 +94,14 @@ export async function listProjectTasksWithRelations(
         where ${taskAttachments.taskId} = tasks.id
           and ${taskAttachments.deletedAt} is null
       )`,
+      loggedHours: sql<string>`(
+        select coalesce(sum(${timeLogs.hours}), 0)
+        from ${timeLogTasks}
+        join ${timeLogs} on ${timeLogs.id} = ${timeLogTasks.timeLogId}
+        where ${timeLogTasks.taskId} = tasks.id
+          and ${timeLogTasks.deletedAt} is null
+          and ${timeLogs.deletedAt} is null
+      )`,
     })
     .from(tasks)
     .where(whereClause)
@@ -145,6 +156,7 @@ export async function listProjectTasksWithRelations(
     assignees: assigneesByTask.get(row.id) ?? [],
     comment_count: Number(row.commentCount ?? 0),
     attachment_count: Number(row.attachmentCount ?? 0),
+    logged_hours: Number(row.loggedHours ?? 0),
   }))
 }
 

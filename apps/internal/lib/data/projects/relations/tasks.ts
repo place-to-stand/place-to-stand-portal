@@ -1,4 +1,4 @@
-import { and, inArray, isNotNull, isNull, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import {
@@ -6,6 +6,8 @@ import {
   taskAttachments as taskAttachmentsTable,
   taskComments as taskCommentsTable,
   tasks as tasksTable,
+  timeLogTasks as timeLogTasksTable,
+  timeLogs as timeLogsTable,
 } from '@/lib/db/schema'
 
 import type { RawTaskWithRelations } from '../types'
@@ -31,6 +33,7 @@ export type TaskRow = {
   workerStatus: string | null
   commentCount: number
   attachmentCount: number
+  loggedHours: number
 }
 
 export type TaskAssigneeRow = {
@@ -83,7 +86,7 @@ export async function loadTaskRows(
   // Two grouped queries replace the old per-row correlated subqueries,
   // which executed 2 index probes per task row per request.
   const taskIds = rows.map(row => row.id)
-  const [commentCounts, attachmentCounts] = await Promise.all([
+  const [commentCounts, attachmentCounts, loggedHours] = await Promise.all([
     db
       .select({
         taskId: taskCommentsTable.taskId,
@@ -110,6 +113,27 @@ export async function loadTaskRows(
         )
       )
       .groupBy(taskAttachmentsTable.taskId),
+    // Sum numeric(8,2) in SQL, never by accumulating floats in JS. A log
+    // linked to several tasks contributes fully to each -- the same shape the
+    // task sheet's own total uses, so a card can't contradict its sheet.
+    db
+      .select({
+        taskId: timeLogTasksTable.taskId,
+        hours: sql<string>`coalesce(sum(${timeLogsTable.hours}), 0)`,
+      })
+      .from(timeLogTasksTable)
+      .innerJoin(
+        timeLogsTable,
+        eq(timeLogTasksTable.timeLogId, timeLogsTable.id)
+      )
+      .where(
+        and(
+          inArray(timeLogTasksTable.taskId, taskIds),
+          isNull(timeLogTasksTable.deletedAt),
+          isNull(timeLogsTable.deletedAt)
+        )
+      )
+      .groupBy(timeLogTasksTable.taskId),
   ])
 
   const commentCountByTask = new Map(
@@ -118,11 +142,15 @@ export async function loadTaskRows(
   const attachmentCountByTask = new Map(
     attachmentCounts.map(row => [row.taskId, Number(row.count)])
   )
+  const loggedHoursByTask = new Map(
+    loggedHours.map(row => [row.taskId, Number(row.hours)])
+  )
 
   return rows.map(row => ({
     ...row,
     commentCount: commentCountByTask.get(row.id) ?? 0,
     attachmentCount: attachmentCountByTask.get(row.id) ?? 0,
+    loggedHours: loggedHoursByTask.get(row.id) ?? 0,
   }))
 }
 
@@ -188,6 +216,7 @@ export function mapTaskRowsToRaw(
       assignees: assigneesByTask.get(row.id) ?? [],
       comment_count: Number(row.commentCount ?? 0),
       attachment_count: Number(row.attachmentCount ?? 0),
+      logged_hours: Number(row.loggedHours ?? 0),
     } as RawTaskWithRelations
 
     return normalized
