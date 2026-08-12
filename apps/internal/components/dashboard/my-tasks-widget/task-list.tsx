@@ -67,17 +67,17 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
           hasTaskLink && 'pointer-events-none'
         )}
       >
-        <div className='flex-1 space-y-1'>
+        <div className='min-w-0 flex-1 space-y-1'>
           {hasTaskLink ? (
-            <span className='text-foreground group-hover:text-primary line-clamp-2 text-sm font-semibold underline-offset-4 transition'>
+            <span className='text-foreground group-hover:text-primary block truncate text-sm font-semibold underline-offset-4 transition'>
               {task.title}
             </span>
           ) : (
-            <span className='text-muted-foreground line-clamp-2 text-sm font-semibold'>
+            <span className='text-muted-foreground block truncate text-sm font-semibold'>
               {task.title}
             </span>
           )}
-          <div className='flex flex-wrap items-center gap-1.5 text-xs'>
+          <div className='flex min-w-0 items-center gap-1.5'>
             <Badge
               variant='outline'
               className={cn(
@@ -87,46 +87,59 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
             >
               {statusLabel}
             </Badge>
-            <div className='text-muted-foreground inline-flex flex-wrap items-center gap-x-2.5 gap-y-1'>
+            {/*
+              Meta line matches the time-log rows: 11px text, size-3 icons, and
+              a dot between each fragment so they read as one breadcrumb rather
+              than three floating chips.
+            */}
+            <div className='text-muted-foreground flex min-w-0 items-center gap-1.5 text-[11px]'>
               {clientLinkMeta.href ? (
                 <Link
                   href={clientLinkMeta.href}
                   onClick={e => e.stopPropagation()}
-                  className='hover:text-foreground pointer-events-auto relative z-20 inline-flex items-center gap-1 underline-offset-4 transition hover:underline'
+                  className='hover:text-foreground pointer-events-auto relative z-20 inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
                 >
-                  {renderProjectTypeIcon(task.project.type, 'size-3.5')}
-                  {clientLabel}
+                  {renderProjectTypeIcon(task.project.type, 'size-3 shrink-0')}
+                  <span className='truncate'>{clientLabel}</span>
                 </Link>
               ) : (
-                <span className='inline-flex items-center gap-1'>
-                  {renderProjectTypeIcon(task.project.type, 'size-3.5')}
-                  {clientLabel}
+                <span className='inline-flex min-w-0 items-center gap-1'>
+                  {renderProjectTypeIcon(task.project.type, 'size-3 shrink-0')}
+                  <span className='truncate'>{clientLabel}</span>
                 </span>
               )}
+              <MetaSeparator />
               {projectLinkMeta.href ? (
                 <Link
                   href={projectLinkMeta.href}
                   onClick={e => e.stopPropagation()}
-                  className='hover:text-foreground pointer-events-auto relative z-20 inline-flex items-center gap-1 underline-offset-4 transition hover:underline'
+                  className='hover:text-foreground pointer-events-auto relative z-20 inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
                 >
-                  <FolderKanban className='size-3.5' aria-hidden />
-                  {task.project.name}
+                  <FolderKanban className='size-3 shrink-0' aria-hidden />
+                  <span className='truncate'>{task.project.name}</span>
                 </Link>
               ) : (
-                <span className='inline-flex items-center gap-1'>
-                  <FolderKanban className='size-3.5' aria-hidden />
-                  {task.project.name}
+                <span className='inline-flex min-w-0 items-center gap-1'>
+                  <FolderKanban className='size-3 shrink-0' aria-hidden />
+                  <span className='truncate'>{task.project.name}</span>
                 </span>
               )}
-              <div
-                className={cn(
-                  'inline-flex items-center gap-1',
-                  TASK_DUE_TONE_CLASSES[dueMeta.tone]
-                )}
-              >
-                <CalendarDays className='size-3.5' aria-hidden />
-                {dueMeta.label}
-              </div>
+              {/* No due date set is the common case -- say nothing rather than
+                  spend a line saying there's nothing to say. */}
+              {task.dueOn ? (
+                <>
+                  <MetaSeparator />
+                  <span
+                    className={cn(
+                      'inline-flex shrink-0 items-center gap-1',
+                      TASK_DUE_TONE_CLASSES[dueMeta.tone]
+                    )}
+                  >
+                    <CalendarDays className='size-3 shrink-0' aria-hidden />
+                    {dueMeta.label}
+                  </span>
+                </>
+              ) : null}
             </div>
           </div>
         </div>
@@ -143,6 +156,14 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
         </p>
       ) : null}
     </li>
+  )
+}
+
+function MetaSeparator() {
+  return (
+    <span aria-hidden className='shrink-0 opacity-50'>
+      ·
+    </span>
   )
 }
 

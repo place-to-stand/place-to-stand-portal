@@ -34,18 +34,18 @@ export function TimeLogList({
 
   if (!items.length) {
     return (
-      <p className='text-muted-foreground border-t pt-3 text-xs'>
+      <p className='text-muted-foreground pt-3 text-xs'>
         No time logged this month.
       </p>
     )
   }
 
   return (
-    <div className='flex flex-col border-t'>
+    <div className='flex flex-col'>
       {/*
         The label keeps its quiet uppercase treatment; separation comes from
-        whitespace instead. Making it heavier turned a section marker into
-        something that competed with the rows beneath it.
+        whitespace alone -- a rule here on top of the row dividers below made
+        the widget read as a stack of boxes.
       */}
       <div className='flex items-center justify-between pt-4 pb-2'>
         <h3 className='text-muted-foreground text-[11px] font-semibold tracking-wide uppercase'>
@@ -125,28 +125,26 @@ function TimeLogRow({
         type='button'
         onClick={() => onOpen(entry.id)}
         disabled={isOpening}
-        className='hover:bg-muted/60 focus-visible:ring-primary focus-visible:ring-offset-background absolute inset-0 z-0 cursor-pointer rounded-md transition focus-visible:ring-2 focus-visible:ring-offset-1 disabled:cursor-wait'
+        className='hover:bg-muted/60 focus-visible:ring-primary focus-visible:ring-offset-background absolute inset-x-0 inset-y-0.5 z-0 cursor-pointer rounded-md transition focus-visible:ring-2 focus-visible:ring-offset-1 disabled:cursor-wait'
         aria-label={`Edit time log: ${label}, ${dateLabel}`}
       />
       <div className='pointer-events-none relative z-10 flex items-center gap-3 px-2 py-2'>
         <div className='min-w-0 flex-1'>
-          {/* Primary line: when and what. */}
-          <div className='flex items-baseline gap-2'>
-            <span className='text-muted-foreground shrink-0 text-[11px] tabular-nums'>
+          {/* Primary line: the task alone, flush left so the titles stack. */}
+          <span className='text-foreground block truncate text-xs font-medium'>
+            {label}
+            {otherTasks.length ? (
+              <span className='text-muted-foreground font-normal'>
+                {' '}
+                +{otherTasks.length} more
+              </span>
+            ) : null}
+          </span>
+          {/* Secondary line: when it happened and where it landed. */}
+          <div className='text-muted-foreground mt-0.5 flex min-w-0 items-center gap-1.5 text-[11px]'>
+            <span className='bg-muted text-muted-foreground shrink-0 rounded px-1.5 py-0.5 text-[10px] leading-none tabular-nums'>
               {dateLabel}
             </span>
-            <span className='text-foreground min-w-0 flex-1 truncate text-xs font-medium'>
-              {label}
-              {otherTasks.length ? (
-                <span className='text-muted-foreground font-normal'>
-                  {' '}
-                  +{otherTasks.length} more
-                </span>
-              ) : null}
-            </span>
-          </div>
-          {/* Secondary line: where it landed. */}
-          <div className='text-muted-foreground mt-0.5 flex min-w-0 items-center gap-1.5 text-[11px]'>
             {entry.clientName ? (
               <>
                 {clientHref ? (
