@@ -13,10 +13,14 @@ type Props = {
   /**
    * Attach Google to the session's existing auth user instead of signing in.
    *
-   * Used during onboarding, where the invite link has already authenticated them.
-   * This is what makes a mismatched address work — an admin invites
-   * `someone@company.com` but they want to use `someone@gmail.com`, which would
-   * never auto-link on an email match.
+   * Used during onboarding, where the invite link has already authenticated them,
+   * so the identity lands on the account the invite created rather than minting a
+   * second one.
+   *
+   * It does NOT make a mismatched address work. Google decides which account
+   * signs in, so the address is only knowable on the return leg — onboarding
+   * checks it there and detaches anything that doesn't match the invited address.
+   * See `onboarding-wizard.tsx`.
    */
   linkExisting?: boolean
   /**

@@ -77,15 +77,20 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  // For password recovery, redirect to the reset form so the user can set a new password
-  if (type === 'recovery') {
-    return NextResponse.redirect(new URL('/reset-password', request.url))
-  }
-
   // Relative paths only. Without this, `?redirect_to=//evil.com` resolves to an
   // absolute off-site URL — the same guard the sibling callback route already applies.
   const safePath =
     redirectTo.startsWith('/') && !redirectTo.startsWith('//') ? redirectTo : '/'
+
+  // Password recovery lands on the reset form, which is the only page that can
+  // spend the session usefully. A caller may name a more specific target — the
+  // form carries a post-reset `?redirect=` — but it is still relative-only, and
+  // absent one this falls back to the form rather than the dashboard.
+  if (type === 'recovery') {
+    return NextResponse.redirect(
+      new URL(safePath === '/' ? '/reset-password' : safePath, request.url)
+    )
+  }
 
   return NextResponse.redirect(new URL(safePath, request.url))
 }

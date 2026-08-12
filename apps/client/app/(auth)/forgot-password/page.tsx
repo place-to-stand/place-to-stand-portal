@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { getSupabaseBrowserClient } from '@/lib/supabase/client'
+
+import { requestPasswordReset } from '@/app/(auth)/_actions/auth-emails'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -15,17 +16,10 @@ export default function ForgotPasswordPage() {
     setLoading(true)
 
     try {
-      const supabase = getSupabaseBrowserClient()
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-        email,
-        { redirectTo: `${window.location.origin}/force-reset-password` }
-      )
-
-      if (resetError) {
-        setError(resetError.message)
-        return
-      }
-
+      // Always reports success, including for addresses with no account — the
+      // action logs the real outcome rather than returning it, so this form
+      // can't be used to find out who has a portal login.
+      await requestPasswordReset(email)
       setSent(true)
     } catch {
       setError('An unexpected error occurred')

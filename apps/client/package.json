@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@pts/db": "*",
+    "@pts/email": "*",
     "@pts/github": "*",
     "@radix-ui/react-avatar": "^1.2.6",
     "@radix-ui/react-dropdown-menu": "^2.1.24",
