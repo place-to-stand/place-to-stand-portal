@@ -42,15 +42,23 @@ export function TimeLogList({
 
   return (
     <div className='flex flex-col border-t'>
-      <div className='flex items-center justify-between pt-3 pb-1'>
-        <h3 className='text-muted-foreground text-[11px] font-semibold tracking-wide uppercase'>
-          My time logs
-        </h3>
-        <span className='text-muted-foreground text-[11px] tabular-nums'>
+      {/*
+        Full-strength foreground text and a filled count chip: at muted 11px
+        uppercase this heading read as one more row of metadata and vanished
+        when scanning the widget. It is a section break, so it looks like one.
+      */}
+      <div className='flex items-center justify-between pt-4 pb-2'>
+        <h3 className='text-foreground text-xs font-semibold'>My time logs</h3>
+        <span className='bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-[10px] font-medium tabular-nums'>
           {items.length} of {totalCount}
         </span>
       </div>
-      <ul className='divide-border divide-y'>
+      {/*
+        -mx-2 lets each row's own px-2 push the hover surface past the text on
+        both sides, so the highlight has breathing room while the text stays
+        aligned with the stat cards above.
+      */}
+      <ul className='divide-border -mx-2 divide-y'>
         {items.map(entry => (
           <TimeLogRow
             key={entry.id}
@@ -94,83 +102,109 @@ function TimeLogRow({
   isOpening: boolean
 }) {
   const projectHref = getProjectHref(entry)
-  const contextLabel = getContextLabel(entry)
+  const clientHref = getClientHref(entry)
   // A log can span several tasks; the first names the row and the rest
-  // collapse into a count so the line stays one line.
+  // collapse into a count so the primary line stays one line.
   const [firstTask, ...otherTasks] = entry.taskTitles
-  const detail = firstTask ?? entry.note ?? null
+  const label = firstTask ?? entry.note ?? 'Untitled entry'
+  const dateLabel = formatCalendarDate(entry.loggedOn, {
+    month: 'short',
+    day: 'numeric',
+  })
 
   return (
     <li className='group relative'>
       {/*
         Full-bleed overlay button rather than wrapping the row: the project
-        link inside needs to stay independently clickable, which it does by
-        sitting above this on the z-axis. Same shape as the My Tasks widget.
+        link on the second line needs to stay independently clickable, which
+        it does by sitting above this on the z-axis.
       */}
       <button
         type='button'
         onClick={() => onOpen(entry.id)}
         disabled={isOpening}
-        className='hover:bg-muted/60 focus-visible:ring-primary focus-visible:ring-offset-background absolute inset-0 z-0 rounded-md transition focus-visible:ring-2 focus-visible:ring-offset-1'
-        aria-label={`Edit time log from ${formatCalendarDate(entry.loggedOn, {
-          month: 'short',
-          day: 'numeric',
-        })}`}
+        className='hover:bg-muted/60 focus-visible:ring-primary focus-visible:ring-offset-background absolute inset-0 z-0 cursor-pointer rounded-md transition focus-visible:ring-2 focus-visible:ring-offset-1 disabled:cursor-wait'
+        aria-label={`Edit time log: ${label}, ${dateLabel}`}
       />
-      <div className='pointer-events-none relative z-10 flex items-start justify-between gap-3 py-2'>
+      <div className='pointer-events-none relative z-10 flex items-center gap-3 px-2 py-2'>
         <div className='min-w-0 flex-1'>
-          <div className='text-muted-foreground flex flex-wrap items-center gap-x-2 text-[11px]'>
-            <span className='tabular-nums'>
-              {formatCalendarDate(entry.loggedOn, {
-                month: 'short',
-                day: 'numeric',
-              })}
+          {/* Primary line: when and what. */}
+          <div className='flex items-baseline gap-2'>
+            <span className='text-muted-foreground shrink-0 text-[11px] tabular-nums'>
+              {dateLabel}
             </span>
-            {projectHref ? (
-              <Link
-                href={projectHref}
-                onClick={event => event.stopPropagation()}
-                className='hover:text-foreground pointer-events-auto relative z-20 inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
-              >
-                {renderProjectTypeIcon(entry.projectType)}
-                <span className='truncate'>{contextLabel}</span>
-              </Link>
-            ) : (
-              <span className='inline-flex min-w-0 items-center gap-1'>
-                {renderProjectTypeIcon(entry.projectType)}
-                <span className='truncate'>{contextLabel}</span>
-              </span>
-            )}
-          </div>
-          {detail ? (
-            <p className='text-foreground mt-0.5 truncate text-xs'>
-              {detail}
+            <span className='text-foreground min-w-0 flex-1 truncate text-xs font-medium'>
+              {label}
               {otherTasks.length ? (
-                <span className='text-muted-foreground'>
+                <span className='text-muted-foreground font-normal'>
                   {' '}
                   +{otherTasks.length} more
                 </span>
               ) : null}
-            </p>
-          ) : null}
+            </span>
+          </div>
+          {/* Secondary line: where it landed. */}
+          <div className='text-muted-foreground mt-0.5 flex min-w-0 items-center gap-1.5 text-[11px]'>
+            {entry.clientName ? (
+              <>
+                {clientHref ? (
+                  <Link
+                    href={clientHref}
+                    className='hover:text-foreground pointer-events-auto relative z-20 inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
+                  >
+                    {renderProjectTypeIcon(entry.projectType)}
+                    <span className='truncate'>{entry.clientName}</span>
+                  </Link>
+                ) : (
+                  <span className='inline-flex min-w-0 items-center gap-1'>
+                    {renderProjectTypeIcon(entry.projectType)}
+                    <span className='truncate'>{entry.clientName}</span>
+                  </span>
+                )}
+                <span aria-hidden className='shrink-0 opacity-50'>
+                  ·
+                </span>
+              </>
+            ) : null}
+            {projectHref ? (
+              <Link
+                href={projectHref}
+                className='hover:text-foreground pointer-events-auto relative z-20 inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
+              >
+                {entry.clientName
+                  ? null
+                  : renderProjectTypeIcon(entry.projectType)}
+                <FolderKanban className='size-3 shrink-0' aria-hidden />
+                <span className='truncate'>{entry.projectName}</span>
+              </Link>
+            ) : (
+              <span className='inline-flex min-w-0 items-center gap-1'>
+                {entry.clientName
+                  ? null
+                  : renderProjectTypeIcon(entry.projectType)}
+                <FolderKanban className='size-3 shrink-0' aria-hidden />
+                <span className='truncate'>{entry.projectName}</span>
+              </span>
+            )}
+          </div>
         </div>
-        <span className='text-foreground inline-flex shrink-0 items-center gap-1 text-xs font-semibold tabular-nums'>
+        {/*
+          The hours sit in their own column, centred against both lines, so the
+          number a scan is looking for is the one thing that isn't competing
+          for the primary line.
+        */}
+        <span className='text-foreground inline-flex shrink-0 items-center gap-1.5 text-base leading-none font-semibold tabular-nums'>
           {isOpening ? (
-            <Loader2 className='h-3 w-3 animate-spin' aria-hidden />
+            <Loader2 className='h-3.5 w-3.5 animate-spin' aria-hidden />
           ) : null}
-          {formatHours(entry.hours)}h
+          {formatHours(entry.hours)}
+          <span className='text-muted-foreground text-[11px] font-normal'>
+            h
+          </span>
         </span>
       </div>
     </li>
   )
-}
-
-function getContextLabel(entry: DashboardTimeLogEntry) {
-  if (entry.clientName) {
-    return `${entry.clientName} · ${entry.projectName}`
-  }
-
-  return entry.projectName
 }
 
 function getProjectHref(entry: DashboardTimeLogEntry) {
@@ -178,19 +212,29 @@ function getProjectHref(entry: DashboardTimeLogEntry) {
     return null
   }
 
+  // The tasks tab is a project's default view -- same target the My Tasks
+  // widget uses, so both widgets land in the same place.
   if (entry.projectType === 'INTERNAL') {
-    return `/projects/${PROJECT_SPECIAL_SEGMENTS.INTERNAL}/${entry.projectSlug}/time-logs`
+    return `/projects/${PROJECT_SPECIAL_SEGMENTS.INTERNAL}/${entry.projectSlug}/tasks`
   }
 
   if (entry.projectType === 'PERSONAL') {
-    return `/projects/${PROJECT_SPECIAL_SEGMENTS.PERSONAL}/${entry.projectSlug}/time-logs`
+    return `/projects/${PROJECT_SPECIAL_SEGMENTS.PERSONAL}/${entry.projectSlug}/tasks`
   }
 
   if (!entry.clientSlug) {
     return null
   }
 
-  return `/projects/${entry.clientSlug}/${entry.projectSlug}/time-logs`
+  return `/projects/${entry.clientSlug}/${entry.projectSlug}/tasks`
+}
+
+function getClientHref(entry: DashboardTimeLogEntry) {
+  if (!entry.clientSlug) {
+    return null
+  }
+
+  return `/clients/${entry.clientSlug}`
 }
 
 function renderProjectTypeIcon(projectType: string) {
