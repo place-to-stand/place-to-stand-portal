@@ -57,10 +57,10 @@ export function RecentActivityOverviewWidget({
           isRefreshing={isBusy}
         />
         <div className='flex flex-1 flex-col overflow-hidden'>
-          <div className='flex-1 overflow-y-auto px-5 py-4'>
+          <div className='flex-1 overflow-y-auto px-4 py-3'>
             <SummaryContent state={state} />
           </div>
-          <footer className='text-muted-foreground border-t px-5 py-3 text-xs'>
+          <footer className='text-muted-foreground border-t px-4 py-2 text-xs'>
             <div className='flex flex-wrap items-center gap-2'>
               <Badge
                 variant='outline'

@@ -185,14 +185,12 @@ export function HoursWidget({ initialSnapshot, className }: HoursWidgetProps) {
       )}
       aria-labelledby='hours-widget-heading'
     >
-      <header className='flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4'>
-        <div>
-          <h2 id='hours-widget-heading' className='text-base font-semibold'>
-            Monthly Hours Snapshot
-          </h2>
-        </div>
-        <div className='flex items-center gap-2'>
-          <p className='mr-2 text-sm font-medium whitespace-nowrap'>
+      <header className='flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5'>
+        <h2 id='hours-widget-heading' className='text-sm font-semibold'>
+          Monthly Hours Snapshot
+        </h2>
+        <div className='flex items-center gap-1.5'>
+          <p className='mr-1 text-xs font-medium whitespace-nowrap'>
             {monthLabel}
           </p>
           <DisabledFieldTooltip
@@ -235,8 +233,8 @@ export function HoursWidget({ initialSnapshot, className }: HoursWidgetProps) {
           </DisabledFieldTooltip>
         </div>
       </header>
-      <div className='flex flex-1 flex-col gap-4 px-5 py-4'>
-        <div className='grid grid-cols-3 gap-4'>
+      <div className='flex flex-1 flex-col gap-3 px-4 py-3'>
+        <div className='grid grid-cols-3 gap-2'>
           <StatCard
             label='My billable hours'
             value={formatHours(snapshot.myHours)}
@@ -276,14 +274,16 @@ function StatCard({ label, value, variant = 'primary' }: StatCardProps) {
   return (
     <div
       className={cn(
-        'rounded-lg border px-4 py-3',
+        'rounded-lg border px-3 py-2',
         variant === 'muted' && 'bg-muted/50'
       )}
     >
-      <p className='text-muted-foreground text-xs font-medium tracking-wide uppercase'>
+      <p className='text-muted-foreground text-[10px] leading-tight font-medium tracking-wide uppercase'>
         {label}
       </p>
-      <p className='text-foreground mt-1 text-2xl font-semibold'>{value}</p>
+      <p className='text-foreground mt-0.5 text-xl leading-tight font-semibold tabular-nums'>
+        {value}
+      </p>
     </div>
   )
 }
