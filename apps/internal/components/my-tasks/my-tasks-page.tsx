@@ -45,6 +45,8 @@ type MyTasksPageProps = {
   activeTaskId: string | null
   view: MyTasksView
   selectedAssigneeId: string
+  doneWeeks: number
+  olderDoneCount: number
 }
 
 export function MyTasksPage({
@@ -56,6 +58,8 @@ export function MyTasksPage({
   activeTaskId,
   view,
   selectedAssigneeId,
+  doneWeeks,
+  olderDoneCount,
 }: MyTasksPageProps) {
   const router = useRouter()
   const reorderMutation = useMyTasksReorderMutation()
@@ -311,6 +315,8 @@ export function MyTasksPage({
             activeTaskId={activeTaskId}
             scrollStorageKey={boardScrollStorageKey}
             onCreateTask={handleStartCreateTask}
+            doneWeeks={doneWeeks}
+            olderDoneCount={olderDoneCount}
           />
         )
       ) : (

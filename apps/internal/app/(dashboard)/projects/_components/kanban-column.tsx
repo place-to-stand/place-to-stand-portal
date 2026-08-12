@@ -1,4 +1,9 @@
-import { Fragment, type MutableRefObject, type UIEventHandler } from 'react'
+import {
+  Fragment,
+  type MutableRefObject,
+  type ReactNode,
+  type UIEventHandler,
+} from 'react'
 import { Plus } from 'lucide-react'
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
@@ -40,6 +45,12 @@ type KanbanColumnProps = {
   getTaskCardOptions?: (task: TaskWithRelations) => TaskCardOptions | undefined
   columnScrollRef?: MutableRefObject<HTMLDivElement | null>
   onColumnScroll?: UIEventHandler<HTMLDivElement>
+  /**
+   * Rendered inside the scroll pane below the last card. Used by the My Tasks
+   * Done column to offer widening its rolling window; unset everywhere else,
+   * so the project board is unchanged.
+   */
+  footerSlot?: ReactNode
 }
 
 export function KanbanColumn({
@@ -59,6 +70,7 @@ export function KanbanColumn({
   getTaskCardOptions,
   columnScrollRef,
   onColumnScroll,
+  footerSlot,
 }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: columnId,
@@ -157,6 +169,7 @@ export function KanbanColumn({
             <BoardDropPlaceholder key={`${columnId}-placeholder`} />
           ) : null}
         </SortableContext>
+        {footerSlot}
       </div>
     </div>
   )
