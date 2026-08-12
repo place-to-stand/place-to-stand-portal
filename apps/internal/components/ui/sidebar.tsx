@@ -42,6 +42,30 @@ type SidebarContextProps = {
   toggleSidebar: () => void
 }
 
+/**
+ * True when the event landed in something that accepts typing — an input, a
+ * textarea, or any contentEditable host (which is what TipTap renders). Used
+ * to keep the sidebar's Cmd/Ctrl+B from stealing the editor's bold shortcut.
+ */
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) {
+    return false
+  }
+
+  if (target.isContentEditable) {
+    return true
+  }
+
+  const tagName = target.tagName
+  if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT') {
+    return true
+  }
+
+  // Guards the case where the event target is a node inside the editable
+  // host rather than the host itself.
+  return target.closest('[contenteditable="true"]') !== null
+}
+
 const SidebarContext = React.createContext<SidebarContextProps | null>(null)
 
 function useSidebar() {
@@ -100,6 +124,15 @@ function SidebarProvider({
         event.key === SIDEBAR_KEYBOARD_SHORTCUT &&
         (event.metaKey || event.ctrlKey)
       ) {
+        // Cmd/Ctrl+B means bold while the caret is in a text field, and the
+        // rich text editor is the obvious case: toggling bold in a task
+        // description was also collapsing the sidebar behind the sheet.
+        // A global chrome shortcut has no business pre-empting the one the
+        // focused control already owns.
+        if (isEditableTarget(event.target)) {
+          return
+        }
+
         event.preventDefault()
         toggleSidebar()
       }

@@ -60,11 +60,17 @@ function DropdownMenuRadioGroup({ ...props }: MenuPrimitive.RadioGroup.Props) {
 function DropdownMenuItem({
   asChild,
   children,
+  // Menu.Item defaults this to false, unlike Trigger and Tab which default to
+  // true. Every asChild consumer here passes a tiptap Button, which renders a
+  // real <button>, so the default is wrong for all of them and Base UI logs a
+  // mismatch on every item. Overridable for a caller that renders otherwise.
+  nativeButton = true,
   ...props
-}: MenuPrimitive.Item.Props & { asChild?: boolean }) {
+}: MenuPrimitive.Item.Props & { asChild?: boolean; nativeButton?: boolean }) {
   if (asChild && React.isValidElement(children)) {
     return (
       <MenuPrimitive.Item
+        nativeButton={nativeButton}
         render={children as React.ReactElement<Record<string, unknown>>}
         {...props}
       />
@@ -142,15 +148,31 @@ function MenuPopup({
 
   return (
     <>
-      {renderInline ? (
-        <span ref={setInlineContainer} data-slot="tiptap-dropdown-anchor" />
-      ) : null}
+      {/*
+        Always rendered, even when portalling: `portal` is driven by a media
+        query, so mounting the anchor lazily would leave the container null for
+        a frame on every viewport flip.
+
+        display:contents generates no box, so the anchor never becomes a flex
+        item of the toolbar group — otherwise each dropdown would silently add
+        a gap's worth of width to a row that already overflows.
+      */}
+      <span
+        ref={setInlineContainer}
+        data-slot="tiptap-dropdown-anchor"
+        style={{ display: "contents" }}
+      />
       <MenuPrimitive.Portal
         {...(typeof portal === "object" ? portal : {})}
-        // Rendering into the anchor above keeps the menu inline. Until the ref
-        // resolves this is null, which Base UI reads as the body — harmless,
-        // because the anchor mounts with the closed menu, long before it opens.
-        container={renderInline ? inlineContainer : undefined}
+        /*
+          Rendering into the anchor above keeps the menu inline.
+
+          Never pass null: Floating UI treats an explicit null container as
+          "wait, the container is still resolving" and renders nothing at all,
+          which silently hid these menus. undefined means "use the body", which
+          is the right fallback for the frame before the ref resolves.
+        */
+        container={renderInline ? (inlineContainer ?? undefined) : undefined}
       >
         <MenuPrimitive.Positioner
           align={align}

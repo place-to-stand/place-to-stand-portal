@@ -13,7 +13,10 @@
 .tiptap-toolbar {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  // 0.25rem here overflowed the sheet's standard width by ~20px: the fixed
+  // toolbar has 11 direct children, so every 2px trimmed off the gap is 20px
+  // reclaimed across the row. Groups keep their own tighter internal gap.
+  gap: 0.125rem;
 
   &-group {
     display: flex;
