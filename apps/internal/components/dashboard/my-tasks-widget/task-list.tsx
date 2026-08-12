@@ -57,17 +57,17 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
       {hasTaskLink ? (
         <Link
           href={linkMeta.href!}
-          className='hover:bg-muted/60 focus-visible:ring-primary focus-visible:ring-offset-background absolute inset-0 z-0 rounded-lg px-5 py-4 transition focus-visible:ring-2 focus-visible:ring-offset-2'
+          className='hover:bg-muted/60 focus-visible:ring-primary focus-visible:ring-offset-background absolute inset-0 z-0 rounded-lg px-4 py-2.5 transition focus-visible:ring-2 focus-visible:ring-offset-2'
           aria-label={`View task: ${task.title}`}
         />
       ) : null}
       <article
         className={cn(
-          'relative z-10 flex items-start gap-3 px-5 py-4',
+          'relative z-10 flex items-start gap-2 px-4 py-2.5',
           hasTaskLink && 'pointer-events-none'
         )}
       >
-        <div className='flex-1 space-y-2'>
+        <div className='flex-1 space-y-1'>
           {hasTaskLink ? (
             <span className='text-foreground group-hover:text-primary line-clamp-2 text-sm font-semibold underline-offset-4 transition'>
               {task.title}
@@ -77,7 +77,7 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
               {task.title}
             </span>
           )}
-          <div className='flex flex-wrap items-center gap-2 text-xs'>
+          <div className='flex flex-wrap items-center gap-1.5 text-xs'>
             <Badge
               variant='outline'
               className={cn(
@@ -87,7 +87,7 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
             >
               {statusLabel}
             </Badge>
-            <div className='text-muted-foreground inline-flex items-center gap-3'>
+            <div className='text-muted-foreground inline-flex flex-wrap items-center gap-x-2.5 gap-y-1'>
               {clientLinkMeta.href ? (
                 <Link
                   href={clientLinkMeta.href}
@@ -138,7 +138,7 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
         ) : null}
       </article>
       {linkMeta.reason ? (
-        <p className='text-muted-foreground relative z-10 px-5 pt-2 pb-4 text-xs'>
+        <p className='text-muted-foreground relative z-10 px-4 pt-1 pb-2.5 text-xs'>
           {linkMeta.reason}
         </p>
       ) : null}

@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { cache } from 'react'
-import { and, asc, desc, eq, isNull, ne, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, isNotNull, isNull, lt, ne, or, sql } from 'drizzle-orm'
 
 import type { ProjectTypeValue } from '@/lib/types'
 import { db } from '@/lib/db'
@@ -38,6 +38,12 @@ export type AssignedTaskSummary = {
 export type AssignedTaskSummaryResult = {
   items: AssignedTaskSummary[]
   totalCount: number
+  /**
+   * Assigned DONE tasks that finished before `doneSince` and were therefore
+   * withheld. Zero when no window is applied. Drives whether the board offers
+   * to widen the window.
+   */
+  olderDoneCount: number
 }
 
 const DEFAULT_LIMIT = 12
@@ -57,12 +63,19 @@ type FetchAssignedTasksSummaryOptions = {
   userId: string
   limit?: number | null
   includeCompletedStatuses?: boolean
+  /**
+   * ISO instant. When set, DONE tasks completed before it are withheld;
+   * every other status is unaffected. Used by the My Tasks board to keep the
+   * Done column to a rolling window instead of an ever-growing archive.
+   */
+  doneSince?: string | null
 }
 
 async function loadAssignedTaskSummaries({
   userId,
   limit = DEFAULT_LIMIT,
   includeCompletedStatuses = true,
+  doneSince = null,
 }: FetchAssignedTasksSummaryOptions): Promise<AssignedTaskSummaryResult> {
   const normalizedLimit =
     typeof limit === 'number' && Number.isFinite(limit)
@@ -82,6 +95,22 @@ async function loadAssignedTaskSummaries({
 
   if (!includeCompletedStatuses) {
     baseConditions.push(ne(tasksTable.status, 'DONE'))
+  }
+
+  // Applies to DONE rows only, so the active columns never shrink. A DONE row
+  // with a null completed_at stays visible on purpose: it would otherwise be
+  // unreachable at every window size, and an extra card beats a lost one.
+  const doneWindowCondition =
+    includeCompletedStatuses && doneSince
+      ? or(
+          ne(tasksTable.status, 'DONE'),
+          isNull(tasksTable.completedAt),
+          gte(tasksTable.completedAt, doneSince)
+        )
+      : null
+
+  if (doneWindowCondition) {
+    baseConditions.push(doneWindowCondition)
   }
 
   const whereClause = and(...baseConditions)
@@ -155,6 +184,25 @@ async function loadAssignedTaskSummaries({
     totalCount = Number(totalResult[0]?.count ?? 0)
   }
 
+  let olderDoneCount = 0
+  if (doneWindowCondition) {
+    const [olderResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(taskAssigneesTable)
+      .innerJoin(tasksTable, eq(taskAssigneesTable.taskId, tasksTable.id))
+      .innerJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
+      .where(
+        and(
+          ...baseConditions.filter(condition => condition !== doneWindowCondition),
+          eq(tasksTable.status, 'DONE'),
+          isNotNull(tasksTable.completedAt),
+          lt(tasksTable.completedAt, doneSince!)
+        )
+      )
+
+    olderDoneCount = Number(olderResult?.count ?? 0)
+  }
+
   const items: AssignedTaskSummary[] = rows.map(row => {
     const updatedSource = row.updatedAt ?? row.createdAt ?? null
 
@@ -183,7 +231,7 @@ async function loadAssignedTaskSummaries({
     }
   })
 
-  return { items, totalCount }
+  return { items, totalCount, olderDoneCount }
 }
 
 export const fetchAssignedTasksSummary = cache(

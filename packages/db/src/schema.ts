@@ -484,6 +484,13 @@ export const tasks = pgTable(
       withTimezone: true,
       mode: 'string',
     }),
+    // Stamped when a task enters DONE, cleared when it leaves. updated_at can't
+    // stand in for this: any later edit to a finished task would bump it and
+    // drag the task back into "completed recently" windows.
+    completedAt: timestamp('completed_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
     rank: text().default('zzzzzzzz').notNull(),
     githubIssueNumber: integer('github_issue_number'),
     githubIssueUrl: text('github_issue_url'),
@@ -516,6 +523,10 @@ export const tasks = pgTable(
     index('idx_tasks_lead')
       .using('btree', table.leadId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL AND lead_id IS NOT NULL)`),
+    // Serves the My Tasks board's rolling "done in the last N weeks" window.
+    index('idx_tasks_completed_at')
+      .using('btree', table.completedAt.desc().nullsLast().op('timestamptz_ops'))
+      .where(sql`(deleted_at IS NULL AND status = 'DONE'::task_status)`),
     foreignKey({
       columns: [table.projectId],
       foreignColumns: [projects.id],

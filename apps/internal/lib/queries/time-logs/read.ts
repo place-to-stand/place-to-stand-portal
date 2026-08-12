@@ -268,6 +268,39 @@ export async function listTaskTimeLogs(
   }
 }
 
+/**
+ * One time log in full `TimeLogEntry` shape (author + linked tasks), by id.
+ *
+ * The dashboard's hours widget lists logs in a lean shape and fetches this
+ * only when a row is opened for editing, so the list payload stays small and
+ * the edit path still gets everything the dialog needs.
+ */
+export async function getTimeLogEntryById(
+  user: AppUser,
+  timeLogId: string,
+): Promise<TimeLogEntry> {
+  await ensureTimeLogAccess(user, timeLogId)
+
+  const timeLogRows = (await db
+    .select(TIME_LOG_SELECTION)
+    .from(timeLogs)
+    .leftJoin(users, eq(timeLogs.userId, users.id))
+    .where(and(eq(timeLogs.id, timeLogId), isNull(timeLogs.deletedAt)))
+    .limit(1)) as TimeLogSelection[]
+
+  if (!timeLogRows.length) {
+    throw new NotFoundError('Time log not found')
+  }
+
+  const [entry] = await hydrateTimeLogEntries(timeLogRows)
+
+  if (!entry) {
+    throw new NotFoundError('Time log not found')
+  }
+
+  return entry
+}
+
 export async function getTimeLogById(
   user: AppUser,
   timeLogId: string,

@@ -51,4 +51,36 @@ export function getTaskStatusLabel(value: string): string {
     .join(' ')
 }
 
+/** Statuses that mean the task is not finished — reaching one reopens it. */
+const REOPENING_STATUSES = new Set(['ON_DECK', 'IN_PROGRESS', 'BLOCKED'])
+
+/**
+ * The single rule for `tasks.completed_at`, shared by every status write path
+ * (task sheet save, board status change, and both reorder routes). Callers
+ * spread the result into their `.set({...})`.
+ *
+ * - Entering DONE stamps the moment.
+ * - Staying DONE preserves the original stamp, so editing a finished task
+ *   doesn't reset its clock — the whole reason this column exists instead of
+ *   reading `updated_at`.
+ * - ARCHIVED preserves it too: archiving files a task away, it doesn't undo
+ *   the completion. (A task archived straight from ON_DECK was never
+ *   completed, so preserving simply keeps the null.)
+ * - Reopening to an active status clears it.
+ */
+export function resolveCompletedAt(
+  nextStatus: string,
+  currentCompletedAt: string | null | undefined
+): { completedAt: string | null } {
+  if (nextStatus === 'DONE') {
+    return { completedAt: currentCompletedAt ?? new Date().toISOString() }
+  }
+
+  if (REOPENING_STATUSES.has(nextStatus)) {
+    return { completedAt: null }
+  }
+
+  return { completedAt: currentCompletedAt ?? null }
+}
+
 export { TASK_STATUS_TOKENS, TASK_STATUS_LABELS }

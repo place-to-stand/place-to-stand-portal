@@ -100,13 +100,12 @@ const MainToolbarContent = ({
 }) => {
   return (
     <>
-      <Spacer size='8' />
-
+      {/* No leading spacer: the row overflows the sheet's width as it is, and
+          the toolbar's own padding already sets the left inset. */}
       <ToolbarGroup>
-        <HeadingDropdownMenu levels={[1, 2, 3, 4]} portal={isMobile} />
+        <HeadingDropdownMenu levels={[1, 2, 3, 4]} />
         <ListDropdownMenu
           types={['bulletList', 'orderedList', 'taskList']}
-          portal={isMobile}
         />
         <BlockquoteButton />
         <CodeBlockButton />

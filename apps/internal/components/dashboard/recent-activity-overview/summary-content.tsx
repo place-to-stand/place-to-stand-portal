@@ -32,8 +32,8 @@ export function SummaryContent({ state }: SummaryContentProps) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-4 gap-3">
+    <div className="space-y-3">
+      <div className="grid grid-cols-4 gap-2">
         <MetricCard value={state.metrics.tasksDone} label="tasks accepted" />
         <MetricCard value={state.metrics.newLeads} label="new leads" />
         <MetricCard value={state.metrics.activeProjects} label="active projects" />
@@ -54,8 +54,8 @@ export function SummaryContent({ state }: SummaryContentProps) {
 
 function LoadingState() {
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-4 gap-3">
+    <div className="space-y-3">
+      <div className="grid grid-cols-4 gap-2">
         <MetricCardSkeleton />
         <MetricCardSkeleton />
         <MetricCardSkeleton />

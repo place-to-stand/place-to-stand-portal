@@ -20,23 +20,21 @@ export function WidgetControls({
   isRefreshing,
 }: WidgetControlsProps) {
   return (
-    <header className='flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4'>
-      <div>
-        <h2
-          id='recent-activity-overview-heading'
-          className='text-base font-semibold'
-        >
-          Recent Activity Overview
-        </h2>
-      </div>
-      <div className='flex items-center gap-2'>
-        <TabsList className='h-9'>
+    <header className='flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5'>
+      <h2
+        id='recent-activity-overview-heading'
+        className='text-sm font-semibold'
+      >
+        Recent Activity Overview
+      </h2>
+      <div className='flex items-center gap-1.5'>
+        <TabsList className='h-7'>
           {options.map(option => (
             <TabsTrigger
               key={option.value}
               value={option.value}
               title={option.description}
-              className='px-2 py-1 text-xs'
+              className='px-2 py-0.5 text-[11px]'
             >
               {option.label}
             </TabsTrigger>

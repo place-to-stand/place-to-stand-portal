@@ -18,6 +18,7 @@ import {
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'
 import { ensureTaskAttachmentBucket } from '@/lib/storage/task-attachments'
+import { resolveCompletedAt } from '@/lib/projects/task-status'
 import { resolveNextTaskRank } from './task-rank'
 
 import { revalidateProjectTaskViews } from './shared'
@@ -107,6 +108,10 @@ export async function saveTask(input: BaseTaskInput): Promise<SaveTaskResult> {
           createdBy: user.id,
           updatedBy: user.id,
           rank: nextRank,
+          // A task can be created straight into DONE (e.g. logging work that
+          // was already finished) — stamp it at birth rather than leaving a
+          // null that the two-week window would silently drop.
+          ...resolveCompletedAt(status, null),
         })
         .returning({ id: tasks.id })
 
@@ -200,6 +205,7 @@ export async function saveTask(input: BaseTaskInput): Promise<SaveTaskResult> {
         status: tasks.status,
         rank: tasks.rank,
         dueOn: tasks.dueOn,
+        completedAt: tasks.completedAt,
         clientId: projects.clientId,
       })
       .from(tasks)
@@ -292,6 +298,7 @@ export async function saveTask(input: BaseTaskInput): Promise<SaveTaskResult> {
           dueOn,
           updatedBy: user.id,
           rank: nextRank,
+          ...resolveCompletedAt(status, existingTask.completedAt),
         })
         .where(eq(tasks.id, id))
     } catch (error) {

@@ -35,43 +35,86 @@ export const ensureEditorStyles = () => {
       font-size: inherit;
     }
 
+    /*
+      Type scale and rhythm live here as two variables rather than being
+      repeated across the rules below, which is how the old 1rem/1.6 pair
+      ended up restated five times with !important.
+
+      0.875rem matches the app's body text -- the editor was rendering a
+      point larger than everything around it -- and the tighter leading and
+      block margins fit more of a description on screen without crowding.
+    */
+    .rich-text-editor .ProseMirror {
+      --rte-font-size: 0.875rem;
+      --rte-line-height: 1.5;
+    }
+
     .rich-text-editor .ProseMirror ul,
     .rich-text-editor .ProseMirror ol {
-      padding-left: 1.25rem;
-      margin: 0.5rem 0;
+      padding-left: 1.125rem;
+      margin: 0.375rem 0;
     }
 
     .rich-text-editor .ProseMirror li {
-      margin: 0.25rem 0;
+      margin: 0.125rem 0;
+    }
+
+    .rich-text-editor .ProseMirror li p {
+      margin: 0;
     }
 
     /* Ensure first child elements (lists, paragraphs, etc.) have consistent font size */
     .rich-text-editor .ProseMirror > *:first-child {
-      font-size: 1rem !important;
+      font-size: var(--rte-font-size) !important;
     }
 
     .rich-text-editor .ProseMirror > ul:first-child,
     .rich-text-editor .ProseMirror > ol:first-child {
-      font-size: 1rem !important;
+      font-size: var(--rte-font-size) !important;
     }
 
     .rich-text-editor .ProseMirror > ul:first-child li,
     .rich-text-editor .ProseMirror > ol:first-child li {
-      font-size: 1rem !important;
+      font-size: var(--rte-font-size) !important;
     }
 
     .rich-text-editor .ProseMirror p {
-      margin: 0.5rem 0;
-      font-size: 1rem !important;
-      line-height: 1.6 !important;
+      margin: 0.25rem 0;
+      font-size: var(--rte-font-size) !important;
+      line-height: var(--rte-line-height) !important;
       font-weight: normal;
     }
 
     /* Ensure first paragraph has same font size as others */
     .rich-text-editor .ProseMirror p:first-child {
-      font-size: 1rem !important;
-      line-height: 1.6 !important;
+      font-size: var(--rte-font-size) !important;
+      line-height: var(--rte-line-height) !important;
       font-weight: normal;
+    }
+
+    /* Headings kept proportional to the new body size, with tighter collars
+       so a heading no longer pushes a paragraph-and-a-half of space. */
+    .rich-text-editor .ProseMirror :is(h1, h2, h3, h4, h5, h6) {
+      margin: 0.75rem 0 0.25rem;
+      line-height: 1.25;
+    }
+
+    .rich-text-editor .ProseMirror > :is(h1, h2, h3, h4, h5, h6):first-child {
+      margin-top: 0;
+    }
+
+    .rich-text-editor .ProseMirror blockquote,
+    .rich-text-editor .ProseMirror pre {
+      margin: 0.5rem 0;
+    }
+
+    /* No leading or trailing gap inside the editor's own padding. */
+    .rich-text-editor .ProseMirror > *:first-child {
+      margin-top: 0;
+    }
+
+    .rich-text-editor .ProseMirror > *:last-child {
+      margin-bottom: 0;
     }
 
     .rich-text-editor .ProseMirror:focus {

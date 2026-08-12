@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Label as LabelPrimitive, Slot as SlotPrimitive } from 'radix-ui'
+import { Slot as SlotPrimitive } from '@pts/ui/slot'
 
 import {
   Controller,
@@ -90,7 +90,7 @@ function FormItem({ className, ...props }: React.ComponentProps<'div'>) {
 function FormLabel({
   className,
   ...props
-}: React.ComponentProps<typeof LabelPrimitive.Root>) {
+}: React.ComponentProps<'label'>) {
   const { error, formItemId } = useFormField()
 
   return (
@@ -104,11 +104,11 @@ function FormLabel({
   )
 }
 
-function FormControl({ ...props }: React.ComponentProps<typeof SlotPrimitive.Slot>) {
+function FormControl({ ...props }: React.ComponentProps<typeof SlotPrimitive>) {
   const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
 
   return (
-    <SlotPrimitive.Slot
+    <SlotPrimitive
       data-slot='form-control'
       id={formItemId}
       aria-describedby={

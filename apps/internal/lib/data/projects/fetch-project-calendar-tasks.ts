@@ -17,6 +17,7 @@ type TaskRow = {
   description: string | null
   status: DbTask['status']
   acceptedAt: string | null
+  completedAt: string | null
   dueOn: string | null
   createdBy: string | null
   updatedBy: string | null
@@ -55,6 +56,7 @@ export async function fetchProjectCalendarTasks({
       description: tasksTable.description,
       status: tasksTable.status,
       acceptedAt: tasksTable.acceptedAt,
+      completedAt: tasksTable.completedAt,
       dueOn: tasksTable.dueOn,
       createdBy: tasksTable.createdBy,
       updatedBy: tasksTable.updatedBy,
@@ -111,6 +113,7 @@ export async function fetchProjectCalendarTasks({
     status: row.status,
     rank: row.rank,
     accepted_at: row.acceptedAt,
+    completed_at: row.completedAt,
     due_on: row.dueOn,
     created_by: row.createdBy ?? null,
     updated_by: row.updatedBy ?? null,

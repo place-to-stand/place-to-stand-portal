@@ -45,6 +45,8 @@ type MyTasksPageProps = {
   activeTaskId: string | null
   view: MyTasksView
   selectedAssigneeId: string
+  doneWeeks: number
+  olderDoneCount: number
 }
 
 export function MyTasksPage({
@@ -56,6 +58,8 @@ export function MyTasksPage({
   activeTaskId,
   view,
   selectedAssigneeId,
+  doneWeeks,
+  olderDoneCount,
 }: MyTasksPageProps) {
   const router = useRouter()
   const reorderMutation = useMyTasksReorderMutation()
@@ -295,7 +299,11 @@ export function MyTasksPage({
       contentClassName='flex flex-col gap-4 sm:gap-6'
     >
       {view === 'board' ? (
-        entries.length === 0 ? (
+        // Only truly empty when nothing is hidden either. With older DONE
+        // tasks outside the window the board must still render, or its
+        // "load previous two weeks" control never mounts and the tasks are
+        // unreachable at any window size.
+        entries.length === 0 && olderDoneCount === 0 ? (
           <ProjectsBoardEmpty
             title='No tasks assigned'
             description='Once a task is assigned to you, it will appear here.'
@@ -311,6 +319,8 @@ export function MyTasksPage({
             activeTaskId={activeTaskId}
             scrollStorageKey={boardScrollStorageKey}
             onCreateTask={handleStartCreateTask}
+            doneWeeks={doneWeeks}
+            olderDoneCount={olderDoneCount}
           />
         )
       ) : (

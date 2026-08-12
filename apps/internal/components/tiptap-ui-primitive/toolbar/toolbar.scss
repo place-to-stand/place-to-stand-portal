@@ -1,5 +1,7 @@
 :root {
-  --tt-toolbar-height: 2.75rem;
+  // 2.75rem left ~6px of dead space above and below a 2rem button row. 2.25rem
+  // keeps a 2px collar without the toolbar reading as a padded band.
+  --tt-toolbar-height: 2.25rem;
   --tt-safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --tt-toolbar-bg-color: var(--white);
   --tt-toolbar-border-color: var(--tt-gray-light-a-100);
@@ -13,7 +15,10 @@
 .tiptap-toolbar {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  // 0.25rem here overflowed the sheet's standard width by ~20px: the fixed
+  // toolbar has 11 direct children, so every 2px trimmed off the gap is 20px
+  // reclaimed across the row. Groups keep their own tighter internal gap.
+  gap: 0.125rem;
 
   &-group {
     display: flex;
@@ -38,7 +43,9 @@
     min-height: var(--tt-toolbar-height);
     background: var(--tt-toolbar-bg-color);
     border-bottom: 1px solid var(--tt-toolbar-border-color);
-    padding: 0;
+    // Matches the collar the row already has above and below it:
+    // (--tt-toolbar-height - button height) / 2 = (2.25rem - 2rem) / 2.
+    padding: 0 0.125rem;
     overflow-x: auto;
     overscroll-behavior-x: contain;
     -webkit-overflow-scrolling: touch;

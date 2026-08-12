@@ -21,6 +21,7 @@ import {
 } from '@/lib/projects/tasks/my-tasks-constants'
 import type { MyTasksReorderPayload } from '@/lib/projects/tasks/use-my-tasks-data'
 import type { MyTasksInitialEntry } from './my-tasks-page'
+import { DoneWindowFooter } from './done-window-footer'
 import type { TaskContextDetails } from '@/app/(dashboard)/projects/task-card'
 
 type TaskCardOptions = {
@@ -45,6 +46,8 @@ type MyTasksBoardProps = {
   activeTaskId: string | null
   scrollStorageKey?: string | null
   onCreateTask?: (status: MyTaskStatus) => void
+  doneWeeks: number
+  olderDoneCount: number
 }
 
 type TaskRow = {
@@ -71,6 +74,8 @@ export function MyTasksBoard({
   activeTaskId,
   scrollStorageKey,
   onCreateTask,
+  doneWeeks,
+  olderDoneCount,
 }: MyTasksBoardProps) {
   const { sensors } = useProjectsBoardSensors()
   const { viewportRef: boardViewportRef, handleScroll: handleBoardScroll } =
@@ -216,6 +221,14 @@ export function MyTasksBoard({
                       getTaskCardOptions={getTaskCardOptions}
                       columnScrollRef={getColumnRef(column.id)}
                       onColumnScroll={getScrollHandler(column.id)}
+                      footerSlot={
+                        column.id === 'DONE' ? (
+                          <DoneWindowFooter
+                            doneWeeks={doneWeeks}
+                            olderDoneCount={olderDoneCount}
+                          />
+                        ) : undefined
+                      }
                     />
                   )
                 })}
