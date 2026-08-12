@@ -77,9 +77,14 @@ function TabsTrigger({
 }: TabsTriggerProps) {
   // `render` takes over the element entirely, so the child carries its own
   // content; passing `children` alongside it would double up.
+  //
+  // nativeButton must follow what actually renders: Base UI defaults it to
+  // true, and leaving it true while rendering the board's <Link> anchors makes
+  // it treat the element as a real button -- it warns, and drops Space-key
+  // activation because an anchor has no native space handling.
   const renderProps =
     asChild && React.isValidElement(children)
-      ? { render: children as React.ReactElement }
+      ? { render: children as React.ReactElement, nativeButton: false }
       : { children }
 
   return (

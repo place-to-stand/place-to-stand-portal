@@ -18,8 +18,15 @@ import { useRender } from '@base-ui/react/use-render'
  *
  * Behavioral notes, matching Radix:
  * - Event handlers compose, className/style merge, other child props win.
- * - A non-element child renders nothing rather than throwing.
+ * - A non-element child renders nothing, and logs in development. Radix threw
+ *   here; rendering nothing in production is the safer failure for a live app,
+ *   but silence would let a malformed child erase a button with no trace, so
+ *   the dev build names the problem instead.
  */
+
+// @pts/ui carries no node types; NODE_ENV is inlined by the bundler. The file
+// is a module, so this declaration stays module-scoped.
+declare const process: { env?: { NODE_ENV?: string } } | undefined
 
 // Stable placeholder so the hook below is never called conditionally. Its
 // output is discarded whenever there is no valid child.
@@ -33,6 +40,14 @@ function Slot({
   ref?: React.Ref<HTMLElement>
 }) {
   const child = React.isValidElement(children) ? children : null
+
+  if (process?.env?.NODE_ENV !== 'production' && children != null && !child) {
+    console.error(
+      'Slot expected a single React element child (this is what `asChild` ' +
+        'forwards props onto), but received %s. Nothing will render.',
+      typeof children
+    )
+  }
 
   const rendered = useRender({
     render: child ?? NO_CHILD,

@@ -24,7 +24,15 @@ export function DoneWindowFooter({
   const [isPending, startTransition] = useTransition()
 
   const handleWiden = useCallback(() => {
-    const params = new URLSearchParams(searchParams.toString())
+    // Read the live query string rather than the captured searchParams
+    // snapshot: a sheet opening in the same tick writes its own param from its
+    // own snapshot, and whichever navigation lands last would otherwise drop
+    // the other's param.
+    const params = new URLSearchParams(
+      typeof window === 'undefined'
+        ? searchParams.toString()
+        : window.location.search
+    )
     params.set('doneWeeks', String(doneWeeks + DONE_WINDOW_WEEKS))
 
     startTransition(() => {

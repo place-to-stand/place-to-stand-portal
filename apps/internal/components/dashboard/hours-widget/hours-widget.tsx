@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
@@ -43,6 +43,17 @@ export function HoursWidget({ initialSnapshot, className }: HoursWidgetProps) {
   // month replaces the whole snapshot, which resets paging for free.
   const [logs, setLogs] = useState<DashboardTimeLogPage>(
     initialSnapshot.timeLogs
+  )
+  // Tracked separately from `logs.items.length`: dedupe can drop rows, and
+  // deriving the next offset from the deduped count would advance slower than
+  // the server consumed, re-requesting overlapping pages forever.
+  const [logOffset, setLogOffset] = useState(
+    initialSnapshot.timeLogs.items.length
+  )
+  // Identifies the month whose data is currently on screen, so a response that
+  // arrives after the user moved months can be discarded rather than merged.
+  const activeCursorRef = useRef(
+    `${initialSnapshot.year}-${initialSnapshot.month}`
   )
   const [isLoadingLogs, setIsLoadingLogs] = useState(false)
   const [logError, setLogError] = useState<string | null>(null)
@@ -130,8 +141,10 @@ export function HoursWidget({ initialSnapshot, className }: HoursWidgetProps) {
         }
 
         const payload = (await response.json()) as HoursSnapshot
+        activeCursorRef.current = `${payload.year}-${payload.month}`
         setSnapshot(payload)
         setLogs(payload.timeLogs)
+        setLogOffset(payload.timeLogs.items.length)
         setLogError(null)
       } catch (requestError) {
         console.error('Failed to load hours snapshot', requestError)
@@ -149,6 +162,8 @@ export function HoursWidget({ initialSnapshot, className }: HoursWidgetProps) {
       return
     }
 
+    const requestedCursor = `${snapshot.year}-${snapshot.month}`
+
     setIsLoadingLogs(true)
     setLogError(null)
 
@@ -159,7 +174,7 @@ export function HoursWidget({ initialSnapshot, className }: HoursWidgetProps) {
         body: JSON.stringify({
           year: snapshot.year,
           month: snapshot.month,
-          logOffset: logs.items.length,
+          logOffset,
         }),
         cache: 'no-store',
       })
@@ -170,9 +185,20 @@ export function HoursWidget({ initialSnapshot, className }: HoursWidgetProps) {
 
       const page = (await response.json()) as DashboardTimeLogPage
 
+      // The month can change while this is in flight -- nothing disables
+      // navigation during paging -- and appending these rows would splice one
+      // month's logs into another's list and totals.
+      if (activeCursorRef.current !== requestedCursor) {
+        return
+      }
+
+      // Advance by what the server actually returned, not by how many survived
+      // dedupe, so a row inserted above the boundary can't stall the cursor.
+      setLogOffset(current => current + page.items.length)
+
       setLogs(current => {
-        // A log deleted between pages would shift the offset and could
-        // re-deliver a row we already show; dedupe by id so it can't double up.
+        // A log deleted between pages shifts the offset and can re-deliver a
+        // row already on screen; dedupe by id so it can't double up.
         const seen = new Set(current.items.map(item => item.id))
         return {
           items: [
@@ -184,11 +210,13 @@ export function HoursWidget({ initialSnapshot, className }: HoursWidgetProps) {
       })
     } catch (requestError) {
       console.error('Failed to load more time logs', requestError)
-      setLogError('Unable to load more logs. Please try again.')
+      if (activeCursorRef.current === requestedCursor) {
+        setLogError('Unable to load more logs. Please try again.')
+      }
     } finally {
       setIsLoadingLogs(false)
     }
-  }, [isLoadingLogs, logs.items.length, snapshot.month, snapshot.year])
+  }, [isLoadingLogs, logOffset, snapshot.month, snapshot.year])
 
   /**
    * Re-pulls the current month after an edit so the totals and the row's own
@@ -228,6 +256,7 @@ export function HoursWidget({ initialSnapshot, className }: HoursWidgetProps) {
 
       setSnapshot(nextSnapshot)
       setLogs(nextPage)
+      setLogOffset(nextPage.items.length)
     } catch (requestError) {
       console.error('Failed to refresh hours after edit', requestError)
       setLogError('Saved, but the list is out of date. Reload to see it.')

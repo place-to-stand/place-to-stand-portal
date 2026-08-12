@@ -80,13 +80,9 @@ type PopupWithPortalProps = Omit<MenuPrimitive.Popup.Props, "className"> &
     // plain string, and cn() only takes strings.
     className?: string
     /**
-     * Accepted for API compatibility with the Radix version. Base UI requires
-     * a Portal around the Positioner, so this no longer toggles portalling —
-     * an object value still forwards props to the Portal. Both consumers
-     * defaulted to `false` and neither overrode it, and Base UI positions the
-     * popup with fixed coordinates anchored to the trigger, so the rendered
-     * result is unchanged apart from no longer being clippable by the
-     * toolbar's overflow.
+     * `false` keeps the menu in the toolbar's own DOM position; `true` sends
+     * it to the document body. RichTextEditor passes `portal={isMobile}`, so
+     * this is a live responsive choice, not compatibility baggage.
      */
     portal?: boolean | MenuPrimitive.Portal.Props
   }
@@ -96,11 +92,13 @@ function DropdownMenuSubContent({
   portal = true,
   ...props
 }: PopupWithPortalProps) {
-  return renderPopup({
-    className: cn("tiptap-dropdown-menu", className),
-    portal,
-    props,
-  })
+  return (
+    <MenuPopup
+      className={cn("tiptap-dropdown-menu", className)}
+      portal={portal}
+      {...props}
+    />
+  )
 }
 
 function DropdownMenuContent({
@@ -109,42 +107,69 @@ function DropdownMenuContent({
   portal = false,
   ...props
 }: PopupWithPortalProps) {
-  return renderPopup({
-    className: cn("tiptap-dropdown-menu", className),
-    portal,
-    props: { sideOffset, ...props },
-  })
+  return (
+    <MenuPopup
+      className={cn("tiptap-dropdown-menu", className)}
+      portal={portal}
+      sideOffset={sideOffset}
+      {...props}
+    />
+  )
 }
 
 /**
- * Base UI splits Radix's single Content into Portal > Positioner > Popup. All
- * three are mandatory — rendering a Positioner outside a Portal throws
- * "<Menu.Portal> is missing" at render time, which is what the SSR smoke
- * harness caught when this kept Radix's optional-portal shape.
+ * Base UI splits Radix's single Content into Portal > Positioner > Popup, and
+ * all three are mandatory — rendering a Positioner outside a Portal throws
+ * "<Menu.Portal> is missing", which the SSR smoke harness caught.
+ *
+ * That would flatten `portal={false}` into "always portal to body", quietly
+ * dropping the desktop/mobile distinction RichTextEditor asks for. Instead the
+ * inline case portals into an anchor rendered right here, so the popup keeps
+ * its original DOM position while still satisfying Base UI's requirement.
  */
-function renderPopup({
+function MenuPopup({
   className,
   portal,
-  props,
-}: {
-  className: string
-  portal: boolean | MenuPrimitive.Portal.Props
-  props: Omit<MenuPrimitive.Popup.Props, "className"> &
-    Pick<MenuPrimitive.Positioner.Props, "align" | "side" | "sideOffset">
-}) {
-  const { align, side, sideOffset, ...popupProps } = props
+  align,
+  side,
+  sideOffset,
+  ...popupProps
+}: PopupWithPortalProps & { className: string }) {
+  const [inlineContainer, setInlineContainer] =
+    React.useState<HTMLElement | null>(null)
+
+  const renderInline = portal === false
 
   return (
-    <DropdownMenuPortal {...(typeof portal === "object" ? portal : {})}>
-      <MenuPrimitive.Positioner
-        align={align}
-        side={side}
-        sideOffset={sideOffset}
-        className="pointer-events-auto isolate z-50 outline-none"
+    <>
+      {renderInline ? (
+        <span ref={setInlineContainer} data-slot="tiptap-dropdown-anchor" />
+      ) : null}
+      <MenuPrimitive.Portal
+        {...(typeof portal === "object" ? portal : {})}
+        // Rendering into the anchor above keeps the menu inline. Until the ref
+        // resolves this is null, which Base UI reads as the body — harmless,
+        // because the anchor mounts with the closed menu, long before it opens.
+        container={renderInline ? inlineContainer : undefined}
       >
-        <MenuPrimitive.Popup className={className} {...popupProps} />
-      </MenuPrimitive.Positioner>
-    </DropdownMenuPortal>
+        <MenuPrimitive.Positioner
+          align={align}
+          side={side}
+          sideOffset={sideOffset}
+          className="pointer-events-auto isolate z-50 outline-none"
+        >
+          <MenuPrimitive.Popup
+            className={className}
+            // Restores the Radix version's onCloseAutoFocus preventDefault.
+            // These triggers are tabIndex={-1} toolbar buttons, so Base UI's
+            // default of focusing the trigger on close would pull the caret
+            // out of the document after picking a heading or list style.
+            finalFocus={false}
+            {...popupProps}
+          />
+        </MenuPrimitive.Positioner>
+      </MenuPrimitive.Portal>
+    </>
   )
 }
 
