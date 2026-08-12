@@ -417,7 +417,7 @@ See `AGENTS.md` for comprehensive development practices including:
 - Observability and operations guidelines
 
 **Key guardrails from AGENTS.md:**
-- Do not edit `package.json`, lockfiles, or migrations directly
+- Do not hand-edit dependencies, lockfiles, or migrations — use the CLIs so `package-lock.json` and the schema stay in sync. Other `package.json` config (scripts, workspace fields) is fine to edit.
 - Always run `npm run build`, `npm run lint`, `npm run type-check` from the repo root (runs via Turbo) for touched surfaces
 - Prefer existing modules, utilities, and shadcn components before building new
 - Files approaching 300 lines should be split by responsibility
