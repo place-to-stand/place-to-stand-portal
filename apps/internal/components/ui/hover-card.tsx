@@ -1,10 +1,16 @@
 'use client'
 
 import * as React from 'react'
-import { Popover as PopoverPrimitive } from 'radix-ui'
+import { Popover as PopoverPrimitive } from '@base-ui/react/popover'
 
 import { cn } from '@/lib/utils'
 
+/**
+ * Built on Base UI's Popover rather than its PreviewCard: the timer contract
+ * below (controlled-open cancelling this instance's pending timers, so sliding
+ * between triggers can't let a stale close fire ~200ms later and wipe a card
+ * the parent just opened) is behaviour PreviewCard does not expose.
+ */
 const OPEN_DELAY = 50
 const CLOSE_DELAY = 200
 
@@ -123,7 +129,10 @@ function HoverCard({
         closeTimeoutRef,
       }}
     >
-      <PopoverPrimitive.Root open={open} onOpenChange={setOpenState}>
+      <PopoverPrimitive.Root
+        open={open}
+        onOpenChange={nextOpen => setOpenState(nextOpen)}
+      >
         {children}
       </PopoverPrimitive.Root>
     </HoverCardContext.Provider>
@@ -133,9 +142,17 @@ function HoverCard({
 function HoverCardTrigger({
   className,
   children,
+  asChild,
   ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Trigger>) {
+}: PopoverPrimitive.Trigger.Props & { asChild?: boolean }) {
   const { setOpen } = useHoverCard()
+
+  // `asChild` maps onto Base UI's `render`; callers wrap links and table cells
+  // so the trigger stays whatever element they already had.
+  const renderProps =
+    asChild && React.isValidElement(children)
+      ? { render: children as React.ReactElement<Record<string, unknown>> }
+      : { children }
 
   return (
     <PopoverPrimitive.Trigger
@@ -143,19 +160,27 @@ function HoverCardTrigger({
       className={className}
       onPointerEnter={() => setOpen(true)}
       onPointerLeave={() => setOpen(false)}
+      {...renderProps}
       {...props}
-    >
-      {children}
-    </PopoverPrimitive.Trigger>
+    />
   )
 }
+
+/**
+ * Keeps the Radix transform-origin variable resolving, so the origin-(...)
+ * class above still anchors the zoom animation correctly.
+ */
+const radixVarAliases = {
+  '--radix-popover-content-transform-origin': 'var(--transform-origin)',
+} as React.CSSProperties
 
 function HoverCardContent({
   className,
   align = 'center',
   sideOffset = 4,
   ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Content>) {
+}: PopoverPrimitive.Popup.Props &
+  Pick<PopoverPrimitive.Positioner.Props, 'align' | 'sideOffset'>) {
   const { setOpen, closeTimeoutRef } = useHoverCard()
 
   const handlePointerEnter = React.useCallback(() => {
@@ -171,18 +196,26 @@ function HoverCardContent({
 
   return (
     <PopoverPrimitive.Portal>
-      <PopoverPrimitive.Content
-        data-slot='hover-card-content'
+      <PopoverPrimitive.Positioner
         align={align}
         sideOffset={sideOffset}
-        className={cn(
-          'bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 w-64 origin-(--radix-popover-content-transform-origin) rounded-md border p-4 shadow-md outline-hidden',
-          className
-        )}
-        onPointerEnter={handlePointerEnter}
-        onPointerLeave={handlePointerLeave}
-        {...props}
-      />
+        className='pointer-events-auto isolate z-50'
+      >
+        <PopoverPrimitive.Popup
+          data-slot='hover-card-content'
+          style={radixVarAliases}
+          className={cn(
+            // data-open/data-closed are Base UI's spelling of Radix's
+            // data-[state=*]. fill-mode-forwards holds the exit frame so the
+            // card doesn't blink back at full opacity before unmounting.
+            'bg-popover text-popover-foreground data-open:animate-in data-closed:animate-out data-closed:fill-mode-forwards data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 w-64 origin-(--radix-popover-content-transform-origin) rounded-md border p-4 shadow-md outline-hidden',
+            className
+          )}
+          onPointerEnter={handlePointerEnter}
+          onPointerLeave={handlePointerLeave}
+          {...props}
+        />
+      </PopoverPrimitive.Positioner>
     </PopoverPrimitive.Portal>
   )
 }
