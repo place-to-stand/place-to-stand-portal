@@ -60,9 +60,22 @@ export type EmailLayoutArgs = {
   action?: EmailAction
   /** Small print under the action, e.g. link expiry. Escaped. */
   note?: string
+  /**
+   * Lead-in to the footer line; `replyTo` is appended as the address, so pass
+   * the sentence up to but not including it.
+   *
+   * The default suits mail you can safely disregard. A message reporting a
+   * change that has already happened should override it — telling someone their
+   * password just changed and then that they can ignore the message is the
+   * opposite of the advice they need.
+   */
+  footerLead?: string
   /** Address a confused recipient should write to. */
   replyTo: string
 }
+
+const DEFAULT_FOOTER_LEAD =
+  "If you weren't expecting this message you can ignore it, or reply to"
 
 export type RenderedEmail = {
   subject: string
@@ -80,12 +93,28 @@ export type RenderedEmail = {
  */
 export function renderEmail(
   subject: string,
-  { preheader, heading, paragraphs, action, note, replyTo }: EmailLayoutArgs
+  {
+    preheader,
+    heading,
+    paragraphs,
+    action,
+    note,
+    footerLead,
+    replyTo,
+  }: EmailLayoutArgs
 ): RenderedEmail {
   return {
     subject,
-    text: renderText({ heading, paragraphs, action, note, replyTo }),
-    html: renderHtml({ preheader, heading, paragraphs, action, note, replyTo }),
+    text: renderText({ heading, paragraphs, action, note, footerLead, replyTo }),
+    html: renderHtml({
+      preheader,
+      heading,
+      paragraphs,
+      action,
+      note,
+      footerLead,
+      replyTo,
+    }),
   }
 }
 
@@ -94,6 +123,7 @@ function renderText({
   paragraphs,
   action,
   note,
+  footerLead,
   replyTo,
 }: Omit<EmailLayoutArgs, 'preheader'>): string {
   const lines = [heading, '', ...paragraphs.flatMap(p => [p, ''])]
@@ -107,7 +137,7 @@ function renderText({
   }
 
   lines.push(
-    `If you weren't expecting this message, you can ignore it or reply to ${replyTo}.`,
+    `${footerLead ?? DEFAULT_FOOTER_LEAD} ${replyTo}.`,
     '',
     `— The ${BRAND} Team`
   )
@@ -121,6 +151,7 @@ function renderHtml({
   paragraphs,
   action,
   note,
+  footerLead,
   replyTo,
 }: EmailLayoutArgs): string {
   const body = paragraphs
@@ -169,7 +200,7 @@ function renderHtml({
                 ${smallPrint}
                 <hr style="border:none;border-top:1px solid ${COLORS.rule};margin:24px 0;" />
                 <p style="margin:0 0 8px;font-size:13px;line-height:1.6;color:${COLORS.muted};">
-                  If you weren't expecting this message you can ignore it, or reply to
+                  ${escapeHtml(footerLead ?? DEFAULT_FOOTER_LEAD)}
                   <a href="mailto:${escapeHtml(replyTo)}" style="color:${COLORS.muted};">${escapeHtml(replyTo)}</a>.
                 </p>
                 <p style="margin:0;font-size:13px;color:${COLORS.faint};">— The ${BRAND} Team</p>

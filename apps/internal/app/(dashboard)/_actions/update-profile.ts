@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { requireUser } from "@/lib/auth/session";
+import { sendPasswordChangedEmail } from "@/lib/email/auth-emails";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseServiceClient } from "@/lib/supabase/service";
 import { db } from "@/lib/db";
@@ -107,6 +108,17 @@ export async function updateProfile(input: UpdateProfileInput): Promise<UpdatePr
   if (authError) {
     console.error("Failed to update auth profile", authError);
     return { error: authError.message };
+  }
+
+  // Goes to the address on file, not `email`: a new address is unconfirmed at
+  // this point, so notifying it would tell whoever owns it about a change to an
+  // account that isn't theirs yet — and leave the real owner unaware.
+  if (password) {
+    try {
+      await sendPasswordChangedEmail(user.email);
+    } catch (error) {
+      console.error("Failed to send password changed email", error);
+    }
   }
 
   revalidatePath("/settings/users");

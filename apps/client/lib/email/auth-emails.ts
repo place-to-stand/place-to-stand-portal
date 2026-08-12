@@ -2,6 +2,7 @@ import 'server-only'
 
 import {
   magicLinkEmail,
+  passwordChangedEmail,
   passwordResetEmail,
   sendEmail,
   type RenderedEmail,
@@ -42,6 +43,23 @@ export async function sendMagicLinkEmail(
 }
 
 /**
+ * Confirms a password change that has already happened.
+ *
+ * Replaces Supabase's own `password_changed` notification, which is disabled so
+ * the two can't both land. Every path that changes a password is responsible for
+ * calling this — see `supabase/config.toml`.
+ */
+export async function sendPasswordChangedEmail(to: string): Promise<void> {
+  const { from, replyTo, transport } = resolveMailConfig()
+
+  await deliver(
+    to,
+    passwordChangedEmail({ destination: DESTINATION, replyTo }),
+    { from, replyTo, transport }
+  )
+}
+
+/**
  * Throws if deployed mail is misconfigured.
  *
  * Callers run this *outside* the catch that keeps unknown addresses
@@ -58,15 +76,23 @@ async function send(
   actionLink: string,
   template: AuthEmailTemplate
 ): Promise<void> {
-  const { from, replyTo, transport } = resolveMailConfig()
+  const config = resolveMailConfig()
 
   const email = template({
     actionLink,
     destination: DESTINATION,
     expiresInMinutes: LINK_EXPIRY_MINUTES,
-    replyTo,
+    replyTo: config.replyTo,
   })
 
+  await deliver(to, email, config)
+}
+
+async function deliver(
+  to: string,
+  email: RenderedEmail,
+  { from, replyTo, transport }: MailConfig
+): Promise<void> {
   await sendEmail(
     {
       from: `Place To Stand <${from}>`,

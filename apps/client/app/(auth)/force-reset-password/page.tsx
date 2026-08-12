@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { notifyPasswordChanged } from '@/app/(auth)/_actions/auth-emails'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 
 export default function ForceResetPasswordPage() {
@@ -35,6 +36,10 @@ export default function ForceResetPasswordPage() {
         setError(updateError.message)
         return
       }
+
+      // Awaited so the request isn't cancelled by the reload below. The action
+      // absorbs its own failures, so this can't strand a completed reset.
+      await notifyPasswordChanged()
 
       // Full reload so middleware and server components see the fresh
       // session cookies.
