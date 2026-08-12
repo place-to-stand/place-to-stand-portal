@@ -560,6 +560,10 @@ export async function fetchNet30Billing(
     .where(
       and(
         isNet30AsOf(startDate),
+        // Every other net_30 query (origination, closer) scopes to CLIENT
+        // projects. Without it this one counts hours the commission sections
+        // never see, inflating Billing In and House against nothing.
+        eq(projects.type, 'CLIENT'),
         isNull(timeLogs.deletedAt),
         isNull(projects.deletedAt),
         isNull(clients.deletedAt),
@@ -581,10 +585,13 @@ export async function fetchReportDateBounds(): Promise<{
   min: MonthCursor
   max: MonthCursor
 }> {
+  // UTC throughout, matching monthDateRange/isFuturePeriod/currentMonthStartUtc.
+  // Reading local getters here disagreed with those on the last hours of a
+  // month in a negative-offset timezone.
   const now = new Date()
   const currentCursor: MonthCursor = {
-    year: now.getFullYear(),
-    month: now.getMonth() + 1, // Convert 0-indexed to 1-indexed
+    year: now.getUTCFullYear(),
+    month: now.getUTCMonth() + 1, // Convert 0-indexed to 1-indexed
   }
 
   // Find earliest time log date
@@ -605,20 +612,25 @@ export async function fetchReportDateBounds(): Promise<{
     .where(isNull(hourBlocks.deletedAt))
     .limit(1)
 
-  // Parse dates and find the overall minimum
+  // Parse dates and find the overall minimum.
+  //
+  // These come from raw `MIN(<date column>)` expressions, so postgres.js
+  // applies its own date parser and hands back a Date at UTC midnight rather
+  // than the declared string. Reading it with local getters rolls back a day
+  // in any negative-offset timezone, which moved the earliest cursor into the
+  // previous month whenever the first record fell on the 1st — silently
+  // hiding a month from the report navigation. Read in UTC to match the
+  // stored calendar date. (Handles a plain 'YYYY-MM-DD' string too: that also
+  // parses as UTC midnight.)
   const dates: Date[] = []
 
-  if (timeLogRow?.earliestDate) {
-    const d = new Date(timeLogRow.earliestDate)
-    if (!Number.isNaN(d.getTime())) {
-      dates.push(d)
+  for (const value of [timeLogRow?.earliestDate, hourBlockRow?.earliestDate]) {
+    if (!value) {
+      continue
     }
-  }
-
-  if (hourBlockRow?.earliestDate) {
-    const d = new Date(hourBlockRow.earliestDate)
-    if (!Number.isNaN(d.getTime())) {
-      dates.push(d)
+    const parsed = new Date(value)
+    if (!Number.isNaN(parsed.getTime())) {
+      dates.push(parsed)
     }
   }
 
@@ -631,8 +643,8 @@ export async function fetchReportDateBounds(): Promise<{
   const earliestDate = dates.reduce((a, b) => (a < b ? a : b))
 
   const minCursor: MonthCursor = {
-    year: earliestDate.getFullYear(),
-    month: earliestDate.getMonth() + 1,
+    year: earliestDate.getUTCFullYear(),
+    month: earliestDate.getUTCMonth() + 1,
   }
 
   // Don't allow future months

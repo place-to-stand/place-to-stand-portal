@@ -11,6 +11,7 @@ import { projects, tasks } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 import type { ProjectWithRelations } from '@/lib/types'
 
+import { getClientHoursTotals } from '@pts/db/hours'
 import { getTimeLogSummariesForProjects } from '@/lib/queries/time-logs'
 import { assembleProjectsWithRelations } from './assemble-projects'
 import { fetchBaseProjects } from './fetch-base-projects'
@@ -72,15 +73,17 @@ export const fetchProjectsWithRelations = cache(
       includeArchivedTasks: options.includeArchivedTasks,
     })
 
-    const timeLogSummaries = await getTimeLogSummariesForProjects(
-      baseProjects.projectIds
-    )
+    const [timeLogSummaries, clientHours] = await Promise.all([
+      getTimeLogSummariesForProjects(baseProjects.projectIds),
+      getClientHoursTotals(db, baseProjects.clientIds),
+    ])
 
     return assembleProjectsWithRelations({
       projects: baseProjects.projects,
       projectClientLookup: baseProjects.projectClientLookup,
       relations,
       timeLogSummaries,
+      clientHours,
     })
   }
 )
@@ -106,10 +109,11 @@ export const fetchProjectsLite = cache(
         members: [],
         tasks: [],
         archivedTasks: [],
-        hourBlocks: [],
         githubReposByProject: new Map(),
       },
       timeLogSummaries: new Map(),
+      // Switchers/selectors read identity fields only; burndown is unused.
+      clientHours: new Map(),
     })
   }
 )
@@ -183,10 +187,12 @@ export async function fetchProjectsForLanding(
       members: [],
       tasks: [],
       archivedTasks: [],
-      hourBlocks: [],
       githubReposByProject,
     },
     timeLogSummaries: new Map(),
+    // The landing page reads client hours from `fetchClientsWithMetrics`, not
+    // from `project.burndown`.
+    clientHours: new Map(),
   })
 
   return assembled.map(project => ({
@@ -211,15 +217,20 @@ export async function fetchProjectsWithRelationsByIds(
     includeArchivedTasks: options.includeArchivedTasks,
   })
 
-  const timeLogSummaries = await getTimeLogSummariesForProjects(
-    baseProjects.projectIds
-  )
+  // Client hours must be queried per CLIENT, not derived from the hydrated
+  // projects — these routes hydrate a single project, so deriving the client
+  // burndown from `timeLogSummaries` would ignore the client's other projects.
+  const [timeLogSummaries, clientHours] = await Promise.all([
+    getTimeLogSummariesForProjects(baseProjects.projectIds),
+    getClientHoursTotals(db, baseProjects.clientIds),
+  ])
 
   return assembleProjectsWithRelations({
     projects: baseProjects.projects,
     projectClientLookup: baseProjects.projectClientLookup,
     relations,
     timeLogSummaries,
+    clientHours,
   })
 }
 

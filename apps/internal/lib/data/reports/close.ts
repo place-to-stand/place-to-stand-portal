@@ -19,15 +19,15 @@ import {
 } from '@/lib/queries/reports/close-snapshots'
 
 import { fetchMonthlyCloseReport } from './monthly-close'
+import { computeDeltas } from './close-drift'
 import type { MonthlyCloseReport } from './types'
 
 export const SNAPSHOT_SCHEMA_VERSION = 1
 
-/**
- * The persisted report: MonthlyCloseReport minus the global navigation
- * cursors, which are always computed live.
- */
-export type SnapshotReport = Omit<MonthlyCloseReport, 'minCursor' | 'maxCursor'>
+// The snapshot shape and the pure snapshot-vs-live comparison live in
+// ./close-drift so they can be exercised without a database or a session.
+export type { CloseDriftDelta, SnapshotReport } from './close-drift'
+import type { CloseDriftDelta, SnapshotReport } from './close-drift'
 
 // ---------------------------------------------------------------------------
 // Snapshot payload validation (F9). The snapshot must decode without running
@@ -455,21 +455,6 @@ export async function closedMonthWarning(
 // Snapshot-aware report view + drift detection (F2/F8)
 // ---------------------------------------------------------------------------
 
-export type CloseDriftDelta = {
-  section:
-    | 'prepaidBilling'
-    | 'net30Billing'
-    | 'payroll'
-    | 'origination'
-    | 'closer'
-    | 'partnerPayouts'
-  /** Section name, or "Section · payee/client" for row-level differences. */
-  label: string
-  unit: 'hours' | 'amount'
-  snapshotValue: number
-  liveValue: number
-}
-
 export type CloseDriftLateRecord = {
   kind: 'time_log' | 'hour_block'
   id: string
@@ -496,155 +481,6 @@ export type MonthlyCloseView = {
     snapshotError?: string
     drift?: CloseDrift | null
   }
-}
-
-/** Hours are NUMERIC(8,2) — compare rounded to avoid float noise. */
-const round2 = (value: number): number => Math.round(value * 100) / 100
-
-const differs = (a: number, b: number): boolean => round2(a) !== round2(b)
-
-/**
- * Canonical snapshot-vs-live comparison (F2). Hours-only totals miss real
- * drift — hours moved between users, a closer swap, or offsetting edits
- * change WHO gets paid with section totals unchanged — so this compares
- * per-section hours AND dollars, per-client billing rows, and per-payee
- * payout amounts.
- */
-function computeDeltas(
-  snapshot: SnapshotReport,
-  live: MonthlyCloseReport
-): CloseDriftDelta[] {
-  const deltas: CloseDriftDelta[] = []
-
-  const sectionTotals: Array<{
-    section: CloseDriftDelta['section']
-    label: string
-    snapHours: number
-    liveHours: number
-    snapAmount: number
-    liveAmount: number
-  }> = [
-    {
-      section: 'prepaidBilling',
-      label: 'Prepaid billing',
-      snapHours: snapshot.prepaidBilling.totalHours,
-      liveHours: live.prepaidBilling.totalHours,
-      snapAmount: snapshot.prepaidBilling.totalAmount,
-      liveAmount: live.prepaidBilling.totalAmount,
-    },
-    {
-      section: 'net30Billing',
-      label: 'Net 30 billing',
-      snapHours: snapshot.net30Billing.totalHours,
-      liveHours: live.net30Billing.totalHours,
-      snapAmount: snapshot.net30Billing.totalAmount,
-      liveAmount: live.net30Billing.totalAmount,
-    },
-    {
-      section: 'payroll',
-      label: 'Payroll',
-      snapHours: snapshot.payroll.totalHours,
-      liveHours: live.payroll.totalHours,
-      snapAmount: snapshot.payroll.totalAmount,
-      liveAmount: live.payroll.totalAmount,
-    },
-    {
-      section: 'origination',
-      label: 'Origination',
-      snapHours: snapshot.origination.totalHours,
-      liveHours: live.origination.totalHours,
-      snapAmount: snapshot.origination.totalAmount,
-      liveAmount: live.origination.totalAmount,
-    },
-    {
-      section: 'closer',
-      label: 'Closer',
-      snapHours: snapshot.closer.totalHours,
-      liveHours: live.closer.totalHours,
-      snapAmount: snapshot.closer.totalAmount,
-      liveAmount: live.closer.totalAmount,
-    },
-  ]
-
-  for (const s of sectionTotals) {
-    if (differs(s.snapHours, s.liveHours)) {
-      deltas.push({
-        section: s.section,
-        label: s.label,
-        unit: 'hours',
-        snapshotValue: s.snapHours,
-        liveValue: s.liveHours,
-      })
-    }
-    if (differs(s.snapAmount, s.liveAmount)) {
-      deltas.push({
-        section: s.section,
-        label: s.label,
-        unit: 'amount',
-        snapshotValue: s.snapAmount,
-        liveValue: s.liveAmount,
-      })
-    }
-  }
-
-  // Per-client billing rows — a client swapping basis or gaining/losing hours.
-  const billingSections = [
-    {
-      section: 'prepaidBilling' as const,
-      label: 'Prepaid',
-      snapRows: snapshot.prepaidBilling.rows,
-      liveRows: live.prepaidBilling.rows,
-    },
-    {
-      section: 'net30Billing' as const,
-      label: 'Net 30',
-      snapRows: snapshot.net30Billing.rows,
-      liveRows: live.net30Billing.rows,
-    },
-  ]
-
-  for (const bs of billingSections) {
-    const snapById = new Map(bs.snapRows.map(r => [r.clientId, r]))
-    const liveById = new Map(bs.liveRows.map(r => [r.clientId, r]))
-    const clientIds = new Set([...snapById.keys(), ...liveById.keys()])
-
-    for (const clientId of clientIds) {
-      const snap = snapById.get(clientId)
-      const liveRow = liveById.get(clientId)
-      const name = snap?.clientName ?? liveRow?.clientName ?? clientId
-      if (differs(snap?.totalHours ?? 0, liveRow?.totalHours ?? 0)) {
-        deltas.push({
-          section: bs.section,
-          label: `${bs.label} · ${name}`,
-          unit: 'hours',
-          snapshotValue: snap?.totalHours ?? 0,
-          liveValue: liveRow?.totalHours ?? 0,
-        })
-      }
-    }
-  }
-
-  // Per-payee payout rows — catches reassignment even when totals match.
-  const snapPayees = new Map(snapshot.partnerPayouts.rows.map(r => [r.key, r]))
-  const livePayees = new Map(live.partnerPayouts.rows.map(r => [r.key, r]))
-  const payeeKeys = new Set([...snapPayees.keys(), ...livePayees.keys()])
-
-  for (const key of payeeKeys) {
-    const snap = snapPayees.get(key)
-    const liveRow = livePayees.get(key)
-    const name = snap?.name ?? liveRow?.name ?? key
-    if (differs(snap?.totalAmount ?? 0, liveRow?.totalAmount ?? 0)) {
-      deltas.push({
-        section: 'partnerPayouts',
-        label: `Payouts · ${name}`,
-        unit: 'amount',
-        snapshotValue: snap?.totalAmount ?? 0,
-        liveValue: liveRow?.totalAmount ?? 0,
-      })
-    }
-  }
-
-  return deltas
 }
 
 async function computeDrift(

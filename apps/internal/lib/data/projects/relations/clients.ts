@@ -4,12 +4,11 @@ import { db } from '@/lib/db'
 import {
   clients as clientsTable,
   clientMembers as clientMembersTable,
-  hourBlocks as hourBlocksTable,
   users as usersTable,
 } from '@/lib/db/schema'
 import type { DbClient, DbUser } from '@/lib/types'
 
-import type { MemberWithUser, RawHourBlock } from '../types'
+import type { MemberWithUser } from '../types'
 
 export type ClientRow = {
   id: string
@@ -46,13 +45,6 @@ export type MemberRow = {
     updatedAt: string
     deletedAt: string | null
   } | null
-}
-
-export type HourBlockRow = {
-  id: string
-  clientId: string | null
-  hoursPurchased: string | number
-  deletedAt: string | null
 }
 
 export async function loadClientRows(clientIds: string[]): Promise<ClientRow[]> {
@@ -111,24 +103,6 @@ export async function loadMemberRows(clientIds: string[]): Promise<MemberRow[]> 
     .where(and(inArray(clientMembersTable.clientId, clientIds), isNull(clientMembersTable.deletedAt)))
 }
 
-export async function loadHourBlockRows(
-  clientIds: string[],
-): Promise<HourBlockRow[]> {
-  if (!clientIds.length) {
-    return []
-  }
-
-  return db
-    .select({
-      id: hourBlocksTable.id,
-      clientId: hourBlocksTable.clientId,
-      hoursPurchased: hourBlocksTable.hoursPurchased,
-      deletedAt: hourBlocksTable.deletedAt,
-    })
-    .from(hourBlocksTable)
-    .where(and(inArray(hourBlocksTable.clientId, clientIds), isNull(hourBlocksTable.deletedAt)))
-}
-
 export function mapClientRows(rows: ClientRow[]): DbClient[] {
   return rows.map(row => ({
     id: row.id,
@@ -170,12 +144,4 @@ export function mapMemberRows(rows: MemberRow[]): MemberWithUser[] {
   }))
 }
 
-export function mapHourBlockRows(rows: HourBlockRow[]): RawHourBlock[] {
-  return rows.map(row => ({
-    id: row.id,
-    client_id: row.clientId,
-    hours_purchased: Number(row.hoursPurchased ?? 0),
-    deleted_at: row.deletedAt,
-  }))
-}
 

@@ -21,10 +21,28 @@ const currency = new Intl.NumberFormat('en-US', {
   currency: 'USD',
 })
 
-const formatValue = (value: number, unit: 'hours' | 'amount'): string =>
-  unit === 'hours' ? `${value.toFixed(2)}h` : currency.format(value)
+const MAX_VISIBLE_DELTAS = 12
 
-const formatSigned = (delta: number, unit: 'hours' | 'amount'): string => {
+type DriftUnit = CloseDrift['deltas'][number]['unit']
+
+const formatValue = (value: number, unit: DriftUnit): string => {
+  switch (unit) {
+    case 'hours':
+      return `${value.toFixed(2)}h`
+    case 'rate':
+      return `${currency.format(value)}/hr`
+    case 'flag':
+      return value ? 'yes' : 'no'
+    default:
+      return currency.format(value)
+  }
+}
+
+const formatSigned = (delta: number, unit: DriftUnit): string => {
+  // A flag has no meaningful magnitude — it flipped, that's the whole story.
+  if (unit === 'flag') {
+    return delta >= 0 ? 'enabled' : 'disabled'
+  }
   const sign = delta >= 0 ? '+' : '−'
   return `${sign}${formatValue(Math.abs(delta), unit)}`
 }
@@ -61,6 +79,10 @@ export function DriftBanner({
   }
 
   const unexplained = drift.deltas.length > 0 && drift.lateRecords.length === 0
+  // The comparison is exhaustive, so a rate-schedule edit can produce dozens of
+  // deltas. Show the first slice and say plainly how many were withheld.
+  const visibleDeltas = drift.deltas.slice(0, MAX_VISIBLE_DELTAS)
+  const hiddenDeltaCount = drift.deltas.length - visibleDeltas.length
 
   return (
     <div className='border-destructive/40 bg-destructive/10 rounded-xl border px-4 py-3 text-sm'>
@@ -71,7 +93,7 @@ export function DriftBanner({
             Live data differs from the {displayMonth} close.
           </p>
           <ul className='text-destructive/90 space-y-0.5 pl-6'>
-            {drift.deltas.map(delta => (
+            {visibleDeltas.map(delta => (
               <li key={`${delta.section}:${delta.label}:${delta.unit}`}>
                 {delta.label}:{' '}
                 {formatValue(delta.snapshotValue, delta.unit)} closed →{' '}
@@ -80,6 +102,12 @@ export function DriftBanner({
                 )
               </li>
             ))}
+            {hiddenDeltaCount > 0 ? (
+              <li className='font-medium'>
+                …and {hiddenDeltaCount} more difference
+                {hiddenDeltaCount === 1 ? '' : 's'} not shown.
+              </li>
+            ) : null}
             {drift.lateRecords.map(record => (
               <li key={`${record.kind}:${record.id}`} className='text-xs'>
                 • {record.change === 'deleted' ? 'Removed' : record.change === 'added' ? 'Late' : 'Edited'}{' '}
@@ -97,9 +125,9 @@ export function DriftBanner({
             ))}
             {unexplained ? (
               <li className='text-xs italic'>
-                Cause unknown — compare sections manually (a billing-term or
-                partner assignment change alters figures without a late
-                record).
+                No late time logs or hour blocks explain this — the differences
+                above are itemized, and a cause with no late record is usually a
+                billing-term or partner-assignment change.
               </li>
             ) : null}
           </ul>
