@@ -86,7 +86,10 @@ export function TaskSheetForm(props: TaskSheetFormProps) {
       <form
         id={TASK_FORM_ID}
         onSubmit={submitHandler}
-        className='flex flex-1 flex-col gap-6 px-6 pb-4'
+        // No flex-1: the form sizes to its content so the sections that follow
+        // it in the scroll column (time, comments) stack directly beneath it
+        // instead of being pushed to the bottom of the viewport.
+        className='flex flex-col gap-6 px-6 pb-4'
       >
         <TaskSheetFormFields
           form={form}
