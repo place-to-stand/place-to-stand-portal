@@ -114,6 +114,11 @@ export const useTaskSheetState = ({
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+  // Deliberately a second transition: re-baselining the form is low-priority
+  // work that must NOT read as pending to the UI. `isPending` above means
+  // "a save or delete is in flight" — it drives the "Saving..." label and the
+  // disabled controls — so a reset on open/close can't be allowed to set it.
+  const [, startResetTransition] = useTransition()
   const { toast } = useToast()
   // Synchronous in-flight lock: `isPending` is render state, so two submits
   // in the same render window both observe it as false. This ref is checked
@@ -186,26 +191,29 @@ export const useTaskSheetState = ({
     }
 
     lastResetTaskIdRef.current = currentTaskId
-    startTransition(() => {
+    startResetTransition(() => {
       resetFormState()
     })
-  }, [open, task?.id, resetFormState, startTransition])
+  }, [open, task?.id, resetFormState, startResetTransition])
 
   const handleSheetOpenChange = useCallback(
     (next: boolean) => {
       if (!next) {
         confirmDiscard(() => {
-          startTransition(() => {
+          // Close first, then re-baseline. The reset still has to run — it
+          // cleans up attachment uploads the user is discarding — but nothing
+          // about it needs to happen before the sheet starts moving.
+          onOpenChange(false)
+          startResetTransition(() => {
             resetFormState()
           })
-          onOpenChange(false)
         })
         return
       }
 
       onOpenChange(next)
     },
-    [confirmDiscard, onOpenChange, resetFormState, startTransition]
+    [confirmDiscard, onOpenChange, resetFormState, startResetTransition]
   )
 
   const handleFormSubmit = useCallback(

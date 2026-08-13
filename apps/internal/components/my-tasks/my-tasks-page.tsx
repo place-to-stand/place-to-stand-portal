@@ -24,7 +24,7 @@ import {
   DONE_WINDOW_WEEKS,
   MAX_DONE_WEEKS,
 } from '@/lib/projects/tasks/done-window'
-import { useSheetParams } from '@/lib/sheets/use-sheet-params'
+import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
 
 import { MyTasksBoard } from './my-tasks-board'
 import type { MyTasksBoardReorderUpdate, TaskLookup } from './my-tasks-board'
@@ -69,10 +69,19 @@ export function MyTasksPage({
 }: MyTasksPageProps) {
   const router = useRouter()
   const reorderMutation = useMyTasksReorderMutation()
-  // Raw `?task=` value — the server prop is uuid-guarded, so `new` only
-  // shows up here.
-  const { get: getSheetParam } = useSheetParams()
-  const taskParam = getSheetParam('task')
+  // Sheet selection goes through the shared hook like every other entity
+  // sheet: the URL stays the source of truth, mirrored in local state so open
+  // and close land immediately instead of waiting on the route transition.
+  // `selectedValue` is the raw `?task=` value — the server prop is
+  // uuid-guarded, so `new` only shows up here.
+  const {
+    selectedValue: taskParam,
+    isCreating: isCreatingTask,
+    isOpen: isSheetOpen,
+    select: selectTask,
+    openCreate: openCreateTask,
+    clear: clearTask,
+  } = useSheetParamSelection('task')
   const [createTaskContext, setCreateTaskContext] = useState<{
     status: MyTaskStatus
     assigneeId: string
@@ -227,10 +236,6 @@ export function MyTasksPage({
     }
   }, [doneWeeks, isLoadingOlderDone, selectedAssigneeId, windowAnchor])
 
-  // The `?task=` param is the source of truth: `new` = create, uuid = edit.
-  const isCreatingTask = taskParam === NEW_SHEET_VALUE
-  const isSheetOpen = isCreatingTask || Boolean(activeTaskId)
-
   // Drop the create seed defaults once the create sheet's param is gone.
   const [prevTaskParam, setPrevTaskParam] = useState(taskParam)
   if (prevTaskParam !== taskParam) {
@@ -334,9 +339,9 @@ export function MyTasksPage({
 
   const handleOpenTask = useCallback(
     (taskId: string) => {
-      router.push(buildViewPath(view, taskId), { scroll: false })
+      selectTask(taskId)
     },
-    [buildViewPath, router, view]
+    [selectTask]
   )
 
   const handleSheetChange = useCallback(
@@ -346,13 +351,14 @@ export function MyTasksPage({
       }
 
       setCreateTaskContext(null)
-      // Close replaces so Back doesn't bounce straight back into the sheet.
-      router.replace(buildViewPath(view), { scroll: false })
+      // `clear` closes locally first, then replaces the URL so Back doesn't
+      // bounce straight back into the sheet.
+      clearTask()
       startRefresh(() => {
         router.refresh()
       })
     },
-    [buildViewPath, router, startRefresh, view]
+    [clearTask, router, startRefresh]
   )
 
   const handleReorder = useCallback(
@@ -386,9 +392,9 @@ export function MyTasksPage({
         assigneeId: user.id,
         projectId: null,
       })
-      router.push(buildViewPath(view, NEW_SHEET_VALUE), { scroll: false })
+      openCreateTask()
     },
-    [buildViewPath, router, user.id, view]
+    [openCreateTask, user.id]
   )
 
   const viewTabs = [

@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useTransition,
+} from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
@@ -42,6 +48,11 @@ export function useClientSheetFormState({
   setFeedback,
   toast,
 }: ClientSheetFormStateArgs): BaseFormState {
+  // Separate from the caller's save transition on purpose: `isPending` means
+  // "a save is in flight" (it drives the "Saving..." label and the disabled
+  // controls), so re-baselining the form on open/close must not set it.
+  const [, startResetTransition] = useTransition()
+
   // Contact state
   const [isContactPickerOpen, setIsContactPickerOpen] = useState(false)
   const [fetchedAllContacts, setFetchedAllContacts] = useState<ClientContactOption[]>([])
@@ -219,7 +230,7 @@ export function useClientSheetFormState({
       return
     }
 
-    startTransition(() => {
+    startResetTransition(() => {
       resetFormState()
     })
 
@@ -316,7 +327,7 @@ export function useClientSheetFormState({
   }, [
     open,
     resetFormState,
-    startTransition,
+    startResetTransition,
     client?.id,
     client?.origination_contact_id,
     client?.origination_user_id,
@@ -330,7 +341,7 @@ export function useClientSheetFormState({
     (next: boolean) => {
       if (!next) {
         confirmDiscard(() => {
-          startTransition(() => {
+          startResetTransition(() => {
             resetFormState()
           })
           onOpenChange(false)
@@ -340,7 +351,7 @@ export function useClientSheetFormState({
 
       onOpenChange(next)
     },
-    [confirmDiscard, onOpenChange, resetFormState, startTransition]
+    [confirmDiscard, onOpenChange, resetFormState, startResetTransition]
   )
 
   // Contact handlers

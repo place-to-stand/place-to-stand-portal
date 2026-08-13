@@ -21,6 +21,7 @@ import {
 } from '@pts/ui/table'
 import { useToast } from '@/components/ui/use-toast'
 import { useListParams } from '@/hooks/use-list-params'
+import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
 import { cn } from '@/lib/utils'
 import {
   FORM_SUBMISSION_KIND_LABELS,
@@ -95,21 +96,17 @@ export function SubmissionsTable({
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
-  const submissionParam = searchParams.get('submission')
   // Selection by id, derived from fresh props: after router.refresh() the
   // open sheet re-renders with the server's latest row instead of a stale
-  // snapshot. Selection is mirrored to `?submission=` so open sheets are
-  // shareable links; local state keeps the sheet opening instantly while
-  // the URL catches up.
-  const [selectedId, setSelectedId] = useState<string | null>(submissionParam)
-  // Adopt external URL changes (back/forward, shared-link navigation) via
-  // the adjust-state-during-render pattern rather than an effect.
-  const [lastSubmissionParam, setLastSubmissionParam] =
-    useState(submissionParam)
-  if (submissionParam !== lastSubmissionParam) {
-    setLastSubmissionParam(submissionParam)
-    setSelectedId(submissionParam)
-  }
+  // snapshot. The shared hook owns the `?submission=` mirroring — local state
+  // keeps the sheet opening and closing instantly while the URL catches up,
+  // and back/forward is adopted during render.
+  const {
+    selectedValue: submissionParam,
+    selectedId,
+    select: selectSubmission,
+    clear: clearSubmission,
+  } = useSheetParamSelection('submission')
   const selected =
     submissions.find(submission => submission.id === selectedId) ??
     (deepLinkedSubmission && deepLinkedSubmission.id === selectedId
@@ -173,24 +170,20 @@ export function SubmissionsTable({
 
   const handleSelect = useCallback(
     (id: string) => {
-      setSelectedId(id)
-      updateParams({ submission: id }, { scroll: false })
+      selectSubmission(id)
     },
-    [updateParams]
+    [selectSubmission]
   )
 
   const handleSheetOpenChange = useCallback(
     (open: boolean) => {
       if (!open) {
-        setSelectedId(null)
-        // Close replaces (shared convention) so Back doesn't reopen the sheet.
-        updateParams(
-          { submission: undefined },
-          { scroll: false, replace: true }
-        )
+        // `clear` closes locally, then replaces the URL (shared convention)
+        // so Back doesn't reopen the sheet.
+        clearSubmission()
       }
     },
-    [updateParams]
+    [clearSubmission]
   )
 
   // After an action removes the last row of a page > 1, plain refresh would

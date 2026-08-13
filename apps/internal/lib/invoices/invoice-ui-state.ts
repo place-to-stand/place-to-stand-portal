@@ -82,12 +82,20 @@ export const deriveStandardFieldState = (
 // Button states
 // ---------------------------------------------------------------------------
 
+/**
+ * `isSaving` is the save itself; `isBusy` also covers the open-time fetch of
+ * the invoice's line items. Both block submit, but only a real save may say
+ * "Saving..." — a sheet that reads "Saving..." on open is lying about what
+ * it's doing.
+ */
 export const deriveSubmitButtonState = (
-  isPending: boolean,
+  isSaving: boolean,
   isEditing: boolean,
   clientOptions: ClientOption[],
-  status: string | null
+  status: string | null,
+  isBusy: boolean = isSaving
 ): SubmitButtonState => {
+  const isPending = isBusy
   if (!isInvoiceEditable(status)) {
     return {
       disabled: true,
@@ -109,7 +117,7 @@ export const deriveSubmitButtonState = (
   }
 
   let label: string = SUBMIT_LABELS.creating
-  if (isPending) {
+  if (isSaving) {
     label = SUBMIT_LABELS.pending
   } else if (isEditing) {
     label = SUBMIT_LABELS.updating

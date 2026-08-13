@@ -1,13 +1,52 @@
-export const sanitizeHtml = (content: string) =>
-  content
-    .replace(/<br\s*\/?>(\s|&nbsp;|\u00a0)*/gi, ' ')
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/<[^>]*>/g, ' ')
+const NAMED_ENTITIES: Record<string, string> = {
+  amp: '&',
+  apos: "'",
+  gt: '>',
+  lt: '<',
+  nbsp: ' ',
+  quot: '"',
+}
+
+/**
+ * Single-pass entity decode, so `&amp;lt;` correctly lands on the literal
+ * `&lt;` the author typed rather than being decoded twice into `<`.
+ */
+const decodeHtmlEntities = (content: string) =>
+  content.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (match, entity: string) => {
+    if (entity.startsWith('#')) {
+      const codePoint =
+        entity[1]?.toLowerCase() === 'x'
+          ? Number.parseInt(entity.slice(2), 16)
+          : Number.parseInt(entity.slice(1), 10)
+
+      if (!Number.isFinite(codePoint) || codePoint < 1 || codePoint > 0x10ffff) {
+        return match
+      }
+
+      return String.fromCodePoint(codePoint)
+    }
+
+    return NAMED_ENTITIES[entity.toLowerCase()] ?? match
+  })
+
+/**
+ * Flattens editor HTML to the text a reader would see. Entities are decoded
+ * *after* tags are stripped: escaped markup like `&lt;script&gt;` is content
+ * the author wrote, so it must survive tag removal and then read as `<script>`
+ * \u2014 decoding first would turn it into a tag and delete it.
+ */
+export const richTextToPlainText = (content: string) =>
+  decodeHtmlEntities(
+    content
+      .replace(/<br\s*\/?>(\s|&nbsp;|\u00a0)*/gi, ' ')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/<[^>]*>/g, ' ')
+  )
     .replace(/\s+/g, ' ')
     .trim()
 
 export const isContentEmpty = (content: string) =>
-  sanitizeHtml(content).length === 0
+  richTextToPlainText(content).length === 0
 
 export const ensureUrlProtocol = (value: string) => {
   if (!value) return ''
