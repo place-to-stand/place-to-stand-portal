@@ -1,8 +1,9 @@
 /**
- * SSR smoke-render for the Base UI ports (PRD 004). Renders every ported
- * wrapper in its real consumer compositions — open/keepMounted states
- * included — via renderToString. Catches runtime context-invariant throws
- * (the class that crashed DropdownMenuLabel) that tsc cannot see.
+ * SSR smoke-render for the Base UI ports (PRD 004, completed later by the
+ * Slot/tabs/hover-card/tiptap ports). Renders every ported wrapper in its real
+ * consumer compositions — open/keepMounted states included — via
+ * renderToString. Catches runtime context-invariant throws (the class that
+ * crashed DropdownMenuLabel) that tsc cannot see.
  */
 import * as React from 'react'
 import { renderToString } from 'react-dom/server'
@@ -41,6 +42,17 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@pts/u
 import {
   Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger,
 } from '../components/ui/sheet'
+import { Slot } from '@pts/ui/slot'
+import { Badge } from '../components/ui/badge'
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '../components/ui/hover-card'
+import {
+  Popover as TiptapPopover, PopoverContent as TiptapPopoverContent,
+  PopoverTrigger as TiptapPopoverTrigger,
+} from '../components/tiptap-ui-primitive/popover/popover'
+import {
+  DropdownMenu as TiptapDropdownMenu, DropdownMenuContent as TiptapDropdownMenuContent,
+  DropdownMenuItem as TiptapDropdownMenuItem, DropdownMenuTrigger as TiptapDropdownMenuTrigger,
+} from '../components/tiptap-ui-primitive/dropdown-menu/dropdown-menu'
 
 type Case = { name: string; element: React.ReactElement }
 
@@ -234,6 +246,77 @@ const cases: Case[] = [
         </SheetContent>
       </Sheet>
     ),
+  },
+  // --- Slot / asChild: the composition every `asChild` call site depends on.
+  {
+    name: 'slot (bare, prop + className merge)',
+    element: (
+      <Slot className='outer' data-outer=''>
+        <a href='/x' className='inner'>link</a>
+      </Slot>
+    ),
+  },
+  {
+    name: 'button asChild (link)',
+    element: <Button asChild size='sm'><a href='/x'>Go</a></Button>,
+  },
+  { name: 'badge asChild (link)', element: <Badge asChild><a href='/x'>New</a></Badge> },
+  // --- Tabs on Base UI, including the board's Link-as-tab shape.
+  {
+    name: 'tabs (asChild link triggers — project board shape)',
+    element: (
+      <Tabs value='overview'>
+        <TabsList>
+          <TabsTrigger value='overview' asChild><a href='/overview'>Overview</a></TabsTrigger>
+          <TabsTrigger value='tasks' asChild><a href='/tasks'>Tasks</a></TabsTrigger>
+        </TabsList>
+        <TabsContent value='overview'>content</TabsContent>
+      </Tabs>
+    ),
+  },
+  // --- hover-card: the deferred port, now on Base UI popover.
+  {
+    name: 'hover-card (open, trigger asChild)',
+    element: (
+      <HoverCard open>
+        <HoverCardTrigger asChild><a href='/x'>hover me</a></HoverCardTrigger>
+        <HoverCardContent>card body</HoverCardContent>
+      </HoverCard>
+    ),
+  },
+  {
+    name: 'hover-card (closed — uncontrolled default)',
+    element: (
+      <HoverCard>
+        <HoverCardTrigger asChild><a href='/x'>hover me</a></HoverCardTrigger>
+        <HoverCardContent>card body</HoverCardContent>
+      </HoverCard>
+    ),
+  },
+  // --- tiptap primitives: inline (portal=false) is the editor's default.
+  {
+    name: 'tiptap popover (open, trigger asChild)',
+    element: (
+      <TiptapPopover open>
+        <TiptapPopoverTrigger asChild><button type='button'>link</button></TiptapPopoverTrigger>
+        <TiptapPopoverContent aria-label='Link'>body</TiptapPopoverContent>
+      </TiptapPopover>
+    ),
+  },
+  {
+    name: 'tiptap dropdown (open, asChild trigger + item)',
+    element: (
+      <TiptapDropdownMenu open>
+        <TiptapDropdownMenuTrigger asChild><button type='button'>H</button></TiptapDropdownMenuTrigger>
+        <TiptapDropdownMenuContent align='start'>
+          <TiptapDropdownMenuItem asChild><button type='button'>H1</button></TiptapDropdownMenuItem>
+        </TiptapDropdownMenuContent>
+      </TiptapDropdownMenu>
+    ),
+  },
+  {
+    name: 'slot (invalid text child renders nothing, does not throw)',
+    element: <Slot className='outer'>{'just text'}</Slot>,
   },
 ]
 

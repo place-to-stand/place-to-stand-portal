@@ -10,6 +10,7 @@ import { ensureTaskAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { projects, tasks } from '@/lib/db/schema'
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
+import { resolveCompletedAt } from '@/lib/projects/task-status'
 
 import { revalidateProjectTaskViews } from './shared'
 import { statusSchema, TASK_STATUSES } from './shared-schemas'
@@ -54,6 +55,7 @@ export async function changeTaskStatus(input: {
       id: tasks.id,
       title: tasks.title,
       status: tasks.status,
+      completedAt: tasks.completedAt,
       projectId: tasks.projectId,
       clientId: projects.clientId,
       deletedAt: tasks.deletedAt,
@@ -90,6 +92,7 @@ export async function changeTaskStatus(input: {
         rank: nextRank,
         updatedBy: user.id,
         updatedAt: new Date().toISOString(),
+        ...resolveCompletedAt(status, task.completedAt),
       })
       .where(eq(tasks.id, taskId))
 

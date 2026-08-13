@@ -428,6 +428,13 @@
       "when": 1786292644335,
       "tag": "0060_trgm_search_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1786505637165,
+      "tag": "0061_add_tasks_completed_at",
+      "breakpoints": true
     }
   ]
 }

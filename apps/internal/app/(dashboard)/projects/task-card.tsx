@@ -14,6 +14,7 @@ import {
   Bot,
   Building2,
   CalendarDays,
+  Clock,
   FolderKanban,
   MessageCircle,
   Paperclip,
@@ -56,6 +57,16 @@ type TaskCardProps = {
   hideAssignees?: boolean
 }
 
+/**
+ * Hours read as a compact chip, so `3` not `3.00` and `3.5` not `3.50` —
+ * the card has room for a glance, not a ledger.
+ */
+const formatLoggedHours = (value: number) =>
+  `${value.toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })}h`
+
 const toPlainText = (value: string | null) => {
   if (!value) {
     return ''
@@ -88,6 +99,7 @@ function CardContent({
     : 'Unassigned'
   const descriptionPreview = toPlainText(task.description)
   const attachmentCount = task.attachmentCount ?? task.attachments?.length ?? 0
+  const loggedHours = task.loggedHours ?? 0
   const dueMeta = task.due_on
     ? getTaskDueMeta(task.due_on, { status: task.status })
     : null
@@ -195,7 +207,7 @@ function CardContent({
             </div>
           </div>
         ) : null}
-        {task.commentCount > 0 || attachmentCount > 0 ? (
+        {task.commentCount > 0 || attachmentCount > 0 || loggedHours > 0 ? (
           <div className='text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-2 text-xs'>
             {task.commentCount > 0 ? (
               <span className='inline-flex items-center gap-1'>
@@ -207,6 +219,15 @@ function CardContent({
               <span className='inline-flex items-center gap-1'>
                 <Paperclip className='h-3.5 w-3.5' />
                 {attachmentCount}
+              </span>
+            ) : null}
+            {loggedHours > 0 ? (
+              <span
+                className='inline-flex items-center gap-1'
+                title={`${formatLoggedHours(loggedHours)} logged`}
+              >
+                <Clock className='h-3.5 w-3.5' aria-hidden />
+                {formatLoggedHours(loggedHours)}
               </span>
             ) : null}
           </div>

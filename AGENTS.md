@@ -6,7 +6,7 @@
 - **Clarify Scope:** Summarize the requested change in your own words and highlight unknowns back to the user before coding anything significant.
 - **Design Before Code:** Propose the approach (data flow, component ownership, API shape) and wait for approval when impact is medium or higher.
 - **Reuse > Rebuild:** Prefer existing modules, utilities, and shadcn components. Flag gaps before introducing new abstractions.
-- **Guardrails:** Do not edit `package.json`, lockfiles, or Supabase migrations directly. Use the prescribed CLIs when dependencies or schema changes are required.
+- **Guardrails:** Do not add, remove, or upgrade dependencies by hand, and never hand-edit lockfiles or Supabase migrations. Use the prescribed CLIs so `package-lock.json` and the schema stay in sync. Editing other `package.json` config — scripts, workspace fields — is fine and needs no approval. The test: if a change would require a lockfile update, stop and ask; if not, make it.
 - **Verification:** Always run build, linting, type-checking, and targeted tests for any touched surface. Share command results or blockers with the user.
 - **Documentation:** Update or create README snippets, inline comments, and changelog notes whenever behavior or interfaces shift.
 

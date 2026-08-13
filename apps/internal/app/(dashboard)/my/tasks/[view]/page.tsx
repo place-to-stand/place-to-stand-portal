@@ -17,6 +17,10 @@ import {
   getActiveTaskProjectId,
   listAssignedTaskSummaries,
 } from '@/lib/data/tasks'
+import {
+  DONE_WINDOW_WEEKS,
+  resolveDoneWindowStart,
+} from '@/lib/projects/tasks/done-window'
 
 export const metadata: Metadata = {
   title: 'My Tasks | Place to Stand Portal',
@@ -69,9 +73,21 @@ export default async function MyTasksViewRoute({
       ? requestedAssigneeId
       : user.id
 
+  // The Done column starts at one window and widens on demand via
+  // /api/my-tasks/done-window, so the first load never carries the whole
+  // completed archive.
+  //
+  // Board only. The calendar plots by due date and has no Done column, so
+  // windowing there would quietly erase history from past months.
+  const now = new Date().toISOString()
+  const isBoardView = viewParam === 'board'
+
   const assignedSummaries = await listAssignedTaskSummaries({
     userId: selectedAssigneeId,
     limit: null,
+    doneSince: isBoardView
+      ? resolveDoneWindowStart(DONE_WINDOW_WEEKS, now)
+      : null,
   })
 
   const includedProjectIds = new Set<string>()
@@ -135,6 +151,8 @@ export default async function MyTasksViewRoute({
       activeTaskId={resolvedActiveTaskId}
       view={viewParam}
       selectedAssigneeId={selectedAssigneeId}
+      now={now}
+      initialOlderDoneCount={assignedSummaries.olderDoneCount}
     />
   )
 }

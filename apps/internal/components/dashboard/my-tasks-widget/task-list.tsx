@@ -57,27 +57,27 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
       {hasTaskLink ? (
         <Link
           href={linkMeta.href!}
-          className='hover:bg-muted/60 focus-visible:ring-primary focus-visible:ring-offset-background absolute inset-0 z-0 rounded-lg px-5 py-4 transition focus-visible:ring-2 focus-visible:ring-offset-2'
+          className='hover:bg-muted/60 focus-visible:ring-primary focus-visible:ring-offset-background absolute inset-0 z-0 rounded-lg px-4 py-2.5 transition focus-visible:ring-2 focus-visible:ring-offset-2'
           aria-label={`View task: ${task.title}`}
         />
       ) : null}
       <article
         className={cn(
-          'relative z-10 flex items-start gap-3 px-5 py-4',
+          'relative z-10 flex items-start gap-2 px-4 py-2.5',
           hasTaskLink && 'pointer-events-none'
         )}
       >
-        <div className='flex-1 space-y-2'>
+        <div className='min-w-0 flex-1 space-y-1'>
           {hasTaskLink ? (
-            <span className='text-foreground group-hover:text-primary line-clamp-2 text-sm font-semibold underline-offset-4 transition'>
+            <span className='text-foreground group-hover:text-primary block truncate text-sm font-semibold underline-offset-4 transition'>
               {task.title}
             </span>
           ) : (
-            <span className='text-muted-foreground line-clamp-2 text-sm font-semibold'>
+            <span className='text-muted-foreground block truncate text-sm font-semibold'>
               {task.title}
             </span>
           )}
-          <div className='flex flex-wrap items-center gap-2 text-xs'>
+          <div className='flex min-w-0 items-center gap-1.5'>
             <Badge
               variant='outline'
               className={cn(
@@ -87,46 +87,59 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
             >
               {statusLabel}
             </Badge>
-            <div className='text-muted-foreground inline-flex items-center gap-3'>
+            {/*
+              Meta line matches the time-log rows: 11px text, size-3 icons, and
+              a dot between each fragment so they read as one breadcrumb rather
+              than three floating chips.
+            */}
+            <div className='text-muted-foreground flex min-w-0 items-center gap-1.5 text-[11px]'>
               {clientLinkMeta.href ? (
                 <Link
                   href={clientLinkMeta.href}
                   onClick={e => e.stopPropagation()}
-                  className='hover:text-foreground pointer-events-auto relative z-20 inline-flex items-center gap-1 underline-offset-4 transition hover:underline'
+                  className='hover:text-foreground pointer-events-auto relative z-20 inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
                 >
-                  {renderProjectTypeIcon(task.project.type, 'size-3.5')}
-                  {clientLabel}
+                  {renderProjectTypeIcon(task.project.type, 'size-3 shrink-0')}
+                  <span className='truncate'>{clientLabel}</span>
                 </Link>
               ) : (
-                <span className='inline-flex items-center gap-1'>
-                  {renderProjectTypeIcon(task.project.type, 'size-3.5')}
-                  {clientLabel}
+                <span className='inline-flex min-w-0 items-center gap-1'>
+                  {renderProjectTypeIcon(task.project.type, 'size-3 shrink-0')}
+                  <span className='truncate'>{clientLabel}</span>
                 </span>
               )}
+              <MetaSeparator />
               {projectLinkMeta.href ? (
                 <Link
                   href={projectLinkMeta.href}
                   onClick={e => e.stopPropagation()}
-                  className='hover:text-foreground pointer-events-auto relative z-20 inline-flex items-center gap-1 underline-offset-4 transition hover:underline'
+                  className='hover:text-foreground pointer-events-auto relative z-20 inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
                 >
-                  <FolderKanban className='size-3.5' aria-hidden />
-                  {task.project.name}
+                  <FolderKanban className='size-3 shrink-0' aria-hidden />
+                  <span className='truncate'>{task.project.name}</span>
                 </Link>
               ) : (
-                <span className='inline-flex items-center gap-1'>
-                  <FolderKanban className='size-3.5' aria-hidden />
-                  {task.project.name}
+                <span className='inline-flex min-w-0 items-center gap-1'>
+                  <FolderKanban className='size-3 shrink-0' aria-hidden />
+                  <span className='truncate'>{task.project.name}</span>
                 </span>
               )}
-              <div
-                className={cn(
-                  'inline-flex items-center gap-1',
-                  TASK_DUE_TONE_CLASSES[dueMeta.tone]
-                )}
-              >
-                <CalendarDays className='size-3.5' aria-hidden />
-                {dueMeta.label}
-              </div>
+              {/* No due date set is the common case -- say nothing rather than
+                  spend a line saying there's nothing to say. */}
+              {task.dueOn ? (
+                <>
+                  <MetaSeparator />
+                  <span
+                    className={cn(
+                      'inline-flex shrink-0 items-center gap-1',
+                      TASK_DUE_TONE_CLASSES[dueMeta.tone]
+                    )}
+                  >
+                    <CalendarDays className='size-3 shrink-0' aria-hidden />
+                    {dueMeta.label}
+                  </span>
+                </>
+              ) : null}
             </div>
           </div>
         </div>
@@ -138,11 +151,19 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
         ) : null}
       </article>
       {linkMeta.reason ? (
-        <p className='text-muted-foreground relative z-10 px-5 pt-2 pb-4 text-xs'>
+        <p className='text-muted-foreground relative z-10 px-4 pt-1 pb-2.5 text-xs'>
           {linkMeta.reason}
         </p>
       ) : null}
     </li>
+  )
+}
+
+function MetaSeparator() {
+  return (
+    <span aria-hidden className='shrink-0 opacity-50'>
+      ·
+    </span>
   )
 }
 

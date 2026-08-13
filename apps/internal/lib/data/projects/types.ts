@@ -18,6 +18,7 @@ export type RawTaskWithRelations = DbTask & {
   assignees: Array<{ user_id: string; deleted_at: string | null }> | null
   comment_count?: number | null
   attachment_count?: number | null
+  logged_hours?: number | null
   attachments?: RawTaskAttachment[] | null
 }
 

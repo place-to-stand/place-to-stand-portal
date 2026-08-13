@@ -36,17 +36,17 @@ export function MyTasksWidget({
       )}
       aria-labelledby='my-tasks-heading'
     >
-      <header className='flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4'>
+      <header className='flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5'>
         <div className='min-w-0 flex-1'>
-          <h2 id='my-tasks-heading' className='text-base font-semibold'>
+          <h2 id='my-tasks-heading' className='text-sm font-semibold'>
             My Tasks
           </h2>
         </div>
-        <div className='flex items-center gap-3'>
+        <div className='flex items-center gap-2'>
           <p className='text-muted-foreground text-xs font-medium'>
             {visibleCount} of {totalCount} tasks
           </p>
-          <Button asChild size='sm' variant='outline'>
+          <Button asChild size='xs' variant='outline'>
             <Link href='/my/tasks/board' aria-label='View all assigned tasks'>
               See all
             </Link>

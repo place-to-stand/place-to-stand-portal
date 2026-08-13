@@ -32,8 +32,8 @@ export function SummaryContent({ state }: SummaryContentProps) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-4 gap-3">
+    <div>
+      <div className="grid grid-cols-4 gap-2">
         <MetricCard value={state.metrics.tasksDone} label="tasks accepted" />
         <MetricCard value={state.metrics.newLeads} label="new leads" />
         <MetricCard value={state.metrics.activeProjects} label="active projects" />
@@ -43,8 +43,13 @@ export function SummaryContent({ state }: SummaryContentProps) {
           variant="warning"
         />
       </div>
+      {/*
+        28px below the cards, matching the Hours widget: its gap-3 to the time
+        log section plus that section's own pt-4. Written as one value here
+        because there's no equivalent section wrapper to split it across.
+      */}
       {state.highlight && (
-        <div className="text-muted-foreground text-sm leading-relaxed [&_strong]:text-foreground [&_strong]:font-semibold [&_ul]:mt-1 [&_ul]:mb-3 [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:space-y-0.5 [&_li]:text-xs">
+        <div className="text-muted-foreground mt-7 text-sm leading-relaxed [&_strong]:text-foreground [&_strong]:font-semibold [&_ul]:mt-1 [&_ul]:mb-3 [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:space-y-0.5 [&_li]:text-xs">
           <Markdown>{state.highlight}</Markdown>
         </div>
       )}
@@ -54,14 +59,14 @@ export function SummaryContent({ state }: SummaryContentProps) {
 
 function LoadingState() {
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-4 gap-3">
+    <div>
+      <div className="grid grid-cols-4 gap-2">
         <MetricCardSkeleton />
         <MetricCardSkeleton />
         <MetricCardSkeleton />
         <MetricCardSkeleton />
       </div>
-      <div className="space-y-2">
+      <div className="mt-7 space-y-2">
         <div className="bg-muted h-4 w-3/5 animate-pulse rounded" />
         <div className="bg-muted h-3 w-4/5 animate-pulse rounded" />
         <div className="bg-muted h-3 w-2/3 animate-pulse rounded" />

@@ -13,7 +13,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--tt-radius-lg, 0.75rem);
+  // Explicit, not var(--tt-radius-*): those are defined in _variables.scss, so
+  // a fallback here would never apply. --tt-radius-lg (0.75rem) read almost
+  // pill-shaped on a 2rem square button; 0.375rem matches the app's own
+  // rounded-md buttons.
+  border-radius: 0.375rem;
   transition-property: background, color, opacity;
   transition-duration: var(--tt-transition-duration-default);
   transition-timing-function: var(--tt-transition-easing-default);
@@ -52,7 +56,7 @@
     height: 1.5rem;
     min-width: 1.5rem;
     padding: 0.3125rem;
-    border-radius: var(--tt-radius-md, 0.5rem);
+    border-radius: 0.25rem;
   }
 
   /* trim / expand text of the button */

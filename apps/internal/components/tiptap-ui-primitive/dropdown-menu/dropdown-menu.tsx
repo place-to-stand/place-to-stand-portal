@@ -1,89 +1,155 @@
 "use client"
 
-import { forwardRef } from "react"
-import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui"
+import * as React from "react"
+import { Menu as MenuPrimitive } from "@base-ui/react/menu"
 import { cn } from "@/lib/tiptap-utils"
 import "@/components/tiptap-ui-primitive/dropdown-menu/dropdown-menu.scss"
 
-function DropdownMenu({
-  modal = false,
-  ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
-  return <DropdownMenuPrimitive.Root modal={modal} {...props} />
+/**
+ * Vendored TipTap primitive, rebased from Radix onto Base UI. The export
+ * surface and the `tiptap-dropdown-menu` class hook are unchanged, so the
+ * editor's SCSS and both consumers (heading, list) keep working as-is.
+ *
+ * `forwardRef` is gone: React 19 passes `ref` as an ordinary prop, and these
+ * wrappers only forwarded it through.
+ */
+
+function DropdownMenu({ ...props }: MenuPrimitive.Root.Props) {
+  return <MenuPrimitive.Root {...props} />
 }
 
-function DropdownMenuPortal({
-  ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.Portal>) {
-  return <DropdownMenuPrimitive.Portal {...props} />
+function DropdownMenuPortal({ ...props }: MenuPrimitive.Portal.Props) {
+  return <MenuPrimitive.Portal {...props} />
 }
 
-const DropdownMenuTrigger = forwardRef<
-  React.ComponentRef<typeof DropdownMenuPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Trigger>
->(({ ...props }, ref) => <DropdownMenuPrimitive.Trigger ref={ref} {...props} />)
-DropdownMenuTrigger.displayName = DropdownMenuPrimitive.Trigger.displayName
-
-const DropdownMenuGroup = DropdownMenuPrimitive.Group
-
-const DropdownMenuSub = DropdownMenuPrimitive.Sub
-
-const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup
-
-const DropdownMenuItem = DropdownMenuPrimitive.Item
-
-const DropdownMenuSubTrigger = DropdownMenuPrimitive.SubTrigger
-
-const DropdownMenuSubContent = forwardRef<
-  React.ComponentRef<typeof DropdownMenuPrimitive.SubContent>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent> & {
-    portal?: boolean | React.ComponentProps<typeof DropdownMenuPortal>
+function DropdownMenuTrigger({
+  asChild,
+  children,
+  ...props
+}: MenuPrimitive.Trigger.Props & { asChild?: boolean }) {
+  if (asChild && React.isValidElement(children)) {
+    return (
+      <MenuPrimitive.Trigger
+        render={children as React.ReactElement<Record<string, unknown>>}
+        {...props}
+      />
+    )
   }
->(({ className, portal = true, ...props }, ref) => {
-  const content = (
-    <DropdownMenuPrimitive.SubContent
-      ref={ref}
+
+  return <MenuPrimitive.Trigger {...props}>{children}</MenuPrimitive.Trigger>
+}
+
+function DropdownMenuGroup({ ...props }: MenuPrimitive.Group.Props) {
+  return <MenuPrimitive.Group {...props} />
+}
+
+function DropdownMenuSub({ ...props }: MenuPrimitive.SubmenuRoot.Props) {
+  return <MenuPrimitive.SubmenuRoot {...props} />
+}
+
+function DropdownMenuSubTrigger({
+  ...props
+}: MenuPrimitive.SubmenuTrigger.Props) {
+  return <MenuPrimitive.SubmenuTrigger {...props} />
+}
+
+function DropdownMenuRadioGroup({ ...props }: MenuPrimitive.RadioGroup.Props) {
+  return <MenuPrimitive.RadioGroup {...props} />
+}
+
+function DropdownMenuItem({
+  asChild,
+  children,
+  // Menu.Item defaults this to false, unlike Trigger and Tab which default to
+  // true. Every asChild consumer here passes a tiptap Button, which renders a
+  // real <button>, so the default is wrong for all of them and Base UI logs a
+  // mismatch on every item. Overridable for a caller that renders otherwise.
+  nativeButton = true,
+  ...props
+}: MenuPrimitive.Item.Props & { asChild?: boolean; nativeButton?: boolean }) {
+  if (asChild && React.isValidElement(children)) {
+    return (
+      <MenuPrimitive.Item
+        nativeButton={nativeButton}
+        render={children as React.ReactElement<Record<string, unknown>>}
+        {...props}
+      />
+    )
+  }
+
+  return <MenuPrimitive.Item {...props}>{children}</MenuPrimitive.Item>
+}
+
+type DropdownMenuContentProps = Omit<
+  MenuPrimitive.Popup.Props,
+  "className"
+> &
+  Pick<MenuPrimitive.Positioner.Props, "align" | "side" | "sideOffset"> & {
+    // Base UI also accepts a state callback here; every consumer passes a
+    // plain string, and cn() only takes strings.
+    className?: string
+  }
+
+function DropdownMenuSubContent({
+  className,
+  ...props
+}: DropdownMenuContentProps) {
+  return <MenuPopup className={cn("tiptap-dropdown-menu", className)} {...props} />
+}
+
+function DropdownMenuContent({
+  className,
+  sideOffset = 4,
+  ...props
+}: DropdownMenuContentProps) {
+  return (
+    <MenuPopup
       className={cn("tiptap-dropdown-menu", className)}
-      {...props}
-    />
-  )
-
-  return portal ? (
-    <DropdownMenuPortal {...(typeof portal === "object" ? portal : {})}>
-      {content}
-    </DropdownMenuPortal>
-  ) : (
-    content
-  )
-})
-DropdownMenuSubContent.displayName =
-  DropdownMenuPrimitive.SubContent.displayName
-
-const DropdownMenuContent = forwardRef<
-  React.ComponentRef<typeof DropdownMenuPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content> & {
-    portal?: boolean
-  }
->(({ className, sideOffset = 4, portal = false, ...props }, ref) => {
-  const content = (
-    <DropdownMenuPrimitive.Content
-      ref={ref}
       sideOffset={sideOffset}
-      onCloseAutoFocus={(e) => e.preventDefault()}
-      className={cn("tiptap-dropdown-menu", className)}
       {...props}
     />
   )
+}
 
-  return portal ? (
-    <DropdownMenuPortal {...(typeof portal === "object" ? portal : {})}>
-      {content}
-    </DropdownMenuPortal>
-  ) : (
-    content
+/**
+ * Base UI splits Radix's single Content into Portal > Positioner > Popup, and
+ * all three are mandatory.
+ *
+ * The Radix version took a `portal` prop so the toolbar could render menus in
+ * place on desktop. That does not survive the port: the fixed toolbar is an
+ * `overflow-x: auto` scroll container, so an in-place popup is clipped by it
+ * and anchors against the wrong box. The prop is gone rather than kept as a
+ * no-op — a prop that claims to control DOM placement while doing nothing is
+ * worse than no prop.
+ */
+function MenuPopup({
+  className,
+  align,
+  side,
+  sideOffset,
+  ...popupProps
+}: DropdownMenuContentProps & { className: string }) {
+  return (
+    <MenuPrimitive.Portal>
+      <MenuPrimitive.Positioner
+        align={align}
+        side={side}
+        sideOffset={sideOffset}
+        className="pointer-events-auto isolate z-50 outline-none"
+      >
+        <MenuPrimitive.Popup
+          className={className}
+          // Restores the Radix version's onCloseAutoFocus preventDefault.
+          // These triggers are tabIndex={-1} toolbar buttons, so Base UI's
+          // default of focusing the trigger on close would pull the caret out
+          // of the document after picking a heading or list style.
+          finalFocus={false}
+          {...popupProps}
+        />
+      </MenuPrimitive.Positioner>
+    </MenuPrimitive.Portal>
   )
-})
-DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName
+}
 
 export {
   DropdownMenu,

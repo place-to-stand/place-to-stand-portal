@@ -20,6 +20,10 @@ import { TaskSheet } from '@/app/(dashboard)/projects/task-sheet'
 import { useMyTasksReorderMutation } from '@/lib/projects/tasks/use-my-tasks-data'
 import type { MyTaskStatus } from '@/lib/projects/tasks/my-tasks-constants'
 import { NEW_SHEET_VALUE } from '@/lib/sheets/entities'
+import {
+  DONE_WINDOW_WEEKS,
+  MAX_DONE_WEEKS,
+} from '@/lib/projects/tasks/done-window'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 
 import { MyTasksBoard } from './my-tasks-board'
@@ -45,6 +49,10 @@ type MyTasksPageProps = {
   activeTaskId: string | null
   view: MyTasksView
   selectedAssigneeId: string
+  /** Server-rendered instant the board's Done window measures back from. */
+  now: string
+  /** Assigned DONE tasks completed before the first window. */
+  initialOlderDoneCount: number
 }
 
 export function MyTasksPage({
@@ -56,6 +64,8 @@ export function MyTasksPage({
   activeTaskId,
   view,
   selectedAssigneeId,
+  now,
+  initialOlderDoneCount,
 }: MyTasksPageProps) {
   const router = useRouter()
   const reorderMutation = useMyTasksReorderMutation()
@@ -78,10 +88,39 @@ export function MyTasksPage({
     [user.id]
   )
 
-  const taskLookup = useMemo(() => buildTaskLookup(projects), [projects])
+  // Done-window paging state. The board opens on one window and fetches
+  // older slices on demand, so the first paint never carries the whole
+  // completed archive.
+  const [doneWeeks, setDoneWeeks] = useState(DONE_WINDOW_WEEKS)
+  const [olderDoneCount, setOlderDoneCount] = useState(initialOlderDoneCount)
+  const [olderEntries, setOlderEntries] = useState<MyTasksInitialEntry[]>([])
+  const [olderProjects, setOlderProjects] = useState<ProjectWithRelations[]>([])
+  const [isLoadingOlderDone, setIsLoadingOlderDone] = useState(false)
+  const [doneWindowError, setDoneWindowError] = useState<string | null>(null)
+  // Pinned at mount. `now` changes on every server render, and stepping the
+  // window against a moving anchor would leave slivers of time between one
+  // slice's start and the next slice's end.
+  const [windowAnchor] = useState(now)
+
+  // Widening pulls in projects the initial load never hydrated; they extend
+  // the server's set rather than replacing it.
+  const allProjects = useMemo(() => {
+    if (!olderProjects.length) {
+      return projects
+    }
+
+    const known = new Set(projects.map(project => project.id))
+    return [...projects, ...olderProjects.filter(p => !known.has(p.id))]
+  }, [projects, olderProjects])
+
+  const taskLookup = useMemo(() => buildTaskLookup(allProjects), [allProjects])
+  // Deliberately keyed off the server's projects, not `allProjects`: this only
+  // filters the server's own entries, and rebuilding it every time a slice
+  // lands would reset `entries` and discard in-flight reorder state.
+  const serverTaskLookup = useMemo(() => buildTaskLookup(projects), [projects])
   const sanitizedEntries = useMemo(
-    () => initialEntries.filter(entry => taskLookup.has(entry.taskId)),
-    [initialEntries, taskLookup]
+    () => initialEntries.filter(entry => serverTaskLookup.has(entry.taskId)),
+    [initialEntries, serverTaskLookup]
   )
 
   const [entries, setEntries] =
@@ -95,6 +134,98 @@ export function MyTasksPage({
     setPrevSanitizedEntries(sanitizedEntries)
     setEntries(sanitizedEntries)
   }
+
+  // Switching whose board you're viewing is a different Done history; carrying
+  // the previous person's loaded slices over would show their tasks.
+  const [prevAssigneeId, setPrevAssigneeId] = useState(selectedAssigneeId)
+  if (prevAssigneeId !== selectedAssigneeId) {
+    setPrevAssigneeId(selectedAssigneeId)
+    setDoneWeeks(DONE_WINDOW_WEEKS)
+    setOlderDoneCount(initialOlderDoneCount)
+    setOlderEntries([])
+    setOlderProjects([])
+    setDoneWindowError(null)
+  }
+
+  // Slices append below the server's entries; dedupe by task id so a task that
+  // drifts into the initial window between loads can't render twice.
+  const boardEntries = useMemo(() => {
+    if (!olderEntries.length) {
+      return entries
+    }
+
+    const seen = new Set(entries.map(entry => entry.taskId))
+    return [
+      ...entries,
+      ...olderEntries.filter(
+        entry => !seen.has(entry.taskId) && taskLookup.has(entry.taskId)
+      ),
+    ]
+  }, [entries, olderEntries, taskLookup])
+
+  const handleLoadOlderDone = useCallback(async () => {
+    if (isLoadingOlderDone) {
+      return
+    }
+
+    const toWeeks = Math.min(doneWeeks + DONE_WINDOW_WEEKS, MAX_DONE_WEEKS)
+
+    if (toWeeks <= doneWeeks) {
+      return
+    }
+
+    setIsLoadingOlderDone(true)
+    setDoneWindowError(null)
+
+    try {
+      const response = await fetch('/api/my-tasks/done-window', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assigneeId: selectedAssigneeId,
+          fromWeeks: doneWeeks,
+          toWeeks,
+          now: windowAnchor,
+        }),
+        cache: 'no-store',
+      })
+
+      const payload = (await response.json()) as {
+        ok: boolean
+        data?: {
+          entries: MyTasksInitialEntry[]
+          projects: ProjectWithRelations[]
+          olderDoneCount: number
+        }
+        error?: string
+      }
+
+      if (!response.ok || !payload.ok || !payload.data) {
+        throw new Error(payload.error ?? 'Request failed')
+      }
+
+      const data = payload.data
+
+      setOlderProjects(current => {
+        const known = new Set(current.map(project => project.id))
+        return [...current, ...data.projects.filter(p => !known.has(p.id))]
+      })
+      setOlderEntries(current => {
+        const seen = new Set(current.map(entry => entry.taskId))
+        return [
+          ...current,
+          ...data.entries.filter(entry => !seen.has(entry.taskId)),
+        ]
+      })
+      setOlderDoneCount(data.olderDoneCount)
+      setDoneWeeks(toWeeks)
+    } catch (error) {
+      console.error('Failed to load older done tasks', error)
+      setDoneWindowError('Unable to load older tasks. Please try again.')
+    } finally {
+      setIsLoadingOlderDone(false)
+    }
+  }, [doneWeeks, isLoadingOlderDone, selectedAssigneeId, windowAnchor])
 
   // The `?task=` param is the source of truth: `new` = create, uuid = edit.
   const isCreatingTask = taskParam === NEW_SHEET_VALUE
@@ -110,8 +241,8 @@ export function MyTasksPage({
   }
 
   const memberDirectory = useMemo(
-    () => buildMemberDirectory(projects, admins),
-    [projects, admins]
+    () => buildMemberDirectory(allProjects, admins),
+    [allProjects, admins]
   )
   const renderAssignees = useMemo(
     () => createRenderAssignees(memberDirectory),
@@ -295,14 +426,18 @@ export function MyTasksPage({
       contentClassName='flex flex-col gap-4 sm:gap-6'
     >
       {view === 'board' ? (
-        entries.length === 0 ? (
+        // Only truly empty when nothing is hidden either. With older DONE
+        // tasks outside the window the board must still render, or its
+        // "load previous two weeks" control never mounts and those tasks are
+        // unreachable at any window size.
+        boardEntries.length === 0 && olderDoneCount === 0 ? (
           <ProjectsBoardEmpty
             title='No tasks assigned'
             description='Once a task is assigned to you, it will appear here.'
           />
         ) : (
           <MyTasksBoard
-            entries={entries}
+            entries={boardEntries}
             taskLookup={taskLookup}
             renderAssignees={renderAssignees}
             getTaskCardOptions={getTaskCardOptions}
@@ -311,6 +446,11 @@ export function MyTasksPage({
             activeTaskId={activeTaskId}
             scrollStorageKey={boardScrollStorageKey}
             onCreateTask={handleStartCreateTask}
+            doneWeeks={doneWeeks}
+            olderDoneCount={olderDoneCount}
+            onLoadOlderDone={handleLoadOlderDone}
+            isLoadingOlderDone={isLoadingOlderDone}
+            doneWindowError={doneWindowError}
           />
         )
       ) : (
@@ -335,7 +475,7 @@ export function MyTasksPage({
           currentUserId={user.id}
           defaultStatus={createTaskContext?.status ?? 'ON_DECK'}
           defaultDueOn={null}
-          projects={projects}
+          projects={allProjects}
           projectSelectionProjects={projectSelectionProjects}
           defaultProjectId={
             createTaskContext?.projectId ?? editingTaskMeta?.project.id ?? null

@@ -21,6 +21,7 @@
     "./select": "./src/select.tsx",
     "./separator": "./src/separator.tsx",
     "./skeleton": "./src/skeleton.tsx",
+    "./slot": "./src/slot.tsx",
     "./switch": "./src/switch.tsx",
     "./table": "./src/table.tsx",
     "./tabs": "./src/tabs.tsx",
@@ -34,7 +35,6 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.28.0",
-    "radix-ui": "^1.6.7",
     "tailwind-merge": "^3.6.0"
   },
   "peerDependencies": {

@@ -13,7 +13,8 @@
     "db:generate": "drizzle-kit generate --config drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config drizzle.config.ts",
     "db:migrate:prod": "dotenv -e .env.prod -- drizzle-kit migrate --config drizzle.config.ts",
-    "db:reset": "supabase db reset --workdir ../.. && npm run db:migrate"
+    "db:reset": "supabase db reset --workdir ../.. && npm run db:migrate",
+    "smoke:ui": "tsx --require ./scripts/stub-styles.cjs scripts/smoke-render-ui.tsx"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.26",
@@ -69,7 +70,6 @@
     "postgres": "^3.4.9",
     "posthog-js": "^1.409.5",
     "posthog-node": "^5.47.3",
-    "radix-ui": "^1.6.7",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-hook-form": "^7.83.0",

@@ -72,6 +72,7 @@ export type DbTask = {
   updated_at: string
   deleted_at: string | null
   accepted_at: string | null
+  completed_at: string | null
   rank: string
   github_issue_number: number | null
   github_issue_url: string | null
@@ -169,6 +170,12 @@ export type TaskWithRelations = DbTask & {
   assignees: { user_id: string }[]
   commentCount: number
   attachmentCount: number
+  /**
+   * Sum of every time log linked to this task. A log split across N tasks
+   * counts its full hours toward each, matching the total the task sheet
+   * already shows — so card and sheet never disagree.
+   */
+  loggedHours: number
   attachments?: DbTaskAttachment[]
 }
 

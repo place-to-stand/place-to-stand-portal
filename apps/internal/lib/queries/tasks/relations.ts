@@ -10,6 +10,8 @@ import {
   taskAttachments,
   taskComments,
   tasks,
+  timeLogTasks,
+  timeLogs,
 } from '@/lib/db/schema'
 import type { RawTaskWithRelations } from '@/lib/data/projects/types'
 
@@ -22,6 +24,7 @@ type TaskWithRelationsSelection = {
   status: RawTaskWithRelations['status']
   rank: string
   acceptedAt: string | null
+  completedAt: string | null
   dueOn: string | null
   createdBy: string | null
   updatedBy: string | null
@@ -33,6 +36,7 @@ type TaskWithRelationsSelection = {
   workerStatus: string | null
   commentCount: number
   attachmentCount: number
+  loggedHours: string | number | null
 }
 
 type TaskAssigneeSelection = {
@@ -68,6 +72,7 @@ export async function listProjectTasksWithRelations(
       status: tasks.status,
       rank: tasks.rank,
       acceptedAt: tasks.acceptedAt,
+      completedAt: tasks.completedAt,
       dueOn: tasks.dueOn,
       createdBy: tasks.createdBy,
       updatedBy: tasks.updatedBy,
@@ -88,6 +93,14 @@ export async function listProjectTasksWithRelations(
         from ${taskAttachments}
         where ${taskAttachments.taskId} = tasks.id
           and ${taskAttachments.deletedAt} is null
+      )`,
+      loggedHours: sql<string>`(
+        select coalesce(sum(${timeLogs.hours}), 0)
+        from ${timeLogTasks}
+        join ${timeLogs} on ${timeLogs.id} = ${timeLogTasks.timeLogId}
+        where ${timeLogTasks.taskId} = tasks.id
+          and ${timeLogTasks.deletedAt} is null
+          and ${timeLogs.deletedAt} is null
       )`,
     })
     .from(tasks)
@@ -130,6 +143,7 @@ export async function listProjectTasksWithRelations(
     status: row.status ?? 'ON_DECK',
     rank: row.rank,
     accepted_at: row.acceptedAt,
+    completed_at: row.completedAt,
     due_on: row.dueOn,
     created_by: row.createdBy ?? null,
     updated_by: row.updatedBy ?? null,
@@ -142,6 +156,7 @@ export async function listProjectTasksWithRelations(
     assignees: assigneesByTask.get(row.id) ?? [],
     comment_count: Number(row.commentCount ?? 0),
     attachment_count: Number(row.attachmentCount ?? 0),
+    logged_hours: Number(row.loggedHours ?? 0),
   }))
 }
 
