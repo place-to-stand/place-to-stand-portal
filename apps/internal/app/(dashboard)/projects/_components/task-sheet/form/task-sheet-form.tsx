@@ -89,7 +89,11 @@ export function TaskSheetForm(props: TaskSheetFormProps) {
         // No flex-1: the form sizes to its content so the sections that follow
         // it in the scroll column (time, comments) stack directly beneath it
         // instead of being pushed to the bottom of the viewport.
-        className='flex flex-col gap-6 px-6 pb-4'
+        //
+        // No bottom padding either: the scroll column's own gap-6 separates the
+        // form from the time-log section, so padding here would stack on top of
+        // it and make that seam wider than the gap-6 between the fields above.
+        className='flex flex-col gap-6 px-6'
       >
         <TaskSheetFormFields
           form={form}

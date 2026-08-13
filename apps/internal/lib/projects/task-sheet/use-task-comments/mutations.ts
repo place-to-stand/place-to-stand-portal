@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query'
-import type { QueryClient } from '@tanstack/react-query'
+import type { InfiniteData, QueryClient } from '@tanstack/react-query'
 import type { useRouter } from 'next/navigation'
 
 import { logClientActivity } from '@/lib/activity/client'
@@ -9,9 +9,20 @@ import {
   taskCommentUpdatedEvent,
 } from '@/lib/activity/events'
 import type { useToast } from '@/components/ui/use-toast'
+import type { TaskCommentsPage } from '@/lib/queries/task-comments'
+import type { TaskCommentWithAuthor } from '@/lib/types'
 
 import { serializeCommentMetadata } from './helpers'
 import type { CommentActivityMetadata } from './types'
+
+type CommentsCache = InfiniteData<TaskCommentsPage, string | null>
+
+/** Marks a row that exists only until the server round-trip lands. */
+export const OPTIMISTIC_COMMENT_ID_PREFIX = 'optimistic-'
+
+export function isOptimisticComment(commentId: string): boolean {
+  return commentId.startsWith(OPTIMISTIC_COMMENT_ID_PREFIX)
+}
 
 type RouterInstance = ReturnType<typeof useRouter>
 type ToastFn = ReturnType<typeof useToast>['toast']
@@ -29,7 +40,13 @@ type BaseMutationArgs = {
 }
 
 type CreateMutationArgs = BaseMutationArgs & {
+  /** Byline for the optimistic row before the refetch supplies the real one. */
+  currentUserName?: string | null
   onSuccess?: () => void
+  /** Fired once the optimistic row is in the cache — clear the composer here. */
+  onOptimisticInsert?: () => void
+  /** Fired when the post failed and the row was removed — restore the draft. */
+  onRollback?: (body: string) => void
 }
 
 type UpdateMutationArgs = BaseMutationArgs & {
@@ -63,17 +80,43 @@ const logCommentActivity = async (
   })
 }
 
+/**
+ * Reuse the author record from a comment this user already has in the cache,
+ * so the optimistic byline matches the real one exactly. Falls back to the
+ * name the sheet supplied when they haven't commented on this task before.
+ */
+function resolveOptimisticAuthor(
+  cache: CommentsCache | undefined,
+  currentUserId: string,
+  currentUserName: string | null | undefined
+): TaskCommentWithAuthor['author'] {
+  const known = cache?.pages
+    .flatMap(page => page.items)
+    .find(item => item.author_id === currentUserId && item.author)?.author
+
+  return (
+    known ?? {
+      id: currentUserId,
+      full_name: currentUserName ?? null,
+      avatar_url: null,
+    }
+  )
+}
+
 export function useCreateTaskCommentMutation({
   taskId,
   projectId,
   clientId,
   currentUserId,
+  currentUserName,
   taskTitle,
   queryKey,
   queryClient,
   router,
   toast,
   onSuccess,
+  onOptimisticInsert,
+  onRollback,
 }: CreateMutationArgs) {
   return useMutation({
     mutationFn: async (body: string) => {
@@ -107,8 +150,49 @@ export function useCreateTaskCommentMutation({
 
       return payload.commentId
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey })
+    onMutate: async (body: string) => {
+      if (!taskId) {
+        return { previous: undefined }
+      }
+
+      // Stop any in-flight refetch from overwriting the row we're about to add.
+      await queryClient.cancelQueries({ queryKey })
+
+      const previous = queryClient.getQueryData<CommentsCache>(queryKey)
+
+      // Nothing cached yet (the thread never loaded) — let the refetch handle
+      // it rather than inventing a page shape the query would replace anyway.
+      if (!previous?.pages?.length) {
+        return { previous }
+      }
+
+      const now = new Date().toISOString()
+      const optimistic: TaskCommentWithAuthor = {
+        id: `${OPTIMISTIC_COMMENT_ID_PREFIX}${now}`,
+        task_id: taskId,
+        author_id: currentUserId,
+        body,
+        created_at: now,
+        // Equal to created_at so the row doesn't render an "Edited" marker.
+        updated_at: now,
+        deleted_at: null,
+        author: resolveOptimisticAuthor(previous, currentUserId, currentUserName),
+      }
+
+      queryClient.setQueryData<CommentsCache>(queryKey, {
+        ...previous,
+        // Pages are newest-first, and the panel reverses the flattened list —
+        // so the head of page 0 is what renders last, next to the composer.
+        pages: previous.pages.map((page, index) =>
+          index === 0 ? { ...page, items: [optimistic, ...page.items] } : page
+        ),
+      })
+
+      onOptimisticInsert?.()
+
+      return { previous }
+    },
+    onSuccess: () => {
       onSuccess?.()
       if (taskId) {
         router.refresh()
@@ -118,14 +202,26 @@ export function useCreateTaskCommentMutation({
         description: 'Your message is now visible to project collaborators.',
       })
     },
-    onError: error => {
+    onError: (error, body, context) => {
       console.error('Failed to add comment', error)
+
+      // Drop the optimistic row and hand the text back so the post isn't lost.
+      if (context?.previous) {
+        queryClient.setQueryData(queryKey, context.previous)
+      }
+      onRollback?.(body)
+
       toast({
         title: 'Could not add comment',
         description:
           'Please try again. If the issue continues contact support.',
         variant: 'destructive',
       })
+    },
+    // Reconcile against the server on both paths: success swaps the temporary
+    // row for the real one, failure re-syncs after the rollback.
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey })
     },
   })
 }

@@ -106,7 +106,7 @@ Turbo v2 uses strict mode by default — only env vars listed in `turbo.json` ar
 └── unauthorized/     # Access denied page
 ```
 
-The project workspace is tabbed: `/projects/[clientSlug]/[projectSlug]/{tasks,overview,review,time-logs,activity,archive}`. The task board lives on the `tasks` tab, with the task sheet as an optional catch-all: `/projects/[clientSlug]/[projectSlug]/tasks/[[...taskId]]`
+The project workspace is tabbed: `/projects/[clientSlug]/[projectSlug]/{tasks,overview,review,time-logs,activity,archive}`. The task board lives on the `tasks` tab, and the task sheet opens over it via the `?task=<uuid>` query param — never a route segment (see **Sheet deep links** below). Board links come from `buildBoardPath`, which keeps the board mounted across task selection instead of remounting it the way the retired trailing-segment URLs did.
 
 **Client portal** (`apps/client/app/`):
 ```

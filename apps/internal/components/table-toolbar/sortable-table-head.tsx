@@ -19,6 +19,8 @@ type SortableTableHeadProps = {
   onSortChange: (next: SortValue | undefined) => void
   children: ReactNode
   className?: string
+  /** Header alignment — set 'center' to match a column whose cells are centered. */
+  align?: 'left' | 'center'
 }
 
 function parseSort(value: string | undefined, fallback: SortValue) {
@@ -43,6 +45,7 @@ export function SortableTableHead({
   onSortChange,
   children,
   className,
+  align = 'left',
 }: SortableTableHeadProps) {
   const current = parseSort(sort, defaultSort)
   const isActive = current.field === field
@@ -78,6 +81,8 @@ export function SortableTableHead({
   // expose that to AT too.
   const showAsSorted = isActive && (sort !== undefined || defaultParsed.field === field)
 
+  // The cell carries `group/head` because that named group is what reveals
+  // the neutral chevron below — it has to sit on an ancestor of the icon.
   return (
     <TableHead
       aria-sort={
@@ -87,12 +92,15 @@ export function SortableTableHead({
             : 'descending'
           : undefined
       }
-      className={cn('p-0', className)}
+      className={cn('group/head p-0', className)}
     >
       <button
         type='button'
         onClick={handleClick}
-        className='hover:text-foreground flex h-full w-full cursor-pointer items-center gap-1 px-2 py-2 text-left font-medium'
+        className={cn(
+          'hover:text-foreground flex h-full w-full cursor-pointer items-center gap-1 px-2 py-2 font-medium',
+          align === 'center' ? 'justify-center text-center' : 'text-left'
+        )}
       >
         <span>{children}</span>
         {showAsSorted ? (

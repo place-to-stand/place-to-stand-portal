@@ -8,6 +8,11 @@ export type UseTaskCommentsOptions = {
   canComment: boolean
   taskTitle?: string | null
   clientId?: string | null
+  /**
+   * Display name for the optimistic comment's byline. Only used until the
+   * refetch lands; falls back to the author on a cached comment by this user.
+   */
+  currentUserName?: string | null
 }
 
 export type UseTaskCommentsState = {

@@ -3,9 +3,16 @@
 import { useCallback, useMemo } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import { formatDistanceToNow } from 'date-fns'
-import { Loader2, Pencil, Send, Trash2, X } from 'lucide-react'
+import { Loader2, MoreHorizontal, Pencil, Send, Trash2, X } from 'lucide-react'
 
+import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Button } from '@pts/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@pts/ui/dropdown-menu'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import {
@@ -13,9 +20,12 @@ import {
   sanitizeEditorHtml,
 } from '@/components/ui/rich-text-editor/utils'
 import type { TaskCommentWithAuthor } from '@/lib/types'
+import { getInitials } from '@/lib/users/initials'
+import { cn } from '@/lib/utils'
 
 export type TaskCommentsPanelShellProps = {
-  title: string
+  /** Omit inside an already-labelled tab — the tab is the heading. */
+  title?: string
   description: string
   children: ReactNode
   action?: ReactNode
@@ -27,7 +37,7 @@ export function TaskCommentsPanelShell(props: TaskCommentsPanelShellProps) {
     <section className='space-y-4 rounded-xl border px-5 py-4 shadow-sm'>
       <div className='flex flex-wrap items-start justify-between gap-3'>
         <div>
-          <h3 className='text-sm font-semibold'>{title}</h3>
+          {title ? <h3 className='text-sm font-semibold'>{title}</h3> : null}
           <p className='text-muted-foreground text-xs'>{description}</p>
         </div>
         {action}
@@ -182,56 +192,65 @@ export function TaskCommentItem(props: TaskCommentItemProps) {
   }
 
   return (
-    <article className='rounded-lg border px-4 py-3 shadow-sm'>
+    <article className='relative rounded-lg border px-4 py-3 shadow-sm'>
+      {isAuthor ? (
+        <div className='absolute top-2 right-2'>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='sm'
+                  className='text-muted-foreground hover:text-foreground h-7 w-7 p-0'
+                  disabled={disableActions}
+                  aria-label='Comment actions'
+                />
+              }
+            >
+              <MoreHorizontal className='h-4 w-4' />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align='end' className='w-36'>
+              <DropdownMenuItem onClick={() => onStartEdit(comment)}>
+                <Pencil className='h-3.5 w-3.5' /> Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                variant='destructive'
+                onClick={() => onRequestDelete(comment.id)}
+              >
+                <Trash2 className='h-3.5 w-3.5' /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ) : null}
       <div
-        className='text-foreground [&_a]:text-primary [&_code]:bg-muted [&_pre]:bg-muted space-y-2 text-sm leading-relaxed [&_a]:underline [&_a]:underline-offset-4 [&_code]:rounded [&_code]:px-1 [&_code]:py-0.5 [&_li]:my-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:p-3 [&_ul]:list-disc [&_ul]:pl-5'
+        className={cn(
+          'text-foreground [&_a]:text-primary [&_code]:bg-muted [&_pre]:bg-muted space-y-2 text-sm leading-relaxed [&_a]:underline [&_a]:underline-offset-4 [&_code]:rounded [&_code]:px-1 [&_code]:py-0.5 [&_li]:my-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:p-3 [&_ul]:list-disc [&_ul]:pl-5',
+          // Keep the first line clear of the absolutely-positioned menu button.
+          isAuthor && 'pr-8'
+        )}
         dangerouslySetInnerHTML={{ __html: sanitizedBody }}
       />
-      <footer className='text-muted-foreground mt-3 flex flex-wrap items-center justify-between gap-2 text-xs'>
+      <footer className='text-muted-foreground mt-3 flex flex-wrap items-center gap-2 text-xs'>
         <div className='flex flex-wrap items-center gap-2'>
+          <Avatar className='h-5 w-5'>
+            {comment.author?.avatar_url ? (
+              <AvatarImage
+                src={`/api/storage/user-avatar/${comment.author.id}`}
+                alt={authorName}
+              />
+            ) : null}
+            <AvatarFallback className='text-[9px]'>
+              {getInitials(comment.author?.full_name)}
+            </AvatarFallback>
+          </Avatar>
           <span className='text-foreground font-medium'>{authorName}</span>
           <span>{createdAgo}</span>
           {edited ? <span>Edited</span> : null}
         </div>
-        {isAuthor ? (
-          <div className='flex items-center gap-2'>
-            <Button
-              type='button'
-              variant='ghost'
-              size='sm'
-              className='text-muted-foreground hover:text-foreground'
-              onClick={() => onStartEdit(comment)}
-              disabled={disableActions}
-            >
-              <Pencil className='h-3.5 w-3.5' />
-            </Button>
-            <Button
-              type='button'
-              variant='ghost'
-              size='sm'
-              className='text-muted-foreground hover:text-destructive'
-              onClick={() => onRequestDelete(comment.id)}
-              disabled={disableActions}
-            >
-              <Trash2 className='h-3.5 w-3.5' />
-            </Button>
-          </div>
-        ) : null}
       </footer>
     </article>
-  )
-}
-
-export type TaskCommentsEmptyStateProps = {
-  message: string
-}
-
-export function TaskCommentsEmptyState(props: TaskCommentsEmptyStateProps) {
-  const { message } = props
-  return (
-    <div className='text-muted-foreground rounded-lg border border-dashed px-4 py-6 text-center text-sm'>
-      {message}
-    </div>
   )
 }
 

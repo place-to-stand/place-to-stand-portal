@@ -18,7 +18,6 @@ export function TaskActivityPanel({
     return (
       <div className='space-y-2'>
         <Separator />
-        <h3 className='text-base font-semibold'>Activity</h3>
         <p className='text-muted-foreground text-sm'>
           Log history becomes available once the task is created.
         </p>
@@ -28,7 +27,7 @@ export function TaskActivityPanel({
 
   return (
     <div className='space-y-4'>
-      <h3 className='text-base font-semibold'>Activity</h3>
+      {/* No heading here — the enclosing tab is already labelled "Activity". */}
       <ActivityFeed
         targetType='TASK'
         targetId={taskId}
