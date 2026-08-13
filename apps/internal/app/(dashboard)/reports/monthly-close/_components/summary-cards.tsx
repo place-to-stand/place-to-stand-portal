@@ -235,7 +235,7 @@ export function TotalPayoutsCard({
     })
   }
   children.push({
-    label: 'House',
+    label: 'House (estimated)',
     sublabel: formatPercent(rates.housePerHour, rates.billablePerHour),
     value: houseTotal,
     icon: Building,
