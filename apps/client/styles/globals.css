@@ -1,7 +1,19 @@
 @import 'tailwindcss';
 
+/* Class-based rather than prefers-color-scheme, so the user can override the
+   system setting. Matches apps/internal. A blocking script in the root layout
+   resolves stored-preference-or-system and stamps `.dark` on <html> before
+   first paint, so there is no flash and no media query is needed here. */
+@custom-variant dark (&:is(.dark *));
+
 @theme {
-  --color-background: oklch(1 0 0);
+  /* The page sits on grey; cards and the top bar are what stand out from it.
+     In dark this is the old card tone, with every surface re-based one step up
+     so nothing disappears into the page. */
+  --color-background: oklch(0.97 0 0);
+  /* Top bar. Deliberately not `background` — the chrome reads as a distinct
+     band above the page rather than part of it. */
+  --color-chrome: oklch(1 0 0);
   --color-foreground: oklch(0.145 0 0);
   --color-card: oklch(1 0 0);
   --color-card-foreground: oklch(0.145 0 0);
@@ -19,7 +31,35 @@
   --color-border: oklch(0.922 0 0);
   --color-input: oklch(0.922 0 0);
   --color-ring: oklch(0.708 0 0);
+
+  /* Layered surfaces for stacked content: surface-1 is the shallowest,
+     surface-3 the deepest. Lightest-to-darkest in light mode and in dark mode
+     alike, so "deeper" always reads the same way.
+     Every value is an existing step on the neutral ramp — 0.985 is borrowed
+     from the internal portal's --sidebar, which is the off-white step this
+     palette otherwise lacks between card (1.0) and muted (0.97).
+     Deliberately NOT translucent black: a wash that darkens in both themes
+     ends up below the page background in dark mode, and an inner surface
+     darker than the page reads as a hole punched in the card. */
+  /* surface-1 takes the internal board's kanban-column tone (`bg-background/80`
+     in kanban-column.tsx) — the recessed container. surface-2/3 take the task
+     card tone (`bg-card` in task-card.tsx) — the raised item inside it.
+     Internal renders both as white in light mode and lets borders do the
+     separating; here surface-1 drops to 0.97 so the recessed/raised
+     relationship survives rather than collapsing. */
+  --color-surface-1: oklch(0.97 0 0);
+  --color-surface-2: oklch(1 0 0);
+  --color-surface-3: oklch(1 0 0);
+
+  /* Dashboard goes two-column here. Not one of Tailwind's defaults: `md`
+     (768px) halves the cards while the invoice row's View/Download/Pay buttons
+     still need the width, and `lg` (1024px) leaves an empty column for too
+     long. Named rather than inlined as min-[53rem] so the page and its loading
+     skeleton cannot drift apart. */
+  --breakpoint-dash: 53rem;
+
   --radius-sm: 0.375rem;
+
   --radius-md: 0.425rem;
   --radius-lg: 0.625rem;
   --radius-xl: 1.025rem;
@@ -29,28 +69,34 @@
     'Liberation Mono', 'Courier New', monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-    --color-background: oklch(0.145 0 0);
-    --color-foreground: oklch(0.985 0 0);
-    --color-card: oklch(0.205 0 0);
-    --color-card-foreground: oklch(0.985 0 0);
-    --color-popover: oklch(0.205 0 0);
-    --color-popover-foreground: oklch(0.985 0 0);
-    --color-primary: oklch(0.922 0 0);
-    --color-primary-foreground: oklch(0.205 0 0);
-    --color-secondary: oklch(0.269 0 0);
-    --color-secondary-foreground: oklch(0.985 0 0);
-    --color-muted: oklch(0.269 0 0);
-    --color-muted-foreground: oklch(0.708 0 0);
-    --color-accent: oklch(0.269 0 0);
-    --color-accent-foreground: oklch(0.985 0 0);
-    --color-destructive: oklch(0.704 0.191 22.216);
-    --color-border: oklch(1 0 0 / 10%);
-    --color-input: oklch(1 0 0 / 15%);
-    --color-ring: oklch(0.556 0 0);
-  }
+.dark {
+  color-scheme: dark;
+  /* Grey page, black chrome. */
+  --color-background: oklch(0.205 0 0);
+  --color-chrome: oklch(0.145 0 0);
+  --color-foreground: oklch(0.985 0 0);
+  --color-card: oklch(0.205 0 0);
+  --color-card-foreground: oklch(0.985 0 0);
+  --color-popover: oklch(0.205 0 0);
+  --color-popover-foreground: oklch(0.985 0 0);
+  --color-primary: oklch(0.922 0 0);
+  --color-primary-foreground: oklch(0.205 0 0);
+  --color-secondary: oklch(0.269 0 0);
+  --color-secondary-foreground: oklch(0.985 0 0);
+  --color-muted: oklch(0.269 0 0);
+  --color-muted-foreground: oklch(0.708 0 0);
+  --color-accent: oklch(0.269 0 0);
+  --color-accent-foreground: oklch(0.985 0 0);
+  --color-destructive: oklch(0.704 0.191 22.216);
+  --color-border: oklch(1 0 0 / 10%);
+  --color-input: oklch(1 0 0 / 15%);
+  --color-ring: oklch(0.556 0 0);
+
+  /* Internal's board values exactly: 0.145 is the kanban column, 0.205 the
+     task card sitting on it. */
+  --color-surface-1: oklch(0.145 0 0);
+  --color-surface-2: oklch(0.205 0 0);
+  --color-surface-3: oklch(0.205 0 0);
 }
 
 @layer base {

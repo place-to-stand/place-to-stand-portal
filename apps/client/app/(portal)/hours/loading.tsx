@@ -8,7 +8,7 @@ export default function HoursLoading() {
         <Skeleton className="mt-2 h-4 w-64" />
       </div>
       <div className="grid gap-3">
-        <Skeleton className="h-32 w-full rounded-xl" />
+        <Skeleton className="h-32 w-full rounded-lg" />
       </div>
     </div>
   )
