@@ -21,7 +21,30 @@ export type ProjectTasks = {
   completed: ClientTask[]
 }
 
-const CURRENT_STATUSES = ['ON_DECK', 'IN_PROGRESS', 'BLOCKED'] as const
+/**
+ * What "open" means in the portal. Exported so the dashboard's per-project
+ * count can't drift from the list the project page actually renders.
+ */
+export const CURRENT_STATUSES = ['ON_DECK', 'IN_PROGRESS', 'BLOCKED'] as const
+
+const STATUS_ORDER: Record<string, number> = {
+  IN_PROGRESS: 0,
+  BLOCKED: 1,
+  ON_DECK: 2,
+}
+
+/**
+ * Groups current tasks by status, preserving the board's manual rank order
+ * within each group. Stable, so callers must pass rows already ordered by rank.
+ *
+ * Shared so the dashboard's inline task list and the project page present the
+ * same work in the same order.
+ */
+export function sortCurrentTasks<T extends { status: string }>(rows: T[]): T[] {
+  return [...rows].sort(
+    (a, b) => (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99)
+  )
+}
 
 /**
  * Tasks for a project, split into current and completed.
@@ -64,17 +87,6 @@ export const fetchProjectTasks = cache(
         .orderBy(desc(tasks.updatedAt)),
     ])
 
-    const statusOrder: Record<string, number> = {
-      IN_PROGRESS: 0,
-      BLOCKED: 1,
-      ON_DECK: 2,
-    }
-
-    // Stable: rank order from SQL is preserved within each status group.
-    const current = [...currentRows].sort(
-      (a, b) => (statusOrder[a.status] ?? 99) - (statusOrder[b.status] ?? 99)
-    )
-
-    return { current, completed: completedRows }
+    return { current: sortCurrentTasks(currentRows), completed: completedRows }
   }
 )
