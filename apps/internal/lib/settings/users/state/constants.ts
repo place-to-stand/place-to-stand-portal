@@ -5,7 +5,7 @@ export const DEFAULT_ASSIGNMENTS = { clients: 0, projects: 0, tasks: 0 }
 const formatCount = (count: number, noun: string) =>
   `${count} ${noun}${count === 1 ? '' : 's'}`
 
-export const PENDING_REASON = 'Please wait for the current request to finish.'
+export { PENDING_REASON } from '@/lib/forms/form-controls'
 export const SELF_DELETE_REASON = 'You cannot archive your own account.'
 
 export const buildDeleteDialogDescription = (

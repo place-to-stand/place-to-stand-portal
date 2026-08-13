@@ -12,9 +12,10 @@ import {
   requestPasswordReset,
   type ForgotPasswordState,
 } from "./actions";
+import { PENDING_REASON } from "@/lib/forms/form-controls";
 
 const INITIAL_STATE: ForgotPasswordState = {};
-const pendingReason = "Please wait for the current request to finish.";
+const pendingReason = PENDING_REASON;
 
 type Props = {
   redirectTo?: string;

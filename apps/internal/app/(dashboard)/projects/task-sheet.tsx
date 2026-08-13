@@ -44,6 +44,7 @@ import { TaskCommentsPanel } from './_components/task-sheet/task-comments-panel'
 import { TaskActivityPanel } from './_components/task-sheet/task-activity-panel'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@pts/ui/tabs'
 import type { BoardColumnId } from '@/lib/projects/board/board-constants'
+import { getSubmitLabel } from '@/lib/forms/form-controls'
 
 // Survives page remounts (module scope): navigating to a task URL changes a
 // dynamic route param, which remounts the whole page — including this sheet.
@@ -181,11 +182,15 @@ export function TaskSheet(props: TaskSheetProps) {
     historyKey,
   })
 
-  const saveLabel = useMemo(() => {
-    if (isPending) return 'Saving...'
-    if (isEditing) return 'Save changes'
-    return 'Create task'
-  }, [isEditing, isPending])
+  const saveLabel = useMemo(
+    () =>
+      getSubmitLabel({
+        isSaving: isPending,
+        isEditing,
+        createLabel: 'Create task',
+      }),
+    [isEditing, isPending]
+  )
 
   // ---- Drag & drop ----
   const hasDraggedFiles = useCallback(

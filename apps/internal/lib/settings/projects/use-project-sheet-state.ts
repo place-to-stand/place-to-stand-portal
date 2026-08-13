@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   useForm,
   useWatch,
@@ -15,6 +15,7 @@ import {
 } from '@/app/(dashboard)/settings/projects/actions'
 import { useToast } from '@/components/ui/use-toast'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
+import { useSheetLifecycle } from '@/lib/sheets/use-sheet-lifecycle'
 import {
   finishSettingsInteraction,
   startSettingsInteraction,
@@ -95,11 +96,6 @@ export function useProjectSheetState({
 }: UseProjectSheetStateArgs): UseProjectSheetStateReturn {
   const isEditing = Boolean(project)
   const [feedback, setFeedback] = useState<string | null>(null)
-  const [isPending, startTransition] = useTransition()
-  // Second transition on purpose: `isPending` means "a save or delete is in
-  // flight" (it drives the "Saving..." label and the disabled controls), so
-  // re-baselining the form on open/close must not set it.
-  const [, startResetTransition] = useTransition()
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isReposDirty, setIsReposDirty] = useState(false)
   const { toast } = useToast()
@@ -128,9 +124,6 @@ export function useProjectSheetState({
     }) ?? 'CLIENT'
   const requiresClientSelection = projectType === 'CLIENT'
 
-  const { requestConfirmation: confirmDiscard, dialog: unsavedChangesDialog } =
-    useUnsavedChangesWarning({ isDirty: hasUnsavedChanges })
-
   const resetFormState = useCallback(() => {
     const defaults = buildProjectFormDefaults(project)
 
@@ -157,32 +150,18 @@ export function useProjectSheetState({
     [form]
   )
 
-  useEffect(() => {
-    if (!open) {
-      return
-    }
-
-    startResetTransition(() => {
-      resetFormState()
-    })
-  }, [open, resetFormState, startResetTransition])
-
-  const handleSheetOpenChange = useCallback(
-    (next: boolean) => {
-      if (!next) {
-        confirmDiscard(() => {
-          startResetTransition(() => {
-            resetFormState()
-          })
-          onOpenChange(false)
-        })
-        return
-      }
-
-      onOpenChange(next)
-    },
-    [confirmDiscard, onOpenChange, resetFormState, startResetTransition]
-  )
+  const {
+    isSaving: isPending,
+    startSave,
+    handleSheetOpenChange,
+    unsavedChangesDialog,
+  } = useSheetLifecycle({
+    open,
+    onOpenChange,
+    isDirty: hasUnsavedChanges,
+    onReset: resetFormState,
+    resetKey: project?.id ?? null,
+  })
 
   const linkPendingRepos = useCallback(
     async (projectId: string, pendingRepos: PendingRepo[]) => {
@@ -232,7 +211,7 @@ export function useProjectSheetState({
       pendingRepos: PendingRepo[],
       removedRepoIds: string[]
     ) => {
-      startTransition(async () => {
+      startSave(async () => {
         setFeedback(null)
         form.clearErrors()
 
@@ -343,7 +322,7 @@ export function useProjectSheetState({
       onComplete,
       onOpenChange,
       project,
-      startTransition,
+      startSave,
       toast,
     ]
   )
@@ -370,7 +349,7 @@ export function useProjectSheetState({
     }
 
     setIsDeleteDialogOpen(false)
-    startTransition(async () => {
+    startSave(async () => {
       setFeedback(null)
       form.clearErrors()
       const interaction = startSettingsInteraction({
@@ -433,7 +412,7 @@ export function useProjectSheetState({
     onComplete,
     onOpenChange,
     project,
-    startTransition,
+    startSave,
     toast,
   ])
 

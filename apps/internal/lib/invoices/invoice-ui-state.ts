@@ -1,5 +1,6 @@
 import type { InvoiceWithClient } from './invoice-form'
 import type { ClientOption } from './invoice-options'
+import { PENDING_REASON, getSubmitLabel } from '@/lib/forms/form-controls'
 
 export type FieldState = {
   disabled: boolean
@@ -17,18 +18,13 @@ export type DeleteButtonState = {
   reason: string | null
 }
 
-export const PENDING_REASON = 'Please wait for the current request to finish.'
+
+export { PENDING_REASON }
 export const MISSING_CLIENT_REASON =
   'Create a client before creating invoices.'
 export const NON_EDITABLE_REASON = 'This invoice cannot be edited.'
 
 const NON_EDITABLE_STATUSES = new Set(['PAID', 'VOID'])
-
-const SUBMIT_LABELS = {
-  creating: 'Create invoice',
-  updating: 'Save changes',
-  pending: 'Saving...',
-} as const
 
 // ---------------------------------------------------------------------------
 // Invoice editability
@@ -100,7 +96,11 @@ export const deriveSubmitButtonState = (
     return {
       disabled: true,
       reason: NON_EDITABLE_REASON,
-      label: SUBMIT_LABELS.updating,
+      label: getSubmitLabel({
+        isSaving: false,
+        isEditing: true,
+        createLabel: 'Create invoice',
+      }),
     }
   }
 
@@ -116,12 +116,11 @@ export const deriveSubmitButtonState = (
         : MISSING_CLIENT_REASON
   }
 
-  let label: string = SUBMIT_LABELS.creating
-  if (isSaving) {
-    label = SUBMIT_LABELS.pending
-  } else if (isEditing) {
-    label = SUBMIT_LABELS.updating
-  }
+  const label = getSubmitLabel({
+    isSaving,
+    isEditing,
+    createLabel: 'Create invoice',
+  })
 
   return { disabled, reason, label }
 }

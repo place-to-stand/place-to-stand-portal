@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
 
 import { useToast } from '@/components/ui/use-toast'
 
@@ -25,7 +25,6 @@ export const useClientSheetState = ({
 }: UseClientSheetStateArgs): UseClientSheetStateReturn => {
   const isEditing = Boolean(client)
   const [feedback, setFeedback] = useState<string | null>(null)
-  const [isPending, startTransition] = useTransition()
   const { toast } = useToast()
 
   const formState = useClientSheetFormState({
@@ -37,16 +36,18 @@ export const useClientSheetState = ({
     clientContacts,
     allAdminUsers,
     isEditing,
-    isPending,
-    startTransition,
     setFeedback,
     toast,
   })
 
+  // The form state owns the save transition (it also owns the form and the
+  // close guard); deletion shares the same one so both read as one operation.
+  const { isSaving: isPending, startSave } = formState
+
   const deletionState = useClientDeletionState({
     client,
     isPending,
-    startTransition,
+    startTransition: startSave,
     setFeedback,
     onOpenChange,
     onComplete,

@@ -3,6 +3,7 @@ import { User } from 'lucide-react'
 
 import type { ClientRow, ProjectWithClient } from './project-sheet-form'
 import { PROJECT_SHEET_PENDING_REASON } from './project-sheet-contractors'
+import { getSubmitLabel } from '@/lib/forms/form-controls'
 
 export type SubmitButtonState = {
   disabled: boolean
@@ -86,12 +87,11 @@ export const deriveSubmitButtonState = (
         : null
   }
 
-  let label = 'Create project'
-  if (isPending) {
-    label = 'Saving...'
-  } else if (isEditing) {
-    label = 'Save changes'
-  }
+  const label = getSubmitLabel({
+    isSaving: isPending,
+    isEditing,
+    createLabel: 'Create project',
+  })
 
   return { disabled, reason, label }
 }

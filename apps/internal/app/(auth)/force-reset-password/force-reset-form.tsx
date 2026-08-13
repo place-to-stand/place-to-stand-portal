@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
+import { PENDING_REASON } from "@/lib/forms/form-controls";
 
 const formSchema = z
   .object({
@@ -41,7 +42,7 @@ type Props = {
   email?: string | null;
 };
 
-const pendingReason = "Please wait for the current request to finish.";
+const pendingReason = PENDING_REASON;
 
 export function PasswordResetForm({ redirectTo, email }: Props) {
   const router = useRouter();

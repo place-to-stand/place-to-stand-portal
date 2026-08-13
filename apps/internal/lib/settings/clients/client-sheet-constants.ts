@@ -1,4 +1,4 @@
-export const PENDING_REASON = 'Please wait for the current request to finish.'
+export { PENDING_REASON } from '@/lib/forms/form-controls'
 
 export const NO_AVAILABLE_CLIENT_USERS_MESSAGE =
   'All client-role users are already assigned.'

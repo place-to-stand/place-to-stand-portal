@@ -41,6 +41,7 @@ import type { ClientSheetFormValues } from '@/lib/settings/clients/client-sheet-
 import { ClientContactPicker } from './client-contact-picker'
 import { ClientCloserPicker } from './client-closer-picker'
 import { ClientOriginationPicker } from './client-origination-picker'
+import { getSubmitLabel } from '@/lib/forms/form-controls'
 
 const FEEDBACK_CLASSES =
   'border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm'
@@ -181,13 +182,15 @@ export function ClientSheetForm({
     historyKey,
   })
 
-  const saveLabel = useMemo(() => {
-    if (isPending) {
-      return 'Saving...'
-    }
-
-    return isEditing ? 'Save changes' : 'Create client'
-  }, [isEditing, isPending])
+  const saveLabel = useMemo(
+    () =>
+      getSubmitLabel({
+        isSaving: isPending,
+        isEditing,
+        createLabel: 'Create client',
+      }),
+    [isEditing, isPending]
+  )
 
   const firstFieldRef = useRef<HTMLInputElement>(null)
 

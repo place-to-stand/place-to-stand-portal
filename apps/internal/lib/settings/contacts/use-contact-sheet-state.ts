@@ -23,6 +23,7 @@ import {
 } from '@/app/(dashboard)/contacts/actions'
 import type { ContactsTableContact } from '@/lib/settings/contacts/use-contacts-table-state'
 import type { ContactClientOption } from '@/app/(dashboard)/contacts/_components/contact-sheet/contact-client-picker'
+import { PENDING_REASON } from '@/lib/forms/form-controls'
 
 export const contactFormSchema = z.object({
   email: z.string().email({ message: 'Valid email is required' }),
@@ -51,7 +52,7 @@ export type UseContactSheetStateOptions = {
   allClients?: ContactClientOption[]
 }
 
-const PENDING_REASON = 'Please wait for the current action to complete.'
+
 
 function hasMetrics(
   c: ContactsTableContact | ContactSheetInput | null | undefined

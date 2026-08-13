@@ -8,8 +8,9 @@ export type ContractorButtonState = {
   reason: string | null
 }
 
-export const PROJECT_SHEET_PENDING_REASON =
-  'Please wait for the current request to finish.'
+import { PENDING_REASON as PROJECT_SHEET_PENDING_REASON } from '@/lib/forms/form-controls'
+
+export { PROJECT_SHEET_PENDING_REASON }
 
 export const getContractorDisplayName = (user: ContractorUserSummary) =>
   user.fullName?.trim() || user.email

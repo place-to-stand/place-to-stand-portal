@@ -18,6 +18,7 @@ import { ProjectLifecycleDialogs } from '@/components/settings/projects/table/pr
 import { ProjectsTableSection } from '@/components/settings/projects/table/projects-table-section'
 import { type ContractorUserSummary } from '@/components/settings/projects/table/types'
 import { useProjectsSettingsController } from '@/components/settings/projects/table/use-projects-settings-controller'
+import { PENDING_REASON } from '@/lib/forms/form-controls'
 
 
 type ProjectsManagementSectionProps = {
@@ -79,7 +80,7 @@ export function ProjectsManagementSection({
     confirmDestroy,
   } = controller
 
-  const pendingReason = 'Please wait for the current request to finish.'
+  const pendingReason = PENDING_REASON
 
   const handlePaginate = (direction: 'forward' | 'backward') => {
     const cursorValue =

@@ -30,6 +30,7 @@ import {
   useProjectsBoardViewModel,
   type ProjectsBoardProps,
 } from './_hooks/use-projects-board-view-model'
+import { PENDING_REASON } from '@/lib/forms/form-controls'
 
 type ProjectsBoardComponentProps = ProjectsBoardProps & {
   adminUsers?: AdminUserForOwner[]
@@ -81,7 +82,7 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
     [activeProject]
   )
 
-  const pendingReason = 'Please wait for the current request to finish.'
+  const pendingReason = PENDING_REASON
 
   const handleEditProject = () => {
     if (!activeProjectForSheet || projectMutationPending) {

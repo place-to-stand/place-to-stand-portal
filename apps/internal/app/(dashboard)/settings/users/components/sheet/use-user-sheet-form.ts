@@ -3,8 +3,6 @@
 import { useCallback, useMemo, useState } from "react"
 import { useForm, useWatch, type UseFormReturn } from "react-hook-form"
 
-import { useUnsavedChangesWarning } from "@/lib/hooks/use-unsaved-changes-warning"
-
 import { deriveInitials } from "./derive-initials"
 import {
   createUserFormResolver,
@@ -24,12 +22,6 @@ export type UseUserSheetFormReturn = {
   avatarFieldKey: number
   avatarInitials: string
   avatarDisplayName: string | null
-  requestConfirmation: ReturnType<
-    typeof useUnsavedChangesWarning
-  >["requestConfirmation"]
-  unsavedChangesDialog: ReturnType<
-    typeof useUnsavedChangesWarning
-  >["dialog"]
 }
 
 export function useUserSheetForm({
@@ -79,18 +71,12 @@ export function useUserSheetForm({
   )
   const avatarDisplayName = watchedFullName || user?.full_name || null
 
-  const { requestConfirmation, dialog } = useUnsavedChangesWarning({
-    isDirty: form.formState.isDirty,
-  })
-
   return {
     form,
     resetFormState,
     avatarFieldKey,
     avatarInitials,
     avatarDisplayName,
-    requestConfirmation,
-    unsavedChangesDialog: dialog,
   }
 }
 
