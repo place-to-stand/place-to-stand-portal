@@ -162,7 +162,9 @@ const SheetContent = React.forwardRef<
           ref={ref}
           data-slot='sheet-content'
           className={cn(
-            'pointer-events-auto bg-background data-open:animate-in data-closed:animate-out data-closed:fill-mode-forwards fixed z-50 flex flex-col gap-4 shadow-lg transition ease-in-out data-closed:duration-300 data-open:duration-500',
+            // Open and close both 300ms: the open used to run at 500ms, which
+            // read as slower than the close it was paired with.
+            'pointer-events-auto bg-background data-open:animate-in data-closed:animate-out data-closed:fill-mode-forwards fixed z-50 flex flex-col gap-4 shadow-lg transition ease-in-out data-closed:duration-300 data-open:duration-300',
             skipMountAnimation && 'data-open:animate-none',
             side === 'right' &&
               'data-closed:slide-out-to-right data-open:slide-in-from-right inset-y-0 right-0 h-full w-3/4 border-l',
