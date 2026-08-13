@@ -352,3 +352,4 @@ the section files; that file is the definition of record.
 | --- | --- | --- | --- |
 | 2026-08-13 | — | PRD authored | Phase 1: 22 files scanned, 10 questions resolved, 0 repeat asks |
 | 2026-08-13 | — | Consistency check | 15 inconsistencies fixed; D17/D18 added; C11/W11 added; ARCHITECTURE-REVIEW.md split out of this file |
+| 2026-08-13 | — | Multi-reviewer pass (PR #141) | 9 findings applied → W18–W26, audits A7/A8, migration-edit policy corrected, I1 retracted. Two would have broken implementation (W18 My Tasks joins, W19 nested CHECK) |
