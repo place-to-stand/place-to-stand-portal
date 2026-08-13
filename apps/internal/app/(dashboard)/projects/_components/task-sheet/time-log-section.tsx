@@ -3,9 +3,11 @@
 import { format, parseISO } from 'date-fns'
 import { Clock, Plus } from 'lucide-react'
 
+import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Skeleton } from '@pts/ui/skeleton'
+import { getInitials } from '@/lib/users/initials'
 import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 
 import { TaskSheetEmptyState } from './task-sheet-empty-state'
@@ -91,14 +93,34 @@ export function TimeLogSection({
                 onClick={() => onEditEntry(entry)}
                 className='hover:bg-muted/50 flex w-full cursor-pointer items-center gap-3 px-3 py-2 text-left text-sm transition-colors'
               >
+                {/* Avatar instead of the logger's name: the row has one line
+                    for date, hours, person and note, and the note is the part
+                    that needs the room. It leads the row — same identity-first
+                    reading order as the comments thread above — with the name
+                    still reachable by hover and by AT. */}
+                <span className='shrink-0' title={resolveLoggerName(entry)}>
+                  <Avatar className='h-5 w-5'>
+                    {entry.user?.avatar_url ? (
+                      <AvatarImage
+                        src={`/api/storage/user-avatar/${entry.user.id}`}
+                        alt=''
+                      />
+                    ) : null}
+                    <AvatarFallback className='text-[9px]'>
+                      {getInitials(resolveLoggerName(entry))}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className='sr-only'>
+                    Logged by {resolveLoggerName(entry)}
+                  </span>
+                </span>
                 <span className='text-muted-foreground w-24 shrink-0 tabular-nums'>
                   {formatLoggedOn(entry.logged_on)}
                 </span>
-                <span className='w-14 shrink-0 font-medium tabular-nums'>
+                {/* Right-aligned so `0.5h` and `12.5h` line up down the column
+                    and the number sits flush against the note. */}
+                <span className='w-12 shrink-0 text-right font-medium tabular-nums'>
                   {entry.hours}h
-                </span>
-                <span className='text-muted-foreground shrink-0'>
-                  {resolveLoggerName(entry)}
                 </span>
                 {entry.note ? (
                   <span className='text-muted-foreground min-w-0 flex-1 truncate'>

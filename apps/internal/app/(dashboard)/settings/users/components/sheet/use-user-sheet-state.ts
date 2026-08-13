@@ -57,6 +57,10 @@ export const useUserSheetState = ({
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+  // Second transition on purpose: `isPending` means "a save or delete is in
+  // flight" (it drives the "Saving..." label and the disabled controls), so
+  // re-baselining the form on open/close must not set it.
+  const [, startResetTransition] = useTransition()
 
   const {
     form,
@@ -73,17 +77,17 @@ export const useUserSheetState = ({
       return
     }
 
-    startTransition(() => {
+    startResetTransition(() => {
       resetFormState()
       setFeedback(null)
     })
-  }, [open, resetFormState, startTransition])
+  }, [open, resetFormState, startResetTransition])
 
   const handleSheetOpenChange = useCallback(
     (nextOpen: boolean) => {
       if (!nextOpen) {
         requestConfirmation(() => {
-          startTransition(() => {
+          startResetTransition(() => {
             resetFormState()
             setFeedback(null)
           })
@@ -94,7 +98,7 @@ export const useUserSheetState = ({
 
       onOpenChange(nextOpen)
     },
-    [onOpenChange, requestConfirmation, resetFormState, startTransition]
+    [onOpenChange, requestConfirmation, resetFormState, startResetTransition]
   )
 
   const handleFormSubmit = useCallback(

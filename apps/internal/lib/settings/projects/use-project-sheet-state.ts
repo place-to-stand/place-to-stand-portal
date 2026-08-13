@@ -96,6 +96,10 @@ export function useProjectSheetState({
   const isEditing = Boolean(project)
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  // Second transition on purpose: `isPending` means "a save or delete is in
+  // flight" (it drives the "Saving..." label and the disabled controls), so
+  // re-baselining the form on open/close must not set it.
+  const [, startResetTransition] = useTransition()
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isReposDirty, setIsReposDirty] = useState(false)
   const { toast } = useToast()
@@ -158,16 +162,16 @@ export function useProjectSheetState({
       return
     }
 
-    startTransition(() => {
+    startResetTransition(() => {
       resetFormState()
     })
-  }, [open, resetFormState, startTransition])
+  }, [open, resetFormState, startResetTransition])
 
   const handleSheetOpenChange = useCallback(
     (next: boolean) => {
       if (!next) {
         confirmDiscard(() => {
-          startTransition(() => {
+          startResetTransition(() => {
             resetFormState()
           })
           onOpenChange(false)
@@ -177,7 +181,7 @@ export function useProjectSheetState({
 
       onOpenChange(next)
     },
-    [confirmDiscard, onOpenChange, resetFormState, startTransition]
+    [confirmDiscard, onOpenChange, resetFormState, startResetTransition]
   )
 
   const linkPendingRepos = useCallback(

@@ -1,6 +1,7 @@
 import { formatISO, parseISO } from 'date-fns'
 import { User } from 'lucide-react'
 
+import { isContentEmpty } from '@/components/ui/rich-text-editor/utils'
 import type {
   SearchableComboboxGroup,
   SearchableComboboxItem,
@@ -72,14 +73,7 @@ export const normalizeRichTextContent = (value: string | null | undefined) => {
     return null
   }
 
-  const stripped = value
-    .replace(/<br\s*\/?>(\s|&nbsp;|\u00a0)*/gi, ' ')
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-
-  if (stripped.length === 0) {
+  if (isContentEmpty(value)) {
     return null
   }
 

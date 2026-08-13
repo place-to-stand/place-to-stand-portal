@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
+import { richTextToPlainText } from '@/components/ui/rich-text-editor/utils'
 import { ENTITY_ACCENTS } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 import type { ProjectTypeValue, TaskWithRelations, WorkerStatusValue } from '@/lib/types'
@@ -67,18 +68,8 @@ const formatLoggedHours = (value: number) =>
     maximumFractionDigits: 2,
   })}h`
 
-const toPlainText = (value: string | null) => {
-  if (!value) {
-    return ''
-  }
-
-  return value
-    .replace(/<br\s*\/?>(\s|&nbsp;|\u00a0)*/gi, ' ')
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
+const toPlainText = (value: string | null) =>
+  value ? richTextToPlainText(value) : ''
 
 function CardContent({
   task,

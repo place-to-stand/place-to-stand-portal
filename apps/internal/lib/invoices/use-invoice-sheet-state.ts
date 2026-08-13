@@ -129,6 +129,13 @@ export function useInvoiceSheetState({
 
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  // Three transitions, three meanings. `isPending` is the save/delete — it is
+  // the only one allowed to render as "Saving...". `isLoading` is the
+  // open-time fetch of line items: it blocks submit (you can't save a
+  // half-loaded form) but isn't a save. The reset has no flag at all, because
+  // re-baselining the form is not something the user is waiting on.
+  const [isLoading, startLoadTransition] = useTransition()
+  const [, startResetTransition] = useTransition()
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const invoiceWithLineItemsRef = useRef<InvoiceWithLineItems | null>(null)
   // Track the client ID loaded from the database / pre-fill so we only
@@ -226,7 +233,7 @@ export function useInvoiceSheetState({
       // Mark the pre-filled client (if any) so auto-fill skips hydration
       loadedClientIdRef.current = (prefillData?.clientId ?? null)
 
-      startTransition(() => {
+      startResetTransition(() => {
         if (prefillData) {
           form.reset(prefillData)
           form.clearErrors()
@@ -247,8 +254,8 @@ export function useInvoiceSheetState({
     }
 
     // Edit mode — fetch full invoice with line items.
-    // React 19 async transitions keep isPending=true until resolved.
-    startTransition(async () => {
+    // React 19 async transitions keep the flag true until resolved.
+    startLoadTransition(async () => {
       try {
         const fullInvoice = await getInvoiceDetails(invoice.id)
         // Mark the loaded client so auto-fill skips hydration
@@ -347,10 +354,10 @@ export function useInvoiceSheetState({
     (next: boolean) => {
       if (!next) {
         confirmDiscard(() => {
-          startTransition(() => {
+          onOpenChange(false)
+          startResetTransition(() => {
             resetFormState(invoiceWithLineItemsRef.current)
           })
-          onOpenChange(false)
         })
         return
       }
@@ -361,7 +368,7 @@ export function useInvoiceSheetState({
       confirmDiscard,
       onOpenChange,
       resetFormState,
-      startTransition,
+      startResetTransition,
     ],
   )
 
@@ -620,14 +627,18 @@ export function useInvoiceSheetState({
   // Derived field states
   // ---------------------------------------------------------------------------
 
+  // Fields lock for either reason — a form that's still loading its line
+  // items shouldn't be editable any more than one mid-save.
+  const isBusy = isPending || isLoading
+
   const clientField: FieldState = useMemo(
-    () => deriveClientFieldState(isPending, clientOptions, invoiceStatus),
-    [clientOptions, invoiceStatus, isPending],
+    () => deriveClientFieldState(isBusy, clientOptions, invoiceStatus),
+    [clientOptions, invoiceStatus, isBusy],
   )
 
   const standardField: FieldState = useMemo(
-    () => deriveStandardFieldState(isPending, invoiceStatus),
-    [invoiceStatus, isPending],
+    () => deriveStandardFieldState(isBusy, invoiceStatus),
+    [invoiceStatus, isBusy],
   )
 
   const submitButton: SubmitButtonState = useMemo(
@@ -637,8 +648,9 @@ export function useInvoiceSheetState({
         isEditing,
         clientOptions,
         invoiceStatus,
+        isBusy,
       ),
-    [clientOptions, invoiceStatus, isEditing, isPending],
+    [clientOptions, invoiceStatus, isEditing, isPending, isBusy],
   )
 
   const deleteButton: DeleteButtonState = useMemo(

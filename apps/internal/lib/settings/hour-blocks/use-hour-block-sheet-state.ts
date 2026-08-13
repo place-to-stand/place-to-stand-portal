@@ -75,6 +75,10 @@ export function useHourBlockSheetState({
   const isEditing = Boolean(hourBlock)
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  // Second transition on purpose: `isPending` means "a save or delete is in
+  // flight" (it drives the "Saving..." label and the disabled controls), so
+  // re-baselining the form on open/close must not set it.
+  const [, startResetTransition] = useTransition()
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const { toast } = useToast()
 
@@ -108,10 +112,10 @@ export function useHourBlockSheetState({
       return
     }
 
-    startTransition(() => {
+    startResetTransition(() => {
       resetFormState()
     })
-  }, [open, resetFormState, startTransition])
+  }, [open, resetFormState, startResetTransition])
 
   const applyServerFieldErrors = useCallback(
     (fieldErrors?: Record<string, string[]>) => {
@@ -130,17 +134,17 @@ export function useHourBlockSheetState({
     (next: boolean) => {
       if (!next) {
         confirmDiscard(() => {
-          startTransition(() => {
+          onOpenChange(false)
+          startResetTransition(() => {
             resetFormState()
           })
-          onOpenChange(false)
         })
         return
       }
 
       onOpenChange(next)
     },
-    [confirmDiscard, onOpenChange, resetFormState, startTransition]
+    [confirmDiscard, onOpenChange, resetFormState, startResetTransition]
   )
 
   const handleSubmit = useCallback(

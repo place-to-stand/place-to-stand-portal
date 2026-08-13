@@ -68,7 +68,7 @@ export const useBoardSheetState = ({
   const previousSheetOpenRef = useRef<boolean>(Boolean(activeTaskId))
   // Raw `?task=` value: the server prop is uuid-guarded, so `new` (the
   // create-sheet convention) only reaches the client here.
-  const { get: getSheetParam } = useSheetParams()
+  const { get: getSheetParam, close: closeSheetParam } = useSheetParams()
   const isCreatingTask = getSheetParam('task') === NEW_SHEET_VALUE
 
   // Cold load of `?task=new` (shared link or refresh) must open the create
@@ -217,11 +217,12 @@ export const useBoardSheetState = ({
           startTransition(() => {
             setRouteTaskId(null)
             setPendingTaskId(null)
-            navigateToProject(projectIdForSheet, {
-              taskId: null,
-              replace: true,
-              view: currentView,
-            })
+            // Closing never leaves the current board, so this is the shared
+            // `close` (replace, scroll:false, other params preserved) rather
+            // than a board navigation. Opening still goes through
+            // `navigateToProject` — it can cross to another project's path,
+            // which the param helpers can't express.
+            closeSheetParam('task')
           })
         }
 
@@ -229,8 +230,7 @@ export const useBoardSheetState = ({
       }
     },
     [
-      currentView,
-      navigateToProject,
+      closeSheetParam,
       routeTaskId,
       selectedProjectId,
       sheetTask?.project_id,
