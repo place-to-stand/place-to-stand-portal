@@ -405,11 +405,15 @@ export function MyTasksPage({
   )
 
   const viewTabs = [
-    { value: 'board', label: 'Board', href: buildViewPath('board', activeTaskId) },
+    {
+      value: 'board',
+      label: 'Board',
+      href: buildViewPath('board', resolvedTaskId),
+    },
     {
       value: 'calendar',
       label: 'Calendar',
-      href: buildViewPath('calendar', activeTaskId),
+      href: buildViewPath('calendar', resolvedTaskId),
     },
   ]
 
@@ -456,7 +460,7 @@ export function MyTasksPage({
             getTaskCardOptions={getTaskCardOptions}
             onOpenTask={handleOpenTask}
             onReorder={handleReorder}
-            activeTaskId={activeTaskId}
+            activeTaskId={resolvedTaskId}
             scrollStorageKey={boardScrollStorageKey}
             onCreateTask={handleStartCreateTask}
             doneWeeks={doneWeeks}
@@ -472,7 +476,7 @@ export function MyTasksPage({
           taskLookup={taskLookup}
           renderAssignees={renderAssignees}
           onOpenTask={handleOpenTask}
-          activeTaskId={activeTaskId}
+          activeTaskId={resolvedTaskId}
           onDueDateChange={handleDueDateChange}
           onRefresh={handleCalendarRefresh}
           scrollStorageKey={calendarScrollStorageKey}
