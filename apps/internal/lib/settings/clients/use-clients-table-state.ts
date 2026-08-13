@@ -12,6 +12,7 @@ import {
 
 import type { ClientRow } from './client-sheet-utils'
 import { useClientSheetSelection } from './use-client-sheet-selection'
+import { PENDING_REASON } from '@/lib/forms/form-controls'
 
 export type ClientsTab = 'clients' | 'archive' | 'activity'
 
@@ -56,7 +57,7 @@ export function useClientsTableState({
   const [isPending, startTransition] = useTransition()
   const { toast } = useToast()
 
-  const pendingReason = 'Please wait for the current request to finish.'
+  const pendingReason = PENDING_REASON
 
   /**
    * The row is about to leave this tab — drop `?client=` first so the refresh

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useForm, type Resolver, type UseFormReturn } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
@@ -10,6 +10,7 @@ import {
 } from '@/app/(dashboard)/hour-blocks/actions'
 import { useToast } from '@/components/ui/use-toast'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
+import { useSheetLifecycle } from '@/lib/sheets/use-sheet-lifecycle'
 import {
   finishSettingsInteraction,
   startSettingsInteraction,
@@ -74,11 +75,6 @@ export function useHourBlockSheetState({
 }: UseHourBlockSheetStateArgs): UseHourBlockSheetStateReturn {
   const isEditing = Boolean(hourBlock)
   const [feedback, setFeedback] = useState<string | null>(null)
-  const [isPending, startTransition] = useTransition()
-  // Second transition on purpose: `isPending` means "a save or delete is in
-  // flight" (it drives the "Saving..." label and the disabled controls), so
-  // re-baselining the form on open/close must not set it.
-  const [, startResetTransition] = useTransition()
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const { toast } = useToast()
 
@@ -98,24 +94,24 @@ export function useHourBlockSheetState({
     defaultValues: buildHourBlockFormDefaults(hourBlock),
   })
 
-  const { requestConfirmation: confirmDiscard, dialog: unsavedChangesDialog } =
-    useUnsavedChangesWarning({ isDirty: form.formState.isDirty })
-
   const resetFormState = useCallback(() => {
     form.reset(buildHourBlockFormDefaults(hourBlock))
     form.clearErrors()
     setFeedback(null)
   }, [form, hourBlock])
 
-  useEffect(() => {
-    if (!open) {
-      return
-    }
-
-    startResetTransition(() => {
-      resetFormState()
-    })
-  }, [open, resetFormState, startResetTransition])
+  const {
+    isSaving: isPending,
+    startSave,
+    handleSheetOpenChange,
+    unsavedChangesDialog,
+  } = useSheetLifecycle({
+    open,
+    onOpenChange,
+    isDirty: form.formState.isDirty,
+    onReset: resetFormState,
+    resetKey: hourBlock?.id ?? null,
+  })
 
   const applyServerFieldErrors = useCallback(
     (fieldErrors?: Record<string, string[]>) => {
@@ -130,26 +126,9 @@ export function useHourBlockSheetState({
     [form]
   )
 
-  const handleSheetOpenChange = useCallback(
-    (next: boolean) => {
-      if (!next) {
-        confirmDiscard(() => {
-          onOpenChange(false)
-          startResetTransition(() => {
-            resetFormState()
-          })
-        })
-        return
-      }
-
-      onOpenChange(next)
-    },
-    [confirmDiscard, onOpenChange, resetFormState, startResetTransition]
-  )
-
   const handleSubmit = useCallback(
     (values: HourBlockFormValues) => {
-      startTransition(async () => {
+      startSave(async () => {
         setFeedback(null)
         form.clearErrors()
 
@@ -229,7 +208,7 @@ export function useHourBlockSheetState({
       onComplete,
       onOpenChange,
       resetFormState,
-      startTransition,
+      startSave,
       toast,
     ]
   )
@@ -256,7 +235,7 @@ export function useHourBlockSheetState({
     }
 
     setIsDeleteDialogOpen(false)
-    startTransition(async () => {
+    startSave(async () => {
       setFeedback(null)
       form.clearErrors()
       const interaction = startSettingsInteraction({
@@ -323,7 +302,7 @@ export function useHourBlockSheetState({
     isPending,
     onComplete,
     onOpenChange,
-    startTransition,
+    startSave,
     toast,
   ])
 

@@ -14,6 +14,7 @@ import type {
   ClientRow,
   HourBlockWithClient,
 } from '@/lib/settings/hour-blocks/hour-block-form'
+import { PENDING_REASON } from '@/lib/forms/form-controls'
 
 type UseHourBlocksTableStateArgs = {
   clients: ClientRow[]
@@ -26,7 +27,7 @@ type UseHourBlocksTableStateArgs = {
   deepLinkedHourBlock?: HourBlockWithClient | null
 }
 
-const pendingReason = 'Please wait for the current request to finish.'
+const pendingReason = PENDING_REASON
 
 export function useHourBlocksTableState({
   clients,

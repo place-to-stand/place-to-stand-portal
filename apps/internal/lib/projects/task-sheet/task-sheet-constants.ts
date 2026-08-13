@@ -24,4 +24,4 @@ export const UNASSIGNED_ASSIGNEE_VALUE = '__UNASSIGNED__'
 export const MANAGE_PERMISSION_REASON =
   'You need manage permissions to edit this task.'
 
-export const PENDING_REASON = 'Please wait for the current request to finish.'
+export { PENDING_REASON } from '@/lib/forms/form-controls'

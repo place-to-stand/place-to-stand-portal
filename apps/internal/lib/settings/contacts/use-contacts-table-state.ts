@@ -13,6 +13,7 @@ import type { LinkedClient } from '@/lib/queries/contacts'
 import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
 
 import type { ContactSheetInput } from './use-contact-sheet-state'
+import { PENDING_REASON } from '@/lib/forms/form-controls'
 
 export type ContactsTab = 'contacts' | 'archive' | 'activity'
 
@@ -85,7 +86,7 @@ export function useContactsTableState({
   const [isPending, startTransition] = useTransition()
   const { toast } = useToast()
 
-  const pendingReason = 'Please wait for the current request to finish.'
+  const pendingReason = PENDING_REASON
 
   const openEdit = (contact: ContactsTableContact) => {
     select(contact.id)

@@ -31,6 +31,7 @@ import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/use-toast'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import type { AppUser } from '@/lib/auth/session'
+import { PENDING_REASON } from '@/lib/forms/form-controls'
 
 function deriveInitials(fullName?: string | null, email?: string | null) {
   const trimmed = fullName?.trim()
@@ -82,7 +83,7 @@ type Props = {
   user: AppUser
 }
 
-const pendingReason = 'Please wait for the current request to finish.'
+const pendingReason = PENDING_REASON
 
 export function EditProfileDialog({ open, onOpenChange, user }: Props) {
   const router = useRouter()

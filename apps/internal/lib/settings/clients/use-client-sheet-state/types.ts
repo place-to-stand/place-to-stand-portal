@@ -52,6 +52,10 @@ export type UseClientSheetStateArgs = {
 
 export type BaseFormState = {
   form: UseFormReturn<ClientSheetFormValues>
+  /** A save is in flight — the only flag allowed to render as "Saving...". */
+  isSaving: boolean
+  /** The save transition, shared with the deletion state. */
+  startSave: TransitionStartFunction
   submitDisabled: boolean
   submitDisabledReason: string | null
   unsavedChangesDialog: UnsavedChangesDialog
@@ -107,8 +111,6 @@ export type DeletionState = {
 
 export type ClientSheetFormStateArgs = UseClientSheetStateArgs & {
   isEditing: boolean
-  isPending: boolean
-  startTransition: TransitionStartFunction
   setFeedback: (value: string | null) => void
   toast: ToastFn
   allContacts?: ClientContactOption[]

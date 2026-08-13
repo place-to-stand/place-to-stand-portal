@@ -1,13 +1,6 @@
 'use client'
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useTransition,
-} from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { UseFormReturn } from 'react-hook-form'
 
@@ -18,6 +11,7 @@ import type {
 } from '@/lib/types'
 import type { BoardColumnId } from '@/lib/projects/board/board-constants'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
+import { useSheetLifecycle } from '@/lib/sheets/use-sheet-lifecycle'
 import { useToast } from '@/components/ui/use-toast'
 
 import { removeTask, saveTask } from '@/app/(dashboard)/projects/actions'
@@ -113,12 +107,6 @@ export const useTaskSheetState = ({
   const router = useRouter()
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [isPending, startTransition] = useTransition()
-  // Deliberately a second transition: re-baselining the form is low-priority
-  // work that must NOT read as pending to the UI. `isPending` above means
-  // "a save or delete is in flight" — it drives the "Saving..." label and the
-  // disabled controls — so a reset on open/close can't be allowed to set it.
-  const [, startResetTransition] = useTransition()
   const { toast } = useToast()
   // Synchronous in-flight lock: `isPending` is render state, so two submits
   // in the same render window both observe it as false. This ref is checked
@@ -153,11 +141,6 @@ export const useTaskSheetState = ({
     toast,
   })
 
-  const { requestConfirmation: confirmDiscard, dialog: unsavedChangesDialog } =
-    useUnsavedChangesWarning({
-      isDirty: form.formState.isDirty || attachmentsDirty,
-    })
-
   const resetFormState = useCallback(
     (options?: { preservePending?: boolean }) => {
       form.reset(defaultValues)
@@ -168,53 +151,22 @@ export const useTaskSheetState = ({
     [defaultValues, form, resetAttachmentsState]
   )
 
-  // Consolidated re-baseline rule: the reset chain fires when the sheet
-  // opens, or when `task?.id` CHANGES while open (create→edit arrival,
-  // switching tasks) — never on same-id prop identity changes (e.g. the
-  // router.refresh() a time-log save triggers), which would wipe unsaved
-  // task-form edits. `undefined` marks "closed / not yet reset".
-  const lastResetTaskIdRef = useRef<string | null | undefined>(undefined)
-
-  useEffect(() => {
-    if (!open) {
-      lastResetTaskIdRef.current = undefined
-      return
-    }
-
-    const currentTaskId = task?.id ?? null
-
-    if (
-      lastResetTaskIdRef.current !== undefined &&
-      lastResetTaskIdRef.current === currentTaskId
-    ) {
-      return
-    }
-
-    lastResetTaskIdRef.current = currentTaskId
-    startResetTransition(() => {
-      resetFormState()
-    })
-  }, [open, task?.id, resetFormState, startResetTransition])
-
-  const handleSheetOpenChange = useCallback(
-    (next: boolean) => {
-      if (!next) {
-        confirmDiscard(() => {
-          // Close first, then re-baseline. The reset still has to run — it
-          // cleans up attachment uploads the user is discarding — but nothing
-          // about it needs to happen before the sheet starts moving.
-          onOpenChange(false)
-          startResetTransition(() => {
-            resetFormState()
-          })
-        })
-        return
-      }
-
-      onOpenChange(next)
-    },
-    [confirmDiscard, onOpenChange, resetFormState, startResetTransition]
-  )
+  // `resetKey` carries the re-baseline rule: reset on open, and when the task
+  // CHANGES while open (create→edit arrival, switching tasks) — never on a
+  // same-id prop identity change (e.g. the router.refresh() a time-log save
+  // triggers), which would wipe unsaved task-form edits.
+  const {
+    isSaving: isPending,
+    startSave,
+    handleSheetOpenChange,
+    unsavedChangesDialog,
+  } = useSheetLifecycle({
+    open,
+    onOpenChange,
+    isDirty: form.formState.isDirty || attachmentsDirty,
+    onReset: resetFormState,
+    resetKey: task?.id ?? null,
+  })
 
   const handleFormSubmit = useCallback(
     (values: TaskSheetFormValues) => {
@@ -224,7 +176,7 @@ export const useTaskSheetState = ({
 
       submitLockRef.current = true
 
-      startTransition(async () => {
+      startSave(async () => {
         try {
           setFeedback(null)
           const normalizedDescription = normalizeRichTextContent(
@@ -281,6 +233,7 @@ export const useTaskSheetState = ({
       canManage,
       onOpenChange,
       router,
+      startSave,
       resetFormState,
       task,
       toast,
@@ -309,7 +262,7 @@ export const useTaskSheetState = ({
     }
 
     setIsDeleteDialogOpen(false)
-    startTransition(async () => {
+    startSave(async () => {
       setFeedback(null)
       const result = await removeTask({ taskId: task.id })
 
@@ -327,7 +280,16 @@ export const useTaskSheetState = ({
       resetFormState()
       onOpenChange(false)
     })
-  }, [canManage, isPending, onOpenChange, resetFormState, router, task, toast])
+  }, [
+    canManage,
+    isPending,
+    onOpenChange,
+    resetFormState,
+    router,
+    startSave,
+    task,
+    toast,
+  ])
 
   const attachmentsDisabledReason = getDisabledReason(
     !canManage || isPending,

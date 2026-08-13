@@ -1,10 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  useTransition,
-} from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
@@ -13,7 +7,7 @@ import {
   getClientSheetContactData,
   syncClientContacts,
 } from '@/app/(dashboard)/clients/actions'
-import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
+import { useSheetLifecycle } from '@/lib/sheets/use-sheet-lifecycle'
 import {
   finishSettingsInteraction,
   startSettingsInteraction,
@@ -43,16 +37,9 @@ export function useClientSheetFormState({
   clientContacts: clientContactsProp,
   allAdminUsers: allAdminUsersProp,
   isEditing,
-  isPending,
-  startTransition,
   setFeedback,
   toast,
 }: ClientSheetFormStateArgs): BaseFormState {
-  // Separate from the caller's save transition on purpose: `isPending` means
-  // "a save is in flight" (it drives the "Saving..." label and the disabled
-  // controls), so re-baselining the form on open/close must not set it.
-  const [, startResetTransition] = useTransition()
-
   // Contact state
   const [isContactPickerOpen, setIsContactPickerOpen] = useState(false)
   const [fetchedAllContacts, setFetchedAllContacts] = useState<ClientContactOption[]>([])
@@ -170,6 +157,45 @@ export function useClientSheetFormState({
     return currentCloserId !== initialCloserUserId
   }, [selectedCloser, initialCloserUserId])
 
+  const resetFormState = useCallback(() => {
+    const defaults = {
+      name: client?.name ?? '',
+      slug: client?.slug ?? '',
+      billingType: client?.billing_type ?? 'prepaid',
+      billingEffective: 'next_month' as const,
+      state: client?.state ?? '',
+      website: client?.website ?? '',
+      notes: client?.notes ?? '',
+    }
+
+    form.reset(defaults)
+    setFeedback(null)
+    setOriginationError(null)
+    setCloserError(null)
+
+    // Reset pickers
+    setIsContactPickerOpen(false)
+    setIsOriginationUserPickerOpen(false)
+    setIsOriginationContactPickerOpen(false)
+    setIsCloserPickerOpen(false)
+  }, [client, form, setFeedback])
+
+  const hasUnsavedChanges =
+    form.formState.isDirty || contactsDirty || originationDirty || closerDirty
+
+  const {
+    isSaving: isPending,
+    startSave,
+    handleSheetOpenChange,
+    unsavedChangesDialog,
+  } = useSheetLifecycle({
+    open,
+    onOpenChange,
+    isDirty: hasUnsavedChanges,
+    onReset: resetFormState,
+    resetKey: client?.id ?? null,
+  })
+
   const contactsAddButtonDisabled = isPending || isLoadingContacts || availableContacts.length === 0
   const contactsAddButtonDisabledReason = contactsAddButtonDisabled
     ? isPending
@@ -196,43 +222,10 @@ export function useClientSheetFormState({
   const submitDisabled = isPending
   const submitDisabledReason = submitDisabled ? PENDING_REASON : null
 
-  const hasUnsavedChanges =
-    form.formState.isDirty || contactsDirty || originationDirty || closerDirty
-
-  const { requestConfirmation: confirmDiscard, dialog: unsavedChangesDialog } =
-    useUnsavedChangesWarning({ isDirty: hasUnsavedChanges })
-
-  const resetFormState = useCallback(() => {
-    const defaults = {
-      name: client?.name ?? '',
-      slug: client?.slug ?? '',
-      billingType: client?.billing_type ?? 'prepaid',
-      billingEffective: 'next_month' as const,
-      state: client?.state ?? '',
-      website: client?.website ?? '',
-      notes: client?.notes ?? '',
-    }
-
-    form.reset(defaults)
-    setFeedback(null)
-    setOriginationError(null)
-    setCloserError(null)
-
-    // Reset pickers
-    setIsContactPickerOpen(false)
-    setIsOriginationUserPickerOpen(false)
-    setIsOriginationContactPickerOpen(false)
-    setIsCloserPickerOpen(false)
-  }, [client, form, setFeedback])
-
   useEffect(() => {
     if (!open) {
       return
     }
-
-    startResetTransition(() => {
-      resetFormState()
-    })
 
     // Initialize contacts from props if provided
     // Intentional: Sync contact state with props when sheet opens
@@ -326,8 +319,6 @@ export function useClientSheetFormState({
     }
   }, [
     open,
-    resetFormState,
-    startResetTransition,
     client?.id,
     client?.origination_contact_id,
     client?.origination_user_id,
@@ -336,23 +327,6 @@ export function useClientSheetFormState({
     clientContactsProp,
     allAdminUsersProp,
   ])
-
-  const handleSheetOpenChange = useCallback(
-    (next: boolean) => {
-      if (!next) {
-        confirmDiscard(() => {
-          startResetTransition(() => {
-            resetFormState()
-          })
-          onOpenChange(false)
-        })
-        return
-      }
-
-      onOpenChange(next)
-    },
-    [confirmDiscard, onOpenChange, resetFormState, startResetTransition]
-  )
 
   // Contact handlers
   const handleContactPickerOpenChange = useCallback(
@@ -494,7 +468,7 @@ export function useClientSheetFormState({
       setOriginationError(null)
       setCloserError(null)
 
-      startTransition(async () => {
+      startSave(async () => {
         setFeedback(null)
 
         const payload = {
@@ -613,13 +587,15 @@ export function useClientSheetFormState({
       selectedOriginationContact,
       selectedOriginationUser,
       setFeedback,
-      startTransition,
+      startSave,
       toast,
     ]
   )
 
   return {
     form,
+    isSaving: isPending,
+    startSave,
     submitDisabled,
     submitDisabledReason,
     unsavedChangesDialog,

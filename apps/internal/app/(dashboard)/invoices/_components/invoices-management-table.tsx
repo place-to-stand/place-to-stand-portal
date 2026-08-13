@@ -26,6 +26,7 @@ import { sendInvoiceAction } from '../actions/send-invoice'
 import { InvoiceArchiveDialog } from './invoice-archive-dialog'
 import { InvoicesTableSection } from './invoices-table-section'
 import { InvoiceSheet } from '../invoice-sheet'
+import { PENDING_REASON } from '@/lib/forms/form-controls'
 
 type InvoicesManagementTableProps = {
   invoices: InvoiceWithClient[]
@@ -55,7 +56,7 @@ const EMPTY_MESSAGES = {
     'Archive is empty. Archived invoices appear here after deletion.',
 } as const
 
-const PENDING_REASON = 'Please wait for the current request to finish.'
+
 
 export function InvoicesManagementTable({
   invoices,

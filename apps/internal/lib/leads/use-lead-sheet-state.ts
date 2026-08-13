@@ -9,6 +9,7 @@ import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import { archiveLead, saveLead } from '@/app/(dashboard)/leads/actions'
+import { getSubmitLabel } from '@/lib/forms/form-controls'
 import {
   leadFormSchema,
   type LeadFormValues,
@@ -157,12 +158,10 @@ export function useLeadSheetState({
     }
   )
 
-  const saveLabel = useMemo(() => {
-    if (isSaving) {
-      return isEditing ? 'Saving...' : 'Creating...'
-    }
-    return isEditing ? 'Save changes' : 'Create lead'
-  }, [isEditing, isSaving])
+  const saveLabel = useMemo(
+    () => getSubmitLabel({ isSaving, isEditing, createLabel: 'Create lead' }),
+    [isEditing, isSaving]
+  )
 
   const submitDisabledReason = isSaving
     ? 'Saving lead...'

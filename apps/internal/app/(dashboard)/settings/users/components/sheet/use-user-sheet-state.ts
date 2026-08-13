@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useTransition } from 'react'
+import { useCallback, useState } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 
 import { PENDING_REASON, SELF_DISABLE_RESTRICTION } from './constants'
@@ -13,7 +13,11 @@ import {
   getRoleDisabledReason,
   getSubmitDisabledReason,
 } from './user-sheet-mutations'
-import { useUserSheetForm, type UseUserSheetFormReturn } from './use-user-sheet-form'
+import { useUserSheetForm } from './use-user-sheet-form'
+import {
+  useSheetLifecycle,
+  type SheetLifecycle,
+} from '@/lib/sheets/use-sheet-lifecycle'
 import type { UserSheetProps } from './types'
 
 export type UseUserSheetStateReturn = {
@@ -36,7 +40,7 @@ export type UseUserSheetStateReturn = {
   accessToggleDisabledReason: string | null
   isDeleteDialogOpen: boolean
   pendingReason: string
-  unsavedChangesDialog: UseUserSheetFormReturn['unsavedChangesDialog']
+  unsavedChangesDialog: SheetLifecycle['unsavedChangesDialog']
   handleSheetOpenChange: (open: boolean) => void
   handleFormSubmit: (values: UserFormValues) => void
   handleRequestDelete: () => void
@@ -56,50 +60,31 @@ export const useUserSheetState = ({
 
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [isPending, startTransition] = useTransition()
-  // Second transition on purpose: `isPending` means "a save or delete is in
-  // flight" (it drives the "Saving..." label and the disabled controls), so
-  // re-baselining the form on open/close must not set it.
-  const [, startResetTransition] = useTransition()
-
   const {
     form,
     resetFormState,
     avatarFieldKey,
     avatarInitials,
     avatarDisplayName,
-    requestConfirmation,
-    unsavedChangesDialog,
   } = useUserSheetForm({ user, isEditing })
 
-  useEffect(() => {
-    if (!open) {
-      return
-    }
+  const resetSheetState = useCallback(() => {
+    resetFormState()
+    setFeedback(null)
+  }, [resetFormState])
 
-    startResetTransition(() => {
-      resetFormState()
-      setFeedback(null)
-    })
-  }, [open, resetFormState, startResetTransition])
-
-  const handleSheetOpenChange = useCallback(
-    (nextOpen: boolean) => {
-      if (!nextOpen) {
-        requestConfirmation(() => {
-          startResetTransition(() => {
-            resetFormState()
-            setFeedback(null)
-          })
-          onOpenChange(false)
-        })
-        return
-      }
-
-      onOpenChange(nextOpen)
-    },
-    [onOpenChange, requestConfirmation, resetFormState, startResetTransition]
-  )
+  const {
+    isSaving: isPending,
+    startSave,
+    handleSheetOpenChange,
+    unsavedChangesDialog,
+  } = useSheetLifecycle({
+    open,
+    onOpenChange,
+    isDirty: form.formState.isDirty,
+    onReset: resetSheetState,
+    resetKey: user?.id ?? null,
+  })
 
   const handleFormSubmit = useCallback(
     (values: UserFormValues) => {
@@ -111,7 +96,7 @@ export const useUserSheetState = ({
         onClose: onOpenChange,
         resetFormState,
         setFeedback,
-        transition: startTransition,
+        transition: startSave,
       })
 
       submit(values)
@@ -122,6 +107,7 @@ export const useUserSheetState = ({
       onComplete,
       onOpenChange,
       resetFormState,
+      startSave,
       user,
     ]
   )
@@ -136,7 +122,7 @@ export const useUserSheetState = ({
         setIsDeleteDialogOpen,
         onClose: onOpenChange,
         onComplete,
-        transition: startTransition,
+        transition: startSave,
       })
 
       handler()
@@ -147,7 +133,7 @@ export const useUserSheetState = ({
       onComplete,
       onOpenChange,
       setFeedback,
-      startTransition,
+      startSave,
       user,
     ]
   )
@@ -174,7 +160,7 @@ export const useUserSheetState = ({
         setIsDeleteDialogOpen,
         onClose: onOpenChange,
         onComplete,
-        transition: startTransition,
+        transition: startSave,
       })
 
       handler()
@@ -184,7 +170,7 @@ export const useUserSheetState = ({
       isPending,
       onComplete,
       onOpenChange,
-      startTransition,
+      startSave,
       user,
     ]
   )

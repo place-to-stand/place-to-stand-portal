@@ -1,5 +1,6 @@
 import type { HourBlockWithClient } from './hour-block-form'
 import type { ClientOption } from './hour-block-options'
+import { PENDING_REASON, getSubmitLabel } from '@/lib/forms/form-controls'
 
 export type FieldState = {
   disabled: boolean
@@ -17,15 +18,10 @@ export type DeleteButtonState = {
   reason: string | null
 }
 
-export const PENDING_REASON = 'Please wait for the current request to finish.'
+
+export { PENDING_REASON }
 export const MISSING_CLIENT_REASON =
   'Create a client before logging hour blocks.'
-
-const SUBMIT_LABELS = {
-  creating: 'Create hour block',
-  updating: 'Save changes',
-  pending: 'Saving...',
-} as const
 
 export const deriveClientFieldState = (
   isPending: boolean,
@@ -65,12 +61,11 @@ export const deriveSubmitButtonState = (
         : MISSING_CLIENT_REASON
   }
 
-  let label: string = SUBMIT_LABELS.creating
-  if (isPending) {
-    label = SUBMIT_LABELS.pending
-  } else if (isEditing) {
-    label = SUBMIT_LABELS.updating
-  }
+  const label = getSubmitLabel({
+    isSaving: isPending,
+    isEditing,
+    createLabel: 'Create hour block',
+  })
 
   return { disabled, reason, label }
 }

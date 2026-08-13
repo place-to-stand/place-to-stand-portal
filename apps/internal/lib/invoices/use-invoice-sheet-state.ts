@@ -24,7 +24,10 @@ import {
   archiveInvoice,
 } from '@/app/(dashboard)/invoices/actions'
 import { useToast } from '@/components/ui/use-toast'
-import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
+import {
+  useSheetLifecycle,
+  type SheetLifecycle,
+} from '@/lib/sheets/use-sheet-lifecycle'
 import {
   finishSettingsInteraction,
   startSettingsInteraction,
@@ -95,7 +98,7 @@ export type UseInvoiceSheetStateReturn = {
   submitButton: SubmitButtonState
   deleteButton: DeleteButtonState
   isDeleteDialogOpen: boolean
-  unsavedChangesDialog: ReturnType<typeof useUnsavedChangesWarning>['dialog']
+  unsavedChangesDialog: SheetLifecycle['unsavedChangesDialog']
   totals: { subtotal: number; taxAmount: number; total: number }
   taxRateLabel: string | null
   handleSheetOpenChange: (open: boolean) => void
@@ -128,14 +131,11 @@ export function useInvoiceSheetState({
   const readOnly = !isInvoiceEditable(invoiceStatus)
 
   const [feedback, setFeedback] = useState<string | null>(null)
-  const [isPending, startTransition] = useTransition()
-  // Three transitions, three meanings. `isPending` is the save/delete — it is
-  // the only one allowed to render as "Saving...". `isLoading` is the
-  // open-time fetch of line items: it blocks submit (you can't save a
-  // half-loaded form) but isn't a save. The reset has no flag at all, because
-  // re-baselining the form is not something the user is waiting on.
+  // `isLoading` is the open-time fetch of line items: it blocks submit (you
+  // can't save a half-loaded form) but is not a save, so it never reaches the
+  // button label. The save transition and the quiet one come from
+  // useSheetLifecycle.
   const [isLoading, startLoadTransition] = useTransition()
-  const [, startResetTransition] = useTransition()
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const invoiceWithLineItemsRef = useRef<InvoiceWithLineItems | null>(null)
   // Track the client ID loaded from the database / pre-fill so we only
@@ -167,8 +167,34 @@ export function useInvoiceSheetState({
     name: 'lineItems',
   })
 
-  const { requestConfirmation: confirmDiscard, dialog: unsavedChangesDialog } =
-    useUnsavedChangesWarning({ isDirty: form.formState.isDirty })
+  const resetFormState = useCallback(
+    (data: InvoiceWithLineItems | null) => {
+      form.reset(buildInvoiceFormDefaults(data))
+      form.clearErrors()
+      setFeedback(null)
+    },
+    [form],
+  )
+
+  const resetToLoadedInvoice = useCallback(() => {
+    resetFormState(invoiceWithLineItemsRef.current)
+  }, [resetFormState])
+
+  const {
+    isSaving: isPending,
+    startSave,
+    startQuiet: startResetTransition,
+    handleSheetOpenChange,
+    unsavedChangesDialog,
+  } = useSheetLifecycle({
+    open,
+    onOpenChange,
+    isDirty: form.formState.isDirty,
+    onReset: resetToLoadedInvoice,
+    // The open path builds its own state (prefill, catalog defaults, or the
+    // line-item fetch below), so the hook only handles the post-close reset.
+    resetOnOpen: false,
+  })
 
   // ---------------------------------------------------------------------------
   // Live totals computation via useWatch
@@ -196,15 +222,6 @@ export function useInvoiceSheetState({
   // ---------------------------------------------------------------------------
   // Reset and load
   // ---------------------------------------------------------------------------
-
-  const resetFormState = useCallback(
-    (data: InvoiceWithLineItems | null) => {
-      form.reset(buildInvoiceFormDefaults(data))
-      form.clearErrors()
-      setFeedback(null)
-    },
-    [form],
-  )
 
   useEffect(() => {
     if (!open) {
@@ -266,7 +283,15 @@ export function useInvoiceSheetState({
         setFeedback('Unable to load invoice details.')
       }
     })
-  }, [open, invoice, form, resetFormState, productCatalog, startTransition])
+  }, [
+    open,
+    invoice,
+    form,
+    resetFormState,
+    productCatalog,
+    startLoadTransition,
+    startResetTransition,
+  ])
 
   // ---------------------------------------------------------------------------
   // Auto-fill: due date + tax rate based on selected client
@@ -350,27 +375,6 @@ export function useInvoiceSheetState({
   // Sheet open/close
   // ---------------------------------------------------------------------------
 
-  const handleSheetOpenChange = useCallback(
-    (next: boolean) => {
-      if (!next) {
-        confirmDiscard(() => {
-          onOpenChange(false)
-          startResetTransition(() => {
-            resetFormState(invoiceWithLineItemsRef.current)
-          })
-        })
-        return
-      }
-
-      onOpenChange(next)
-    },
-    [
-      confirmDiscard,
-      onOpenChange,
-      resetFormState,
-      startResetTransition,
-    ],
-  )
 
   // ---------------------------------------------------------------------------
   // Submit
@@ -380,7 +384,7 @@ export function useInvoiceSheetState({
     (values: InvoiceFormValues) => {
       if (readOnly) return
 
-      startTransition(async () => {
+      startSave(async () => {
         setFeedback(null)
         form.clearErrors()
 
@@ -458,7 +462,7 @@ export function useInvoiceSheetState({
       onOpenChange,
       readOnly,
       resetFormState,
-      startTransition,
+      startSave,
       toast,
     ],
   )
@@ -486,7 +490,7 @@ export function useInvoiceSheetState({
     }
 
     setIsDeleteDialogOpen(false)
-    startTransition(async () => {
+    startSave(async () => {
       setFeedback(null)
       form.clearErrors()
 
@@ -554,7 +558,7 @@ export function useInvoiceSheetState({
     isPending,
     onComplete,
     onOpenChange,
-    startTransition,
+    startSave,
     toast,
   ])
 
