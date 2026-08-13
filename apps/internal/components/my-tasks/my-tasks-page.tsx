@@ -76,6 +76,7 @@ export function MyTasksPage({
   // uuid-guarded, so `new` only shows up here.
   const {
     selectedValue: taskParam,
+    selectedId: selectedTaskId,
     isCreating: isCreatingTask,
     isOpen: isSheetOpen,
     select: selectTask,
@@ -288,8 +289,14 @@ export function MyTasksPage({
   )
 
 
-  const activeTaskMeta = activeTaskId
-    ? (taskLookup.get(activeTaskId) ?? null)
+  // Resolve from the LOCAL selection, not the server's `activeTaskId`. The
+  // board already holds every loaded task client-side, so this lands in the
+  // same render as the open — whereas `activeTaskId` only updates when the
+  // route transition commits, which opened the sheet on an empty form and
+  // filled it ~230ms later, after the slide-in had finished.
+  const resolvedTaskId = selectedTaskId ?? activeTaskId
+  const activeTaskMeta = resolvedTaskId
+    ? (taskLookup.get(resolvedTaskId) ?? null)
     : null
   const editingTaskMeta = isCreatingTask ? null : activeTaskMeta
   const shouldKeepTaskSheetMounted = Boolean(
