@@ -7,6 +7,10 @@ const schema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.url(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
   APP_BASE_URL: z.url().optional(),
+  // Full URL of the internal portal (e.g. https://portal.placetostand.co). The
+  // mirror of CLIENT_PORTAL_URL in the internal app. Used to hand off to the
+  // shared invoice page, which is where invoice payment lives.
+  INTERNAL_PORTAL_URL: z.url(),
   // Optional so local development — which routes mail to Mailpit and needs no
   // Resend credentials — boots without them, and so the unrelated GitHub routes
   // that share this schema don't start failing on a missing mail key. The email
@@ -31,6 +35,7 @@ function getServerEnv() {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     APP_BASE_URL: emptyToUndefined(process.env.APP_BASE_URL),
+    INTERNAL_PORTAL_URL: process.env.INTERNAL_PORTAL_URL,
     RESEND_API_KEY: emptyToUndefined(process.env.RESEND_API_KEY),
     RESEND_FROM_EMAIL: emptyToUndefined(process.env.RESEND_FROM_EMAIL),
     RESEND_REPLY_TO_EMAIL: emptyToUndefined(process.env.RESEND_REPLY_TO_EMAIL),
