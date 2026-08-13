@@ -3,16 +3,18 @@ import type { Metadata } from 'next'
 import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { requireUser } from '@/lib/auth/session'
-import { fetchClientsWithMetrics, type ClientWithMetrics } from '@/lib/data/clients'
+import { fetchClientsWithMetrics } from '@/lib/data/clients'
 import { listClientsForSettings } from '@/lib/queries/clients'
-import { parseClientsSearchParams } from '@/lib/settings/clients/filters'
-import type { ParsedSort } from '@/lib/pagination/sort'
-import type { ClientSortField } from '@/lib/settings/clients/filters'
+import {
+  parseClientsLandingSort,
+  parseClientsSearchParams,
+} from '@/lib/settings/clients/filters'
 
 import { ClientsLanding } from './_components/clients-landing'
 import { ClientsAddButton } from './_components/clients-add-button'
 import { ClientsFilters } from './_components/clients-filters'
 import { resolveClientDeepLink } from './_lib/client-deep-link'
+import { sortLandingClients } from './_lib/sort-landing-clients'
 import { CLIENTS_TABS } from './_lib/tabs'
 
 export const metadata: Metadata = {
@@ -23,29 +25,14 @@ type ClientsPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 }
 
-/**
- * The landing table is unpaginated (fetchClientsWithMetrics), so sorting is
- * a plain in-memory sort of the fetched array (PRD 004 §03 — no keyset
- * cursor concerns on this view).
- */
-function sortLandingClients(
-  clients: ClientWithMetrics[],
-  sort: ParsedSort<ClientSortField>
-): ClientWithMetrics[] {
-  const factor = sort.direction === 'asc' ? 1 : -1
-  return [...clients].sort((a, b) => {
-    if (sort.field === 'created') {
-      return a.createdAt.localeCompare(b.createdAt) * factor
-    }
-    return a.name.localeCompare(b.name) * factor
-  })
-}
-
 export default async function ClientsPage({ searchParams }: ClientsPageProps) {
   const user = await requireUser()
   const params = searchParams ? await searchParams : {}
   const { cursor, direction, limit, billing, search, sort } =
     parseClientsSearchParams(params)
+  // `sort` above stays keyset-safe for the paginated query below; the landing
+  // table sorts in memory and accepts the wider metric-backed allowlist.
+  const landingSort = parseClientsLandingSort(params)
 
   // Share links: `?client=<id>` opens the edit sheet even when the filtered
   // landing list doesn't contain that row (redirects to the archive tab when
@@ -70,7 +57,7 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
     }),
   ])
 
-  const sortedClients = sortLandingClients(clients, sort)
+  const sortedClients = sortLandingClients(clients, landingSort)
 
   return (
     <PageShell

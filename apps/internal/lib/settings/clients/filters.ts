@@ -24,6 +24,24 @@ export function isClientBilling(
 export const CLIENT_SORT_FIELDS = ['name', 'created'] as const
 export type ClientSortField = (typeof CLIENT_SORT_FIELDS)[number]
 
+/**
+ * Landing-table allowlist. The landing view is unpaginated, so it sorts the
+ * fetched array in memory and can order by computed metrics (active project
+ * count, remaining hours, joined partner names) that have no SQL descriptor.
+ * Those fields live HERE only — `CLIENT_SORT_FIELDS` stays the keyset-safe
+ * set the archive query resolves against `CLIENT_SORT_DESCRIPTORS`.
+ */
+export const CLIENT_LANDING_SORT_FIELDS = [
+  ...CLIENT_SORT_FIELDS,
+  'billing',
+  'projects',
+  'hours',
+  'origination',
+  'closer',
+] as const
+export type ClientLandingSortField =
+  (typeof CLIENT_LANDING_SORT_FIELDS)[number]
+
 export const DEFAULT_CLIENTS_SORT = {
   field: 'name',
   direction: 'asc',
@@ -33,6 +51,14 @@ export function isClientSortValue(value: string): boolean {
   const [field, direction] = value.split(':')
   return (
     (CLIENT_SORT_FIELDS as readonly string[]).includes(field) &&
+    (direction === 'asc' || direction === 'desc')
+  )
+}
+
+export function isClientLandingSortValue(value: string): boolean {
+  const [field, direction] = value.split(':')
+  return (
+    (CLIENT_LANDING_SORT_FIELDS as readonly string[]).includes(field) &&
     (direction === 'asc' || direction === 'desc')
   )
 }
@@ -86,4 +112,20 @@ export function parseClientsSearchParams(
     search: searchParam || undefined,
     sort,
   }
+}
+
+/**
+ * Resolve `?sort=` against the wider landing allowlist. Read alongside
+ * `parseClientsSearchParams` on the landing page: that call keeps returning
+ * the keyset-safe sort for the paginated query (a landing-only field falls
+ * back to the default there), while this one drives the in-memory sort.
+ */
+export function parseClientsLandingSort(
+  params: RawSearchParams
+): ParsedSort<ClientLandingSortField> {
+  return parseSortParam(
+    firstParam(params.sort),
+    CLIENT_LANDING_SORT_FIELDS,
+    DEFAULT_CLIENTS_SORT
+  )
 }

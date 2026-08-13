@@ -21,7 +21,7 @@ import { useListParams } from '@/hooks/use-list-params'
 import type { ClientWithMetrics } from '@/lib/data/clients'
 import { getBillingTypeOption } from '@/lib/settings/clients/billing-types'
 import type { ClientRow } from '@/lib/settings/clients/client-sheet-utils'
-import { isClientSortValue } from '@/lib/settings/clients/filters'
+import { isClientLandingSortValue } from '@/lib/settings/clients/filters'
 import { useClientSheetSelection } from '@/lib/settings/clients/use-client-sheet-selection'
 import { cn } from '@/lib/utils'
 import {
@@ -70,7 +70,8 @@ export function ClientsLanding({
     resetKeys: ['cursor', 'dir'],
   })
   const rawSort = getParam('sort')
-  const sort = rawSort && isClientSortValue(rawSort) ? rawSort : undefined
+  const sort =
+    rawSort && isClientLandingSortValue(rawSort) ? rawSort : undefined
   // Guard-validated active search (R4): an empty list under a live `?q=`
   // shows the filtered message, not the default empty state.
   const hasActiveFilter = Boolean(getParam('q')?.trim())
@@ -149,11 +150,52 @@ export function ClientsLanding({
               >
                 Client
               </SortableTableHead>
-              <TableHead>Billing</TableHead>
-              <TableHead>Projects</TableHead>
-              <TableHead>Hours</TableHead>
-              <TableHead className='w-24 text-center'>Origination</TableHead>
-              <TableHead className='w-20 text-center'>Closer</TableHead>
+              <SortableTableHead
+                field='billing'
+                sort={sort}
+                defaultSort='name:asc'
+                onSortChange={next => update({ sort: next })}
+              >
+                Billing
+              </SortableTableHead>
+              {/* Ordered by active project count — the number the cell leads with. */}
+              <SortableTableHead
+                field='projects'
+                sort={sort}
+                defaultSort='name:asc'
+                onSortChange={next => update({ sort: next })}
+              >
+                Projects
+              </SortableTableHead>
+              {/* Ordered by hours remaining; net_30 rows have none and sort last. */}
+              <SortableTableHead
+                field='hours'
+                sort={sort}
+                defaultSort='name:asc'
+                onSortChange={next => update({ sort: next })}
+              >
+                Hours
+              </SortableTableHead>
+              <SortableTableHead
+                field='origination'
+                sort={sort}
+                defaultSort='name:asc'
+                onSortChange={next => update({ sort: next })}
+                align='center'
+                className='w-24'
+              >
+                Origination
+              </SortableTableHead>
+              <SortableTableHead
+                field='closer'
+                sort={sort}
+                defaultSort='name:asc'
+                onSortChange={next => update({ sort: next })}
+                align='center'
+                className='w-20'
+              >
+                Closer
+              </SortableTableHead>
               <TableHead className='w-16 text-center'>Links</TableHead>
             </TableRow>
           </TableHeader>
