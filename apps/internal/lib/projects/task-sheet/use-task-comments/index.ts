@@ -20,8 +20,15 @@ import type { TaskCommentWithAuthor } from '@/lib/types'
 export function useTaskComments(
   options: UseTaskCommentsOptions
 ): UseTaskCommentsState {
-  const { taskId, projectId, currentUserId, canComment, taskTitle, clientId } =
-    options
+  const {
+    taskId,
+    projectId,
+    currentUserId,
+    currentUserName,
+    canComment,
+    taskTitle,
+    clientId,
+  } = options
 
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -51,10 +58,18 @@ export function useTaskComments(
     pageSize: 20,
   })
 
-  const flattenedComments = useMemo(
-    () => data?.pages?.flatMap(page => page.items) ?? [],
-    [data?.pages]
-  )
+  /**
+   * The keyset query is newest-first (page 1 = the 20 most recent, page 2 the
+   * 20 before that), which is what pagination needs — but the thread renders
+   * chronologically, so the newest comment sits at the bottom next to the
+   * composer. Reversing the FLATTENED list (not each page) keeps that correct
+   * across pages: every older page lands above the ones already shown.
+   */
+  const flattenedComments = useMemo(() => {
+    // flatMap returns a fresh array, so reversing in place can't mutate the
+    // React Query cache.
+    return (data?.pages?.flatMap(page => page.items) ?? []).reverse()
+  }, [data?.pages])
 
   const loadMore = useCallback(() => {
     if (!hasNextPage) {
@@ -68,13 +83,19 @@ export function useTaskComments(
     projectId,
     clientId: clientId ?? null,
     currentUserId,
+    currentUserName,
     taskTitle,
     queryKey: commentsQueryKey,
     queryClient,
     router,
     toast,
-    onSuccess: () => {
+    // The composer empties the moment the optimistic row appears, not after
+    // the round-trip — and the draft comes back if the post fails.
+    onOptimisticInsert: () => {
       setDraft('')
+    },
+    onRollback: body => {
+      setDraft(body)
     },
   })
 

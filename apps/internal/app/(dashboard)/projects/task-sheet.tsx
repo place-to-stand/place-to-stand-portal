@@ -115,6 +115,16 @@ export function TaskSheet(props: TaskSheetProps) {
     currentUserId: props.currentUserId,
   })
 
+  // The assignee list already carries every internal user by id, so it doubles
+  // as the lookup for the current user's display name — no extra plumbing for
+  // the optimistic comment byline.
+  const currentUserName = useMemo(
+    () =>
+      assigneeItems.find(item => item.value === props.currentUserId)?.label ??
+      null,
+    [assigneeItems, props.currentUserId]
+  )
+
   const [isDragActive, setIsDragActive] = useState(false)
   // Frozen at mount: skip the slide-in only when this instance mounts
   // already-open right after a page swap that also had the sheet open.
@@ -372,7 +382,9 @@ export function TaskSheet(props: TaskSheetProps) {
             <div className='flex h-full w-full flex-col sm:w-[672px] sm:shrink-0'>
               {/* Scrollable area */}
               <div
-                className='flex flex-1 flex-col gap-6 overflow-y-auto pb-4 pt-6'
+                // pb-6 matches the px-6 the sections inside use, so the gap
+                // under the last element reads the same as the side margins.
+                className='flex flex-1 flex-col gap-6 overflow-y-auto pb-6 pt-6'
                 onDragEnter={handleDragEnter}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
@@ -412,24 +424,29 @@ export function TaskSheet(props: TaskSheetProps) {
                     onEditEntry={handleEditTimeLogEntry}
                   />
                 ) : null}
+                {/* pt-6 rides on top of the column's gap-6, setting the tab
+                    group apart from the time-log section above it. */}
                 {props.task && taskPanelProjectId ? (
-                  <div className='px-6'>
+                  <div className='px-6 pt-6'>
                     <Tabs defaultValue='comments' className='w-full'>
                       <TabsList className='grid w-full grid-cols-2'>
                         <TabsTrigger value='comments'>Comments</TabsTrigger>
                         <TabsTrigger value='activity'>Activity</TabsTrigger>
                       </TabsList>
-                      <TabsContent value='comments' className='mt-6'>
+                      {/* mt-2 lands on 16px in total — the Tabs root is
+                          flex gap-2, and that 8px stacks on this margin. */}
+                      <TabsContent value='comments' className='mt-2'>
                         <TaskCommentsPanel
                           taskId={props.task.id}
                           projectId={taskPanelProjectId}
                           currentUserId={props.currentUserId}
+                          currentUserName={currentUserName}
                           canComment
                           taskTitle={props.task.title}
                           clientId={taskPanelClientId}
                         />
                       </TabsContent>
-                      <TabsContent value='activity' className='mt-6'>
+                      <TabsContent value='activity' className='mt-2'>
                         <TaskActivityPanel
                           taskId={props.task.id}
                           projectId={taskPanelProjectId}

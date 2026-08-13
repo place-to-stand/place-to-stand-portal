@@ -6,11 +6,13 @@ import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 
 import { useTaskComments } from '@/lib/projects/task-sheet/use-task-comments'
+import { isOptimisticComment } from '@/lib/projects/task-sheet/use-task-comments/mutations'
+
+import { TaskSheetEmptyState } from '../task-sheet-empty-state'
 
 import {
   TaskCommentComposer,
   TaskCommentItem,
-  TaskCommentsEmptyState,
   TaskCommentsErrorState,
   TaskCommentsPanelShell,
 } from './task-comments-components'
@@ -19,6 +21,8 @@ export type TaskCommentsPanelProps = {
   taskId: string | null
   projectId: string
   currentUserId: string
+  /** Byline for the optimistic comment until the refetch replaces it. */
+  currentUserName?: string | null
   canComment: boolean
   taskTitle?: string | null
   clientId?: string | null
@@ -29,18 +33,15 @@ export function TaskCommentsPanel(props: TaskCommentsPanelProps) {
 
   if (!state.taskId) {
     return (
-      <TaskCommentsPanelShell
-        title='Comments'
-        description='Save the task to start a threaded conversation with collaborators.'
-      >
-        <TaskCommentsEmptyState message='Comments activate after the task is created.' />
+      <TaskCommentsPanelShell description='Save the task to start a threaded conversation with collaborators.'>
+        <TaskSheetEmptyState message='Comments activate after the task is created.' />
       </TaskCommentsPanelShell>
     )
   }
 
   return (
     <>
-      <h3 className='mb-4 text-base font-semibold'>Comments</h3>
+      {/* No heading here — the enclosing tab is already labelled "Comments". */}
       {state.isLoading ? (
         <div className='text-muted-foreground flex items-center gap-2 text-sm'>
           <Loader2 className='h-4 w-4 animate-spin' /> Loading comments…
@@ -49,17 +50,26 @@ export function TaskCommentsPanel(props: TaskCommentsPanelProps) {
         <TaskCommentsErrorState onRetry={state.refresh} />
       ) : (
         <div className='space-y-4'>
-          <TaskCommentComposer
-            value={state.composer.value}
-            onChange={state.composer.onChange}
-            onSubmit={state.composer.submit}
-            disabled={state.composer.disabled}
-            pending={state.composer.isSubmitting}
-            canComment={state.composer.canComment}
-          />
           <div className='space-y-4'>
             {state.comments.length > 0 ? (
               <>
+                {/* Older comments load in above the thread, so the control
+                    sits at the top where they'll appear. */}
+                {state.pagination.hasNextPage ? (
+                  <div className='flex justify-center'>
+                    <Button
+                      type='button'
+                      variant='ghost'
+                      size='sm'
+                      onClick={state.pagination.loadMore}
+                      disabled={state.pagination.isFetchingNextPage}
+                    >
+                      {state.pagination.isFetchingNextPage
+                        ? 'Loading…'
+                        : 'Load older comments'}
+                    </Button>
+                  </div>
+                ) : null}
                 {state.comments.map(comment => (
                   <TaskCommentItem
                     key={comment.id}
@@ -76,29 +86,28 @@ export function TaskCommentsPanel(props: TaskCommentsPanelProps) {
                     onCancelEdit={state.editing.cancel}
                     onConfirmEdit={state.editing.confirm}
                     onRequestDelete={state.deletion.request}
-                    disableActions={state.isMutating}
+                    // The optimistic row's id isn't a real comment yet, so it
+                    // stays inert until the refetch swaps in the saved one.
+                    disableActions={
+                      state.isMutating || isOptimisticComment(comment.id)
+                    }
                   />
                 ))}
-                {state.pagination.hasNextPage ? (
-                  <div className='flex justify-center'>
-                    <Button
-                      type='button'
-                      variant='ghost'
-                      size='sm'
-                      onClick={state.pagination.loadMore}
-                      disabled={state.pagination.isFetchingNextPage}
-                    >
-                      {state.pagination.isFetchingNextPage
-                        ? 'Loading…'
-                        : 'Load older comments'}
-                    </Button>
-                  </div>
-                ) : null}
               </>
             ) : (
-              <TaskCommentsEmptyState message='No comments yet. Be the first to share an update.' />
+              <TaskSheetEmptyState message='No comments yet. Be the first to share an update.' />
             )}
           </div>
+          {/* Composer sits below the thread, directly under the newest
+              comment — a posted comment lands immediately above it. */}
+          <TaskCommentComposer
+            value={state.composer.value}
+            onChange={state.composer.onChange}
+            onSubmit={state.composer.submit}
+            disabled={state.composer.disabled}
+            pending={state.composer.isSubmitting}
+            canComment={state.composer.canComment}
+          />
         </div>
       )}
       <ConfirmDialog

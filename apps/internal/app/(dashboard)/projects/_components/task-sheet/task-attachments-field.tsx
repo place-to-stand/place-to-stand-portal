@@ -165,14 +165,18 @@ export function TaskAttachmentsField({
 
   const dropzoneClasses = clsx(
     'border-border/60 bg-muted/40 relative flex items-center justify-center gap-2 rounded-md border-2 border-dashed p-6 text-sm text-muted-foreground transition w-full',
-    disabled ? 'opacity-60' : 'hover:border-primary',
+    disabled ? 'opacity-60' : 'hover:border-primary cursor-pointer',
     isDragActive ? 'border-primary bg-primary/5 text-primary' : null
   )
 
   return (
     <div className='space-y-1'>
       <div className='flex items-center justify-between gap-3'>
-        <h3 className='text-sm font-medium'>Attachments</h3>
+        {/* Icon + heading mirrors the time-log section header. */}
+        <div className='flex items-center gap-2'>
+          <Paperclip className='text-muted-foreground h-4 w-4' />
+          <h3 className='text-sm font-medium'>Attachments</h3>
+        </div>
         <DisabledFieldTooltip
           disabled={disabled || isUploading}
           reason={
