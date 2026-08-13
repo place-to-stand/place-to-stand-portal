@@ -246,7 +246,7 @@ export function TotalPayoutsCard({
       label='Billing Distribution'
       icon={Wallet}
       total={total}
-      caption='How billing is distributed — Payroll + Origination + Closer + House.'
+      caption='How billing is distributed — Payroll + Origination + Closer + House (estimated).'
       accent='violet'
       action={action}
       stretch

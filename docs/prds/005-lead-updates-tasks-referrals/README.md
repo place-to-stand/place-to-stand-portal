@@ -138,9 +138,18 @@ section file across 001–004.
 ## Schema changes summary
 
 **Five migrations** (six if §03 generates its own — see the ownership note below), generated from
-`packages/db/` with `npm run db:generate -- --name <label>`. **Never hand-write these files**, with
-two sanctioned exceptions: §05's hand-appended backfill and §06's hand-appended seed. Drizzle cannot
-express either.
+`packages/db/` with `npm run db:generate -- --name <label>`. **Never hand-write or hand-edit these
+files** — `AGENTS.md:9` allows no exceptions, and an earlier draft of this PRD wrongly claimed two.
+
+Drizzle cannot express data backfills or seeds, so those are **standalone scripts** under
+`apps/internal/scripts/`, modeled on `dedupe-sales-project.ts`: idempotent, logging counts, run
+explicitly after the migration applies.
+
+| Script | Section | Purpose |
+| --- | --- | --- |
+| `backfill-lead-task-projects.ts` | 04 | Null `project_id` on existing lead tasks (W22) |
+| `backfill-lead-origination.ts` | 05 | Resolve `source_detail` → contact, unambiguously (W24) |
+| `seed-lead-stage-settings.ts` | 06 | Seed the 3/7/7/30 thresholds |
 
 > **Migration numbering:** the last committed migration is `0061_add_tasks_completed_at.sql`.
 > Sections 02, 04, and 06 add one each; **section 05 adds two** (additive, then destructive — W9).

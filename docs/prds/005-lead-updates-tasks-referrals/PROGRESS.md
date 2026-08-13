@@ -57,6 +57,8 @@ These gate destructive work. **Do not proceed past a blank result cell.**
 | A4 | 05 | Source distribution (query 1) | — | | |
 | A5 | 05 | REFERRAL detail → contact match (query 2) | — | | |
 | A6 | 05 | WEBSITE/EVENT detail (query 3) | — | | |
+| A7 | 04 | `SELECT p.name, count(*) FROM tasks t JOIN projects p ON p.id=t.project_id WHERE t.lead_id IS NOT NULL AND t.deleted_at IS NULL GROUP BY p.name;` — existing lead tasks to backfill (W22) | count > 0 expected | | |
+| A8 | 05 | Ambiguity report: REFERRAL leads whose `source_detail` matches **more than one** active contact (W24) | `0` rows, or resolved | | |
 
 **A3 — paste the function body here.** Section 04 C7: a `CHECK` constraint *passes* on `NULL`, so if
 this function dereferences `tasks.project_id` without a null guard it may silently permit the
@@ -177,13 +179,29 @@ time-log linkage D10 forbids.
 
 ## Section 04 — Lead task placement
 
-**Blocked until A2 and A3 are recorded above.**
+**Blocked until A2, A3, and A7 are recorded above.**
+**Also blocked on W23:** the time-log CHECK function must be versioned into a migration and amended
+to return `false` for null-project tasks *before* this section is approved — reading it is not enough.
 
 ### Schema
-- [ ] `tasks.project_id` nullable, with the portal-invisibility security comment *(C6)*
-- [ ] `tasks_anchor_present` CHECK added; rejects a task with neither anchor
+- [ ] `tasks.project_id` nullable, commented as a data property — **not** described as security
+      *(W21)*
+- [ ] `tasks_anchor_present` CHECK added with a **bare expression, no `CHECK (...)` wrapper** *(W19)*
+- [ ] `destroyLead` soft-deletes the lead's project-less tasks before hard-deleting the lead *(W20)*
+- [ ] Permanent lead deletion has a regression test *(W20 — no coverage today)*
+- [ ] `time_log_task_matches_project` versioned into a migration and returns `false` for
+      null-project tasks; **direct SQL insertion tested**, not just the API guard *(W23)*
 - [ ] Migration generated, reviewed, applied; indexes not needlessly rebuilt
 - [ ] No RLS statements
+
+### Backfill (W22)
+- [ ] `apps/internal/scripts/backfill-lead-task-projects.ts` written, idempotent, logs counts
+- [ ] A7 pre-flight count recorded; post-run count matches
+- [ ] **Migrated** tasks tested — not just newly created ones — across boards, My Tasks, portal,
+      archive, and time logs
+- [ ] `loadAssignedTaskSummaries` in `apps/internal/lib/data/tasks.ts`: all four `innerJoin(projects)`
+      sites (173, 201, 254, 315) converted to `leftJoin`; row mapper and
+      `AssignedTaskSummary['project']` tolerate null *(W18)*
 
 ### Creation
 - [ ] `create-lead-task.ts` no longer calls `getOrCreateSalesProject`; inserts `projectId: null`
@@ -226,8 +244,14 @@ time-log linkage D10 forbids.
 - [ ] `origination_contact_id` + `origination_user_id` added with `ON DELETE SET NULL` FKs and
       partial indexes
 - [ ] `leads_origination_mutex` CHECK added, mirroring `clients_origination_mutex`
-- [ ] Additive migration generated; backfill SQL hand-appended; reviewed
+- [ ] Additive migration generated and applied — **not hand-edited**
+- [ ] `apps/internal/scripts/backfill-lead-origination.ts` written, idempotent, logs counts
+- [ ] Backfill matches only names resolving to **exactly one** active contact; prints an ambiguity
+      report and exits non-zero if any remain *(W24 — `contacts.name` is not unique)*
+- [ ] A8 ambiguity report recorded and resolved
 - [ ] Backfill uses **exact** case-insensitive matching — no fuzzy matching *(W8)*
+- [ ] All `source_detail` writers removed **before** the delta re-check; DROP ships in a **separate
+      release** with a rollback window *(W25)*
 - [ ] `contact_leads` rows created for every backfilled origination contact
 - [ ] **Separate** destructive migration drops `source_type`, `source_detail`, `lead_source_type` *(W9)*
 - [ ] Drop coordination with §03 verified — no double-drop of `last_contact_at`/`awaiting_reply`
@@ -285,7 +309,9 @@ time-log linkage D10 forbids.
 ### Schema
 - [ ] `lead_stage_settings` added: `status` unique, nullable `stale_after_days`, timestamps, **no**
       `deletedAt` *(matches `tax_rates`, not a singleton — W16)*
-- [ ] Migration generated; seed `INSERT … ON CONFLICT (status) DO NOTHING` hand-appended
+- [ ] Migration generated and applied — **not hand-edited**
+- [ ] `apps/internal/scripts/seed-lead-stage-settings.ts` written with
+      `INSERT … ON CONFLICT (status) DO NOTHING`, idempotent
 - [ ] Seeds exactly `NEW_OPPORTUNITIES` 3, `ACTIVE_OPPORTUNITIES` 7, `PROPOSAL_SENT` 7, `ON_ICE` 30
 - [ ] Terminal statuses get **no row**
 - [ ] Re-running the migration does not overwrite tuned values
@@ -312,8 +338,10 @@ time-log linkage D10 forbids.
 
 ## Review codes
 
-**Defined in [ARCHITECTURE-REVIEW.md](ARCHITECTURE-REVIEW.md)** — C1–C14 and W1–W17, with the
-cross-cutting themes and open risks. Codes are cited inline in the checklists above and throughout
+**Defined in [ARCHITECTURE-REVIEW.md](ARCHITECTURE-REVIEW.md)** — C1–C14 and W1–W26, with the
+cross-cutting themes, the retracted I1, the migration-edit policy correction, and open risks.
+**W18–W26 came from the PR #141 multi-reviewer pass and include two defects that would have broken
+implementation.** Codes are cited inline in the checklists above and throughout
 the section files; that file is the definition of record.
 
 ---

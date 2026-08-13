@@ -232,14 +232,20 @@ export async function listLeadUpdates(
 /**
  * Derived last-touch per lead. Excludes NOTE (see LEAD_TOUCH_TYPES).
  * Batched by lead id so the board can render N leads without N queries.
+ *
+ * Takes AppUser and asserts admin — this is lead data, and there is no RLS
+ * backstop if a future caller invokes it from an unguarded path (W26).
  */
 export async function fetchLastTouchByLead(
+  user: AppUser,
   leadIds: string[]
 ): Promise<Map<string, string>>
 ```
 
-`listLeadUpdates` calls `assertAdmin(user)` — matching `listTasksForLead`
-(`apps/internal/lib/queries/tasks/basic.ts:69`). There is no RLS; scoping is the query's job.
+**Both helpers call `assertAdmin(user)`**, matching `listTasksForLead`
+(`apps/internal/lib/queries/tasks/basic.ts:69`). There is no RLS; scoping is the query's job, and a
+shared helper that can't authorize is one refactor away from leaking. Today's callers are all
+guarded — that is exactly why the omission would be invisible until it isn't.
 
 `fetchLastTouchByLead` takes ids rather than a single lead specifically to avoid an N+1 on the leads
 board. Call it once with every visible lead's id.

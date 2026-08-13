@@ -83,9 +83,12 @@ No index beyond the unique constraint — the table holds at most seven rows and
 No `deletedAt`: this is configuration, not an entity. Matches `tax_rates`. **This is a second
 carve-out from the soft-delete convention** alongside `contact_leads` (W14) — noted in TEST-PLAN X11.
 
-### Seeding
+### Seeding — a script, not a migration edit
 
-The migration seeds the D19 defaults so the feature works on first deploy with no manual setup:
+`AGENTS.md:9` forbids hand-editing generated migrations, and that rule holds here (see the
+[data-migration script policy in §05](05-lead-origination-model.md#data-migration-scripts)). The seed
+lives in `apps/internal/scripts/seed-lead-stage-settings.ts`, modeled on
+[`dedupe-sales-project.ts`](../../../apps/internal/scripts/dedupe-sales-project.ts):
 
 ```sql
 INSERT INTO lead_stage_settings (status, stale_after_days) VALUES
@@ -100,11 +103,13 @@ Terminal statuses (`CLOSED_WON`, `CLOSED_LOST`, `UNQUALIFIED`) get **no row** �
 stale, which is simpler than storing `NULL` for them and avoids an "is this unset or deliberately
 never?" ambiguity.
 
-`ON CONFLICT DO NOTHING` keeps the migration re-runnable and means a re-deploy never stomps values
-the team has tuned.
+`ON CONFLICT DO NOTHING` makes the script idempotent, so re-running it never stomps values the team
+has tuned.
 
-> This is a hand-appended `INSERT` on a generated migration — the same sanctioned exception §05 uses
-> for its backfill (W9). Drizzle cannot express seed data.
+**Because the seed is a separate step, the table can be empty between migration and script.** That
+is safe by construction: C14's fallback means an unseeded table resolves to `LEAD_STALE_AFTER_DAYS`,
+so staleness behaves correctly even if the script is never run. Run it anyway — it's what makes the
+values editable.
 
 ### Migration
 
@@ -112,7 +117,7 @@ the team has tuned.
 npm run db:generate -- --name lead_stage_settings
 ```
 
-Then hand-append the seed `INSERT`. Purely additive — no `DROP`.
+Purely additive — no `DROP`, and **no hand-editing**. Then run the seed script.
 
 ---
 
@@ -138,10 +143,14 @@ New file `apps/internal/lib/queries/lead-stage-settings.ts`:
 ```ts
 import 'server-only'
 
-/** All configured thresholds, keyed by status. At most 7 rows — read whole. */
-export async function fetchLeadStaleThresholds(): Promise<
-  Map<LeadStatusValue, number | null>
->
+/**
+ * All configured thresholds, keyed by status. At most 7 rows — read whole.
+ * Takes AppUser and asserts admin: no RLS backstop, and a shared helper that
+ * can't authorize is one refactor away from being called unguarded (W26).
+ */
+export async function fetchLeadStaleThresholds(
+  user: AppUser
+): Promise<Map<LeadStatusValue, number | null>>
 ```
 
 Wrap in React `cache()` so the board page, the lead sheet, and the settings page share one read per

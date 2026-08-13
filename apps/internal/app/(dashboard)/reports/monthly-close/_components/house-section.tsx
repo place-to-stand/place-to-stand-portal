@@ -27,7 +27,7 @@ export function HouseSection({
       compact
       icon={Building}
       iconTone='emerald'
-      title='House'
+      title='House (estimated)'
       description={`${nominalPercent} house rate at $${data.ratePerHour}/hr on billing in — prepaid hours sold + net 30 hours logged.`}
       total={formatCurrency(data.totalAmount)}
     >

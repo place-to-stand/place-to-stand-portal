@@ -115,6 +115,29 @@ If the unmatched set is large or valuable, the right response is to create the m
 first and re-run — not to quietly widen the match or add back a preservation column that D15
 removed.
 
+### The sign-off goes stale (W25)
+
+The audit is a **snapshot**, but the drop happens in a later, separately-deployed migration. Between
+the two, `source_detail` keeps being written — the lead sheet's Source Info field is live until §05's
+UI change ships, and `/api/integrations/leads-intake` is live until this section removes it. **Any
+value created or edited in that window is never reviewed and is silently destroyed by the DROP.**
+A signed-off checkbox in PROGRESS.md does not enforce a deployment invariant.
+
+Close the window in this order:
+
+1. **Deploy the additive migration + backfill script** (steps 2–4 above).
+2. **Remove every writer** — ship the lead-sheet origination UI (which drops the Source Info field)
+   and delete the `leads-intake` route. After this, nothing can write `source_detail`.
+3. **Re-run the pre-flight audit as a delta check.** Any row whose `source_detail` is non-null and
+   `origination_contact_id` is null is either a genuine unmatched value (expected, approved in A5) or
+   something written after the original audit (**not** approved). Re-run the backfill script; it is
+   idempotent.
+4. **Only then** generate and apply the destructive migration.
+
+**Deploy step 4 in a separate release from step 2**, leaving `source_detail` readable for a rollback
+window. It costs one extra deploy and makes the difference between a recoverable mistake and an
+unrecoverable one.
+
 ---
 
 ## Schema
@@ -197,48 +220,88 @@ DROP TYPE lead_source_type;
 Plus `last_contact_at` and `awaiting_reply` if §03 hasn't already dropped them — coordinate so
 neither migration double-drops, and record which one carried it in [PROGRESS.md](PROGRESS.md).
 
-### Migration procedure
+### Data-migration scripts
 
-The generator produces add-and-drop but **cannot write the backfill**. Sequence:
+**Generated migrations are never hand-edited.** `AGENTS.md:9` states plainly: *"never hand-edit
+lockfiles or Supabase migrations."* An earlier draft of this PRD declared a "sanctioned exception"
+for appending backfill SQL — **that exception was not real**, and the rule stands as written.
+
+Drizzle genuinely cannot express data backfills or seeds, so those live in **standalone scripts**
+under `apps/internal/scripts/`, following the existing
+[`dedupe-sales-project.ts`](../../../apps/internal/scripts/dedupe-sales-project.ts) precedent: its
+own `dotenv` loading, `createDb(DATABASE_URL)`, idempotent, logs counts, safe to re-run, and **not
+executed automatically**. Every data step in this PRD (§04's task backfill, §05's origination
+backfill, §06's threshold seed) follows that shape.
+
+Trade-off accepted: the backfill is no longer atomic with the schema change, so there is a window
+where the columns exist unpopulated. That is why the origination fields are nullable and why nothing
+reads them until the backfill has run.
+
+### Migration procedure
 
 1. Edit `packages/db/src/schema.ts`: add the origination columns, constraint, indexes, FKs. Leave
    `source_type` / `source_detail` in place.
-2. `npm run db:generate -- --name lead_origination` → **additive migration only**.
-3. **Hand-append the backfill SQL** to that generated file, before any drop. This is the one
-   sanctioned hand-edit: Drizzle cannot express a data backfill, and the project rule against
-   hand-editing migrations is about not desynchronizing schema from `meta/_journal.json` — appending
-   `UPDATE`/`INSERT` statements doesn't.
-4. Remove `source_type` / `source_detail` from `schema.ts`, delete the `leadSourceType` enum.
-5. `npm run db:generate -- --name drop_lead_source` → the destructive migration, kept separate so it
-   can be reviewed and deployed independently.
-6. Review both. Apply with `npm run db:migrate`.
+2. `npm run db:generate -- --name lead_origination` → **additive migration only**. Do not edit it.
+3. `npm run db:migrate`.
+4. Write and run `apps/internal/scripts/backfill-lead-origination.ts` (below). Record its counts in
+   [PROGRESS.md](PROGRESS.md).
+5. **Stop every legacy writer of `source_detail`** and run the delta re-check (see "The sign-off
+   goes stale" below).
+6. Remove `source_type` / `source_detail` from `schema.ts`, delete the `leadSourceType` enum.
+7. `npm run db:generate -- --name drop_lead_source` → the destructive migration, kept separate so it
+   can be reviewed and deployed independently (W9).
+8. Review and apply.
 
-**Backfill:**
+**Backfill — must reject ambiguous matches (W24):**
+
+`contacts` has a unique constraint on **`email`**, not on `name` (`schema.ts:251`). Two active
+contacts can share a name. A plain `UPDATE … FROM` with multiple matching source rows lets
+PostgreSQL pick **either one nondeterministically** — and a wrong referrer flows into the client's
+origination and then into partner payouts. That is strictly worse than leaving the field unset.
+
+Match only where exactly one active contact exists for the normalized name:
 
 ```sql
--- Link REFERRAL leads to a contact by exact case-insensitive name match.
+-- Link REFERRAL leads to a contact ONLY where the normalized name resolves to
+-- exactly one active contact. Ambiguous names are deliberately left unset for
+-- manual resolution — see the ambiguity report below.
+WITH unique_contacts AS (
+  SELECT lower(trim(name)) AS norm_name, min(id) AS contact_id
+  FROM contacts
+  WHERE deleted_at IS NULL
+  GROUP BY lower(trim(name))
+  HAVING count(*) = 1
+)
 UPDATE leads l
-SET origination_contact_id = c.id
-FROM contacts c
+SET origination_contact_id = uc.contact_id
+FROM unique_contacts uc
 WHERE l.source_type = 'REFERRAL'
   AND l.source_detail IS NOT NULL
   AND l.deleted_at IS NULL
-  AND c.deleted_at IS NULL
-  AND lower(trim(c.name)) = lower(trim(l.source_detail));
+  AND uc.norm_name = lower(trim(l.source_detail));
 
 -- Mirror into the link table.
 INSERT INTO contact_leads (contact_id, lead_id)
 SELECT origination_contact_id, id FROM leads
 WHERE origination_contact_id IS NOT NULL
 ON CONFLICT ON CONSTRAINT contact_leads_contact_lead_key DO NOTHING;
-
--- Everything else (unmatched REFERRAL detail, all WEBSITE, all EVENT) is
--- discarded by the DROP in the next migration. Per PRD 005 D15 this is
--- intentional and was reviewed in the pre-flight audit.
 ```
 
-Exact match only — no fuzzy matching. A wrong referrer attribution is worse than none, because it
-flows into the client's origination and then into partner payouts.
+**The script must print an ambiguity report and exit non-zero if any rows appear**, so ambiguous
+cases are resolved by a human rather than silently dropped:
+
+```sql
+SELECT l.id, l.contact_name, l.source_detail, count(c.id) AS matching_contacts
+FROM leads l
+JOIN contacts c
+  ON lower(trim(c.name)) = lower(trim(l.source_detail)) AND c.deleted_at IS NULL
+WHERE l.source_type = 'REFERRAL' AND l.deleted_at IS NULL
+  AND l.origination_contact_id IS NULL
+GROUP BY l.id, l.contact_name, l.source_detail
+HAVING count(c.id) > 1;
+```
+
+Exact match only — **no fuzzy matching** (W8), and no arbitrary tie-breaking.
 
 ---
 

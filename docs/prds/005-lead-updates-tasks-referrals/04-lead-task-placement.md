@@ -35,15 +35,30 @@ permanently.
 
 **Explicitly not doing (D11):** predefined task presets. Free text only.
 
-### Why this makes D12 safe
+### What null actually guarantees — and what it doesn't (W21)
 
-Client task visibility is deferred, and this section is what makes that deferral safe rather than
-risky. `apps/client/lib/data/tasks.ts:58` selects tasks by `eq(tasks.projectId, projectId)`. **A
-`NULL` `project_id` can never satisfy an equality predicate**, so lead tasks are structurally
-invisible to the client portal — not by policy, but by the shape of the data.
+`apps/client/lib/data/tasks.ts:58` selects tasks by `eq(tasks.projectId, projectId)`, and a `NULL`
+`project_id` can never satisfy an equality predicate. So **a task whose `project_id` is null is
+unreachable from the portal.** That much is a real property of SQL, not a policy.
 
-That is a genuine guarantee, and it is worth stating plainly in code comments so nobody later
-"fixes" the null handling and quietly opens the door.
+**But that is narrower than "lead tasks are safe," and an earlier draft of this PRD overstated it.**
+Two gaps:
+
+1. **Every lead task in production today has a non-null `project_id`.**
+   `create-lead-task.ts:132-140` inserts *both* `projectId` (the Sales project) and `leadId`. The
+   null-invisibility argument covers **zero existing rows** until the backfill below runs.
+2. **The CHECK deliberately permits both anchors set.** A task carrying `lead_id` *and* a client
+   `project_id` is indistinguishable from any other project task to the portal query — it is
+   visible. Nothing in the schema prevents a lead task from later being moved onto a client project.
+
+**So: null-project invisibility is a true statement about a subset of rows, not an access-control
+mechanism.** D12's deferral is safe because of the combination of (a) the backfill nulling existing
+lead tasks, (b) D9 (no transfer on conversion), and (c) no UI path that reassigns a lead task to a
+project — *not* because of the null alone. If any of those three changes, the deferral stops being
+safe.
+
+Document this at the column, and **do not describe it as security** in code comments. When D12 is
+picked up, the portal must filter on an explicit visibility column — not on `project_id` being null.
 
 ---
 
@@ -79,9 +94,18 @@ A task must be anchored to exactly one of the two:
 ```ts
 check(
   'tasks_anchor_present',
-  sql`CHECK (project_id IS NOT NULL OR lead_id IS NOT NULL)`
+  // NO `CHECK (...)` wrapper — drizzle-kit adds it. Compare
+  // packages/db/src/schema.ts:843-845, which generates
+  // `CHECK (effective_from = ...)` in migration 0056 line 19 from a bare
+  // expression. Wrapping it yourself emits `CHECK (CHECK (...))`, which is a
+  // syntax error and fails to apply. (W19)
+  sql`project_id IS NOT NULL OR lead_id IS NOT NULL`
 ),
 ```
+
+> `time_log_task_matches_project` (`schema.ts:924-927`) *does* contain a literal `CHECK (...)` — but
+> that was captured verbatim from `pg_get_constraintdef()` during the Supabase baseline
+> introspection and never round-tripped through `drizzle-kit generate`. **Do not copy its style.**
 
 Without this, nullable `project_id` permits an orphan task reachable from nowhere. **Audit for
 existing violations before adding the constraint** — a `lead_id`-only task can't exist yet
@@ -94,8 +118,37 @@ SELECT count(*) FROM tasks WHERE project_id IS NULL AND lead_id IS NULL;
 Expect `0`. A non-zero result means the migration will fail — resolve those rows first.
 
 > Deliberately **not** a mutual exclusion. A task with both set is legal: that's a project task that
-> also references a lead, which the current data model already permits and which nothing here needs
-> to forbid.
+> also references a lead, which the current data model already permits. **But see the portal caveat
+> under "What null actually guarantees" below — both-set tasks are exactly the rows the invisibility
+> argument does *not* cover.**
+
+### The CHECK conflicts with `ON DELETE SET NULL` (W20)
+
+`tasks_lead_id_fkey` is `ON DELETE SET NULL` (`schema.ts:535-539`), and
+`destroy-lead.ts:37` performs a **real hard delete** (`db.delete(leads)`) on already-soft-deleted
+leads.
+
+Sequence: hard-delete a lead → Postgres sets `lead_id = NULL` on its tasks → a lead-anchored task
+now has **both** anchors null → `tasks_anchor_present` fires → **the lead deletion fails**. Permanent
+lead deletion breaks entirely, and the failure surfaces as an opaque constraint error.
+
+**Resolution — soft-delete the lead's tasks inside `destroyLead`, before deleting the lead:**
+
+```ts
+// Lead-anchored tasks have no project to fall back to, so ON DELETE SET NULL
+// would strand them with no anchor and trip tasks_anchor_present (W20).
+// Soft-delete them first; project tasks that merely reference the lead keep
+// their project anchor and are left alone.
+await db.update(tasks)
+  .set({ deletedAt: now, leadId: null })
+  .where(and(eq(tasks.leadId, leadId), isNull(tasks.projectId), isNull(tasks.deletedAt)))
+```
+
+Rejected alternatives: switching the FK to `CASCADE` would also delete project tasks that merely
+*reference* a lead; dropping the CHECK would permit genuinely unreachable orphan tasks.
+
+**Add a regression test for permanent lead deletion** — this path has no coverage today and the
+failure is silent until someone tries it.
 
 ### Index review
 
@@ -133,9 +186,19 @@ SELECT prosrc FROM pg_proc WHERE proname = 'time_log_task_matches_project';
 and a `CHECK` constraint **passes** on `NULL`. That would silently permit exactly the linkage D10
 forbids.
 
-Per **D10**, lead tasks cannot be time-logged, so the correct outcome is that no time log ever
-references one. Enforce that in the application layer (below) rather than by modifying a database
-function whose behavior you'd be inferring.
+Per **D10**, lead tasks cannot be time-logged. An application-layer guard (below) is necessary but
+**not sufficient** — the constraint is the only thing protecting direct SQL, scripts, and any future
+write path.
+
+**This is a blocking prerequisite, not a note (W23).** Do not treat §04 as approved until:
+
+1. The production function body is read (audit **A3**).
+2. It is **checked into version control** as a generated migration, so the definition is
+   reproducible and environments cannot drift. It exists only in the live database today.
+3. It is amended to **explicitly return `false`** for a task with a null `project_id`. A `CHECK`
+   constraint *passes* on `NULL`, so a function that dereferences `project_id` without a null guard
+   will silently permit exactly the linkage D10 forbids.
+4. **Direct database insertion** is tested, not only the API guard.
 
 ### Migration
 
@@ -148,6 +211,50 @@ npm run db:generate -- --name tasks_nullable_project
 Expected: `ALTER TABLE tasks ALTER COLUMN project_id DROP NOT NULL` plus the new CHECK. Review
 before applying. If Drizzle proposes dropping and recreating indexes, investigate rather than
 accepting.
+
+### Backfilling existing lead tasks — required (W22)
+
+**The migration alone leaves the feature half-applied.** Dropping `NOT NULL` changes nothing about
+existing rows: `create-lead-task.ts:132-140` has always written *both* `projectId` (the Sales
+project) and `leadId`, so **every lead task in production today still carries a project**. Only
+newly created tasks would get `project_id = NULL`.
+
+That produces two populations of "lead task" behaving differently:
+
+| | Existing lead tasks | New lead tasks |
+| --- | --- | --- |
+| On the Sales project board | **Yes** | No |
+| Portal-reachable by project equality | **Yes**, if ever moved to a client project | No |
+| Gets the "Lead task" sheet treatment | **No** | Yes |
+| Time-logging blocked | **No** | Yes |
+
+**Run a separate, reviewed backfill script** (not appended to the migration — see the migration-data
+policy in [05](05-lead-origination-model.md#data-migration-scripts)):
+
+```sql
+-- Pre-flight: how many rows, and where do they live?
+SELECT p.name AS project, count(*)
+FROM tasks t JOIN projects p ON p.id = t.project_id
+WHERE t.lead_id IS NOT NULL AND t.deleted_at IS NULL
+GROUP BY p.name;
+
+-- Backfill, transactional. Only tasks that live in the internal Sales project —
+-- a task on a CLIENT project that merely references a lead keeps its project.
+BEGIN;
+UPDATE tasks t
+SET project_id = NULL
+FROM projects p
+WHERE p.id = t.project_id
+  AND p.type = 'INTERNAL'
+  AND p.slug IN ('sales', 'sales-strategy')
+  AND t.lead_id IS NOT NULL
+  AND t.deleted_at IS NULL;
+-- Verify the count matches the pre-flight before committing.
+COMMIT;
+```
+
+Record before/after counts in [PROGRESS.md](PROGRESS.md) (audit **A7**). **Test the migrated rows,
+not just newly created ones** — boards, My Tasks, portal queries, archive, and time logs.
 
 ---
 
@@ -229,10 +336,15 @@ grep -rn "tasks.projectId\|eq(tasks.projectId" apps/internal/lib --include="*.ts
 `LEFT JOIN` versus inner join is the single highest-risk detail in this section. An inner join on
 `projects` makes lead tasks vanish from surfaces where they belong, with no error.
 
-> **Good news from the audit (I1):** the main My Tasks path already uses
-> `leftJoin(projects, …)` / `leftJoin(clients, …)` (`apps/internal/lib/queries/tasks/summaries.ts:97-98`),
-> so the headline risk is largely pre-mitigated. Verify the remaining call sites, but expect fewer
-> corrections than this section's warning implies.
+> **The exact sites, confirmed (W18).** An earlier draft of this PRD claimed My Tasks already used
+> `leftJoin` and was therefore safe. **That was wrong** — it cited `queries/tasks/summaries.ts:97-98`,
+> a single-task lookup, not the list path.
+>
+> The real path is `loadAssignedTaskSummaries` in **`apps/internal/lib/data/tasks.ts`**, backing both
+> the `/my/tasks` page and `GET /api/my-tasks`. It uses **`innerJoin(projectsTable, …)` at lines 173,
+> 201, 254, and 315**. All four must become `leftJoin`, and the row mapper (from ~line 222) plus
+> `AssignedTaskSummary['project']` must tolerate a null project. Without this, every lead task
+> silently disappears from My Tasks and this section's acceptance criterion fails.
 
 ### The type ripple (W15 — audit finding)
 

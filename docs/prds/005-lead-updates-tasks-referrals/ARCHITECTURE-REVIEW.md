@@ -89,7 +89,7 @@ nobody spends time re-verifying them.
 
 | # | Finding |
 | --- | --- |
-| **I1** | My Tasks already uses `leftJoin(projects, …)` / `leftJoin(clients, …)` (`queries/tasks/summaries.ts:97-98`). §04's headline "an inner join silently drops lead tasks" risk is largely pre-mitigated on the main path. |
+| **~~I1~~** | ~~My Tasks already uses `leftJoin`…~~ **RETRACTED — this claim was false.** It cited `queries/tasks/summaries.ts:97-98`, which is `getTaskSummaryForUser`, a **single-task lookup gated by `ensureTaskAccess`** — not the My Tasks list path. The real path is `loadAssignedTaskSummaries` in `apps/internal/lib/data/tasks.ts`, which uses **`innerJoin(projectsTable, …)` at four sites (lines 173, 201, 254, 315)**. Once §04 makes `project_id` nullable, those inner joins silently drop every lead task from My Tasks — the exact risk §04 calls its highest, and the direct cause of §04's acceptance criterion "appears in My Tasks" failing. See **W18**. |
 | **I2** | `apps/internal/lib/activity/events.ts:8` is `export * from './events/leads'`, so §03's "re-export from events.ts" step is a **no-op** — adding the event to `events/leads.ts` is sufficient. |
 | **I3** | `projects` has **no** origination fields. Kris's *"carries over to the project when created"* can only mean the client record, which is what §05 implements. Not an oversight. |
 | **I4** | The inline FK to `contacts` is valid for `leads` (line 931, after `contacts` at 233). The migration-based workaround noted at `schema.ts:223` exists only because `clients` (~line 155) precedes `contacts` — **do not copy it**. |
@@ -110,6 +110,33 @@ mid-market clients, explicitly **no account managers** — clients work directly
 | **PW6** | **D18's restore path was tested but never specced.** TEST-PLAN 4.10b exercised restore; §04 only described a collapsed grouping. Restore is the entire point of C11. | Restore control now required in [04](04-lead-task-placement.md), reusing the existing task restore action. |
 | **PI1** | Badge label vocabulary sits on every card all day. | Confirmed **Referral** / **Partner** (D17), matching the schema's own language — *"internal sourcing partners"* vs *"external referrers with IC agreements"*. |
 | **PI2** | **Nothing client-facing changes, correctly.** The client portal is untouched. For an agency whose portal *is* its client experience, keeping lead-stage machinery out of it is the right call — noted so a future section doesn't drift into it. | No action. |
+
+---
+
+## Post-review additions (W18–W26)
+
+Added after a multi-reviewer pass on PR #141 (Claude code-review + Codex standard + Codex
+adversarial). Each was verified against real code before being accepted.
+
+| # | Section | Warning |
+| --- | --- | --- |
+| **W18** | [04](04-lead-task-placement.md) | **My Tasks uses `innerJoin(projects)` at four sites** — `apps/internal/lib/data/tasks.ts` lines 173, 201, 254, 315 (`loadAssignedTaskSummaries`, backing `/my/tasks` and `GET /api/my-tasks`). All four must become `leftJoin`, with the row mapper and `AssignedTaskSummary['project']` tolerating null. Retracted I1 claimed the opposite. |
+| **W19** | [04](04-lead-task-placement.md) | **Never wrap a `check()` expression in `CHECK (...)`.** drizzle-kit adds it. Evidence: `schema.ts:843-845` (bare expression) → migration `0056:19` (`CHECK (…)`). The literal wrapper in `time_log_task_matches_project` is a baseline-introspection artifact, not a template. |
+| **W20** | [04](04-lead-task-placement.md) | **`tasks_anchor_present` collides with `ON DELETE SET NULL`.** `destroy-lead.ts:37` hard-deletes; the FK nulls `lead_id`; a lead-only task then has no anchor and the CHECK blocks the delete. Soft-delete the lead's project-less tasks inside `destroyLead` first. |
+| **W21** | [04](04-lead-task-placement.md) | **Null-project invisibility is not access control.** It is true of null-project rows only — and today *zero* rows qualify, since `create-lead-task.ts` writes both anchors. The CHECK also permits both-set tasks, which the portal *can* see. D12's deferral is safe because of backfill + D9 + no reassignment path, not because of the null. |
+| **W22** | [04](04-lead-task-placement.md) | **Existing lead tasks need a backfill.** Dropping `NOT NULL` changes no existing row. Without the backfill script there are two populations of "lead task" with different board, portal, sheet, and time-log behavior — and the acceptance criteria only exercise the new one. |
+| **W23** | [04](04-lead-task-placement.md) | **Version the time-log CHECK function before approving §04.** Reading it (A3) is not enough: it must be checked into a migration and amended to return `false` for null-project tasks, because `CHECK` passes on `NULL`. Test direct SQL insertion, not just the API guard. |
+| **W24** | [05](05-lead-origination-model.md) | **`contacts.name` is not unique** (only `email` is, `schema.ts:251`). A plain `UPDATE … FROM` picks an arbitrary row among duplicates, and a wrong referrer flows into partner payouts. Match only names resolving to exactly one active contact; report ambiguities and exit non-zero. |
+| **W25** | [05](05-lead-origination-model.md) | **The A5 sign-off goes stale.** Writers of `source_detail` stay live between the audit and the later DROP, so post-audit values are destroyed unreviewed. Remove all writers, re-run a delta audit, and ship the DROP in a separate release with a rollback window. |
+| **W26** | [03](03-updates-timeline-ui.md), [06](06-lead-settings.md) | **Shared query helpers must take `AppUser` and assert admin.** `fetchLastTouchByLead` and `fetchLeadStaleThresholds` had no authz. Current callers are guarded, which is precisely why the gap would stay invisible until a future unguarded caller appears. No RLS backstop exists. |
+
+### Policy correction
+
+**Generated migrations are never hand-edited.** An earlier draft declared a "sanctioned exception"
+for appending backfill/seed SQL. `AGENTS.md:9` says *"never hand-edit lockfiles or Supabase
+migrations"* with no such carve-out, and the exception was asserted without authority. All data steps
+(§04 task backfill, §05 origination backfill, §06 threshold seed) are now **standalone scripts** under
+`apps/internal/scripts/`, following the `dedupe-sales-project.ts` precedent.
 
 ---
 

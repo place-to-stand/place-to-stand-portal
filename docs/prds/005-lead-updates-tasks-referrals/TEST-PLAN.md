@@ -212,8 +212,33 @@ Schema-only; verified by inspection and migration behavior.
 - [ ] **4.13** Assignees, due date, description, comments, attachments all work
 - [ ] **4.14** Open a **project** task's sheet → project selector and time logging unchanged
 
+### Backfill of existing lead tasks (W22)
+- [ ] **4.14a** Before backfill: an **existing** lead task still has a non-null `project_id`
+      (A7 count > 0) — confirms the gap is real
+- [ ] **4.14b** Run `backfill-lead-task-projects.ts` → those tasks now have `project_id IS NULL`;
+      post-count matches A7
+- [ ] **4.14c** A **migrated** lead task (not a newly created one) disappears from the Sales project
+      board, appears in the lead sheet, and appears in My Tasks when assigned
+- [ ] **4.14d** A task on a **CLIENT** project that merely references a lead is **not** touched by
+      the backfill — it keeps its project
+- [ ] **4.14e** Re-running the script is a no-op
+
+### My Tasks join conversion (W18)
+- [ ] **4.14f** With a lead task assigned to you, `/my/tasks` **and** `GET /api/my-tasks` both
+      include it — this fails if any of the four `innerJoin(projects)` sites was missed
+- [ ] **4.14g** Project tasks still render with full project/client context after the `leftJoin`
+      conversion
+
+### Lead deletion (W20)
+- [ ] **4.14h** Soft-delete a lead that has lead-anchored tasks, then **permanently delete** it from
+      the leads archive → succeeds, no constraint error
+- [ ] **4.14i** Its lead-anchored tasks are soft-deleted; a project task that referenced the same
+      lead survives with its project intact
+
 ### Guards
 - [ ] **4.15** `POST` a time log against a lead task's id directly → rejected with a clear error
+- [ ] **4.15a** **Direct SQL** insert of a `time_log_tasks` row pointing at a null-project task is
+      rejected by the constraint — the API guard is not the only defense *(W23)*
 - [ ] **4.16** Insert a task with both `project_id` and `lead_id` NULL → rejected by
       `tasks_anchor_present`
 - [ ] **4.17** Insert with both set → **allowed** (deliberately not mutually exclusive)
@@ -273,6 +298,13 @@ Schema-only; verified by inspection and migration behavior.
       *(expected — D15)*
 - [ ] **5.16** Former `WEBSITE` and `EVENT` leads show no origination and render without error
 - [ ] **5.17** `SELECT count(*) FROM contact_leads` matches the backfilled origination count
+- [ ] **5.17a** **Ambiguity guard (W24):** create two active contacts with the same name and a lead
+      whose `source_detail` matches it → the backfill leaves `origination_contact_id` **null**,
+      prints the lead in its ambiguity report, and **exits non-zero**
+- [ ] **5.17b** After resolving the duplicate, re-running the script links the lead correctly
+- [ ] **5.17c** Re-running the script with nothing to do is a no-op
+- [ ] **5.17d** **Stale sign-off (W25):** edit a lead's Source Info *after* the audit and *before*
+      the DROP → the delta re-check surfaces it rather than silently destroying it
 
 ### Conversion
 - [ ] **5.18** Convert a `CLOSED_WON` lead with an **external referrer** to a **new** client →
@@ -321,8 +353,10 @@ Schema-only; verified by inspection and migration behavior.
       timestamps, and **no** `deleted_at`
 - [ ] **6.2** After migration, exactly four seeded rows: 3 / 7 / 7 / 30
 - [ ] **6.3** Terminal statuses have **no** row
-- [ ] **6.4** Change a value, re-run `npm run db:migrate` → the tuned value **survives**
+- [ ] **6.4** Change a value, re-run `seed-lead-stage-settings.ts` → the tuned value **survives**
       (`ON CONFLICT DO NOTHING`)
+- [ ] **6.4a** With the table **empty** (migration applied, seed not yet run), staleness still works
+      off the `LEAD_STALE_AFTER_DAYS` fallback — it does not silently disable *(C14)*
 - [ ] **6.5** Migration contains no `DROP`, no RLS statements
 
 ### Page
@@ -393,11 +427,11 @@ Schema-only; verified by inspection and migration behavior.
 | 01 — Sales project defect | 11 | Includes the 1.6 crash regression |
 | 02 — Schema: lead updates | 9 | Inspection + migration behavior |
 | 03 — Updates timeline UI | 61 | Largest surface; D19 staleness, D23 filter row, D21/D24 shortcut, W13 |
-| 04 — Lead task placement | 29 | 5 client-portal regression checks + D18 archive & restore |
-| 05 — Lead origination model | 46 | Backfill, conversion, D17 badge, W12 guard, submissions |
-| 06 — Lead settings | 19 | Schema, seed idempotency, validation, revalidation |
+| 04 — Lead task placement | 39 | Portal regression, D18 archive/restore, W18/W20/W22/W23 |
+| 05 — Lead origination model | 50 | Backfill, conversion, D17 badge, W12/W24/W25 guards |
+| 06 — Lead settings | 20 | Schema, seed idempotency, validation, revalidation |
 | Cross-cutting | 18 | A11y, responsive, integrity, permissions, build |
-| **Total** | **193** | |
+| **Total** | **208** | |
 
 ### Highest-risk tests
 
@@ -415,4 +449,7 @@ If time is short, these five catch the failures that would hurt most:
 | **5.23a** | An archived assignee aborting conversion is a hard failure on a field nobody touched |
 | **3.35** | If leads with no updates never go stale, D19 does nothing on existing data — the exact way `last_contact_at` died |
 | **3.37** | A `NOTE` clearing the staleness dot would make the whole follow-up signal lie |
-| **3.44b / 6.4** | A missing settings row silently disabling staleness looks identical to a quiet board (C14); a re-run migration stomping tuned values undoes the point of D22 |
+| **3.44b / 6.4a** | A missing settings row silently disabling staleness looks identical to a quiet board (C14) |
+| **4.14c / 4.14f** | Without the backfill and the four `leftJoin` conversions, migrated lead tasks vanish from My Tasks with no error (W18, W22) |
+| **4.14h** | The anchor CHECK vs `ON DELETE SET NULL` breaks permanent lead deletion outright (W20) |
+| **5.17a** | A duplicate contact name silently attributing the wrong referrer flows into partner payouts (W24) |
