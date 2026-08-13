@@ -91,13 +91,19 @@ export const useBoardSheetState = ({
       return
     }
 
-    if (activeTaskId) {
+    // Prefer the click-time id over the route's. The board already holds every
+    // task client-side, so opening from `pendingTaskId` puts the populated
+    // sheet and the card highlight in the same frame as the click, instead of
+    // waiting ~270ms for the route to deliver `activeTaskId`.
+    const targetTaskId = pendingTaskId ?? activeTaskId
+
+    if (targetTaskId) {
       let nextTask: TaskWithRelations | null = null
 
       if (selectedProjectId) {
         const projectTasks = tasksByProject.get(selectedProjectId)
         const match = projectTasks?.find(
-          (task: TaskWithRelations) => task.id === activeTaskId
+          (task: TaskWithRelations) => task.id === targetTaskId
         )
         if (match) {
           nextTask = match
@@ -105,22 +111,25 @@ export const useBoardSheetState = ({
       }
 
       if (!nextTask) {
-        nextTask = findTaskAcrossProjects(projects, activeTaskId) ?? null
+        nextTask = findTaskAcrossProjects(projects, targetTaskId) ?? null
       }
 
       startTransition(() => {
-        setRouteTaskId(activeTaskId)
-        setPendingTaskId(null)
+        if (activeTaskId) {
+          setRouteTaskId(activeTaskId)
+          // Only drop the pending id once the route actually delivers it —
+          // clearing on any `activeTaskId` would snap the sheet back to the
+          // previously open task while a newer click is still in flight.
+          if (pendingTaskId === activeTaskId) {
+            setPendingTaskId(null)
+          }
+        }
         setDefaultTaskDueOn(null)
         if (nextTask) {
           setSheetTask(nextTask)
           setIsSheetOpen(true)
         }
       })
-      return
-    }
-
-    if (pendingTaskId) {
       return
     }
 
@@ -186,6 +195,12 @@ export const useBoardSheetState = ({
       setRouteTaskId(task.id)
       setPendingTaskId(task.id)
       setDefaultTaskDueOn(null)
+      // Open from the task the click already carries. Going through the effect
+      // instead meant the update sat in a transition behind the router's, so
+      // the sheet and the card highlight both landed ~300ms late. The effect
+      // below still reconciles once the route delivers `activeTaskId`.
+      setSheetTask(task)
+      setIsSheetOpen(true)
       taskSheetInteractionRef.current = startClientInteraction(
         INTERACTION_EVENTS.TASK_SHEET_OPEN,
         {
