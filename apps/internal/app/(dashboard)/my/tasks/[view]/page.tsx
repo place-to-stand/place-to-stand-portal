@@ -96,6 +96,16 @@ export default async function MyTasksViewRoute({
   const initialEntries: MyTasksInitialEntry[] = []
 
   assignedSummaries.items.forEach(item => {
+    // Lead-anchored tasks have no project (PRD 005 D8), and this board is built
+    // by hydrating project graphs and grouping tasks under them — there is no
+    // group for a project-less task to join. They reach the assignee through
+    // the dashboard My Tasks widget, which renders a flat list. Placing them on
+    // this board needs a grouping model the PRD does not specify; see
+    // PROGRESS.md §04.
+    if (!item.project) {
+      return
+    }
+
     if (!includedProjectIds.has(item.project.id)) {
       includedProjectIds.add(item.project.id)
       orderedProjectIds.push(item.project.id)

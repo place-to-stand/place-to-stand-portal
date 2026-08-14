@@ -55,7 +55,10 @@ const exactPaths =
 
 export const SHEET_ENTITIES: Record<SheetEntityKey, SheetEntityConfig> = {
   task: {
-    auxParams: [],
+    // `taskDueOn` prefills the due date on a create sheet — used by the lead
+    // update composer's follow-up shortcut (PRD 005 D24). Cleared with the
+    // sheet, like every aux param.
+    auxParams: ['taskDueOn'],
     claimsPathname: pathname =>
       /^\/my\/tasks(\/|$)/.test(pathname) ||
       /^\/projects\/[^/]+\/[^/]+\/(tasks|review)$/.test(pathname),

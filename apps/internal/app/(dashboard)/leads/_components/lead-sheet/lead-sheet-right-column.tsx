@@ -1,19 +1,24 @@
 'use client'
 
 import type { LeadRecord } from '@/lib/leads/types'
+import type { LeadStaleThresholdSource } from '@/lib/leads/updates'
 
 import { LeadTasksSection } from './lead-tasks-section'
+import { LeadUpdatesSection } from './updates/lead-updates-section'
 
 type LeadSheetRightColumnProps = {
   lead: LeadRecord
   canManage: boolean
   onSuccess: () => void
+  /** Configured staleness thresholds, for the follow-up due-date prefill (D24). */
+  thresholds?: LeadStaleThresholdSource
 }
 
 export function LeadSheetRightColumn({
   lead,
   canManage,
   onSuccess,
+  thresholds,
 }: LeadSheetRightColumnProps) {
   return (
     <div className='bg-muted/20 w-80 flex-shrink-0 overflow-y-auto lg:w-96'>
@@ -23,6 +28,14 @@ export function LeadSheetRightColumn({
           lead={lead}
           canManage={canManage}
           onSuccess={onSuccess}
+        />
+        {/* Updates sit below Tasks (D6) — keeps the at-a-glance "last touched
+            12 days ago, 2 open tasks" read that tabs would hide. */}
+        <LeadUpdatesSection
+          lead={lead}
+          canManage={canManage}
+          onSuccess={onSuccess}
+          thresholds={thresholds}
         />
       </div>
     </div>

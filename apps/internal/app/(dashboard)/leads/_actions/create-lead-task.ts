@@ -6,14 +6,11 @@ import { z } from 'zod'
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { leads, projects, tasks, taskAssignees } from '@/lib/db/schema'
-import { resolveNextTaskRank } from '@/app/(dashboard)/projects/actions/task-rank'
+import { leads, tasks, taskAssignees } from '@/lib/db/schema'
+import { resolveNextLeadTaskRank } from '@/app/(dashboard)/projects/actions/task-rank'
 
 import { revalidateLeadsPath } from './utils'
 import type { LeadActionResult } from './types'
-
-const SALES_PROJECT_NAME = 'Sales'
-const SALES_PROJECT_SLUG = 'sales'
 
 const createLeadTaskSchema = z.object({
   leadId: z.string().uuid(),
@@ -27,72 +24,13 @@ export type CreateLeadTaskInput = z.infer<typeof createLeadTaskSchema>
 
 export type CreateLeadTaskResult = LeadActionResult & {
   taskId?: string
-  projectId?: string
 }
 
 /**
- * Find (or, only if absent, create) the internal "Sales" project for
- * lead-related tasks. This is a centralized project where all lead tasks are
- * stored. The existing real project is always preferred — a project is only
- * created as a guarded fallback when none exists.
- */
-async function getOrCreateSalesProject(userId: string): Promise<string> {
-  // Prefer the existing internal Sales project.
-  const findSalesProject = async () =>
-    db
-      .select({ id: projects.id })
-      .from(projects)
-      .where(
-        and(
-          eq(projects.slug, SALES_PROJECT_SLUG),
-          eq(projects.type, 'INTERNAL'),
-          isNull(projects.deletedAt)
-        )
-      )
-      .limit(1)
-
-  const [existingProject] = await findSalesProject()
-
-  if (existingProject) {
-    return existingProject.id
-  }
-
-  // Fallback: create the Sales project only if it does not already exist.
-  // `onConflictDoNothing` on the unique slug index prevents concurrent callers
-  // from creating duplicates.
-  const timestamp = new Date().toISOString()
-  const [newProject] = await db
-    .insert(projects)
-    .values({
-      name: SALES_PROJECT_NAME,
-      slug: SALES_PROJECT_SLUG,
-      type: 'INTERNAL',
-      status: 'ACTIVE',
-      createdBy: userId,
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    })
-    .onConflictDoNothing({ target: projects.slug })
-    .returning({ id: projects.id })
-
-  if (newProject) {
-    return newProject.id
-  }
-
-  // A concurrent call won the insert race (conflict → no row returned).
-  // Re-select to resolve the now-existing project.
-  const [racedProject] = await findSalesProject()
-
-  if (!racedProject) {
-    throw new Error('Failed to resolve Sales project')
-  }
-
-  return racedProject.id
-}
-
-/**
- * Create a task linked to a lead.
- * Tasks are created in the internal "Sales" project.
+ * Create a task anchored to a lead.
+ *
+ * Lead tasks carry NO project (PRD 005 D8) — the lead is the anchor. They stay
+ * on the lead forever, including through conversion (D9).
  */
 export async function createLeadTask(
   input: CreateLeadTaskInput
@@ -123,18 +61,15 @@ export async function createLeadTask(
   }
 
   try {
-    // Get the existing Sales project (created only if absent)
-    const projectId = await getOrCreateSalesProject(user.id)
-
-    // Determine rank for the new task
-    const rank = await resolveNextTaskRank(projectId, 'ON_DECK')
+    // Rank is scoped to the lead, not to a project (W6).
+    const rank = await resolveNextLeadTaskRank(leadId, 'ON_DECK')
 
     // Create the task with leadId
     const timestamp = new Date().toISOString()
     const [insertedTask] = await db
       .insert(tasks)
       .values({
-        projectId,
+        projectId: null,
         leadId,
         title,
         description: description ?? null,
@@ -167,7 +102,6 @@ export async function createLeadTask(
     return {
       success: true,
       taskId: insertedTask.id,
-      projectId,
     }
   } catch (error) {
     console.error('Failed to create lead task:', error)

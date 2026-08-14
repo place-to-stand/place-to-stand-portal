@@ -40,7 +40,7 @@ import type { ClientSheetFormValues } from '@/lib/settings/clients/client-sheet-
 
 import { ClientContactPicker } from './client-contact-picker'
 import { ClientCloserPicker } from './client-closer-picker'
-import { ClientOriginationPicker } from './client-origination-picker'
+import { OriginationPicker } from '@/components/origination/origination-picker'
 import { getSubmitLabel } from '@/lib/forms/form-controls'
 
 const FEEDBACK_CLASSES =
@@ -440,7 +440,7 @@ export function ClientSheetForm({
             >
               Origination
             </FormLabel>
-            <ClientOriginationPicker
+            <OriginationPicker
               mode={originationMode}
               selectedUser={selectedOriginationUser}
               selectedContact={selectedOriginationContact}

@@ -1,12 +1,15 @@
 'use client'
 
 import {
+  createContext,
   memo,
+  useContext,
   useEffect,
   useMemo,
   useState,
   type CSSProperties,
   type KeyboardEvent,
+  type ReactNode,
 } from 'react'
 import { defaultAnimateLayoutChanges, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -20,7 +23,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@pts/ui/tooltip'
-import { getLeadSourceLabel } from '@/lib/leads/constants'
+import { LEAD_ORIGINATION_LABELS } from '@/lib/leads/constants'
 import type { LeadRecord } from '@/lib/leads/types'
 import { cn } from '@/lib/utils'
 import { formatPhoneUS } from '@/lib/utils/phone-format'
@@ -128,22 +131,75 @@ export const LeadCard = memo(function LeadCard({
   )
 })
 
-export function LeadCardContent({ lead }: { lead: LeadRecord }) {
+/**
+ * The "overdue for contact" signal, resolved by the workspace and handed down.
+ *
+ * Resolved upstream rather than computed here so every card on the board shares
+ * one threshold lookup and one `now` — see LeadStalenessProvider.
+ */
+export type LeadStaleSignal = {
+  days: number
+  lastTouchLabel: string
+}
+
+/**
+ * Staleness reaches the card through context rather than props.
+ *
+ * The dot is purely presentational, and the alternative is threading a map
+ * through LeadsBoard and LeadColumn — two components that have nothing to do
+ * with cadence and would only be passing it along.
+ */
+const LeadStalenessContext = createContext<
+  ReadonlyMap<string, LeadStaleSignal>
+>(new Map())
+
+export function LeadStalenessProvider({
+  signals,
+  children,
+}: {
+  signals: ReadonlyMap<string, LeadStaleSignal>
+  children: ReactNode
+}) {
+  return (
+    <LeadStalenessContext.Provider value={signals}>
+      {children}
+    </LeadStalenessContext.Provider>
+  )
+}
+
+export function LeadCardContent({
+  lead,
+  staleSignal,
+}: {
+  lead: LeadRecord
+  /** Explicit override; otherwise resolved from context. */
+  staleSignal?: LeadStaleSignal | null
+}) {
+  const signals = useContext(LeadStalenessContext)
+  const resolvedStaleSignal = staleSignal ?? signals.get(lead.id) ?? null
   const assigneeDisplay =
     lead.assigneeName ?? lead.assigneeEmail ?? 'Unassigned'
   const companyDisplay = lead.companyName?.trim()
-  const sourceLabel = lead.sourceType
-    ? getLeadSourceLabel(lead.sourceType)
+  // D17: the origination badge takes the removed source badge's exact slot and
+  // styling — kind as the label, referrer name on hover — so board card density
+  // is unchanged. It is a DISPLAY over LeadRecord's origination fields and must
+  // never grow its own resolution logic (W11).
+  const originationLabel = lead.originationMode
+    ? LEAD_ORIGINATION_LABELS[lead.originationMode]
     : null
-  const sourceDetail = lead.sourceDetail?.trim()
-  const showSourceTooltip = Boolean(sourceDetail && sourceLabel)
+  const originationName = (
+    lead.originationMode === 'external'
+      ? lead.originationContactName
+      : lead.originationUserName
+  )?.trim()
+  const showSourceTooltip = Boolean(originationName && originationLabel)
 
-  const sourceBadge = sourceLabel ? (
+  const sourceBadge = originationLabel ? (
     <Badge
       variant='outline'
       className='text-muted-foreground text-[10px] font-medium tracking-wide uppercase'
     >
-      {sourceLabel}
+      {originationLabel}
     </Badge>
   ) : null
 
@@ -160,8 +216,11 @@ export function LeadCardContent({ lead }: { lead: LeadRecord }) {
   return (
     <>
       <div className='space-y-0.5'>
-        <h3 className='text-foreground line-clamp-2 text-sm leading-snug font-semibold'>
-          {lead.contactName}
+        <h3 className='text-foreground flex items-start gap-1.5 text-sm leading-snug font-semibold'>
+          <span className='line-clamp-2'>{lead.contactName}</span>
+          {resolvedStaleSignal ? (
+            <StalenessDot signal={resolvedStaleSignal} />
+          ) : null}
         </h3>
         {companyDisplay ? (
           <p className='text-muted-foreground text-xs font-medium'>
@@ -211,7 +270,7 @@ export function LeadCardContent({ lead }: { lead: LeadRecord }) {
           {showSourceTooltip && sourceBadge ? (
             <Tooltip>
               <TooltipTrigger asChild>{sourceBadge}</TooltipTrigger>
-              <TooltipContent side='top'>{sourceDetail}</TooltipContent>
+              <TooltipContent side='top'>{originationName}</TooltipContent>
             </Tooltip>
           ) : (
             sourceBadge
@@ -220,6 +279,33 @@ export function LeadCardContent({ lead }: { lead: LeadRecord }) {
         </div>
       )}
     </>
+  )
+}
+
+/**
+ * A dot, deliberately not a badge: D17's badge slot belongs to origination and
+ * card density must not move (W11).
+ *
+ * Color is never the only signal (WCAG 1.4.1) — the dot carries an `aria-label`
+ * and a tooltip that both state the day count and the last-touch date, so a
+ * screen-reader user gets exactly what a sighted user gets.
+ */
+function StalenessDot({ signal }: { signal: LeadStaleSignal }) {
+  const description = `No contact in ${signal.days} ${
+    signal.days === 1 ? 'day' : 'days'
+  } — ${signal.lastTouchLabel}`
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          role='img'
+          aria-label={description}
+          className='mt-1 inline-block h-2 w-2 shrink-0 rounded-full bg-amber-500 dark:bg-amber-400'
+        />
+      </TooltipTrigger>
+      <TooltipContent side='top'>{description}</TooltipContent>
+    </Tooltip>
   )
 }
 

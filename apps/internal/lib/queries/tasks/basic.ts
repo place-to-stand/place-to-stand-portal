@@ -61,6 +61,12 @@ export async function getTaskById(
 /**
  * Get tasks linked to a specific lead.
  * Admin-only operation (leads are admin-only).
+ *
+ * Returns ARCHIVED rows too (PRD 005 D18/C11). Project archive routes are
+ * project-scoped and a lead task has no project, so the lead sheet is the only
+ * place an archived lead task can live — filtering them out here would make
+ * archiving one an irreversible disappearance from the UI. Callers group by
+ * `deletedAt`.
  */
 export async function listTasksForLead(
   user: AppUser,
@@ -71,7 +77,7 @@ export async function listTasksForLead(
   return db
     .select(taskFields)
     .from(tasks)
-    .where(and(eq(tasks.leadId, leadId), isNull(tasks.deletedAt)))
+    .where(eq(tasks.leadId, leadId))
     .orderBy(asc(tasks.createdAt))
 }
 

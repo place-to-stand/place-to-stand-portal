@@ -101,7 +101,7 @@ Turbo v2 uses strict mode by default — only env vars listed in `turbo.json` ar
 ├── api/              # API routes: v1/, tasks/, task-comments/, my-tasks/, projects/,
 │                     #   clients/, contacts/, leads/, invoices/, dashboard/, activity/,
 │                     #   planning/, uploads/, storage/, public/, auth/, github/, google/,
-│                     #   integrations/ (leads-intake, stripe, github, google, ...)
+│                     #   integrations/ (stripe, github, google, ...)
 ├── auth/             # Supabase auth callback
 └── unauthorized/     # Access denied page
 ```
@@ -291,31 +291,6 @@ await logTaskCreated(taskId, userId)
 - For custom properties referenced in 2+ files/callsites, use enum or const object
 - Consult developer before creating new event/property names (naming consistency is essential)
 - Changes to existing event/property names may break reporting
-
-### Lead Intake Webhook
-
-**Endpoint:** `POST /api/integrations/leads-intake`
-
-**Authentication:** Bearer token matching `LEADS_INTAKE_TOKEN` env var
-
-**Setup:**
-1. Generate token: `openssl rand -hex 32`
-2. Store in this app: `LEADS_INTAKE_TOKEN`
-3. Store in marketing site: `PORTAL_LEADS_TOKEN`
-
-**Payload shape:**
-```json
-{
-  "name": "string (required)",
-  "email": "string (required)",
-  "company": "string (optional)",
-  "website": "string (optional)",
-  "message": "string (optional)",
-  "sourceDetail": "string (optional)"
-}
-```
-
-Leads are inserted with `WEBSITE` source and appear on `/leads/board` immediately.
 
 ### Key Patterns & Conventions
 

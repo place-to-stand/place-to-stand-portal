@@ -1,17 +1,15 @@
 'use server'
 
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull, ne } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { leads, leadStageHistory } from '@/lib/db/schema'
+import { contactLeads, leads, leadStageHistory } from '@/lib/db/schema'
 import {
-  LEAD_SOURCE_TYPES,
   LEAD_STATUS_VALUES,
   isTerminalLeadStatus,
-  type LeadSourceTypeValue,
   type LeadStatusValue,
 } from '@/lib/leads/constants'
 import { serializeLeadNotes } from '@/lib/leads/notes'
@@ -28,13 +26,9 @@ const saveLeadSchema = z.object({
     .min(1, 'Contact name is required')
     .max(160),
   status: z.enum(LEAD_STATUS_VALUES).optional(),
-  sourceType: z.enum(LEAD_SOURCE_TYPES).optional().nullable(),
-  sourceDetail: z
-    .string()
-    .trim()
-    .max(160, 'Source info must be 160 characters or fewer')
-    .optional()
-    .nullable(),
+  originationMode: z.enum(['internal', 'external']).optional().nullable(),
+  originationContactId: z.string().uuid().optional().nullable(),
+  originationUserId: z.string().uuid().optional().nullable(),
   assigneeId: z.string().uuid().optional().nullable(),
   contactEmail: z.string().trim().max(160).optional().nullable(),
   contactPhone: z.string().trim().max(40).optional().nullable(),
@@ -79,8 +73,8 @@ export async function saveLead(input: SaveLeadInput): Promise<LeadActionResult> 
       const inserted = await db.insert(leads).values({
         contactName: normalized.contactName,
         status: normalized.status,
-        sourceType: normalized.sourceType,
-        sourceDetail: normalized.sourceDetail,
+        originationContactId: normalized.originationContactId,
+        originationUserId: normalized.originationUserId,
         assigneeId: normalized.assigneeId,
         contactEmail: normalized.contactEmail,
         contactPhone: normalized.contactPhone,
@@ -95,6 +89,11 @@ export async function saveLead(input: SaveLeadInput): Promise<LeadActionResult> 
 
       createdLeadId = inserted[0]?.id
       if (createdLeadId) {
+        await syncContactLeadLink(
+          createdLeadId,
+          normalized.originationContactId
+        )
+
         await db.insert(leadStageHistory).values({
           leadId: createdLeadId,
           fromStatus: null,
@@ -130,8 +129,8 @@ export async function saveLead(input: SaveLeadInput): Promise<LeadActionResult> 
       const setPayload: Record<string, unknown> = {
         contactName: normalized.contactName,
         status: normalized.status,
-        sourceType: normalized.sourceType,
-        sourceDetail: normalized.sourceDetail,
+        originationContactId: normalized.originationContactId,
+        originationUserId: normalized.originationUserId,
         assigneeId: normalized.assigneeId,
         contactEmail: normalized.contactEmail,
         contactPhone: normalized.contactPhone,
@@ -164,6 +163,11 @@ export async function saveLead(input: SaveLeadInput): Promise<LeadActionResult> 
         .set(setPayload)
         .where(eq(leads.id, normalized.id))
 
+      await syncContactLeadLink(
+        normalized.id,
+        normalized.originationContactId
+      )
+
       if (statusChanged) {
         await db.insert(leadStageHistory).values({
           leadId: normalized.id,
@@ -186,14 +190,53 @@ export async function saveLead(input: SaveLeadInput): Promise<LeadActionResult> 
   return { success: true, leadId: createdLeadId }
 }
 
+/**
+ * Keep `contact_leads` in step with the lead's origination contact.
+ *
+ * `origination_contact_id` stays the authoritative single referrer;
+ * `contact_leads` is the queryable link that lets a contact's page answer
+ * "which leads did this person refer?".
+ *
+ * Clearing or changing the referrer is a HARD delete: `contact_leads` has no
+ * `deletedAt` (its columns are `id, contact_id, lead_id, created_at`), matching
+ * `contact_clients` — hard-delete is the established convention for pure link
+ * tables here. Do NOT add `deletedAt` to it (W14).
+ */
+async function syncContactLeadLink(
+  leadId: string,
+  originationContactId: string | null
+): Promise<void> {
+  // Remove any link that no longer matches — covers both "cleared" and
+  // "changed to someone else".
+  await db
+    .delete(contactLeads)
+    .where(
+      originationContactId
+        ? and(
+            eq(contactLeads.leadId, leadId),
+            ne(contactLeads.contactId, originationContactId)
+          )
+        : eq(contactLeads.leadId, leadId)
+    )
+
+  if (!originationContactId) {
+    return
+  }
+
+  await db
+    .insert(contactLeads)
+    .values({ leadId, contactId: originationContactId })
+    .onConflictDoNothing()
+}
+
 function normalizeLeadPayload(
   payload: SaveLeadInput
 ): {
   id?: string
   contactName: string
   status: LeadStatusValue
-  sourceType: LeadSourceTypeValue | null
-  sourceDetail: string | null
+  originationContactId: string | null
+  originationUserId: string | null
   assigneeId: string | null
   contactEmail: string | null
   contactPhone: string | null
@@ -205,8 +248,17 @@ function normalizeLeadPayload(
     id: payload.id,
     contactName: payload.contactName.trim(),
     status: payload.status ?? 'NEW_OPPORTUNITIES',
-    sourceType: payload.sourceType ?? null,
-    sourceDetail: normalizeOptionalString(payload.sourceDetail, 160),
+    // Enforce the mutex HERE as well as in the database, so a constraint
+    // violation is never the user-facing error. The selected mode decides which
+    // slot survives; the other is cleared unconditionally.
+    originationContactId:
+      payload.originationMode === 'external'
+        ? (payload.originationContactId ?? null)
+        : null,
+    originationUserId:
+      payload.originationMode === 'internal'
+        ? (payload.originationUserId ?? null)
+        : null,
     assigneeId: payload.assigneeId ?? null,
     contactEmail: normalizeEmail(payload.contactEmail),
     contactPhone: normalizeOptionalString(payload.contactPhone, 40),

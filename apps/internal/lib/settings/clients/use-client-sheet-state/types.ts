@@ -20,21 +20,20 @@ export type ClientContactOption = {
   hasPortalAccess: boolean
 }
 
-/** A contact available as an external origination source (IC referrer). */
-export type OriginationContactOption = {
-  id: string
-  name: string | null
-  email: string
-}
+// Imported from the shared origination module so the client and lead sheets
+// consume ONE definition of these shapes (PRD 005 C13), and re-exported because
+// existing client-side call sites import them from here.
+import type {
+  OriginationContactOption,
+  OriginationMode,
+  PartnerUserOption,
+} from '@/components/origination/types'
 
-/** An admin user available as an internal origination partner or closer. */
-export type PartnerUserOption = {
-  id: string
-  fullName: string | null
-  email: string
+export type {
+  OriginationContactOption,
+  OriginationMode,
+  PartnerUserOption,
 }
-
-export type OriginationMode = 'internal' | 'external'
 
 export type UseClientSheetStateArgs = {
   open: boolean

@@ -71,18 +71,23 @@ export async function POST(request: Request) {
       before: resolveDoneWindowStart(payload.fromWeeks, payload.now),
     })
 
+    // Project-less lead tasks have no graph to hydrate — see the note in
+    // app/(dashboard)/my/tasks/[view]/page.tsx.
+    const projectEntries = slice.items.flatMap(item =>
+      item.project ? [{ taskId: item.id, project: item.project, sortOrder: item.sortOrder }] : []
+    )
     const projectIds = Array.from(
-      new Set(slice.items.map(item => item.project.id))
+      new Set(projectEntries.map(entry => entry.project.id))
     )
     const projects = await fetchProjectsWithRelationsByIds(projectIds)
 
     return NextResponse.json({
       ok: true,
       data: {
-        entries: slice.items.map(item => ({
-          taskId: item.id,
-          projectId: item.project.id,
-          sortOrder: item.sortOrder,
+        entries: projectEntries.map(entry => ({
+          taskId: entry.taskId,
+          projectId: entry.project.id,
+          sortOrder: entry.sortOrder,
         })),
         projects,
         olderDoneCount: slice.olderDoneCount,

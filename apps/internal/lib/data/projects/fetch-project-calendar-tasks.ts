@@ -47,7 +47,10 @@ export async function fetchProjectCalendarTasks({
   start,
   end,
 }: FetchProjectCalendarTasksArgs): Promise<TaskWithRelations[]> {
-  const taskRows: TaskRow[] = await db
+  // Project-scoped: `eq(projectId, projectId)` can never match a NULL, so the
+  // project-less lead tasks introduced by PRD 005 D8 are already excluded.
+  // Narrowed below rather than widening TaskRow (W15).
+  const selectedTaskRows = await db
     .select({
       id: tasksTable.id,
       projectId: tasksTable.projectId,
@@ -78,6 +81,10 @@ export async function fetchProjectCalendarTasks({
       ),
     )
     .orderBy(asc(tasksTable.dueOn), asc(tasksTable.title))
+
+  const taskRows: TaskRow[] = selectedTaskRows.flatMap(row =>
+    row.projectId === null ? [] : [{ ...row, projectId: row.projectId }]
+  )
 
   const taskIds = taskRows.map(row => row.id)
 

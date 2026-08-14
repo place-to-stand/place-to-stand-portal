@@ -54,6 +54,14 @@ export function sortCurrentTasks<T extends { status: string }>(rows: T[]): T[] {
  * page has already loaded the project this costs nothing extra. Only the task
  * title and status are selected — descriptions are written for the internal
  * board and are deliberately not exposed here.
+ *
+ * The `eq(tasks.projectId, projectId)` predicate below is also what keeps
+ * lead-anchored tasks out of the portal: `tasks.project_id` is nullable since
+ * PRD 005 D8, and SQL equality never matches NULL. Do NOT make this filter
+ * null-tolerant — that would expose pre-sales tasks to clients, and PRD 005 D12
+ * (client task visibility) is explicitly deferred, not designed. If that work
+ * is picked up, filter on an explicit visibility column rather than inferring
+ * anything from `project_id`. (C6, W21)
  */
 export const fetchProjectTasks = cache(
   async (user: AppUser, projectId: string): Promise<ProjectTasks> => {

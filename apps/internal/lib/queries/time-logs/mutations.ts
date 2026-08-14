@@ -50,6 +50,19 @@ async function assertLinkedTasksEligible(
   for (const taskId of taskIds) {
     const row = rowsById.get(taskId)
 
+    // Lead-anchored tasks cannot be time-logged (PRD 005 D10): pre-sales time
+    // isn't billable to a client, and there is no project to bill it to.
+    //
+    // The generic check below would already reject these (`null !== projectId`),
+    // but only incidentally — and an incidental guard is one refactor away from
+    // being lost. Reject it deliberately, with a message that says why.
+    if (row && row.projectId === null) {
+      throw new HttpError(
+        'Lead tasks cannot be time-logged. They belong to a lead, not a project.',
+        400,
+      )
+    }
+
     if (
       !row ||
       row.projectId !== projectId ||

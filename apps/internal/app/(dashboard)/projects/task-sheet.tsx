@@ -336,6 +336,12 @@ export function TaskSheet(props: TaskSheetProps) {
   // The DB check `time_log_tasks_project_match` makes the PERSISTED project
   // authoritative — an unsaved project change must block logging until saved.
   const watchedProjectId = form.watch('projectId') ?? null
+  // Lead-anchored: no project on the persisted row, but a lead (PRD 005 D8).
+  // Derived from the persisted task for an existing one, and from the create
+  // sheet's defaults when a task is being created from a lead.
+  const isLeadTask = props.task
+    ? props.task.project_id === null && props.task.lead_id !== null
+    : props.defaultProjectId === null && props.defaultLeadId !== null
   const taskUnavailableForTime = Boolean(
     props.task && (props.task.deleted_at || props.task.status === 'ARCHIVED')
   )
@@ -401,6 +407,7 @@ export function TaskSheet(props: TaskSheetProps) {
                   feedback={feedback}
                   isPending={isPending}
                   canManage={props.canManage}
+                  isLeadTask={isLeadTask}
                   assigneeItems={assigneeItems}
                   projectItems={projectItems}
                   projectGroups={projectGroups}

@@ -7,7 +7,7 @@ import { logActivity } from '@/lib/activity/logger'
 import { leadConvertedEvent } from '@/lib/activity/events'
 import { requireRole } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { clients, contacts, contactClients, leads } from '@/lib/db/schema'
+import { clients, contacts, contactClients, leads, users } from '@/lib/db/schema'
 import { createClient } from '@/lib/settings/clients/actions/create-client'
 import { saveProject } from '@/lib/settings/projects/actions/save-project'
 import { extractLeadNotes } from '@/lib/leads/notes'
@@ -58,6 +58,14 @@ export async function convertLeadToClient(
 
   let finalClientId: string
   let finalClientSlug: string | undefined
+  const warnings: string[] = []
+
+  // D16 + W12: `createClient` calls `assertClientPartnerUserRoles`, which ERRORS
+  // OUT when the referenced user is archived — so copying an archived assignee
+  // straight through would abort the whole conversion over a field the user
+  // never touched. Resolve the attribution defensively first: an archived or
+  // non-ADMIN reference becomes null plus a warning, never a failure.
+  const attribution = await resolveLeadAttribution(lead, warnings)
 
   if (existingClientId) {
     // 2a. Link to existing client
@@ -73,6 +81,16 @@ export async function convertLeadToClient(
 
     finalClientId = existingClient.id
     finalClientSlug = existingClient.slug ?? undefined
+
+    // C10: NEVER overwrite an existing client's attribution. These fields feed
+    // the monthly-close origination and partner-payout reports, and the existing
+    // client's values may already have fed a closed month. Fill only nulls, and
+    // say so when something was skipped.
+    await applyAttributionToExistingClient(
+      existingClient.id,
+      attribution,
+      warnings
+    )
   } else {
     // 2b. Create a new client (reuse existing action)
     const resolvedName = clientName || lead.companyName || lead.contactName
@@ -88,9 +106,10 @@ export async function convertLeadToClient(
         billingType,
         state: null,
         website: lead.companyWebsite || null,
-        originationContactId: null,
-        originationUserId: null,
-        closerUserId: null,
+        originationContactId: attribution.originationContactId,
+        originationUserId: attribution.originationUserId,
+        // D16: the person working the lead is the person who closed it.
+        closerUserId: attribution.closerUserId,
         notes: resolvedNotes,
         memberIds: memberIds || [],
       }
@@ -111,7 +130,6 @@ export async function convertLeadToClient(
   }
 
   // 3. Create a contact from lead info (if requested and lead has an email)
-  const warnings: string[] = []
   const contactEmail = lead.contactEmail
   if (createContact && contactEmail) {
     try {
@@ -231,4 +249,145 @@ export async function convertLeadToClient(
     projectId,
     warnings: warnings.length > 0 ? warnings : undefined,
   }
+}
+
+
+type LeadAttribution = {
+  originationContactId: string | null
+  originationUserId: string | null
+  closerUserId: string | null
+}
+
+/**
+ * Resolve what a converted client should inherit from the lead (D16).
+ *
+ * `createClient` runs `assertClientPartnerUserRoles`, which returns an ERROR —
+ * killing the entire conversion — when a referenced user is archived
+ * (`deleted_at IS NOT NULL`) or is not an ADMIN. Role is safe by construction
+ * (`fetchLeadAssignees` delegates to `fetchAdminUsers`), but archival is not:
+ * converting an older lead whose assignee has since been archived would fail
+ * with "Selected partner user is archived", about a field the user never
+ * touched.
+ *
+ * So both user references are validated here first. An invalid one becomes null
+ * plus a `warnings[]` entry — the conversion succeeds and the operator is told
+ * what was dropped (W12).
+ */
+async function resolveLeadAttribution(
+  lead: { originationContactId: string | null; originationUserId: string | null; assigneeId: string | null },
+  warnings: string[]
+): Promise<LeadAttribution> {
+  const candidateIds = [lead.originationUserId, lead.assigneeId].filter(
+    (id): id is string => Boolean(id)
+  )
+
+  const validUserIds = new Set<string>()
+
+  if (candidateIds.length > 0) {
+    const rows = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.role, 'ADMIN'), isNull(users.deletedAt)))
+
+    for (const row of rows) {
+      if (candidateIds.includes(row.id)) {
+        validUserIds.add(row.id)
+      }
+    }
+  }
+
+  const originationUserId =
+    lead.originationUserId && validUserIds.has(lead.originationUserId)
+      ? lead.originationUserId
+      : null
+
+  if (lead.originationUserId && !originationUserId) {
+    warnings.push(
+      'The lead\'s internal origination partner is archived or no longer an admin, so origination was left unset on the client.'
+    )
+  }
+
+  // An unassigned lead simply yields a null closer — the existing behavior, and
+  // not worth a warning.
+  const closerUserId =
+    lead.assigneeId && validUserIds.has(lead.assigneeId)
+      ? lead.assigneeId
+      : null
+
+  if (lead.assigneeId && !closerUserId) {
+    warnings.push(
+      'The lead\'s assignee is archived or no longer an admin, so the closer was left unset on the client.'
+    )
+  }
+
+  return {
+    originationContactId: lead.originationContactId,
+    originationUserId,
+    closerUserId,
+  }
+}
+
+/**
+ * Fill only the NULL attribution fields on an existing client (C10).
+ *
+ * `origination_*` and `closer_user_id` feed the monthly-close origination and
+ * partner-payout reports. Per the billing-terms/close-locking precedent, a
+ * mutable field must not silently change what a historical report reads — so an
+ * existing non-null value wins, and the skip is surfaced as a warning rather
+ * than happening invisibly.
+ */
+async function applyAttributionToExistingClient(
+  clientId: string,
+  attribution: LeadAttribution,
+  warnings: string[]
+): Promise<void> {
+  const [existing] = await db
+    .select({
+      originationContactId: clients.originationContactId,
+      originationUserId: clients.originationUserId,
+      closerUserId: clients.closerUserId,
+    })
+    .from(clients)
+    .where(eq(clients.id, clientId))
+    .limit(1)
+
+  if (!existing) {
+    return
+  }
+
+  const updates: Record<string, string> = {}
+  const hasOrigination = Boolean(
+    existing.originationContactId || existing.originationUserId
+  )
+
+  if (attribution.originationContactId || attribution.originationUserId) {
+    if (hasOrigination) {
+      warnings.push(
+        'This client already has an origination set, so the lead\'s origination was not copied.'
+      )
+    } else if (attribution.originationContactId) {
+      updates.originationContactId = attribution.originationContactId
+    } else if (attribution.originationUserId) {
+      updates.originationUserId = attribution.originationUserId
+    }
+  }
+
+  if (attribution.closerUserId) {
+    if (existing.closerUserId) {
+      warnings.push(
+        'This client already has a closer set, so the lead\'s assignee was not copied.'
+      )
+    } else {
+      updates.closerUserId = attribution.closerUserId
+    }
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return
+  }
+
+  await db
+    .update(clients)
+    .set({ ...updates, updatedAt: new Date().toISOString() })
+    .where(eq(clients.id, clientId))
 }

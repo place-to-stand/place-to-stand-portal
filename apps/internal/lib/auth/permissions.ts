@@ -66,7 +66,16 @@ export async function ensureTaskAccess(
     throw new NotFoundError('Task not found')
   }
 
-  await ensureProjectAccess(user, task[0].projectId)
+  const projectId = task[0].projectId
+
+  // A lead-anchored task has no project to authorize against (PRD 005 D8).
+  // The internal portal is admin-only and `assertAdmin` already ran above, so
+  // existence is the remaining check — which the lookup just performed.
+  if (projectId === null) {
+    return
+  }
+
+  await ensureProjectAccess(user, projectId)
 }
 
 export async function ensureTaskCommentAccess(

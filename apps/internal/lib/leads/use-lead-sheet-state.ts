@@ -59,8 +59,9 @@ export function useLeadSheetState({
       contactPhone: lead?.contactPhone ?? '',
       companyName: lead?.companyName ?? initialValues?.companyName ?? '',
       companyWebsite: lead?.companyWebsite ?? '',
-      sourceType: lead?.sourceType ?? null,
-      sourceDetail: lead?.sourceDetail ?? '',
+      originationMode: lead?.originationMode ?? null,
+      originationContactId: lead?.originationContactId ?? null,
+      originationUserId: lead?.originationUserId ?? null,
       status: lead?.status ?? initialStatus ?? 'NEW_OPPORTUNITIES',
       assigneeId: lead?.assigneeId ?? null,
       notes: lead?.notesHtml ?? initialValues?.notes ?? '',
@@ -77,19 +78,37 @@ export function useLeadSheetState({
     form.reset(defaultValues)
   }, [defaultValues, form])
 
-  const selectedSourceType = useWatch({
+  const selectedOriginationMode = useWatch({
     control: form.control,
-    name: 'sourceType',
+    name: 'originationMode',
   })
 
+  // The old watcher cleared `sourceDetail` when `sourceType` went empty. Its
+  // replacement enforces the mutex in the form: switching modes clears the slot
+  // that no longer applies, so `leads_origination_mutex` can never be the thing
+  // that surfaces the error to the user.
   useEffect(() => {
-    if (!selectedSourceType) {
-      const currentDetail = form.getValues('sourceDetail')
-      if (currentDetail) {
-        form.setValue('sourceDetail', '')
+    if (selectedOriginationMode === 'internal') {
+      if (form.getValues('originationContactId')) {
+        form.setValue('originationContactId', null)
       }
+      return
     }
-  }, [form, selectedSourceType])
+
+    if (selectedOriginationMode === 'external') {
+      if (form.getValues('originationUserId')) {
+        form.setValue('originationUserId', null)
+      }
+      return
+    }
+
+    if (form.getValues('originationContactId')) {
+      form.setValue('originationContactId', null)
+    }
+    if (form.getValues('originationUserId')) {
+      form.setValue('originationUserId', null)
+    }
+  }, [form, selectedOriginationMode])
 
   const submitDisabled = isSaving || isArchiving
   const historyKey = lead?.id ?? 'lead:new'
@@ -125,8 +144,9 @@ export function useLeadSheetState({
           contactPhone: values.contactPhone ?? '',
           companyName: values.companyName ?? '',
           companyWebsite: values.companyWebsite ?? '',
-          sourceType: values.sourceType ?? null,
-          sourceDetail: values.sourceDetail ?? '',
+          originationMode: values.originationMode ?? null,
+          originationContactId: values.originationContactId ?? null,
+          originationUserId: values.originationUserId ?? null,
           status: values.status,
           assigneeId: values.assigneeId ?? null,
           notes: values.notes ?? '',
@@ -240,7 +260,7 @@ export function useLeadSheetState({
     setActionParam,
     canConvert,
     isConverted,
-    selectedSourceType,
+    selectedOriginationMode,
     submitDisabled,
     submitDisabledReason,
     archiveDisabledReason,

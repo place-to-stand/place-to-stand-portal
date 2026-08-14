@@ -435,6 +435,55 @@
       "when": 1786505637165,
       "tag": "0061_add_tasks_completed_at",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1786662792940,
+      "tag": "0062_lead_updates",
+      "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1786662946570,
+      "tag": "0063_lead_stage_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1786663340292,
+      "tag": "0064_drop_dead_lead_activity_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1786664331455,
+      "tag": "0065_tasks_nullable_project",
+      "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1786664339617,
+      "tag": "0066_time_log_task_matches_project",
+      "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1786665319657,
+      "tag": "0067_lead_origination",
+      "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1786665786669,
+      "tag": "0068_drop_lead_source",
+      "breakpoints": true
     }
   ]
 }

@@ -4,6 +4,7 @@ import {
   CalendarDays,
   ChevronRight,
   FolderKanban,
+  Handshake,
   User,
   Users,
 } from 'lucide-react'
@@ -99,31 +100,38 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
                   onClick={e => e.stopPropagation()}
                   className='hover:text-foreground pointer-events-auto relative z-20 inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
                 >
-                  {renderProjectTypeIcon(task.project.type, 'size-3 shrink-0')}
+                  {renderTaskAnchorIcon(task.project, 'size-3 shrink-0')}
                   <span className='truncate'>{clientLabel}</span>
                 </Link>
               ) : (
                 <span className='inline-flex min-w-0 items-center gap-1'>
-                  {renderProjectTypeIcon(task.project.type, 'size-3 shrink-0')}
+                  {renderTaskAnchorIcon(task.project, 'size-3 shrink-0')}
                   <span className='truncate'>{clientLabel}</span>
                 </span>
               )}
-              <MetaSeparator />
-              {projectLinkMeta.href ? (
-                <Link
-                  href={projectLinkMeta.href}
-                  onClick={e => e.stopPropagation()}
-                  className='hover:text-foreground pointer-events-auto relative z-20 inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
-                >
-                  <FolderKanban className='size-3 shrink-0' aria-hidden />
-                  <span className='truncate'>{task.project.name}</span>
-                </Link>
-              ) : (
-                <span className='inline-flex min-w-0 items-center gap-1'>
-                  <FolderKanban className='size-3 shrink-0' aria-hidden />
-                  <span className='truncate'>{task.project.name}</span>
-                </span>
-              )}
+              {/* A lead-anchored task has no project fragment to show, so the
+                  breadcrumb ends at the "Lead" label rather than trailing a
+                  separator into nothing (PRD 005 D8). */}
+              {task.project ? (
+                <>
+                  <MetaSeparator />
+                  {projectLinkMeta.href ? (
+                    <Link
+                      href={projectLinkMeta.href}
+                      onClick={e => e.stopPropagation()}
+                      className='hover:text-foreground pointer-events-auto relative z-20 inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
+                    >
+                      <FolderKanban className='size-3 shrink-0' aria-hidden />
+                      <span className='truncate'>{task.project.name}</span>
+                    </Link>
+                  ) : (
+                    <span className='inline-flex min-w-0 items-center gap-1'>
+                      <FolderKanban className='size-3 shrink-0' aria-hidden />
+                      <span className='truncate'>{task.project.name}</span>
+                    </span>
+                  )}
+                </>
+              ) : null}
               {/* No due date set is the common case -- say nothing rather than
                   spend a line saying there's nothing to say. */}
               {task.dueOn ? (
@@ -175,6 +183,12 @@ function getTaskLinkMeta(task: AssignedTaskSummary): TaskLinkMeta {
 
 function getProjectLinkMeta(task: AssignedTaskSummary): TaskLinkMeta {
   const { client, project } = task
+
+  // Lead-anchored tasks have no project to link to (PRD 005 D8).
+  if (!project) {
+    return { href: null }
+  }
+
   const projectSlug = project.slug ?? null
 
   if (!projectSlug) {
@@ -208,7 +222,7 @@ function getClientLinkMeta(task: AssignedTaskSummary): TaskLinkMeta {
   const { client, project } = task
 
   // Only link to client pages for CLIENT-type projects with a valid client
-  if (project.type !== 'CLIENT' || !client) {
+  if (!project || project.type !== 'CLIENT' || !client) {
     return { href: null }
   }
 
@@ -225,6 +239,11 @@ function getClientDisplayName(task: AssignedTaskSummary): string {
     return task.client.name
   }
 
+  // A lead task belongs to a lead, not a client or a project (PRD 005 D8).
+  if (!task.project) {
+    return 'Lead'
+  }
+
   if (task.project.type === 'PERSONAL') {
     return 'Personal'
   }
@@ -234,6 +253,21 @@ function getClientDisplayName(task: AssignedTaskSummary): string {
   }
 
   return 'Unassigned'
+}
+
+/**
+ * Icon for whatever the task is anchored to. A null project means a
+ * lead-anchored task (PRD 005 D8), which gets the lead icon.
+ */
+function renderTaskAnchorIcon(
+  project: AssignedTaskSummary['project'],
+  className: string
+) {
+  if (!project) {
+    return <Handshake className={className} aria-hidden />
+  }
+
+  return renderProjectTypeIcon(project.type, className)
 }
 
 function renderProjectTypeIcon(

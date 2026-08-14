@@ -68,7 +68,12 @@ export function useSheetParams() {
   )
 
   const open = useCallback(
-    (entity: SheetEntityKey, value: string) => {
+    (
+      entity: SheetEntityKey,
+      value: string,
+      /** Aux params to set alongside the entity — must be declared on it. */
+      aux?: Record<string, string>
+    ) => {
       // Let the host mount now; the URL write below round-trips first.
       emitSheetOpen(entity, value)
       router.push(
@@ -80,6 +85,10 @@ export function useSheetParams() {
           } else {
             params.append(entity, value)
           }
+
+          for (const [key, auxValue] of Object.entries(aux ?? {})) {
+            params.set(key, auxValue)
+          }
         }),
         { scroll: false }
       )
@@ -88,7 +97,8 @@ export function useSheetParams() {
   )
 
   const openNew = useCallback(
-    (entity: SheetEntityKey) => open(entity, NEW_SHEET_VALUE),
+    (entity: SheetEntityKey, aux?: Record<string, string>) =>
+      open(entity, NEW_SHEET_VALUE, aux),
     [open]
   )
 

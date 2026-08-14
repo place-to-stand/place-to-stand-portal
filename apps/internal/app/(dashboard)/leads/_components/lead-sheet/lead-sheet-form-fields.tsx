@@ -25,28 +25,24 @@ import {
 } from '@pts/ui/select'
 import { cn } from '@/lib/utils'
 import {
-  LEAD_SOURCE_LABELS,
-  LEAD_SOURCE_TYPES,
   LEAD_STATUS_LABELS,
   LEAD_STATUS_ORDER,
   getLeadStatusToken,
-  type LeadSourceTypeValue,
   type LeadStatusValue,
 } from '@/lib/leads/constants'
 import type { LeadAssigneeOption } from '@/lib/leads/types'
 
+import { LeadOriginationField } from './lead-origination-field'
 import type { LeadFormValues } from './types'
 
 type LeadSheetFormFieldsProps = {
   control: Control<LeadFormValues>
   assignees: LeadAssigneeOption[]
-  selectedSourceType: LeadSourceTypeValue | null | undefined
 }
 
 export function LeadSheetFormFields({
   control,
   assignees,
-  selectedSourceType,
 }: LeadSheetFormFieldsProps) {
   const assigneeItems = useMemo(
     () => [
@@ -168,64 +164,10 @@ export function LeadSheetFormFields({
           )}
         />
       </div>
-      <div className='grid gap-4 sm:grid-cols-2'>
-        <FormField
-          control={control}
-          name='sourceType'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Source</FormLabel>
-              <Select
-                value={field.value ?? 'none'}
-                onValueChange={(value: string) =>
-                  field.onChange(value === 'none' ? null : value as LeadSourceTypeValue)
-                }
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder='Select source'>
-                      {field.value ? (
-                        LEAD_SOURCE_LABELS[field.value]
-                      ) : (
-                        <span className='text-muted-foreground'>Not set</span>
-                      )}
-                    </SelectValue>
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value='none'>
-                    <span className='text-muted-foreground'>Not set</span>
-                  </SelectItem>
-                  {LEAD_SOURCE_TYPES.map(source => (
-                    <SelectItem key={source} value={source}>
-                      {LEAD_SOURCE_LABELS[source]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={control}
-          name='sourceDetail'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Source Info</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  value={field.value ?? ''}
-                  placeholder='Referral name, site URL, or event title'
-                  disabled={!selectedSourceType}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
+      {/* Origination — the shared picker, not a copy (C9). Replaces the old
+          free-text Source / Source Info pair, which had no FK and so could not
+          carry over to a client on conversion (D13). */}
+      <LeadOriginationField disabled={false} />
       <div className='grid gap-4 sm:grid-cols-2'>
         <FormField
           control={control}

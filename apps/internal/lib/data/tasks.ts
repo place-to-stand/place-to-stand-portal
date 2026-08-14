@@ -33,13 +33,19 @@ export type AssignedTaskSummary = {
   dueOn: string | null
   updatedAt: string | null
   sortOrder: number | null
+  /**
+   * NULL for lead-anchored tasks (PRD 005 D8) — they belong to a lead, not a
+   * project. My Tasks is assignee-scoped, not project-scoped, so these belong
+   * here; the four joins onto `projects` are LEFT joins precisely so a
+   * project-less task is not silently dropped (W18).
+   */
   project: {
     id: string
     name: string
     slug: string | null
     type: ProjectTypeValue
     createdBy: string | null
-  }
+  } | null
   client: {
     id: string
     name: string
@@ -170,7 +176,7 @@ async function loadAssignedTaskSummaries({
     })
     .from(taskAssigneesTable)
     .innerJoin(tasksTable, eq(taskAssigneesTable.taskId, tasksTable.id))
-    .innerJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
+    .leftJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
     .leftJoin(clientsTable, eq(projectsTable.clientId, clientsTable.id))
     .leftJoin(
       taskAssigneeMetadataTable,
@@ -198,7 +204,7 @@ async function loadAssignedTaskSummaries({
       })
       .from(taskAssigneesTable)
       .innerJoin(tasksTable, eq(taskAssigneesTable.taskId, tasksTable.id))
-      .innerJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
+      .leftJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
       .where(whereClause)
 
     totalCount = Number(totalResult[0]?.count ?? 0)
@@ -219,13 +225,15 @@ async function loadAssignedTaskSummaries({
       dueOn: row.dueOn ?? null,
       updatedAt: updatedSource,
       sortOrder: row.sortOrder ?? null,
-      project: {
-        id: row.project.id,
-        name: row.project.name,
-        slug: row.project.slug ?? null,
-        type: row.project.type as ProjectTypeValue,
-        createdBy: row.project.createdBy ?? null,
-      },
+      project: row.project?.id
+        ? {
+            id: row.project.id,
+            name: row.project.name,
+            slug: row.project.slug ?? null,
+            type: row.project.type as ProjectTypeValue,
+            createdBy: row.project.createdBy ?? null,
+          }
+        : null,
       client: row.client?.id
         ? {
             id: row.client.id,
@@ -251,7 +259,7 @@ async function countAssignedDoneBefore(
     .select({ count: sql<number>`count(*)` })
     .from(taskAssigneesTable)
     .innerJoin(tasksTable, eq(taskAssigneesTable.taskId, tasksTable.id))
-    .innerJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
+    .leftJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
     .where(
       and(
         ...assignedTaskConditions(userId),
@@ -312,7 +320,7 @@ export async function listAssignedDoneSlice({
     })
     .from(taskAssigneesTable)
     .innerJoin(tasksTable, eq(taskAssigneesTable.taskId, tasksTable.id))
-    .innerJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
+    .leftJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
     .leftJoin(clientsTable, eq(projectsTable.clientId, clientsTable.id))
     .leftJoin(
       taskAssigneeMetadataTable,
@@ -341,13 +349,15 @@ export async function listAssignedDoneSlice({
     dueOn: row.dueOn ?? null,
     updatedAt: row.updatedAt ?? row.createdAt ?? null,
     sortOrder: row.sortOrder ?? null,
-    project: {
-      id: row.project.id,
-      name: row.project.name,
-      slug: row.project.slug ?? null,
-      type: row.project.type as ProjectTypeValue,
-      createdBy: row.project.createdBy ?? null,
-    },
+    project: row.project?.id
+      ? {
+          id: row.project.id,
+          name: row.project.name,
+          slug: row.project.slug ?? null,
+          type: row.project.type as ProjectTypeValue,
+          createdBy: row.project.createdBy ?? null,
+        }
+      : null,
     client: row.client?.id
       ? {
           id: row.client.id,

@@ -1,7 +1,21 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { ListTodo, Plus, Calendar, ExternalLink, CheckCircle2, Circle } from 'lucide-react'
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useTransition,
+} from 'react'
+import {
+  ListTodo,
+  Plus,
+  Calendar,
+  ExternalLink,
+  CheckCircle2,
+  Circle,
+  RotateCcw,
+} from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -13,12 +27,16 @@ import { myTaskHref } from '@/lib/sheets/hrefs'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { prefetchSheetInit } from '@/lib/sheets/wrappers/use-sheet-init'
 
+import { restoreTask } from '@/app/(dashboard)/projects/actions/restore-task'
+
 type LeadTask = {
   id: string
   title: string
   status: string
   dueOn: string | null
   createdAt: string
+  /** Non-null = archived. Lead tasks have no project archive to live in (D18). */
+  deletedAt: string | null
 }
 
 type LeadTasksSectionProps = {
@@ -35,6 +53,8 @@ export function LeadTasksSection({
   const { openNew, get } = useSheetParams()
   const [tasks, setTasks] = useState<LeadTask[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [restoreError, setRestoreError] = useState<string | null>(null)
+  const [isRestoring, startRestore] = useTransition()
   const taskParam = get('task')
 
   const fetchTasks = useCallback(() => {
@@ -83,8 +103,35 @@ export function LeadTasksSection({
     }
   }, [fetchTasks, onSuccess, taskParam])
 
-  const completedTasks = tasks.filter(t => t.status === 'DONE' || t.status === 'ARCHIVED')
-  const activeTasks = tasks.filter(t => t.status !== 'DONE' && t.status !== 'ARCHIVED')
+  const handleRestore = useCallback(
+    (taskId: string) => {
+      startRestore(async () => {
+        const result = await restoreTask({ taskId })
+
+        if (result.error) {
+          setRestoreError(result.error)
+          return
+        }
+
+        setRestoreError(null)
+        await fetchTasks()
+        onSuccess?.()
+      })
+    },
+    [fetchTasks, onSuccess]
+  )
+
+  // Archived lead tasks have nowhere else to live: project archive routes are
+  // project-scoped and a lead task has no project (D18/C11). Without this
+  // grouping, archiving one would remove it from the UI permanently.
+  const archivedTasks = tasks.filter(t => t.deletedAt !== null)
+  const liveTasks = tasks.filter(t => t.deletedAt === null)
+  const completedTasks = liveTasks.filter(
+    t => t.status === 'DONE' || t.status === 'ARCHIVED'
+  )
+  const activeTasks = liveTasks.filter(
+    t => t.status !== 'DONE' && t.status !== 'ARCHIVED'
+  )
 
   return (
     <div className="space-y-3">
@@ -145,6 +192,32 @@ export function LeadTasksSection({
               )}
             </div>
           )}
+
+          {/* Archived tasks (D18) — collapsed, each restorable. */}
+          {archivedTasks.length > 0 && (
+            <details className="space-y-2 pt-2">
+              <summary className="text-muted-foreground cursor-pointer text-xs font-medium">
+                Archived ({archivedTasks.length})
+              </summary>
+              <div className="mt-2 space-y-2">
+                {restoreError && (
+                  <p role="alert" className="text-destructive text-xs">
+                    {restoreError}
+                  </p>
+                )}
+                {archivedTasks.map(task => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    isArchived
+                    canRestore={canManage}
+                    isRestoring={isRestoring}
+                    onRestore={() => handleRestore(task.id)}
+                  />
+                ))}
+              </div>
+            </details>
+          )}
         </div>
       )}
 
@@ -171,16 +244,30 @@ const STATUS_COLORS: Record<string, string> = {
 function TaskCard({
   task,
   isCompleted = false,
+  isArchived = false,
+  canRestore = false,
+  isRestoring = false,
+  onRestore,
 }: {
   task: LeadTask
   isCompleted?: boolean
+  isArchived?: boolean
+  canRestore?: boolean
+  isRestoring?: boolean
+  onRestore?: () => void
 }) {
   const statusLabel = STATUS_LABELS[task.status] ?? task.status
   const statusColor = STATUS_COLORS[task.status] ?? 'bg-slate-500/10 text-slate-600'
 
   return (
     <div
-      className={`rounded-lg border p-3 ${isCompleted ? 'bg-muted/20 opacity-70' : 'bg-muted/30'}`}
+      className={`rounded-lg border p-3 ${
+        isArchived
+          ? 'bg-muted/10 border-dashed opacity-60'
+          : isCompleted
+            ? 'bg-muted/20 opacity-70'
+            : 'bg-muted/30'
+      }`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
@@ -206,13 +293,26 @@ function TaskCard({
             )}
           </div>
         </div>
-        <a
-          href={myTaskHref(task.id)}
-          className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-          aria-label={`Open task: ${task.title}`}
-        >
-          <ExternalLink className="h-4 w-4" aria-hidden="true" />
-        </a>
+        <div className="flex shrink-0 items-center gap-1">
+          {isArchived && canRestore && onRestore && (
+            <button
+              type="button"
+              onClick={onRestore}
+              disabled={isRestoring}
+              className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+              aria-label={`Restore task: ${task.title}`}
+            >
+              <RotateCcw className="h-4 w-4" aria-hidden="true" />
+            </button>
+          )}
+          <a
+            href={myTaskHref(task.id)}
+            className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+            aria-label={`Open task: ${task.title}`}
+          >
+            <ExternalLink className="h-4 w-4" aria-hidden="true" />
+          </a>
+        </div>
       </div>
     </div>
   )

@@ -4,12 +4,13 @@ import { and, eq, isNull } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { clients, projects } from '@/lib/db/schema'
+import { clients } from '@/lib/db/schema'
 import {
   fetchProjectsLite,
   fetchProjectsWithRelationsByIds,
 } from '@/lib/data/projects'
 import { getActiveTaskProjectId } from '@/lib/data/tasks'
+import { fetchLeadTaskWithRelations } from '@/lib/data/projects/fetch-lead-task'
 import { fetchFormSubmissionById } from '@/lib/data/form-submissions'
 import { fetchLeadAssignees, fetchLeadById } from '@/lib/data/leads'
 import { fetchAdminUsers } from '@/lib/data/users'
@@ -225,64 +226,17 @@ const resolveLeadInit: SheetInitResolver<'lead'> = async (user, id) => {
   return { lead, assignees, senderName }
 }
 
-const SALES_PROJECT_SLUG = 'sales-strategy'
-const SALES_PROJECT_NAME = 'Sales Strategy'
-
-/**
- * Find or create the internal Sales Strategy project — the default project
- * for tasks created from a lead.
- */
-async function getOrCreateSalesProject(userId: string): Promise<string> {
-  const [existingProject] = await db
-    .select({ id: projects.id })
-    .from(projects)
-    .where(
-      and(
-        eq(projects.slug, SALES_PROJECT_SLUG),
-        eq(projects.type, 'INTERNAL'),
-        isNull(projects.deletedAt)
-      )
-    )
-    .limit(1)
-
-  if (existingProject) {
-    return existingProject.id
-  }
-
-  const timestamp = new Date().toISOString()
-  const [newProject] = await db
-    .insert(projects)
-    .values({
-      name: SALES_PROJECT_NAME,
-      slug: SALES_PROJECT_SLUG,
-      type: 'INTERNAL',
-      status: 'ACTIVE',
-      createdBy: userId,
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    })
-    .returning({ id: projects.id })
-
-  if (!newProject) {
-    throw new Error('Failed to create Sales Strategy project')
-  }
-
-  return newProject.id
-}
-
 const resolveTaskInit: SheetInitResolver<'task'> = async (user, id) => {
   // The sheet only reads project identity fields for its selector — no need
   // to hydrate every project's task graph.
-  const [admins, allProjects, salesProjectId] = await Promise.all([
+  const [admins, allProjects] = await Promise.all([
     fetchAdminUsers(),
     fetchProjectsLite(),
-    getOrCreateSalesProject(user.id),
   ])
 
   const base = {
     admins,
     projects: allProjects,
-    salesProjectId,
     currentUserId: user.id,
   }
 
@@ -293,8 +247,18 @@ const resolveTaskInit: SheetInitResolver<'task'> = async (user, id) => {
   // Resolve the task's project, then hydrate just that project's graph so
   // the sheet gets a full `TaskWithRelations`.
   const holdingProjectId = await getActiveTaskProjectId(id)
+
   if (!holdingProjectId) {
-    throw new NotFoundError('Task not found')
+    // A lead-anchored task has no project graph to hydrate from (PRD 005 D8).
+    // Without this branch every lead task 404s in the sheet — which would be a
+    // regression, since today they all carry the Sales project and open fine.
+    const leadTask = await fetchLeadTaskWithRelations(id)
+
+    if (!leadTask) {
+      throw new NotFoundError('Task not found')
+    }
+
+    return { task: leadTask, ...base }
   }
 
   const [hydratedProject] = await fetchProjectsWithRelationsByIds([

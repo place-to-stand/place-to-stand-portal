@@ -2,11 +2,12 @@ import 'server-only'
 
 import { cache } from 'react'
 import { and, asc, desc, eq, isNotNull, isNull, sql } from 'drizzle-orm'
+import { alias } from 'drizzle-orm/pg-core'
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { leads, users } from '@/lib/db/schema'
+import { contacts, leads, users } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 import { extractLeadNotes } from '@/lib/leads/notes'
 import {
@@ -19,6 +20,47 @@ import type {
   LeadRecord,
 } from '@/lib/leads/types'
 import { fetchAdminUsers } from '@/lib/data/users'
+import { fetchLastTouchByLead } from '@/lib/queries/lead-updates'
+
+// `users` is already joined for the assignee, so the origination user needs its
+// own alias; the contact join is aliased for symmetry and readability.
+const originationUser = alias(users, 'origination_user')
+const originationContact = alias(contacts, 'origination_contact')
+
+/**
+ * Flatten a lead row's origination into the shape `LeadRecord` exposes.
+ *
+ * `originationMode` is DERIVED from which slot is populated rather than stored:
+ * `leads_origination_mutex` guarantees at most one is set, so the column would
+ * be a third copy of a fact the other two already carry.
+ */
+function mapOrigination(row: {
+  originationContactId: string | null
+  originationUserId: string | null
+  originationContactName: string | null
+  originationUserName: string | null
+  originationUserEmail: string | null
+}): Pick<
+  LeadRecord,
+  | 'originationMode'
+  | 'originationContactId'
+  | 'originationContactName'
+  | 'originationUserId'
+  | 'originationUserName'
+> {
+  return {
+    originationMode: row.originationContactId
+      ? 'external'
+      : row.originationUserId
+        ? 'internal'
+        : null,
+    originationContactId: row.originationContactId ?? null,
+    originationContactName: row.originationContactName ?? null,
+    originationUserId: row.originationUserId ?? null,
+    originationUserName:
+      row.originationUserName ?? row.originationUserEmail ?? null,
+  }
+}
 
 export const fetchLeadsBoard = cache(
   async (user: AppUser): Promise<LeadBoardColumnData[]> => {
@@ -39,6 +81,13 @@ export const fetchLeadsBoard = cache(
       }
     }
 
+    // One batched aggregate for every visible lead — a per-lead call here would
+    // be an N+1 across seven columns (C4).
+    const lastTouchByLead = await fetchLastTouchByLead(
+      user,
+      rows.map(row => row.id)
+    )
+
     const columnMap = new Map<LeadStatusValue, LeadRecord[]>(
       LEAD_BOARD_COLUMNS.map(column => [column.id, []])
     )
@@ -53,8 +102,7 @@ export const fetchLeadsBoard = cache(
         id: row.id,
         contactName: row.contactName,
         status: row.status as LeadStatusValue,
-        sourceType: (row.sourceType as LeadRecord['sourceType']) ?? null,
-        sourceDetail: row.sourceDetail ?? null,
+        ...mapOrigination(row),
         assigneeId: row.assigneeId ?? null,
         assigneeName: row.assigneeName ?? null,
         assigneeEmail: row.assigneeEmail ?? null,
@@ -67,9 +115,8 @@ export const fetchLeadsBoard = cache(
         rank: row.rank,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
-        // Activity Tracking
-        lastContactAt: row.lastContactAt ?? null,
-        awaitingReply: row.awaitingReply ?? false,
+        // Activity Tracking — derived, never stored (D4)
+        lastTouchAt: lastTouchByLead.get(row.id) ?? null,
         // Predictions
         expectedCloseDate: row.expectedCloseDate ?? null,
         // Conversion
@@ -112,13 +159,13 @@ export const fetchLeadById = cache(
     }
 
     const lead = rows[0]
+    const lastTouchByLead = await fetchLastTouchByLead(user, [lead.id])
 
     return {
       id: lead.id,
       contactName: lead.contactName,
       status: lead.status as LeadStatusValue,
-      sourceType: (lead.sourceType as LeadRecord['sourceType']) ?? null,
-      sourceDetail: lead.sourceDetail ?? null,
+      ...mapOrigination(lead),
       assigneeId: lead.assigneeId ?? null,
       assigneeName: lead.assigneeName ?? null,
       assigneeEmail: lead.assigneeEmail ?? null,
@@ -131,9 +178,8 @@ export const fetchLeadById = cache(
       rank: lead.rank,
       createdAt: lead.createdAt,
       updatedAt: lead.updatedAt,
-      // Activity Tracking
-      lastContactAt: lead.lastContactAt ?? null,
-      awaitingReply: lead.awaitingReply ?? false,
+      // Activity Tracking — derived, never stored (D4)
+      lastTouchAt: lastTouchByLead.get(lead.id) ?? null,
       // Predictions
       expectedCloseDate: lead.expectedCloseDate ?? null,
       // Conversion
@@ -164,12 +210,16 @@ export const fetchArchivedLeads = cache(
       }
     }
 
+    const lastTouchByLead = await fetchLastTouchByLead(
+      user,
+      rows.map(row => row.id)
+    )
+
     return rows.map(row => ({
       id: row.id,
       contactName: row.contactName,
       status: row.status as LeadStatusValue,
-      sourceType: (row.sourceType as LeadRecord['sourceType']) ?? null,
-      sourceDetail: row.sourceDetail ?? null,
+      ...mapOrigination(row),
       assigneeId: row.assigneeId ?? null,
       assigneeName: row.assigneeName ?? null,
       assigneeEmail: row.assigneeEmail ?? null,
@@ -182,9 +232,8 @@ export const fetchArchivedLeads = cache(
       rank: row.rank,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
-      // Activity Tracking
-      lastContactAt: row.lastContactAt ?? null,
-      awaitingReply: row.awaitingReply ?? false,
+      // Activity Tracking — derived, never stored (D4)
+      lastTouchAt: lastTouchByLead.get(row.id) ?? null,
       // Predictions
       expectedCloseDate: row.expectedCloseDate ?? null,
       // Conversion
@@ -220,8 +269,11 @@ async function selectLeadRows({
     id: leads.id,
     contactName: leads.contactName,
     status: leads.status,
-    sourceType: leads.sourceType,
-    sourceDetail: leads.sourceDetail,
+    originationContactId: leads.originationContactId,
+    originationUserId: leads.originationUserId,
+    originationContactName: originationContact.name,
+    originationUserName: originationUser.fullName,
+    originationUserEmail: originationUser.email,
     assigneeId: leads.assigneeId,
     assigneeName: users.fullName,
     assigneeEmail: users.email,
@@ -234,9 +286,6 @@ async function selectLeadRows({
     rank: includeRank ? leads.rank : sql<string>`'zzzzzzzz'`,
     createdAt: leads.createdAt,
     updatedAt: leads.updatedAt,
-    // Activity Tracking
-    lastContactAt: leads.lastContactAt,
-    awaitingReply: leads.awaitingReply,
     // Predictions
     expectedCloseDate: leads.expectedCloseDate,
     // Conversion
@@ -252,6 +301,13 @@ async function selectLeadRows({
     .select(selection)
     .from(leads)
     .leftJoin(users, eq(users.id, leads.assigneeId))
+    // Aliased joins: the origination contact/user are different rows from the
+    // assignee, so the display names must come from their own joins.
+    .leftJoin(
+      originationContact,
+      eq(originationContact.id, leads.originationContactId)
+    )
+    .leftJoin(originationUser, eq(originationUser.id, leads.originationUserId))
     .where(where ? and(where, deletedFilter) : deletedFilter)
     .orderBy(
       ...(archived

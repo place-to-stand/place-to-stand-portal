@@ -16,7 +16,8 @@ import type { LeadSheetProps } from './types'
 const LEAD_FORM_ID = 'lead-form'
 
 export function LeadSheet(props: LeadSheetProps) {
-  const { open, lead, assignees, canManage = false, onSuccess } = props
+  const { open, lead, assignees, canManage = false, onSuccess, thresholds } =
+    props
   const {
     form,
     isEditing,
@@ -28,7 +29,6 @@ export function LeadSheet(props: LeadSheetProps) {
     setActionParam,
     canConvert,
     isConverted,
-    selectedSourceType,
     submitDisabled,
     submitDisabledReason,
     archiveDisabledReason,
@@ -93,7 +93,6 @@ export function LeadSheet(props: LeadSheetProps) {
                   <LeadSheetFormFields
                     control={form.control}
                     assignees={assignees}
-                    selectedSourceType={selectedSourceType}
                   />
                 </div>
 
@@ -121,6 +120,7 @@ export function LeadSheet(props: LeadSheetProps) {
                   lead={lead}
                   canManage={canManage}
                   onSuccess={onSuccess}
+                  thresholds={thresholds}
                 />
               )}
             </form>

@@ -12,14 +12,28 @@ import {
   useSheetParams,
   useSheetParamSelection,
 } from '@/lib/sheets/use-sheet-params'
-import type { LeadAssigneeOption, LeadBoardColumnData } from '@/lib/leads/types'
+import type {
+  LeadAssigneeOption,
+  LeadBoardColumnData,
+  LeadStalenessConfig,
+} from '@/lib/leads/types'
 import type { LeadRecord } from '@/lib/leads/types'
 import type { LeadStatusValue } from '@/lib/leads/constants'
+import { daysSinceTouch, isLeadStale } from '@/lib/leads/updates'
+import { formatCalendarDate } from '@/lib/dates'
 
 import { LEADS_TABS } from '../_lib/tabs'
 import { LeadsBoard } from './leads-board'
 import { LeadSheet } from './lead-sheet'
 import { ConvertLeadDialog } from './convert-lead-dialog'
+import {
+  LeadStalenessProvider,
+  type LeadStaleSignal,
+} from './lead-card'
+import {
+  LeadsBoardFiltersBar,
+  useLeadsBoardFilters,
+} from './leads-board-filters'
 
 type LeadsWorkspaceProps = {
   initialColumns: LeadBoardColumnData[]
@@ -28,6 +42,8 @@ type LeadsWorkspaceProps = {
   senderName?: string
   /** True when the `?lead=` share link points at a lead that no longer exists. */
   leadNotFound?: boolean
+  /** Configured thresholds plus a server-stamped `now` (D19, D22). */
+  staleness: LeadStalenessConfig
 }
 
 export function LeadsWorkspace({
@@ -36,9 +52,65 @@ export function LeadsWorkspace({
   canManage,
   senderName,
   leadNotFound = false,
+  staleness,
 }: LeadsWorkspaceProps) {
   const router = useRouter()
   const { getAux } = useSheetParams()
+  const filters = useLeadsBoardFilters(assignees)
+
+  // Staleness is derived, never stored — a pure function of status, last touch,
+  // creation date, and the configured threshold (same reasoning as D4). One
+  // pass over the board resolves every card's signal.
+  const staleSignals = useMemo(() => {
+    const now = new Date(staleness.now)
+    const signals = new Map<string, LeadStaleSignal>()
+
+    for (const column of initialColumns) {
+      for (const lead of column.leads) {
+        if (
+          !isLeadStale(
+            lead.status,
+            lead.lastTouchAt,
+            lead.createdAt,
+            staleness.thresholds,
+            now
+          )
+        ) {
+          continue
+        }
+
+        signals.set(lead.id, {
+          days: daysSinceTouch(lead.lastTouchAt, lead.createdAt, now),
+          lastTouchLabel: lead.lastTouchAt
+            ? `last touched ${formatCalendarDate(lead.lastTouchAt)}`
+            : `no touches logged since ${formatCalendarDate(lead.createdAt)}`,
+        })
+      }
+    }
+
+    return signals
+  }, [initialColumns, staleness])
+
+  // Client-side over the already-loaded board: every active lead is present, so
+  // a server round trip would buy nothing and would fight the DnD state (D23).
+  const visibleColumns = useMemo(() => {
+    if (!filters.needsFollowUp && !filters.assigneeId) {
+      return initialColumns
+    }
+
+    return initialColumns.map(column => ({
+      ...column,
+      leads: column.leads.filter(lead => {
+        if (filters.needsFollowUp && !staleSignals.has(lead.id)) {
+          return false
+        }
+        if (filters.assigneeId && lead.assigneeId !== filters.assigneeId) {
+          return false
+        }
+        return true
+      }),
+    }))
+  }, [filters.assigneeId, filters.needsFollowUp, initialColumns, staleSignals])
   // The `?lead=` param drives the sheet: uuid = edit, `new` = create. Local
   // selection state opens the sheet instantly while the URL catches up.
   const { selectedId, isCreating, select, openCreate, clear } =
@@ -167,6 +239,7 @@ export function LeadsWorkspace({
           canManage={canManage}
           senderName={senderName}
           initialAction={initialAction}
+          thresholds={staleness.thresholds}
           onSuccess={handleSheetSuccess}
         />
       ) : null}
@@ -185,14 +258,21 @@ export function LeadsWorkspace({
           }}
         />
       )}
-      <LeadsBoard
-        initialColumns={initialColumns}
-        canManage={canManage}
-        onEditLead={handleEditLead}
-        onCreateLead={handleCreateLead}
-        onLeadClosedWon={handleLeadClosedWon}
-        activeLeadId={boardActiveLeadId}
+      <LeadsBoardFiltersBar
+        filters={filters}
+        assignees={assignees}
+        staleCount={staleSignals.size}
       />
+      <LeadStalenessProvider signals={staleSignals}>
+        <LeadsBoard
+          initialColumns={visibleColumns}
+          canManage={canManage}
+          onEditLead={handleEditLead}
+          onCreateLead={handleCreateLead}
+          onLeadClosedWon={handleLeadClosedWon}
+          activeLeadId={boardActiveLeadId}
+        />
+      </LeadStalenessProvider>
     </PageShell>
   )
 }

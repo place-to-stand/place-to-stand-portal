@@ -15,7 +15,7 @@ import { resolveCompletedAt } from '@/lib/projects/task-status'
 import { revalidateProjectTaskViews } from './shared'
 import { statusSchema, TASK_STATUSES } from './shared-schemas'
 import type { ActionResult } from './action-types'
-import { resolveNextTaskRank } from './task-rank'
+import { resolveNextLeadTaskRank, resolveNextTaskRank } from './task-rank'
 
 export async function changeTaskStatus(input: {
   taskId: string
@@ -57,6 +57,7 @@ export async function changeTaskStatus(input: {
       status: tasks.status,
       completedAt: tasks.completedAt,
       projectId: tasks.projectId,
+      leadId: tasks.leadId,
       clientId: projects.clientId,
       deletedAt: tasks.deletedAt,
     })
@@ -79,7 +80,16 @@ export async function changeTaskStatus(input: {
     let nextRank: string
 
     try {
-      nextRank = await resolveNextTaskRank(task.projectId, status)
+      // Lead tasks rank within their lead, project tasks within their project
+      // (W6) — the two scopes are different, not one scope with a null.
+      // `tasks_anchor_present` guarantees at least one is set.
+      if (task.projectId !== null) {
+        nextRank = await resolveNextTaskRank(task.projectId, status)
+      } else if (task.leadId !== null) {
+        nextRank = await resolveNextLeadTaskRank(task.leadId, status)
+      } else {
+        return { error: 'Task is not attached to a project or a lead.' }
+      }
     } catch (rankError) {
       console.error('Failed to resolve rank for task status change', rankError)
       return { error: 'Unable to update task ordering.' }

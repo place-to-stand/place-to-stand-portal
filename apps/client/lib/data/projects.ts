@@ -74,6 +74,15 @@ export const fetchClientProjects = cache(
 
     const countsByProject = new Map<string, { open: number; done: number }>()
     for (const row of taskCounts) {
+      // `tasks.project_id` became nullable for lead-anchored tasks (PRD 005
+      // D8). The `inArray` filter above already excludes them — NULL never
+      // satisfies IN — so this narrowing is stating the intent, not changing
+      // the result set: these counts are per-project and a project-less task
+      // has no project to count against.
+      if (row.projectId === null) {
+        continue
+      }
+
       const entry = countsByProject.get(row.projectId) ?? { open: 0, done: 0 }
       if (row.status === 'DONE') entry.done += row.count
       else entry.open += row.count

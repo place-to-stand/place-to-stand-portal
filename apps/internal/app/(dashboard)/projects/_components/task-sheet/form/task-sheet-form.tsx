@@ -37,6 +37,8 @@ type TaskSheetFormProps = {
   maxAttachmentSize: number
   attachmentsDisabledReason: string | null
   isDragActive: boolean
+  /** Lead-anchored task (PRD 005 D8) — swaps the project selector for a label. */
+  isLeadTask?: boolean
 }
 
 export function TaskSheetForm(props: TaskSheetFormProps) {
@@ -117,6 +119,7 @@ export function TaskSheetForm(props: TaskSheetFormProps) {
           maxAttachmentSize={maxAttachmentSize}
           feedback={feedback}
           isSheetOpen={isSheetOpen}
+          isLeadTask={props.isLeadTask}
         />
       </form>
     </Form>

@@ -8,6 +8,8 @@ import {
   fetchLeadAssignees,
   fetchLeadsBoard,
 } from '@/lib/data/leads'
+import type { LeadStalenessConfig } from '@/lib/leads/types'
+import { fetchLeadStaleThresholds } from '@/lib/queries/lead-stage-settings'
 import { NEW_SHEET_VALUE, UUID_PATTERN } from '@/lib/sheets/entities'
 import { leadHref } from '@/lib/sheets/hrefs'
 
@@ -29,10 +31,21 @@ export default async function LeadsBoardPage({ searchParams }: PageProps) {
   const params = searchParams ? await searchParams : {}
   const leadParam = firstParam(params.lead) ?? null
 
-  const [board, assignees] = await Promise.all([
+  const [board, assignees, thresholdMap] = await Promise.all([
     fetchLeadsBoard(user),
     fetchLeadAssignees(),
+    fetchLeadStaleThresholds(user),
   ])
+
+  // `fetchLeadStaleThresholds` is server-only, so the configured values cross
+  // the boundary as a plain object. `now` crosses with them: staleness is a
+  // function of elapsed time, and letting the client read its own clock during
+  // hydration would produce a server/client text mismatch at a day boundary
+  // (the React #418 class of bug this codebase has already been bitten by).
+  const staleness: LeadStalenessConfig = {
+    thresholds: Object.fromEntries(thresholdMap) as LeadStalenessConfig['thresholds'],
+    now: new Date().toISOString(),
+  }
 
   // Deep-link resolution: the board holds every active lead, so a uuid param
   // that isn't on it is either archived (cross-redirect so shared links keep
@@ -62,6 +75,7 @@ export default async function LeadsBoardPage({ searchParams }: PageProps) {
       canManage
       senderName={user.full_name ?? user.email ?? ''}
       leadNotFound={leadNotFound}
+      staleness={staleness}
     />
   )
 }

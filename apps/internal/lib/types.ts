@@ -1,6 +1,5 @@
 import {
   clientBillingType,
-  leadSourceType,
   leadStatus,
   projectType,
   taskStatus,
@@ -14,7 +13,6 @@ export type ClientBillingTypeValue =
   (typeof clientBillingType.enumValues)[number]
 export type ProjectTypeValue = (typeof projectType.enumValues)[number]
 export type LeadStatusValue = (typeof leadStatus.enumValues)[number]
-export type LeadSourceTypeValue = (typeof leadSourceType.enumValues)[number]
 export type WorkerStatusValue = (typeof workerStatus.enumValues)[number]
 
 export type DbClient = {
@@ -60,7 +58,11 @@ export type DbProject = {
 
 export type DbTask = {
   id: string
-  project_id: string
+  /**
+   * NULL for lead-anchored tasks (PRD 005 D8) — kept in lockstep with
+   * `tasks.project_id` in packages/db/src/schema.ts, which dropped NOT NULL.
+   */
+  project_id: string | null
   lead_id: string | null
   title: string
   description: string | null
@@ -183,8 +185,8 @@ export type DbLead = {
   id: string
   contact_name: string
   status: LeadStatusValue
-  source_type: LeadSourceTypeValue | null
-  source_detail: string | null
+  origination_contact_id: string | null
+  origination_user_id: string | null
   assignee_id: string | null
   contact_email: string | null
   contact_phone: string | null

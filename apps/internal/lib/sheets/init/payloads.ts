@@ -71,7 +71,6 @@ export type SheetInitPayloads = {
     /** Identity-only projects for the sheet's project selector. */
     projects: ProjectWithRelations[]
     /** Default project when creating a task from a lead. */
-    salesProjectId: string
     currentUserId: string
   }
 }

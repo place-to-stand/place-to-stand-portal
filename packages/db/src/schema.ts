@@ -59,18 +59,6 @@ export const leadStatus = pgEnum('lead_status', [
   'UNQUALIFIED',
 ])
 
-/**
- * Lead source types.
- * - REFERRAL: Lead came from a referral
- * - WEBSITE: Lead came from the website contact form
- * - EVENT: Reserved for future use (conference, meetup, etc.)
- */
-export const leadSourceType = pgEnum('lead_source_type', [
-  'REFERRAL',
-  'WEBSITE',
-  'EVENT', // Reserved: for future event-based lead capture
-])
-
 // OAuth enums
 export const oauthProvider = pgEnum('oauth_provider', ['GOOGLE', 'GITHUB'])
 
@@ -105,6 +93,18 @@ export const leadLossReason = pgEnum('lead_loss_reason', [
   'FIT',
   'GHOSTED',
   'OTHER',
+])
+
+/**
+ * How a logged lead interaction happened.
+ * Kept deliberately small at launch — see PRD 005 D3. Direction (inbound vs
+ * outbound), SMS, and artifact-sent types are deferred to PRD 005 §07.
+ */
+export const leadUpdateType = pgEnum('lead_update_type', [
+  'MEETING',
+  'PHONE_CALL',
+  'EMAIL',
+  'NOTE',
 ])
 
 export const workerStatus = pgEnum('worker_status', [
@@ -465,7 +465,22 @@ export const tasks = pgTable(
   'tasks',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
-    projectId: uuid('project_id').notNull(),
+    /**
+     * NULL for lead-anchored tasks — they belong to a lead (see `leadId`), not
+     * a project. See PRD 005 D8.
+     *
+     * A DATA PROPERTY, NOT ACCESS CONTROL. The client portal selects tasks by
+     * equality on this column (`apps/client/lib/data/tasks.ts`), and SQL
+     * equality never matches NULL, so a null-project task cannot reach the
+     * portal. That is true of null-project rows ONLY: `tasks_anchor_present`
+     * deliberately permits a task with BOTH anchors set, and such a task is
+     * portal-visible like any other project task. Lead tasks stay private
+     * because of the backfill + D9 (no transfer on conversion) + no UI path
+     * that reassigns them — not because of the null. When PRD 005 D12 is picked
+     * up, filter the portal on an explicit visibility column instead of
+     * inferring anything from this one. (W21)
+     */
+    projectId: uuid('project_id'),
     leadId: uuid('lead_id'),
     title: text().notNull(),
     description: text(),
@@ -547,6 +562,17 @@ export const tasks = pgTable(
       foreignColumns: [users.id],
       name: 'tasks_updated_by_fkey',
     }),
+    // Every task is anchored to a project, a lead, or both — never neither,
+    // which would be a row reachable from nowhere. Deliberately NOT a mutual
+    // exclusion: a project task that references a lead is legal.
+    //
+    // Bare expression, no `CHECK (...)` wrapper — drizzle-kit adds it. The
+    // literal wrapper in `time_log_tasks_project_match` below is a
+    // baseline-introspection artifact, not a template. (W19)
+    check(
+      'tasks_anchor_present',
+      sql`project_id IS NOT NULL OR lead_id IS NOT NULL`
+    ),
   ]
 )
 
@@ -934,8 +960,16 @@ export const leads = pgTable(
     id: uuid().defaultRandom().primaryKey().notNull(),
     contactName: text('contact_name').notNull(),
     status: leadStatus().default('NEW_OPPORTUNITIES').notNull(),
-    sourceType: leadSourceType('source_type'),
-    sourceDetail: text('source_detail'),
+    // Origination: at most ONE of these may be set per the
+    // leads_origination_mutex CHECK below. Internal sourcing partners use
+    // originationUserId; external referrers use originationContactId. Both NULL
+    // means no known origination.
+    //
+    // Mirrors clients.origination_* EXACTLY so conversion is a field copy
+    // rather than a translation layer between two half-matching models
+    // (PRD 005 D13/C8).
+    originationContactId: uuid('origination_contact_id'),
+    originationUserId: uuid('origination_user_id'),
     assigneeId: uuid('assignee_id'),
     contactEmail: text('contact_email'),
     contactPhone: text('contact_phone'),
@@ -944,9 +978,12 @@ export const leads = pgTable(
     notes: jsonb('notes').default({}).notNull(),
     rank: text().default('zzzzzzzz').notNull(),
 
-    // Activity Tracking
-    lastContactAt: timestamp('last_contact_at', { withTimezone: true, mode: 'string' }),
-    awaitingReply: boolean('awaiting_reply').default(false),
+    // Activity Tracking is DERIVED, not stored — `lastTouchAt` is
+    // MAX(occurred_at) over this lead's non-NOTE `lead_updates` rows (PRD 005
+    // D4). `last_contact_at` and `awaiting_reply` used to live here; both were
+    // read at four sites and written at zero, so they were dropped in 0064
+    // rather than wired up. Do not reintroduce a stamped column: it goes stale
+    // the moment an update is edited or deleted.
 
     // Predictions
     expectedCloseDate: date('expected_close_date'),
@@ -989,6 +1026,32 @@ export const leads = pgTable(
       foreignColumns: [clients.id],
       name: 'leads_converted_to_client_id_fkey',
     }),
+    index('idx_leads_origination_contact_id')
+      .using('btree', table.originationContactId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND origination_contact_id IS NOT NULL)`),
+    index('idx_leads_origination_user_id')
+      .using('btree', table.originationUserId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND origination_user_id IS NOT NULL)`),
+    // The inline contacts FK is valid here: `leads` is declared AFTER
+    // `contacts`. The migration-based workaround noted on clients.origination_
+    // contact_id exists only because `clients` precedes `contacts` — do not
+    // copy it (I4).
+    foreignKey({
+      columns: [table.originationContactId],
+      foreignColumns: [contacts.id],
+      name: 'leads_origination_contact_id_fkey',
+    }).onDelete('set null'),
+    foreignKey({
+      columns: [table.originationUserId],
+      foreignColumns: [users.id],
+      name: 'leads_origination_user_id_fkey',
+    }).onDelete('set null'),
+    // Mirrors clients_origination_mutex. Bare expression — drizzle-kit adds the
+    // CHECK (...) wrapper (W19).
+    check(
+      'leads_origination_mutex',
+      sql`NOT (origination_user_id IS NOT NULL AND origination_contact_id IS NOT NULL)`
+    ),
   ]
 )
 
@@ -1019,6 +1082,95 @@ export const leadStageHistory = pgTable(
       foreignColumns: [users.id],
       name: 'lead_stage_history_changed_by_fkey',
     }),
+  ]
+)
+
+/**
+ * Per-stage follow-up cadence configuration (PRD 005 §06, D22).
+ *
+ * A keyed config table in the shape of `tax_rates`, deliberately NOT a
+ * singleton: one row per lead status means adding a status later needs no
+ * ALTER TABLE, and terminal statuses simply have no row.
+ *
+ * No `deletedAt` — this is configuration, not an entity. Second carve-out from
+ * the soft-delete convention alongside `contact_leads` (W14/W16).
+ */
+export const leadStageSettings = pgTable('lead_stage_settings', {
+  id: uuid().defaultRandom().primaryKey().notNull(),
+  /** One row per status. Terminal statuses simply have no row. */
+  status: leadStatus().notNull().unique(),
+  /**
+   * Days without a touch (see LEAD_TOUCH_TYPES) before a lead in this stage
+   * reads as overdue. NULL = never stale.
+   */
+  staleAfterDays: integer('stale_after_days'),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+    .default(sql`timezone('utc'::text, now())`)
+    .notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+    .default(sql`timezone('utc'::text, now())`)
+    .notNull(),
+})
+
+export const leadUpdates = pgTable(
+  'lead_updates',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    leadId: uuid('lead_id').notNull(),
+    type: leadUpdateType().notNull(),
+    /**
+     * The interaction's description. The §03 composer writes PLAIN TEXT and the
+     * timeline renders it as plain text — deliberately not the TipTap HTML
+     * convention `task_comments` uses. If a rich editor is ever added here,
+     * the renderer must change with it; until then escaped markup showing up in
+     * the timeline is the (safe) signal that something wrote HTML.
+     */
+    body: text().notNull(),
+    /**
+     * When the interaction actually happened — NOT when the row was written.
+     * Cadence math uses this; created_at would measure data-entry lag instead.
+     * Defaults to now() so quick same-day logging needs no extra input.
+     */
+    occurredAt: timestamp('occurred_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    authorId: uuid('author_id').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    // Serves both the timeline render (ordered by occurred_at desc) and the
+    // derived last-touch aggregate in §03. Partial on deleted_at IS NULL, so
+    // soft-deleted rows are excluded by the index itself rather than filtered
+    // after the fact.
+    index('idx_lead_updates_lead_occurred')
+      .using(
+        'btree',
+        table.leadId.asc().nullsLast().op('uuid_ops'),
+        table.occurredAt.desc().nullsLast().op('timestamptz_ops')
+      )
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_lead_updates_author')
+      .using('btree', table.authorId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL)`),
+    foreignKey({
+      columns: [table.leadId],
+      foreignColumns: [leads.id],
+      name: 'lead_updates_lead_id_fkey',
+    }).onDelete('cascade'),
+    // RESTRICT, not CASCADE: an update is an audit record of who contacted
+    // whom, and users are disabled (`disabled_at`) rather than deleted in this
+    // codebase. Deliberately stricter than task_comments — see PRD 005 W2.
+    foreignKey({
+      columns: [table.authorId],
+      foreignColumns: [users.id],
+      name: 'lead_updates_author_id_fkey',
+    }).onDelete('restrict'),
   ]
 )
 

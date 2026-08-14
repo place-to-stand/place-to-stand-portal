@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import type React from 'react'
+import { Handshake } from 'lucide-react'
 import {
   FormField,
   FormItem,
@@ -57,6 +58,13 @@ export type TaskSheetFormFieldsProps = {
   maxAttachmentSize: number
   feedback: string | null
   isSheetOpen: boolean
+  /**
+   * True when the task is anchored to a lead rather than a project (PRD 005
+   * D8). The project selector is replaced by a static indicator — reassigning a
+   * lead task onto a project is deliberately out of scope, and is one of the
+   * three things keeping D12's deferral safe (W21).
+   */
+  isLeadTask?: boolean
 }
 
 export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
@@ -82,6 +90,7 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
     maxAttachmentSize,
     feedback,
     isSheetOpen,
+    isLeadTask = false,
   } = props
 
   const firstFieldRef = useRef<HTMLInputElement>(null)
@@ -254,38 +263,51 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
             )
           }}
         />
-        <FormField
-          control={form.control}
-          name='projectId'
-          render={({ field }) => {
-            const disabled = isPending || !canManage
-            const reason = resolveDisabledReason(disabled)
-            const selectedValue = field.value ?? ''
+        {isLeadTask ? (
+          <FormItem>
+            <FormLabel>Project</FormLabel>
+            <div className='border-input bg-muted/40 text-muted-foreground flex h-9 items-center gap-2 rounded-md border px-3 text-sm'>
+              <Handshake className='h-3.5 w-3.5 shrink-0' aria-hidden />
+              <span>Lead task</span>
+            </div>
+            <p className='text-muted-foreground text-xs'>
+              This task belongs to a lead, not a project.
+            </p>
+          </FormItem>
+        ) : (
+          <FormField
+            control={form.control}
+            name='projectId'
+            render={({ field }) => {
+              const disabled = isPending || !canManage
+              const reason = resolveDisabledReason(disabled)
+              const selectedValue = field.value ?? ''
 
-            return (
-              <FormItem>
-                <FormLabel>Project</FormLabel>
-                <FormControl>
-                  <DisabledFieldTooltip disabled={disabled} reason={reason}>
-                    <SearchableCombobox
-                      items={projectItems}
-                      groups={projectGroups}
-                      value={selectedValue}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      name={field.name}
-                      placeholder='Select project'
-                      searchPlaceholder='Search projects...'
-                      emptyMessage='No projects found.'
-                      disabled={disabled}
-                    />
-                  </DisabledFieldTooltip>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )
-          }}
-        />
+              return (
+                <FormItem>
+                  <FormLabel>Project</FormLabel>
+                  <FormControl>
+                    <DisabledFieldTooltip disabled={disabled} reason={reason}>
+                      <SearchableCombobox
+                        items={projectItems}
+                        groups={projectGroups}
+                        value={selectedValue}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        placeholder='Select project'
+                        searchPlaceholder='Search projects...'
+                        emptyMessage='No projects found.'
+                        disabled={disabled}
+                      />
+                    </DisabledFieldTooltip>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )
+            }}
+          />
+        )}
       </div>
       <FormField
         control={form.control}

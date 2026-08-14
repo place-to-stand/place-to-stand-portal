@@ -1,4 +1,4 @@
-import { leadSourceType, leadStatus } from '@/lib/db/schema'
+import { leadStatus } from '@/lib/db/schema'
 import { TASK_STATUS_TOKENS } from '@/lib/projects/task-status'
 
 export const LEAD_STATUS_VALUES = leadStatus.enumValues
@@ -83,22 +83,19 @@ export function getLeadStatusToken(status: LeadStatusValue): string {
   return LEAD_STATUS_TOKENS[status] ?? ''
 }
 
-export const LEAD_SOURCE_TYPES = leadSourceType.enumValues
-
-export type LeadSourceTypeValue = (typeof LEAD_SOURCE_TYPES)[number]
-
-export const LEAD_SOURCE_LABELS: Record<LeadSourceTypeValue, string> = {
-  REFERRAL: 'Referral',
-  WEBSITE: 'Website',
-  EVENT: 'Event',
-}
-
-export function getLeadSourceLabel(source?: LeadSourceTypeValue | null): string {
-  if (!source) {
-    return ''
-  }
-
-  return LEAD_SOURCE_LABELS[source] ?? source
+/**
+ * Origination badge labels for the lead card (D17).
+ *
+ * `Referral` = an external contact, `Partner` = an internal admin user —
+ * matching the schema's own vocabulary ("internal sourcing partners" vs
+ * "external referrers with IC agreements").
+ */
+export const LEAD_ORIGINATION_LABELS: Record<
+  'internal' | 'external',
+  string
+> = {
+  external: 'Referral',
+  internal: 'Partner',
 }
 
 /**

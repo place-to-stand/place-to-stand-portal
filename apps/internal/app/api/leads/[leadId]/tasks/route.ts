@@ -26,6 +26,10 @@ export async function GET(
         status: task.status,
         dueOn: task.dueOn,
         createdAt: task.createdAt,
+        // Archived lead tasks live only in the lead sheet (D18/C11), so the
+        // section needs to know which rows are archived in order to group and
+        // offer restore.
+        deletedAt: task.deletedAt,
       })),
     })
   } catch (error) {

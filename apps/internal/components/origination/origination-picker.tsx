@@ -23,9 +23,18 @@ import type {
   OriginationContactOption,
   OriginationMode,
   PartnerUserOption,
-} from '@/lib/settings/clients/use-client-sheet-state'
+} from './types'
 
-export type ClientOriginationPickerProps = {
+/**
+ * The internal-partner / external-referrer toggle, shared by the client and
+ * lead sheets (PRD 005 C9).
+ *
+ * Fully prop-driven — it holds no state and no client-specific logic — which is
+ * what made the extraction mechanical. Two visually identical pickers that must
+ * stay in sync is §01's failure mode with a different file name; do not copy
+ * this component, render it.
+ */
+export type OriginationPickerProps = {
   mode: OriginationMode
   selectedUser: PartnerUserOption | null
   selectedContact: OriginationContactOption | null
@@ -49,7 +58,7 @@ function UserDisplayName(user: PartnerUserOption): string {
   return user.fullName?.trim() || user.email
 }
 
-export function ClientOriginationPicker({
+export function OriginationPicker({
   mode,
   selectedUser,
   selectedContact,
@@ -67,7 +76,7 @@ export function ClientOriginationPicker({
   onSelectUser,
   onSelectContact,
   onClear,
-}: ClientOriginationPickerProps) {
+}: OriginationPickerProps) {
   const controlsDisabled = disabled || isPending
 
   return (

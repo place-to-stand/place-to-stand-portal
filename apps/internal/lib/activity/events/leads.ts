@@ -5,15 +5,34 @@ import { toMetadata } from './shared'
 export const leadCreatedEvent = (args: {
   contactName: string
   status?: string
-  sourceType?: string | null
+  /** 'internal' | 'external' | null — replaces the retired sourceType (D13). */
+  originationMode?: string | null
 }): ActivityEvent => ({
   verb: ActivityVerbs.LEAD_CREATED,
   summary: `Created lead "${args.contactName}"`,
+  // Historical activity_logs rows keep their old `sourceType` metadata. That is
+  // an immutable audit trail — do NOT migrate it (W10).
   metadata: toMetadata({
     lead: {
       contactName: args.contactName,
       status: args.status ?? null,
-      sourceType: args.sourceType ?? null,
+      originationMode: args.originationMode ?? null,
+    },
+  }),
+})
+
+export const leadUpdateLoggedEvent = (args: {
+  contactName: string
+  type: string
+  typeLabel: string
+  occurredAt: string
+}): ActivityEvent => ({
+  verb: ActivityVerbs.LEAD_UPDATE_LOGGED,
+  summary: `Logged ${args.typeLabel.toLowerCase()} on lead "${args.contactName}"`,
+  metadata: toMetadata({
+    update: {
+      type: args.type,
+      occurredAt: args.occurredAt,
     },
   }),
 })

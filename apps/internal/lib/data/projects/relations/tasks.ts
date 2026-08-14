@@ -79,6 +79,68 @@ export async function loadTaskRows(
     .from(tasksTable)
     .where(and(inArray(tasksTable.projectId, projectIds), deletedPredicate))
 
+  const hydrated = await hydrateTaskRows(rows)
+
+  // `tasks.project_id` is nullable since PRD 005 D8, but this loader is
+  // project-scoped: `inArray(projectId, projectIds)` can never match a NULL.
+  // Narrowing states that rather than widening TaskRow for every project-graph
+  // consumer (W15).
+  return hydrated.flatMap(row =>
+    row.projectId === null ? [] : [{ ...row, projectId: row.projectId }]
+  )
+}
+
+/**
+ * Hydrate ONE lead-anchored task (PRD 005 D8).
+ *
+ * `loadTaskRows` is project-scoped, and a lead task has no project — but the
+ * relation loading (comment/attachment counts, logged hours) is identical, so
+ * both paths share `hydrateTaskRows` rather than growing a second copy.
+ */
+export async function loadLeadTaskRow(
+  taskId: string
+): Promise<LeadTaskRow | null> {
+  const rows = await db
+    .select(LEAD_TASK_SELECTION)
+    .from(tasksTable)
+    .where(and(eq(tasksTable.id, taskId), isNull(tasksTable.projectId)))
+    .limit(1)
+
+  const [hydrated] = await hydrateTaskRows(rows)
+
+  // The query filters `isNull(projectId)`, so this narrowing is a restatement
+  // of the predicate, not a behavior change.
+  return hydrated && hydrated.projectId === null
+    ? { ...hydrated, projectId: null }
+    : null
+}
+
+/** A hydrated task row whose project anchor is null. */
+export type LeadTaskRow = Omit<TaskRow, 'projectId'> & { projectId: null }
+
+const LEAD_TASK_SELECTION = {
+  id: tasksTable.id,
+  projectId: tasksTable.projectId,
+  title: tasksTable.title,
+  description: tasksTable.description,
+  status: tasksTable.status,
+  rank: tasksTable.rank,
+  acceptedAt: tasksTable.acceptedAt,
+  completedAt: tasksTable.completedAt,
+  dueOn: tasksTable.dueOn,
+  createdBy: tasksTable.createdBy,
+  updatedBy: tasksTable.updatedBy,
+  createdAt: tasksTable.createdAt,
+  updatedAt: tasksTable.updatedAt,
+  deletedAt: tasksTable.deletedAt,
+  githubIssueNumber: tasksTable.githubIssueNumber,
+  githubIssueUrl: tasksTable.githubIssueUrl,
+  workerStatus: tasksTable.workerStatus,
+} satisfies Record<string, unknown>
+
+async function hydrateTaskRows<
+  T extends { id: string; projectId: string | null },
+>(rows: T[]) {
   if (!rows.length) {
     return []
   }
@@ -191,7 +253,7 @@ export function buildAssigneeMap(
 }
 
 export function mapTaskRowsToRaw(
-  rows: TaskRow[],
+  rows: Array<TaskRow | LeadTaskRow>,
   assigneesByTask: Map<string, RawTaskWithRelations['assignees']>
 ): RawTaskWithRelations[] {
   return rows.map(row => {
