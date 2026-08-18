@@ -115,6 +115,11 @@ export async function proxy(req: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|assets/|relay-HVAq/|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp)$).*)',
+    // `icon` and `apple-icon` are the generated metadata routes (app/icon.tsx,
+    // app/apple-icon.tsx). They carry no file extension, so without naming them
+    // here they get gated like a page: a signed-out tab's icon request redirects
+    // to /sign-in, the browser falls back to the static favicon.ico, and the DEV
+    // band silently disappears from the sign-in screen only.
+    '/((?!_next/static|_next/image|favicon.ico|icon|apple-icon|robots.txt|sitemap.xml|assets/|relay-HVAq/|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp)$).*)',
   ],
 }

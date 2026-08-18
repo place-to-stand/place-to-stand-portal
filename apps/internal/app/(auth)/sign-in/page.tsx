@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import { AuthShell } from "@pts/ui/auth-shell";
+
 import { getCurrentUser } from "@/lib/auth/session";
 import { serverEnv } from "@/lib/env.server";
 
@@ -27,19 +29,15 @@ export default async function SignInPage({ searchParams }: PageProps) {
     resolvedSearchParams?.notice === "client-portal";
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 px-6 py-12">
-      <div className="w-full max-w-sm space-y-8 rounded-xl bg-background p-8 shadow-sm">
-        <div className="text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Sign in with your work email to manage your projects.
-          </p>
-        </div>
-        {showClientPortalNotice ? (
-          <ClientPortalNotice clientPortalUrl={serverEnv.CLIENT_PORTAL_URL} />
-        ) : null}
-        <SignInForm redirectTo={redirectTo} />
-      </div>
-    </div>
+    <AuthShell
+      label="Internal Portal"
+      title="Welcome back"
+      description="Sign in with your work email to manage your projects."
+    >
+      {showClientPortalNotice ? (
+        <ClientPortalNotice clientPortalUrl={serverEnv.CLIENT_PORTAL_URL} />
+      ) : null}
+      <SignInForm redirectTo={redirectTo} />
+    </AuthShell>
   );
 }

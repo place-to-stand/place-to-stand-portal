@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 
-import { Button } from "@pts/ui/button";
+import { authSecondaryButtonClass } from "@pts/ui/auth-shell";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type Props = {
@@ -16,6 +16,10 @@ type Props = {
 /**
  * OAuth needs a full browser redirect, so this stays client-side rather than
  * going through the server action the password form uses.
+ *
+ * Styled with the auth shell's control classes rather than the app Button:
+ * the sign-in screen is the only place this renders, and it sits on the
+ * marketing site's dark blueprint panel rather than the themed dashboard.
  */
 export function GoogleSignInButton({ redirectTo, disabled, onError }: Props) {
   const [isPending, setIsPending] = useState(false);
@@ -47,10 +51,9 @@ export function GoogleSignInButton({ redirectTo, disabled, onError }: Props) {
   }
 
   return (
-    <Button
+    <button
       type="button"
-      variant="outline"
-      className="w-full"
+      className={authSecondaryButtonClass}
       disabled={disabled || isPending}
       onClick={handleClick}
     >
@@ -63,7 +66,7 @@ export function GoogleSignInButton({ redirectTo, disabled, onError }: Props) {
           <GoogleMark /> Continue with Google
         </span>
       )}
-    </Button>
+    </button>
   );
 }
 

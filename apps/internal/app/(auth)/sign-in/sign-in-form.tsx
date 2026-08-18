@@ -4,9 +4,14 @@ import { useActionState, useEffect, useRef, useState, useTransition } from "reac
 import { Loader2, Mail } from "lucide-react";
 import Link from "next/link";
 
-import { Button } from "@pts/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@pts/ui/label";
+import {
+  authErrorClass,
+  authFieldLabelClass,
+  authInputClass,
+  authLinkClass,
+  authPrimaryButtonClass,
+  authSecondaryButtonClass,
+} from "@pts/ui/auth-shell";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 
 import {
@@ -73,8 +78,10 @@ export function SignInForm({ redirectTo }: Props) {
       <form action={formAction} className="space-y-6">
         <input type="hidden" name="redirectTo" value={redirectTo ?? ""} />
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
+          <label className={authFieldLabelClass} htmlFor="email">
+            Email
+          </label>
+          <input
             ref={emailRef}
             id="email"
             name="email"
@@ -84,34 +91,40 @@ export function SignInForm({ redirectTo }: Props) {
             placeholder="you@example.com"
             required
             disabled={isPending}
+            className={authInputClass}
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
-          <Input
+          <label className={authFieldLabelClass} htmlFor="password">
+            Password
+          </label>
+          <input
             id="password"
             name="password"
             type="password"
             autoComplete="current-password"
             required
             disabled={isPending}
+            className={authInputClass}
           />
         </div>
-        {state.error ? (
-          <p className="text-sm text-destructive">{state.error}</p>
-        ) : null}
+        {state.error ? <p className={authErrorClass}>{state.error}</p> : null}
         {state.clientPortalUrl ? (
           <ClientPortalNotice clientPortalUrl={state.clientPortalUrl} />
         ) : null}
-        <Button type="submit" className="w-full" disabled={isPending}>
+        <button
+          type="submit"
+          className={authPrimaryButtonClass}
+          disabled={isPending}
+        >
           {isPendingPassword ? (
-            <span className="inline-flex items-center gap-2">
+            <>
               <Loader2 className="h-4 w-4 animate-spin" /> Signing in...
-            </span>
+            </>
           ) : (
             "Sign in"
           )}
-        </Button>
+        </button>
         <div className="text-center text-sm">
           <Link
             href={
@@ -119,7 +132,7 @@ export function SignInForm({ redirectTo }: Props) {
                 ? `/forgot-password?redirect=${encodeURIComponent(redirectTo)}`
                 : "/forgot-password"
             }
-            className="font-medium text-primary hover:underline"
+            className={authLinkClass}
           >
             Forgot password?
           </Link>
@@ -128,10 +141,12 @@ export function SignInForm({ redirectTo }: Props) {
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t" />
+          <span className="w-full border-t border-[#2a2b30]" />
         </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">or</span>
+        <div className="relative flex justify-center">
+          <span className="bg-[#16181c] px-2 font-mono text-[11px] uppercase tracking-[0.1em] text-[#a8a8ac]">
+            or
+          </span>
         </div>
       </div>
 
@@ -142,10 +157,9 @@ export function SignInForm({ redirectTo }: Props) {
           onError={(message) => setMagicLinkFeedback({ error: message })}
         />
 
-        <Button
+        <button
           type="button"
-          variant="outline"
-          className="w-full"
+          className={authSecondaryButtonClass}
           disabled={isPending || cooldown > 0}
           onClick={handleMagicLink}
         >
@@ -161,21 +175,19 @@ export function SignInForm({ redirectTo }: Props) {
                 : "Email me a sign-in link"}
             </span>
           )}
-        </Button>
+        </button>
       </div>
 
       {magicLinkFeedback.success ? (
         // Deliberately non-committal: the action returns success for unknown
         // addresses too, so this copy can't be used to probe for accounts.
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-center text-sm text-[#a8a8ac]">
           If an account exists for that email, we&apos;ve sent a sign-in link.
           Check your inbox.
         </p>
       ) : null}
       {magicLinkFeedback.error ? (
-        <p className="text-center text-sm text-destructive">
-          {magicLinkFeedback.error}
-        </p>
+        <p className={authErrorClass}>{magicLinkFeedback.error}</p>
       ) : null}
     </div>
   );

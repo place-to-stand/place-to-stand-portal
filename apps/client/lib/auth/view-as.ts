@@ -110,7 +110,9 @@ async function resolveAdminScope(): Promise<PortalScope> {
       id: contacts.id,
       name: contacts.name,
       email: contacts.email,
-      isPromoted: isNotNull(contacts.userId),
+      // mapWith(Boolean): isNotNull is SQL<unknown>, and the postgres driver
+      // hands the flag back as a real boolean.
+      isPromoted: isNotNull(contacts.userId).mapWith(Boolean),
     })
     .from(contacts)
     .where(isNull(contacts.deletedAt))
