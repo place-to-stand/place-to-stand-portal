@@ -37,6 +37,8 @@ type ContactsManagementTableProps = {
   deepLinkedContact?: ContactSheetInput | null
   /** True when `?contact=` points at a contact that no longer exists. */
   contactNotFound?: boolean
+  /** Base URL of the client portal (e.g. https://client.placetostand.co). */
+  clientPortalUrl?: string
 }
 
 const EMPTY_MESSAGES = {
@@ -55,6 +57,7 @@ export function ContactsManagementTable({
   basePath,
   deepLinkedContact = null,
   contactNotFound = false,
+  clientPortalUrl = '',
 }: ContactsManagementTableProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -93,6 +96,14 @@ export function ContactsManagementTable({
   const emptyMessage = hasActiveFilter
     ? 'No contacts match the current filters.'
     : EMPTY_MESSAGES[mode]
+
+  const handleRequestPreview = useCallback(
+    (contact: ContactsTableContact) => {
+      const url = `${clientPortalUrl}/api/admin/preview-contact?contactId=${contact.id}`
+      window.open(url, '_blank', 'noopener,noreferrer')
+    },
+    [clientPortalUrl]
+  )
 
   const handleRequestPromote = useCallback(
     (contact: ContactsTableContact) => {
@@ -195,6 +206,7 @@ export function ContactsManagementTable({
         onRestore={handleRestore}
         onRequestDestroy={handleRequestDestroy}
         onRequestPromote={handleRequestPromote}
+        onRequestPreview={handleRequestPreview}
         isPending={isPending || isPromotePending}
         pendingReason={pendingReason}
         pendingDeleteId={pendingDeleteId}

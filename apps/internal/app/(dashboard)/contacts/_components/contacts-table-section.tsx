@@ -3,6 +3,7 @@
 import {
   Archive,
   Contact,
+  Eye,
   Mail,
   Phone,
   RefreshCw,
@@ -42,6 +43,7 @@ export type ContactsTableSectionProps = {
   onRestore: (contact: ContactsTableContact) => void
   onRequestDestroy: (contact: ContactsTableContact) => void
   onRequestPromote: (contact: ContactsTableContact) => void
+  onRequestPreview: (contact: ContactsTableContact) => void
   isPending: boolean
   pendingReason: string
   pendingDeleteId: string | null
@@ -61,6 +63,7 @@ export function ContactsTableSection({
   onRestore,
   onRequestDestroy,
   onRequestPromote,
+  onRequestPreview,
   isPending,
   pendingReason,
   pendingDeleteId,
@@ -129,6 +132,7 @@ export function ContactsTableSection({
             const showSoftDelete = mode === 'active'
             const showRestore = mode === 'archive'
             const showDestroy = mode === 'archive'
+            const showPreview = mode === 'active'
             const showPromote =
               mode === 'active' &&
               !contact.userId
@@ -178,6 +182,21 @@ export function ContactsTableSection({
                 </TableCell>
                 <TableCell className='text-right'>
                   <div className='flex justify-end gap-2'>
+                    {showPreview ? (
+                      <Button
+                        variant='outline'
+                        size='icon-sm'
+                        onClick={e => {
+                          e.stopPropagation()
+                          onRequestPreview(contact)
+                        }}
+                        title='Preview in client portal'
+                        aria-label='Preview in client portal'
+                        disabled={isPending}
+                      >
+                        <Eye className='h-4 w-4' />
+                      </Button>
+                    ) : null}
                     {showPromote ? (
                       <DisabledFieldTooltip
                         disabled={promoteDisabled}

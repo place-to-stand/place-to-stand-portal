@@ -5,6 +5,7 @@ import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { requireUser } from '@/lib/auth/session'
 import { listContactsForSettings, listAllActiveClients } from '@/lib/queries/contacts'
 import { parseContactsSearchParams } from '@/lib/settings/contacts/filters'
+import { serverEnv } from '@/lib/env.server'
 
 import { CONTACTS_TABS } from './_lib/tabs'
 import { ContactsAddButton } from './_components/contacts-add-button'
@@ -87,6 +88,7 @@ export default async function ContactsPage({ searchParams }: ContactsPageProps) 
           basePath='/contacts'
           deepLinkedContact={deepLinkedContact}
           contactNotFound={deepLink.notFound}
+          clientPortalUrl={serverEnv.CLIENT_PORTAL_URL ?? ''}
         />
       </section>
     </PageShell>

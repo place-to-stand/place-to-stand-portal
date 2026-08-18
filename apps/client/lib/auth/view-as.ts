@@ -2,10 +2,10 @@ import 'server-only'
 
 import { cache } from 'react'
 import { cookies } from 'next/headers'
-import { and, asc, eq, isNull } from 'drizzle-orm'
+import { and, asc, eq, isNotNull, isNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { clientMembers, clients } from '@pts/db/schema'
+import { clientMembers, clients, contactClients, contacts } from '@pts/db/schema'
 import type { AppUser } from '@/lib/auth/session'
 import { isAdmin } from '@/lib/auth/permissions'
 
@@ -20,9 +20,25 @@ import { isAdmin } from '@/lib/auth/permissions'
  */
 export const VIEW_AS_COOKIE = 'pts_view_as_client'
 
+/**
+ * Cookie holding the contact an ADMIN is currently previewing the portal as.
+ *
+ * When set, the portal is scoped to all clients linked to that contact via
+ * contact_clients. Takes precedence over VIEW_AS_COOKIE.
+ */
+export const VIEW_AS_CONTACT_COOKIE = 'pts_view_as_contact'
+
 export type PortalClientOption = {
   id: string
   name: string
+}
+
+export type PortalContactOption = {
+  id: string
+  name: string
+  email: string
+  /** True when the contact has a portal user account (userId IS NOT NULL). */
+  isPromoted: boolean
 }
 
 export type PortalScope = {
@@ -30,18 +46,23 @@ export type PortalScope = {
   clientIds: string[]
   /** The same clients, with names, for display in the header. */
   scopedClients: PortalClientOption[]
-  /** True when an admin has a valid client selected. */
+  /** True when an admin has a valid contact selected. */
   isAdminPreview: boolean
   viewingAsClientId: string | null
-  /** Clients the admin may switch between. Always empty for non-admins. */
+  /** @deprecated Use availableContacts / viewingAsContactId instead. */
   availableClients: PortalClientOption[]
+  /** Contacts the admin may switch between. Always empty for non-admins. */
+  availableContacts: PortalContactOption[]
+  /** The contact the admin is currently previewing as (null if none selected). */
+  viewingAsContactId: string | null
 }
 
-const EMPTY_ADMIN_SCOPE: Omit<PortalScope, 'availableClients'> = {
+const EMPTY_ADMIN_SCOPE: Omit<PortalScope, 'availableClients' | 'availableContacts'> = {
   clientIds: [],
   scopedClients: [],
   isAdminPreview: false,
   viewingAsClientId: null,
+  viewingAsContactId: null,
 }
 
 /**
@@ -76,39 +97,63 @@ export const resolvePortalScope = cache(
       isAdminPreview: false,
       viewingAsClientId: null,
       availableClients: [],
+      availableContacts: [],
+      viewingAsContactId: null,
     }
   }
 )
 
 async function resolveAdminScope(): Promise<PortalScope> {
-  const availableClients = await db
-    .select({ id: clients.id, name: clients.name })
-    .from(clients)
-    .where(isNull(clients.deletedAt))
-    .orderBy(asc(clients.name))
+  // Fetch all non-deleted contacts ordered by name, with promoted flag.
+  const availableContacts = await db
+    .select({
+      id: contacts.id,
+      name: contacts.name,
+      email: contacts.email,
+      isPromoted: isNotNull(contacts.userId),
+    })
+    .from(contacts)
+    .where(isNull(contacts.deletedAt))
+    .orderBy(asc(contacts.name))
 
   const cookieStore = await cookies()
-  const selectedClientId = cookieStore.get(VIEW_AS_COOKIE)?.value ?? null
+  const selectedContactId = cookieStore.get(VIEW_AS_CONTACT_COOKIE)?.value ?? null
 
-  // Re-validate the selection against live rows on every request so a client
-  // that has since been archived falls back to "nothing selected".
-  const isValidSelection =
-    !!selectedClientId &&
-    availableClients.some(client => client.id === selectedClientId)
+  // Re-validate the selection against live rows on every request so a contact
+  // that has since been deleted falls back to "nothing selected".
+  const isValidContactSelection =
+    !!selectedContactId &&
+    availableContacts.some(c => c.id === selectedContactId)
 
-  if (!isValidSelection) {
-    // Fail closed: an admin with no valid selection sees an empty portal
-    // rather than every client's data at once.
-    return { ...EMPTY_ADMIN_SCOPE, availableClients }
+  if (!isValidContactSelection) {
+    // Fail closed: an admin with no valid selection sees an empty portal.
+    return {
+      ...EMPTY_ADMIN_SCOPE,
+      availableClients: [],
+      availableContacts,
+    }
   }
 
-  const selected = availableClients.filter(c => c.id === selectedClientId)
+  // Derive clientIds from contact_clients join.
+  const linkedClients = await db
+    .select({ id: clients.id, name: clients.name })
+    .from(contactClients)
+    .innerJoin(clients, eq(clients.id, contactClients.clientId))
+    .where(
+      and(
+        eq(contactClients.contactId, selectedContactId),
+        isNull(clients.deletedAt)
+      )
+    )
+    .orderBy(asc(clients.name))
 
   return {
-    clientIds: [selectedClientId],
-    scopedClients: selected,
+    clientIds: linkedClients.map(c => c.id),
+    scopedClients: linkedClients,
     isAdminPreview: true,
-    viewingAsClientId: selectedClientId,
-    availableClients,
+    viewingAsClientId: null,
+    availableClients: [],
+    availableContacts,
+    viewingAsContactId: selectedContactId,
   }
 }

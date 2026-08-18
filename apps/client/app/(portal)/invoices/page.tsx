@@ -41,7 +41,7 @@ export default async function InvoicesPage() {
         <div className="rounded-lg border border-border p-8 text-center">
           <p className="text-sm text-muted-foreground">
             {needsClientSelection
-              ? 'Select a client above to preview their portal.'
+              ? 'Select a contact above to preview the portal.'
               : 'No invoices yet. They will appear here as soon as we send you one.'}
           </p>
         </div>
