@@ -34,7 +34,7 @@
     "@base-ui/react": "^1.7.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "lucide-react": "^1.28.0",
+    "lucide-react": "^1.31.0",
     "tailwind-merge": "^3.6.0"
   },
   "peerDependencies": {
@@ -42,7 +42,7 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@types/react": "^19.2.7",
+    "@types/react": "^19.2.18",
     "typescript": "^6.0.3"
   }
 }
