@@ -7,6 +7,7 @@ import { eq } from 'drizzle-orm'
 import type { UserRole } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { users as usersTable } from '@/lib/db/schema'
+import { isUserAvatarPath } from '@/lib/storage/avatar'
 
 const DEFAULT_ROLE: UserRole = 'CLIENT'
 
@@ -52,8 +53,9 @@ export async function ensureUserProfile(
   const resolvedRole = metadataRole ?? existing?.role ?? DEFAULT_ROLE
 
   const nextEmail = user.email ?? ''
-  const nextFullName = (user.user_metadata?.full_name as string | undefined) ?? null
-  const nextAvatar = (user.user_metadata?.avatar_url as string | undefined) ?? null
+  const metadataFullName =
+    (user.user_metadata?.full_name as string | undefined)?.trim() || null
+  const metadataAvatar = user.user_metadata?.avatar_url as string | undefined
 
   // Accounts are provisioned by an admin — createPortalUser and
   // findOrCreatePortalUser both insert the `users` row explicitly. Authenticating
@@ -63,11 +65,24 @@ export async function ensureUserProfile(
     return 'not_provisioned'
   }
 
+  // Name and avatar are seeded, never re-synced. Supabase merges the identity
+  // provider's own values into `user_metadata` at every sign-in, so mirroring
+  // them back would let Google overwrite the portal profile — and a Google
+  // account with no picture (no `avatar_url` at all) would wipe the stored
+  // avatar outright. The avatar column holds a bucket object path, not a URL,
+  // so a provider CDN URL is rejected here rather than 404ing later in
+  // /api/storage/user-avatar/[userId].
+  const seedFullName = !existing.fullName && metadataFullName ? metadataFullName : null
+  const seedAvatar =
+    !existing.avatarUrl && isUserAvatarPath(metadataAvatar, user.id)
+      ? metadataAvatar
+      : null
+
   const shouldUpdate =
     existing.email !== nextEmail ||
     existing.role !== resolvedRole ||
-    existing.fullName !== nextFullName ||
-    existing.avatarUrl !== nextAvatar
+    seedFullName !== null ||
+    seedAvatar !== null
 
   if (!shouldUpdate) {
     return 'ok'
@@ -77,10 +92,10 @@ export async function ensureUserProfile(
     .update(usersTable)
     .set({
       email: nextEmail,
-      fullName: nextFullName,
       role: resolvedRole,
-      avatarUrl: nextAvatar,
       deletedAt: null,
+      ...(seedFullName ? { fullName: seedFullName } : {}),
+      ...(seedAvatar ? { avatarUrl: seedAvatar } : {}),
     })
     .where(eq(usersTable.id, user.id))
 
