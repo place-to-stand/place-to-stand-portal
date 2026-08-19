@@ -24,6 +24,7 @@ import {
   contactLeads,
   githubRepoLinks,
   leadStageHistory,
+  leadUpdates,
   taskDeployments,
   planningSessions,
   planThreads,
@@ -103,6 +104,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   activityLogs: many(activityLogs),
   oauthConnections: many(oauthConnections),
   leadStageHistory: many(leadStageHistory),
+  leadUpdates: many(leadUpdates),
   invoices: many(invoices),
 }))
 
@@ -171,6 +173,18 @@ export const leadsRelations = relations(leads, ({ one, many }) => ({
   contactLeads: many(contactLeads),
   tasks: many(tasks),
   stageHistory: many(leadStageHistory),
+  updates: many(leadUpdates),
+}))
+
+export const leadUpdatesRelations = relations(leadUpdates, ({ one }) => ({
+  lead: one(leads, {
+    fields: [leadUpdates.leadId],
+    references: [leads.id],
+  }),
+  author: one(users, {
+    fields: [leadUpdates.authorId],
+    references: [users.id],
+  }),
 }))
 
 export const leadStageHistoryRelations = relations(

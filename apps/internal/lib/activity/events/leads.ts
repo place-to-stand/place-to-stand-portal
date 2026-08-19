@@ -18,6 +18,22 @@ export const leadCreatedEvent = (args: {
   }),
 })
 
+export const leadUpdateLoggedEvent = (args: {
+  contactName: string
+  type: string
+  typeLabel: string
+  occurredAt: string
+}): ActivityEvent => ({
+  verb: ActivityVerbs.LEAD_UPDATE_LOGGED,
+  summary: `Logged ${args.typeLabel.toLowerCase()} on lead "${args.contactName}"`,
+  metadata: toMetadata({
+    update: {
+      type: args.type,
+      occurredAt: args.occurredAt,
+    },
+  }),
+})
+
 export const leadUpdatedEvent = (args: {
   contactName: string
   changedFields: string[]

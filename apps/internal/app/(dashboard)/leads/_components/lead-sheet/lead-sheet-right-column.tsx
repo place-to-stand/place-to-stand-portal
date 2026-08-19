@@ -3,6 +3,7 @@
 import type { LeadRecord } from '@/lib/leads/types'
 
 import { LeadTasksSection } from './lead-tasks-section'
+import { LeadUpdatesSection } from './updates/lead-updates-section'
 
 type LeadSheetRightColumnProps = {
   lead: LeadRecord
@@ -20,6 +21,13 @@ export function LeadSheetRightColumn({
       <div className='space-y-6 p-6'>
         {/* Tasks */}
         <LeadTasksSection
+          lead={lead}
+          canManage={canManage}
+          onSuccess={onSuccess}
+        />
+        {/* Updates sit below Tasks (D6) — keeps the at-a-glance "last touched
+            12 days ago, 2 open tasks" read that tabs would hide. */}
+        <LeadUpdatesSection
           lead={lead}
           canManage={canManage}
           onSuccess={onSuccess}
