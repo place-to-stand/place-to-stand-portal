@@ -9,6 +9,12 @@ export class HttpError extends Error {
   }
 }
 
+export class BadRequestError extends HttpError {
+  constructor(message = 'Bad Request', options?: ErrorOptions) {
+    super(message, 400, options)
+  }
+}
+
 export class UnauthorizedError extends HttpError {
   constructor(message = 'Unauthorized', options?: ErrorOptions) {
     super(message, 401, options)
@@ -28,6 +34,7 @@ export class NotFoundError extends HttpError {
 }
 
 export type HttpException =
+  | BadRequestError
   | UnauthorizedError
   | ForbiddenError
   | NotFoundError
