@@ -223,11 +223,11 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
       </div>
 
       <div className='rounded-lg border'>
-        <Table density='compact'>
+        <Table density='compact' layout='fixed'>
           <TableHeader>
             <TableRow className='bg-muted/40'>
-              <TableHead>State</TableHead>
-              <TableHead>Rate (%)</TableHead>
+              <TableHead className='w-[24%]'>State</TableHead>
+              <TableHead className='w-[16%]'>Rate (%)</TableHead>
               <SortableTableHead
                 field='label'
                 sort={sort}
@@ -236,7 +236,7 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
               >
                 Label
               </SortableTableHead>
-              <TableHead>Active</TableHead>
+              <TableHead className='w-[14%]'>Active</TableHead>
               <TableHead className='w-10' />
             </TableRow>
           </TableHeader>
@@ -254,9 +254,9 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
             ) : (
               sortedRates.map(rate => (
                 <TableRow key={rate.id}>
-                  <TableCell className='font-medium'>{rate.state}</TableCell>
+                  <TableCell className='truncate font-medium'>{rate.state}</TableCell>
                   <TableCell>{(Number(rate.rate) * 100).toFixed(2).replace(/\.?0+$/, '')}%</TableCell>
-                  <TableCell>{rate.label}</TableCell>
+                  <TableCell className='truncate'>{rate.label}</TableCell>
                   <TableCell>
                     <Switch
                       size='sm'

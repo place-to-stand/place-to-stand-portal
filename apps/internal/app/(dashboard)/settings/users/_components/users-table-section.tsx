@@ -40,7 +40,7 @@ export function UsersTableSection({
 
   return (
     <div className='overflow-hidden rounded-lg border'>
-      <Table density='compact'>
+      <Table density='compact' layout='fixed'>
         <TableHeader>
           <TableRow className='bg-muted/40'>
             <SortableTableHead
@@ -48,12 +48,13 @@ export function UsersTableSection({
               sort={sort}
               defaultSort='name:asc'
               onSortChange={next => update({ sort: next })}
+              className='w-[22%]'
             >
               Name
             </SortableTableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Access</TableHead>
+            <TableHead className='w-[26%]'>Email</TableHead>
+            <TableHead className='w-[10%]'>Role</TableHead>
+            <TableHead className='w-[14%]'>Access</TableHead>
             <SortableTableHead
               field='created'
               sort={sort}

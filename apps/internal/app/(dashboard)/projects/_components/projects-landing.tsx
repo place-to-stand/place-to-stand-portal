@@ -317,7 +317,7 @@ export function ProjectsLanding({
         className={href !== '#' ? CLICKABLE_ROW_CLASS : undefined}
       >
         <TableCell>
-          <div className='flex items-center'>
+          <div className='flex min-w-0 items-center'>
             {treeLine && (
               <span className='text-muted-foreground/30 mr-2 w-4 shrink-0 text-center font-mono'>
                 {treeLine}
@@ -325,10 +325,10 @@ export function ProjectsLanding({
             )}
             <Link
               href={href}
-              className='flex items-center gap-2 py-1'
+              className='flex min-w-0 items-center gap-2 py-1'
             >
               <FolderKanban className='h-4 w-4 shrink-0 text-emerald-500' />
-              <span className='font-medium'>{project.name}</span>
+              <span className='truncate font-medium'>{project.name}</span>
             </Link>
           </div>
         </TableCell>
@@ -410,7 +410,7 @@ export function ProjectsLanding({
 
   const renderProjectTable = (items: LandingProject[]) => (
     <div className='rounded-lg border'>
-      <Table density='compact' className='table-fixed'>
+      <Table density='compact' layout='fixed'>
         <TableHeader>
           <TableRow className='bg-muted/40'>
             <SortableTableHead
@@ -506,7 +506,7 @@ export function ProjectsLanding({
   const clientSectionContent =
     clientSections.length > 0 ? (
       <div className='rounded-lg border'>
-        <Table density='compact' className='table-fixed'>
+        <Table density='compact' layout='fixed'>
           <TableHeader>
             <TableRow className='bg-muted/40'>
               <SortableTableHead

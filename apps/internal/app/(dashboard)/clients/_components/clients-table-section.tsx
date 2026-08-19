@@ -78,7 +78,7 @@ export function ClientsTableSection({
 
   return (
     <div className='overflow-hidden rounded-lg border'>
-      <Table density='compact'>
+      <Table density='compact' layout='fixed'>
         <TableHeader>
           <TableRow className='bg-muted/40'>
             <SortableTableHead
@@ -86,11 +86,12 @@ export function ClientsTableSection({
               sort={sort}
               defaultSort='name:asc'
               onSortChange={next => update({ sort: next })}
+              className='w-[34%]'
             >
               Name
             </SortableTableHead>
-            <TableHead>Billing type</TableHead>
-            <TableHead>Active projects</TableHead>
+            <TableHead className='w-[20%]'>Billing type</TableHead>
+            <TableHead className='w-[18%]'>Active projects</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className='w-32 text-right'>Actions</TableHead>
           </TableRow>
@@ -144,9 +145,9 @@ export function ClientsTableSection({
                 )}
               >
                 <TableCell>
-                  <div className='flex items-center gap-2'>
-                    <Building2 className='text-muted-foreground h-4 w-4' />
-                    <span className='font-medium'>{client.name}</span>
+                  <div className='flex min-w-0 items-center gap-2'>
+                    <Building2 className='text-muted-foreground h-4 w-4 shrink-0' />
+                    <span className='truncate font-medium'>{client.name}</span>
                   </div>
                 </TableCell>
                 <TableCell className='text-muted-foreground text-sm'>

@@ -79,9 +79,9 @@ function ProductRow({
 }: ProductRowProps) {
   return (
     <TableRow>
-      <TableCell className='font-medium'>{item.name}</TableCell>
+      <TableCell className='truncate font-medium'>{item.name}</TableCell>
       <TableCell>${item.unit_price}</TableCell>
-      <TableCell>{item.unit_label}</TableCell>
+      <TableCell className='truncate'>{item.unit_label}</TableCell>
       <TableCell>{item.min_quantity ?? '\u2014'}</TableCell>
       <TableCell>{item.creates_hour_block_default ? 'Yes' : 'No'}</TableCell>
       <TableCell>
@@ -306,7 +306,7 @@ export function ProductCatalogSection({
       </div>
 
       <div className='rounded-lg border'>
-        <Table density='compact'>
+        <Table density='compact' layout='fixed'>
           <TableHeader>
             <TableRow className='bg-muted/40'>
               <SortableTableHead
@@ -317,11 +317,11 @@ export function ProductCatalogSection({
               >
                 Name
               </SortableTableHead>
-              <TableHead>Unit Price</TableHead>
-              <TableHead>Unit Label</TableHead>
-              <TableHead>Min Qty</TableHead>
-              <TableHead>Hour Block</TableHead>
-              <TableHead>Active</TableHead>
+              <TableHead className='w-[13%]'>Unit Price</TableHead>
+              <TableHead className='w-[13%]'>Unit Label</TableHead>
+              <TableHead className='w-[11%]'>Min Qty</TableHead>
+              <TableHead className='w-[13%]'>Hour Block</TableHead>
+              <TableHead className='w-[11%]'>Active</TableHead>
               <TableHead className='w-10' />
             </TableRow>
           </TableHeader>

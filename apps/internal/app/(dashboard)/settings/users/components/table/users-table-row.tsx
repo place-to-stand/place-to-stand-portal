@@ -54,17 +54,17 @@ export function UsersTableRow({
       className={cn(CLICKABLE_ROW_CLASS, user.deleted_at && ARCHIVED_ROW_CLASS)}
     >
       <TableCell>
-        <div className='flex items-center gap-2'>
-          <Avatar className='h-6 w-6'>
+        <div className='flex min-w-0 items-center gap-2'>
+          <Avatar className='h-6 w-6 shrink-0'>
             {user.avatar_url && (
               <AvatarImage src={`/api/storage/user-avatar/${user.id}`} />
             )}
             <AvatarFallback className='text-[10px]'>{initials}</AvatarFallback>
           </Avatar>
-          <span className='font-medium'>{displayName}</span>
+          <span className='truncate font-medium'>{displayName}</span>
         </div>
       </TableCell>
-      <TableCell className='text-muted-foreground text-sm'>
+      <TableCell className='text-muted-foreground truncate text-sm'>
         {user.email}
       </TableCell>
       <TableCell className='text-sm'>{USER_ROLE_LABELS[user.role]}</TableCell>

@@ -8,6 +8,12 @@ import { cn } from './cn'
 // py-1.5 cells, promoted from the monthly-close tableClasses experiment.
 type TableDensity = 'default' | 'compact'
 
+// 'fixed' opts into table-layout: fixed so column widths come from the
+// header row alone — sorting/paging in new rows can't reflow the grid.
+// Opt-in: columns without a declared width split the leftover space
+// equally, so a table must set header widths before switching.
+type TableLayout = 'auto' | 'fixed'
+
 const TableDensityContext = React.createContext<TableDensity>('default')
 
 function useTableDensity() {
@@ -17,8 +23,12 @@ function useTableDensity() {
 function Table({
   className,
   density = 'default',
+  layout = 'auto',
   ...props
-}: React.ComponentProps<'table'> & { density?: TableDensity }) {
+}: React.ComponentProps<'table'> & {
+  density?: TableDensity
+  layout?: TableLayout
+}) {
   return (
     <TableDensityContext.Provider value={density}>
       <div
@@ -28,7 +38,11 @@ function Table({
         <table
           data-slot='table'
           data-density={density}
-          className={cn('w-full caption-bottom text-sm', className)}
+          className={cn(
+            'w-full caption-bottom text-sm',
+            layout === 'fixed' && 'table-fixed',
+            className
+          )}
           {...props}
         />
       </div>

@@ -138,7 +138,7 @@ export function ClientsLanding({
     <>
       {sheet}
       <div className='rounded-lg border'>
-        <Table density='compact'>
+        <Table density='compact' layout='fixed'>
           <TableHeader>
             <TableRow className='bg-muted/40'>
               <SortableTableHead
@@ -155,6 +155,7 @@ export function ClientsLanding({
                 sort={sort}
                 defaultSort='name:asc'
                 onSortChange={next => update({ sort: next })}
+                className='w-[10%]'
               >
                 Billing
               </SortableTableHead>
@@ -173,6 +174,7 @@ export function ClientsLanding({
                 sort={sort}
                 defaultSort='name:asc'
                 onSortChange={next => update({ sort: next })}
+                className='w-[24%]'
               >
                 Hours
               </SortableTableHead>
@@ -211,10 +213,10 @@ export function ClientsLanding({
                 <TableCell>
                   <Link
                     href={getClientHref(client)}
-                    className='flex items-center gap-2 py-1'
+                    className='flex min-w-0 items-center gap-2 py-1'
                   >
                     <Building2 className='h-4 w-4 shrink-0 text-blue-500' />
-                    <span className='font-medium'>{client.name}</span>
+                    <span className='truncate font-medium'>{client.name}</span>
                   </Link>
                 </TableCell>
                 <TableCell>
