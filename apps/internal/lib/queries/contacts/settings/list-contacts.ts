@@ -15,11 +15,12 @@ import {
 } from '@/lib/pagination/sort'
 import { DEFAULT_CONTACTS_SORT } from '@/lib/settings/contacts/filters'
 
-import { contactFields, contactGroupByColumns, type SelectContact } from '../selectors'
+import { contactFields, type SelectContact } from '../selectors'
 import {
   buildSearchCondition,
   buildStatusCondition,
   CONTACT_SORT_DESCRIPTORS,
+  linkedClientsCountSql,
   normalizeStatus,
   resolveContactDirection,
   resolvePaginationLimit,
@@ -54,15 +55,16 @@ async function queryContactRows(
   limit: number,
   opts?: { offset?: number }
 ) {
+  // Correlated subquery instead of a join + GROUP BY: it counts only live
+  // clients (matching the Linked Clients cell) and is also what the
+  // `clients` sort descriptor orders by.
   const query = db
     .select({
       ...contactFields,
-      totalClients: sql<number>`count(${contactClients.clientId})`,
+      totalClients: linkedClientsCountSql,
     })
     .from(contacts)
-    .leftJoin(contactClients, eq(contactClients.contactId, contacts.id))
     .where(whereClause)
-    .groupBy(...contactGroupByColumns)
     .orderBy(...ordering)
 
   if (typeof opts?.offset === 'number') {
