@@ -143,6 +143,18 @@ async function fetchUserProfileUncached(userId: string): Promise<UserProfile | n
   return profileRows[0] ?? null
 }
 
+/**
+ * Resolve an AppUser straight from a user id, skipping the cookie-backed
+ * Supabase session entirely. Callers that authenticate by some other means —
+ * the CLI's bearer token, for one — need the same profile row and the same
+ * disabled/deleted filtering without a request-scoped session to read from.
+ */
+export async function loadAppUserById(userId: string): Promise<AppUser | null> {
+  const profile = await fetchUserProfileUncached(userId)
+
+  return profile ? mapProfileToAppUser(profile) : null
+}
+
 function mapProfileToAppUser(profile: UserProfile): AppUser {
   return {
     id: profile.id,

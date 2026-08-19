@@ -25,6 +25,7 @@ type CommentSelection = {
   author: {
     id: string
     fullName: string | null
+    email: string | null
     avatarUrl: string | null
   } | null
 }
@@ -39,6 +40,7 @@ function mapUserToCommentAuthor(
   return {
     id: user.id,
     full_name: user.fullName ?? null,
+    email: user.email ?? null,
     avatar_url: user.avatarUrl ?? null,
   }
 }
@@ -71,6 +73,7 @@ async function getCommentSelectionById(commentId: string): Promise<CommentSelect
       author: {
         id: users.id,
         fullName: users.fullName,
+        email: users.email,
         avatarUrl: users.avatarUrl,
       },
     })
@@ -147,6 +150,7 @@ export async function listTaskComments(
       author: {
         id: users.id,
         fullName: users.fullName,
+        email: users.email,
         avatarUrl: users.avatarUrl,
       },
     })

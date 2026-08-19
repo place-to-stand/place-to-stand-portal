@@ -98,6 +98,7 @@ function resolveOptimisticAuthor(
     known ?? {
       id: currentUserId,
       full_name: currentUserName ?? null,
+      email: null,
       avatar_url: null,
     }
   )
