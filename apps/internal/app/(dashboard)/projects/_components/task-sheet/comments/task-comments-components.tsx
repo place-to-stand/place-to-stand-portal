@@ -141,7 +141,10 @@ export function TaskCommentItem(props: TaskCommentItemProps) {
     disableActions,
   } = props
 
-  const authorName = comment.author?.full_name ?? 'Unknown user'
+  // Matches the time-log history component: a user with no display name
+  // still has an email, which identifies them far better than 'Unknown user'.
+  const authorName =
+    comment.author?.full_name ?? comment.author?.email ?? 'Unknown user'
   const createdAgo = formatDistanceToNow(new Date(comment.created_at), {
     addSuffix: true,
   })

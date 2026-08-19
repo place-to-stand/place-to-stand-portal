@@ -1,0 +1,3 @@
+# Build output. This is the first package in the repo that actually emits —
+# the others declare "build": "tsc" but inherit noEmit from tsconfig.base.json.
+dist

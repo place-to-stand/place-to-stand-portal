@@ -24,6 +24,12 @@ const PUBLIC_PATHS = new Set([
   '/api/integrations/stripe',
   '/api/cron/',
   '/api/public/',
+  // Machine surface for the `pts` CLI. Authenticates by bearer token rather
+  // than a session cookie, so the cookie gate here would 302 every request to
+  // /sign-in and hand the caller an HTML page instead of JSON. Every route
+  // under this prefix must resolve its own user via `withCliAuth`
+  // (lib/cli/handler.ts) — there is no edge-level fallback.
+  '/api/cli/',
 ])
 const FORCE_RESET_PATH = '/force-reset-password'
 
