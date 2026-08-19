@@ -13,15 +13,3 @@ export const contactFields = {
   updatedAt: contacts.updatedAt,
   deletedAt: contacts.deletedAt,
 }
-
-export const contactGroupByColumns = [
-  contacts.id,
-  contacts.email,
-  contacts.name,
-  contacts.phone,
-  contacts.createdBy,
-  contacts.userId,
-  contacts.createdAt,
-  contacts.updatedAt,
-  contacts.deletedAt,
-] as const

@@ -93,9 +93,30 @@ export function ContactsTableSection({
             >
               Name
             </SortableTableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Phone</TableHead>
-            <TableHead>Linked Clients</TableHead>
+            <SortableTableHead
+              field='email'
+              sort={sort}
+              defaultSort='name:asc'
+              onSortChange={next => update({ sort: next })}
+            >
+              Email
+            </SortableTableHead>
+            <SortableTableHead
+              field='phone'
+              sort={sort}
+              defaultSort='name:asc'
+              onSortChange={next => update({ sort: next })}
+            >
+              Phone
+            </SortableTableHead>
+            <SortableTableHead
+              field='clients'
+              sort={sort}
+              defaultSort='name:asc'
+              onSortChange={next => update({ sort: next })}
+            >
+              Linked Clients
+            </SortableTableHead>
             <TableHead className='w-32 text-right'>Actions</TableHead>
           </TableRow>
         </TableHeader>

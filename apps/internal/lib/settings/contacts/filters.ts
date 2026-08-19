@@ -2,7 +2,13 @@ import { parseSortParam, type ParsedSort } from '@/lib/pagination/sort'
 
 // PRD 004 §03: per-view sort allowlist (D6/R5). Each field here has a
 // matching descriptor (order expr + cursor encode/compare) in the query.
-export const CONTACT_SORT_FIELDS = ['name', 'created'] as const
+export const CONTACT_SORT_FIELDS = [
+  'name',
+  'email',
+  'phone',
+  'clients',
+  'created',
+] as const
 export type ContactSortField = (typeof CONTACT_SORT_FIELDS)[number]
 
 export const DEFAULT_CONTACTS_SORT = {
