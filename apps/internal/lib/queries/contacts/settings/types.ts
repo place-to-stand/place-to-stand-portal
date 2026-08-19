@@ -31,6 +31,8 @@ export type ContactsSettingsResult = {
 export type ListContactsForSettingsInput = {
   status?: 'active' | 'archived'
   search?: string | null
+  /** Only contacts with a live link to this client (validated UUID). */
+  clientId?: string | null
   cursor?: string | null
   direction?: CursorDirection | null
   limit?: number | null

@@ -17,6 +17,7 @@ import { DEFAULT_CONTACTS_SORT } from '@/lib/settings/contacts/filters'
 
 import { contactFields, type SelectContact } from '../selectors'
 import {
+  buildClientCondition,
   buildSearchCondition,
   buildStatusCondition,
   CONTACT_SORT_DESCRIPTORS,
@@ -38,12 +39,21 @@ type ContactMetricsResult = SelectContact & {
   totalClients: number | string | null
 }
 
-function buildBaseConditions(status: StatusFilter, searchQuery: string): SQL[] {
+function buildBaseConditions(
+  status: StatusFilter,
+  searchQuery: string,
+  clientId: string | null | undefined
+): SQL[] {
   const conditions: SQL[] = [buildStatusCondition(status)]
 
   const searchCondition = buildSearchCondition(searchQuery)
   if (searchCondition) {
     conditions.push(searchCondition)
+  }
+
+  const clientCondition = buildClientCondition(clientId)
+  if (clientCondition) {
+    conditions.push(clientCondition)
   }
 
   return conditions
@@ -195,7 +205,11 @@ export async function listContactsForSettings(
   const descriptor = CONTACT_SORT_DESCRIPTORS[sort.field]
 
   const statusCondition = buildStatusCondition(normalizedStatus)
-  const baseConditions = buildBaseConditions(normalizedStatus, searchQuery)
+  const baseConditions = buildBaseConditions(
+    normalizedStatus,
+    searchQuery,
+    input.clientId
+  )
   const useOffset = typeof input.offset === 'number' && input.offset >= 0
 
   let normalizedRows: ContactMetricsResult[]
