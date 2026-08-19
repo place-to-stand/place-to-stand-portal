@@ -32,6 +32,11 @@ type Props = {
    * which is where mismatches otherwise come from.
    */
   loginHint?: string
+  /**
+   * Overrides the button styling. The auth screens pass the blueprint control
+   * class; onboarding, which renders inside the themed portal, uses the default.
+   */
+  className?: string
 }
 
 /**
@@ -40,6 +45,9 @@ type Props = {
  * Copy reads as *sign in*, never *sign up*: portal accounts are created by an
  * admin, and an unprovisioned Google account is bounced at the callback.
  */
+const DEFAULT_CLASS =
+  'flex w-full items-center justify-center gap-2 rounded-md border border-foreground/20 bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-foreground/5 disabled:opacity-50'
+
 export function GoogleSignInButton({
   redirectTo,
   disabled,
@@ -47,6 +55,7 @@ export function GoogleSignInButton({
   label = 'Continue with Google',
   linkExisting = false,
   loginHint,
+  className = DEFAULT_CLASS,
 }: Props) {
   const [isPending, setIsPending] = useState(false)
 
@@ -87,7 +96,7 @@ export function GoogleSignInButton({
       type="button"
       onClick={handleClick}
       disabled={disabled || isPending}
-      className="flex w-full items-center justify-center gap-2 rounded-md border border-foreground/20 bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-foreground/5 disabled:opacity-50"
+      className={className}
     >
       <GoogleMark />
       {isPending ? 'Redirecting...' : label}

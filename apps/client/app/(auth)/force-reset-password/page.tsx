@@ -1,6 +1,15 @@
 'use client'
 
 import { useState } from 'react'
+
+import {
+  AuthShell,
+  authErrorClass,
+  authFieldLabelClass,
+  authInputClass,
+  authPrimaryButtonClass,
+} from '@pts/ui/auth-shell'
+
 import { notifyPasswordChanged } from '@/app/(auth)/_actions/auth-emails'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 
@@ -53,58 +62,52 @@ export default function ForceResetPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="w-full max-w-sm space-y-6 p-8">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-foreground">Set new password</h1>
+    <AuthShell
+      label="Client Portal"
+      title="Set new password"
+      description="Choose a password you'll use to sign in from now on."
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {error && <div className={authErrorClass}>{error}</div>}
+
+        <div className="space-y-2">
+          <label htmlFor="password" className={authFieldLabelClass}>
+            New password
+          </label>
+          <input
+            id="password"
+            type="password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            required
+            minLength={8}
+            className={authInputClass}
+          />
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="rounded-md bg-red-50 p-3 text-sm text-red-600 dark:bg-red-950 dark:text-red-400">
-              {error}
-            </div>
-          )}
+        <div className="space-y-2">
+          <label htmlFor="confirm" className={authFieldLabelClass}>
+            Confirm password
+          </label>
+          <input
+            id="confirm"
+            type="password"
+            value={confirm}
+            onChange={e => setConfirm(e.target.value)}
+            required
+            minLength={8}
+            className={authInputClass}
+          />
+        </div>
 
-          <div className="space-y-2">
-            <label htmlFor="password" className="block text-sm font-medium text-foreground">
-              New password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-              minLength={8}
-              className="w-full rounded-md border border-foreground/20 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="confirm" className="block text-sm font-medium text-foreground">
-              Confirm password
-            </label>
-            <input
-              id="confirm"
-              type="password"
-              value={confirm}
-              onChange={e => setConfirm(e.target.value)}
-              required
-              minLength={8}
-              className="w-full rounded-md border border-foreground/20 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-md bg-foreground px-3 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-50"
-          >
-            {loading ? 'Updating...' : 'Update password'}
-          </button>
-        </form>
-      </div>
-    </div>
+        <button
+          type="submit"
+          disabled={loading}
+          className={authPrimaryButtonClass}
+        >
+          {loading ? 'Updating...' : 'Update password'}
+        </button>
+      </form>
+    </AuthShell>
   )
 }

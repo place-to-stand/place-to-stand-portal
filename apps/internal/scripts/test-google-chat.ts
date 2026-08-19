@@ -9,8 +9,11 @@
  *   npx tsx scripts/test-google-chat.ts
  *
  * Optionally override the sample data via positional args:
- *   npx tsx scripts/test-google-chat.ts <invoiceNumber> <total> <clientName>
+ *   npx tsx scripts/test-google-chat.ts <invoiceNumber> <total> <clientName> <invoiceUrl>
  *   npx tsx scripts/test-google-chat.ts INV-1042 4500.00 "Acme Co."
+ *
+ * The "View invoice" button only renders when an invoice URL is present, so the
+ * sample falls back to APP_BASE_URL (or localhost) with a placeholder id.
  *
  * This script is NOT executed automatically.
  */
@@ -33,12 +36,20 @@ async function main() {
     )
   }
 
-  const [invoiceNumber, total, clientName] = process.argv.slice(2)
+  const [invoiceNumber, total, clientName, invoiceUrl] = process.argv.slice(2)
+
+  const baseUrl =
+    process.env.APP_BASE_URL ??
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    'http://localhost:3000'
 
   const notice = {
     invoiceNumber: invoiceNumber ?? 'INV-TEST-001',
     total: total ?? '4500.00',
     clientName: clientName ?? 'Test Client',
+    invoiceUrl:
+      invoiceUrl ??
+      `${baseUrl}/invoices?invoice=00000000-0000-4000-8000-000000000000`,
   }
 
   console.log('Sending sample invoice-paid card:', notice)

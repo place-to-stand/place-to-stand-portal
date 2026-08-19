@@ -11,6 +11,12 @@ export type InvoicePaidNotice = {
   invoiceNumber?: string | null
   total?: string | null
   clientName?: string | null
+  /**
+   * Absolute URL of the invoice in the portal. The card gets a "View invoice"
+   * button only when this is set — Google Chat renders a relative URL as a dead
+   * link, so a missing base URL must drop the button rather than emit one.
+   */
+  invoiceUrl?: string | null
 }
 
 const formatCurrency = (amount: string | null | undefined): string => {
@@ -67,6 +73,22 @@ export function buildInvoicePaidCard(
                     text: formatCurrency(notice.total),
                   },
                 },
+                ...(notice.invoiceUrl
+                  ? [
+                      {
+                        buttonList: {
+                          buttons: [
+                            {
+                              text: 'View invoice',
+                              onClick: {
+                                openLink: { url: notice.invoiceUrl },
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    ]
+                  : []),
               ],
             },
           ],

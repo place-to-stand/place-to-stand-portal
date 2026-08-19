@@ -7,7 +7,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { completePasswordReset } from "@/app/(auth)/_actions/update-password";
-import { Button } from "@pts/ui/button";
+import {
+  authErrorClass,
+  authFieldLabelClass,
+  authInputClass,
+  authPrimaryButtonClass,
+} from "@pts/ui/auth-shell";
 import { DisabledFieldTooltip } from "@/components/ui/disabled-field-tooltip";
 import {
   Form,
@@ -83,7 +88,7 @@ export function PasswordResetForm({ redirectTo, email }: Props) {
   return (
     <div className="space-y-6">
       {email ? (
-        <p className="text-sm text-muted-foreground">Signed in as {email}</p>
+        <p className="text-sm text-[#a8a8ac]">Signed in as {email}</p>
       ) : null}
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
@@ -92,7 +97,9 @@ export function PasswordResetForm({ redirectTo, email }: Props) {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>New password</FormLabel>
+                <FormLabel className={authFieldLabelClass}>
+                  New password
+                </FormLabel>
                 <FormControl>
                   <DisabledFieldTooltip disabled={isPending} reason={isPending ? pendingReason : null}>
                     <Input
@@ -100,10 +107,11 @@ export function PasswordResetForm({ redirectTo, email }: Props) {
                       type="password"
                       autoComplete="new-password"
                       disabled={isPending}
+                      className={authInputClass}
                     />
                   </DisabledFieldTooltip>
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-red-300" />
               </FormItem>
             )}
           />
@@ -112,7 +120,9 @@ export function PasswordResetForm({ redirectTo, email }: Props) {
             name="confirmPassword"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Confirm password</FormLabel>
+                <FormLabel className={authFieldLabelClass}>
+                  Confirm password
+                </FormLabel>
                 <FormControl>
                   <DisabledFieldTooltip disabled={isPending} reason={isPending ? pendingReason : null}>
                     <Input
@@ -120,22 +130,25 @@ export function PasswordResetForm({ redirectTo, email }: Props) {
                       type="password"
                       autoComplete="new-password"
                       disabled={isPending}
+                      className={authInputClass}
                     />
                   </DisabledFieldTooltip>
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-red-300" />
               </FormItem>
             )}
           />
           {feedback ? (
-            <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {feedback}
-            </p>
+            <p className={authErrorClass}>{feedback}</p>
           ) : null}
           <DisabledFieldTooltip disabled={isPending} reason={isPending ? pendingReason : null}>
-            <Button type="submit" className="w-full" disabled={isPending}>
+            <button
+              type="submit"
+              className={authPrimaryButtonClass}
+              disabled={isPending}
+            >
               {isPending ? "Saving..." : "Save password"}
-            </Button>
+            </button>
           </DisabledFieldTooltip>
         </form>
       </Form>
