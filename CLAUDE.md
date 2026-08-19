@@ -23,14 +23,15 @@ place-to-stand-portal/
 │       └── styles/        # Global CSS
 ├── packages/
 │   ├── db/                # Shared database schema, relations, and migrations (@pts/db)
-│   └── github/            # GitHub App auth and API utilities (@pts/github)
+│   ├── github/            # GitHub App auth and API utilities (@pts/github)
+│   └── cli/               # `pts` admin CLI, consumes /api/cli/v1 (@pts/cli, not published)
 ├── supabase/              # Supabase config (stays at root)
 ├── turbo.json             # Build orchestration
 ├── tsconfig.base.json     # Shared TypeScript config
 └── package.json           # Workspace root
 ```
 
-The two main apps are `apps/internal/` (admin portal) and `apps/client/` (client portal). Unqualified paths like `lib/`, `app/`, `components/` refer to directories inside `apps/internal/` unless stated otherwise. Shared database schema and GitHub utilities live in `packages/`.
+The two main apps are `apps/internal/` (admin portal) and `apps/client/` (client portal). Unqualified paths like `lib/`, `app/`, `components/` refer to directories inside `apps/internal/` unless stated otherwise. Shared database schema, GitHub utilities, and the admin CLI live in `packages/`.
 
 ## Commands
 
@@ -39,6 +40,7 @@ The two main apps are `apps/internal/` (admin portal) and `apps/client/` (client
 - `npm run build` - Build all apps via Turbo
 - `npm run lint` - Lint all apps via Turbo
 - `npm run type-check` - Type-check all apps via Turbo
+- `npm run cli:link` - Build the `pts` CLI and link it onto your PATH (see `packages/cli/README.md`)
 
 ### Development (from `apps/internal/` or `apps/client/`)
 - `npm run dev` - Start app with Turbopack (internal: port 3000, client: port 3001)
@@ -98,13 +100,22 @@ Turbo v2 uses strict mode by default — only env vars listed in `turbo.json` ar
 │   ├── settings/     # Users, projects, integrations
 │   └── submissions/  # Website form submissions
 ├── (public)/         # Publicly shared pages (e.g. share/invoices/[token])
-├── api/              # API routes: v1/, tasks/, task-comments/, my-tasks/, projects/,
-│                     #   clients/, contacts/, leads/, invoices/, dashboard/, activity/,
-│                     #   planning/, uploads/, storage/, public/, auth/, github/, google/,
+├── api/              # API routes: v1/, cli/v1/, tasks/, task-comments/, my-tasks/,
+│                     #   projects/, clients/, contacts/, leads/, invoices/, dashboard/,
+│                     #   activity/, planning/, uploads/, storage/, public/, auth/,
+│                     #   github/, google/,
 │                     #   integrations/ (leads-intake, stripe, github, google, ...)
 ├── auth/             # Supabase auth callback
 └── unauthorized/     # Access denied page
 ```
+
+**CLI API (`api/cli/v1/`)** — the machine surface consumed by `packages/cli`. Unlike the
+cookie-authenticated routes above it authenticates by bearer JWT, so `/api/cli/` is on the
+`proxy.ts` allowlist and every route **must** wrap itself in `withCliAuth` (`lib/cli/handler.ts`);
+there is no edge-level fallback. Responses are always enveloped (`{ ok, data }`) and camelCase —
+do not follow the bare-envelope, snake_case precedent set by `api/v1/`. Adding a resource means a
+serializer in `lib/cli/serializers/` plus a thin route; the serializers are the contract agents
+hardcode against, so adding a field is safe and renaming one is breaking.
 
 The project workspace is tabbed: `/projects/[clientSlug]/[projectSlug]/{tasks,overview,review,time-logs,activity,archive}`. The task board lives on the `tasks` tab, and the task sheet opens over it via the `?task=<uuid>` query param — never a route segment (see **Sheet deep links** below). Board links come from `buildBoardPath`, which keeps the board mounted across task selection instead of remounting it the way the retired trailing-segment URLs did.
 

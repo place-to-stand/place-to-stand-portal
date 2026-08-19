@@ -7,7 +7,7 @@ const schema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.url(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
   APP_BASE_URL: z.url().optional(),
-  // Full URL of the internal portal (e.g. https://portal.placetostand.co). The
+  // Full URL of the internal portal (e.g. https://portal.placetostandagency.com). The
   // mirror of CLIENT_PORTAL_URL in the internal app. Used to hand off to the
   // shared invoice page, which is where invoice payment lives.
   INTERNAL_PORTAL_URL: z.url(),
