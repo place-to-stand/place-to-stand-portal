@@ -13,7 +13,7 @@ import {
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { closedMonthWarning } from '@/lib/data/reports/close'
 import { db } from '@/lib/db'
-import { hourBlocks, invoices } from '@/lib/db/schema'
+import { clients, hourBlocks, invoices } from '@/lib/db/schema'
 import {
   currentMonthStartUtc,
   resolveHourBlockBillingMonth,
@@ -52,21 +52,23 @@ type LinkedInvoice = {
 }
 
 /**
- * Verify the picked invoice exists, is active, and belongs to the block's
- * client. Returns the invoice so its number can be recorded in the activity
- * log alongside the link.
+ * Verify the picked invoice exists and is active. A cross-client link is
+ * allowed with a non-blocking warning — when hours are transferred between
+ * clients, keeping the original invoice preserves the purchase record.
  */
 async function resolveLinkedInvoice(
   invoiceId: string,
   clientId: string,
-): Promise<{ invoice?: LinkedInvoice; error?: string }> {
+): Promise<{ invoice?: LinkedInvoice; warning?: string; error?: string }> {
   const rows = await db
     .select({
       id: invoices.id,
       invoiceNumber: invoices.invoiceNumber,
       clientId: invoices.clientId,
+      clientName: clients.name,
     })
     .from(invoices)
+    .leftJoin(clients, eq(invoices.clientId, clients.id))
     .where(and(eq(invoices.id, invoiceId), isNull(invoices.deletedAt)))
     .limit(1)
 
@@ -76,11 +78,15 @@ async function resolveLinkedInvoice(
     return { error: 'Selected invoice could not be found.' }
   }
 
-  if (invoice.clientId !== clientId) {
-    return { error: 'Selected invoice belongs to a different client.' }
-  }
+  const warning =
+    invoice.clientId !== clientId
+      ? `${invoice.invoiceNumber ?? 'The linked invoice'} was issued to ${invoice.clientName ?? 'another client'} — the link is kept as the original purchase record.`
+      : undefined
 
-  return { invoice: { id: invoice.id, invoiceNumber: invoice.invoiceNumber } }
+  return {
+    invoice: { id: invoice.id, invoiceNumber: invoice.invoiceNumber },
+    warning,
+  }
 }
 
 async function performSaveHourBlock(
@@ -111,6 +117,7 @@ async function performSaveHourBlock(
   }
 
   let linkedInvoice: LinkedInvoice | null = null
+  let invoiceWarning: string | undefined
 
   if (invoiceId) {
     const resolved = await resolveLinkedInvoice(invoiceId, clientId)
@@ -123,6 +130,7 @@ async function performSaveHourBlock(
     }
 
     linkedInvoice = resolved.invoice ?? null
+    invoiceWarning = resolved.warning
   }
 
   const invoiceNumber = linkedInvoice?.invoiceNumber ?? null
@@ -287,5 +295,8 @@ async function performSaveHourBlock(
 
   revalidatePath(HOUR_BLOCKS_PATH)
 
-  return warning ? { warning } : {}
+  const combinedWarning =
+    [invoiceWarning, warning].filter(Boolean).join(' ') || undefined
+
+  return combinedWarning ? { warning: combinedWarning } : {}
 }
