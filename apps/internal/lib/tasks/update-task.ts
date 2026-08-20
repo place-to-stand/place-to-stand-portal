@@ -47,6 +47,7 @@ export async function updateTaskForActor(
       rank: tasks.rank,
       dueOn: tasks.dueOn,
       completedAt: tasks.completedAt,
+      leadId: tasks.leadId,
       clientId: projects.clientId,
     })
     .from(tasks)
@@ -119,7 +120,10 @@ export async function updateTaskForActor(
       .update(tasks)
       .set({
         projectId,
-        leadId: leadId ?? null,
+        // PATCH semantics: an omitted leadId keeps the existing lead link,
+        // only an explicit null clears it. `?? null` here once let any save
+        // path that didn't know about leads silently sever tasks.lead_id.
+        leadId: leadId !== undefined ? leadId : existingTask.leadId,
         title,
         description,
         status,
