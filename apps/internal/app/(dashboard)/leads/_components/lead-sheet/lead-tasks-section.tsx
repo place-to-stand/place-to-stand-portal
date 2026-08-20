@@ -105,7 +105,7 @@ export function LeadTasksSection({
             size="sm"
             onClick={() => openNew('task')}
           >
-            <Plus className="mr-1 h-3 w-3" />
+            <Plus className="h-3 w-3" />
             Create
           </Button>
         )}

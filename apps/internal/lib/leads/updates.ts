@@ -42,37 +42,3 @@ export const LEAD_UPDATE_ICONS: Record<LeadUpdateTypeValue, LucideIcon> = {
   EMAIL: Mail,
   NOTE: StickyNote,
 }
-
-/**
- * Types that count as contact with the lead. NOTE is excluded — an internal
- * observation is not a touch, and counting it would make a lead look recently
- * contacted when nobody reached out. See §03 last-touch derivation.
- *
- * This is the single source of truth for the exclusion (PRD 005 C5). The
- * last-touch query imports it; never re-list the literals.
- */
-export const LEAD_TOUCH_TYPES = [
-  'MEETING',
-  'PHONE_CALL',
-  'EMAIL',
-] as const satisfies ReadonlyArray<LeadUpdateTypeValue>
-
-const MS_PER_DAY = 24 * 60 * 60 * 1000
-
-/**
- * Whole days since the last touch (or since creation when nothing is logged).
- * Used for the dot's tooltip and the sheet's last-touch summary.
- */
-export function daysSinceTouch(
-  lastTouchAt: string | null,
-  createdAt: string,
-  now: Date = new Date()
-): number {
-  const since = new Date(lastTouchAt ?? createdAt).getTime()
-
-  if (Number.isNaN(since)) {
-    return 0
-  }
-
-  return Math.max(0, Math.floor((now.getTime() - since) / MS_PER_DAY))
-}

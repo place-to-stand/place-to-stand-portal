@@ -1,16 +1,14 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { MessageSquareText, Plus } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { Skeleton } from '@pts/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
-import { formatCalendarDate } from '@/lib/dates'
 import type { LeadRecord, LeadUpdateRecord } from '@/lib/leads/types'
-import { LEAD_TOUCH_TYPES, daysSinceTouch } from '@/lib/leads/updates'
 
-import { LeadUpdateComposer } from './lead-update-composer'
+import { LeadUpdateDialog } from './lead-update-dialog'
 import { LeadUpdateItem } from './lead-update-item'
 
 type LeadUpdatesSectionProps = {
@@ -18,8 +16,6 @@ type LeadUpdatesSectionProps = {
   canManage: boolean
   onSuccess?: () => void
 }
-
-const TOUCH_TYPES = new Set<string>(LEAD_TOUCH_TYPES)
 
 export function LeadUpdatesSection({
   lead,
@@ -29,7 +25,11 @@ export function LeadUpdatesSection({
   const [updates, setUpdates] = useState<LeadUpdateRecord[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadFailed, setLoadFailed] = useState(false)
-  const [isComposing, setIsComposing] = useState(false)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  // The dialog is shared between logging and editing: null = log a new one.
+  const [editingUpdate, setEditingUpdate] = useState<LeadUpdateRecord | null>(
+    null
+  )
 
   const fetchUpdates = useCallback(() => {
     // Promise-chained (not awaited inline) so every setState runs
@@ -59,35 +59,20 @@ export function LeadUpdatesSection({
     fetchUpdates()
   }, [fetchUpdates])
 
-  // Last touch is derived here the same way the server derives it: NOTE never
-  // counts (C5). The list is already ordered newest-first.
-  const lastTouch = useMemo(
-    () => updates.find(update => TOUCH_TYPES.has(update.type)) ?? null,
-    [updates]
-  )
+  const openLogDialog = useCallback(() => {
+    setEditingUpdate(null)
+    setIsDialogOpen(true)
+  }, [])
+
+  const openEditDialog = useCallback((update: LeadUpdateRecord) => {
+    setEditingUpdate(update)
+    setIsDialogOpen(true)
+  }, [])
 
   const handleSaved = useCallback(() => {
-    setIsComposing(false)
     void fetchUpdates()
     onSuccess?.()
   }, [fetchUpdates, onSuccess])
-
-  const summary = (() => {
-    if (isLoading) {
-      return null
-    }
-
-    if (!lastTouch) {
-      return 'No touches logged'
-    }
-
-    const days = daysSinceTouch(lastTouch.occurredAt, lead.createdAt)
-    const absolute = formatCalendarDate(lastTouch.occurredAt)
-
-    return days === 0
-      ? `Last touched today (${absolute})`
-      : `Last touched ${days} ${days === 1 ? 'day' : 'days'} ago`
-  })()
 
   return (
     <div className='space-y-3'>
@@ -101,39 +86,18 @@ export function LeadUpdatesSection({
             </Badge>
           )}
         </div>
-        {canManage && !isComposing && (
+        {canManage && (
           <Button
             type='button'
             variant='outline'
             size='sm'
-            onClick={() => setIsComposing(true)}
+            onClick={openLogDialog}
           >
-            <Plus className='mr-1 h-3 w-3' />
-            Log update
+            <Plus className='h-3 w-3' />
+            Log
           </Button>
         )}
       </div>
-
-      {summary ? (
-        <p
-          className='text-muted-foreground text-xs'
-          title={
-            lastTouch
-              ? (formatCalendarDate(lastTouch.occurredAt) ?? undefined)
-              : undefined
-          }
-        >
-          {summary}
-        </p>
-      ) : null}
-
-      {isComposing ? (
-        <LeadUpdateComposer
-          leadId={lead.id}
-          onCancel={() => setIsComposing(false)}
-          onSaved={handleSaved}
-        />
-      ) : null}
 
       {isLoading ? (
         <div className='space-y-2'>
@@ -161,16 +125,16 @@ export function LeadUpdatesSection({
       ) : updates.length === 0 ? (
         <div className='space-y-2'>
           <p className='text-muted-foreground text-sm'>
-            No interactions logged yet. Notes don&apos;t count as a touch.
+            No interactions logged yet.
           </p>
-          {canManage && !isComposing ? (
+          {canManage ? (
             <Button
               type='button'
               variant='outline'
               size='sm'
-              onClick={() => setIsComposing(true)}
+              onClick={openLogDialog}
             >
-              <Plus className='mr-1 h-3 w-3' />
+              <Plus className='h-3 w-3' />
               Log the first update
             </Button>
           ) : null}
@@ -182,14 +146,20 @@ export function LeadUpdatesSection({
               key={update.id}
               update={update}
               canManage={canManage}
-              onDeleted={() => {
-                void fetchUpdates()
-                onSuccess?.()
-              }}
+              onEdit={openEditDialog}
+              onArchived={handleSaved}
             />
           ))}
         </div>
       )}
+
+      <LeadUpdateDialog
+        leadId={lead.id}
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        update={editingUpdate}
+        onSaved={handleSaved}
+      />
     </div>
   )
 }

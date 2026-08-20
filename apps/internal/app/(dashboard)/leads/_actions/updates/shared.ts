@@ -7,7 +7,9 @@ import { db } from '@/lib/db'
 import { leads } from '@/lib/db/schema'
 import { LEAD_UPDATE_TYPES } from '@/lib/leads/updates'
 
-export const MAX_UPDATE_BODY_LENGTH = 5000
+// The body is TipTap HTML (like task_comments), so markup overhead counts
+// toward this — same ceiling as the comments API.
+export const MAX_UPDATE_BODY_LENGTH = 10_000
 
 export const leadUpdateTypeSchema = z.enum(LEAD_UPDATE_TYPES)
 
@@ -15,7 +17,7 @@ export const leadUpdateBodySchema = z
   .string()
   .trim()
   .min(1, 'Add a short description of the interaction.')
-  .max(MAX_UPDATE_BODY_LENGTH, 'Keep updates under 5000 characters.')
+  .max(MAX_UPDATE_BODY_LENGTH, 'Keep updates under 10,000 characters.')
 
 /**
  * An interaction cannot have happened in the future — that is always a typo,

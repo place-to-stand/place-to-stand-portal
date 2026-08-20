@@ -1043,11 +1043,10 @@ export const leadUpdates = pgTable(
     leadId: uuid('lead_id').notNull(),
     type: leadUpdateType().notNull(),
     /**
-     * The interaction's description. The §03 composer writes PLAIN TEXT and the
-     * timeline renders it as plain text — deliberately not the TipTap HTML
-     * convention `task_comments` uses. If a rich editor is ever added here,
-     * the renderer must change with it; until then escaped markup showing up in
-     * the timeline is the (safe) signal that something wrote HTML.
+     * The interaction's description, as TipTap HTML — the same convention as
+     * `task_comments`: the dialog sanitizes before send and the timeline
+     * renderer sanitizes again before injecting. Rows written before the RTE
+     * landed hold plain text, which renders unchanged.
      */
     body: text().notNull(),
     /**
