@@ -2,9 +2,10 @@
 
 **Status:** Implemented on `prd-005-lead-updates-slim`
 **Created:** 2026-08-14, as a deliberate scope reduction of PRD 005
-**Supersedes:** the unshipped `prd-005-lead-updates-tasks-referrals` branch, which is **parked, not
-deleted** — its five other sections (lead-anchored tasks, origination model, staleness dots, board
-filters, lead settings) live there with full review history if any is ever resurrected.
+**Supersedes:** the unshipped full-scope PRD 005 (`prd-005-lead-updates-tasks-referrals`).
+That branch was **deleted on 2026-08-20 at Jason's direction** — the dropped scope is abandoned,
+not parked. The cut list below stays as the record of what was deliberately not built; any of it
+would be a fresh design if ever wanted (the old tip was `4d92ab99` should archaeology ever call).
 
 ---
 
@@ -38,25 +39,23 @@ same session: the staleness dot dies too (no thresholds anywhere), and the compo
 
 ## What was deliberately cut (do not scope-creep back in)
 
-| Cut | Where it lives if wanted later |
+| Cut | Status |
 | --- | --- |
-| `tasks.project_id` nullable / lead-anchored tasks | parked branch §04 — lead tasks stay hard-coded to the internal **Sales** project |
-| Origination model, referrer contacts, `contact_leads` revival | parked branch §05 — `leads.source_type` / `source_detail` remain exactly as on main |
-| Staleness dot + per-stage thresholds + `/leads/settings` | parked branch §03/§06 |
-| Board filter row (follow-up toggle, assignee filter) | parked branch §03 |
-| Composer "Add follow-up task" checkbox (D21/D24) | parked branch §03 |
-| `leads-intake` route removal | parked branch §05 — the route stays live on main |
-| Dropping `last_contact_at` / `awaiting_reply` | parked branch §03 — both columns stay (write-never, read-but-dead), no destructive migration in this PRD |
+| `tasks.project_id` nullable / lead-anchored tasks | dropped — lead tasks stay hard-coded to the internal **Sales** project |
+| Origination model, referrer contacts, `contact_leads` revival | dropped — `leads.source_type` / `source_detail` remain exactly as on main |
+| Staleness dot + per-stage thresholds + `/leads/settings` | dropped |
+| Board filter row (follow-up toggle, assignee filter) | dropped |
+| Composer "Add follow-up task" checkbox (D21/D24) | dropped |
+| `leads-intake` route removal | dropped — the route stays live on main |
+| Dropping `last_contact_at` / `awaiting_reply` | dropped — both columns stay (write-never, read-but-dead), no destructive migration in this PRD |
 
-## Deploying
+## Deployed
 
-1. Merge; apply `0062_lead_updates.sql` to production (`npm run db:migrate:prod` from the **main
-   checkout**, not a worktree). Purely additive — no sign-offs required, nothing destroyed.
-2. No env vars, no backfills, no seed scripts, no Vercel changes.
-3. Production timelines start **empty** — `last_contact_at` history is not migrated into
-   `lead_updates` (the local dev clone carries 19 synthesized EMAIL-typed rows for feel; those are
-   local fixtures only, and the "original channel unknown" caveat is why they were never promoted
-   to a production backfill).
+Merged to `main` and live in production on **2026-08-20** (PR #152, with follow-ups #153–#155);
+migration `0062_lead_updates.sql` applied and verified the same day. Purely additive — no env
+vars, no backfills, no seeds. Production timelines started empty by design: `last_contact_at`
+history was never migrated into `lead_updates` (original channel unknown), and the local clone's
+synthesized preview rows were removed after launch.
 
 ## Verification
 
