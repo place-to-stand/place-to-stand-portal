@@ -103,10 +103,10 @@ export const authInputClass =
   'w-full border border-[#2a2b30] bg-[#0e0f11] px-3 py-2 text-sm text-[#e8e6e3] placeholder:text-[#a8a8ac]/50 transition-colors focus:border-[#b5f542] focus:outline-none focus:ring-1 focus:ring-[#b5f542] disabled:opacity-50'
 
 export const authPrimaryButtonClass =
-  'inline-flex w-full items-center justify-center gap-2 bg-[#b5f542] px-3 py-2 text-sm font-semibold text-[#0e0f11] transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b5f542] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0e0f11] disabled:opacity-50'
+  'inline-flex w-full cursor-pointer items-center justify-center gap-2 bg-[#b5f542] px-3 py-2 text-sm font-semibold text-[#0e0f11] transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b5f542] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0e0f11] disabled:cursor-default disabled:opacity-50'
 
 export const authSecondaryButtonClass =
-  'inline-flex w-full items-center justify-center gap-2 border border-[#3a3b40] bg-transparent px-3 py-2 text-sm font-medium text-[#e8e6e3] transition-colors hover:border-[#b5f542]/50 hover:text-[#b5f542] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b5f542] disabled:opacity-50'
+  'inline-flex w-full cursor-pointer items-center justify-center gap-2 border border-[#3a3b40] bg-transparent px-3 py-2 text-sm font-medium text-[#e8e6e3] transition-colors hover:border-[#b5f542]/50 hover:text-[#b5f542] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b5f542] disabled:cursor-default disabled:opacity-50'
 
 export const authLinkClass =
   'font-medium text-[#b5f542] underline-offset-4 hover:underline'

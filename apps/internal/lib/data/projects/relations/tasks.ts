@@ -16,6 +16,7 @@ import type { SelectTask } from '@/lib/queries/tasks/common'
 export type TaskRow = {
   id: string
   projectId: string
+  leadId: string | null
   title: string
   description: string | null
   status: SelectTask['status']
@@ -57,6 +58,9 @@ export async function loadTaskRows(
   const taskSelection = {
     id: tasksTable.id,
     projectId: tasksTable.projectId,
+    // The lead link must ride along: the task sheet round-trips it on save,
+    // so omitting it here made every board edit silently null tasks.lead_id.
+    leadId: tasksTable.leadId,
     title: tasksTable.title,
     description: tasksTable.description,
     status: tasksTable.status,
@@ -198,6 +202,7 @@ export function mapTaskRowsToRaw(
     const normalized = {
       id: row.id,
       project_id: row.projectId,
+      lead_id: row.leadId,
       title: row.title ?? '',
       description: row.description,
       status: (row.status ?? 'ON_DECK') as RawTaskWithRelations['status'],

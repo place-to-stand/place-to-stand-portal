@@ -1,24 +1,22 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { ListTodo, Plus, Calendar, ExternalLink, CheckCircle2, Circle } from 'lucide-react'
+import { ListTodo, Plus } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@pts/ui/skeleton'
+import { TaskCardStatic } from '@/app/(dashboard)/projects/task-card'
 import type { LeadRecord } from '@/lib/leads/types'
-import { formatCalendarDate } from '@/lib/dates'
+import type { TaskWithRelations } from '@/lib/types'
 import { NEW_SHEET_VALUE } from '@/lib/sheets/entities'
-import { myTaskHref } from '@/lib/sheets/hrefs'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { prefetchSheetInit } from '@/lib/sheets/wrappers/use-sheet-init'
 
-type LeadTask = {
+type AssigneeInfo = {
   id: string
-  title: string
-  status: string
-  dueOn: string | null
-  createdAt: string
+  name: string
+  avatarUrl: string | null
 }
 
 type LeadTasksSectionProps = {
@@ -32,8 +30,11 @@ export function LeadTasksSection({
   canManage,
   onSuccess,
 }: LeadTasksSectionProps) {
-  const { openNew, get } = useSheetParams()
-  const [tasks, setTasks] = useState<LeadTask[]>([])
+  const { open, openNew, get } = useSheetParams()
+  const [tasks, setTasks] = useState<TaskWithRelations[]>([])
+  const [assigneesById, setAssigneesById] = useState<
+    Record<string, AssigneeInfo>
+  >({})
   const [isLoading, setIsLoading] = useState(true)
   const taskParam = get('task')
 
@@ -45,6 +46,7 @@ export function LeadTasksSection({
         if (response.ok) {
           const data = await response.json()
           setTasks(data.tasks ?? [])
+          setAssigneesById(data.assignees ?? {})
         }
       })
       .catch(error => {
@@ -69,9 +71,9 @@ export function LeadTasksSection({
 
   // The task sheet stacks on top of this one via `?task=` (rendered by the
   // global SheetHost). Refetch the linked tasks once that param clears, so a
-  // task created here shows up in the list. This runs in an effect, not the
-  // adjust-during-render pattern: `onSuccess` sets state in the parent, and
-  // updating another component during render is illegal.
+  // task created or edited there shows up here. This runs in an effect, not
+  // the adjust-during-render pattern: `onSuccess` sets state in the parent,
+  // and updating another component during render is illegal.
   const previousTaskParamRef = useRef(taskParam)
   useEffect(() => {
     const previous = previousTaskParamRef.current
@@ -83,63 +85,94 @@ export function LeadTasksSection({
     }
   }, [fetchTasks, onSuccess, taskParam])
 
-  const completedTasks = tasks.filter(t => t.status === 'DONE' || t.status === 'ARCHIVED')
-  const activeTasks = tasks.filter(t => t.status !== 'DONE' && t.status !== 'ARCHIVED')
+  const resolveAssignees = useCallback(
+    (task: TaskWithRelations): AssigneeInfo[] =>
+      task.assignees
+        .map(assignee => assigneesById[assignee.user_id])
+        .filter((info): info is AssigneeInfo => Boolean(info)),
+    [assigneesById]
+  )
+
+  // Stacks the task sheet over this lead sheet (`?lead=…&task=…`) instead of
+  // navigating away — closing the task drops back to the lead.
+  const openTask = useCallback(
+    (task: TaskWithRelations) => open('task', task.id),
+    [open]
+  )
+
+  const completedTasks = tasks.filter(
+    t => t.status === 'DONE' || t.status === 'ARCHIVED'
+  )
+  const activeTasks = tasks.filter(
+    t => t.status !== 'DONE' && t.status !== 'ARCHIVED'
+  )
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <ListTodo className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Tasks</span>
+    <div className='space-y-3'>
+      <div className='flex items-center justify-between'>
+        <div className='flex items-center gap-2'>
+          <ListTodo className='text-muted-foreground h-4 w-4' />
+          <span className='text-sm font-medium'>Tasks</span>
           {tasks.length > 0 && (
-            <Badge variant="secondary" className="text-xs">
+            <Badge variant='secondary' className='text-xs'>
               {tasks.length}
             </Badge>
           )}
         </div>
         {canManage && (
           <Button
-            type="button"
-            variant="outline"
-            size="sm"
+            type='button'
+            variant='outline'
+            size='sm'
             onClick={() => openNew('task')}
           >
-            <Plus className="mr-1 h-3 w-3" />
+            <Plus className='h-3 w-3' />
             Create
           </Button>
         )}
       </div>
 
       {isLoading ? (
-        <div className="space-y-2">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
+        <div className='space-y-2'>
+          <Skeleton className='h-24 w-full' />
+          <Skeleton className='h-24 w-full' />
         </div>
       ) : tasks.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No tasks linked to this lead yet.</p>
+        <p className='text-muted-foreground text-sm'>
+          No tasks linked to this lead yet.
+        </p>
       ) : (
-        <div className="space-y-2">
-          {/* Active tasks */}
+        <div className='space-y-2'>
           {activeTasks.length > 0 && (
-            <div className="space-y-2">
+            <div className='space-y-2'>
               {activeTasks.map(task => (
-                <TaskCard key={task.id} task={task} />
+                <TaskCardStatic
+                  key={task.id}
+                  task={task}
+                  assignees={resolveAssignees(task)}
+                  onClick={() => openTask(task)}
+                />
               ))}
             </div>
           )}
 
-          {/* Completed tasks */}
           {completedTasks.length > 0 && (
-            <div className="space-y-2">
+            <div className='space-y-2'>
               {activeTasks.length > 0 && (
-                <p className="text-xs font-medium text-muted-foreground pt-2">Completed</p>
+                <p className='text-muted-foreground pt-2 text-xs font-medium'>
+                  Completed
+                </p>
               )}
               {completedTasks.slice(0, 3).map(task => (
-                <TaskCard key={task.id} task={task} isCompleted />
+                <TaskCardStatic
+                  key={task.id}
+                  task={task}
+                  assignees={resolveAssignees(task)}
+                  onClick={() => openTask(task)}
+                />
               ))}
               {completedTasks.length > 3 && (
-                <p className="text-xs text-muted-foreground">
+                <p className='text-muted-foreground text-xs'>
                   +{completedTasks.length - 3} more completed tasks
                 </p>
               )}
@@ -147,73 +180,6 @@ export function LeadTasksSection({
           )}
         </div>
       )}
-
-    </div>
-  )
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  ON_DECK: 'On Deck',
-  IN_PROGRESS: 'In Progress',
-  BLOCKED: 'Blocked',
-  DONE: 'Done',
-  ARCHIVED: 'Archived',
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  ON_DECK: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
-  IN_PROGRESS: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
-  BLOCKED: 'bg-red-500/10 text-red-600 border-red-500/20',
-  DONE: 'bg-green-500/10 text-green-600 border-green-500/20',
-  ARCHIVED: 'bg-slate-500/10 text-slate-500 border-slate-500/20',
-}
-
-function TaskCard({
-  task,
-  isCompleted = false,
-}: {
-  task: LeadTask
-  isCompleted?: boolean
-}) {
-  const statusLabel = STATUS_LABELS[task.status] ?? task.status
-  const statusColor = STATUS_COLORS[task.status] ?? 'bg-slate-500/10 text-slate-600'
-
-  return (
-    <div
-      className={`rounded-lg border p-3 ${isCompleted ? 'bg-muted/20 opacity-70' : 'bg-muted/30'}`}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            {isCompleted ? (
-              <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" aria-hidden="true" />
-            ) : (
-              <Circle className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
-            )}
-            <p className={`truncate text-sm font-medium ${isCompleted ? 'line-through' : ''}`}>
-              {task.title}
-            </p>
-          </div>
-          <div className="mt-1 ml-6 flex items-center gap-2 flex-wrap">
-            <Badge variant="outline" className={`text-xs ${statusColor}`}>
-              {statusLabel}
-            </Badge>
-            {task.dueOn && (
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Calendar className="h-3 w-3" aria-hidden="true" />
-                {formatCalendarDate(task.dueOn, { month: 'short', day: 'numeric' })}
-              </span>
-            )}
-          </div>
-        </div>
-        <a
-          href={myTaskHref(task.id)}
-          className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-          aria-label={`Open task: ${task.title}`}
-        >
-          <ExternalLink className="h-4 w-4" aria-hidden="true" />
-        </a>
-      </div>
     </div>
   )
 }

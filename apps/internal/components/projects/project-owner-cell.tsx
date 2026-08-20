@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState, useTransition } from 'react'
-import { UserRoundPlus } from 'lucide-react'
+import { ChevronDown, UserRoundPlus } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
@@ -117,8 +117,16 @@ export function ProjectOwnerCell({
           disabled={isPending}
           aria-label={triggerLabel}
           title={displayOwner?.full_name ?? 'Assign owner'}
+          // The whole row navigates on click — the picker must not. Plain
+          // onClick (not capture): React delegates events at the root, so a
+          // capture-phase stopPropagation would also silence the popover
+          // trigger's own merged handler.
+          onClick={event => event.stopPropagation()}
           className={cn(
-            'focus-visible:ring-ring hover:ring-ring/50 cursor-pointer rounded-full transition-shadow hover:ring-2 focus:outline-none focus-visible:ring-2',
+            // ProjectStatusCell's hover treatment: accent surface plus a
+            // reveal-on-hover caret, per Jason's ask that the owner cell
+            // match the status column.
+            'group focus-visible:ring-ring hover:bg-accent/60 -mx-1 inline-flex cursor-pointer items-center gap-1.5 rounded-md p-1 focus:outline-none focus-visible:ring-2',
             isPending && 'animate-pulse'
           )}
         >
@@ -141,6 +149,7 @@ export function ProjectOwnerCell({
               </AvatarFallback>
             </Avatar>
           )}
+          <ChevronDown className='text-foreground/70 h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100' />
         </button>
       }
     />

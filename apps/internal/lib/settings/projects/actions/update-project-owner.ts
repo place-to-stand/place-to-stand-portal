@@ -8,7 +8,7 @@ import { logActivity } from '@/lib/activity/logger'
 import { projectUpdatedEvent } from '@/lib/activity/events'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
-import { projects } from '@/lib/db/schema'
+import { projects, users } from '@/lib/db/schema'
 import type { ProjectActionResult } from '@/lib/settings/projects/project-service'
 import {
   revalidateProjectDetailRoutes,
@@ -83,6 +83,26 @@ export async function updateProjectOwner(
 
       if (previousOwnerId === ownerId) {
         return {}
+      }
+
+      // A valid uuid isn't enough — the owner must be an active admin, or a
+      // stale/forged id would attribute the project to nobody reachable.
+      if (ownerId) {
+        const [owner] = await db
+          .select({ id: users.id })
+          .from(users)
+          .where(
+            and(
+              eq(users.id, ownerId),
+              eq(users.role, 'ADMIN'),
+              isNull(users.deletedAt)
+            )
+          )
+          .limit(1)
+
+        if (!owner) {
+          return { error: 'Selected owner is not an active admin.' }
+        }
       }
 
       try {

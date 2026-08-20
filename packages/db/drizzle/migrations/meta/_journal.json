@@ -435,6 +435,13 @@
       "when": 1786505637165,
       "tag": "0061_add_tasks_completed_at",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1787172047380,
+      "tag": "0062_lead_updates",
+      "breakpoints": true
     }
   ]
 }
