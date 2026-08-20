@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
@@ -13,7 +13,7 @@ import {
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { closedMonthWarning } from '@/lib/data/reports/close'
 import { db } from '@/lib/db'
-import { hourBlocks } from '@/lib/db/schema'
+import { hourBlocks, invoices } from '@/lib/db/schema'
 import {
   currentMonthStartUtc,
   resolveHourBlockBillingMonth,
@@ -25,10 +25,7 @@ import {
 
 import { hourBlockSchema } from './schemas'
 import type { ActionResult, HourBlockInput } from './types'
-import {
-  HOUR_BLOCKS_PATH,
-  normalizeInvoiceNumber,
-} from './helpers'
+import { HOUR_BLOCKS_PATH } from './helpers'
 
 export async function saveHourBlock(
   input: HourBlockInput,
@@ -49,6 +46,43 @@ export async function saveHourBlock(
   )
 }
 
+type LinkedInvoice = {
+  id: string
+  invoiceNumber: string | null
+}
+
+/**
+ * Verify the picked invoice exists, is active, and belongs to the block's
+ * client. Returns the invoice so its number can be recorded in the activity
+ * log alongside the link.
+ */
+async function resolveLinkedInvoice(
+  invoiceId: string,
+  clientId: string,
+): Promise<{ invoice?: LinkedInvoice; error?: string }> {
+  const rows = await db
+    .select({
+      id: invoices.id,
+      invoiceNumber: invoices.invoiceNumber,
+      clientId: invoices.clientId,
+    })
+    .from(invoices)
+    .where(and(eq(invoices.id, invoiceId), isNull(invoices.deletedAt)))
+    .limit(1)
+
+  const invoice = rows[0]
+
+  if (!invoice) {
+    return { error: 'Selected invoice could not be found.' }
+  }
+
+  if (invoice.clientId !== clientId) {
+    return { error: 'Selected invoice belongs to a different client.' }
+  }
+
+  return { invoice: { id: invoice.id, invoiceNumber: invoice.invoiceNumber } }
+}
+
 async function performSaveHourBlock(
   input: HourBlockInput,
 ): Promise<ActionResult> {
@@ -64,8 +98,10 @@ async function performSaveHourBlock(
     return { error: message, fieldErrors }
   }
 
-  const { id, clientId, hoursPurchased, invoiceNumber } = parsed.data
-  const normalizedInvoiceNumber = normalizeInvoiceNumber(invoiceNumber)
+  const { id, clientId, hoursPurchased } = parsed.data
+  const invoiceId = parsed.data.invoiceId ?? null
+  const notes =
+    parsed.data.notes && parsed.data.notes.length > 0 ? parsed.data.notes : null
   const hoursPurchasedValue = hoursPurchased.toString()
 
   const client = await getActiveClientSummary(user, clientId)
@@ -73,6 +109,23 @@ async function performSaveHourBlock(
   if (!client) {
     return { error: 'Selected client could not be found.' }
   }
+
+  let linkedInvoice: LinkedInvoice | null = null
+
+  if (invoiceId) {
+    const resolved = await resolveLinkedInvoice(invoiceId, clientId)
+
+    if (resolved.error) {
+      return {
+        error: resolved.error,
+        fieldErrors: { invoiceId: [resolved.error] },
+      }
+    }
+
+    linkedInvoice = resolved.invoice ?? null
+  }
+
+  const invoiceNumber = linkedInvoice?.invoiceNumber ?? null
 
   const targetClientName = client.name
   const nowIso = new Date().toISOString()
@@ -89,7 +142,8 @@ async function performSaveHourBlock(
         .values({
           clientId,
           hoursPurchased: hoursPurchasedValue,
-          invoiceNumber: normalizedInvoiceNumber,
+          invoiceId: linkedInvoice?.id ?? null,
+          notes,
           createdBy: user.id,
           billingMonth,
         })
@@ -102,7 +156,7 @@ async function performSaveHourBlock(
       const event = hourBlockCreatedEvent({
         clientName: targetClientName,
         hoursPurchased,
-        invoiceNumber: normalizedInvoiceNumber,
+        invoiceNumber,
       })
 
       await logActivity({
@@ -144,13 +198,20 @@ async function performSaveHourBlock(
       return { error: 'Hour block not found.' }
     }
 
+    const invoiceChanged =
+      (existingHourBlock.invoice_id ?? null) !== (linkedInvoice?.id ?? null)
+
     try {
       await db
         .update(hourBlocks)
         .set({
           clientId,
           hoursPurchased: hoursPurchasedValue,
-          invoiceNumber: normalizedInvoiceNumber,
+          invoiceId: linkedInvoice?.id ?? null,
+          notes,
+          // The line-item link belongs to the invoice the block was created
+          // from; re-pointing the block at another invoice orphans it.
+          ...(invoiceChanged ? { invoiceLineItemId: null } : {}),
           updatedAt: nowIso,
         })
         .where(eq(hourBlocks.id, id))
@@ -183,11 +244,18 @@ async function performSaveHourBlock(
       nextDetails.hoursPurchased = hoursPurchased
     }
 
-    const previousInvoice = existingHourBlock.invoice_number ?? null
-    if (previousInvoice !== normalizedInvoiceNumber) {
-      changedFields.push('invoice number')
-      previousDetails.invoiceNumber = previousInvoice
-      nextDetails.invoiceNumber = normalizedInvoiceNumber
+    if (invoiceChanged) {
+      changedFields.push('invoice')
+      previousDetails.invoiceId = existingHourBlock.invoice_id
+      previousDetails.invoiceNumber = existingHourBlock.invoice_number
+      nextDetails.invoiceId = linkedInvoice?.id ?? null
+      nextDetails.invoiceNumber = invoiceNumber
+    }
+
+    if ((existingHourBlock.notes ?? null) !== notes) {
+      changedFields.push('notes')
+      previousDetails.notes = existingHourBlock.notes
+      nextDetails.notes = notes
     }
 
     if (changedFields.length > 0) {

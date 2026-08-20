@@ -5,6 +5,7 @@ import { requireRole } from '@/lib/auth/session'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import {
   getHourBlockWithClientById,
+  listHourBlockInvoiceDirectory,
   listHourBlocksForSettings,
 } from '@/lib/queries/hour-blocks'
 import { resolveSheetDeepLink } from '@/lib/sheets/resolve-deep-link'
@@ -38,14 +39,19 @@ export default async function HourBlocksArchivePage({
   const { page: currentPage, search, sort } = parseHourBlocksSearchParams(params)
   const offset = (currentPage - 1) * PAGE_SIZE
 
-  const { items, clients, totalCount, unfilteredTotalCount } =
-    await listHourBlocksForSettings(currentUser, {
+  const [
+    { items, clients, totalCount, unfilteredTotalCount },
+    invoiceDirectory,
+  ] = await Promise.all([
+    listHourBlocksForSettings(currentUser, {
       status: 'archived',
       offset,
       limit: PAGE_SIZE,
       search,
       sort,
-    })
+    }),
+    listHourBlockInvoiceDirectory(currentUser),
+  ])
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
 
@@ -78,6 +84,7 @@ export default async function HourBlocksArchivePage({
         <HourBlocksManagementTable
           hourBlocks={items}
           clients={clients}
+          invoices={invoiceDirectory}
           totalCount={totalCount}
           currentPage={currentPage}
           totalPages={totalPages}

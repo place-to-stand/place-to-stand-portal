@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-const invoicePattern = /^[A-Za-z0-9-]+$/
+import { HOUR_BLOCK_NOTES_MAX_LENGTH } from '@/lib/settings/hour-blocks/hour-block-form'
 
 export const hourBlockSchema = z.object({
   id: z.string().uuid().optional(),
@@ -9,15 +9,16 @@ export const hourBlockSchema = z.object({
     .number()
     .int('Hours purchased must be a whole number.')
     .positive('Hours purchased must be greater than zero'),
-  invoiceNumber: z
+  invoiceId: z.string().uuid('Select a valid invoice.').optional().nullable(),
+  notes: z
     .string()
     .trim()
+    .max(
+      HOUR_BLOCK_NOTES_MAX_LENGTH,
+      `Notes must be ${HOUR_BLOCK_NOTES_MAX_LENGTH} characters or fewer.`
+    )
     .optional()
-    .nullable()
-    .refine(
-      value => !value || value === '' || invoicePattern.test(value),
-      'Invoice number may only contain letters, numbers, and dashes.'
-    ),
+    .nullable(),
 })
 
 export const deleteSchema = z.object({ id: z.string().uuid() })

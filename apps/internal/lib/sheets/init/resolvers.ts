@@ -20,6 +20,7 @@ import { getContactSheetInputById } from '@/lib/queries/contacts'
 import {
   getHourBlockWithClientById,
   listHourBlockClientDirectory,
+  listHourBlockInvoiceDirectory,
 } from '@/lib/queries/hour-blocks'
 import {
   getInvoiceById,
@@ -104,10 +105,13 @@ const resolveHourBlockInit: SheetInitResolver<'hour-block'> = async (
   user,
   id
 ) => {
-  const clientDirectory = await listHourBlockClientDirectory(user)
+  const [clientDirectory, invoiceDirectory] = await Promise.all([
+    listHourBlockClientDirectory(user),
+    listHourBlockInvoiceDirectory(user),
+  ])
 
   if (id === NEW_SHEET_VALUE) {
-    return { hourBlock: null, clients: clientDirectory }
+    return { hourBlock: null, clients: clientDirectory, invoices: invoiceDirectory }
   }
 
   const hourBlock = await getHourBlockWithClientById(user, id)
@@ -115,7 +119,7 @@ const resolveHourBlockInit: SheetInitResolver<'hour-block'> = async (
     throw new NotFoundError('Hour block not found')
   }
 
-  return { hourBlock, clients: clientDirectory }
+  return { hourBlock, clients: clientDirectory, invoices: invoiceDirectory }
 }
 
 const resolveInvoiceInit: SheetInitResolver<'invoice'> = async (user, id) => {

@@ -5,10 +5,11 @@ import { and, asc, eq, isNull, sql, type SQL } from 'drizzle-orm'
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, hourBlocks } from '@/lib/db/schema'
+import { clients, hourBlocks, invoices } from '@/lib/db/schema'
 
 import type {
   ClientRow,
+  HourBlockInvoiceRow,
   HourBlockWithClient,
 } from '@/lib/settings/hour-blocks/hour-block-form'
 
@@ -41,6 +42,7 @@ type HourBlockSelection = {
     hoursPurchased: string | null
     invoiceId: string | null
     invoiceNumber: string | null
+    notes: string | null
     createdBy: string | null
     createdAt: string
     updatedAt: string
@@ -60,12 +62,15 @@ type ClientSelection = {
   deletedAt: string | null
 }
 
+// invoiceNumber is derived from the linked invoice — every query using this
+// selection must leftJoin(invoices, eq(hourBlocks.invoiceId, invoices.id)).
 const hourBlockSelection = {
   id: hourBlocks.id,
   clientId: hourBlocks.clientId,
   hoursPurchased: hourBlocks.hoursPurchased,
   invoiceId: hourBlocks.invoiceId,
-  invoiceNumber: hourBlocks.invoiceNumber,
+  invoiceNumber: invoices.invoiceNumber,
+  notes: hourBlocks.notes,
   createdBy: hourBlocks.createdBy,
   createdAt: hourBlocks.createdAt,
   updatedAt: hourBlocks.updatedAt,
@@ -153,7 +158,7 @@ export async function listHourBlocksForSettings(
   if (searchQuery) {
     const pattern = createSearchPattern(searchQuery)
     baseConditions.push(
-      sql`(${hourBlocks.invoiceNumber} ILIKE ${pattern} OR ${clients.name} ILIKE ${pattern})`
+      sql`(${invoices.invoiceNumber} ILIKE ${pattern} OR ${clients.name} ILIKE ${pattern})`
     )
   }
 
@@ -178,6 +183,7 @@ export async function listHourBlocksForSettings(
       })
       .from(hourBlocks)
       .leftJoin(clients, eq(hourBlocks.clientId, clients.id))
+      .leftJoin(invoices, eq(hourBlocks.invoiceId, invoices.id))
       .where(baseWhere)
       .orderBy(...ordering)
       .limit(limit)
@@ -218,6 +224,7 @@ export async function listHourBlocksForSettings(
       })
       .from(hourBlocks)
       .leftJoin(clients, eq(hourBlocks.clientId, clients.id))
+      .leftJoin(invoices, eq(hourBlocks.invoiceId, invoices.id))
       .where(whereClause)
       .orderBy(...ordering)
       .limit(limit + 1)) as HourBlockSelection[]
@@ -232,12 +239,13 @@ export async function listHourBlocksForSettings(
 
   const [totalResult, unfilteredTotalResult, clientDirectory] =
     await Promise.all([
-      // Search touches the joined client name, so the filtered count needs
-      // the same join as the page query.
+      // Search touches the joined client name and invoice number, so the
+      // filtered count needs the same joins as the page query.
       db
         .select({ count: sql<number>`count(*)` })
         .from(hourBlocks)
         .leftJoin(clients, eq(hourBlocks.clientId, clients.id))
+        .leftJoin(invoices, eq(hourBlocks.invoiceId, invoices.id))
         .where(and(...baseConditions)),
       db
         .select({ count: sql<number>`count(*)` })
@@ -328,6 +336,47 @@ export async function listHourBlockClientDirectory(
   return rows.map(mapClientRow)
 }
 
+/**
+ * Active, numbered invoices for the hour block sheet's invoice picker.
+ * Drafts have no invoice number yet (numbers mint on DRAFT → SENT), so they
+ * are excluded — a block can only reference an invoice a client has seen.
+ */
+export async function listHourBlockInvoiceDirectory(
+  user: AppUser
+): Promise<HourBlockInvoiceRow[]> {
+  assertAdmin(user)
+
+  const rows = await db
+    .select({
+      id: invoices.id,
+      invoiceNumber: invoices.invoiceNumber,
+      clientId: invoices.clientId,
+      clientName: clients.name,
+      status: invoices.status,
+      total: invoices.total,
+      issuedDate: invoices.issuedDate,
+    })
+    .from(invoices)
+    .leftJoin(clients, eq(invoices.clientId, clients.id))
+    .where(
+      and(
+        isNull(invoices.deletedAt),
+        sql`${invoices.invoiceNumber} IS NOT NULL`
+      )
+    )
+    .orderBy(sql`${invoices.createdAt} DESC`)
+
+  return rows.map(row => ({
+    id: row.id,
+    invoice_number: row.invoiceNumber ?? '',
+    client_id: row.clientId,
+    client_name: row.clientName,
+    status: row.status,
+    total: Number(row.total ?? '0'),
+    issued_date: row.issuedDate,
+  }))
+}
+
 export async function getHourBlockWithClientById(
   user: AppUser,
   hourBlockId: string
@@ -341,6 +390,7 @@ export async function getHourBlockWithClientById(
     })
     .from(hourBlocks)
     .leftJoin(clients, eq(hourBlocks.clientId, clients.id))
+    .leftJoin(invoices, eq(hourBlocks.invoiceId, invoices.id))
     .where(eq(hourBlocks.id, hourBlockId))
     .limit(1)) as HourBlockSelection[]
 
@@ -367,6 +417,7 @@ function mapHourBlockWithClient(row: HourBlockSelection): HourBlockWithClient {
     hours_purchased: Number(row.block.hoursPurchased ?? '0'),
     invoice_id: row.block.invoiceId,
     invoice_number: row.block.invoiceNumber,
+    notes: row.block.notes,
     created_by: row.block.createdBy,
     created_at: row.block.createdAt,
     updated_at: row.block.updatedAt,

@@ -9,6 +9,7 @@ import { PaginationControls } from '@/components/ui/pagination-controls'
 
 import type {
   ClientRow,
+  HourBlockInvoiceRow,
   HourBlockWithClient,
 } from '@/lib/settings/hour-blocks/hour-block-form'
 import { useHourBlocksTableState } from '@/lib/settings/hour-blocks/use-hour-blocks-table-state'
@@ -20,6 +21,8 @@ import { HourBlockSheet } from '../hour-block-sheet'
 type HourBlocksManagementTableProps = {
   hourBlocks: HourBlockWithClient[]
   clients: ClientRow[]
+  /** Invoice directory backing the sheet's invoice picker. */
+  invoices: HourBlockInvoiceRow[]
   totalCount: number
   currentPage: number
   totalPages: number
@@ -44,6 +47,7 @@ const EMPTY_MESSAGES = {
 export function HourBlocksManagementTable({
   hourBlocks,
   clients,
+  invoices,
   totalCount,
   currentPage,
   totalPages,
@@ -158,6 +162,7 @@ export function HourBlocksManagementTable({
         onComplete={handleComplete}
         hourBlock={selectedBlock}
         clients={sortedClients}
+        invoices={invoices}
       />
     </div>
   )

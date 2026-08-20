@@ -729,10 +729,10 @@ export const hourBlocks = pgTable(
       .default(sql`timezone('utc'::text, now())`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
-    invoiceNumber: text('invoice_number'),
     clientId: uuid('client_id').notNull(),
     invoiceId: uuid('invoice_id'),
     invoiceLineItemId: uuid('invoice_line_item_id'),
+    notes: text('notes'),
     /**
      * Month this block's hours are billed in (always the 1st). Defaults to the
      * creation month but is clamped forward to the client's first prepaid
@@ -767,10 +767,6 @@ export const hourBlocks = pgTable(
       foreignColumns: [clients.id],
       name: 'hour_blocks_client_id_fkey',
     }).onDelete('cascade'),
-    check(
-      'hour_blocks_invoice_number_format',
-      sql`(invoice_number IS NULL) OR (invoice_number ~ '^[A-Za-z0-9-]+$'::text)`
-    ),
     check(
       'chk_hour_blocks_billing_month_month_start',
       sql`billing_month = date_trunc('month', billing_month)::date`
