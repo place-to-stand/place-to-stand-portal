@@ -11,6 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@pts/ui/dropdown-menu'
+import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { sanitizeEditorHtml } from '@/components/ui/rich-text-editor/utils'
 import { formatCalendarDate } from '@/lib/dates'
@@ -121,7 +122,20 @@ export function LeadUpdateItem({
         className='text-foreground [&_a]:text-primary [&_code]:bg-muted [&_pre]:bg-muted mt-2 space-y-2 text-sm leading-relaxed [&_a]:underline [&_a]:underline-offset-4 [&_code]:rounded [&_code]:px-1 [&_code]:py-0.5 [&_li]:my-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-2 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0 [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:p-3 [&_ul]:list-disc [&_ul]:pl-5'
         dangerouslySetInnerHTML={{ __html: sanitizedBody }}
       />
-      <p className='text-muted-foreground mt-2 text-xs'>{authorDisplay}</p>
+      <div className='text-muted-foreground mt-2 flex items-center gap-1.5 text-xs'>
+        <Avatar className='h-4 w-4'>
+          {update.authorAvatarUrl ? (
+            <AvatarImage
+              src={`/api/storage/user-avatar/${update.authorId}`}
+              alt={authorDisplay}
+            />
+          ) : null}
+          <AvatarFallback className='text-[8px]'>
+            {authorDisplay.slice(0, 2).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+        <span>{authorDisplay}</span>
+      </div>
       {error ? (
         <p role='alert' className='text-destructive mt-2 text-xs'>
           {error}

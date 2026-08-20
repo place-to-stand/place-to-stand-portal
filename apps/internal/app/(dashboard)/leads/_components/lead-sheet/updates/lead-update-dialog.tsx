@@ -167,7 +167,10 @@ export function LeadUpdateDialog({
           <DialogTitle>{isEditing ? 'Edit update' : 'Log update'}</DialogTitle>
         </DialogHeader>
 
-        <div className='space-y-4'>
+        {/* min-w-0 lets this grid child shrink to the popup's width — without
+            it the RTE toolbar's min-content width drags the whole track wider
+            than the panel and everything bleeds past the border. */}
+        <div className='min-w-0 space-y-4'>
           <div className='flex gap-3'>
             <div className='flex-1 space-y-1'>
               <Label htmlFor='lead-update-type' className='text-xs'>
@@ -180,7 +183,7 @@ export function LeadUpdateDialog({
                   setIsDirty(true)
                 }}
               >
-                <SelectTrigger id='lead-update-type' size='sm'>
+                <SelectTrigger id='lead-update-type'>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
