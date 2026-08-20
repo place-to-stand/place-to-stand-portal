@@ -7,6 +7,7 @@ import {
 import type { AppUser } from '@/lib/auth/session'
 import { ensureTaskAttachmentBucket } from '@/lib/storage/task-attachments'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'
+import type { ActivitySourceValue } from '@/lib/types'
 
 import { createTaskForActor } from './create-task'
 import { updateTaskForActor } from './update-task'
@@ -31,7 +32,8 @@ export type { SaveTaskResult } from './types'
  */
 export async function saveTaskForActor(
   actor: AppUser,
-  input: BaseTaskInput
+  input: BaseTaskInput,
+  source: ActivitySourceValue
 ): Promise<SaveTaskResult> {
   const parsed = baseTaskSchema.safeParse(input)
 
@@ -49,6 +51,7 @@ export async function saveTaskForActor(
     storage,
     input: parsed.data,
     assigneeIds: Array.from(new Set(assigneeIds)),
+    source,
   }
 
   return id

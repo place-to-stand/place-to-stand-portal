@@ -47,7 +47,8 @@ export default async function PublicInvoicePage({ params, searchParams }: Props)
           })
 
           return logActivity({
-            actorId: invoice.created_by ?? invoice.id,
+            actorId: null,
+            source: 'SYSTEM',
             verb: event.verb,
             summary: event.summary,
             targetType: 'INVOICE',

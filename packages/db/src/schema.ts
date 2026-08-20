@@ -34,6 +34,11 @@ export const taskStatus = pgEnum('task_status', [
   'ARCHIVED',
 ])
 export const userRole = pgEnum('user_role', ['ADMIN', 'CLIENT'])
+export const activitySource = pgEnum('activity_source', [
+  'ADMIN_UI',
+  'CLI',
+  'SYSTEM',
+])
 export const clientBillingType = pgEnum('client_billing_type', [
   'prepaid',
   'net_30',
@@ -1026,8 +1031,9 @@ export const activityLogs = pgTable(
   'activity_logs',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
-    actorId: uuid('actor_id').notNull(),
-    actorRole: userRole('actor_role').notNull(),
+    actorId: uuid('actor_id'),
+    actorRole: userRole('actor_role'),
+    source: activitySource('source').default('ADMIN_UI').notNull(),
     verb: text().notNull(),
     summary: text().notNull(),
     targetType: text('target_type').notNull(),

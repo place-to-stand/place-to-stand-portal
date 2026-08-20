@@ -126,6 +126,7 @@ export async function GET(request: NextRequest) {
     await logActivity({
       actorId: user.id,
       actorRole: user.role,
+      source: 'SYSTEM',
       verb: 'OAUTH_CONNECTED',
       summary: `Connected GitHub account (@${userInfo.login})`,
       targetType: 'SETTINGS',

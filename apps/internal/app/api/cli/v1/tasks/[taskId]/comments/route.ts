@@ -64,6 +64,7 @@ export const POST = withCliAuth<Params>(async ({ user, request, params }) => {
     await logActivity({
       actorId: user.id,
       actorRole: user.role,
+      source: 'CLI',
       verb: event.verb,
       summary: event.summary,
       targetType: 'COMMENT',

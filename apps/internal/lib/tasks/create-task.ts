@@ -22,6 +22,7 @@ export async function createTaskForActor({
   storage,
   input,
   assigneeIds,
+  source,
 }: TaskWriteContext): Promise<SaveTaskResult> {
   const { projectId, leadId, title, description, status, dueOn, attachments } =
     input
@@ -127,6 +128,7 @@ export async function createTaskForActor({
     await logActivity({
       actorId: actor.id,
       actorRole: actor.role,
+      source,
       verb: event.verb,
       summary: event.summary,
       targetType: 'TASK',

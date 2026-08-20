@@ -19,7 +19,7 @@ import type { SaveTaskResult, TaskWriteContext } from './types'
 
 export async function updateTaskForActor(
   taskId: string,
-  { actor, storage, input, assigneeIds }: TaskWriteContext
+  { actor, storage, input, assigneeIds, source }: TaskWriteContext
 ): Promise<SaveTaskResult> {
   const { projectId, leadId, title, description, status, dueOn, attachments } =
     input
@@ -176,6 +176,7 @@ export async function updateTaskForActor(
     await logActivity({
       actorId: actor.id,
       actorRole: actor.role,
+      source,
       verb: event.verb,
       summary: event.summary,
       targetType: 'TASK',
