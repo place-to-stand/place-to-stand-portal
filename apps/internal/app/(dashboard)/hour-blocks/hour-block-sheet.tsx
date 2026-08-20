@@ -55,6 +55,7 @@ export function HourBlockSheet({
     isPending,
     clientOptions,
     invoiceOptions,
+    invoiceHint,
     clientField,
     hoursField,
     invoiceField,
@@ -210,6 +211,11 @@ export function HourBlockSheet({
                           />
                         </DisabledFieldTooltip>
                       </FormControl>
+                      {invoiceHint ? (
+                        <p className='text-muted-foreground text-xs'>
+                          {invoiceHint}
+                        </p>
+                      ) : null}
                       <FormMessage />
                     </FormItem>
                   )}

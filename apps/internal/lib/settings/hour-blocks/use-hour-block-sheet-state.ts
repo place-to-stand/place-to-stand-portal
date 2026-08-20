@@ -64,6 +64,8 @@ export type UseHourBlockSheetStateReturn = {
   isPending: boolean
   clientOptions: ClientOption[]
   invoiceOptions: InvoiceOption[]
+  /** Set when the selected invoice was issued to a different client. */
+  invoiceHint: string | null
   clientField: FieldState
   hoursField: FieldState
   invoiceField: FieldState
@@ -141,6 +143,29 @@ export function useHourBlockSheetState({
       hourBlock?.invoice_id ?? null
     )
   }, [hourBlock, invoices, selectedClientId])
+
+  const selectedInvoiceId = useWatch({
+    control: form.control,
+    name: 'invoiceId',
+  })
+
+  // Cross-client links stay valid (hours transferred between clients keep
+  // the original purchase invoice) — but surface that it's intentional.
+  const invoiceHint = useMemo(() => {
+    if (!selectedInvoiceId || !selectedClientId) {
+      return null
+    }
+
+    const invoice = invoices.find(row => row.id === selectedInvoiceId)
+    const ownerClientId = invoice?.client_id ?? hourBlock?.client_id ?? null
+    const ownerName = invoice?.client_name ?? hourBlock?.client?.name ?? null
+
+    if (!ownerClientId || ownerClientId === selectedClientId) {
+      return null
+    }
+
+    return `This invoice was issued to ${ownerName ?? 'another client'} — keeping it preserves the original purchase record.`
+  }, [hourBlock, invoices, selectedClientId, selectedInvoiceId])
 
   const resetFormState = useCallback(() => {
     form.reset(buildHourBlockFormDefaults(hourBlock))
@@ -383,6 +408,7 @@ export function useHourBlockSheetState({
     isPending,
     clientOptions,
     invoiceOptions,
+    invoiceHint,
     clientField,
     hoursField,
     invoiceField,
