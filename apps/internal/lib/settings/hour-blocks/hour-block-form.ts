@@ -1,8 +1,8 @@
 import { z } from 'zod'
 
-const invoicePattern = /^[A-Za-z0-9-]+$/
-
 export const DEFAULT_HOURS_PURCHASED = 5
+
+export const HOUR_BLOCK_NOTES_MAX_LENGTH = 2000
 
 export const hourBlockFormSchema = z.object({
   clientId: z.string().uuid('Select a client'),
@@ -10,13 +10,18 @@ export const hourBlockFormSchema = z.object({
     .number()
     .int('Hours purchased must be a whole number.')
     .positive('Hours purchased must be greater than zero'),
-  invoiceNumber: z
+  invoiceId: z
+    .string()
+    .refine(
+      value => value === '' || z.string().uuid().safeParse(value).success,
+      'Select a valid invoice.'
+    ),
+  notes: z
     .string()
     .trim()
-    .optional()
-    .refine(
-      value => !value || value === '' || invoicePattern.test(value),
-      'Invoice number may only contain letters, numbers, and dashes.'
+    .max(
+      HOUR_BLOCK_NOTES_MAX_LENGTH,
+      `Notes must be ${HOUR_BLOCK_NOTES_MAX_LENGTH} characters or fewer.`
     ),
 })
 
@@ -27,7 +32,9 @@ type HourBlockRow = {
   client_id: string
   hours_purchased: number
   invoice_id: string | null
+  /** Derived from the linked invoice at query time — not a stored column. */
   invoice_number: string | null
+  notes: string | null
   created_by: string | null
   created_at: string
   updated_at: string
@@ -42,12 +49,24 @@ type ClientRow = {
   deleted_at: string | null
 }
 
+/** Invoice directory row the sheet's invoice picker renders. */
+export type HourBlockInvoiceRow = {
+  id: string
+  invoice_number: string
+  client_id: string
+  client_name: string | null
+  status: string
+  total: number
+  issued_date: string | null
+}
+
 export type HourBlockWithClient = HourBlockRow & { client: ClientRow | null }
 
 export const HOUR_BLOCK_FORM_FIELDS: Array<keyof HourBlockFormValues> = [
   'clientId',
   'hoursPurchased',
-  'invoiceNumber',
+  'invoiceId',
+  'notes',
 ]
 
 export const buildHourBlockFormDefaults = (
@@ -55,14 +74,16 @@ export const buildHourBlockFormDefaults = (
 ): HourBlockFormValues => ({
   clientId: hourBlock?.client_id ?? '',
   hoursPurchased: hourBlock?.hours_purchased ?? DEFAULT_HOURS_PURCHASED,
-  invoiceNumber: hourBlock?.invoice_number ?? '',
+  invoiceId: hourBlock?.invoice_id ?? '',
+  notes: hourBlock?.notes ?? '',
 })
 
 export type HourBlockSavePayload = {
   id?: string
   clientId: string
   hoursPurchased: number
-  invoiceNumber: string | null
+  invoiceId: string | null
+  notes: string | null
 }
 
 export const createHourBlockSavePayload = (
@@ -72,10 +93,8 @@ export const createHourBlockSavePayload = (
   id: hourBlock?.id,
   clientId: values.clientId,
   hoursPurchased: values.hoursPurchased,
-  invoiceNumber:
-    values.invoiceNumber && values.invoiceNumber.trim().length > 0
-      ? values.invoiceNumber.trim()
-      : null,
+  invoiceId: values.invoiceId.length > 0 ? values.invoiceId : null,
+  notes: values.notes.trim().length > 0 ? values.notes.trim() : null,
 })
 
 export const sortClientsByName = (clients: ClientRow[]): ClientRow[] =>

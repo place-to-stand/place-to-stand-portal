@@ -25,6 +25,7 @@ import type { LeadAssigneeOption, LeadRecord } from '@/lib/leads/types'
 import type { ContactSheetInput } from '@/lib/settings/contacts/use-contact-sheet-state'
 import type {
   ClientRow as HourBlockClientRow,
+  HourBlockInvoiceRow,
   HourBlockWithClient,
 } from '@/lib/settings/hour-blocks/hour-block-form'
 import type {
@@ -43,6 +44,7 @@ export type SheetInitPayloads = {
   'hour-block': {
     hourBlock: HourBlockWithClient | null
     clients: HourBlockClientRow[]
+    invoices: HourBlockInvoiceRow[]
   }
   invoice: {
     invoice: InvoiceWithLineItems | null

@@ -449,6 +449,20 @@
       "when": 1787258488668,
       "tag": "0063_add_activity_logs_source",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1787264320013,
+      "tag": "0064_hour_block_notes",
+      "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1787264823747,
+      "tag": "0065_drop_hour_block_invoice_number",
+      "breakpoints": true
     }
   ]
 }

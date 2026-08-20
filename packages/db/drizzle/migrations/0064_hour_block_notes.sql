@@ -1,0 +1,1 @@
+ALTER TABLE "hour_blocks" ADD COLUMN "notes" text;

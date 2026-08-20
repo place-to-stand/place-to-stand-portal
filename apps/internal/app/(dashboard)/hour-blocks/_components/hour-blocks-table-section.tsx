@@ -1,9 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { Archive, Building2, RefreshCw, Trash2 } from 'lucide-react'
+import { Archive, Building2, Info, RefreshCw, Trash2 } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
@@ -162,7 +163,24 @@ export function HourBlocksTableSection({
                   )}
                 </TableCell>
                 <TableCell className='text-sm'>
-                  {toHours(block.hours_purchased)}
+                  <span className='inline-flex items-center gap-1.5'>
+                    {toHours(block.hours_purchased)}
+                    {block.notes ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span
+                            className='cursor-default'
+                            aria-label='Hour block notes'
+                          >
+                            <Info className='text-muted-foreground h-3.5 w-3.5' />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent className='max-w-xs whitespace-pre-wrap'>
+                          {block.notes}
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : null}
+                  </span>
                 </TableCell>
                 <TableCell className='text-muted-foreground text-sm'>
                   {formatTimestamp(block.created_at)}

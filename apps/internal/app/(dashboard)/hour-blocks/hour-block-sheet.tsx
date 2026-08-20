@@ -12,6 +12,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
@@ -23,6 +24,7 @@ import {
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import type {
   ClientRow,
+  HourBlockInvoiceRow,
   HourBlockWithClient,
 } from '@/lib/settings/hour-blocks/hour-block-form'
 import { HourBlockArchiveDialog } from './_components/hour-block-archive-dialog'
@@ -35,6 +37,7 @@ type Props = {
   onComplete: () => void
   hourBlock: HourBlockWithClient | null
   clients: ClientRow[]
+  invoices: HourBlockInvoiceRow[]
 }
 
 export function HourBlockSheet({
@@ -43,6 +46,7 @@ export function HourBlockSheet({
   onComplete,
   hourBlock,
   clients,
+  invoices,
 }: Props) {
   const {
     form,
@@ -50,6 +54,7 @@ export function HourBlockSheet({
     isEditing,
     isPending,
     clientOptions,
+    invoiceOptions,
     clientField,
     hoursField,
     invoiceField,
@@ -68,6 +73,7 @@ export function HourBlockSheet({
     onComplete,
     hourBlock,
     clients,
+    invoices,
   })
 
   const handleSave = useCallback(
@@ -177,11 +183,11 @@ export function HourBlockSheet({
                 </div>
                 <FormField
                   control={form.control}
-                  name='invoiceNumber'
+                  name='invoiceId'
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Invoice #{' '}
+                        Invoice{' '}
                         <span className='text-muted-foreground text-xs'>
                           (optional)
                         </span>
@@ -191,12 +197,44 @@ export function HourBlockSheet({
                           disabled={invoiceField.disabled}
                           reason={invoiceField.reason}
                         >
-                          <Input
+                          <SearchableCombobox
+                            name={field.name}
+                            value={field.value ?? ''}
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            items={invoiceOptions}
+                            placeholder='No invoice'
+                            searchPlaceholder='Search invoices...'
+                            emptyMessage='No invoices found for this client.'
+                            disabled={invoiceField.disabled}
+                          />
+                        </DisabledFieldTooltip>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='notes'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Notes{' '}
+                        <span className='text-muted-foreground text-xs'>
+                          (optional)
+                        </span>
+                      </FormLabel>
+                      <FormControl>
+                        <DisabledFieldTooltip
+                          disabled={invoiceField.disabled}
+                          reason={invoiceField.reason}
+                        >
+                          <Textarea
                             {...field}
                             value={field.value ?? ''}
-                            placeholder='INV-2025-01'
-                            inputMode='text'
-                            maxLength={64}
+                            placeholder='e.g. Comped 2 hours for leaving a review'
+                            rows={3}
                             disabled={invoiceField.disabled}
                           />
                         </DisabledFieldTooltip>

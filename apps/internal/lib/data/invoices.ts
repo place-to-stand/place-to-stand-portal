@@ -89,7 +89,6 @@ export async function createHourBlocksFromInvoice(
         hoursPurchased,
         invoiceId: invoice.id,
         invoiceLineItemId: item.id,
-        invoiceNumber: invoice.invoiceNumber,
         createdBy: invoice.createdBy,
         billingMonth,
       })
