@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useCallback, useMemo } from 'react'
+import { Users } from 'lucide-react'
 
 import {
   SearchableCombobox,
@@ -9,8 +10,11 @@ import {
 } from '@/components/ui/searchable-combobox'
 import type { DbUser } from '@/lib/types'
 
+export const ALL_TASKS_VALUE = 'all'
+
 type PersonSelectorProps = {
   admins: DbUser[]
+  /** An admin id, or `'all'` for the everyone view. */
   selectedUserId: string
   currentUserId: string
   disabled?: boolean
@@ -36,11 +40,22 @@ export function PersonSelector({
       }))
 
       // Sort: current user first, then alphabetically by label
-      return mappedItems.sort((a, b) => {
+      mappedItems.sort((a, b) => {
         if (a.userId === currentUserId) return -1
         if (b.userId === currentUserId) return 1
         return a.label.localeCompare(b.label)
       })
+
+      // Everyone's tasks — for the weekly planning walk-through.
+      return [
+        {
+          value: ALL_TASKS_VALUE,
+          label: 'All tasks',
+          keywords: ['all', 'everyone'],
+          icon: Users,
+        },
+        ...mappedItems,
+      ]
     },
     [admins, currentUserId]
   )
@@ -54,6 +69,9 @@ export function PersonSelector({
       } else {
         params.delete('assignee')
       }
+
+      // Person-scoped sort metadata has no meaning across boards, and the
+      // sheet params should survive the switch untouched.
 
       const search = params.toString()
       const url = search ? `${pathname}?${search}` : pathname
@@ -75,7 +93,7 @@ export function PersonSelector({
         {items.map(item => (
           <span
             key={item.value}
-            className="flex h-0 items-center gap-2 border border-transparent px-3 text-sm whitespace-nowrap"
+            className='flex h-0 items-center gap-2 border-x border-x-transparent px-3 text-sm whitespace-nowrap'
           >
             <span className="size-5 shrink-0" />
             {item.label}

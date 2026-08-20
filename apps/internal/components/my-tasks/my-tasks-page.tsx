@@ -30,6 +30,10 @@ import { MyTasksBoard } from './my-tasks-board'
 import type { MyTasksBoardReorderUpdate, TaskLookup } from './my-tasks-board'
 import { MyTasksCalendar } from './my-tasks-calendar'
 import { PersonSelector } from './person-selector'
+import {
+  ClientSelector,
+  type ClientSelectorOption,
+} from './client-selector'
 import { Plus } from 'lucide-react'
 
 export type MyTasksInitialEntry = {
@@ -48,7 +52,11 @@ type MyTasksPageProps = {
   initialEntries: MyTasksInitialEntry[]
   activeTaskId: string | null
   view: MyTasksView
+  /** An admin id, or `'all'` for the everyone view. */
   selectedAssigneeId: string
+  /** A client id, or `'all'` when unscoped. */
+  selectedClientId: string
+  clients: ClientSelectorOption[]
   /** Server-rendered instant the board's Done window measures back from. */
   now: string
   /** Assigned DONE tasks completed before the first window. */
@@ -64,6 +72,8 @@ export function MyTasksPage({
   activeTaskId,
   view,
   selectedAssigneeId,
+  selectedClientId,
+  clients,
   now,
   initialOlderDoneCount,
 }: MyTasksPageProps) {
@@ -192,7 +202,11 @@ export function MyTasksPage({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          // 'all' is a UI sentinel; the API takes it verbatim and widens
+          // to every assignee. The client scope rides along so the wider
+          // window matches what the board is showing.
           assigneeId: selectedAssigneeId,
+          clientId: selectedClientId === 'all' ? null : selectedClientId,
           fromWeeks: doneWeeks,
           toWeeks,
           now: windowAnchor,
@@ -235,7 +249,7 @@ export function MyTasksPage({
     } finally {
       setIsLoadingOlderDone(false)
     }
-  }, [doneWeeks, isLoadingOlderDone, selectedAssigneeId, windowAnchor])
+  }, [doneWeeks, isLoadingOlderDone, selectedAssigneeId, selectedClientId, windowAnchor])
 
   // Drop the create seed defaults once the create sheet's param is gone.
   const [prevTaskParam, setPrevTaskParam] = useState(taskParam)
@@ -425,6 +439,10 @@ export function MyTasksPage({
       count={{ label: 'tasks', total: totalTaskCount }}
       primaryAction={
         <div className='flex items-center gap-2'>
+          <ClientSelector
+            clients={clients}
+            selectedClientId={selectedClientId}
+          />
           <PersonSelector
             admins={admins}
             selectedUserId={selectedAssigneeId}
@@ -454,6 +472,7 @@ export function MyTasksPage({
           />
         ) : (
           <MyTasksBoard
+            canReorder={selectedAssigneeId !== 'all'}
             entries={boardEntries}
             taskLookup={taskLookup}
             renderAssignees={renderAssignees}
