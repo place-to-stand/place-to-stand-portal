@@ -169,7 +169,9 @@ function SelectContent({
   className,
   children,
   position = 'popper',
-  align = 'center',
+  // House rule: dropdown popups left-align with their trigger (or match its
+  // width); deviations opt in with an explicit `align` at the call site.
+  align = 'start',
   alignOffset = 0,
   side = 'bottom',
   sideOffset = 0,

@@ -11,9 +11,9 @@ import {
 type DoneWindowFooterProps = {
   /** Current window width in weeks; always a multiple of DONE_WINDOW_WEEKS. */
   doneWeeks: number
-  /** Assigned DONE tasks completed before the window. Zero hides the button. */
+  /** DONE tasks completed before the window. Zero hides the button. */
   hiddenCount: number
-  /** Fetches and appends the next step. */
+  /** Reveals the next step (a fetch on My Tasks, a local widen on boards). */
   onWiden: () => void
   isLoading: boolean
   error: string | null

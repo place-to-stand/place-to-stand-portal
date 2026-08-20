@@ -58,7 +58,7 @@ export function ProjectsTableSection({
 
   return (
     <div className='overflow-hidden rounded-lg border'>
-      <Table density='compact'>
+      <Table density='compact' layout='fixed'>
         <TableHeader>
           <TableRow className='bg-muted/40'>
             <SortableTableHead
@@ -66,11 +66,12 @@ export function ProjectsTableSection({
               sort={sort}
               defaultSort='name:asc'
               onSortChange={next => update({ sort: next })}
+              className='w-[32%]'
             >
               Name
             </SortableTableHead>
-            <TableHead>Owner</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead className='w-[20%]'>Owner</TableHead>
+            <TableHead className='w-[14%]'>Status</TableHead>
             <SortableTableHead
               field='created'
               sort={sort}

@@ -139,6 +139,9 @@ export function useProjectsBoardViewModel({
       onCreateTask: boardState.openCreateSheet,
       activeSheetTaskId: boardState.sheetTask?.id ?? null,
       activityTargetClientId: boardState.activeProject?.client?.id ?? null,
+      doneWeeks: boardState.doneWeeks,
+      hiddenDoneCount: boardState.hiddenDoneCount,
+      onWidenDoneWindow: boardState.widenDoneWindow,
     },
     drag: {
       sensors,

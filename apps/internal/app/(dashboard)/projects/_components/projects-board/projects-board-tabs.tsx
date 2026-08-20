@@ -54,6 +54,9 @@ export type ProjectsBoardTabsProps = {
   onBoardScroll: UIEventHandler<HTMLDivElement>
   activeSheetTaskId: string | null
   activityTargetClientId: string | null
+  doneWeeks: number
+  hiddenDoneCount: number
+  onWidenDoneWindow: () => void
   doneTasks: TaskWithRelations[]
   acceptedTasks: TaskWithRelations[]
   archivedTasks: TaskWithRelations[]
@@ -107,6 +110,9 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
     onBoardScroll,
     activeSheetTaskId,
     activityTargetClientId,
+    doneWeeks,
+    hiddenDoneCount,
+    onWidenDoneWindow,
     doneTasks,
     acceptedTasks,
     archivedTasks,
@@ -175,6 +181,9 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
         activeDropColumnId={activeDropColumnId}
         dropPreview={dropPreview}
         recentlyMovedTaskId={recentlyMovedTaskId}
+        doneWeeks={doneWeeks}
+        hiddenDoneCount={hiddenDoneCount}
+        onWidenDoneWindow={onWidenDoneWindow}
       />
       <ReviewTabContent
         isActive={initialTab === 'review'}

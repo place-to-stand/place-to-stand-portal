@@ -297,7 +297,7 @@ export function LeadsArchiveSection({
         <ResetFiltersButton show={hasActiveFilters} onReset={reset} />
       </FilterBar>
       <div className='rounded-lg border'>
-        <Table density='compact'>
+        <Table density='compact' layout='fixed'>
           <TableHeader>
             <TableRow className='bg-muted/40'>
               <SortableTableHead
@@ -305,13 +305,13 @@ export function LeadsArchiveSection({
                 sort={sortParam}
                 defaultSort='archived:desc'
                 onSortChange={next => update({ sort: next })}
-                className='w-[30%]'
+                className='w-[20%]'
               >
                 Contact
               </SortableTableHead>
-              <TableHead>Company</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Last Status</TableHead>
+              <TableHead className='w-[16%]'>Company</TableHead>
+              <TableHead className='w-[22%]'>Email</TableHead>
+              <TableHead className='w-[16%]'>Last Status</TableHead>
               <SortableTableHead
                 field='archived'
                 sort={sortParam}
@@ -341,15 +341,15 @@ export function LeadsArchiveSection({
                   })}
                   className={cn(CLICKABLE_ROW_CLASS, ARCHIVED_ROW_CLASS)}
                 >
-                  <TableCell className='font-medium'>
+                  <TableCell className='truncate font-medium'>
                     {lead.contactName}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className='truncate'>
                     {lead.companyName ?? (
                       <span className='text-muted-foreground/40'>—</span>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className='truncate'>
                     {lead.contactEmail ? (
                       <span className='text-muted-foreground text-sm'>
                         {lead.contactEmail}
@@ -358,7 +358,7 @@ export function LeadsArchiveSection({
                       <span className='text-muted-foreground/40'>—</span>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className='truncate'>
                     <span className='text-muted-foreground text-sm'>
                       {statusLabel}
                     </span>

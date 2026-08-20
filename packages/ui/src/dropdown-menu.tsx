@@ -47,7 +47,9 @@ const radixVarAliases = {
 
 function DropdownMenuContent({
   className,
-  align = "center",
+  // House rule: dropdown popups left-align with their trigger; deviations
+  // (e.g. row-action menus hanging left) opt in with an explicit `align`.
+  align = "start",
   alignOffset = 0,
   side = "bottom",
   sideOffset = 4,

@@ -57,15 +57,11 @@ type SearchableComboboxProps = {
   ariaDescribedBy?: string
   ariaInvalid?: boolean
   /**
-   * Replaces the default full-width form trigger while keeping the popover,
-   * search, and item rendering identical — for compact inline pickers (e.g.
-   * the projects landing's owner cell) that must match the form comboboxes.
-   * The element receives the popover's trigger props via asChild.
+   * Custom trigger element (e.g. an avatar button) rendered in place of the
+   * default full-width combobox button. The caller owns its labeling and
+   * disabled state; the popover behaves identically either way.
    */
-  renderTrigger?: (args: {
-    open: boolean
-    selectedItem: SearchableComboboxItem | null
-  }) => React.ReactElement
+  trigger?: React.ReactElement
 }
 
 const baseTriggerClasses =
@@ -97,7 +93,7 @@ export const SearchableCombobox = React.forwardRef<
       ariaLabelledBy,
       ariaDescribedBy,
       ariaInvalid,
-      renderTrigger,
+      trigger,
     },
     forwardedRef
   ) => {
@@ -209,9 +205,7 @@ export const SearchableCombobox = React.forwardRef<
         <input type='hidden' name={name} value={value ?? ''} />
         <Popover open={open} onOpenChange={handleOpenChange} modal>
           <PopoverTrigger asChild>
-            {renderTrigger ? (
-              renderTrigger({ open, selectedItem })
-            ) : (
+            {trigger ?? (
             <Button
               ref={mergedRef}
               type='button'

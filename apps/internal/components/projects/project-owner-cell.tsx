@@ -1,175 +1,157 @@
 'use client'
 
 import { useMemo, useState, useTransition } from 'react'
-import { ChevronDown, Loader2, User } from 'lucide-react'
+import { ChevronDown, UserRoundPlus } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
+import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import {
-  SearchableCombobox,
-  type SearchableComboboxItem,
-} from '@/components/ui/searchable-combobox'
+  buildOwnerOptions,
+  type AdminUserForOwner,
+} from '@/lib/settings/projects/project-sheet-ui-state'
 import { cn } from '@/lib/utils'
 
-const UNASSIGNED_VALUE = '__UNASSIGNED__'
-
-export type ProjectOwnerOption = {
+export type ProjectOwnerSummary = {
   id: string
-  name: string
-  avatarUrl: string | null
+  full_name: string | null
+  avatar_url: string | null
 }
 
 export type ProjectOwnerCellProps = {
   projectId: string
-  owner: ProjectOwnerOption | null
-  options: ProjectOwnerOption[]
+  owner: ProjectOwnerSummary | null
+  admins: AdminUserForOwner[]
+  /** Throw on failure so the cell can roll back its optimistic owner. */
   onOwnerChange: (projectId: string, ownerId: string | null) => Promise<void>
-  disabled?: boolean
-  className?: string
 }
 
-const getInitials = (name: string) =>
-  name
-    .split(/\s+/)
-    .map(part => part[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join('')
-    .toUpperCase() || '?'
-
-function OwnerAvatar({
-  owner,
-  className,
-}: {
-  owner: ProjectOwnerOption | null
-  className?: string
-}) {
-  if (!owner) {
-    // Same muted icon-avatar the assignee dropdown gives its Unassigned row.
-    return (
-      <Avatar className={className}>
-        <AvatarFallback className='bg-muted'>
-          <User className='text-muted-foreground h-3.5 w-3.5' aria-hidden />
-        </AvatarFallback>
-      </Avatar>
-    )
-  }
-
-  return (
-    <Avatar className={className}>
-      {owner.avatarUrl && (
-        <AvatarImage
-          src={`/api/storage/user-avatar/${owner.id}`}
-          alt={owner.name}
-        />
-      )}
-      <AvatarFallback className='text-xs'>
-        {getInitials(owner.name)}
-      </AvatarFallback>
-    </Avatar>
-  )
+function getInitials(name: string | null): string {
+  if (!name) return '?'
+  const parts = name.trim().split(/\s+/)
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase()
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
 }
 
 /**
- * Inline owner picker for the projects landing. The trigger mirrors
- * `ProjectStatusCell` (hover surface + reveal-on-hover caret); the popup IS
- * the task sheet's assignee dropdown — the same SearchableCombobox with the
- * same search input, avatar rows, and Unassigned entry.
+ * Owner avatar as an instant table-row control: clicking it opens the same
+ * searchable owner picker the project edit sheet uses, and picking someone
+ * saves immediately with optimistic state + rollback (the ProjectStatusCell
+ * precedent — table-row controls may mutate instantly, sheets apply on save).
  */
 export function ProjectOwnerCell({
   projectId,
   owner,
-  options,
+  admins,
   onOwnerChange,
-  disabled,
-  className,
 }: ProjectOwnerCellProps) {
   const [isPending, startTransition] = useTransition()
-  const [optimisticOwner, setOptimisticOwner] = useState(owner)
-
-  const items = useMemo<SearchableComboboxItem[]>(
-    () => [
-      {
-        value: UNASSIGNED_VALUE,
-        label: 'Unassigned',
-        keywords: ['unassigned'],
-        icon: User,
-      },
-      ...options.map(option => ({
-        value: option.id,
-        label: option.name,
-        keywords: ['admin'],
-        userId: option.id,
-        avatarUrl: option.avatarUrl,
-      })),
-    ],
-    [options]
+  const [optimisticOwnerId, setOptimisticOwnerId] = useState<string | null>(
+    owner?.id ?? null
   )
 
-  const handleChange = (nextValue: string) => {
-    const next =
-      nextValue === UNASSIGNED_VALUE
-        ? null
-        : (options.find(option => option.id === nextValue) ?? null)
+  // Adopt server updates (router.refresh after save) over stale optimism.
+  const serverOwnerId = owner?.id ?? null
+  const [prevServerOwnerId, setPrevServerOwnerId] = useState(serverOwnerId)
+  if (prevServerOwnerId !== serverOwnerId) {
+    setPrevServerOwnerId(serverOwnerId)
+    setOptimisticOwnerId(serverOwnerId)
+  }
 
-    if ((next?.id ?? null) === (optimisticOwner?.id ?? null)) {
+  const ownerOptions = useMemo(() => buildOwnerOptions(admins), [admins])
+
+  // While optimistic, the new owner's display data comes from the admin
+  // directory; once the refresh lands, the server row takes over again.
+  const displayOwner = useMemo<ProjectOwnerSummary | null>(() => {
+    if (optimisticOwnerId === serverOwnerId) {
+      return owner
+    }
+
+    if (!optimisticOwnerId) {
+      return null
+    }
+
+    const admin = admins.find(entry => entry.id === optimisticOwnerId)
+    return admin
+      ? {
+          id: admin.id,
+          full_name: admin.full_name ?? admin.email,
+          avatar_url: admin.avatar_url,
+        }
+      : null
+  }, [admins, optimisticOwnerId, owner, serverOwnerId])
+
+  const handleChange = (value: string) => {
+    const nextOwnerId = value ? value : null
+
+    if (nextOwnerId === optimisticOwnerId) {
       return
     }
 
-    setOptimisticOwner(next)
+    const previousOwnerId = optimisticOwnerId
+    setOptimisticOwnerId(nextOwnerId)
 
     startTransition(async () => {
       try {
-        await onOwnerChange(projectId, next?.id ?? null)
+        await onOwnerChange(projectId, nextOwnerId)
       } catch {
-        setOptimisticOwner(owner)
+        setOptimisticOwnerId(previousOwnerId)
       }
     })
   }
 
-  if (disabled) {
-    return (
-      <OwnerAvatar owner={optimisticOwner} className={cn('h-7 w-7', className)} />
-    )
-  }
+  const triggerLabel = displayOwner
+    ? `Change owner (currently ${displayOwner.full_name ?? 'unnamed'})`
+    : 'Assign owner'
 
   return (
     <SearchableCombobox
-      className='w-auto'
-      items={items}
-      value={optimisticOwner?.id ?? UNASSIGNED_VALUE}
+      items={ownerOptions}
+      value={optimisticOwnerId ?? ''}
       onChange={handleChange}
-      searchPlaceholder='Search collaborators...'
-      emptyMessage='No eligible collaborators found.'
-      disabled={isPending}
-      renderTrigger={() => (
+      searchPlaceholder='Search team members...'
+      emptyMessage='No team members found.'
+      className='w-fit'
+      trigger={
         <button
           type='button'
-          className={cn(
-            'group focus-visible:ring-ring hover:bg-accent/60 -mx-1 inline-flex cursor-pointer items-center gap-1.5 rounded-md p-1 focus:outline-none focus-visible:ring-2',
-            className
-          )}
           disabled={isPending}
-          aria-label={
-            optimisticOwner
-              ? `Change owner (currently ${optimisticOwner.name})`
-              : 'Set project owner'
-          }
+          aria-label={triggerLabel}
+          title={displayOwner?.full_name ?? 'Assign owner'}
           // The whole row navigates on click — the picker must not. Plain
           // onClick (not capture): React delegates events at the root, so a
           // capture-phase stopPropagation would also silence the popover
           // trigger's own merged handler.
           onClick={event => event.stopPropagation()}
+          className={cn(
+            // ProjectStatusCell's hover treatment: accent surface plus a
+            // reveal-on-hover caret, per Jason's ask that the owner cell
+            // match the status column.
+            'group focus-visible:ring-ring hover:bg-accent/60 -mx-1 inline-flex cursor-pointer items-center gap-1.5 rounded-md p-1 focus:outline-none focus-visible:ring-2',
+            isPending && 'animate-pulse'
+          )}
         >
-          {isPending ? (
-            <span className='flex h-7 w-7 items-center justify-center'>
-              <Loader2 className='text-muted-foreground h-4 w-4 animate-spin' />
-            </span>
+          {displayOwner ? (
+            <Avatar className='h-7 w-7'>
+              {displayOwner.avatar_url && (
+                <AvatarImage
+                  src={`/api/storage/user-avatar/${displayOwner.id}`}
+                  alt={displayOwner.full_name ?? 'Owner'}
+                />
+              )}
+              <AvatarFallback className='text-xs'>
+                {getInitials(displayOwner.full_name)}
+              </AvatarFallback>
+            </Avatar>
           ) : (
-            <OwnerAvatar owner={optimisticOwner} className='h-7 w-7' />
+            <Avatar className='h-7 w-7 border border-dashed'>
+              <AvatarFallback className='bg-transparent'>
+                <UserRoundPlus className='text-muted-foreground/60 h-3.5 w-3.5' />
+              </AvatarFallback>
+            </Avatar>
           )}
           <ChevronDown className='text-foreground/70 h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100' />
         </button>
-      )}
+      }
     />
   )
 }

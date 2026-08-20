@@ -38,6 +38,30 @@ export function buildSearchCondition(search: string | null | undefined): SQL | n
 }
 
 /**
+ * Linked-client filter: keeps contacts with a live link to the given client.
+ * Mirrors the Linked Clients cell semantics (archived clients don't count).
+ * Raw identifiers for the same dequalification reason as
+ * `linkedClientsCountSql` below.
+ */
+export function buildClientCondition(
+  clientId: string | null | undefined
+): SQL | null {
+  if (!clientId) {
+    return null
+  }
+
+  return sql`exists (
+    select 1
+    from contact_clients cc
+    inner join clients c
+      on c.id = cc.client_id
+      and c.deleted_at is null
+    where cc.contact_id = contacts.id
+      and cc.client_id = ${clientId}
+  )`
+}
+
+/**
  * Live linked-client count as a correlated subquery: counts only links to
  * non-archived clients so sorting (and the count the row displays) matches
  * the names shown in the Linked Clients cell, which filters archived

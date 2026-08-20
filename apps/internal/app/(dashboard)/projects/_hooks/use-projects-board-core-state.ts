@@ -35,6 +35,7 @@ export function useProjectsBoardCoreState({
     activeProjectArchivedTasks: boardState.activeProjectArchivedTasks,
     activeProjectAcceptedTasks: boardState.activeProjectAcceptedTasks,
     tasksByColumn: boardState.tasksByColumn,
+    allDoneTasks: boardState.allDoneTasks,
   })
 
   const reviewActions = useProjectsBoardReviewActions({

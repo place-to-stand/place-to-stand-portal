@@ -12,6 +12,7 @@ import { fetchAdminUsers } from '@/lib/data/users'
 import { requireUser } from '@/lib/auth/session'
 import { fetchClientDirectory } from '@/lib/queries/clients'
 import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
+import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
 import type { ProjectWithRelations } from '@/lib/types'
 
 export const metadata: Metadata = {
@@ -32,7 +33,7 @@ export default async function ProjectsPage({
 
   // One wave: nothing below depends on anything else here, and the old
   // second Promise.all added a full serial round-trip level per request.
-  const [projects, unfilteredCounts, clientsWithMetrics, clientDirectory, adminUsers] =
+  const [projects, unfilteredCounts, clientsWithMetrics, clientDirectory, admins] =
     await Promise.all([
       fetchProjectsForLanding({
         statuses,
@@ -47,16 +48,17 @@ export default async function ProjectsPage({
   const filteredProjectCount = countVisibleProjects(projects, user.id)
   const clientHoursMap = buildClientHoursMap(clientsWithMetrics)
 
-  const ownerOptions = adminUsers.map(admin => ({
-    id: admin.id,
-    name: admin.full_name ?? admin.email,
-    avatarUrl: admin.avatar_url,
-  }))
-
   const clientRows: ClientRow[] = clientDirectory.map(client => ({
     id: client.id,
     name: client.name,
     deleted_at: client.deletedAt,
+  }))
+
+  const adminUsers: AdminUserForOwner[] = admins.map(admin => ({
+    id: admin.id,
+    full_name: admin.full_name,
+    email: admin.email,
+    avatar_url: admin.avatar_url,
   }))
 
 
@@ -65,6 +67,7 @@ export default async function ProjectsPage({
         projects={projects}
         landingClients={landingClients}
         clients={clientRows}
+        admins={adminUsers}
         currentUserId={user.id}
         totalProjectCount={unfilteredCounts.total}
         filteredProjectCount={filteredProjectCount}
@@ -73,7 +76,6 @@ export default async function ProjectsPage({
         filtersActive={filtersActive}
         unfilteredCounts={unfilteredCounts}
         clientHoursMap={clientHoursMap}
-        ownerOptions={ownerOptions}
       />
   )
 }

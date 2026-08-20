@@ -21,7 +21,7 @@ import {
 } from '@/lib/projects/tasks/my-tasks-constants'
 import type { MyTasksReorderPayload } from '@/lib/projects/tasks/use-my-tasks-data'
 import type { MyTasksInitialEntry } from './my-tasks-page'
-import { DoneWindowFooter } from './done-window-footer'
+import { DoneWindowFooter } from '@/app/(dashboard)/projects/_components/done-window-footer'
 import type { TaskContextDetails } from '@/app/(dashboard)/projects/task-card'
 
 type TaskCardOptions = {

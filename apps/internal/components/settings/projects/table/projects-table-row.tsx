@@ -99,15 +99,15 @@ export function ProjectsTableRow({
       className={cn(CLICKABLE_ROW_CLASS, isArchived && ARCHIVED_ROW_CLASS)}
     >
       <TableCell>
-        <div className='flex items-center gap-2'>
-          <FolderKanban className='text-muted-foreground h-4 w-4' />
-          <span className='font-medium'>{project.name}</span>
+        <div className='flex min-w-0 items-center gap-2'>
+          <FolderKanban className='text-muted-foreground h-4 w-4 shrink-0' />
+          <span className='truncate font-medium'>{project.name}</span>
         </div>
       </TableCell>
       <TableCell>
-        <div className='flex items-center gap-2 text-sm'>
-          <ownerDisplay.Icon className='text-muted-foreground h-4 w-4' />
-          <span>{ownerDisplay.label}</span>
+        <div className='flex min-w-0 items-center gap-2 text-sm'>
+          <ownerDisplay.Icon className='text-muted-foreground h-4 w-4 shrink-0' />
+          <span className='truncate'>{ownerDisplay.label}</span>
         </div>
         {ownerDisplay.message ? (
           <p

@@ -17,15 +17,16 @@ import {
 
 const updateProjectOwnerSchema = z.object({
   projectId: z.string().uuid(),
-  /** Null clears the owner. */
+  /** Null clears the owner (the sheet's "Unassigned" option). */
   ownerId: z.string().uuid().nullable(),
 })
 
 export type UpdateProjectOwnerInput = z.infer<typeof updateProjectOwnerSchema>
 
 /**
- * Inline owner change from the projects landing — the owner-cell sibling of
- * `updateProjectStatus`, structured the same way.
+ * Single-field owner swap for table-row controls (the landing's avatar
+ * picker). Mirrors `updateProjectStatus`; the full-form path stays
+ * `saveProject`.
  */
 export async function updateProjectOwner(
   input: UpdateProjectOwnerInput
@@ -78,10 +79,14 @@ export async function updateProjectOwner(
         return { error: 'Project not found or has been archived.' }
       }
 
-      if (existingProject.ownerId === ownerId) {
+      const previousOwnerId = existingProject.ownerId ?? null
+
+      if (previousOwnerId === ownerId) {
         return {}
       }
 
+      // A valid uuid isn't enough — the owner must be an active admin, or a
+      // stale/forged id would attribute the project to nobody reachable.
       if (ownerId) {
         const [owner] = await db
           .select({ id: users.id })
@@ -115,11 +120,13 @@ export async function updateProjectOwner(
         }
       }
 
+      // Same field name and shape saveProject logs for owner changes, so the
+      // activity feed renders both paths identically.
       const event = projectUpdatedEvent({
         name: existingProject.name,
         changedFields: ['owner'],
         details: {
-          before: { ownerId: existingProject.ownerId },
+          before: { ownerId: previousOwnerId },
           after: { ownerId },
         },
       })

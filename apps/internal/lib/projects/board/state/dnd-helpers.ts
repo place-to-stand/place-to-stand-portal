@@ -113,9 +113,21 @@ export const resolveDestinationColumnId = (
   return null
 }
 
+/**
+ * Narrows a status-filtered column to the tasks the board actually renders
+ * (e.g. the Done column's rolling window). Sortable indexes on drag events
+ * are positions in the rendered list, so rank math has to run against the
+ * same list or a drop lands between the wrong neighbors.
+ */
+export type ColumnTaskFilter = (
+  columnId: BoardColumnId,
+  tasks: TaskWithRelations[]
+) => TaskWithRelations[]
+
 export const deriveReorderPlan = (
   event: DragComputeEvent,
-  tasksByProject: TaskLookup
+  tasksByProject: TaskLookup,
+  filterColumnTasks?: ColumnTaskFilter
 ): ReorderPlan | null => {
   const activeData = event.active.data.current as TaskDragData | undefined
 
@@ -153,10 +165,14 @@ export const deriveReorderPlan = (
     return null
   }
 
-  const destinationTasks =
+  const rawDestinationTasks =
     sourceColumnId === destinationColumnId
       ? getColumnTasks(projectTasks, sourceColumnId)
       : getColumnTasks(projectTasks, destinationColumnId)
+
+  const destinationTasks = filterColumnTasks
+    ? filterColumnTasks(destinationColumnId, rawDestinationTasks)
+    : rawDestinationTasks
 
   const overSortable = extractSortableMeta(event.over?.data?.current)
 

@@ -44,7 +44,9 @@ const radixVarAliases = {
 
 function PopoverContent({
   className,
-  align = "center",
+  // House rule: dropdown popups left-align with their trigger; deviations
+  // opt in with an explicit `align` at the call site.
+  align = "start",
   alignOffset = 0,
   side = "bottom",
   sideOffset = 4,

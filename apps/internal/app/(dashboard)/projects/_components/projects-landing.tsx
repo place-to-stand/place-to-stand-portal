@@ -21,11 +21,9 @@ import { useToast } from '@/components/ui/use-toast'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
 import { ProjectStatusCell } from '@/components/projects/project-status-cell'
-import {
-  ProjectOwnerCell,
-  type ProjectOwnerOption,
-} from '@/components/projects/project-owner-cell'
+import { ProjectOwnerCell } from '@/components/projects/project-owner-cell'
 import type { ProjectStatusValue } from '@/lib/constants'
+import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
 import { formatProjectDateRange } from '@/lib/settings/projects/project-formatters'
 import { buildBoardPath } from '@/lib/projects/board/board-utils'
 import {
@@ -63,7 +61,6 @@ const HOURS_FORMATTER = new Intl.NumberFormat('en-US', {
 function formatHours(hours: number): string {
   return HOURS_FORMATTER.format(hours)
 }
-
 
 function SimpleIcon({
   icon,
@@ -115,14 +112,14 @@ type ProjectsLandingProps = {
   /** Already filtered server-side (status + search); this component only groups/renders. */
   projects: LandingProject[]
   clients: Array<{ id: string; name: string; slug: string | null }>
+  /** Owner picker options for the avatar cell (same list the edit sheet uses). */
+  admins: AdminUserForOwner[]
   currentUserId: string
   clientHoursMap?: Record<string, ClientHoursData>
   /** Pre-filter counts — drive the empty-state wording per section. */
   unfilteredCounts: LandingUnfilteredCounts
   /** True when the URL deviates from the clean landing (status or search). */
   filtersActive: boolean
-  /** Active admins, for the inline owner picker. */
-  ownerOptions: ProjectOwnerOption[]
 }
 
 type SectionConfig = {
@@ -136,11 +133,11 @@ type SectionConfig = {
 export function ProjectsLanding({
   projects,
   clients,
+  admins,
   currentUserId,
   clientHoursMap = {},
   unfilteredCounts,
   filtersActive,
-  ownerOptions,
 }: ProjectsLandingProps) {
   const router = useRouter()
   const { toast } = useToast()
@@ -172,6 +169,8 @@ export function ProjectsLanding({
     [router, toast]
   )
 
+  // Same instant-mutation contract as status: throw on failure so the cell
+  // rolls back its optimistic owner.
   const handleProjectOwnerChange = useCallback(
     async (projectId: string, ownerId: string | null) => {
       const result = await updateProjectOwner({ projectId, ownerId })
@@ -330,7 +329,7 @@ export function ProjectsLanding({
         className={href !== '#' ? CLICKABLE_ROW_CLASS : undefined}
       >
         <TableCell>
-          <div className='flex items-center'>
+          <div className='flex min-w-0 items-center'>
             {treeLine && (
               <span className='text-muted-foreground/30 mr-2 w-4 shrink-0 text-center font-mono'>
                 {treeLine}
@@ -338,10 +337,10 @@ export function ProjectsLanding({
             )}
             <Link
               href={href}
-              className='flex items-center gap-2 py-1'
+              className='flex min-w-0 items-center gap-2 py-1'
             >
               <FolderKanban className='h-4 w-4 shrink-0 text-emerald-500' />
-              <span className='font-medium'>{project.name}</span>
+              <span className='truncate font-medium'>{project.name}</span>
             </Link>
           </div>
         </TableCell>
@@ -366,24 +365,12 @@ export function ProjectsLanding({
           </span>
         </TableCell>
         <TableCell className='align-middle'>
-          {/* items-center wrapper keeps the avatar vertically centered — the
-              bare inline avatar sat on the text baseline and drifted low. */}
-          <div className='flex items-center'>
-            <ProjectOwnerCell
-              projectId={project.id}
-              owner={
-                project.owner
-                  ? {
-                      id: project.owner.id,
-                      name: project.owner.full_name ?? 'Unknown',
-                      avatarUrl: project.owner.avatar_url,
-                    }
-                  : null
-              }
-              options={ownerOptions}
-              onOwnerChange={handleProjectOwnerChange}
-            />
-          </div>
+          <ProjectOwnerCell
+            projectId={project.id}
+            owner={project.owner}
+            admins={admins}
+            onOwnerChange={handleProjectOwnerChange}
+          />
         </TableCell>
         <TableCell className='align-middle'>
           <div className='flex h-full items-center'>
@@ -417,7 +404,7 @@ export function ProjectsLanding({
 
   const renderProjectTable = (items: LandingProject[]) => (
     <div className='rounded-lg border'>
-      <Table density='compact' className='table-fixed'>
+      <Table density='compact' layout='fixed'>
         <TableHeader>
           <TableRow className='bg-muted/40'>
             <SortableTableHead
@@ -513,7 +500,7 @@ export function ProjectsLanding({
   const clientSectionContent =
     clientSections.length > 0 ? (
       <div className='rounded-lg border'>
-        <Table density='compact' className='table-fixed'>
+        <Table density='compact' layout='fixed'>
           <TableHeader>
             <TableRow className='bg-muted/40'>
               <SortableTableHead

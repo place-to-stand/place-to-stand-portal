@@ -23,6 +23,12 @@ export type UseProjectsBoardStateArgs = {
   activeProjectId: string | null
   activeTaskId: string | null
   currentView: BoardView
+  /**
+   * Server-rendered instant the Done column's rolling window measures back
+   * from. Optional because only the tasks route renders the board tab; pages
+   * that never show a Done column can let the client pin its own anchor.
+   */
+  now?: string
 }
 
 export type MemberDirectoryEntry = { name: string; avatarUrl: string | null }
@@ -41,7 +47,16 @@ export type ProjectsBoardState = {
   activeProjectAcceptedTasks: TaskWithRelations[]
   canManageTasks: boolean
   memberDirectory: Map<string, MemberDirectoryEntry>
+  /** Board render view: the DONE bucket is limited to the rolling window. */
   tasksByColumn: Map<string, TaskWithRelations[]>
+  /** Every unaccepted DONE task, unwindowed — the Review tab's source. */
+  allDoneTasks: TaskWithRelations[]
+  /** Current Done window width in weeks. */
+  doneWeeks: number
+  /** DONE tasks completed before the window (and so not rendered). */
+  hiddenDoneCount: number
+  /** Widens the window by one step; instant, all tasks are client-side. */
+  widenDoneWindow: () => void
   draggingTask: TaskWithRelations | null
   addTaskDisabled: boolean
   addTaskDisabledReason: string | null
