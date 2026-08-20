@@ -10,6 +10,7 @@ import {
   DropPreview,
   extractSortableMeta,
   prepareReorderOutcome,
+  type ColumnTaskFilter,
   type DragComputeEvent,
   type ReorderOutcome,
   type ReorderPlan,
@@ -25,6 +26,8 @@ type UseBoardDnDArgs = {
   activeProjectTasks: TaskWithRelations[]
   startTransition: TransitionStartFunction
   setFeedback: Dispatch<SetStateAction<string | null>>
+  /** Keeps rank math on the same task list the board renders per column. */
+  filterColumnTasks?: ColumnTaskFilter
 }
 
 export const useBoardDnDState = ({
@@ -35,6 +38,7 @@ export const useBoardDnDState = ({
   activeProjectTasks,
   startTransition,
   setFeedback,
+  filterColumnTasks,
 }: UseBoardDnDArgs) => {
   const [dragTaskId, setDragTaskId] = useState<string | null>(null)
   const [activeDropColumnId, setActiveDropColumnId] =
@@ -49,9 +53,9 @@ export const useBoardDnDState = ({
 
   const getReorderPlan = useCallback(
     (event: DragComputeEvent): ReorderPlan | null => {
-      return deriveReorderPlan(event, tasksByProject)
+      return deriveReorderPlan(event, tasksByProject, filterColumnTasks)
     },
-    [tasksByProject]
+    [filterColumnTasks, tasksByProject]
   )
 
   const handleDragStart = useCallback(

@@ -56,6 +56,12 @@ type SearchableComboboxProps = {
   ariaLabelledBy?: string
   ariaDescribedBy?: string
   ariaInvalid?: boolean
+  /**
+   * Custom trigger element (e.g. an avatar button) rendered in place of the
+   * default full-width combobox button. The caller owns its labeling and
+   * disabled state; the popover behaves identically either way.
+   */
+  trigger?: React.ReactElement
 }
 
 const baseTriggerClasses =
@@ -87,6 +93,7 @@ export const SearchableCombobox = React.forwardRef<
       ariaLabelledBy,
       ariaDescribedBy,
       ariaInvalid,
+      trigger,
     },
     forwardedRef
   ) => {
@@ -198,6 +205,7 @@ export const SearchableCombobox = React.forwardRef<
         <input type='hidden' name={name} value={value ?? ''} />
         <Popover open={open} onOpenChange={handleOpenChange} modal>
           <PopoverTrigger asChild>
+            {trigger ?? (
             <Button
               ref={mergedRef}
               type='button'
@@ -244,6 +252,7 @@ export const SearchableCombobox = React.forwardRef<
               </div>
               <ChevronsUpDownIcon className='size-4 shrink-0 opacity-50' />
             </Button>
+            )}
           </PopoverTrigger>
           <PopoverContent
             align='start'

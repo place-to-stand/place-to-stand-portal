@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge'
 import { TabsContent } from '@pts/ui/tabs'
 import { getProjectStatusLabel, getProjectStatusToken } from '@/lib/constants'
 import { formatProjectDateRange } from '@/lib/settings/projects/project-formatters'
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
+import { prefetchSheetInit } from '@/lib/sheets/wrappers/use-sheet-init'
 import { cn } from '@/lib/utils'
 import { ProjectsBoardEmpty } from '../projects-board-empty'
 import {
@@ -32,7 +34,7 @@ export function OverviewTabContent(props: OverviewTabContentProps) {
   return (
     <TabsContent
       value='overview'
-      className='flex min-h-0 flex-1 flex-col gap-4 sm:gap-6'
+      className='flex min-h-0 flex-1 flex-col gap-4 pb-8 sm:gap-6'
     >
       {!activeProject ? (
         <ProjectsBoardEmpty
@@ -83,6 +85,9 @@ function ProjectDetailsWidget({
 }: {
   project: NonNullable<ProjectsBoardActiveProject>
 }) {
+  // Owner opens the user sheet over this page via `?user=` (global SheetHost).
+  const { open } = useSheetParams()
+  const owner = project.owner
   const statusLabel = getProjectStatusLabel(project.status)
   const statusToken = getProjectStatusToken(project.status)
   const dateRange = formatProjectDateRange(project.starts_on, project.ends_on)
@@ -131,23 +136,28 @@ function ProjectDetailsWidget({
         <div className='flex items-center gap-3 px-4 py-2.5'>
           <span className='text-muted-foreground text-sm'>Owner</span>
           <div className='ml-auto flex items-center gap-2'>
-            {project.owner ? (
-              <>
+            {owner ? (
+              <button
+                type='button'
+                className='group flex cursor-pointer items-center gap-2'
+                onPointerEnter={() => prefetchSheetInit('user', owner.id)}
+                onClick={() => open('user', owner.id)}
+              >
                 <Avatar className='h-6 w-6'>
-                  {project.owner.avatar_url && (
+                  {owner.avatar_url && (
                     <AvatarImage
-                      src={`/api/storage/user-avatar/${project.owner.id}`}
-                      alt={project.owner.full_name ?? 'Owner'}
+                      src={`/api/storage/user-avatar/${owner.id}`}
+                      alt={owner.full_name ?? 'Owner'}
                     />
                   )}
                   <AvatarFallback className='text-[10px]'>
-                    {getInitials(project.owner.full_name)}
+                    {getInitials(owner.full_name)}
                   </AvatarFallback>
                 </Avatar>
-                <span className='text-sm font-medium'>
-                  {project.owner.full_name ?? 'Unknown'}
+                <span className='text-sm font-medium underline-offset-4 group-hover:underline'>
+                  {owner.full_name ?? 'Unknown'}
                 </span>
-              </>
+              </button>
             ) : (
               <span className='text-muted-foreground/60 text-sm'>—</span>
             )}

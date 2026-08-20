@@ -82,6 +82,7 @@ export default async function ClientDetailPage({
           id: users.id,
           fullName: users.fullName,
           email: users.email,
+          avatarUrl: users.avatarUrl,
         })
         .from(users)
         .where(
@@ -100,6 +101,7 @@ export default async function ClientDetailPage({
           id: users.id,
           fullName: users.fullName,
           email: users.email,
+          avatarUrl: users.avatarUrl,
         })
         .from(users)
         .where(
