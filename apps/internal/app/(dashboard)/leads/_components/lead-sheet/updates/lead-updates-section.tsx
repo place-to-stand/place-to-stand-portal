@@ -123,22 +123,9 @@ export function LeadUpdatesSection({
           </Button>
         </div>
       ) : updates.length === 0 ? (
-        <div className='space-y-2'>
-          <p className='text-muted-foreground text-sm'>
-            No interactions logged yet.
-          </p>
-          {canManage ? (
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              onClick={openLogDialog}
-            >
-              <Plus className='h-3 w-3' />
-              Log the first update
-            </Button>
-          ) : null}
-        </div>
+        <p className='text-muted-foreground text-sm'>
+          No interactions logged yet.
+        </p>
       ) : (
         <div className='space-y-2'>
           {updates.map(update => (
