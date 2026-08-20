@@ -18,7 +18,7 @@ export function LeadSheetRightColumn({
 }: LeadSheetRightColumnProps) {
   return (
     <div className='bg-muted/20 w-80 flex-shrink-0 overflow-y-auto lg:w-96'>
-      <div className='space-y-6 p-6'>
+      <div className='space-y-10 p-6'>
         {/* Tasks */}
         <LeadTasksSection
           lead={lead}
