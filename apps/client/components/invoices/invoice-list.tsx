@@ -4,7 +4,6 @@ import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import {
-  INVOICE_OVERDUE_TOKEN,
   getInvoiceStatusLabel,
   getInvoiceStatusToken,
 } from '@/lib/invoices/status'
@@ -23,8 +22,8 @@ const DATE_FORMATTER = new Intl.DateTimeFormat('en-US', {
 })
 
 /**
- * Issued/due are date-only columns. Appending the time forces them to parse as
- * local midnight instead of UTC, which is what keeps a due date from rendering
+ * Issued is a date-only column. Appending the time forces it to parse as
+ * local midnight instead of UTC, which is what keeps the date from rendering
  * a day early — the same guard the PDF generator uses.
  */
 function formatDate(value: string | null): string {
@@ -77,30 +76,14 @@ function InvoiceRow({
           <span className="text-sm font-medium text-card-foreground">
             {invoice.invoiceNumber ?? 'Invoice'}
           </span>
-          {/* Overdue replaces "Due" rather than sitting beside it — being late
-              already implies being unpaid, so the pair carries no more
-              information than the one badge. (The internal table shows both
-              because its first badge distinguishes Sent from Viewed, which is
-              a distinction the client portal deliberately drops.) */}
-          {invoice.isOverdue ? (
-            <Badge
-              variant="secondary"
-              className={cn('shrink-0', INVOICE_OVERDUE_TOKEN)}
-            >
-              Overdue
-            </Badge>
-          ) : (
-            <Badge
-              variant="secondary"
-              className={cn('shrink-0', getInvoiceStatusToken(invoice.status))}
-            >
-              {getInvoiceStatusLabel(invoice.status)}
-            </Badge>
-          )}
+          <Badge
+            variant="secondary"
+            className={cn('shrink-0', getInvoiceStatusToken(invoice.status))}
+          >
+            {getInvoiceStatusLabel(invoice.status)}
+          </Badge>
         </div>
 
-        {/* Issued date only for now. The due date still drives the Overdue
-            badge above — it is just not spelled out on this line. */}
         <p className="text-xs text-muted-foreground">
           Issued {formatDate(invoice.issuedDate)}
         </p>

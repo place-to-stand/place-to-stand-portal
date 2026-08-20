@@ -10,30 +10,12 @@ const CURRENCY_FORMATTER = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 0,
 })
 
-/**
- * Overdue replaces the neutral line rather than adding to it — if something is
- * late that is the whole message. The amount beside "overdue" is the overdue
- * subset, not the full balance, so both numbers describe the same invoices.
- */
-function invoiceLine(summary: ClientInvoiceSummary): {
-  text: string
-  isUrgent: boolean
-} {
-  if (summary.overdueCount > 0) {
-    return {
-      text: `${summary.overdueCount} overdue · ${CURRENCY_FORMATTER.format(Number(summary.overdueTotal))}`,
-      isUrgent: true,
-    }
-  }
-
+function invoiceLine(summary: ClientInvoiceSummary): string {
   if (summary.unpaidCount > 0) {
-    return {
-      text: `${summary.unpaidCount} unpaid · ${CURRENCY_FORMATTER.format(Number(summary.unpaidTotal))}`,
-      isUrgent: false,
-    }
+    return `${summary.unpaidCount} unpaid · ${CURRENCY_FORMATTER.format(Number(summary.unpaidTotal))}`
   }
 
-  return { text: 'All paid', isUrgent: false }
+  return 'All paid'
 }
 
 /**
@@ -53,7 +35,7 @@ export function AccountCard({
   showClientName: boolean
   className?: string
 }) {
-  const { text, isUrgent } = invoiceLine(invoiceSummary)
+  const text = invoiceLine(invoiceSummary)
 
   return (
     <div
@@ -74,12 +56,7 @@ export function AccountCard({
         href="/invoices"
         title="Invoices"
         meta={
-          <span
-            className={cn(
-              'truncate text-sm',
-              isUrgent ? 'font-medium text-destructive' : 'text-muted-foreground'
-            )}
-          >
+          <span className='truncate text-sm text-muted-foreground'>
             {text}
           </span>
         }

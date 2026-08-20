@@ -52,7 +52,7 @@ async function performSaveInvoice(
     return { error: message, fieldErrors }
   }
 
-  const { id, clientId, dueDate, notes, taxRate, lineItems } = parsed.data
+  const { id, clientId, notes, taxRate, lineItems } = parsed.data
 
   const clientRows = await db
     .select({ id: clients.id, name: clients.name, billingType: clients.billingType })
@@ -92,7 +92,6 @@ async function performSaveInvoice(
             clientId,
             invoiceNumber,
             billingType: client.billingType,
-            dueDate: dueDate ?? null,
             notes: notes ?? null,
             taxRate: taxRate.toString(),
             subtotal: subtotal.toFixed(2),
@@ -159,7 +158,6 @@ async function performSaveInvoice(
         status: invoices.status,
         clientId: invoices.clientId,
         invoiceNumber: invoices.invoiceNumber,
-        dueDate: invoices.dueDate,
         notes: invoices.notes,
         taxRate: invoices.taxRate,
         subtotal: invoices.subtotal,
@@ -183,7 +181,6 @@ async function performSaveInvoice(
       await db.transaction(async tx => {
         const updateData: Record<string, unknown> = {
           clientId,
-          dueDate: dueDate ?? null,
           notes: notes ?? null,
           taxRate: taxRate.toString(),
           subtotal: subtotal.toFixed(2),
@@ -284,12 +281,6 @@ async function performSaveInvoice(
       previousDetails.clientId = existing.clientId
       nextDetails.clientId = clientId
       nextDetails.clientName = targetClientName
-    }
-
-    if ((existing.dueDate ?? null) !== (dueDate ?? null)) {
-      changedFields.push('due date')
-      previousDetails.dueDate = existing.dueDate
-      nextDetails.dueDate = dueDate ?? null
     }
 
     if ((existing.notes ?? null) !== (notes ?? null)) {
