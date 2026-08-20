@@ -50,13 +50,22 @@ export function LeadUpdateComposer({
     setError(null)
 
     startTransition(async () => {
+      // Today gets the ACTUAL current time — anchoring today at local noon
+      // would be a future timestamp for anyone logging in the morning, and the
+      // server's no-future-dates guard would (rightly) reject it. Past days
+      // keep the noon anchor so a timezone shift can never roll them into
+      // "tomorrow" and trip that same guard.
+      const now = new Date()
+      const occurredAt =
+        occurredOn === toDateInputValue(now)
+          ? now
+          : new Date(`${occurredOn}T12:00:00`)
+
       const result = await createLeadUpdate({
         leadId,
         type,
         body,
-        // Anchor the chosen calendar day at local noon so a timezone shift can
-        // never roll it into "tomorrow" and trip the no-future-dates guard.
-        occurredAt: new Date(`${occurredOn}T12:00:00`).toISOString(),
+        occurredAt: occurredAt.toISOString(),
       })
 
       if (!result.success) {
