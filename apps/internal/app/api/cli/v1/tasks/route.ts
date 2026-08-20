@@ -49,7 +49,7 @@ export const POST = withCliAuth(async ({ user, request }) => {
     dueOn: payload.dueOn ?? null,
     assigneeIds,
     leadId: payload.leadId ?? null,
-  })
+  }, 'CLI')
 
   return respondToTaskWrite(user, result, 201)
 })

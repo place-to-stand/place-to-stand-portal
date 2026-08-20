@@ -44,17 +44,16 @@ async function markInvoicePaid(
       clientName: invoice.client?.name,
     })
 
-    if (invoice.created_by) {
-      logActivity({
-        actorId: invoice.created_by,
-        verb: paidEvent.verb,
-        summary: paidEvent.summary,
-        targetType: 'INVOICE',
-        targetId: invoice.id,
-        targetClientId: invoice.client_id,
-        metadata: paidEvent.metadata,
-      }).catch(console.error)
-    }
+    logActivity({
+      actorId: null,
+      source: 'SYSTEM',
+      verb: paidEvent.verb,
+      summary: paidEvent.summary,
+      targetType: 'INVOICE',
+      targetId: invoice.id,
+      targetClientId: invoice.client_id,
+      metadata: paidEvent.metadata,
+    }).catch(console.error)
 
     // Notify the team in Google Chat (fire-and-forget — non-critical).
     // Guarded by status !== 'PAID' so retried webhooks don't re-notify.

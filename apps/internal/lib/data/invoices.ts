@@ -99,21 +99,20 @@ export async function createHourBlocksFromInvoice(
       })
 
     // Log activity (fire-and-forget)
-    if (invoice.createdBy) {
-      const event = hourBlockCreatedEvent({
-        clientName: invoice.clientName,
-        hoursPurchased: Number(hoursPurchased),
-        invoiceNumber: invoice.invoiceNumber,
-      })
+    const event = hourBlockCreatedEvent({
+      clientName: invoice.clientName,
+      hoursPurchased: Number(hoursPurchased),
+      invoiceNumber: invoice.invoiceNumber,
+    })
 
-      logActivity({
-        actorId: invoice.createdBy,
-        verb: event.verb,
-        summary: event.summary,
-        targetType: 'HOUR_BLOCK',
-        targetClientId: invoice.clientId,
-        metadata: event.metadata,
-      }).catch(console.error)
-    }
+    logActivity({
+      actorId: null,
+      source: 'SYSTEM',
+      verb: event.verb,
+      summary: event.summary,
+      targetType: 'HOUR_BLOCK',
+      targetClientId: invoice.clientId,
+      metadata: event.metadata,
+    }).catch(console.error)
   }
 }

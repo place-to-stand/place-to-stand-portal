@@ -6,13 +6,14 @@ import { eq } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { activityLogs, users } from '@/lib/db/schema'
-import type { UserRoleValue } from '@/lib/types'
+import type { ActivitySourceValue, UserRoleValue } from '@/lib/types'
 import type { Json } from '@/lib/types/json'
 import type { ActivityTargetType, ActivityVerb } from './types'
 
 export type LogActivityOptions = {
-  actorId: string
+  actorId?: string | null
   actorRole?: UserRoleValue | null
+  source?: ActivitySourceValue
   verb: ActivityVerb
   summary: string
   targetType: ActivityTargetType | string
@@ -24,17 +25,18 @@ export type LogActivityOptions = {
 }
 
 const DEFAULT_ACTOR_ROLE: UserRoleValue = 'ADMIN'
+const DEFAULT_SOURCE: ActivitySourceValue = 'ADMIN_UI'
 
 export async function logActivity(options: LogActivityOptions) {
   try {
-    const actorRole = await resolveActorRole(
-      options.actorId,
-      options.actorRole
-    )
+    const actorRole = options.actorId
+      ? await resolveActorRole(options.actorId, options.actorRole)
+      : null
 
     await db.insert(activityLogs).values({
-      actorId: options.actorId,
+      actorId: options.actorId ?? null,
       actorRole,
+      source: options.source ?? DEFAULT_SOURCE,
       verb: options.verb,
       summary: options.summary,
       targetType: options.targetType,

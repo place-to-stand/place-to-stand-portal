@@ -1,10 +1,11 @@
-import type { UserRoleValue } from '@/lib/types'
+import type { ActivitySourceValue, UserRoleValue } from '@/lib/types'
 import type { Json } from '@/lib/types/json'
 
 export type DbActivityLog = {
   id: string
-  actor_id: string
-  actor_role: UserRoleValue
+  actor_id: string | null
+  actor_role: UserRoleValue | null
+  source: ActivitySourceValue
   verb: string
   summary: string
   target_type: string

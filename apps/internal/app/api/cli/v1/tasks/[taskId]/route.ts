@@ -47,7 +47,7 @@ export const PATCH = withCliAuth<Params>(async ({ user, request, params }) => {
         ? assigneeIds
         : await resolveUserIds(user, payload.assigneeIds),
     leadId: payload.leadId === undefined ? task.leadId : payload.leadId,
-  })
+  }, 'CLI')
 
   return respondToTaskWrite(user, result, 200)
 })

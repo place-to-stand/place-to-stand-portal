@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { AppUser } from '@/lib/auth/session'
 import type { BaseTaskInput } from '@/app/(dashboard)/projects/actions/shared-schemas'
 import type { Database } from '@/lib/supabase/types'
+import type { ActivitySourceValue } from '@/lib/types'
 
 // Local widening (do not touch the shared ActionResult): a result carrying
 // `taskId` means the row exists — even alongside `error`, which signals a
@@ -26,4 +27,5 @@ export type TaskWriteContext = {
   input: BaseTaskInput
   /** Deduplicated; `syncAssignees` does not dedupe on its own. */
   assigneeIds: string[]
+  source: ActivitySourceValue
 }

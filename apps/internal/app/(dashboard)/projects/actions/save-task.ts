@@ -20,7 +20,7 @@ export type { SaveTaskResult }
  */
 export async function saveTask(input: BaseTaskInput): Promise<SaveTaskResult> {
   const user = await requireUser()
-  const result = await saveTaskForActor(user, input)
+  const result = await saveTaskForActor(user, input, 'ADMIN_UI')
 
   // A `taskId` in the result means a row was written — including the partial
   // failures, where the task exists but a follow-up step did not finish. Those

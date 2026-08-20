@@ -1,4 +1,5 @@
 import {
+  activitySource,
   clientBillingType,
   leadSourceType,
   leadStatus,
@@ -9,6 +10,7 @@ import {
 } from '@/lib/db/schema'
 
 export type UserRoleValue = (typeof userRole.enumValues)[number]
+export type ActivitySourceValue = (typeof activitySource.enumValues)[number]
 export type TaskStatusValue = (typeof taskStatus.enumValues)[number]
 export type ClientBillingTypeValue =
   (typeof clientBillingType.enumValues)[number]

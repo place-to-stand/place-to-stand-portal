@@ -19,7 +19,7 @@ import { db } from '@/lib/db'
 import { activityLogs, users } from '@/lib/db/schema'
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
-import type { UserRoleValue } from '@/lib/types'
+import type { ActivitySourceValue, UserRoleValue } from '@/lib/types'
 import type { Json } from '@/lib/types/json'
 
 import type {
@@ -37,8 +37,9 @@ type SqlExpression = SQL<unknown>
 type ActivityLogSelection = {
   log: {
     id: string
-    actorId: string
-    actorRole: UserRoleValue
+    actorId: string | null
+    actorRole: UserRoleValue | null
+    source: ActivitySourceValue
     verb: string
     summary: string
     targetType: string
@@ -64,6 +65,7 @@ const activityLogSelection = {
   id: activityLogs.id,
   actorId: activityLogs.actorId,
   actorRole: activityLogs.actorRole,
+  source: activityLogs.source,
   verb: activityLogs.verb,
   summary: activityLogs.summary,
   targetType: activityLogs.targetType,
@@ -244,6 +246,7 @@ function mapToActivityLog(row: ActivityLogSelection): ActivityLogWithActor {
     id: log.id,
     actor_id: log.actorId,
     actor_role: log.actorRole,
+    source: log.source,
     verb: log.verb,
     summary: log.summary,
     target_type: log.targetType,

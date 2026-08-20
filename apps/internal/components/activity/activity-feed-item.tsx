@@ -2,7 +2,9 @@ import { formatDistanceToNow } from 'date-fns'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 import type { ActivityLogWithActor } from '@/lib/activity/types'
+import type { ActivitySourceValue } from '@/lib/types'
 import {
   getActorDisplayName,
   getActorInitials,
@@ -16,6 +18,20 @@ import {
 
 export type ActivityFeedItemProps = {
   log: ActivityLogWithActor
+}
+
+const SOURCE_LABELS: Record<ActivitySourceValue, string> = {
+  ADMIN_UI: 'Admin UI',
+  CLI: 'CLI',
+  SYSTEM: 'System',
+}
+
+const SOURCE_BADGE_STYLES: Record<ActivitySourceValue, string> = {
+  ADMIN_UI:
+    'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800/40 dark:text-slate-300 dark:border-slate-700',
+  CLI: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-900',
+  SYSTEM:
+    'bg-slate-700 text-slate-50 border-slate-600 dark:bg-slate-950 dark:text-slate-300 dark:border-slate-800',
 }
 
 export function ActivityFeedItem({ log }: ActivityFeedItemProps) {
@@ -40,7 +56,15 @@ export function ActivityFeedItem({ log }: ActivityFeedItemProps) {
       </Avatar>
       <div className='flex-1 space-y-2'>
         <header className='space-y-1'>
-          <div className='text-sm font-medium'>{actorName}</div>
+          <div className='flex items-center gap-2'>
+            <div className='text-sm font-medium'>{actorName}</div>
+            <Badge
+              variant='outline'
+              className={cn('text-xs', SOURCE_BADGE_STYLES[log.source])}
+            >
+              {SOURCE_LABELS[log.source]}
+            </Badge>
+          </div>
           <div className='text-sm'>{log.summary}</div>
           <time className='text-muted-foreground text-xs'>
             {createdAtLabel}
