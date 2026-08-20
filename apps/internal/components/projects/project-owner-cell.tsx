@@ -1,16 +1,16 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { ChevronDown, Loader2, UserX } from 'lucide-react'
+import { useMemo, useState, useTransition } from 'react'
+import { ChevronDown, Loader2, User } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@pts/ui/dropdown-menu'
+  SearchableCombobox,
+  type SearchableComboboxItem,
+} from '@/components/ui/searchable-combobox'
 import { cn } from '@/lib/utils'
+
+const UNASSIGNED_VALUE = '__UNASSIGNED__'
 
 export type ProjectOwnerOption = {
   id: string
@@ -44,15 +44,13 @@ function OwnerAvatar({
   className?: string
 }) {
   if (!owner) {
+    // Same muted icon-avatar the assignee dropdown gives its Unassigned row.
     return (
-      <span
-        className={cn(
-          'border-muted-foreground/30 text-muted-foreground/50 flex items-center justify-center rounded-full border border-dashed',
-          className
-        )}
-      >
-        <UserX className='h-3.5 w-3.5' aria-hidden />
-      </span>
+      <Avatar className={className}>
+        <AvatarFallback className='bg-muted'>
+          <User className='text-muted-foreground h-3.5 w-3.5' aria-hidden />
+        </AvatarFallback>
+      </Avatar>
     )
   }
 
@@ -72,9 +70,10 @@ function OwnerAvatar({
 }
 
 /**
- * Inline owner picker for the projects landing — the owner column's sibling
- * of `ProjectStatusCell`: same hover surface, same reveal-on-hover caret,
- * same optimistic swap with rollback on failure.
+ * Inline owner picker for the projects landing. The trigger mirrors
+ * `ProjectStatusCell` (hover surface + reveal-on-hover caret); the popup IS
+ * the task sheet's assignee dropdown — the same SearchableCombobox with the
+ * same search input, avatar rows, and Unassigned entry.
  */
 export function ProjectOwnerCell({
   projectId,
@@ -86,16 +85,37 @@ export function ProjectOwnerCell({
 }: ProjectOwnerCellProps) {
   const [isPending, startTransition] = useTransition()
   const [optimisticOwner, setOptimisticOwner] = useState(owner)
-  const [isOpen, setIsOpen] = useState(false)
 
-  const handleSelect = (next: ProjectOwnerOption | null) => {
+  const items = useMemo<SearchableComboboxItem[]>(
+    () => [
+      {
+        value: UNASSIGNED_VALUE,
+        label: 'Unassigned',
+        keywords: ['unassigned'],
+        icon: User,
+      },
+      ...options.map(option => ({
+        value: option.id,
+        label: option.name,
+        keywords: ['admin'],
+        userId: option.id,
+        avatarUrl: option.avatarUrl,
+      })),
+    ],
+    [options]
+  )
+
+  const handleChange = (nextValue: string) => {
+    const next =
+      nextValue === UNASSIGNED_VALUE
+        ? null
+        : (options.find(option => option.id === nextValue) ?? null)
+
     if ((next?.id ?? null) === (optimisticOwner?.id ?? null)) {
-      setIsOpen(false)
       return
     }
 
     setOptimisticOwner(next)
-    setIsOpen(false)
 
     startTransition(async () => {
       try {
@@ -113,60 +133,43 @@ export function ProjectOwnerCell({
   }
 
   return (
-    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
-      <DropdownMenuTrigger
-        className={cn(
-          'group focus-visible:ring-ring hover:bg-accent/60 -mx-1 inline-flex cursor-pointer items-center gap-1.5 rounded-md p-1 focus:outline-none focus-visible:ring-2',
-          className
-        )}
-        disabled={isPending}
-        aria-label={
-          optimisticOwner
-            ? `Change owner (currently ${optimisticOwner.name})`
-            : 'Set project owner'
-        }
-        onClick={event => {
-          // The whole row navigates on click — the picker must not.
-          event.stopPropagation()
-        }}
-      >
-        {isPending ? (
-          <span className='flex h-7 w-7 items-center justify-center'>
-            <Loader2 className='text-muted-foreground h-4 w-4 animate-spin' />
-          </span>
-        ) : (
-          <OwnerAvatar owner={optimisticOwner} className='h-7 w-7' />
-        )}
-        <ChevronDown className='text-foreground/70 h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100' />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align='start'
-        onClick={event => event.stopPropagation()}
-      >
-        {options.map(option => (
-          <DropdownMenuItem
-            key={option.id}
-            onClick={() => handleSelect(option)}
-            className={cn(
-              'cursor-pointer gap-2',
-              option.id === optimisticOwner?.id && 'bg-accent/50'
-            )}
-          >
-            <OwnerAvatar owner={option} className='h-5 w-5' />
-            {option.name}
-          </DropdownMenuItem>
-        ))}
-        <DropdownMenuItem
-          onClick={() => handleSelect(null)}
+    <SearchableCombobox
+      className='w-auto'
+      items={items}
+      value={optimisticOwner?.id ?? UNASSIGNED_VALUE}
+      onChange={handleChange}
+      searchPlaceholder='Search collaborators...'
+      emptyMessage='No eligible collaborators found.'
+      disabled={isPending}
+      renderTrigger={() => (
+        <button
+          type='button'
           className={cn(
-            'text-muted-foreground cursor-pointer gap-2',
-            !optimisticOwner && 'bg-accent/50'
+            'group focus-visible:ring-ring hover:bg-accent/60 -mx-1 inline-flex cursor-pointer items-center gap-1.5 rounded-md p-1 focus:outline-none focus-visible:ring-2',
+            className
           )}
+          disabled={isPending}
+          aria-label={
+            optimisticOwner
+              ? `Change owner (currently ${optimisticOwner.name})`
+              : 'Set project owner'
+          }
+          // The whole row navigates on click — the picker must not. Plain
+          // onClick (not capture): React delegates events at the root, so a
+          // capture-phase stopPropagation would also silence the popover
+          // trigger's own merged handler.
+          onClick={event => event.stopPropagation()}
         >
-          <UserX className='h-4 w-4' aria-hidden />
-          Unassigned
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          {isPending ? (
+            <span className='flex h-7 w-7 items-center justify-center'>
+              <Loader2 className='text-muted-foreground h-4 w-4 animate-spin' />
+            </span>
+          ) : (
+            <OwnerAvatar owner={optimisticOwner} className='h-7 w-7' />
+          )}
+          <ChevronDown className='text-foreground/70 h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100' />
+        </button>
+      )}
+    />
   )
 }
