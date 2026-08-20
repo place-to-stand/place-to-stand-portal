@@ -335,6 +335,57 @@ export function TaskCard({
   )
 }
 
+/**
+ * The board card without the board: no dnd-kit (useSortable needs the board's
+ * DndContext), no fixed width — a plain clickable card for surfaces like the
+ * lead sheet's Tasks section that want board-identical rendering.
+ */
+export function TaskCardStatic({
+  task,
+  assignees,
+  onClick,
+  className,
+  context,
+  hideAssignees = false,
+}: {
+  task: TaskWithRelations
+  assignees: AssigneeInfo[]
+  onClick: () => void
+  className?: string
+  context?: TaskContextDetails
+  hideAssignees?: boolean
+}) {
+  const isCompleted = task.status === 'DONE' || task.status === 'ARCHIVED'
+
+  return (
+    <div
+      role='button'
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          onClick()
+        }
+      }}
+      className={cn(
+        'group bg-card cursor-pointer rounded-lg border p-4 text-left shadow-sm transition',
+        isCompleted
+          ? 'opacity-65 hover:border-muted-foreground/30 hover:bg-muted/20 hover:shadow-md'
+          : ENTITY_ACCENTS.task.card,
+        className
+      )}
+    >
+      <CardContent
+        task={task}
+        assignees={assignees}
+        context={context}
+        hideAssignees={hideAssignees}
+      />
+    </div>
+  )
+}
+
 export function TaskCardPreview({
   task,
   assignees,
