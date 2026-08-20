@@ -16,6 +16,7 @@ import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import type { ProjectStatusValue } from '@/lib/constants'
 
 import { ProjectsLanding } from './projects-landing'
+import type { ProjectOwnerOption } from '@/components/projects/project-owner-cell'
 import type { ClientHoursData, LandingUnfilteredCounts } from './projects-landing'
 import { ProjectsLandingFilters } from './projects-landing-filters'
 import { PROJECTS_TABS } from '../_lib/tabs'
@@ -34,6 +35,7 @@ export type ProjectsLandingAdminSectionProps = {
   filtersActive: boolean
   unfilteredCounts: LandingUnfilteredCounts
   clientHoursMap?: Record<string, ClientHoursData>
+  ownerOptions: ProjectOwnerOption[]
 }
 
 export function ProjectsLandingAdminSection({
@@ -48,6 +50,7 @@ export function ProjectsLandingAdminSection({
   filtersActive,
   unfilteredCounts,
   clientHoursMap = {},
+  ownerOptions,
 }: ProjectsLandingAdminSectionProps) {
   const sortedClients = useMemo(() => sortClientsByName(clients), [clients])
 
@@ -102,6 +105,7 @@ export function ProjectsLandingAdminSection({
           clients={landingClients}
           currentUserId={currentUserId}
           clientHoursMap={clientHoursMap}
+          ownerOptions={ownerOptions}
           unfilteredCounts={unfilteredCounts}
           filtersActive={filtersActive}
         />
