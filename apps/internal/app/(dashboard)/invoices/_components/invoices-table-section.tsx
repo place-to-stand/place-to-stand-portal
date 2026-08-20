@@ -73,12 +73,7 @@ const formatCurrency = (value: string) => {
 
 const formatDate = (value: string | null) => formatCalendarDate(value) ?? '\u2014'
 
-function StatusBadge({ status, dueDate }: { status: string; dueDate: string | null }) {
-  const isOverdue =
-    dueDate &&
-    (status === 'SENT' || status === 'VIEWED') &&
-    new Date(dueDate) < new Date()
-
+function StatusBadge({ status }: { status: string }) {
   return (
     <div className='flex items-center gap-1.5'>
       {status === 'DRAFT' ? (
@@ -112,11 +107,6 @@ function StatusBadge({ status, dueDate }: { status: string; dueDate: string | nu
           {status}
         </Badge>
       )}
-      {isOverdue ? (
-        <Badge variant='destructive' className='text-xs'>
-          Overdue
-        </Badge>
-      ) : null}
     </div>
   )
 }
@@ -401,24 +391,13 @@ export function InvoicesTableSection({
                   ) : null}
                 </TableCell>
                 <TableCell>
-                  <StatusBadge status={invoice.status} dueDate={invoice.due_date} />
+                  <StatusBadge status={invoice.status} />
                 </TableCell>
                 <TableCell className='text-sm'>
                   {formatCurrency(invoice.total)}
                 </TableCell>
                 <TableCell className='text-muted-foreground text-sm'>
-                  {invoice.issued_date ? (
-                    <>
-                      {formatDate(invoice.issued_date)}
-                      {invoice.due_date ? (
-                        <span className='text-muted-foreground/70'>
-                          {' '}(due {formatDate(invoice.due_date)})
-                        </span>
-                      ) : null}
-                    </>
-                  ) : (
-                    '\u2014'
-                  )}
+                  {formatDate(invoice.issued_date)}
                 </TableCell>
                 <TableCell>
                   <ShareLinkCell

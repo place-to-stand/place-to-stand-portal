@@ -78,7 +78,6 @@ export const invoiceLineItemFormSchema = z.object({
 
 export const invoiceFormSchema = z.object({
   clientId: z.string().uuid('Select a client'),
-  dueDate: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
   taxRate: z.coerce.number().min(0).max(100).default(0),
   lineItems: z
@@ -97,7 +96,6 @@ export type InvoiceFormValues = z.infer<typeof invoiceFormSchema>
 
 export const INVOICE_FORM_FIELDS: Array<keyof InvoiceFormValues> = [
   'clientId',
-  'dueDate',
   'notes',
   'taxRate',
   'lineItems',
@@ -137,7 +135,6 @@ export const buildInvoiceFormDefaults = (
   if (!invoice) {
     return {
       clientId: '',
-      dueDate: null,
       notes: null,
       taxRate: 0,
       lineItems: [createEmptyLineItem()],
@@ -149,7 +146,6 @@ export const buildInvoiceFormDefaults = (
 
   return {
     clientId: invoice.client_id,
-    dueDate: invoice.due_date ?? null,
     notes: invoice.notes ?? null,
     taxRate: taxRatePercent,
     lineItems:
@@ -184,7 +180,6 @@ export type InvoiceLineItemSavePayload = {
 export type InvoiceSavePayload = {
   id?: string
   clientId: string
-  dueDate: string | null
   notes: string | null
   taxRate: number
   subtotal: number
@@ -218,10 +213,6 @@ export const createInvoiceSavePayload = (
   return {
     id: invoice?.id,
     clientId: values.clientId,
-    dueDate:
-      values.dueDate && values.dueDate.trim().length > 0
-        ? values.dueDate.trim()
-        : null,
     notes:
       values.notes && values.notes.trim().length > 0
         ? values.notes.trim()

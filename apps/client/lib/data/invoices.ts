@@ -24,11 +24,8 @@ export type ClientInvoice = {
   clientId: string
   clientName: string
   issuedDate: string | null
-  dueDate: string | null
   total: string
   paidAt: string | null
-  /** Past due and still owed. Derived here so the row component stays dumb. */
-  isOverdue: boolean
   /** Owed *and* reachable on the internal share page, which is where payment lives. */
   isPayable: boolean
   /** Null unless sharing is currently enabled, so callers can't build a dead link. */
@@ -55,7 +52,6 @@ export const fetchClientInvoices = cache(
         clientId: invoices.clientId,
         clientName: clients.name,
         issuedDate: invoices.issuedDate,
-        dueDate: invoices.dueDate,
         total: invoices.total,
         paidAt: invoices.paidAt,
         shareToken: invoices.shareToken,
@@ -78,8 +74,6 @@ export const fetchClientInvoices = cache(
         sql`${invoices.createdAt} desc`
       )
 
-    const today = new Date().toISOString().slice(0, 10)
-
     return rows.map((row): ClientInvoice => {
       const status = row.status as ClientInvoiceStatusValue
       const isOwed = status === 'SENT' || status === 'VIEWED'
@@ -94,10 +88,8 @@ export const fetchClientInvoices = cache(
         clientId: row.clientId,
         clientName: row.clientName,
         issuedDate: row.issuedDate,
-        dueDate: row.dueDate,
         total: row.total,
         paidAt: row.paidAt,
-        isOverdue: isOwed && !!row.dueDate && row.dueDate < today,
         isPayable: isOwed && shareToken !== null,
         shareToken,
       }
@@ -109,16 +101,11 @@ export type ClientInvoiceSummary = {
   unpaidCount: number
   /** Sum of every unpaid invoice, as a numeric string. */
   unpaidTotal: string
-  overdueCount: number
-  /** Sum of the overdue subset only, not the whole unpaid balance. */
-  overdueTotal: string
 }
 
 const EMPTY_SUMMARY: ClientInvoiceSummary = {
   unpaidCount: 0,
   unpaidTotal: '0',
-  overdueCount: 0,
-  overdueTotal: '0',
 }
 
 /**
@@ -133,14 +120,10 @@ export const fetchClientInvoiceSummary = cache(
     const { clientIds } = await resolvePortalScope(user)
     if (clientIds.length === 0) return EMPTY_SUMMARY
 
-    const overdue = sql`${invoices.dueDate} < current_date`
-
     const [row] = await db
       .select({
         unpaidCount: sql<number>`count(*)::int`,
         unpaidTotal: sql<string>`coalesce(sum(${invoices.total}), 0)::text`,
-        overdueCount: sql<number>`(count(*) filter (where ${overdue}))::int`,
-        overdueTotal: sql<string>`coalesce(sum(${invoices.total}) filter (where ${overdue}), 0)::text`,
       })
       .from(invoices)
       .where(

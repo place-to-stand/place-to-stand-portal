@@ -173,15 +173,12 @@ export function InvoiceSheet({
     }
   }, [open, isPending])
 
-  // Determine whether to show the due date field based on client billing type
   const watchedClientId = useWatch({ control: form.control, name: 'clientId' })
   const selectedClientBillingType = useMemo(() => {
     if (!watchedClientId) return null
     const option = clientOptions.find(c => c.value === watchedClientId)
     return option?.billingType ?? null
   }, [watchedClientId, clientOptions])
-  const showDueDate =
-    selectedClientBillingType === 'net_30' || (isEditing && invoice?.due_date)
 
   const catalogItemMap = useMemo(
     () =>
@@ -395,38 +392,6 @@ export function InvoiceSheet({
                             </FormItem>
                           )}
                         />
-                        {showDueDate ? (
-                          <FormField
-                            control={form.control}
-                            name='dueDate'
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Due date</FormLabel>
-                                <FormControl>
-                                  <DisabledFieldTooltip
-                                    disabled={standardField.disabled}
-                                    reason={standardField.reason}
-                                  >
-                                    <Input
-                                      {...field}
-                                      value={field.value ?? ''}
-                                      type='date'
-                                      disabled={
-                                        standardField.disabled || isReadOnly
-                                      }
-                                    />
-                                  </DisabledFieldTooltip>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        ) : null}
-                        {selectedClientBillingType === 'net_30' ? (
-                          <p className='text-muted-foreground text-[0.8rem] sm:col-span-2'>
-                            Net 30 — due date auto-set to 30 days from today.
-                          </p>
-                        ) : null}
                       </div>
 
                       <FormField

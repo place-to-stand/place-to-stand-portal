@@ -320,16 +320,6 @@ export function useInvoiceSheetState({
     const selectedClient = clients.find(c => c.id === watchedClientId)
     if (!selectedClient) return
 
-    // Auto-fill due date for net_30 clients
-    if (selectedClient.billing_type === 'net_30') {
-      const today = new Date()
-      today.setDate(today.getDate() + 30)
-      const dueDateStr = today.toISOString().split('T')[0]!
-      form.setValue('dueDate', dueDateStr, { shouldDirty: true })
-    } else {
-      form.setValue('dueDate', null, { shouldDirty: true })
-    }
-
     // Auto-fill tax rate from client state
     if (selectedClient.state) {
       const matchingRate = taxRateMap.get(selectedClient.state)

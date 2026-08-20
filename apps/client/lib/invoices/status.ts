@@ -22,10 +22,6 @@ const INVOICE_STATUS_TOKENS = {
   VOID: 'border-transparent bg-slate-200 text-slate-700 dark:bg-slate-700/60 dark:text-slate-200',
 } as const
 
-/** Matches the red "Overdue" badge the internal invoices table renders. */
-export const INVOICE_OVERDUE_TOKEN =
-  'border-transparent bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200'
-
 export type ClientInvoiceStatus = keyof typeof INVOICE_STATUS_LABELS
 
 export function getInvoiceStatusLabel(value: string): string {

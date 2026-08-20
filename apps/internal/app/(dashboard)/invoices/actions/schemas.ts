@@ -14,7 +14,6 @@ const lineItemSchema = z.object({
 export const invoiceSchema = z.object({
   id: z.string().uuid().optional(),
   clientId: z.string().uuid('Select a client.'),
-  dueDate: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
   taxRate: z.number().min(0, 'Tax rate cannot be negative.'),
   lineItems: z.array(lineItemSchema).min(1, 'At least one line item is required.'),
