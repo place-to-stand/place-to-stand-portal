@@ -5,6 +5,7 @@ import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { requireRole } from '@/lib/auth/session'
 import { listContactsForSettings, listAllActiveClients } from '@/lib/queries/contacts'
 import { parseContactsSearchParams } from '@/lib/settings/contacts/filters'
+import { serverEnv } from '@/lib/env.server'
 
 import { CONTACTS_TABS } from '../_lib/tabs'
 import { ContactsAddButton } from '../_components/contacts-add-button'
@@ -28,7 +29,12 @@ export default async function ContactsArchivePage({
 }: ContactsArchivePageProps) {
   const admin = await requireRole('ADMIN')
   const params = searchParams ? await searchParams : {}
-  const { page: currentPage, search, sort } = parseContactsSearchParams(params)
+  const {
+    page: currentPage,
+    search,
+    clientId,
+    sort,
+  } = parseContactsSearchParams(params)
   const offset = (currentPage - 1) * PAGE_SIZE
 
   // Share links: `?contact=<id>` opens the edit sheet even when the row sits
@@ -45,6 +51,7 @@ export default async function ContactsArchivePage({
       listContactsForSettings(admin, {
         status: 'archived',
         search,
+        clientId,
         offset,
         limit: PAGE_SIZE,
         sort,
@@ -77,7 +84,12 @@ export default async function ContactsArchivePage({
       primaryAction={<ContactsAddButton />}
     >
       <section className='bg-background rounded-xl border p-4 shadow-sm space-y-4'>
-        <ContactsFilters basePath='/contacts/archive' search={search} />
+        <ContactsFilters
+          basePath='/contacts/archive'
+          search={search}
+          clientId={clientId}
+          clients={allClients}
+        />
         <ContactsManagementTable
           contacts={contactsForTable}
           totalCount={totalCount}
@@ -89,6 +101,7 @@ export default async function ContactsArchivePage({
           basePath='/contacts/archive'
           deepLinkedContact={deepLinkedContact}
           contactNotFound={deepLink.notFound}
+          clientPortalUrl={serverEnv.CLIENT_PORTAL_URL ?? ''}
         />
       </section>
     </PageShell>

@@ -1,9 +1,10 @@
 import type { KeyboardEvent, MouseEvent } from 'react'
 
 /**
- * Row-as-button affordance for list tables whose primary action is opening a
- * sheet or navigating to a detail view. Pair `CLICKABLE_ROW_CLASS` with
- * `getClickableRowProps(onActivate)` spread onto a `<TableRow>`.
+ * Row-as-button affordance for lists whose primary action is opening a sheet
+ * or navigating to a detail view. Pair `CLICKABLE_ROW_CLASS` with
+ * `getClickableRowProps(onActivate)` spread onto a `<TableRow>` or any
+ * row-shaped element (overview cards use plain divs).
  *
  * Clicks on interactive content inside the row (links, buttons, switches,
  * hover-card triggers, disabled-control tooltip wrappers) never activate the
@@ -20,9 +21,7 @@ export const CLICKABLE_ROW_CLASS =
 const INTERACTIVE_SELECTOR =
   'a, button, input, textarea, select, label, [role="switch"], [role="checkbox"], [role="menuitem"], [aria-disabled="true"]'
 
-type RowEvent =
-  | MouseEvent<HTMLTableRowElement>
-  | KeyboardEvent<HTMLTableRowElement>
+type RowEvent = MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>
 
 function shouldIgnoreRowClick(event: RowEvent): boolean {
   const target = event.target
@@ -38,14 +37,14 @@ export function getClickableRowProps(onActivate: () => void) {
   return {
     role: 'button' as const,
     tabIndex: 0,
-    onClick: (event: MouseEvent<HTMLTableRowElement>) => {
+    onClick: (event: MouseEvent<HTMLElement>) => {
       if (shouldIgnoreRowClick(event)) return
       // Don't hijack a click that ends a text selection (copying an email,
       // an invoice number, ...).
       if (window.getSelection()?.toString()) return
       onActivate()
     },
-    onKeyDown: (event: KeyboardEvent<HTMLTableRowElement>) => {
+    onKeyDown: (event: KeyboardEvent<HTMLElement>) => {
       // Only when the row itself is focused — Enter on a focused button inside
       // the row bubbles here and must not double-activate.
       if (event.target !== event.currentTarget) return

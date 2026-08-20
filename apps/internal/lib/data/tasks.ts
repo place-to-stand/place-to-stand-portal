@@ -64,10 +64,26 @@ const DEFAULT_LIMIT = 12
  * Shared row filter for "tasks assigned to this user that still matter":
  * not deleted, not archived, and not yet accepted.
  */
-function assignedTaskConditions(userId: string) {
-  return [
-    eq(taskAssigneesTable.userId, userId),
+/**
+ * ON clause for the (left) assignee join. Person-scoping and the soft-delete
+ * filter live HERE, not in WHERE — in the everyone view an unassigned task
+ * joins to no assignee row, and a WHERE filter on assignee columns would
+ * silently drop it.
+ */
+function assigneeJoinCondition(userId: string | null) {
+  return and(
+    eq(taskAssigneesTable.taskId, tasksTable.id),
     isNull(taskAssigneesTable.deletedAt),
+    ...(userId ? [eq(taskAssigneesTable.userId, userId)] : [])
+  )
+}
+
+function assignedTaskConditions(userId: string | null) {
+  return [
+    // A person-scoped board keeps assigned-only semantics; the everyone
+    // view (null) includes unassigned tasks — that's the planning session's
+    // whole picture.
+    ...(userId ? [isNotNull(taskAssigneesTable.userId)] : []),
     isNull(tasksTable.deletedAt),
     isNull(projectsTable.deletedAt),
     isNull(tasksTable.acceptedAt),
@@ -87,7 +103,10 @@ const STATUS_PRIORITY_SQL = sql`
 `
 
 type FetchAssignedTasksSummaryOptions = {
-  userId: string
+  /** Null = tasks assigned to ANYONE (the board's "All tasks" view). */
+  userId: string | null
+  /** Restrict to one client's projects (null/undefined = every client). */
+  clientId?: string | null
   limit?: number | null
   includeCompletedStatuses?: boolean
   /**
@@ -100,6 +119,7 @@ type FetchAssignedTasksSummaryOptions = {
 
 async function loadAssignedTaskSummaries({
   userId,
+  clientId = null,
   limit = DEFAULT_LIMIT,
   includeCompletedStatuses = true,
   doneSince = null,
@@ -112,6 +132,10 @@ async function loadAssignedTaskSummaries({
         : DEFAULT_LIMIT
 
   const baseConditions = assignedTaskConditions(userId)
+
+  if (clientId) {
+    baseConditions.push(eq(projectsTable.clientId, clientId))
+  }
 
   if (!includeCompletedStatuses) {
     baseConditions.push(ne(tasksTable.status, 'DONE'))
@@ -168,8 +192,8 @@ async function loadAssignedTaskSummaries({
         slug: clientsTable.slug,
       },
     })
-    .from(taskAssigneesTable)
-    .innerJoin(tasksTable, eq(taskAssigneesTable.taskId, tasksTable.id))
+    .from(tasksTable)
+    .leftJoin(taskAssigneesTable, assigneeJoinCondition(userId))
     .innerJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
     .leftJoin(clientsTable, eq(projectsTable.clientId, clientsTable.id))
     .leftJoin(
@@ -194,10 +218,10 @@ async function loadAssignedTaskSummaries({
   if (normalizedLimit !== null) {
     const totalResult = await db
       .select({
-        count: sql<number>`count(*)`,
+        count: sql<number>`count(distinct ${tasksTable.id})`,
       })
-      .from(taskAssigneesTable)
-      .innerJoin(tasksTable, eq(taskAssigneesTable.taskId, tasksTable.id))
+      .from(tasksTable)
+      .leftJoin(taskAssigneesTable, assigneeJoinCondition(userId))
       .innerJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
       .where(whereClause)
 
@@ -205,10 +229,24 @@ async function loadAssignedTaskSummaries({
   }
 
   const olderDoneCount = doneSince
-    ? await countAssignedDoneBefore(userId, doneSince)
+    ? await countAssignedDoneBefore(userId, doneSince, clientId)
     : 0
 
-  const items: AssignedTaskSummary[] = rows.map(row => {
+  // In the all-assignees view a task with two assignees joins to two rows;
+  // keep the first (best-ordered) one. A single-user query never duplicates.
+  const seenTaskIds = new Set<string>()
+  const dedupedRows = rows.filter(row => {
+    if (seenTaskIds.has(row.id)) {
+      return false
+    }
+    seenTaskIds.add(row.id)
+    return true
+  })
+  if (normalizedLimit === null) {
+    totalCount = dedupedRows.length
+  }
+
+  const items: AssignedTaskSummary[] = dedupedRows.map(row => {
     const updatedSource = row.updatedAt ?? row.createdAt ?? null
 
     return {
@@ -244,17 +282,20 @@ async function loadAssignedTaskSummaries({
  * completed_at are excluded: they're always shown, so they're never "older".
  */
 async function countAssignedDoneBefore(
-  userId: string,
-  before: string
+  userId: string | null,
+  before: string,
+  clientId: string | null = null
 ): Promise<number> {
   const [result] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(taskAssigneesTable)
-    .innerJoin(tasksTable, eq(taskAssigneesTable.taskId, tasksTable.id))
+    // Distinct: the all-assignees view joins one row per assignee.
+    .select({ count: sql<number>`count(distinct ${tasksTable.id})` })
+    .from(tasksTable)
+    .leftJoin(taskAssigneesTable, assigneeJoinCondition(userId))
     .innerJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
     .where(
       and(
         ...assignedTaskConditions(userId),
+        ...(clientId ? [eq(projectsTable.clientId, clientId)] : []),
         eq(tasksTable.status, 'DONE'),
         isNotNull(tasksTable.completedAt),
         lt(tasksTable.completedAt, before)
@@ -280,10 +321,12 @@ export type AssignedDoneSliceResult = {
  */
 export async function listAssignedDoneSlice({
   userId,
+  clientId = null,
   since,
   before,
 }: {
-  userId: string
+  userId: string | null
+  clientId?: string | null
   since: string
   before: string
 }): Promise<AssignedDoneSliceResult> {
@@ -310,8 +353,8 @@ export async function listAssignedDoneSlice({
         slug: clientsTable.slug,
       },
     })
-    .from(taskAssigneesTable)
-    .innerJoin(tasksTable, eq(taskAssigneesTable.taskId, tasksTable.id))
+    .from(tasksTable)
+    .leftJoin(taskAssigneesTable, assigneeJoinCondition(userId))
     .innerJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
     .leftJoin(clientsTable, eq(projectsTable.clientId, clientsTable.id))
     .leftJoin(
@@ -325,6 +368,7 @@ export async function listAssignedDoneSlice({
     .where(
       and(
         ...assignedTaskConditions(userId),
+        ...(clientId ? [eq(projectsTable.clientId, clientId)] : []),
         eq(tasksTable.status, 'DONE'),
         isNotNull(tasksTable.completedAt),
         gte(tasksTable.completedAt, since),
@@ -333,7 +377,17 @@ export async function listAssignedDoneSlice({
     )
     .orderBy(desc(tasksTable.completedAt))
 
-  const items: AssignedTaskSummary[] = rows.map(row => ({
+  // All-assignees view: one row per assignee per task — keep the first.
+  const seenSliceTaskIds = new Set<string>()
+  const dedupedSliceRows = rows.filter(row => {
+    if (seenSliceTaskIds.has(row.id)) {
+      return false
+    }
+    seenSliceTaskIds.add(row.id)
+    return true
+  })
+
+  const items: AssignedTaskSummary[] = dedupedSliceRows.map(row => ({
     id: row.id,
     title: row.title,
     description: row.description ?? null,
@@ -359,7 +413,7 @@ export async function listAssignedDoneSlice({
 
   return {
     items,
-    olderDoneCount: await countAssignedDoneBefore(userId, since),
+    olderDoneCount: await countAssignedDoneBefore(userId, since, clientId),
   }
 }
 

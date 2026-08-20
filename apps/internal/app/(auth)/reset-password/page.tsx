@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import {
+  AuthShell,
+  authErrorClass,
+  authLinkClass,
+} from "@pts/ui/auth-shell";
+
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 import { PasswordResetForm } from "../force-reset-password/force-reset-form";
@@ -51,36 +57,33 @@ export default async function ResetPasswordPage({ searchParams }: PageProps) {
 
   if (!user) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 px-6 py-12">
-        <div className="w-full max-w-sm space-y-6 rounded-xl bg-background p-8 text-center shadow-sm">
-          <h1 className="text-2xl font-semibold tracking-tight">Reset link not valid</h1>
-          <p className="text-sm text-muted-foreground">
-            {errorMessage ?? "We couldn't verify that link. It may have expired or already been used."}
-          </p>
-          <Link href="/forgot-password" className="text-sm font-medium text-primary hover:underline">
+      <AuthShell
+        label="Internal Portal"
+        title="Reset link not valid"
+        description={
+          errorMessage ??
+          "We couldn't verify that link. It may have expired or already been used."
+        }
+        footer={
+          <Link href="/forgot-password" className={authLinkClass}>
             Request a new reset link
           </Link>
-        </div>
-      </div>
+        }
+      >
+        {null}
+      </AuthShell>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 px-6 py-12">
-      <div className="w-full max-w-md space-y-6 rounded-xl bg-background p-8 shadow-sm">
-        <div className="space-y-2 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">Create a new password</h1>
-          <p className="text-sm text-muted-foreground">
-            Choose a strong password to keep your account secure.
-          </p>
-        </div>
-        {errorMessage ? (
-          <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {errorMessage}
-          </p>
-        ) : null}
-        <PasswordResetForm redirectTo={redirectTo} email={user.email} />
-      </div>
-    </div>
+    <AuthShell
+      wide
+      label="Internal Portal"
+      title="Create a new password"
+      description="Choose a strong password to keep your account secure."
+    >
+      {errorMessage ? <p className={authErrorClass}>{errorMessage}</p> : null}
+      <PasswordResetForm redirectTo={redirectTo} email={user.email} />
+    </AuthShell>
   );
 }

@@ -1,7 +1,13 @@
-import { useMemo, useState, useTransition } from 'react'
+import { useCallback, useMemo, useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import type { TaskWithRelations } from '@/lib/types'
+import {
+  DONE_WINDOW_WEEKS,
+  MAX_DONE_WEEKS,
+  isCompletedWithinDoneWindow,
+  resolveDoneWindowStart,
+} from '@/lib/projects/tasks/done-window'
 
 import { BOARD_COLUMNS, getBoardViewFromPathname } from '../board-constants'
 import {
@@ -30,6 +36,7 @@ export const useProjectsBoardState = ({
   activeProjectId,
   activeTaskId,
   currentView,
+  now,
 }: UseProjectsBoardStateArgs): ProjectsBoardState => {
   const router = useRouter()
   const pathname = usePathname()
@@ -149,9 +156,80 @@ export const useProjectsBoardState = ({
     return directory
   }, [activeProject, admins])
 
-  const tasksByColumn = useMemo(
+  // The Done column mirrors the My Tasks board's rolling window: tasks
+  // completed before the cutoff are withheld from the column (and only the
+  // column — the Review tab and accept-all keep the full set). The whole task
+  // graph is already client-side here, so "load previous two weeks" is a
+  // local widen rather than the fetch My Tasks needs.
+  const [doneWeeks, setDoneWeeks] = useState(DONE_WINDOW_WEEKS)
+  // Pinned at mount so SSR and hydration measure from the same instant; the
+  // tasks page passes its render-time `now` for the same reason My Tasks does.
+  const [doneWindowAnchor] = useState(() => now ?? new Date().toISOString())
+
+  // A different project is a different Done history; carrying a widened
+  // window across the switch would quietly change what "recent" means there.
+  const [prevProjectIdForDoneWindow, setPrevProjectIdForDoneWindow] =
+    useState(selectedProjectId)
+  if (prevProjectIdForDoneWindow !== selectedProjectId) {
+    setPrevProjectIdForDoneWindow(selectedProjectId)
+    setDoneWeeks(DONE_WINDOW_WEEKS)
+  }
+
+  const doneWindowStart = useMemo(
+    () => resolveDoneWindowStart(doneWeeks, doneWindowAnchor),
+    [doneWeeks, doneWindowAnchor]
+  )
+
+  const widenDoneWindow = useCallback(() => {
+    setDoneWeeks(weeks => Math.min(weeks + DONE_WINDOW_WEEKS, MAX_DONE_WEEKS))
+  }, [])
+
+  const fullTasksByColumn = useMemo(
     () => groupTasksByColumn(activeProjectTasks, BOARD_COLUMNS),
     [activeProjectTasks]
+  )
+
+  // Full unaccepted DONE list, for the Review tab: acceptance must see every
+  // task awaiting it, no matter how long ago it was completed.
+  const allDoneTasks = useMemo(
+    () => fullTasksByColumn.get('DONE') ?? [],
+    [fullTasksByColumn]
+  )
+
+  const { tasksByColumn, hiddenDoneCount } = useMemo(() => {
+    const visibleDone = allDoneTasks.filter(task =>
+      isCompletedWithinDoneWindow(task.completed_at, doneWindowStart)
+    )
+
+    if (visibleDone.length === allDoneTasks.length) {
+      return { tasksByColumn: fullTasksByColumn, hiddenDoneCount: 0 }
+    }
+
+    const windowed = new Map(fullTasksByColumn)
+    windowed.set('DONE', visibleDone)
+
+    return {
+      tasksByColumn: windowed,
+      hiddenDoneCount: allDoneTasks.length - visibleDone.length,
+    }
+  }, [allDoneTasks, doneWindowStart, fullTasksByColumn])
+
+  // Drag indexes come from the rendered (windowed) column, so rank math must
+  // run against that same list — this also excludes accepted DONE tasks,
+  // which the column never renders.
+  const filterColumnTasksForDnD = useCallback(
+    (columnId: string, tasks: TaskWithRelations[]) => {
+      if (columnId !== 'DONE') {
+        return tasks
+      }
+
+      return tasks.filter(
+        task =>
+          !task.accepted_at &&
+          isCompletedWithinDoneWindow(task.completed_at, doneWindowStart)
+      )
+    },
+    [doneWindowStart]
   )
 
   const {
@@ -189,6 +267,7 @@ export const useProjectsBoardState = ({
     activeProjectTasks,
     startTransition,
     setFeedback,
+    filterColumnTasks: filterColumnTasksForDnD,
   })
 
   const addTaskDisabled = !activeProject
@@ -211,6 +290,10 @@ export const useProjectsBoardState = ({
     canManageTasks,
     memberDirectory,
     tasksByColumn,
+    allDoneTasks,
+    doneWeeks,
+    hiddenDoneCount,
+    widenDoneWindow,
     draggingTask,
     addTaskDisabled,
     addTaskDisabledReason,

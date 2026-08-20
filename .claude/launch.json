@@ -17,7 +17,8 @@
         "-c",
         "set -e; docker info >/dev/null 2>&1 || { echo '>> Starting Docker Desktop'; open -a Docker; until docker info >/dev/null 2>&1; do sleep 2; done; echo '>> Docker ready'; }; npx supabase status >/dev/null 2>&1 || { echo '>> Starting Supabase'; npx supabase start; }; exec npm run dev -w @pts/internal"
       ],
-      "port": 3000
+      "port": 3000,
+      "autoPort": true
     },
     {
       "name": "Client portal",

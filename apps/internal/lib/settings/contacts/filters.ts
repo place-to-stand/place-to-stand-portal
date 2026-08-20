@@ -1,8 +1,15 @@
 import { parseSortParam, type ParsedSort } from '@/lib/pagination/sort'
+import { UUID_PATTERN } from '@/lib/sheets/entities'
 
 // PRD 004 §03: per-view sort allowlist (D6/R5). Each field here has a
 // matching descriptor (order expr + cursor encode/compare) in the query.
-export const CONTACT_SORT_FIELDS = ['name', 'created'] as const
+export const CONTACT_SORT_FIELDS = [
+  'name',
+  'email',
+  'phone',
+  'clients',
+  'created',
+] as const
 export type ContactSortField = (typeof CONTACT_SORT_FIELDS)[number]
 
 export const DEFAULT_CONTACTS_SORT = {
@@ -24,6 +31,11 @@ export type ContactsSearchParams = {
   /** 1-based page for the offset-paginated contacts tables. */
   page: number
   search: string | undefined
+  /**
+   * Linked-client filter (`?clientId=<uuid>`). Named `clientId` because
+   * `?client=` is the client sheet's deep-link param.
+   */
+  clientId: string | undefined
   sort: ParsedSort<ContactSortField>
 }
 
@@ -47,6 +59,7 @@ export function parseContactsSearchParams(
 ): ContactsSearchParams {
   const pageParam = Number.parseInt(firstParam(params.page) ?? '1', 10)
   const searchParam = firstParam(params.q)?.trim()
+  const clientIdParam = firstParam(params.clientId)?.trim()
   const sort = parseSortParam(
     firstParam(params.sort),
     CONTACT_SORT_FIELDS,
@@ -56,6 +69,10 @@ export function parseContactsSearchParams(
   return {
     page: Math.max(1, Number.isFinite(pageParam) ? pageParam : 1),
     search: searchParam || undefined,
+    clientId:
+      clientIdParam && UUID_PATTERN.test(clientIdParam)
+        ? clientIdParam
+        : undefined,
     sort,
   }
 }

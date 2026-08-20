@@ -26,6 +26,9 @@ type BoardProps = Pick<
   | 'onCreateTask'
   | 'activeSheetTaskId'
   | 'activityTargetClientId'
+  | 'doneWeeks'
+  | 'hiddenDoneCount'
+  | 'onWidenDoneWindow'
 >
 
 type DragProps = Pick<

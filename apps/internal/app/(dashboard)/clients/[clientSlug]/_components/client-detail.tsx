@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { formatCalendarDate } from '@/lib/dates'
 
+import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Button } from '@pts/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
@@ -38,6 +39,9 @@ import {
   getArchiveClientDialogDescription,
 } from '@/lib/settings/clients/client-sheet-constants'
 import type { ClientRow } from '@/lib/settings/clients/client-sheet-utils'
+import type { SheetEntityKey } from '@/lib/sheets/entities'
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
+import { prefetchSheetInit } from '@/lib/sheets/wrappers/use-sheet-init'
 import { cn } from '@/lib/utils'
 import { ViewLogger } from '@/components/activity/view-logger'
 import { ActivityVerbs } from '@/lib/activity/types'
@@ -58,6 +62,7 @@ export type PartnerUserInfo = {
   id: string
   fullName: string | null
   email: string
+  avatarUrl: string | null
 } | null
 
 type ClientDetailProps = {
@@ -85,7 +90,7 @@ export function ClientDetail({
   const otherProjects = projects.filter(p => p.status !== 'ACTIVE')
 
   return (
-    <div className='space-y-4'>
+    <div className='space-y-4 pb-8'>
       <ViewLogger
         actorId={currentUserId}
         verb={ActivityVerbs.CLIENT_VIEWED}
@@ -220,7 +225,14 @@ function ClientDetailsWidget({
             <UserPlus className='text-muted-foreground h-4 w-4' />
             <span className='text-muted-foreground text-sm'>Origination</span>
             <span className='ml-auto flex items-center gap-2 text-sm font-medium'>
-              {originationLabel}
+              <SheetLink
+                entity={originationUser ? 'user' : 'contact'}
+                id={originationUser?.id ?? originationContact?.id ?? null}
+                label={originationLabel}
+                avatarUserId={
+                  originationUser?.avatarUrl ? originationUser.id : null
+                }
+              />
               {originationKind ? (
                 <span className='text-muted-foreground text-xs font-normal'>
                   ({originationKind})
@@ -233,7 +245,14 @@ function ClientDetailsWidget({
           <div className='flex items-center gap-3 px-4 py-2.5'>
             <Handshake className='text-muted-foreground h-4 w-4' />
             <span className='text-muted-foreground text-sm'>Closer</span>
-            <span className='ml-auto text-sm font-medium'>{closerLabel}</span>
+            <span className='ml-auto text-sm font-medium'>
+              <SheetLink
+                entity='user'
+                id={closerUser?.id ?? null}
+                label={closerLabel}
+                avatarUserId={closerUser?.avatarUrl ? closerUser.id : null}
+              />
+            </span>
           </div>
         ) : null}
         {client.slug ? (
@@ -245,6 +264,61 @@ function ClientDetailsWidget({
         ) : null}
       </div>
     </section>
+  )
+}
+
+function getPersonInitials(name: string): string {
+  const parts = name.trim().split(/\s+/)
+  if (!parts[0]) return '?'
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase()
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
+}
+
+/**
+ * Inline avatar + name that opens the person's sheet over this page via its
+ * deep-link param (`?user=` / `?contact=`), served by the global SheetHost.
+ * The image only exists for internal users (`avatarUserId`); external
+ * contacts get the initials fallback. Falls back to plain text when the id
+ * is missing.
+ */
+function SheetLink({
+  entity,
+  id,
+  label,
+  avatarUserId,
+}: {
+  entity: SheetEntityKey
+  id: string | null
+  label: string
+  /** User id to load the avatar image for; null renders initials only. */
+  avatarUserId: string | null
+}) {
+  const { open } = useSheetParams()
+
+  if (!id) {
+    return <>{label}</>
+  }
+
+  return (
+    <button
+      type='button'
+      className='group flex cursor-pointer items-center gap-1.5'
+      onPointerEnter={() => prefetchSheetInit(entity, id)}
+      onClick={() => open(entity, id)}
+    >
+      <Avatar className='h-5 w-5'>
+        {avatarUserId && (
+          <AvatarImage
+            src={`/api/storage/user-avatar/${avatarUserId}`}
+            alt={label}
+          />
+        )}
+        <AvatarFallback className='text-[9px]'>
+          {getPersonInitials(label)}
+        </AvatarFallback>
+      </Avatar>
+      <span className='underline-offset-4 group-hover:underline'>{label}</span>
+    </button>
   )
 }
 

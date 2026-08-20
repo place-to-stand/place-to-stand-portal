@@ -121,6 +121,9 @@ export default async function ProjectBoardRoute({
       activeProjectId={activeProjectId}
       activeTaskId={activeTaskId}
       initialTab='board'
+      // Server-rendered anchor for the Done column's rolling window, so SSR
+      // and hydration measure the cutoff from the same instant.
+      now={new Date().toISOString()}
     />
   )
 }

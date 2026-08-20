@@ -13,6 +13,7 @@ import {
   fetchProjectsWithRelationsByIds,
 } from '@/lib/data/projects'
 import { fetchAdminUsers } from '@/lib/data/users'
+import { fetchClientDirectory } from '@/lib/queries/clients'
 import {
   getActiveTaskProjectId,
   listAssignedTaskSummaries,
@@ -32,6 +33,7 @@ type PageParams = {
 
 type PageSearchParams = {
   assignee?: string
+  clientId?: string
   task?: string
 }
 
@@ -60,18 +62,33 @@ export default async function MyTasksViewRoute({
 
   // Lite projects feed only the sheet's project selector; the task graph is
   // hydrated below for just the projects that hold assigned tasks.
-  const [admins, liteProjects] = await Promise.all([
+  const [admins, liteProjects, clientDirectory] = await Promise.all([
     fetchAdminUsers(),
     fetchProjectsLite(),
+    fetchClientDirectory(),
   ])
 
-  // Allow viewing another admin's tasks via the assignee param
+  // Allow viewing another admin's tasks via the assignee param.
+  // `assignee=all` is the everyone view (weekly planning); landing with no
+  // param defaults to the signed-in user's own board.
   const requestedAssigneeId = resolvedSearchParams.assignee ?? user.id
   const selectedAssigneeId =
-    requestedAssigneeId !== user.id &&
-    admins.some(admin => admin.id === requestedAssigneeId)
-      ? requestedAssigneeId
-      : user.id
+    requestedAssigneeId === 'all'
+      ? 'all'
+      : requestedAssigneeId !== user.id &&
+          admins.some(admin => admin.id === requestedAssigneeId)
+        ? requestedAssigneeId
+        : user.id
+
+  // Optional client scope. Validated against the directory so a stale or
+  // hand-edited id quietly falls back to all clients.
+  const requestedClientId = resolvedSearchParams.clientId ?? null
+  const activeClients = clientDirectory.filter(client => !client.deletedAt)
+  const selectedClientId =
+    requestedClientId &&
+    activeClients.some(client => client.id === requestedClientId)
+      ? requestedClientId
+      : null
 
   // The Done column starts at one window and widens on demand via
   // /api/my-tasks/done-window, so the first load never carries the whole
@@ -83,7 +100,8 @@ export default async function MyTasksViewRoute({
   const isBoardView = viewParam === 'board'
 
   const assignedSummaries = await listAssignedTaskSummaries({
-    userId: selectedAssigneeId,
+    userId: selectedAssigneeId === 'all' ? null : selectedAssigneeId,
+    clientId: selectedClientId,
     limit: null,
     doneSince: isBoardView
       ? resolveDoneWindowStart(DONE_WINDOW_WEEKS, now)
@@ -151,6 +169,11 @@ export default async function MyTasksViewRoute({
       activeTaskId={resolvedActiveTaskId}
       view={viewParam}
       selectedAssigneeId={selectedAssigneeId}
+      selectedClientId={selectedClientId ?? 'all'}
+      clients={activeClients.map(client => ({
+        id: client.id,
+        name: client.name,
+      }))}
       now={now}
       initialOlderDoneCount={assignedSummaries.olderDoneCount}
     />

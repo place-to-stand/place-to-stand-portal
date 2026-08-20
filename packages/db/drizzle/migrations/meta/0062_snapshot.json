@@ -1,5 +1,5 @@
 {
-  "id": "6e160206-c08f-40a4-84d7-f20188acfed4",
+  "id": "df6eb467-6e75-4719-aef7-8a7381a47e6e",
   "prevId": "f82bc9ba-e1ab-4cbc-95e7-e3425ac81d3c",
   "version": "7",
   "dialect": "postgresql",
@@ -19,22 +19,14 @@
           "name": "actor_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "actor_role": {
           "name": "actor_role",
           "type": "user_role",
           "typeSchema": "public",
           "primaryKey": false,
-          "notNull": false
-        },
-        "source": {
-          "name": "source",
-          "type": "activity_source",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'ADMIN_UI'"
+          "notNull": true
         },
         "verb": {
           "name": "verb",
@@ -2893,6 +2885,147 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.lead_updates": {
+      "name": "lead_updates",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "lead_id": {
+          "name": "lead_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "lead_update_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "body": {
+          "name": "body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "occurred_at": {
+          "name": "occurred_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "timezone('utc'::text, now())"
+        },
+        "author_id": {
+          "name": "author_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "timezone('utc'::text, now())"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "timezone('utc'::text, now())"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "idx_lead_updates_lead_occurred": {
+          "name": "idx_lead_updates_lead_occurred",
+          "columns": [
+            {
+              "expression": "lead_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops"
+            },
+            {
+              "expression": "occurred_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last",
+              "opclass": "timestamptz_ops"
+            }
+          ],
+          "isUnique": false,
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_lead_updates_author": {
+          "name": "idx_lead_updates_author",
+          "columns": [
+            {
+              "expression": "author_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops"
+            }
+          ],
+          "isUnique": false,
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "lead_updates_lead_id_fkey": {
+          "name": "lead_updates_lead_id_fkey",
+          "tableFrom": "lead_updates",
+          "tableTo": "leads",
+          "columnsFrom": [
+            "lead_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "lead_updates_author_id_fkey": {
+          "name": "lead_updates_author_id_fkey",
+          "tableFrom": "lead_updates",
+          "tableTo": "users",
+          "columnsFrom": [
+            "author_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.leads": {
       "name": "leads",
       "schema": "",
@@ -5598,15 +5731,6 @@
     }
   },
   "enums": {
-    "public.activity_source": {
-      "name": "activity_source",
-      "schema": "public",
-      "values": [
-        "ADMIN_UI",
-        "CLI",
-        "SYSTEM"
-      ]
-    },
     "public.client_billing_type": {
       "name": "client_billing_type",
       "schema": "public",
@@ -5685,6 +5809,16 @@
         "CLOSED_WON",
         "CLOSED_LOST",
         "UNQUALIFIED"
+      ]
+    },
+    "public.lead_update_type": {
+      "name": "lead_update_type",
+      "schema": "public",
+      "values": [
+        "MEETING",
+        "PHONE_CALL",
+        "EMAIL",
+        "NOTE"
       ]
     },
     "public.oauth_connection_status": {

@@ -3,6 +3,7 @@
 import {
   Archive,
   Contact,
+  Eye,
   Mail,
   Phone,
   RefreshCw,
@@ -42,6 +43,7 @@ export type ContactsTableSectionProps = {
   onRestore: (contact: ContactsTableContact) => void
   onRequestDestroy: (contact: ContactsTableContact) => void
   onRequestPromote: (contact: ContactsTableContact) => void
+  onRequestPreview: (contact: ContactsTableContact) => void
   isPending: boolean
   pendingReason: string
   pendingDeleteId: string | null
@@ -61,6 +63,7 @@ export function ContactsTableSection({
   onRestore,
   onRequestDestroy,
   onRequestPromote,
+  onRequestPreview,
   isPending,
   pendingReason,
   pendingDeleteId,
@@ -79,7 +82,7 @@ export function ContactsTableSection({
 
   return (
     <div className='overflow-hidden rounded-lg border'>
-      <Table density='compact'>
+      <Table density='compact' layout='fixed'>
         <TableHeader>
           <TableRow className='bg-muted/40'>
             <SortableTableHead
@@ -87,12 +90,36 @@ export function ContactsTableSection({
               sort={sort}
               defaultSort='name:asc'
               onSortChange={next => update({ sort: next })}
+              className='w-[28%]'
             >
               Name
             </SortableTableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Phone</TableHead>
-            <TableHead>Linked Clients</TableHead>
+            <SortableTableHead
+              field='email'
+              sort={sort}
+              defaultSort='name:asc'
+              onSortChange={next => update({ sort: next })}
+              className='w-[30%]'
+            >
+              Email
+            </SortableTableHead>
+            <SortableTableHead
+              field='phone'
+              sort={sort}
+              defaultSort='name:asc'
+              onSortChange={next => update({ sort: next })}
+              className='w-[18%]'
+            >
+              Phone
+            </SortableTableHead>
+            <SortableTableHead
+              field='clients'
+              sort={sort}
+              defaultSort='name:asc'
+              onSortChange={next => update({ sort: next })}
+            >
+              Linked Clients
+            </SortableTableHead>
             <TableHead className='w-32 text-right'>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -129,6 +156,7 @@ export function ContactsTableSection({
             const showSoftDelete = mode === 'active'
             const showRestore = mode === 'archive'
             const showDestroy = mode === 'archive'
+            const showPreview = mode === 'active'
             const showPromote =
               mode === 'active' &&
               !contact.userId
@@ -146,18 +174,18 @@ export function ContactsTableSection({
                 )}
               >
                 <TableCell>
-                  <div className='flex items-center gap-2'>
-                    <Contact className='h-4 w-4 text-cyan-500' />
-                    <span className='font-medium'>{contact.name}</span>
+                  <div className='flex min-w-0 items-center gap-2'>
+                    <Contact className='h-4 w-4 shrink-0 text-cyan-500' />
+                    <span className='truncate font-medium'>{contact.name}</span>
                   </div>
                 </TableCell>
                 <TableCell className='text-muted-foreground text-sm'>
                   <a
                     href={`mailto:${contact.email}`}
-                    className='hover:text-foreground inline-flex items-center gap-1.5 transition'
+                    className='hover:text-foreground inline-flex max-w-full items-center gap-1.5 transition'
                   >
-                    <Mail className='h-3 w-3' />
-                    {contact.email}
+                    <Mail className='h-3 w-3 shrink-0' />
+                    <span className='truncate'>{contact.email}</span>
                   </a>
                 </TableCell>
                 <TableCell className='text-muted-foreground text-sm'>
@@ -178,6 +206,21 @@ export function ContactsTableSection({
                 </TableCell>
                 <TableCell className='text-right'>
                   <div className='flex justify-end gap-2'>
+                    {showPreview ? (
+                      <Button
+                        variant='outline'
+                        size='icon-sm'
+                        onClick={e => {
+                          e.stopPropagation()
+                          onRequestPreview(contact)
+                        }}
+                        title='Preview in client portal'
+                        aria-label='Preview in client portal'
+                        disabled={isPending}
+                      >
+                        <Eye className='h-4 w-4' />
+                      </Button>
+                    ) : null}
                     {showPromote ? (
                       <DisabledFieldTooltip
                         disabled={promoteDisabled}

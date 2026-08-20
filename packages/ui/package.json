@@ -5,7 +5,11 @@
   "type": "module",
   "exports": {
     "./alert-dialog": "./src/alert-dialog.tsx",
+    "./auth-shell": "./src/auth-shell.tsx",
     "./avatar": "./src/avatar.tsx",
+    "./brand": "./src/brand.tsx",
+    "./brand-icon-assets": "./src/brand-icon-assets.ts",
+    "./brand-og-mark": "./src/brand-og-mark.tsx",
     "./breadcrumb": "./src/breadcrumb.tsx",
     "./button": "./src/button.tsx",
     "./checkbox": "./src/checkbox.tsx",

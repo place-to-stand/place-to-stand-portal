@@ -76,6 +76,20 @@ export function useSheetInit<E extends SheetInitEntity & SheetEntityKey>(
     handlersRef.current = { close, toast }
   }, [close, toast])
 
+  // Retire the cached payload once this sheet leaves the DOM (or swaps
+  // value, e.g. create→edit). The sheet is where the record gets EDITED, so
+  // a payload cached before a session of edits is exactly the one that must
+  // not seed the next open: the form baselines on the first data it sees and
+  // deliberately never re-baselines on a same-id refetch, so a stale seed
+  // showed pre-edit values and read as "my change didn't save". Prefetch
+  // warming (the cache's real win) is unaffected.
+  useEffect(
+    () => () => {
+      initCache.delete(cacheKey(entity, value))
+    },
+    [entity, value]
+  )
+
   useEffect(() => {
     let cancelled = false
     requestedValueRef.current = value

@@ -19,7 +19,10 @@ import {
  * and without holding every finished task from the start.
  */
 const payloadSchema = z.object({
-  assigneeId: z.string().uuid().optional(),
+  /** An admin id, `'all'` for every assignee, or absent for self. */
+  assigneeId: z.union([z.string().uuid(), z.literal('all')]).optional(),
+  /** Restrict the widened window to one client's projects. */
+  clientId: z.string().uuid().nullable().optional(),
   /** Window width already on screen, in weeks. */
   fromWeeks: z.number().int().min(0).max(MAX_DONE_WEEKS),
   /** Window width being opened up to, in weeks. */
@@ -62,11 +65,14 @@ export async function POST(request: Request) {
 
   // The internal portal is admin-only, so any admin may view another admin's
   // board — same rule the reorder route applies.
-  const boardOwnerId = payload.assigneeId ?? user.id
+  // 'all' widens to every assignee (null); absent defaults to self.
+  const boardOwnerId =
+    payload.assigneeId === 'all' ? null : (payload.assigneeId ?? user.id)
 
   try {
     const slice = await listAssignedDoneSlice({
       userId: boardOwnerId,
+      clientId: payload.clientId ?? null,
       since: resolveDoneWindowStart(payload.toWeeks, payload.now),
       before: resolveDoneWindowStart(payload.fromWeeks, payload.now),
     })

@@ -322,7 +322,7 @@ export function SubmissionsTable({
         </div>
       ) : null}
       <div className='overflow-hidden rounded-lg border'>
-        <Table density='compact'>
+        <Table density='compact' layout='fixed'>
           <TableHeader>
             <TableRow className='bg-muted/40'>
               <TableHead className='w-6'>
@@ -333,16 +333,19 @@ export function SubmissionsTable({
                 sort={sort}
                 defaultSort='received:desc'
                 onSortChange={next => updateListParams({ sort: next })}
+                className='w-[11%]'
               >
                 Received
               </SortableTableHead>
-              <TableHead>Form</TableHead>
-              <TableHead>Contact</TableHead>
-              <TableHead>Company</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Progress</TableHead>
+              <TableHead className='w-[9%]'>Form</TableHead>
+              <TableHead className='w-[18%]'>Contact</TableHead>
+              <TableHead className='w-[12%]'>Company</TableHead>
+              <TableHead className='w-[10%]'>Status</TableHead>
+              <TableHead className='w-[10%]'>Progress</TableHead>
               <TableHead>Phase</TableHead>
-              {mode === 'archive' ? <TableHead>Archived</TableHead> : null}
+              {mode === 'archive' ? (
+                <TableHead className='w-[10%]'>Archived</TableHead>
+              ) : null}
               <TableHead className='w-32 text-right'>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -402,9 +405,11 @@ export function SubmissionsTable({
                     </TableCell>
                     <TableCell>
                       {submission.contactName || submission.contactEmail ? (
-                        <div className='flex flex-col'>
-                          <span>{submission.contactName ?? '—'}</span>
-                          <span className='text-muted-foreground text-xs'>
+                        <div className='flex min-w-0 flex-col'>
+                          <span className='truncate'>
+                            {submission.contactName ?? '—'}
+                          </span>
+                          <span className='text-muted-foreground truncate text-xs'>
                             {submission.contactEmail}
                           </span>
                         </div>
@@ -414,7 +419,9 @@ export function SubmissionsTable({
                         </span>
                       )}
                     </TableCell>
-                    <TableCell>{submission.contactCompany ?? '—'}</TableCell>
+                    <TableCell className='truncate'>
+                      {submission.contactCompany ?? '—'}
+                    </TableCell>
                     <TableCell>
                       <Badge
                         variant='outline'
@@ -440,7 +447,7 @@ export function SubmissionsTable({
                         </div>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className='truncate'>
                       {submission.result?.phaseName ??
                         submission.phaseId ?? (
                           <span className='text-muted-foreground'>—</span>

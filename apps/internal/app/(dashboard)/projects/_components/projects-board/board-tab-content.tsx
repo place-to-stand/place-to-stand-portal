@@ -10,6 +10,7 @@ import {
 } from '@dnd-kit/core'
 
 import { TabsContent } from '@pts/ui/tabs'
+import { DoneWindowFooter } from '../done-window-footer'
 import { KanbanColumn } from '../kanban-column'
 import { ProjectsBoardEmpty } from '../projects-board-empty'
 import { TaskDragOverlay } from '../task-drag-overlay'
@@ -63,6 +64,12 @@ export type BoardTabContentProps = {
   activeDropColumnId: BoardColumnId | null
   dropPreview: { columnId: BoardColumnId; index: number } | null
   recentlyMovedTaskId: string | null
+  /** Current Done window width in weeks. */
+  doneWeeks: number
+  /** DONE tasks completed before the window. */
+  hiddenDoneCount: number
+  /** Widens the window one step; instant, no fetch. */
+  onWidenDoneWindow: () => void
 }
 
 export function BoardTabContent(props: BoardTabContentProps) {
@@ -86,6 +93,9 @@ export function BoardTabContent(props: BoardTabContentProps) {
     activeDropColumnId,
     dropPreview,
     recentlyMovedTaskId,
+    doneWeeks,
+    hiddenDoneCount,
+    onWidenDoneWindow,
   } = props
 
   const lastTaskOverId = useRef<UniqueIdentifier | null>(null)
@@ -305,29 +315,47 @@ export function BoardTabContent(props: BoardTabContentProps) {
                     gridTemplateColumns: `repeat(${BOARD_COLUMNS.length}, minmax(20rem, 1fr))`,
                   }}
                 >
-                  {BOARD_COLUMNS.map(column => (
-                    <KanbanColumn
-                      key={column.id}
-                      columnId={column.id}
-                      label={column.label}
-                      tasks={tasksByColumn.get(column.id) ?? []}
-                      renderAssignees={renderAssignees}
-                      onEditTask={onEditTask}
-                      canManage={canManageTasks}
-                      activeTaskId={activeSheetTaskId}
-                      onCreateTask={onCreateTask}
-                      isDropTarget={activeDropColumnId === column.id}
-                      dropIndicatorIndex={
-                        dropPreview?.columnId === column.id
-                          ? dropPreview.index
-                          : null
-                      }
-                      draggingTask={draggingTask}
-                      recentlyMovedTaskId={recentlyMovedTaskId}
-                      columnScrollRef={getColumnRef(column.id)}
-                      onColumnScroll={getScrollHandler(column.id)}
-                    />
-                  ))}
+                  {BOARD_COLUMNS.map(column => {
+                    const columnTasks = tasksByColumn.get(column.id) ?? []
+
+                    return (
+                      <KanbanColumn
+                        key={column.id}
+                        columnId={column.id}
+                        label={column.label}
+                        tasks={columnTasks}
+                        renderAssignees={renderAssignees}
+                        onEditTask={onEditTask}
+                        canManage={canManageTasks}
+                        activeTaskId={activeSheetTaskId}
+                        onCreateTask={onCreateTask}
+                        isDropTarget={activeDropColumnId === column.id}
+                        dropIndicatorIndex={
+                          dropPreview?.columnId === column.id
+                            ? dropPreview.index
+                            : null
+                        }
+                        draggingTask={draggingTask}
+                        recentlyMovedTaskId={recentlyMovedTaskId}
+                        columnScrollRef={getColumnRef(column.id)}
+                        onColumnScroll={getScrollHandler(column.id)}
+                        footerSlot={
+                          // Same rule as the My Tasks board: an empty column
+                          // with nothing hidden has no filtering to explain.
+                          column.id === 'DONE' &&
+                          (columnTasks.length > 0 || hiddenDoneCount > 0) ? (
+                            <DoneWindowFooter
+                              doneWeeks={doneWeeks}
+                              hiddenCount={hiddenDoneCount}
+                              onWiden={onWidenDoneWindow}
+                              isLoading={false}
+                              error={null}
+                            />
+                          ) : undefined
+                        }
+                      />
+                    )
+                  })}
                 </div>
                 <TaskDragOverlay
                   draggingTask={draggingTask}

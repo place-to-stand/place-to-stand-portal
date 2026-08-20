@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { AuthShell, authLinkClass } from "@pts/ui/auth-shell";
+
 export const metadata: Metadata = {
   title: "Account not set up | Place to Stand Portal",
 };
@@ -17,23 +19,18 @@ export const metadata: Metadata = {
  */
 export default function AccountNotSetUpPage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 px-6 py-12">
-      <div className="w-full max-w-md space-y-6 rounded-xl bg-background p-10 text-center shadow-sm">
-        <h1 className="text-3xl font-semibold tracking-tight">
-          This account isn&apos;t set up yet
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          We couldn&apos;t find a Place to Stand account for that email. If
-          you&apos;re expecting access, contact your account manager and
-          we&apos;ll get you set up.
-        </p>
-        <Link
-          className="text-sm font-medium text-primary underline"
-          href="/sign-in"
-        >
+    <AuthShell
+      wide
+      label="Internal Portal"
+      title="This account isn't set up yet"
+      description="We couldn't find a Place to Stand account for that email. If you're expecting access, contact your account manager and we'll get you set up."
+      footer={
+        <Link className={authLinkClass} href="/sign-in">
           Back to sign in
         </Link>
-      </div>
-    </div>
+      }
+    >
+      {null}
+    </AuthShell>
   );
 }

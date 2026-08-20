@@ -8,9 +8,11 @@ import {
   fetchProjectsForLanding,
 } from '@/lib/data/projects'
 import { fetchClientsWithMetrics } from '@/lib/data/clients'
+import { fetchAdminUsers } from '@/lib/data/users'
 import { requireUser } from '@/lib/auth/session'
 import { fetchClientDirectory } from '@/lib/queries/clients'
 import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
+import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
 import type { ProjectWithRelations } from '@/lib/types'
 
 export const metadata: Metadata = {
@@ -31,7 +33,7 @@ export default async function ProjectsPage({
 
   // One wave: nothing below depends on anything else here, and the old
   // second Promise.all added a full serial round-trip level per request.
-  const [projects, unfilteredCounts, clientsWithMetrics, clientDirectory] =
+  const [projects, unfilteredCounts, clientsWithMetrics, clientDirectory, admins] =
     await Promise.all([
       fetchProjectsForLanding({
         statuses,
@@ -40,6 +42,7 @@ export default async function ProjectsPage({
       fetchLandingProjectCounts(user.id),
       fetchClientsWithMetrics(user),
       fetchClientDirectory(),
+      fetchAdminUsers(),
     ])
   const landingClients = buildLandingClients(projects)
   const filteredProjectCount = countVisibleProjects(projects, user.id)
@@ -51,12 +54,20 @@ export default async function ProjectsPage({
     deleted_at: client.deletedAt,
   }))
 
+  const adminUsers: AdminUserForOwner[] = admins.map(admin => ({
+    id: admin.id,
+    full_name: admin.full_name,
+    email: admin.email,
+    avatar_url: admin.avatar_url,
+  }))
+
 
   return (
     <ProjectsLandingAdminSection
         projects={projects}
         landingClients={landingClients}
         clients={clientRows}
+        admins={adminUsers}
         currentUserId={user.id}
         totalProjectCount={unfilteredCounts.total}
         filteredProjectCount={filteredProjectCount}

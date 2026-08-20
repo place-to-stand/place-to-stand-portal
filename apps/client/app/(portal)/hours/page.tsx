@@ -28,7 +28,7 @@ export default async function HoursPage() {
         <div className="rounded-lg border border-border p-8 text-center">
           <p className="text-sm text-muted-foreground">
             {needsClientSelection
-              ? 'Select a client above to preview their portal.'
+              ? 'Select a contact above to preview the portal.'
               : 'No hours information is available for your account yet. Contact your account manager to get started.'}
           </p>
         </div>

@@ -3,10 +3,13 @@
 import { useActionState } from "react";
 import { Loader2 } from "lucide-react";
 
-import { Button } from "@pts/ui/button";
+import {
+  authErrorClass,
+  authFieldLabelClass,
+  authInputClass,
+  authPrimaryButtonClass,
+} from "@pts/ui/auth-shell";
 import { DisabledFieldTooltip } from "@/components/ui/disabled-field-tooltip";
-import { Input } from "@/components/ui/input";
-import { Label } from "@pts/ui/label";
 
 import {
   requestPasswordReset,
@@ -31,9 +34,11 @@ export function ForgotPasswordForm({ redirectTo }: Props) {
     <form action={formAction} className="space-y-6">
       <input type="hidden" name="redirect" value={redirectTo ?? ""} />
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
+        <label className={authFieldLabelClass} htmlFor="email">
+          Email
+        </label>
         <DisabledFieldTooltip disabled={isPending} reason={isPending ? pendingReason : null}>
-          <Input
+          <input
             id="email"
             name="email"
             type="email"
@@ -42,27 +47,30 @@ export function ForgotPasswordForm({ redirectTo }: Props) {
             placeholder="you@example.com"
             required
             disabled={isPending}
+            className={authInputClass}
           />
         </DisabledFieldTooltip>
       </div>
-      {state.error ? (
-        <p className="text-sm text-destructive">{state.error}</p>
-      ) : null}
+      {state.error ? <p className={authErrorClass}>{state.error}</p> : null}
       {state.success ? (
-        <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+        <p className="border border-[#b5f542]/40 bg-[#b5f542]/10 px-3 py-2 text-sm text-[#b5f542]">
           If that email is associated with an account, we just sent instructions to reset the password.
         </p>
       ) : null}
       <DisabledFieldTooltip disabled={isPending} reason={isPending ? pendingReason : null}>
-        <Button type="submit" className="w-full" disabled={isPending}>
+        <button
+          type="submit"
+          className={authPrimaryButtonClass}
+          disabled={isPending}
+        >
           {isPending ? (
-            <span className="inline-flex items-center gap-2">
+            <>
               <Loader2 className="h-4 w-4 animate-spin" /> Sending...
-            </span>
+            </>
           ) : (
             "Send reset link"
           )}
-        </Button>
+        </button>
       </DisabledFieldTooltip>
     </form>
   );

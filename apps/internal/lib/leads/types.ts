@@ -1,6 +1,7 @@
 import type { leads } from '@/lib/db/schema'
 import type { InferSelectModel } from 'drizzle-orm'
 import type { LeadSourceTypeValue, LeadStatusValue } from './constants'
+import type { LeadUpdateTypeValue } from './updates'
 
 // =============================================================================
 // Database Types
@@ -119,4 +120,24 @@ export type LeadAssigneeOption = {
   name: string
   email: string | null
   avatarUrl: string | null
+}
+
+/**
+ * A single logged interaction on a lead, hydrated for the timeline.
+ *
+ * Author identity is denormalized the same way `LeadRecord` flattens the
+ * assignee fields — it keeps the timeline from needing a round trip per row.
+ */
+export type LeadUpdateRecord = {
+  id: string
+  leadId: string
+  type: LeadUpdateTypeValue
+  body: string
+  occurredAt: string
+  authorId: string
+  authorName: string | null
+  authorEmail: string | null
+  authorAvatarUrl: string | null
+  createdAt: string
+  updatedAt: string
 }

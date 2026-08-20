@@ -58,6 +58,7 @@ async function markInvoicePaid(
     // Notify the team in Google Chat (fire-and-forget — non-critical).
     // Guarded by status !== 'PAID' so retried webhooks don't re-notify.
     notifyInvoicePaid({
+      invoiceId: invoice.id,
       invoiceNumber: invoice.invoice_number,
       total: invoice.total,
       clientName: invoice.client?.name,

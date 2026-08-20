@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@source '../../../packages/ui/src';
 
 /* Class-based rather than prefers-color-scheme, so the user can override the
    system setting. Matches apps/internal. A blocking script in the root layout

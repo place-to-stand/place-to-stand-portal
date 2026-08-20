@@ -61,7 +61,7 @@ export default async function DashboardPage() {
           ) : (
             <EmptyState>
               {needsClientSelection
-                ? 'Select a client above to preview their portal.'
+                ? 'Select a contact above to preview the portal.'
                 : 'No account information is available yet. Contact your account manager to get started.'}
             </EmptyState>
           )}
@@ -71,7 +71,7 @@ export default async function DashboardPage() {
           {projects.length === 0 ? (
             <EmptyState>
               {needsClientSelection
-                ? 'Select a client above to preview their portal.'
+                ? 'Select a contact above to preview the portal.'
                 : 'No projects found. Contact your account manager to get started.'}
             </EmptyState>
           ) : (

@@ -112,6 +112,20 @@ export const leadLossReason = pgEnum('lead_loss_reason', [
   'OTHER',
 ])
 
+
+/**
+ * How a logged lead interaction happened.
+ * Kept deliberately small at launch — see PRD 005 D3. Direction (inbound vs
+ * outbound), SMS, and artifact-sent types are deferred to PRD 005 §07.
+ */
+export const leadUpdateType = pgEnum('lead_update_type', [
+  'MEETING',
+  'PHONE_CALL',
+  'EMAIL',
+  'NOTE',
+])
+
+
 export const workerStatus = pgEnum('worker_status', [
   'working',
   'plan_ready',
@@ -1024,6 +1038,67 @@ export const leadStageHistory = pgTable(
       foreignColumns: [users.id],
       name: 'lead_stage_history_changed_by_fkey',
     }),
+  ]
+)
+
+export const leadUpdates = pgTable(
+  'lead_updates',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    leadId: uuid('lead_id').notNull(),
+    type: leadUpdateType().notNull(),
+    /**
+     * The interaction's description, as TipTap HTML — the same convention as
+     * `task_comments`: the dialog sanitizes before send and the timeline
+     * renderer sanitizes again before injecting. Rows written before the RTE
+     * landed hold plain text, which renders unchanged.
+     */
+    body: text().notNull(),
+    /**
+     * When the interaction actually happened — NOT when the row was written.
+     * Cadence math uses this; created_at would measure data-entry lag instead.
+     * Defaults to now() so quick same-day logging needs no extra input.
+     */
+    occurredAt: timestamp('occurred_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    authorId: uuid('author_id').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    // Serves both the timeline render (ordered by occurred_at desc) and the
+    // derived last-touch aggregate in §03. Partial on deleted_at IS NULL, so
+    // soft-deleted rows are excluded by the index itself rather than filtered
+    // after the fact.
+    index('idx_lead_updates_lead_occurred')
+      .using(
+        'btree',
+        table.leadId.asc().nullsLast().op('uuid_ops'),
+        table.occurredAt.desc().nullsLast().op('timestamptz_ops')
+      )
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_lead_updates_author')
+      .using('btree', table.authorId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL)`),
+    foreignKey({
+      columns: [table.leadId],
+      foreignColumns: [leads.id],
+      name: 'lead_updates_lead_id_fkey',
+    }).onDelete('cascade'),
+    // RESTRICT, not CASCADE: an update is an audit record of who contacted
+    // whom, and users are disabled (`disabled_at`) rather than deleted in this
+    // codebase. Deliberately stricter than task_comments — see PRD 005 W2.
+    foreignKey({
+      columns: [table.authorId],
+      foreignColumns: [users.id],
+      name: 'lead_updates_author_id_fkey',
+    }).onDelete('restrict'),
   ]
 )
 

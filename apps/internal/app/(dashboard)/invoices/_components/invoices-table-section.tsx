@@ -236,8 +236,8 @@ function ShareLinkCell({
   const shareUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/share/invoices/${invoice.share_token}`
 
   return (
-    <div className='flex items-center gap-1.5'>
-      <span className='text-muted-foreground truncate text-xs font-mono'>
+    <div className='flex min-w-0 items-center gap-1.5'>
+      <span className='text-muted-foreground min-w-0 truncate text-xs font-mono'>
         {truncatedPath}
       </span>
       <Button
@@ -292,7 +292,7 @@ export function InvoicesTableSection({
 
   return (
     <div className='overflow-hidden rounded-lg border'>
-      <Table density='compact'>
+      <Table density='compact' layout='fixed'>
         <TableHeader>
           <TableRow className='bg-muted/40'>
             <SortableTableHead
@@ -300,17 +300,19 @@ export function InvoicesTableSection({
               sort={sort}
               defaultSort='created:desc'
               onSortChange={next => update({ sort: next })}
+              className='w-[12%]'
             >
               Invoice #
             </SortableTableHead>
-            <TableHead>Client</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Total</TableHead>
+            <TableHead className='w-[18%]'>Client</TableHead>
+            <TableHead className='w-[12%]'>Status</TableHead>
+            <TableHead className='w-[10%]'>Total</TableHead>
             <SortableTableHead
               field='created'
               sort={sort}
               defaultSort='created:desc'
               onSortChange={next => update({ sort: next })}
+              className='w-[20%]'
             >
               Issued
             </SortableTableHead>
@@ -377,18 +379,18 @@ export function InvoicesTableSection({
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className='flex items-center gap-2 text-sm'>
-                    <Building2 className='text-muted-foreground h-4 w-4' />
+                  <div className='flex min-w-0 items-center gap-2 text-sm'>
+                    <Building2 className='text-muted-foreground h-4 w-4 shrink-0' />
                     {client ? (
                       client.slug ? (
                         <Link
                           href={`/clients/${client.slug}`}
-                          className='hover:text-foreground hover:underline'
+                          className='hover:text-foreground truncate hover:underline'
                         >
                           {client.name}
                         </Link>
                       ) : (
-                        <span>{client.name}</span>
+                        <span className='truncate'>{client.name}</span>
                       )
                     ) : (
                       <span>Unassigned</span>

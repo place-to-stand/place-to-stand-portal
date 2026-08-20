@@ -33,8 +33,8 @@ export default async function PortalLayout({
     <div className="min-h-screen bg-background">
       {isAdmin(user) && (
         <ViewAsBanner
-          availableClients={scope.availableClients}
-          viewingAsClientId={scope.viewingAsClientId}
+          availableContacts={scope.availableContacts}
+          viewingAsContactId={scope.viewingAsContactId}
         />
       )}
       <header className="border-b border-foreground/10 bg-chrome">
