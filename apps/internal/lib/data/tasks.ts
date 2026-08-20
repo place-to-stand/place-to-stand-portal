@@ -64,12 +64,26 @@ const DEFAULT_LIMIT = 12
  * Shared row filter for "tasks assigned to this user that still matter":
  * not deleted, not archived, and not yet accepted.
  */
+/**
+ * ON clause for the (left) assignee join. Person-scoping and the soft-delete
+ * filter live HERE, not in WHERE — in the everyone view an unassigned task
+ * joins to no assignee row, and a WHERE filter on assignee columns would
+ * silently drop it.
+ */
+function assigneeJoinCondition(userId: string | null) {
+  return and(
+    eq(taskAssigneesTable.taskId, tasksTable.id),
+    isNull(taskAssigneesTable.deletedAt),
+    ...(userId ? [eq(taskAssigneesTable.userId, userId)] : [])
+  )
+}
+
 function assignedTaskConditions(userId: string | null) {
   return [
-    // Null skips the person filter — any assignee. The join itself still
-    // requires SOME assignee row, so unassigned tasks never appear here.
-    ...(userId ? [eq(taskAssigneesTable.userId, userId)] : []),
-    isNull(taskAssigneesTable.deletedAt),
+    // A person-scoped board keeps assigned-only semantics; the everyone
+    // view (null) includes unassigned tasks — that's the planning session's
+    // whole picture.
+    ...(userId ? [isNotNull(taskAssigneesTable.userId)] : []),
     isNull(tasksTable.deletedAt),
     isNull(projectsTable.deletedAt),
     isNull(tasksTable.acceptedAt),
@@ -178,8 +192,8 @@ async function loadAssignedTaskSummaries({
         slug: clientsTable.slug,
       },
     })
-    .from(taskAssigneesTable)
-    .innerJoin(tasksTable, eq(taskAssigneesTable.taskId, tasksTable.id))
+    .from(tasksTable)
+    .leftJoin(taskAssigneesTable, assigneeJoinCondition(userId))
     .innerJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
     .leftJoin(clientsTable, eq(projectsTable.clientId, clientsTable.id))
     .leftJoin(
@@ -204,10 +218,10 @@ async function loadAssignedTaskSummaries({
   if (normalizedLimit !== null) {
     const totalResult = await db
       .select({
-        count: sql<number>`count(*)`,
+        count: sql<number>`count(distinct ${tasksTable.id})`,
       })
-      .from(taskAssigneesTable)
-      .innerJoin(tasksTable, eq(taskAssigneesTable.taskId, tasksTable.id))
+      .from(tasksTable)
+      .leftJoin(taskAssigneesTable, assigneeJoinCondition(userId))
       .innerJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
       .where(whereClause)
 
@@ -275,8 +289,8 @@ async function countAssignedDoneBefore(
   const [result] = await db
     // Distinct: the all-assignees view joins one row per assignee.
     .select({ count: sql<number>`count(distinct ${tasksTable.id})` })
-    .from(taskAssigneesTable)
-    .innerJoin(tasksTable, eq(taskAssigneesTable.taskId, tasksTable.id))
+    .from(tasksTable)
+    .leftJoin(taskAssigneesTable, assigneeJoinCondition(userId))
     .innerJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
     .where(
       and(
@@ -339,8 +353,8 @@ export async function listAssignedDoneSlice({
         slug: clientsTable.slug,
       },
     })
-    .from(taskAssigneesTable)
-    .innerJoin(tasksTable, eq(taskAssigneesTable.taskId, tasksTable.id))
+    .from(tasksTable)
+    .leftJoin(taskAssigneesTable, assigneeJoinCondition(userId))
     .innerJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
     .leftJoin(clientsTable, eq(projectsTable.clientId, clientsTable.id))
     .leftJoin(
