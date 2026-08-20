@@ -26,6 +26,33 @@ export function resolveDoneWindowStart(weeks: number, now: string): string {
 }
 
 /**
+ * Client-side twin of the SQL window predicate in `lib/data/tasks.ts`: a task
+ * is inside the window when it finished at or after `windowStart`. Null or
+ * unparseable completed_at stays visible on purpose — it would otherwise be
+ * unreachable at every window size, and an extra card beats a lost one.
+ *
+ * Timestamps are compared as parsed instants, not strings: completed_at
+ * arrives in postgres text format (`2026-08-05 17:23:45+00`) while
+ * `windowStart` is ISO, so lexicographic comparison would misorder them.
+ */
+export function isCompletedWithinDoneWindow(
+  completedAt: string | null,
+  windowStart: string
+): boolean {
+  if (!completedAt) {
+    return true
+  }
+
+  const completed = Date.parse(completedAt)
+
+  if (Number.isNaN(completed)) {
+    return true
+  }
+
+  return completed >= Date.parse(windowStart)
+}
+
+/**
  * Human label for the current window width, for the footer's explanation of
  * why the column isn't showing everything.
  */

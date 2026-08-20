@@ -1,5 +1,3 @@
-import { useMemo } from 'react'
-
 import type { TaskWithRelations } from '@/lib/types'
 
 export type ProjectsBoardDerivedStateArgs = {
@@ -7,6 +5,12 @@ export type ProjectsBoardDerivedStateArgs = {
   activeProjectArchivedTasks: TaskWithRelations[]
   activeProjectAcceptedTasks: TaskWithRelations[]
   tasksByColumn: Map<string, TaskWithRelations[]>
+  /**
+   * Full unaccepted DONE list, unwindowed. `tasksByColumn`'s DONE bucket is
+   * limited to the board's rolling window, but review and accept-all must see
+   * every task still awaiting acceptance.
+   */
+  allDoneTasks: TaskWithRelations[]
 }
 
 export type ProjectsBoardDerivedState = {
@@ -22,15 +26,11 @@ export function useProjectsBoardDerivedState({
   activeProjectArchivedTasks,
   activeProjectAcceptedTasks,
   tasksByColumn,
+  allDoneTasks,
 }: ProjectsBoardDerivedStateArgs): ProjectsBoardDerivedState {
   const tasksByColumnToRender = tasksByColumn
 
-  const doneColumnTasks = useMemo(
-    () => tasksByColumnToRender.get('DONE') ?? [],
-    [tasksByColumnToRender]
-  )
-
-  const hasAcceptableTasks = doneColumnTasks.length > 0
+  const hasAcceptableTasks = allDoneTasks.length > 0
   const acceptAllDisabled = !hasAcceptableTasks
   const acceptAllDisabledReason = !hasAcceptableTasks
     ? 'No tasks are ready for acceptance.'
@@ -40,7 +40,7 @@ export function useProjectsBoardDerivedState({
     tasksByColumnToRender,
     acceptedTasks: activeProjectAcceptedTasks,
     archivedTasks: activeProjectArchivedTasks,
-    doneColumnTasks,
+    doneColumnTasks: allDoneTasks,
     acceptAllDisabled,
     acceptAllDisabledReason,
   }

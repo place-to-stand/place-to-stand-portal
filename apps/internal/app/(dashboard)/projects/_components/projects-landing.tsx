@@ -8,14 +8,7 @@ import { Building2, Clock, FolderKanban, UserRound, Users } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { siGithub } from 'simple-icons/icons'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Progress } from '@pts/ui/progress'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@pts/ui/tooltip'
 import {
   Table,
   TableBody,
@@ -28,7 +21,9 @@ import { useToast } from '@/components/ui/use-toast'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
 import { ProjectStatusCell } from '@/components/projects/project-status-cell'
+import { ProjectOwnerCell } from '@/components/projects/project-owner-cell'
 import type { ProjectStatusValue } from '@/lib/constants'
+import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
 import { formatProjectDateRange } from '@/lib/settings/projects/project-formatters'
 import { buildBoardPath } from '@/lib/projects/board/board-utils'
 import {
@@ -37,6 +32,7 @@ import {
   createClientSlugLookup,
 } from '@/lib/projects/board/board-utils'
 import { updateProjectStatus } from '@/lib/settings/projects/actions/update-project-status'
+import { updateProjectOwner } from '@/lib/settings/projects/actions/update-project-owner'
 import type { LandingProject } from '@/lib/data/projects'
 import { cn } from '@/lib/utils'
 import {
@@ -64,13 +60,6 @@ const HOURS_FORMATTER = new Intl.NumberFormat('en-US', {
 
 function formatHours(hours: number): string {
   return HOURS_FORMATTER.format(hours)
-}
-
-function getInitials(name: string | null): string {
-  if (!name) return '?'
-  const parts = name.trim().split(/\s+/)
-  if (parts.length === 1) return parts[0].charAt(0).toUpperCase()
-  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
 }
 
 function SimpleIcon({
@@ -123,6 +112,8 @@ type ProjectsLandingProps = {
   /** Already filtered server-side (status + search); this component only groups/renders. */
   projects: LandingProject[]
   clients: Array<{ id: string; name: string; slug: string | null }>
+  /** Owner picker options for the avatar cell (same list the edit sheet uses). */
+  admins: AdminUserForOwner[]
   currentUserId: string
   clientHoursMap?: Record<string, ClientHoursData>
   /** Pre-filter counts — drive the empty-state wording per section. */
@@ -142,6 +133,7 @@ type SectionConfig = {
 export function ProjectsLanding({
   projects,
   clients,
+  admins,
   currentUserId,
   clientHoursMap = {},
   unfilteredCounts,
@@ -166,6 +158,26 @@ export function ProjectsLanding({
       if (result.error) {
         toast({
           title: 'Failed to update status',
+          description: result.error,
+          variant: 'destructive',
+        })
+        throw new Error(result.error)
+      }
+
+      router.refresh()
+    },
+    [router, toast]
+  )
+
+  // Same instant-mutation contract as status: throw on failure so the cell
+  // rolls back its optimistic owner.
+  const handleProjectOwnerChange = useCallback(
+    async (projectId: string, ownerId: string | null) => {
+      const result = await updateProjectOwner({ projectId, ownerId })
+
+      if (result.error) {
+        toast({
+          title: 'Failed to update owner',
           description: result.error,
           variant: 'destructive',
         })
@@ -353,30 +365,12 @@ export function ProjectsLanding({
           </span>
         </TableCell>
         <TableCell className='align-middle'>
-          {project.owner ? (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Avatar className='h-7 w-7'>
-                    {project.owner.avatar_url && (
-                      <AvatarImage
-                        src={`/api/storage/user-avatar/${project.owner.id}`}
-                        alt={project.owner.full_name ?? 'Owner'}
-                      />
-                    )}
-                    <AvatarFallback className='text-xs'>
-                      {getInitials(project.owner.full_name)}
-                    </AvatarFallback>
-                  </Avatar>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{project.owner.full_name ?? 'Unknown'}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          ) : (
-            <span className='text-muted-foreground/40'>—</span>
-          )}
+          <ProjectOwnerCell
+            projectId={project.id}
+            owner={project.owner}
+            admins={admins}
+            onOwnerChange={handleProjectOwnerChange}
+          />
         </TableCell>
         <TableCell className='align-middle'>
           <div className='flex h-full items-center'>

@@ -8,6 +8,7 @@ import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
 import { sortClientsByName } from '@/lib/settings/projects/project-sheet-form'
 import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
+import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
 import type { LandingProject } from '@/lib/data/projects'
 
 import { PageShell } from '@/components/layout/page-shell'
@@ -24,6 +25,8 @@ export type ProjectsLandingAdminSectionProps = {
   projects: LandingProject[]
   landingClients: Array<{ id: string; name: string; slug: string | null }>
   clients: ClientRow[]
+  /** Owner picker options for the table's avatar cell. */
+  admins: AdminUserForOwner[]
   currentUserId: string
   /** Unfiltered visible-project total (pre status/search filter). */
   totalProjectCount: number
@@ -40,6 +43,7 @@ export function ProjectsLandingAdminSection({
   projects,
   landingClients,
   clients,
+  admins,
   currentUserId,
   totalProjectCount,
   filteredProjectCount,
@@ -100,6 +104,7 @@ export function ProjectsLandingAdminSection({
         <ProjectsLanding
           projects={projects}
           clients={landingClients}
+          admins={admins}
           currentUserId={currentUserId}
           clientHoursMap={clientHoursMap}
           unfilteredCounts={unfilteredCounts}
