@@ -2,6 +2,7 @@
 
 import { useCallback, useTransition, type MouseEvent, type PointerEvent } from 'react'
 import { useRouter } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import { Bot, Loader2 } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
@@ -9,6 +10,7 @@ import { cn } from '@/lib/utils'
 import { useToast } from '@/components/ui/use-toast'
 
 import { startAgentSessionFromTask } from '@/app/(dashboard)/agents/actions/start-from-task'
+import { AGENT_SESSIONS_OVERVIEW_KEY } from '@/app/(dashboard)/agents/_components/agent-sessions-list'
 
 type StartAgentSessionButtonProps = {
   taskId: string
@@ -32,6 +34,7 @@ export function StartAgentSessionButton({
   className,
 }: StartAgentSessionButtonProps) {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { toast } = useToast()
   const [isPending, startTransition] = useTransition()
 
@@ -60,10 +63,11 @@ export function StartAgentSessionButton({
           return
         }
 
+        queryClient.invalidateQueries({ queryKey: [AGENT_SESSIONS_OVERVIEW_KEY] })
         router.push(`/agents?session=${result.sessionId}`)
       })
     },
-    [taskId, projectId, taskTitle, isPending, toast, router]
+    [taskId, projectId, taskTitle, isPending, toast, router, queryClient]
   )
 
   // Board cards spread dnd-kit's drag listeners across the whole card, so a
