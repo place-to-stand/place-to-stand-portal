@@ -12,6 +12,7 @@ import { getCurrentUser } from '@/lib/auth/session'
 import { ensureClientAccess } from '@/lib/auth/permissions'
 import { getEnv } from '@/lib/env.server'
 import { getInstallationRepo } from '@pts/github/app-client'
+import { isInstallationNotFoundError } from '@pts/github/app-auth'
 
 const linkSchema = z.object({
   projectId: z.string().uuid(),
@@ -19,6 +20,55 @@ const linkSchema = z.object({
   repoOwner: z.string().min(1),
   repoName: z.string().min(1),
 })
+
+/**
+ * GET /api/github/link?projectId=xxx
+ *
+ * Lists repos linked to a project via the GitHub App.
+ */
+export async function GET(request: Request) {
+  const user = await getCurrentUser()
+  if (!user) {
+    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const url = new URL(request.url)
+  const projectId = url.searchParams.get('projectId')
+
+  if (!projectId) {
+    return NextResponse.json(
+      { ok: false, error: 'projectId is required' },
+      { status: 400 }
+    )
+  }
+
+  const [project] = await db
+    .select({ id: projects.id, clientId: projects.clientId })
+    .from(projects)
+    .where(and(eq(projects.id, projectId), isNull(projects.deletedAt)))
+    .limit(1)
+
+  if (!project || !project.clientId) {
+    return NextResponse.json(
+      { ok: false, error: 'Project not found or not accessible' },
+      { status: 404 }
+    )
+  }
+
+  await ensureClientAccess(user, project.clientId)
+
+  const links = await db
+    .select()
+    .from(githubRepoLinks)
+    .where(
+      and(
+        eq(githubRepoLinks.projectId, projectId),
+        isNull(githubRepoLinks.deletedAt)
+      )
+    )
+
+  return NextResponse.json({ ok: true, data: { links } })
+}
 
 /**
  * POST /api/github/link
@@ -113,6 +163,27 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true, data: link })
   } catch (error) {
+    // The installation was uninstalled on GitHub's side (or the `deleted`
+    // webhook never reached this environment) — self-heal the stale row.
+    if (isInstallationNotFoundError(error)) {
+      await db
+        .update(githubAppInstallations)
+        .set({
+          status: 'REMOVED',
+          deletedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(githubAppInstallations.id, installation.id))
+
+      return NextResponse.json(
+        {
+          ok: false,
+          error: 'GitHub connection was lost. Please reconnect and try again.',
+        },
+        { status: 400 }
+      )
+    }
+
     console.error('Failed to link repo:', error)
 
     const message =

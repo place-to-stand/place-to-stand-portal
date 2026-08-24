@@ -1,10 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
-import { and, eq, isNull } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { githubAppInstallations, clientMembers } from '@pts/db/schema'
+import { githubAppInstallations } from '@pts/db/schema'
 import { getCurrentUser } from '@/lib/auth/session'
+import { ensureClientAccess } from '@/lib/auth/permissions'
 import { getEnv } from '@/lib/env.server'
 import { getInstallationById } from '@pts/github/app-auth'
 
@@ -24,10 +25,13 @@ export async function GET(request: NextRequest) {
   const installationId = searchParams.get('installation_id')
   const state = searchParams.get('state')
   const cookieStore = await cookies()
+  const returnClientId = cookieStore.get('github_app_return_client')?.value
   const returnProjectId = cookieStore.get('github_app_return_project')?.value
   const returnTo = cookieStore.get('github_app_return_to')?.value
 
-  // Build redirect paths — returnTo cookie takes precedence, then projectId, then github/setup
+  // Build redirect paths — returnTo cookie takes precedence, then projectId,
+  // then home (there is no standalone GitHub setup page in this app; the
+  // install flow always originates from a project page and supplies one).
   let errorPath: string
   let successPath: string
 
@@ -38,11 +42,11 @@ export async function GET(request: NextRequest) {
     errorPath = `/projects/${returnProjectId}?github=error`
     successPath = `/projects/${returnProjectId}?github=installed`
   } else {
-    errorPath = '/github/setup?error=callback_failed'
-    successPath = '/github/setup?success=true'
+    errorPath = '/?github=error'
+    successPath = '/?github=installed'
   }
 
-  if (!installationId || !state) {
+  if (!installationId || !state || !returnClientId) {
     return NextResponse.redirect(new URL(errorPath, request.url))
   }
 
@@ -55,8 +59,17 @@ export async function GET(request: NextRequest) {
 
   // Clear cookies
   cookieStore.delete('github_app_state')
+  cookieStore.delete('github_app_return_client')
   cookieStore.delete('github_app_return_project')
   cookieStore.delete('github_app_return_to')
+
+  // Re-validate access to the client the install was started for (defense in
+  // depth — matches the check the /api/github/install route already made).
+  try {
+    await ensureClientAccess(user, returnClientId)
+  } catch {
+    return NextResponse.redirect(new URL(errorPath, request.url))
+  }
 
   const env = getEnv()
 
@@ -68,30 +81,27 @@ export async function GET(request: NextRequest) {
       env.GITHUB_APP_PRIVATE_KEY
     )
 
-    // Find which client this user belongs to
-    const [membership] = await db
-      .select({ clientId: clientMembers.clientId })
-      .from(clientMembers)
-      .where(
-        and(
-          eq(clientMembers.userId, user.id),
-          isNull(clientMembers.deletedAt)
-        )
-      )
-      .limit(1)
-
-    if (!membership) {
-      return NextResponse.redirect(new URL(errorPath, request.url))
-    }
-
     // Upsert the installation record
     const existing = await db
-      .select({ id: githubAppInstallations.id })
+      .select({ id: githubAppInstallations.id, clientId: githubAppInstallations.clientId })
       .from(githubAppInstallations)
       .where(eq(githubAppInstallations.installationId, installation.id))
       .limit(1)
 
     if (existing.length > 0) {
+      // This installation already belongs to a different client — don't
+      // silently reassign ownership; surface it as an error instead.
+      if (existing[0].clientId !== returnClientId) {
+        return NextResponse.redirect(
+          new URL(
+            errorPath.includes('?')
+              ? `${errorPath}&reason=already_linked`
+              : `${errorPath}?reason=already_linked`,
+            request.url
+          )
+        )
+      }
+
       // Update existing installation
       await db
         .update(githubAppInstallations)
@@ -112,7 +122,7 @@ export async function GET(request: NextRequest) {
     } else {
       // Create new installation
       await db.insert(githubAppInstallations).values({
-        clientId: membership.clientId,
+        clientId: returnClientId,
         installedByUserId: user.id,
         installationId: installation.id,
         accountLogin: installation.account.login,

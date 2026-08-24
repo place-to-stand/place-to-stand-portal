@@ -1281,6 +1281,14 @@ export const githubAppInstallations = pgTable(
       withTimezone: true,
       mode: 'string',
     }),
+    // Set when a live GitHub check last confirmed this installation still
+    // exists — distinct from updatedAt, which changes on any field edit
+    // (including webhook-driven metadata refreshes that aren't a liveness
+    // check). Null means never verified.
+    lastVerifiedAt: timestamp('last_verified_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
       .notNull(),
