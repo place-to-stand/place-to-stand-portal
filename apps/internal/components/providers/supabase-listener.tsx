@@ -33,13 +33,15 @@ export function SupabaseListener({ initialSession }: Props) {
           }
         : null;
 
+      // Swallow network failures (navigation cancelling the request,
+      // sleep/wake, offline) — the next auth event re-syncs the cookie.
       void fetch("/auth/callback", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ event: _event, session: tokens }),
-      });
+      }).catch(() => {});
     });
 
     return () => {
@@ -61,9 +63,9 @@ export function SupabaseListener({ initialSession }: Props) {
         void supabase.auth.setSession({
           access_token: initialSession.access_token,
           refresh_token: initialSession.refresh_token,
-        });
+        }).catch(() => {});
       }
-    });
+    }).catch(() => {});
   }, [initialSession, supabase]);
 
   // Refresh session when page becomes visible
@@ -88,7 +90,7 @@ export function SupabaseListener({ initialSession }: Props) {
             // eslint-disable-next-line @next/next/no-location-assign-relative-destination
             window.location.href = '/sign-in';
           }
-        });
+        }).catch(() => {});
       }
     };
 
