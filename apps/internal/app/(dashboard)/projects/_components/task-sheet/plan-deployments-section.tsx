@@ -35,7 +35,7 @@ const TERMINAL_STATUSES: string[] = [
 // Compact status badge (matches deployment-card WorkerStatusBadge)
 // ---------------------------------------------------------------------------
 
-function CompactStatusBadge({ status }: { status: WorkerCommentStatus | string }) {
+export function CompactStatusBadge({ status }: { status: WorkerCommentStatus | string }) {
   switch (status) {
     case 'working':
     case 'implementing':

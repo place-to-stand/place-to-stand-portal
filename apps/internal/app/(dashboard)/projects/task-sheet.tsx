@@ -40,6 +40,7 @@ import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { TaskSheetForm } from './_components/task-sheet/task-sheet-form'
 import { TASK_FORM_ID } from './_components/task-sheet/form/task-sheet-form'
 import { PlanningPanel } from './_components/task-sheet/planning-panel'
+import { StartAgentSessionButton } from './_components/start-agent-session-button'
 import { TaskCommentsPanel } from './_components/task-sheet/task-comments-panel'
 import { TaskActivityPanel } from './_components/task-sheet/task-activity-panel'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@pts/ui/tabs'
@@ -379,7 +380,18 @@ export function TaskSheet(props: TaskSheetProps) {
           }
         >
           {/* Header — spans full width */}
-          <SheetFormHeader entity='task' title={sheetTitle} />
+          <SheetFormHeader entity='task' title={sheetTitle}>
+            {props.task && taskPanelProjectId ? (
+              <div className='mt-1.5'>
+                <StartAgentSessionButton
+                  taskId={props.task.id}
+                  projectId={taskPanelProjectId}
+                  taskTitle={props.task.title}
+                  variant='label'
+                />
+              </div>
+            ) : null}
+          </SheetFormHeader>
 
           {/* Two-column body */}
           <div className='flex flex-1 overflow-hidden'>

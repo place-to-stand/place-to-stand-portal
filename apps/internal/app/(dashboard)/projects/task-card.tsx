@@ -32,6 +32,8 @@ import {
   getTaskDueMeta,
 } from '@/lib/projects/task-due-date'
 
+import { StartAgentSessionButton } from './_components/start-agent-session-button'
+
 type AssigneeInfo = {
   id: string
   name: string
@@ -311,7 +313,7 @@ export function TaskCard({
         }
       }}
       className={cn(
-        'group bg-card rounded-lg border p-4 text-left shadow-sm transition',
+        'group relative bg-card rounded-lg border p-4 text-left shadow-sm transition',
         draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
         isDragging && 'ring-primary ring-2',
         (isActive || isDragging) && 'border-primary/50 bg-primary/5 shadow-md',
@@ -325,6 +327,14 @@ export function TaskCard({
           'hover:border-muted-foreground/30 hover:bg-muted/20 hover:shadow-md'
       )}
     >
+      <div className='absolute right-2 bottom-2 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100'>
+        <StartAgentSessionButton
+          taskId={task.id}
+          projectId={task.project_id}
+          taskTitle={task.title}
+          className='bg-background/80 backdrop-blur-sm hover:bg-background'
+        />
+      </div>
       <CardContent
         task={task}
         assignees={assignees}

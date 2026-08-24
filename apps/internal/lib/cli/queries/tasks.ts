@@ -5,12 +5,14 @@ import { and, desc, eq, exists, inArray, isNull, sql } from 'drizzle-orm'
 import { assertAdmin } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { taskAssignees, tasks } from '@/lib/db/schema'
+import { projects, taskAssignees, tasks } from '@/lib/db/schema'
 import { getTaskById } from '@/lib/queries/tasks/basic'
 import { taskFields, type SelectTask } from '@/lib/queries/tasks/common'
 
 export type CliTaskFilters = {
   projectId?: string
+  /** Ignored when projectId is set — a specific project already implies its client. */
+  clientId?: string
   status?: SelectTask['status']
   assigneeId?: string
   limit: number
@@ -62,7 +64,7 @@ export async function fetchAssigneeIdsByTask(
  */
 export async function listTasksForCli(
   user: AppUser,
-  { projectId, status, assigneeId, limit }: CliTaskFilters
+  { projectId, clientId, status, assigneeId, limit }: CliTaskFilters
 ): Promise<SelectTask[]> {
   assertAdmin(user)
 
@@ -70,6 +72,15 @@ export async function listTasksForCli(
 
   if (projectId) {
     conditions.push(eq(tasks.projectId, projectId))
+  } else if (clientId) {
+    conditions.push(
+      exists(
+        db
+          .select({ one: sql`1` })
+          .from(projects)
+          .where(and(eq(projects.id, tasks.projectId), eq(projects.clientId, clientId)))
+      )
+    )
   }
 
   if (status) {

@@ -38,6 +38,7 @@ export const activitySource = pgEnum('activity_source', [
   'ADMIN_UI',
   'CLI',
   'SYSTEM',
+  'AI_AGENT',
 ])
 export const clientBillingType = pgEnum('client_billing_type', [
   'prepaid',
@@ -1548,6 +1549,199 @@ export const planMessages = pgTable(
       columns: [table.threadId],
       foreignColumns: [planThreads.id],
       name: 'plan_messages_thread_id_fkey',
+    }).onDelete('cascade'),
+  ]
+)
+
+// =============================================================================
+// AI AGENTS (Chat Workspace)
+// =============================================================================
+
+export const agentSessionStatus = pgEnum('agent_session_status', [
+  'active',
+  'archived',
+])
+
+export const agentSessionTurnStatus = pgEnum('agent_session_turn_status', [
+  'idle',
+  'streaming',
+  'error',
+])
+
+export const agentSessions = pgTable(
+  'agent_sessions',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    createdBy: uuid('created_by').notNull(),
+    status: agentSessionStatus().default('active').notNull(),
+    title: text(),
+    // Optional UI-convenience scoping hints — never required by tools/actions.
+    // projectId scopes to one project; clientId (with projectId null) scopes
+    // to every project under that client.
+    clientId: uuid('client_id'),
+    projectId: uuid('project_id'),
+    repoLinkId: uuid('repo_link_id'),
+    // Denormalized off the latest agent_messages row so the sessions list can
+    // show "what's generating" with a plain WHERE, no join — same rationale
+    // as activity_overview_cache.
+    turnStatus: agentSessionTurnStatus('turn_status').default('idle').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+  },
+  table => [
+    index('idx_agent_sessions_created_by')
+      .using('btree', table.createdBy.asc().nullsLast().op('uuid_ops')),
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [users.id],
+      name: 'agent_sessions_created_by_fkey',
+    }),
+    foreignKey({
+      columns: [table.clientId],
+      foreignColumns: [clients.id],
+      name: 'agent_sessions_client_id_fkey',
+    }).onDelete('set null'),
+    foreignKey({
+      columns: [table.projectId],
+      foreignColumns: [projects.id],
+      name: 'agent_sessions_project_id_fkey',
+    }).onDelete('set null'),
+    foreignKey({
+      columns: [table.repoLinkId],
+      foreignColumns: [githubRepoLinks.id],
+      name: 'agent_sessions_repo_link_id_fkey',
+    }).onDelete('set null'),
+  ]
+)
+
+export const agentMessageStatus = pgEnum('agent_message_status', [
+  'streaming',
+  'complete',
+  'error',
+])
+
+export const agentMessages = pgTable(
+  'agent_messages',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    sessionId: uuid('session_id').notNull(),
+    role: text().notNull(),
+    content: text().notNull(),
+    status: agentMessageStatus().default('streaming').notNull(),
+    // Sessions are shared among admins — this is who actually sent a
+    // 'user'-role message, never set for 'assistant' rows.
+    userId: uuid('user_id'),
+    metadata: jsonb(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+  },
+  table => [
+    index('idx_agent_messages_session')
+      .using('btree', table.sessionId.asc().nullsLast().op('uuid_ops'), table.createdAt.asc().nullsLast()),
+    foreignKey({
+      columns: [table.sessionId],
+      foreignColumns: [agentSessions.id],
+      name: 'agent_messages_session_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [users.id],
+      name: 'agent_messages_user_id_fkey',
+    }).onDelete('set null'),
+  ]
+)
+
+export const agentProposedTaskStatus = pgEnum('agent_proposed_task_status', [
+  'proposed',
+  'accepted',
+  'rejected',
+])
+
+export const agentProposedTasks = pgTable(
+  'agent_proposed_tasks',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    sessionId: uuid('session_id').notNull(),
+    title: text().notNull(),
+    description: text(),
+    status: agentProposedTaskStatus().default('proposed').notNull(),
+    // Nullable: the model may not know a target project yet. The Accept
+    // action requires the human to supply one if this is null, since
+    // baseTaskSchema.projectId is required.
+    projectId: uuid('project_id'),
+    sourceMessageId: uuid('source_message_id'),
+    createdTaskId: uuid('created_task_id'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true, mode: 'string' }),
+    resolvedBy: uuid('resolved_by'),
+  },
+  table => [
+    index('idx_agent_proposed_tasks_session')
+      .using('btree', table.sessionId.asc().nullsLast().op('uuid_ops')),
+    foreignKey({
+      columns: [table.sessionId],
+      foreignColumns: [agentSessions.id],
+      name: 'agent_proposed_tasks_session_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.projectId],
+      foreignColumns: [projects.id],
+      name: 'agent_proposed_tasks_project_id_fkey',
+    }).onDelete('set null'),
+    foreignKey({
+      columns: [table.sourceMessageId],
+      foreignColumns: [agentMessages.id],
+      name: 'agent_proposed_tasks_source_message_id_fkey',
+    }).onDelete('set null'),
+    foreignKey({
+      columns: [table.createdTaskId],
+      foreignColumns: [tasks.id],
+      name: 'agent_proposed_tasks_created_task_id_fkey',
+    }).onDelete('set null'),
+    foreignKey({
+      columns: [table.resolvedBy],
+      foreignColumns: [users.id],
+      name: 'agent_proposed_tasks_resolved_by_fkey',
+    }),
+  ]
+)
+
+export const agentSessionTaskSource = pgEnum('agent_session_task_source', [
+  'proposal',
+  'selected',
+])
+
+export const agentSessionTasks = pgTable(
+  'agent_session_tasks',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    sessionId: uuid('session_id').notNull(),
+    taskId: uuid('task_id').notNull(),
+    addedVia: agentSessionTaskSource('added_via').notNull(),
+    addedAt: timestamp('added_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+  },
+  table => [
+    index('idx_agent_session_tasks_session')
+      .using('btree', table.sessionId.asc().nullsLast().op('uuid_ops')),
+    unique('agent_session_tasks_session_task_key').on(table.sessionId, table.taskId),
+    foreignKey({
+      columns: [table.sessionId],
+      foreignColumns: [agentSessions.id],
+      name: 'agent_session_tasks_session_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.taskId],
+      foreignColumns: [tasks.id],
+      name: 'agent_session_tasks_task_id_fkey',
     }).onDelete('cascade'),
   ]
 )

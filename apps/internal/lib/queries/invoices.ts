@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, asc, desc, eq, isNull, sql, type SQL } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNull, sql, type SQL } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
@@ -507,6 +507,42 @@ export async function recordInvoiceView(
   // is the NEW count. The previous count is newCount - 1.
   const newCount = result[0]?.previousCount ?? 0
   return newCount - 1
+}
+
+// ---------------------------------------------------------------------------
+// Outstanding balance (net-30 obligation signal)
+// ---------------------------------------------------------------------------
+
+export type OutstandingInvoiceSummary = { count: number; total: number }
+
+/**
+ * Sent-but-unpaid invoice count/total per client — SENT or VIEWED, never
+ * PAID/VOID/DRAFT. There's no due-date/overdue concept in this schema (see
+ * `a998e47b`, which removed it deliberately), so "outstanding" is the only
+ * available net-30 obligation signal.
+ */
+export async function countOutstandingInvoicesByClient(
+  clientIds: string[]
+): Promise<Map<string, OutstandingInvoiceSummary>> {
+  if (clientIds.length === 0) return new Map()
+
+  const rows = await db
+    .select({
+      clientId: invoices.clientId,
+      count: sql<number>`count(*)`.as('count'),
+      total: sql<string>`coalesce(sum(${invoices.total}), 0)`.as('total'),
+    })
+    .from(invoices)
+    .where(
+      and(
+        inArray(invoices.clientId, clientIds),
+        inArray(invoices.status, ['SENT', 'VIEWED']),
+        isNull(invoices.deletedAt)
+      )
+    )
+    .groupBy(invoices.clientId)
+
+  return new Map(rows.map(row => [row.clientId, { count: Number(row.count), total: Number(row.total) }]))
 }
 
 // ---------------------------------------------------------------------------

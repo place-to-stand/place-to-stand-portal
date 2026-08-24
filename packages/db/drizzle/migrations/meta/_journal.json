@@ -449,6 +449,27 @@
       "when": 1787258488668,
       "tag": "0063_add_activity_logs_source",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1787438116301,
+      "tag": "0064_agent_sessions",
+      "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1787443167704,
+      "tag": "0065_agent_sessions_scope_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1787453033998,
+      "tag": "0066_agent_messages_user_id",
+      "breakpoints": true
     }
   ]
 }

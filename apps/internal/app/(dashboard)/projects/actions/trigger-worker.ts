@@ -102,6 +102,23 @@ export async function triggerWorkerPlan(input: {
 
   if (!task) return { error: 'Task not found.' }
 
+  // Refuse a second dispatch while one is already in flight. pts-worker has
+  // no coordination between sandboxes racing the same branch — two triggers
+  // landing close together can silently drop one runner's changes (see
+  // https://github.com/place-to-stand/pts-worker/issues/21). This is now
+  // reachable from two UI surfaces (the task sheet and the Agents tab), so
+  // guard it once here rather than in each caller.
+  const [latestDeployment] = await db
+    .select({ workerStatus: taskDeployments.workerStatus })
+    .from(taskDeployments)
+    .where(eq(taskDeployments.taskId, taskId))
+    .orderBy(desc(taskDeployments.createdAt))
+    .limit(1)
+
+  if (latestDeployment && (latestDeployment.workerStatus === 'working' || latestDeployment.workerStatus === 'implementing')) {
+    return { error: 'A deployment is already in progress for this task.' }
+  }
+
   // Load repo link and verify it belongs to the task's project
   const repoLink = await getRepoLinkById(repoLinkId)
   if (!repoLink) return { error: 'Repository link not found.' }

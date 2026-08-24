@@ -519,6 +519,124 @@ export async function searchRepoCode(
   }))
 }
 
+// ---------------------------------------------------------------------------
+// Pull requests & comparisons (read-only, for AI tool use)
+// ---------------------------------------------------------------------------
+
+export interface GitHubPullRequestListItem {
+  number: number
+  title: string
+  state: 'open' | 'closed'
+  draft: boolean
+  html_url: string
+  head: { ref: string; sha: string }
+  base: { ref: string; sha: string }
+  user: { login: string }
+  created_at: string
+  updated_at: string
+  merged_at: string | null
+}
+
+export interface GitHubPullRequestDetail extends GitHubPullRequestListItem {
+  body: string | null
+  merged: boolean
+  additions: number
+  deletions: number
+  changed_files: number
+}
+
+export interface GitHubDiffFile {
+  filename: string
+  status: string
+  additions: number
+  deletions: number
+  changes: number
+  patch?: string
+}
+
+export interface GitHubCompareResult {
+  status: 'ahead' | 'behind' | 'identical' | 'diverged'
+  ahead_by: number
+  behind_by: number
+  total_commits: number
+  files: GitHubDiffFile[]
+}
+
+/**
+ * List pull requests for a repo.
+ */
+export async function listPullRequests(
+  userId: string,
+  owner: string,
+  repo: string,
+  options: { state?: 'open' | 'closed' | 'all'; base?: string; perPage?: number } = {},
+  auth?: GitHubAuth
+): Promise<GitHubPullRequestListItem[]> {
+  const { state = 'open', base, perPage = 30 } = options
+  const params = new URLSearchParams({ state, per_page: String(perPage) })
+  if (base) params.set('base', base)
+  return githubFetch(userId, `/repos/${owner}/${repo}/pulls?${params.toString()}`, {}, auth)
+}
+
+/**
+ * Get a single pull request's metadata (not the diff — see getPullRequestFiles).
+ */
+export async function getPullRequest(
+  userId: string,
+  owner: string,
+  repo: string,
+  number: number,
+  auth?: GitHubAuth
+): Promise<GitHubPullRequestDetail> {
+  return githubFetch(userId, `/repos/${owner}/${repo}/pulls/${number}`, {}, auth)
+}
+
+/**
+ * Get the changed files (with unified diff patches) for a pull request.
+ */
+export async function getPullRequestFiles(
+  userId: string,
+  owner: string,
+  repo: string,
+  number: number,
+  auth?: GitHubAuth
+): Promise<GitHubDiffFile[]> {
+  return githubFetch(userId, `/repos/${owner}/${repo}/pulls/${number}/files?per_page=100`, {}, auth)
+}
+
+/**
+ * Compare two refs (branches, tags, or SHAs) — e.g. a feature branch against
+ * main. Read-only equivalent of `git diff base...head`.
+ */
+export async function compareCommits(
+  userId: string,
+  owner: string,
+  repo: string,
+  base: string,
+  head: string,
+  auth?: GitHubAuth
+): Promise<GitHubCompareResult> {
+  const result = await githubFetch<{
+    status: 'ahead' | 'behind' | 'identical' | 'diverged'
+    ahead_by: number
+    behind_by: number
+    total_commits: number
+    files?: GitHubDiffFile[]
+  }>(
+    userId,
+    `/repos/${owner}/${repo}/compare/${encodeURIComponent(base)}...${encodeURIComponent(head)}`,
+    {},
+    auth
+  )
+  return {
+    status: result.status,
+    ahead_by: result.ahead_by,
+    behind_by: result.behind_by,
+    total_commits: result.total_commits,
+    files: result.files ?? [],
+  }
+}
+
 /**
  * Get the default connection ID for a user
  */

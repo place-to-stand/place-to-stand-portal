@@ -24,6 +24,7 @@ const SOURCE_LABELS: Record<ActivitySourceValue, string> = {
   ADMIN_UI: 'Admin UI',
   CLI: 'CLI',
   SYSTEM: 'System',
+  AI_AGENT: 'AI Agent',
 }
 
 const SOURCE_BADGE_STYLES: Record<ActivitySourceValue, string> = {
@@ -32,6 +33,8 @@ const SOURCE_BADGE_STYLES: Record<ActivitySourceValue, string> = {
   CLI: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-900',
   SYSTEM:
     'bg-slate-700 text-slate-50 border-slate-600 dark:bg-slate-950 dark:text-slate-300 dark:border-slate-800',
+  AI_AGENT:
+    'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-900',
 }
 
 export function ActivityFeedItem({ log }: ActivityFeedItemProps) {

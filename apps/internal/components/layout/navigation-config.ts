@@ -12,6 +12,7 @@ import {
   FileText,
   Receipt,
   Inbox,
+  Bot,
 } from 'lucide-react'
 
 export type NavItem = {
@@ -40,6 +41,12 @@ export const NAV_GROUPS: NavGroup[] = [
         label: 'Tasks',
         icon: ListTodo,
         matchHrefs: ['/my/tasks', '/my/tasks/calendar'],
+      },
+      {
+        href: '/agents',
+        label: 'Agents',
+        icon: Bot,
+        matchHrefs: ['/agents'],
       },
     ],
   },

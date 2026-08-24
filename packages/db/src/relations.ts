@@ -35,6 +35,10 @@ import {
   invoices,
   invoiceLineItems,
   formSubmissions,
+  agentSessions,
+  agentMessages,
+  agentProposedTasks,
+  agentSessionTasks,
 } from './schema'
 
 export const clientsRelations = relations(clients, ({ one, many }) => ({
@@ -64,6 +68,7 @@ export const clientsRelations = relations(clients, ({ one, many }) => ({
   contactClients: many(contactClients),
   invoices: many(invoices),
   githubAppInstallations: many(githubAppInstallations),
+  agentSessions: many(agentSessions),
 }))
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -141,6 +146,7 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
   taskAttachments: many(taskAttachments),
   taskDeployments: many(taskDeployments),
   planningSessions: many(planningSessions),
+  agentSessionTasks: many(agentSessionTasks),
   project: one(projects, {
     fields: [tasks.projectId],
     references: [projects.id],
@@ -268,6 +274,8 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   timeLogs: many(timeLogs),
   tasks: many(tasks),
   githubRepos: many(githubRepoLinks),
+  agentSessions: many(agentSessions),
+  agentProposedTasks: many(agentProposedTasks),
 }))
 
 export const taskCommentsRelations = relations(taskComments, ({ one }) => ({
@@ -502,6 +510,73 @@ export const planMessagesRelations = relations(
     }),
   })
 )
+
+export const agentSessionsRelations = relations(agentSessions, ({ one, many }) => ({
+  createdByUser: one(users, {
+    fields: [agentSessions.createdBy],
+    references: [users.id],
+  }),
+  client: one(clients, {
+    fields: [agentSessions.clientId],
+    references: [clients.id],
+  }),
+  project: one(projects, {
+    fields: [agentSessions.projectId],
+    references: [projects.id],
+  }),
+  repoLink: one(githubRepoLinks, {
+    fields: [agentSessions.repoLinkId],
+    references: [githubRepoLinks.id],
+  }),
+  messages: many(agentMessages),
+  proposedTasks: many(agentProposedTasks),
+  sessionTasks: many(agentSessionTasks),
+}))
+
+export const agentMessagesRelations = relations(agentMessages, ({ one }) => ({
+  session: one(agentSessions, {
+    fields: [agentMessages.sessionId],
+    references: [agentSessions.id],
+  }),
+  user: one(users, {
+    fields: [agentMessages.userId],
+    references: [users.id],
+  }),
+}))
+
+export const agentProposedTasksRelations = relations(agentProposedTasks, ({ one }) => ({
+  session: one(agentSessions, {
+    fields: [agentProposedTasks.sessionId],
+    references: [agentSessions.id],
+  }),
+  project: one(projects, {
+    fields: [agentProposedTasks.projectId],
+    references: [projects.id],
+  }),
+  sourceMessage: one(agentMessages, {
+    fields: [agentProposedTasks.sourceMessageId],
+    references: [agentMessages.id],
+  }),
+  createdTask: one(tasks, {
+    fields: [agentProposedTasks.createdTaskId],
+    references: [tasks.id],
+  }),
+  resolvedByUser: one(users, {
+    fields: [agentProposedTasks.resolvedBy],
+    references: [users.id],
+  }),
+}))
+
+export const agentSessionTasksRelations = relations(agentSessionTasks, ({ one }) => ({
+  session: one(agentSessions, {
+    fields: [agentSessionTasks.sessionId],
+    references: [agentSessions.id],
+  }),
+  task: one(tasks, {
+    fields: [agentSessionTasks.taskId],
+    references: [tasks.id],
+  }),
+}))
 
 // =============================================================================
 // TAX RATES
