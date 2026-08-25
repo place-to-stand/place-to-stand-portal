@@ -410,7 +410,7 @@ Conventions, all enforced by `useSheetParams`/`useSheetParamSelection` — never
 4. Add to the app's `.env.example`
 
 **Cross-app env vars:**
-- `CLIENT_PORTAL_URL` (internal app) — full URL of the client portal (e.g. `https://client.placetostand.co`)
+- `CLIENT_PORTAL_URL` (internal app) — full URL of the client portal (e.g. `https://clients.placetostandagency.com`)
 - `GITHUB_APP_*` (client app) — GitHub App credentials for repo integration
 
 ### Logging activity events
