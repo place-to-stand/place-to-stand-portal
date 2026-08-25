@@ -9,6 +9,7 @@ import { users, oauthConnections } from '@pts/db/schema'
 export interface PtsStaffGitHubAccount {
   userId: string
   name: string
+  email: string
   githubLogin: string
 }
 
@@ -49,11 +50,18 @@ export const fetchPtsStaffGitHubAccounts = cache(
       )
 
     return rows
-      .map(r => ({
-        userId: r.userId,
-        name: r.fullName || r.email,
-        githubLogin: (r.providerMetadata as { login?: string })?.login ?? '',
-      }))
+      .map(r => {
+        const metadata = r.providerMetadata as { login?: string; name?: string }
+        const githubLogin = metadata?.login ?? ''
+        return {
+          userId: r.userId,
+          // Prefer the PTS profile name, then the name GitHub returned at
+          // connect time, then the GitHub login.
+          name: r.fullName || metadata?.name || githubLogin,
+          email: r.email,
+          githubLogin,
+        }
+      })
       .filter((r): r is PtsStaffGitHubAccount => r.githubLogin.length > 0)
   }
 )

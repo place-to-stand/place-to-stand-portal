@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { CheckIcon, CopyIcon, ExternalLinkIcon } from 'lucide-react'
+import { CheckIcon, CopyIcon, ExternalLinkIcon, InfoIcon } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -23,31 +23,29 @@ export function StaffAuthorizationModal({
   open,
   onOpenChange,
   links,
-  staffAccounts,
+  staffAccounts = [],
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   links: RepoLink[]
-  staffAccounts: PtsStaffGitHubAccount[]
+  staffAccounts?: PtsStaffGitHubAccount[]
 }) {
-  const [copiedLogin, setCopiedLogin] = useState<string | null>(null)
+  const [copiedEmail, setCopiedEmail] = useState<string | null>(null)
 
-  const handleCopy = (login: string) => {
-    void navigator.clipboard.writeText(login).then(() => {
-      setCopiedLogin(login)
-      setTimeout(() => setCopiedLogin(current => (current === login ? null : current)), 1500)
+  const handleCopy = (email: string) => {
+    void navigator.clipboard.writeText(email).then(() => {
+      setCopiedEmail(email)
+      setTimeout(() => setCopiedEmail(current => (current === email ? null : current)), 1500)
     })
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Staff authorization</DialogTitle>
           <DialogDescription>
-            Add our team as collaborators on GitHub so they can review code
-            and pull requests directly. This is separate from the GitHub App
-            connection above, which only covers automated access.
+            Add our team as collaborators so they can review code directly.
           </DialogDescription>
         </DialogHeader>
 
@@ -58,10 +56,14 @@ export function StaffAuthorizationModal({
           </p>
         ) : (
           <div className="space-y-4">
+            <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+              <InfoIcon className="mt-0.5 size-3.5 shrink-0" />
+              <p>Copy an email below and search for it on GitHub.</p>
+            </div>
             {links.map(link => (
               <div key={link.id} className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="truncate text-sm font-medium text-foreground">
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
                     {link.repoFullName}
                   </span>
                   <Button variant="outline" size="xs" className="shrink-0 gap-1.5" asChild>
@@ -83,35 +85,40 @@ export function StaffAuthorizationModal({
                     >
                       <div className="flex min-w-0 items-center gap-2">
                         <GitHubMark className="size-3.5 shrink-0 text-muted-foreground" />
-                        <span className="truncate text-sm text-card-foreground">
+                        <span className="shrink-0 text-sm text-card-foreground">
                           {staff.name}
                         </span>
-                        <span className="shrink-0 text-xs text-muted-foreground">
-                          @{staff.githubLogin}
+                        <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                          {staff.email}
                         </span>
                       </div>
-                      <div className="flex shrink-0 items-center gap-1">
+                      <div className="flex shrink-0 items-center gap-1.5">
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon-sm"
-                          onClick={() => handleCopy(staff.githubLogin)}
-                          aria-label={`Copy ${staff.githubLogin}`}
+                          onClick={() => handleCopy(staff.email)}
+                          aria-label={`Copy ${staff.email}`}
                         >
-                          {copiedLogin === staff.githubLogin ? (
+                          {copiedEmail === staff.email ? (
                             <CheckIcon className="size-3.5" />
                           ) : (
                             <CopyIcon className="size-3.5" />
                           )}
                         </Button>
-                        <Button variant="ghost" size="icon-sm" asChild>
+                        <Button
+                          variant="outline"
+                          size="xs"
+                          className="shrink-0 gap-1"
+                          asChild
+                        >
                           <a
                             href={`https://github.com/${link.repoFullName}/settings/access`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            aria-label={`Add ${staff.githubLogin} on GitHub`}
                           >
-                            <ExternalLinkIcon className="size-3.5" />
+                            Add on GitHub
+                            <ExternalLinkIcon className="size-3" />
                           </a>
                         </Button>
                       </div>
