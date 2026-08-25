@@ -15,8 +15,15 @@ import { toast } from '@/components/ui/use-toast'
 import type { GitHubRepoLink } from '@/lib/types/github'
 import { siGithub } from 'simple-icons/icons'
 
+export type RepoSource = 'oauth' | 'app'
+
 export interface PendingRepo {
   repoFullName: string
+  // Which auth source this repo was picked from — set for repos added via
+  // the picker, absent for anything constructed without it (defaults to the
+  // staff member's own OAuth connection on save).
+  source?: RepoSource
+  sourceId?: string
 }
 
 export interface RemovedRepo {
@@ -39,6 +46,8 @@ interface RepoOption {
   value: string
   label: string
   description?: string
+  source: RepoSource
+  sourceId: string
 }
 
 function SimpleIcon({
@@ -90,17 +99,18 @@ export function GitHubReposSection({
 
   const isCreateMode = !projectId
 
-  // Check GitHub connection status
+  // Check GitHub connection status — connected via the staff member's own
+  // OAuth account, or via the project's client GitHub App installation.
   useEffect(() => {
-    fetch('/api/integrations/github/status')
+    const url = projectId
+      ? `/api/integrations/github/status?projectId=${projectId}`
+      : '/api/integrations/github/status'
+
+    fetch(url)
       .then(r => r.json())
-      .then(data =>
-        setIsGitHubConnected(
-          data.connected || (data.accounts && data.accounts.length > 0)
-        )
-      )
+      .then(data => setIsGitHubConnected(Boolean(data.connected)))
       .catch(() => setIsGitHubConnected(false))
-  }, [])
+  }, [projectId])
 
   // Load linked repos (only in edit mode). Promise-chained so every
   // setState runs asynchronously when invoked from the effect below.
@@ -153,7 +163,11 @@ export function GitHubReposSection({
   // effect only performs the fetch (all its setStates are async).
   useEffect(() => {
     if (dialogOpen && isGitHubConnected) {
-      fetch('/api/integrations/github/repos')
+      const url = projectId
+        ? `/api/integrations/github/repos?projectId=${projectId}`
+        : '/api/integrations/github/repos'
+
+      fetch(url)
         .then(r => r.json())
         .then(data => {
           if (data.repos) {
@@ -169,11 +183,26 @@ export function GitHubReposSection({
                 .filter(
                   (r: { fullName: string }) => !excludedNames.has(r.fullName)
                 )
-                .map((r: { fullName: string; description?: string }) => ({
-                  value: r.fullName,
-                  label: r.fullName,
-                  description: r.description || undefined,
-                }))
+                .map(
+                  (r: {
+                    fullName: string
+                    description?: string
+                    source: RepoSource
+                    sourceId: string
+                  }) => ({
+                    value: r.fullName,
+                    label: r.fullName,
+                    description:
+                      [
+                        r.source === 'app' ? 'GitHub App' : undefined,
+                        r.description || undefined,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ') || undefined,
+                    source: r.source,
+                    sourceId: r.sourceId,
+                  })
+                )
             )
           }
         })
@@ -186,7 +215,7 @@ export function GitHubReposSection({
         })
         .finally(() => setLoadingRepos(false))
     }
-  }, [dialogOpen, isGitHubConnected, repos, pendingRepos])
+  }, [dialogOpen, isGitHubConnected, repos, pendingRepos, projectId])
 
   const handleDialogOpenChange = useCallback(
     (open: boolean) => {
@@ -201,9 +230,18 @@ export function GitHubReposSection({
   const handleLink = () => {
     if (!selectedRepo) return
 
+    const option = availableRepos.find(r => r.value === selectedRepo)
+
     // Always add to pending list (for both create and edit modes)
     // Repos get linked when the form is saved
-    onPendingReposChange([...pendingRepos, { repoFullName: selectedRepo }])
+    onPendingReposChange([
+      ...pendingRepos,
+      {
+        repoFullName: selectedRepo,
+        source: option?.source,
+        sourceId: option?.sourceId,
+      },
+    ])
     setDialogOpen(false)
     setSelectedRepo(null)
     toast({
@@ -277,6 +315,18 @@ export function GitHubReposSection({
     displayRepos.length === 0 &&
     pendingRepos.length === 0 &&
     removedRepos.length === 0
+
+  // Group the picker by auth source only when both are present — otherwise
+  // a single unlabeled list reads cleaner.
+  const oauthOptions = availableRepos.filter(r => r.source === 'oauth')
+  const appOptions = availableRepos.filter(r => r.source === 'app')
+  const repoGroups =
+    oauthOptions.length > 0 && appOptions.length > 0
+      ? [
+          { label: 'Your GitHub', items: oauthOptions },
+          { label: "Client's GitHub App", items: appOptions },
+        ]
+      : undefined
 
   return (
     <div className='space-y-1'>
@@ -355,6 +405,11 @@ export function GitHubReposSection({
                 <div className='flex items-center gap-2 text-sm'>
                   <SimpleIcon icon={siGithub} className='text-muted-foreground h-4 w-4 shrink-0' />
                   <span className='truncate'>{repo.repoFullName}</span>
+                  {repo.source === 'app' && (
+                    <span className='bg-muted rounded px-1.5 py-0.5 text-[10px] font-medium'>
+                      App
+                    </span>
+                  )}
                 </div>
                 <div className='pl-6 text-xs text-amber-600'>Pending save</div>
               </div>
@@ -419,6 +474,7 @@ export function GitHubReposSection({
             ) : (
               <SearchableCombobox
                 items={availableRepos}
+                groups={repoGroups}
                 value={selectedRepo ?? ''}
                 onChange={setSelectedRepo}
                 searchPlaceholder='Search repositories...'

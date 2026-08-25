@@ -59,6 +59,8 @@ export type UseProjectSheetStateArgs = {
 
 export type PendingRepo = {
   repoFullName: string
+  source?: 'oauth' | 'app'
+  sourceId?: string
 }
 
 // Note: We only need the ID to unlink repos via the API
@@ -171,7 +173,14 @@ export function useProjectSheetState({
         fetch(`/api/projects/${projectId}/github-repos`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ repoFullName: repo.repoFullName }),
+          body: JSON.stringify({
+            repoFullName: repo.repoFullName,
+            ...(repo.source === 'app'
+              ? { githubAppInstallationId: repo.sourceId }
+              : repo.source === 'oauth'
+                ? { connectionId: repo.sourceId }
+                : {}),
+          }),
         })
       )
 
