@@ -21,6 +21,8 @@ import {
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { GitHubMark } from '@/components/icons/github-mark'
 import { useGitHubCallbackNotice } from '@/lib/hooks/use-github-callback-notice'
+import { StaffAuthorizationModal } from '@/components/projects/staff-authorization-modal'
+import type { PtsStaffGitHubAccount } from '@/lib/data/staff-github-access'
 
 interface RepoOption {
   fullName: string
@@ -51,9 +53,11 @@ interface LinksResponse {
 export function GitHubRepoSection({
   projectId,
   clientId,
+  staffAccounts,
 }: {
   projectId: string
   clientId: string
+  staffAccounts: PtsStaffGitHubAccount[]
 }) {
   const { notice, error: callbackError } = useGitHubCallbackNotice(
     `/projects/${projectId}`
@@ -71,6 +75,8 @@ export function GitHubRepoSection({
 
   const [unlinkTarget, setUnlinkTarget] = useState<RepoLink | null>(null)
   const [unlinking, setUnlinking] = useState(false)
+
+  const [staffModalOpen, setStaffModalOpen] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -167,22 +173,66 @@ export function GitHubRepoSection({
 
   return (
     <section className="space-y-2">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
           GitHub
         </h2>
-        {hasInstallation && !loading && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="xs"
-            onClick={() => setDialogOpen(true)}
-            disabled={pickableRepos.length === 0}
-          >
-            <PlusIcon className="size-3.5" />
-            Link repository
-          </Button>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {!loading && (
+            <Button
+              type="button"
+              variant={hasInstallation ? 'outline' : 'default'}
+              size="xs"
+              className="gap-1.5"
+              disabled={hasInstallation}
+              asChild={!hasInstallation}
+            >
+              {hasInstallation ? (
+                <>
+                  <GitHubMark className="size-3.5" />
+                  Agent authorized
+                </>
+              ) : (
+                <a
+                  href={`/api/github/install?clientId=${clientId}&projectId=${projectId}&returnTo=/projects/${projectId}`}
+                >
+                  <GitHubMark className="size-3.5" />
+                  Authorize agent
+                </a>
+              )}
+            </Button>
+          )}
+          {!loading && (
+            <Button
+              type="button"
+              variant="outline"
+              size="xs"
+              className="gap-1.5"
+              onClick={() => setStaffModalOpen(true)}
+              disabled={links.length === 0}
+              title={
+                links.length === 0
+                  ? 'Link a repository first'
+                  : undefined
+              }
+            >
+              <GitHubMark className="size-3.5" />
+              Staff authorization
+            </Button>
+          )}
+          {hasInstallation && !loading && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              onClick={() => setDialogOpen(true)}
+              disabled={pickableRepos.length === 0}
+            >
+              <PlusIcon className="size-3.5" />
+              Link repository
+            </Button>
+          )}
+        </div>
       </div>
 
       {notice && <p className="text-xs text-emerald-600">{notice}</p>}
@@ -201,15 +251,8 @@ export function GitHubRepoSection({
         <div className="flex items-center gap-3 rounded-lg border border-border p-4">
           <GitHubMark className="size-4 shrink-0 text-muted-foreground" />
           <p className="min-w-0 flex-1 text-sm text-muted-foreground">
-            Connect GitHub to link repositories to this project.
+            Authorize our agent above to link repositories to this project.
           </p>
-          <Button variant="outline" size="xs" className="shrink-0" asChild>
-            <a
-              href={`/api/github/install?clientId=${clientId}&projectId=${projectId}&returnTo=/projects/${projectId}`}
-            >
-              Connect GitHub
-            </a>
-          </Button>
         </div>
       ) : links.length === 0 ? (
         <div className="rounded-lg border border-border p-4 text-center">
@@ -308,6 +351,13 @@ export function GitHubRepoSection({
         confirmDisabled={unlinking}
         onConfirm={handleUnlink}
         onCancel={() => setUnlinkTarget(null)}
+      />
+
+      <StaffAuthorizationModal
+        open={staffModalOpen}
+        onOpenChange={setStaffModalOpen}
+        links={links}
+        staffAccounts={staffAccounts}
       />
     </section>
   )
