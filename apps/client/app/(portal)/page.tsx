@@ -7,20 +7,28 @@ import { fetchClientProjects } from '@/lib/data/projects'
 import { fetchClientHoursSummaries } from '@/lib/data/hours'
 import { fetchClientInvoiceSummary } from '@/lib/data/invoices'
 import { fetchClientGitHubStatus } from '@/lib/data/github'
+import { fetchPtsStaffGitHubAccounts } from '@/lib/data/staff-github-access'
 import { AccountCard } from '@/components/account-card'
 import { ProjectsCard } from '@/components/projects-card'
 import { GitHubStatusBadges } from '@/components/github-status-badges'
 
 export default async function DashboardPage() {
   const user = await requireClientUser()
-  const [projects, hoursSummaries, invoiceSummary, githubStatuses, scope] =
-    await Promise.all([
-      fetchClientProjects(user),
-      fetchClientHoursSummaries(user),
-      fetchClientInvoiceSummary(user),
-      fetchClientGitHubStatus(user),
-      resolvePortalScope(user),
-    ])
+  const [
+    projects,
+    hoursSummaries,
+    invoiceSummary,
+    githubStatuses,
+    staffGitHubAccounts,
+    scope,
+  ] = await Promise.all([
+    fetchClientProjects(user),
+    fetchClientHoursSummaries(user),
+    fetchClientInvoiceSummary(user),
+    fetchClientGitHubStatus(user),
+    fetchPtsStaffGitHubAccounts(),
+    resolvePortalScope(user),
+  ])
 
   const needsClientSelection = isAdmin(user) && scope.clientIds.length === 0
   const showClientName = scope.scopedClients.length > 1
@@ -42,6 +50,7 @@ export default async function DashboardPage() {
             <GitHubStatusBadges
               statuses={githubStatuses}
               showClientName={showClientName}
+              staffAccounts={staffGitHubAccounts}
             />
           )}
         </div>

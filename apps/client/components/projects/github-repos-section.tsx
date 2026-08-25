@@ -1,33 +1,13 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { ExternalLinkIcon, Loader2Icon, PlusIcon, Trash2Icon } from 'lucide-react'
+import { ExternalLinkIcon, Loader2Icon } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@pts/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@pts/ui/select'
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { GitHubMark } from '@/components/icons/github-mark'
 import { useGitHubCallbackNotice } from '@/lib/hooks/use-github-callback-notice'
-
-interface RepoOption {
-  fullName: string
-  owner: string
-  name: string
-  defaultBranch: string
-}
+import { StaffAuthorizationModal } from '@/components/projects/staff-authorization-modal'
+import type { PtsStaffGitHubAccount } from '@/lib/data/staff-github-access'
 
 interface RepoLink {
   id: string
@@ -37,10 +17,7 @@ interface RepoLink {
 
 interface ReposResponse {
   ok: boolean
-  data?: {
-    repos: RepoOption[]
-    hasInstallation: boolean
-  }
+  data?: { hasInstallation: boolean }
 }
 
 interface LinksResponse {
@@ -51,9 +28,11 @@ interface LinksResponse {
 export function GitHubRepoSection({
   projectId,
   clientId,
+  staffAccounts,
 }: {
   projectId: string
   clientId: string
+  staffAccounts: PtsStaffGitHubAccount[]
 }) {
   const { notice, error: callbackError } = useGitHubCallbackNotice(
     `/projects/${projectId}`
@@ -61,16 +40,10 @@ export function GitHubRepoSection({
 
   const [loading, setLoading] = useState(true)
   const [hasInstallation, setHasInstallation] = useState(false)
-  const [availableRepos, setAvailableRepos] = useState<RepoOption[]>([])
   const [links, setLinks] = useState<RepoLink[]>([])
   const [error, setError] = useState<string | null>(null)
 
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [selectedRepo, setSelectedRepo] = useState<string | null>(null)
-  const [linking, setLinking] = useState(false)
-
-  const [unlinkTarget, setUnlinkTarget] = useState<RepoLink | null>(null)
-  const [unlinking, setUnlinking] = useState(false)
+  const [staffModalOpen, setStaffModalOpen] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -84,7 +57,6 @@ export function GitHubRepoSection({
       }
 
       setHasInstallation(reposJson.data.hasInstallation)
-      setAvailableRepos(reposJson.data.repos)
 
       if (reposJson.data.hasInstallation) {
         const linksRes = await fetch(`/api/github/link?projectId=${projectId}`)
@@ -110,79 +82,56 @@ export function GitHubRepoSection({
     void load()
   }, [load])
 
-  const linkedFullNames = new Set(links.map(l => l.repoFullName))
-  const pickableRepos = availableRepos.filter(r => !linkedFullNames.has(r.fullName))
-
-  const handleLink = async () => {
-    if (!selectedRepo) return
-    const repo = availableRepos.find(r => r.fullName === selectedRepo)
-    if (!repo) return
-
-    setLinking(true)
-    setError(null)
-    try {
-      const res = await fetch('/api/github/link', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          projectId,
-          clientId,
-          repoOwner: repo.owner,
-          repoName: repo.name,
-        }),
-      })
-      const json = await res.json()
-      if (!res.ok || !json.ok) {
-        throw new Error(json.error ?? 'Failed to link repository')
-      }
-      setDialogOpen(false)
-      setSelectedRepo(null)
-      await load()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to link repository')
-    } finally {
-      setLinking(false)
-    }
-  }
-
-  const handleUnlink = async () => {
-    if (!unlinkTarget) return
-    setUnlinking(true)
-    try {
-      const res = await fetch(`/api/github/link/${unlinkTarget.id}`, {
-        method: 'DELETE',
-      })
-      if (!res.ok) {
-        throw new Error('Failed to remove repository')
-      }
-      setUnlinkTarget(null)
-      await load()
-    } catch {
-      setError('Failed to remove repository.')
-      setUnlinkTarget(null)
-    } finally {
-      setUnlinking(false)
-    }
-  }
-
   return (
     <section className="space-y-2">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
           GitHub
         </h2>
-        {hasInstallation && !loading && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="xs"
-            onClick={() => setDialogOpen(true)}
-            disabled={pickableRepos.length === 0}
-          >
-            <PlusIcon className="size-3.5" />
-            Link repository
-          </Button>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {!loading && (
+            <Button
+              type="button"
+              variant={hasInstallation ? 'outline' : 'default'}
+              size="xs"
+              className="gap-1.5"
+              disabled={hasInstallation}
+              asChild={!hasInstallation}
+            >
+              {hasInstallation ? (
+                <>
+                  <GitHubMark className="size-3.5" />
+                  Agent authorized
+                </>
+              ) : (
+                <a
+                  href={`/api/github/install?clientId=${clientId}&projectId=${projectId}&returnTo=/projects/${projectId}`}
+                >
+                  <GitHubMark className="size-3.5" />
+                  Authorize agent
+                </a>
+              )}
+            </Button>
+          )}
+          {!loading && (
+            <Button
+              type="button"
+              variant="outline"
+              size="xs"
+              className="gap-1.5"
+              onClick={() => setStaffModalOpen(true)}
+              disabled={links.length === 0}
+              title={
+                links.length === 0
+                  ? 'Link a repository first'
+                  : undefined
+              }
+            >
+              <GitHubMark className="size-3.5" />
+              Staff authorization
+            </Button>
+          )}
+        </div>
       </div>
 
       {notice && <p className="text-xs text-emerald-600">{notice}</p>}
@@ -201,20 +150,14 @@ export function GitHubRepoSection({
         <div className="flex items-center gap-3 rounded-lg border border-border p-4">
           <GitHubMark className="size-4 shrink-0 text-muted-foreground" />
           <p className="min-w-0 flex-1 text-sm text-muted-foreground">
-            Connect GitHub to link repositories to this project.
+            Authorize our agent above to link repositories to this project.
           </p>
-          <Button variant="outline" size="xs" className="shrink-0" asChild>
-            <a
-              href={`/api/github/install?clientId=${clientId}&projectId=${projectId}&returnTo=/projects/${projectId}`}
-            >
-              Connect GitHub
-            </a>
-          </Button>
         </div>
       ) : links.length === 0 ? (
         <div className="rounded-lg border border-border p-4 text-center">
           <p className="text-sm text-muted-foreground">
-            No repositories linked yet.
+            No repositories linked yet. Contact your account manager to link
+            one.
           </p>
         </div>
       ) : (
@@ -235,79 +178,20 @@ export function GitHubRepoSection({
                   <span className="truncate">{link.repoFullName}</span>
                   <ExternalLinkIcon className="size-3 shrink-0 text-muted-foreground" />
                 </a>
-                <div className="flex shrink-0 items-center gap-2">
-                  <span className="text-xs text-muted-foreground">
-                    {link.defaultBranch}
-                  </span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    className="text-muted-foreground hover:text-destructive"
-                    onClick={() => setUnlinkTarget(link)}
-                    aria-label={`Remove ${link.repoFullName}`}
-                  >
-                    <Trash2Icon className="size-3.5" />
-                  </Button>
-                </div>
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  {link.defaultBranch}
+                </span>
               </li>
             ))}
           </ul>
         </div>
       )}
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Link a repository</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Select value={selectedRepo ?? ''} onValueChange={setSelectedRepo}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a repository" />
-              </SelectTrigger>
-              <SelectContent>
-                {pickableRepos.map(repo => (
-                  <SelectItem key={repo.fullName} value={repo.fullName}>
-                    {repo.fullName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setDialogOpen(false)}
-              disabled={linking}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={handleLink}
-              disabled={!selectedRepo || linking}
-            >
-              {linking ? 'Linking...' : 'Link repository'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <ConfirmDialog
-        open={!!unlinkTarget}
-        title="Remove repository?"
-        description={
-          unlinkTarget
-            ? `${unlinkTarget.repoFullName} will be unlinked from this project.`
-            : undefined
-        }
-        confirmLabel={unlinking ? 'Removing...' : 'Remove'}
-        confirmVariant="destructive"
-        confirmDisabled={unlinking}
-        onConfirm={handleUnlink}
-        onCancel={() => setUnlinkTarget(null)}
+      <StaffAuthorizationModal
+        open={staffModalOpen}
+        onOpenChange={setStaffModalOpen}
+        links={links}
+        staffAccounts={staffAccounts}
       />
     </section>
   )
