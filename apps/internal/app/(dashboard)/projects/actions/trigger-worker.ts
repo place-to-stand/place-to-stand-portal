@@ -391,7 +391,7 @@ export async function triggerWorkerImplement(input: {
 // Cancel Deployment
 // ---------------------------------------------------------------------------
 
-const WORKER_BOT_LOGIN = 'pts-worker[bot]'
+const WORKER_BOT_LOGIN = 'place-to-stand[bot]'
 
 const cancelSchema = z.object({
   deploymentId: z.string().uuid(),
