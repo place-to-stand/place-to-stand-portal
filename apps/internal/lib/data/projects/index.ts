@@ -152,8 +152,7 @@ export async function fetchProjectsForLanding(
           .where(
             and(
               inArray(tasks.projectId, baseProjects.projectIds),
-              isNull(tasks.deletedAt),
-              ne(tasks.status, 'ARCHIVED')
+              isNull(tasks.deletedAt)
             )
           )
           .groupBy(tasks.projectId)

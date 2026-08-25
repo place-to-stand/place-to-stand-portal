@@ -1,3 +1,5 @@
+// Display vocabulary, not the DB enum: ACCEPTED (accepted_at set) and
+// ARCHIVED (deleted_at set) are derived states with no task_status value.
 const TASK_STATUS_TOKENS = {
   ON_DECK:
     'border-transparent bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200',
@@ -63,10 +65,8 @@ const REOPENING_STATUSES = new Set(['ON_DECK', 'IN_PROGRESS', 'BLOCKED'])
  * - Staying DONE preserves the original stamp, so editing a finished task
  *   doesn't reset its clock — the whole reason this column exists instead of
  *   reading `updated_at`.
- * - ARCHIVED preserves it too: archiving files a task away, it doesn't undo
- *   the completion. (A task archived straight from ON_DECK was never
- *   completed, so preserving simply keeps the null.)
  * - Reopening to an active status clears it.
+ * - Any other value (defensive: nothing else exists today) preserves it.
  */
 export function resolveCompletedAt(
   nextStatus: string,

@@ -50,12 +50,7 @@ async function assertLinkedTasksEligible(
   for (const taskId of taskIds) {
     const row = rowsById.get(taskId)
 
-    if (
-      !row ||
-      row.projectId !== projectId ||
-      row.deletedAt !== null ||
-      row.status === 'ARCHIVED'
-    ) {
+    if (!row || row.projectId !== projectId || row.deletedAt !== null) {
       throw new HttpError(
         'One or more linked tasks are no longer available.',
         400,

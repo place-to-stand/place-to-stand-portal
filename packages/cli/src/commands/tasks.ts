@@ -37,7 +37,7 @@ export function registerTaskCommands(program: Command): void {
     .command('list')
     .description('List tasks, most recently updated first')
     .option('--project <ref>', 'Project UUID or slug')
-    .option('--status <status>', 'ON_DECK | IN_PROGRESS | BLOCKED | DONE | ARCHIVED')
+    .option('--status <status>', 'ON_DECK | IN_PROGRESS | BLOCKED | DONE')
     .option('--assignee <userId>', 'Only tasks assigned to this user id')
     .option('--limit <count>', 'Maximum rows (default 50, max 200)')
     .action(async (options: ListOptions) => {

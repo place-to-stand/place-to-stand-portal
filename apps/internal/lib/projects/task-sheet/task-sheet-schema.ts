@@ -3,13 +3,7 @@ import { z } from 'zod'
 export const taskSheetFormSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional().nullable(),
-  status: z.enum([
-    'ON_DECK',
-    'IN_PROGRESS',
-    'BLOCKED',
-    'DONE',
-    'ARCHIVED',
-  ] as const),
+  status: z.enum(['ON_DECK', 'IN_PROGRESS', 'BLOCKED', 'DONE'] as const),
   dueOn: z.string().optional(),
   projectId: z
     .string()

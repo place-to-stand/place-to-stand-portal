@@ -35,7 +35,7 @@ export const CalendarTaskCardShell = forwardRef<
   },
   ref
 ) {
-  const isCompleted = task.status === 'DONE' || task.status === 'ARCHIVED'
+  const isCompleted = task.status === 'DONE'
 
   return (
     <div

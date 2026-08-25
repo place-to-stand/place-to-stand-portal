@@ -346,10 +346,7 @@ export const fetchProjectsForClient = cache(
     const taskCounts = await db
       .select({
         projectId: tasks.projectId,
-        total:
-          sql<number>`count(*) filter (where ${tasks.status} != 'ARCHIVED')`.as(
-            'total'
-          ),
+        total: sql<number>`count(*)`.as('total'),
         done: sql<number>`count(*) filter (where ${tasks.status} = 'DONE')`.as(
           'done'
         ),

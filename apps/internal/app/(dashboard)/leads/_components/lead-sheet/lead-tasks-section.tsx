@@ -100,12 +100,8 @@ export function LeadTasksSection({
     [open]
   )
 
-  const completedTasks = tasks.filter(
-    t => t.status === 'DONE' || t.status === 'ARCHIVED'
-  )
-  const activeTasks = tasks.filter(
-    t => t.status !== 'DONE' && t.status !== 'ARCHIVED'
-  )
+  const completedTasks = tasks.filter(t => t.status === 'DONE')
+  const activeTasks = tasks.filter(t => t.status !== 'DONE')
 
   return (
     <div className='space-y-3'>
