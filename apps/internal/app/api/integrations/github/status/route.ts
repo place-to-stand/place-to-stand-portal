@@ -1,12 +1,14 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { eq, and, isNull } from 'drizzle-orm'
 
 import { requireUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { oauthConnections } from '@/lib/db/schema'
+import { getActiveInstallationForProject } from '@/lib/github/app-installations'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const user = await requireUser()
+  const projectId = request.nextUrl.searchParams.get('projectId')
 
   // Fetch all GitHub accounts for this user (multi-account support)
   const connections = await db
@@ -31,12 +33,14 @@ export async function GET() {
     )
     .orderBy(oauthConnections.createdAt)
 
-  if (connections.length === 0) {
-    return NextResponse.json({ connected: false, accounts: [] })
-  }
+  // A project's client may have granted access via their own GitHub App
+  // installation — distinct from the staff member's personal OAuth connection.
+  const installation = projectId
+    ? await getActiveInstallationForProject(projectId)
+    : null
 
   return NextResponse.json({
-    connected: true,
+    connected: connections.length > 0 || installation !== null,
     accounts: connections.map(c => ({
       id: c.id,
       email: c.providerEmail,
@@ -48,5 +52,13 @@ export async function GET() {
       connectedAt: c.createdAt,
       metadata: c.providerMetadata,
     })),
+    appInstallation: installation
+      ? {
+          id: installation.id,
+          accountLogin: installation.accountLogin,
+          accountAvatarUrl: installation.accountAvatarUrl,
+          repositorySelection: installation.repositorySelection,
+        }
+      : null,
   })
 }

@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { getInstallationRepo } from '@pts/github'
+import { isInstallationNotFoundError } from '@pts/github/app-auth'
 import { requireRole } from '@/lib/auth/session'
 import { getProjectRepos, linkRepoToProject } from '@/lib/data/github-repos'
 import { getRepo, getDefaultConnectionId } from '@/lib/github/client'
+import { getActiveInstallationForProject } from '@/lib/github/app-installations'
+import { serverEnv } from '@/lib/env.server'
 
 const linkSchema = z.object({
   repoFullName: z.string().regex(/^[^/]+\/[^/]+$/, 'Invalid repo format (expected owner/repo)'),
   connectionId: z.string().uuid().optional(),
+  githubAppInstallationId: z.string().uuid().optional(),
 })
 
 export async function GET(
@@ -39,6 +44,65 @@ export async function POST(
   }
 
   const [owner, name] = result.data.repoFullName.split('/')
+
+  // Link via the project's client GitHub App installation.
+  if (result.data.githubAppInstallationId) {
+    const installation = await getActiveInstallationForProject(projectId)
+
+    if (!installation || installation.id !== result.data.githubAppInstallationId) {
+      return NextResponse.json(
+        { error: 'GitHub App installation not found for this project' },
+        { status: 400 }
+      )
+    }
+
+    if (!serverEnv.GITHUB_APP_ID || !serverEnv.GITHUB_APP_PRIVATE_KEY) {
+      return NextResponse.json(
+        { error: 'GitHub App credentials are not configured' },
+        { status: 500 }
+      )
+    }
+
+    try {
+      const repoDetails = await getInstallationRepo(
+        installation.installationId,
+        serverEnv.GITHUB_APP_ID,
+        serverEnv.GITHUB_APP_PRIVATE_KEY,
+        owner,
+        name
+      )
+
+      const link = await linkRepoToProject(
+        projectId,
+        {
+          githubAppInstallationId: installation.id,
+          repoOwner: repoDetails.owner.login,
+          repoName: repoDetails.name,
+          repoFullName: repoDetails.full_name,
+          repoId: repoDetails.id,
+          defaultBranch: repoDetails.default_branch,
+        },
+        user.id
+      )
+
+      return NextResponse.json({ success: true, link })
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('unique')) {
+        return NextResponse.json(
+          { error: 'Repository already linked to this project' },
+          { status: 400 }
+        )
+      }
+      if (isInstallationNotFoundError(error)) {
+        return NextResponse.json(
+          { error: 'GitHub App installation was removed. Ask the client to reinstall it.' },
+          { status: 400 }
+        )
+      }
+      console.error('Error linking repo via GitHub App installation:', error)
+      return NextResponse.json({ error: 'Failed to link repository' }, { status: 500 })
+    }
+  }
 
   try {
     // Get connection ID (use provided or default)
