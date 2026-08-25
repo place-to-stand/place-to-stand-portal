@@ -87,7 +87,6 @@ function assignedTaskConditions(userId: string | null) {
     isNull(tasksTable.deletedAt),
     isNull(projectsTable.deletedAt),
     isNull(tasksTable.acceptedAt),
-    ne(tasksTable.status, 'ARCHIVED'),
   ]
 }
 
@@ -97,7 +96,6 @@ const STATUS_PRIORITY_SQL = sql`
     WHEN ${tasksTable.status} = 'IN_PROGRESS' THEN 1
     WHEN ${tasksTable.status} = 'ON_DECK' THEN 2
     WHEN ${tasksTable.status} = 'DONE' THEN 3
-    WHEN ${tasksTable.status} = 'ARCHIVED' THEN 4
     ELSE 999
   END
 `

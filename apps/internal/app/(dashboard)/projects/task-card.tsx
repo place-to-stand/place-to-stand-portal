@@ -94,7 +94,7 @@ function CardContent({
   const dueMeta = task.due_on
     ? getTaskDueMeta(task.due_on, { status: task.status })
     : null
-  const isCompleted = task.status === 'DONE' || task.status === 'ARCHIVED'
+  const isCompleted = task.status === 'DONE'
 
   return (
     <>
@@ -280,7 +280,7 @@ export function TaskCard({
     return rest
   }, [attributes])
 
-  const isCompleted = task.status === 'DONE' || task.status === 'ARCHIVED'
+  const isCompleted = task.status === 'DONE'
   const shouldDisableTransition = disableDropTransition && !isDragging
   const style: CSSProperties = {
     opacity: isDragging ? 0 : isCompleted ? 0.65 : 1,
@@ -355,7 +355,7 @@ export function TaskCardStatic({
   context?: TaskContextDetails
   hideAssignees?: boolean
 }) {
-  const isCompleted = task.status === 'DONE' || task.status === 'ARCHIVED'
+  const isCompleted = task.status === 'DONE'
 
   return (
     <div
@@ -397,7 +397,7 @@ export function TaskCardPreview({
   context?: TaskContextDetails
   hideAssignees?: boolean
 }) {
-  const isCompleted = task.status === 'DONE' || task.status === 'ARCHIVED'
+  const isCompleted = task.status === 'DONE'
   return (
     <div
       className={cn(

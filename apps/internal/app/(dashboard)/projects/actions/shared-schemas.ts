@@ -5,7 +5,6 @@ export const TASK_STATUSES = [
   'IN_PROGRESS',
   'BLOCKED',
   'DONE',
-  'ARCHIVED',
 ] as const
 
 export const statusSchema = z.enum(TASK_STATUSES)

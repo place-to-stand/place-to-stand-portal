@@ -807,12 +807,7 @@ export type Database = {
     Enums: {
       hour_block_type: 'RETAINER' | 'PROJECT' | 'MAINTENANCE'
       member_role: 'OWNER' | 'CONTRIBUTOR' | 'VIEWER'
-      task_status:
-        | 'ON_DECK'
-        | 'IN_PROGRESS'
-        | 'BLOCKED'
-        | 'DONE'
-        | 'ARCHIVED'
+      task_status: 'ON_DECK' | 'IN_PROGRESS' | 'BLOCKED' | 'DONE'
       user_role: 'ADMIN' | 'CLIENT'
     }
     CompositeTypes: {
@@ -943,13 +938,7 @@ export const Constants = {
     Enums: {
       hour_block_type: ['RETAINER', 'PROJECT', 'MAINTENANCE'],
       member_role: ['OWNER', 'CONTRIBUTOR', 'VIEWER'],
-      task_status: [
-        'ON_DECK',
-        'IN_PROGRESS',
-        'BLOCKED',
-        'DONE',
-        'ARCHIVED',
-      ],
+      task_status: ['ON_DECK', 'IN_PROGRESS', 'BLOCKED', 'DONE'],
       user_role: ['ADMIN', 'CLIENT'],
     },
   },

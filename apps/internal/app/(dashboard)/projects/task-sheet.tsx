@@ -336,9 +336,7 @@ export function TaskSheet(props: TaskSheetProps) {
   // The DB check `time_log_tasks_project_match` makes the PERSISTED project
   // authoritative — an unsaved project change must block logging until saved.
   const watchedProjectId = form.watch('projectId') ?? null
-  const taskUnavailableForTime = Boolean(
-    props.task && (props.task.deleted_at || props.task.status === 'ARCHIVED')
-  )
+  const taskUnavailableForTime = Boolean(props.task && props.task.deleted_at)
   const projectFieldUnsaved = Boolean(
     props.task && watchedProjectId !== props.task.project_id
   )

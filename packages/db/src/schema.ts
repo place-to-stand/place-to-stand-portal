@@ -31,7 +31,6 @@ export const taskStatus = pgEnum('task_status', [
   'IN_PROGRESS',
   'BLOCKED',
   'DONE',
-  'ARCHIVED',
 ])
 export const userRole = pgEnum('user_role', ['ADMIN', 'CLIENT'])
 export const activitySource = pgEnum('activity_source', [
