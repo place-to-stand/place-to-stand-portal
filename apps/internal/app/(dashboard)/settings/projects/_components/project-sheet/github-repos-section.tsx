@@ -192,7 +192,13 @@ export function GitHubReposSection({
                   }) => ({
                     value: r.fullName,
                     label: r.fullName,
-                    description: r.description || undefined,
+                    description:
+                      [
+                        r.source === 'app' ? 'GitHub App' : undefined,
+                        r.description || undefined,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ') || undefined,
                     source: r.source,
                     sourceId: r.sourceId,
                   })
