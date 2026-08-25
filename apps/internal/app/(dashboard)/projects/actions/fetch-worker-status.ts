@@ -47,7 +47,7 @@ export type WorkerStatusResult =
 // Parsing helpers
 // ---------------------------------------------------------------------------
 
-const WORKER_BOT_LOGIN = 'pts-worker[bot]'
+const WORKER_BOT_LOGIN = 'place-to-stand[bot]'
 const PR_URL_REGEX = /\*\*Pull request:\*\*\s+(https:\/\/github\.com\/\S+)/
 const PLAN_HEADING = '## Implementation Plan'
 const WORKING_PATTERNS = ['Agent working', 'Planning...', '🔄', 'Working on']
