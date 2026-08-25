@@ -8,6 +8,7 @@ import { requireClientUser } from '@/lib/auth/session'
 import { fetchProjectDetail } from '@/lib/data/project-detail'
 import { fetchProjectTasks } from '@/lib/data/tasks'
 import { ProjectTaskList } from '@/components/tasks/project-task-list'
+import { GitHubRepoSection } from '@/components/projects/github-repos-section'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -28,7 +29,7 @@ export default async function ProjectDetailPage({
   // the caller's portal scope.
   const project = await fetchProjectDetail(user, projectId)
 
-  if (!project) {
+  if (!project || !project.clientId) {
     notFound()
   }
 
@@ -48,6 +49,8 @@ export default async function ProjectDetailPage({
       <h1 className="text-2xl font-bold text-foreground">{project.name}</h1>
 
       <ProjectTaskList tasks={tasks} />
+
+      <GitHubRepoSection projectId={project.id} clientId={project.clientId} />
     </div>
   )
 }

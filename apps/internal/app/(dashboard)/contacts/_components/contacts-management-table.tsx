@@ -37,7 +37,7 @@ type ContactsManagementTableProps = {
   deepLinkedContact?: ContactSheetInput | null
   /** True when `?contact=` points at a contact that no longer exists. */
   contactNotFound?: boolean
-  /** Base URL of the client portal (e.g. https://client.placetostand.co). */
+  /** Base URL of the client portal (e.g. https://clients.placetostandagency.com). */
   clientPortalUrl?: string
 }
 

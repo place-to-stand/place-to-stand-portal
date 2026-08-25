@@ -3,20 +3,33 @@ import { cookies } from 'next/headers'
 import { nanoid } from 'nanoid'
 
 import { getCurrentUser } from '@/lib/auth/session'
+import { ensureClientAccess } from '@/lib/auth/permissions'
 import { getEnv } from '@/lib/env.server'
 
 /**
- * GET /api/github/install?projectId=xxx
+ * GET /api/github/install?clientId=xxx&projectId=xxx
  *
  * Generates a CSRF state token, stores it in a cookie,
  * and redirects to the GitHub App installation page.
- * Optionally stores projectId for post-install redirect.
+ * Requires clientId so the callback can attribute the installation to the
+ * right client explicitly, rather than guessing from the caller's memberships.
  */
 export async function GET(request: Request) {
   const user = await getCurrentUser()
   if (!user) {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
   }
+
+  const url = new URL(request.url)
+  const clientId = url.searchParams.get('clientId')
+  if (!clientId) {
+    return NextResponse.json(
+      { ok: false, error: 'clientId is required' },
+      { status: 400 }
+    )
+  }
+
+  await ensureClientAccess(user, clientId)
 
   getEnv() // validate env vars are present
   const state = nanoid(32)
@@ -32,8 +45,17 @@ export async function GET(request: Request) {
     path: '/',
   })
 
+  // Store the target client so the callback attributes the installation to
+  // it explicitly instead of inferring from the caller's memberships.
+  cookieStore.set('github_app_return_client', clientId, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 600, // 10 minutes
+    path: '/',
+  })
+
   // Store projectId and optional returnTo for redirect after callback
-  const url = new URL(request.url)
   const projectId = url.searchParams.get('projectId')
   if (projectId) {
     cookieStore.set('github_app_return_project', projectId, {

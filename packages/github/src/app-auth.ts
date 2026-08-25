@@ -79,6 +79,20 @@ export async function getInstallationToken(
 }
 
 /**
+ * True when an error thrown by `getInstallationById` or `getInstallationToken`
+ * means the installation itself no longer exists on GitHub's side (uninstalled,
+ * or the `deleted` webhook never reached this environment) — as opposed to a
+ * transient or permissions failure. Callers can use this to self-heal a stale
+ * `github_app_installations` row instead of surfacing a raw error.
+ */
+export function isInstallationNotFoundError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    /^Failed to get installation(?: token)? \(404\)/.test(error.message)
+  )
+}
+
+/**
  * Get installation details using the App JWT.
  */
 export async function getInstallationById(

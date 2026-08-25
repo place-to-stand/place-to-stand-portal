@@ -1,0 +1,1 @@
+ALTER TABLE "github_app_installations" ADD COLUMN "last_verified_at" timestamp with time zone;

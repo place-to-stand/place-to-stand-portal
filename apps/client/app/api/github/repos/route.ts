@@ -7,6 +7,8 @@ import { getCurrentUser } from '@/lib/auth/session'
 import { ensureClientAccess } from '@/lib/auth/permissions'
 import { getEnv } from '@/lib/env.server'
 import { listInstallationRepos } from '@pts/github/app-client'
+import { isInstallationNotFoundError } from '@pts/github/app-auth'
+import { ensureInstallationVerified } from '@/lib/github/verify-installation'
 
 /**
  * GET /api/github/repos?clientId=xxx
@@ -53,6 +55,16 @@ export async function GET(request: Request) {
     })
   }
 
+  // Throttled to once a day — skips the GitHub call entirely if we checked
+  // recently, so this doesn't hit GitHub on every project-page load.
+  const { removed } = await ensureInstallationVerified(installation)
+  if (removed) {
+    return NextResponse.json({
+      ok: true,
+      data: { repos: [], hasInstallation: false },
+    })
+  }
+
   try {
     const repos = await listInstallationRepos(
       installation.installationId,
@@ -81,6 +93,25 @@ export async function GET(request: Request) {
       },
     })
   } catch (error) {
+    // The installation was uninstalled on GitHub's side (or the `deleted`
+    // webhook never reached this environment) — self-heal the stale row so
+    // the client sees "not installed" instead of a raw error.
+    if (isInstallationNotFoundError(error)) {
+      await db
+        .update(githubAppInstallations)
+        .set({
+          status: 'REMOVED',
+          deletedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(githubAppInstallations.id, installation.id))
+
+      return NextResponse.json({
+        ok: true,
+        data: { repos: [], hasInstallation: false },
+      })
+    }
+
     console.error('Failed to list installation repos:', error)
     return NextResponse.json(
       { ok: false, error: 'Failed to list repositories' },
