@@ -132,7 +132,7 @@ export async function triggerWorkerPlan(input: {
       repoLink.repoOwner,
       repoLink.repoName,
       {
-        title: `Portal:${task.title}`,
+        title: `PTS-Portal: ${task.title}`,
         body: composeIssueBody({
           taskTitle: task.title,
           taskDescription: task.description,
@@ -689,7 +689,7 @@ export async function deployPlan(input: {
       repoLink.repoOwner,
       repoLink.repoName,
       {
-        title: `Portal:${task.title}`,
+        title: `PTS-Portal: ${task.title}`,
         body: composeIssueBody({
           taskTitle: task.title,
           taskDescription: task.description,
