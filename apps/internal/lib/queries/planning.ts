@@ -97,6 +97,47 @@ export async function updateThreadVersion(
 }
 
 // ---------------------------------------------------------------------------
+// Generation status (lets the frontend detect and resume an in-flight or
+// just-finished generation after navigating away mid-stream and back)
+// ---------------------------------------------------------------------------
+
+export async function startThreadGeneration(threadId: string, version: number) {
+  await db
+    .update(planThreads)
+    .set({
+      generationStatus: 'streaming',
+      generatingVersion: version,
+      partialContent: '',
+      generationError: null,
+    })
+    .where(eq(planThreads.id, threadId))
+}
+
+export async function updateThreadPartialContent(
+  threadId: string,
+  partialContent: string
+) {
+  await db
+    .update(planThreads)
+    .set({ partialContent })
+    .where(eq(planThreads.id, threadId))
+}
+
+export async function finishThreadGeneration(threadId: string) {
+  await db
+    .update(planThreads)
+    .set({ generationStatus: 'idle' })
+    .where(eq(planThreads.id, threadId))
+}
+
+export async function failThreadGeneration(threadId: string, error: string) {
+  await db
+    .update(planThreads)
+    .set({ generationStatus: 'error', generationError: error })
+    .where(eq(planThreads.id, threadId))
+}
+
+// ---------------------------------------------------------------------------
 // Revisions
 // ---------------------------------------------------------------------------
 

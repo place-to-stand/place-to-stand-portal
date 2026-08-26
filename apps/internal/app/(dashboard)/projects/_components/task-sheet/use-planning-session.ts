@@ -15,6 +15,11 @@ export const PLANNING_SESSION_KEY = 'planning-session'
 const DEFAULT_MODEL = DEFAULT_PLANNING_TIER
 const DEFAULT_LABEL = getModelLabel(DEFAULT_PLANNING_TIER)
 
+// While any thread is mid-generation, poll so a client that had this
+// session closed (or never open) picks up the in-progress/finished state
+// instead of only finding out on next manual refetch.
+const GENERATION_POLL_INTERVAL = 2_000
+
 export function usePlanningSession(taskId: string, repoLinkId: string) {
   const queryClient = useQueryClient()
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null)
@@ -29,6 +34,13 @@ export function usePlanningSession(taskId: string, repoLinkId: string) {
       return result.data
     },
     staleTime: 30_000,
+    refetchInterval: query => {
+      const result = query.state.data as PlanningSessionData | undefined
+      const isAnyThreadStreaming = result?.threads.some(
+        t => t.generationStatus === 'streaming'
+      )
+      return isAnyThreadStreaming ? GENERATION_POLL_INTERVAL : false
+    },
   })
 
   const threads = data?.threads ?? []

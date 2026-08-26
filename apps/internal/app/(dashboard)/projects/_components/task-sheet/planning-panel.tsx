@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Check, ChevronDown, ExternalLink, Loader2, MessageCircleQuestion, Play, Send } from 'lucide-react'
 
@@ -108,19 +108,61 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
     navigateTo,
   } = usePlanRevisions(activeThreadId, Boolean(activeThreadId))
 
-  // Determine displayed content: streaming > revision
-  const displayContent = isGenerating ? streamContent : (currentRevision?.content ?? '')
+  // Persisted generation state for the active thread — lets us detect a
+  // generation that's still in flight (or just failed) on the server even
+  // when this tab didn't start it, e.g. after navigating away mid-stream
+  // and coming back, or after the sheet was closed and reopened.
+  const isThreadStreaming = activeThread?.generationStatus === 'streaming'
+  const threadPartialContent = activeThread?.partialContent ?? ''
+  const threadGeneratingVersion = activeThread?.generatingVersion ?? null
+  // Only surface a persisted error if nothing ever got saved for that
+  // attempt (i.e. the failed version is still ahead of the latest revision) —
+  // otherwise a stale error would outlive a subsequent successful generation.
+  const threadHasError =
+    !isGenerating &&
+    activeThread?.generationStatus === 'error' &&
+    threadGeneratingVersion !== null &&
+    threadGeneratingVersion > latestVersion
+  const threadErrorMessage = threadHasError
+    ? (activeThread?.generationError ?? 'Generation failed')
+    : null
 
-  // Effective versions: show the in-progress version immediately during generation
-  const effectiveLatest = generatingVersion ?? latestVersion
-  const effectiveCurrent = generatingVersion ?? currentVersion
-  const isViewingOldVersion = !isGenerating && currentVersion < latestVersion && latestVersion > 0
+  // True while the server is actively generating for this thread, whether
+  // this tab is driving the fetch (isGenerating) or we've resumed a
+  // generation that was already underway before this mount (isThreadStreaming).
+  const isBusy = isGenerating || isThreadStreaming
+
+  // Determine displayed content: local stream > resumed in-progress stream > revision
+  const displayContent = isGenerating
+    ? streamContent
+    : isThreadStreaming
+      ? threadPartialContent
+      : (currentRevision?.content ?? '')
+
+  // Effective versions: show the in-progress version immediately during generation,
+  // whether driven locally or resumed from a generation already underway.
+  const effectiveGeneratingVersion =
+    generatingVersion ?? (isThreadStreaming ? threadGeneratingVersion : null)
+  const effectiveLatest = effectiveGeneratingVersion ?? latestVersion
+  const effectiveCurrent = effectiveGeneratingVersion ?? currentVersion
+  const isViewingOldVersion = !isBusy && currentVersion < latestVersion && latestVersion > 0
 
   // Detect if current content is clarifying questions vs a plan
   const displayContentType = isGenerating
     ? streamContentType
     : detectContentType(displayContent)
   const isQuestionsResponse = displayContentType === 'questions'
+
+  // Once a resumed generation finishes or fails while this panel is parked
+  // on it, pull in the final revision instead of continuing to show the
+  // now-stale partial content.
+  const wasThreadStreamingRef = useRef(false)
+  useEffect(() => {
+    if (wasThreadStreamingRef.current && !isThreadStreaming) {
+      invalidateRevisions()
+    }
+    wasThreadStreamingRef.current = isThreadStreaming
+  }, [isThreadStreaming, invalidateRevisions])
 
   // Deployments for this task — used for version nav coloring + accept button state
   const { deployments: allDeployments } = useTaskDeployments(task.id, true)
@@ -160,14 +202,16 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
     }
 
     // If currently generating a new version beyond what's in revisions, add it
-    if (generatingVersion && !meta.some(m => m.version === generatingVersion)) {
-      const isQ = streamContentType === 'questions'
+    if (effectiveGeneratingVersion && !meta.some(m => m.version === effectiveGeneratingVersion)) {
+      const isQ = isGenerating
+        ? streamContentType === 'questions'
+        : detectContentType(threadPartialContent) === 'questions'
       if (isQ) {
         qCount++
-        meta.push({ version: generatingVersion, label: qCount > 1 ? `Q${qCount}` : 'Q', isQuestions: true, deployStatus: 'none' })
+        meta.push({ version: effectiveGeneratingVersion, label: qCount > 1 ? `Q${qCount}` : 'Q', isQuestions: true, deployStatus: 'none' })
       } else {
         planCount++
-        meta.push({ version: generatingVersion, label: `v${planCount}`, isQuestions: false, deployStatus: 'none' })
+        meta.push({ version: effectiveGeneratingVersion, label: `v${planCount}`, isQuestions: false, deployStatus: 'none' })
       }
     }
 
@@ -178,7 +222,14 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
     }
 
     return meta
-  }, [revisions, generatingVersion, streamContentType, getDeployStatusForVersion])
+  }, [
+    revisions,
+    effectiveGeneratingVersion,
+    isGenerating,
+    streamContentType,
+    threadPartialContent,
+    getDeployStatusForVersion,
+  ])
 
   // Get the plan-specific label for the current version (e.g. "v1" instead of raw version number)
   const displayedVersion = currentVersion || latestVersion
@@ -198,7 +249,7 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
   )
 
   // Whether we're in the empty state (no revisions generated yet)
-  const hasStartedPlanning = latestVersion > 0 || isGenerating
+  const hasStartedPlanning = latestVersion > 0 || isBusy || threadHasError
 
   // Auto-create default thread when session loads with no threads
   useEffect(() => {
@@ -209,7 +260,7 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
 
   // Start planning — manual trigger for v1
   const handleStartPlanning = useCallback(() => {
-    if (!activeThreadId || isGenerating) return
+    if (!activeThreadId || isBusy) return
 
     setGeneratingVersion(1)
     generate({
@@ -223,11 +274,11 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
       setGeneratingVersion(null)
       invalidateRevisions()
     })
-  }, [activeThreadId, isGenerating, selectedRepoId, task, activeModel, generate, invalidateRevisions])
+  }, [activeThreadId, isBusy, selectedRepoId, task, activeModel, generate, invalidateRevisions])
 
   // Handle feedback submission
   const handleFeedbackSubmit = useCallback(() => {
-    if (!feedbackInput.trim() || !activeThreadId || !activeThread || isGenerating) return
+    if (!feedbackInput.trim() || !activeThreadId || !activeThread || isBusy) return
 
     const feedback = feedbackInput.trim()
     setFeedbackInput('')
@@ -250,7 +301,7 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
     feedbackInput,
     activeThreadId,
     activeThread,
-    isGenerating,
+    isBusy,
     selectedRepoId,
     task,
     activeModel,
@@ -357,13 +408,13 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
             latestVersion={effectiveLatest}
             versionMeta={versionMeta}
             onNavigate={navigateTo}
-            disabled={isGenerating}
+            disabled={isBusy}
           />
         )}
       </div>
 
       {/* Questions banner */}
-      {isQuestionsResponse && !isGenerating && (
+      {isQuestionsResponse && !isBusy && (
         <div className='flex items-center gap-2 border-b bg-amber-500/10 px-4 py-2 text-xs text-amber-700 dark:text-amber-400'>
           <MessageCircleQuestion className='h-3.5 w-3.5 shrink-0' />
           <span>Claude has questions before generating the plan. Answer below to continue.</span>
@@ -425,9 +476,9 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
         ) : (
           <PlanDocumentViewer
             content={displayContent}
-            isStreaming={isGenerating}
-            toolCalls={toolCalls}
-            error={streamError}
+            isStreaming={isBusy}
+            toolCalls={isGenerating ? toolCalls : []}
+            error={isGenerating ? streamError : threadErrorMessage}
           />
         )}
       </div>
@@ -442,7 +493,7 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
             placeholder={isQuestionsResponse ? 'Answer the questions above...' : 'Refine this plan...'}
             className='min-h-[36px] max-h-[100px] resize-none text-xs'
             rows={1}
-            disabled={isGenerating || isViewingOldVersion}
+            disabled={isBusy || isViewingOldVersion}
           />
           <div className='mt-2 flex items-center gap-2'>
             {isGenerating ? (
@@ -453,6 +504,11 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
                 className='flex-1'
               >
                 Stop
+              </Button>
+            ) : isThreadStreaming ? (
+              <Button size='sm' variant='secondary' disabled className='flex-1'>
+                <Loader2 className='mr-1.5 h-3.5 w-3.5 animate-spin' />
+                Generating...
               </Button>
             ) : (
               <Button
@@ -471,7 +527,7 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
                   variant='outline'
                   size='sm'
                   className='shrink-0 gap-1 text-xs'
-                  disabled={isGenerating}
+                  disabled={isBusy}
                 >
                   {activeModelLabel.split(' ')[0]}
                   <ChevronDown className='h-3 w-3 opacity-50' />
@@ -497,7 +553,7 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
       )}
 
       {/* Dispatch section — visually separated from feedback input */}
-      {hasStartedPlanning && !isGenerating && !isQuestionsResponse && displayContent && (
+      {hasStartedPlanning && !isBusy && !isQuestionsResponse && displayContent && (
         <div className='flex items-center gap-2 border-t bg-muted/30 px-4 py-4'>
           <AlertDialog>
             <AlertDialogTrigger asChild>
