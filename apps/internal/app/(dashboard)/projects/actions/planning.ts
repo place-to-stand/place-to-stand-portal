@@ -5,7 +5,7 @@ import { requireUser } from '@/lib/auth/session'
 import { ensureTaskAccess } from '@/lib/auth/permissions'
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
 import {
-  getActiveSessionByTaskId,
+  getSessionByTaskId,
   createSession,
   getThreadsForSession,
   createThread,
@@ -53,7 +53,7 @@ export async function getOrCreatePlanningSession(input: {
     return { error: 'Unable to authorize request.' }
   }
 
-  let session = await getActiveSessionByTaskId(taskId)
+  let session = await getSessionByTaskId(taskId)
 
   if (!session) {
     session = await createSession(taskId, repoLinkId, user.id)

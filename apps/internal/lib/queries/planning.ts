@@ -1,4 +1,4 @@
-import { eq, and, asc } from 'drizzle-orm'
+import { eq, and, asc, desc } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import {
   planningSessions,
@@ -11,16 +11,18 @@ import {
 // Sessions
 // ---------------------------------------------------------------------------
 
-export async function getActiveSessionByTaskId(taskId: string) {
+/**
+ * A task's planning session, regardless of status. `status` is a display
+ * flag ('active' = still drafting, 'deployed' = dispatched at least once) —
+ * the session and its chat history stay reusable either way, so lookup must
+ * not filter it out once deployed.
+ */
+export async function getSessionByTaskId(taskId: string) {
   const [session] = await db
     .select()
     .from(planningSessions)
-    .where(
-      and(
-        eq(planningSessions.taskId, taskId),
-        eq(planningSessions.status, 'active')
-      )
-    )
+    .where(eq(planningSessions.taskId, taskId))
+    .orderBy(desc(planningSessions.createdAt))
     .limit(1)
 
   return session ?? null
