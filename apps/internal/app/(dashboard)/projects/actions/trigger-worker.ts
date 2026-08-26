@@ -27,7 +27,7 @@ import { composeWorkerComment } from '@/lib/github/compose-worker-comment'
 import { composeIssueBody } from '@/lib/github/compose-issue-body'
 import { serverEnv } from '@/lib/env.server'
 import { customAlphabet } from 'nanoid'
-import { getRevisionByVersion } from '@/lib/queries/planning'
+import { getRevisionByVersion, getThreadById, updateSessionStatus } from '@/lib/queries/planning'
 import { PLANNING_MODEL_TIERS, type PlanningModelTier } from '@/lib/planning/models'
 
 const generatePlanId = customAlphabet('0123456789abcdefghijklmnopqrstuvwxyz', 6)
@@ -51,7 +51,7 @@ const triggerImplementSchema = z.object({
 })
 
 type TriggerResult =
-  | { deploymentId: string; issueNumber: number; issueUrl: string; commentUrl: string; workerStatus: 'working' | 'implementing' }
+  | { deploymentId: string; issueNumber: number; issueUrl: string; commentUrl: string; workerStatus: 'working' | 'implementing' | 'dispatched' }
   | { error: string }
 
 type ImplementResult =
@@ -132,7 +132,7 @@ export async function triggerWorkerPlan(input: {
       repoLink.repoOwner,
       repoLink.repoName,
       {
-        title: `Portal:${task.title}`,
+        title: `PTS-Portal: ${task.title}`,
         body: composeIssueBody({
           taskTitle: task.title,
           taskDescription: task.description,
@@ -422,7 +422,11 @@ export async function cancelDeployment(input: {
   if (!deployment) return { error: 'Deployment not found.' }
 
   // Verify cancellable status
-  if (deployment.workerStatus !== 'working' && deployment.workerStatus !== 'implementing') {
+  if (
+    deployment.workerStatus !== 'dispatched' &&
+    deployment.workerStatus !== 'working' &&
+    deployment.workerStatus !== 'implementing'
+  ) {
     return { error: 'Deployment is not in a cancellable state.' }
   }
 
@@ -482,29 +486,31 @@ export async function cancelDeployment(input: {
   }
 
   const botComments = rawComments.filter(c => c.user.login === WORKER_BOT_LOGIN)
-  if (botComments.length === 0) {
-    return { error: 'No worker comments found to cancel.' }
-  }
 
-  const latestBotComment = botComments[botComments.length - 1]
+  // If the worker hasn't posted anything yet (dispatched but no reaction),
+  // there's no comment to react on — just record the cancellation. pts-worker
+  // only checks for a 👎 reaction on its own status comment while it runs, so
+  // once one exists we react on it to actually stop the in-progress agent.
+  if (botComments.length > 0) {
+    const latestBotComment = botComments[botComments.length - 1]
 
-  // React with 👎 (-1) on the latest bot comment
-  try {
-    await createCommentReaction(
-      user.id,
-      repoLink.repoOwner,
-      repoLink.repoName,
-      latestBotComment.id,
-      '-1',
-      repoAuth
-    )
-  } catch (error) {
-    console.error('Failed to add cancel reaction', error)
-    return {
-      error:
-        error instanceof Error
-          ? `GitHub API error: ${error.message}`
-          : 'Failed to add cancel reaction.',
+    try {
+      await createCommentReaction(
+        user.id,
+        repoLink.repoOwner,
+        repoLink.repoName,
+        latestBotComment.id,
+        '-1',
+        repoAuth
+      )
+    } catch (error) {
+      console.error('Failed to add cancel reaction', error)
+      return {
+        error:
+          error instanceof Error
+            ? `GitHub API error: ${error.message}`
+            : 'Failed to add cancel reaction.',
+      }
     }
   }
 
@@ -683,7 +689,7 @@ export async function deployPlan(input: {
       repoLink.repoOwner,
       repoLink.repoName,
       {
-        title: `Portal:${task.title}`,
+        title: `PTS-Portal: ${task.title}`,
         body: composeIssueBody({
           taskTitle: task.title,
           taskDescription: task.description,
@@ -709,7 +715,7 @@ export async function deployPlan(input: {
       repoLinkId,
       githubIssueNumber: issue.number,
       githubIssueUrl: issue.html_url,
-      workerStatus: 'working',
+      workerStatus: 'dispatched',
       planId,
       planThreadId: threadId,
       planVersion: version,
@@ -725,7 +731,7 @@ export async function deployPlan(input: {
     .set({
       githubIssueNumber: issue.number,
       githubIssueUrl: issue.html_url,
-      workerStatus: 'working',
+      workerStatus: 'dispatched',
       updatedBy: user.id,
       updatedAt: new Date().toISOString(),
     })
@@ -776,12 +782,19 @@ export async function deployPlan(input: {
     metadata: { ...(event.metadata as Record<string, unknown> ?? {}), planId, prdPath },
   })
 
+  // Mark the planning session deployed so it stops showing as still-drafting
+  // once the plan has actually been handed off to the worker.
+  const thread = await getThreadById(threadId)
+  if (thread) {
+    await updateSessionStatus(thread.sessionId, 'deployed')
+  }
+
   return {
     deploymentId: deployment.id,
     issueNumber: issue.number,
     issueUrl: issue.html_url,
     commentUrl: comment.html_url,
-    workerStatus: 'working',
+    workerStatus: 'dispatched',
   }
 }
 

@@ -433,8 +433,13 @@ function renderProjectTypeIcon(
 const WORKER_BADGE_CONFIG: Partial<
   Record<WorkerStatusValue, { label: string; className: string }>
 > = {
+  dispatched: {
+    label: 'Dispatched',
+    className:
+      'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+  },
   working: {
-    label: 'Planning',
+    label: 'Executing',
     className:
       'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
   },

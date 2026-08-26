@@ -126,6 +126,7 @@ export const leadUpdateType = pgEnum('lead_update_type', [
 
 
 export const workerStatus = pgEnum('worker_status', [
+  'dispatched',
   'working',
   'plan_ready',
   'implementing',

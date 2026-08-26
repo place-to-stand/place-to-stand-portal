@@ -37,6 +37,12 @@ const TERMINAL_STATUSES: string[] = [
 
 function CompactStatusBadge({ status }: { status: WorkerCommentStatus | string }) {
   switch (status) {
+    case 'dispatched':
+      return (
+        <Badge variant='secondary' className='gap-1 text-[10px]'>
+          Dispatched
+        </Badge>
+      )
     case 'working':
     case 'implementing':
       return (
