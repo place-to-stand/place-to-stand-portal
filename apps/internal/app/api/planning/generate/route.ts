@@ -13,6 +13,10 @@ import {
   appendMessage,
   createRevision,
   updateThreadVersion,
+  startThreadGeneration,
+  updateThreadPartialContent,
+  finishThreadGeneration,
+  failThreadGeneration,
 } from '@/lib/queries/planning'
 import {
   PLANNING_MODEL_TIERS,
@@ -140,6 +144,16 @@ export async function POST(request: Request) {
   // Haiku doesn't support extended thinking
   const supportsThinking = tierSupportsThinking(modelTier)
 
+  // Mark the thread as actively generating so a client that navigates away
+  // and comes back (or a fresh mount) can detect and resume this in-flight
+  // generation instead of showing the blank initial-planning screen.
+  await startThreadGeneration(threadId, nextVersion)
+
+  const PARTIAL_PERSIST_INTERVAL_MS = 1500
+  let accumulatedText = ''
+  let lastPersistedAt = 0
+  let hasErrored = false
+
   const result = streamText({
     model: gateway(gatewayModel),
     system: systemPrompt,
@@ -153,17 +167,47 @@ export async function POST(request: Request) {
           } satisfies AnthropicLanguageModelOptions,
         }
       : undefined,
+    onChunk: async ({ chunk }) => {
+      if (chunk.type !== 'text-delta') return
+
+      accumulatedText += chunk.text
+      const now = Date.now()
+      if (now - lastPersistedAt < PARTIAL_PERSIST_INTERVAL_MS) return
+
+      lastPersistedAt = now
+      try {
+        await updateThreadPartialContent(threadId, accumulatedText)
+      } catch (error) {
+        console.error('[planning/generate] partial content persist failed', error)
+      }
+    },
+    onError: async ({ error }) => {
+      hasErrored = true
+      try {
+        await failThreadGeneration(
+          threadId,
+          error instanceof Error ? error.message : 'Generation failed'
+        )
+      } catch (persistError) {
+        console.error('[planning/generate] failed to persist generation error', persistError)
+      }
+    },
     onFinish: async ({ text }) => {
-      if (!text) return
+      if (text) {
+        // Persist assistant message
+        await appendMessage(threadId, 'assistant', text)
 
-      // Persist assistant message
-      await appendMessage(threadId, 'assistant', text)
+        // Save as revision
+        await createRevision(threadId, nextVersion, text, feedback || undefined)
 
-      // Save as revision
-      await createRevision(threadId, nextVersion, text, feedback || undefined)
+        // Update thread version
+        await updateThreadVersion(threadId, nextVersion)
+      }
 
-      // Update thread version
-      await updateThreadVersion(threadId, nextVersion)
+      // onError may have already marked the thread as errored — don't clobber that.
+      if (!hasErrored) {
+        await finishThreadGeneration(threadId)
+      }
     },
   })
 

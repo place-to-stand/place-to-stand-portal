@@ -22,6 +22,8 @@ const getOrCreateSessionSchema = z.object({
   repoLinkId: z.string().uuid(),
 })
 
+export type PlanThreadGenerationStatus = 'idle' | 'streaming' | 'error'
+
 export type PlanningSessionData = {
   sessionId: string
   threads: Array<{
@@ -29,6 +31,10 @@ export type PlanningSessionData = {
     model: string
     modelLabel: string
     currentVersion: number
+    generationStatus: PlanThreadGenerationStatus
+    generatingVersion: number | null
+    partialContent: string | null
+    generationError: string | null
   }>
 }
 
@@ -69,6 +75,10 @@ export async function getOrCreatePlanningSession(input: {
         model: t.model,
         modelLabel: t.modelLabel,
         currentVersion: t.currentVersion,
+        generationStatus: t.generationStatus,
+        generatingVersion: t.generatingVersion,
+        partialContent: t.partialContent,
+        generationError: t.generationError,
       })),
     },
   }
@@ -85,7 +95,7 @@ const addThreadSchema = z.object({
 })
 
 type AddThreadResult =
-  | { thread: { id: string; model: string; modelLabel: string; currentVersion: number } }
+  | { thread: PlanningSessionData['threads'][number] }
   | { error: string }
 
 export async function addPlanThread(input: {
@@ -108,6 +118,10 @@ export async function addPlanThread(input: {
       model: thread.model,
       modelLabel: thread.modelLabel,
       currentVersion: thread.currentVersion,
+      generationStatus: thread.generationStatus,
+      generatingVersion: thread.generatingVersion,
+      partialContent: thread.partialContent,
+      generationError: thread.generationError,
     },
   }
 }

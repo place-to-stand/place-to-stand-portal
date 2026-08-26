@@ -1450,6 +1450,12 @@ export const planningSessionStatus = pgEnum('planning_session_status', [
   'deployed',
 ])
 
+export const planThreadGenerationStatus = pgEnum('plan_thread_generation_status', [
+  'idle',
+  'streaming',
+  'error',
+])
+
 export const planningSessions = pgTable(
   'planning_sessions',
   {
@@ -1494,6 +1500,12 @@ export const planThreads = pgTable(
     model: text().notNull(),
     modelLabel: text('model_label').notNull(),
     currentVersion: integer('current_version').default(0).notNull(),
+    generationStatus: planThreadGenerationStatus('generation_status')
+      .default('idle')
+      .notNull(),
+    generatingVersion: integer('generating_version'),
+    partialContent: text('partial_content'),
+    generationError: text('generation_error'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
       .notNull(),
