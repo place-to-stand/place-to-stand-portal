@@ -83,6 +83,10 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
   // record-cycle shortcuts; no conflict with the sidebar's ⌘B.
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
+      // Yield when something closer to the target already claimed the event —
+      // e.g. the rich text editor's ⌘K link shortcut (ProseMirror calls
+      // preventDefault before the event bubbles up to window).
+      if (e.defaultPrevented) return
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault()
         setOpen(current => !current)
