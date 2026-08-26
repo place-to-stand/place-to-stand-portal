@@ -1,6 +1,7 @@
 import { streamText, stepCountIs, type ModelMessage } from 'ai'
 import { createGateway } from '@ai-sdk/gateway'
 import type { AnthropicLanguageModelOptions } from '@ai-sdk/anthropic'
+import { after } from 'next/server'
 import { z } from 'zod'
 
 import { getCurrentUser } from '@/lib/auth/session'
@@ -164,6 +165,19 @@ export async function POST(request: Request) {
       // Update thread version
       await updateThreadVersion(threadId, nextVersion)
     },
+  })
+
+  // Keep generating server-side even if the client disconnects (sheet closed,
+  // navigation away, etc.) — streamText is backpressure-gated on consumption,
+  // so without this, an early disconnect stalls generation and onFinish (the
+  // only place the assistant message gets persisted) never runs. `after()`
+  // keeps the function alive long enough for consumeStream() to finish.
+  after(async () => {
+    await result.consumeStream({
+      onError: error => {
+        console.error('[planning/generate] consumeStream error', error)
+      },
+    })
   })
 
   return result.toUIMessageStreamResponse()

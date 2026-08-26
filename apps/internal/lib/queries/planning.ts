@@ -53,6 +53,16 @@ export async function updateSessionStatus(
 // Threads
 // ---------------------------------------------------------------------------
 
+export async function getThreadById(threadId: string) {
+  const [thread] = await db
+    .select()
+    .from(planThreads)
+    .where(eq(planThreads.id, threadId))
+    .limit(1)
+
+  return thread ?? null
+}
+
 export async function getThreadsForSession(sessionId: string) {
   return db
     .select()
