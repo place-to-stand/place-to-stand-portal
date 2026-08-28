@@ -8,7 +8,7 @@ import { requireUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { contacts, contactClients, users } from '@/lib/db/schema'
 import {
-  fetchClientsWithMetrics,
+  fetchClientCycleDirectory,
   fetchProjectsForClient,
   resolveClientIdentifier,
 } from '@/lib/data/clients'
@@ -115,14 +115,14 @@ export default async function ClientDetailPage({
     : Promise.resolve(null)
 
   const [
-    allClients,
+    cycleClients,
     projects,
     clientContacts,
     originationContact,
     originationUser,
     closerUser,
   ] = await Promise.all([
-    fetchClientsWithMetrics(user),
+    fetchClientCycleDirectory(user),
     fetchProjectsForClient(user, client.resolvedId),
     // Fetch contacts for this client via junction table
     db.select({
@@ -157,7 +157,7 @@ export default async function ClientDetailPage({
       contentClassName='space-y-6'
     >
       <ClientRecordCycle
-        clients={allClients.map(entry => ({ id: entry.id, slug: entry.slug }))}
+        clients={cycleClients}
         selectedClientId={client.resolvedId}
       />
       <ClientDetail

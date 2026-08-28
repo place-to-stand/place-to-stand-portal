@@ -101,7 +101,11 @@ export const fetchClientsWithMetrics = cache(
     const originationUsers = aliasedTable(users, 'origination_users')
     const closerUsers = aliasedTable(users, 'closer_users')
 
-    // Fetch base client data with project counts
+    // Base client data. Project counts are derived below from the per-client
+    // project rows we fetch anyway — the previous projects join + 21-column
+    // GROUP BY fanned out clients × projects only to count rows the second
+    // query re-fetched. The remaining joins are all many-to-one, so this
+    // returns exactly one row per client with no grouping.
     const rows = await db
       .select({
         id: clients.id,
@@ -126,18 +130,8 @@ export const fetchClientsWithMetrics = cache(
         createdAt: clients.createdAt,
         updatedAt: clients.updatedAt,
         deletedAt: clients.deletedAt,
-        projectCount: sql<number>`
-          count(${projects.id}) filter (where ${projects.deletedAt} is null)
-        `.as('project_count'),
-        activeProjectCount: sql<number>`
-          count(${projects.id}) filter (
-            where ${projects.deletedAt} is null
-            and lower(${projects.status}::text) in ('active', 'onboarding')
-          )
-        `.as('active_project_count'),
       })
       .from(clients)
-      .leftJoin(projects, eq(projects.clientId, clients.id))
       .leftJoin(contacts, eq(clients.originationContactId, contacts.id))
       .leftJoin(
         originationUsers,
@@ -145,30 +139,6 @@ export const fetchClientsWithMetrics = cache(
       )
       .leftJoin(closerUsers, eq(clients.closerUserId, closerUsers.id))
       .where(and(...baseConditions))
-      .groupBy(
-        clients.id,
-        clients.name,
-        clients.slug,
-        clients.notes,
-        clients.website,
-        clients.billingType,
-        clients.state,
-        clients.originationContactId,
-        contacts.name,
-        clients.originationUserId,
-        originationUsers.fullName,
-        originationUsers.email,
-        originationUsers.avatarUrl,
-        originationUsers.updatedAt,
-        clients.closerUserId,
-        closerUsers.fullName,
-        closerUsers.email,
-        closerUsers.avatarUrl,
-        closerUsers.updatedAt,
-        clients.createdAt,
-        clients.updatedAt,
-        clients.deletedAt
-      )
       .orderBy(asc(clients.name))
 
     if (rows.length === 0) {
@@ -177,24 +147,25 @@ export const fetchClientsWithMetrics = cache(
 
     const clientIds = rows.map(r => r.id)
 
-    const clientHours = await getClientHoursTotals(db, clientIds)
-
     // Fetch every non-deleted project per client (any status). The active
     // list is derived below — the definition of "active" (ACTIVE/ONBOARDING)
     // is unchanged; "total" is any status, deletedAt IS NULL.
-    const projectsData = await db
-      .select({
-        id: projects.id,
-        name: projects.name,
-        slug: projects.slug,
-        status: projects.status,
-        clientId: projects.clientId,
-      })
-      .from(projects)
-      .where(
-        and(inArray(projects.clientId, clientIds), isNull(projects.deletedAt))
-      )
-      .orderBy(asc(projects.name))
+    const [clientHours, projectsData] = await Promise.all([
+      getClientHoursTotals(db, clientIds),
+      db
+        .select({
+          id: projects.id,
+          name: projects.name,
+          slug: projects.slug,
+          status: projects.status,
+          clientId: projects.clientId,
+        })
+        .from(projects)
+        .where(
+          and(inArray(projects.clientId, clientIds), isNull(projects.deletedAt))
+        )
+        .orderBy(asc(projects.name)),
+    ])
 
     // Group projects by client ID
     const projectsMap = new Map<string, ClientProjectSummary[]>()
@@ -243,13 +214,69 @@ export const fetchClientsWithMetrics = cache(
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
         deletedAt: row.deletedAt,
-        projectCount: Number(row.projectCount ?? 0),
-        activeProjectCount: Number(row.activeProjectCount ?? 0),
+        projectCount: allProjects.length,
+        activeProjectCount: activeProjects.length,
         activeProjects,
         allProjects,
         totalHoursPurchased,
         totalHoursUsed,
         hoursRemaining,
+      }
+    })
+  }
+)
+
+/**
+ * Name-ordered `{ id, slug }` directory of live clients — the prev/next
+ * `ClientRecordCycle` needs exactly this and nothing more. It previously rode
+ * on `fetchClientsWithMetrics`, which dragged the full hours/projects metrics
+ * pipeline onto every client detail render.
+ */
+export const fetchClientCycleDirectory = cache(
+  async (user: AppUser): Promise<Array<{ id: string; slug: string | null }>> => {
+    assertAdmin(user)
+
+    return db
+      .select({ id: clients.id, slug: clients.slug })
+      .from(clients)
+      .where(isNull(clients.deletedAt))
+      .orderBy(asc(clients.name))
+  }
+)
+
+export type ClientHoursSummary = {
+  id: string
+  billingType: 'prepaid' | 'net_30'
+  totalHoursPurchased: number
+  hoursRemaining: number
+}
+
+/**
+ * Billing type + prepaid burndown per live client — what the projects landing
+ * hours badge needs. Only prepaid clients hit the time-log aggregate; net_30
+ * clients render a flat badge with no totals.
+ */
+export const fetchClientHoursSummaries = cache(
+  async (user: AppUser): Promise<ClientHoursSummary[]> => {
+    assertAdmin(user)
+
+    const rows = await db
+      .select({ id: clients.id, billingType: clients.billingType })
+      .from(clients)
+      .where(isNull(clients.deletedAt))
+
+    const prepaidIds = rows
+      .filter(row => row.billingType === 'prepaid')
+      .map(row => row.id)
+    const clientHours = await getClientHoursTotals(db, prepaidIds)
+
+    return rows.map(row => {
+      const totals = clientHoursTotalsFor(clientHours, row.id)
+      return {
+        id: row.id,
+        billingType: row.billingType,
+        totalHoursPurchased: totals.purchased,
+        hoursRemaining: totals.remaining,
       }
     })
   }

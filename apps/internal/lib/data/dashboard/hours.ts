@@ -47,39 +47,18 @@ export async function fetchHoursSnapshot(
   const { year, month } = clampedCursor
   const { startDate, endDate } = buildMonthDateRange(year, month)
 
-  // My hours: billable (CLIENT project) hours only
-  const myHours = await sumHoursWithProjectFilter({
-    filters: [
-      eq(timeLogs.userId, user.id),
-      gte(timeLogs.loggedOn, startDate),
-      lte(timeLogs.loggedOn, endDate),
-      isNull(timeLogs.deletedAt),
-    ],
-    projectType: 'CLIENT',
-  })
+  const myFilters: SQL<unknown>[] = [
+    eq(timeLogs.userId, user.id),
+    gte(timeLogs.loggedOn, startDate),
+    lte(timeLogs.loggedOn, endDate),
+    isNull(timeLogs.deletedAt),
+  ]
 
   const baseFilters: SQL<unknown>[] = [
     gte(timeLogs.loggedOn, startDate),
     lte(timeLogs.loggedOn, endDate),
     isNull(timeLogs.deletedAt),
   ]
-
-  // Company hours: billable (CLIENT project) hours only
-  const companyHours = await sumHoursWithProjectFilter({
-    filters: baseFilters,
-    projectType: 'CLIENT',
-  })
-
-  // Internal/Personal hours: non-billable project hours for the current user
-  const internalPersonalHours = await sumHoursWithProjectFilter({
-    filters: [
-      eq(timeLogs.userId, user.id),
-      gte(timeLogs.loggedOn, startDate),
-      lte(timeLogs.loggedOn, endDate),
-      isNull(timeLogs.deletedAt),
-    ],
-    projectType: 'NON_CLIENT',
-  })
 
   const { startTimestamp, endTimestamp } = buildMonthTimestampRange(year, month)
   const prepaidFilters = [
@@ -88,11 +67,24 @@ export async function fetchHoursSnapshot(
     isNull(hourBlocks.deletedAt),
   ]
 
-  const companyHoursPrepaid = await sumPrepaidHours({ filters: prepaidFilters })
-
-  const timeLogPage = await fetchMyMonthTimeLogs(user, clampedCursor, {
-    offset: 0,
-  })
+  // All five aggregates and the log page derive from the clamped cursor
+  // alone — awaiting them one by one cost a serial DB round trip each.
+  const [
+    // My hours: billable (CLIENT project) hours only
+    myHours,
+    // Company hours: billable (CLIENT project) hours only
+    companyHours,
+    // Internal/Personal hours: non-billable project hours for the current user
+    internalPersonalHours,
+    companyHoursPrepaid,
+    timeLogPage,
+  ] = await Promise.all([
+    sumHoursWithProjectFilter({ filters: myFilters, projectType: 'CLIENT' }),
+    sumHoursWithProjectFilter({ filters: baseFilters, projectType: 'CLIENT' }),
+    sumHoursWithProjectFilter({ filters: myFilters, projectType: 'NON_CLIENT' }),
+    sumPrepaidHours({ filters: prepaidFilters }),
+    fetchMyMonthTimeLogs(user, clampedCursor, { offset: 0 }),
+  ])
 
   return {
     month,
@@ -131,35 +123,36 @@ export async function fetchMyMonthTimeLogs(
     isNull(projects.deletedAt)
   )
 
-  const rows = await db
-    .select({
-      id: timeLogs.id,
-      loggedOn: timeLogs.loggedOn,
-      hours: timeLogs.hours,
-      note: timeLogs.note,
-      createdAt: timeLogs.createdAt,
-      projectId: projects.id,
-      projectName: projects.name,
-      projectSlug: projects.slug,
-      projectType: projects.type,
-      clientName: clients.name,
-      clientSlug: clients.slug,
-    })
-    .from(timeLogs)
-    .innerJoin(projects, eq(timeLogs.projectId, projects.id))
-    .leftJoin(clients, eq(projects.clientId, clients.id))
-    .where(windowFilter)
-    // createdAt breaks ties within a day; id makes the order total, so paging
-    // can't show or skip a row because two logs share a timestamp.
-    .orderBy(desc(timeLogs.loggedOn), desc(timeLogs.createdAt), desc(timeLogs.id))
-    .limit(limit)
-    .offset(offset)
-
-  const [countRow] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(timeLogs)
-    .innerJoin(projects, eq(timeLogs.projectId, projects.id))
-    .where(windowFilter)
+  const [rows, [countRow]] = await Promise.all([
+    db
+      .select({
+        id: timeLogs.id,
+        loggedOn: timeLogs.loggedOn,
+        hours: timeLogs.hours,
+        note: timeLogs.note,
+        createdAt: timeLogs.createdAt,
+        projectId: projects.id,
+        projectName: projects.name,
+        projectSlug: projects.slug,
+        projectType: projects.type,
+        clientName: clients.name,
+        clientSlug: clients.slug,
+      })
+      .from(timeLogs)
+      .innerJoin(projects, eq(timeLogs.projectId, projects.id))
+      .leftJoin(clients, eq(projects.clientId, clients.id))
+      .where(windowFilter)
+      // createdAt breaks ties within a day; id makes the order total, so paging
+      // can't show or skip a row because two logs share a timestamp.
+      .orderBy(desc(timeLogs.loggedOn), desc(timeLogs.createdAt), desc(timeLogs.id))
+      .limit(limit)
+      .offset(offset),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(timeLogs)
+      .innerJoin(projects, eq(timeLogs.projectId, projects.id))
+      .where(windowFilter),
+  ])
 
   const totalCount = Number(countRow?.count ?? 0)
 

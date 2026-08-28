@@ -7,7 +7,10 @@ import {
   fetchLandingProjectCounts,
   fetchProjectsForLanding,
 } from '@/lib/data/projects'
-import { fetchClientsWithMetrics } from '@/lib/data/clients'
+import {
+  fetchClientHoursSummaries,
+  type ClientHoursSummary,
+} from '@/lib/data/clients'
 import { fetchAdminUsers } from '@/lib/data/users'
 import { requireUser } from '@/lib/auth/session'
 import { fetchClientDirectory } from '@/lib/queries/clients'
@@ -33,20 +36,20 @@ export default async function ProjectsPage({
 
   // One wave: nothing below depends on anything else here, and the old
   // second Promise.all added a full serial round-trip level per request.
-  const [projects, unfilteredCounts, clientsWithMetrics, clientDirectory, admins] =
+  const [projects, unfilteredCounts, clientHoursSummaries, clientDirectory, admins] =
     await Promise.all([
       fetchProjectsForLanding({
         statuses,
         search: search ?? undefined,
       }),
       fetchLandingProjectCounts(user.id),
-      fetchClientsWithMetrics(user),
+      fetchClientHoursSummaries(user),
       fetchClientDirectory(),
       fetchAdminUsers(),
     ])
   const landingClients = buildLandingClients(projects)
   const filteredProjectCount = countVisibleProjects(projects, user.id)
-  const clientHoursMap = buildClientHoursMap(clientsWithMetrics)
+  const clientHoursMap = buildClientHoursMap(clientHoursSummaries)
 
   const clientRows: ClientRow[] = clientDirectory.map(client => ({
     id: client.id,
@@ -114,7 +117,7 @@ function countVisibleProjects(
 }
 
 function buildClientHoursMap(
-  clients: Awaited<ReturnType<typeof fetchClientsWithMetrics>>
+  clients: ClientHoursSummary[]
 ): Record<string, ClientHoursData> {
   const map: Record<string, ClientHoursData> = {}
 
