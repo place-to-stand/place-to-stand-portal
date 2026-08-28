@@ -1,0 +1,2 @@
+CREATE INDEX "idx_time_logs_logged_on" ON "time_logs" USING btree ("logged_on") WHERE (deleted_at IS NULL);--> statement-breakpoint
+CREATE INDEX "idx_time_logs_project_logged_on" ON "time_logs" USING btree ("project_id" uuid_ops,"logged_on") WHERE (deleted_at IS NULL);

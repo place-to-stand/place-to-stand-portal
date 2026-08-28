@@ -4,7 +4,7 @@ import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { requireUser } from '@/lib/auth/session'
 import { fetchClientsWithMetrics } from '@/lib/data/clients'
-import { listClientsForSettings } from '@/lib/queries/clients'
+import { countClientsForSettings } from '@/lib/queries/clients'
 import {
   parseClientsLandingSort,
   parseClientsSearchParams,
@@ -28,33 +28,22 @@ type ClientsPageProps = {
 export default async function ClientsPage({ searchParams }: ClientsPageProps) {
   const user = await requireUser()
   const params = searchParams ? await searchParams : {}
-  const { cursor, direction, limit, billing, search, sort } =
-    parseClientsSearchParams(params)
-  // `sort` above stays keyset-safe for the paginated query below; the landing
-  // table sorts in memory and accepts the wider metric-backed allowlist.
+  const { billing, search } = parseClientsSearchParams(params)
   const landingSort = parseClientsLandingSort(params)
 
   // Share links: `?client=<id>` opens the edit sheet even when the filtered
   // landing list doesn't contain that row (redirects to the archive tab when
   // the client is archived).
   const clientParam = params.client
-  const deepLink = await resolveClientDeepLink(
-    user,
-    Array.isArray(clientParam) ? clientParam[0] : clientParam,
-    'active'
-  )
 
-  const [clients, managementData] = await Promise.all([
+  const [deepLink, clients, counts] = await Promise.all([
+    resolveClientDeepLink(
+      user,
+      Array.isArray(clientParam) ? clientParam[0] : clientParam,
+      'active'
+    ),
     fetchClientsWithMetrics(user, search, billing),
-    listClientsForSettings(user, {
-      status: 'active',
-      billing,
-      search,
-      cursor,
-      direction,
-      limit,
-      sort,
-    }),
+    countClientsForSettings(user, { status: 'active', billing, search }),
   ])
 
   const sortedClients = sortLandingClients(clients, landingSort)
@@ -66,8 +55,8 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
       activeTab='clients'
       count={{
         label: 'clients',
-        total: managementData.unfilteredTotalCount,
-        filteredTotal: managementData.totalCount,
+        total: counts.unfilteredTotalCount,
+        filteredTotal: counts.totalCount,
       }}
       primaryAction={<ClientsAddButton />}
     >

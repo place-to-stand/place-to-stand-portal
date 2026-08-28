@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, sql, type AnyColumn } from 'drizzle-orm'
+import { and, eq, gte, inArray, isNull, or, sql, type AnyColumn, type SQL } from 'drizzle-orm'
 
 import type { DbClient } from './client'
 import { clientBillingTerms, hourBlocks, projects, timeLogs } from './schema'
@@ -57,26 +57,81 @@ export function clientHoursTotalsFor(
  * 2. Consecutive same-type terms take the era's START, not the latest row. A
  *    same-month edit-then-revert can upsert a second prepaid term; `max` would
  *    jump the boundary forward and discard usage that legitimately drew down.
- * 3. A client with no prepaid term at all falls back to `0001-01-01`, i.e.
- *    count everything — matching the old behaviour for net_30-only clients.
+ * 3. A client with no prepaid term at all has no row in the returned map,
+ *    which callers treat as "count everything" — matching the old behaviour
+ *    for net_30-only clients.
  */
-function prepaidEraStart(clientIdRef: AnyColumn) {
-  return sql`COALESCE((
-    SELECT min(era.effective_from)
-    FROM ${clientBillingTerms} era
-    WHERE era.client_id = ${clientIdRef}
-      AND era.billing_type = 'prepaid'
-      AND era.deleted_at IS NULL
-      AND era.effective_from <= CURRENT_DATE
-      AND era.effective_from > COALESCE((
-        SELECT max(prior.effective_from)
-        FROM ${clientBillingTerms} prior
-        WHERE prior.client_id = ${clientIdRef}
-          AND prior.billing_type <> 'prepaid'
-          AND prior.deleted_at IS NULL
-          AND prior.effective_from <= CURRENT_DATE
-      ), DATE '0001-01-01')
-  ), DATE '0001-01-01')`
+async function fetchPrepaidEraStarts(
+  db: DbClient,
+  clientIds: string[]
+): Promise<Map<string, string>> {
+  const rows = await db
+    .select({
+      clientId: clientBillingTerms.clientId,
+      eraStart: sql<string>`min(${clientBillingTerms.effectiveFrom})`,
+    })
+    .from(clientBillingTerms)
+    .where(
+      and(
+        inArray(clientBillingTerms.clientId, clientIds),
+        eq(clientBillingTerms.billingType, 'prepaid'),
+        isNull(clientBillingTerms.deletedAt),
+        sql`${clientBillingTerms.effectiveFrom} <= CURRENT_DATE`,
+        sql`${clientBillingTerms.effectiveFrom} > COALESCE((
+          SELECT max(prior.effective_from)
+          FROM ${clientBillingTerms} prior
+          WHERE prior.client_id = ${clientBillingTerms.clientId}
+            AND prior.billing_type <> 'prepaid'
+            AND prior.deleted_at IS NULL
+            AND prior.effective_from <= CURRENT_DATE
+        ), DATE '0001-01-01')`
+      )
+    )
+    .groupBy(clientBillingTerms.clientId)
+
+  const eraByClient = new Map<string, string>()
+  for (const row of rows) {
+    if (row.eraStart) {
+      eraByClient.set(row.clientId, row.eraStart)
+    }
+  }
+  return eraByClient
+}
+
+/**
+ * Turns the per-client era map into one sargable predicate: clients are
+ * grouped by distinct era date, and each group contributes
+ * `(client_id IN (...) AND date_col >= era)`. Clients with no prepaid era
+ * (the `0001-01-01` fallback — count everything) skip the date clause
+ * entirely. Distinct eras are few (most clients never switch billing type),
+ * so the OR stays short and every branch can use an index on the date column
+ * — unlike the previous correlated subquery, which Postgres re-evaluated per
+ * candidate row and which made the predicate unindexable.
+ */
+function buildEraScopedCondition(
+  clientIdColumn: AnyColumn,
+  dateColumn: AnyColumn,
+  clientIds: string[],
+  eraByClient: Map<string, string>
+): SQL {
+  const idsByEra = new Map<string | null, string[]>()
+  for (const clientId of clientIds) {
+    const era = eraByClient.get(clientId) ?? null
+    const ids = idsByEra.get(era) ?? []
+    ids.push(clientId)
+    idsByEra.set(era, ids)
+  }
+
+  const branches: SQL[] = []
+  for (const [era, ids] of idsByEra) {
+    branches.push(
+      era
+        ? and(inArray(clientIdColumn, ids), gte(dateColumn, era))!
+        : inArray(clientIdColumn, ids)
+    )
+  }
+
+  return or(...branches)!
 }
 
 /**
@@ -108,6 +163,8 @@ export async function getClientHoursTotals(
     return totals
   }
 
+  const eraByClient = await fetchPrepaidEraStarts(db, clientIds)
+
   const [purchasedRows, usedRows] = await Promise.all([
     db
       .select({
@@ -117,9 +174,13 @@ export async function getClientHoursTotals(
       .from(hourBlocks)
       .where(
         and(
-          inArray(hourBlocks.clientId, clientIds),
           isNull(hourBlocks.deletedAt),
-          sql`${hourBlocks.billingMonth} >= ${prepaidEraStart(hourBlocks.clientId)}`
+          buildEraScopedCondition(
+            hourBlocks.clientId,
+            hourBlocks.billingMonth,
+            clientIds,
+            eraByClient
+          )
         )
       )
       .groupBy(hourBlocks.clientId),
@@ -132,7 +193,6 @@ export async function getClientHoursTotals(
       .innerJoin(projects, eq(timeLogs.projectId, projects.id))
       .where(
         and(
-          inArray(projects.clientId, clientIds),
           isNull(timeLogs.deletedAt),
           isNull(projects.deletedAt),
           // Only client work draws down a prepaid balance. Redundant while
@@ -140,7 +200,12 @@ export async function getClientHoursTotals(
           // schema does not enforce that pairing, and the monthly-close queries
           // all carry the same guard.
           eq(projects.type, 'CLIENT'),
-          sql`${timeLogs.loggedOn} >= ${prepaidEraStart(projects.clientId)}`
+          buildEraScopedCondition(
+            projects.clientId,
+            timeLogs.loggedOn,
+            clientIds,
+            eraByClient
+          )
         )
       )
       .groupBy(projects.clientId),

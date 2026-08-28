@@ -887,6 +887,18 @@ export const timeLogs = pgTable(
     index('idx_time_logs_user_id')
       .using('btree', table.userId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
+    // Every hours aggregate (client burndown, dashboard snapshot, monthly
+    // close) filters live logs by logged_on, alone or per project.
+    index('idx_time_logs_logged_on')
+      .using('btree', table.loggedOn.asc().nullsLast())
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_time_logs_project_logged_on')
+      .using(
+        'btree',
+        table.projectId.asc().nullsLast().op('uuid_ops'),
+        table.loggedOn.asc().nullsLast()
+      )
+      .where(sql`(deleted_at IS NULL)`),
     foreignKey({
       columns: [table.projectId],
       foreignColumns: [projects.id],
