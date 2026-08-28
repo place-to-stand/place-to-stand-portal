@@ -5,6 +5,10 @@ import { AuthShell, authLinkClass } from "@pts/ui/auth-shell";
 
 import { ForgotPasswordForm } from "./forgot-password-form";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 type PageProps = {
   searchParams?: Promise<{ redirect?: string }>;
 };

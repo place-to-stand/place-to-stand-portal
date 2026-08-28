@@ -15,6 +15,10 @@ import { SubmissionsTable } from '../_components/submissions-table'
 import { resolveSubmissionDeepLink } from '../_lib/submission-deep-link'
 import { SUBMISSIONS_TABS } from '../_lib/tabs'
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 export const metadata: Metadata = {
   title: 'Submissions Archive',
 }

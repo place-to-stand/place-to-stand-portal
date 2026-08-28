@@ -17,6 +17,10 @@ import type { ClientRow } from '@/lib/settings/clients/client-sheet-utils'
 import { ClientRecordCycle } from '../_components/client-record-cycle'
 import { ClientDetail } from './_components/client-detail'
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 type Params = Promise<{ clientSlug: string }>
 
 type ClientDetailPageProps = {

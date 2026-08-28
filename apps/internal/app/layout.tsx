@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/react'
 
@@ -25,11 +26,10 @@ export const metadata: Metadata = {
   description: 'Client and project management for Place to Stand Agency.',
 }
 
-export default async function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
+// Reads the Supabase session (cookies) behind Suspense so the root shell
+// stays prerenderable — the listener renders nothing, so a null fallback
+// costs no UI while keeping cookie access out of the static shell.
+async function SessionListener() {
   const session = await getSession()
   const initialSession = session
     ? {
@@ -37,7 +37,14 @@ export default async function RootLayout({
         refresh_token: session.refresh_token,
       }
     : null
+  return <SupabaseListener initialSession={initialSession} />
+}
 
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode
+}>) {
   return (
     <html lang='en' suppressHydrationWarning>
       <head>
@@ -68,7 +75,9 @@ export default async function RootLayout({
         )}
       >
         <AppProviders>
-          <SupabaseListener initialSession={initialSession} />
+          <Suspense fallback={null}>
+            <SessionListener />
+          </Suspense>
           {children}
         </AppProviders>
         <Analytics />

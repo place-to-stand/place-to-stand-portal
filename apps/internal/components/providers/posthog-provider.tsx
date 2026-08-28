@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from "react";
-import { Fragment } from "react";
+import { Fragment, Suspense } from "react";
 import { PostHogProvider as PHProvider } from "@posthog/react";
 import posthog from "posthog-js";
 
@@ -17,7 +17,11 @@ export function PostHogProvider({ children }: Props) {
     <PHProvider client={posthog}>
       <Fragment>
         {children}
-        <RouterTransitionTracker />
+        {/* useSearchParams() consumer — Suspense keeps the root shell
+            prerenderable (Cache Components); the tracker renders no UI. */}
+        <Suspense fallback={null}>
+          <RouterTransitionTracker />
+        </Suspense>
         <IdleResumeTracker />
       </Fragment>
     </PHProvider>

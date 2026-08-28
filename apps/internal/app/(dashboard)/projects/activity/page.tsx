@@ -10,6 +10,10 @@ import { ProjectsActivitySection } from '../_components/projects-activity-sectio
 import { ProjectsAddButton } from '../_components/projects-add-button'
 import { PROJECTS_TABS } from '../_lib/tabs'
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 export const metadata: Metadata = {
   title: 'Project Activity | Place to Stand Portal',
 }

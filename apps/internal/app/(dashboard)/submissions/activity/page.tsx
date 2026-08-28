@@ -7,6 +7,10 @@ import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { SubmissionsActivitySection } from '../_components/submissions-activity-section'
 import { SUBMISSIONS_TABS } from '../_lib/tabs'
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 export const metadata: Metadata = {
   title: 'Submissions Activity',
 }

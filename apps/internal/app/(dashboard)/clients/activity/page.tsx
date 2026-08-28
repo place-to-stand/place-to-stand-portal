@@ -8,6 +8,10 @@ import { CLIENTS_TABS } from '../_lib/tabs'
 import { ClientsAddButton } from '../_components/clients-add-button'
 import { ClientsActivitySection } from '../_components/clients-activity-section'
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 export const metadata: Metadata = {
   title: 'Client Activity | Place to Stand Portal',
 }

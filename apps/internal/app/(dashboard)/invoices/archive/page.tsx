@@ -13,6 +13,10 @@ import { InvoicesFilters } from '../_components/invoices-filters'
 import { InvoicesManagementTable } from '../_components/invoices-management-table'
 import { INVOICES_TABS } from '../_lib/tabs'
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 export const metadata: Metadata = {
   title: 'Invoices Archive',
 }

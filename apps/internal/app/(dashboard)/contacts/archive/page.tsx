@@ -14,6 +14,10 @@ import { ContactsManagementTable } from '../_components/contacts-management-tabl
 import { resolveContactDeepLink } from '../_lib/contact-deep-link'
 import { mapContactToTableRow } from '../_lib/map-contact-to-table-row'
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 type ContactsArchivePageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 }

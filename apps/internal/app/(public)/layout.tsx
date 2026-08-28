@@ -1,5 +1,9 @@
 import type { ReactNode } from 'react'
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 export default function PublicLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen overflow-auto bg-background" style={{ height: '100vh' }}>

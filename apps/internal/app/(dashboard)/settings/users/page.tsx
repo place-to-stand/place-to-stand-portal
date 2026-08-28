@@ -13,6 +13,10 @@ import { UsersFilters } from './_components/users-filters'
 import { UsersManagementTable } from './_components/users-management-table'
 import { USERS_TABS } from './_lib/tabs'
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 export const metadata: Metadata = {
   title: 'Users | Settings',
 }

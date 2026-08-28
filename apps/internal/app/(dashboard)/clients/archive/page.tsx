@@ -13,6 +13,10 @@ import { ClientsManagementTable } from '../_components/clients-management-table'
 import { resolveClientDeepLink } from '../_lib/client-deep-link'
 import { mapClientToTableRow } from '../_lib/map-client-to-table-row'
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 type ClientsArchivePageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 }

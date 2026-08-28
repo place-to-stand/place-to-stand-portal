@@ -1,5 +1,9 @@
 import Link from "next/link";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 export default function UnauthorizedPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 px-6 py-12">
