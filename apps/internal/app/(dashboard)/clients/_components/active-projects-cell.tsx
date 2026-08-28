@@ -72,7 +72,7 @@ export function ActiveProjectsCell({
           ({totalProjectCount} total)
         </button>
       </HoverCardTrigger>
-      <HoverCardContent align='start' className='w-64 p-0'>
+      <HoverCardContent align='start' className='w-auto min-w-64 p-0'>
         <ul className='max-h-80 overflow-y-auto py-1'>
           {allProjects.map(project => {
             const projectPath = project.slug ?? project.id
@@ -83,7 +83,7 @@ export function ActiveProjectsCell({
                   className='hover:bg-accent flex items-center gap-2 px-3 py-2 text-sm transition-colors'
                 >
                   <FolderKanban className='text-muted-foreground h-4 w-4 shrink-0' />
-                  <span className='min-w-0 flex-1 truncate'>
+                  <span className='flex-1 whitespace-nowrap'>
                     {project.name}
                   </span>
                   <Badge
@@ -129,7 +129,7 @@ export function ActiveProjectsCell({
             {activeCount} active
           </button>
         </HoverCardTrigger>
-        <HoverCardContent align='start' className='w-56 p-0'>
+        <HoverCardContent align='start' className='w-auto min-w-56 p-0'>
           <ul className='py-1'>
             {projects.map(project => {
               const projectPath = project.slug ?? project.id
@@ -140,7 +140,7 @@ export function ActiveProjectsCell({
                     className='hover:bg-accent flex items-center gap-2 px-3 py-2 text-sm transition-colors'
                   >
                     <FolderKanban className='text-muted-foreground h-4 w-4 shrink-0' />
-                    <span className='truncate'>{project.name}</span>
+                    <span className='whitespace-nowrap'>{project.name}</span>
                   </Link>
                 </li>
               )
