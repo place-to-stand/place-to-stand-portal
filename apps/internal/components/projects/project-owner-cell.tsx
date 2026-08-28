@@ -126,7 +126,11 @@ export function ProjectOwnerCell({
             // ProjectStatusCell's hover treatment: accent surface plus a
             // reveal-on-hover caret, per Jason's ask that the owner cell
             // match the status column.
-            'group focus-visible:ring-ring hover:bg-accent/60 -mx-0.5 inline-flex cursor-pointer items-center gap-1.5 rounded-md p-0.5 focus:outline-none focus-visible:ring-2',
+            // `flex` (block-level), not `inline-flex`: an inline box whose
+            // avatar shows an image (no text) baseline-aligns by its bottom
+            // edge, and the cell's font strut adds ~4px of phantom space
+            // below — rows grew to 44px on prod where avatars load.
+            'group focus-visible:ring-ring hover:bg-accent/60 -mx-0.5 flex w-fit cursor-pointer items-center gap-1.5 rounded-md p-0.5 focus:outline-none focus-visible:ring-2',
             isPending && 'animate-pulse'
           )}
         >
