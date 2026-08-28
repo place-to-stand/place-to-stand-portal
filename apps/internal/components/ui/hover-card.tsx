@@ -203,6 +203,10 @@ function HoverCardContent({
       >
         <PopoverPrimitive.Popup
           data-slot='hover-card-content'
+          // Hover-opened cards must not steal focus (the first link would
+          // render focused/highlighted); keyboard opens keep the default so
+          // Tab still lands inside the popup.
+          initialFocus={openType => (openType === 'keyboard' ? true : false)}
           style={radixVarAliases}
           className={cn(
             // data-open/data-closed are Base UI's spelling of Radix's
