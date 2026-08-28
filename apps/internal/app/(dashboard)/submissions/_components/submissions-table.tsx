@@ -405,13 +405,18 @@ export function SubmissionsTable({
                     </TableCell>
                     <TableCell>
                       {submission.contactName || submission.contactEmail ? (
-                        <div className='flex min-w-0 flex-col'>
-                          <span className='truncate'>
-                            {submission.contactName ?? '—'}
+                        // Single line so rows keep a uniform height: name
+                        // first, email as muted secondary text. Both truncate;
+                        // the detail sheet has the full values.
+                        <div className='flex min-w-0 items-baseline gap-1.5'>
+                          <span className='min-w-0 truncate'>
+                            {submission.contactName ?? submission.contactEmail}
                           </span>
-                          <span className='text-muted-foreground truncate text-xs'>
-                            {submission.contactEmail}
-                          </span>
+                          {submission.contactName && submission.contactEmail ? (
+                            <span className='text-muted-foreground min-w-0 truncate text-xs'>
+                              {submission.contactEmail}
+                            </span>
+                          ) : null}
                         </div>
                       ) : (
                         <span className='text-muted-foreground italic'>
