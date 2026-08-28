@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 
 import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
@@ -8,15 +9,14 @@ import { CONTACTS_TABS } from '../_lib/tabs'
 import { ContactsAddButton } from '../_components/contacts-add-button'
 import { ContactsActivitySection } from '../_components/contacts-activity-section'
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
 export const metadata: Metadata = {
   title: 'Contact Activity | Place to Stand Portal',
 }
 
-export default async function ContactsActivityPage() {
+// All auth access lives here, behind Suspense, so the page keeps a
+// prerenderable shell and client navigations commit instantly (Cache
+// Components instant-navigation pattern).
+async function ContactsActivityContent() {
   await requireRole('ADMIN')
 
   return (
@@ -30,5 +30,28 @@ export default async function ContactsActivityPage() {
         <ContactsActivitySection />
       </section>
     </PageShell>
+  )
+}
+
+// Identical header chrome (breadcrumbs · tabs · add button) so only the
+// content area pulses while auth resolves.
+function ContactsActivityPageFallback() {
+  return (
+    <PageShell
+      breadcrumbs={[...crumbsForNav('/contacts'), { label: 'Activity' }]}
+      tabs={CONTACTS_TABS}
+      activeTab='activity'
+      primaryAction={<ContactsAddButton />}
+    >
+      <section className='bg-background h-96 animate-pulse rounded-xl border p-4 shadow-sm' />
+    </PageShell>
+  )
+}
+
+export default function ContactsActivityPage() {
+  return (
+    <Suspense fallback={<ContactsActivityPageFallback />}>
+      <ContactsActivityContent />
+    </Suspense>
   )
 }

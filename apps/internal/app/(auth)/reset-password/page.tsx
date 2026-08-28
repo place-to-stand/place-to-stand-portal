@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 
 import {
@@ -10,10 +11,6 @@ import {
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 import { PasswordResetForm } from "../force-reset-password/force-reset-form";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 type PageProps = {
   searchParams?: Promise<{
@@ -28,7 +25,10 @@ export const metadata: Metadata = {
   title: "Set new password | Place To Stand Portal",
 };
 
-export default async function ResetPasswordPage({ searchParams }: PageProps) {
+// Supabase session exchange + search-param reads live here, behind Suspense,
+// so the page keeps a prerenderable shell (Cache Components
+// instant-navigation pattern).
+async function ResetPasswordContent({ searchParams }: PageProps) {
   const supabase = getSupabaseServerClient();
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const redirectTo = resolvedSearchParams?.redirect;
@@ -89,5 +89,13 @@ export default async function ResetPasswordPage({ searchParams }: PageProps) {
       {errorMessage ? <p className={authErrorClass}>{errorMessage}</p> : null}
       <PasswordResetForm redirectTo={redirectTo} email={user.email} />
     </AuthShell>
+  );
+}
+
+export default function ResetPasswordPage({ searchParams }: PageProps) {
+  return (
+    <Suspense fallback={null}>
+      <ResetPasswordContent searchParams={searchParams} />
+    </Suspense>
   );
 }

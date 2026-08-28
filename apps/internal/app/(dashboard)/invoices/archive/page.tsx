@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 
 import { PageShell } from '@/components/layout/page-shell'
 import { requireRole } from '@/lib/auth/session'
@@ -13,10 +14,6 @@ import { InvoicesFilters } from '../_components/invoices-filters'
 import { InvoicesManagementTable } from '../_components/invoices-management-table'
 import { INVOICES_TABS } from '../_lib/tabs'
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
 export const metadata: Metadata = {
   title: 'Invoices Archive',
 }
@@ -27,7 +24,10 @@ type InvoicesArchivePageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 }
 
-export default async function InvoicesArchivePage({
+// All auth + data access lives here, behind Suspense, so the page keeps a
+// prerenderable shell and client navigations commit instantly (Cache
+// Components instant-navigation pattern).
+async function InvoicesArchiveContent({
   searchParams,
 }: InvoicesArchivePageProps) {
   const currentUser = await requireRole('ADMIN')
@@ -101,5 +101,30 @@ export default async function InvoicesArchivePage({
         />
       </section>
     </PageShell>
+  )
+}
+
+// Identical header chrome (breadcrumbs · tabs) so only the table area pulses
+// while data streams in. The add button needs the fetched client list, so it
+// appears with the content.
+function InvoicesArchivePageFallback() {
+  return (
+    <PageShell
+      breadcrumbs={[...crumbsForNav('/invoices'), { label: 'Archive' }]}
+      tabs={INVOICES_TABS}
+      activeTab='archive'
+    >
+      <section className='bg-background h-96 animate-pulse rounded-xl border p-4 shadow-sm' />
+    </PageShell>
+  )
+}
+
+export default function InvoicesArchivePage({
+  searchParams,
+}: InvoicesArchivePageProps) {
+  return (
+    <Suspense fallback={<InvoicesArchivePageFallback />}>
+      <InvoicesArchiveContent searchParams={searchParams} />
+    </Suspense>
   )
 }

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 
 import { PageShell } from '@/components/layout/page-shell'
 import { requireRole } from '@/lib/auth/session'
@@ -12,10 +13,6 @@ import { UsersAddButton } from './_components/users-add-button'
 import { UsersFilters } from './_components/users-filters'
 import { UsersManagementTable } from './_components/users-management-table'
 import { USERS_TABS } from './_lib/tabs'
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 export const metadata: Metadata = {
   title: 'Users | Settings',
@@ -44,9 +41,10 @@ type UsersPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 }
 
-export default async function UsersPage({
-  searchParams,
-}: UsersPageProps) {
+// All auth + data access lives here, behind Suspense, so the page keeps a
+// prerenderable shell and client navigations commit instantly (Cache
+// Components instant-navigation pattern).
+async function UsersContent({ searchParams }: UsersPageProps) {
   const currentUser = await requireRole('ADMIN')
   const params = searchParams ? await searchParams : {}
   const { page, limit, role, access, search, sort } =
@@ -113,5 +111,30 @@ export default async function UsersPage({
         />
       </section>
     </PageShell>
+  )
+}
+
+// Identical header chrome (breadcrumbs · tabs · add button) so only the
+// table area pulses while data streams in — the count chip appears with it.
+function UsersPageFallback() {
+  return (
+    <PageShell
+      breadcrumbs={crumbsForNav('/settings/users')}
+      tabs={USERS_TABS}
+      activeTab='users'
+      primaryAction={
+        <UsersAddButton />
+      }
+    >
+      <section className='bg-background h-96 animate-pulse rounded-xl border p-4 shadow-sm' />
+    </PageShell>
+  )
+}
+
+export default function UsersPage({ searchParams }: UsersPageProps) {
+  return (
+    <Suspense fallback={<UsersPageFallback />}>
+      <UsersContent searchParams={searchParams} />
+    </Suspense>
   )
 }

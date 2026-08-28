@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
@@ -7,10 +8,6 @@ import { invoiceViewedEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
 
 import { PublicInvoice } from './public-invoice'
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 type Props = {
   params: Promise<{ token: string }>
@@ -29,7 +26,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export default async function PublicInvoicePage({ params, searchParams }: Props) {
+// All params/session/data access lives here, behind Suspense, so the route
+// keeps a prerenderable shell (Cache Components instant-navigation pattern).
+async function PublicInvoiceContent({ params, searchParams }: Props) {
   const { token } = await params
   const invoice = await getInvoiceByShareToken(token)
 
@@ -87,5 +86,13 @@ export default async function PublicInvoicePage({ params, searchParams }: Props)
       shareToken={token}
       paymentStatus={paymentStatus}
     />
+  )
+}
+
+export default function PublicInvoicePage({ params, searchParams }: Props) {
+  return (
+    <Suspense fallback={null}>
+      <PublicInvoiceContent params={params} searchParams={searchParams} />
+    </Suspense>
   )
 }

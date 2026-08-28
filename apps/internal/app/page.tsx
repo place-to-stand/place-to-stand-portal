@@ -1,17 +1,25 @@
+import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 
 import { getCurrentUser } from '@/lib/auth/session'
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
-export default async function IndexPage() {
+// Redirect-only route: the session check lives behind Suspense so the page
+// keeps a prerenderable shell (Cache Components instant-navigation pattern).
+async function IndexRedirect() {
   const user = await getCurrentUser()
 
   if (!user) {
     redirect('/sign-in')
   }
 
-  redirect('/my/home')
+  // redirect() returns `never`, which keeps this a valid JSX component type.
+  return redirect('/my/home')
+}
+
+export default function IndexPage() {
+  return (
+    <Suspense fallback={null}>
+      <IndexRedirect />
+    </Suspense>
+  )
 }

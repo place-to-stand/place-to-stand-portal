@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -16,10 +17,6 @@ import { leadHref, newLeadHref } from '@/lib/sheets/hrefs'
 import { LEADS_TABS } from '../_lib/tabs'
 import { LeadsArchiveSection } from '../_components/leads-archive-section'
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
 export const metadata: Metadata = {
   title: 'Lead Archive | Place to Stand Portal',
 }
@@ -31,7 +28,23 @@ type PageProps = {
 const firstParam = (value: string | string[] | undefined) =>
   Array.isArray(value) ? value[0] : value
 
-export default async function LeadsArchivePage({ searchParams }: PageProps) {
+// Static add button, shared by the streamed page and the fallback so the
+// header chrome doesn't shift when data arrives.
+function AddLeadButton() {
+  return (
+    <Button asChild size='sm' className='gap-2'>
+      <Link href={newLeadHref()}>
+        <Plus className='h-4 w-4' />
+        Add lead
+      </Link>
+    </Button>
+  )
+}
+
+// All auth + data access lives here, behind Suspense, so the page keeps a
+// prerenderable shell and client navigations commit instantly (Cache
+// Components instant-navigation pattern).
+async function LeadsArchiveContent({ searchParams }: PageProps) {
   const user = await requireUser()
   assertAdmin(user)
   const params = searchParams ? await searchParams : {}
@@ -65,14 +78,7 @@ export default async function LeadsArchivePage({ searchParams }: PageProps) {
       tabs={LEADS_TABS}
       activeTab='archive'
       count={{ label: 'archived leads', total: archivedLeads.length }}
-      primaryAction={
-        <Button asChild size='sm' className='gap-2'>
-          <Link href={newLeadHref()}>
-            <Plus className='h-4 w-4' />
-            Add lead
-          </Link>
-        </Button>
-      }
+      primaryAction={<AddLeadButton />}
     >
       <section className='bg-background rounded-xl border p-4 shadow-sm space-y-3'>
         <LeadsArchiveSection
@@ -83,5 +89,28 @@ export default async function LeadsArchivePage({ searchParams }: PageProps) {
         />
       </section>
     </PageShell>
+  )
+}
+
+// Identical header chrome (breadcrumbs · tabs · add button) so only the
+// table area pulses while data streams in — the count chip appears with it.
+function LeadsArchivePageFallback() {
+  return (
+    <PageShell
+      breadcrumbs={[...crumbsForNav('/leads'), { label: 'Archive' }]}
+      tabs={LEADS_TABS}
+      activeTab='archive'
+      primaryAction={<AddLeadButton />}
+    >
+      <section className='bg-background h-96 animate-pulse rounded-xl border p-4 shadow-sm' />
+    </PageShell>
+  )
+}
+
+export default function LeadsArchivePage({ searchParams }: PageProps) {
+  return (
+    <Suspense fallback={<LeadsArchivePageFallback />}>
+      <LeadsArchiveContent searchParams={searchParams} />
+    </Suspense>
   )
 }

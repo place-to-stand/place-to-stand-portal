@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import { connection } from 'next/server'
+import { Suspense } from 'react'
 import { and, eq, isNull, desc } from 'drizzle-orm'
 
 import { PageShell } from '@/components/layout/page-shell'
@@ -16,10 +18,6 @@ import type { ClientRow } from '@/lib/settings/clients/client-sheet-utils'
 
 import { ClientRecordCycle } from '../_components/client-record-cycle'
 import { ClientDetail } from './_components/client-detail'
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 type Params = Promise<{ clientSlug: string }>
 
@@ -46,9 +44,10 @@ export async function generateMetadata({
   }
 }
 
-export default async function ClientDetailPage({
-  params,
-}: ClientDetailPageProps) {
+// All auth + data access lives here, behind Suspense, so the page keeps a
+// prerenderable shell and client navigations commit instantly (Cache
+// Components instant-navigation pattern).
+async function ClientDetailContent({ params }: ClientDetailPageProps) {
   const { clientSlug } = await params
   const user = await requireUser()
 
@@ -175,6 +174,46 @@ export default async function ClientDetailPage({
         closerUser={closerUser}
       />
     </PageShell>
+  )
+}
+
+// Static crumb portion only — the client name comes from fetched data, so the
+// fallback shows a generic placeholder while the content streams in.
+function ClientDetailPageFallback() {
+  return (
+    <PageShell
+      breadcrumbs={[...crumbsForNav('/clients'), { label: 'Client' }]}
+      contentClassName='space-y-6'
+    >
+      <section className='bg-background h-96 animate-pulse rounded-xl border p-4 shadow-sm' />
+    </PageShell>
+  )
+}
+
+// generateMetadata reads runtime data (`params` + DB), which Cache Components
+// only allows when the page itself is dynamic. This marker opts the page into
+// dynamic rendering without blocking the prerendered shell.
+async function Connection() {
+  await connection()
+  return null
+}
+
+function DynamicMarker() {
+  return (
+    <Suspense>
+      <Connection />
+    </Suspense>
+  )
+}
+
+export default function ClientDetailPage({ params }: ClientDetailPageProps) {
+  return (
+    <>
+      <Suspense fallback={<ClientDetailPageFallback />}>
+        <ClientDetailContent params={params} />
+      </Suspense>
+      <DynamicMarker />
+    </>
   )
 }
 

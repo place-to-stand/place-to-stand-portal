@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { format, getMonth, getYear } from 'date-fns'
 
 import { ArrowRight } from 'lucide-react'
@@ -28,10 +29,6 @@ import {
   TotalPayoutsCard,
 } from './_components/summary-cards'
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
 export const metadata: Metadata = {
   title: 'Monthly Close | Reports',
 }
@@ -46,7 +43,10 @@ function parseSearchParam(value: string | string[] | undefined): string | null {
   return null
 }
 
-export default async function MonthlyClosePage({
+// All auth + data access lives here, behind Suspense, so the page keeps a
+// prerenderable shell and client navigations commit instantly (Cache
+// Components instant-navigation pattern).
+async function MonthlyCloseContent({
   searchParams,
 }: MonthlyClosePageProps) {
   await requireRole('ADMIN')
@@ -191,5 +191,25 @@ export default async function MonthlyClosePage({
         <PartnerPayoutsSection data={report.partnerPayouts} />
       </div>
     </PageShell>
+  )
+}
+
+// Identical header chrome (breadcrumbs) so only the report area pulses while
+// data streams in.
+function MonthlyClosePageFallback() {
+  return (
+    <PageShell breadcrumbs={crumbsForNav('/reports/monthly-close')}>
+      <section className='bg-background h-96 animate-pulse rounded-xl border p-4 shadow-sm' />
+    </PageShell>
+  )
+}
+
+export default function MonthlyClosePage({
+  searchParams,
+}: MonthlyClosePageProps) {
+  return (
+    <Suspense fallback={<MonthlyClosePageFallback />}>
+      <MonthlyCloseContent searchParams={searchParams} />
+    </Suspense>
   )
 }

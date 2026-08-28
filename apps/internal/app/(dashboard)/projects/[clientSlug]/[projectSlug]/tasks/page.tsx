@@ -1,6 +1,9 @@
 import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 
+import { PageShell } from '@/components/layout/page-shell'
+import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { ProjectsBoard } from '../../../projects-board'
 import {
   fetchProjectsLite,
@@ -14,10 +17,6 @@ import { buildQuerySuffix } from '@/lib/sheets/hrefs'
 import { fetchClientDirectory } from '@/lib/queries/clients'
 import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
 import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 export const metadata: Metadata = {
   title: 'Projects | Place to Stand Portal',
@@ -34,10 +33,10 @@ type PageProps = {
 const firstParam = (value: string | string[] | undefined) =>
   Array.isArray(value) ? value[0] : value
 
-export default async function ProjectBoardRoute({
-  params,
-  searchParams,
-}: PageProps) {
+// All auth + data access lives here, behind Suspense, so the page keeps a
+// prerenderable shell and client navigations commit instantly (Cache
+// Components instant-navigation pattern).
+async function ProjectBoardContent({ params, searchParams }: PageProps) {
   const resolvedParams = await params
   const { clientSlug, projectSlug } = resolvedParams
   const resolvedSearchParams = searchParams ? await searchParams : {}
@@ -129,5 +128,27 @@ export default async function ProjectBoardRoute({
       // and hydration measure the cutoff from the same instant.
       now={new Date().toISOString()}
     />
+  )
+}
+
+// Static portion of the board chrome only — the project-name breadcrumb and
+// burndown widget depend on fetched data, so the fallback shows the base
+// crumb with a pulsing board area (mirrors ProjectsBoard's PageShell).
+function ProjectBoardFallback() {
+  return (
+    <PageShell
+      breadcrumbs={crumbsForNav('/projects')}
+      contentClassName='flex h-full min-h-0 flex-col gap-4 sm:gap-6'
+    >
+      <section className='bg-background flex-1 animate-pulse rounded-xl border p-4 shadow-sm' />
+    </PageShell>
+  )
+}
+
+export default function ProjectBoardRoute({ params, searchParams }: PageProps) {
+  return (
+    <Suspense fallback={<ProjectBoardFallback />}>
+      <ProjectBoardContent params={params} searchParams={searchParams} />
+    </Suspense>
   )
 }

@@ -1,9 +1,16 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
+// Redirect-only page: the redirect happens behind Suspense so the route keeps
+// a prerenderable shell (Cache Components instant-navigation pattern).
+async function SettingsIndexRedirect() {
+  return redirect("/settings/users");
+}
 
 export default function SettingsIndexPage() {
-  redirect("/settings/users");
+  return (
+    <Suspense fallback={null}>
+      <SettingsIndexRedirect />
+    </Suspense>
+  );
 }

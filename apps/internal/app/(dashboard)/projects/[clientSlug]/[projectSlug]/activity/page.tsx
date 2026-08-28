@@ -1,6 +1,9 @@
 import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 
+import { PageShell } from '@/components/layout/page-shell'
+import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { ProjectsBoard } from '../../../projects-board'
 import {
   fetchProjectsLite,
@@ -13,10 +16,6 @@ import { fetchClientDirectory } from '@/lib/queries/clients'
 import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
 import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
 export const metadata: Metadata = {
   title: 'Projects | Place to Stand Portal',
 }
@@ -28,7 +27,10 @@ type PageProps = {
   }>
 }
 
-export default async function ProjectActivityRoute({ params }: PageProps) {
+// All auth + data access lives here, behind Suspense, so the page keeps a
+// prerenderable shell and client navigations commit instantly (Cache
+// Components instant-navigation pattern).
+async function ProjectActivityContent({ params }: PageProps) {
   const resolvedParams = await params
   const { clientSlug, projectSlug } = resolvedParams
   const user = await requireUser()
@@ -108,5 +110,27 @@ export default async function ProjectActivityRoute({ params }: PageProps) {
       activeTaskId={null}
       initialTab='activity'
     />
+  )
+}
+
+// Static portion of the workspace chrome only — the project-name breadcrumb
+// depends on fetched data, so the fallback shows the base crumb with a
+// pulsing content area (mirrors ProjectsBoard's PageShell).
+function ProjectActivityFallback() {
+  return (
+    <PageShell
+      breadcrumbs={crumbsForNav('/projects')}
+      contentClassName='flex min-h-fit flex-col gap-4 sm:gap-6'
+    >
+      <section className='bg-background h-96 animate-pulse rounded-xl border p-4 shadow-sm' />
+    </PageShell>
+  )
+}
+
+export default function ProjectActivityRoute({ params }: PageProps) {
+  return (
+    <Suspense fallback={<ProjectActivityFallback />}>
+      <ProjectActivityContent params={params} />
+    </Suspense>
   )
 }

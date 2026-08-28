@@ -1,13 +1,10 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 
 import { AuthShell, authLinkClass } from "@pts/ui/auth-shell";
 
 import { ForgotPasswordForm } from "./forgot-password-form";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 type PageProps = {
   searchParams?: Promise<{ redirect?: string }>;
@@ -17,7 +14,9 @@ export const metadata: Metadata = {
   title: "Reset password | Place To Stand Portal",
 };
 
-export default async function ForgotPasswordPage({ searchParams }: PageProps) {
+// Search-param read lives here, behind Suspense, so the page keeps a
+// prerenderable shell (Cache Components instant-navigation pattern).
+async function ForgotPasswordContent({ searchParams }: PageProps) {
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const redirectTo = resolvedSearchParams?.redirect;
 
@@ -41,5 +40,13 @@ export default async function ForgotPasswordPage({ searchParams }: PageProps) {
     >
       <ForgotPasswordForm redirectTo={redirectTo} />
     </AuthShell>
+  );
+}
+
+export default function ForgotPasswordPage({ searchParams }: PageProps) {
+  return (
+    <Suspense fallback={null}>
+      <ForgotPasswordContent searchParams={searchParams} />
+    </Suspense>
   );
 }

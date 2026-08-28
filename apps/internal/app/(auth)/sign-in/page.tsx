@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
 import { AuthShell } from "@pts/ui/auth-shell";
@@ -9,10 +10,6 @@ import { serverEnv } from "@/lib/env.server";
 import { ClientPortalNotice } from "./client-portal-notice";
 import { SignInForm } from "./sign-in-form";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
 type PageProps = {
   searchParams?: Promise<{ redirect?: string; notice?: string }>;
 };
@@ -21,7 +18,9 @@ export const metadata: Metadata = {
   title: "Sign in | Place to Stand Portal",
 };
 
-export default async function SignInPage({ searchParams }: PageProps) {
+// Auth check + search-param reads live here, behind Suspense, so the page
+// keeps a prerenderable shell (Cache Components instant-navigation pattern).
+async function SignInContent({ searchParams }: PageProps) {
   const user = await getCurrentUser();
   if (user) {
     redirect("/");
@@ -43,5 +42,13 @@ export default async function SignInPage({ searchParams }: PageProps) {
       ) : null}
       <SignInForm redirectTo={redirectTo} />
     </AuthShell>
+  );
+}
+
+export default function SignInPage({ searchParams }: PageProps) {
+  return (
+    <Suspense fallback={null}>
+      <SignInContent searchParams={searchParams} />
+    </Suspense>
   );
 }

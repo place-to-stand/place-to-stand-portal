@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 
 import { PageShell } from '@/components/layout/page-shell'
 import { requireRole } from '@/lib/auth/session'
@@ -17,10 +18,6 @@ import { HourBlocksFilters } from './_components/hour-blocks-filters'
 import { HourBlocksManagementTable } from './_components/hour-blocks-management-table'
 import { HOUR_BLOCKS_TABS } from './_lib/tabs'
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
 export const metadata: Metadata = {
   title: 'Hour Blocks | Settings',
 }
@@ -34,9 +31,10 @@ type HourBlocksPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 }
 
-export default async function HourBlocksPage({
-  searchParams,
-}: HourBlocksPageProps) {
+// All auth + data access lives here, behind Suspense, so the page keeps a
+// prerenderable shell and client navigations commit instantly (Cache
+// Components instant-navigation pattern).
+async function HourBlocksContent({ searchParams }: HourBlocksPageProps) {
   const currentUser = await requireRole('ADMIN')
   const params = searchParams ? await searchParams : {}
 
@@ -100,5 +98,28 @@ export default async function HourBlocksPage({
         />
       </section>
     </PageShell>
+  )
+}
+
+// Identical header chrome (breadcrumbs · tabs) so only the table area pulses
+// while data streams in. The add button needs the fetched client list, so it
+// appears with the content.
+function HourBlocksPageFallback() {
+  return (
+    <PageShell
+      breadcrumbs={crumbsForNav('/hour-blocks')}
+      tabs={HOUR_BLOCKS_TABS}
+      activeTab='hour-blocks'
+    >
+      <section className='bg-background h-96 animate-pulse rounded-xl border p-4 shadow-sm' />
+    </PageShell>
+  )
+}
+
+export default function HourBlocksPage({ searchParams }: HourBlocksPageProps) {
+  return (
+    <Suspense fallback={<HourBlocksPageFallback />}>
+      <HourBlocksContent searchParams={searchParams} />
+    </Suspense>
   )
 }
