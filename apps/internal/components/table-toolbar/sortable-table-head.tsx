@@ -102,6 +102,12 @@ export function SortableTableHead({
           align === 'center' ? 'justify-center text-center' : 'text-left'
         )}
       >
+        {/* Centered heads get a mirror-width spacer so the label sits at
+            true center — the sort icon on the right otherwise pushes it
+            ~9px off-axis relative to the centered cell content below. */}
+        {align === 'center' ? (
+          <span aria-hidden className='size-3.5 shrink-0' />
+        ) : null}
         <span>{children}</span>
         {showAsSorted ? (
           current.direction === 'asc' ? (

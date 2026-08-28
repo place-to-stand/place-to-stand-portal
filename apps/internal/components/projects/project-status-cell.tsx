@@ -76,7 +76,7 @@ export function ProjectStatusCell({
       <DropdownMenuTrigger
         className={cn(
           'group focus-visible:ring-ring inline-flex cursor-pointer items-center gap-1.5 rounded-md focus:outline-none focus-visible:ring-2',
-          variant === 'table' && 'hover:bg-accent/60 -mx-1 p-1',
+          variant === 'table' && 'hover:bg-accent/60 -mx-0.5 p-0.5',
           variant === 'standalone' &&
             'bg-background/20 hover:border-border h-9 border border-transparent px-2 transition-colors',
           className

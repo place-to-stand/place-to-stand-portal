@@ -206,21 +206,9 @@ export function ContactsTableSection({
                 </TableCell>
                 <TableCell className='text-right'>
                   <div className='flex justify-end gap-2'>
-                    {showPreview ? (
-                      <Button
-                        variant='outline'
-                        size='icon-sm'
-                        onClick={e => {
-                          e.stopPropagation()
-                          onRequestPreview(contact)
-                        }}
-                        title='Preview in client portal'
-                        aria-label='Preview in client portal'
-                        disabled={isPending}
-                      >
-                        <Eye className='h-4 w-4' />
-                      </Button>
-                    ) : null}
+                    {/* Promote renders first: it's conditional, so keeping
+                        Preview adjacent to Archive holds the eye icon to one
+                        column across rows. */}
                     {showPromote ? (
                       <DisabledFieldTooltip
                         disabled={promoteDisabled}
@@ -236,6 +224,21 @@ export function ContactsTableSection({
                           <UserPlus className='h-4 w-4' />
                         </Button>
                       </DisabledFieldTooltip>
+                    ) : null}
+                    {showPreview ? (
+                      <Button
+                        variant='outline'
+                        size='icon-sm'
+                        onClick={e => {
+                          e.stopPropagation()
+                          onRequestPreview(contact)
+                        }}
+                        title='Preview in client portal'
+                        aria-label='Preview in client portal'
+                        disabled={isPending}
+                      >
+                        <Eye className='h-4 w-4' />
+                      </Button>
                     ) : null}
                     {showRestore ? (
                       <DisabledFieldTooltip

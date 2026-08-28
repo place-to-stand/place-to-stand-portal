@@ -141,7 +141,8 @@ export function LeadsWorkspace({
           </Button>
         </DisabledFieldTooltip>
       }
-      contentClassName='flex flex-col gap-4 sm:gap-6'
+      // Kanban board: pin to the viewport (columns scroll internally).
+      contentClassName='flex h-full min-h-0 flex-col gap-4 sm:gap-6'
     >
       {leadNotFound && !isCreating ? (
         <div

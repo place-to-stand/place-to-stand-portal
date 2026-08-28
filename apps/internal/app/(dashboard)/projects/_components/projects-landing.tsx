@@ -1,13 +1,24 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState, useTransition } from 'react'
 import type { ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { Building2, Clock, FolderKanban, UserRound, Users } from 'lucide-react'
+import {
+  Archive,
+  Building2,
+  Clock,
+  FolderKanban,
+  Pencil,
+  UserRound,
+  Users,
+} from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { siGithub } from 'simple-icons/icons'
 
+import { Button } from '@pts/ui/button'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Progress } from '@pts/ui/progress'
 import {
   Table,
@@ -33,6 +44,9 @@ import {
 } from '@/lib/projects/board/board-utils'
 import { updateProjectStatus } from '@/lib/settings/projects/actions/update-project-status'
 import { updateProjectOwner } from '@/lib/settings/projects/actions/update-project-owner'
+import { softDeleteProject } from '@/app/(dashboard)/settings/projects/actions'
+import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
+import { PENDING_REASON } from '@/lib/forms/form-controls'
 import type { LandingProject } from '@/lib/data/projects'
 import { cn } from '@/lib/utils'
 import {
@@ -141,6 +155,55 @@ export function ProjectsLanding({
 }: ProjectsLandingProps) {
   const router = useRouter()
   const { toast } = useToast()
+
+  // Edit opens the global `?project=` sheet: the landing rows omit fields the
+  // sheet needs, so the dashboard SheetHost resolves the id server-side.
+  const { select: openProjectSheet } = useSheetParamSelection('project')
+
+  const [deleteTarget, setDeleteTarget] = useState<LandingProject | null>(null)
+  const [isArchivePending, startArchiveTransition] = useTransition()
+
+  const handleRequestDelete = (project: LandingProject) => {
+    if (isArchivePending) {
+      return
+    }
+    setDeleteTarget(project)
+  }
+
+  const handleCancelDelete = () => {
+    if (isArchivePending) {
+      return
+    }
+    setDeleteTarget(null)
+  }
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) {
+      return
+    }
+
+    const project = deleteTarget
+    setDeleteTarget(null)
+
+    startArchiveTransition(async () => {
+      const result = await softDeleteProject({ id: project.id })
+
+      if (result.error) {
+        toast({
+          title: 'Unable to archive project',
+          description: result.error,
+          variant: 'destructive',
+        })
+        return
+      }
+
+      toast({
+        title: 'Project archived',
+        description: `${project.name} is hidden from active views but remains in historical reporting.`,
+      })
+      router.refresh()
+    })
+  }
 
   const { update, getParam } = useListParams({
     basePath: '/projects',
@@ -389,17 +452,49 @@ export function ProjectsLanding({
             )}
           </div>
         </TableCell>
+        <TableCell className='text-right'>
+          <div className='flex justify-end gap-2'>
+            <Button
+              variant='outline'
+              size='icon-sm'
+              onClick={() => openProjectSheet(project.id)}
+              title='Edit project'
+              aria-label='Edit project'
+              disabled={isArchivePending}
+            >
+              <Pencil className='h-4 w-4' />
+              <span className='sr-only'>Edit</span>
+            </Button>
+            <DisabledFieldTooltip
+              disabled={isArchivePending}
+              reason={isArchivePending ? PENDING_REASON : null}
+            >
+              <Button
+                variant='destructive'
+                size='icon-sm'
+                onClick={() => handleRequestDelete(project)}
+                title='Archive project'
+                aria-label='Archive project'
+                disabled={isArchivePending}
+              >
+                <Archive className='h-4 w-4' />
+                <span className='sr-only'>Archive</span>
+              </Button>
+            </DisabledFieldTooltip>
+          </div>
+        </TableCell>
       </TableRow>
     )
   }
 
   const tableColumnWidths = {
-    project: 'w-[30%]',
+    project: 'w-[28%]',
     status: 'w-[11%]',
-    progress: 'w-[20%]',
-    dates: 'w-[16%]',
-    owner: 'w-[11%]',
-    links: 'w-[12%]',
+    progress: 'w-[18%]',
+    dates: 'w-[15%]',
+    owner: 'w-[10%]',
+    links: 'w-[8%]',
+    actions: 'w-24',
   }
 
   const renderProjectTable = (items: LandingProject[]) => (
@@ -423,6 +518,9 @@ export function ProjectsLanding({
             <TableHead className={tableColumnWidths.dates}>Dates</TableHead>
             <TableHead className={tableColumnWidths.owner}>Owner</TableHead>
             <TableHead className={tableColumnWidths.links}>Links</TableHead>
+            <TableHead className={`${tableColumnWidths.actions} text-right`}>
+              Actions
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>{items.map(project => renderProjectRow(project))}</TableBody>
@@ -443,8 +541,8 @@ export function ProjectsLanding({
         className='border-t-muted hover:bg-transparent'
       >
         <TableCell
-          colSpan={6}
-          className='bg-blue-100 py-3 align-middle dark:bg-blue-500/8'
+          colSpan={7}
+          className='bg-blue-100 py-2.5 align-middle dark:bg-blue-500/8'
         >
           <div className='flex items-center gap-4'>
             <Link
@@ -519,6 +617,9 @@ export function ProjectsLanding({
               <TableHead className={tableColumnWidths.dates}>Dates</TableHead>
               <TableHead className={tableColumnWidths.owner}>Owner</TableHead>
               <TableHead className={tableColumnWidths.links}>Links</TableHead>
+              <TableHead className={`${tableColumnWidths.actions} text-right`}>
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -581,6 +682,20 @@ export function ProjectsLanding({
 
   return (
     <div className='space-y-12'>
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title='Archive project?'
+        description={
+          deleteTarget
+            ? `Archiving ${deleteTarget.name} hides it from active views but keeps the history intact.`
+            : 'Archiving this project hides it from active views but keeps the history intact.'
+        }
+        confirmLabel='Archive'
+        confirmVariant='destructive'
+        confirmDisabled={isArchivePending}
+        onCancel={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+      />
       <div className='space-y-6'>{clientSectionContent}</div>
       {sectionConfigs.map(
         ({ key, title, icon: Icon, count, content, className }) => (

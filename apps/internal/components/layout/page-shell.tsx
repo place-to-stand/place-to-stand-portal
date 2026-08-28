@@ -132,7 +132,13 @@ export function PageShell({
             </div>
           </div>
         ) : null}
-        <div className={cn('min-h-0 flex-1', contentClassName)}>{children}</div>
+        {/* min-h-fit lets document-flow content grow the wrapper so main's
+            bottom padding stays inside the scrollable area. Viewport-pinned
+            views (kanban boards) pass `h-full min-h-0` via contentClassName
+            to reinstate the clamp — tailwind-merge lets it win. */}
+        <div className={cn('min-h-fit flex-1', contentClassName)}>
+          {children}
+        </div>
       </main>
     </div>
   )

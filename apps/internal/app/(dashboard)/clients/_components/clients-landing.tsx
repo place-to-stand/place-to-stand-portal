@@ -1,12 +1,15 @@
 'use client'
 
 import Link from 'next/link'
+import { useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Building2, CheckCircle2, Clock, ExternalLink } from 'lucide-react'
+import { Archive, Building2, CheckCircle2, Clock, Pencil } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@pts/ui/button'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import {
   Table,
@@ -22,7 +25,10 @@ import type { ClientWithMetrics } from '@/lib/data/clients'
 import { getBillingTypeOption } from '@/lib/settings/clients/billing-types'
 import type { ClientRow } from '@/lib/settings/clients/client-sheet-utils'
 import { isClientLandingSortValue } from '@/lib/settings/clients/filters'
-import { useClientSheetSelection } from '@/lib/settings/clients/use-client-sheet-selection'
+import {
+  type ClientsTableClient,
+  useClientsTableState,
+} from '@/lib/settings/clients/use-clients-table-state'
 import { cn } from '@/lib/utils'
 import {
   CLICKABLE_ROW_CLASS,
@@ -59,6 +65,34 @@ function getInitials(name: string | null): string {
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
 }
 
+/**
+ * The landing query returns camelCase metric rows; the sheet/table state
+ * machine speaks the snake_case `ClientRow` twin. `created_by` is the one
+ * field the metrics query doesn't select — nothing in the sheet reads it.
+ */
+function toTableClient(client: ClientWithMetrics): ClientsTableClient {
+  return {
+    id: client.id,
+    name: client.name,
+    slug: client.slug,
+    notes: client.notes,
+    website: client.website,
+    state: client.state,
+    origination_contact_id: client.originationContactId,
+    origination_user_id: client.originationUserId,
+    closer_user_id: client.closerUserId,
+    billing_type: client.billingType,
+    created_by: null,
+    created_at: client.createdAt,
+    updated_at: client.updatedAt,
+    deleted_at: client.deletedAt,
+    metrics: {
+      active_projects: client.activeProjectCount,
+      total_projects: client.projectCount,
+    },
+  }
+}
+
 export function ClientsLanding({
   clients,
   deepLinkedClient = null,
@@ -76,16 +110,25 @@ export function ClientsLanding({
   // shows the filtered message, not the default empty state.
   const hasActiveFilter = Boolean(getParam('q')?.trim())
 
+  const tableClients = useMemo(() => clients.map(toTableClient), [clients])
+
   // `/clients` is the canonical host page for `?client=` — the landing rows
-  // link into the client workspace, so the sheet is driven by the param
-  // alone (share links and the Add client button).
+  // link into the client workspace, so the sheet opens via the Edit action
+  // (or a share link / the Add client button), never plain row click.
   const {
     sheetOpen,
-    sheetClient,
-    clear,
+    selectedClient,
+    deleteTarget,
+    isPending,
+    pendingReason,
+    openEdit,
+    clearSelection: clear,
     handleSheetOpenChange,
     handleSheetComplete,
-  } = useClientSheetSelection({ deepLinkedClient })
+    handleRequestDelete,
+    handleCancelDelete,
+    handleConfirmDelete,
+  } = useClientsTableState({ clients: tableClients, deepLinkedClient })
 
   const sheet = (
     <>
@@ -103,11 +146,25 @@ export function ClientsLanding({
           </Button>
         </div>
       ) : null}
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title='Archive client?'
+        description={
+          deleteTarget
+            ? `Archiving ${deleteTarget.name} hides it from selectors and reporting. Existing projects stay linked.`
+            : 'Archiving this client hides it from selectors and reporting. Existing projects stay linked.'
+        }
+        confirmLabel='Archive'
+        confirmVariant='destructive'
+        confirmDisabled={isPending}
+        onCancel={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+      />
       <ClientSheet
         open={sheetOpen}
         onOpenChange={handleSheetOpenChange}
         onComplete={handleSheetComplete}
-        client={sheetClient}
+        client={selectedClient}
       />
     </>
   )
@@ -146,7 +203,7 @@ export function ClientsLanding({
                 sort={sort}
                 defaultSort='name:asc'
                 onSortChange={next => update({ sort: next })}
-                className='w-[300px]'
+                className='w-[24%]'
               >
                 Client
               </SortableTableHead>
@@ -165,6 +222,7 @@ export function ClientsLanding({
                 sort={sort}
                 defaultSort='name:asc'
                 onSortChange={next => update({ sort: next })}
+                className='w-[15%]'
               >
                 Projects
               </SortableTableHead>
@@ -198,11 +256,11 @@ export function ClientsLanding({
               >
                 Closer
               </SortableTableHead>
-              <TableHead className='w-16 text-center'>Links</TableHead>
+              <TableHead className='w-24 text-right'>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {clients.map(client => (
+            {clients.map((client, index) => (
               <TableRow
                 key={client.id}
                 {...getClickableRowProps(() =>
@@ -341,35 +399,35 @@ export function ClientsLanding({
                     )}
                   </div>
                 </TableCell>
-                <TableCell>
-                  <div className='flex items-center justify-center gap-1'>
-                    {client.website ? (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <a
-                            href={client.website}
-                            target='_blank'
-                            rel='noopener noreferrer'
-                            className='text-muted-foreground hover:text-foreground transition-colors'
-                          >
-                            <ExternalLink className='h-4 w-4' />
-                          </a>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {(() => {
-                            try {
-                              return new URL(client.website).hostname
-                            } catch {
-                              return client.website
-                            }
-                          })()}
-                        </TooltipContent>
-                      </Tooltip>
-                    ) : (
-                      <span className='text-muted-foreground/40 text-sm'>
-                        —
-                      </span>
-                    )}
+                <TableCell className='text-right'>
+                  <div className='flex justify-end gap-2'>
+                    <Button
+                      variant='outline'
+                      size='icon-sm'
+                      onClick={() => openEdit(tableClients[index])}
+                      title='Edit client'
+                      aria-label='Edit client'
+                      disabled={isPending}
+                    >
+                      <Pencil className='h-4 w-4' />
+                      <span className='sr-only'>Edit</span>
+                    </Button>
+                    <DisabledFieldTooltip
+                      disabled={isPending}
+                      reason={isPending ? pendingReason : null}
+                    >
+                      <Button
+                        variant='destructive'
+                        size='icon-sm'
+                        onClick={() => handleRequestDelete(tableClients[index])}
+                        title='Archive client'
+                        aria-label='Archive client'
+                        disabled={isPending}
+                      >
+                        <Archive className='h-4 w-4' />
+                        <span className='sr-only'>Archive</span>
+                      </Button>
+                    </DisabledFieldTooltip>
                   </div>
                 </TableCell>
               </TableRow>
