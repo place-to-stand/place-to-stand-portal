@@ -126,24 +126,24 @@ export function ProjectOwnerCell({
             // ProjectStatusCell's hover treatment: accent surface plus a
             // reveal-on-hover caret, per Jason's ask that the owner cell
             // match the status column.
-            'group focus-visible:ring-ring hover:bg-accent/60 -mx-1 inline-flex cursor-pointer items-center gap-1.5 rounded-md p-1 focus:outline-none focus-visible:ring-2',
+            'group focus-visible:ring-ring hover:bg-accent/60 -mx-0.5 inline-flex cursor-pointer items-center gap-1.5 rounded-md p-0.5 focus:outline-none focus-visible:ring-2',
             isPending && 'animate-pulse'
           )}
         >
           {displayOwner ? (
-            <Avatar className='h-7 w-7'>
+            <Avatar className='h-6 w-6'>
               {displayOwner.avatar_url && (
                 <AvatarImage
                   src={`/api/storage/user-avatar/${displayOwner.id}`}
                   alt={displayOwner.full_name ?? 'Owner'}
                 />
               )}
-              <AvatarFallback className='text-xs'>
+              <AvatarFallback className='text-[9px]'>
                 {getInitials(displayOwner.full_name)}
               </AvatarFallback>
             </Avatar>
           ) : (
-            <Avatar className='h-7 w-7 border border-dashed'>
+            <Avatar className='h-6 w-6 border border-dashed'>
               <AvatarFallback className='bg-transparent'>
                 <UserRoundPlus className='text-muted-foreground/60 h-3.5 w-3.5' />
               </AvatarFallback>

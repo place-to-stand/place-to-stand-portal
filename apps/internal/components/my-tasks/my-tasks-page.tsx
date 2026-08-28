@@ -458,7 +458,13 @@ export function MyTasksPage({
           </Button>
         </div>
       }
-      contentClassName='flex flex-col gap-4 sm:gap-6'
+      // The board pins to the viewport (columns scroll internally) and needs
+      // the min-h-0 clamp back; other views flow with the document.
+      contentClassName={
+        view === 'board'
+          ? 'flex h-full min-h-0 flex-col gap-4 sm:gap-6'
+          : 'flex flex-col gap-4 sm:gap-6'
+      }
     >
       {view === 'board' ? (
         // Only truly empty when nothing is hidden either. With older DONE
