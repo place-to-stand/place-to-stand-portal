@@ -236,9 +236,16 @@ export async function disconnectIntegration(
     return false
   }
 
+  // Drop the ciphertext too: a soft-deleted row should not keep a working
+  // credential around. The column is NOT NULL, hence the empty string.
   await db
     .update(oauthConnections)
-    .set({ deletedAt: new Date().toISOString() })
+    .set({
+      accessToken: '',
+      refreshToken: null,
+      status: 'REVOKED',
+      deletedAt: new Date().toISOString(),
+    })
     .where(eq(oauthConnections.id, connection.id))
 
   await logActivity({
