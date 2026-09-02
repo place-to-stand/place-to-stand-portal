@@ -1823,6 +1823,11 @@ export const formSubmissions = pgTable(
     contactEmail: text('contact_email'),
     contactCompany: text('contact_company'),
     contactWebsite: text('contact_website'),
+    // Contact form only: a preset ("Referral Program") or the visitor's own
+    // free-form subject. Audit rows leave it null.
+    subject: text('subject'),
+    // Free text from the visitor: the contact form's message, or the optional
+    // "anything else we should know" note on the audit capture step.
     message: text('message'),
     marketingConsent: boolean('marketing_consent'),
 
