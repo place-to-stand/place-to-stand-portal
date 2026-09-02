@@ -23,6 +23,7 @@ import {
   contactClients,
   contactLeads,
   githubRepoLinks,
+  projectIntegrationLinks,
   leadStageHistory,
   leadUpdates,
   taskDeployments,
@@ -400,6 +401,21 @@ export const githubAppInstallationsRelations = relations(
       references: [users.id],
     }),
     githubRepoLinks: many(githubRepoLinks),
+    integrationLinks: many(projectIntegrationLinks),
+  })
+)
+
+export const projectIntegrationLinksRelations = relations(
+  projectIntegrationLinks,
+  ({ one }) => ({
+    project: one(projects, {
+      fields: [projectIntegrationLinks.projectId],
+      references: [projects.id],
+    }),
+    linkedByUser: one(users, {
+      fields: [projectIntegrationLinks.linkedBy],
+      references: [users.id],
+    }),
   })
 )
 

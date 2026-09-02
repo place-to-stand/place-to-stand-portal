@@ -223,6 +223,8 @@ export type ProjectBurndownSummary = {
   lastLogAt: string | null
 }
 
+import type { ProjectIntegrationLinkSummary } from '@/lib/types/integrations'
+
 export type GitHubRepoLinkSummary = {
   id: string
   repoFullName: string
@@ -244,4 +246,5 @@ export type ProjectWithRelations = DbProject & {
   acceptedTasks: TaskWithRelations[]
   burndown: ProjectBurndownSummary
   githubRepos: GitHubRepoLinkSummary[]
+  integrationLinks: ProjectIntegrationLinkSummary[]
 }

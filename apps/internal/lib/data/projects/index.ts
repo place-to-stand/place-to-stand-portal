@@ -17,6 +17,8 @@ import { assembleProjectsWithRelations } from './assemble-projects'
 import { fetchBaseProjects } from './fetch-base-projects'
 import { fetchProjectRelations, loadOwners } from './fetch-project-relations'
 import { getReposForProjects } from '@/lib/data/github-repos'
+import { getIntegrationLinksForProjects } from '@/lib/data/project-integration-links'
+import { toIntegrationLinkSummary } from '@/lib/types/integrations'
 import { loadClientRows, mapClientRows } from './relations/clients'
 export { fetchProjectCalendarTasks } from './fetch-project-calendar-tasks'
 
@@ -110,6 +112,7 @@ export const fetchProjectsLite = cache(
         tasks: [],
         archivedTasks: [],
         githubReposByProject: new Map(),
+        integrationLinksByProject: new Map(),
       },
       timeLogSummaries: new Map(),
       // Switchers/selectors read identity fields only; burndown is unused.
@@ -137,10 +140,12 @@ export async function fetchProjectsForLanding(
     search: options.search,
   })
 
-  const [clients, owners, reposMap, progressRows] = await Promise.all([
+  const [clients, owners, reposMap, integrationLinksMap, progressRows] =
+    await Promise.all([
     loadClientRows(baseProjects.clientIds),
     loadOwners(baseProjects.ownerIds),
     getReposForProjects(baseProjects.projectIds),
+    getIntegrationLinksForProjects(baseProjects.projectIds),
     baseProjects.projectIds.length
       ? db
           .select({
@@ -170,6 +175,13 @@ export async function fetchProjectsForLanding(
     ])
   )
 
+  const integrationLinksByProject = new Map(
+    Array.from(integrationLinksMap.entries(), ([projectId, links]) => [
+      projectId,
+      links.map(toIntegrationLinkSummary),
+    ])
+  )
+
   const progressByProject = new Map(
     progressRows.map(row => [
       row.projectId,
@@ -187,6 +199,7 @@ export async function fetchProjectsForLanding(
       tasks: [],
       archivedTasks: [],
       githubReposByProject,
+      integrationLinksByProject,
     },
     timeLogSummaries: new Map(),
     // The landing page reads client hours from `fetchClientsWithMetrics`, not
