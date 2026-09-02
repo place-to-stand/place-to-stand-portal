@@ -8,6 +8,7 @@ import {
   type UseFormReturn,
 } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useQueryClient } from '@tanstack/react-query'
 
 import type { IntegrationProvider } from '@/lib/types/integrations'
 
@@ -118,6 +119,7 @@ export function useProjectSheetState({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isReposDirty, setIsReposDirty] = useState(false)
   const { toast } = useToast()
+  const queryClient = useQueryClient()
 
   const sortedClients = useMemo(() => sortClientsByName(clients), [clients])
 
@@ -362,6 +364,12 @@ export function useProjectSheetState({
                 removedIntegrationLinkIds
               ),
             ])
+            // The sheet stays mounted between opens, so the links section's
+            // query never remounts — invalidate it or the next open shows
+            // the pre-save list.
+            await queryClient.invalidateQueries({
+              queryKey: ['projectIntegrationLinks', targetProjectId],
+            })
           }
 
           finishSettingsInteraction(interaction, {
@@ -411,6 +419,7 @@ export function useProjectSheetState({
       linkPendingRepos,
       linkPendingIntegrations,
       unlinkRemovedIntegrations,
+      queryClient,
       unlinkRemovedRepos,
       onComplete,
       onOpenChange,
