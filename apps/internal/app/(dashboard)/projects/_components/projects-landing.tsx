@@ -15,6 +15,11 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { siGithub } from 'simple-icons/icons'
+import { IntegrationProviderIcon } from '@/components/integrations/provider-icon'
+import {
+  formatIntegrationLinkLabel,
+  type ProjectIntegrationLinkSummary,
+} from '@/lib/types/integrations'
 
 import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
@@ -142,6 +147,15 @@ type SectionConfig = {
   icon: LucideIcon
   count: number
   content: ReactNode
+}
+
+const firstLinkPerProvider = (links: ProjectIntegrationLinkSummary[]) => {
+  const seen = new Set<string>()
+  return links.filter(link => {
+    if (seen.has(link.provider)) return false
+    seen.add(link.provider)
+    return true
+  })
 }
 
 export function ProjectsLanding({
@@ -382,6 +396,7 @@ export function ProjectsLanding({
 
     const treeLine = options?.indent ? (options.isLast ? '└' : '├') : null
     const firstRepo = project.githubRepos[0]
+    const firstIntegrationLinks = firstLinkPerProvider(project.integrationLinks)
 
     return (
       <TableRow
@@ -436,7 +451,7 @@ export function ProjectsLanding({
           />
         </TableCell>
         <TableCell className='align-middle'>
-          <div className='flex h-full items-center'>
+          <div className='flex h-full items-center gap-2'>
             {firstRepo ? (
               <a
                 href={`https://github.com/${firstRepo.repoFullName}`}
@@ -447,9 +462,22 @@ export function ProjectsLanding({
               >
                 <SimpleIcon icon={siGithub} className='h-4 w-4' />
               </a>
-            ) : (
+            ) : null}
+            {firstIntegrationLinks.map(link => (
+              <a
+                key={link.id}
+                href={link.url}
+                target='_blank'
+                rel='noopener noreferrer'
+                className='text-muted-foreground hover:text-foreground inline-flex items-center transition-colors'
+                title={formatIntegrationLinkLabel(link)}
+              >
+                <IntegrationProviderIcon provider={link.provider} className='h-4 w-4' />
+              </a>
+            ))}
+            {!firstRepo && firstIntegrationLinks.length === 0 ? (
               <span className='text-muted-foreground/40'>—</span>
-            )}
+            ) : null}
           </div>
         </TableCell>
         <TableCell className='text-right'>
