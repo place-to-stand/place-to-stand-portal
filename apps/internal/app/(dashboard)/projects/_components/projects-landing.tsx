@@ -16,10 +16,8 @@ import {
 import type { LucideIcon } from 'lucide-react'
 import { siGithub } from 'simple-icons/icons'
 import { IntegrationProviderIcon } from '@/components/integrations/provider-icon'
-import {
-  formatIntegrationLinkLabel,
-  type ProjectIntegrationLinkSummary,
-} from '@/lib/types/integrations'
+import { formatIntegrationLinkLabel } from '@/lib/types/integrations'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 
 import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
@@ -149,14 +147,28 @@ type SectionConfig = {
   content: ReactNode
 }
 
-const firstLinkPerProvider = (links: ProjectIntegrationLinkSummary[]) => {
-  const seen = new Set<string>()
-  return links.filter(link => {
-    if (seen.has(link.provider)) return false
-    seen.add(link.provider)
-    return true
-  })
+type ExternalLinkItem = {
+  key: string
+  href: string
+  label: string
+  icon: ReactNode
 }
+
+/** Every repo and hosting link on a project, in provider order, as icons. */
+const buildExternalLinks = (project: LandingProject): ExternalLinkItem[] => [
+  ...project.githubRepos.map(repo => ({
+    key: `github-${repo.id}`,
+    href: `https://github.com/${repo.repoFullName}`,
+    label: repo.repoFullName,
+    icon: <SimpleIcon icon={siGithub} className='h-4 w-4' />,
+  })),
+  ...project.integrationLinks.map(link => ({
+    key: `${link.provider}-${link.id}`,
+    href: link.url,
+    label: formatIntegrationLinkLabel(link),
+    icon: <IntegrationProviderIcon provider={link.provider} className='h-4 w-4' />,
+  })),
+]
 
 export function ProjectsLanding({
   projects,
@@ -395,8 +407,7 @@ export function ProjectsLanding({
       totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0
 
     const treeLine = options?.indent ? (options.isLast ? '└' : '├') : null
-    const firstRepo = project.githubRepos[0]
-    const firstIntegrationLinks = firstLinkPerProvider(project.integrationLinks)
+    const externalLinks = buildExternalLinks(project)
 
     return (
       <TableRow
@@ -451,33 +462,27 @@ export function ProjectsLanding({
           />
         </TableCell>
         <TableCell className='align-middle'>
-          <div className='flex h-full items-center gap-2'>
-            {firstRepo ? (
-              <a
-                href={`https://github.com/${firstRepo.repoFullName}`}
-                target='_blank'
-                rel='noopener noreferrer'
-                className='text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 transition-colors'
-                title={firstRepo.repoFullName}
-              >
-                <SimpleIcon icon={siGithub} className='h-4 w-4' />
-              </a>
-            ) : null}
-            {firstIntegrationLinks.map(link => (
-              <a
-                key={link.id}
-                href={link.url}
-                target='_blank'
-                rel='noopener noreferrer'
-                className='text-muted-foreground hover:text-foreground inline-flex items-center transition-colors'
-                title={formatIntegrationLinkLabel(link)}
-              >
-                <IntegrationProviderIcon provider={link.provider} className='h-4 w-4' />
-              </a>
-            ))}
-            {!firstRepo && firstIntegrationLinks.length === 0 ? (
+          <div className='flex h-full flex-wrap items-center gap-1.5'>
+            {externalLinks.length > 0 ? (
+              externalLinks.map(link => (
+                <Tooltip key={link.key}>
+                  <TooltipTrigger asChild>
+                    <a
+                      href={link.href}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      aria-label={link.label}
+                      className='text-muted-foreground hover:text-foreground inline-flex items-center transition-colors'
+                    >
+                      {link.icon}
+                    </a>
+                  </TooltipTrigger>
+                  <TooltipContent>{link.label}</TooltipContent>
+                </Tooltip>
+              ))
+            ) : (
               <span className='text-muted-foreground/40'>—</span>
-            ) : null}
+            )}
           </div>
         </TableCell>
         <TableCell className='text-right'>
@@ -519,9 +524,9 @@ export function ProjectsLanding({
     project: 'w-[28%]',
     status: 'w-[11%]',
     progress: 'w-[18%]',
-    dates: 'w-[15%]',
-    owner: 'w-[10%]',
-    links: 'w-[8%]',
+    dates: 'w-[14%]',
+    owner: 'w-[7%]',
+    links: 'w-[11%]',
     actions: 'w-24',
   }
 
