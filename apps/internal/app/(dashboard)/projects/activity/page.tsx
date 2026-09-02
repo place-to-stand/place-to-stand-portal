@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 
 import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
@@ -14,7 +15,10 @@ export const metadata: Metadata = {
   title: 'Project Activity | Place to Stand Portal',
 }
 
-export default async function ProjectsActivityPage() {
+// All auth + data access lives here, behind Suspense, so the page keeps a
+// prerenderable shell and client navigations commit instantly (Cache
+// Components instant-navigation pattern).
+async function ProjectsActivityContent() {
   const admin = await requireRole('ADMIN')
 
   const managementResult = await listProjectsForSettings(admin, {
@@ -39,5 +43,28 @@ export default async function ProjectsActivityPage() {
         <ProjectsActivitySection />
       </section>
     </PageShell>
+  )
+}
+
+// Identical header chrome (breadcrumbs · tabs · add button) so only the
+// content area pulses while data streams in.
+function ProjectsActivityPageFallback() {
+  return (
+    <PageShell
+      breadcrumbs={[...crumbsForNav('/projects'), { label: 'Activity' }]}
+      tabs={PROJECTS_TABS}
+      activeTab='activity'
+      primaryAction={<ProjectsAddButton clients={[]} />}
+    >
+      <section className='bg-background h-96 animate-pulse rounded-xl border p-4 shadow-sm' />
+    </PageShell>
+  )
+}
+
+export default function ProjectsActivityPage() {
+  return (
+    <Suspense fallback={<ProjectsActivityPageFallback />}>
+      <ProjectsActivityContent />
+    </Suspense>
   )
 }

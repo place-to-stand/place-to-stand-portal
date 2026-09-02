@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 
 import { PageShell } from '@/components/layout/page-shell'
 import { requireRole } from '@/lib/auth/session'
@@ -11,7 +12,9 @@ export const metadata: Metadata = {
   title: 'Submissions Activity',
 }
 
-export default async function SubmissionsActivityPage() {
+// Auth lives here, behind Suspense, so the page keeps a prerenderable shell
+// (Cache Components instant-navigation pattern).
+async function SubmissionsActivityContent() {
   await requireRole('ADMIN')
 
   return (
@@ -24,5 +27,26 @@ export default async function SubmissionsActivityPage() {
         <SubmissionsActivitySection />
       </section>
     </PageShell>
+  )
+}
+
+// Identical header chrome so only the content area pulses while auth resolves.
+function SubmissionsActivityPageFallback() {
+  return (
+    <PageShell
+      breadcrumbs={[...crumbsForNav('/submissions'), { label: 'Activity' }]}
+      tabs={SUBMISSIONS_TABS}
+      activeTab='activity'
+    >
+      <section className='bg-background h-96 animate-pulse rounded-xl border p-4 shadow-sm' />
+    </PageShell>
+  )
+}
+
+export default function SubmissionsActivityPage() {
+  return (
+    <Suspense fallback={<SubmissionsActivityPageFallback />}>
+      <SubmissionsActivityContent />
+    </Suspense>
   )
 }

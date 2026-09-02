@@ -3,7 +3,13 @@ import { withPostHogConfig } from '@posthog/nextjs-config'
 
 const nextConfig: NextConfig = {
   transpilePackages: ['@pts/ui'],
-  cacheComponents: false,
+  cacheComponents: true,
+  experimental: {
+    // GET route handlers (e.g. /api/cli/v1/*) wrap their logic in try/catch;
+    // during build-time prerender the runtime-data bail-out throws inside that
+    // catch and gets logged as noise. This hides logs emitted after the abort.
+    hideLogsAfterAbort: true,
+  },
   reactCompiler: true,
   reactStrictMode: true,
   async rewrites() {

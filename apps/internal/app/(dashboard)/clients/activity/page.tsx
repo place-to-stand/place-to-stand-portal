@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 
 import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
@@ -12,7 +13,10 @@ export const metadata: Metadata = {
   title: 'Client Activity | Place to Stand Portal',
 }
 
-export default async function ClientsActivityPage() {
+// All auth access lives here, behind Suspense, so the page keeps a
+// prerenderable shell and client navigations commit instantly (Cache
+// Components instant-navigation pattern).
+async function ClientsActivityContent() {
   await requireRole('ADMIN')
 
   return (
@@ -26,5 +30,28 @@ export default async function ClientsActivityPage() {
         <ClientsActivitySection />
       </section>
     </PageShell>
+  )
+}
+
+// Identical header chrome (breadcrumbs · tabs · add button) so only the
+// content area pulses while auth resolves.
+function ClientsActivityPageFallback() {
+  return (
+    <PageShell
+      breadcrumbs={[...crumbsForNav('/clients'), { label: 'Activity' }]}
+      tabs={CLIENTS_TABS}
+      activeTab='activity'
+      primaryAction={<ClientsAddButton />}
+    >
+      <section className='bg-background h-96 animate-pulse rounded-xl border p-4 shadow-sm' />
+    </PageShell>
+  )
+}
+
+export default function ClientsActivityPage() {
+  return (
+    <Suspense fallback={<ClientsActivityPageFallback />}>
+      <ClientsActivityContent />
+    </Suspense>
   )
 }

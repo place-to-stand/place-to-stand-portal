@@ -6,11 +6,10 @@ import { requireUser } from "@/lib/auth/session";
 import { fetchUnacknowledgedSubmissionCount } from "@/lib/data/form-submissions";
 import { SheetHost } from "@/lib/sheets/sheet-host";
 
-export default async function DashboardLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
+// Reads session + cookies behind Suspense so the dashboard segment keeps a
+// prerenderable shell (Cache Components): the fallback paints the chrome
+// footprint instantly while auth and data resolve.
+async function DashboardShell({ children }: { children: ReactNode }) {
   const user = await requireUser();
   // D6 (PRD 001): server-fetched unacknowledged count; refreshed via
   // revalidatePath('/', 'layout') from the submissions actions.
@@ -35,5 +34,28 @@ export default async function DashboardLayout({
         <SheetHost />
       </Suspense>
     </AppShell>
+  );
+}
+
+// Structural placeholder matching AppShell's footprint (sidebar rail +
+// content column) so the static shell paints layout, not a blank page.
+function DashboardShellFallback() {
+  return (
+    <div className="bg-muted flex h-screen min-h-0 overflow-hidden">
+      <div className="hidden w-[13rem] shrink-0 md:block" />
+      <div className="flex h-screen min-h-0 min-w-0 flex-1 flex-col" />
+    </div>
+  );
+}
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  return (
+    <Suspense fallback={<DashboardShellFallback />}>
+      <DashboardShell>{children}</DashboardShell>
+    </Suspense>
   );
 }

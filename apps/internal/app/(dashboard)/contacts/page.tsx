@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 
 import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
@@ -24,7 +25,10 @@ type ContactsPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 }
 
-export default async function ContactsPage({ searchParams }: ContactsPageProps) {
+// All auth + data access lives here, behind Suspense, so the page keeps a
+// prerenderable shell and client navigations commit instantly (Cache
+// Components instant-navigation pattern).
+async function ContactsContent({ searchParams }: ContactsPageProps) {
   const user = await requireUser()
   const params = searchParams ? await searchParams : {}
   const {
@@ -103,5 +107,28 @@ export default async function ContactsPage({ searchParams }: ContactsPageProps) 
         />
       </section>
     </PageShell>
+  )
+}
+
+// Identical header chrome (breadcrumbs · tabs · add button) so only the
+// table area pulses while data streams in — the count chip appears with it.
+function ContactsPageFallback() {
+  return (
+    <PageShell
+      breadcrumbs={crumbsForNav('/contacts')}
+      tabs={CONTACTS_TABS}
+      activeTab='contacts'
+      primaryAction={<ContactsAddButton />}
+    >
+      <section className='bg-background h-96 animate-pulse rounded-xl border p-4 shadow-sm' />
+    </PageShell>
+  )
+}
+
+export default function ContactsPage({ searchParams }: ContactsPageProps) {
+  return (
+    <Suspense fallback={<ContactsPageFallback />}>
+      <ContactsContent searchParams={searchParams} />
+    </Suspense>
   )
 }

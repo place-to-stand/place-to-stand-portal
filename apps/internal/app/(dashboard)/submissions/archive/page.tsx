@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 
 import { PageShell } from '@/components/layout/page-shell'
 import { requireRole } from '@/lib/auth/session'
@@ -31,7 +32,10 @@ function firstParam(
   return Array.isArray(value) ? value[0] : value
 }
 
-export default async function SubmissionsArchivePage({
+// All auth + data access lives here, behind Suspense, so the page keeps a
+// prerenderable shell and client navigations commit instantly (Cache
+// Components instant-navigation pattern).
+async function SubmissionsArchiveContent({
   searchParams,
 }: SubmissionsArchivePageProps) {
   const currentUser = await requireRole('ADMIN')
@@ -99,5 +103,29 @@ export default async function SubmissionsArchivePage({
         />
       </section>
     </PageShell>
+  )
+}
+
+// Identical header chrome (breadcrumbs · tabs) so only the table area pulses
+// while data streams in — the count chip appears with it.
+function SubmissionsArchivePageFallback() {
+  return (
+    <PageShell
+      breadcrumbs={[...crumbsForNav('/submissions'), { label: 'Archive' }]}
+      tabs={SUBMISSIONS_TABS}
+      activeTab='archive'
+    >
+      <section className='bg-background h-96 animate-pulse rounded-xl border p-4 shadow-sm' />
+    </PageShell>
+  )
+}
+
+export default function SubmissionsArchivePage({
+  searchParams,
+}: SubmissionsArchivePageProps) {
+  return (
+    <Suspense fallback={<SubmissionsArchivePageFallback />}>
+      <SubmissionsArchiveContent searchParams={searchParams} />
+    </Suspense>
   )
 }

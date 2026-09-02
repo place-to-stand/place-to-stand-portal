@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 
 import { PageShell } from '@/components/layout/page-shell'
 import { requireRole } from '@/lib/auth/session'
@@ -30,7 +31,10 @@ type HourBlocksArchivePageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 }
 
-export default async function HourBlocksArchivePage({
+// All auth + data access lives here, behind Suspense, so the page keeps a
+// prerenderable shell and client navigations commit instantly (Cache
+// Components instant-navigation pattern).
+async function HourBlocksArchiveContent({
   searchParams,
 }: HourBlocksArchivePageProps) {
   const currentUser = await requireRole('ADMIN')
@@ -96,5 +100,30 @@ export default async function HourBlocksArchivePage({
         />
       </section>
     </PageShell>
+  )
+}
+
+// Identical header chrome (breadcrumbs · tabs) so only the table area pulses
+// while data streams in. The add button needs the fetched client list, so it
+// appears with the content.
+function HourBlocksArchivePageFallback() {
+  return (
+    <PageShell
+      breadcrumbs={[...crumbsForNav('/hour-blocks'), { label: 'Archive' }]}
+      tabs={HOUR_BLOCKS_TABS}
+      activeTab='archive'
+    >
+      <section className='bg-background h-96 animate-pulse rounded-xl border p-4 shadow-sm' />
+    </PageShell>
+  )
+}
+
+export default function HourBlocksArchivePage({
+  searchParams,
+}: HourBlocksArchivePageProps) {
+  return (
+    <Suspense fallback={<HourBlocksArchivePageFallback />}>
+      <HourBlocksArchiveContent searchParams={searchParams} />
+    </Suspense>
   )
 }

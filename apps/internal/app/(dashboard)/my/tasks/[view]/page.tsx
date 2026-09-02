@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 
 import {
@@ -6,6 +7,8 @@ import {
   type MyTasksInitialEntry,
   type MyTasksView,
 } from '@/components/my-tasks/my-tasks-page'
+import { PageShell } from '@/components/layout/page-shell'
+import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { requireUser } from '@/lib/auth/session'
 import { buildQuerySuffix } from '@/lib/sheets/hrefs'
 import {
@@ -44,10 +47,10 @@ type PageProps = {
 
 const DEFAULT_VIEW: MyTasksView = 'board'
 
-export default async function MyTasksViewRoute({
-  params,
-  searchParams,
-}: PageProps) {
+// All auth + data access lives here, behind Suspense, so the page keeps a
+// prerenderable shell and client navigations commit instantly (Cache
+// Components instant-navigation pattern).
+async function MyTasksViewContent({ params, searchParams }: PageProps) {
   const user = await requireUser()
   const resolvedParams = await params
   const resolvedSearchParams = await searchParams
@@ -180,10 +183,37 @@ export default async function MyTasksViewRoute({
   )
 }
 
+// Static mirror of MyTasksPage's PageShell chrome (breadcrumbs + view tabs).
+// The active view lives in the dynamic [view] param, so the fallback keeps a
+// generic static selection; selectors and the Add task button need data and
+// are omitted here.
+function MyTasksViewFallback() {
+  return (
+    <PageShell
+      breadcrumbs={crumbsForNav('/my/tasks/board')}
+      tabs={[
+        { value: 'board', label: 'Board', href: '/my/tasks/board' },
+        { value: 'calendar', label: 'Calendar', href: '/my/tasks/calendar' },
+      ]}
+      activeTab='board'
+      contentClassName='flex flex-col gap-4 sm:gap-6'
+    >
+      <section className='bg-background h-96 animate-pulse rounded-xl border p-4 shadow-sm' />
+    </PageShell>
+  )
+}
+
+export default function MyTasksViewRoute({ params, searchParams }: PageProps) {
+  return (
+    <Suspense fallback={<MyTasksViewFallback />}>
+      <MyTasksViewContent params={params} searchParams={searchParams} />
+    </Suspense>
+  )
+}
+
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 function isMyTasksView(value: string): value is MyTasksView {
   return value === 'board' || value === 'calendar'
 }
-

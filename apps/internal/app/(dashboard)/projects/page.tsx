@@ -1,8 +1,13 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 
+import { PageShell } from '@/components/layout/page-shell'
+import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import type { ClientHoursData } from './_components/projects-landing'
 import { ProjectsLandingAdminSection } from './_components/projects-landing-admin-section'
+import { ProjectsAddButton } from './_components/projects-add-button'
 import { parseProjectsLandingSearchParams } from './_lib/parse-projects-search-params'
+import { PROJECTS_TABS } from './_lib/tabs'
 import {
   fetchLandingProjectCounts,
   fetchProjectsForLanding,
@@ -26,9 +31,10 @@ type ProjectsPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 }
 
-export default async function ProjectsPage({
-  searchParams,
-}: ProjectsPageProps) {
+// All auth + data access lives here, behind Suspense, so the page keeps a
+// prerenderable shell and client navigations commit instantly (Cache
+// Components instant-navigation pattern).
+async function ProjectsContent({ searchParams }: ProjectsPageProps) {
   const user = await requireUser()
   const params = searchParams ? await searchParams : {}
   const { statuses, search, filtersActive } =
@@ -80,6 +86,29 @@ export default async function ProjectsPage({
         unfilteredCounts={unfilteredCounts}
         clientHoursMap={clientHoursMap}
       />
+  )
+}
+
+// Identical header chrome (breadcrumbs · tabs · add button) so only the
+// table area pulses while data streams in — the count chip appears with it.
+function ProjectsPageFallback() {
+  return (
+    <PageShell
+      breadcrumbs={crumbsForNav('/projects')}
+      tabs={PROJECTS_TABS}
+      activeTab='projects'
+      primaryAction={<ProjectsAddButton clients={[]} />}
+    >
+      <section className='bg-background h-96 animate-pulse rounded-xl border p-4 shadow-sm' />
+    </PageShell>
+  )
+}
+
+export default function ProjectsPage({ searchParams }: ProjectsPageProps) {
+  return (
+    <Suspense fallback={<ProjectsPageFallback />}>
+      <ProjectsContent searchParams={searchParams} />
+    </Suspense>
   )
 }
 

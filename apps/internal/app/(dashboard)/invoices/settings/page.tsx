@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 
 import { PageShell } from '@/components/layout/page-shell'
 import { requireRole } from '@/lib/auth/session'
@@ -14,7 +15,10 @@ export const metadata: Metadata = {
   title: 'Invoice Settings',
 }
 
-export default async function InvoiceSettingsPage() {
+// All auth + data access lives here, behind Suspense, so the page keeps a
+// prerenderable shell and client navigations commit instantly (Cache
+// Components instant-navigation pattern).
+async function InvoiceSettingsContent() {
   await requireRole('ADMIN')
 
   const [products, taxRates] = await Promise.all([
@@ -35,5 +39,27 @@ export default async function InvoiceSettingsPage() {
         </div>
       </section>
     </PageShell>
+  )
+}
+
+// Identical header chrome (breadcrumbs · tabs) so only the content area pulses
+// while data streams in.
+function InvoiceSettingsPageFallback() {
+  return (
+    <PageShell
+      breadcrumbs={[...crumbsForNav('/invoices'), { label: 'Settings' }]}
+      tabs={INVOICES_TABS}
+      activeTab='settings'
+    >
+      <section className='bg-background h-96 animate-pulse rounded-xl border p-4 shadow-sm' />
+    </PageShell>
+  )
+}
+
+export default function InvoiceSettingsPage() {
+  return (
+    <Suspense fallback={<InvoiceSettingsPageFallback />}>
+      <InvoiceSettingsContent />
+    </Suspense>
   )
 }

@@ -1,6 +1,9 @@
 import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 
+import { PageShell } from '@/components/layout/page-shell'
+import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { ProjectsBoard } from '../../../projects-board'
 import {
   fetchProjectsLite,
@@ -24,7 +27,10 @@ type PageProps = {
   }>
 }
 
-export default async function ProjectTimeLogsRoute({ params }: PageProps) {
+// All auth + data access lives here, behind Suspense, so the page keeps a
+// prerenderable shell and client navigations commit instantly (Cache
+// Components instant-navigation pattern).
+async function ProjectTimeLogsContent({ params }: PageProps) {
   const resolvedParams = await params
   const { clientSlug, projectSlug } = resolvedParams
   const user = await requireUser()
@@ -107,3 +113,24 @@ export default async function ProjectTimeLogsRoute({ params }: PageProps) {
   )
 }
 
+// Static portion of the workspace chrome only — the project-name breadcrumb
+// depends on fetched data, so the fallback shows the base crumb with a
+// pulsing content area (mirrors ProjectsBoard's PageShell).
+function ProjectTimeLogsFallback() {
+  return (
+    <PageShell
+      breadcrumbs={crumbsForNav('/projects')}
+      contentClassName='flex min-h-fit flex-col gap-4 sm:gap-6'
+    >
+      <section className='bg-background h-96 animate-pulse rounded-xl border p-4 shadow-sm' />
+    </PageShell>
+  )
+}
+
+export default function ProjectTimeLogsRoute({ params }: PageProps) {
+  return (
+    <Suspense fallback={<ProjectTimeLogsFallback />}>
+      <ProjectTimeLogsContent params={params} />
+    </Suspense>
+  )
+}

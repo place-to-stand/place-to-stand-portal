@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { format, getMonth, getYear } from 'date-fns'
 
 import { ArrowRight } from 'lucide-react'
@@ -42,7 +43,10 @@ function parseSearchParam(value: string | string[] | undefined): string | null {
   return null
 }
 
-export default async function MonthlyClosePage({
+// All auth + data access lives here, behind Suspense, so the page keeps a
+// prerenderable shell and client navigations commit instantly (Cache
+// Components instant-navigation pattern).
+async function MonthlyCloseContent({
   searchParams,
 }: MonthlyClosePageProps) {
   await requireRole('ADMIN')
@@ -187,5 +191,25 @@ export default async function MonthlyClosePage({
         <PartnerPayoutsSection data={report.partnerPayouts} />
       </div>
     </PageShell>
+  )
+}
+
+// Identical header chrome (breadcrumbs) so only the report area pulses while
+// data streams in.
+function MonthlyClosePageFallback() {
+  return (
+    <PageShell breadcrumbs={crumbsForNav('/reports/monthly-close')}>
+      <section className='bg-background h-96 animate-pulse rounded-xl border p-4 shadow-sm' />
+    </PageShell>
+  )
+}
+
+export default function MonthlyClosePage({
+  searchParams,
+}: MonthlyClosePageProps) {
+  return (
+    <Suspense fallback={<MonthlyClosePageFallback />}>
+      <MonthlyCloseContent searchParams={searchParams} />
+    </Suspense>
   )
 }
