@@ -82,6 +82,7 @@ Turbo v2 uses strict mode by default — only env vars listed in `turbo.json` ar
 - **Analytics**: PostHog (client and server-side)
 - **Email**: Resend
 - **GitHub Integration**: GitHub App for repo linking (`packages/github`)
+- **Vercel / Supabase linking**: staff personal access tokens stored encrypted in `oauth_connections`; provider adapters in `apps/internal/lib/integrations/`, routes under `api/integrations/[provider]/`
 
 ### Route Organization
 
@@ -158,6 +159,7 @@ Portal access is controlled via `client_members` table. Contacts promoted to por
 - `oauth_connections` - Google/GitHub OAuth connections
 - `github_app_installations` - GitHub App installs per client
 - `github_repo_links` - Repository links per project
+- `project_integration_links` - Vercel/Supabase projects linked to projects (external ids only; access resolved per viewer from their own token in `oauth_connections`)
 - `activity_logs` + `activity_overview_cache` - Activity audit trail
 
 **Key patterns:**
