@@ -10,7 +10,6 @@ import {
   DetailFooter,
   DetailHeader,
   Field,
-  PaperPane,
   PreviewToolbar,
   SegmentedControl,
   TemplateList,
@@ -109,14 +108,17 @@ export function PdfsBrowser({ entries }: { entries: PdfTemplateEntry[] }) {
           ) : null}
         </PreviewToolbar>
 
-        <PaperPane>
-          <iframe
-            key={previewUrl}
-            title={`${selected.name} — ${variant.label} preview`}
-            src={previewUrl}
-            className='h-[820px] w-full max-w-[640px] rounded border border-slate-200 bg-white'
-          />
-        </PaperPane>
+        {/*
+          Chrome's viewer honours these open parameters: hide the thumbnail
+          pane (every template here is a single page; the toolbar can reopen
+          it) and fit the page to the pane's width.
+        */}
+        <iframe
+          key={previewUrl}
+          title={`${selected.name} — ${variant.label} preview`}
+          src={`${previewUrl}#navpanes=0&view=FitH`}
+          className='h-[860px] w-full bg-slate-50'
+        />
 
         <DetailFooter
           title='Inputs'
