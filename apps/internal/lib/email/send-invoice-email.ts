@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { serverEnv } from '@/lib/env.server'
+import { escapeHtml } from '@/lib/email/escape-html'
 import { getResendClient } from '@/lib/email/resend'
 
 type SendInvoiceEmailArgs = {
@@ -45,18 +46,28 @@ export async function sendInvoiceEmail({
     'Place to Stand',
   ].join('\n')
 
+  // Client names can originate from the public leads-intake webhook; every
+  // interpolated value is escaped so none of them can inject markup.
+  const safe = {
+    greeting: escapeHtml(greeting),
+    invoiceNumber: escapeHtml(invoiceNumber),
+    formattedTotal: escapeHtml(formattedTotal),
+    dueLine: escapeHtml(dueLine),
+    shareUrl: escapeHtml(shareUrl),
+  }
+
   const html = `
     <div style="font-family: sans-serif; line-height: 1.6; color: #0f172a; max-width: 600px;">
-      <p>${greeting}</p>
-      <p>Please find attached invoice <strong>${invoiceNumber}</strong> for <strong>${formattedTotal}</strong>.</p>
-      <p>${dueLine}</p>
+      <p>${safe.greeting}</p>
+      <p>Please find attached invoice <strong>${safe.invoiceNumber}</strong> for <strong>${safe.formattedTotal}</strong>.</p>
+      <p>${safe.dueLine}</p>
       <p>
-        <a href="${shareUrl}" style="display: inline-block; background-color: #0f172a; color: #ffffff; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: 500;">
+        <a href="${safe.shareUrl}" style="display: inline-block; background-color: #0f172a; color: #ffffff; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: 500;">
           View &amp; Pay Online
         </a>
       </p>
       <p style="color: #64748b; font-size: 13px;">
-        Or copy this link: <a href="${shareUrl}" style="color: #0369a1;">${shareUrl}</a>
+        Or copy this link: <a href="${safe.shareUrl}" style="color: #0369a1;">${safe.shareUrl}</a>
       </p>
       <p>
         Thank you,<br />

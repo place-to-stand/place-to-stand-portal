@@ -512,6 +512,20 @@
       "when": 1788378517328,
       "tag": "0072_project_integration_links",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1788381155406,
+      "tag": "0073_revoke_api_role_grants",
+      "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1788448104551,
+      "tag": "0074_rate_limit_buckets",
+      "breakpoints": true
     }
   ]
 }

@@ -122,7 +122,12 @@ export function TokenIntegrationCard({
       if (!res.ok) throw new Error('Failed to disconnect')
     },
     onSuccess: async () => {
-      toast({ title: `${config.label} account disconnected` })
+      // Personal tokens have no revocation API: the portal has dropped its
+      // copy, but the token itself stays valid until deleted at the provider.
+      toast({
+        title: `${config.label} account disconnected`,
+        description: `The token is still valid in ${config.label}. Delete it from your ${config.label} account settings to fully revoke it.`,
+      })
       await invalidate()
     },
     onError: (error: unknown) => {
