@@ -1,6 +1,7 @@
 import "server-only";
 
 import { serverEnv } from "@/lib/env.server";
+import { escapeHtml } from "@/lib/email/escape-html";
 import { sendEmail } from "@/lib/email/send";
 
 const SUBJECT = "You're invited to the Place To Stand portal";
@@ -51,10 +52,10 @@ export async function sendPortalInviteEmail({
 
   const html = `
     <div style="font-family: sans-serif; line-height: 1.5; color: #0f172a;">
-      <p>Hi ${greetingName},</p>
+      <p>Hi ${escapeHtml(greetingName)},</p>
       <p>You've been invited to the Place To Stand client portal.</p>
       <p>
-        <a href="${actionLink}" style="display: inline-block; padding: 10px 18px; background: #0f172a; color: #ffffff; border-radius: 6px; text-decoration: none;">
+        <a href="${escapeHtml(actionLink)}" style="display: inline-block; padding: 10px 18px; background: #0f172a; color: #ffffff; border-radius: 6px; text-decoration: none;">
           Sign in to the portal
         </a>
       </p>
@@ -119,15 +120,15 @@ export async function sendAdminInviteEmail({
 
   const html = `
     <div style="font-family: sans-serif; line-height: 1.5; color: #0f172a;">
-      <p>Hi ${greetingName},</p>
+      <p>Hi ${escapeHtml(greetingName)},</p>
       <p>You've been given access to the Place To Stand internal portal. Use the details below to sign in:</p>
       <ul>
-        <li><strong>Email:</strong> ${to}</li>
-        <li><strong>Temporary password:</strong> ${temporaryPassword}</li>
+        <li><strong>Email:</strong> ${escapeHtml(to)}</li>
+        <li><strong>Temporary password:</strong> ${escapeHtml(temporaryPassword)}</li>
       </ul>
       <p>For security, you'll be asked to create a new password when you first log in.</p>
       <p>
-        <a href="${baseUrl}/sign-in">Sign in to the portal</a> to get started.
+        <a href="${escapeHtml(baseUrl)}/sign-in">Sign in to the portal</a> to get started.
       </p>
       <p>If you weren't expecting this message, please reach out to <a href="mailto:${serverEnv.RESEND_REPLY_TO_EMAIL}">${serverEnv.RESEND_REPLY_TO_EMAIL}</a>.</p>
       <p>Talk soon,<br />The Place To Stand Team</p>

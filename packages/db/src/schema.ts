@@ -1990,6 +1990,36 @@ export const formSubmissions = pgTable(
 )
 
 // =============================================================================
+// RATE LIMITING
+// =============================================================================
+
+/**
+ * Fixed-window counters for throttling unauthenticated actions (auth email
+ * dispatch). Keyed by a caller-chosen string such as `auth-email:<address>`
+ * or `auth-email-ip:<ip>`. Rows are transient: `consumeRateLimit` in
+ * `@pts/db/rate-limit` resets expired windows in place and sweeps stale rows.
+ */
+export const rateLimitBuckets = pgTable(
+  'rate_limit_buckets',
+  {
+    key: text().primaryKey().notNull(),
+    windowStart: timestamp('window_start', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    count: integer().default(0).notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+  },
+  table => [
+    index('idx_rate_limit_buckets_window_start').using(
+      'btree',
+      table.windowStart.asc().nullsLast()
+    ),
+  ]
+)
+
+// =============================================================================
 // VIEWS
 // =============================================================================
 
