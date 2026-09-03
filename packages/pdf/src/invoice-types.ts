@@ -1,12 +1,7 @@
 /**
- * Row shapes consumed by `invoice-pdf.ts`, copied from
- * `apps/internal/lib/invoices/invoice-form.ts` (which mirrors the internal query
- * layer's snake_case mapping).
- *
- * Only the four types the PDF path actually reaches are copied — the zod
- * schemas, `ClientRow`, and the product-catalog types stay behind. Keep these
- * field-for-field identical to the internal originals so the two PDF modules
- * stay interchangeable.
+ * Row shapes consumed by `invoice-pdf.ts`, in the snake_case form the internal
+ * query layer produces (`apps/internal/lib/invoices/invoice-form.ts`). Keep
+ * them field-for-field identical to that mapping.
  */
 
 export type InvoiceRow = {
@@ -50,7 +45,7 @@ export type InvoiceLineItemRow = {
   deleted_at: string | null
 }
 
-export type InvoiceWithClient = InvoiceRow & {
+type InvoiceWithClient = InvoiceRow & {
   client: {
     id: string
     name: string

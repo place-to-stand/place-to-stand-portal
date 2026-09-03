@@ -1,8 +1,11 @@
-import 'server-only'
+/**
+ * Invoice PDF, shared by the client portal (download) and the internal portal
+ * (template preview). One copy, so the layout cannot drift between readers.
+ */
 
 import { jsPDF } from 'jspdf'
 
-import type { InvoiceWithLineItems } from './invoice-form'
+import type { InvoiceWithLineItems } from './invoice-types'
 
 const MARGIN = 20
 const FONT = 'helvetica'
@@ -26,7 +29,6 @@ const formatDate = (date: string | null): string => {
 
 export async function generateInvoicePdf(
   invoice: InvoiceWithLineItems,
-  shareUrl?: string,
 ): Promise<Buffer> {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
   const pageWidth = doc.internal.pageSize.getWidth()
@@ -209,23 +211,6 @@ export async function generateInvoicePdf(
     ensureSpace(noteLines.length * 4)
     doc.text(noteLines, MARGIN, y)
     addSpacer(noteLines.length * 4 + 4)
-  }
-
-  // ---------------------------------------------------------------------------
-  // Footer with share URL
-  // ---------------------------------------------------------------------------
-
-  if (shareUrl) {
-    ensureSpace(15)
-    addSpacer(8)
-
-    doc.setFontSize(8)
-    doc.setFont(FONT, 'normal')
-    doc.setTextColor(100, 100, 100)
-    doc.text('View and pay online:', MARGIN, y)
-    addSpacer(4)
-    doc.setTextColor(0, 102, 204)
-    doc.text(shareUrl, MARGIN, y)
   }
 
   // ---------------------------------------------------------------------------
