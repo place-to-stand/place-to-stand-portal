@@ -32,7 +32,23 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   reactStrictMode: true,
   async headers() {
-    return [{ source: '/(.*)', headers: securityHeaders }]
+    return [
+      { source: '/(.*)', headers: securityHeaders },
+      // The Settings → Templates page frames its own PDF previews. Later
+      // entries override earlier ones for the same header key, so this route
+      // alone may be framed, and only by this origin.
+      {
+        source: '/api/templates/pdf/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value:
+              "frame-ancestors 'self'; base-uri 'self'; object-src 'none'",
+          },
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+        ],
+      },
+    ]
   },
   async rewrites() {
     // PostHog reverse proxy to avoid ad blockers
