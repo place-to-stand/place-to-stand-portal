@@ -184,16 +184,6 @@ export function ConnectedAccountsList({
             </div>
           )
         })}
-
-        <Button
-          onClick={onAddAccount}
-          variant="outline"
-          size="sm"
-          className="w-full"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Add Another {providerName} Account
-        </Button>
       </div>
 
       <ConfirmDialog
