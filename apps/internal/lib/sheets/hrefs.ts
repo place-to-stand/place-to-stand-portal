@@ -15,11 +15,6 @@ export const contactSheetHref = (id: string) => `/contacts?contact=${id}`
 export const invoiceHref = (id: string) => `/invoices?invoice=${id}`
 
 export const hourBlockHref = (id: string) => `/hour-blocks?hour-block=${id}`
-
-export const userSheetHref = (id: string) => `/settings/users?user=${id}`
-
-export const projectSheetHref = (id: string) => `/projects?project=${id}`
-
 export const leadHref = (
   id: string,
   options?: { archived?: boolean; convert?: boolean }
@@ -30,10 +25,6 @@ export const leadHref = (
 }
 
 export const newLeadHref = () => `/leads?lead=${NEW_SHEET_VALUE}`
-
-export const submissionHref = (id: string, options?: { archived?: boolean }) =>
-  `${options?.archived ? '/submissions/archive' : '/submissions'}?submission=${id}`
-
 /**
  * Rebuilds a page's query string for a server-side `redirect()`. Redirects
  * must carry the whole query across — the sheet stack and any filters live

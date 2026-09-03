@@ -52,13 +52,13 @@ import { ClientNotesSection } from './client-notes-section'
 
 type HydratedClientDetail = ClientDetailType & { resolvedId: string }
 
-export type OriginationContactInfo = {
+type OriginationContactInfo = {
   id: string
   name: string | null
   email: string
 } | null
 
-export type PartnerUserInfo = {
+type PartnerUserInfo = {
   id: string
   fullName: string | null
   email: string
