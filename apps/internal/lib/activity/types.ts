@@ -1,7 +1,7 @@
 import type { ActivitySourceValue, UserRoleValue } from '@/lib/types'
 import type { Json } from '@/lib/types/json'
 
-export type DbActivityLog = {
+type DbActivityLog = {
   id: string
   actor_id: string | null
   actor_role: UserRoleValue | null

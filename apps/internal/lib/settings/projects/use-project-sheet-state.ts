@@ -48,7 +48,7 @@ export type {
   ProjectSheetFormValues,
   ProjectWithClient,
 } from './project-sheet-form'
-export { PROJECT_SHEET_MISSING_CLIENT_REASON } from './project-sheet-ui-state'
+
 
 export type UseProjectSheetStateArgs = {
   open: boolean
@@ -60,7 +60,7 @@ export type UseProjectSheetStateArgs = {
   projectContractors?: Record<string, ContractorUserSummary[]>
 }
 
-export type PendingRepo = {
+type PendingRepo = {
   repoFullName: string
   source?: 'oauth' | 'app'
   sourceId?: string
