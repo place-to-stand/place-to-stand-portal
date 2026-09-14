@@ -49,6 +49,55 @@ export const getProjectClientSegment = (
   return null
 }
 
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+/**
+ * Structural equality for the JSON-shaped data a task row carries: scalars,
+ * ISO timestamp strings, and arrays of plain objects (assignees,
+ * attachments). Nothing on `TaskWithRelations` is a Date or class instance,
+ * so this is exhaustive for it. A key that is absent and a key set to
+ * `undefined` are treated alike — `attachments` is optional and arrives both
+ * ways depending on which query built the row.
+ */
+export const isStructurallyEqual = (a: unknown, b: unknown): boolean => {
+  if (Object.is(a, b)) {
+    return true
+  }
+
+  if (Array.isArray(a) || Array.isArray(b)) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) {
+      return false
+    }
+    return a.every((item, index) => isStructurallyEqual(item, b[index]))
+  }
+
+  if (isPlainObject(a) && isPlainObject(b)) {
+    const keys = new Set([...Object.keys(a), ...Object.keys(b)])
+    for (const key of keys) {
+      if (!isStructurallyEqual(a[key], b[key])) {
+        return false
+      }
+    }
+    return true
+  }
+
+  return false
+}
+
+/**
+ * Decides whether a fresh server task list should replace the board's local
+ * copy (`useBoardTaskCollections`). Order-insensitive — columns re-sort by
+ * rank — but otherwise every field counts.
+ *
+ * This used to fingerprint `status`/`rank`/`updated_at`/`commentCount` only,
+ * and any change outside that list was silently dropped after
+ * `router.refresh()`: logging time bumps `loggedHours` without touching
+ * `updated_at`, so the card kept the old total until a hard reload. The
+ * same hole covered every other aggregate or side-table field (attachments,
+ * assignees, accepted_at, due_on written by the calendar route). Comparing
+ * the whole row closes the class of bug instead of patching one field.
+ */
 export const areTaskCollectionsEqual = (
   a: TaskWithRelations[] | undefined,
   b: TaskWithRelations[]
@@ -56,18 +105,12 @@ export const areTaskCollectionsEqual = (
   if (!a) return b.length === 0
   if (a.length !== b.length) return false
 
-  const snapshot = new Map(
-    a.map(task => [
-      task.id,
-      `${task.status}-${task.rank ?? ''}-${task.updated_at}-${task.commentCount}`,
-    ])
-  )
+  const snapshot = new Map(a.map(task => [task.id, task]))
 
-  return b.every(
-    task =>
-      snapshot.get(task.id) ===
-      `${task.status}-${task.rank ?? ''}-${task.updated_at}-${task.commentCount}`
-  )
+  return b.every(task => {
+    const existing = snapshot.get(task.id)
+    return existing !== undefined && isStructurallyEqual(existing, task)
+  })
 }
 
 const fallbackTime = (value: string | null) =>
