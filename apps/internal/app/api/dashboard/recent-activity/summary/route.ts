@@ -23,13 +23,7 @@ import {
 import { getCurrentUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import {
-  activityLogs,
-  clients,
-  leads,
-  projects,
-  tasks,
-} from '@/lib/db/schema'
+import { activityLogs, clients, leads, projects, tasks } from '@/lib/db/schema'
 
 const VALID_TIMEFRAMES = [1, 7, 14, 28] as const
 const ONE_HOUR_MS = 60 * 60 * 1000
@@ -77,7 +71,6 @@ type CacheHeaders = {
 }
 
 type ActivityMetrics = {
-  tasksDone: number
   newLeads: number
   activeProjects: number
   blockedTasks: number
@@ -138,6 +131,7 @@ export async function POST(request: Request) {
 
   const now = new Date()
   const nowIso = now.toISOString()
+  const since = new Date(now.getTime() - timeframeDays * 24 * 60 * 60 * 1000)
 
   try {
     const cache = await loadActivityOverviewCache({
@@ -150,15 +144,21 @@ export async function POST(request: Request) {
       cache &&
       new Date(cache.expires_at).getTime() > now.getTime()
     ) {
+      // Only the model-written highlight is worth caching. The metric cards
+      // are four count queries, and serving them from the hour-old row made
+      // "tasks blocked" lag behind the board until the cache expired.
       const cachedResponse = parseCachedResponse(cache.summary)
-      return jsonResponse(cachedResponse, {
-        status: 'hit',
-        cachedAt: cache.cached_at,
-        expiresAt: cache.expires_at,
-      })
+      const metrics = await computeMetrics(since)
+      return jsonResponse(
+        { metrics, highlight: cachedResponse.highlight },
+        {
+          status: 'hit',
+          cachedAt: cache.cached_at,
+          expiresAt: cache.expires_at,
+        }
+      )
     }
 
-    const since = new Date(now.getTime() - timeframeDays * 24 * 60 * 60 * 1000)
     const logs = await fetchActivityLogsSince(user, {
       since: since.toISOString(),
       limit: TIMEFRAME_LOG_LIMITS[timeframeDays as ValidTimeframe],
@@ -215,7 +215,10 @@ export async function POST(request: Request) {
       highlight = buildFallbackHighlight(logs, timeframeDays, metrics)
     }
 
-    highlight = enforceHighlightCharacterLimit(highlight, HIGHLIGHT_CHARACTER_LIMIT)
+    highlight = enforceHighlightCharacterLimit(
+      highlight,
+      HIGHLIGHT_CHARACTER_LIMIT
+    )
 
     const response: ActivityOverviewResponse = {
       metrics,
@@ -293,40 +296,23 @@ function parseCachedResponse(summary: Json): ActivityOverviewResponse {
     return parsed as ActivityOverviewResponse
   }
   return {
-    metrics: { tasksDone: 0, newLeads: 0, activeProjects: 0, blockedTasks: 0 },
+    metrics: { newLeads: 0, activeProjects: 0, blockedTasks: 0 },
     highlight: 'No recent activity to report.',
   }
 }
 
 async function computeMetrics(since: Date): Promise<ActivityMetrics> {
-  const [tasksDone, newLeads, activeProjects, blockedTasks] =
-    await Promise.all([
-      countTasksDone(since),
-      countNewLeads(since),
-      countActiveProjects(since),
-      countBlockedTasks(),
-    ])
+  const [newLeads, activeProjects, blockedTasks] = await Promise.all([
+    countNewLeads(since),
+    countActiveProjects(since),
+    countBlockedTasks(),
+  ])
 
   return {
-    tasksDone,
     newLeads,
     activeProjects,
     blockedTasks,
   }
-}
-
-async function countTasksDone(since: Date): Promise<number> {
-  const result = await db
-    .select({ count: count() })
-    .from(tasks)
-    .where(
-      and(
-        isNull(tasks.deletedAt),
-        gte(tasks.acceptedAt, since.toISOString())
-      )
-    )
-
-  return result[0]?.count ?? 0
 }
 
 /**
@@ -361,7 +347,9 @@ async function countNewLeads(since: Date): Promise<number> {
   const result = await db
     .select({ count: count() })
     .from(leads)
-    .where(and(isNull(leads.deletedAt), gte(leads.createdAt, since.toISOString())))
+    .where(
+      and(isNull(leads.deletedAt), gte(leads.createdAt, since.toISOString()))
+    )
 
   return result[0]?.count ?? 0
 }
@@ -425,7 +413,9 @@ function buildUserPrompt({
   const logsByActor = new Map<string, string[]>()
   for (const log of logs.filter(log => !isViewEvent(log))) {
     const actorName = (
-      log.actor?.full_name?.trim() || log.actor?.email || 'System'
+      log.actor?.full_name?.trim() ||
+      log.actor?.email ||
+      'System'
     ).replace(/\s+/g, ' ')
     const existing = logsByActor.get(actorName) ?? []
     existing.push(formatActivityLog(log, context))
@@ -440,7 +430,6 @@ function buildUserPrompt({
     `Today is ${now.toISOString()}. Write a team activity summary for ${timeframeLabel}.`,
     '',
     'Current metrics:',
-    `- Tasks accepted: ${metrics.tasksDone}`,
     `- New leads: ${metrics.newLeads}`,
     `- Active projects: ${metrics.activeProjects}`,
     `- Blocked tasks: ${metrics.blockedTasks}`,
@@ -467,11 +456,6 @@ function buildFallbackHighlight(
   const dayLabel = timeframeDays === 1 ? 'day' : 'days'
   const bullets: string[] = []
 
-  if (metrics.tasksDone > 0) {
-    const taskWord = metrics.tasksDone === 1 ? 'task was' : 'tasks were'
-    bullets.push(`${metrics.tasksDone} ${taskWord} accepted over the past ${timeframeDays} ${dayLabel}.`)
-  }
-
   if (metrics.newLeads > 0) {
     const leadWord = metrics.newLeads === 1 ? 'lead' : 'leads'
     bullets.push(`${metrics.newLeads} new ${leadWord} came in — worth a look.`)
@@ -479,7 +463,9 @@ function buildFallbackHighlight(
 
   if (metrics.blockedTasks > 0) {
     const blockedWord = metrics.blockedTasks === 1 ? 'task is' : 'tasks are'
-    bullets.push(`${metrics.blockedTasks} ${blockedWord} currently blocked and may need attention.`)
+    bullets.push(
+      `${metrics.blockedTasks} ${blockedWord} currently blocked and may need attention.`
+    )
   }
 
   if (bullets.length === 0) {

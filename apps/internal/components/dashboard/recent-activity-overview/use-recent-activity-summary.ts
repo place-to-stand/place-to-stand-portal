@@ -15,7 +15,6 @@ import {
 type SummaryStatus = "idle" | "loading" | "success" | "error"
 
 type ActivityMetrics = {
-  tasksDone: number
   newLeads: number
   activeProjects: number
   blockedTasks: number

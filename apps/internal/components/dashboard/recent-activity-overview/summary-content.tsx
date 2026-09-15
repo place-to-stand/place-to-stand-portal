@@ -33,8 +33,7 @@ export function SummaryContent({ state }: SummaryContentProps) {
 
   return (
     <div>
-      <div className="grid grid-cols-4 gap-2">
-        <MetricCard value={state.metrics.tasksDone} label="tasks accepted" />
+      <div className="grid grid-cols-3 gap-2">
         <MetricCard value={state.metrics.newLeads} label="new leads" />
         <MetricCard value={state.metrics.activeProjects} label="active projects" />
         <MetricCard
