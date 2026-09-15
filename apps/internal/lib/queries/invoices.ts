@@ -191,6 +191,13 @@ const INVOICE_SORT_ORDERINGS: Record<
     asc: sql`${invoices.invoiceNumber} ASC NULLS LAST`,
     desc: sql`${invoices.invoiceNumber} DESC NULLS LAST`,
   },
+  // Case-insensitive so "acme" and "Acme" don't split; unassigned invoices
+  // (no client) sink to the bottom either way, and a client's own invoices
+  // stay newest-first so the grouping reads like the default view.
+  client: {
+    asc: sql`LOWER(${clients.name}) ASC NULLS LAST, ${invoices.createdAt} DESC`,
+    desc: sql`LOWER(${clients.name}) DESC NULLS LAST, ${invoices.createdAt} DESC`,
+  },
 }
 
 export async function listInvoices(
