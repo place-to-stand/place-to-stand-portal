@@ -9,7 +9,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@pts/ui/dropdown-menu'
 import type { PortalClientOption } from '@/lib/auth/view-as'
 import { SignOutButton } from './sign-out-button'
 import { ThemeToggle } from './theme-toggle'

@@ -1,6 +1,6 @@
 import { Plus } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 
 import { DesignSection, Specimen } from './specimen'

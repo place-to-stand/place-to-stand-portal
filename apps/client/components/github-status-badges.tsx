@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { CheckCircle2Icon } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@pts/ui/button'
 import { GitHubMark } from '@/components/icons/github-mark'
 import { useGitHubCallbackNotice } from '@/lib/hooks/use-github-callback-notice'
 import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'

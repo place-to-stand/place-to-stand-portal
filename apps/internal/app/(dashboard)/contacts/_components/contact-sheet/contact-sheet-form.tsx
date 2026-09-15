@@ -5,7 +5,7 @@ import type React from 'react'
 import { Check, User2, UserPlus } from 'lucide-react'
 import type { UseFormReturn } from 'react-hook-form'
 
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'

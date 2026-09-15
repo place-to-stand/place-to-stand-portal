@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@pts/ui/select'
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import type { UseFormReturn } from 'react-hook-form'

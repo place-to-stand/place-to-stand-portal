@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Loader2, Mail, Plus } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { useToast } from '@/components/ui/use-toast'
 import { formatCalendarDate } from '@/lib/dates'

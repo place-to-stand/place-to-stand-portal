@@ -3,7 +3,7 @@
 import { useState } from 'react'
 
 import { Avatar, AvatarFallback } from '@pts/ui/avatar'
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import {
   Breadcrumb,
   BreadcrumbItem,

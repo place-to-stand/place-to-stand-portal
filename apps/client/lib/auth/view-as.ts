@@ -28,6 +28,8 @@ export const VIEW_AS_COOKIE = 'pts_view_as_client'
  */
 export const VIEW_AS_CONTACT_COOKIE = 'pts_view_as_contact'
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export type PortalClientOption = {
   id: string
   name: string
@@ -49,15 +51,11 @@ export type PortalScope = {
   /** True when an admin has a valid contact selected. */
   isAdminPreview: boolean
   viewingAsClientId: string | null
-  /** @deprecated Use availableContacts / viewingAsContactId instead. */
-  availableClients: PortalClientOption[]
-  /** Contacts the admin may switch between. Always empty for non-admins. */
-  availableContacts: PortalContactOption[]
   /** The contact the admin is currently previewing as (null if none selected). */
   viewingAsContactId: string | null
 }
 
-const EMPTY_ADMIN_SCOPE: Omit<PortalScope, 'availableClients' | 'availableContacts'> = {
+const EMPTY_ADMIN_SCOPE: PortalScope = {
   clientIds: [],
   scopedClients: [],
   isAdminPreview: false,
@@ -96,44 +94,57 @@ export const resolvePortalScope = cache(
       scopedClients: memberships,
       isAdminPreview: false,
       viewingAsClientId: null,
-      availableClients: [],
-      availableContacts: [],
       viewingAsContactId: null,
     }
   }
 )
 
-async function resolveAdminScope(): Promise<PortalScope> {
-  // Fetch all non-deleted contacts ordered by name, with promoted flag.
-  const availableContacts = await db
-    .select({
-      id: contacts.id,
-      name: contacts.name,
-      email: contacts.email,
-      // mapWith(Boolean): isNotNull is SQL<unknown>, and the postgres driver
-      // hands the flag back as a real boolean.
-      isPromoted: isNotNull(contacts.userId).mapWith(Boolean),
-    })
-    .from(contacts)
-    .where(isNull(contacts.deletedAt))
-    .orderBy(asc(contacts.name))
+/**
+ * Every contact an admin may preview as — the list behind the ViewAsBanner
+ * dropdown. Only the portal layout needs it, so it is deliberately NOT part of
+ * resolvePortalScope: the scope resolution runs on every page render (and
+ * every Link prefetch), and loading the whole contacts table there was a
+ * full-table query per navigation for admins.
+ */
+export const fetchPortalContactOptions = cache(
+  async (user: AppUser): Promise<PortalContactOption[]> => {
+    if (!isAdmin(user)) return []
 
+    return db
+      .select({
+        id: contacts.id,
+        name: contacts.name,
+        email: contacts.email,
+        // mapWith(Boolean): isNotNull is SQL<unknown>, and the postgres driver
+        // hands the flag back as a real boolean.
+        isPromoted: isNotNull(contacts.userId).mapWith(Boolean),
+      })
+      .from(contacts)
+      .where(isNull(contacts.deletedAt))
+      .orderBy(asc(contacts.name))
+  }
+)
+
+async function resolveAdminScope(): Promise<PortalScope> {
   const cookieStore = await cookies()
   const selectedContactId = cookieStore.get(VIEW_AS_CONTACT_COOKIE)?.value ?? null
 
-  // Re-validate the selection against live rows on every request so a contact
-  // that has since been deleted falls back to "nothing selected".
-  const isValidContactSelection =
-    !!selectedContactId &&
-    availableContacts.some(c => c.id === selectedContactId)
+  // Fail closed: an admin with no selection sees an empty portal.
+  if (!selectedContactId || !UUID_RE.test(selectedContactId)) {
+    return EMPTY_ADMIN_SCOPE
+  }
 
-  if (!isValidContactSelection) {
-    // Fail closed: an admin with no valid selection sees an empty portal.
-    return {
-      ...EMPTY_ADMIN_SCOPE,
-      availableClients: [],
-      availableContacts,
-    }
+  // Re-validate the selection against the live row on every request so a
+  // contact that has since been deleted falls back to "nothing selected". One
+  // indexed lookup — not the whole contacts table.
+  const [contact] = await db
+    .select({ id: contacts.id })
+    .from(contacts)
+    .where(and(eq(contacts.id, selectedContactId), isNull(contacts.deletedAt)))
+    .limit(1)
+
+  if (!contact) {
+    return EMPTY_ADMIN_SCOPE
   }
 
   // Derive clientIds from contact_clients join.
@@ -154,8 +165,6 @@ async function resolveAdminScope(): Promise<PortalScope> {
     scopedClients: linkedClients,
     isAdminPreview: true,
     viewingAsClientId: null,
-    availableClients: [],
-    availableContacts,
     viewingAsContactId: selectedContactId,
   }
 }

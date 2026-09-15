@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { ListTodo, Plus } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import { Skeleton } from '@pts/ui/skeleton'
 import { TaskCardStatic } from '@/app/(dashboard)/projects/task-card'
 import type { LeadRecord } from '@/lib/leads/types'

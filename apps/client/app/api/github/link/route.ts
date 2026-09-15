@@ -10,7 +10,7 @@ import {
 } from '@pts/db/schema'
 import { getCurrentUser } from '@/lib/auth/session'
 import { ensureClientAccess } from '@/lib/auth/permissions'
-import { getEnv } from '@/lib/env.server'
+import { getGitHubAppEnv } from '@/lib/env.server'
 import { getInstallationRepo } from '@pts/github/app-client'
 import { isInstallationNotFoundError } from '@pts/github/app-auth'
 
@@ -134,7 +134,7 @@ export async function POST(request: Request) {
     )
   }
 
-  const env = getEnv()
+  const env = getGitHubAppEnv()
 
   try {
     // Verify repo is accessible via installation

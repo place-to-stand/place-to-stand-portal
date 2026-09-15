@@ -1,7 +1,7 @@
 import { Download, ExternalLink, FileText } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
-import { buttonVariants } from '@/components/ui/button'
+import { Badge } from '@pts/ui/badge'
+import { buttonVariants } from '@pts/ui/button'
 import { cn } from '@/lib/utils'
 import {
   getInvoiceStatusLabel,

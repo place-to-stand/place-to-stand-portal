@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type React from 'react'
 import { useWatch, type UseFormReturn } from 'react-hook-form'
 
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'

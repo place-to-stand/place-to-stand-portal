@@ -7,7 +7,7 @@ import { BrandLogo } from '@pts/ui/brand'
 
 import { requireClientUser } from '@/lib/auth/session'
 import { isAdmin } from '@/lib/auth/permissions'
-import { resolvePortalScope } from '@/lib/auth/view-as'
+import { fetchPortalContactOptions, resolvePortalScope } from '@/lib/auth/view-as'
 import { UserMenu } from '@/components/layout/user-menu'
 import { ViewAsBanner } from '@/components/layout/view-as-banner'
 
@@ -24,14 +24,19 @@ export default async function PortalLayout({
     redirect('/onboarding')
   }
 
-  // cache()-wrapped, so the pages below reuse this same resolution.
-  const scope = await resolvePortalScope(user)
+  // Both cache()-wrapped, so the pages below reuse this same resolution. The
+  // contact list is layout-only: pages never need it, and it is the one query
+  // here that grows with the size of the contacts table.
+  const [scope, availableContacts] = await Promise.all([
+    resolvePortalScope(user),
+    fetchPortalContactOptions(user),
+  ])
 
   return (
     <div className="min-h-screen bg-background">
       {isAdmin(user) && (
         <ViewAsBanner
-          availableContacts={scope.availableContacts}
+          availableContacts={availableContacts}
           viewingAsContactId={scope.viewingAsContactId}
         />
       )}

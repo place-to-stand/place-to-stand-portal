@@ -21,7 +21,7 @@ import {
 } from 'lucide-react'
 
 import { CardAssigneeAvatars } from '@/components/cards/card-assignee-avatars'
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import { ENTITY_ACCENTS } from '@/lib/entity-accents'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import {

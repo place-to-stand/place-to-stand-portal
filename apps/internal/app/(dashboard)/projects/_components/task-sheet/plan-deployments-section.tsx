@@ -12,7 +12,7 @@ import {
   Terminal,
 } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import { useToast } from '@/components/ui/use-toast'
 import type { DbTaskDeployment } from '@/lib/types'
 import type { WorkerCommentStatus } from '../../actions/fetch-worker-status'

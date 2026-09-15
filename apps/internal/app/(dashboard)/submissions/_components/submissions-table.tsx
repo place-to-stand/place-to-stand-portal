@@ -6,7 +6,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { Archive, Check, RefreshCw, Trash2 } from 'lucide-react'
 
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { PaginationControls } from '@/components/ui/pagination-controls'

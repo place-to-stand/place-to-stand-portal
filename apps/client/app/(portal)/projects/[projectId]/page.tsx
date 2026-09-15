@@ -7,6 +7,7 @@ import { ArrowLeftIcon } from 'lucide-react'
 import { requireClientUser } from '@/lib/auth/session'
 import { fetchProjectDetail } from '@/lib/data/project-detail'
 import { fetchProjectTasks } from '@/lib/data/tasks'
+import { fetchProjectGitHubStatus } from '@/lib/data/github'
 import { fetchPtsStaffGitHubAccounts } from '@/lib/data/staff-github-access'
 import { ProjectTaskList } from '@/components/tasks/project-task-list'
 import { GitHubRepoSection } from '@/components/projects/github-repos-section'
@@ -34,9 +35,14 @@ export default async function ProjectDetailPage({
     notFound()
   }
 
-  // Re-checks access internally; the fetchProjectDetail call above is cached.
-  const tasks = await fetchProjectTasks(user, projectId)
-  const staffAccounts = await fetchPtsStaffGitHubAccounts()
+  // Both project fetchers re-check access internally; the fetchProjectDetail
+  // call above is cached, so that check is free. Nothing here depends on
+  // anything else, so it all goes out at once.
+  const [tasks, github, staffAccounts] = await Promise.all([
+    fetchProjectTasks(user, projectId),
+    fetchProjectGitHubStatus(user, projectId),
+    fetchPtsStaffGitHubAccounts(),
+  ])
 
   return (
     <div className="space-y-6">
@@ -55,6 +61,8 @@ export default async function ProjectDetailPage({
       <GitHubRepoSection
         projectId={project.id}
         clientId={project.clientId}
+        hasInstallation={github.hasInstallation}
+        links={github.links}
         staffAccounts={staffAccounts}
       />
     </div>

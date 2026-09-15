@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@pts/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import { sanitizeEditorHtml } from '@/components/ui/rich-text-editor/utils'
 import { formatCalendarDate } from '@/lib/dates'
 import type { LeadUpdateRecord } from '@/lib/leads/types'

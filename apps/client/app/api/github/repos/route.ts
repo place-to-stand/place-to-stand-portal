@@ -5,7 +5,7 @@ import { db } from '@/lib/db'
 import { githubAppInstallations } from '@pts/db/schema'
 import { getCurrentUser } from '@/lib/auth/session'
 import { ensureClientAccess } from '@/lib/auth/permissions'
-import { getEnv } from '@/lib/env.server'
+import { getGitHubAppEnv } from '@/lib/env.server'
 import { listInstallationRepos } from '@pts/github/app-client'
 import { isInstallationNotFoundError } from '@pts/github/app-auth'
 import { ensureInstallationVerified } from '@/lib/github/verify-installation'
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
 
   await ensureClientAccess(user, clientId)
 
-  const env = getEnv()
+  const env = getGitHubAppEnv()
 
   // Find active installation for this client
   const [installation] = await db

@@ -4,7 +4,7 @@ import { Eye, FlaskConical, Loader2, Pencil, Send } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import { formatCalendarDate } from '@/lib/dates'
 
 type UpdateToolbarProps = {

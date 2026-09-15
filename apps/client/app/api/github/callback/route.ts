@@ -7,7 +7,7 @@ import { githubAppInstallations } from '@pts/db/schema'
 import { getCurrentUser } from '@/lib/auth/session'
 import { safeRedirectPath } from '@/lib/auth/callback'
 import { ensureClientAccess } from '@/lib/auth/permissions'
-import { getEnv } from '@/lib/env.server'
+import { getGitHubAppEnv } from '@/lib/env.server'
 import { getInstallationById } from '@pts/github/app-auth'
 
 /**
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL(errorPath, request.url))
   }
 
-  const env = getEnv()
+  const env = getGitHubAppEnv()
 
   try {
     // Fetch installation details from GitHub using App JWT
