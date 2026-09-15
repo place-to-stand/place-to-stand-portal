@@ -62,19 +62,25 @@ async function checkSupabaseAuth(req: NextRequest): Promise<{
     }
   )
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
+  // Verifies the JWT locally once the project is on asymmetric signing keys
+  // (falls back to a getUser() round trip on the legacy HS256 secret). Still
+  // refreshes an expired session and writes the new cookies onto `res`, which
+  // is the one place in the request lifecycle that can set them.
+  const { data, error: claimsError } = await supabase.auth.getClaims()
 
   // AuthSessionMissingError is expected for unauthenticated users - don't log it
-  if (userError && userError.name !== 'AuthSessionMissingError') {
-    console.error('Failed to resolve Supabase user in middleware', userError)
+  if (claimsError && claimsError.name !== 'AuthSessionMissingError') {
+    console.error('Failed to resolve Supabase session in middleware', claimsError)
   }
 
+  const claims = claimsError ? null : data?.claims
+  const userMetadata = claims?.user_metadata as
+    | { must_reset_password?: unknown }
+    | undefined
+
   return {
-    isAuthenticated: Boolean(user),
-    mustResetPassword: Boolean(user?.user_metadata?.must_reset_password),
+    isAuthenticated: Boolean(claims?.sub),
+    mustResetPassword: Boolean(userMetadata?.must_reset_password),
     response: res,
   }
 }

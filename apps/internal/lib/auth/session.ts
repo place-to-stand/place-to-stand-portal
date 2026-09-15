@@ -33,26 +33,28 @@ export const getSession = cache(async (): Promise<Session | null> => {
 
 export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
   const supabase = getSupabaseServerClient()
-  const {
-    data: { user: authUser },
-    error,
-  } = await supabase.auth.getUser()
+
+  // getClaims() verifies the session JWT's signature and expiry. With the
+  // project on asymmetric signing keys (ES256) that happens in-process against
+  // a JWKS cached for 10 minutes — no round trip to Supabase Auth per request.
+  // With the legacy HS256 secret it falls back to getUser() internally, so
+  // behaviour is unchanged until the key is rotated. The only claims trusted
+  // here are `sub` and `email`; role, disabled and deleted state come from our
+  // own users row below, on every request.
+  const { data, error } = await supabase.auth.getClaims()
 
   // AuthSessionMissingError is expected for unauthenticated users - don't log it
   if (error && error.name !== 'AuthSessionMissingError') {
-    console.error('Failed to resolve Supabase user', error)
+    console.error('Failed to resolve Supabase session', error)
   }
 
-  if (error) {
-    return null
-  }
-
-  if (!authUser?.id) {
+  const authUserId = data?.claims.sub
+  if (error || !authUserId) {
     return null
   }
 
   try {
-    const profile = await fetchUserProfile(authUser.id)
+    const profile = await fetchUserProfile(authUserId)
 
     if (!profile) {
       return null
@@ -60,11 +62,17 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
 
     // Sync profile if Supabase auth email differs from database email
     // This handles cases where email change confirmation bypassed our /auth/confirm route
-    const authEmail = authUser.email ?? ''
+    const authEmail = data.claims.email ?? ''
     if (authEmail && authEmail.toLowerCase() !== profile.email.toLowerCase()) {
-      await syncUserProfile(authUser, profile.email)
+      // Rare path, so the full auth user is fetched only here.
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser()
+      if (authUser) {
+        await syncUserProfile(authUser, profile.email)
+      }
       // Re-fetch to get updated email
-      const updatedProfile = await fetchUserProfileUncached(authUser.id)
+      const updatedProfile = await fetchUserProfileUncached(authUserId)
       if (updatedProfile) {
         return mapProfileToAppUser(updatedProfile)
       }
