@@ -4,11 +4,14 @@ import {
   CalendarDays,
   ChevronRight,
   FolderKanban,
+  Loader2,
   User,
   Users,
 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@pts/ui/button'
+import { MY_TASKS_WIDGET_PAGE_SIZE } from '@/lib/dashboard/types'
 import { myTaskHref } from '@/lib/sheets/hrefs'
 import type { AssignedTaskSummary } from '@/lib/data/tasks'
 import type { ProjectTypeValue } from '@/lib/types'
@@ -25,6 +28,10 @@ import { PROJECT_SPECIAL_SEGMENTS } from '@/lib/projects/board/board-utils'
 
 type TaskListProps = {
   items: AssignedTaskSummary[]
+  totalCount: number
+  isLoadingMore: boolean
+  onLoadMore: () => void
+  error: string | null
 }
 
 type TaskLinkMeta = {
@@ -32,13 +39,53 @@ type TaskLinkMeta = {
   reason?: string
 }
 
-export function TaskList({ items }: TaskListProps) {
+export function TaskList({
+  items,
+  totalCount,
+  isLoadingMore,
+  onLoadMore,
+  error,
+}: TaskListProps) {
+  const remaining = Math.max(0, totalCount - items.length)
+
   return (
-    <ul className='divide-border flex h-full flex-col divide-y'>
-      {items.map(task => (
-        <TaskListItem key={task.id} task={task} />
-      ))}
-    </ul>
+    <div className='flex h-full flex-col'>
+      <ul className='divide-border flex flex-col divide-y'>
+        {items.map(task => (
+          <TaskListItem key={task.id} task={task} />
+        ))}
+      </ul>
+      {/*
+        Same ghost "Load N more" as the hours widget's log list, sitting under
+        a rule so it reads as the list's footer rather than one more row.
+      */}
+      {error || remaining > 0 ? (
+        <div className='border-t px-2 py-1.5'>
+          {error ? (
+            <p className='text-destructive px-2 pb-1 text-xs'>{error}</p>
+          ) : null}
+          {remaining > 0 ? (
+            <Button
+              type='button'
+              variant='ghost'
+              size='sm'
+              className='h-7 w-full text-xs'
+              onClick={onLoadMore}
+              disabled={isLoadingMore}
+            >
+              {isLoadingMore ? (
+                <>
+                  <Loader2 className='h-3.5 w-3.5 animate-spin' aria-hidden />
+                  Loading...
+                </>
+              ) : (
+                `Load ${Math.min(MY_TASKS_WIDGET_PAGE_SIZE, remaining)} more`
+              )}
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
   )
 }
 

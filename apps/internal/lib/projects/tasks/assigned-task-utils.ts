@@ -15,10 +15,19 @@ export function sortAssignedTasks(
   return copy
 }
 
-function compareAssignedTasks(
-  a: AssignedTaskSummary,
-  b: AssignedTaskSummary
-) {
+/**
+ * Same key order as the SQL in `loadAssignedTaskSummaries`: status first so a
+ * flat list reads Blocked, In progress, On deck; then the board's per-column
+ * drag order, due date, recency, and title as tie-breakers.
+ */
+function compareAssignedTasks(a: AssignedTaskSummary, b: AssignedTaskSummary) {
+  const priorityA = STATUS_PRIORITY[a.status ?? ''] ?? Number.MAX_SAFE_INTEGER
+  const priorityB = STATUS_PRIORITY[b.status ?? ''] ?? Number.MAX_SAFE_INTEGER
+
+  if (priorityA !== priorityB) {
+    return priorityA - priorityB
+  }
+
   const orderA = a.sortOrder ?? null
   const orderB = b.sortOrder ?? null
 
@@ -47,13 +56,6 @@ function compareAssignedTasks(
 
   if (dueA === null && dueB !== null) {
     return 1
-  }
-
-  const priorityA = STATUS_PRIORITY[a.status ?? ''] ?? Number.MAX_SAFE_INTEGER
-  const priorityB = STATUS_PRIORITY[b.status ?? ''] ?? Number.MAX_SAFE_INTEGER
-
-  if (priorityA !== priorityB) {
-    return priorityA - priorityB
   }
 
   const updatedA = getTimestamp(a.updatedAt)

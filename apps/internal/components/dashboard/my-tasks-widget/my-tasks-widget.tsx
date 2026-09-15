@@ -22,11 +22,17 @@ export function MyTasksWidget({
   totalCount,
   className,
 }: MyTasksWidgetProps) {
-
-  const { items } = useMyTasksWidgetState({
+  const {
+    items,
+    totalCount: currentTotalCount,
+    isLoadingMore,
+    error,
+    loadMore,
+  } = useMyTasksWidgetState({
     initialTasks: tasks,
+    initialTotalCount: totalCount,
   })
-  const visibleCount = Math.min(items.length, totalCount)
+  const visibleCount = Math.min(items.length, currentTotalCount)
 
   return (
     <section
@@ -44,7 +50,7 @@ export function MyTasksWidget({
         </div>
         <div className='flex items-center gap-2'>
           <p className='text-muted-foreground text-xs font-medium'>
-            {visibleCount} of {totalCount} tasks
+            {visibleCount} of {currentTotalCount} tasks
           </p>
           <Button asChild size='xs' variant='outline'>
             <Link href='/my/tasks/board' aria-label='View all assigned tasks'>
@@ -54,7 +60,17 @@ export function MyTasksWidget({
         </div>
       </header>
       <div className='flex-1 overflow-hidden'>
-        {items.length ? <TaskList items={items} /> : <EmptyState />}
+        {items.length ? (
+          <TaskList
+            items={items}
+            totalCount={currentTotalCount}
+            isLoadingMore={isLoadingMore}
+            onLoadMore={loadMore}
+            error={error}
+          />
+        ) : (
+          <EmptyState />
+        )}
       </div>
     </section>
   )
