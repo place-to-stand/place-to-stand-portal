@@ -294,7 +294,15 @@ export function InvoicesTableSection({
             >
               Invoice #
             </SortableTableHead>
-            <TableHead className='w-[18%]'>Client</TableHead>
+            <SortableTableHead
+              field='client'
+              sort={sort}
+              defaultSort='created:desc'
+              onSortChange={next => update({ sort: next })}
+              className='w-[18%]'
+            >
+              Client
+            </SortableTableHead>
             <TableHead className='w-[12%]'>Status</TableHead>
             <TableHead className='w-[10%]'>Total</TableHead>
             <SortableTableHead
