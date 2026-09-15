@@ -2,7 +2,7 @@
 
 import { Mail, Phone, Star, UserCheck, Users } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import type { ContactWithClientLink } from '@/lib/types/client-contacts'
 import {
   CLICKABLE_ROW_CLASS,

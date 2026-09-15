@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react'
 
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import { Tabs } from '@pts/ui/tabs'
 import { cn } from '@/lib/utils'
 

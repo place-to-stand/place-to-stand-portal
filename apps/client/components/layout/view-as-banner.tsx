@@ -10,7 +10,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@pts/ui/dropdown-menu'
 import type { PortalContactOption } from '@/lib/auth/view-as'
 import { setViewAsContact } from '@/app/(portal)/_actions/set-view-as-contact'
 
@@ -54,7 +54,7 @@ export function ViewAsBanner({
             {selectedContact?.name ?? 'Select a contact to preview'}
             <ChevronDownIcon className="size-3.5" aria-hidden="true" />
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="max-h-80 w-72 overflow-y-auto">
+          <DropdownMenuContent className="max-h-80 w-72 overflow-y-auto">
             <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
               Viewing as
             </DropdownMenuLabel>

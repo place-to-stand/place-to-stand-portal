@@ -3,7 +3,7 @@
 import { useCallback, useState, useTransition } from 'react'
 import { FileText, Check, Loader2 } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { updateClientNotes } from '../actions'

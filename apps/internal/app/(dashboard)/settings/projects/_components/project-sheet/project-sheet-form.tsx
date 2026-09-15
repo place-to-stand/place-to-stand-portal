@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from '@pts/ui/select'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import {
   PROJECT_STATUS_OPTIONS,
   getProjectStatusLabel,

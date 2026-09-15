@@ -1,4 +1,4 @@
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import { cn } from '@/lib/utils'
 import { getTaskStatusLabel, getTaskStatusToken } from '@/lib/tasks/task-status'
 import type { ClientTask, ProjectTasks } from '@/lib/data/tasks'

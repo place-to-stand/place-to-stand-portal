@@ -4,7 +4,7 @@ import { createHmac, timingSafeEqual } from 'crypto'
 
 import { db } from '@/lib/db'
 import { githubAppInstallations } from '@pts/db/schema'
-import { getEnv } from '@/lib/env.server'
+import { getGitHubAppEnv } from '@/lib/env.server'
 
 /**
  * POST /api/github/webhook
@@ -13,7 +13,7 @@ import { getEnv } from '@/lib/env.server'
  * Handles: installation, installation_repositories events.
  */
 export async function POST(request: NextRequest) {
-  const env = getEnv()
+  const env = getGitHubAppEnv()
 
   // Verify webhook signature
   const signature = request.headers.get('x-hub-signature-256')

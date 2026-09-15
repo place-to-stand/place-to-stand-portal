@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import { useWatch, type Control } from 'react-hook-form'
 
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import {
   FormControl,
   FormField,

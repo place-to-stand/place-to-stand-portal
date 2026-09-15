@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { formatDistanceToNowStrict } from 'date-fns'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import { ActivityChangeList } from '@/components/activity/activity-change-list'
 import { getActivityChanges } from '@/lib/activity/changes'
 import {

@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 import type { LeadRecord } from '@/lib/leads/types'
 import type { LeadStatusValue } from '@/lib/leads/constants'
 import { getLeadStatusToken } from '@/lib/leads/constants'
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 
 import { BoardDropPlaceholder } from '@/components/board/drop-placeholder'

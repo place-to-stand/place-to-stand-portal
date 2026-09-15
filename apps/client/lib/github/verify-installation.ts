@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { githubAppInstallations } from '@pts/db/schema'
-import { getEnv } from '@/lib/env.server'
+import { getGitHubAppEnv } from '@/lib/env.server'
 import { getInstallationById, isInstallationNotFoundError } from '@pts/github/app-auth'
 
 const VERIFY_INTERVAL_MS = 24 * 60 * 60 * 1000 // 1 day
@@ -37,9 +37,12 @@ export async function ensureInstallationVerified(installation: {
     return { removed: false }
   }
 
-  const env = getEnv()
-
   try {
+    // Inside the try on purpose: this now runs during the project page render
+    // (not behind an API route), and a missing GitHub env must degrade to
+    // "skip the check", never take the page down.
+    const env = getGitHubAppEnv()
+
     await getInstallationById(
       installation.installationId,
       env.GITHUB_APP_ID,
@@ -54,6 +57,7 @@ export async function ensureInstallationVerified(installation: {
     return { removed: false }
   } catch (error) {
     if (!isInstallationNotFoundError(error)) {
+      console.warn('Skipped GitHub installation verification', error)
       return { removed: false }
     }
 

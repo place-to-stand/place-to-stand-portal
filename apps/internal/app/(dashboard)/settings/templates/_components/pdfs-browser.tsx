@@ -3,7 +3,7 @@
 import { FileText } from 'lucide-react'
 import { useState } from 'react'
 
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import type { PdfTemplateEntry } from '@/lib/pdf/catalog'
 
 import {

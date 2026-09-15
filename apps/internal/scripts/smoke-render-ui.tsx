@@ -43,7 +43,7 @@ import {
   Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger,
 } from '../components/ui/sheet'
 import { Slot } from '@pts/ui/slot'
-import { Badge } from '../components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '../components/ui/hover-card'
 import {
   Popover as TiptapPopover, PopoverContent as TiptapPopoverContent,
