@@ -71,24 +71,30 @@ export function TimeLogList({
         ))}
       </ul>
       {error ? <p className='text-destructive pt-2 text-xs'>{error}</p> : null}
+      {/*
+        Same -mx-2 as the list so the rule above the button lines up with the
+        row dividers, matching the My Tasks widget's footer.
+      */}
       {remaining > 0 ? (
-        <Button
-          type='button'
-          variant='ghost'
-          size='sm'
-          className='mt-1 h-7 w-full text-xs'
-          onClick={onLoadMore}
-          disabled={isLoadingMore}
-        >
-          {isLoadingMore ? (
-            <>
-              <Loader2 className='h-3.5 w-3.5 animate-spin' aria-hidden />
-              Loading...
-            </>
-          ) : (
-            `Load ${Math.min(5, remaining)} more`
-          )}
-        </Button>
+        <div className='-mx-2 border-t px-2 pt-1.5'>
+          <Button
+            type='button'
+            variant='ghost'
+            size='sm'
+            className='h-7 w-full text-xs'
+            onClick={onLoadMore}
+            disabled={isLoadingMore}
+          >
+            {isLoadingMore ? (
+              <>
+                <Loader2 className='h-3.5 w-3.5 animate-spin' aria-hidden />
+                Loading...
+              </>
+            ) : (
+              `Load ${Math.min(5, remaining)} more`
+            )}
+          </Button>
+        </div>
       ) : null}
     </div>
   )
