@@ -127,6 +127,12 @@ type FetchAssignedTasksSummaryOptions = {
   /** Project types to withhold (e.g. PERSONAL, INTERNAL); empty = show all. */
   hiddenProjectTypes?: readonly ProjectTypeValue[]
   limit?: number | null
+  /**
+   * Rows to skip before `limit` applies. Only meaningful with a `userId`:
+   * the everyone view joins one row per assignee and dedupes afterwards, so
+   * an offset there would skip tasks the dedupe would have collapsed.
+   */
+  offset?: number
   includeCompletedStatuses?: boolean
   /**
    * ISO instant. When set, DONE tasks completed before it are withheld;
@@ -141,6 +147,7 @@ async function loadAssignedTaskSummaries({
   clientId = null,
   hiddenProjectTypes = [],
   limit = DEFAULT_LIMIT,
+  offset = 0,
   includeCompletedStatuses = true,
   doneSince = null,
 }: FetchAssignedTasksSummaryOptions): Promise<AssignedTaskSummaryResult> {
@@ -150,6 +157,8 @@ async function loadAssignedTaskSummaries({
       : limit === null
         ? null
         : DEFAULT_LIMIT
+  const normalizedOffset =
+    Number.isFinite(offset) && offset > 0 ? Math.floor(offset) : 0
 
   const baseConditions = [
     ...assignedTaskConditions(userId),
@@ -178,12 +187,16 @@ async function loadAssignedTaskSummaries({
 
   const whereClause = and(...baseConditions)
 
+  // Status leads so a flat list (the home widget) reads Blocked, then In
+  // progress, then On deck. The board groups by status into columns, so only
+  // the keys after it -- the column's drag order, then due date -- shape what
+  // it shows. Keep this in step with `sortAssignedTasks`.
   const orderExpressions = [
+    STATUS_PRIORITY_SQL,
     sql`CASE WHEN ${taskAssigneeMetadataTable.sortOrder} IS NULL THEN 1 ELSE 0 END`,
     asc(taskAssigneeMetadataTable.sortOrder),
     sql`CASE WHEN ${tasksTable.dueOn} IS NULL THEN 1 ELSE 0 END`,
     asc(tasksTable.dueOn),
-    STATUS_PRIORITY_SQL,
     desc(sql`COALESCE(${tasksTable.updatedAt}, ${tasksTable.createdAt})`),
     asc(tasksTable.title),
   ]
@@ -228,7 +241,7 @@ async function loadAssignedTaskSummaries({
 
   const rows =
     normalizedLimit !== null
-      ? await baseQuery.limit(normalizedLimit)
+      ? await baseQuery.limit(normalizedLimit).offset(normalizedOffset)
       : await baseQuery
 
   // An unbounded query already returned every match — counting again

@@ -30,6 +30,9 @@ export type DashboardTimeLogPage = {
 
 export const HOURS_WIDGET_LOG_PAGE_SIZE = 5
 
+/** Rows per page in the home page's My Tasks widget; later pages arrive via the API. */
+export const MY_TASKS_WIDGET_PAGE_SIZE = 5
+
 export type HoursSnapshot = {
   month: number
   year: number
