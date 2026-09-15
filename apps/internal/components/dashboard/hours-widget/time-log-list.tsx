@@ -72,11 +72,12 @@ export function TimeLogList({
       </ul>
       {error ? <p className='text-destructive pt-2 text-xs'>{error}</p> : null}
       {/*
-        Same -mx-2 as the list so the rule above the button lines up with the
-        row dividers, matching the My Tasks widget's footer.
+        Pulls out of the card's px-4/py-3 so the rule runs edge to edge and
+        the button sits 8px in with 6px above and below -- the same footer
+        the My Tasks widget draws.
       */}
       {remaining > 0 ? (
-        <div className='-mx-2 border-t px-2 pt-1.5'>
+        <div className='-mx-4 -mb-3 border-t px-2 py-1.5'>
           <Button
             type='button'
             variant='ghost'
