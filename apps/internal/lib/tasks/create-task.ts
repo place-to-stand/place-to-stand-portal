@@ -2,7 +2,7 @@ import 'server-only'
 
 import { and, eq, isNull } from 'drizzle-orm'
 
-import { resolveNextTaskRank } from '@/app/(dashboard)/projects/actions/task-rank'
+import { resolveNewTaskRank } from '@/app/(dashboard)/projects/actions/task-rank'
 import {
   syncAssignees,
   syncAttachments,
@@ -57,7 +57,7 @@ export async function createTaskForActor({
   let nextRank: string
 
   try {
-    nextRank = await resolveNextTaskRank(projectId, status)
+    nextRank = await resolveNewTaskRank(projectId, status)
   } catch (rankError) {
     console.error('Failed to resolve rank for new task', rankError)
     return { error: 'Unable to determine ordering for new task.' }

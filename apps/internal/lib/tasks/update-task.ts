@@ -2,7 +2,7 @@ import 'server-only'
 
 import { and, eq, isNull } from 'drizzle-orm'
 
-import { resolveNextTaskRank } from '@/app/(dashboard)/projects/actions/task-rank'
+import { resolveMovedTaskRank } from '@/app/(dashboard)/projects/actions/task-rank'
 import {
   syncAssignees,
   syncAttachments,
@@ -14,6 +14,7 @@ import { projects, taskAssignees, tasks } from '@/lib/db/schema'
 import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
 import { resolveCompletedAt } from '@/lib/projects/task-status'
 
+import { pinTaskToTopOfAssigneeBoards } from './assignee-sort'
 import { buildTaskUpdateEvent } from './save-task-activity'
 import type { SaveTaskResult, TaskWriteContext } from './types'
 
@@ -102,13 +103,14 @@ export async function updateTaskForActor(
 
   const existingAssigneeIds = existingAssignees.map(assignee => assignee.userId)
 
+  const statusChanged = existingTask.status !== status
   let nextRank = existingTask.rank
 
   // Recompute ordering when the status changes, or when the task moves to a
   // new project (so it lands correctly in the destination column).
-  if (existingTask.status !== status || projectChanged) {
+  if (statusChanged || projectChanged) {
     try {
-      nextRank = await resolveNextTaskRank(projectId, status)
+      nextRank = await resolveMovedTaskRank(projectId, status)
     } catch (rankError) {
       console.error('Failed to resolve rank for task status update', rankError)
       return { error: 'Unable to update task ordering.' }
@@ -156,6 +158,16 @@ export async function updateTaskForActor(
   } catch (assigneeError) {
     console.error('Failed to sync task assignees', assigneeError)
     return { error: 'Task saved but assignees could not be updated.' }
+  }
+
+  // After the assignee sync, so the pin lands on the final assignee set.
+  if (statusChanged) {
+    try {
+      await pinTaskToTopOfAssigneeBoards(taskId, status)
+    } catch (sortError) {
+      console.error('Failed to pin task on assignee boards', sortError)
+      return { taskId, error: 'Task saved but could not be moved to the top of My Tasks.' }
+    }
   }
 
   const event = buildTaskUpdateEvent(

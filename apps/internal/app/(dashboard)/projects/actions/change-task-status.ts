@@ -11,11 +11,12 @@ import { db } from '@/lib/db'
 import { projects, tasks } from '@/lib/db/schema'
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
 import { resolveCompletedAt } from '@/lib/projects/task-status'
+import { pinTaskToTopOfAssigneeBoards } from '@/lib/tasks/assignee-sort'
 
 import { revalidateProjectTaskViews } from './shared'
 import { statusSchema, TASK_STATUSES } from './shared-schemas'
 import type { ActionResult } from './action-types'
-import { resolveNextTaskRank } from './task-rank'
+import { resolveMovedTaskRank } from './task-rank'
 
 export async function changeTaskStatus(input: {
   taskId: string
@@ -79,7 +80,7 @@ export async function changeTaskStatus(input: {
     let nextRank: string
 
     try {
-      nextRank = await resolveNextTaskRank(task.projectId, status)
+      nextRank = await resolveMovedTaskRank(task.projectId, status)
     } catch (rankError) {
       console.error('Failed to resolve rank for task status change', rankError)
       return { error: 'Unable to update task ordering.' }
@@ -95,6 +96,15 @@ export async function changeTaskStatus(input: {
         ...resolveCompletedAt(status, task.completedAt),
       })
       .where(eq(tasks.id, taskId))
+
+    // The reorder route calls this first and then writes the dropped
+    // position over it, so drag-and-drop still lands exactly where dropped.
+    try {
+      await pinTaskToTopOfAssigneeBoards(taskId, status)
+    } catch (sortError) {
+      console.error('Failed to pin task on assignee boards', sortError)
+      return { error: 'Status saved but the task could not be moved to the top of My Tasks.' }
+    }
 
     const event = taskStatusChangedEvent({
       title: task.title ?? 'Task',

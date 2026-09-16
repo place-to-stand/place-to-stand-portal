@@ -51,16 +51,29 @@ function textOrStdin(value: string | undefined): string | undefined {
 }
 
 /**
- * The portal URL goes to stderr, as `updates draft` does, so
- * `pts tasks create | jq` still sees clean JSON on stdout.
+ * The server sends a portal-relative `path`; the CLI knows which portal it is
+ * talking to, so it adds the absolute `url` an agent can paste into a reply
+ * without reconstructing it. Null when the project has no board URL.
  */
-async function emitTaskUrl(task: Task): Promise<void> {
-  if (!task.path) {
-    return
-  }
-
+async function withUrl<T extends Task>(task: T): Promise<T & { url: string | null }> {
   const apiUrl = await resolveApiContext()
-  emitMessage(`View: ${apiUrl}${task.path}`)
+
+  return { ...task, url: task.path ? `${apiUrl}${task.path}` : null }
+}
+
+async function withUrls<T extends Task>(tasks: T[]): Promise<(T & { url: string | null })[]> {
+  return Promise.all(tasks.map(withUrl))
+}
+
+/**
+ * The portal URL also goes to stderr, as `updates draft` does, so a human
+ * watching the terminal sees it while `pts tasks create | jq` still gets
+ * clean JSON on stdout.
+ */
+function emitTaskUrl(task: { url: string | null }): void {
+  if (task.url) {
+    emitMessage(`View: ${task.url}`)
+  }
 }
 
 export function registerTaskCommands(program: Command): void {
@@ -75,7 +88,7 @@ export function registerTaskCommands(program: Command): void {
     .option('--assignee <userId>', 'Only tasks assigned to this user id')
     .option('--limit <count>', 'Maximum rows (default 50, max 200)')
     .action(async (options: ListOptions) => {
-      const { data } = await apiGet('api/cli/v1/tasks', {
+      const { data } = await apiGet<Task[]>('api/cli/v1/tasks', {
         project: options.project,
         lead: options.lead,
         status: options.status,
@@ -83,17 +96,19 @@ export function registerTaskCommands(program: Command): void {
         limit: options.limit,
       })
 
-      emit(data)
+      emit(await withUrls(data))
     })
 
   tasks
     .command('show <taskId>')
     .description('Show one task')
     .action(async (taskId: string) => {
-      const { data } = await apiGet<Task>(`api/cli/v1/tasks/${taskId}`)
+      const task = await withUrl(
+        (await apiGet<Task>(`api/cli/v1/tasks/${taskId}`)).data
+      )
 
-      emit(data)
-      await emitTaskUrl(data)
+      emit(task)
+      emitTaskUrl(task)
     })
 
   tasks
@@ -127,8 +142,10 @@ export function registerTaskCommands(program: Command): void {
         assigneeIds: options.assignee,
       })
 
-      emit(data, warning)
-      await emitTaskUrl(data)
+      const task = await withUrl(data)
+
+      emit(task, warning)
+      emitTaskUrl(task)
     })
 
   tasks
@@ -145,6 +162,13 @@ export function registerTaskCommands(program: Command): void {
       })
 
       emit(data)
+
+      // A comment is the most common "I touched this task" moment, so it gets
+      // the same View line as an edit — one extra read for a pasteable link.
+      const task = await withUrl(
+        (await apiGet<Task>(`api/cli/v1/tasks/${taskId}`)).data
+      )
+      emitTaskUrl(task)
     })
 
   tasks
@@ -201,8 +225,9 @@ export function registerTaskCommands(program: Command): void {
         `api/cli/v1/tasks/${taskId}`,
         payload
       )
+      const task = await withUrl(data)
 
-      emit(data, warning)
-      await emitTaskUrl(data)
+      emit(task, warning)
+      emitTaskUrl(task)
     })
 }
