@@ -2155,6 +2155,33 @@ export const rateLimitBuckets = pgTable(
   ]
 )
 
+/**
+ * Per-user home dashboard widget arrangement. One row per user; absent row
+ * means the default layout. `layout` is validated/normalized in
+ * apps/internal/lib/dashboard/layout.ts (unknown widget ids are dropped,
+ * missing ones appended), so stale JSON never breaks rendering.
+ */
+export const userDashboardLayouts = pgTable(
+  'user_dashboard_layouts',
+  {
+    userId: uuid('user_id').primaryKey().notNull(),
+    layout: jsonb().notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+  },
+  table => [
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [users.id],
+      name: 'user_dashboard_layouts_user_id_fkey',
+    }).onDelete('cascade'),
+  ]
+)
+
 // =============================================================================
 // VIEWS
 // =============================================================================

@@ -1,36 +1,47 @@
 'use client'
 
 import { PageShell } from '@/components/layout/page-shell'
-import type { AssignedTaskSummary } from '@/lib/data/tasks'
-import type { HoursSnapshot } from '@/lib/dashboard/types'
+import type { DashboardLayout } from '@/lib/dashboard/layout'
 
-import { MyTasksWidget } from './my-tasks-widget'
-import { RecentActivityOverviewWidget } from './recent-activity-overview-widget'
-import { HoursWidget } from './hours-widget'
+import { DashboardWidgetGrid } from './widget-layout/dashboard-widget-grid'
+import { LayoutEditControls } from './widget-layout/layout-edit-controls'
+import type { DashboardWidgetData } from './widget-layout/types'
+import { useDashboardLayoutEditor } from './widget-layout/use-dashboard-layout-editor'
 
-type HomeDashboardProps = {
-  tasks: AssignedTaskSummary[]
-  totalTaskCount: number
-  initialHoursSnapshot: HoursSnapshot
+type HomeDashboardProps = DashboardWidgetData & {
+  initialLayout: DashboardLayout
 }
 
 export function HomeDashboard({
   tasks,
   totalTaskCount,
   initialHoursSnapshot,
+  initialLayout,
 }: HomeDashboardProps) {
+  const editor = useDashboardLayoutEditor({ initialLayout })
+
   return (
-    <PageShell breadcrumbs={[{ label: 'Home' }]}>
-      {/* Widget gutters match the shell's content padding (p-3 sm:p-4). */}
-      <div className='grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2'>
-        <div>
-          <MyTasksWidget tasks={tasks} totalCount={totalTaskCount} />
-        </div>
-        <div className='flex flex-col gap-3 sm:gap-4'>
-          <HoursWidget initialSnapshot={initialHoursSnapshot} />
-          <RecentActivityOverviewWidget />
-        </div>
-      </div>
+    <PageShell
+      breadcrumbs={[{ label: 'Home' }]}
+      headerRight={
+        <LayoutEditControls
+          isEditing={editor.isEditing}
+          canReset={!editor.isDefault}
+          onStartEditing={editor.startEditing}
+          onStopEditing={editor.stopEditing}
+          onReset={editor.reset}
+        />
+      }
+    >
+      <DashboardWidgetGrid
+        layout={editor.layout}
+        data={{ tasks, totalTaskCount, initialHoursSnapshot }}
+        isEditing={editor.isEditing}
+        onDragStart={editor.handleDragStart}
+        onDragOver={editor.handleDragOver}
+        onDragEnd={editor.handleDragEnd}
+        onDragCancel={editor.handleDragCancel}
+      />
     </PageShell>
   )
 }
