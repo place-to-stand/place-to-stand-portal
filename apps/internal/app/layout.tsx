@@ -5,7 +5,6 @@ import { Analytics } from '@vercel/analytics/react'
 import { AppProviders } from '@/components/providers/app-providers'
 import { SupabaseListener } from '@/components/providers/supabase-listener'
 import { cn } from '@/lib/utils'
-import { getSession } from '@/lib/auth/session'
 
 import './globals.css'
 
@@ -37,14 +36,6 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const session = await getSession()
-  const initialSession = session
-    ? {
-        access_token: session.access_token,
-        refresh_token: session.refresh_token,
-      }
-    : null
-
   return (
     <html lang='en' suppressHydrationWarning>
       <head>
@@ -76,7 +67,7 @@ export default async function RootLayout({
         )}
       >
         <AppProviders>
-          <SupabaseListener initialSession={initialSession} />
+          <SupabaseListener />
           {children}
         </AppProviders>
         <Analytics />

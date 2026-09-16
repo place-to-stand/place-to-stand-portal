@@ -4,69 +4,21 @@ import { useEffect } from "react";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
-type SessionTokens = {
-  access_token: string;
-  refresh_token: string;
-};
-
-interface Props {
-  initialSession: SessionTokens | null;
-}
-
 /**
- * Supabase Auth session listener
+ * Supabase Auth session listener.
  *
- * Handles session refresh and visibility change events for Supabase Auth.
+ * The browser client (`createBrowserClient` from @supabase/ssr) stores the
+ * session in the same cookies the server reads, and refreshes it itself when
+ * it nears expiry. This component only handles the case that client can't:
+ * a tab coming back from the background with a session that was revoked
+ * while it slept.
+ *
+ * It used to also force a `refreshSession()` on every mount and mirror every
+ * auth event to `POST /auth/callback`, which cost a token rotation plus two
+ * `GET /user` calls per full page load — all redundant with cookie storage.
  */
-export function SupabaseListener({ initialSession }: Props) {
+export function SupabaseListener() {
   const supabase = getSupabaseBrowserClient();
-
-  // Subscribe to auth state changes
-  useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, currentSession) => {
-      const tokens = currentSession
-        ? {
-            access_token: currentSession.access_token,
-            refresh_token: currentSession.refresh_token,
-          }
-        : null;
-
-      // Swallow network failures (navigation cancelling the request,
-      // sleep/wake, offline) — the next auth event re-syncs the cookie.
-      void fetch("/auth/callback", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ event: _event, session: tokens }),
-      }).catch(() => {});
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [supabase]);
-
-  // Refresh session on mount
-  useEffect(() => {
-    if (!initialSession) return;
-
-    // Immediately refresh the session to avoid negative timeout warnings
-    // when the token has expired while the app was idle
-    void supabase.auth.refreshSession({
-      refresh_token: initialSession.refresh_token,
-    }).then(({ error }) => {
-      if (error) {
-        // Fallback to setSession if refresh fails
-        void supabase.auth.setSession({
-          access_token: initialSession.access_token,
-          refresh_token: initialSession.refresh_token,
-        }).catch(() => {});
-      }
-    }).catch(() => {});
-  }, [initialSession, supabase]);
 
   // Refresh session when page becomes visible
   // This handles computer sleep/wake scenarios
