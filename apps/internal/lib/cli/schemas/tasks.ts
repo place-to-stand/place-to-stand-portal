@@ -19,15 +19,24 @@ const projectRefSchema = z.string().trim().min(1, 'project is required.')
 /** A user UUID or email address — resolved server-side, same reasoning. */
 const assigneeRefSchema = z.array(z.string().trim().min(1))
 
-export const cliCreateTaskSchema = z.object({
-  title: titleSchema,
-  project: projectRefSchema,
-  description: z.string().nullish(),
-  status: statusSchema.default('ON_DECK'),
-  dueOn: dueOnSchema.nullish(),
-  assigneeIds: assigneeRefSchema.default([]),
-  leadId: z.string().uuid().nullish(),
-})
+/**
+ * `project` may be omitted only for a lead task, which then lands in the
+ * internal Sales project — the same placement the lead sheet uses.
+ */
+export const cliCreateTaskSchema = z
+  .object({
+    title: titleSchema,
+    project: projectRefSchema.optional(),
+    description: z.string().nullish(),
+    status: statusSchema.default('ON_DECK'),
+    dueOn: dueOnSchema.nullish(),
+    assigneeIds: assigneeRefSchema.default([]),
+    leadId: z.string().uuid().nullish(),
+  })
+  .refine(payload => payload.project || payload.leadId, {
+    message: 'project is required unless leadId is set.',
+    path: ['project'],
+  })
 
 /**
  * Every field optional: an omitted key keeps its current value, while an
@@ -49,6 +58,7 @@ export const cliUpdateTaskSchema = z
   })
 export const cliTaskListQuerySchema = z.object({
   project: projectRefSchema.optional(),
+  lead: z.string().uuid().optional(),
   status: statusSchema.optional(),
   assignee: z.string().uuid().optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50),

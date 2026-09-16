@@ -3,6 +3,7 @@ import { Command } from 'commander'
 import { ApiError } from './api.js'
 import { registerAuthCommands } from './commands/auth.js'
 import { registerConfigCommands } from './commands/config.js'
+import { registerLeadCommands } from './commands/leads.js'
 import { registerResourceCommands } from './commands/resources.js'
 import { registerTaskCommands } from './commands/tasks.js'
 import { registerUpdateCommands } from './commands/updates.js'
@@ -32,6 +33,7 @@ program
 registerAuthCommands(program)
 registerConfigCommands(program)
 registerTaskCommands(program)
+registerLeadCommands(program)
 registerUpdateCommands(program)
 registerResourceCommands(program)
 

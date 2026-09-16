@@ -12,6 +12,7 @@ import { taskFields, type SelectTask } from '@/lib/queries/tasks/common'
 
 export type CliTaskFilters = {
   projectId?: string
+  leadId?: string
   status?: SelectTask['status']
   assigneeId?: string
   limit: number
@@ -116,7 +117,7 @@ export async function fetchBoardLocationsByProject(
  */
 export async function listTasksForCli(
   user: AppUser,
-  { projectId, status, assigneeId, limit }: CliTaskFilters
+  { projectId, leadId, status, assigneeId, limit }: CliTaskFilters
 ): Promise<SelectTask[]> {
   assertAdmin(user)
 
@@ -124,6 +125,10 @@ export async function listTasksForCli(
 
   if (projectId) {
     conditions.push(eq(tasks.projectId, projectId))
+  }
+
+  if (leadId) {
+    conditions.push(eq(tasks.leadId, leadId))
   }
 
   if (status) {

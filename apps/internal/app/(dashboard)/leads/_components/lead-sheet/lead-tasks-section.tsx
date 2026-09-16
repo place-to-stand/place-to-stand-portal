@@ -1,11 +1,17 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { ListTodo, Plus } from 'lucide-react'
+import { ChevronDown, ListTodo, Plus } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@pts/ui/collapsible'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@pts/ui/skeleton'
+import { cn } from '@/lib/utils'
 import { TaskCardStatic } from '@/app/(dashboard)/projects/task-card'
 import type { LeadRecord } from '@/lib/leads/types'
 import type { TaskWithRelations } from '@/lib/types'
@@ -36,6 +42,9 @@ export function LeadTasksSection({
     Record<string, AssigneeInfo>
   >({})
   const [isLoading, setIsLoading] = useState(true)
+  // Closed by default: completed tasks only grow over the life of a lead, and
+  // left open they push the Updates timeline below the fold.
+  const [showCompleted, setShowCompleted] = useState(false)
   const taskParam = get('task')
 
   const fetchTasks = useCallback(() => {
@@ -153,26 +162,28 @@ export function LeadTasksSection({
           )}
 
           {completedTasks.length > 0 && (
-            <div className='space-y-2'>
-              {activeTasks.length > 0 && (
-                <p className='text-muted-foreground pt-2 text-xs font-medium'>
-                  Completed
-                </p>
-              )}
-              {completedTasks.slice(0, 3).map(task => (
-                <TaskCardStatic
-                  key={task.id}
-                  task={task}
-                  assignees={resolveAssignees(task)}
-                  onClick={() => openTask(task)}
+            <Collapsible open={showCompleted} onOpenChange={setShowCompleted}>
+              <CollapsibleTrigger className='text-muted-foreground hover:text-foreground flex w-full cursor-pointer items-center gap-1.5 pt-2 text-xs font-medium'>
+                <ChevronDown
+                  className={cn(
+                    'h-3.5 w-3.5 transition-transform',
+                    showCompleted ? 'rotate-0' : '-rotate-90'
+                  )}
+                  aria-hidden='true'
                 />
-              ))}
-              {completedTasks.length > 3 && (
-                <p className='text-muted-foreground text-xs'>
-                  +{completedTasks.length - 3} more completed tasks
-                </p>
-              )}
-            </div>
+                Completed ({completedTasks.length})
+              </CollapsibleTrigger>
+              <CollapsibleContent className='space-y-2 pt-2'>
+                {completedTasks.map(task => (
+                  <TaskCardStatic
+                    key={task.id}
+                    task={task}
+                    assignees={resolveAssignees(task)}
+                    onClick={() => openTask(task)}
+                  />
+                ))}
+              </CollapsibleContent>
+            </Collapsible>
           )}
         </div>
       )}
