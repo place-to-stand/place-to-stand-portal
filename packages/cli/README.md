@@ -121,9 +121,15 @@ is scaffolded with one empty item per task that moved since the last sent update
 ]
 ```
 
-`tasks show`, `tasks create` and `tasks edit` print the task's portal URL on stderr (`View: …`),
-built from the `path` field in the response the same way `updates draft` does — so the link you
-hand someone is the one the board actually uses, not a guess.
+Every task in the JSON carries an absolute `url` (the CLI joins the server's portal-relative
+`path` to the portal it is talking to; `null` when the project has no board URL), and
+`tasks show`, `tasks create`, `tasks edit` and `tasks comment` also print it on stderr
+(`View: …`) the same way `updates draft` does — so the link you hand someone is the one the
+board actually uses, not a guess.
+
+Changing a task's status puts it at the top of the destination column on the project board and
+on every assignee's My Tasks board; `tasks create` joins the bottom of an open column (top of
+Done). Dragging in the board UI is the only way to pick an exact position.
 
 `tasks edit` is a genuine partial update: fields you omit keep their current values, and
 `--clear-description` / `--clear-due` are how you blank one. This matters because the
