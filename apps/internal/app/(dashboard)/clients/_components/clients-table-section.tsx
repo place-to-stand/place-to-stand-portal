@@ -3,7 +3,7 @@
 import { Archive, Building2, RefreshCw, Trash2 } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'

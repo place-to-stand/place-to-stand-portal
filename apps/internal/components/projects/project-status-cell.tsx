@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { ChevronDown, Loader2 } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import {
   DropdownMenu,
   DropdownMenuContent,

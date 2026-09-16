@@ -12,6 +12,8 @@ import {
 } from '@pts/db/schema'
 import type { AppUser } from '@/lib/auth/session'
 import { resolvePortalScope } from '@/lib/auth/view-as'
+import { fetchProjectDetail } from '@/lib/data/project-detail'
+import { ensureInstallationVerified } from '@/lib/github/verify-installation'
 
 export type ClientGitHubStatus =
   | {
@@ -118,5 +120,80 @@ export const fetchClientGitHubStatus = cache(
         })),
       }
     })
+  }
+)
+
+export type ProjectGitHubLink = {
+  id: string
+  repoFullName: string
+  defaultBranch: string
+}
+
+export type ProjectGitHubStatus = {
+  /** The project's client has an active GitHub App installation. */
+  hasInstallation: boolean
+  /** Repos linked to this project through that installation. */
+  links: ProjectGitHubLink[]
+}
+
+const NO_GITHUB: ProjectGitHubStatus = { hasInstallation: false, links: [] }
+
+/**
+ * GitHub state for one project page, resolved on the server.
+ *
+ * Replaces the pair of client-side fetches the section used to make on mount
+ * (`/api/github/repos` then `/api/github/link`). The first of those listed
+ * every repository through GitHub's API on every page view just to read
+ * `hasInstallation` — this answers the same question from the database alone.
+ *
+ * SECURITY: gated on fetchProjectDetail, which returns null for any project
+ * outside the caller's portal scope; that call is cache()-wrapped so the page
+ * pays for it once.
+ */
+export const fetchProjectGitHubStatus = cache(
+  async (user: AppUser, projectId: string): Promise<ProjectGitHubStatus> => {
+    const project = await fetchProjectDetail(user, projectId)
+    if (!project?.clientId) return NO_GITHUB
+
+    const [installation] = await db
+      .select({
+        id: githubAppInstallations.id,
+        installationId: githubAppInstallations.installationId,
+        lastVerifiedAt: githubAppInstallations.lastVerifiedAt,
+      })
+      .from(githubAppInstallations)
+      .where(
+        and(
+          eq(githubAppInstallations.clientId, project.clientId),
+          eq(githubAppInstallations.status, 'ACTIVE'),
+          isNull(githubAppInstallations.deletedAt)
+        )
+      )
+      .limit(1)
+
+    if (!installation) return NO_GITHUB
+
+    // Once-a-day liveness check against GitHub. It used to ride the repos API
+    // route this page called on mount; it rides the page render now so a
+    // missed `deleted` webhook still gets noticed. Throttled, so it is a no-op
+    // on all but the first view each day.
+    const { removed } = await ensureInstallationVerified(installation)
+    if (removed) return NO_GITHUB
+
+    const links = await db
+      .select({
+        id: githubRepoLinks.id,
+        repoFullName: githubRepoLinks.repoFullName,
+        defaultBranch: githubRepoLinks.defaultBranch,
+      })
+      .from(githubRepoLinks)
+      .where(
+        and(
+          eq(githubRepoLinks.projectId, projectId),
+          isNull(githubRepoLinks.deletedAt)
+        )
+      )
+
+    return { hasInstallation: true, links }
   }
 )

@@ -5,7 +5,7 @@ import { nanoid } from 'nanoid'
 import { getCurrentUser } from '@/lib/auth/session'
 import { safeRedirectPath } from '@/lib/auth/callback'
 import { ensureClientAccess } from '@/lib/auth/permissions'
-import { getEnv } from '@/lib/env.server'
+import { getGitHubAppEnv } from '@/lib/env.server'
 
 /**
  * GET /api/github/install?clientId=xxx&projectId=xxx
@@ -32,7 +32,7 @@ export async function GET(request: Request) {
 
   await ensureClientAccess(user, clientId)
 
-  getEnv() // validate env vars are present
+  getGitHubAppEnv() // validate env vars are present
   const state = nanoid(32)
 
   const cookieStore = await cookies()

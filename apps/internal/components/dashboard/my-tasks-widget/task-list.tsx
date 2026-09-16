@@ -9,7 +9,7 @@ import {
   Users,
 } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { MY_TASKS_WIDGET_PAGE_SIZE } from '@/lib/dashboard/types'
 import { myTaskHref } from '@/lib/sheets/hrefs'

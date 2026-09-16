@@ -21,16 +21,22 @@ export type AppUser = {
 }
 export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
   const supabase = getSupabaseServerClient()
-  const {
-    data: { user: authUser },
-    error,
-  } = await supabase.auth.getUser()
+
+  // getClaims() verifies the session JWT's signature and expiry. With the
+  // project on asymmetric signing keys (ES256) that happens in-process against
+  // a JWKS cached for 10 minutes — no round trip to Supabase Auth per request.
+  // With the legacy HS256 secret it falls back to getUser() internally, so
+  // behaviour is unchanged until the key is rotated. Either way the only claim
+  // trusted here is `sub`; role, disabled and deleted state come from our own
+  // users row below, on every request.
+  const { data, error } = await supabase.auth.getClaims()
 
   if (error && error.name !== 'AuthSessionMissingError') {
-    console.error('Failed to resolve Supabase user', error)
+    console.error('Failed to resolve Supabase session', error)
   }
 
-  if (error || !authUser?.id) {
+  const authUserId = data?.claims.sub
+  if (error || !authUserId) {
     return null
   }
 
@@ -50,7 +56,7 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
       .from(users)
       .where(
         and(
-          eq(users.id, authUser.id),
+          eq(users.id, authUserId),
           isNull(users.deletedAt),
           // Disabled users are rejected on every request, which also ends any
           // session that existed before the account was disabled.

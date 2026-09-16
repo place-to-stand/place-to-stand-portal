@@ -5,7 +5,7 @@ import { MessageSquareText, Plus } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { Skeleton } from '@pts/ui/skeleton'
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import type { LeadRecord, LeadUpdateRecord } from '@/lib/leads/types'
 
 import { LeadUpdateDialog } from './lead-update-dialog'

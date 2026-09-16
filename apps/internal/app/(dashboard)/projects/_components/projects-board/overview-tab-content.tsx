@@ -7,7 +7,7 @@ import { IntegrationProviderIcon } from '@/components/integrations/provider-icon
 import { formatIntegrationLinkLabel } from '@/lib/types/integrations'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import { TabsContent } from '@pts/ui/tabs'
 import { getProjectStatusLabel, getProjectStatusToken } from '@/lib/constants'
 import { formatProjectDateRange } from '@/lib/settings/projects/project-formatters'

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import type { EmailPortal, EmailTemplateEntry } from '@/lib/email/catalog'
 
 import {

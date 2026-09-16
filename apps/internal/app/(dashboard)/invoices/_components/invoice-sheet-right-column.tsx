@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react'
 import { Ban, Calendar, Eye, Hash, Send, Undo2 } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Separator } from '@pts/ui/separator'

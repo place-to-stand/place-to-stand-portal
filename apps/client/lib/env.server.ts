@@ -18,6 +18,13 @@ const schema = z.object({
   RESEND_API_KEY: z.string().min(1).optional(),
   RESEND_FROM_EMAIL: z.email().optional(),
   RESEND_REPLY_TO_EMAIL: z.email().optional(),
+})
+
+// Validated separately, and only by the GitHub App routes and helpers, for the
+// same reason the Resend keys are optional above: a local checkout without a
+// GitHub App must still render invoices and send sign-in links. Anything that
+// actually talks to GitHub calls getGitHubAppEnv() and fails there, by name.
+const githubAppSchema = z.object({
   GITHUB_APP_ID: z.string().min(1),
   GITHUB_APP_PRIVATE_KEY: z.string().min(1),
   GITHUB_APP_WEBHOOK_SECRET: z.string().min(1),
@@ -39,6 +46,11 @@ function getServerEnv() {
     RESEND_API_KEY: emptyToUndefined(process.env.RESEND_API_KEY),
     RESEND_FROM_EMAIL: emptyToUndefined(process.env.RESEND_FROM_EMAIL),
     RESEND_REPLY_TO_EMAIL: emptyToUndefined(process.env.RESEND_REPLY_TO_EMAIL),
+  })
+}
+
+function getGitHubAppServerEnv() {
+  return githubAppSchema.parse({
     GITHUB_APP_ID: process.env.GITHUB_APP_ID,
     GITHUB_APP_PRIVATE_KEY: process.env.GITHUB_APP_PRIVATE_KEY,
     GITHUB_APP_WEBHOOK_SECRET: process.env.GITHUB_APP_WEBHOOK_SECRET,
@@ -56,4 +68,16 @@ export function getEnv() {
     _serverEnv = getServerEnv()
   }
   return _serverEnv
+}
+
+let _gitHubAppEnv:
+  | (z.infer<typeof schema> & z.infer<typeof githubAppSchema>)
+  | undefined
+
+/** Core env plus the GitHub App credentials. Throws if either set is missing. */
+export function getGitHubAppEnv() {
+  if (!_gitHubAppEnv) {
+    _gitHubAppEnv = { ...getEnv(), ...getGitHubAppServerEnv() }
+  }
+  return _gitHubAppEnv
 }

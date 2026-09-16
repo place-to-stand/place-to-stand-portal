@@ -1,7 +1,7 @@
 import { LinkIcon, Wallet } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@pts/ui/badge'
 import {
   Table,
   TableBody,
