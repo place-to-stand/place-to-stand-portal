@@ -3,6 +3,12 @@ import { leadHref } from '@/lib/sheets/hrefs'
 
 import type { CliLeadRow } from '../queries/leads'
 
+/**
+ * `lastContactAt`, `awaitingReply` and `expectedCloseDate` exist on the row
+ * but nothing in the app writes them (PRD 006 left them write-never), so they
+ * are deliberately not exported — a null there reads as "never contacted",
+ * which is wrong. Last touch is the newest entry in `leads updates`.
+ */
 export type CliLead = {
   id: string
   name: string
@@ -17,9 +23,6 @@ export type CliLead = {
   /** Editor HTML, as stored. Empty string when the lead has no notes. */
   notes: string
   rank: string
-  lastContactAt: string | null
-  awaitingReply: boolean
-  expectedCloseDate: string | null
   currentStageEnteredAt: string | null
   resolvedAt: string | null
   lossReason: CliLeadRow['lossReason']
@@ -46,9 +49,6 @@ export function serializeLead(lead: CliLeadRow): CliLead {
     website: lead.companyWebsite,
     notes: extractLeadNotes(lead.notes),
     rank: lead.rank,
-    lastContactAt: lead.lastContactAt,
-    awaitingReply: lead.awaitingReply ?? false,
-    expectedCloseDate: lead.expectedCloseDate,
     currentStageEnteredAt: lead.currentStageEnteredAt,
     resolvedAt: lead.resolvedAt,
     lossReason: lead.lossReason,
