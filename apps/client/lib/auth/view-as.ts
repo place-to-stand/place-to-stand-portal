@@ -134,31 +134,31 @@ async function resolveAdminScope(): Promise<PortalScope> {
     return EMPTY_ADMIN_SCOPE
   }
 
-  // Re-validate the selection against the live row on every request so a
-  // contact that has since been deleted falls back to "nothing selected". One
-  // indexed lookup — not the whole contacts table.
-  const [contact] = await db
-    .select({ id: contacts.id })
+  // One round trip resolves both questions: does the contact still exist, and
+  // which live clients is it linked to? Zero rows means the contact is gone
+  // (fail closed); rows with a null client mean a valid contact with nothing
+  // linked yet, which is still a valid preview.
+  const rows = await db
+    .select({ clientId: clients.id, clientName: clients.name })
     .from(contacts)
+    .leftJoin(contactClients, eq(contactClients.contactId, contacts.id))
+    .leftJoin(
+      clients,
+      and(eq(clients.id, contactClients.clientId), isNull(clients.deletedAt))
+    )
     .where(and(eq(contacts.id, selectedContactId), isNull(contacts.deletedAt)))
-    .limit(1)
+    .orderBy(asc(clients.name))
 
-  if (!contact) {
+  if (rows.length === 0) {
     return EMPTY_ADMIN_SCOPE
   }
 
-  // Derive clientIds from contact_clients join.
-  const linkedClients = await db
-    .select({ id: clients.id, name: clients.name })
-    .from(contactClients)
-    .innerJoin(clients, eq(clients.id, contactClients.clientId))
-    .where(
-      and(
-        eq(contactClients.contactId, selectedContactId),
-        isNull(clients.deletedAt)
-      )
-    )
-    .orderBy(asc(clients.name))
+  const linkedClients: PortalClientOption[] = []
+  for (const row of rows) {
+    if (row.clientId && row.clientName) {
+      linkedClients.push({ id: row.clientId, name: row.clientName })
+    }
+  }
 
   return {
     clientIds: linkedClients.map(c => c.id),

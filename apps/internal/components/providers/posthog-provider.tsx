@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from "react";
-import { Fragment } from "react";
+import { Fragment, Suspense } from "react";
 import { PostHogProvider as PHProvider } from "@posthog/react";
 import posthog from "posthog-js";
 
@@ -17,7 +17,13 @@ export function PostHogProvider({ children }: Props) {
     <PHProvider client={posthog}>
       <Fragment>
         {children}
-        <RouterTransitionTracker />
+        {/* Reads useSearchParams(). Now that the root layout no longer touches
+            cookies, static routes like /_not-found prerender through here, and
+            Next requires a Suspense boundary around search-param readers on a
+            prerendered page. */}
+        <Suspense fallback={null}>
+          <RouterTransitionTracker />
+        </Suspense>
         <IdleResumeTracker />
       </Fragment>
     </PHProvider>
