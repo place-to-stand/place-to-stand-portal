@@ -12,6 +12,7 @@ import {
 import { serializeTask } from '@/lib/cli/serializers/task'
 import { resolveUserIds } from '@/lib/cli/queries/users'
 import { resolveProjectId, respondToTaskWrite } from '@/lib/cli/tasks'
+import { getOrCreateSalesProject } from '@/lib/leads/sales-project'
 import { saveTaskForActor } from '@/lib/tasks/save-task-core'
 
 export const GET = withCliAuth(async ({ user, request }) => {
@@ -25,6 +26,7 @@ export const GET = withCliAuth(async ({ user, request }) => {
 
   const rows = await listTasksForCli(user, {
     projectId,
+    leadId: query.lead,
     status: query.status,
     assigneeId: query.assignee,
     limit: query.limit,
@@ -46,7 +48,11 @@ export const GET = withCliAuth(async ({ user, request }) => {
 
 export const POST = withCliAuth(async ({ user, request }) => {
   const payload = cliCreateTaskSchema.parse(await readJsonBody(request))
-  const projectId = await resolveProjectId(user, payload.project)
+  // Schema guarantees one of the two; a lead task with no explicit project
+  // goes where the lead sheet would put it.
+  const projectId = payload.project
+    ? await resolveProjectId(user, payload.project)
+    : await getOrCreateSalesProject(user.id)
   const assigneeIds = await resolveUserIds(user, payload.assigneeIds)
 
   const result = await saveTaskForActor(user, {

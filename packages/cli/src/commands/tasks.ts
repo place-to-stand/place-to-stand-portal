@@ -14,6 +14,7 @@ type Task = {
 
 type ListOptions = {
   project?: string
+  lead?: string
   status?: string
   assignee?: string
   limit?: string
@@ -21,7 +22,8 @@ type ListOptions = {
 
 type CreateOptions = {
   title: string
-  project: string
+  project?: string
+  lead?: string
   description?: string
   status?: string
   due?: string
@@ -68,12 +70,14 @@ export function registerTaskCommands(program: Command): void {
     .command('list')
     .description('List tasks, most recently updated first')
     .option('--project <ref>', 'Project UUID or slug')
+    .option('--lead <leadId>', 'Only tasks linked to this lead')
     .option('--status <status>', 'ON_DECK | IN_PROGRESS | BLOCKED | DONE')
     .option('--assignee <userId>', 'Only tasks assigned to this user id')
     .option('--limit <count>', 'Maximum rows (default 50, max 200)')
     .action(async (options: ListOptions) => {
       const { data } = await apiGet('api/cli/v1/tasks', {
         project: options.project,
+        lead: options.lead,
         status: options.status,
         assignee: options.assignee,
         limit: options.limit,
@@ -96,15 +100,27 @@ export function registerTaskCommands(program: Command): void {
     .command('create')
     .description('Create a task')
     .requiredOption('--title <title>', 'Task title')
-    .requiredOption('--project <ref>', 'Project UUID or slug')
+    .option(
+      '--project <ref>',
+      'Project UUID or slug; required unless --lead is given'
+    )
+    .option(
+      '--lead <leadId>',
+      'Link the task to a lead; without --project it goes in the Sales project'
+    )
     .option('--description <text>', 'Task description; "-" reads stdin')
     .option('--status <status>', 'Defaults to ON_DECK')
     .option('--due <date>', 'Due date as YYYY-MM-DD')
     .option('--assignee <user...>', 'Assign by email or user id')
     .action(async (options: CreateOptions) => {
+      if (!options.project && !options.lead) {
+        throw new Error('Provide --project, or --lead for a sales task.')
+      }
+
       const { data, warning } = await apiPost<Task>('api/cli/v1/tasks', {
         title: options.title,
         project: options.project,
+        leadId: options.lead,
         description: textOrStdin(options.description),
         status: options.status,
         dueOn: options.due,

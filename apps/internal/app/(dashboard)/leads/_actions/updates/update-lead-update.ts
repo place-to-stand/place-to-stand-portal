@@ -19,7 +19,7 @@ import {
   leadUpdateBodySchema,
   leadUpdateTypeSchema,
   occurredAtSchema,
-} from './shared'
+} from '@/lib/leads/lead-update-shared'
 
 const updateLeadUpdateSchema = z.object({
   id: z.string().uuid(),

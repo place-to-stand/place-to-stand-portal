@@ -1,8 +1,9 @@
 # `pts` — Place to Stand admin CLI
 
 A machine-facing view of the portal, for admins and the AI agents helping them. Reads cover
-tasks, projects, clients, contacts, users, time logs and invoices; writes cover task create,
-task edit and comments.
+tasks, leads, projects, clients, contacts, users, time logs and invoices; writes cover task
+create, task edit and comments, lead create, lead edit and lead interaction logging, and client
+update drafts.
 
 Output is JSON on **stdout** and everything else on **stderr**, so `pts … | jq` never has to
 step around a status line. `--pretty` renders a table instead, for humans.
@@ -67,13 +68,22 @@ once per environment and switch with a flag.
 pts login | logout | whoami | status
 pts config show | set-url <url>
 
-pts tasks list [--project <slug|uuid>] [--status <s>] [--assignee <uuid>] [--limit n]
+pts tasks list [--project <slug|uuid>] [--lead <uuid>] [--status <s>] [--assignee <uuid>] [--limit n]
 pts tasks show <taskId>
-pts tasks create --title <t> --project <slug|uuid> [--description] [--status] [--due] [--assignee …]
+pts tasks create --title <t> (--project <slug|uuid> | --lead <uuid>) [--description] [--status] [--due] [--assignee …]
 pts tasks edit <taskId> [--title] [--project] [--description] [--status] [--due] [--assignee …]
                         [--clear-description] [--clear-due]
 pts tasks comment <taskId> --body <text|->
 pts tasks comments <taskId> [--limit n]
+
+pts leads list [--status <s>] [--assignee <email|uuid>] [--search <text>] [--limit n]
+pts leads show <leadId>
+pts leads create --name <n> [--status] [--source] [--source-detail] [--assignee] [--email] [--phone]
+                 [--company] [--website] [--notes <text|->]
+pts leads edit <leadId> [--name] [--status] [--source] [--source-detail] [--assignee] [--email] [--phone]
+                        [--company] [--website] [--notes <text|->] [--clear-notes] [--clear-assignee]
+pts leads log <leadId> --type MEETING|PHONE_CALL|EMAIL|NOTE --body <text|-> [--at <iso-datetime>]
+pts leads updates <leadId> [--limit n]
 
 pts updates draft --client <slug|uuid> [--items <file|->] [--subject] [--intro] [--closing] [--since]
 pts updates list [--client <slug|uuid>] [--status DRAFT|SENT] [--limit n]
@@ -118,6 +128,15 @@ hand someone is the one the board actually uses, not a guess.
 `tasks edit` is a genuine partial update: fields you omit keep their current values, and
 `--clear-description` / `--clear-due` are how you blank one. This matters because the
 underlying save is a full replace.
+
+`leads` mirrors `tasks`. `leads create` makes a lead only — it does **not** create a contact;
+contacts come from converting a `CLOSED_WON` lead in the portal. `leads edit --status` is how
+you move a lead across the board from the CLI, and it does the same bookkeeping the board's
+drag does (stage history, rank, resolved/converted timestamps). `--notes` and `leads log
+--body` take the same minimal markdown as task descriptions. `leads log` records an
+interaction on the lead's timeline; `--at` backdates it (ISO 8601 with offset, never in the
+future), otherwise it is stamped now. A lead task is `tasks create --lead <id>`; without
+`--project` it lands in the internal Sales project, where the lead sheet puts its own tasks.
 
 ## Notes for agents
 

@@ -14,7 +14,7 @@ import { getLeadUpdateForLead } from '@/lib/queries/lead-updates'
 
 import type { LeadActionResult } from '../types'
 import { revalidateLeadsPath } from '../utils'
-import { findActiveLead } from './shared'
+import { findActiveLead } from '@/lib/leads/lead-update-shared'
 
 const deleteLeadUpdateSchema = z.object({
   id: z.string().uuid(),
