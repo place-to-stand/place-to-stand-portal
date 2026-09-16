@@ -547,6 +547,13 @@
       "when": 1789047574988,
       "tag": "0077_client_commission_terms",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1789585457618,
+      "tag": "0078_user_dashboard_layouts",
+      "breakpoints": true
     }
   ]
 }

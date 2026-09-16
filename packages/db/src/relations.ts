@@ -20,6 +20,7 @@ import {
   activityLogs,
   leads,
   oauthConnections,
+  userDashboardLayouts,
   contacts,
   contactClients,
   contactLeads,
@@ -71,7 +72,7 @@ export const clientsRelations = relations(clients, ({ one, many }) => ({
   updates: many(clientUpdates),
 }))
 
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ one, many }) => ({
   contactsCreated: many(contacts, {
     relationName: 'contacts_createdBy_users_id',
   }),
@@ -108,6 +109,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   }),
   activityLogs: many(activityLogs),
   oauthConnections: many(oauthConnections),
+  dashboardLayout: one(userDashboardLayouts),
   leadStageHistory: many(leadStageHistory),
   leadUpdates: many(leadUpdates),
   clientUpdatesCreated: many(clientUpdates, {
@@ -621,3 +623,13 @@ export const formSubmissionsRelations = relations(formSubmissions, ({ one }) => 
     references: [users.id],
   }),
 }))
+
+export const userDashboardLayoutsRelations = relations(
+  userDashboardLayouts,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [userDashboardLayouts.userId],
+      references: [users.id],
+    }),
+  })
+)
