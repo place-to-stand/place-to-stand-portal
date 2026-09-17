@@ -15,6 +15,11 @@
  *   AUDIT_INTAKE_TOKEN=... CONTACT_INTAKE_TOKEN=... \
  *     BASE_URL=http://localhost:3000 npx tsx scripts/test-form-intake.ts
  *
+ * Add `--deliver` to also exercise email delivery (PRD 008): claim-once sends,
+ * replay safety, the per-address throttle, and the audit `captured` gate. That
+ * mode reads the messages back out of local Mailpit, so it only works against
+ * a non-production server.
+ *
  * Writes real rows to whatever DATABASE_URL points at, then deletes them — do
  * not aim it at production.
  *
@@ -30,6 +35,8 @@ config({ path: '.env.local', override: false })
 config({ path: '.env', override: false })
 
 const BASE_URL = process.env.BASE_URL ?? 'http://localhost:3000'
+const MAILPIT_URL = process.env.MAILPIT_URL ?? 'http://127.0.0.1:54324'
+const WITH_DELIVERY = process.argv.includes('--deliver')
 const AUDIT_TOKEN = process.env.AUDIT_INTAKE_TOKEN
 const CONTACT_TOKEN = process.env.CONTACT_INTAKE_TOKEN
 
@@ -63,6 +70,15 @@ async function post(path: string, token: string | undefined, body: unknown) {
   })
 
   return { status: response.status, body: await response.json().catch(() => null) }
+}
+
+/** Messages in Mailpit whose full text mentions `token`. */
+async function mailpitCount(token: string): Promise<number> {
+  const response = await fetch(
+    `${MAILPIT_URL}/api/v1/search?query=${encodeURIComponent(`"${token}"`)}`
+  )
+  const body = (await response.json()) as { messages?: unknown[] }
+  return body.messages?.length ?? 0
 }
 
 function submitAudit(payload: unknown) {
@@ -168,7 +184,7 @@ async function main() {
   // Connect directly rather than via `@/lib/db` — that module is marked
   // `server-only`, which does not resolve outside the Next runtime.
   const { createDb } = await import('@pts/db/client')
-  const { formSubmissions } = await import('@pts/db/schema')
+  const { formSubmissions, rateLimitBuckets } = await import('@pts/db/schema')
   const db = createDb(process.env.DATABASE_URL)
 
   const readRow = async (key: string) => {
@@ -355,9 +371,104 @@ async function main() {
   })
   check('retry -> 200 (idempotent, no duplicate)', retry.status === 200, retry.status)
 
+
+  // --- Email delivery (PRD 008) -------------------------------------------
+  const deliveryKeys: string[] = []
+  const deliveryEmails: string[] = []
+
+  if (WITH_DELIVERY) {
+    const tag = randomUUID().slice(0, 8)
+    const email = `deliver+${tag}@example.com`
+    const name = `Delivery Probe ${tag}`
+    deliveryEmails.push(email)
+
+    const contactBody = (id: string, deliver: boolean) => ({
+      submissionId: id,
+      sourceDetail: 'https://placetostandagency.com/',
+      submittedAt: new Date().toISOString(),
+      contact: { name, email, company: 'Probe Co', website: null, subject: 'Delivery test', message: 'Line one.\nLine two.', marketingConsent: false },
+      analytics: ENVELOPE.analytics,
+      attribution: ENVELOPE.attribution,
+      client: ENVELOPE.client,
+      deliver,
+    })
+
+    console.log('\nDelivery: contact without deliver')
+    const quietId = randomUUID()
+    deliveryKeys.push(quietId)
+    const quiet = await submitContact(contactBody(quietId, false))
+    check('no deliver -> emails skipped', quiet.body?.data?.emails?.team === 'skipped', quiet.body)
+    check('no deliver -> nothing in Mailpit', (await mailpitCount(tag)) === 0)
+
+    console.log('\nDelivery: contact with deliver')
+    const firstId = randomUUID()
+    deliveryKeys.push(firstId)
+    const first = await submitContact(contactBody(firstId, true))
+    check('deliver -> 200 with envelope', first.status === 200 && first.body?.ok === true, first.body)
+    check('team sent', first.body?.data?.emails?.team === 'sent', first.body?.data)
+    check('confirmation sent', first.body?.data?.emails?.confirmation === 'sent', first.body?.data)
+    const firstRow = await readRow(firstId)
+    check('delivery_requested_at stamped', Boolean(firstRow?.deliveryRequestedAt))
+    check('team_notified_at stamped', Boolean(firstRow?.teamNotifiedAt))
+    check('confirmation_sent_at stamped', Boolean(firstRow?.confirmationSentAt))
+    check('two messages in Mailpit', (await mailpitCount(tag)) === 2, await mailpitCount(tag))
+
+    console.log('\nDelivery: replay of the same submission')
+    const replay = await submitContact(contactBody(firstId, true))
+    check('replay -> still reports sent', replay.body?.data?.emails?.team === 'sent', replay.body?.data)
+    check('replay -> no new messages', (await mailpitCount(tag)) === 2, await mailpitCount(tag))
+
+    console.log('\nDelivery: per-address throttle (3 per window)')
+    // `first` and `replay` spent two hits; one more is allowed, the next is not.
+    const thirdId = randomUUID()
+    const fourthId = randomUUID()
+    deliveryKeys.push(thirdId, fourthId)
+    const third = await submitContact(contactBody(thirdId, true))
+    check('third hit -> sent', third.body?.data?.emails?.team === 'sent', third.body?.data)
+    const fourth = await submitContact(contactBody(fourthId, true))
+    check('fourth hit -> 200 (still recorded)', fourth.status === 200, fourth.status)
+    check('fourth hit -> skipped', fourth.body?.data?.emails?.team === 'skipped', fourth.body?.data)
+    const fourthRow = await readRow(fourthId)
+    check('fourth hit -> delivery not requested', fourthRow?.deliveryRequestedAt === null, fourthRow?.deliveryRequestedAt)
+
+    console.log('\nDelivery: audit only mails on captured')
+    const auditTag = randomUUID().slice(0, 8)
+    const auditEmail = `audit+${auditTag}@example.com`
+    const auditSession = randomUUID()
+    deliveryKeys.push(auditSession)
+    deliveryEmails.push(auditEmail)
+    const startedAt = new Date(Date.now() - 60_000).toISOString()
+    const auditBody = (status: 'completed' | 'captured', offsetMs: number) => ({
+      sessionId: auditSession,
+      status,
+      trigger: status === 'captured' ? 'captured' : 'scored',
+      sourceDetail: ENVELOPE.sourceDetail,
+      startedAt,
+      updatedAt: new Date(Date.now() + offsetMs).toISOString(),
+      completedAt: startedAt,
+      progress: { furthestStepIndex: 3, stepsTotal: 4, answeredCount: 4, questionsTotal: 4, percentComplete: 100, durationMs: 60_000 },
+      responses: responses(4),
+      result: RESULT,
+      lead: status === 'captured' ? { name: `Audit Probe ${auditTag}`, email: auditEmail, company: null, message: null, marketingConsent: false } : null,
+      analytics: ENVELOPE.analytics,
+      attribution: ENVELOPE.attribution,
+      client: ENVELOPE.client,
+      deliver: true,
+    })
+    const scored = await submitAudit(auditBody('completed', 0))
+    check('completed + deliver -> skipped', scored.body?.data?.emails?.team === 'skipped', scored.body?.data)
+    const capturedAudit = await submitAudit(auditBody('captured', 1000))
+    check('captured + deliver -> team sent', capturedAudit.body?.data?.emails?.team === 'sent', capturedAudit.body?.data)
+    check('captured + deliver -> results sent', capturedAudit.body?.data?.emails?.confirmation === 'sent', capturedAudit.body?.data)
+    check('two audit messages in Mailpit', (await mailpitCount(auditTag)) === 2, await mailpitCount(auditTag))
+  }
+
   // --- Cleanup ------------------------------------------------------------
-  for (const key of [sessionId, submissionId, throwawaySessionId]) {
+  for (const key of [sessionId, submissionId, throwawaySessionId, ...deliveryKeys]) {
     await db.delete(formSubmissions).where(eq(formSubmissions.sessionKey, key))
+  }
+  for (const email of deliveryEmails) {
+    await db.delete(rateLimitBuckets).where(eq(rateLimitBuckets.key, `form-deliver:${email}`))
   }
   console.log('\nTest rows deleted.')
 

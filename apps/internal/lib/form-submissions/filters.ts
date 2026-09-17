@@ -29,3 +29,17 @@ export function parseSubmissionsSort(
 ): ParsedSort<SubmissionSortField> {
   return parseSortParam(raw, SUBMISSION_SORT_FIELDS, DEFAULT_SUBMISSIONS_SORT)
 }
+
+/**
+ * `?contact=` (PRD 008 §7). One param, two states, same convention as
+ * `?unacknowledged=`: '1' = rows that identify someone, '0' = anonymous rows.
+ */
+export function parseContactFilter(
+  raw: string | undefined
+): boolean | undefined {
+  return raw === '1' ? true : raw === '0' ? false : undefined
+}
+
+export function isContactFilterValue(value: string): boolean {
+  return value === '1' || value === '0'
+}

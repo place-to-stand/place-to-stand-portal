@@ -317,6 +317,17 @@ creates a lead directly — leads are promoted from a submission by hand.
 1. Generate a token per endpoint: `openssl rand -hex 32`
 2. Store the same values under the same names in this app and in the marketing site, which also needs `PORTAL_API_BASE_URL`
 
+**Email (PRD 008):** the marketing site sends no email. A payload with `deliver: true` makes the
+portal send the team notification and the visitor's confirmation *after* recording the row
+(`lib/form-submissions/delivery/`). Sends claim `team_notified_at` / `confirmation_sent_at` first so
+a replay cannot mail twice, a failed send is retried by `/api/cron/retry-submission-emails`, and
+rows with `delivery_requested_at IS NULL` (everything before the cutover) are never mailed. Only a
+`captured` audit can deliver, and only the site's BotID-gated server action may set the flag —
+never its unauthenticated progress beacon. Templates live in `packages/email` and are registered in
+`lib/email/catalog-forms.ts`. Optional env: `RESEND_FORMS_FROM_EMAIL`, `FORMS_NOTIFY_EMAIL`,
+`RESEND_AUDIENCE_ID`. The source line shared by the email, the Submissions table, and the sheet is
+`describeAttribution` (`lib/form-submissions/attribution.ts`).
+
 Every payload carries a shared `analytics` / `attribution` / `client` envelope (PostHog ids, UTMs,
 gclid, referrer, landing path, device). The full wire contract lives in
 `docs/integrations/marketing-form-submissions.md`. The older `leads-intake` webhook was retired in

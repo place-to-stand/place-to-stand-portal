@@ -100,13 +100,21 @@ export const auditPayloadSchema = z.object({
   analytics: analyticsSchema,
   attribution: attributionSchema,
   client: clientSchema,
+
+  // Opt-in email delivery (PRD 008). Only the marketing site's BotID-gated
+  // server action sets this, and only on the `captured` push. Its progress
+  // beacon route is unauthenticated by design and must never forward it:
+  // honouring `deliver` from a beacon would let anyone mail any address.
+  deliver: z.boolean().optional().default(false),
 })
 
 export type AuditPayload = z.infer<typeof auditPayloadSchema>
 
 export function toAuditSubmissionRow(
   payload: AuditPayload,
-  requestUserAgent: string | null
+  requestUserAgent: string | null,
+  /** From `resolveDeliveryRequest`; null records the row without emailing. */
+  deliveryRequestedAt: string | null = null
 ): NewFormSubmission {
   const { progress, result, lead, analytics, attribution, client } = payload
 
@@ -168,5 +176,7 @@ export function toAuditSubmissionRow(
     // the visitor's UA survives. The request header is a fallback for a
     // hypothetical direct caller.
     userAgent: client.userAgent ?? requestUserAgent,
+
+    deliveryRequestedAt,
   }
 }

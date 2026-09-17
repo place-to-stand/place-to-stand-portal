@@ -554,6 +554,13 @@
       "when": 1789585457618,
       "tag": "0078_user_dashboard_layouts",
       "breakpoints": true
+    },
+    {
+      "idx": 79,
+      "version": "7",
+      "when": 1789677446241,
+      "tag": "0079_form_submission_email_delivery",
+      "breakpoints": true
     }
   ]
 }

@@ -10,7 +10,7 @@ import {
   Trash2,
   Undo2,
 } from 'lucide-react'
-import { format, formatDistanceToNow } from 'date-fns'
+import { formatDistanceToNow } from 'date-fns'
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
@@ -21,8 +21,14 @@ import { SheetFooterBar } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import { useToast } from '@/components/ui/use-toast'
+import { formatCalendarDate } from '@/lib/dates'
 import { cn } from '@/lib/utils'
 import {
+  ATTRIBUTION_CHANNEL_LABELS,
+  describeAttribution,
+} from '@/lib/form-submissions/attribution'
+import {
+  ATTRIBUTION_CHANNEL_TOKENS,
   FORM_SUBMISSION_KIND_LABELS,
   FORM_SUBMISSION_STATUS_LABELS,
   FORM_SUBMISSION_STATUS_TOKENS,
@@ -75,6 +81,27 @@ function formatDuration(ms: number): string {
     return `${total}s`
   }
   return `${Math.floor(total / 60)}m ${total % 60}s`
+}
+
+const STARTED_STYLE = {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+} as const
+
+const EMAIL_STAMP_STYLE = {
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+} as const
+
+/** A null stamp with delivery requested means the retry sweep still owes it. */
+function formatEmailStamp(sentAt: string | null): string {
+  const formatted = formatCalendarDate(sentAt, EMAIL_STAMP_STYLE)
+  return formatted ? `Sent ${formatted}` : 'Queued for retry'
 }
 
 /** Renders `—` for null/empty so empty fields read consistently. */
@@ -275,6 +302,7 @@ export function SubmissionDetailSheet({
   const acknowledgedAt = displaySubmission.acknowledgedAt
 
   const isAudit = displaySubmission.kind === 'audit'
+  const source = describeAttribution(displaySubmission)
   const hasAttribution = Boolean(
     displaySubmission.utmSource ||
     displaySubmission.utmMedium ||
@@ -313,13 +341,26 @@ export function SubmissionDetailSheet({
                 {unacknowledged ? (
                   <Badge variant='secondary'>Unacknowledged</Badge>
                 ) : null}
+                {/* Same summary the table and the team email show, so the
+                    answer to "where did this come from" is above the fold
+                    instead of eight fields down in Attribution. */}
+                <Badge
+                  variant='outline'
+                  className={cn(ATTRIBUTION_CHANNEL_TOKENS[source.channel])}
+                >
+                  {ATTRIBUTION_CHANNEL_LABELS[source.channel]}
+                </Badge>
+                {source.detail ? (
+                  <span className='text-muted-foreground text-xs'>
+                    {source.detail}
+                  </span>
+                ) : null}
               </div>
               <p className='text-muted-foreground text-xs'>
                 {[
-                  `Started ${format(
-                    new Date(displaySubmission.startedAt),
-                    "d MMM yyyy 'at' HH:mm"
-                  )}`,
+                  // Company timezone, like the email stamps below — an
+                  // ambient-TZ format here put two clocks in one sheet.
+                  `Started ${formatCalendarDate(displaySubmission.startedAt, STARTED_STYLE)}`,
                   displaySubmission.durationMs !== null
                     ? `${formatDuration(displaySubmission.durationMs)} on page`
                     : null,
@@ -393,6 +434,29 @@ export function SubmissionDetailSheet({
                 </div>
               )}
             </SheetSection>
+
+            {/* Only once the marketing site asked for email (PRD 008). Rows
+                from before that cutover never requested delivery, and an
+                "Emails" block full of dashes would read as a failure. */}
+            {displaySubmission.deliveryRequestedAt ? (
+              <>
+                <Separator />
+                <SheetSection title='Emails'>
+                  <dl className={KV_GRID}>
+                    <Kv
+                      label='Team notification'
+                      value={formatEmailStamp(displaySubmission.teamNotifiedAt)}
+                    />
+                    <Kv
+                      label='Visitor confirmation'
+                      value={formatEmailStamp(
+                        displaySubmission.confirmationSentAt
+                      )}
+                    />
+                  </dl>
+                </SheetSection>
+              </>
+            ) : null}
 
             {isAudit && (
               <>

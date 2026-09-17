@@ -44,10 +44,12 @@ site's Vercel project (all environments).
 
 | Status | Body | Meaning |
 | --- | --- | --- |
-| `200` | `{"ok":true}` | Accepted. Also returned when a stale beacon is intentionally discarded — see [§5](#5-idempotency-and-ordering). |
-| `400` | `{"error":"..."}` | Malformed JSON, or payload failed validation. `error` is the first validation message. |
+| `200` | `{"ok":true,"data":{"id":"…","emails":{"team":"sent","confirmation":"sent"}}}` | Accepted. `id` is `null` when a stale beacon is intentionally discarded — see [§5](#5-idempotency-and-ordering). `emails` is described in [§6.1](#61-email-delivery-deliver). |
+| `400` | `{"ok":false,"error":"..."}` | Malformed JSON, or payload failed validation. `error` is the first validation message. |
 | `401` | `{"error":"Unauthorized"}` | Missing, malformed, or mismatched bearer token. |
-| `500` | `{"error":"..."}` | Token not configured portal-side, or a database failure. Safe to retry. |
+| `500` | `{"ok":false,"error":"..."}` | Token not configured portal-side, or a database failure. Safe to retry. |
+
+Senders should branch on the HTTP status only. The body is for logs.
 
 ---
 
@@ -315,12 +317,45 @@ Retries are safe at any point — the upsert is idempotent.
 
 ## 6. Failure handling
 
-A failed POST must never break the visitor's experience. Keep the current
-`send-audit.ts` behaviour: log and continue, still show success. The audit's Resend emails and
-the Resend audience opt-in are unaffected by this integration and stay as they are.
+Two kinds of request, two rules (changed by PRD 008, September 2026):
 
-Because delivery is best-effort, prefer sending **more** beacons rather than fewer — the
-upsert makes duplicates free, and a dropped intermediate beacon is recovered by the next one.
+- **Audit progress beacons are best-effort.** A failed POST must never break the visitor's
+  experience: log and continue. Prefer sending **more** beacons rather than fewer — the upsert
+  makes duplicates free, and a dropped intermediate beacon is recovered by the next one.
+- **The two form submissions are awaited and gate success.** The contact form, and the audit's
+  `captured` push, are the only way a lead reaches anyone now that the portal sends the email. If
+  the portal does not answer `2xx`, the visitor is shown an error pointing at
+  hello@placetostandagency.com.
+
+### 6.1 Email delivery (`deliver`)
+
+The marketing site sends no email. Both payloads accept an optional top-level `deliver: boolean`
+(default `false`). When `true`, the portal sends the team notification and the visitor's
+confirmation after it has recorded the row, and adds a consenting visitor to the Resend audience.
+
+**Record first, then send.** A mail-provider failure never fails the request. The row exists and
+flags unread, the claim on the email is released, and `/api/cron/retry-submission-emails` retries
+it for up to 24 hours. `emails.team` / `emails.confirmation` in the response report what happened:
+
+| Value | Meaning |
+| --- | --- |
+| `sent` | Delivered by this request, or already delivered by an earlier one. |
+| `queued` | The send failed; the retry sweep owns it now. |
+| `skipped` | Delivery not requested, the row is not an eligible captured lead, or the address is over the throttle (3 requests per 15 minutes). |
+
+**Exactly once.** Each email claims a timestamp on the row (`team_notified_at`,
+`confirmation_sent_at`) before sending, so replaying a payload cannot send twice. Rows that never
+asked for delivery have `delivery_requested_at = NULL` and are invisible to the sweep, which is what
+stops it emailing submissions from before the cutover.
+
+**Audit: only `captured` can deliver.** `deliver` is ignored unless `status` is `captured` and
+`lead` is present.
+
+> ⚠️ **`deliver: true` must only ever be sent from a BotID-verified server action.** It makes the
+> portal email an address the caller supplied. The marketing site's `/api/audit-progress` beacon
+> route is unauthenticated by design, so it must refuse `status: "captured"`, null any `lead`, and
+> never forward `deliver`. The `captured` push goes through `sendAudit` instead. Relaxing this turns
+> the portal into an open mail relay.
 
 ---
 
@@ -369,5 +404,11 @@ curl -i -X POST https://<portal-host>/api/integrations/contact-submissions \
   }'
 ```
 
-Expect `200 {"ok":true}`, then confirm the row at **Sales → Submissions** in the portal.
-Re-running the same command is a no-op (same `submissionId`), which is the idempotency check.
+Expect `200` with `"ok":true` and both `emails` values `"skipped"` (no `deliver` in this payload),
+then confirm the row at **Sales → Submissions** in the portal. Re-running the same command is a
+no-op (same `submissionId`), which is the idempotency check.
+
+To check delivery end to end, run `npx tsx scripts/test-form-intake.ts --deliver` from
+`apps/internal` against a **local** server: it reads the messages back out of Mailpit and covers
+replay safety, the throttle, and the `captured` gate. Do not add `"deliver": true` to a curl aimed
+at production unless you mean to email the address in the payload.

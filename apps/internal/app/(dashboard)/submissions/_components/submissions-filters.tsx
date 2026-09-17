@@ -15,6 +15,7 @@ import {
   type FormSubmissionKind,
   type FormSubmissionStatus,
 } from '@/lib/form-submissions/constants'
+import { isContactFilterValue } from '@/lib/form-submissions/filters'
 
 type AcknowledgementFilter = 'unacknowledged' | 'acknowledged'
 
@@ -30,6 +31,12 @@ const ACK_PARAM: Record<AcknowledgementFilter, string> = {
   acknowledged: '0',
 }
 
+// Same one-param-two-states shape as the acknowledgement filter.
+const CONTACT_OPTIONS = [
+  { value: '1', label: 'With contact only' },
+  { value: '0', label: 'Anonymous only' },
+]
+
 const KIND_OPTIONS = FORM_SUBMISSION_KIND_VALUES.map(kind => ({
   value: kind,
   label: FORM_SUBMISSION_KIND_LABELS[kind],
@@ -44,6 +51,8 @@ type SubmissionsFiltersProps = {
   search?: string
   activeKind?: FormSubmissionKind
   activeStatus?: FormSubmissionStatus
+  /** `?contact=` — true: identified rows only, false: anonymous only. */
+  activeContact?: boolean
   /**
    * PW1 acknowledgement quick filter — List tab only (archived rows are
    * never unacknowledged, so the archive page omits the prop entirely).
@@ -58,6 +67,7 @@ export function SubmissionsFilters({
   search,
   activeKind,
   activeStatus,
+  activeContact,
   activeAcknowledgement,
   showUnacknowledgedFilter = false,
   basePath,
@@ -72,6 +82,7 @@ export function SubmissionsFilters({
       unacknowledged: { isValid: value => value === '1' || value === '0' },
       kind: { isValid: value => isFormSubmissionKind(value) },
       status: { isValid: value => isFormSubmissionStatus(value) },
+      contact: { isValid: isContactFilterValue },
     },
   })
 
@@ -107,6 +118,14 @@ export function SubmissionsFilters({
         onChange={value => update({ status: value })}
         placeholder='All statuses'
         options={STATUS_OPTIONS}
+      />
+      <FilterSelect
+        value={
+          activeContact === undefined ? undefined : activeContact ? '1' : '0'
+        }
+        onChange={value => update({ contact: value })}
+        placeholder='All visitors'
+        options={CONTACT_OPTIONS}
       />
       <ResetFiltersButton show={hasActiveFilters} onReset={reset} />
     </FilterBar>

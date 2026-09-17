@@ -35,8 +35,14 @@ type FormSubmissionFilters = {
   acknowledgedOnly?: boolean
   /** false/undefined: active rows (deleted_at IS NULL). true: archived rows. */
   archived?: boolean
-  /** Fuzzy identity search (PRD 004 §03) — name, email, company. */
+  /** Fuzzy identity search (PRD 004 §03) — name, email, company, subject. */
   search?: string
+  /**
+   * PRD 008 §7. true: rows that identify someone (a name or an email).
+   * false: anonymous rows only. Anonymous in-progress/abandoned audits are
+   * most of the list at ad volume, so this is the "show me people" switch.
+   */
+  hasContact?: boolean
 }
 
 function buildFilters({
@@ -46,6 +52,7 @@ function buildFilters({
   acknowledgedOnly,
   archived,
   search,
+  hasContact,
 }: FormSubmissionFilters) {
   const searchQuery = search?.trim() ?? ''
   const searchPattern = searchQuery ? createSearchPattern(searchQuery) : null
@@ -68,6 +75,17 @@ function buildFilters({
         )
       : undefined,
     acknowledgedOnly ? isNotNull(formSubmissions.acknowledgedAt) : undefined,
+    hasContact === true
+      ? or(
+          isNotNull(formSubmissions.contactName),
+          isNotNull(formSubmissions.contactEmail)
+        )
+      : hasContact === false
+        ? and(
+            isNull(formSubmissions.contactName),
+            isNull(formSubmissions.contactEmail)
+          )
+        : undefined,
     searchPattern
       ? or(
           ilike(formSubmissions.contactName, searchPattern),
@@ -219,6 +237,10 @@ export async function upsertFormSubmission(
         timezone: sql`COALESCE(excluded.timezone, ${formSubmissions.timezone})`,
         language: sql`COALESCE(excluded.language, ${formSubmissions.language})`,
         userAgent: sql`COALESCE(excluded.user_agent, ${formSubmissions.userAgent})`,
+
+        // First request wins and is never cleared: a later beacon without
+        // `deliver` must not cancel an email the retry sweep still owes.
+        deliveryRequestedAt: sql`COALESCE(${formSubmissions.deliveryRequestedAt}, excluded.delivery_requested_at)`,
 
         updatedAt: sql`timezone('utc'::text, now())`,
       },

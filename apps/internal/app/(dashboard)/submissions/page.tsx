@@ -7,7 +7,10 @@ import {
   isFormSubmissionKind,
   isFormSubmissionStatus,
 } from '@/lib/form-submissions/constants'
-import { parseSubmissionsSort } from '@/lib/form-submissions/filters'
+import {
+  parseContactFilter,
+  parseSubmissionsSort,
+} from '@/lib/form-submissions/filters'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { readPageSize } from '@/lib/pagination/page-size.server'
 
@@ -52,6 +55,7 @@ export default async function SubmissionsPage({
   const unacknowledgedOnly = ackParam === '1'
   const acknowledgedOnly = ackParam === '0'
   const search = firstParam(params.q)?.trim() || undefined
+  const hasContact = parseContactFilter(firstParam(params.contact))
   const sort = parseSubmissionsSort(firstParam(params.sort))
 
   // Share links: ?submission=<id> opens the detail sheet directly (redirects
@@ -71,6 +75,7 @@ export default async function SubmissionsPage({
       unacknowledgedOnly,
       acknowledgedOnly,
       search,
+      hasContact,
       sort,
     })
 
@@ -90,6 +95,7 @@ export default async function SubmissionsPage({
           search={search}
           activeKind={kind}
           activeStatus={status}
+          activeContact={hasContact}
           activeAcknowledgement={
             unacknowledgedOnly ? 'unacknowledged' : acknowledgedOnly ? 'acknowledged' : undefined
           }

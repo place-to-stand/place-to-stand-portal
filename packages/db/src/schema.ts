@@ -2092,6 +2092,25 @@ export const formSubmissions = pgTable(
       mode: 'string',
     }),
 
+    // Email delivery (PRD 008). `delivery_requested_at` is set only when the
+    // marketing site opts in with `deliver: true`, so rows that predate the
+    // cutover can never be picked up by the retry sweep. The two stamps double
+    // as claims: a send takes its column first (… WHERE x IS NULL RETURNING)
+    // and releases it on failure, which is what stops a replayed payload from
+    // mailing twice. None of the three is PII, so a tombstone keeps them.
+    deliveryRequestedAt: timestamp('delivery_requested_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
+    teamNotifiedAt: timestamp('team_notified_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
+    confirmationSentAt: timestamp('confirmation_sent_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
+
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
       .notNull(),
