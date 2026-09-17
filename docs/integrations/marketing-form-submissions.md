@@ -338,6 +338,8 @@ Order matters. The portal must be live first, or in-flight form submissions are 
    - add `AUDIT_INTAKE_TOKEN` and `CONTACT_INTAKE_TOKEN`
    - keep the Resend emails and audience opt-in exactly as they are
 3. **Portal follow-up** removes the now-dead `leads-intake` route and `LEADS_INTAKE_TOKEN`.
+   **Done Sep 2026** — the route, its `proxy.ts` allowlist entry, and the `turbo.json` env entry
+   are gone. Delete `LEADS_INTAKE_TOKEN` from the Vercel project settings by hand.
 
 After step 2 the marketing site no longer creates portal leads directly. Submissions are
 promoted to leads manually in the portal.
