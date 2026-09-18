@@ -8,6 +8,7 @@ import {
   countCapturedSubmissionsFromEmail,
   findActiveLeadIdByEmail,
   getSubmissionForDelivery,
+  markSubmissionEmailSent,
   releaseSubmissionEmail,
   type SubmissionEmailKind,
 } from '@/lib/queries/form-submission-delivery'
@@ -17,8 +18,10 @@ import { resolveFormEmailAddresses, resolvePortalOrigin } from './addresses'
 import { renderSubmissionEmails } from './render'
 
 /**
- * `sent`    — delivered now, or already delivered by an earlier request.
- * `queued`  — the send failed; the claim was released for the retry sweep.
+ * `sent`    — the provider accepted it, now or in an earlier request.
+ * `queued`  — not sent by this request: the send failed and the lease was
+ *             released, or another request holds the lease right now. Either
+ *             way the retry sweep owns it.
  * `skipped` — delivery was not requested, or the row is not eligible.
  */
 export type SubmissionEmailOutcome = 'sent' | 'queued' | 'skipped'
@@ -28,7 +31,7 @@ export type SubmissionEmailOutcomes = {
   confirmation: SubmissionEmailOutcome
 }
 
-const SKIPPED: SubmissionEmailOutcomes = {
+export const SKIPPED_OUTCOMES: SubmissionEmailOutcomes = {
   team: 'skipped',
   confirmation: 'skipped',
 }
@@ -51,33 +54,43 @@ async function resolveRepeat(email: string) {
 }
 
 /**
- * Claim, send, and release on failure. Never throws: a Resend outage must not
- * fail the intake request, because the submission itself is already recorded.
+ * Lease, send, stamp; release on failure. Never throws: a provider outage
+ * must not fail the intake request, because the submission is already stored.
+ *
+ * The stamp is written only after the provider accepts, so a crash between
+ * lease and send leaves an expiring lease rather than a false "sent". The
+ * idempotency key covers the other half: if the provider accepted but the
+ * response was lost, the retry is deduplicated on their side.
  */
-async function sendClaimed(
+async function sendLeased(
   id: string,
   kind: SubmissionEmailKind,
   message: RenderedEmail,
   envelope: { from: string; to: string; replyTo: string }
 ): Promise<{ outcome: SubmissionEmailOutcome; sentNow: boolean }> {
-  let claimed = false
+  let leased = false
 
   try {
-    claimed = await claimSubmissionEmail(id, kind)
+    leased = await claimSubmissionEmail(id, kind)
 
-    // Lost the claim: another request holds it or already sent it.
-    if (!claimed) return { outcome: 'sent', sentNow: false }
+    // Already sent, or someone else is sending it this minute.
+    if (!leased) return { outcome: 'queued', sentNow: false }
 
-    await sendEmail({ ...envelope, ...message })
+    await sendEmail({
+      ...envelope,
+      ...message,
+      idempotencyKey: `form-submission:${id}:${kind}`,
+    })
+    await markSubmissionEmailSent(id, kind)
     return { outcome: 'sent', sentNow: true }
   } catch (error) {
     console.error(`Submission ${kind} email failed`, { id, error })
 
-    if (claimed) {
+    if (leased) {
       await releaseSubmissionEmail(id, kind).catch(releaseError => {
-        // The claim is now stuck, so this email will not be retried. The row
-        // still flags unread in the portal, which is the backstop.
-        console.error(`Unable to release ${kind} email claim`, {
+        // The lease expires on its own, so the sweep still retries this —
+        // just not for another EMAIL_LEASE_MINUTES.
+        console.error(`Unable to release ${kind} email lease`, {
           id,
           releaseError,
         })
@@ -90,7 +103,8 @@ async function sendClaimed(
 
 /**
  * Sends whatever is still outstanding for one submission. Safe to call any
- * number of times, from the intake routes and the retry sweep alike.
+ * number of times, from the intake routes and the retry sweep alike. Throws
+ * only if the row cannot be read; callers decide what that means for them.
  */
 export async function deliverSubmissionEmails(
   id: string
@@ -103,7 +117,7 @@ export async function deliverSubmissionEmails(
     row.status !== 'captured' ||
     !row.contactEmail
   ) {
-    return SKIPPED
+    return SKIPPED_OUTCOMES
   }
 
   if (row.teamNotifiedAt && row.confirmationSentAt) {
@@ -118,7 +132,7 @@ export async function deliverSubmissionEmails(
     repeat: await resolveRepeat(row.contactEmail),
   })
 
-  if (!emails) return SKIPPED
+  if (!emails) return SKIPPED_OUTCOMES
 
   const visitor = row.contactEmail
   const confirmationEmail = emails.confirmation
@@ -126,7 +140,7 @@ export async function deliverSubmissionEmails(
   const [team, confirmation] = await Promise.all([
     row.teamNotifiedAt
       ? ('sent' as const)
-      : sendClaimed(id, 'team', emails.team, {
+      : sendLeased(id, 'team', emails.team, {
           from,
           to: teamInbox,
           replyTo: visitor,
@@ -134,13 +148,13 @@ export async function deliverSubmissionEmails(
     row.confirmationSentAt
       ? ('sent' as const)
       : confirmationEmail
-        ? sendClaimed(id, 'confirmation', confirmationEmail, {
+        ? sendLeased(id, 'confirmation', confirmationEmail, {
             from,
             to: visitor,
             replyTo: teamInbox,
           }).then(async ({ outcome, sentNow }) => {
-            // Tied to winning the confirmation claim so it happens once per
-            // submission, not once per replay.
+            // Tied to this request having sent the confirmation, so it
+            // happens once per submission, not once per replay.
             if (sentNow && row.marketingConsent) {
               await addToMarketingAudience({
                 email: visitor,

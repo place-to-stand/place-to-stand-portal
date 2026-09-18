@@ -418,18 +418,21 @@ async function main() {
     check('replay -> still reports sent', replay.body?.data?.emails?.team === 'sent', replay.body?.data)
     check('replay -> no new messages', (await mailpitCount(tag)) === 2, await mailpitCount(tag))
 
-    console.log('\nDelivery: per-address throttle (3 per window)')
-    // `first` and `replay` spent two hits; one more is allowed, the next is not.
+    console.log('\nDelivery: per-address throttle (3 per window, replays free)')
+    // `first` spent one hit; the replay reused its decision and spent none.
     const thirdId = randomUUID()
     const fourthId = randomUUID()
-    deliveryKeys.push(thirdId, fourthId)
+    const fifthId = randomUUID()
+    deliveryKeys.push(thirdId, fourthId, fifthId)
     const third = await submitContact(contactBody(thirdId, true))
-    check('third hit -> sent', third.body?.data?.emails?.team === 'sent', third.body?.data)
+    check('second submission -> sent', third.body?.data?.emails?.team === 'sent', third.body?.data)
     const fourth = await submitContact(contactBody(fourthId, true))
-    check('fourth hit -> 200 (still recorded)', fourth.status === 200, fourth.status)
-    check('fourth hit -> skipped', fourth.body?.data?.emails?.team === 'skipped', fourth.body?.data)
-    const fourthRow = await readRow(fourthId)
-    check('fourth hit -> delivery not requested', fourthRow?.deliveryRequestedAt === null, fourthRow?.deliveryRequestedAt)
+    check('third submission -> sent (replay did not spend quota)', fourth.body?.data?.emails?.team === 'sent', fourth.body?.data)
+    const fifth = await submitContact(contactBody(fifthId, true))
+    check('fourth submission -> 200 (still recorded)', fifth.status === 200, fifth.status)
+    check('fourth submission -> skipped', fifth.body?.data?.emails?.team === 'skipped', fifth.body?.data)
+    const fifthRow = await readRow(fifthId)
+    check('fourth submission -> delivery not requested', fifthRow?.deliveryRequestedAt === null, fifthRow?.deliveryRequestedAt)
 
     console.log('\nDelivery: audit only mails on captured')
     const auditTag = randomUUID().slice(0, 8)
@@ -455,12 +458,36 @@ async function main() {
       client: ENVELOPE.client,
       deliver: true,
     })
-    const scored = await submitAudit(auditBody('completed', 0))
+    // The progress beacon is stamped AFTER the captured push: the stale gate
+    // must still let the capture through, because a status advance is never
+    // stale. Before the fix this returned 200 with id:null and lost the lead.
+    const scored = await submitAudit(auditBody('completed', 5000))
     check('completed + deliver -> skipped', scored.body?.data?.emails?.team === 'skipped', scored.body?.data)
-    const capturedAudit = await submitAudit(auditBody('captured', 1000))
+    const capturedAudit = await submitAudit(auditBody('captured', 0))
+    check('older captured push still lands (status advance beats stale gate)', capturedAudit.body?.data?.id !== null, capturedAudit.body?.data)
+    const capturedRow = await readRow(auditSession)
+    check('status captured', capturedRow?.status === 'captured', capturedRow?.status)
+    check('lead stored', capturedRow?.contactEmail === auditEmail, capturedRow?.contactEmail)
+    check('last_activity_at did not go backwards', capturedRow?.lastActivityAt !== null && new Date(capturedRow.lastActivityAt).getTime() >= Date.now() + 4000, capturedRow?.lastActivityAt)
     check('captured + deliver -> team sent', capturedAudit.body?.data?.emails?.team === 'sent', capturedAudit.body?.data)
     check('captured + deliver -> results sent', capturedAudit.body?.data?.emails?.confirmation === 'sent', capturedAudit.body?.data)
     check('two audit messages in Mailpit', (await mailpitCount(auditTag)) === 2, await mailpitCount(auditTag))
+    check('leases recorded alongside stamps', Boolean(capturedRow?.teamEmailClaimedAt && capturedRow?.confirmationEmailClaimedAt))
+
+    console.log('\nDelivery: unscored audit has nothing to confirm')
+    const unscoredTag = randomUUID().slice(0, 8)
+    const unscoredSession = randomUUID()
+    deliveryKeys.push(unscoredSession)
+    deliveryEmails.push(`audit+${unscoredTag}@example.com`)
+    const unscored = await submitAudit({
+      ...auditBody('captured', 0),
+      sessionId: unscoredSession,
+      result: null,
+      lead: { name: `Unscored Probe ${unscoredTag}`, email: `audit+${unscoredTag}@example.com`, company: null, message: null, marketingConsent: false },
+    })
+    check('unscored captured -> team sent', unscored.body?.data?.emails?.team === 'sent', unscored.body?.data)
+    check('unscored captured -> confirmation skipped', unscored.body?.data?.emails?.confirmation === 'skipped', unscored.body?.data)
+    check('one unscored message in Mailpit', (await mailpitCount(unscoredTag)) === 1, await mailpitCount(unscoredTag))
   }
 
   // --- Cleanup ------------------------------------------------------------

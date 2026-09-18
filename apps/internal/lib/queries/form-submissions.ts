@@ -171,7 +171,10 @@ export async function upsertFormSubmission(
       set: {
         status: sql`GREATEST(${formSubmissions.status}, excluded.status)`,
         lastTrigger: sql`excluded.last_trigger`,
-        lastActivityAt: sql`excluded.last_activity_at`,
+        // GREATEST rather than wholesale: the gate below lets an older
+        // payload through when it advances status, and that must not wind
+        // the activity clock back.
+        lastActivityAt: sql`GREATEST(${formSubmissions.lastActivityAt}, excluded.last_activity_at)`,
         completedAt: sql`COALESCE(${formSubmissions.completedAt}, excluded.completed_at)`,
         capturedAt: sql`COALESCE(${formSubmissions.capturedAt}, excluded.captured_at)`,
         durationMs: sql`GREATEST(${formSubmissions.durationMs}, excluded.duration_ms)`,
@@ -246,10 +249,13 @@ export async function upsertFormSubmission(
       },
       // Rule 2: a beacon older than what we already stored is a no-op. The
       // route still returns 200 — discarding it is the expected outcome.
+      // A status ADVANCE is never stale, whatever its timestamp: the captured
+      // push carries the lead and the delivery request, and a progress beacon
+      // that happened to be stamped later must not be able to discard it.
       // Tombstones (destroyed_at set) additionally reject EVERY beacon: the
       // PII-stripped row keeps the session_key occupied precisely so a late
       // beacon can't repopulate or resurrect a permanently deleted session.
-      setWhere: sql`excluded.last_activity_at >= ${formSubmissions.lastActivityAt} AND ${formSubmissions.destroyedAt} IS NULL`,
+      setWhere: sql`(excluded.last_activity_at >= ${formSubmissions.lastActivityAt} OR excluded.status > ${formSubmissions.status}) AND ${formSubmissions.destroyedAt} IS NULL`,
     })
     .returning({
       id: formSubmissions.id,

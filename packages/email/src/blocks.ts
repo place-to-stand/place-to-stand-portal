@@ -38,6 +38,16 @@ export type EmailBlock =
 
 const LINK = `color:${C.ink};text-decoration:underline;`
 
+/**
+ * Only web and mail links are ever rendered as links. Anything else — a
+ * javascript: or data: URL smuggled through a field a visitor typed — falls
+ * back to plain text. Escaping alone stops attribute breakout, not this.
+ */
+function safeHref(href: string | undefined): string | null {
+  if (!href) return null
+  return /^(https?:|mailto:)/i.test(href.trim()) ? href.trim() : null
+}
+
 function withBreaks(value: string): string {
   return escapeHtml(value).replace(/\r?\n/g, '<br />')
 }
@@ -56,8 +66,9 @@ function blockHtml(block: EmailBlock): string {
     case 'rows': {
       const rows = block.rows
         .map(row => {
-          const value = row.href
-            ? `<a href="${escapeHtml(row.href)}" style="${LINK}">${escapeHtml(row.value)}</a>`
+          const href = safeHref(row.href)
+          const value = href
+            ? `<a href="${escapeHtml(href)}" style="${LINK}">${escapeHtml(row.value)}</a>`
             : escapeHtml(row.value)
           return `<tr>
             <td width="96" style="width:96px;padding:4px 12px 4px 0;vertical-align:top;font-family:${F.mono};font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:${C.faint};">${escapeHtml(row.label)}</td>
@@ -98,7 +109,7 @@ function blockHtml(block: EmailBlock): string {
 
     case 'button':
       return `<p style="margin:0 0 24px;">
-         <a href="${escapeHtml(block.url)}" style="display:inline-block;padding:12px 24px;background:${C.ink};border:1px solid ${C.ink};color:${C.accent};text-decoration:none;font-size:13px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;">${escapeHtml(block.label)}</a>
+         <a href="${escapeHtml(safeHref(block.url) ?? '#')}" style="display:inline-block;padding:12px 24px;background:${C.ink};border:1px solid ${C.ink};color:${C.accent};text-decoration:none;font-size:13px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;">${escapeHtml(block.label)}</a>
        </p>`
 
     case 'divider':
@@ -128,7 +139,10 @@ function blockText(block: EmailBlock): string[] {
       ]
     case 'pairs':
       return [
-        ...block.items.flatMap(item => [`- ${item.prompt}`, `  ${item.answer}`]),
+        ...block.items.flatMap(item => [
+          `- ${item.prompt}`,
+          `  ${item.answer}`,
+        ]),
         '',
       ]
     case 'button':

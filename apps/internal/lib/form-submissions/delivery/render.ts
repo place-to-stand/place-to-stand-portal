@@ -47,13 +47,33 @@ function describeDevice(row: FormSubmission): string | null {
   return parts.length > 0 ? parts.join(' · ') : null
 }
 
+/**
+ * The replay URL is visitor-supplied (it rides in the payload from the
+ * browser). It is rendered under a fixed "Watch the session in PostHog" label,
+ * so only a real PostHog https URL may take that label.
+ */
+function safeReplayUrl(value: string | null): string | null {
+  if (!value) return null
+
+  try {
+    const url = new URL(value)
+    const host = url.hostname.toLowerCase()
+    return url.protocol === 'https:' &&
+      (host === 'posthog.com' || host.endsWith('.posthog.com'))
+      ? url.toString()
+      : null
+  } catch {
+    return null
+  }
+}
+
 function buildSource(row: FormSubmission): SubmissionSource {
   return {
     summary: describeAttribution(row).label,
     landingPath: row.landingPath,
     device: describeDevice(row),
     timezone: row.timezone,
-    replayUrl: row.posthogReplayUrl,
+    replayUrl: safeReplayUrl(row.posthogReplayUrl),
   }
 }
 

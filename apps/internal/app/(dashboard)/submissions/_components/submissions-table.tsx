@@ -360,7 +360,7 @@ export function SubmissionsTable({
               <TableHead className='w-[8%]'>Form</TableHead>
               <TableHead className='w-[19%]'>Contact</TableHead>
               <TableHead className='w-[10%]'>Company</TableHead>
-              <TableHead>Outcome</TableHead>
+              <TableHead className='w-[21%]'>Outcome</TableHead>
               <TableHead className='w-[18%]'>Source</TableHead>
               {mode === 'archive' ? (
                 <TableHead className='w-[10%]'>Archived</TableHead>

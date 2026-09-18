@@ -22,6 +22,7 @@ import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import { useToast } from '@/components/ui/use-toast'
 import { formatCalendarDate } from '@/lib/dates'
+import { RETRY_MAX_AGE_HOURS } from '@/lib/form-submissions/delivery/constants'
 import { cn } from '@/lib/utils'
 import {
   ATTRIBUTION_CHANNEL_LABELS,
@@ -98,10 +99,26 @@ const EMAIL_STAMP_STYLE = {
   minute: '2-digit',
 } as const
 
-/** A null stamp with delivery requested means the retry sweep still owes it. */
-function formatEmailStamp(sentAt: string | null): string {
+/**
+ * A null stamp means the retry sweep still owes the email — until the retry
+ * window has passed, after which nothing will send it and the copy says so.
+ */
+function formatEmailStamp(
+  sentAt: string | null,
+  requestedAt: string,
+  { applies }: { applies: boolean }
+): string {
+  if (!applies) return 'Not applicable'
+
   const formatted = formatCalendarDate(sentAt, EMAIL_STAMP_STYLE)
-  return formatted ? `Sent ${formatted}` : 'Queued for retry'
+  if (formatted) return `Sent ${formatted}`
+
+  const requestedMs = new Date(requestedAt).getTime()
+  const expired =
+    Number.isFinite(requestedMs) &&
+    Date.now() - requestedMs > RETRY_MAX_AGE_HOURS * 60 * 60 * 1000
+
+  return expired ? 'Not sent — retry window passed' : 'Queued for retry'
 }
 
 /** Renders `—` for null/empty so empty fields read consistently. */
@@ -445,12 +462,23 @@ export function SubmissionDetailSheet({
                   <dl className={KV_GRID}>
                     <Kv
                       label='Team notification'
-                      value={formatEmailStamp(displaySubmission.teamNotifiedAt)}
+                      value={formatEmailStamp(
+                        displaySubmission.teamNotifiedAt,
+                        displaySubmission.deliveryRequestedAt,
+                        { applies: true }
+                      )}
                     />
                     <Kv
                       label='Visitor confirmation'
                       value={formatEmailStamp(
-                        displaySubmission.confirmationSentAt
+                        displaySubmission.confirmationSentAt,
+                        displaySubmission.deliveryRequestedAt,
+                        // An audit captured without a stored result has
+                        // nothing to confirm (mirrors the sweep predicate).
+                        {
+                          applies:
+                            !isAudit || displaySubmission.result !== null,
+                        }
                       )}
                     />
                   </dl>

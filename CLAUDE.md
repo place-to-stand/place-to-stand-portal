@@ -319,9 +319,11 @@ creates a lead directly — leads are promoted from a submission by hand.
 
 **Email (PRD 008):** the marketing site sends no email. A payload with `deliver: true` makes the
 portal send the team notification and the visitor's confirmation *after* recording the row
-(`lib/form-submissions/delivery/`). Sends claim `team_notified_at` / `confirmation_sent_at` first so
-a replay cannot mail twice, a failed send is retried by `/api/cron/retry-submission-emails`, and
-rows with `delivery_requested_at IS NULL` (everything before the cutover) are never mailed. Only a
+(`lib/form-submissions/delivery/`). Each send takes an expiring lease (`*_email_claimed_at`),
+sends with a Resend idempotency key, and stamps `team_notified_at` / `confirmation_sent_at` only on
+acceptance, so neither a crash nor a replay can double-send or fake a send; failed sends are retried
+by `/api/cron/retry-submission-emails` for 72h, and rows with `delivery_requested_at IS NULL`
+(everything before the cutover) are never mailed. Only a
 `captured` audit can deliver, and only the site's BotID-gated server action may set the flag —
 never its unauthenticated progress beacon. Templates live in `packages/email` and are registered in
 `lib/email/catalog-forms.ts`. Optional env: `RESEND_FORMS_FROM_EMAIL`, `FORMS_NOTIFY_EMAIL`,

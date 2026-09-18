@@ -66,6 +66,7 @@ export async function POST(request: NextRequest) {
     const deliveryRequestedAt = await resolveDeliveryRequest({
       deliver,
       email: parsed.data.lead?.email,
+      sessionKey: parsed.data.sessionId,
     })
 
     const recorded = await recordSubmission(

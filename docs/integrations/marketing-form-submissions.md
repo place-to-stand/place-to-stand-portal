@@ -334,19 +334,27 @@ The marketing site sends no email. Both payloads accept an optional top-level `d
 confirmation after it has recorded the row, and adds a consenting visitor to the Resend audience.
 
 **Record first, then send.** A mail-provider failure never fails the request. The row exists and
-flags unread, the claim on the email is released, and `/api/cron/retry-submission-emails` retries
-it for up to 24 hours. `emails.team` / `emails.confirmation` in the response report what happened:
+flags unread, the lease on the email is released, and `/api/cron/retry-submission-emails` retries
+it for up to 72 hours (`RETRY_MAX_AGE_HOURS`); after that the sheet says "Not sent — retry window
+passed". `emails.team` / `emails.confirmation` in the response report what happened:
 
 | Value | Meaning |
 | --- | --- |
 | `sent` | Delivered by this request, or already delivered by an earlier one. |
-| `queued` | The send failed; the retry sweep owns it now. |
-| `skipped` | Delivery not requested, the row is not an eligible captured lead, or the address is over the throttle (3 requests per 15 minutes). |
+| `queued` | Not sent by this request — the send failed, or another request holds the lease; the retry sweep owns it. |
+| `skipped` | Delivery not requested, the row is not an eligible captured lead, the address is over the throttle (3 new submissions per 15 minutes; replays are free), or — for the confirmation — an audit was captured without a stored result. |
 
-**Exactly once.** Each email claims a timestamp on the row (`team_notified_at`,
-`confirmation_sent_at`) before sending, so replaying a payload cannot send twice. Rows that never
-asked for delivery have `delivery_requested_at = NULL` and are invisible to the sweep, which is what
-stops it emailing submissions from before the cutover.
+**Exactly once.** Each email has a lease (`*_email_claimed_at`, expires after 10 minutes) and a
+stamp (`team_notified_at` / `confirmation_sent_at`). A sender takes the lease, sends with a Resend
+idempotency key of `form-submission:<id>:<kind>`, and writes the stamp only once Resend accepted;
+a failure clears the lease. So a crash mid-send cannot fake a "sent", a lost response cannot
+produce a second copy, and a replayed payload cannot send twice. Rows that never asked for delivery
+have `delivery_requested_at = NULL` and are invisible to the sweep, which is what stops it emailing
+submissions from before the cutover.
+
+**Ordering.** A status advance is never "stale": a `captured` push lands even if a progress beacon
+with a later `updatedAt` arrived first, and an older replay of an already-captured row still
+flushes whatever that row owes.
 
 **Audit: only `captured` can deliver.** `deliver` is ignored unless `status` is `captured` and
 `lead` is present.

@@ -1,0 +1,2 @@
+ALTER TABLE "form_submissions" ADD COLUMN "team_email_claimed_at" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "form_submissions" ADD COLUMN "confirmation_email_claimed_at" timestamp with time zone;

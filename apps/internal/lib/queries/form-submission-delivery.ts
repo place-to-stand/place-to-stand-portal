@@ -2,22 +2,36 @@ import { and, asc, eq, isNotNull, isNull, or, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { formSubmissions, leads } from '@/lib/db/schema'
+import {
+  EMAIL_LEASE_MINUTES,
+  RETRY_MAX_AGE_HOURS,
+  RETRY_MIN_AGE_MINUTES,
+} from '@/lib/form-submissions/delivery/constants'
 
 /**
  * Email delivery state for marketing form submissions (PRD 008 §4).
  *
- * `team_notified_at` and `confirmation_sent_at` are both the record that an
- * email went out and the lock that stops it going out twice. A sender claims
- * its column before calling Resend and releases it if the call fails, so a
- * replayed payload, a double-clicked submit, and the retry sweep racing the
- * intake route all resolve to exactly one send.
+ * Each email has a lease (`*_email_claimed_at`) and a stamp
+ * (`team_notified_at` / `confirmation_sent_at`). A sender takes the lease,
+ * calls the provider, and writes the stamp only once the provider accepted the
+ * message; a failure clears the lease. The lease expires, so a process that
+ * dies mid-send does not strand the email, and the stamp is written only on
+ * acceptance, so a crash can never make an unsent email look sent. Duplicate
+ * delivery when the provider accepted but the response was lost is handled by
+ * the provider-side idempotency key the sender attaches.
  */
 
 export type SubmissionEmailKind = 'team' | 'confirmation'
 
-const STAMP_COLUMNS = {
-  team: formSubmissions.teamNotifiedAt,
-  confirmation: formSubmissions.confirmationSentAt,
+const COLUMNS = {
+  team: {
+    claimed: formSubmissions.teamEmailClaimedAt,
+    sent: formSubmissions.teamNotifiedAt,
+  },
+  confirmation: {
+    claimed: formSubmissions.confirmationEmailClaimedAt,
+    sent: formSubmissions.confirmationSentAt,
+  },
 } as const
 
 // Plain `now()`: these are timestamptz columns compared against a timestamptz
@@ -27,8 +41,9 @@ const STAMP_COLUMNS = {
 const now = sql`now()`
 
 /**
- * Atomically takes the send for one email. Returns false when another caller
- * already holds it (or already sent it), or when the row is no longer eligible.
+ * Atomically leases one email for sending. Returns false when it is already
+ * sent, when another sender holds a live lease, or when the row is no longer
+ * eligible.
  *
  * Eligibility is re-checked here rather than trusted from the caller's earlier
  * read: delivery must have been requested, the row must be a captured lead
@@ -38,19 +53,23 @@ export async function claimSubmissionEmail(
   id: string,
   kind: SubmissionEmailKind
 ): Promise<boolean> {
-  const column = STAMP_COLUMNS[kind]
+  const { claimed, sent } = COLUMNS[kind]
 
   const rows = await db
     .update(formSubmissions)
     .set(
       kind === 'team'
-        ? { teamNotifiedAt: now }
-        : { confirmationSentAt: now }
+        ? { teamEmailClaimedAt: now }
+        : { confirmationEmailClaimedAt: now }
     )
     .where(
       and(
         eq(formSubmissions.id, id),
-        isNull(column),
+        isNull(sent),
+        or(
+          isNull(claimed),
+          sql`${claimed} < ${now} - make_interval(mins => ${EMAIL_LEASE_MINUTES})`
+        ),
         isNotNull(formSubmissions.deliveryRequestedAt),
         eq(formSubmissions.status, 'captured'),
         isNotNull(formSubmissions.contactEmail),
@@ -62,7 +81,20 @@ export async function claimSubmissionEmail(
   return rows.length > 0
 }
 
-/** Gives a claim back after a failed send so the sweep can retry it. */
+/** Records that the provider accepted the message. The lease is kept as history. */
+export async function markSubmissionEmailSent(
+  id: string,
+  kind: SubmissionEmailKind
+): Promise<void> {
+  await db
+    .update(formSubmissions)
+    .set(
+      kind === 'team' ? { teamNotifiedAt: now } : { confirmationSentAt: now }
+    )
+    .where(eq(formSubmissions.id, id))
+}
+
+/** Gives a lease back after a failed send so the sweep can retry at once. */
 export async function releaseSubmissionEmail(
   id: string,
   kind: SubmissionEmailKind
@@ -70,7 +102,9 @@ export async function releaseSubmissionEmail(
   await db
     .update(formSubmissions)
     .set(
-      kind === 'team' ? { teamNotifiedAt: null } : { confirmationSentAt: null }
+      kind === 'team'
+        ? { teamEmailClaimedAt: null }
+        : { confirmationEmailClaimedAt: null }
     )
     .where(eq(formSubmissions.id, id))
 }
@@ -79,8 +113,31 @@ export async function getSubmissionForDelivery(id: string) {
   const [row] = await db
     .select()
     .from(formSubmissions)
+    .where(and(eq(formSubmissions.id, id), isNull(formSubmissions.destroyedAt)))
+    .limit(1)
+
+  return row ?? null
+}
+
+/**
+ * The row a payload would land on, before it is upserted. Lets a replay reuse
+ * its earlier delivery decision instead of spending throttle quota, and lets a
+ * replay the stale-beacon gate discards still flush outstanding sends.
+ */
+export async function findDeliveryStateBySessionKey(
+  sessionKey: string
+): Promise<{ id: string; deliveryRequestedAt: string | null } | null> {
+  const [row] = await db
+    .select({
+      id: formSubmissions.id,
+      deliveryRequestedAt: formSubmissions.deliveryRequestedAt,
+    })
+    .from(formSubmissions)
     .where(
-      and(eq(formSubmissions.id, id), isNull(formSubmissions.destroyedAt))
+      and(
+        eq(formSubmissions.sessionKey, sessionKey),
+        isNull(formSubmissions.destroyedAt)
+      )
     )
     .limit(1)
 
@@ -128,20 +185,26 @@ export async function findActiveLeadIdByEmail(
 }
 
 /**
- * Rows the retry sweep should pick up: delivery was requested, at least one
- * email is still outstanding, and the request is old enough that the intake
- * route has finished with it but young enough to still be worth sending.
+ * A confirmation only exists for a contact submission or a scored audit. An
+ * audit captured without a stored result has nothing to confirm, and must not
+ * sit in the retry batch forever looking like a failed send.
+ */
+const confirmationApplies = or(
+  eq(formSubmissions.kind, 'contact'),
+  isNotNull(formSubmissions.result)
+)
+
+/**
+ * Rows the retry sweep should pick up: delivery was requested, an applicable
+ * email is still unsent, and the request is old enough that the intake route
+ * has finished with it but young enough to still be worth sending.
  *
- * The lower bound matters as much as the upper one. Without it the sweep could
- * see a claim the intake route is about to take and race it for no benefit.
+ * Lease state is deliberately not filtered here; `claimSubmissionEmail` is the
+ * one place that decides, so a live lease simply makes the claim fail.
  */
 export async function listSubmissionsAwaitingEmail({
-  minAgeMinutes,
-  maxAgeHours,
   limit,
 }: {
-  minAgeMinutes: number
-  maxAgeHours: number
   limit: number
 }): Promise<string[]> {
   const rows = await db
@@ -150,11 +213,11 @@ export async function listSubmissionsAwaitingEmail({
     .where(
       and(
         isNotNull(formSubmissions.deliveryRequestedAt),
-        sql`${formSubmissions.deliveryRequestedAt} < ${now} - make_interval(mins => ${minAgeMinutes})`,
-        sql`${formSubmissions.deliveryRequestedAt} > ${now} - make_interval(hours => ${maxAgeHours})`,
+        sql`${formSubmissions.deliveryRequestedAt} < ${now} - make_interval(mins => ${RETRY_MIN_AGE_MINUTES})`,
+        sql`${formSubmissions.deliveryRequestedAt} > ${now} - make_interval(hours => ${RETRY_MAX_AGE_HOURS})`,
         or(
           isNull(formSubmissions.teamNotifiedAt),
-          isNull(formSubmissions.confirmationSentAt)
+          and(isNull(formSubmissions.confirmationSentAt), confirmationApplies)
         ),
         eq(formSubmissions.status, 'captured'),
         isNotNull(formSubmissions.contactEmail),

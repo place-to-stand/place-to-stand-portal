@@ -54,11 +54,22 @@ bottom; each block depends only on the ones above it.
 - [x] Resend code, `audit-emails.ts`, `resend` dependency, and Resend env vars removed <!-- removed from code and .env.example; also dropped the now-dead `summarizeAnswers`. Deleting the vars in Vercel is a manual step, listed under G -->
 - [x] Site PRD 005 contract notes updated
 
+## R. Review findings (multi-reviewer pass, 2026-09-18)
+
+- [x] Lease columns (`*_email_claimed_at`, migration 0080) + Resend idempotency key; stamp written only on acceptance
+- [x] Delivery step wrapped so a read failure after the upsert reports `queued`, not a 500
+- [x] Sweep skips confirmations that cannot apply (audit with `result IS NULL`); sheet shows "Not applicable"
+- [x] Upsert gate lets a status advance through regardless of timestamp; no-op replays still flush outstanding sends
+- [x] Retry window 72h as a shared constant; sheet says "Not sent — retry window passed" once exceeded
+- [x] Throttle charged per submission, replays free
+- [x] Replay link only rendered for `https://*.posthog.com`; block renderer refuses non-http(s)/mailto hrefs
+- [x] Outcome header given an explicit width (`w-[21%]`)
+
 ## G. Docs + rollout
 
 - [x] `docs/integrations/marketing-form-submissions.md` documents `deliver`, the response envelope, and the beacon rule
 - [x] `CLAUDE.md` email + env notes updated
-- [ ] Migration applied in production via `db:migrate:prod` <!-- MANUAL STEP for the user: from the MAIN checkout (not a worktree — it reads apps/internal/.env.prod), run `npm run db:migrate:prod` in packages/db after the portal PR merges. Migration 0079 is additive. -->
+- [ ] Migration applied in production via `db:migrate:prod` <!-- MANUAL STEP for the user: from the MAIN checkout (not a worktree — it reads apps/internal/.env.prod), run `npm run db:migrate:prod` in packages/db after the portal PR merges. Migrations 0079 and 0080 are additive. -->
 - [ ] Three env vars set in Vercel (internal project) <!-- MANUAL STEP for the user: RESEND_FORMS_FROM_EMAIL=hello@send.placetostandagency.com, FORMS_NOTIFY_EMAIL=hello@placetostandagency.com, RESEND_AUDIENCE_ID=<copy from the marketing site's Vercel project>. All optional, but without the first one visitor mail comes from portal@. CRON_SECRET must already be set for the sweep to run. -->
 - [ ] Verify the Vercel plan permits the `*/15` cron <!-- MANUAL STEP for the user: Hobby allows daily crons only and the deploy will fail on this schedule. If the team is on Hobby, change apps/internal/vercel.json to a daily schedule and widen MAX_AGE_HOURS in the route accordingly. -->
 - [ ] Site Resend env vars removed from Vercel after a quiet week <!-- MANUAL STEP for the user: delete RESEND_API_KEY and RESEND_AUDIENCE_ID from the marketing site's Vercel project once the cutover has run clean for a week. -->

@@ -13,7 +13,8 @@ import { listSubmissionsAwaitingEmail } from '@/lib/queries/form-submission-deli
  * an outage leaves rows with delivery requested and a stamp still null. This
  * sweep is what makes "record first" safe rather than lossy. Rows that never
  * asked for delivery (everything before the PRD 008 cutover) are never
- * selected, so it cannot retro-email history.
+ * selected, so it cannot retro-email history. The window lives in
+ * lib/form-submissions/delivery/constants.ts, shared with the sheet.
  *
  * Sequential on purpose: the batch is tiny, and it keeps a recovering Resend
  * from being hit with a burst.
@@ -21,8 +22,6 @@ import { listSubmissionsAwaitingEmail } from '@/lib/queries/form-submission-deli
  * Auth: Vercel sends `Authorization: Bearer ${CRON_SECRET}` automatically
  * when the CRON_SECRET env var is set on the project.
  */
-const MIN_AGE_MINUTES = 5
-const MAX_AGE_HOURS = 24
 const BATCH_LIMIT = 25
 
 export async function GET(request: NextRequest) {
@@ -33,11 +32,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const ids = await listSubmissionsAwaitingEmail({
-      minAgeMinutes: MIN_AGE_MINUTES,
-      maxAgeHours: MAX_AGE_HOURS,
-      limit: BATCH_LIMIT,
-    })
+    const ids = await listSubmissionsAwaitingEmail({ limit: BATCH_LIMIT })
 
     let stillQueued = 0
 

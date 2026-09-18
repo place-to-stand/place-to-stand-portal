@@ -80,33 +80,37 @@ Portal side, belt and braces: sends happen only when the stored row is `captured
 
 ### §4 Exactly-once-ish sends
 
-Migration (additive) on `form_submissions`:
+Migrations (additive) on `form_submissions`:
 
 | Column | Meaning |
 | --- | --- |
 | `delivery_requested_at timestamptz` | Set (COALESCE, never cleared) when a payload arrives with `deliver: true`. |
-| `team_notified_at timestamptz` | Team notification sent. |
-| `confirmation_sent_at timestamptz` | Visitor confirmation sent. |
+| `team_email_claimed_at` / `confirmation_email_claimed_at timestamptz` | Expiring lease (10 min) taken before a send. *(Added after review — the stamp alone made a crash mid-send look sent.)* |
+| `team_notified_at timestamptz` | Team notification accepted by Resend. |
+| `confirmation_sent_at timestamptz` | Visitor confirmation accepted by Resend. |
 
 None are PII; `destroyFormSubmission` leaves them alone. Add them to the snake-case twin types and
 `FormSubmissionRecord`.
 
-Each send **claims** its column first —
-`UPDATE … SET team_notified_at = now() WHERE id = $1 AND team_notified_at IS NULL AND destroyed_at IS NULL RETURNING id`
-— sends only if a row came back, and **releases** (sets back to NULL) if the send throws. A retry
-of the same `submissionId`/`sessionId` therefore cannot double-send. The crash window between
-claim and send loses an email but never the lead (row + unread dot remain).
+Each send takes its **lease** first (`… WHERE sent IS NULL AND (claimed IS NULL OR claimed <
+now() - 10 min) …`), sends with a Resend idempotency key `form-submission:<id>:<kind>`, then writes
+the **stamp**; a failure clears the lease. A retry of the same `submissionId`/`sessionId` cannot
+double-send, a crash mid-send leaves an expiring lease rather than a false stamp, and a lost
+provider response is deduplicated provider-side.
 
 **Sweep:** `GET /api/cron/retry-submission-emails` (`verifyIntakeToken` with `CRON_SECRET`, same
-as the existing crons) retries rows where `delivery_requested_at` is between 5 minutes and 24
-hours old and either stamp is NULL. Schedule `*/15 * * * *` — **audit to verify the Vercel plan
+as the existing crons) retries rows where `delivery_requested_at` is between 5 minutes and 72
+hours old and an *applicable* stamp is NULL (an audit captured without a result has no
+confirmation to send and is not re-selected). Past 72h the sheet says "Not sent — retry window
+passed". Schedule `*/15 * * * *` — **audit to verify the Vercel plan
 allows sub-daily crons**; if not, fall back to one inline retry inside the request plus an hourly
 or daily sweep.
 
 **Throttle:** before honouring `deliver`, `consumeRateLimit` on `form-deliver:<email>` (3 per 15
-min, same helper as `lib/auth/throttle.ts`). Over the limit, the row is still recorded but
-`delivery_requested_at` is not set, so nothing sends and the sweep ignores it. Emails report
-`'skipped'`.
+min, same helper as `lib/auth/throttle.ts`), charged **per submission**: a replay of a row that
+already has `delivery_requested_at` reuses that decision and spends nothing. Over the limit, the
+row is still recorded but `delivery_requested_at` is not set, so nothing sends and the sweep
+ignores it. Emails report `'skipped'`.
 
 ### §5 Templates
 
