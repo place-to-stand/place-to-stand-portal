@@ -10,7 +10,7 @@ import {
   Trash2,
   Undo2,
 } from 'lucide-react'
-import { format, formatDistanceToNow } from 'date-fns'
+import { formatDistanceToNow } from 'date-fns'
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
@@ -21,8 +21,15 @@ import { SheetFooterBar } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import { useToast } from '@/components/ui/use-toast'
+import { formatCalendarDate } from '@/lib/dates'
+import { RETRY_MAX_AGE_HOURS } from '@/lib/form-submissions/delivery/constants'
 import { cn } from '@/lib/utils'
 import {
+  ATTRIBUTION_CHANNEL_LABELS,
+  describeAttribution,
+} from '@/lib/form-submissions/attribution'
+import {
+  ATTRIBUTION_CHANNEL_TOKENS,
   FORM_SUBMISSION_KIND_LABELS,
   FORM_SUBMISSION_STATUS_LABELS,
   FORM_SUBMISSION_STATUS_TOKENS,
@@ -75,6 +82,43 @@ function formatDuration(ms: number): string {
     return `${total}s`
   }
   return `${Math.floor(total / 60)}m ${total % 60}s`
+}
+
+const STARTED_STYLE = {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+} as const
+
+const EMAIL_STAMP_STYLE = {
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+} as const
+
+/**
+ * A null stamp means the retry sweep still owes the email — until the retry
+ * window has passed, after which nothing will send it and the copy says so.
+ */
+function formatEmailStamp(
+  sentAt: string | null,
+  requestedAt: string,
+  { applies }: { applies: boolean }
+): string {
+  if (!applies) return 'Not applicable'
+
+  const formatted = formatCalendarDate(sentAt, EMAIL_STAMP_STYLE)
+  if (formatted) return `Sent ${formatted}`
+
+  const requestedMs = new Date(requestedAt).getTime()
+  const expired =
+    Number.isFinite(requestedMs) &&
+    Date.now() - requestedMs > RETRY_MAX_AGE_HOURS * 60 * 60 * 1000
+
+  return expired ? 'Not sent — retry window passed' : 'Queued for retry'
 }
 
 /** Renders `—` for null/empty so empty fields read consistently. */
@@ -275,6 +319,26 @@ export function SubmissionDetailSheet({
   const acknowledgedAt = displaySubmission.acknowledgedAt
 
   const isAudit = displaySubmission.kind === 'audit'
+  const source = describeAttribution(displaySubmission)
+  // Not a hook: the sheet returns early above when nothing is selected. The
+  // React Compiler memoises this; the clock read only changes the copy at
+  // the 72-hour boundary, which is a fine time for it to change.
+  const emailStamps = displaySubmission.deliveryRequestedAt
+    ? {
+        team: formatEmailStamp(
+          displaySubmission.teamNotifiedAt,
+          displaySubmission.deliveryRequestedAt,
+          { applies: true }
+        ),
+        confirmation: formatEmailStamp(
+          displaySubmission.confirmationSentAt,
+          displaySubmission.deliveryRequestedAt,
+          // An audit captured without a stored result has nothing to confirm
+          // (mirrors the sweep predicate).
+          { applies: !isAudit || displaySubmission.result !== null }
+        ),
+      }
+    : null
   const hasAttribution = Boolean(
     displaySubmission.utmSource ||
     displaySubmission.utmMedium ||
@@ -313,13 +377,26 @@ export function SubmissionDetailSheet({
                 {unacknowledged ? (
                   <Badge variant='secondary'>Unacknowledged</Badge>
                 ) : null}
+                {/* Same summary the table and the team email show, so the
+                    answer to "where did this come from" is above the fold
+                    instead of eight fields down in Attribution. */}
+                <Badge
+                  variant='outline'
+                  className={cn(ATTRIBUTION_CHANNEL_TOKENS[source.channel])}
+                >
+                  {ATTRIBUTION_CHANNEL_LABELS[source.channel]}
+                </Badge>
+                {source.detail ? (
+                  <span className='text-muted-foreground text-xs'>
+                    {source.detail}
+                  </span>
+                ) : null}
               </div>
               <p className='text-muted-foreground text-xs'>
                 {[
-                  `Started ${format(
-                    new Date(displaySubmission.startedAt),
-                    "d MMM yyyy 'at' HH:mm"
-                  )}`,
+                  // Company timezone, like the email stamps below — an
+                  // ambient-TZ format here put two clocks in one sheet.
+                  `Started ${formatCalendarDate(displaySubmission.startedAt, STARTED_STYLE)}`,
                   displaySubmission.durationMs !== null
                     ? `${formatDuration(displaySubmission.durationMs)} on page`
                     : null,
@@ -393,6 +470,24 @@ export function SubmissionDetailSheet({
                 </div>
               )}
             </SheetSection>
+
+            {/* Only once the marketing site asked for email (PRD 008). Rows
+                from before that cutover never requested delivery, and an
+                "Emails" block full of dashes would read as a failure. */}
+            {emailStamps ? (
+              <>
+                <Separator />
+                <SheetSection title='Emails'>
+                  <dl className={KV_GRID}>
+                    <Kv label='Team notification' value={emailStamps.team} />
+                    <Kv
+                      label='Visitor confirmation'
+                      value={emailStamps.confirmation}
+                    />
+                  </dl>
+                </SheetSection>
+              </>
+            ) : null}
 
             {isAudit && (
               <>

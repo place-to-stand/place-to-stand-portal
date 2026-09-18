@@ -2092,6 +2092,38 @@ export const formSubmissions = pgTable(
       mode: 'string',
     }),
 
+    // Email delivery (PRD 008). `delivery_requested_at` is set only when the
+    // marketing site opts in with `deliver: true`, so rows that predate the
+    // cutover can never be picked up by the retry sweep.
+    //
+    // Each email has a lease and a stamp. A sender takes the lease first
+    // (`*_email_claimed_at`, expiring so a crash mid-send is recoverable),
+    // writes the stamp (`*_sent_at` / `team_notified_at`) only once the
+    // provider has accepted the message, and clears the lease on failure. The
+    // stamp is the record of delivery; the lease is what stops two requests
+    // sending the same email at once. None of these is PII, so a tombstone
+    // keeps them.
+    deliveryRequestedAt: timestamp('delivery_requested_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
+    teamEmailClaimedAt: timestamp('team_email_claimed_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
+    teamNotifiedAt: timestamp('team_notified_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
+    confirmationEmailClaimedAt: timestamp('confirmation_email_claimed_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
+    confirmationSentAt: timestamp('confirmation_sent_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
+
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
       .notNull(),

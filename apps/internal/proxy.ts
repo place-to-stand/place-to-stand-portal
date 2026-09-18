@@ -18,7 +18,6 @@ const PUBLIC_PATHS = new Set([
   // the visitor is unauthenticated when it renders.
   '/account-not-set-up',
   '/share/',
-  '/api/integrations/leads-intake',
   '/api/integrations/audit-responses',
   '/api/integrations/contact-submissions',
   '/api/integrations/stripe',

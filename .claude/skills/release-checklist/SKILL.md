@@ -41,7 +41,7 @@ Comprehensive pre-deployment verification to ensure safe, successful releases.
 - [ ] Breaking API changes versioned under `/api/v{n}`
 - [ ] Deprecated endpoints still functional
 - [ ] Response contracts unchanged or backward compatible
-- [ ] Webhook integrations tested (leads-intake, etc.)
+- [ ] Webhook integrations tested (contact-submissions, audit-responses, stripe)
 
 ### 6. Authentication & Authorization
 - [ ] New routes protected with `requireUser()` or `requireRole()`

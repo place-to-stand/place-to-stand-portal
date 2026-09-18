@@ -6,9 +6,8 @@ import {
   contactPayloadSchema,
   toContactSubmissionRow,
 } from '@/lib/form-submissions/contact-payload'
-import { submissionReceivedEvent } from '@/lib/activity/events'
-import { logActivity } from '@/lib/activity/logger'
-import { upsertFormSubmission } from '@/lib/queries/form-submissions'
+import { recordSubmission } from '@/lib/form-submissions/delivery/intake'
+import { resolveDeliveryRequest } from '@/lib/form-submissions/delivery/request'
 
 /**
  * Contact form intake from the marketing site.
@@ -36,47 +35,46 @@ export async function POST(request: NextRequest) {
     json = await request.json()
   } catch (error) {
     console.error('Invalid JSON body for contact intake', error)
-    return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 })
+    return NextResponse.json(
+      { ok: false, error: 'Invalid request body.' },
+      { status: 400 }
+    )
   }
 
   const parsed = contactPayloadSchema.safeParse(json)
 
   if (!parsed.success) {
     return NextResponse.json(
-      { error: parsed.error.issues[0]?.message ?? 'Invalid payload.' },
+      {
+        ok: false,
+        error: parsed.error.issues[0]?.message ?? 'Invalid payload.',
+      },
       { status: 400 }
     )
   }
 
   try {
-    const result = await upsertFormSubmission(
-      toContactSubmissionRow(parsed.data, request.headers.get('user-agent'))
+    const deliveryRequestedAt = await resolveDeliveryRequest({
+      deliver: parsed.data.deliver,
+      email: parsed.data.contact.email,
+      sessionKey: parsed.data.submissionId,
+    })
+
+    const recorded = await recordSubmission(
+      toContactSubmissionRow(
+        parsed.data,
+        request.headers.get('user-agent'),
+        deliveryRequestedAt
+      ),
+      { deliver: parsed.data.deliver }
     )
 
-    // Only the first insert is an event; later beacons for the same session
-    // are updates and would otherwise flood the feed.
-    if (result?.inserted) {
-      const event = submissionReceivedEvent({
-        formType: result.kind,
-        status: result.status,
-      })
-      await logActivity({
-        actorId: null,
-        source: 'SYSTEM',
-        verb: event.verb,
-        summary: event.summary,
-        targetType: 'SUBMISSION',
-        targetId: result.id,
-        metadata: event.metadata,
-      })
-    }
+    return NextResponse.json({ ok: true, data: recorded }, { status: 200 })
   } catch (error) {
     console.error('Failed to record contact submission', error)
     return NextResponse.json(
-      { error: 'Unable to record submission.' },
+      { ok: false, error: 'Unable to record submission.' },
       { status: 500 }
     )
   }
-
-  return NextResponse.json({ ok: true }, { status: 200 })
 }

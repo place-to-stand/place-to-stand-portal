@@ -2,11 +2,11 @@
 
 - Supabase storage expects a private `user-avatars` bucket. Create it once with authenticated access before enabling avatar uploads in the portal.
 
-## Lead intake webhook
+## Marketing form intake
 
-- Incoming marketing-site leads should be POSTed to `/api/integrations/leads-intake` with a `Bearer` token that matches `LEADS_INTAKE_TOKEN`.
-- Generate a token with `openssl rand -hex 32` (or a similar secret generator) and store it both in this app (`LEADS_INTAKE_TOKEN`) and the marketing site (`PORTAL_LEADS_TOKEN`).
-- Requests must provide JSON in the shape `{ name, email, company?, website?, message?, sourceDetail? }`. Records are inserted into the `NEW_OPPORTUNITIES` column with a `WEBSITE` source and appear on `/leads/board` immediately.
+- The marketing site POSTs the contact form to `/api/integrations/contact-submissions` and Opportunity Audit progress to `/api/integrations/audit-responses`. Each needs a `Bearer` token matching `CONTACT_INTAKE_TOKEN` / `AUDIT_INTAKE_TOKEN`.
+- Generate each token with `openssl rand -hex 32` and store it under the same name in this app and in the marketing site (which also needs `PORTAL_API_BASE_URL`).
+- Submissions are stored in `form_submissions` and appear at `/submissions`; leads are promoted from there by hand. See `docs/integrations/marketing-form-submissions.md` for the payload contract.
 
 ## Database migrations
 

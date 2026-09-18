@@ -41,13 +41,19 @@ export const contactPayloadSchema = z.object({
   analytics: analyticsSchema,
   attribution: attributionSchema,
   client: clientSchema,
+
+  // Opt-in email delivery (PRD 008). Absent or false means record only, which
+  // is what keeps a portal deploy inert until the marketing site switches over.
+  deliver: z.boolean().optional().default(false),
 })
 
 export type ContactPayload = z.infer<typeof contactPayloadSchema>
 
 export function toContactSubmissionRow(
   payload: ContactPayload,
-  requestUserAgent: string | null
+  requestUserAgent: string | null,
+  /** From `resolveDeliveryRequest`; null records the row without emailing. */
+  deliveryRequestedAt: string | null = null
 ): NewFormSubmission {
   const { contact, analytics, attribution, client } = payload
 
@@ -105,5 +111,7 @@ export function toContactSubmissionRow(
     // form posts from the marketing site's server action, so our request
     // header is its Node fetch agent, not the visitor's browser.
     userAgent: client.userAgent ?? requestUserAgent,
+
+    deliveryRequestedAt,
   }
 }

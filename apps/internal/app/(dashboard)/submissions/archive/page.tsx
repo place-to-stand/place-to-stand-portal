@@ -7,7 +7,10 @@ import {
   isFormSubmissionKind,
   isFormSubmissionStatus,
 } from '@/lib/form-submissions/constants'
-import { parseSubmissionsSort } from '@/lib/form-submissions/filters'
+import {
+  parseContactFilter,
+  parseSubmissionsSort,
+} from '@/lib/form-submissions/filters'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { readPageSize } from '@/lib/pagination/page-size.server'
 
@@ -48,6 +51,7 @@ export default async function SubmissionsArchivePage({
   const kind = isFormSubmissionKind(kindParam) ? kindParam : undefined
   const status = isFormSubmissionStatus(statusParam) ? statusParam : undefined
   const search = firstParam(params.q)?.trim() || undefined
+  const hasContact = parseContactFilter(firstParam(params.contact))
   const sort = parseSubmissionsSort(firstParam(params.sort))
 
   // Share links: ?submission=<id> opens the detail sheet directly (redirects
@@ -66,6 +70,7 @@ export default async function SubmissionsArchivePage({
       status,
       archived: true,
       search,
+      hasContact,
       sort,
     })
 
@@ -85,6 +90,7 @@ export default async function SubmissionsArchivePage({
           search={search}
           activeKind={kind}
           activeStatus={status}
+          activeContact={hasContact}
           basePath='/submissions/archive'
         />
         <SubmissionsTable
