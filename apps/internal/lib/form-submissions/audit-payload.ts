@@ -42,6 +42,8 @@ const responseItemSchema = z.object({
 const recommendationSchema = z.object({
   serviceId: z.string().trim().max(120),
   serviceName: z.string().trim().max(255),
+  // Optional so payloads from a site bundle that predates it still land.
+  tagline: z.string().trim().max(255).optional(),
   score: z.number(),
   reasons: z.array(z.string().max(1000)).max(20),
 })
@@ -49,6 +51,7 @@ const recommendationSchema = z.object({
 const resultSchema = z.object({
   phaseId: z.string().trim().max(120),
   phaseName: z.string().trim().max(255),
+  phaseTagline: z.string().trim().max(255).optional(),
   summary: longText,
   generatedBy: z.enum(['rules', 'ai']),
   phaseScores: z.record(z.string(), z.number()),

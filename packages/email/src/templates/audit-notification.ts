@@ -5,6 +5,7 @@ import {
   contactRows,
   identityLine,
   sourceBlocks,
+  subjectSafe,
   type SubmissionContact,
   type SubmissionRepeat,
   type SubmissionSource,
@@ -62,7 +63,7 @@ export function auditNotificationEmail({
   const body = renderBlocks(blocks)
 
   return renderRichEmail(
-    `[Audit] ${identityLine(contact)} — ${result.phaseName} phase`,
+    `[Audit] ${identityLine(contact)} — ${subjectSafe(result.phaseName)} phase`,
     {
       preheader: `${contact.name} is in the ${result.phaseName} phase.`,
       label: 'New audit',

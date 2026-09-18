@@ -15,6 +15,7 @@ import { describeAttribution } from '@/lib/form-submissions/attribution'
 import {
   extractAuditResponses,
   extractAuditResult,
+  type AuditResult,
 } from '@/lib/form-submissions/types'
 import { leadHref, submissionHref } from '@/lib/sheets/hrefs'
 
@@ -95,8 +96,22 @@ function buildTranscript(
 
 const UNSCORED_RESULT: AuditEmailResult = {
   phaseName: 'Unscored',
+  phaseTagline: null,
   summary: 'No scored result was stored for this audit.',
   recommendations: [],
+}
+
+function toEmailResult(result: AuditResult): AuditEmailResult {
+  return {
+    phaseName: result.phaseName,
+    phaseTagline: result.phaseTagline ?? null,
+    summary: result.summary,
+    recommendations: result.recommendations.map(rec => ({
+      serviceName: rec.serviceName,
+      tagline: rec.tagline ?? null,
+      reasons: rec.reasons,
+    })),
+  }
 }
 
 /**
@@ -149,19 +164,24 @@ export function renderSubmissionEmails(
   }
 
   const result = extractAuditResult(row.result)
+  const emailResult = result ? toEmailResult(result) : null
 
   return {
     team: auditNotificationEmail({
       submissionUrl,
       contact,
       message: row.message,
-      result: result ?? UNSCORED_RESULT,
+      result: emailResult ?? UNSCORED_RESULT,
       transcript: buildTranscript(row),
       source,
       repeat: repeatArgs,
     }),
-    confirmation: result
-      ? auditResultsEmail({ name: contact.name, result, replyTo: teamInbox })
+    confirmation: emailResult
+      ? auditResultsEmail({
+          name: contact.name,
+          result: emailResult,
+          replyTo: teamInbox,
+        })
       : null,
   }
 }

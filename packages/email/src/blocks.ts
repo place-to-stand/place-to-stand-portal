@@ -18,7 +18,10 @@ export type EmailDetailRow = {
 
 export type EmailListItem = {
   title: string
+  /** One line under the title, in the body colour. */
   detail?: string
+  /** A second, quieter line — e.g. the signals behind a recommendation. */
+  note?: string
 }
 
 export type EmailBlock =
@@ -86,11 +89,14 @@ function blockHtml(block: EmailBlock): string {
       const items = block.items
         .map((item, index) => {
           const detail = item.detail
-            ? `<br /><span style="font-size:13px;line-height:1.5;color:${C.muted};">${escapeHtml(item.detail)}</span>`
+            ? `<br /><span style="font-size:13px;line-height:1.5;font-weight:400;color:${C.muted};">${escapeHtml(item.detail)}</span>`
+            : ''
+          const note = item.note
+            ? `<br /><span style="font-family:${F.mono};font-size:11px;line-height:1.6;font-weight:400;color:${C.faint};">${escapeHtml(item.note)}</span>`
             : ''
           return `<tr>
             <td width="24" style="width:24px;padding:6px 0;vertical-align:top;font-family:${F.mono};font-size:12px;color:${C.faint};">${index + 1}.</td>
-            <td style="padding:6px 0;vertical-align:top;font-size:15px;line-height:1.5;font-weight:600;color:${C.ink};">${escapeHtml(item.title)}${detail}</td>
+            <td style="padding:6px 0;vertical-align:top;font-size:15px;line-height:1.5;font-weight:600;color:${C.ink};">${escapeHtml(item.title)}${detail}${note}</td>
           </tr>`
         })
         .join('')
@@ -134,6 +140,7 @@ function blockText(block: EmailBlock): string[] {
         ...block.items.flatMap((item, index) => [
           `${index + 1}. ${item.title}`,
           ...(item.detail ? [`   ${item.detail}`] : []),
+          ...(item.note ? [`   ${item.note}`] : []),
         ]),
         '',
       ]

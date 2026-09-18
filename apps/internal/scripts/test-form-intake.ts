@@ -108,12 +108,13 @@ function responses(answeredCount: number) {
 const RESULT = {
   phaseId: 'growth',
   phaseName: 'Growth',
+  phaseTagline: 'Streamline what works and automate the manual work.',
   summary: 'You are ready to scale operations.',
   generatedBy: 'rules' as const,
   phaseScores: { foundation: 2, launch: 4, growth: 9 },
   recommendations: [
     { serviceId: 'internal-tools', serviceName: 'Internal Tools', score: 6, reasons: ['Manual ops'] },
-    { serviceId: 'workflow-automation', serviceName: 'Workflow Automation', score: 9, reasons: ['Repetitive handoffs'] },
+    { serviceId: 'workflow-automation', serviceName: 'Workflow Automation', tagline: 'Connect your tools and automate handoffs.', score: 9, reasons: ['Repetitive handoffs'] },
   ],
 }
 

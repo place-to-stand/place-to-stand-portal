@@ -65,6 +65,16 @@ bottom; each block depends only on the ones above it.
 - [x] Replay link only rendered for `https://*.posthog.com`; block renderer refuses non-http(s)/mailto hrefs
 - [x] Outcome header given an explicit width (`w-[21%]`)
 
+## AR. Architecture + product audit (2026-09-18, see ARCHITECTURE-REVIEW.md)
+
+- [x] W1 — subject lines sanitised via `subjectSafe`
+- [x] W2 — site `push` type excludes `captured`
+- [x] W3 — `Date.now()` in the sheet: accepted and documented (cannot be a hook there)
+- [x] PW1 — phase and service taglines flow from the site payload into the results email (optional portal-side)
+- [x] PW2 — default filter stays off (Jason)
+- [x] I4 — migrations left as 0079 + 0080 (Jason)
+- [x] `ARCHITECTURE-REVIEW.md` written; no `TEST-PLAN.md` exists for this slim PRD — the README's Verification section is the test record
+
 ## G. Docs + rollout
 
 - [x] `docs/integrations/marketing-form-submissions.md` documents `deliver`, the response envelope, and the beacon rule

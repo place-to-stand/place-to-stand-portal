@@ -133,12 +133,14 @@ interface AuditProgressPayload {
   result: {
     phaseId: string            // 'foundation' | 'launch' | 'growth' | ...
     phaseName: string
+    phaseTagline?: string      // optional (PRD 008): shown in the visitor's results email
     summary: string
     generatedBy: 'rules' | 'ai'
     phaseScores: Record<string, number>
     recommendations: Array<{
       serviceId: string        // 'workflow-automation' | 'internal-tools' | ...
       serviceName: string
+      tagline?: string         // optional (PRD 008): shown under the service name in email
       score: number
       reasons: string[]
     }>

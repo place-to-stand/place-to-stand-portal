@@ -4,6 +4,7 @@ import {
   contactRows,
   identityLine,
   sourceBlocks,
+  subjectSafe,
   type SubmissionContact,
   type SubmissionRepeat,
   type SubmissionSource,
@@ -48,8 +49,12 @@ export function contactNotificationEmail({
 
   const body = renderBlocks(blocks)
 
+  const subjectLine = subject ? subjectSafe(subject) : ''
+
   return renderRichEmail(
-    subject ? `[Contact] ${identity} — ${subject}` : `[Contact] ${identity}`,
+    subjectLine
+      ? `[Contact] ${identity} — ${subjectLine}`
+      : `[Contact] ${identity}`,
     {
       preheader: message.replace(/\s+/g, ' ').slice(0, 140),
       label: 'New inquiry',

@@ -39,9 +39,20 @@ export function ordinal(value: number): string {
   return `${value}${suffix}`
 }
 
+/**
+ * Collapses anything that could break a header into a single space. Subject
+ * lines are built from strings a visitor typed, and the intake schemas only
+ * trim their ends.
+ */
+export function subjectSafe(value: string): string {
+  return value.replace(/[\u0000-\u001f\u007f\s]+/g, ' ').trim()
+}
+
 /** `Jane Doe · Acme` — the identity half of a team subject line. */
 export function identityLine(contact: SubmissionContact): string {
-  return contact.company ? `${contact.name} · ${contact.company}` : contact.name
+  const name = subjectSafe(contact.name)
+  const company = contact.company ? subjectSafe(contact.company) : ''
+  return company ? `${name} · ${company}` : name
 }
 
 export function contactRows(contact: SubmissionContact): EmailDetailRow[] {
@@ -104,5 +115,8 @@ export function sourceBlocks(
     })
   }
 
-  return [{ type: 'label', text: 'Where they came from' }, { type: 'rows', rows }]
+  return [
+    { type: 'label', text: 'Where they came from' },
+    { type: 'rows', rows },
+  ]
 }

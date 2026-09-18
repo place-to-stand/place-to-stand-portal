@@ -7,8 +7,14 @@ import type { EmailBlock } from '../blocks'
  */
 export type AuditEmailResult = {
   phaseName: string
+  /** Null for audits stored before the site started sending it. */
+  phaseTagline: string | null
   summary: string
-  recommendations: Array<{ serviceName: string; reasons: string[] }>
+  recommendations: Array<{
+    serviceName: string
+    tagline: string | null
+    reasons: string[]
+  }>
 }
 
 export function resultBlocks(
@@ -18,6 +24,11 @@ export function resultBlocks(
   const blocks: EmailBlock[] = [
     { type: 'label', text: 'Business phase' },
     { type: 'heading', text: result.phaseName },
+    ...(result.phaseTagline
+      ? ([
+          { type: 'paragraph', text: result.phaseTagline },
+        ] satisfies EmailBlock[])
+      : []),
     { type: 'paragraph', text: result.summary },
   ]
 
@@ -28,7 +39,8 @@ export function resultBlocks(
         type: 'list',
         items: result.recommendations.map(rec => ({
           title: rec.serviceName,
-          detail:
+          detail: rec.tagline ?? undefined,
+          note:
             includeReasons && rec.reasons.length > 0
               ? `Signals: ${rec.reasons.join(', ')}`
               : undefined,

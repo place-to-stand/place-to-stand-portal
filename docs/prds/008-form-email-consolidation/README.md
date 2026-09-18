@@ -1,6 +1,6 @@
 # PRD 008 — Form email consolidation + scannable submissions
 
-**Status:** Implemented — portal [PR #234](https://github.com/place-to-stand/place-to-stand-portal/pull/234) (`claude/email-sending-consolidation-aba781`) and marketing site branch `claude/portal-sends-form-email` (PR not yet opened). Reviewed 2026-09-18; not yet deployed — see Rollout.
+**Status:** Implemented and audited (see [ARCHITECTURE-REVIEW.md](./ARCHITECTURE-REVIEW.md)) — portal [PR #234](https://github.com/place-to-stand/place-to-stand-portal/pull/234) (`claude/email-sending-consolidation-aba781`) and marketing site branch `claude/portal-sends-form-email` (PR not yet opened). Reviewed 2026-09-18; not yet deployed — see Rollout.
 **Created:** 2026-09-17
 **Branch:** `claude/email-sending-consolidation-aba781`
 **Repos touched:** `place-to-stand-portal` (one PR, this PRD) and `place-to-stand` (marketing
@@ -133,14 +133,16 @@ strings, never DB or Zod types. The block renderer renders an href only for `htt
 
 | Template | To | Reply-To | Subject |
 | --- | --- | --- | --- |
-| `contactNotificationEmail` | team | visitor | `[Contact] Jane Doe · Acme — Website redesign` |
+| `contactNotificationEmail` | team | visitor | `[Contact] Jane Doe · Acme — Website redesign` (subject parts pass through `subjectSafe`, W1) |
 | `contactConfirmationEmail` | visitor | team | `Thanks for contacting Place To Stand` |
 | `auditNotificationEmail` | team | visitor | `[Audit] Jane Doe · Acme — Scale phase` |
 | `auditResultsEmail` | visitor | team | `Your Place To Stand Opportunity Audit` |
 
 The audit templates render from the stored `result` and `responses` JSON, which are already
-self-describing (prompt, labels, phase name, recommendations + reasons) — the portal needs none
-of the site's scoring code.
+self-describing (prompt, labels, phase name + tagline, recommendations with taglines + reasons)
+— the portal needs none of the site's scoring code. The taglines were added after the audit
+(PW1): the site sends `phaseTagline` and `recommendations[].tagline`, both optional portal-side so
+older payloads still land, and audits stored before then simply render without them.
 
 **Team notification layout, top to bottom:**
 1. **Open in portal** button → `/submissions?submission=<id>` (`submissionHref` in

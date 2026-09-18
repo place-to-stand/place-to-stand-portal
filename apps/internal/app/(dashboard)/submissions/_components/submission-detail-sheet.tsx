@@ -320,6 +320,25 @@ export function SubmissionDetailSheet({
 
   const isAudit = displaySubmission.kind === 'audit'
   const source = describeAttribution(displaySubmission)
+  // Not a hook: the sheet returns early above when nothing is selected. The
+  // React Compiler memoises this; the clock read only changes the copy at
+  // the 72-hour boundary, which is a fine time for it to change.
+  const emailStamps = displaySubmission.deliveryRequestedAt
+    ? {
+        team: formatEmailStamp(
+          displaySubmission.teamNotifiedAt,
+          displaySubmission.deliveryRequestedAt,
+          { applies: true }
+        ),
+        confirmation: formatEmailStamp(
+          displaySubmission.confirmationSentAt,
+          displaySubmission.deliveryRequestedAt,
+          // An audit captured without a stored result has nothing to confirm
+          // (mirrors the sweep predicate).
+          { applies: !isAudit || displaySubmission.result !== null }
+        ),
+      }
+    : null
   const hasAttribution = Boolean(
     displaySubmission.utmSource ||
     displaySubmission.utmMedium ||
@@ -455,31 +474,15 @@ export function SubmissionDetailSheet({
             {/* Only once the marketing site asked for email (PRD 008). Rows
                 from before that cutover never requested delivery, and an
                 "Emails" block full of dashes would read as a failure. */}
-            {displaySubmission.deliveryRequestedAt ? (
+            {emailStamps ? (
               <>
                 <Separator />
                 <SheetSection title='Emails'>
                   <dl className={KV_GRID}>
-                    <Kv
-                      label='Team notification'
-                      value={formatEmailStamp(
-                        displaySubmission.teamNotifiedAt,
-                        displaySubmission.deliveryRequestedAt,
-                        { applies: true }
-                      )}
-                    />
+                    <Kv label='Team notification' value={emailStamps.team} />
                     <Kv
                       label='Visitor confirmation'
-                      value={formatEmailStamp(
-                        displaySubmission.confirmationSentAt,
-                        displaySubmission.deliveryRequestedAt,
-                        // An audit captured without a stored result has
-                        // nothing to confirm (mirrors the sweep predicate).
-                        {
-                          applies:
-                            !isAudit || displaySubmission.result !== null,
-                        }
-                      )}
+                      value={emailStamps.confirmation}
                     />
                   </dl>
                 </SheetSection>

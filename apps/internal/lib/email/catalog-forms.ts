@@ -34,15 +34,18 @@ const SAMPLE_SOURCE = {
 
 const SAMPLE_AUDIT_RESULT = {
   phaseName: 'Scale',
+  phaseTagline: 'Re-architect your stack and rethink operations for demand.',
   summary:
     'Sample Co has working processes that are starting to strain. The biggest wins are in removing manual handoffs between the tools the team already uses.',
   recommendations: [
     {
       serviceName: 'Workflow automation',
+      tagline: 'Connect your tools, automate handoffs, see every process.',
       reasons: ['Re-keys data between systems', 'Reports built by hand'],
     },
     {
       serviceName: 'Internal tools',
+      tagline: 'Purpose-built software for the work only you do.',
       reasons: ['Spreadsheets used as a system of record'],
     },
   ],
