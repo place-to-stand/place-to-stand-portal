@@ -23,7 +23,6 @@ import {
 } from 'lucide-react'
 
 import { CardAssigneeAvatars } from '@/components/cards/card-assignee-avatars'
-import { Badge } from '@pts/ui/badge'
 import { ENTITY_ACCENTS } from '@/lib/entity-accents'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import {
@@ -179,14 +178,22 @@ function LeadCardContent({ lead }: { lead: LeadRecord }) {
       </Tooltip>
     ) : null
 
-  const convertedBadge = lead.convertedToClientId ? (
-    <Badge
-      variant='outline'
-      className='gap-1 border-green-500/20 bg-green-500/10 text-[10px] font-medium text-green-600 dark:text-green-400'
-    >
-      <CheckCircle className='h-3 w-3' aria-hidden />
-      Converted
-    </Badge>
+  // Same 20px box and tooltip as the source mark so the two sit on one axis
+  // top-right; a labelled badge in the meta column cost every converted card
+  // a row.
+  const convertedMark = lead.convertedToClientId ? (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          role='img'
+          aria-label='Converted to client'
+          className='inline-flex size-5 shrink-0 items-center justify-center text-green-600 dark:text-green-400'
+        >
+          <CheckCircle className='size-4' aria-hidden />
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side='top'>Converted to client</TooltipContent>
+    </Tooltip>
   ) : null
 
   return (
@@ -202,7 +209,12 @@ function LeadCardContent({ lead }: { lead: LeadRecord }) {
             </p>
           ) : null}
         </div>
-        {sourceMark}
+        {convertedMark || sourceMark ? (
+          <div className='flex shrink-0 items-center gap-1'>
+            {convertedMark}
+            {sourceMark}
+          </div>
+        ) : null}
       </div>
       {/* Same shape as the task card: meta stacks down the left, the
           assignee avatar pins bottom-right without costing a row. */}
@@ -248,11 +260,6 @@ function LeadCardContent({ lead }: { lead: LeadRecord }) {
                   {lead.updateCount}
                 </span>
               ) : null}
-            </div>
-          ) : null}
-          {convertedBadge ? (
-            <div className='flex flex-wrap items-center gap-1.5'>
-              {convertedBadge}
             </div>
           ) : null}
         </div>
