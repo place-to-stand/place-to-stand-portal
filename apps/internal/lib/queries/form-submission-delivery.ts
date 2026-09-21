@@ -6,6 +6,8 @@ import {
   EMAIL_LEASE_MINUTES,
   RETRY_MAX_AGE_HOURS,
   RETRY_MIN_AGE_MINUTES,
+  STUCK_ALERT_AFTER_MINUTES,
+  SWEEP_INTERVAL_MINUTES,
 } from '@/lib/form-submissions/delivery/constants'
 
 /**
@@ -228,4 +230,45 @@ export async function listSubmissionsAwaitingEmail({
     .limit(limit)
 
   return rows.map(row => row.id)
+}
+
+/**
+ * Rows whose email has just become "stuck": requested between the alert
+ * threshold and one sweep interval beyond it, with an applicable email still
+ * unsent. Selecting only that window is what makes each row alert once —
+ * the next run sees it as older than the window and leaves it alone. (A
+ * skipped cron run therefore skips that run's alerts; the retry itself is
+ * unaffected.)
+ */
+export async function listSubmissionsStuckAtThreshold(): Promise<
+  Array<{
+    id: string
+    kind: 'audit' | 'contact'
+    contactName: string | null
+    contactEmail: string | null
+  }>
+> {
+  return db
+    .select({
+      id: formSubmissions.id,
+      kind: formSubmissions.kind,
+      contactName: formSubmissions.contactName,
+      contactEmail: formSubmissions.contactEmail,
+    })
+    .from(formSubmissions)
+    .where(
+      and(
+        isNotNull(formSubmissions.deliveryRequestedAt),
+        sql`${formSubmissions.deliveryRequestedAt} <= ${now} - make_interval(mins => ${STUCK_ALERT_AFTER_MINUTES})`,
+        sql`${formSubmissions.deliveryRequestedAt} > ${now} - make_interval(mins => ${STUCK_ALERT_AFTER_MINUTES + SWEEP_INTERVAL_MINUTES})`,
+        or(
+          isNull(formSubmissions.teamNotifiedAt),
+          and(isNull(formSubmissions.confirmationSentAt), confirmationApplies)
+        ),
+        eq(formSubmissions.status, 'captured'),
+        isNotNull(formSubmissions.contactEmail),
+        isNull(formSubmissions.destroyedAt)
+      )
+    )
+    .orderBy(asc(formSubmissions.deliveryRequestedAt))
 }

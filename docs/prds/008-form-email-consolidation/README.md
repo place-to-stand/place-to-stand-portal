@@ -111,7 +111,15 @@ hours old and an *applicable* stamp is NULL (an audit captured without a result 
 confirmation to send and is not re-selected). Past 72h the sheet says "Not sent — retry window
 passed". Schedule `*/15 * * * *` (the team is on Vercel Pro, which allows sub-daily crons —
 confirmed 2026-09-18). Constants live in `apps/internal/lib/form-submissions/delivery/constants.ts`,
-shared with the sheet. **Ordering:** a status advance is never "stale" — the upsert gate is
+shared with the sheet.
+
+**Stuck-email alert (added 2026-09-21):** after retrying, the sweep looks for rows whose applicable
+email is still unsent 60 minutes after it was requested and posts one Google Chat card to the Sales
+space (`GOOGLE_CHAT_SALES_WEBHOOK_URL`, same helper as the invoice-paid notice) listing them with
+portal links, plus a `console.error` for Vercel log alerts. Each row alerts once: the query selects
+only the 15-minute window just past the threshold (`SWEEP_INTERVAL_MINUTES` must match
+`vercel.json`). Without the webhook it is a no-op; the row still flags unread. Preview the card with
+`npx tsx scripts/test-google-chat.ts --stuck`. **Ordering:** a status advance is never "stale" — the upsert gate is
 `newer OR status advances` — so a `captured` push lands even if a progress beacon stamped later
 arrived first, and a no-op replay of a captured row still flushes whatever it owes.
 
@@ -235,9 +243,14 @@ the tables convention.
 1. Portal PR #234 merges → run migrations `0079` + `0080` via `db:migrate:prod` from the main
    checkout → set the three env vars in Vercel (and confirm `CRON_SECRET` is set, or the sweep
    never runs) → delete `LEADS_INTAKE_TOKEN`. Behaviour unchanged (no payload sets `deliver` yet).
-2. Verify in prod with one hand-built `deliver: true` contact POST to a throwaway address (the
-   `--deliver` script mode reads Mailpit and is local-only): both emails land, stamps set, a
-   replay is a no-op.
+2. Verify in prod with `BASE_URL=https://<portal> CONTACT_INTAKE_TOKEN=… SMOKE_EMAIL=you+probe@…
+   CRON_SECRET=… npx tsx scripts/test-form-intake.ts --smoke` from `apps/internal`: one real
+   delivery to your alias, a replay that sends nothing, and a sweep call that returns
+   `stillQueued: 0` (a 500 here means `CRON_SECRET` is unset on Vercel). Then check both inboxes
+   — Reply-To on the team mail must be the alias — and "Delete forever" the probe row from the
+   link the script prints. Optionally run the failure drill: point `RESEND_FORMS_FROM_EMAIL` at
+   an unverified domain, submit, confirm `queued` + the unread row, restore the var, and watch the
+   next sweep deliver.
 3. Site PR merges → cutover. Submit one real contact + one real audit.
 4. After a quiet week, remove the site's Resend env vars in Vercel.
 

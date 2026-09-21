@@ -75,6 +75,12 @@ bottom; each block depends only on the ones above it.
 - [x] I4 — migrations left as 0079 + 0080 (Jason)
 - [x] `ARCHITECTURE-REVIEW.md` written; no `TEST-PLAN.md` exists for this slim PRD — the README's Verification section is the test record
 
+## M. Monitoring (2026-09-21)
+
+- [x] Stuck-email Google Chat alert from the sweep, once per row, 60-minute threshold; `--stuck` preview in `scripts/test-google-chat.ts`
+- [x] `scripts/test-form-intake.ts --smoke` for production: real delivery to an owned address, replay, sweep check, no DB access
+- [x] Failure drill run locally: Mailpit stopped → intake 200 with `queued`, sweep reports `stuckCount: 1`; Mailpit restarted → next sweep delivers both
+
 ## G. Docs + rollout
 
 - [x] `docs/integrations/marketing-form-submissions.md` documents `deliver`, the response envelope, and the beacon rule

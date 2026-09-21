@@ -15,12 +15,19 @@
  * The "View invoice" button only renders when an invoice URL is present, so the
  * sample falls back to APP_BASE_URL (or localhost) with a placeholder id.
  *
+ * `--stuck` sends the PRD 008 "form emails not sent" card instead, so the
+ * alert the retry sweep posts can be eyeballed without breaking Resend:
+ *   npx tsx scripts/test-google-chat.ts --stuck
+ *
  * This script is NOT executed automatically.
  */
 
 import { config } from 'dotenv'
 
-import { buildInvoicePaidCard } from '../lib/notifications/google-chat-messages'
+import {
+  buildInvoicePaidCard,
+  buildStuckEmailCard,
+} from '../lib/notifications/google-chat-messages'
 
 // Mirror drizzle.config.ts / dedupe-sales-project.ts env loading so the script
 // can run standalone.
@@ -36,12 +43,42 @@ async function main() {
     )
   }
 
-  const [invoiceNumber, total, clientName, invoiceUrl] = process.argv.slice(2)
-
   const baseUrl =
     process.env.APP_BASE_URL ??
     process.env.NEXT_PUBLIC_SITE_URL ??
     'http://localhost:3000'
+
+  if (process.argv.includes('--stuck')) {
+    const card = buildStuckEmailCard(
+      {
+        thresholdMinutes: 60,
+        items: [
+          {
+            label: 'Jordan Sample',
+            kind: 'contact',
+            url: `${baseUrl}/submissions?submission=00000000-0000-4000-8000-000000000000`,
+          },
+          { label: 'sample@example.com', kind: 'audit', url: null },
+        ],
+      },
+      { test: true }
+    )
+    console.log('Sending sample stuck-email card')
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(card),
+    })
+    if (!response.ok) {
+      throw new Error(
+        `Webhook rejected the card: ${response.status} ${await response.text()}`
+      )
+    }
+    console.log('Sent. Check the Sales space.')
+    return
+  }
+
+  const [invoiceNumber, total, clientName, invoiceUrl] = process.argv.slice(2)
 
   const notice = {
     invoiceNumber: invoiceNumber ?? 'INV-TEST-001',
@@ -64,7 +101,9 @@ async function main() {
 
   const body = await response.text().catch(() => '')
 
-  console.log(`Google Chat responded: ${response.status} ${response.statusText}`)
+  console.log(
+    `Google Chat responded: ${response.status} ${response.statusText}`
+  )
   if (body) console.log(body)
 
   if (!response.ok) {
@@ -74,7 +113,7 @@ async function main() {
   console.log('✅ Sent. Check the Sales channel.')
 }
 
-main().catch((err) => {
+main().catch(err => {
   console.error(err)
   process.exit(1)
 })

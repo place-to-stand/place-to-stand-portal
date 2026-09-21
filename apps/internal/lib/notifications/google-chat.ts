@@ -5,7 +5,9 @@ import { invoiceHref } from '@/lib/sheets/hrefs'
 
 import {
   buildInvoicePaidCard,
+  buildStuckEmailCard,
   type InvoicePaidNotice,
+  type StuckEmailNotice,
 } from './google-chat-messages'
 
 /**
@@ -14,7 +16,9 @@ import {
  * here rather than at the call site so the Stripe webhook stays free of URL
  * assembly.
  */
-function resolveInvoiceUrl(invoiceId: string | null | undefined): string | null {
+function resolveInvoiceUrl(
+  invoiceId: string | null | undefined
+): string | null {
   if (!invoiceId) return null
 
   const baseUrl =
@@ -60,5 +64,35 @@ export async function notifyInvoicePaid(
     }
   } catch (err) {
     console.error('[google-chat] invoice-paid notification error:', err)
+  }
+}
+
+/**
+ * Warn the Sales space that marketing form emails are stuck (PRD 008). Same
+ * contract as `notifyInvoicePaid`: no-op without the webhook, never throws —
+ * the retry sweep that calls this must finish regardless.
+ */
+export async function notifyStuckSubmissionEmails(
+  notice: StuckEmailNotice
+): Promise<void> {
+  const webhookUrl = serverEnv.GOOGLE_CHAT_SALES_WEBHOOK_URL
+
+  if (!webhookUrl || notice.items.length === 0) return
+
+  try {
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(buildStuckEmailCard(notice)),
+    })
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => '')
+      console.error(
+        `[google-chat] stuck-email notification failed: ${response.status} ${body}`
+      )
+    }
+  } catch (err) {
+    console.error('[google-chat] stuck-email notification error:', err)
   }
 }
