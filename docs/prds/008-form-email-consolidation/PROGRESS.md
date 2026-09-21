@@ -78,7 +78,7 @@ bottom; each block depends only on the ones above it.
 ## M. Monitoring (2026-09-21)
 
 - [x] Stuck-email Google Chat alert from the sweep, once per row, 60-minute threshold; `--stuck` preview in `scripts/test-google-chat.ts`
-- [x] `scripts/test-form-intake.ts --smoke` for production: real delivery to an owned address, replay, sweep check, no DB access
+- [x] `scripts/test-form-intake.ts --smoke` for production: real delivery to an owned address, replay, sweep check, no DB access; `npm run smoke:prod -- <email>` pulls `APP_BASE_URL` from Vercel; the tokens are Secret-type and must come from the shell
 - [x] Failure drill run locally: Mailpit stopped → intake 200 with `queued`, sweep reports `stuckCount: 1`; Mailpit restarted → next sweep delivers both
 
 ## G. Docs + rollout
@@ -86,7 +86,7 @@ bottom; each block depends only on the ones above it.
 - [x] `docs/integrations/marketing-form-submissions.md` documents `deliver`, the response envelope, and the beacon rule
 - [x] `CLAUDE.md` email + env notes updated
 - [ ] Migration applied in production via `db:migrate:prod` <!-- MANUAL STEP for the user: from the MAIN checkout (not a worktree — it reads apps/internal/.env.prod), run `npm run db:migrate:prod` in packages/db after the portal PR merges. Migrations 0079 and 0080 are additive. -->
-- [ ] Three env vars set in Vercel (internal project) <!-- MANUAL STEP for the user: RESEND_FORMS_FROM_EMAIL=hello@send.placetostandagency.com, FORMS_NOTIFY_EMAIL=hello@placetostandagency.com, RESEND_AUDIENCE_ID=<copy from the marketing site's Vercel project>. All optional, but without the first one visitor mail comes from portal@. CRON_SECRET must already be set for the sweep to run. Also delete LEADS_INTAKE_TOKEN while there. -->
+- [ ] Env vars set in Vercel (internal project) <!-- MANUAL STEP for the user: RESEND_FORMS_FROM_EMAIL=hello@send.placetostandagency.com and FORMS_NOTIFY_EMAIL=hello@placetostandagency.com still need adding; RESEND_AUDIENCE_ID, CRON_SECRET, APP_BASE_URL and GOOGLE_CHAT_SALES_WEBHOOK_URL were confirmed present in production on 2026-09-21. Also delete LEADS_INTAKE_TOKEN while there. -->
 - [x] Verify the Vercel plan permits the `*/15` cron <!-- Jason confirmed 2026-09-18: Pro, keep */15 -->
 - [ ] Site Resend env vars removed from Vercel after a quiet week <!-- MANUAL STEP for the user: delete RESEND_API_KEY and RESEND_AUDIENCE_ID from the marketing site's Vercel project once the cutover has run clean for a week. -->
 - [ ] Merge order respected <!-- MANUAL STEP for the user: portal PR first, then migrate + env vars + one `--deliver`-style check, THEN the marketing site PR (claude/portal-sends-form-email). Merging the site first means forms succeed but no email is sent, because the portal would ignore `deliver`. -->

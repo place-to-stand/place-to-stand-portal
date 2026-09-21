@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "type-check": "tsc --noEmit",
+    "smoke:prod": "bash scripts/smoke-prod.sh",
     "db:pull": "drizzle-kit pull --config drizzle.config.ts",
     "db:generate": "drizzle-kit generate --config drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config drizzle.config.ts",
