@@ -15,7 +15,9 @@ import {
   CheckCircle,
   Globe,
   Handshake,
+  ListTodo,
   Mail,
+  MessageCircle,
   Phone,
   type LucideIcon,
 } from 'lucide-react'
@@ -222,6 +224,30 @@ function LeadCardContent({ lead }: { lead: LeadRecord }) {
                 value={formatPhoneUS(lead.contactPhone)}
                 href={`tel:${lead.contactPhone}`}
               />
+            </div>
+          ) : null}
+          {/* Same icon row as the task card (comments / attachments / hours):
+              linked open tasks and logged updates, hidden when there are none. */}
+          {lead.openTaskCount > 0 || lead.updateCount > 0 ? (
+            <div className='text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-2 text-xs'>
+              {lead.openTaskCount > 0 ? (
+                <span
+                  className='inline-flex items-center gap-1'
+                  title={`${lead.openTaskCount} open ${lead.openTaskCount === 1 ? 'task' : 'tasks'}`}
+                >
+                  <ListTodo className='h-3.5 w-3.5' aria-hidden />
+                  {lead.openTaskCount}
+                </span>
+              ) : null}
+              {lead.updateCount > 0 ? (
+                <span
+                  className='inline-flex items-center gap-1'
+                  title={`${lead.updateCount} ${lead.updateCount === 1 ? 'update' : 'updates'}`}
+                >
+                  <MessageCircle className='h-3.5 w-3.5' aria-hidden />
+                  {lead.updateCount}
+                </span>
+              ) : null}
             </div>
           ) : null}
           {convertedBadge ? (

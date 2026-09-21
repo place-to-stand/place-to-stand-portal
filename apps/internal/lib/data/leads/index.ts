@@ -9,10 +9,7 @@ import { db } from '@/lib/db'
 import { leads, users } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 import { extractLeadNotes } from '@/lib/leads/notes'
-import {
-  LEAD_BOARD_COLUMNS,
-  type LeadStatusValue,
-} from '@/lib/leads/constants'
+import { LEAD_BOARD_COLUMNS, type LeadStatusValue } from '@/lib/leads/constants'
 import type {
   LeadAssigneeOption,
   LeadBoardColumnData,
@@ -75,6 +72,8 @@ export const fetchLeadsBoard = cache(
         // Conversion
         convertedAt: row.convertedAt ?? null,
         convertedToClientId: row.convertedToClientId ?? null,
+        openTaskCount: Number(row.openTaskCount ?? 0),
+        updateCount: Number(row.updateCount ?? 0),
       })
     })
 
@@ -139,6 +138,8 @@ export const fetchLeadById = cache(
       // Conversion
       convertedAt: lead.convertedAt ?? null,
       convertedToClientId: lead.convertedToClientId ?? null,
+      openTaskCount: Number(lead.openTaskCount ?? 0),
+      updateCount: Number(lead.updateCount ?? 0),
     }
   }
 )
@@ -190,22 +191,26 @@ export const fetchArchivedLeads = cache(
       // Conversion
       convertedAt: row.convertedAt ?? null,
       convertedToClientId: row.convertedToClientId ?? null,
+      openTaskCount: Number(row.openTaskCount ?? 0),
+      updateCount: Number(row.updateCount ?? 0),
       deletedAt: row.deletedAt!,
     }))
   }
 )
 
-export const fetchLeadAssignees = cache(async (): Promise<LeadAssigneeOption[]> => {
-  const admins = await fetchAdminUsers()
+export const fetchLeadAssignees = cache(
+  async (): Promise<LeadAssigneeOption[]> => {
+    const admins = await fetchAdminUsers()
 
-  return admins.map(admin => ({
-    id: admin.id,
-    name: admin.full_name ?? admin.email,
-    email: admin.email,
-    avatarUrl: admin.avatar_url,
-    disabledAt: admin.disabled_at ?? null,
-  }))
-})
+    return admins.map(admin => ({
+      id: admin.id,
+      name: admin.full_name ?? admin.email,
+      email: admin.email,
+      avatarUrl: admin.avatar_url,
+      disabledAt: admin.disabled_at ?? null,
+    }))
+  }
+)
 
 async function selectLeadRows({
   includeRank,
@@ -243,6 +248,16 @@ async function selectLeadRows({
     // Conversion
     convertedAt: leads.convertedAt,
     convertedToClientId: leads.convertedToClientId,
+    // Raw SQL on purpose: interpolating the Drizzle columns here would strip
+    // the table qualification and break the correlation with the outer row.
+    openTaskCount: sql<number>`(
+      SELECT count(*)::int FROM tasks t
+      WHERE t.lead_id = leads.id AND t.deleted_at IS NULL AND t.status <> 'DONE'
+    )`,
+    updateCount: sql<number>`(
+      SELECT count(*)::int FROM lead_updates lu
+      WHERE lu.lead_id = leads.id AND lu.deleted_at IS NULL
+    )`,
   }
 
   const deletedFilter = archived
