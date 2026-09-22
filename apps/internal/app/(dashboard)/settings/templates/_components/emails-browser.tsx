@@ -73,10 +73,6 @@ export function EmailsBrowser({ entries }: { entries: EmailTemplateEntry[] }) {
           )}
           renderSubtitle={entry => entry.variants[0]?.sample.subject}
         />
-        <p className='text-muted-foreground px-3.5 text-xs leading-relaxed'>
-          Marketing site form recaps and alerts are sent from that repo through
-          the same Resend account. Not shown here.
-        </p>
       </div>
 
       <section className='bg-background flex min-w-0 flex-col overflow-hidden rounded-xl border shadow-sm'>

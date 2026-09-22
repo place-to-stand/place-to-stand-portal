@@ -1,5 +1,7 @@
 import { formSubmissionKind, formSubmissionStatus } from '@/lib/db/schema'
 
+import type { AttributionChannel } from './attribution'
+
 export const FORM_SUBMISSION_KIND_VALUES = formSubmissionKind.enumValues
 export const FORM_SUBMISSION_STATUS_VALUES = formSubmissionStatus.enumValues
 
@@ -34,6 +36,22 @@ export const FORM_SUBMISSION_STATUS_TOKENS: Record<
     'border-transparent bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200',
   captured:
     'border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200',
+}
+
+/** Source column badges (PRD 008 §7). Always paired with the text label. */
+export const ATTRIBUTION_CHANNEL_TOKENS: Record<AttributionChannel, string> = {
+  paid: 'border-transparent bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200',
+  organic:
+    'border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200',
+  referral:
+    'border-transparent bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200',
+  social:
+    'border-transparent bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200',
+  email:
+    'border-transparent bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200',
+  campaign:
+    'border-transparent bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-200',
+  direct: 'text-muted-foreground',
 }
 
 export const FORM_SUBMISSION_KIND_TOKENS: Record<FormSubmissionKind, string> = {

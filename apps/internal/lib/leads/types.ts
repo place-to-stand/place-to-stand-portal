@@ -44,6 +44,11 @@ export type LeadRecord = {
   // Conversion
   convertedAt: string | null
   convertedToClientId: string | null
+
+  // Linked work, for the board card's icon row. Open = not DONE; a lead that
+  // has only finished tasks shows nothing, which is the point.
+  openTaskCount: number
+  updateCount: number
 }
 
 /**

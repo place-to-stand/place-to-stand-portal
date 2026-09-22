@@ -97,3 +97,60 @@ export function buildInvoicePaidCard(
     ],
   }
 }
+
+export type StuckEmailNotice = {
+  /** Rows whose email is still unsent past the alert threshold. */
+  items: Array<{
+    /** Visitor name or email, whatever the row has. */
+    label: string
+    kind: 'audit' | 'contact'
+    /** Absolute portal link to the submission; null when no base URL is set. */
+    url: string | null
+  }>
+  thresholdMinutes: number
+}
+
+/**
+ * Build a Google Chat `cardsV2` payload warning that marketing form emails
+ * are stuck. One card per sweep run, listing every row that just crossed the
+ * threshold, so an outage reads as one message rather than one per lead.
+ */
+export function buildStuckEmailCard(
+  notice: StuckEmailNotice,
+  options?: { test?: boolean }
+): object {
+  const count = notice.items.length
+  return {
+    cardsV2: [
+      {
+        cardId: 'submission-email-stuck',
+        card: {
+          header: {
+            title: `✉️ ${count} form ${count === 1 ? 'email' : 'emails'} not sent`,
+            subtitle: options?.test
+              ? '⚠️ TEST MESSAGE — not a real failure'
+              : `Still unsent ${notice.thresholdMinutes} min after the submission. The lead is recorded and flagged unread; the sweep keeps retrying.`,
+          },
+          sections: [
+            {
+              widgets: notice.items.map(item => ({
+                decoratedText: {
+                  topLabel: item.kind === 'audit' ? 'Audit' : 'Contact',
+                  text: item.label,
+                  ...(item.url
+                    ? {
+                        button: {
+                          text: 'Open',
+                          onClick: { openLink: { url: item.url } },
+                        },
+                      }
+                    : {}),
+                },
+              })),
+            },
+          ],
+        },
+      },
+    ],
+  }
+}

@@ -26,6 +26,8 @@ export type AuditResponseItem = {
 export type AuditRecommendation = {
   serviceId: string
   serviceName: string
+  /** Absent on rows stored before the site started sending it. */
+  tagline?: string
   score: number
   reasons: string[]
 }
@@ -33,6 +35,7 @@ export type AuditRecommendation = {
 export type AuditResult = {
   phaseId: string
   phaseName: string
+  phaseTagline?: string
   summary: string
   generatedBy: 'rules' | 'ai'
   phaseScores: Record<string, number>
@@ -101,6 +104,7 @@ export function extractAuditResult(value: unknown): AuditResult | null {
         serviceId: typeof item.serviceId === 'string' ? item.serviceId : '',
         serviceName:
           typeof item.serviceName === 'string' ? item.serviceName : '',
+        ...(typeof item.tagline === 'string' ? { tagline: item.tagline } : {}),
         score: typeof item.score === 'number' ? item.score : 0,
         reasons: toStringArray(item.reasons),
       }))
@@ -109,6 +113,9 @@ export function extractAuditResult(value: unknown): AuditResult | null {
   return {
     phaseId: typeof value.phaseId === 'string' ? value.phaseId : '',
     phaseName: typeof value.phaseName === 'string' ? value.phaseName : '',
+    ...(typeof value.phaseTagline === 'string'
+      ? { phaseTagline: value.phaseTagline }
+      : {}),
     summary: typeof value.summary === 'string' ? value.summary : '',
     generatedBy: value.generatedBy === 'ai' ? 'ai' : 'rules',
     phaseScores,

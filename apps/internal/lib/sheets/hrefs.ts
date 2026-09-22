@@ -51,6 +51,9 @@ export const leadHref = (
   return `${base}?lead=${id}${convert}`
 }
 
+/** Resolves server-side, so the link keeps working after archive/restore. */
+export const submissionHref = (id: string) => `/submissions?submission=${id}`
+
 export const newLeadHref = () => `/leads?lead=${NEW_SHEET_VALUE}`
 /**
  * Rebuilds a page's query string for a server-side `redirect()`. Redirects

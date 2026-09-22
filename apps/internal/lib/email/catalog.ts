@@ -11,6 +11,8 @@ import {
 import { serverEnv } from '@/lib/env.server'
 import { renderUpdateEmail } from '@/lib/updates/render-email'
 
+import { buildFormEmailEntries } from './catalog-forms'
+
 export type EmailPortal = 'internal' | 'client'
 
 type EmailTemplateVariant = {
@@ -203,6 +205,7 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
         },
       ],
     },
+    ...buildFormEmailEntries(internalOrigin),
     {
       id: 'client-update',
       status: 'active',

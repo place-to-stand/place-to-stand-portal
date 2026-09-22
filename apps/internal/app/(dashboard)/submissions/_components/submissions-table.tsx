@@ -10,7 +10,6 @@ import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { PaginationControls } from '@/components/ui/pagination-controls'
-import { Progress } from '@pts/ui/progress'
 import {
   Table,
   TableBody,
@@ -23,7 +22,13 @@ import { useToast } from '@/components/ui/use-toast'
 import { useListParams } from '@/hooks/use-list-params'
 import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
 import { cn } from '@/lib/utils'
+import { formatCalendarDate } from '@/lib/dates'
 import {
+  ATTRIBUTION_CHANNEL_LABELS,
+  describeAttribution,
+} from '@/lib/form-submissions/attribution'
+import {
+  ATTRIBUTION_CHANNEL_TOKENS,
   FORM_SUBMISSION_KIND_LABELS,
   FORM_SUBMISSION_KIND_TOKENS,
   FORM_SUBMISSION_STATUS_LABELS,
@@ -32,7 +37,11 @@ import {
   isFormSubmissionStatus,
   isUnacknowledgedSubmission,
 } from '@/lib/form-submissions/constants'
-import { isSubmissionSortValue } from '@/lib/form-submissions/filters'
+import {
+  isContactFilterValue,
+  isSubmissionSortValue,
+} from '@/lib/form-submissions/filters'
+import { describeSubmissionOutcome } from '@/lib/form-submissions/outcome'
 import type { FormSubmissionRecord } from '@/lib/form-submissions/types'
 import {
   acknowledgeSubmission,
@@ -50,6 +59,16 @@ import {
 } from '@/lib/table/clickable-row'
 
 type SubmissionsTableMode = 'active' | 'archive'
+
+// Pinned to the company timezone by formatCalendarDate, so the tooltip is the
+// same string on the server and in every browser (no hydration mismatch).
+const RECEIVED_TITLE_STYLE = {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+} as const
 
 const EMPTY_STATE_COPY: Record<SubmissionsTableMode, string> = {
   active: 'No submissions yet.',
@@ -120,7 +139,7 @@ export function SubmissionsTable({
   const [, startTransition] = useTransition()
 
   // The archive tab shows when each row was archived; active mode doesn't.
-  const columnCount = mode === 'archive' ? 10 : 9
+  const columnCount = mode === 'archive' ? 9 : 8
 
   // Sort changes route through useListParams so they reset offset paging
   // (PRD 004 §03); row-selection and page pushes keep the local helper.
@@ -139,6 +158,7 @@ export function SubmissionsTable({
     (searchParams.get('q') ?? '').trim().length > 0 ||
     isFormSubmissionKind(searchParams.get('kind') ?? undefined) ||
     isFormSubmissionStatus(searchParams.get('status') ?? undefined) ||
+    isContactFilterValue(searchParams.get('contact') ?? '') ||
     (mode === 'active' && searchParams.get('unacknowledged') === '1')
 
   const emptyMessage = hasActiveFilter
@@ -337,12 +357,11 @@ export function SubmissionsTable({
               >
                 Received
               </SortableTableHead>
-              <TableHead className='w-[9%]'>Form</TableHead>
-              <TableHead className='w-[18%]'>Contact</TableHead>
-              <TableHead className='w-[12%]'>Company</TableHead>
-              <TableHead className='w-[10%]'>Status</TableHead>
-              <TableHead className='w-[10%]'>Progress</TableHead>
-              <TableHead>Phase</TableHead>
+              <TableHead className='w-[8%]'>Form</TableHead>
+              <TableHead className='w-[19%]'>Contact</TableHead>
+              <TableHead className='w-[10%]'>Company</TableHead>
+              <TableHead className='w-[21%]'>Outcome</TableHead>
+              <TableHead className='w-[18%]'>Source</TableHead>
               {mode === 'archive' ? (
                 <TableHead className='w-[10%]'>Archived</TableHead>
               ) : null}
@@ -363,6 +382,10 @@ export function SubmissionsTable({
               submissions.map(submission => {
                 const unacknowledged =
                   mode === 'active' && isUnacknowledgedSubmission(submission)
+                const anonymous =
+                  !submission.contactName && !submission.contactEmail
+                const outcome = describeSubmissionOutcome(submission)
+                const source = describeAttribution(submission)
 
                 return (
                   <TableRow
@@ -373,6 +396,9 @@ export function SubmissionsTable({
                     className={cn(
                       CLICKABLE_ROW_CLASS,
                       unacknowledged && 'font-medium',
+                      // Anonymous rows are mostly unfinished audits: keep
+                      // them, but let identified visitors carry the page.
+                      anonymous && 'text-muted-foreground',
                       submission.deletedAt && ARCHIVED_ROW_CLASS
                     )}
                   >
@@ -387,7 +413,15 @@ export function SubmissionsTable({
                         </>
                       ) : null}
                     </TableCell>
-                    <TableCell className='whitespace-nowrap'>
+                    <TableCell
+                      className='whitespace-nowrap'
+                      title={
+                        formatCalendarDate(
+                          submission.lastActivityAt,
+                          RECEIVED_TITLE_STYLE
+                        ) ?? undefined
+                      }
+                    >
                       {formatDistanceToNow(
                         new Date(submission.lastActivityAt),
                         { addSuffix: true }
@@ -428,35 +462,45 @@ export function SubmissionsTable({
                       {submission.contactCompany ?? '—'}
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        variant='outline'
-                        className={cn(
-                          FORM_SUBMISSION_STATUS_TOKENS[submission.status]
-                        )}
-                      >
-                        {FORM_SUBMISSION_STATUS_LABELS[submission.status]}
-                      </Badge>
+                      {/* Single line so rows keep a uniform height: the
+                          badge never shrinks, the detail truncates. */}
+                      <div className='flex min-w-0 items-center gap-2'>
+                        <Badge
+                          variant='outline'
+                          className={cn(
+                            'shrink-0',
+                            FORM_SUBMISSION_STATUS_TOKENS[submission.status]
+                          )}
+                        >
+                          {FORM_SUBMISSION_STATUS_LABELS[submission.status]}
+                        </Badge>
+                        {outcome ? (
+                          <span className='min-w-0 truncate' title={outcome}>
+                            {outcome}
+                          </span>
+                        ) : null}
+                      </div>
                     </TableCell>
                     <TableCell>
-                      {submission.percentComplete === null ? (
-                        <span className='text-muted-foreground'>—</span>
-                      ) : (
-                        <div className='flex items-center gap-2'>
-                          <Progress
-                            value={submission.percentComplete}
-                            className='w-16'
-                          />
-                          <span className='text-muted-foreground text-xs'>
-                            {submission.percentComplete}%
+                      <div
+                        className='flex min-w-0 items-center gap-2'
+                        title={source.label}
+                      >
+                        <Badge
+                          variant='outline'
+                          className={cn(
+                            'shrink-0',
+                            ATTRIBUTION_CHANNEL_TOKENS[source.channel]
+                          )}
+                        >
+                          {ATTRIBUTION_CHANNEL_LABELS[source.channel]}
+                        </Badge>
+                        {source.detail ? (
+                          <span className='text-muted-foreground min-w-0 truncate text-xs'>
+                            {source.detail}
                           </span>
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell className='truncate'>
-                      {submission.result?.phaseName ??
-                        submission.phaseId ?? (
-                          <span className='text-muted-foreground'>—</span>
-                        )}
+                        ) : null}
+                      </div>
                     </TableCell>
                     {mode === 'archive' ? (
                       <TableCell className='text-muted-foreground text-sm whitespace-nowrap'>

@@ -105,7 +105,7 @@ Turbo v2 uses strict mode by default — only env vars listed in `turbo.json` ar
 │                     #   projects/, clients/, contacts/, leads/, invoices/, dashboard/,
 │                     #   activity/, planning/, uploads/, storage/, public/, auth/,
 │                     #   github/, google/,
-│                     #   integrations/ (leads-intake, stripe, github, google, ...)
+│                     #   integrations/ (audit-responses, contact-submissions, stripe, github, google, ...)
 ├── auth/             # Supabase auth callback
 └── unauthorized/     # Access denied page
 ```
@@ -302,30 +302,38 @@ await logTaskCreated(taskId, userId)
 - Consult developer before creating new event/property names (naming consistency is essential)
 - Changes to existing event/property names may break reporting
 
-### Lead Intake Webhook
+### Marketing Form Intake
 
-**Endpoint:** `POST /api/integrations/leads-intake`
+The marketing site's two forms land in `form_submissions` and surface at `/submissions`. Nothing
+creates a lead directly — leads are promoted from a submission by hand.
 
-**Authentication:** Bearer token matching `LEADS_INTAKE_TOKEN` env var
+**Endpoints:**
+- `POST /api/integrations/contact-submissions` — one-shot contact form; token `CONTACT_INTAKE_TOKEN`
+- `POST /api/integrations/audit-responses` — Opportunity Audit progress beacons, upserted on `sessionId`; token `AUDIT_INTAKE_TOKEN`
+
+**Authentication:** Bearer token checked by `verifyIntakeToken` (`lib/integrations/verify-intake-token.ts`). Both paths are on the `proxy.ts` allowlist, so each route must verify its own token.
 
 **Setup:**
-1. Generate token: `openssl rand -hex 32`
-2. Store in this app: `LEADS_INTAKE_TOKEN`
-3. Store in marketing site: `PORTAL_LEADS_TOKEN`
+1. Generate a token per endpoint: `openssl rand -hex 32`
+2. Store the same values under the same names in this app and in the marketing site, which also needs `PORTAL_API_BASE_URL`
 
-**Payload shape:**
-```json
-{
-  "name": "string (required)",
-  "email": "string (required)",
-  "company": "string (optional)",
-  "website": "string (optional)",
-  "message": "string (optional)",
-  "sourceDetail": "string (optional)"
-}
-```
+**Email (PRD 008):** the marketing site sends no email. A payload with `deliver: true` makes the
+portal send the team notification and the visitor's confirmation *after* recording the row
+(`lib/form-submissions/delivery/`). Each send takes an expiring lease (`*_email_claimed_at`),
+sends with a Resend idempotency key, and stamps `team_notified_at` / `confirmation_sent_at` only on
+acceptance, so neither a crash nor a replay can double-send or fake a send; failed sends are retried
+by `/api/cron/retry-submission-emails` for 72h, and rows with `delivery_requested_at IS NULL`
+(everything before the cutover) are never mailed. Only a
+`captured` audit can deliver, and only the site's BotID-gated server action may set the flag —
+never its unauthenticated progress beacon. Templates live in `packages/email` and are registered in
+`lib/email/catalog-forms.ts`. Optional env: `RESEND_FORMS_FROM_EMAIL`, `FORMS_NOTIFY_EMAIL`,
+`RESEND_AUDIENCE_ID`. The source line shared by the email, the Submissions table, and the sheet is
+`describeAttribution` (`lib/form-submissions/attribution.ts`).
 
-Leads are inserted with `WEBSITE` source and appear on `/leads/board` immediately.
+Every payload carries a shared `analytics` / `attribution` / `client` envelope (PostHog ids, UTMs,
+gclid, referrer, landing path, device). The full wire contract lives in
+`docs/integrations/marketing-form-submissions.md`. The older `leads-intake` webhook was retired in
+Sep 2026.
 
 ### Key Patterns & Conventions
 

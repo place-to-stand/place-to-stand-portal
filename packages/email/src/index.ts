@@ -1,4 +1,10 @@
 export {
+  renderBlocks,
+  type EmailBlock,
+  type EmailDetailRow,
+  type EmailListItem,
+} from './blocks'
+export {
   EMAIL_COLORS,
   EMAIL_FONTS,
   escapeHtml,
