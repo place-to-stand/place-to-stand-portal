@@ -139,7 +139,7 @@ export function SubmissionsTable({
   const [, startTransition] = useTransition()
 
   // The archive tab shows when each row was archived; active mode doesn't.
-  const columnCount = mode === 'archive' ? 9 : 8
+  const columnCount = mode === 'archive' ? 8 : 7
 
   // Sort changes route through useListParams so they reset offset paging
   // (PRD 004 §03); row-selection and page pushes keep the local helper.
@@ -342,30 +342,38 @@ export function SubmissionsTable({
         </div>
       ) : null}
       <div className='overflow-hidden rounded-lg border'>
-        <Table density='compact' layout='fixed'>
+        {/* Fixed layout: the predictable columns (relative time, a badge,
+            icon buttons) get pixel widths so they never bloat on wide
+            screens, the text columns take a share of the table, and Contact
+            — the only one without a width — absorbs whatever is left, so the
+            sum can never push Actions off the edge. Below xl the Company
+            column and the Source detail drop out (both are in the sheet) so
+            the values that remain are readable at laptop widths, and the
+            min width makes the container scroll instead of crushing columns
+            when the window is narrower still. */}
+        <Table density='compact' layout='fixed' className='min-w-[50rem]'>
           <TableHeader>
             <TableRow className='bg-muted/40'>
-              <TableHead className='w-6'>
-                <span className='sr-only'>Unacknowledged</span>
-              </TableHead>
               <SortableTableHead
                 field='received'
                 sort={sort}
                 defaultSort='received:desc'
                 onSortChange={next => updateListParams({ sort: next })}
-                className='w-[11%]'
+                className='w-40'
               >
                 Received
               </SortableTableHead>
-              <TableHead className='w-[8%]'>Form</TableHead>
-              <TableHead className='w-[19%]'>Contact</TableHead>
-              <TableHead className='w-[10%]'>Company</TableHead>
-              <TableHead className='w-[21%]'>Outcome</TableHead>
-              <TableHead className='w-[18%]'>Source</TableHead>
+              <TableHead className='w-24'>Form</TableHead>
+              <TableHead>Contact</TableHead>
+              <TableHead className='hidden xl:table-cell xl:w-[12%]'>
+                Company
+              </TableHead>
+              <TableHead className='w-[30%] xl:w-[22%]'>Outcome</TableHead>
+              <TableHead className='w-24 xl:w-[18%]'>Source</TableHead>
               {mode === 'archive' ? (
-                <TableHead className='w-[10%]'>Archived</TableHead>
+                <TableHead className='w-32'>Archived</TableHead>
               ) : null}
-              <TableHead className='w-32 text-right'>Actions</TableHead>
+              <TableHead className='w-24 text-right'>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -390,9 +398,7 @@ export function SubmissionsTable({
                 return (
                   <TableRow
                     key={submission.id}
-                    {...getClickableRowProps(() =>
-                      handleSelect(submission.id)
-                    )}
+                    {...getClickableRowProps(() => handleSelect(submission.id))}
                     className={cn(
                       CLICKABLE_ROW_CLASS,
                       unacknowledged && 'font-medium',
@@ -402,19 +408,7 @@ export function SubmissionsTable({
                       submission.deletedAt && ARCHIVED_ROW_CLASS
                     )}
                   >
-                    <TableCell className='w-6'>
-                      {unacknowledged ? (
-                        <>
-                          <span
-                            className='bg-primary block size-2 rounded-full'
-                            aria-hidden='true'
-                          />
-                          <span className='sr-only'>Unacknowledged</span>
-                        </>
-                      ) : null}
-                    </TableCell>
                     <TableCell
-                      className='whitespace-nowrap'
                       title={
                         formatCalendarDate(
                           submission.lastActivityAt,
@@ -422,10 +416,26 @@ export function SubmissionsTable({
                         ) ?? undefined
                       }
                     >
-                      {formatDistanceToNow(
-                        new Date(submission.lastActivityAt),
-                        { addSuffix: true }
-                      )}
+                      {/* The unread dot lives in a fixed slot so the times
+                          stay aligned whether or not a row is acknowledged. */}
+                      <div className='flex items-center gap-2'>
+                        <span
+                          className={cn(
+                            'size-2 shrink-0 rounded-full',
+                            unacknowledged && 'bg-primary'
+                          )}
+                          aria-hidden='true'
+                        />
+                        {unacknowledged ? (
+                          <span className='sr-only'>Unacknowledged</span>
+                        ) : null}
+                        <span className='truncate'>
+                          {formatDistanceToNow(
+                            new Date(submission.lastActivityAt),
+                            { addSuffix: true }
+                          )}
+                        </span>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge
@@ -439,15 +449,19 @@ export function SubmissionsTable({
                     </TableCell>
                     <TableCell>
                       {submission.contactName || submission.contactEmail ? (
-                        // Single line so rows keep a uniform height: name
-                        // first, email as muted secondary text. Both truncate;
-                        // the detail sheet has the full values.
+                        // Single line so every row is the same height: name
+                        // first and never squeezed, email as muted secondary
+                        // text that gives way first. The detail sheet has the
+                        // full values.
                         <div className='flex min-w-0 items-baseline gap-1.5'>
-                          <span className='min-w-0 truncate'>
+                          <span className='max-w-full shrink-0 truncate'>
                             {submission.contactName ?? submission.contactEmail}
                           </span>
                           {submission.contactName && submission.contactEmail ? (
-                            <span className='text-muted-foreground min-w-0 truncate text-xs'>
+                            <span
+                              className='text-muted-foreground min-w-0 truncate text-xs'
+                              title={submission.contactEmail}
+                            >
                               {submission.contactEmail}
                             </span>
                           ) : null}
@@ -458,7 +472,10 @@ export function SubmissionsTable({
                         </span>
                       )}
                     </TableCell>
-                    <TableCell className='truncate'>
+                    <TableCell
+                      className='hidden truncate xl:table-cell'
+                      title={submission.contactCompany ?? undefined}
+                    >
                       {submission.contactCompany ?? '—'}
                     </TableCell>
                     <TableCell>
@@ -496,7 +513,7 @@ export function SubmissionsTable({
                           {ATTRIBUTION_CHANNEL_LABELS[source.channel]}
                         </Badge>
                         {source.detail ? (
-                          <span className='text-muted-foreground min-w-0 truncate text-xs'>
+                          <span className='text-muted-foreground hidden min-w-0 truncate text-xs xl:inline'>
                             {source.detail}
                           </span>
                         ) : null}

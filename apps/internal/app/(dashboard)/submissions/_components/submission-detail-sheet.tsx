@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation'
 import {
   Archive,
   Check,
+  Clock,
   ExternalLink,
   RefreshCw,
+  Timer,
   Trash2,
   Undo2,
 } from 'lucide-react'
@@ -364,7 +366,10 @@ export function SubmissionDetailSheet({
 
         <div className='flex-1 overflow-y-auto'>
           <div className='flex flex-col gap-6 px-6 pt-6 pb-8'>
-            <div className='flex flex-wrap items-center justify-between gap-x-3 gap-y-2'>
+            {/* Two deliberate rows — what it is, then when — instead of a
+                justify-between pair that wrapped into a ragged second line
+                at sheet width. */}
+            <div className='flex flex-col gap-3'>
               <div className='flex flex-wrap items-center gap-2'>
                 <Badge
                   variant='outline'
@@ -387,34 +392,51 @@ export function SubmissionDetailSheet({
                   {ATTRIBUTION_CHANNEL_LABELS[source.channel]}
                 </Badge>
                 {source.detail ? (
-                  <span className='text-muted-foreground text-xs'>
+                  <span className='text-muted-foreground text-sm'>
                     {source.detail}
                   </span>
                 ) : null}
               </div>
-              <p className='text-muted-foreground text-xs'>
-                {[
-                  // Company timezone, like the email stamps below — an
-                  // ambient-TZ format here put two clocks in one sheet.
-                  `Started ${formatCalendarDate(displaySubmission.startedAt, STARTED_STYLE)}`,
-                  displaySubmission.durationMs !== null
-                    ? `${formatDuration(displaySubmission.durationMs)} on page`
-                    : null,
-                  mode === 'active' && warrantsAttention && acknowledged
-                    ? `Acknowledged ${
-                        override
-                          ? 'just now'
-                          : acknowledgedAt
-                            ? formatDistanceToNow(new Date(acknowledgedAt), {
-                                addSuffix: true,
-                              })
-                            : ''
-                      }`.trim()
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </p>
+              {/* Each fact is its own icon-led item that never breaks
+                  internally, so a narrow sheet wraps between facts rather
+                  than mid-timestamp. */}
+              <ul className='text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs'>
+                <li className='flex items-center gap-1.5 whitespace-nowrap'>
+                  <Clock className='size-3.5 shrink-0' aria-hidden='true' />
+                  {/* Company timezone, like the email stamps below — an
+                      ambient-TZ format here put two clocks in one sheet. */}
+                  <span>
+                    Started{' '}
+                    {formatCalendarDate(
+                      displaySubmission.startedAt,
+                      STARTED_STYLE
+                    )}
+                  </span>
+                </li>
+                {displaySubmission.durationMs !== null ? (
+                  <li className='flex items-center gap-1.5 whitespace-nowrap'>
+                    <Timer className='size-3.5 shrink-0' aria-hidden='true' />
+                    <span>
+                      {formatDuration(displaySubmission.durationMs)} on page
+                    </span>
+                  </li>
+                ) : null}
+                {mode === 'active' && warrantsAttention && acknowledged ? (
+                  <li className='flex items-center gap-1.5 whitespace-nowrap'>
+                    <Check className='size-3.5 shrink-0' aria-hidden='true' />
+                    <span>
+                      Acknowledged{' '}
+                      {override
+                        ? 'just now'
+                        : acknowledgedAt
+                          ? formatDistanceToNow(new Date(acknowledgedAt), {
+                              addSuffix: true,
+                            })
+                          : ''}
+                    </span>
+                  </li>
+                ) : null}
+              </ul>
             </div>
 
             <Separator />
