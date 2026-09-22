@@ -2047,6 +2047,16 @@ export const formSubmissions = pgTable(
     message: text('message'),
     marketingConsent: boolean('marketing_consent'),
 
+    // Results-page feedback (audit only). Two optional questions shown under
+    // the scored result; either may be answered alone, so both are nullable.
+    // `feedback_at` is the visitor's submit time as stamped by the beacon.
+    feedbackHelpful: boolean('feedback_helpful'),
+    feedbackComment: text('feedback_comment'),
+    feedbackAt: timestamp('feedback_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
+
     // Analytics
     posthogDistinctId: text('posthog_distinct_id'),
     posthogSessionId: text('posthog_session_id'),

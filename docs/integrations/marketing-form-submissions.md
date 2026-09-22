@@ -97,6 +97,7 @@ type AuditTrigger =
   | 'captured'       // email-capture form submitted successfully
   | 'abandoned'      // explicitly backed out of the wizard
   | 'pagehide'       // sendBeacon fired as the tab closed
+  | 'feedback'       // results-page feedback card voted or sent
 
 interface AuditResponseItem {
   questionId: string   // 'industry' | 'revenue' | 'ops-management' | ...
@@ -154,6 +155,15 @@ interface AuditProgressPayload {
     // Optional free-text note from the capture form; stored in `message`.
     message?: string | null
     marketingConsent: boolean
+  } | null
+
+  // Optional. Results-page feedback: a yes/no vote and/or a comment. Either
+  // field may be null on its own. Sent on the `feedback` trigger; status is
+  // unchanged (feedback can arrive on a completed or captured session).
+  feedback?: {
+    helpful: boolean | null
+    comment: string | null
+    submittedAt: string          // ISO 8601, stamped at send time
   } | null
 
   analytics: {
@@ -284,7 +294,8 @@ atomically on write. Four rules apply:
    a no-op. The response is still `200` — this is expected behaviour, not an error.
 3. **Status only advances**, along `in_progress → abandoned → completed → captured`. It never
    moves backwards.
-4. **A non-null `result` or `lead` is never overwritten with null.**
+4. **A non-null `result`, `lead`, or `feedback` is never overwritten with null.** A later
+   non-null `feedback` (a re-vote, a re-sent comment) replaces the earlier one.
 
 Rules 3 and 4 mean a late `abandoned`/`pagehide` beacon cannot clobber a completed capture.
 **The sender does not need to guard against any of this** — send beacons as they happen.
@@ -312,6 +323,7 @@ Three things the portal cannot do for you:
 | `captured` | email-capture succeeds (`status: 'captured'`, `lead` populated) |
 | `abandoned` | visitor explicitly exits the wizard |
 | `pagehide` | `pagehide` / `visibilitychange → hidden`, via `sendBeacon` |
+| `feedback` | visitor votes or sends a comment on the results page (`feedback` populated, status unchanged) |
 
 Retries are safe at any point — the upsert is idempotent.
 

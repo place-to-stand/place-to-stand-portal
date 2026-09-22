@@ -68,6 +68,7 @@ export const auditPayloadSchema = z.object({
     'captured',
     'abandoned',
     'pagehide',
+    'feedback',
   ]),
   sourceDetail: shortText.min(1),
 
@@ -100,6 +101,18 @@ export const auditPayloadSchema = z.object({
     })
     .nullable(),
 
+  // Results-page feedback: a yes/no vote and/or a free-text comment, sent on
+  // the `feedback` trigger. Optional so a marketing deploy that predates the
+  // card still lands; nullable because a vote and a comment are independent.
+  feedback: z
+    .object({
+      helpful: z.boolean().nullable(),
+      comment: z.string().trim().max(10000).nullable(),
+      submittedAt: isoDateTime,
+    })
+    .nullable()
+    .optional(),
+
   analytics: analyticsSchema,
   attribution: attributionSchema,
   client: clientSchema,
@@ -119,7 +132,8 @@ export function toAuditSubmissionRow(
   /** From `resolveDeliveryRequest`; null records the row without emailing. */
   deliveryRequestedAt: string | null = null
 ): NewFormSubmission {
-  const { progress, result, lead, analytics, attribution, client } = payload
+  const { progress, result, lead, feedback, analytics, attribution, client } =
+    payload
 
   return {
     kind: 'audit',
@@ -153,6 +167,10 @@ export function toAuditSubmissionRow(
     subject: null,
     message: lead?.message ?? null,
     marketingConsent: lead?.marketingConsent ?? null,
+
+    feedbackHelpful: feedback?.helpful ?? null,
+    feedbackComment: feedback?.comment || null,
+    feedbackAt: feedback?.submittedAt ?? null,
 
     posthogDistinctId: analytics.posthogDistinctId,
     posthogSessionId: analytics.posthogSessionId,

@@ -137,10 +137,14 @@ function buildFilters({
  * wiping real progress.
  *
  * Acknowledgement (D8, PRD 001): `acknowledged_at`/`acknowledged_by` reset to
- * NULL when and only when status advances. A reviewed row that gains new
- * signal (completed -> captured is the one that matters) must re-flag as
- * unread; a beacon that doesn't advance status leaves the acknowledgement
+ * NULL when status advances or when results-page feedback lands. A reviewed
+ * row that gains new signal (completed -> captured, or a vote/comment on the
+ * result) must re-flag as unread; any other beacon leaves the acknowledgement
  * alone.
+ *
+ * Feedback columns use COALESCE like the lead block, so a later beacon that
+ * omits feedback never wipes it. A re-vote or re-sent comment carries a
+ * non-null value and replaces the earlier one.
  *
  * Contact submissions run through the same path. They are one-shot with a
  * unique `submissionId`, so they never conflict and every rule above is a
@@ -204,12 +208,19 @@ export async function upsertFormSubmission(
         message: sql`COALESCE(excluded.message, ${formSubmissions.message})`,
         marketingConsent: sql`COALESCE(excluded.marketing_consent, ${formSubmissions.marketingConsent})`,
 
-        // Acknowledgement resets when status advances: a reviewed row that
-        // gains new signal must re-flag as unread. Status can only advance
-        // (GREATEST above), so a strict > comparison is exactly "advanced".
+        feedbackHelpful: sql`COALESCE(excluded.feedback_helpful, ${formSubmissions.feedbackHelpful})`,
+        feedbackComment: sql`COALESCE(excluded.feedback_comment, ${formSubmissions.feedbackComment})`,
+        feedbackAt: sql`COALESCE(excluded.feedback_at, ${formSubmissions.feedbackAt})`,
+
+        // Acknowledgement resets when status advances or feedback lands: a
+        // reviewed row that gains new signal must re-flag as unread. Status
+        // can only advance (GREATEST above), so a strict > comparison is
+        // exactly "advanced". Feedback is "new" when the beacon's submit time
+        // is later than what is stored (or nothing is stored yet).
         acknowledgedAt: sql`
           CASE
             WHEN excluded.status > ${formSubmissions.status}
+              OR excluded.feedback_at > COALESCE(${formSubmissions.feedbackAt}, '-infinity'::timestamptz)
               THEN NULL
             ELSE ${formSubmissions.acknowledgedAt}
           END
@@ -217,6 +228,7 @@ export async function upsertFormSubmission(
         acknowledgedBy: sql`
           CASE
             WHEN excluded.status > ${formSubmissions.status}
+              OR excluded.feedback_at > COALESCE(${formSubmissions.feedbackAt}, '-infinity'::timestamptz)
               THEN NULL
             ELSE ${formSubmissions.acknowledgedBy}
           END
