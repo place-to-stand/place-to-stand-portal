@@ -8,11 +8,13 @@ import {
   Clock,
   ExternalLink,
   RefreshCw,
+  ThumbsDown,
+  ThumbsUp,
   Timer,
   Trash2,
   Undo2,
 } from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
+import { format, formatDistanceToNow } from 'date-fns'
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
@@ -341,6 +343,9 @@ export function SubmissionDetailSheet({
         ),
       }
     : null
+  const hasFeedback =
+    displaySubmission.feedbackHelpful !== null ||
+    Boolean(displaySubmission.feedbackComment)
   const hasAttribution = Boolean(
     displaySubmission.utmSource ||
     displaySubmission.utmMedium ||
@@ -589,6 +594,54 @@ export function SubmissionDetailSheet({
                         </li>
                       ))}
                     </ul>
+                  )}
+                </SheetSection>
+              </>
+            )}
+
+            {hasFeedback && (
+              <>
+                <Separator />
+                <SheetSection title='Feedback'>
+                  <dl className={KV_GRID}>
+                    <Kv
+                      label='Helpful'
+                      value={
+                        displaySubmission.feedbackHelpful === null ? (
+                          <span className='text-muted-foreground'>—</span>
+                        ) : (
+                          <span className='inline-flex items-center gap-1.5'>
+                            {displaySubmission.feedbackHelpful ? (
+                              <ThumbsUp className='size-3.5 text-emerald-600 dark:text-emerald-400' />
+                            ) : (
+                              <ThumbsDown className='size-3.5 text-red-600 dark:text-red-400' />
+                            )}
+                            {displaySubmission.feedbackHelpful ? 'Yes' : 'No'}
+                          </span>
+                        )
+                      }
+                    />
+                    <Kv
+                      label='Submitted'
+                      value={
+                        displaySubmission.feedbackAt
+                          ? format(
+                              new Date(displaySubmission.feedbackAt),
+                              'MMM d, yyyy h:mm a'
+                            )
+                          : '—'
+                      }
+                    />
+                  </dl>
+                  {displaySubmission.feedbackComment && (
+                    <div className='flex flex-col gap-1'>
+                      <span className='text-muted-foreground text-xs'>
+                        Comment
+                      </span>
+                      <p className='text-sm whitespace-pre-wrap'>
+                        {displaySubmission.feedbackComment}
+                      </p>
+                    </div>
                   )}
                 </SheetSection>
               </>

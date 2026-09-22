@@ -3,7 +3,14 @@
 import { useCallback, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
-import { Archive, Check, RefreshCw, Trash2 } from 'lucide-react'
+import {
+  Archive,
+  Check,
+  RefreshCw,
+  ThumbsDown,
+  ThumbsUp,
+  Trash2,
+} from 'lucide-react'
 
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { Badge } from '@pts/ui/badge'
@@ -495,6 +502,17 @@ export function SubmissionsTable({
                           <span className='min-w-0 truncate' title={outcome}>
                             {outcome}
                           </span>
+                        ) : null}
+                        {submission.feedbackHelpful === true ? (
+                          <ThumbsUp
+                            className='size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400'
+                            aria-label='Found results helpful'
+                          />
+                        ) : submission.feedbackHelpful === false ? (
+                          <ThumbsDown
+                            className='size-3.5 shrink-0 text-red-600 dark:text-red-400'
+                            aria-label='Did not find results helpful'
+                          />
                         ) : null}
                       </div>
                     </TableCell>
