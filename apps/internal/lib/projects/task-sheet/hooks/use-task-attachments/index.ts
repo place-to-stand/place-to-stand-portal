@@ -18,33 +18,83 @@ import {
 } from './attachment-transformers'
 import { useAttachmentUploader } from './use-attachment-uploader'
 
+const NO_ATTACHMENTS: AttachmentDraft[] = []
+
+type AttachmentRow = {
+  id: string
+  storage_path: string
+  original_name: string
+  mime_type: string
+  file_size: number | null
+}
+
+const toPersistedDraft = (attachment: AttachmentRow): AttachmentDraft => ({
+  id: attachment.id,
+  storagePath: attachment.storage_path,
+  originalName: attachment.original_name,
+  mimeType: attachment.mime_type,
+  fileSize: Number(attachment.file_size ?? 0),
+  isPending: false,
+  downloadUrl: `/api/storage/task-attachment/${attachment.id}`,
+  previewUrl: null,
+})
+
+/**
+ * Persisted attachments are always derived — from the task prop when it
+ * carries them, otherwise from a per-task fetch (board rows only carry
+ * `attachmentCount`). The only state is the unsaved delta: new uploads and
+ * removals. A reset clears the delta and never writes a list, so a reset
+ * queued in a transition cannot land after the fetch and blank the sheet —
+ * which is what made attachments intermittently vanish on open.
+ */
 export const useTaskAttachments = ({
   task,
   canManage,
   toast,
 }: UseTaskAttachmentsArgs): UseTaskAttachmentsReturn => {
-  const defaultAttachments = useMemo(
-    () => buildDefaultAttachments(task),
-    [task]
-  )
+  const taskId = task?.id ?? null
+  const inlineAttachments = useMemo(() => buildDefaultAttachments(task), [task])
+  const hasInlineAttachments = inlineAttachments.length > 0
 
-  const [baselineAttachments, setBaselineAttachments] =
-    useState<AttachmentDraft[]>(defaultAttachments)
-  const [attachments, setAttachments] =
-    useState<AttachmentDraft[]>(defaultAttachments)
+  const [fetched, setFetched] = useState<{
+    taskId: string
+    attachments: AttachmentDraft[]
+  } | null>(null)
+  const [refreshToken, setRefreshToken] = useState(0)
+
+  const persistedAttachments = useMemo(() => {
+    if (hasInlineAttachments) {
+      return inlineAttachments
+    }
+    return fetched && fetched.taskId === taskId
+      ? fetched.attachments
+      : NO_ATTACHMENTS
+  }, [fetched, hasInlineAttachments, inlineAttachments, taskId])
+
+  const [pendingDrafts, setPendingDrafts] = useState<AttachmentDraft[]>([])
   const [attachmentsToRemove, setAttachmentsToRemove] = useState<string[]>([])
   const pendingPathsRef = useRef<Set<string>>(new Set())
   const previewUrlRef = useRef<Map<string, string>>(new Map())
-  const loadedTaskIdRef = useRef<string | null>(null)
 
   const { handleAttachmentUpload, pendingUploadCount, resetPendingUploads } =
     useAttachmentUploader({
       canManage,
       toast,
-      setAttachments,
+      setAttachments: setPendingDrafts,
       pendingPathsRef,
       previewUrlRef,
     })
+
+  const attachments = useMemo(
+    () => [
+      ...persistedAttachments.filter(
+        attachment =>
+          !attachment.id || !attachmentsToRemove.includes(attachment.id)
+      ),
+      ...pendingDrafts,
+    ],
+    [attachmentsToRemove, pendingDrafts, persistedAttachments]
+  )
 
   const cleanupPendingAttachments = useCallback((paths: string[]) => {
     if (!paths.length) {
@@ -85,48 +135,35 @@ export const useTaskAttachments = ({
       }
 
       clearPreviewUrls()
-      setAttachments(baselineAttachments)
+      setPendingDrafts([])
       setAttachmentsToRemove([])
       resetPendingUploads()
+
+      // A save just changed what is persisted; reload so reopening the task
+      // shows it without waiting on the board's refreshed count.
+      if (options?.preservePending) {
+        setRefreshToken(token => token + 1)
+      }
     },
-    [
-      baselineAttachments,
-      cleanupPendingAttachments,
-      clearPreviewUrls,
-      resetPendingUploads,
-    ]
+    [cleanupPendingAttachments, clearPreviewUrls, resetPendingUploads]
   )
 
   const attachmentsDirty = useMemo(
     () =>
       attachmentsAreDirty(
         attachments,
-        baselineAttachments,
+        persistedAttachments,
         attachmentsToRemove,
       ),
-    [attachments, attachmentsToRemove, baselineAttachments],
+    [attachments, attachmentsToRemove, persistedAttachments],
   )
 
-  // When the sheet switches tasks, reset editing state during render
-  // (adjust-state-during-render pattern); the effect below keeps only the
-  // non-state side effects (refs and object-URL revocation).
-  const [prevResetKey, setPrevResetKey] = useState({
-    defaultAttachments,
-    taskId: task?.id ?? null,
-    attachmentCount: task?.attachments?.length ?? 0,
-  })
-  if (
-    prevResetKey.defaultAttachments !== defaultAttachments ||
-    prevResetKey.taskId !== (task?.id ?? null) ||
-    prevResetKey.attachmentCount !== (task?.attachments?.length ?? 0)
-  ) {
-    setPrevResetKey({
-      defaultAttachments,
-      taskId: task?.id ?? null,
-      attachmentCount: task?.attachments?.length ?? 0,
-    })
-    setBaselineAttachments(defaultAttachments)
-    setAttachments(defaultAttachments)
+  // Switching tasks drops the previous task's unsaved delta during render
+  // (adjust-state-during-render); the effect below handles the refs.
+  const [prevTaskId, setPrevTaskId] = useState(taskId)
+  if (prevTaskId !== taskId) {
+    setPrevTaskId(taskId)
+    setPendingDrafts([])
     setAttachmentsToRemove([])
     resetPendingUploads()
   }
@@ -134,43 +171,23 @@ export const useTaskAttachments = ({
   useEffect(() => {
     pendingPathsRef.current.clear()
     clearPreviewUrls()
-    loadedTaskIdRef.current = task?.attachments?.length ? task.id ?? null : null
-  }, [
-    clearPreviewUrls,
-    defaultAttachments,
-    task?.attachments?.length,
-    task?.id,
-  ])
+  }, [clearPreviewUrls, taskId])
+
+  const attachmentCount = task?.attachmentCount ?? 0
 
   useEffect(() => {
-    const taskId = task?.id ?? null
-
-    if (!taskId) {
-      return
-    }
-
-    if (loadedTaskIdRef.current === taskId) {
-      return
-    }
-
-    if (task?.attachments?.length) {
-      loadedTaskIdRef.current = taskId
+    if (!taskId || hasInlineAttachments) {
       return
     }
 
     const controller = new AbortController()
 
-    const loadAttachments = async () => {
-      try {
-        const response = await fetch(
-          `/api/v1/tasks/${taskId}/attachments`,
-          {
-            method: 'GET',
-            credentials: 'include',
-            signal: controller.signal,
-          }
-        )
-
+    fetch(`/api/v1/tasks/${taskId}/attachments`, {
+      method: 'GET',
+      credentials: 'include',
+      signal: controller.signal,
+    })
+      .then(async response => {
         if (!response.ok) {
           const payload = (await response.json().catch(() => null)) as {
             error?: string
@@ -179,58 +196,31 @@ export const useTaskAttachments = ({
         }
 
         const payload = (await response.json()) as {
-          attachments?: Array<{
-            id: string
-            storage_path: string
-            original_name: string
-            mime_type: string
-            file_size: number | null
-          }>
+          attachments?: AttachmentRow[]
         }
 
         if (controller.signal.aborted) {
           return
         }
 
-        const normalized = (payload.attachments ?? []).map(attachment => ({
-          id: attachment.id,
-          storagePath: attachment.storage_path,
-          originalName: attachment.original_name,
-          mimeType: attachment.mime_type,
-          fileSize: Number(attachment.file_size ?? 0),
-          isPending: false,
-          downloadUrl: `/api/storage/task-attachment/${attachment.id}`,
-          previewUrl: null,
-        }))
-
-        pendingPathsRef.current.clear()
-        clearPreviewUrls()
-        setBaselineAttachments(normalized)
-        setAttachments(normalized)
-        setAttachmentsToRemove([])
-        resetPendingUploads()
-        loadedTaskIdRef.current = taskId
-      } catch (error) {
+        setFetched({
+          taskId,
+          attachments: (payload.attachments ?? []).map(toPersistedDraft),
+        })
+      })
+      .catch(error => {
         if (controller.signal.aborted) {
           return
         }
         console.error('Failed to load task attachments', error)
-        loadedTaskIdRef.current = null
-      }
-    }
-
-    void loadAttachments()
+      })
 
     return () => {
       controller.abort()
     }
-  }, [
-    clearPreviewUrls,
-    resetPendingUploads,
-    task?.attachmentCount,
-    task?.attachments?.length,
-    task?.id,
-  ])
+    // `attachmentCount` and `refreshToken` are refetch triggers: the board's
+    // count moving, or a save having just changed what is persisted.
+  }, [attachmentCount, hasInlineAttachments, refreshToken, taskId])
 
   const handleAttachmentRemove = useCallback(
     (key: string) => {
@@ -249,18 +239,15 @@ export const useTaskAttachments = ({
           URL.revokeObjectURL(target.previewUrl)
         }
         previewUrlRef.current.delete(target.storagePath)
+        setPendingDrafts(prev =>
+          prev.filter(attachment => makeAttachmentKey(attachment) !== key)
+        )
       } else if (target.id) {
-        setAttachmentsToRemove(prev => {
-          if (prev.includes(target.id as string)) {
-            return prev
-          }
-          return [...prev, target.id as string]
-        })
+        const targetId = target.id
+        setAttachmentsToRemove(prev =>
+          prev.includes(targetId) ? prev : [...prev, targetId]
+        )
       }
-
-      setAttachments(prev =>
-        prev.filter(attachment => makeAttachmentKey(attachment) !== key)
-      )
     },
     [attachments, cleanupPendingAttachments]
   )
@@ -302,7 +289,6 @@ export const useTaskAttachments = ({
 
 export type {
   AttachmentItem,
-  
   UseTaskAttachmentsArgs,
   UseTaskAttachmentsReturn,
 } from './types'
