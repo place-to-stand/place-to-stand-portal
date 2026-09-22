@@ -78,7 +78,7 @@ bottom; each block depends only on the ones above it.
 ## M. Monitoring (2026-09-21)
 
 - [x] Stuck-email Google Chat alert from the sweep, once per row, 60-minute threshold; `--stuck` preview in `scripts/test-google-chat.ts`
-- [x] `scripts/test-form-intake.ts --smoke` for production: real delivery to an owned address, replay, sweep check, no DB access; `npm run smoke:prod -- <email>` pulls `APP_BASE_URL` from Vercel; the tokens are Secret-type and must come from the shell
+- [x] Production smoke script — removed 2026-09-21: the intake tokens are Vercel Secret-type and unrecoverable, so prod verification is done through the live forms instead (see README Rollout)
 - [x] Failure drill run locally: Mailpit stopped → intake 200 with `queued`, sweep reports `stuckCount: 1`; Mailpit restarted → next sweep delivers both
 
 ## G. Docs + rollout

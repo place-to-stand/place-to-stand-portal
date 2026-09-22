@@ -243,12 +243,12 @@ the tables convention.
 1. Portal PR #234 merges → run migrations `0079` + `0080` via `db:migrate:prod` from the main
    checkout → set the three env vars in Vercel (and confirm `CRON_SECRET` is set, or the sweep
    never runs) → delete `LEADS_INTAKE_TOKEN`. Behaviour unchanged (no payload sets `deliver` yet).
-2. Verify in prod with `CONTACT_INTAKE_TOKEN=… CRON_SECRET=… npm run smoke:prod -- you+probe@…`
-   from `apps/internal`. The wrapper pulls `APP_BASE_URL` from the linked Vercel project; the two
-   tokens are Vercel "Secret" type, which no CLI can read back, so they come from the password
-   manager (if nobody has them, rotate: `openssl rand -hex 32`, set on both Vercel projects). It
-   does one real delivery to your alias, a replay that sends nothing, and a sweep call that
-   returns `stillQueued: 0` (a 500 here means `CRON_SECRET` is unset on Vercel). Then check both inboxes
+2. There is no token-level prod smoke: the intake tokens and `CRON_SECRET` are Vercel Secret-type
+   (write-only) and were never stored elsewhere, so verification goes through the front door after
+   the site cutover (step 3): submit the live contact form and a full audit with an owned alias,
+   check both inboxes (Reply-To on the team mail = the alias) and the row's Emails block, and
+   confirm the `retry-submission-emails` cron is green in the Vercel dashboard (Vercel supplies
+   `CRON_SECRET` itself). Hard-delete the probe rows and their activity afterwards. Then check both inboxes
    — Reply-To on the team mail must be the alias — and "Delete forever" the probe row from the
    link the script prints. Optionally run the failure drill: point `RESEND_FORMS_FROM_EMAIL` at
    an unverified domain, submit, confirm `queued` + the unread row, restore the var, and watch the

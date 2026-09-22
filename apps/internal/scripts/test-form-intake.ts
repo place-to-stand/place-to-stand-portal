@@ -23,16 +23,6 @@
  * Writes real rows to whatever DATABASE_URL points at, then deletes them — do
  * not aim it at production.
  *
- * `--smoke` is the one mode that IS for production. It sends a single contact
- * submission with `deliver: true` to BASE_URL and checks the response, replays
- * it, and (with CRON_SECRET) pings the retry sweep. It touches no database and
- * no Mailpit; you confirm the two emails by looking in the two inboxes, then
- * "Delete forever" the probe row from the link it prints.
- *
- *   BASE_URL=https://<portal> CONTACT_INTAKE_TOKEN=... SMOKE_EMAIL=you+probe@... \
- *     [CRON_SECRET=...] npx tsx scripts/test-form-intake.ts --smoke
- *
- * This script is NOT executed automatically.
  */
 
 import { randomUUID } from 'crypto'
@@ -46,8 +36,6 @@ config({ path: '.env', override: false })
 const BASE_URL = process.env.BASE_URL ?? 'http://localhost:3000'
 const MAILPIT_URL = process.env.MAILPIT_URL ?? 'http://127.0.0.1:54324'
 const WITH_DELIVERY = process.argv.includes('--deliver')
-const SMOKE = process.argv.includes('--smoke')
-const SMOKE_EMAIL = process.env.SMOKE_EMAIL
 const AUDIT_TOKEN = process.env.AUDIT_INTAKE_TOKEN
 const CONTACT_TOKEN = process.env.CONTACT_INTAKE_TOKEN
 
@@ -203,131 +191,6 @@ function auditBeacon(overrides: Record<string, unknown>) {
     ...ENVELOPE,
     ...overrides,
   }
-}
-
-/**
- * Production smoke: one real delivery to an address you own. Everything it
- * asserts comes from the intake response, so it needs no database access.
- */
-async function smoke() {
-  if (!process.env.BASE_URL || !CONTACT_TOKEN || !SMOKE_EMAIL) {
-    console.error(
-      'Smoke mode needs BASE_URL, CONTACT_INTAKE_TOKEN and SMOKE_EMAIL set explicitly.'
-    )
-    process.exit(2)
-  }
-
-  const probeId = randomUUID()
-  const body = (submittedAt: string) => ({
-    submissionId: probeId,
-    sourceDetail: 'https://placetostandagency.com/',
-    submittedAt,
-    contact: {
-      name: 'Smoke Test',
-      email: SMOKE_EMAIL,
-      company: 'test-form-intake --smoke',
-      website: null,
-      subject: 'Smoke test — delete this row',
-      message: `Sent by scripts/test-form-intake.ts --smoke at ${submittedAt}. Safe to delete forever.`,
-      marketingConsent: false,
-    },
-    analytics: {
-      posthogDistinctId: null,
-      posthogSessionId: null,
-      posthogReplayUrl: null,
-    },
-    attribution: {
-      utmSource: 'smoke',
-      utmMedium: 'test',
-      utmCampaign: 'form-intake',
-      utmTerm: null,
-      utmContent: null,
-      gclid: null,
-      referrer: null,
-      landingPath: '/',
-    },
-    client: {
-      viewport: null,
-      screenWidth: null,
-      timezone: null,
-      language: null,
-      userAgent: null,
-    },
-    deliver: true,
-  })
-
-  console.log(`\nSmoke target: ${BASE_URL}`)
-  console.log(`Probe submissionId: ${probeId}`)
-  console.log(`Visitor address: ${SMOKE_EMAIL}\n`)
-
-  console.log('Contact with deliver')
-  const first = await submitContact(body(new Date().toISOString()))
-  check(
-    '-> 200 ok',
-    first.status === 200 && first.body?.ok === true,
-    first.body
-  )
-  check(
-    'team notification sent',
-    first.body?.data?.emails?.team === 'sent',
-    first.body?.data
-  )
-  check(
-    'visitor confirmation sent',
-    first.body?.data?.emails?.confirmation === 'sent',
-    first.body?.data
-  )
-
-  console.log('\nReplay (same submissionId)')
-  const replay = await submitContact(body(new Date().toISOString()))
-  check(
-    '-> 200 ok',
-    replay.status === 200 && replay.body?.ok === true,
-    replay.body
-  )
-  check(
-    'still reports sent (no second send)',
-    replay.body?.data?.emails?.team === 'sent' &&
-      replay.body?.data?.emails?.confirmation === 'sent',
-    replay.body?.data
-  )
-
-  if (process.env.CRON_SECRET) {
-    console.log('\nRetry sweep')
-    const sweep = await fetch(`${BASE_URL}/api/cron/retry-submission-emails`, {
-      headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` },
-    })
-    const sweepBody = await sweep.json().catch(() => null)
-    check(
-      'sweep -> 200 ok',
-      sweep.status === 200 && sweepBody?.ok === true,
-      sweepBody
-    )
-    check(
-      'nothing left queued',
-      sweepBody?.data?.stillQueued === 0,
-      sweepBody?.data
-    )
-  } else {
-    console.log('\nCRON_SECRET not set; skipping the sweep check.')
-  }
-
-  const id = first.body?.data?.id
-  console.log('\nNow confirm by hand:')
-  console.log(
-    `  1. The team inbox has "[Contact] Smoke Test · test-form-intake --smoke — Smoke test — delete this row" with Reply-To ${SMOKE_EMAIL}.`
-  )
-  console.log(`  2. ${SMOKE_EMAIL} has "Thanks for contacting Place To Stand".`)
-  console.log(
-    `  3. Delete the probe forever: ${BASE_URL}/submissions?submission=${id ?? '<id>'}  (Archive, then Delete forever)`
-  )
-
-  if (failures > 0) {
-    console.error(`\n${failures} check(s) FAILED\n`)
-    process.exit(1)
-  }
-  console.log('\nAll smoke checks passed.\n')
-  process.exit(0)
 }
 
 async function main() {
@@ -927,7 +790,7 @@ async function main() {
   process.exit(0)
 }
 
-;(SMOKE ? smoke() : main()).catch(error => {
+main().catch(error => {
   console.error(error)
   process.exit(1)
 })
