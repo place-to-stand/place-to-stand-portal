@@ -31,7 +31,7 @@ export const EMAIL_COLORS = {
   backdrop: '#f4f4f2',
   mastheadText: '#e8e6e3',
   accent: '#b5f542',
-  accentFrame: 'rgba(181, 245, 66, 0.5)',
+  accentFrame: '#62822a',
   accentInk: '#4d7c0f',
 } as const
 
@@ -237,12 +237,29 @@ function renderAction(action?: EmailAction): {
  * The blueprint mark (a framed square holding an accent dot) beside the
  * wordmark, built from table cells because mail clients drop flexbox.
  */
+/**
+ * Fixed-size on purpose. A bare cell stretches to the height of its row, and on
+ * a phone the wordmark wraps to two lines, so the frame turned into a tall
+ * rectangle in Gmail for iOS. Nesting the mark in its own 20x20 table pins it,
+ * and the dot is a filled cell rather than an inline-block span, which Gmail
+ * collapses when the font size is zero.
+ */
+const MARK = `<table role="presentation" cellpadding="0" cellspacing="0" width="20" style="width:20px;border-collapse:collapse;">
+                  <tr>
+                    <td width="18" height="18" align="center" valign="middle" style="width:18px;height:18px;padding:0;border:1px solid ${C.accentFrame};line-height:0;font-size:0;">
+                      <table role="presentation" cellpadding="0" cellspacing="0" width="8" style="width:8px;border-collapse:collapse;">
+                        <tr>
+                          <td width="8" height="8" bgcolor="${C.accent}" style="width:8px;height:8px;padding:0;background:${C.accent};line-height:8px;font-size:8px;">&nbsp;</td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>`
+
 const LOGO = `<table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
                   <tr>
-                    <td width="20" height="20" style="width:20px;height:20px;border:1px solid ${C.accentFrame};text-align:center;vertical-align:middle;font-size:0;line-height:0;">
-                      <span style="display:inline-block;width:8px;height:8px;background:${C.accent};"></span>
-                    </td>
-                    <td style="padding-left:10px;font-family:${F.head};font-size:18px;line-height:1;font-weight:700;letter-spacing:-0.025em;color:${C.mastheadText};">${BRAND}</td>
+                    <td width="20" style="width:20px;padding:0;vertical-align:middle;line-height:0;font-size:0;">${MARK}</td>
+                    <td style="padding-left:10px;vertical-align:middle;white-space:nowrap;font-family:${F.head};font-size:18px;line-height:1;font-weight:700;letter-spacing:-0.025em;color:${C.mastheadText};">${BRAND}</td>
                   </tr>
                 </table>`
 
