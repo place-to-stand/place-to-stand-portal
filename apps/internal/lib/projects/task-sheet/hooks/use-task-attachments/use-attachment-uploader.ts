@@ -3,7 +3,9 @@ import { useCallback, useState } from 'react'
 import {
   ACCEPTED_TASK_ATTACHMENT_MIME_TYPES,
   MAX_TASK_ATTACHMENT_FILE_SIZE,
+  TASK_ATTACHMENT_BUCKET,
 } from '@/lib/storage/task-attachment-constants'
+import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 
 import type { AttachmentDraft } from './types'
 import { UPLOAD_ENDPOINT } from './types'
@@ -70,12 +72,10 @@ export function useAttachmentUploader({
         setPendingUploadCount(count => count + 1)
 
         try {
-          const formData = new FormData()
-          formData.append('file', file)
-
           const response = await fetch(UPLOAD_ENDPOINT, {
             method: 'POST',
-            body: formData,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mimeType: file.type, fileSize: file.size }),
           })
 
           if (!response.ok) {
@@ -87,9 +87,21 @@ export function useAttachmentUploader({
 
           const payload = (await response.json()) as {
             path: string
-            originalName: string
-            mimeType: string
-            fileSize: number
+            token: string
+          }
+
+          // Straight to Storage: Vercel caps function bodies at 4.5MB.
+          const { error: uploadError } = await getSupabaseBrowserClient()
+            .storage.from(TASK_ATTACHMENT_BUCKET)
+            .uploadToSignedUrl(payload.path, payload.token, file, {
+              contentType: file.type,
+              cacheControl: '0',
+            })
+
+          if (uploadError) {
+            throw new Error('Unable to upload attachment.', {
+              cause: uploadError,
+            })
           }
 
           const previewUrl = URL.createObjectURL(file)
@@ -101,9 +113,9 @@ export function useAttachmentUploader({
             {
               id: null,
               storagePath: payload.path,
-              originalName: payload.originalName,
-              mimeType: payload.mimeType,
-              fileSize: payload.fileSize,
+              originalName: file.name,
+              mimeType: file.type,
+              fileSize: file.size,
               isPending: true,
               downloadUrl: previewUrl,
               previewUrl,
