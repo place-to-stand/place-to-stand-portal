@@ -1,7 +1,7 @@
 /**
  * Entity accent colors — the object-identity color system documented in
- * docs/design-system.md. Class strings are written out literally (never
- * interpolated) so Tailwind's scanner can see them.
+ * docs/design-system/components/sheet.md. Class strings are written out
+ * literally (never interpolated) so Tailwind's scanner can see them.
  */
 
 export type AccentEntity =
