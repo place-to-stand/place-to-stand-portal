@@ -332,7 +332,7 @@ export function InvoicesTableSection({
                       client.slug ? (
                         <Link
                           href={`/clients/${client.slug}`}
-                          className='hover:text-foreground truncate hover:underline'
+                          className='hover:text-foreground truncate-link hover:underline'
                         >
                           {client.name}
                         </Link>

@@ -194,6 +194,19 @@
   --color-email-accent-ink: #4d7c0f;
 }
 
+/*
+ * `truncate` for link text that underlines on hover. Tailwind's `truncate`
+ * uses overflow: hidden, which also clips the underline drawn below the text;
+ * clipping only horizontally keeps the ellipsis and lets the underline show.
+ * min-width: 0 keeps it shrinking inside flex rows the way `truncate` does.
+ */
+@utility truncate-link {
+  overflow-x: clip;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

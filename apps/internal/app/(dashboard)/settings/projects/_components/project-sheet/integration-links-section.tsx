@@ -273,7 +273,7 @@ export function IntegrationLinksSection({
                     href={link.url}
                     target='_blank'
                     rel='noopener noreferrer'
-                    className='truncate hover:underline'
+                    className='truncate-link hover:underline'
                   >
                     {link.externalName}
                     <ExternalLink className='text-muted-foreground ml-1 inline h-3 w-3' />

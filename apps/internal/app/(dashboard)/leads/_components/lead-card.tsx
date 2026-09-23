@@ -308,7 +308,7 @@ function AnchorRow({ icon: Icon, value, href }: AnchorRowProps) {
       title={value}
     >
       <Icon className='h-3.5 w-3.5 shrink-0' aria-hidden />
-      <span className='truncate'>{value}</span>
+      <span className='truncate-link'>{value}</span>
     </a>
   )
 }

@@ -160,7 +160,7 @@ function TimeLogRow({
                     className='hover:text-foreground pointer-events-auto relative z-20 inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
                   >
                     {renderProjectTypeIcon(entry.projectType)}
-                    <span className='truncate'>{entry.clientName}</span>
+                    <span className='truncate-link'>{entry.clientName}</span>
                   </Link>
                 ) : (
                   <span className='inline-flex min-w-0 items-center gap-1'>
@@ -182,7 +182,7 @@ function TimeLogRow({
                   ? null
                   : renderProjectTypeIcon(entry.projectType)}
                 <FolderKanban className='size-3 shrink-0' aria-hidden />
-                <span className='truncate'>{entry.projectName}</span>
+                <span className='truncate-link'>{entry.projectName}</span>
               </Link>
             ) : (
               <span className='inline-flex min-w-0 items-center gap-1'>

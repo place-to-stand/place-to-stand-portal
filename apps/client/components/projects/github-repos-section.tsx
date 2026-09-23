@@ -120,7 +120,7 @@ export function GitHubRepoSection({
                   className='text-card-foreground flex min-w-0 items-center gap-1.5 text-sm hover:underline'
                 >
                   <GitHubMark className='text-muted-foreground size-3.5 shrink-0' />
-                  <span className='truncate'>{link.repoFullName}</span>
+                  <span className='truncate-link'>{link.repoFullName}</span>
                   <ExternalLinkIcon className='text-muted-foreground size-3 shrink-0' />
                 </a>
                 <span className='text-muted-foreground shrink-0 text-xs'>

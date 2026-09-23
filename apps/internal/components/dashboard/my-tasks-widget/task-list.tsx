@@ -149,7 +149,7 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
                   className='hover:text-foreground pointer-events-auto relative z-20 inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
                 >
                   {renderProjectTypeIcon(task.project.type, 'size-3 shrink-0')}
-                  <span className='truncate'>{clientLabel}</span>
+                  <span className='truncate-link'>{clientLabel}</span>
                 </Link>
               ) : (
                 <span className='inline-flex min-w-0 items-center gap-1'>
@@ -165,7 +165,7 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
                   className='hover:text-foreground pointer-events-auto relative z-20 inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
                 >
                   <FolderKanban className='size-3 shrink-0' aria-hidden />
-                  <span className='truncate'>{task.project.name}</span>
+                  <span className='truncate-link'>{task.project.name}</span>
                 </Link>
               ) : (
                 <span className='inline-flex min-w-0 items-center gap-1'>

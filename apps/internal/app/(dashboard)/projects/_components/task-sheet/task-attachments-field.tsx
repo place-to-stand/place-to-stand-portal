@@ -107,7 +107,7 @@ export function TaskAttachmentsField({
           href={attachment.url}
           target='_blank'
           rel='noreferrer'
-          className='text-primary inline-flex items-center gap-2 truncate font-medium hover:underline'
+          className='text-primary truncate-link inline-flex items-center gap-2 font-medium hover:underline'
         >
           <Paperclip className='h-4 w-4 shrink-0' />
           <span className='truncate'>{truncateName(attachment.name)}</span>
