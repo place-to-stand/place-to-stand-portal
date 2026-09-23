@@ -6,6 +6,7 @@ import { formatDistanceToNow } from 'date-fns'
 import {
   Archive,
   Check,
+  Mail,
   RefreshCw,
   ThumbsDown,
   ThumbsUp,
@@ -16,6 +17,7 @@ import { SortableTableHead } from '@/components/table-toolbar/sortable-table-hea
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 import {
   Table,
@@ -456,21 +458,30 @@ export function SubmissionsTable({
                     </TableCell>
                     <TableCell>
                       {submission.contactName || submission.contactEmail ? (
-                        // Single line so every row is the same height: name
-                        // first and never squeezed, email as muted secondary
-                        // text that gives way first. The detail sheet has the
-                        // full values.
-                        <div className='flex min-w-0 items-baseline gap-1.5'>
-                          <span className='max-w-full shrink-0 truncate'>
+                        // Single line so every row is the same height: the
+                        // name truncates, the email collapses to a mailto
+                        // icon (address in the tooltip) that never shrinks.
+                        // The row click ignores anchors, so the icon doesn't
+                        // also open the sheet.
+                        <div className='flex min-w-0 items-center gap-1.5'>
+                          <span className='min-w-0 truncate'>
                             {submission.contactName ?? submission.contactEmail}
                           </span>
-                          {submission.contactName && submission.contactEmail ? (
-                            <span
-                              className='text-muted-foreground min-w-0 truncate text-xs'
-                              title={submission.contactEmail}
-                            >
-                              {submission.contactEmail}
-                            </span>
+                          {submission.contactEmail ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <a
+                                  href={`mailto:${submission.contactEmail}`}
+                                  aria-label={`Email ${submission.contactEmail}`}
+                                  className='text-muted-foreground hover:text-foreground shrink-0 transition'
+                                >
+                                  <Mail className='h-3.5 w-3.5' aria-hidden />
+                                </a>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {submission.contactEmail}
+                              </TooltipContent>
+                            </Tooltip>
                           ) : null}
                         </div>
                       ) : (
