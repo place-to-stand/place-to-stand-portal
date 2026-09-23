@@ -9,27 +9,33 @@ import {
   type RenderedEmail,
 } from '@pts/email'
 import { serverEnv } from '@/lib/env.server'
+import type { TemplateAudience } from '@/lib/templates/audience'
 import { renderUpdateEmail } from '@/lib/updates/render-email'
 
 import { buildFormEmailEntries } from './catalog-forms'
 
-export type EmailPortal = 'internal' | 'client'
-
 type EmailTemplateVariant = {
-  /** Which portal's copy of the template this is, e.g. "Admin". */
-  label: string
+  /** Whose copy of the template this is; a template has one per audience. */
+  audience: TemplateAudience
   sample: RenderedEmail
 }
 
 type EmailTemplateStatus = 'active' | 'disabled'
 
+/** The flow an email belongs to; the list is sectioned by it. */
+export type EmailTemplateGroup =
+  'accounts' | 'contact-form' | 'audit' | 'client'
+
 export type EmailTemplateEntry = {
   id: string
+  group: EmailTemplateGroup
+  /** Short enough to read under its group heading, e.g. "Team notification". */
   name: string
   description: string
+  /** One plain sentence on when it goes out: no routes, flags, or file paths. */
+  overview: string
   /** Whether any code path actually sends it today. */
   status: EmailTemplateStatus
-  portals: EmailPortal[]
   triggers: string[]
   recipient: string
   from: string
@@ -70,11 +76,11 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
     render: (destination: string, origin: string) => RenderedEmail
   ): EmailTemplateVariant[] => [
     {
-      label: 'Admin',
+      audience: 'team',
       sample: render(INTERNAL_DESTINATION, internalOrigin),
     },
     {
-      label: 'Client',
+      audience: 'client',
       sample: render(CLIENT_DESTINATION, clientOrigin),
     },
   ]
@@ -82,11 +88,12 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
   return [
     {
       id: 'magic-link',
+      overview: 'Sent when someone asks for a sign-in link.',
+      group: 'accounts',
       status: 'active',
       name: 'Magic link sign-in',
       description:
         'A one-time sign-in link. The link itself comes from Supabase; only the wrapper email is ours.',
-      portals: ['internal', 'client'],
       triggers: ['"Email me a sign-in link" on either sign-in page'],
       recipient:
         'The address entered on the sign-in form, only if an account exists',
@@ -106,11 +113,12 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
     },
     {
       id: 'password-reset',
+      overview: 'Sent when someone forgets their password.',
+      group: 'accounts',
       status: 'active',
       name: 'Password reset',
       description:
         'Recovery link for the forgot-password flow. Replaces the stock Supabase reset email, which was getting flagged as phishing.',
-      portals: ['internal', 'client'],
       triggers: ['Forgot-password form on either portal'],
       recipient: 'The address entered on the form, only if an account exists',
       from,
@@ -129,11 +137,12 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
     },
     {
       id: 'password-changed',
+      overview: 'Sent after someone changes their password.',
+      group: 'accounts',
       status: 'active',
       name: 'Password changed',
       description:
         'Confirmation sent after a password change has already taken effect. Carries no link on purpose. Supabase’s own notice is disabled so only one message lands.',
-      portals: ['internal', 'client'],
       triggers: [
         'Admin: forced password reset, or changing the password from the profile sheet',
         'Client: forced password reset, or setting a password in the onboarding wizard',
@@ -150,11 +159,12 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
     },
     {
       id: 'portal-invite',
+      overview: 'Sent when a contact is given client portal access.',
+      group: 'accounts',
       status: 'active',
       name: 'Client portal invite',
       description:
         'Welcomes a new client portal user with a one-time sign-in link. Sent from the admin portal, but lands with client contacts.',
-      portals: ['internal'],
       triggers: [
         'Promoting a contact to a portal user',
         'Creating a CLIENT-role user under Settings → Users',
@@ -167,7 +177,7 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
       source: 'packages/email/src/templates/portal-invite.ts',
       variants: [
         {
-          label: 'Client',
+          audience: 'client',
           sample: portalInviteEmail({
             fullName: 'Jordan Sample',
             actionLink: `${clientOrigin}/auth/confirm?token_hash=sample-token&type=magiclink`,
@@ -180,11 +190,12 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
     },
     {
       id: 'admin-invite',
+      overview: 'Sent when a new admin is added.',
+      group: 'accounts',
       status: 'active',
       name: 'Admin invite',
       description:
         'Gives a new admin a temporary password. They are forced through a password reset on first sign-in.',
-      portals: ['internal'],
       triggers: ['Creating an ADMIN-role user under Settings → Users'],
       recipient: 'The new admin user',
       from,
@@ -194,7 +205,7 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
       source: 'packages/email/src/templates/admin-invite.ts',
       variants: [
         {
-          label: 'Admin',
+          audience: 'team',
           sample: adminInviteEmail({
             email: 'new.admin@example.com',
             fullName: 'Jordan Sample',
@@ -208,11 +219,12 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
     ...buildFormEmailEntries(internalOrigin),
     {
       id: 'client-update',
+      overview: 'Sent when an admin sends a client a status update.',
+      group: 'client',
       status: 'active',
       name: 'Client update',
       description:
         'A status email to a client: numbered items about recent work, the remaining prepaid hours, and one button into the client portal. Drafted with `pts updates draft` or from the client page, reviewed at /updates/[id], and sent through the admin’s own Gmail — not Resend.',
-      portals: ['internal'],
       triggers: [
         'Send on the update composer at /updates/[id]',
         'Send test on the same page (to the signed-in admin only, subject prefixed [Test])',
@@ -227,7 +239,7 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
       source: 'apps/internal/lib/updates/render-email.ts',
       variants: [
         {
-          label: 'Client',
+          audience: 'client',
           sample: renderUpdateEmail({
             subject: 'Sample Co updates',
             clientName: 'Sample Co',

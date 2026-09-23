@@ -4,11 +4,7 @@ import { Check, ChevronDown } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { Badge } from '@pts/ui/badge'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@pts/ui/popover'
+import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
 import {
   Select,
   SelectContent,
@@ -23,7 +19,7 @@ const ALL = 'all'
 type FilterOption = {
   value: string
   label: string
-  /** Optional badge class token for multi-mode triggers (project statuses). */
+  /** Optional badge class token: multi mode shows the option as a badge (project statuses). */
   badgeClassName?: string
 }
 
@@ -152,12 +148,22 @@ function MultiFilterSelect({
                 <span
                   className={cn(
                     'border-input flex size-4 items-center justify-center rounded-sm border',
-                    selected && 'bg-primary border-primary text-primary-foreground'
+                    selected &&
+                      'bg-primary border-primary text-primary-foreground'
                   )}
                 >
                   {selected ? <Check className='size-3' /> : null}
                 </span>
-                <span>{option.label}</span>
+                {option.badgeClassName ? (
+                  <Badge
+                    variant='outline'
+                    className={cn('font-normal', option.badgeClassName)}
+                  >
+                    {option.label}
+                  </Badge>
+                ) : (
+                  <span>{option.label}</span>
+                )}
               </button>
             )
           })}

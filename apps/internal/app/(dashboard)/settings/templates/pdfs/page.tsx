@@ -4,7 +4,7 @@ import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { buildPdfTemplateCatalog } from '@/lib/pdf/catalog'
 
-import { PdfsBrowser } from '../_components/pdfs-browser'
+import { PdfsGallery } from '../_components/pdfs-gallery'
 import { TEMPLATES_TABS } from '../_lib/tabs'
 
 export const metadata: Metadata = {
@@ -19,8 +19,9 @@ export default function PdfTemplatesPage() {
       breadcrumbs={crumbsForNav('/settings/templates/emails')}
       tabs={TEMPLATES_TABS}
       activeTab='pdfs'
+      count={{ label: 'templates', total: entries.length }}
     >
-      <PdfsBrowser entries={entries} />
+      <PdfsGallery entries={entries} />
     </PageShell>
   )
 }
