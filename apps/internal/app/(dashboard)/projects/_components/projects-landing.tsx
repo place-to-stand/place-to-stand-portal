@@ -38,7 +38,6 @@ import { ProjectStatusCell } from '@/components/projects/project-status-cell'
 import { ProjectOwnerCell } from '@/components/projects/project-owner-cell'
 import type { ProjectStatusValue } from '@/lib/constants'
 import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
-import { formatProjectDateRange } from '@/lib/settings/projects/project-formatters'
 import { buildBoardPath } from '@/lib/projects/board/board-utils'
 import {
   createProjectLookup,
@@ -400,7 +399,6 @@ export function ProjectsLanding({
     options?: { indent?: boolean; isLast?: boolean }
   ) => {
     const href = getProjectHref(project)
-    const dateRange = formatProjectDateRange(project.starts_on, project.ends_on)
 
     const { done: doneCount, total: totalCount } = project.taskProgress
     const progressPercentage =
@@ -447,11 +445,6 @@ export function ProjectsLanding({
               {doneCount}/{totalCount}
             </span>
           </div>
-        </TableCell>
-        <TableCell>
-          <span className='text-muted-foreground text-sm'>
-            {dateRange !== '—' ? dateRange : '—'}
-          </span>
         </TableCell>
         <TableCell className='align-middle'>
           <ProjectOwnerCell
@@ -521,12 +514,11 @@ export function ProjectsLanding({
   }
 
   const tableColumnWidths = {
-    project: 'w-[28%]',
+    project: 'w-[35%]',
     status: 'w-[11%]',
-    progress: 'w-[18%]',
-    dates: 'w-[14%]',
+    progress: 'w-[22%]',
     owner: 'w-[7%]',
-    links: 'w-[11%]',
+    links: 'w-[14%]',
     actions: 'w-24',
   }
 
@@ -548,7 +540,6 @@ export function ProjectsLanding({
             <TableHead className={tableColumnWidths.progress}>
               Progress
             </TableHead>
-            <TableHead className={tableColumnWidths.dates}>Dates</TableHead>
             <TableHead className={tableColumnWidths.owner}>Owner</TableHead>
             <TableHead className={tableColumnWidths.links}>Links</TableHead>
             <TableHead className={`${tableColumnWidths.actions} text-right`}>
@@ -574,7 +565,7 @@ export function ProjectsLanding({
         className='border-t-muted hover:bg-transparent'
       >
         <TableCell
-          colSpan={7}
+          colSpan={6}
           className='bg-blue-100 py-2.5 align-middle dark:bg-blue-500/8'
         >
           <div className='flex items-center gap-4'>
@@ -647,7 +638,6 @@ export function ProjectsLanding({
               <TableHead className={tableColumnWidths.progress}>
                 Progress
               </TableHead>
-              <TableHead className={tableColumnWidths.dates}>Dates</TableHead>
               <TableHead className={tableColumnWidths.owner}>Owner</TableHead>
               <TableHead className={tableColumnWidths.links}>Links</TableHead>
               <TableHead className={`${tableColumnWidths.actions} text-right`}>
