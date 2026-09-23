@@ -15,7 +15,7 @@ import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { Skeleton } from '@pts/ui/skeleton'
 import { getProjectStatusLabel, getProjectStatusToken } from '@/lib/constants'
-import { formatCalendarDate } from '@/lib/dates'
+import { formatCalendarDate } from '@pts/ui/dates'
 import type { LeadConversionSummary, LeadRecord } from '@/lib/leads/types'
 import {
   clientDetailHref,

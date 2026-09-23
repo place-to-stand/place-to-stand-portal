@@ -14,7 +14,7 @@ import {
   getToneClasses,
   getVerbPresentation,
 } from '@/lib/activity/verb-presentation'
-import { formatCalendarDate } from '@/lib/dates'
+import { formatCalendarDate } from '@pts/ui/dates'
 import type { ActivitySourceValue } from '@/lib/types'
 import { cn } from '@/lib/utils'
 

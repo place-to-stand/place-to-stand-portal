@@ -1,4 +1,5 @@
 import type { EmailTemplateGroup } from '@/lib/email/catalog'
+import { BADGE_TINTS } from '@pts/ui/badge-tints'
 import type { TemplateAudience } from '@/lib/templates/audience'
 
 /** Section order and headings for the emails gallery; key order is display order. */
@@ -15,30 +16,21 @@ export const TEMPLATE_AUDIENCES: TemplateAudience[] = [
   'visitor',
 ]
 
-/**
- * One hue per kind of reader, so "who gets this" scans without reading. Badge
- * classes follow the billing-type and project-status badges.
- */
+/** One hue per kind of reader, so "who gets this" scans without reading. */
 export const AUDIENCE_STYLES: Record<
   TemplateAudience,
   { label: string; badgeClassName: string }
 > = {
   team: {
     label: 'Team',
-    badgeClassName:
-      'border-transparent bg-sky-100 text-sky-800 dark:bg-sky-500/10 dark:text-sky-300',
+    badgeClassName: BADGE_TINTS.sky,
   },
   client: {
     label: 'Client',
-    badgeClassName:
-      'border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300',
+    badgeClassName: BADGE_TINTS.emerald,
   },
   visitor: {
     label: 'Visitor',
-    badgeClassName:
-      'border-transparent bg-amber-100 text-amber-800 dark:bg-amber-500/10 dark:text-amber-300',
+    badgeClassName: BADGE_TINTS.amber,
   },
 }
-
-/** Matches the invoice share page's headline face. */
-export const HEADLINE_FONT = 'font-[family-name:var(--font-space-grotesk)]'

@@ -14,7 +14,7 @@ import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
 import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
 
 export const metadata: Metadata = {
-  title: 'Projects | Place to Stand Portal',
+  title: 'Projects',
 }
 
 type PageProps = {

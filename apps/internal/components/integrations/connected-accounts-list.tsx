@@ -6,7 +6,7 @@ import { Loader2, Trash2, Plus, RefreshCw } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Button } from '@pts/ui/button'
 import { Badge } from '@pts/ui/badge'
-import { formatCalendarDate } from '@/lib/dates'
+import { formatCalendarDate } from '@pts/ui/dates'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 
 const PROVIDER_NAMES = {

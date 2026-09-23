@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@pts/ui/select'
-import { Input } from '@/components/ui/input'
+import { Input } from '@pts/ui/input'
 
 type CalendarHeaderProps = {
   headerRef: React.Ref<HTMLDivElement | null>

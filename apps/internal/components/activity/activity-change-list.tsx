@@ -11,7 +11,7 @@ import {
 import { formatFact } from '@/lib/activity/format-fact'
 import { formatHours } from '@/lib/activity/events/shared'
 import type { ActivityReferences } from '@/lib/activity/types'
-import { formatCalendarDate } from '@/lib/dates'
+import { formatCalendarDate } from '@pts/ui/dates'
 import { getTaskStatusLabel, getTaskStatusToken } from '@/lib/projects/task-status'
 import { cn } from '@/lib/utils'
 

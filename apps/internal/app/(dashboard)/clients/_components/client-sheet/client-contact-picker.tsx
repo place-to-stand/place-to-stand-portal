@@ -5,7 +5,7 @@ import { Plus, UserCheck, X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { CommandCreateRows } from '@/components/ui/command-create-rows'
-import { SheetEmptyState } from '@/components/sheets/sheet-empty-state'
+import { EmptyState } from '@pts/ui/empty-state'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
   Command,
@@ -141,7 +141,7 @@ export function ClientContactList({
   if (selectedContacts.length === 0) {
     return (
       <DisabledFieldTooltip disabled={linkDisabled} reason={linkDisabledReason}>
-        <SheetEmptyState
+        <EmptyState
           message='No contacts linked yet.'
           label='Link contact'
           onClick={onRequestLink}

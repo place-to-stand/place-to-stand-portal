@@ -60,7 +60,7 @@ export default async function DashboardPage() {
             Says "hours" rather than "hours remaining" on purpose — a net_30
             client sees their terms here, not a balance. */}
         <p className="mt-1 text-sm text-balance text-muted-foreground">
-          This is a snapshot of your current engagement with Place to Stand —
+          This is a snapshot of your current engagement with Place To Stand —
           your hours, invoices, and project progress.
         </p>
       </div>

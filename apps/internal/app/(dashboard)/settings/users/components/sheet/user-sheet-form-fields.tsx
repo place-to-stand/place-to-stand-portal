@@ -13,7 +13,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
+import { Input } from '@pts/ui/input'
 import {
   Select,
   SelectContent,
@@ -243,7 +243,6 @@ export function UserSheetFormFields({
                           checked={field.value ?? true}
                           onCheckedChange={field.onChange}
                           disabled={accessToggleDisabled}
-                          className='data-[state=checked]:bg-emerald-500 dark:data-[state=checked]:bg-emerald-500'
                           aria-label={
                             (field.value ?? true)
                               ? `Disable sign-in for ${avatarDisplayName ?? 'this user'}`

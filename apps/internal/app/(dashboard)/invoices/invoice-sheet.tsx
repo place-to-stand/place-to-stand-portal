@@ -32,7 +32,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
+import { Input } from '@pts/ui/input'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
@@ -40,7 +40,7 @@ import {
   SearchableCombobox,
   type SearchableComboboxGroup,
 } from '@/components/ui/searchable-combobox'
-import { Textarea } from '@/components/ui/textarea'
+import { Textarea } from '@pts/ui/textarea'
 import { Separator } from '@pts/ui/separator'
 import { useToast } from '@/components/ui/use-toast'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'

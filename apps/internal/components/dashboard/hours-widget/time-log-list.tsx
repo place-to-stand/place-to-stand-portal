@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Building2, FolderKanban, Loader2, User, Users } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
-import { formatCalendarDate } from '@/lib/dates'
+import { formatCalendarDate } from '@pts/ui/dates'
 import { PROJECT_SPECIAL_SEGMENTS } from '@/lib/projects/board/board-utils'
 import type { DashboardTimeLogEntry } from '@/lib/dashboard/types'
 

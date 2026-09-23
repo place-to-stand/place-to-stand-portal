@@ -46,7 +46,7 @@ export default async function PortalLayout({
               links are gone. */}
           <Link
             href="/"
-            aria-label="Place to Stand Client Portal — home"
+            aria-label="Place To Stand Client Portal — home"
             className="flex min-w-0 items-center gap-3 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <BrandLogo size="sm" className="shrink-0" />

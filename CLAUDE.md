@@ -253,7 +253,7 @@ API responses follow `{ ok: boolean, data?: T, error?: string }` pattern.
 
 ### UI Components
 
-**Design system:** `docs/design-system/` (README, `tokens.json`, `components/*.md`) documents colors, type, components, copy voice and house UI rules; the `design-system` skill loads it for UI work. Read it before any visual change, and update it when you change what it describes. `tokens.json` values are generated: run `npm run design-tokens` after changing `globals.css`, `BRAND` or `EMAIL_COLORS`.
+**Design system:** `docs/design-system/` (README, `tokens.json`, `components/*.md`) documents colors, type, components, copy voice and house UI rules; the `design-system` skill loads it for UI work. Read it before any visual change, and update it when you change what it describes. `tokens.json` values are generated: run `npm run design-tokens` after changing `packages/ui/src/styles/theme.css`, `BRAND` or `EMAIL_COLORS`.
 
 **Component library:**
 - Radix UI primitives in `apps/internal/components/ui/`

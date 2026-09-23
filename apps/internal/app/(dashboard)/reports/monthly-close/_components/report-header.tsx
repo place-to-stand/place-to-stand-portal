@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@pts/ui/select'
-import { Input } from '@/components/ui/input'
+import { Input } from '@pts/ui/input'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { useReportNavigation } from '@/lib/reports/use-report-navigation'
 import type { MonthCursor } from '@/lib/data/reports/types'

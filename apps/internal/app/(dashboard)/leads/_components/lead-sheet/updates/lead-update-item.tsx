@@ -14,7 +14,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Badge } from '@pts/ui/badge'
 import { sanitizeEditorHtml } from '@/components/ui/rich-text-editor/utils'
-import { formatCalendarDate } from '@/lib/dates'
+import { formatCalendarDate } from '@pts/ui/dates'
 import type { LeadUpdateRecord } from '@/lib/leads/types'
 import {
   LEAD_UPDATE_ICONS,

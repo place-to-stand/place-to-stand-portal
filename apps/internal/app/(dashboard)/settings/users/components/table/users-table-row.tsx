@@ -16,7 +16,7 @@ import {
 
 import type { UserRowState } from '@/lib/settings/users/state/use-users-table-state'
 import { cn } from '@/lib/utils'
-import { formatCalendarDate } from '@/lib/dates'
+import { formatCalendarDate } from '@pts/ui/dates'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
 import {
   CLICKABLE_ROW_CLASS,

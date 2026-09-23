@@ -12,7 +12,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
+} from '@pts/ui/card'
 import {
   ConnectedAccountsList,
   type ConnectedAccount,

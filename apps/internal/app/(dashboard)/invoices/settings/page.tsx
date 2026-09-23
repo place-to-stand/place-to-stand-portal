@@ -11,7 +11,7 @@ import { ProductCatalogSection } from './_components/product-catalog-section'
 import { TaxRatesSection } from './_components/tax-rates-section'
 
 export const metadata: Metadata = {
-  title: 'Invoice Settings',
+  title: 'Invoice settings',
 }
 
 export default async function InvoiceSettingsPage() {

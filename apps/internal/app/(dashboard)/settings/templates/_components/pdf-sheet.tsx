@@ -90,7 +90,7 @@ function PdfSheetBody({ entry }: { entry: PdfTemplateEntry }) {
         key={previewUrl}
         title={`${entry.name}, ${variant.label}, preview`}
         src={`${previewUrl}#navpanes=0&view=FitH`}
-        className='block min-h-0 w-full flex-1 border-0 bg-slate-50'
+        className='block min-h-0 w-full flex-1 border-0 bg-email-backdrop'
       />
 
       <TemplateSheetFooter title='Inputs' summary={entry.overview}>

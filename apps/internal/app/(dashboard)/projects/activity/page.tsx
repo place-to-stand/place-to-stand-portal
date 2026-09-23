@@ -11,7 +11,7 @@ import { ProjectsAddButton } from '../_components/projects-add-button'
 import { PROJECTS_TABS } from '../_lib/tabs'
 
 export const metadata: Metadata = {
-  title: 'Project Activity | Place to Stand Portal',
+  title: 'Project activity',
 }
 
 export default async function ProjectsActivityPage() {

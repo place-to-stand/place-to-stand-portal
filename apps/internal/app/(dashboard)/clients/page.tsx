@@ -19,7 +19,7 @@ import { sortLandingClients } from './_lib/sort-landing-clients'
 import { CLIENTS_TABS } from './_lib/tabs'
 
 export const metadata: Metadata = {
-  title: 'Clients | Place to Stand Portal',
+  title: 'Clients',
 }
 
 type ClientsPageProps = {

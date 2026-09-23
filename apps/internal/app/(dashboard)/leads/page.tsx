@@ -14,7 +14,7 @@ import { leadHref } from '@/lib/sheets/hrefs'
 import { LeadsWorkspace } from './_components/leads-workspace'
 
 export const metadata: Metadata = {
-  title: 'Leads | Place to Stand Portal',
+  title: 'Leads',
 }
 
 type PageProps = {

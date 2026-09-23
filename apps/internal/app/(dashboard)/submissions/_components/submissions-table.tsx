@@ -31,7 +31,7 @@ import { useToast } from '@/components/ui/use-toast'
 import { useListParams } from '@/hooks/use-list-params'
 import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
 import { cn } from '@/lib/utils'
-import { formatCalendarDate } from '@/lib/dates'
+import { formatCalendarDate } from '@pts/ui/dates'
 import {
   ATTRIBUTION_CHANNEL_LABELS,
   describeAttribution,

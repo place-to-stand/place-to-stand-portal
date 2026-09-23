@@ -18,8 +18,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
+} from '@pts/ui/card'
+import { Input } from '@pts/ui/input'
 import { toast } from '@/components/ui/use-toast'
 import {
   ConnectedAccountsList,

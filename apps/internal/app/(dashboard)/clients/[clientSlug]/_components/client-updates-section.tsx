@@ -8,7 +8,7 @@ import { Loader2, Mail, Plus } from 'lucide-react'
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { useToast } from '@/components/ui/use-toast'
-import { formatCalendarDate } from '@/lib/dates'
+import { formatCalendarDate } from '@pts/ui/dates'
 import { updateComposerHref } from '@/lib/sheets/hrefs'
 
 import { draftUpdateForClient } from '../actions'

@@ -1,8 +1,18 @@
 import type { Metadata } from 'next'
-import { Space_Grotesk } from 'next/font/google'
+import { Geist, Geist_Mono, Space_Grotesk } from 'next/font/google'
 import '@/styles/globals.css'
 
 import { ThemeProvider } from '@/components/providers/theme-provider'
+
+const geistSans = Geist({
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
+})
+
+const geistMono = Geist_Mono({
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
+})
 
 /** The marketing site's logo face — the `BrandLogo` wordmark reads it. */
 const spaceGrotesk = Space_Grotesk({
@@ -12,7 +22,10 @@ const spaceGrotesk = Space_Grotesk({
 })
 
 export const metadata: Metadata = {
-  title: 'Place to Stand - Client Portal',
+  title: {
+    default: 'Client Portal | Place To Stand',
+    template: '%s | Place To Stand Client Portal',
+  },
   description: 'View your projects and remaining hours',
 }
 
@@ -40,7 +53,9 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`font-sans antialiased ${spaceGrotesk.variable}`}>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} font-sans antialiased`}
+      >
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

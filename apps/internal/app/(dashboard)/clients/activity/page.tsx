@@ -9,7 +9,7 @@ import { ClientsAddButton } from '../_components/clients-add-button'
 import { ClientsActivitySection } from '../_components/clients-activity-section'
 
 export const metadata: Metadata = {
-  title: 'Client Activity | Place to Stand Portal',
+  title: 'Client activity',
 }
 
 export default async function ClientsActivityPage() {

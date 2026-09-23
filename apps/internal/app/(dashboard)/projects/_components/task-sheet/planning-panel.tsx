@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@pts/ui/select'
-import { Textarea } from '@/components/ui/textarea'
+import { Textarea } from '@pts/ui/textarea'
 import { useToast } from '@/components/ui/use-toast'
 
 import type { GitHubRepoLinkSummary, TaskWithRelations } from '@/lib/types'

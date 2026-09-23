@@ -11,7 +11,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
+import { Input } from '@pts/ui/input'
 import { PhoneInput } from '@/components/ui/phone-input'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'

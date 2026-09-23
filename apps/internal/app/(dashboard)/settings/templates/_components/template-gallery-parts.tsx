@@ -5,11 +5,9 @@ import { FilterSelect } from '@/components/table-toolbar/filter-select'
 import { ResetFiltersButton } from '@/components/table-toolbar/reset-filters-button'
 import { SearchInput } from '@/components/table-toolbar/search-input'
 import type { TemplateAudience } from '@/lib/templates/audience'
-import { cn } from '@/lib/utils'
 
 import {
   AUDIENCE_STYLES,
-  HEADLINE_FONT,
   TEMPLATE_AUDIENCES,
 } from './template-labels'
 
@@ -94,10 +92,8 @@ export function TemplateSection({
   return (
     <section aria-labelledby={headingId} className='flex flex-col gap-3'>
       <h2 id={headingId} className='flex items-baseline gap-2'>
-        <span className={cn(HEADLINE_FONT, 'text-lg font-semibold')}>
-          {label}
-        </span>
-        <span className='text-muted-foreground font-mono text-[11px]'>
+        <span className='text-base font-semibold'>{label}</span>
+        <span className='text-muted-foreground text-xs tabular-nums'>
           {count}
         </span>
       </h2>

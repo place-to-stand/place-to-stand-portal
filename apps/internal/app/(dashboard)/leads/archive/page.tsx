@@ -17,7 +17,7 @@ import { LEADS_TABS } from '../_lib/tabs'
 import { LeadsArchiveSection } from '../_components/leads-archive-section'
 
 export const metadata: Metadata = {
-  title: 'Lead Archive | Place to Stand Portal',
+  title: 'Lead archive',
 }
 
 type PageProps = {

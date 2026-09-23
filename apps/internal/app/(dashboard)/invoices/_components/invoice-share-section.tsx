@@ -5,7 +5,7 @@ import { Copy, Check, Link2, Link2Off } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
-import { Input } from '@/components/ui/input'
+import { Input } from '@pts/ui/input'
 import { Label } from '@pts/ui/label'
 import { useToast } from '@/components/ui/use-toast'
 

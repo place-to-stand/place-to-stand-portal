@@ -35,11 +35,11 @@ export async function generateMetadata({
     const client = await resolveClientIdentifier(user, clientSlug)
 
     return {
-      title: `${client.name} | Clients | Place to Stand Portal`,
+      title: `${client.name} | Clients`,
     }
   } catch {
     return {
-      title: 'Client Not Found | Place to Stand Portal',
+      title: 'Client not found',
     }
   }
 }

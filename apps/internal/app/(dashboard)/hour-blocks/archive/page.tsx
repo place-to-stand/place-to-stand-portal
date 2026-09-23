@@ -19,7 +19,7 @@ import { HourBlocksManagementTable } from '../_components/hour-blocks-management
 import { HOUR_BLOCKS_TABS } from '../_lib/tabs'
 
 export const metadata: Metadata = {
-  title: 'Hour Blocks Archive | Settings',
+  title: 'Hour block archive',
 }
 
 

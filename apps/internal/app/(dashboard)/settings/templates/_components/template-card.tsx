@@ -40,7 +40,7 @@ export function TemplateCard({
     >
       <div
         aria-hidden='true'
-        className='relative w-full shrink-0 overflow-hidden bg-[#f4f4f2]'
+        className='relative w-full shrink-0 overflow-hidden bg-email-backdrop'
         style={{ height: THUMBNAIL_HEIGHT }}
       >
         {thumbnail}

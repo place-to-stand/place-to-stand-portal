@@ -29,7 +29,7 @@ import {
 } from './_components/summary-cards'
 
 export const metadata: Metadata = {
-  title: 'Monthly Close | Reports',
+  title: 'Monthly close | Reports',
 }
 
 type MonthlyClosePageProps = {

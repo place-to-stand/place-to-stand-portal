@@ -80,7 +80,7 @@ function NotificationSheetBody({
             <ChatCardPreview payload={entry.sample} />
           </div>
         ) : (
-          <pre className='mx-auto my-8 w-fit max-w-[560px] border border-slate-200 bg-white px-6 py-5 font-mono text-xs leading-relaxed whitespace-pre-wrap text-slate-900'>
+          <pre className='mx-auto my-8 w-fit max-w-[560px] email-paper bg-background text-foreground border px-6 py-5 font-mono text-xs leading-relaxed whitespace-pre-wrap'>
             {JSON.stringify(entry.sample, null, 2)}
           </pre>
         )}

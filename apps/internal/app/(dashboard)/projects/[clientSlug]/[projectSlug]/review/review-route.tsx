@@ -23,7 +23,7 @@ type ReviewRouteArgs = {
 }
 
 export const reviewMetadata: Metadata = {
-  title: 'Projects | Place to Stand Portal',
+  title: 'Projects',
 }
 
 const buildClientList = (

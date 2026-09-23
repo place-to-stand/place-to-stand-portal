@@ -16,7 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@pts/ui/dialog'
-import { Input } from '@/components/ui/input'
+import { Input } from '@pts/ui/input'
 import { Label } from '@pts/ui/label'
 import { Switch } from '@pts/ui/switch'
 import {
@@ -87,7 +87,6 @@ function ProductRow({
       <TableCell>
         <Switch
           size='sm'
-          className='data-[state=checked]:bg-emerald-600'
           checked={item.is_active}
           disabled={isPending}
           onCheckedChange={() => onToggleActive(item)}
@@ -369,7 +368,6 @@ export function ProductCatalogSection({
             <div className='flex items-center gap-3'>
               <Switch
                 id='product-is-active'
-                className='data-[state=checked]:bg-emerald-600'
                 checked={isActive}
                 onCheckedChange={(checked: boolean) =>
                   form.setValue('isActive', checked, { shouldDirty: true })

@@ -8,7 +8,7 @@ import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Separator } from '@pts/ui/separator'
 import type { InvoiceWithClient } from '@/lib/invoices/invoice-form'
-import { formatCalendarDate } from '@/lib/dates'
+import { formatCalendarDate } from '@pts/ui/dates'
 
 import { InvoiceShareSection } from './invoice-share-section'
 

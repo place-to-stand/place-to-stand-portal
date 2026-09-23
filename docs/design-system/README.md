@@ -8,11 +8,13 @@ This folder describes; the code decides. When they disagree, the code wins and t
 
 | What | Source of truth | Here |
 | --- | --- | --- |
-| Theme colors (light/dark), radius | `apps/internal/app/globals.css` | `tokens.json` (generated) |
+| Theme colors (light/dark), radius, fonts, brand and email colors | `packages/ui/src/styles/theme.css` (both portals import it) | `tokens.json` (generated) |
 | Brand colors (auth screens, logo) | `packages/ui/src/brand.tsx` (`BRAND`) | `tokens.json` (generated) |
 | Email colors | `packages/email/src/layout.ts` (`EMAIL_COLORS`) | `tokens.json` (generated) |
-| Fonts | `apps/internal/app/layout.tsx` | this README |
-| Components | `packages/ui/src/*`, `apps/internal/components/ui/*` | `components/*.md` |
+| Font loading | each app's `app/layout.tsx` (next/font) | this README |
+| Components | `packages/ui/src/*` (`@pts/ui/*`), app-only ones in `apps/internal/components/ui/*` | `components/*.md` |
+| Status badge tints | `packages/ui/src/badge-tints.ts` (`BADGE_TINTS`) | this README |
+| Date formatting | `packages/ui/src/dates.ts` (`@pts/ui/dates`) | this README |
 | Sheet header accent colors | `apps/internal/lib/entity-accents.ts` | `components/sheet.md` |
 
 `tokens.json` color values and the radius scale are written by `npm run design-tokens` (from the repo root), which reads the sources above and keeps the hand-written usage notes. `npm run lint` fails when the file is stale. Type, spacing, size, shadow and opacity entries are hand-written.
@@ -23,7 +25,9 @@ This folder describes; the code decides. When they disagree, the code wins and t
 
 - `README.md`: this brand book.
 - `tokens.json`: every token with a usage note.
-- `components/`: one note per component family: badge, brand-logo, button, card, dialog, dropdown-menu, input, select, sheet, switch, table, tabs.
+- `components/`: one note per component family: badge, brand-logo, button, card, dialog, dropdown-menu, empty-state, input, row-action-button, select, sheet, switch, table, tabs.
+
+Both portals share `packages/ui` and its theme. The client portal layers a few tokens of its own on top (a grey page, `chrome` for the top bar, `surface-1/2/3`), defined in `apps/client/styles/globals.css`.
 
 ## The product
 
@@ -35,9 +39,9 @@ Place To Stand is a small software agency. This system describes its two Next.js
 - **The name.** The wordmark reads **Place To Stand**, with a capital T, as `BrandLogo` renders it. The favicon abbreviation is **PTS**. Some older page metadata still says "Place to Stand Portal". Use the wordmark casing in new copy.
 - **Verbs first on actions.** "Archive client", "Mark as sent", "Copy link". A destructive action names what it destroys, so it never needs color to carry the meaning.
 - **Toasts are short and past tense on success** ("Time entry removed", "Closed month"). On failure they read **"Unable to <verb> <noun>"** ("Unable to save invoice"), with the reason in the description.
-- **Empty states are one plain sentence.** "No leads yet", "No matching tasks." There's no illustration and no pep.
+- **Empty states are one plain sentence.** "No leads yet", "No matching tasks." There's no illustration and no pep. Render them with `EmptyState` (`@pts/ui/empty-state`).
 - **Minimal helper copy.** Don't add a hint under a field unless it changes the decision someone is about to make. A section gets at most one line of context. Mark optional fields with `<FormLabel optional>`, which appends a muted "(optional)", instead of explaining them.
-- **Counts and dates are data.** Write "Showing 24 of 118 clients". Format every date with `formatCalendarDate` (`lib/dates.ts`), which gives "Sep 23, 2026". It reads date-only values in UTC and timestamps in `America/Los_Angeles`, so server and client always agree. Never call an ambient-timezone `format()` directly: that caused hydration errors and off-by-one dates.
+- **Counts and dates are data.** Write "Showing 24 of 118 clients". Format every date with `formatCalendarDate` (`@pts/ui/dates`, both apps), which gives "Sep 23, 2026". It reads date-only values in UTC and timestamps in `America/Los_Angeles`, so server and client always agree. Never call an ambient-timezone `format()` directly: that caused hydration errors and off-by-one dates.
 - No emoji, no exclamation marks, no marketing adjectives inside the app.
 
 ## Visual foundations
@@ -50,14 +54,19 @@ Place To Stand is a small software agency. This system describes its two Next.js
   - `accent` for hover and highlight.
   - `border` / `input` / `ring` for edges and focus.
 - **`primary` is ink, not a hue.** It's near-black in light mode and near-white in dark. Text on it is always `primary-foreground`. Use one primary Button per view, for the thing the view is for.
-- **`destructive`** is the only chromatic UI token. It fills the destructive Button and Badge (white label; 60% fill in dark) and colors invalid-field borders and rings.
+- **Three status tokens, and only three.** Use them for status text, icons and tints (`text-success`, `bg-warning/10`); never a raw red, green, emerald or amber shade.
+  - **`destructive`**: errors, deletion, negative balances, removal. It also fills the destructive Button and Badge (white label; 60% fill in dark) and colors invalid-field borders and rings.
+  - **`success`**: paid, connected, done, hours remaining.
+  - **`warning`**: pending, expiring, low, drift.
+- **Status badges use `BADGE_TINTS`** (`@pts/ui/badge-tints`) on an outline `Badge`: one recipe, `bg-X-100 text-X-800` in light and `bg-X-900/40 text-X-200` in dark, keyed by hue, plus `neutral` (muted) for done, void and resting states. Map a domain's statuses to hues in one constants file; never write a tint inline.
 - **`chart-1`–`chart-5`** are for data series only. Their hues change between themes, so never describe a series by its color.
-- **Status colors outside the tokens.** A few status marks use Tailwind palette colors directly: the checked Switch is `emerald-500`, and the dev-environment band in the sidebar is `amber-500` with `amber-950` text. Treat these as fixed exceptions, not a palette to extend.
+- **Fixed exceptions.** The checked Switch is `emerald-500` (set inside the component; never override it), the dev-environment band in the sidebar is `amber-500` with `amber-950` text, and entity accents come from `lib/entity-accents.ts`. Don't extend these into a palette.
 - **The brand lime `brand-lime` (#b5f542) is used sparingly and only on dark grounds.** It belongs to `brand-bg` (#0e0f11): the auth screens, the dark email masthead, and the dark theme's logo mark. On white it all but vanishes, so:
   - Use `brand-lime-600` (#65a30d) for the mark in the light theme.
   - Use `email-accent-ink` (#4d7c0f, lime-700) for any lime text on paper.
   - Never put lime on a UI control, and never use it as a status color.
-- **Email paper.** A `.email-paper` subtree (the third block in `globals.css`) re-declares the light tokens. An email being composed or reviewed then renders white with dark ink, even when the app is dark, which is how a mail client will show it. Emails use the `email-*` tokens: a dark `brand-bg` masthead over an `email-paper` body on an `email-backdrop` canvas.
+- **Brand and email colors are Tailwind colors.** Write `bg-brand-bg`, `text-brand-text-muted`, `border-email-rule`, `bg-email-backdrop`, never their hex values.
+- **Email paper.** A `.email-paper` subtree (a block in `theme.css`) re-declares the light tokens. An email being composed or reviewed then renders white with dark ink, even when the app is dark, which is how a mail client will show it. Emails use the `email-*` tokens: a dark `brand-bg` masthead over an `email-paper` body on an `email-backdrop` canvas.
 
 ### Type
 - **Geist (`sans`) for the entire UI.** The working size is `ui` (text-sm, 14px), and labels and buttons use `ui-medium`. Other sizes:
@@ -65,7 +74,7 @@ Place To Stand is a small software agency. This system describes its two Next.js
   - `overline` (11px, semibold, uppercase, tracking-wide) for group labels.
   - `micro` (10px) for count pills.
   - Inputs use `body` (16px) below the `md` breakpoint so iOS doesn't zoom, then 14px.
-- **Space Grotesk (`display`) is the brand face**, used only for:
+- **Space Grotesk (`font-display`) is the brand face**, used only for:
   - the wordmark (`wordmark`: bold, tracking-tight, leading-none)
   - signed-out headlines (`auth-title`)
   - public share-page and email headings (`share-headline`)
@@ -128,8 +137,12 @@ Signed-out screens (`AuthShell`) are always dark, whatever the user's theme, bec
 3. **Button has `gap-2` built into every size.** Never add `mr-*` or `ml-*` to an icon inside a Button. Put the icon first as a child and let the gap space it ("Add lead").
 4. **Dropdown, select and popover popups align left by default.** The wrappers default to `align='start'`. Never pass `align='start'` at a call site. Pass an explicit `align` only when you mean to deviate.
 5. **Sortable tables use `layout='fixed'`.** Give every header a width class and `truncate` long-text cells, so sorting and paging can't make columns jump.
-6. **Sheet Save is always enabled.** Never gate Save on `isDirty` or has-changes. Disable it only while a save is in flight or when a real validation precondition fails.
+6. **Sheet and dialog Save is always enabled.** Never gate Save on `isDirty` or has-changes. (An inline editor outside a sheet, like the client notes card, may disable Save until something changed.) Disable it only while a save is in flight or when a real validation precondition fails.
 7. **Save means done, which closes the sheet.** A successful save closes the sheet, for create and edit alike. A create sheet never turns into an edit sheet.
-8. **Controls inside a sheet apply on save.** Bind them to the form and apply in the save action. Never fire an immediate mutation from inside an edit sheet. Table-row toggles may stay instant.
+8. **Controls inside a sheet apply on save.** Bind them to the form and apply in the save action. Never fire an immediate mutation from inside an edit sheet. Table-row toggles may stay instant, and so may explicit workflow actions that aren't form fields (send, void, share, deploy), which confirm when destructive.
 9. **Minimal helper copy.** See Content fundamentals.
-10. **Dates go through `formatCalendarDate`.**
+10. **Dates go through `@pts/ui/dates`.** `formatCalendarDate` for dates, timestamps and month labels (`{ month: 'long', year: 'numeric' }`); `formatRelativeTime` for "3 days ago". Never `toLocaleDateString`, a bare `Intl.DateTimeFormat`, or date-fns `format()` in the UI.
+11. **Icon-only row actions use `RowActionButton`** (`@pts/ui/row-action-button`): a real tooltip plus a matching accessible name. Never `title=` as a tooltip.
+12. **Pick a size, don't override it.** Buttons take `size` (`xs` 28px, `sm` 32px, default 36px, `icon-sm`), Avatars take `size` (`xs`–`lg`, initials scale with it). No `h-*` or `text-[9px]` overrides.
+13. **Focus is `focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]`** on every custom interactive element. Never remove the outline without that replacement.
+14. **Toasts:** success is short and past tense ("Invoice sent"); failure is "Unable to <verb> <noun>" with the reason in the description. No "Failed to…", "Error", "…successfully", or exclamation marks.

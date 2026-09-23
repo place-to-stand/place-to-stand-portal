@@ -38,7 +38,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from '@/components/ui/hover-card'
-import { Input } from '@/components/ui/input'
+import { Input } from '@pts/ui/input'
 import {
   Popover,
   PopoverContent,
