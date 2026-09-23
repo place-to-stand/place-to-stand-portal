@@ -126,7 +126,7 @@ export function UpdateComposer({
       const result = await sendClientUpdateTestAction({ id: update.id })
       if (!result.success) {
         toast({
-          title: 'Test not sent',
+          title: 'Unable to send test',
           description: result.error,
           variant: 'destructive',
         })
@@ -153,7 +153,7 @@ export function UpdateComposer({
       const result = await sendClientUpdateAction({ id: update.id })
       if (!result.success) {
         toast({
-          title: 'Not sent',
+          title: 'Unable to send update',
           description: result.error,
           variant: 'destructive',
         })

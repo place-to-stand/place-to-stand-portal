@@ -68,8 +68,8 @@ export function TaskList({
             <Button
               type='button'
               variant='ghost'
-              size='sm'
-              className='h-7 w-full text-xs'
+              size='xs'
+              className='w-full'
               onClick={onLoadMore}
               disabled={isLoadingMore}
             >
@@ -106,7 +106,7 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
           href={linkMeta.href!}
           // Full-bleed so the highlight meets the row dividers and the card's own
           // clipped corners; a per-row radius left square gaps at every edge.
-          className='hover:bg-muted/60 focus-visible:ring-primary absolute inset-0 z-0 transition focus-visible:ring-2 focus-visible:ring-inset'
+          className='hover:bg-muted/60 focus-visible:border-ring focus-visible:ring-ring/50 absolute inset-0 z-0 transition outline-none focus-visible:ring-[3px] focus-visible:ring-inset'
           aria-label={`View task: ${task.title}`}
         />
       ) : null}
@@ -141,7 +141,7 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
               a dot between each fragment so they read as one breadcrumb rather
               than three floating chips.
             */}
-            <div className='text-muted-foreground flex min-w-0 items-center gap-1.5 text-[11px]'>
+            <div className='text-muted-foreground flex min-w-0 items-center gap-1.5 text-xs'>
               {clientLinkMeta.href ? (
                 <Link
                   href={clientLinkMeta.href}

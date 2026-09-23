@@ -22,8 +22,7 @@ export function ReviewTaskDataCells({
   updatedAtOverride,
 }: ReviewTaskDataCellsProps) {
   const commentCount = task.commentCount ?? 0
-  const attachmentCount =
-    task.attachmentCount ?? (task.attachments?.length ?? 0)
+  const attachmentCount = task.attachmentCount ?? task.attachments?.length ?? 0
   const assignedSummary = summarizeAssignees(task, renderAssignees)
   const updatedValue = updatedAtOverride ?? task.updated_at ?? null
 

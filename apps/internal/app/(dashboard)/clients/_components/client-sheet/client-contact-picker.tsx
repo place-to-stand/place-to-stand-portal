@@ -15,6 +15,7 @@ import {
   CommandList,
 } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 
 type ClientContactOption = {
   id: string
@@ -26,9 +27,14 @@ type ClientContactOption = {
 
 function PortalAccessMark() {
   return (
-    <span title='Has portal access'>
-      <UserCheck className='h-3 w-3 text-emerald-500' />
-    </span>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span aria-label='Has portal access'>
+          <UserCheck className='text-success h-3 w-3' />
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>Has portal access</TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -179,8 +185,8 @@ export function ClientContactList({
             <Button
               type='button'
               variant='ghost'
-              size='icon'
-              className='text-muted-foreground hover:text-destructive h-8 w-8 shrink-0'
+              size='icon-sm'
+              className='text-muted-foreground hover:text-destructive shrink-0'
               onClick={() => onRequestRemoval(contact)}
               disabled={isPending}
               aria-label={`Unlink ${contact.name ?? contact.email}`}

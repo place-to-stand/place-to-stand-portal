@@ -41,11 +41,9 @@ export function PayrollSection({ data }: PayrollSectionProps) {
               <SectionRow
                 key={row.userId}
                 leading={
-                  <Avatar className='h-7 w-7'>
+                  <Avatar size='md'>
                     <AvatarImage src={avatarSrc} alt={displayName} />
-                    <AvatarFallback className='text-[10px]'>
-                      {getInitials(displayName)}
-                    </AvatarFallback>
+                    <AvatarFallback>{getInitials(displayName)}</AvatarFallback>
                   </Avatar>
                 }
                 primary={displayName}

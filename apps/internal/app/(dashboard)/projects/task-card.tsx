@@ -22,6 +22,10 @@ import {
   Users,
 } from 'lucide-react'
 
+import { Badge } from '@pts/ui/badge'
+import { BADGE_TINTS } from '@pts/ui/badge-tints'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+
 import {
   CardAssigneeAvatars,
   type CardAssignee,
@@ -179,13 +183,18 @@ function CardContent({
                 </span>
               ) : null}
               {loggedHours > 0 ? (
-                <span
-                  className='inline-flex items-center gap-1'
-                  title={`${formatLoggedHours(loggedHours)} logged`}
-                >
-                  <Clock className='h-3.5 w-3.5' aria-hidden />
-                  {formatLoggedHours(loggedHours)}
-                </span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className='inline-flex items-center gap-1'>
+                      <Clock className='h-3.5 w-3.5' aria-hidden />
+                      {formatLoggedHours(loggedHours)}
+                      <span className='sr-only'> logged</span>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {formatLoggedHours(loggedHours)} logged
+                  </TooltipContent>
+                </Tooltip>
               ) : null}
             </div>
           ) : null}
@@ -378,55 +387,26 @@ function renderProjectTypeIcon(
 const WORKER_BADGE_CONFIG: Partial<
   Record<WorkerStatusValue, { label: string; className: string }>
 > = {
-  dispatched: {
-    label: 'Dispatched',
-    className:
-      'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
-  },
-  working: {
-    label: 'Executing',
-    className:
-      'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
-  },
-  implementing: {
-    label: 'Executing',
-    className:
-      'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
-  },
-  plan_ready: {
-    label: 'Plan Ready',
-    className:
-      'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
-  },
-  pr_created: {
-    label: 'PR Created',
-    className:
-      'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
-  },
-  error: {
-    label: 'Error',
-    className: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
-  },
-  cancelled: {
-    label: 'Cancelled',
-    className:
-      'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300',
-  },
+  dispatched: { label: 'Dispatched', className: BADGE_TINTS.blue },
+  working: { label: 'Executing', className: BADGE_TINTS.amber },
+  implementing: { label: 'Executing', className: BADGE_TINTS.amber },
+  plan_ready: { label: 'Plan ready', className: BADGE_TINTS.blue },
+  pr_created: { label: 'PR created', className: BADGE_TINTS.emerald },
+  error: { label: 'Error', className: BADGE_TINTS.rose },
+  cancelled: { label: 'Cancelled', className: BADGE_TINTS.orange },
 }
 
 function WorkerBadge({ status }: { status: WorkerStatusValue }) {
   const config = WORKER_BADGE_CONFIG[status]
   if (!config) return null
   return (
-    <span
-      className={cn(
-        'inline-flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium',
-        config.className
-      )}
+    <Badge
+      variant='outline'
+      className={cn('w-fit text-[10px]', config.className)}
     >
-      <Bot className='h-3 w-3' />
+      <Bot />
       {config.label}
-    </span>
+    </Badge>
   )
 }
 

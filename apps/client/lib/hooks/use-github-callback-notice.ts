@@ -33,7 +33,7 @@ export function useGitHubCallbackNotice(redirectPath: string): {
       setError(
         reason === 'already_linked'
           ? 'That GitHub organization is already connected to a different client.'
-          : 'Failed to connect GitHub. Please try again.'
+          : 'Unable to connect GitHub. Please try again.'
       )
     }
 

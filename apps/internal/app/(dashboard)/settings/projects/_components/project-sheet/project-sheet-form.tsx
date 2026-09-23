@@ -324,7 +324,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                         </SelectTrigger>
                       </DisabledFieldTooltip>
                     </FormControl>
-                    <SelectContent align='start'>
+                    <SelectContent>
                       {PROJECT_TYPE_OPTIONS.map(option => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
@@ -449,7 +449,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                           </SelectTrigger>
                         </DisabledFieldTooltip>
                       </FormControl>
-                      <SelectContent align='start'>
+                      <SelectContent>
                         {PROJECT_STATUS_OPTIONS.map(status => {
                           const statusToken = getProjectStatusToken(
                             status.value
@@ -474,7 +474,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
               name='ownerId'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Project Owner</FormLabel>
+                  <FormLabel>Project owner</FormLabel>
                   <FormControl>
                     <DisabledFieldTooltip
                       disabled={fieldState.owner.disabled}

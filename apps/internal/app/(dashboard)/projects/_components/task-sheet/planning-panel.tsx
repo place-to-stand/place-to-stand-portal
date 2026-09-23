@@ -1,8 +1,22 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Check, ChevronDown, ExternalLink, Loader2, MessageCircleQuestion, Play, Send } from 'lucide-react'
+import {
+  ChevronDown,
+  ExternalLink,
+  Loader2,
+  MessageCircleQuestion,
+  Play,
+  Send,
+} from 'lucide-react'
 
 import {
   AlertDialog,
@@ -16,11 +30,14 @@ import {
   AlertDialogTrigger,
 } from '@pts/ui/alert-dialog'
 import { Button } from '@pts/ui/button'
+import { cn } from '@pts/ui/cn'
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@pts/ui/popover'
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from '@pts/ui/dropdown-menu'
 import {
   Select,
   SelectContent,
@@ -35,10 +52,17 @@ import type { GitHubRepoLinkSummary, TaskWithRelations } from '@/lib/types'
 import { usePlanningSession } from './use-planning-session'
 import { usePlanStream, detectContentType } from './use-plan-stream'
 import { usePlanRevisions } from './use-plan-revisions'
-import { PlanRevisionNav, type VersionMeta, type VersionDeployStatus } from './plan-revision-nav'
+import {
+  PlanRevisionNav,
+  type VersionMeta,
+  type VersionDeployStatus,
+} from './plan-revision-nav'
 import { PlanDocumentViewer } from './plan-document-viewer'
 import { PlanDeploymentStatus } from './plan-deployments-section'
-import { useTaskDeployments, TASK_DEPLOYMENTS_KEY } from './use-task-deployments'
+import {
+  useTaskDeployments,
+  TASK_DEPLOYMENTS_KEY,
+} from './use-task-deployments'
 import { deployPlan } from '../../actions/trigger-worker'
 import type { WorkerStatusResult } from '../../actions/fetch-worker-status'
 import { WORKER_STATUS_KEY } from './use-worker-status'
@@ -56,6 +80,52 @@ const MODEL_OPTIONS = PLANNING_MODEL_TIERS.map(tier => ({
   label: getModelLabel(tier),
 }))
 
+type ModelMenuProps = {
+  value: PlanningModelTier
+  onChange: (model: PlanningModelTier) => void
+  triggerLabel: string
+  align?: 'center' | 'end'
+  disabled?: boolean
+  className?: string
+}
+
+function ModelMenu({
+  value,
+  onChange,
+  triggerLabel,
+  align,
+  disabled,
+  className,
+}: ModelMenuProps) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant='outline'
+          size='sm'
+          className={cn('text-xs', className)}
+          disabled={disabled}
+        >
+          {triggerLabel}
+          <ChevronDown className='opacity-50' />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className='w-40' align={align}>
+        <DropdownMenuRadioGroup
+          value={value}
+          onValueChange={next => onChange(toPlanningModelTier(next))}
+        >
+          {MODEL_OPTIONS.map(opt => (
+            <DropdownMenuRadioItem key={opt.model} value={opt.model}>
+              {opt.label}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
 type PlanningPanelProps = {
   task: TaskWithRelations
   githubRepos: GitHubRepoLinkSummary[]
@@ -68,9 +138,15 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
   const [selectedRepoId, setSelectedRepoId] = useState(githubRepos[0]?.id ?? '')
   const [feedbackInput, setFeedbackInput] = useState('')
   const [isDispatchPending, startDispatchTransition] = useTransition()
-  const [generatingVersion, setGeneratingVersion] = useState<number | null>(null)
-  const [selectedModel, setSelectedModel] = useState<PlanningModelTier | null>(null)
-  const [dispatchModel, setDispatchModel] = useState<PlanningModelTier>(DEFAULT_PLANNING_TIER)
+  const [generatingVersion, setGeneratingVersion] = useState<number | null>(
+    null
+  )
+  const [selectedModel, setSelectedModel] = useState<PlanningModelTier | null>(
+    null
+  )
+  const [dispatchModel, setDispatchModel] = useState<PlanningModelTier>(
+    DEFAULT_PLANNING_TIER
+  )
 
   // Session management
   const {
@@ -145,7 +221,8 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
     generatingVersion ?? (isThreadStreaming ? threadGeneratingVersion : null)
   const effectiveLatest = effectiveGeneratingVersion ?? latestVersion
   const effectiveCurrent = effectiveGeneratingVersion ?? currentVersion
-  const isViewingOldVersion = !isBusy && currentVersion < latestVersion && latestVersion > 0
+  const isViewingOldVersion =
+    !isBusy && currentVersion < latestVersion && latestVersion > 0
 
   // Detect if current content is clarifying questions vs a plan
   const displayContentType = isGenerating
@@ -174,7 +251,8 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
         d => d.plan_thread_id === activeThreadId && d.plan_version === version
       )
       if (matching.length === 0) return 'none'
-      if (matching.some(d => d.worker_status === 'pr_created' || d.pr_url)) return 'pr_created'
+      if (matching.some(d => d.worker_status === 'pr_created' || d.pr_url))
+        return 'pr_created'
       return 'dispatched'
     },
     [allDeployments, activeThreadId]
@@ -202,16 +280,29 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
     }
 
     // If currently generating a new version beyond what's in revisions, add it
-    if (effectiveGeneratingVersion && !meta.some(m => m.version === effectiveGeneratingVersion)) {
+    if (
+      effectiveGeneratingVersion &&
+      !meta.some(m => m.version === effectiveGeneratingVersion)
+    ) {
       const isQ = isGenerating
         ? streamContentType === 'questions'
         : detectContentType(threadPartialContent) === 'questions'
       if (isQ) {
         qCount++
-        meta.push({ version: effectiveGeneratingVersion, label: qCount > 1 ? `Q${qCount}` : 'Q', isQuestions: true, deployStatus: 'none' })
+        meta.push({
+          version: effectiveGeneratingVersion,
+          label: qCount > 1 ? `Q${qCount}` : 'Q',
+          isQuestions: true,
+          deployStatus: 'none',
+        })
       } else {
         planCount++
-        meta.push({ version: effectiveGeneratingVersion, label: `v${planCount}`, isQuestions: false, deployStatus: 'none' })
+        meta.push({
+          version: effectiveGeneratingVersion,
+          label: `v${planCount}`,
+          isQuestions: false,
+          deployStatus: 'none',
+        })
       }
     }
 
@@ -237,10 +328,12 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
     () => versionMeta.find(m => m.version === displayedVersion),
     [versionMeta, displayedVersion]
   )
-  const currentVersionLabel = currentVersionMeta?.label ?? `v${displayedVersion}`
+  const currentVersionLabel =
+    currentVersionMeta?.label ?? `v${displayedVersion}`
 
   // Check if current version already has a deployment (disables accept button)
-  const versionAlreadyDispatched = (currentVersionMeta?.deployStatus ?? 'none') !== 'none'
+  const versionAlreadyDispatched =
+    (currentVersionMeta?.deployStatus ?? 'none') !== 'none'
 
   // The selected repo object (for display)
   const selectedRepo = useMemo(
@@ -274,11 +367,20 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
       setGeneratingVersion(null)
       invalidateRevisions()
     })
-  }, [activeThreadId, isBusy, selectedRepoId, task, activeModel, generate, invalidateRevisions])
+  }, [
+    activeThreadId,
+    isBusy,
+    selectedRepoId,
+    task,
+    activeModel,
+    generate,
+    invalidateRevisions,
+  ])
 
   // Handle feedback submission
   const handleFeedbackSubmit = useCallback(() => {
-    if (!feedbackInput.trim() || !activeThreadId || !activeThread || isBusy) return
+    if (!feedbackInput.trim() || !activeThreadId || !activeThread || isBusy)
+      return
 
     const feedback = feedbackInput.trim()
     setFeedbackInput('')
@@ -324,7 +426,11 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
       })
 
       if ('error' in result) {
-        toast({ variant: 'destructive', title: 'Error', description: result.error })
+        toast({
+          variant: 'destructive',
+          title: 'Unable to dispatch plan',
+          description: result.error,
+        })
         return
       }
 
@@ -339,8 +445,13 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
         seededStatus
       )
 
-      toast({ title: 'Plan dispatched', description: 'GitHub issue created with PRD instructions.' })
-      queryClient.invalidateQueries({ queryKey: [TASK_DEPLOYMENTS_KEY, task.id] })
+      toast({
+        title: 'Plan dispatched',
+        description: 'GitHub issue created with PRD instructions.',
+      })
+      queryClient.invalidateQueries({
+        queryKey: [TASK_DEPLOYMENTS_KEY, task.id],
+      })
     })
   }, [
     displayContent,
@@ -367,22 +478,24 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
 
   if (isSessionLoading) {
     return (
-      <div className='flex h-full w-[560px] shrink-0 flex-col items-center justify-center border-l bg-muted/50'>
-        <Loader2 className='h-5 w-5 animate-spin text-muted-foreground' />
-        <p className='mt-2 text-xs text-muted-foreground'>Loading planning session...</p>
+      <div className='bg-muted/50 flex h-full w-[560px] shrink-0 flex-col items-center justify-center border-l'>
+        <Loader2 className='text-muted-foreground h-5 w-5 animate-spin' />
+        <p className='text-muted-foreground mt-2 text-xs'>
+          Loading planning session...
+        </p>
       </div>
     )
   }
 
   return (
-    <div className='flex h-full w-[560px] shrink-0 flex-col border-l bg-muted/50'>
+    <div className='bg-muted/50 flex h-full w-[560px] shrink-0 flex-col border-l'>
       {/* Repo link + Version nav */}
       <div className='flex items-center justify-between border-b px-4 py-2'>
         <a
           href={`https://github.com/${selectedRepo?.repoFullName}`}
           target='_blank'
           rel='noopener noreferrer'
-          className='inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground'
+          className='text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-xs'
         >
           <GitHubIcon className='h-3.5 w-3.5' />
           {selectedRepo?.repoFullName}
@@ -390,7 +503,10 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
         </a>
         {githubRepos.length > 1 && (
           <Select value={selectedRepoId} onValueChange={setSelectedRepoId}>
-            <SelectTrigger className='h-6 w-auto gap-1 border-none bg-transparent px-1 text-[10px] text-muted-foreground shadow-none hover:text-foreground'>
+            <SelectTrigger
+              size='xs'
+              className='text-muted-foreground hover:text-foreground w-auto gap-1 border-none bg-transparent shadow-none'
+            >
               <SelectValue placeholder='Switch' />
             </SelectTrigger>
             <SelectContent>
@@ -415,9 +531,12 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
 
       {/* Questions banner */}
       {isQuestionsResponse && !isBusy && (
-        <div className='flex items-center gap-2 border-b bg-amber-500/10 px-4 py-2 text-xs text-amber-700 dark:text-amber-400'>
+        <div className='bg-warning/10 text-warning flex items-center gap-2 border-b px-4 py-2 text-xs'>
           <MessageCircleQuestion className='h-3.5 w-3.5 shrink-0' />
-          <span>Claude has questions before generating the plan. Answer below to continue.</span>
+          <span>
+            Claude has questions before generating the plan. Answer below to
+            continue.
+          </span>
         </div>
       )}
 
@@ -435,42 +554,19 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
         {!hasStartedPlanning ? (
           /* Empty state — before planning starts */
           <div className='flex h-full flex-col items-center justify-center gap-3'>
-            <p className='text-sm text-muted-foreground'>
+            <p className='text-muted-foreground text-sm'>
               Generate an implementation plan for this task.
             </p>
             {/* Model selector for initial generation */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant='outline'
-                  size='sm'
-                  className='gap-1 text-xs'
-                >
-                  {activeModelLabel}
-                  <ChevronDown className='h-3 w-3 opacity-50' />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className='w-36 p-1' align='center'>
-                {MODEL_OPTIONS.map(opt => (
-                  <button
-                    key={opt.model}
-                    className='flex w-full items-center rounded-sm px-2 py-1.5 text-left text-xs hover:bg-muted'
-                    onClick={() => setSelectedModel(opt.model)}
-                  >
-                    {opt.label}
-                    {activeModel === opt.model && (
-                      <Check className='ml-auto h-3 w-3' />
-                    )}
-                  </button>
-                ))}
-              </PopoverContent>
-            </Popover>
-            <Button
-              onClick={handleStartPlanning}
-              disabled={!activeThreadId}
-            >
-              <Play className='mr-1.5 h-4 w-4' />
-              Start Planning
+            <ModelMenu
+              value={activeModel}
+              onChange={setSelectedModel}
+              triggerLabel={activeModelLabel}
+              align='center'
+            />
+            <Button onClick={handleStartPlanning} disabled={!activeThreadId}>
+              <Play />
+              Start planning
             </Button>
           </div>
         ) : (
@@ -485,13 +581,17 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
 
       {/* Footer: feedback input + refine (only after planning started) */}
       {hasStartedPlanning && (
-        <div className='border-t bg-background/60 px-4 py-3'>
+        <div className='bg-background/60 border-t px-4 py-3'>
           <Textarea
             value={feedbackInput}
             onChange={e => setFeedbackInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isQuestionsResponse ? 'Answer the questions above...' : 'Refine this plan...'}
-            className='min-h-[36px] max-h-[100px] resize-none text-xs'
+            placeholder={
+              isQuestionsResponse
+                ? 'Answer the questions above...'
+                : 'Refine this plan...'
+            }
+            className='max-h-[100px] min-h-[36px] resize-none text-xs'
             rows={1}
             disabled={isBusy || isViewingOldVersion}
           />
@@ -507,7 +607,7 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
               </Button>
             ) : isThreadStreaming ? (
               <Button size='sm' variant='secondary' disabled className='flex-1'>
-                <Loader2 className='mr-1.5 h-3.5 w-3.5 animate-spin' />
+                <Loader2 className='animate-spin' />
                 Generating...
               </Button>
             ) : (
@@ -517,107 +617,78 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
                 disabled={!feedbackInput.trim()}
                 className='flex-1'
               >
-                <Send className='mr-1.5 h-3.5 w-3.5' />
+                <Send />
                 Refine
               </Button>
             )}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant='outline'
-                  size='sm'
-                  className='shrink-0 gap-1 text-xs'
-                  disabled={isBusy}
-                >
-                  {activeModelLabel.split(' ')[0]}
-                  <ChevronDown className='h-3 w-3 opacity-50' />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className='w-36 p-1' align='end'>
-                {MODEL_OPTIONS.map(opt => (
-                  <button
-                    key={opt.model}
-                    className='flex w-full items-center rounded-sm px-2 py-1.5 text-left text-xs hover:bg-muted'
-                    onClick={() => setSelectedModel(opt.model)}
-                  >
-                    {opt.label}
-                    {activeModel === opt.model && (
-                      <Check className='ml-auto h-3 w-3' />
-                    )}
-                  </button>
-                ))}
-              </PopoverContent>
-            </Popover>
+            <ModelMenu
+              value={activeModel}
+              onChange={setSelectedModel}
+              triggerLabel={activeModelLabel.split(' ')[0]}
+              align='end'
+              disabled={isBusy}
+              className='shrink-0'
+            />
           </div>
         </div>
       )}
 
       {/* Dispatch section — visually separated from feedback input */}
-      {hasStartedPlanning && !isBusy && !isQuestionsResponse && displayContent && (
-        <div className='flex items-center gap-2 border-t bg-muted/30 px-4 py-4'>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                size='sm'
-                disabled={isDispatchPending || versionAlreadyDispatched}
-                className='flex-1'
-              >
-                {isDispatchPending ? (
-                  <Loader2 className='mr-1.5 h-3.5 w-3.5 animate-spin' />
-                ) : (
-                  <Play className='mr-1.5 h-3.5 w-3.5' />
-                )}
-                {versionAlreadyDispatched
-                  ? `Plan ${currentVersionLabel} Dispatched`
-                  : `Dispatch Plan ${currentVersionLabel}`}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Dispatch Plan {currentVersionLabel}?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will create a GitHub issue and start the worker with{' '}
-                  <span className='font-medium'>{dispatchModelLabel}</span> to implement
-                  the plan on <span className='font-medium'>{selectedRepo?.repoFullName}</span>.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDispatch}>
-                  Dispatch
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant='outline'
-                size='sm'
-                className='shrink-0 gap-1 text-xs'
-                disabled={isDispatchPending || versionAlreadyDispatched}
-              >
-                {dispatchModelLabel.split(' ')[0]}
-                <ChevronDown className='h-3 w-3 opacity-50' />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className='w-36 p-1' align='end'>
-              {MODEL_OPTIONS.map(opt => (
-                <button
-                  key={opt.model}
-                  className='flex w-full items-center rounded-sm px-2 py-1.5 text-left text-xs hover:bg-muted'
-                  onClick={() => setDispatchModel(opt.model)}
+      {hasStartedPlanning &&
+        !isBusy &&
+        !isQuestionsResponse &&
+        displayContent && (
+          <div className='bg-muted/30 flex items-center gap-2 border-t px-4 py-4'>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  size='sm'
+                  disabled={isDispatchPending || versionAlreadyDispatched}
+                  className='flex-1'
                 >
-                  {opt.label}
-                  {dispatchModel === opt.model && (
-                    <Check className='ml-auto h-3 w-3' />
+                  {isDispatchPending ? (
+                    <Loader2 className='animate-spin' />
+                  ) : (
+                    <Play />
                   )}
-                </button>
-              ))}
-            </PopoverContent>
-          </Popover>
-        </div>
-      )}
+                  {versionAlreadyDispatched
+                    ? `Plan ${currentVersionLabel} dispatched`
+                    : `Dispatch plan ${currentVersionLabel}`}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    Dispatch plan {currentVersionLabel}?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will create a GitHub issue and start the worker with{' '}
+                    <span className='font-medium'>{dispatchModelLabel}</span> to
+                    implement the plan on{' '}
+                    <span className='font-medium'>
+                      {selectedRepo?.repoFullName}
+                    </span>
+                    .
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDispatch}>
+                    Dispatch
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <ModelMenu
+              value={dispatchModel}
+              onChange={setDispatchModel}
+              triggerLabel={dispatchModelLabel.split(' ')[0]}
+              align='end'
+              disabled={isDispatchPending || versionAlreadyDispatched}
+              className='shrink-0'
+            />
+          </div>
+        )}
     </div>
   )
 }

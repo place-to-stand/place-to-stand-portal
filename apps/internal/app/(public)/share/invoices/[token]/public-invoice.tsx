@@ -39,7 +39,7 @@ export function PublicInvoice({
     <>
       <PublicHeader>
         {invoice.invoice_number ? (
-          <span className='hidden font-mono text-[11px] tracking-[0.1em] text-[#a8a8ac] uppercase sm:inline'>
+          <span className='text-brand-text-muted hidden font-mono text-[11px] tracking-[0.1em] uppercase sm:inline'>
             Invoice {invoice.invoice_number}
           </span>
         ) : null}
@@ -57,8 +57,8 @@ export function PublicInvoice({
 
           {/* Panel and download stick together as one column on desktop. */}
           <div className='flex flex-col gap-3 lg:sticky lg:top-6'>
-            <aside className='relative flex flex-col gap-6 border border-[#2a2b30] bg-[rgba(22,24,28,0.88)] px-5 py-6 sm:p-7'>
-              <BlueprintCorners size={12} className='border-[#b5f542]/50' />
+            <aside className='border-brand-border bg-brand-bg-panel relative flex flex-col gap-6 border px-5 py-6 sm:p-7'>
+              <BlueprintCorners size={12} className='border-brand-lime/50' />
 
               {isPaid ? (
                 <ReceiptPanel total={invoice.total} paidAt={invoice.paid_at} />
@@ -75,15 +75,15 @@ export function PublicInvoice({
                 className={cn(
                   'flex flex-col gap-1.5',
                   isPaid && 'pt-5',
-                  showPayment && 'border-t border-[#2a2b30] pt-5'
+                  showPayment && 'border-brand-border border-t pt-5'
                 )}
               >
                 <span className={DARK_LABEL}>Questions?</span>
-                <span className='text-sm text-[#a8a8ac]'>
+                <span className='text-brand-text-muted text-sm'>
                   Email{' '}
                   <a
                     href={`mailto:${replyTo}`}
-                    className='font-mono text-[13px] text-[#e8e6e3] underline-offset-4 transition-colors hover:text-[#b5f542] hover:underline'
+                    className='text-brand-text hover:text-brand-lime font-mono text-[13px] underline-offset-4 transition-colors hover:underline'
                   >
                     {replyTo}
                   </a>

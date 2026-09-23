@@ -40,8 +40,8 @@ type HourBlocksManagementTableProps = {
 }
 
 const EMPTY_MESSAGES = {
-  active: 'No hour blocks recorded yet. Log a retainer or client block to monitor it here.',
-  archive: 'Archive is empty. Archived hour blocks appear here after deletion.',
+  active: 'No hour blocks yet.',
+  archive: 'No archived hour blocks.',
 } as const
 
 export function HourBlocksManagementTable({

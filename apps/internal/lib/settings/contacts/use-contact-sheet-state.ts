@@ -59,8 +59,6 @@ export type UseContactSheetStateOptions = {
   allClients?: ContactClientOption[]
 }
 
-
-
 function hasMetrics(
   c: ContactsTableContact | ContactSheetInput | null | undefined
 ): c is ContactsTableContact {
@@ -95,7 +93,9 @@ export function useContactSheetState({
   const [isLoadingClients, setIsLoadingClients] = useState(false)
   // Clients created from inside the picker this session — the fetched list
   // predates them, so they're merged in to stay re-selectable after removal.
-  const [createdClients, setCreatedClients] = useState<ContactClientOption[]>([])
+  const [createdClients, setCreatedClients] = useState<ContactClientOption[]>(
+    []
+  )
   const { openNew } = useSheetParams()
 
   const { toast } = useToast()
@@ -274,11 +274,11 @@ export function useContactSheetState({
           const syncResult = await syncContactClients(contactId, clientIds)
 
           if (!syncResult.ok) {
-            setFeedback(syncResult.error ?? 'Failed to update client links.')
+            setFeedback(syncResult.error ?? 'Unable to update client links.')
             toast({
-              title: 'Warning',
+              title: 'Unable to update client links',
               description:
-                'Contact saved but client links could not be updated.',
+                'The contact was saved, but its client links were not.',
               variant: 'destructive',
             })
             // Still complete since the contact was saved

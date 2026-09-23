@@ -2,15 +2,11 @@
 
 import { useMemo, type RefObject } from 'react'
 import { useDroppable, useDraggable } from '@dnd-kit/core'
-import { format } from 'date-fns'
 import { Plus } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@pts/ui/tooltip'
+import { formatCalendarDate } from '@pts/ui/dates'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { cn } from '@/lib/utils'
 import type { TaskWithRelations } from '@/lib/types'
 import type { RenderAssigneeFn } from '@/lib/projects/board/board-selectors'
@@ -118,15 +114,19 @@ function CalendarDayCell({
   const addButton = (
     <Button
       type='button'
-      size='icon'
+      size='icon-sm'
       variant='ghost'
-      className='h-6 w-6'
       onClick={() => onCreateTask(day.key)}
       disabled={!canManageTasks}
     >
-      <Plus className='h-4 w-4' />
+      <Plus />
       <span className='sr-only'>
-        Add task for {format(day.date, 'MMMM d, yyyy')}
+        Add task for{' '}
+        {formatCalendarDate(day.key, {
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric',
+        })}
       </span>
     </Button>
   )
@@ -162,7 +162,7 @@ function CalendarDayCell({
         </span>
         {canManageTasks ? (
           enableTaskCreation ? (
-          addButton
+            addButton
           ) : null
         ) : (
           <Tooltip>

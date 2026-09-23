@@ -4,6 +4,7 @@ import { useTransition } from 'react'
 import { TriangleAlert } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { formatCalendarDate } from '@pts/ui/dates'
 import { toast } from '@/components/ui/use-toast'
 import type { CloseDrift } from '@/lib/data/reports/close'
 
@@ -65,7 +66,7 @@ export function DriftBanner({
 
       if (result.error) {
         toast({
-          title: 'Re-close failed',
+          title: 'Unable to re-close month',
           description: result.error,
           variant: 'destructive',
         })
@@ -95,10 +96,12 @@ export function DriftBanner({
           <ul className='text-destructive/90 space-y-0.5 pl-6'>
             {visibleDeltas.map(delta => (
               <li key={`${delta.section}:${delta.label}:${delta.unit}`}>
-                {delta.label}:{' '}
-                {formatValue(delta.snapshotValue, delta.unit)} closed →{' '}
-                {formatValue(delta.liveValue, delta.unit)} live (
-                {formatSigned(delta.liveValue - delta.snapshotValue, delta.unit)}
+                {delta.label}: {formatValue(delta.snapshotValue, delta.unit)}{' '}
+                closed → {formatValue(delta.liveValue, delta.unit)} live (
+                {formatSigned(
+                  delta.liveValue - delta.snapshotValue,
+                  delta.unit
+                )}
                 )
               </li>
             ))}
@@ -110,13 +113,18 @@ export function DriftBanner({
             ) : null}
             {drift.lateRecords.map(record => (
               <li key={`${record.kind}:${record.id}`} className='text-xs'>
-                • {record.change === 'deleted' ? 'Removed' : record.change === 'added' ? 'Late' : 'Edited'}{' '}
+                •{' '}
+                {record.change === 'deleted'
+                  ? 'Removed'
+                  : record.change === 'added'
+                    ? 'Late'
+                    : 'Edited'}{' '}
                 {record.hours.toFixed(2)}h{' '}
                 {record.kind === 'time_log' ? 'time log' : 'hour block'}
                 {record.clientName ? ` for ${record.clientName}` : ''} (
                 {record.kind === 'time_log' ? 'logged' : 'billed'}{' '}
                 {record.eventDate}, recorded{' '}
-                {new Date(record.recordedAt).toLocaleDateString('en-US', {
+                {formatCalendarDate(record.recordedAt, {
                   month: 'short',
                   day: 'numeric',
                 })}

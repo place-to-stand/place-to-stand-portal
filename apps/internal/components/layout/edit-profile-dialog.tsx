@@ -181,7 +181,6 @@ export function EditProfileDialog({ open, onOpenChange, user }: Props) {
       } else {
         toast({
           title: 'Profile updated',
-          description: 'Your changes were saved successfully.',
         })
       }
 
@@ -351,17 +350,21 @@ export function EditProfileDialog({ open, onOpenChange, user }: Props) {
                 >
                   Cancel
                 </Button>
-                <Button
-                  type='submit'
+                <DisabledFieldTooltip
                   disabled={isPending || isAvatarUploading}
-                  title={
+                  reason={
                     isAvatarUploading
                       ? 'Waiting for the avatar upload to finish.'
-                      : undefined
+                      : null
                   }
                 >
-                  {isPending ? 'Saving...' : 'Save changes'}
-                </Button>
+                  <Button
+                    type='submit'
+                    disabled={isPending || isAvatarUploading}
+                  >
+                    {isPending ? 'Saving...' : 'Save changes'}
+                  </Button>
+                </DisabledFieldTooltip>
               </DialogFooter>
             </form>
           </Form>

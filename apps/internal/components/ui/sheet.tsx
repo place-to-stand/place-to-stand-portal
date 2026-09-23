@@ -207,7 +207,7 @@ const SheetContent = React.forwardRef<
         >
           {children}
           {!hideCloseButton && (
-            <SheetPrimitive.Close className='ring-offset-background focus:ring-ring absolute top-3 right-3 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none'>
+            <SheetPrimitive.Close className='focus-visible:ring-ring/50 absolute top-3 right-3 rounded-xs opacity-70 transition-opacity outline-none hover:opacity-100 focus-visible:ring-[3px] disabled:pointer-events-none'>
               <XIcon className='size-4' />
               <span className='sr-only'>Close</span>
             </SheetPrimitive.Close>

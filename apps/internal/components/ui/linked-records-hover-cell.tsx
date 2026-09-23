@@ -44,7 +44,7 @@ type LinkedRecordsHoverCellProps = {
 }
 
 const TRIGGER_CLASS =
-  'cursor-pointer border-b border-dotted border-current transition hover:border-solid focus:outline-none'
+  'cursor-pointer border-b border-dotted border-current transition hover:border-solid outline-none focus-visible:rounded-sm focus-visible:ring-ring/50 focus-visible:ring-[3px]'
 const ROW_CLASS = 'flex items-center gap-2 px-3 py-2 text-sm'
 
 /**

@@ -175,8 +175,7 @@ const snapshotEnvelopeSchema = z.object({
 })
 
 type SnapshotParseResult =
-  | { ok: true; report: SnapshotReport }
-  | { ok: false; error: string }
+  { ok: true; report: SnapshotReport } | { ok: false; error: string }
 
 /**
  * Single decode point for persisted snapshots. Version 1 is identity; future
@@ -457,7 +456,7 @@ export async function closedMonthWarning(
     const monthStart = `${month}-01`
     if (await isMonthClosed(monthStart)) {
       const [year, mm] = month.split('-').map(Number)
-      return `${periodLabel(year, mm)} is closed — this change will show as drift on the Monthly Close Report until it is reopened and re-closed.`
+      return `${periodLabel(year, mm)} is closed — this change will show as drift on the monthly close report until it is reopened and re-closed.`
     }
   }
 

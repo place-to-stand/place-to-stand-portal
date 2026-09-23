@@ -11,6 +11,7 @@ import {
 import { Loader2, Lock } from 'lucide-react'
 
 import { authErrorClass, authPrimaryButtonClass } from '@pts/ui/auth-shell'
+import { BRAND } from '@pts/ui/brand'
 
 import { cn } from '@/lib/utils'
 
@@ -27,17 +28,22 @@ export const isStripeConfigured = stripePromise !== null
  * Stripe renders the fields in its own iframe; this is the part of the look
  * it lets us set — the panel's ground, square corners, the lime focus ring,
  * and the mono labels. Field order and card-brand icons stay Stripe's.
+ *
+ * Stripe needs literal colour values, so the brand ones come from `BRAND`
+ * (the same values as the `brand-*` Tailwind colours). The placeholder grey
+ * and the error reds (#fca5a5 text, as in the auth screens' error style, and
+ * a #f87171 invalid border) have no brand token and stay literal.
  */
 const APPEARANCE: Appearance = {
   theme: 'night',
   variables: {
-    colorPrimary: '#b5f542',
-    colorBackground: '#0e0f11',
-    colorText: '#e8e6e3',
-    colorTextSecondary: '#a8a8ac',
+    colorPrimary: BRAND.accent,
+    colorBackground: BRAND.bg,
+    colorText: BRAND.text,
+    colorTextSecondary: BRAND.textMuted,
     colorTextPlaceholder: '#8a8c93',
     colorDanger: '#fca5a5',
-    colorIcon: '#a8a8ac',
+    colorIcon: BRAND.textMuted,
     fontFamily: 'Geist, system-ui, sans-serif',
     fontSizeBase: '14px',
     borderRadius: '0px',
@@ -50,34 +56,34 @@ const APPEARANCE: Appearance = {
       fontSize: '11px',
       letterSpacing: '0.1em',
       textTransform: 'uppercase',
-      color: '#a8a8ac',
+      color: BRAND.textMuted,
     },
     '.Input': {
-      border: '1px solid #3a3b40',
+      border: `1px solid ${BRAND.borderLight}`,
       boxShadow: 'none',
       padding: '12px',
     },
     '.Input:focus': {
-      border: '1px solid #b5f542',
-      boxShadow: '0 0 0 1px #b5f542',
+      border: `1px solid ${BRAND.accent}`,
+      boxShadow: `0 0 0 1px ${BRAND.accent}`,
     },
     '.Input--invalid': {
       border: '1px solid #f87171',
       boxShadow: 'none',
     },
     '.AccordionItem': {
-      border: '1px solid #3a3b40',
-      backgroundColor: '#0e0f11',
+      border: `1px solid ${BRAND.borderLight}`,
+      backgroundColor: BRAND.bg,
       boxShadow: 'none',
     },
     '.Tab': {
-      border: '1px solid #3a3b40',
-      backgroundColor: '#0e0f11',
+      border: `1px solid ${BRAND.borderLight}`,
+      backgroundColor: BRAND.bg,
       boxShadow: 'none',
     },
     '.Tab--selected': {
-      border: '1px solid #b5f542',
-      boxShadow: '0 0 0 1px #b5f542',
+      border: `1px solid ${BRAND.accent}`,
+      boxShadow: `0 0 0 1px ${BRAND.accent}`,
     },
     '.Error': {
       color: '#fca5a5',
@@ -99,7 +105,11 @@ type PaymentPanelProps = {
   isPrepaid: boolean
 }
 
-export function PaymentPanel({ total, shareToken, isPrepaid }: PaymentPanelProps) {
+export function PaymentPanel({
+  total,
+  shareToken,
+  isPrepaid,
+}: PaymentPanelProps) {
   const [checkoutError, setCheckoutError] = useState<string | null>(null)
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [isFetchingSecret, setIsFetchingSecret] = useState(false)
@@ -136,13 +146,13 @@ export function PaymentPanel({ total, shareToken, isPrepaid }: PaymentPanelProps
     <>
       <div className='flex flex-col gap-2'>
         <h2 className={PANEL_TITLE}>Pay this invoice</h2>
-        <p className='text-sm leading-normal text-[#a8a8ac]'>
+        <p className='text-brand-text-muted text-sm leading-normal'>
           {isPrepaid ? 'Work on this invoice begins once it is paid. ' : ''}
           Pay securely below.
         </p>
       </div>
 
-      <div className='flex items-baseline justify-between border-y border-[#2a2b30] py-3.5'>
+      <div className='border-brand-border flex items-baseline justify-between border-y py-3.5'>
         <span className={DARK_LABEL}>Amount due</span>
         <span
           className={cn(
@@ -158,14 +168,18 @@ export function PaymentPanel({ total, shareToken, isPrepaid }: PaymentPanelProps
 
       {isFetchingSecret ? (
         <div className='flex items-center justify-center py-10'>
-          <Loader2 className='size-5 animate-spin text-[#a8a8ac]' />
+          <Loader2 className='text-brand-text-muted size-5 animate-spin' />
         </div>
       ) : null}
 
       {clientSecret && stripePromise ? (
         <Elements
           stripe={stripePromise}
-          options={{ clientSecret, fonts: STRIPE_FONTS, appearance: APPEARANCE }}
+          options={{
+            clientSecret,
+            fonts: STRIPE_FONTS,
+            appearance: APPEARANCE,
+          }}
         >
           <PaymentForm total={total} returnUrl={returnUrl} />
         </Elements>
@@ -174,7 +188,13 @@ export function PaymentPanel({ total, shareToken, isPrepaid }: PaymentPanelProps
   )
 }
 
-function PaymentForm({ total, returnUrl }: { total: string; returnUrl: string }) {
+function PaymentForm({
+  total,
+  returnUrl,
+}: {
+  total: string
+  returnUrl: string
+}) {
   const stripe = useStripe()
   const elements = useElements()
   // Until Stripe fires `ready` there is no Element to confirm against, and
@@ -236,7 +256,7 @@ function PaymentForm({ total, returnUrl }: { total: string; returnUrl: string })
             <>Pay {formatCurrency(total)}</>
           )}
         </button>
-        <p className='flex items-center justify-center gap-2 font-mono text-[11px] tracking-[0.08em] text-[#a8a8ac]'>
+        <p className='text-brand-text-muted flex items-center justify-center gap-2 font-mono text-[11px] tracking-[0.08em]'>
           <Lock className='size-3.5' strokeWidth={1.5} />
           Secured by Stripe
         </p>

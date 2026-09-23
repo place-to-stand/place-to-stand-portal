@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
-import { format, getMonth, getYear } from 'date-fns'
+import { getMonth, getYear } from 'date-fns'
 
-import { ArrowRight } from 'lucide-react'
+import { formatCalendarDate } from '@pts/ui/dates'
 
 import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
@@ -65,9 +65,6 @@ export default async function MonthlyClosePage({
       : getMonth(now)
   const validYear = Number.isFinite(parsedYear) ? parsedYear : getYear(now)
 
-  // Create Date object for display formatting
-  const selectedMonth = new Date(validYear, validMonth, 1)
-
   // W4: the URL month param is 0-indexed; the close layer is 1-indexed.
   const closeMonthNumber = validMonth + 1
 
@@ -78,7 +75,12 @@ export default async function MonthlyClosePage({
   )
 
   // Format month for display
-  const displayMonth = format(selectedMonth, 'MMMM yyyy')
+  // A date-only string formats in UTC, so the label never drifts a month.
+  const displayMonth =
+    formatCalendarDate(
+      `${validYear}-${String(closeMonthNumber).padStart(2, '0')}-01`,
+      { month: 'long', year: 'numeric' }
+    ) ?? ''
   const isCurrentMonth =
     validYear === getYear(now) && validMonth === getMonth(now)
 
@@ -138,12 +140,8 @@ export default async function MonthlyClosePage({
               net30Hours={report.net30Billing.totalHours}
               action={
                 <BreakdownSheet
-                  trigger={
-                    <button className='text-muted-foreground hover:text-foreground inline-flex cursor-pointer items-center gap-1 text-[11px] transition-colors'>
-                      See breakdown <ArrowRight className='h-2.5 w-2.5' />
-                    </button>
-                  }
-                  title='Billing Breakdown'
+                  triggerLabel='See breakdown'
+                  title='Billing breakdown'
                   description='Prepaid hour block purchases and net 30 hours logged this month.'
                 >
                   <PrepaidSection data={report.prepaidBilling} />
@@ -162,12 +160,8 @@ export default async function MonthlyClosePage({
             houseTotal={report.house.totalAmount}
             action={
               <BreakdownSheet
-                trigger={
-                  <button className='text-muted-foreground hover:text-foreground inline-flex cursor-pointer items-center gap-1 text-[11px] transition-colors'>
-                    See breakdown <ArrowRight className='h-2.5 w-2.5' />
-                  </button>
-                }
-                title='Payout Breakdown'
+                triggerLabel='See breakdown'
+                title='Payout breakdown'
                 description='Payroll, origination, closer, and house (estimated) breakdown this month.'
               >
                 <PayrollSection data={report.payroll} />

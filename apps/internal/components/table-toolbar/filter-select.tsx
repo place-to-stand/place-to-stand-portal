@@ -1,9 +1,10 @@
 'use client'
 
-import { Check, ChevronDown } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { Badge } from '@pts/ui/badge'
+import { Checkbox } from '@pts/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
 import {
   Select,
@@ -134,26 +135,19 @@ function MultiFilterSelect({
           <ChevronDown className='text-muted-foreground ml-auto size-4 shrink-0' />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align='start' className='w-64 p-2'>
+      <PopoverContent className='w-64 p-2'>
         <div className='flex flex-col gap-0.5'>
           {options.map(option => {
             const selected = values.includes(option.value)
             return (
-              <button
+              <label
                 key={option.value}
-                type='button'
-                onClick={() => toggle(option.value)}
-                className='hover:bg-muted flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm'
+                className='hover:bg-accent hover:text-accent-foreground flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm'
               >
-                <span
-                  className={cn(
-                    'border-input flex size-4 items-center justify-center rounded-sm border',
-                    selected &&
-                      'bg-primary border-primary text-primary-foreground'
-                  )}
-                >
-                  {selected ? <Check className='size-3' /> : null}
-                </span>
+                <Checkbox
+                  checked={selected}
+                  onCheckedChange={() => toggle(option.value)}
+                />
                 {option.badgeClassName ? (
                   <Badge
                     variant='outline'
@@ -164,7 +158,7 @@ function MultiFilterSelect({
                 ) : (
                   <span>{option.label}</span>
                 )}
-              </button>
+              </label>
             )
           })}
         </div>

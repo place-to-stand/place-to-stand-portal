@@ -1,6 +1,9 @@
 'use client'
 
+import { ArrowRight } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
+
+import { Button } from '@pts/ui/button'
 
 import {
   Sheet,
@@ -12,14 +15,20 @@ import {
 } from '@/components/ui/sheet'
 
 type BreakdownSheetProps = {
-  trigger: ReactNode
+  /**
+   * The link-style trigger's text. The button is built here, in the client
+   * component, rather than passed in: a Button rendered by the server page
+   * crosses the boundary as finished output and no longer matches the
+   * trigger the client renders, which fails hydration.
+   */
+  triggerLabel: string
   title: string
   description: string
   children: ReactNode
 }
 
 export function BreakdownSheet({
-  trigger,
+  triggerLabel,
   title,
   description,
   children,
@@ -28,8 +37,23 @@ export function BreakdownSheet({
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>{trigger}</SheetTrigger>
-      <SheetContent side='right' size='lg' className='overflow-y-auto p-0 [&>[data-slot=sheet-close]]:z-20'>
+      <SheetTrigger
+        render={
+          <Button
+            variant='link'
+            size='xs'
+            className='text-muted-foreground hover:text-foreground'
+          />
+        }
+      >
+        {triggerLabel}
+        <ArrowRight />
+      </SheetTrigger>
+      <SheetContent
+        side='right'
+        size='lg'
+        className='overflow-y-auto p-0 [&>[data-slot=sheet-close]]:z-20'
+      >
         <SheetHeader className='sticky top-0 z-10 border-b pr-10'>
           <SheetTitle>{title}</SheetTitle>
           <SheetDescription>{description}</SheetDescription>

@@ -95,8 +95,8 @@ export function LeadUpdateItem({
                 <Button
                   type='button'
                   variant='ghost'
-                  size='sm'
-                  className='text-muted-foreground hover:text-foreground h-7 w-7 shrink-0 p-0'
+                  size='icon-sm'
+                  className='text-muted-foreground hover:text-foreground shrink-0'
                   disabled={isPending}
                   aria-label={`Actions for ${label.toLowerCase()} logged ${occurredLabel}`}
                 />

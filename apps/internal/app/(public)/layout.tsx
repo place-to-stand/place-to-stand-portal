@@ -16,7 +16,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
   return (
     <div className='h-screen overflow-auto [color-scheme:dark]'>
       <div
-        className='flex min-h-full flex-col text-[#e8e6e3]'
+        className='text-brand-text flex min-h-full flex-col'
         style={{ backgroundColor: BRAND.bg, ...BRAND_DOT_GRID }}
       >
         {children}

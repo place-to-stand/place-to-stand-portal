@@ -1,18 +1,11 @@
+import { EmptyState } from '@pts/ui/empty-state'
+
 type ProjectsBoardEmptyProps = {
-  title: string
-  description: string
+  /** One plain sentence, per the EmptyState rules. */
+  message: string
 }
 
-export function ProjectsBoardEmpty({
-  title,
-  description,
-}: ProjectsBoardEmptyProps) {
-  return (
-    <div className='grid h-full w-full place-items-center rounded-xl border border-dashed p-12 text-center'>
-      <div className='space-y-2'>
-        <h2 className='text-lg font-semibold'>{title}</h2>
-        <p className='text-muted-foreground text-sm'>{description}</p>
-      </div>
-    </div>
-  )
+/** A full-height EmptyState for boards and board tabs. */
+export function ProjectsBoardEmpty({ message }: ProjectsBoardEmptyProps) {
+  return <EmptyState message={message} className='h-full justify-center' />
 }

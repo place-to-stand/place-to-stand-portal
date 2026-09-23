@@ -73,32 +73,26 @@ const OAUTH_MESSAGES: Record<
   string,
   { title: string; description?: string; variant?: 'destructive' }
 > = {
-  google_connected: {
-    title: 'Connected',
-    description: 'Google account connected successfully.',
-  },
-  github_connected: {
-    title: 'Connected',
-    description: 'GitHub account connected successfully.',
-  },
+  google_connected: { title: 'Google connected' },
+  github_connected: { title: 'GitHub connected' },
   access_denied: {
-    title: 'Access Denied',
-    description: 'You denied access to the account.',
+    title: 'Unable to connect account',
+    description: 'Access to the account was denied.',
     variant: 'destructive',
   },
   invalid_request: {
-    title: 'Invalid Request',
-    description: 'OAuth request failed. Please try again.',
+    title: 'Unable to connect account',
+    description: 'The OAuth request was invalid. Please try again.',
     variant: 'destructive',
   },
   invalid_state: {
-    title: 'Security Error',
+    title: 'Unable to connect account',
     description: 'State validation failed. Please try again.',
     variant: 'destructive',
   },
   oauth_failed: {
-    title: 'Connection Failed',
-    description: 'Failed to connect account.',
+    title: 'Unable to connect account',
+    description: 'Please try again.',
     variant: 'destructive',
   },
 }
@@ -173,7 +167,7 @@ export function IntegrationsPanel() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ connectionId }),
       })
-      if (!res.ok) throw new Error('Failed to disconnect')
+      if (!res.ok) throw new Error('Please try again.')
     },
     onSuccess: async () => {
       toast({ title: 'Google account disconnected' })
@@ -183,8 +177,8 @@ export function IntegrationsPanel() {
     },
     onError: (err: unknown) => {
       toast({
-        title: 'Disconnect failed',
-        description: String(err),
+        title: 'Unable to disconnect Google',
+        description: err instanceof Error ? err.message : String(err),
         variant: 'destructive',
       })
     },
@@ -198,7 +192,7 @@ export function IntegrationsPanel() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ connectionId }),
       })
-      if (!res.ok) throw new Error('Failed to disconnect')
+      if (!res.ok) throw new Error('Please try again.')
     },
     onSuccess: async () => {
       toast({ title: 'GitHub account disconnected' })
@@ -208,8 +202,8 @@ export function IntegrationsPanel() {
     },
     onError: (err: unknown) => {
       toast({
-        title: 'Disconnect failed',
-        description: String(err),
+        title: 'Unable to disconnect GitHub',
+        description: err instanceof Error ? err.message : String(err),
         variant: 'destructive',
       })
     },
@@ -290,7 +284,7 @@ export function IntegrationsPanel() {
                 >
                   {isRedirectingGoogle
                     ? 'Connecting...'
-                    : 'Connect Google Account'}
+                    : 'Connect Google account'}
                 </Button>
               </div>
             )}
@@ -335,7 +329,7 @@ export function IntegrationsPanel() {
                 >
                   {isRedirectingGitHub
                     ? 'Connecting...'
-                    : 'Connect GitHub Account'}
+                    : 'Connect GitHub account'}
                 </Button>
               </div>
             )}

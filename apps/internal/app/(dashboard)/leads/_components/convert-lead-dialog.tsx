@@ -94,7 +94,8 @@ export function ConvertLeadDialog({
         .then(setClientOptions)
         .catch(() => {
           toast({
-            title: 'Failed to load clients',
+            title: 'Unable to load clients',
+            description: 'Please try again.',
             variant: 'destructive',
           })
         })
@@ -102,8 +103,14 @@ export function ConvertLeadDialog({
     }
   }, [mode, loadingClients, toast])
 
-  const watchCreateProject = useWatch({ control: form.control, name: 'createProject' })
-  const watchExistingClientId = useWatch({ control: form.control, name: 'existingClientId' })
+  const watchCreateProject = useWatch({
+    control: form.control,
+    name: 'createProject',
+  })
+  const watchExistingClientId = useWatch({
+    control: form.control,
+    name: 'existingClientId',
+  })
 
   // Clear existingClientId when switching modes
   useEffect(() => {
@@ -119,7 +126,7 @@ export function ConvertLeadDialog({
 
       if (result.error) {
         toast({
-          title: 'Conversion failed',
+          title: 'Unable to convert lead',
           description: result.error,
           variant: 'destructive',
         })
@@ -130,7 +137,7 @@ export function ConvertLeadDialog({
       if (result.warnings?.length) {
         for (const warning of result.warnings) {
           toast({
-            title: 'Warning',
+            title: 'Lead converted with warnings',
             description: warning,
             variant: 'destructive',
           })
@@ -148,7 +155,7 @@ export function ConvertLeadDialog({
       }
       const description = parts.join(', ') + '.'
 
-      toast({ title: 'Lead converted!', description })
+      toast({ title: 'Lead converted', description })
 
       onOpenChange(false)
       onSuccess?.()
@@ -159,7 +166,7 @@ export function ConvertLeadDialog({
     } catch (error) {
       console.error('Lead conversion failed:', error)
       toast({
-        title: 'Conversion failed',
+        title: 'Unable to convert lead',
         description: 'An unexpected error occurred. Please try again.',
         variant: 'destructive',
       })
@@ -170,11 +177,11 @@ export function ConvertLeadDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-[480px]">
+      <DialogContent className='max-h-[85vh] overflow-y-auto sm:max-w-[480px]'>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <UserPlus className="h-5 w-5" />
-            Convert Lead to Client
+          <DialogTitle className='flex items-center gap-2'>
+            <UserPlus className='h-5 w-5' />
+            Convert lead to client
           </DialogTitle>
           <DialogDescription>
             Create a new client or link to an existing one. Any linked email
@@ -182,37 +189,34 @@ export function ConvertLeadDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs
-          value={mode}
-          onValueChange={(v) => setMode(v as ConversionMode)}
-        >
-          <TabsList className="w-full">
-            <TabsTrigger value="create" className="flex-1 gap-1.5">
-              <UserPlus className="h-3.5 w-3.5" />
-              New Client
+        <Tabs value={mode} onValueChange={v => setMode(v as ConversionMode)}>
+          <TabsList className='w-full'>
+            <TabsTrigger value='create' className='flex-1'>
+              <UserPlus className='h-3.5 w-3.5' />
+              New client
             </TabsTrigger>
-            <TabsTrigger value="link" className="flex-1 gap-1.5">
-              <Link2 className="h-3.5 w-3.5" />
-              Existing Client
+            <TabsTrigger value='link' className='flex-1'>
+              <Link2 className='h-3.5 w-3.5' />
+              Existing client
             </TabsTrigger>
           </TabsList>
         </Tabs>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
             {mode === 'create' ? (
               <>
                 <FormField
                   control={form.control}
-                  name="clientName"
+                  name='clientName'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Client Name</FormLabel>
+                      <FormLabel>Client name</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
                           value={field.value ?? ''}
-                          placeholder="Enter client name"
+                          placeholder='Enter client name'
                         />
                       </FormControl>
                       <FormMessage />
@@ -222,15 +226,15 @@ export function ConvertLeadDialog({
 
                 <FormField
                   control={form.control}
-                  name="clientSlug"
+                  name='clientSlug'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>URL Slug (optional)</FormLabel>
+                      <FormLabel optional>URL slug</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
                           value={field.value ?? ''}
-                          placeholder="auto-generated-if-empty"
+                          placeholder='auto-generated-if-empty'
                         />
                       </FormControl>
                       <FormDescription>
@@ -243,22 +247,22 @@ export function ConvertLeadDialog({
 
                 <FormField
                   control={form.control}
-                  name="billingType"
+                  name='billingType'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Billing Type</FormLabel>
+                      <FormLabel>Billing type</FormLabel>
                       <Select
                         value={field.value}
                         onValueChange={field.onChange}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select billing type" />
+                            <SelectValue placeholder='Select billing type' />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="net_30">Net 30</SelectItem>
-                          <SelectItem value="prepaid">Prepaid</SelectItem>
+                          <SelectItem value='net_30'>Net 30</SelectItem>
+                          <SelectItem value='prepaid'>Prepaid</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -268,16 +272,16 @@ export function ConvertLeadDialog({
 
                 <FormField
                   control={form.control}
-                  name="copyNotesToClient"
+                  name='copyNotesToClient'
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormItem className='flex flex-row items-start space-y-0 space-x-3 rounded-md border p-4'>
                       <FormControl>
                         <Checkbox
                           checked={field.value}
                           onCheckedChange={field.onChange}
                         />
                       </FormControl>
-                      <div className="space-y-1 leading-none">
+                      <div className='space-y-1 leading-none'>
                         <FormLabel>Copy notes to client</FormLabel>
                         <FormDescription>
                           Transfer lead notes to the new client record.
@@ -290,10 +294,10 @@ export function ConvertLeadDialog({
             ) : (
               <FormField
                 control={form.control}
-                name="existingClientId"
+                name='existingClientId'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Select Client</FormLabel>
+                    <FormLabel>Select client</FormLabel>
                     <Select
                       value={field.value ?? ''}
                       onValueChange={field.onChange}
@@ -311,7 +315,7 @@ export function ConvertLeadDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {clientOptions.map((client) => (
+                        {clientOptions.map(client => (
                           <SelectItem key={client.id} value={client.id}>
                             {client.name}
                           </SelectItem>
@@ -327,20 +331,20 @@ export function ConvertLeadDialog({
             {lead.contactEmail && (
               <FormField
                 control={form.control}
-                name="createContact"
+                name='createContact'
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormItem className='flex flex-row items-start space-y-0 space-x-3 rounded-md border p-4'>
                     <FormControl>
                       <Checkbox
                         checked={field.value}
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
-                    <div className="space-y-1 leading-none">
+                    <div className='space-y-1 leading-none'>
                       <FormLabel>Create contact record</FormLabel>
                       <FormDescription>
-                        Create a contact for {lead.contactName} ({lead.contactEmail})
-                        and link to the client.
+                        Create a contact for {lead.contactName} (
+                        {lead.contactEmail}) and link to the client.
                       </FormDescription>
                     </div>
                   </FormItem>
@@ -350,16 +354,16 @@ export function ConvertLeadDialog({
 
             <FormField
               control={form.control}
-              name="createProject"
+              name='createProject'
               render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                <FormItem className='flex flex-row items-start space-y-0 space-x-3 rounded-md border p-4'>
                   <FormControl>
                     <Checkbox
                       checked={field.value}
                       onCheckedChange={field.onChange}
                     />
                   </FormControl>
-                  <div className="space-y-1 leading-none">
+                  <div className='space-y-1 leading-none'>
                     <FormLabel>Create a project</FormLabel>
                     <FormDescription>
                       Create an active project linked to the client.
@@ -372,10 +376,10 @@ export function ConvertLeadDialog({
             {watchCreateProject && (
               <FormField
                 control={form.control}
-                name="projectName"
+                name='projectName'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Project Name</FormLabel>
+                    <FormLabel>Project name</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
@@ -391,25 +395,24 @@ export function ConvertLeadDialog({
 
             <DialogFooter>
               <Button
-                type="button"
-                variant="outline"
+                type='button'
+                variant='outline'
                 onClick={() => onOpenChange(false)}
                 disabled={isConverting}
               >
                 Cancel
               </Button>
               <Button
-                type="submit"
+                type='submit'
                 disabled={
-                  isConverting ||
-                  (mode === 'link' && !watchExistingClientId)
+                  isConverting || (mode === 'link' && !watchExistingClientId)
                 }
               >
                 {isConverting
                   ? 'Converting...'
                   : mode === 'link'
-                    ? 'Link to Client'
-                    : 'Create Client'}
+                    ? 'Link to client'
+                    : 'Create client'}
               </Button>
             </DialogFooter>
           </form>

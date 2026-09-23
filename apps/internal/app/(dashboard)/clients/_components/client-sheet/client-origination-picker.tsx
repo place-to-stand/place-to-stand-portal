@@ -13,7 +13,7 @@ import {
   CommandList,
 } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
-import { cn } from '@/lib/utils'
+import { Tabs, TabsList, TabsTrigger } from '@pts/ui/tabs'
 
 import type {
   OriginationContactOption,
@@ -57,48 +57,29 @@ export function ClientOriginationModeToggle({
   onModeChange,
 }: ClientOriginationModeToggleProps) {
   return (
-    <div
-      role='tablist'
-      aria-label='Origination source type'
-      className='bg-muted inline-flex rounded-md p-0.5 text-xs'
+    <Tabs
+      value={mode}
+      onValueChange={next => onModeChange(next as OriginationMode)}
     >
-      <Button
-        type='button'
-        role='tab'
-        size='sm'
-        variant='ghost'
-        aria-selected={mode === 'internal'}
-        className={cn(
-          'h-7 rounded-sm px-3 text-xs font-medium',
-          mode === 'internal'
-            ? 'bg-background text-foreground shadow-sm'
-            : 'text-muted-foreground hover:text-foreground'
-        )}
-        disabled={disabled}
-        onClick={() => onModeChange('internal')}
-      >
-        <User2 className='h-3.5 w-3.5' />
-        Internal partner
-      </Button>
-      <Button
-        type='button'
-        role='tab'
-        size='sm'
-        variant='ghost'
-        aria-selected={mode === 'external'}
-        className={cn(
-          'h-7 rounded-sm px-3 text-xs font-medium',
-          mode === 'external'
-            ? 'bg-background text-foreground shadow-sm'
-            : 'text-muted-foreground hover:text-foreground'
-        )}
-        disabled={disabled}
-        onClick={() => onModeChange('external')}
-      >
-        <LinkIcon className='h-3.5 w-3.5' />
-        External referrer
-      </Button>
-    </div>
+      <TabsList aria-label='Origination source type' className='h-7 p-0.5'>
+        <TabsTrigger
+          value='internal'
+          className='px-2 text-xs'
+          disabled={disabled}
+        >
+          <User2 className='size-3.5' />
+          Internal partner
+        </TabsTrigger>
+        <TabsTrigger
+          value='external'
+          className='px-2 text-xs'
+          disabled={disabled}
+        >
+          <LinkIcon className='size-3.5' />
+          External referrer
+        </TabsTrigger>
+      </TabsList>
+    </Tabs>
   )
 }
 
@@ -203,8 +184,8 @@ function InternalPartnerPicker({
           <Button
             type='button'
             variant='ghost'
-            size='icon'
-            className='text-muted-foreground hover:text-destructive h-8 w-8 shrink-0'
+            size='icon-sm'
+            className='text-muted-foreground hover:text-destructive shrink-0'
             onClick={onClear}
             disabled={isPending || disabled}
             aria-label={`Clear internal origination ${UserDisplayName(selectedUser)}`}
@@ -243,10 +224,7 @@ function InternalPartnerPicker({
           </PopoverTrigger>
         </div>
       </DisabledFieldTooltip>
-      <PopoverContent
-        className='w-[var(--radix-popover-trigger-width)] p-0'
-        align='start'
-      >
+      <PopoverContent className='w-(--anchor-width) p-0'>
         <Command>
           <CommandInput placeholder='Search admin users...' />
           <CommandEmpty>No matching users.</CommandEmpty>
@@ -337,8 +315,8 @@ function ExternalReferrerPicker({
           <Button
             type='button'
             variant='ghost'
-            size='icon'
-            className='text-muted-foreground hover:text-destructive h-8 w-8 shrink-0'
+            size='icon-sm'
+            className='text-muted-foreground hover:text-destructive shrink-0'
             onClick={onClear}
             disabled={isPending || disabled}
             aria-label={`Clear external referrer ${selectedContact.name ?? selectedContact.email}`}
@@ -377,10 +355,7 @@ function ExternalReferrerPicker({
           </PopoverTrigger>
         </div>
       </DisabledFieldTooltip>
-      <PopoverContent
-        className='w-[var(--radix-popover-trigger-width)] p-0'
-        align='start'
-      >
+      <PopoverContent className='w-(--anchor-width) p-0'>
         <Command>
           <CommandInput placeholder='Search contacts...' />
           <CommandEmpty>No matching contacts.</CommandEmpty>

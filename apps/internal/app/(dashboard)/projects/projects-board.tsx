@@ -102,7 +102,7 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
 
       if (result.error) {
         toast({
-          title: 'Failed to update status',
+          title: 'Unable to update project status',
           description: result.error,
           variant: 'destructive',
         })
@@ -114,17 +114,16 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
     [router, toast]
   )
 
-  const projectActions =
-    activeProjectForSheet
-      ? {
-          canEdit: !projectMutationPending,
-          canArchive: !projectMutationPending,
-          editDisabledReason: projectMutationPending ? pendingReason : null,
-          archiveDisabledReason: projectMutationPending ? pendingReason : null,
-          onEdit: handleEditProject,
-          onArchive: handleArchiveProject,
-        }
-      : null
+  const projectActions = activeProjectForSheet
+    ? {
+        canEdit: !projectMutationPending,
+        canArchive: !projectMutationPending,
+        editDisabledReason: projectMutationPending ? pendingReason : null,
+        archiveDisabledReason: projectMutationPending ? pendingReason : null,
+        onEdit: handleEditProject,
+        onArchive: handleArchiveProject,
+      }
+    : null
 
   // D2/D14: the combobox header is retired; the breadcrumb carries the
   // active project label and ⌘[/⌘] cycling moves to the shared hook.
@@ -152,10 +151,7 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
         breadcrumbs={boardBreadcrumbs}
         contentClassName='flex h-full flex-col gap-6'
       >
-        <ProjectsBoardEmpty
-          title={viewModel.emptyState.title}
-          description={viewModel.emptyState.description}
-        />
+        <ProjectsBoardEmpty message={viewModel.emptyState.message} />
       </PageShell>
     )
   }

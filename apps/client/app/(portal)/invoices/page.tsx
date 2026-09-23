@@ -3,6 +3,9 @@ export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import { ArrowLeftIcon } from 'lucide-react'
 
+import { Card } from '@pts/ui/card'
+import { EmptyState } from '@pts/ui/empty-state'
+
 import { requireClientUser } from '@/lib/auth/session'
 import { isAdmin } from '@/lib/auth/permissions'
 import { resolvePortalScope } from '@/lib/auth/view-as'
@@ -10,53 +13,85 @@ import { getEnv } from '@/lib/env.server'
 import { fetchClientInvoices, type ClientInvoice } from '@/lib/data/invoices'
 import { InvoiceList } from '@/components/invoices/invoice-list'
 
-export default async function InvoicesPage() {
+type InvoicesPageProps = {
+  /** `?client=<id>` narrows the page to one client (the dashboard links here per client section). */
+  searchParams: Promise<{ client?: string | string[] }>
+}
+
+export default async function InvoicesPage({
+  searchParams,
+}: InvoicesPageProps) {
   const user = await requireClientUser()
-  const [invoices, scope] = await Promise.all([
+  const [allInvoices, scope, { client }] = await Promise.all([
     fetchClientInvoices(user),
     resolvePortalScope(user),
+    searchParams,
   ])
+
+  // Only honor a client the viewer can see; anything else shows everything.
+  const filterClient =
+    typeof client === 'string'
+      ? scope.scopedClients.find(option => option.id === client)
+      : undefined
+  const invoices = filterClient
+    ? allInvoices.filter(invoice => invoice.clientId === filterClient.id)
+    : allInvoices
+  const hasSeveralClients = scope.scopedClients.length > 1
 
   const needsClientSelection = isAdmin(user) && scope.clientIds.length === 0
   const internalPortalUrl = getEnv().INTERNAL_PORTAL_URL
 
   return (
-    <div className="space-y-6">
+    <div className='space-y-6'>
       <Link
-        href="/"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+        href='/'
+        className='text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm'
       >
-        <ArrowLeftIcon className="size-4" />
+        <ArrowLeftIcon className='size-4' />
         Back to dashboard
       </Link>
 
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Invoices</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <h1 className='text-foreground text-3xl font-semibold tracking-tight'>
+          Invoices
+        </h1>
+        <p className='text-muted-foreground mt-1 text-sm'>
           View or download any of your invoices, and pay the ones still open.
         </p>
+        {filterClient && hasSeveralClients && (
+          <p className='mt-3 text-sm'>
+            <span className='font-medium'>{filterClient.name}</span>
+            <span className='text-muted-foreground'> · </span>
+            <Link
+              href='/invoices'
+              className='text-muted-foreground hover:text-foreground underline-offset-4 hover:underline'
+            >
+              Show all clients
+            </Link>
+          </p>
+        )}
       </div>
 
       {invoices.length === 0 ? (
-        <div className="rounded-lg border border-border p-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            {needsClientSelection
+        <EmptyState
+          message={
+            needsClientSelection
               ? 'Select a contact above to preview the portal.'
-              : 'No invoices yet. They will appear here as soon as we send you one.'}
-          </p>
-        </div>
-      ) : scope.scopedClients.length > 1 ? (
+              : 'No invoices yet.'
+          }
+        />
+      ) : hasSeveralClients && !filterClient ? (
         <GroupedByClient
           invoices={invoices}
           internalPortalUrl={internalPortalUrl}
         />
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border bg-card px-4">
+        <Card className='gap-0 overflow-hidden px-4 py-0'>
           <InvoiceList
             invoices={invoices}
             internalPortalUrl={internalPortalUrl}
           />
-        </div>
+        </Card>
       )}
     </div>
   )
@@ -87,20 +122,20 @@ function GroupedByClient({
   }
 
   return (
-    <div className="space-y-6">
+    <div className='space-y-6'>
       {[...groups.entries()]
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([clientName, clientInvoices]) => (
-          <section key={clientName} className="space-y-2">
-            <h2 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+          <section key={clientName} className='space-y-2'>
+            <h2 className='text-muted-foreground text-xs font-medium tracking-wide uppercase'>
               {clientName}
             </h2>
-            <div className="overflow-hidden rounded-lg border border-border bg-card px-4">
+            <Card className='gap-0 overflow-hidden px-4 py-0'>
               <InvoiceList
                 invoices={clientInvoices}
                 internalPortalUrl={internalPortalUrl}
               />
-            </div>
+            </Card>
           </section>
         ))}
     </div>

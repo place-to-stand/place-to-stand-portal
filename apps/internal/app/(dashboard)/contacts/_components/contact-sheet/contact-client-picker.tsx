@@ -153,8 +153,8 @@ export function ContactClientList({
             <Button
               type='button'
               variant='ghost'
-              size='icon'
-              className='text-muted-foreground hover:text-destructive h-8 w-8 shrink-0'
+              size='icon-sm'
+              className='text-muted-foreground hover:text-destructive shrink-0'
               onClick={() => onRequestRemoval(client)}
               disabled={isPending}
               aria-label={`Unlink ${client.name}`}

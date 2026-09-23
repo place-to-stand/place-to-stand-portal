@@ -215,7 +215,7 @@ export const useTaskSheetState = ({
             toast({
               title: task ? 'Task updated' : 'Task created',
               description: task
-                ? 'Changes saved successfully.'
+                ? undefined
                 : 'The task was added to the project board.',
             })
           }

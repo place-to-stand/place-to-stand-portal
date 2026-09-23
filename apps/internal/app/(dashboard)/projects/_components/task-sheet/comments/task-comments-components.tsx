@@ -2,11 +2,11 @@
 
 import { useCallback, useMemo } from 'react'
 import type { FormEvent, ReactNode } from 'react'
-import { formatDistanceToNow } from 'date-fns'
 import { Loader2, MoreHorizontal, Pencil, Send, Trash2, X } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Button } from '@pts/ui/button'
+import { formatRelativeTime } from '@pts/ui/dates'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -96,16 +96,8 @@ export function TaskCommentComposer(props: TaskCommentComposerProps) {
               : 'Only project collaborators can post comments.'
           }
         >
-          <Button
-            type='submit'
-            disabled={disabled || isEmpty}
-            className='flex items-center gap-2'
-          >
-            {pending ? (
-              <Loader2 className='h-4 w-4 animate-spin' />
-            ) : (
-              <Send className='h-4 w-4' />
-            )}
+          <Button type='submit' disabled={disabled || isEmpty}>
+            {pending ? <Loader2 className='animate-spin' /> : <Send />}
             Post comment
           </Button>
         </DisabledFieldTooltip>
@@ -145,9 +137,7 @@ export function TaskCommentItem(props: TaskCommentItemProps) {
   // still has an email, which identifies them far better than 'Unknown user'.
   const authorName =
     comment.author?.full_name ?? comment.author?.email ?? 'Unknown user'
-  const createdAgo = formatDistanceToNow(new Date(comment.created_at), {
-    addSuffix: true,
-  })
+  const createdAgo = formatRelativeTime(comment.created_at)
   const edited = comment.updated_at && comment.updated_at !== comment.created_at
   const sanitizedBody = useMemo(
     () => sanitizeEditorHtml(comment.body ?? ''),
@@ -179,7 +169,7 @@ export function TaskCommentItem(props: TaskCommentItemProps) {
             size='sm'
             onClick={onCancelEdit}
           >
-            <X className='mr-1 h-3.5 w-3.5' /> Cancel
+            <X /> Cancel
           </Button>
           <Button
             type='button'
@@ -187,7 +177,7 @@ export function TaskCommentItem(props: TaskCommentItemProps) {
             onClick={onConfirmEdit}
             disabled={isEditingEmpty || disableActions}
           >
-            <Send className='mr-1 h-3.5 w-3.5' /> Save
+            <Send /> Save
           </Button>
         </div>
       </div>
@@ -204,14 +194,14 @@ export function TaskCommentItem(props: TaskCommentItemProps) {
                 <Button
                   type='button'
                   variant='ghost'
-                  size='sm'
-                  className='text-muted-foreground hover:text-foreground h-7 w-7 p-0'
+                  size='icon-sm'
+                  className='text-muted-foreground hover:text-foreground'
                   disabled={disableActions}
                   aria-label='Comment actions'
                 />
               }
             >
-              <MoreHorizontal className='h-4 w-4' />
+              <MoreHorizontal />
             </DropdownMenuTrigger>
             <DropdownMenuContent align='end' className='w-36'>
               <DropdownMenuItem onClick={() => onStartEdit(comment)}>
@@ -237,14 +227,14 @@ export function TaskCommentItem(props: TaskCommentItemProps) {
       />
       <footer className='text-muted-foreground mt-3 flex flex-wrap items-center gap-2 text-xs'>
         <div className='flex flex-wrap items-center gap-2'>
-          <Avatar className='h-5 w-5'>
+          <Avatar size='xs'>
             {comment.author?.avatar_url ? (
               <AvatarImage
                 src={`/api/storage/user-avatar/${comment.author.id}`}
                 alt={authorName}
               />
             ) : null}
-            <AvatarFallback className='text-[9px]'>
+            <AvatarFallback>
               {getInitials(comment.author?.full_name)}
             </AvatarFallback>
           </Avatar>

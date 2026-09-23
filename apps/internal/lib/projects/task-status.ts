@@ -1,22 +1,19 @@
+import { BADGE_TINTS } from '@pts/ui/badge-tints'
+
 // Display vocabulary, not the DB enum: ACCEPTED (accepted_at set) and
 // ARCHIVED (deleted_at set) are derived states with no task_status value.
 const TASK_STATUS_TOKENS = {
-  ON_DECK:
-    'border-transparent bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200',
-  IN_PROGRESS:
-    'border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200',
-  BLOCKED:
-    'border-transparent bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200',
-  DONE: 'border-transparent bg-slate-200 text-slate-700 dark:bg-slate-700/60 dark:text-slate-200',
-  ACCEPTED:
-    'border-transparent bg-slate-100 text-slate-800 dark:bg-slate-800/40 dark:text-slate-200',
-  ARCHIVED:
-    'border-transparent bg-slate-100 text-slate-800 dark:bg-slate-800/40 dark:text-slate-200',
+  ON_DECK: BADGE_TINTS.sky,
+  IN_PROGRESS: BADGE_TINTS.emerald,
+  BLOCKED: BADGE_TINTS.amber,
+  DONE: BADGE_TINTS.neutral,
+  ACCEPTED: BADGE_TINTS.neutral,
+  ARCHIVED: BADGE_TINTS.neutral,
 } as const
 
 const TASK_STATUS_LABELS = {
-  ON_DECK: 'On Deck',
-  IN_PROGRESS: 'In Progress',
+  ON_DECK: 'On deck',
+  IN_PROGRESS: 'In progress',
   BLOCKED: 'Blocked',
   DONE: 'Done',
   ACCEPTED: 'Accepted',
@@ -46,11 +43,8 @@ export function getTaskStatusLabel(value: string): string {
     return 'Unknown'
   }
 
-  return humanized
-    .toLowerCase()
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ')
+  const lower = humanized.toLowerCase()
+  return lower.charAt(0).toUpperCase() + lower.slice(1)
 }
 
 /** Statuses that mean the task is not finished — reaching one reopens it. */

@@ -45,7 +45,7 @@ export function ClientNotesSection({
       } else {
         setFeedback({
           type: 'error',
-          message: result.error ?? 'Failed to save notes',
+          message: result.error ?? 'Unable to save notes',
         })
       }
     })
@@ -67,7 +67,7 @@ export function ClientNotesSection({
         )}
         {feedback ? (
           <span
-            className={`text-xs ${feedback.type === 'success' ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}
+            className={`text-xs ${feedback.type === 'success' ? 'text-success' : 'text-destructive'}`}
           >
             {feedback.type === 'success' ? (
               <span className='flex items-center gap-1'>
@@ -82,9 +82,8 @@ export function ClientNotesSection({
         <Button
           onClick={handleSave}
           disabled={!hasChanges || isPending}
-          size='sm'
+          size='xs'
           variant={hasChanges ? 'default' : 'ghost'}
-          className='h-7'
         >
           {isPending ? (
             <>

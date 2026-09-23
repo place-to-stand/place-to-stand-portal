@@ -17,7 +17,10 @@ import {
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
+import { BADGE_TINTS } from '@pts/ui/badge-tints'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { EmptyState } from '@pts/ui/empty-state'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
@@ -38,6 +41,8 @@ import {
   CLICKABLE_ROW_CLASS,
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
+
+import { InvoiceStatusBadge } from './invoice-status-badge'
 
 type InvoicesTableMode = 'active' | 'archive'
 
@@ -71,51 +76,14 @@ const formatCurrency = (value: string) => {
   }
 }
 
-const formatDate = (value: string | null) => formatCalendarDate(value) ?? '\u2014'
-
-function StatusBadge({ status }: { status: string }) {
-  return (
-    <div className='flex items-center gap-1.5'>
-      {status === 'DRAFT' ? (
-        <Badge variant='secondary' className='text-xs'>
-          Draft
-        </Badge>
-      ) : status === 'SENT' ? (
-        <Badge variant='default' className='text-xs'>
-          Sent
-        </Badge>
-      ) : status === 'VIEWED' ? (
-        <Badge
-          variant='outline'
-          className='border-transparent bg-amber-100 text-xs text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'
-        >
-          Viewed
-        </Badge>
-      ) : status === 'PAID' ? (
-        <Badge
-          variant='outline'
-          className='border-transparent bg-emerald-100 text-xs text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'
-        >
-          Paid
-        </Badge>
-      ) : status === 'VOID' ? (
-        <Badge variant='destructive' className='text-xs'>
-          Void
-        </Badge>
-      ) : (
-        <Badge variant='secondary' className='text-xs'>
-          {status}
-        </Badge>
-      )}
-    </div>
-  )
-}
+const formatDate = (value: string | null) =>
+  formatCalendarDate(value) ?? '\u2014'
 
 function BillingTypeBadge() {
   return (
     <Badge
       variant='outline'
-      className='border-transparent bg-amber-100 text-[10px] px-1.5 py-0 leading-4 text-amber-800 dark:bg-amber-500/10 dark:text-amber-300'
+      className={cn(BADGE_TINTS.amber, 'px-1.5 py-0 text-[10px] leading-4')}
     >
       Net 30
     </Badge>
@@ -166,14 +134,14 @@ function ShareLinkCell({
       } else {
         toast({
           variant: 'destructive',
-          title: 'Failed to generate link',
+          title: 'Unable to generate link',
           description: data.error ?? 'Please try again.',
         })
       }
     } catch {
       toast({
         variant: 'destructive',
-        title: 'Failed to generate link',
+        title: 'Unable to generate link',
         description: 'Network error. Please check your connection.',
       })
     } finally {
@@ -199,23 +167,14 @@ function ShareLinkCell({
           open={showSendPrompt}
           title='Mark invoice as sent?'
           description='The invoice must be marked as sent before the client can make a payment. Would you like to mark it as sent now?'
-          confirmLabel='Mark as Sent'
-          cancelLabel='Not Now'
+          confirmLabel='Mark as sent'
+          cancelLabel='Not now'
           onConfirm={handleConfirmSend}
           onCancel={handleDeclineSend}
         />
-        <Button
-          size='sm'
-          className='h-7 gap-1.5 px-3 text-xs'
-          onClick={handleGenerateLink}
-          disabled={isGenerating}
-        >
-          {isGenerating ? (
-            <Loader2 className='h-3 w-3 animate-spin' />
-          ) : (
-            <Link2 className='h-3 w-3' />
-          )}
-          {isGenerating ? 'Generating...' : 'Generate Shareable Link'}
+        <Button size='xs' onClick={handleGenerateLink} disabled={isGenerating}>
+          {isGenerating ? <Loader2 className='animate-spin' /> : <Link2 />}
+          {isGenerating ? 'Generating...' : 'Generate shareable link'}
         </Button>
       </>
     )
@@ -227,31 +186,21 @@ function ShareLinkCell({
 
   return (
     <div className='flex min-w-0 items-center gap-1.5'>
-      <span className='text-muted-foreground min-w-0 truncate text-xs font-mono'>
+      <span className='text-muted-foreground min-w-0 truncate font-mono text-xs'>
         {truncatedPath}
       </span>
-      <Button
-        variant='ghost'
-        size='icon-sm'
-        className='h-6 w-6 flex-shrink-0'
+      <RowActionButton
+        label='Copy share link'
+        icon={copied ? <Check className='text-success' /> : <Copy />}
+        className='flex-shrink-0'
         onClick={handleCopy}
-        title='Copy share link'
-      >
-        {copied ? (
-          <Check className='h-3 w-3 text-green-600' />
-        ) : (
-          <Copy className='h-3 w-3' />
-        )}
-      </Button>
-      <Button
-        variant='ghost'
-        size='icon-sm'
-        className='h-6 w-6 flex-shrink-0'
+      />
+      <RowActionButton
+        label='Open share link'
+        icon={<ExternalLink />}
+        className='flex-shrink-0'
         onClick={() => window.open(shareUrl, '_blank')}
-        title='Open share link'
-      >
-        <ExternalLink className='h-3 w-3' />
-      </Button>
+      />
     </div>
   )
 }
@@ -310,11 +259,11 @@ export function InvoicesTableSection({
               sort={sort}
               defaultSort='created:desc'
               onSortChange={next => update({ sort: next })}
-              className='w-[20%]'
+              className='w-[14%]'
             >
               Issued
             </SortableTableHead>
-            <TableHead>Share Link</TableHead>
+            <TableHead className='w-[22%]'>Share link</TableHead>
             <TableHead className='w-28 text-right'>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -399,7 +348,7 @@ export function InvoicesTableSection({
                   ) : null}
                 </TableCell>
                 <TableCell>
-                  <StatusBadge status={invoice.status} />
+                  <InvoiceStatusBadge status={invoice.status} />
                 </TableCell>
                 <TableCell className='text-sm'>
                   {formatCurrency(invoice.total)}
@@ -425,12 +374,10 @@ export function InvoicesTableSection({
                           variant='destructive'
                           size='icon-sm'
                           onClick={() => onRequestDelete(invoice)}
-                          title='Archive invoice'
                           aria-label='Archive invoice'
                           disabled={archiveDisabled}
                         >
-                          <Archive className='h-4 w-4' />
-                          <span className='sr-only'>Archive</span>
+                          <Archive />
                         </Button>
                       </DisabledFieldTooltip>
                     ) : null}
@@ -443,12 +390,10 @@ export function InvoicesTableSection({
                           variant='outline'
                           size='icon-sm'
                           onClick={() => onRestore(invoice)}
-                          title='Restore invoice'
                           aria-label='Restore invoice'
                           disabled={restoreDisabled}
                         >
-                          <RefreshCw className='h-4 w-4' />
-                          <span className='sr-only'>Restore</span>
+                          <RefreshCw />
                         </Button>
                       </DisabledFieldTooltip>
                     ) : null}
@@ -461,12 +406,10 @@ export function InvoicesTableSection({
                           variant='destructive'
                           size='icon-sm'
                           onClick={() => onRequestDestroy(invoice)}
-                          title='Permanently delete invoice'
                           aria-label='Permanently delete invoice'
                           disabled={destroyDisabled}
                         >
-                          <Trash2 className='h-4 w-4' />
-                          <span className='sr-only'>Delete permanently</span>
+                          <Trash2 />
                         </Button>
                       </DisabledFieldTooltip>
                     ) : null}
@@ -477,11 +420,8 @@ export function InvoicesTableSection({
           })}
           {invoiceList.length === 0 ? (
             <TableRow>
-              <TableCell
-                colSpan={7}
-                className='text-muted-foreground py-10 text-center text-sm'
-              >
-                {emptyMessage}
+              <TableCell colSpan={7} className='p-4'>
+                <EmptyState message={emptyMessage} />
               </TableCell>
             </TableRow>
           ) : null}

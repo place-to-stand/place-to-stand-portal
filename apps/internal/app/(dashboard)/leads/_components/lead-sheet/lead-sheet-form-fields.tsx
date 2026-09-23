@@ -92,7 +92,7 @@ export function LeadSheetFormFields({
         name='contactName'
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Contact Name</FormLabel>
+            <FormLabel>Contact name</FormLabel>
             <FormControl>
               <Input
                 {...field}
@@ -110,7 +110,7 @@ export function LeadSheetFormFields({
           name='contactEmail'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Contact Email</FormLabel>
+              <FormLabel>Contact email</FormLabel>
               <FormControl>
                 <Input
                   {...field}
@@ -128,7 +128,7 @@ export function LeadSheetFormFields({
           name='contactPhone'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Contact Phone</FormLabel>
+              <FormLabel>Contact phone</FormLabel>
               <FormControl>
                 <PhoneInput
                   value={field.value ?? ''}
@@ -146,7 +146,7 @@ export function LeadSheetFormFields({
           name='companyName'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Company Name</FormLabel>
+              <FormLabel>Company name</FormLabel>
               <FormControl>
                 <Input
                   {...field}
@@ -163,7 +163,7 @@ export function LeadSheetFormFields({
           name='companyWebsite'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Company Website</FormLabel>
+              <FormLabel>Company website</FormLabel>
               <FormControl>
                 <Input
                   {...field}
@@ -223,7 +223,7 @@ export function LeadSheetFormFields({
           name='sourceDetail'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Source Info</FormLabel>
+              <FormLabel>Source info</FormLabel>
               <FormControl>
                 <Input
                   {...field}

@@ -51,7 +51,7 @@ export function TimeLogList({
         <h3 className='text-muted-foreground text-[11px] font-semibold tracking-wide uppercase'>
           My time logs
         </h3>
-        <span className='text-muted-foreground text-[11px] tabular-nums'>
+        <span className='text-muted-foreground text-xs tabular-nums'>
           {items.length} of {totalCount}
         </span>
       </div>
@@ -81,8 +81,8 @@ export function TimeLogList({
           <Button
             type='button'
             variant='ghost'
-            size='sm'
-            className='h-7 w-full text-xs'
+            size='xs'
+            className='w-full'
             onClick={onLoadMore}
             disabled={isLoadingMore}
           >
@@ -132,7 +132,7 @@ function TimeLogRow({
         type='button'
         onClick={() => onOpen(entry.id)}
         disabled={isOpening}
-        className='hover:bg-muted/60 focus-visible:ring-primary focus-visible:ring-offset-background absolute inset-x-0 inset-y-0.5 z-0 cursor-pointer rounded-md transition focus-visible:ring-2 focus-visible:ring-offset-1 disabled:cursor-wait'
+        className='hover:bg-muted/60 focus-visible:border-ring focus-visible:ring-ring/50 absolute inset-x-0 inset-y-0.5 z-0 cursor-pointer rounded-md transition outline-none focus-visible:ring-[3px] disabled:cursor-wait'
         aria-label={`Edit time log: ${label}, ${dateLabel}`}
       />
       <div className='pointer-events-none relative z-10 flex items-center gap-3 px-2 py-2'>
@@ -148,7 +148,7 @@ function TimeLogRow({
             ) : null}
           </span>
           {/* Secondary line: when it happened and where it landed. */}
-          <div className='text-muted-foreground mt-0.5 flex min-w-0 items-center gap-1.5 text-[11px]'>
+          <div className='text-muted-foreground mt-0.5 flex min-w-0 items-center gap-1.5 text-xs'>
             <span className='bg-muted text-muted-foreground shrink-0 rounded px-1.5 py-0.5 text-[10px] leading-none tabular-nums'>
               {dateLabel}
             </span>
@@ -205,9 +205,7 @@ function TimeLogRow({
             <Loader2 className='h-3.5 w-3.5 animate-spin' aria-hidden />
           ) : null}
           {formatHours(entry.hours)}
-          <span className='text-muted-foreground text-[11px] font-normal'>
-            h
-          </span>
+          <span className='text-muted-foreground text-xs font-normal'>h</span>
         </span>
       </div>
     </li>

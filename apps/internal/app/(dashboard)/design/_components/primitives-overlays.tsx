@@ -39,11 +39,7 @@ import {
   HoverCardTrigger,
 } from '@/components/ui/hover-card'
 import { Input } from '@pts/ui/input'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@pts/ui/popover'
+import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
 import {
   Sheet,
   SheetContent,
@@ -52,11 +48,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@pts/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { useToast } from '@/components/ui/use-toast'
 
 import { DesignSection, Specimen } from './specimen'
@@ -114,7 +106,7 @@ export function PrimitivesOverlays() {
               Dropdown menu
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align='start'>
+          <DropdownMenuContent>
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem>Edit</DropdownMenuItem>
             <DropdownMenuItem>Duplicate</DropdownMenuItem>
@@ -224,8 +216,7 @@ export function PrimitivesOverlays() {
           size='sm'
           onClick={() =>
             toast({
-              title: 'Saved',
-              description: 'Your changes have been saved.',
+              title: 'Changes saved',
             })
           }
         >
@@ -236,7 +227,7 @@ export function PrimitivesOverlays() {
           size='sm'
           onClick={() =>
             toast({
-              title: 'Something went wrong',
+              title: 'Unable to save changes',
               description: 'The request failed. Try again.',
               variant: 'destructive',
             })
@@ -248,8 +239,11 @@ export function PrimitivesOverlays() {
 
       <Specimen label='CommandDialog' className='block'>
         <p className='text-muted-foreground text-sm'>
-          The command palette (components/ui/command.tsx) is rendered app-wide
-          — press <kbd className='bg-muted rounded border px-1 font-mono text-[11px]'>⌘K</kbd>{' '}
+          The command palette (components/ui/command.tsx) is rendered app-wide —
+          press{' '}
+          <kbd className='bg-muted rounded border px-1 font-mono text-[11px]'>
+            ⌘K
+          </kbd>{' '}
           or use the Search affordance in the header above to open the real
           palette. No inert specimen is rendered here.
         </p>

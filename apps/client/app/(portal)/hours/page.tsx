@@ -1,5 +1,7 @@
 export const dynamic = 'force-dynamic'
 
+import { EmptyState } from '@pts/ui/empty-state'
+
 import { requireClientUser } from '@/lib/auth/session'
 import { isAdmin } from '@/lib/auth/permissions'
 import { resolvePortalScope } from '@/lib/auth/view-as'
@@ -16,24 +18,26 @@ export default async function HoursPage() {
   const needsClientSelection = isAdmin(user) && scope.clientIds.length === 0
 
   return (
-    <div className="space-y-6">
+    <div className='space-y-6'>
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Hours</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <h1 className='text-foreground text-3xl font-semibold tracking-tight'>
+          Hours
+        </h1>
+        <p className='text-muted-foreground mt-1 text-sm'>
           Your purchased hours and how much remains.
         </p>
       </div>
 
       {summaries.length === 0 ? (
-        <div className="rounded-lg border border-border p-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            {needsClientSelection
+        <EmptyState
+          message={
+            needsClientSelection
               ? 'Select a contact above to preview the portal.'
-              : 'No hours information is available for your account yet. Contact your account manager to get started.'}
-          </p>
-        </div>
+              : 'No hours yet.'
+          }
+        />
       ) : (
-        <div className="grid gap-3">
+        <div className='grid gap-3'>
           {summaries.map(summary => (
             <HoursSummaryCard
               key={summary.clientId}

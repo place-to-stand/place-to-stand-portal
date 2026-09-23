@@ -103,25 +103,26 @@ export type ClientInvoiceSummary = {
   unpaidTotal: string
 }
 
-const EMPTY_SUMMARY: ClientInvoiceSummary = {
+export const EMPTY_INVOICE_SUMMARY: ClientInvoiceSummary = {
   unpaidCount: 0,
   unpaidTotal: '0',
 }
 
 /**
- * Counts and balances for the dashboard's Invoices card.
- *
- * A single aggregate rather than counting rows in JS — the dashboard never
- * renders the invoices themselves, so there is no reason to ship them over the
- * wire. "Unpaid" is SENT or VIEWED; PAID and VOID are settled either way.
+ * Unpaid counts and balances per client, for each client section's Invoices
+ * row on the dashboard. One grouped aggregate rather than counting rows in JS —
+ * the dashboard never renders the invoices themselves. "Unpaid" is SENT or
+ * VIEWED; PAID and VOID are settled either way. A client with nothing unpaid
+ * has no entry: read with `?? EMPTY_INVOICE_SUMMARY`.
  */
-export const fetchClientInvoiceSummary = cache(
-  async (user: AppUser): Promise<ClientInvoiceSummary> => {
+export const fetchClientInvoiceSummaries = cache(
+  async (user: AppUser): Promise<Map<string, ClientInvoiceSummary>> => {
     const { clientIds } = await resolvePortalScope(user)
-    if (clientIds.length === 0) return EMPTY_SUMMARY
+    if (clientIds.length === 0) return new Map()
 
-    const [row] = await db
+    const rows = await db
       .select({
+        clientId: invoices.clientId,
         unpaidCount: sql<number>`count(*)::int`,
         unpaidTotal: sql<string>`coalesce(sum(${invoices.total}), 0)::text`,
       })
@@ -133,8 +134,9 @@ export const fetchClientInvoiceSummary = cache(
           inArray(invoices.status, ['SENT', 'VIEWED'])
         )
       )
+      .groupBy(invoices.clientId)
 
-    return row ?? EMPTY_SUMMARY
+    return new Map(rows.map(({ clientId, ...summary }) => [clientId, summary]))
   }
 )
 

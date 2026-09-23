@@ -5,6 +5,8 @@ import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { FileCode, Loader2 } from 'lucide-react'
 
+import { EmptyState } from '@pts/ui/empty-state'
+
 type PlanDocumentViewerProps = {
   content: string
   isStreaming: boolean
@@ -29,20 +31,14 @@ export function PlanDocumentViewer({
 
   if (error) {
     return (
-      <div className='flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive'>
+      <div className='border-destructive/50 bg-destructive/10 text-destructive flex items-center gap-2 rounded-md border px-3 py-2 text-xs'>
         {error}
       </div>
     )
   }
 
   if (!content && !isStreaming) {
-    return (
-      <div className='flex flex-col items-center justify-center gap-2 py-12 text-center text-muted-foreground'>
-        <FileCode className='h-8 w-8 opacity-40' />
-        <p className='text-sm'>No plan generated yet.</p>
-        <p className='text-xs'>A plan will be auto-generated when you open this panel.</p>
-      </div>
-    )
+    return <EmptyState message='No plan generated yet.' />
   }
 
   return (
@@ -53,7 +49,7 @@ export function PlanDocumentViewer({
           {toolCalls.slice(-3).map((tc, i) => (
             <div
               key={i}
-              className='flex items-center gap-1.5 rounded bg-muted/60 px-2 py-1 text-[11px] text-muted-foreground'
+              className='bg-muted/60 text-muted-foreground flex items-center gap-1.5 rounded px-2 py-1 text-xs'
             >
               <FileCode className='h-3 w-3' />
               {tc}
@@ -69,7 +65,7 @@ export function PlanDocumentViewer({
 
       {/* Streaming indicator */}
       {isStreaming && (
-        <div className='mt-2 flex items-center gap-1.5 py-2 text-xs text-muted-foreground'>
+        <div className='text-muted-foreground mt-2 flex items-center gap-1.5 py-2 text-xs'>
           <Loader2 className='h-3 w-3 animate-spin' />
           Generating...
         </div>

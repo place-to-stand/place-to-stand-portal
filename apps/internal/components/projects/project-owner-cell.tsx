@@ -133,24 +133,24 @@ export function ProjectOwnerCell({
             // avatar shows an image (no text) baseline-aligns by its bottom
             // edge, and the cell's font strut adds ~4px of phantom space
             // below — rows grew to 44px on prod where avatars load.
-            'group focus-visible:ring-ring hover:bg-accent/60 -mx-0.5 flex w-fit cursor-pointer items-center gap-1.5 rounded-md p-0.5 focus:outline-none focus-visible:ring-2',
+            'group focus-visible:border-ring focus-visible:ring-ring/50 hover:bg-accent/60 -mx-0.5 flex w-fit cursor-pointer items-center gap-1.5 rounded-md p-0.5 outline-none focus-visible:ring-[3px]',
             isPending && 'animate-pulse'
           )}
         >
           {displayOwner ? (
-            <Avatar className='h-6 w-6'>
+            <Avatar size='sm'>
               {displayOwner.avatar_url && (
                 <AvatarImage
                   src={`/api/storage/user-avatar/${displayOwner.id}`}
                   alt={displayOwner.full_name ?? 'Owner'}
                 />
               )}
-              <AvatarFallback className='text-[9px]'>
+              <AvatarFallback>
                 {getInitials(displayOwner.full_name)}
               </AvatarFallback>
             </Avatar>
           ) : (
-            <Avatar className='h-6 w-6 border border-dashed'>
+            <Avatar size='sm' className='border border-dashed'>
               <AvatarFallback className='bg-transparent'>
                 <UserRoundPlus className='text-muted-foreground/60 h-3.5 w-3.5' />
               </AvatarFallback>

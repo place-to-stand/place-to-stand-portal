@@ -12,6 +12,8 @@ import {
 } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { EmptyState } from '@pts/ui/empty-state'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
@@ -37,12 +39,12 @@ import {
 
 /**
  * The one row action that creates something (a portal user) gets a pale
- * green tint so it scans apart from the neutral preview button and the
+ * success tint so it scans apart from the neutral preview button and the
  * destructive archive button beside it — a warm tint read as another
  * destructive action.
  */
 const PROMOTE_BUTTON_CLASS =
-  'border-emerald-500/40 bg-emerald-500/10 text-emerald-700 hover:border-emerald-500/60 hover:bg-emerald-500/20 hover:text-emerald-800 dark:text-emerald-300 dark:hover:text-emerald-200'
+  'border-success/40 bg-success/10 text-success hover:border-success/60 hover:bg-success/20 hover:text-success'
 
 export type ContactsTableSectionProps = {
   contacts: ContactsTableContact[]
@@ -126,6 +128,7 @@ export function ContactsTableSection({
               sort={sort}
               defaultSort='name:asc'
               onSortChange={next => update({ sort: next })}
+              className='w-[12%]'
             >
               Clients
             </SortableTableHead>
@@ -166,9 +169,7 @@ export function ContactsTableSection({
             const showRestore = mode === 'archive'
             const showDestroy = mode === 'archive'
             const showPreview = mode === 'active'
-            const showPromote =
-              mode === 'active' &&
-              !contact.userId
+            const showPromote = mode === 'active' && !contact.userId
 
             const promoteDisabled = isDeleting || isRestoring || isDestroying
             const promoteDisabledReason = promoteDisabled ? pendingReason : null
@@ -227,29 +228,25 @@ export function ContactsTableSection({
                           variant='outline'
                           size='icon-sm'
                           onClick={() => onRequestPromote(contact)}
-                          title='Create portal account'
                           aria-label='Create portal account'
                           disabled={promoteDisabled}
                           className={PROMOTE_BUTTON_CLASS}
                         >
-                          <UserPlus className='h-4 w-4' />
+                          <UserPlus />
                         </Button>
                       </DisabledFieldTooltip>
                     ) : null}
                     {showPreview ? (
-                      <Button
+                      <RowActionButton
+                        label='Preview in client portal'
+                        icon={<Eye />}
                         variant='outline'
-                        size='icon-sm'
                         onClick={e => {
                           e.stopPropagation()
                           onRequestPreview(contact)
                         }}
-                        title='Preview in client portal'
-                        aria-label='Preview in client portal'
                         disabled={isPending}
-                      >
-                        <Eye className='h-4 w-4' />
-                      </Button>
+                      />
                     ) : null}
                     {showRestore ? (
                       <DisabledFieldTooltip
@@ -260,12 +257,10 @@ export function ContactsTableSection({
                           variant='outline'
                           size='icon-sm'
                           onClick={() => onRestore(contact)}
-                          title='Restore contact'
                           aria-label='Restore contact'
                           disabled={restoreDisabled}
                         >
-                          <RefreshCw className='h-4 w-4' />
-                          <span className='sr-only'>Restore</span>
+                          <RefreshCw />
                         </Button>
                       </DisabledFieldTooltip>
                     ) : null}
@@ -278,12 +273,10 @@ export function ContactsTableSection({
                           variant='destructive'
                           size='icon-sm'
                           onClick={() => onRequestDelete(contact)}
-                          title='Archive contact'
                           aria-label='Archive contact'
                           disabled={deleteDisabled}
                         >
-                          <Archive className='h-4 w-4' />
-                          <span className='sr-only'>Archive</span>
+                          <Archive />
                         </Button>
                       </DisabledFieldTooltip>
                     ) : null}
@@ -296,12 +289,10 @@ export function ContactsTableSection({
                           variant='destructive'
                           size='icon-sm'
                           onClick={() => onRequestDestroy(contact)}
-                          title='Permanently delete contact'
                           aria-label='Permanently delete contact'
                           disabled={destroyDisabled}
                         >
-                          <Trash2 className='h-4 w-4' />
-                          <span className='sr-only'>Delete permanently</span>
+                          <Trash2 />
                         </Button>
                       </DisabledFieldTooltip>
                     ) : null}
@@ -312,11 +303,8 @@ export function ContactsTableSection({
           })}
           {contacts.length === 0 ? (
             <TableRow>
-              <TableCell
-                colSpan={5}
-                className='text-muted-foreground py-10 text-center text-sm'
-              >
-                {emptyMessage}
+              <TableCell colSpan={5} className='p-4'>
+                <EmptyState message={emptyMessage} />
               </TableCell>
             </TableRow>
           ) : null}

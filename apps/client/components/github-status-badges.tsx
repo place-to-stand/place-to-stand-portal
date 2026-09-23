@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { CheckCircle2Icon } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { GitHubMark } from '@/components/icons/github-mark'
 import { useGitHubCallbackNotice } from '@/lib/hooks/use-github-callback-notice'
 import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
@@ -15,7 +16,10 @@ import type { PtsStaffGitHubAccount } from '@/lib/data/staff-github-access'
 type ConnectedStatus = Extract<ClientGitHubStatus, { kind: 'connected' }>
 
 /** "acme/site", "3 repos linked", or "Connected" when nothing's linked yet. */
-function connectedLabel(status: ConnectedStatus, showClientName: boolean): string {
+function connectedLabel(
+  status: ConnectedStatus,
+  showClientName: boolean
+): string {
   const prefix = showClientName ? `${status.clientName} · ` : ''
   const { linkedRepos } = status
 
@@ -25,24 +29,27 @@ function connectedLabel(status: ConnectedStatus, showClientName: boolean): strin
 }
 
 /**
- * Compact GitHub connection status, meant to sit on the dashboard title row
- * rather than take up a full card — one small control per client in scope.
+ * Compact GitHub connection status, one small control per client passed in.
+ * The dashboard renders it in each client section's header.
  */
 export function GitHubStatusBadges({
   statuses,
   showClientName,
   staffAccounts,
+  showCallbackNotice = true,
 }: {
   statuses: ClientGitHubStatus[]
   showClientName: boolean
   staffAccounts: PtsStaffGitHubAccount[]
+  /** The post-install notice; show it on one instance when there are several. */
+  showCallbackNotice?: boolean
 }) {
   const { notice, error } = useGitHubCallbackNotice('/')
 
   if (statuses.length === 0) return null
 
   return (
-    <div className="flex flex-wrap items-center justify-end gap-2">
+    <div className='flex flex-wrap items-center justify-end gap-2'>
       {statuses.map(status => (
         <GitHubStatusBadge
           key={status.clientId}
@@ -51,9 +58,11 @@ export function GitHubStatusBadges({
           staffAccounts={staffAccounts}
         />
       ))}
-      {notice && <span className="text-xs text-emerald-600">{notice}</span>}
-      {error && (
-        <span className="text-xs text-destructive" role="alert">
+      {showCallbackNotice && notice && (
+        <span className='text-success text-xs'>{notice}</span>
+      )}
+      {showCallbackNotice && error && (
+        <span className='text-destructive text-xs' role='alert'>
           {error}
         </span>
       )}
@@ -74,42 +83,60 @@ function GitHubStatusBadge({
 
   if (status.kind === 'not_connected') {
     return (
-      <Button variant="outline" size="xs" className="shrink-0" asChild>
+      <Button variant='outline' size='xs' className='shrink-0' asChild>
         <a href={`/api/github/install?clientId=${status.clientId}&returnTo=/`}>
-          <GitHubMark className="size-3" />
+          <GitHubMark />
           {showClientName ? `Connect ${status.clientName}` : 'Connect GitHub'}
         </a>
       </Button>
     )
   }
 
+  const staffButton = (
+    <Button
+      type='button'
+      variant='outline'
+      size='xs'
+      className='shrink-0'
+      onClick={() => setStaffModalOpen(true)}
+      disabled={status.linkedRepos.length === 0}
+    >
+      <GitHubMark />
+      {showClientName
+        ? `Staff authorization · ${status.clientName}`
+        : 'Staff authorization'}
+    </Button>
+  )
+
   return (
     <>
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="outline" size="xs" className="shrink-0">
-            <GitHubMark className="size-3" />
-            <span className="max-w-[220px] truncate">
+          <Button variant='outline' size='xs' className='shrink-0'>
+            <GitHubMark />
+            <span className='max-w-56 truncate'>
               {connectedLabel(status, showClientName)}
             </span>
-            <CheckCircle2Icon className="size-3 text-emerald-600 dark:text-emerald-400" />
+            <CheckCircle2Icon className='text-success' />
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="end" className="w-64 space-y-2 text-sm">
+        <PopoverContent align='end' className='w-64 space-y-2 text-sm'>
           {status.linkedRepos.length === 0 ? (
-            <p className="text-muted-foreground">
+            <p className='text-muted-foreground'>
               Connected as{' '}
-              <span className="font-medium text-foreground">{status.accountLogin}</span>
+              <span className='text-foreground font-medium'>
+                {status.accountLogin}
+              </span>
               . No repositories linked yet.
             </p>
           ) : (
-            <ul className="space-y-2">
+            <ul className='space-y-2'>
               {status.linkedRepos.map(repo => (
-                <li key={repo.id} className="text-muted-foreground">
+                <li key={repo.id} className='text-muted-foreground'>
                   Place To Stand GitHub App installed on{' '}
                   <Link
                     href={`/projects/${repo.projectId}`}
-                    className="font-medium text-foreground hover:underline"
+                    className='text-foreground font-medium hover:underline'
                   >
                     {repo.repoFullName}
                   </Link>
@@ -119,22 +146,20 @@ function GitHubStatusBadge({
           )}
         </PopoverContent>
       </Popover>
-      <Button
-        type="button"
-        variant="outline"
-        size="xs"
-        className="shrink-0 gap-1.5"
-        onClick={() => setStaffModalOpen(true)}
-        disabled={status.linkedRepos.length === 0}
-        title={
-          status.linkedRepos.length === 0
-            ? 'Link a repository first'
-            : undefined
-        }
-      >
-        <GitHubMark className="size-3" />
-        {showClientName ? `Staff authorization · ${status.clientName}` : 'Staff authorization'}
-      </Button>
+      {/* A disabled button takes no pointer events, so the reason hangs off a
+          wrapper instead. */}
+      {status.linkedRepos.length === 0 ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className='inline-flex shrink-0 cursor-not-allowed'>
+              {staffButton}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>Link a repository first</TooltipContent>
+        </Tooltip>
+      ) : (
+        staffButton
+      )}
       <StaffAuthorizationModal
         open={staffModalOpen}
         onOpenChange={setStaffModalOpen}

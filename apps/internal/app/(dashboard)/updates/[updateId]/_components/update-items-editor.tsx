@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { ArrowDown, ArrowUp, Link2, Link2Off, Plus, Trash2 } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { EmptyState } from '@pts/ui/empty-state'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import {
   Select,
   SelectContent,
@@ -73,15 +75,13 @@ export function UpdateItemsEditor({
   return (
     <div className='space-y-4'>
       {items.length === 0 ? (
-        <div className='text-muted-foreground rounded-md border border-dashed px-4 py-6 text-center text-sm'>
-          <p className='text-foreground font-medium'>No items yet</p>
-          <p className='mt-1'>
-            {periodStart
+        <EmptyState
+          message={
+            periodStart
               ? `Nothing was completed, worked on, or blocked for this client since ${formatCalendarDate(periodStart)}.`
-              : 'Nothing was completed, worked on, or blocked for this client in this window.'}{' '}
-            Add an item below to get started.
-          </p>
-        </div>
+              : 'No items yet.'
+          }
+        />
       ) : null}
       {items.map((item, index) => {
         const task = item.taskId ? taskById.get(item.taskId) : undefined
@@ -157,14 +157,14 @@ export function UpdateItemsEditor({
                   onClick={() => move(index, -1)}
                   disabled={disabled || index === 0}
                 >
-                  <ArrowUp className='h-3.5 w-3.5' />
+                  <ArrowUp />
                 </IconButton>
                 <IconButton
                   label='Move down'
                   onClick={() => move(index, 1)}
                   disabled={disabled || index === items.length - 1}
                 >
-                  <ArrowDown className='h-3.5 w-3.5' />
+                  <ArrowDown />
                 </IconButton>
                 {task ? (
                   <IconButton
@@ -172,7 +172,7 @@ export function UpdateItemsEditor({
                     onClick={() => patch(item.id, { taskId: null })}
                     disabled={disabled}
                   >
-                    <Link2Off className='h-3.5 w-3.5' />
+                    <Link2Off />
                   </IconButton>
                 ) : (
                   <IconButton
@@ -180,7 +180,7 @@ export function UpdateItemsEditor({
                     onClick={() => setPickingFor(item.id)}
                     disabled={disabled}
                   >
-                    <Link2 className='h-3.5 w-3.5' />
+                    <Link2 />
                   </IconButton>
                 )}
                 <IconButton
@@ -190,7 +190,7 @@ export function UpdateItemsEditor({
                   }
                   disabled={disabled}
                 >
-                  <Trash2 className='h-3.5 w-3.5' />
+                  <Trash2 />
                 </IconButton>
               </div>
             </div>
@@ -206,11 +206,12 @@ export function UpdateItemsEditor({
           onClick={() => add(null)}
           disabled={disabled}
         >
-          <Plus className='h-3.5 w-3.5' /> Add item
+          <Plus /> Add item
         </Button>
         <Select onValueChange={value => add(value)} disabled={disabled}>
           <SelectTrigger
-            className='h-8 w-auto max-w-xs text-xs'
+            size='sm'
+            className='w-auto max-w-xs text-xs'
             aria-label='Add an item from a task'
           >
             <SelectValue placeholder='Add from a task…' />
@@ -242,17 +243,12 @@ function IconButton({
   children: React.ReactNode
 }) {
   return (
-    <Button
+    <RowActionButton
       type='button'
-      size='icon'
-      variant='ghost'
-      className='h-6 w-6'
+      label={label}
+      icon={children}
       onClick={onClick}
       disabled={disabled}
-      aria-label={label}
-      title={label}
-    >
-      {children}
-    </Button>
+    />
   )
 }

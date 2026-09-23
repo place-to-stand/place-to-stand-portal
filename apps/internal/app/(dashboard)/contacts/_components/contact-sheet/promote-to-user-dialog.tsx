@@ -33,13 +33,26 @@ export function PromoteToUserDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='sm:max-w-md'>
         <DialogHeader>
-          <DialogTitle>Create Portal Account</DialogTitle>
+          <DialogTitle>Create portal account</DialogTitle>
           <DialogDescription>
-            This will create a portal account for {contactName} (<span className='font-bold'>{contactEmail}</span>)
+            This will create a portal account for {contactName} (
+            <span className='font-bold'>{contactEmail}</span>)
             {linkedClientCount > 0 ? (
-              <> and grant them access to {linkedClientCount} linked client{linkedClientCount === 1 ? '' : 's'}.<br /><br />They&apos;ll receive an email with a temporary password.</>
+              <>
+                {' '}
+                and grant them access to {linkedClientCount} linked client
+                {linkedClientCount === 1 ? '' : 's'}.<br />
+                <br />
+                They&apos;ll receive an email with a temporary password.
+              </>
             ) : (
-              <>.<br /><br />They&apos;ll receive an email with a temporary password. No clients are currently linked — they won&apos;t see any projects until you link them to a client.</>
+              <>
+                .<br />
+                <br />
+                They&apos;ll receive an email with a temporary password. No
+                clients are currently linked — they won&apos;t see any projects
+                until you link them to a client.
+              </>
             )}
           </DialogDescription>
         </DialogHeader>
@@ -52,12 +65,8 @@ export function PromoteToUserDialog({
           >
             Cancel
           </Button>
-          <Button
-            type='button'
-            onClick={onConfirm}
-            disabled={isPending}
-          >
-            {isPending ? 'Creating...' : 'Create & Notify'}
+          <Button type='button' onClick={onConfirm} disabled={isPending}>
+            {isPending ? 'Creating...' : 'Create & notify'}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -66,7 +66,7 @@ export const NAV_GROUPS: NavGroup[] = [
       },
       {
         href: '/hour-blocks',
-        label: 'Hour Blocks',
+        label: 'Hour blocks',
         icon: Clock3,
       },
     ],
@@ -96,7 +96,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       {
         href: '/reports/monthly-close',
-        label: 'Monthly Close',
+        label: 'Monthly close',
         icon: FileText,
         matchHrefs: ['/reports'],
       },

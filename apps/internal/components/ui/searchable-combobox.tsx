@@ -6,11 +6,7 @@ import { CheckIcon, ChevronsUpDownIcon } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { cn } from '@/lib/utils'
 import { Button } from '@pts/ui/button'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@pts/ui/popover'
+import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
 import {
   Command,
   CommandEmpty,
@@ -65,7 +61,7 @@ type SearchableComboboxProps = {
 }
 
 const baseTriggerClasses =
-  "border-input data-[placeholder=true]:text-muted-foreground [&_svg]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex w-full items-center justify-between gap-2 rounded-md border bg-background px-3 py-2 text-left text-sm font-normal shadow-xs transition-[color,box-shadow] outline-hidden focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
+  'border-input data-[placeholder=true]:text-muted-foreground [&_svg]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex w-full items-center justify-between gap-2 rounded-md border bg-background px-3 py-2 text-left text-sm font-normal shadow-xs transition-[color,box-shadow] outline-hidden focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50'
 
 const itemWrapperClasses = 'flex flex-col text-sm leading-tight'
 
@@ -192,8 +188,7 @@ export const SearchableCombobox = React.forwardRef<
     )
 
     const contentStyle = React.useMemo<React.CSSProperties>(() => {
-      const maxHeight =
-        'min(320px, var(--radix-popover-content-available-height))'
+      const maxHeight = 'min(320px, var(--available-height))'
       return {
         maxHeight,
         overflowY: 'auto',
@@ -214,57 +209,58 @@ export const SearchableCombobox = React.forwardRef<
         <Popover open={open} onOpenChange={handleOpenChange} modal>
           <PopoverTrigger asChild>
             {trigger ?? (
-            <Button
-              ref={mergedRef}
-              type='button'
-              variant='outline'
-              role='combobox'
-              aria-expanded={open}
-              aria-haspopup='listbox'
-              aria-label={ariaLabel}
-              aria-labelledby={ariaLabelledBy}
-              aria-describedby={ariaDescribedBy}
-              aria-invalid={ariaInvalid ? true : undefined}
-              disabled={disabled}
-              data-placeholder={selectedItem ? undefined : true}
-              id={id}
-              className={cn(baseTriggerClasses, triggerClassName)}
-            >
-              <div className='flex min-w-0 flex-1 items-center gap-2'>
-                {selectedItem?.userId ? (
-                  <Avatar className='h-5 w-5 shrink-0'>
-                    {selectedItem.avatarUrl && (
-                      <AvatarImage
-                        src={`/api/storage/user-avatar/${selectedItem.userId}`}
-                      />
+              <Button
+                ref={mergedRef}
+                type='button'
+                variant='outline'
+                role='combobox'
+                aria-expanded={open}
+                aria-haspopup='listbox'
+                aria-label={ariaLabel}
+                aria-labelledby={ariaLabelledBy}
+                aria-describedby={ariaDescribedBy}
+                aria-invalid={ariaInvalid ? true : undefined}
+                disabled={disabled}
+                data-placeholder={selectedItem ? undefined : true}
+                id={id}
+                className={cn(baseTriggerClasses, triggerClassName)}
+              >
+                <div className='flex min-w-0 flex-1 items-center gap-2'>
+                  {selectedItem?.userId ? (
+                    <Avatar size='xs'>
+                      {selectedItem.avatarUrl && (
+                        <AvatarImage
+                          src={`/api/storage/user-avatar/${selectedItem.userId}`}
+                        />
+                      )}
+                      <AvatarFallback>
+                        {selectedItem.label.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  ) : selectedItem?.icon ? (
+                    <Avatar size='xs'>
+                      <AvatarFallback className='bg-muted'>
+                        <selectedItem.icon className='text-muted-foreground h-3 w-3' />
+                      </AvatarFallback>
+                    </Avatar>
+                  ) : null}
+                  <span
+                    className={cn(
+                      'min-w-0 truncate',
+                      selectedItem
+                        ? selectedTextClasses
+                        : placeholderTextClasses
                     )}
-                    <AvatarFallback className='text-[9px]'>
-                      {selectedItem.label.slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                ) : selectedItem?.icon ? (
-                  <Avatar className='h-5 w-5 shrink-0'>
-                    <AvatarFallback className='bg-muted'>
-                      <selectedItem.icon className='text-muted-foreground h-3 w-3' />
-                    </AvatarFallback>
-                  </Avatar>
-                ) : null}
-                <span
-                  className={cn(
-                    'min-w-0 truncate',
-                    selectedItem ? selectedTextClasses : placeholderTextClasses
-                  )}
-                >
-                  {selectedItem?.label ?? resolvedPlaceholder}
-                </span>
-              </div>
-              <ChevronsUpDownIcon className='size-4 shrink-0 opacity-50' />
-            </Button>
+                  >
+                    {selectedItem?.label ?? resolvedPlaceholder}
+                  </span>
+                </div>
+                <ChevronsUpDownIcon className='size-4 shrink-0 opacity-50' />
+              </Button>
             )}
           </PopoverTrigger>
           <PopoverContent
             ref={contentRef}
-            align='start'
             className='w-full max-w-full overflow-hidden p-0'
             sideOffset={8}
             style={contentStyle}
@@ -310,24 +306,26 @@ export const SearchableCombobox = React.forwardRef<
                               )}
                             />
                             {item.userId ? (
-                              <Avatar className='mr-2 h-5 w-5'>
+                              <Avatar size='xs' className='mr-2'>
                                 {item.avatarUrl && (
                                   <AvatarImage
                                     src={`/api/storage/user-avatar/${item.userId}`}
                                   />
                                 )}
-                                <AvatarFallback className='text-[9px]'>
+                                <AvatarFallback>
                                   {item.label.slice(0, 2).toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>
                             ) : item.icon ? (
-                              <Avatar className='mr-2 h-5 w-5'>
+                              <Avatar size='xs' className='mr-2'>
                                 <AvatarFallback className='bg-muted'>
                                   <item.icon className='text-muted-foreground h-3 w-3' />
                                 </AvatarFallback>
                               </Avatar>
                             ) : null}
-                            <div className={cn(itemWrapperClasses, itemClassName)}>
+                            <div
+                              className={cn(itemWrapperClasses, itemClassName)}
+                            >
                               <span className='font-medium'>{item.label}</span>
                               {item.description ? (
                                 <span className='text-muted-foreground text-xs'>
@@ -366,24 +364,26 @@ export const SearchableCombobox = React.forwardRef<
                             )}
                           />
                           {item.userId ? (
-                            <Avatar className='mr-2 h-5 w-5'>
+                            <Avatar size='xs' className='mr-2'>
                               {item.avatarUrl && (
                                 <AvatarImage
                                   src={`/api/storage/user-avatar/${item.userId}`}
                                 />
                               )}
-                              <AvatarFallback className='text-[9px]'>
+                              <AvatarFallback>
                                 {item.label.slice(0, 2).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
                           ) : item.icon ? (
-                            <Avatar className='mr-2 h-5 w-5'>
+                            <Avatar size='xs' className='mr-2'>
                               <AvatarFallback className='bg-muted'>
                                 <item.icon className='text-muted-foreground h-3 w-3' />
                               </AvatarFallback>
                             </Avatar>
                           ) : null}
-                          <div className={cn(itemWrapperClasses, itemClassName)}>
+                          <div
+                            className={cn(itemWrapperClasses, itemClassName)}
+                          >
                             <span className='font-medium'>{item.label}</span>
                             {item.description ? (
                               <span className='text-muted-foreground text-xs'>

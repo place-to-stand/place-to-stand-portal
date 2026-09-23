@@ -95,7 +95,7 @@ export function TaskCommentsPanel(props: TaskCommentsPanelProps) {
                 ))}
               </>
             ) : (
-              <EmptyState message='No comments yet. Be the first to share an update.' />
+              <EmptyState message='No comments yet.' />
             )}
           </div>
           {/* Composer sits below the thread, directly under the newest

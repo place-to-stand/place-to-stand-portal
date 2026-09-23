@@ -12,7 +12,8 @@ import { fetchPtsStaffGitHubAccounts } from '@/lib/data/staff-github-access'
 import { ProjectTaskList } from '@/components/tasks/project-task-list'
 import { GitHubRepoSection } from '@/components/projects/github-repos-section'
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export default async function ProjectDetailPage({
   params,
@@ -45,16 +46,18 @@ export default async function ProjectDetailPage({
   ])
 
   return (
-    <div className="space-y-6">
+    <div className='space-y-6'>
       <Link
-        href="/"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+        href='/'
+        className='text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm'
       >
-        <ArrowLeftIcon className="size-4" />
+        <ArrowLeftIcon className='size-4' />
         Back to dashboard
       </Link>
 
-      <h1 className="text-2xl font-bold text-foreground">{project.name}</h1>
+      <h1 className='text-foreground text-3xl font-semibold tracking-tight'>
+        {project.name}
+      </h1>
 
       <ProjectTaskList tasks={tasks} />
 

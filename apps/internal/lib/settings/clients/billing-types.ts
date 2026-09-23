@@ -1,3 +1,5 @@
+import { BADGE_TINTS } from '@pts/ui/badge-tints'
+
 export const CLIENT_BILLING_TYPE_VALUES = ['prepaid', 'net_30'] as const
 
 export type ClientBillingTypeValue = (typeof CLIENT_BILLING_TYPE_VALUES)[number]
@@ -15,15 +17,13 @@ export const CLIENT_BILLING_TYPE_SELECT_OPTIONS: BillingTypeOption[] = [
     value: 'prepaid',
     label: 'Prepaid',
     description: 'Hours draw down from purchased blocks.',
-    badgeClassName:
-      'border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300',
+    badgeClassName: BADGE_TINTS.emerald,
   },
   {
     value: 'net_30',
     label: 'Net 30',
     description: 'Clients are invoiced at the end of each month.',
-    badgeClassName:
-      'border-transparent bg-amber-100 text-amber-800 dark:bg-amber-500/10 dark:text-amber-300',
+    badgeClassName: BADGE_TINTS.amber,
   },
 ]
 

@@ -11,7 +11,7 @@ import type { KeyboardEvent, MouseEvent } from 'react'
  * row, so cells keep their own behavior without per-element stopPropagation.
  */
 export const CLICKABLE_ROW_CLASS =
-  'cursor-pointer focus-visible:ring-2 focus-visible:ring-offset-0 focus-visible:outline-none'
+  'cursor-pointer outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]'
 
 /**
  * `[aria-disabled="true"]` covers DisabledFieldTooltip wrappers: a disabled

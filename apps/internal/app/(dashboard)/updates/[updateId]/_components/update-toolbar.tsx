@@ -6,6 +6,7 @@ import { Button } from '@pts/ui/button'
 
 import { Badge } from '@pts/ui/badge'
 import { formatCalendarDate } from '@pts/ui/dates'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 
 type UpdateToolbarProps = {
   clientName: string
@@ -57,11 +58,7 @@ export function UpdateToolbar({
       {!sentAt ? (
         <div className='ml-auto flex items-center gap-2'>
           <Button size='sm' variant='ghost' onClick={onTogglePreview}>
-            {previewing ? (
-              <Pencil className='h-3.5 w-3.5' />
-            ) : (
-              <Eye className='h-3.5 w-3.5' />
-            )}
+            {previewing ? <Pencil /> : <Eye />}
             {previewing ? 'Edit' : 'Preview'}
           </Button>
           <Hint text={hasChanges ? null : 'No unsaved changes.'}>
@@ -71,9 +68,7 @@ export function UpdateToolbar({
               onClick={onSave}
               disabled={busy || !hasChanges}
             >
-              {isSaving ? (
-                <Loader2 className='h-3.5 w-3.5 animate-spin' />
-              ) : null}
+              {isSaving ? <Loader2 className='animate-spin' /> : null}
               Save draft
             </Button>
           </Hint>
@@ -90,20 +85,16 @@ export function UpdateToolbar({
               disabled={!canTest}
             >
               {isTesting ? (
-                <Loader2 className='h-3.5 w-3.5 animate-spin' />
+                <Loader2 className='animate-spin' />
               ) : (
-                <FlaskConical className='h-3.5 w-3.5' />
+                <FlaskConical />
               )}
               Send test
             </Button>
           </Hint>
           <Hint text={sendBlocker}>
             <Button size='sm' onClick={onSend} disabled={!canSend}>
-              {isSending ? (
-                <Loader2 className='h-3.5 w-3.5 animate-spin' />
-              ) : (
-                <Send className='h-3.5 w-3.5' />
-              )}
+              {isSending ? <Loader2 className='animate-spin' /> : <Send />}
               Send
             </Button>
           </Hint>
@@ -124,9 +115,14 @@ function Hint({
   text: string | null
   children: React.ReactNode
 }) {
+  if (!text) return <span className='inline-flex'>{children}</span>
+
   return (
-    <span title={text ?? undefined} className='inline-flex'>
-      {children}
-    </span>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className='inline-flex'>{children}</span>
+      </TooltipTrigger>
+      <TooltipContent>{text}</TooltipContent>
+    </Tooltip>
   )
 }

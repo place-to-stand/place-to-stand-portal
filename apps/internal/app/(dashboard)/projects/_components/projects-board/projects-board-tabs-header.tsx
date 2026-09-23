@@ -114,7 +114,7 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
               timeLogsDisabled ? 'pointer-events-none opacity-50' : undefined
             }
           >
-            Time Logs
+            Time logs
           </Link>
         </TabsTrigger>
         <TabsTrigger
@@ -162,10 +162,8 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
               variant='outline'
               onClick={projectActions.onEdit}
               disabled={!projectActions.canEdit}
-              title='Edit project'
-              aria-label='Edit project'
             >
-              <Pencil className='h-4 w-4' />
+              <Pencil />
               Edit project
             </Button>
           </DisabledFieldTooltip>

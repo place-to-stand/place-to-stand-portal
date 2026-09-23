@@ -36,7 +36,10 @@ export function CloseControls({
 
       if (result.error) {
         toast({
-          title: kind === 'close' ? 'Close failed' : 'Reopen failed',
+          title:
+            kind === 'close'
+              ? 'Unable to close month'
+              : 'Unable to reopen month',
           description: result.error,
           variant: 'destructive',
         })
@@ -68,7 +71,7 @@ export function CloseControls({
           disabled={isPending}
           onClick={() => setConfirming('reopen')}
         >
-          <LockOpen className='mr-1 h-3.5 w-3.5' />
+          <LockOpen />
           Reopen…
         </Button>
         <ConfirmDialog
@@ -103,7 +106,7 @@ export function CloseControls({
         disabled={isPending}
         onClick={() => setConfirming('close')}
       >
-        <Lock className='mr-1 h-3.5 w-3.5' />
+        <Lock />
         Close {displayMonth}
       </Button>
       <ConfirmDialog

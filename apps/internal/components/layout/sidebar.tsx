@@ -24,11 +24,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@pts/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 
 import { UserMenu } from './user-menu'
 import { useCommandPalette } from './command-palette'
@@ -65,7 +61,10 @@ export function Sidebar({ user, badges }: Props) {
             aria-label='Place To Stand — home'
             className='block'
           >
-            <BrandLogo size='md' className='group-data-[collapsible=icon]:hidden' />
+            <BrandLogo
+              size='md'
+              className='group-data-[collapsible=icon]:hidden'
+            />
             <BrandLogoMark
               size={20}
               className='mx-auto hidden group-data-[collapsible=icon]:flex'
@@ -74,7 +73,7 @@ export function Sidebar({ user, badges }: Props) {
         </div>
         {isDev ? (
           <>
-            <div className='flex items-center justify-center gap-1.5 rounded bg-amber-500 px-2 py-1 text-[10px] font-semibold text-amber-950 group-data-[collapsible=icon]:hidden'>
+            <div className='flex items-center justify-center gap-1.5 rounded-sm bg-amber-500 px-2 py-1 text-[10px] font-semibold text-amber-950 group-data-[collapsible=icon]:hidden'>
               <span className='inline-flex h-1.5 w-1.5 animate-pulse rounded-full bg-amber-950/60' />
               Development
             </div>
@@ -82,7 +81,10 @@ export function Sidebar({ user, badges }: Props) {
               <TooltipTrigger asChild>
                 <span className='mx-auto hidden size-2 animate-pulse rounded-full bg-amber-500 group-data-[collapsible=icon]:block' />
               </TooltipTrigger>
-              <TooltipContent side='right' hidden={sidebarState !== 'collapsed'}>
+              <TooltipContent
+                side='right'
+                hidden={sidebarState !== 'collapsed'}
+              >
                 Development
               </TooltipContent>
             </Tooltip>
@@ -95,13 +97,13 @@ export function Sidebar({ user, badges }: Props) {
               type='button'
               onClick={() => setPaletteOpen(true)}
               aria-label='Open command palette'
-              className='text-muted-foreground hover:bg-muted hover:text-foreground border-input flex w-full cursor-pointer items-center gap-2 rounded-md border px-2 py-1.5 text-[12px] transition group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:p-0'
+              className='text-muted-foreground hover:bg-muted hover:text-foreground border-input focus-visible:border-ring focus-visible:ring-ring/50 flex w-full cursor-pointer items-center gap-2 rounded-md border px-2 py-1.5 text-xs leading-normal transition outline-none group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:p-0 focus-visible:ring-[3px]'
             >
               <Search className='size-3.5 shrink-0' />
               <span className='group-data-[collapsible=icon]:hidden'>
                 Search
               </span>
-              <kbd className='bg-muted text-muted-foreground pointer-events-none ml-auto rounded border px-1 font-mono text-[10px] group-data-[collapsible=icon]:hidden'>
+              <kbd className='bg-muted text-muted-foreground pointer-events-none ml-auto rounded-sm border px-1 font-mono text-[10px] group-data-[collapsible=icon]:hidden'>
                 ⌘K
               </kbd>
             </button>
@@ -133,7 +135,7 @@ export function Sidebar({ user, badges }: Props) {
                         isActive={isActive}
                         tooltip={item.label}
                         className={cn(
-                          'h-auto gap-2 rounded px-2 py-1.5 text-[12px]',
+                          'h-auto gap-2 rounded-sm px-2 py-1.5 text-xs leading-normal',
                           'data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:font-normal',
                           !isActive &&
                             'text-muted-foreground hover:bg-muted hover:text-foreground'
