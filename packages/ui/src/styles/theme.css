@@ -213,5 +213,8 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Every underline sits where the task card's links put it. Inherited, so
+       links match without each one repeating underline-offset-4. */
+    text-underline-offset: 4px;
   }
 }

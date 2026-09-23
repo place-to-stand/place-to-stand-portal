@@ -106,7 +106,7 @@ Place To Stand is a small software agency. This system describes its two Next.js
 - **Focus** on every control is `focus-visible:border-ring` plus a 3px `ring-ring/50` halo (`focus-ring`). An invalid field swaps both to `destructive` (the ring at 20%, 40% in dark).
 - **Hover.** Ghost, outline and menu items fill with `accent`. Primary and destructive fills drop to 90%. Table rows take `muted`/50.
 - **Disabled** is `opacity-50` with pointer events off (`disabled`).
-- **Text links** (a client or project name on a card, an email on a lead) are `hover:text-foreground hover:underline underline-offset-4` from muted text, the way the task card's client and project links read. When the link text truncates, use `truncate-link`, never `truncate`: `truncate`'s `overflow: hidden` clips the underline, so the hover silently shows nothing.
+- **Text links** (a client or project name on a card, an email on a lead) are `hover:text-foreground hover:underline` from muted text; the 4px underline offset is set once on `body` in the theme, so don't repeat or override it, the way the task card's client and project links read. When the link text truncates, use `truncate-link`, never `truncate`: `truncate`'s `overflow: hidden` clips the underline, so the hover silently shows nothing.
 - **Transitions** are Tailwind `transition-*` utilities (hover fades, chevron rotations). A collapsible that should open smoothly animates `h-(--collapsible-panel-height)` to and from `data-starting-style:h-0` / `data-ending-style:h-0`, with `motion-reduce:transition-none` (see `template-sheet.tsx`).
 - **Motion** is `tw-animate-css`:
   - Popovers fade and zoom from 95%, sliding 2 units from their trigger side.
