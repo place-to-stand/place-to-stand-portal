@@ -68,7 +68,8 @@ export function SheetFormFooter(props: SheetFormFooterProps) {
           <Button
             type='submit'
             form={formId}
-            size='sm'
+            // xs (28px) to match the icon actions beside it: one height per row.
+            size='xs'
             disabled={submitDisabled}
             aria-label={`${saveLabel} (⌘S / Ctrl+S)`}
           >
