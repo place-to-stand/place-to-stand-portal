@@ -19,7 +19,7 @@ import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui
 import { readPageSize } from '@/lib/pagination/page-size.server'
 
 export const metadata: Metadata = {
-  title: 'Project Archive | Place to Stand Portal',
+  title: 'Project archive',
 }
 
 type ProjectsArchivePageProps = {

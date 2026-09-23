@@ -1,7 +1,7 @@
 import { Loader2, RefreshCw, Trash2 } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
-import { Button } from '@pts/ui/button'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
   Table,
@@ -62,7 +62,7 @@ export function ReviewArchivedSection({
               >
                 {getTaskStatusLabel('ARCHIVED')}
               </Badge>
-              <span className='text-muted-foreground text-[11px]'>
+              <span className='text-muted-foreground text-xs'>
                 {tasks.length}
               </span>
             </div>
@@ -117,7 +117,7 @@ export function ReviewArchivedSection({
                 return (
                   <TableRow
                     key={task.id}
-                    data-state={isActive ? 'selected' : undefined}
+                    data-selected={isActive || undefined}
                     role='button'
                     tabIndex={0}
                     onClick={() => onEditTask(task)}
@@ -128,7 +128,7 @@ export function ReviewArchivedSection({
                       }
                     }}
                     className={cn(
-                      'group cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-offset-0 focus-visible:outline-none',
+                      'group focus-visible:border-ring focus-visible:ring-ring/50 cursor-pointer transition-colors outline-none focus-visible:ring-[3px]',
                       isActive ? 'bg-primary/5' : 'hover:bg-muted/50'
                     )}
                   >
@@ -143,53 +143,51 @@ export function ReviewArchivedSection({
                           disabled={Boolean(disabledReason)}
                           reason={disabledReason}
                         >
-                          <Button
+                          <RowActionButton
                             type='button'
-                            size='icon-sm'
+                            label='Restore task'
                             variant='secondary'
                             onClick={event => {
                               event.preventDefault()
                               event.stopPropagation()
                               onRestoreTask(task.id)
                             }}
-                            title='Restore task'
-                            aria-label='Restore task'
                             disabled={
                               Boolean(disabledReason) || isRestoreAction
                             }
-                          >
-                            {isRestoreAction ? (
-                              <Loader2 className='h-4 w-4 animate-spin' />
-                            ) : (
-                              <RefreshCw className='h-4 w-4' />
-                            )}
-                          </Button>
+                            icon={
+                              isRestoreAction ? (
+                                <Loader2 className='animate-spin' />
+                              ) : (
+                                <RefreshCw />
+                              )
+                            }
+                          />
                         </DisabledFieldTooltip>
                         <DisabledFieldTooltip
                           disabled={Boolean(disabledReason)}
                           reason={disabledReason}
                         >
-                          <Button
+                          <RowActionButton
                             type='button'
-                            size='icon-sm'
+                            label='Delete task permanently'
                             variant='destructive'
                             onClick={event => {
                               event.preventDefault()
                               event.stopPropagation()
                               onRequestDestroy(task)
                             }}
-                            title='Delete task permanently'
-                            aria-label='Delete task permanently'
                             disabled={
                               Boolean(disabledReason) || isDestroyAction
                             }
-                          >
-                            {isDestroyAction ? (
-                              <Loader2 className='h-4 w-4 animate-spin' />
-                            ) : (
-                              <Trash2 className='h-4 w-4' />
-                            )}
-                          </Button>
+                            icon={
+                              isDestroyAction ? (
+                                <Loader2 className='animate-spin' />
+                              ) : (
+                                <Trash2 />
+                              )
+                            }
+                          />
                         </DisabledFieldTooltip>
                       </div>
                     </TableCell>

@@ -95,7 +95,7 @@ export async function updateClientNotes(
     console.error('Failed to update client notes:', error)
     return {
       success: false,
-      error: 'Failed to save notes. Please try again.',
+      error: 'Unable to save notes. Please try again.',
     }
   }
 }
@@ -112,8 +112,7 @@ export async function updateClientNotes(
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type DraftUpdateResult =
-  | { success: true; id: string }
-  | { success: false; error: string }
+  { success: true; id: string } | { success: false; error: string }
 
 /**
  * Starts a draft update for the client. The draft is generated the same way
@@ -134,6 +133,9 @@ export async function draftUpdateForClient(
     return { success: true, id: update.id }
   } catch (error) {
     console.error('Failed to draft client update:', error)
-    return { success: false, error: 'Failed to generate the draft. Please try again.' }
+    return {
+      success: false,
+      error: 'Unable to generate the draft. Please try again.',
+    }
   }
 }

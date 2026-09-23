@@ -49,7 +49,7 @@ export function useAttachmentUploader({
       for (const file of files) {
         if (
           !ACCEPTED_TASK_ATTACHMENT_MIME_TYPES.includes(
-            file.type as (typeof ACCEPTED_TASK_ATTACHMENT_MIME_TYPES)[number],
+            file.type as (typeof ACCEPTED_TASK_ATTACHMENT_MIME_TYPES)[number]
           )
         ) {
           toast({
@@ -124,7 +124,7 @@ export function useAttachmentUploader({
         } catch (error) {
           console.error('Attachment upload failed', error)
           toast({
-            title: 'Upload failed',
+            title: 'Unable to upload attachment',
             description:
               error instanceof Error
                 ? error.message
@@ -136,7 +136,7 @@ export function useAttachmentUploader({
         }
       }
     },
-    [canManage, toast, pendingPathsRef, previewUrlRef, setAttachments],
+    [canManage, toast, pendingPathsRef, previewUrlRef, setAttachments]
   )
 
   return {
@@ -145,4 +145,3 @@ export function useAttachmentUploader({
     resetPendingUploads,
   }
 }
-

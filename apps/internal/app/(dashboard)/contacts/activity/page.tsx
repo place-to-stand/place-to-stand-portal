@@ -9,7 +9,7 @@ import { ContactsAddButton } from '../_components/contacts-add-button'
 import { ContactsActivitySection } from '../_components/contacts-activity-section'
 
 export const metadata: Metadata = {
-  title: 'Contact Activity | Place to Stand Portal',
+  title: 'Contact activity',
 }
 
 export default async function ContactsActivityPage() {

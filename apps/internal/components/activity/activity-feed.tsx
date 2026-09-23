@@ -10,7 +10,7 @@ import {
   useActivityFeed,
   type UseActivityFeedOptions,
 } from '@/lib/activity/use-activity-feed'
-import { formatCalendarDate } from '@/lib/dates'
+import { formatCalendarDate } from '@pts/ui/dates'
 import { cn } from '@/lib/utils'
 
 export type ActivityFeedProps = UseActivityFeedOptions & {

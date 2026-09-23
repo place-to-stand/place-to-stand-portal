@@ -11,7 +11,7 @@ type LinkedClientsCellProps = {
 
 export function LinkedClientsCell({ clients }: LinkedClientsCellProps) {
   return (
-    <span className='flex items-center gap-2 text-sm' title='Clients'>
+    <span className='flex items-center gap-2 text-sm'>
       <Building2 className='text-muted-foreground h-4 w-4 shrink-0' />
       <LinkedRecordsHoverCell
         count={clients.length}

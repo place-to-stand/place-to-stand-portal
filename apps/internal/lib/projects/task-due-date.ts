@@ -1,14 +1,17 @@
 import {
   differenceInCalendarDays,
-  format,
   isToday,
   isTomorrow,
   parseISO,
 } from 'date-fns'
 
+import { formatCalendarDate } from '@pts/ui/dates'
+
+const SHORT_DAY = { month: 'short', day: 'numeric' } as const
+
 export const TASK_DUE_TONE_CLASSES = {
   default: 'text-muted-foreground',
-  caution: 'text-amber-900 dark:text-amber-200',
+  caution: 'text-warning',
   overdue: 'text-destructive font-medium',
 } as const
 
@@ -42,7 +45,7 @@ export function getTaskDueMeta(
 
   if (isDone) {
     return {
-      label: `Due ${format(parsed, 'MMM d')}`,
+      label: `Due ${formatCalendarDate(dueOn, SHORT_DAY)}`,
       tone: 'default',
     }
   }
@@ -59,20 +62,20 @@ export function getTaskDueMeta(
 
   if (daysUntilDue < 0) {
     return {
-      label: `Overdue - ${format(parsed, 'MMM d, yyyy')}`,
+      label: `Overdue - ${formatCalendarDate(dueOn)}`,
       tone: 'overdue',
     }
   }
 
   if (daysUntilDue <= 3) {
     return {
-      label: `Due ${format(parsed, 'MMM d')}`,
+      label: `Due ${formatCalendarDate(dueOn, SHORT_DAY)}`,
       tone: 'caution',
     }
   }
 
   return {
-    label: `Due ${format(parsed, 'MMM d')}`,
+    label: `Due ${formatCalendarDate(dueOn, SHORT_DAY)}`,
     tone: 'default',
   }
 }

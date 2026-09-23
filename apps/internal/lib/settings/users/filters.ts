@@ -1,3 +1,4 @@
+import { BADGE_TINTS } from '@pts/ui/badge-tints'
 import { userRole } from '@/lib/db/schema'
 import type { UserRoleValue } from '@/lib/types'
 import { parseSortParam, type ParsedSort } from '@/lib/pagination/sort'
@@ -11,15 +12,11 @@ export const USER_ROLE_LABELS: Record<UserRoleValue, string> = {
 
 /** Badge tones for the role column, same palette recipe as billing types. */
 export const USER_ROLE_BADGE_CLASSES: Record<UserRoleValue, string> = {
-  ADMIN:
-    'border-transparent bg-violet-100 text-violet-800 dark:bg-violet-500/10 dark:text-violet-300',
-  CLIENT:
-    'border-transparent bg-sky-100 text-sky-800 dark:bg-sky-500/10 dark:text-sky-300',
+  ADMIN: BADGE_TINTS.violet,
+  CLIENT: BADGE_TINTS.sky,
 }
 
-export function isUserRole(
-  value: string | undefined
-): value is UserRoleValue {
+export function isUserRole(value: string | undefined): value is UserRoleValue {
   return (
     typeof value === 'string' &&
     (USER_ROLE_VALUES as readonly string[]).includes(value)
@@ -101,7 +98,9 @@ function firstParam(value: string | string[] | undefined): string | undefined {
  * active and archive pages). Invalid role/access values fail the type guards
  * and are treated as unset, matching the submissions convention.
  */
-export function parseUsersSearchParams(params: RawSearchParams): UsersSearchParams {
+export function parseUsersSearchParams(
+  params: RawSearchParams
+): UsersSearchParams {
   const pageParam = Number.parseInt(firstParam(params.page) ?? '', 10)
   const limitParam = Number.parseInt(firstParam(params.limit) ?? '', 10)
   const roleParam = firstParam(params.role)

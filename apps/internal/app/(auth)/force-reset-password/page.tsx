@@ -12,7 +12,7 @@ type PageProps = {
 };
 
 export const metadata: Metadata = {
-  title: "Update password | Place to Stand Portal",
+  title: 'Update password',
 };
 
 export default async function ForceResetPasswordPage({ searchParams }: PageProps) {

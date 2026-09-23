@@ -10,7 +10,7 @@ import type { LeadRecord } from '@/lib/leads/types'
 import type { LeadStatusValue } from '@/lib/leads/constants'
 import { getLeadStatusToken } from '@/lib/leads/constants'
 import { Badge } from '@pts/ui/badge'
-import { Button } from '@pts/ui/button'
+import { RowActionButton } from '@pts/ui/row-action-button'
 
 import { BoardDropPlaceholder } from '@/components/board/drop-placeholder'
 
@@ -93,16 +93,12 @@ export function LeadColumn({
         </div>
         <div className='flex items-center gap-2'>
           {(enableCreateButton ?? canManage) && onCreateLead ? (
-            <Button
+            <RowActionButton
               type='button'
-              size='icon'
-              variant='ghost'
-              className='h-7 w-7'
+              label={`Add lead to ${label}`}
+              icon={<Plus />}
               onClick={() => onCreateLead(columnId)}
-            >
-              <Plus className='h-4 w-4' />
-              <span className='sr-only'>Add lead to {label}</span>
-            </Button>
+            />
           ) : null}
         </div>
       </div>

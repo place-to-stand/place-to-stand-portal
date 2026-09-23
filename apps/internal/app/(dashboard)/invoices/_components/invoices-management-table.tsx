@@ -16,11 +16,7 @@ import type {
 } from '@/lib/invoices/invoice-form'
 import type { TaxRateData } from '@/lib/invoices/use-invoice-sheet-state'
 import { isInvoiceStatus } from '@/lib/invoices/filters'
-import {
-  archiveInvoice,
-  restoreInvoice,
-  destroyInvoice,
-} from '../actions'
+import { archiveInvoice, restoreInvoice, destroyInvoice } from '../actions'
 import { sendInvoiceAction } from '../actions/send-invoice'
 
 import { InvoiceArchiveDialog } from './invoice-archive-dialog'
@@ -50,13 +46,9 @@ type InvoicesManagementTableProps = {
 }
 
 const EMPTY_MESSAGES = {
-  active:
-    'No invoices created yet. Create a new invoice to start billing clients.',
-  archive:
-    'Archive is empty. Archived invoices appear here after deletion.',
+  active: 'No invoices yet.',
+  archive: 'No archived invoices.',
 } as const
-
-
 
 export function InvoicesManagementTable({
   invoices,
@@ -353,8 +345,8 @@ export function InvoicesManagementTable({
           className='border-destructive/30 bg-destructive/5 flex items-center justify-between gap-3 rounded-md border px-4 py-3 text-sm'
         >
           <span>
-            The linked invoice could not be found. It may have been
-            permanently deleted.
+            The linked invoice could not be found. It may have been permanently
+            deleted.
           </span>
           <Button variant='ghost' size='sm' onClick={clear}>
             Dismiss

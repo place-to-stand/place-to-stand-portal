@@ -19,6 +19,8 @@ import {
   type SearchableComboboxGroup,
 } from '@/components/ui/searchable-combobox'
 import { toast } from '@/components/ui/use-toast'
+import { EmptyState } from '@pts/ui/empty-state'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import {
   INTEGRATION_PROVIDERS,
   formatIntegrationLinkLabel,
@@ -157,7 +159,9 @@ export function IntegrationLinksSection({
   }
 
   const handleAdd = () => {
-    const option = options.find(candidate => candidate.externalId === selectedId)
+    const option = options.find(
+      candidate => candidate.externalId === selectedId
+    )
     if (!option) return
     onPendingLinksChange([
       ...pendingLinks,
@@ -199,25 +203,20 @@ export function IntegrationLinksSection({
     })
   }
 
-  const heading = `${config.label} Projects`
+  const heading = `${config.label} projects`
 
   if (statusQuery.isSuccess && !isConnected) {
     return (
       <div className='space-y-1'>
         <h3 className='text-sm font-medium'>{heading}</h3>
-        <div className='rounded-lg border border-dashed p-4 text-center'>
-          <IntegrationProviderIcon
-            provider={provider}
-            className='text-muted-foreground mx-auto h-5 w-5'
-          />
-          <p className='text-muted-foreground mt-2 text-sm'>
-            Connect your {config.label} account in Settings to link{' '}
-            {config.projectNoun}s.
-          </p>
-          <Button variant='outline' size='sm' className='mt-3' asChild>
-            <a href='/settings/integrations'>Go to Integrations</a>
-          </Button>
-        </div>
+        <EmptyState
+          message={`Connect your ${config.label} account in Settings to link ${config.projectNoun}s.`}
+          action={
+            <Button variant='outline' size='sm' asChild>
+              <a href='/settings/integrations'>Go to integrations</a>
+            </Button>
+          }
+        />
       </div>
     )
   }
@@ -243,30 +242,23 @@ export function IntegrationLinksSection({
     <div className='space-y-1'>
       <div className='flex items-center justify-between gap-3'>
         <h3 className='text-sm font-medium'>{heading}</h3>
-        <Button
+        <RowActionButton
           type='button'
-          variant='ghost'
-          size='xs'
+          label={`Link ${config.label} ${config.projectNoun}`}
+          icon={<Plus />}
           onClick={() => handleDialogOpenChange(true)}
           disabled={disabled}
-          aria-label={`Link ${config.label} ${config.projectNoun}`}
-        >
-          <Plus className='h-4 w-4' />
-        </Button>
+        />
       </div>
 
       {isEmpty ? (
-        <div className='rounded-lg border border-dashed p-4 text-center'>
-          <IntegrationProviderIcon
-            provider={provider}
-            className='text-muted-foreground mx-auto h-6 w-6'
-          />
-          <p className='text-muted-foreground mt-2 text-sm'>
-            {isCreateMode
-              ? `No ${config.label} ${config.projectNoun}s selected. Add one to link when you save.`
-              : `No ${config.label} ${config.projectNoun}s linked.`}
-          </p>
-        </div>
+        <EmptyState
+          message={
+            isCreateMode
+              ? `No ${config.label} ${config.projectNoun}s selected.`
+              : `No ${config.label} ${config.projectNoun}s linked.`
+          }
+        />
       ) : (
         <div className='space-y-2'>
           {activeLinks.map(link => (
@@ -281,7 +273,7 @@ export function IntegrationLinksSection({
                     href={link.url}
                     target='_blank'
                     rel='noopener noreferrer'
-                    className='truncate hover:underline'
+                    className='truncate-link hover:underline'
                   >
                     {link.externalName}
                     <ExternalLink className='text-muted-foreground ml-1 inline h-3 w-3' />
@@ -293,17 +285,14 @@ export function IntegrationLinksSection({
                   </div>
                 ) : null}
               </div>
-              <Button
+              <RowActionButton
                 type='button'
-                variant='ghost'
-                size='icon'
-                className='text-muted-foreground hover:text-destructive h-7 w-7 shrink-0'
+                label={`Remove ${link.externalName}`}
+                icon={<Trash2 />}
+                className='text-muted-foreground hover:text-destructive shrink-0'
                 onClick={() => setUnlinkConfirm(link)}
                 disabled={disabled}
-                aria-label={`Remove ${link.externalName}`}
-              >
-                <Trash2 className='h-4 w-4' />
-              </Button>
+              />
             </div>
           ))}
           {ownPending.map(link => (
@@ -318,19 +307,16 @@ export function IntegrationLinksSection({
                     {formatIntegrationLinkLabel(link)}
                   </span>
                 </div>
-                <div className='pl-6 text-xs text-amber-600'>Pending save</div>
+                <div className='text-warning pl-6 text-xs'>Pending save</div>
               </div>
-              <Button
+              <RowActionButton
                 type='button'
-                variant='ghost'
-                size='icon'
-                className='text-muted-foreground hover:text-destructive h-7 w-7 shrink-0'
+                label={`Remove ${link.externalName}`}
+                icon={<Trash2 />}
+                className='text-muted-foreground hover:text-destructive shrink-0'
                 onClick={() => setPendingRemoveConfirm(link)}
                 disabled={disabled}
-                aria-label={`Remove ${link.externalName}`}
-              >
-                <Trash2 className='h-4 w-4' />
-              </Button>
+              />
             </div>
           ))}
           {removedLinks.map(link => (
@@ -348,13 +334,15 @@ export function IntegrationLinksSection({
                     {formatIntegrationLinkLabel(link)}
                   </span>
                 </div>
-                <div className='pl-6 text-xs text-red-600'>Pending removal</div>
+                <div className='text-destructive pl-6 text-xs'>
+                  Pending removal
+                </div>
               </div>
               <Button
                 type='button'
                 variant='ghost'
-                size='icon'
-                className='text-muted-foreground h-7 w-7 shrink-0'
+                size='xs'
+                className='text-muted-foreground shrink-0'
                 onClick={() => {
                   const next = new Set(removedLinkIds)
                   next.delete(link.id)
@@ -362,9 +350,8 @@ export function IntegrationLinksSection({
                 }}
                 disabled={disabled}
                 aria-label='Undo removal'
-                title='Undo removal'
               >
-                <span className='text-xs'>Undo</span>
+                Undo
               </Button>
             </div>
           ))}
@@ -394,7 +381,7 @@ export function IntegrationLinksSection({
                 value={selectedId ?? ''}
                 onChange={setSelectedId}
                 searchPlaceholder={`Search ${config.label} ${config.projectNoun}s...`}
-                emptyMessage={`No ${config.projectNoun}s found`}
+                emptyMessage={`No ${config.projectNoun}s found.`}
               />
             )}
             <div className='flex justify-end gap-2'>

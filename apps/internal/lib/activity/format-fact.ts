@@ -1,6 +1,6 @@
 import type { ActivityFact } from './changes'
 import { formatHours } from './events/shared'
-import { formatCalendarDate } from '@/lib/dates'
+import { formatCalendarDate } from '@pts/ui/dates'
 
 const MONEY = new Intl.NumberFormat('en-US', {
   style: 'currency',

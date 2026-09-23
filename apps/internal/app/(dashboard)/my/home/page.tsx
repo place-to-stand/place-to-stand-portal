@@ -8,7 +8,7 @@ import { fetchDashboardLayout } from '@/lib/data/dashboard/layout'
 import { fetchAssignedTasksSummary } from '@/lib/data/tasks'
 
 export const metadata: Metadata = {
-  title: 'Home | Place to Stand Portal',
+  title: 'Home',
 }
 
 export default async function HomePage() {

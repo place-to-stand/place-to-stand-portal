@@ -57,17 +57,17 @@ export function CardAssigneeAvatars({
           aria-label={`Assigned to ${names}`}
         >
           {visible.map(assignee => (
-            <Avatar key={assignee.id} className='ring-card h-5 w-5 ring-2'>
+            <Avatar key={assignee.id} size='xs' className='ring-card ring-2'>
               {assignee.avatarUrl && (
                 <AvatarImage src={`/api/storage/user-avatar/${assignee.id}`} />
               )}
-              <AvatarFallback className='text-[8px]'>
+              <AvatarFallback>
                 {assignee.name.slice(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
           ))}
           {overflow > 0 ? (
-            <span className='bg-muted text-muted-foreground ring-card inline-flex h-5 w-5 items-center justify-center rounded-full text-[8px] font-medium ring-2'>
+            <span className='bg-muted text-muted-foreground ring-card inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-medium ring-2'>
               +{overflow}
             </span>
           ) : null}

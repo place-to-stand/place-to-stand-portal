@@ -18,8 +18,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
+} from '@pts/ui/card'
+import { Input } from '@pts/ui/input'
 import { toast } from '@/components/ui/use-toast'
 import {
   ConnectedAccountsList,
@@ -90,7 +90,7 @@ export function TokenIntegrationCard({
         data?: { displayName: string | null }
       }
       if (!res.ok || !body.ok) {
-        throw new Error(body.error ?? `Could not connect ${config.label}`)
+        throw new Error(body.error ?? 'Check the token and try again.')
       }
       return body.data
     },
@@ -105,7 +105,7 @@ export function TokenIntegrationCard({
     },
     onError: (error: unknown) => {
       toast({
-        title: 'Connection failed',
+        title: `Unable to connect ${config.label}`,
         description: error instanceof Error ? error.message : String(error),
         variant: 'destructive',
       })
@@ -119,7 +119,7 @@ export function TokenIntegrationCard({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ connectionId }),
       })
-      if (!res.ok) throw new Error('Failed to disconnect')
+      if (!res.ok) throw new Error('Please try again.')
     },
     onSuccess: async () => {
       // Personal tokens have no revocation API: the portal has dropped its
@@ -132,7 +132,7 @@ export function TokenIntegrationCard({
     },
     onError: (error: unknown) => {
       toast({
-        title: 'Disconnect failed',
+        title: `Unable to disconnect ${config.label}`,
         description: error instanceof Error ? error.message : String(error),
         variant: 'destructive',
       })
@@ -161,7 +161,10 @@ export function TokenIntegrationCard({
         <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
           <div className='flex flex-col space-y-1.5'>
             <CardTitle className='flex items-center gap-2'>
-              <IntegrationProviderIcon provider={provider} className='h-5 w-5' />
+              <IntegrationProviderIcon
+                provider={provider}
+                className='h-5 w-5'
+              />
               {config.label}
             </CardTitle>
             <CardDescription>{description}</CardDescription>
@@ -185,7 +188,7 @@ export function TokenIntegrationCard({
                 Not connected
               </span>
               <Button variant='outline' onClick={openDialog}>
-                Connect {config.label} Account
+                Connect {config.label} account
               </Button>
             </div>
           )}

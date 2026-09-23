@@ -119,12 +119,11 @@ export function KanbanColumn({
           {canShowCreateButton && onCreateTask ? (
             <Button
               type='button'
-              size='icon'
+              size='icon-sm'
               variant='ghost'
-              className='h-7 w-7'
               onClick={() => onCreateTask(columnId as BoardColumnId)}
             >
-              <Plus className='h-4 w-4' />
+              <Plus />
               <span className='sr-only'>Add task to {label}</span>
             </Button>
           ) : null}

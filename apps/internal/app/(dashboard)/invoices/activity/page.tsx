@@ -10,7 +10,7 @@ import { InvoicesActivitySection } from '../_components/invoices-activity-sectio
 import { INVOICES_TABS } from '../_lib/tabs'
 
 export const metadata: Metadata = {
-  title: 'Invoices Activity',
+  title: 'Invoice activity',
 }
 
 export default async function InvoicesActivityPage() {

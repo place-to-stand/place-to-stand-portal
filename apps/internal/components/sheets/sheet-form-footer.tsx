@@ -4,6 +4,7 @@ import { type ReactNode } from 'react'
 import { Archive, Redo2, Undo2 } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 
 /**
@@ -67,38 +68,30 @@ export function SheetFormFooter(props: SheetFormFooterProps) {
           <Button
             type='submit'
             form={formId}
-            size='sm'
+            // xs (28px) to match the icon actions beside it: one height per row.
+            size='xs'
             disabled={submitDisabled}
             aria-label={`${saveLabel} (⌘S / Ctrl+S)`}
-            title={`${saveLabel} (⌘S / Ctrl+S)`}
           >
             {saveLabel}
           </Button>
         </DisabledFieldTooltip>
-        <Button
+        <RowActionButton
           type='button'
           variant='outline'
-          size='icon'
-          className='h-8 w-8'
           onClick={undo}
           disabled={!canUndo}
-          aria-label='Undo (⌘Z / Ctrl+Z)'
-          title='Undo (⌘Z / Ctrl+Z)'
-        >
-          <Undo2 className='h-4 w-4' />
-        </Button>
-        <Button
+          label='Undo (⌘Z / Ctrl+Z)'
+          icon={<Undo2 />}
+        />
+        <RowActionButton
           type='button'
           variant='outline'
-          size='icon'
-          className='h-8 w-8'
           onClick={redo}
           disabled={!canRedo}
-          aria-label='Redo (⇧⌘Z / Ctrl+Shift+Z)'
-          title='Redo (⇧⌘Z / Ctrl+Shift+Z)'
-        >
-          <Redo2 className='h-4 w-4' />
-        </Button>
+          label='Redo (⇧⌘Z / Ctrl+Shift+Z)'
+          icon={<Redo2 />}
+        />
       </div>
       {isEditing ? (
         <DisabledFieldTooltip
@@ -111,11 +104,9 @@ export function SheetFormFooter(props: SheetFormFooterProps) {
             onClick={onRequestDelete}
             disabled={deleteDisabled}
             aria-label={deleteAriaLabel}
-            title={deleteAriaLabel}
-            size='icon'
-            className='h-8 w-8'
+            size='icon-sm'
           >
-            <Archive className='h-4 w-4' />
+            <Archive />
           </Button>
         </DisabledFieldTooltip>
       ) : null}

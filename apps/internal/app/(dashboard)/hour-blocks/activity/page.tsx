@@ -10,7 +10,7 @@ import { HourBlocksActivitySection } from '../_components/hour-blocks-activity-s
 import { HOUR_BLOCKS_TABS } from '../_lib/tabs'
 
 export const metadata: Metadata = {
-  title: 'Hour Blocks Activity | Settings',
+  title: 'Hour block activity',
 }
 
 export default async function HourBlocksActivityPage() {

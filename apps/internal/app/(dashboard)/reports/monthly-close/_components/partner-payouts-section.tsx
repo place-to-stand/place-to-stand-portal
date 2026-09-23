@@ -2,6 +2,7 @@ import { LinkIcon, Wallet } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Badge } from '@pts/ui/badge'
+import { BADGE_TINTS } from '@pts/ui/badge-tints'
 import {
   Table,
   TableBody,
@@ -52,7 +53,7 @@ export function PartnerPayoutsSection({ data }: PartnerPayoutsSectionProps) {
     <SectionShell
       icon={Wallet}
       iconTone='violet'
-      title='Partner Payouts'
+      title='Partner payouts'
       description='Every person owed money this month — Payroll + Origination + Closer combined per payee.'
       total={formatCurrency(data.totalAmount)}
       totalLabel='to distribute'
@@ -88,16 +89,16 @@ export function PartnerPayoutsSection({ data }: PartnerPayoutsSectionProps) {
                   <TableCell className={cn(gutter, 'font-medium')}>
                     <div className='flex items-center gap-3'>
                       {isInternal ? (
-                        <Avatar className='h-9 w-9'>
+                        <Avatar size='lg'>
                           {avatarSrc ? (
                             <AvatarImage src={avatarSrc} alt={row.name} />
                           ) : null}
-                          <AvatarFallback className='text-xs'>
+                          <AvatarFallback>
                             {getInitials(row.name)}
                           </AvatarFallback>
                         </Avatar>
                       ) : (
-                        <div className='flex h-9 w-9 items-center justify-center rounded-full border border-dashed'>
+                        <div className='flex size-10 items-center justify-center rounded-full border border-dashed'>
                           <LinkIcon className='text-muted-foreground h-4 w-4' />
                         </div>
                       )}
@@ -106,7 +107,10 @@ export function PartnerPayoutsSection({ data }: PartnerPayoutsSectionProps) {
                         {!isInternal ? (
                           <Badge
                             variant='outline'
-                            className='border-sky-500/40 bg-sky-500/10 px-1.5 py-0 text-[9px] leading-tight text-sky-700 dark:text-sky-300'
+                            className={cn(
+                              BADGE_TINTS.sky,
+                              'px-1.5 py-0 text-[10px] leading-tight'
+                            )}
                           >
                             External
                           </Badge>
@@ -142,7 +146,7 @@ export function PartnerPayoutsSection({ data }: PartnerPayoutsSectionProps) {
               <TableCell
                 className={cn(
                   gutter,
-                  'text-muted-foreground text-[10px] font-semibold tracking-[0.14em] uppercase'
+                  'text-muted-foreground text-[11px] font-semibold tracking-wide uppercase'
                 )}
               >
                 Column totals

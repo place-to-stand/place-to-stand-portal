@@ -19,8 +19,9 @@ import { IntegrationProviderIcon } from '@/components/integrations/provider-icon
 import { formatIntegrationLinkLabel } from '@/lib/types/integrations'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 
-import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { EmptyState } from '@pts/ui/empty-state'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Progress } from '@pts/ui/progress'
 import {
@@ -38,7 +39,6 @@ import { ProjectStatusCell } from '@/components/projects/project-status-cell'
 import { ProjectOwnerCell } from '@/components/projects/project-owner-cell'
 import type { ProjectStatusValue } from '@/lib/constants'
 import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
-import { formatProjectDateRange } from '@/lib/settings/projects/project-formatters'
 import { buildBoardPath } from '@/lib/projects/board/board-utils'
 import {
   createProjectLookup,
@@ -166,7 +166,9 @@ const buildExternalLinks = (project: LandingProject): ExternalLinkItem[] => [
     key: `${link.provider}-${link.id}`,
     href: link.url,
     label: formatIntegrationLinkLabel(link),
-    icon: <IntegrationProviderIcon provider={link.provider} className='h-4 w-4' />,
+    icon: (
+      <IntegrationProviderIcon provider={link.provider} className='h-4 w-4' />
+    ),
   })),
 ]
 
@@ -246,7 +248,7 @@ export function ProjectsLanding({
 
       if (result.error) {
         toast({
-          title: 'Failed to update status',
+          title: 'Unable to update project status',
           description: result.error,
           variant: 'destructive',
         })
@@ -266,7 +268,7 @@ export function ProjectsLanding({
 
       if (result.error) {
         toast({
-          title: 'Failed to update owner',
+          title: 'Unable to update project owner',
           description: result.error,
           variant: 'destructive',
         })
@@ -318,9 +320,7 @@ export function ProjectsLanding({
     // Sort flips asc/desc per `?sort`; client groups stay alphabetical (asc)
     // so only project ordering within each section/group changes.
     clientMap.forEach(entry => {
-      entry.projects.sort(
-        (a, b) => a.name.localeCompare(b.name) * sortFactor
-      )
+      entry.projects.sort((a, b) => a.name.localeCompare(b.name) * sortFactor)
     })
 
     internal.sort((a, b) => a.name.localeCompare(b.name) * sortFactor)
@@ -367,32 +367,25 @@ export function ProjectsLanding({
 
   if (unfilteredCounts.total === 0) {
     return (
-      <div className='grid h-full w-full place-items-center rounded-xl border border-dashed p-12 text-center'>
-        <div className='space-y-2'>
-          <h2 className='text-lg font-semibold'>No projects found</h2>
-          <p className='text-muted-foreground text-sm'>
-            Projects will appear here once they are created.
-          </p>
-        </div>
-      </div>
+      <EmptyState
+        message='No projects yet.'
+        className='h-full justify-center'
+      />
     )
   }
 
   // Filtered-empty: an active filter/search left all three sections empty.
   if (allSectionsEmpty && filtersActive) {
     return (
-      <div className='grid h-full w-full place-items-center rounded-xl border border-dashed p-12 text-center'>
-        <p className='text-muted-foreground text-sm'>
-          No projects match the current filters.
-        </p>
-      </div>
+      <EmptyState
+        message='No projects match the current filters.'
+        className='h-full justify-center'
+      />
     )
   }
 
   const renderSectionEmptyState = (message: string) => (
-    <div className='text-muted-foreground rounded-lg border border-dashed p-6 text-center text-sm'>
-      {message}
-    </div>
+    <EmptyState message={message} />
   )
 
   const renderProjectRow = (
@@ -400,7 +393,6 @@ export function ProjectsLanding({
     options?: { indent?: boolean; isLast?: boolean }
   ) => {
     const href = getProjectHref(project)
-    const dateRange = formatProjectDateRange(project.starts_on, project.ends_on)
 
     const { done: doneCount, total: totalCount } = project.taskProgress
     const progressPercentage =
@@ -412,9 +404,7 @@ export function ProjectsLanding({
     return (
       <TableRow
         key={project.id}
-        {...(href !== '#'
-          ? getClickableRowProps(() => router.push(href))
-          : {})}
+        {...(href !== '#' ? getClickableRowProps(() => router.push(href)) : {})}
         className={href !== '#' ? CLICKABLE_ROW_CLASS : undefined}
       >
         <TableCell>
@@ -424,10 +414,7 @@ export function ProjectsLanding({
                 {treeLine}
               </span>
             )}
-            <Link
-              href={href}
-              className='flex min-w-0 items-center gap-2 py-1'
-            >
+            <Link href={href} className='flex min-w-0 items-center gap-2 py-1'>
               <FolderKanban className='h-4 w-4 shrink-0 text-emerald-500' />
               <span className='truncate font-medium'>{project.name}</span>
             </Link>
@@ -447,11 +434,6 @@ export function ProjectsLanding({
               {doneCount}/{totalCount}
             </span>
           </div>
-        </TableCell>
-        <TableCell>
-          <span className='text-muted-foreground text-sm'>
-            {dateRange !== '—' ? dateRange : '—'}
-          </span>
         </TableCell>
         <TableCell className='align-middle'>
           <ProjectOwnerCell
@@ -487,32 +469,24 @@ export function ProjectsLanding({
         </TableCell>
         <TableCell className='text-right'>
           <div className='flex justify-end gap-2'>
-            <Button
+            <RowActionButton
+              label='Edit project'
+              icon={<Pencil />}
               variant='outline'
-              size='icon-sm'
               onClick={() => openProjectSheet(project.id)}
-              title='Edit project'
-              aria-label='Edit project'
               disabled={isArchivePending}
-            >
-              <Pencil className='h-4 w-4' />
-              <span className='sr-only'>Edit</span>
-            </Button>
+            />
             <DisabledFieldTooltip
               disabled={isArchivePending}
               reason={isArchivePending ? PENDING_REASON : null}
             >
-              <Button
+              <RowActionButton
+                label='Archive project'
+                icon={<Archive />}
                 variant='destructive'
-                size='icon-sm'
                 onClick={() => handleRequestDelete(project)}
-                title='Archive project'
-                aria-label='Archive project'
                 disabled={isArchivePending}
-              >
-                <Archive className='h-4 w-4' />
-                <span className='sr-only'>Archive</span>
-              </Button>
+              />
             </DisabledFieldTooltip>
           </div>
         </TableCell>
@@ -521,12 +495,11 @@ export function ProjectsLanding({
   }
 
   const tableColumnWidths = {
-    project: 'w-[28%]',
+    project: 'w-[35%]',
     status: 'w-[11%]',
-    progress: 'w-[18%]',
-    dates: 'w-[14%]',
+    progress: 'w-[22%]',
     owner: 'w-[7%]',
-    links: 'w-[11%]',
+    links: 'w-[14%]',
     actions: 'w-24',
   }
 
@@ -548,7 +521,6 @@ export function ProjectsLanding({
             <TableHead className={tableColumnWidths.progress}>
               Progress
             </TableHead>
-            <TableHead className={tableColumnWidths.dates}>Dates</TableHead>
             <TableHead className={tableColumnWidths.owner}>Owner</TableHead>
             <TableHead className={tableColumnWidths.links}>Links</TableHead>
             <TableHead className={`${tableColumnWidths.actions} text-right`}>
@@ -574,7 +546,7 @@ export function ProjectsLanding({
         className='border-t-muted hover:bg-transparent'
       >
         <TableCell
-          colSpan={7}
+          colSpan={6}
           className='bg-blue-100 py-2.5 align-middle dark:bg-blue-500/8'
         >
           <div className='flex items-center gap-4'>
@@ -590,24 +562,24 @@ export function ProjectsLanding({
               <span className='text-sm font-semibold'>{client.name}</span>
             </Link>
             {hours && hours.billingType === 'prepaid' && (
-              <div className='flex items-center gap-1.25 text-[11px]'>
+              <div className='flex items-center gap-1 text-xs'>
                 <Clock
                   className={cn(
                     'h-3 w-3',
                     hours.hoursRemaining > 0
-                      ? 'text-emerald-600'
+                      ? 'text-success'
                       : hours.hoursRemaining === 0
                         ? 'text-muted-foreground'
-                        : 'text-red-600'
+                        : 'text-destructive'
                   )}
                 />
                 <span
                   className={cn(
                     hours.hoursRemaining > 0
-                      ? 'font-medium text-emerald-600'
+                      ? 'text-success font-medium'
                       : hours.hoursRemaining === 0
                         ? 'text-muted-foreground'
-                        : 'font-medium text-red-600'
+                        : 'text-destructive font-medium'
                   )}
                 >
                   {formatHours(hours.hoursRemaining)}h remaining
@@ -615,7 +587,7 @@ export function ProjectsLanding({
               </div>
             )}
             {hours && hours.billingType === 'net_30' && (
-              <div className='flex items-center gap-1.25 text-[11px]'>
+              <div className='flex items-center gap-1 text-xs'>
                 <Clock className='text-muted-foreground h-3 w-3' />
                 <span className='text-muted-foreground font-medium'>
                   Net 30
@@ -647,7 +619,6 @@ export function ProjectsLanding({
               <TableHead className={tableColumnWidths.progress}>
                 Progress
               </TableHead>
-              <TableHead className={tableColumnWidths.dates}>Dates</TableHead>
               <TableHead className={tableColumnWidths.owner}>Owner</TableHead>
               <TableHead className={tableColumnWidths.links}>Links</TableHead>
               <TableHead className={`${tableColumnWidths.actions} text-right`}>
@@ -672,7 +643,7 @@ export function ProjectsLanding({
       renderSectionEmptyState(
         unfilteredCounts.clientCount > 0
           ? 'No client projects match the current filters.'
-          : 'Client projects will appear here once they are created.'
+          : 'No client projects yet.'
       )
     )
 
@@ -680,20 +651,20 @@ export function ProjectsLanding({
     if (unfilteredCounts.internalCount > 0) {
       return 'No internal projects match the current filters.'
     }
-    return 'There are no internal projects yet.'
+    return 'No internal projects yet.'
   }
 
   const getPersonalEmptyMessage = () => {
     if (unfilteredCounts.personalCount > 0) {
       return 'No personal projects match the current filters.'
     }
-    return 'You have not created any personal projects yet.'
+    return 'No personal projects yet.'
   }
 
   const sectionConfigs: (SectionConfig & { className?: string })[] = [
     {
       key: 'internal',
-      title: 'Internal Projects',
+      title: 'Internal projects',
       icon: Users,
       count: internalProjects.length,
       content:
@@ -703,7 +674,7 @@ export function ProjectsLanding({
     },
     {
       key: 'personal',
-      title: 'Personal Projects',
+      title: 'Personal projects',
       icon: UserRound,
       count: personalProjects.length,
       content:

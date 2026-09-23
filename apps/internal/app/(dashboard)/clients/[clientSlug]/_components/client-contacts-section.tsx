@@ -3,6 +3,8 @@
 import { Mail, Phone, Star, UserCheck, Users } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
+import { EmptyState } from '@pts/ui/empty-state'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import type { ContactWithClientLink } from '@/lib/types/client-contacts'
 import {
   CLICKABLE_ROW_CLASS,
@@ -31,9 +33,7 @@ export function ClientContactsSection({ contacts }: Props) {
 
       <div className='p-3'>
         {contacts.length === 0 ? (
-          <div className='text-muted-foreground rounded-md border border-dashed px-4 py-6 text-center text-sm'>
-            No contacts linked yet. Use the Edit button to manage contacts.
-          </div>
+          <EmptyState message='No contacts linked yet.' />
         ) : (
           <div className='space-y-0.5'>
             {contacts.map(contact => (
@@ -73,9 +73,14 @@ function ContactRow({ contact }: { contact: ContactWithClientLink }) {
             <Star className='h-3 w-3 shrink-0 fill-amber-400 text-amber-400' />
           )}
           {contact.userId && (
-            <span title='Has portal access'>
-              <UserCheck className='h-3 w-3 shrink-0 text-emerald-500' />
-            </span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span aria-label='Has portal access'>
+                  <UserCheck className='text-success h-3 w-3 shrink-0' />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>Has portal access</TooltipContent>
+            </Tooltip>
           )}
         </div>
         {/* w-fit keeps the anchors to their text width — the rest of the row

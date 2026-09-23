@@ -16,7 +16,7 @@ import { resolveContactDeepLink } from './_lib/contact-deep-link'
 import { mapContactToTableRow } from './_lib/map-contact-to-table-row'
 
 export const metadata: Metadata = {
-  title: 'Contacts | Place to Stand Portal',
+  title: 'Contacts',
 }
 
 

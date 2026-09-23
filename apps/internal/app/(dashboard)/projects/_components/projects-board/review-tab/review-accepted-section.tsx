@@ -60,7 +60,7 @@ export function ReviewAcceptedSection({
               >
                 {getTaskStatusLabel('ACCEPTED')}
               </Badge>
-              <span className='text-muted-foreground text-[11px]'>
+              <span className='text-muted-foreground text-xs'>
                 {tasks.length}
               </span>
             </div>
@@ -89,7 +89,7 @@ export function ReviewAcceptedSection({
                   className='text-muted-foreground py-8 text-center text-sm'
                   colSpan={6}
                 >
-                  No tasks have been accepted yet.
+                  No accepted tasks yet.
                 </TableCell>
               </TableRow>
             ) : (
@@ -110,7 +110,7 @@ export function ReviewAcceptedSection({
                 return (
                   <TableRow
                     key={task.id}
-                    data-state={isActive ? 'selected' : undefined}
+                    data-selected={isActive || undefined}
                     role='button'
                     tabIndex={0}
                     onClick={() => onEditTask(task)}
@@ -121,7 +121,7 @@ export function ReviewAcceptedSection({
                       }
                     }}
                     className={cn(
-                      'group cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-offset-0 focus-visible:outline-none',
+                      'group focus-visible:border-ring focus-visible:ring-ring/50 cursor-pointer transition-colors outline-none focus-visible:ring-[3px]',
                       isActive ? 'bg-primary/5' : 'hover:bg-muted/50'
                     )}
                   >
@@ -147,7 +147,7 @@ export function ReviewAcceptedSection({
                           disabled={Boolean(disabledReason) || isCurrentAction}
                         >
                           {isCurrentAction ? (
-                            <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                            <Loader2 className='animate-spin' />
                           ) : null}
                           Unaccept
                         </Button>

@@ -39,8 +39,8 @@ type UsersManagementTableProps = {
 }
 
 const EMPTY_MESSAGES = {
-  active: 'No users found. Use the Add user button to invite someone.',
-  archive: 'No archived users. Archived accounts appear here once deleted.',
+  active: 'No users yet.',
+  archive: 'No archived users.',
 } as const
 
 export function UsersManagementTable({

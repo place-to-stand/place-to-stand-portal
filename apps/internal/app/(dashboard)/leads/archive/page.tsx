@@ -9,7 +9,11 @@ import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
-import { fetchArchivedLeads, fetchLeadAssignees, fetchLeadsBoard } from '@/lib/data/leads'
+import {
+  fetchArchivedLeads,
+  fetchLeadAssignees,
+  fetchLeadsBoard,
+} from '@/lib/data/leads'
 import { NEW_SHEET_VALUE, UUID_PATTERN } from '@/lib/sheets/entities'
 import { leadHref, newLeadHref } from '@/lib/sheets/hrefs'
 
@@ -17,7 +21,7 @@ import { LEADS_TABS } from '../_lib/tabs'
 import { LeadsArchiveSection } from '../_components/leads-archive-section'
 
 export const metadata: Metadata = {
-  title: 'Lead Archive | Place to Stand Portal',
+  title: 'Lead archive',
 }
 
 type PageProps = {
@@ -62,7 +66,7 @@ export default async function LeadsArchivePage({ searchParams }: PageProps) {
       activeTab='archive'
       count={{ label: 'archived leads', total: archivedLeads.length }}
       primaryAction={
-        <Button asChild size='sm' className='gap-2'>
+        <Button asChild size='sm'>
           <Link href={newLeadHref()}>
             <Plus className='h-4 w-4' />
             Add lead
@@ -70,7 +74,7 @@ export default async function LeadsArchivePage({ searchParams }: PageProps) {
         </Button>
       }
     >
-      <section className='bg-background rounded-xl border p-4 shadow-sm space-y-3'>
+      <section className='bg-background space-y-3 rounded-xl border p-4 shadow-sm'>
         <LeadsArchiveSection
           leads={archivedLeads}
           assignees={assignees}

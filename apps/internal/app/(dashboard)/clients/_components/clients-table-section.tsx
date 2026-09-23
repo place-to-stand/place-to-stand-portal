@@ -4,6 +4,7 @@ import { Archive, Building2, RefreshCw, Trash2 } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { Badge } from '@pts/ui/badge'
+import { EmptyState } from '@pts/ui/empty-state'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
@@ -32,10 +33,13 @@ import {
 
 const BILLING_TYPE_LABELS = CLIENT_BILLING_TYPE_SELECT_OPTIONS.reduce<
   Record<ClientBillingTypeValue, string>
->((acc, option) => {
-  acc[option.value] = option.label
-  return acc
-}, {} as Record<ClientBillingTypeValue, string>)
+>(
+  (acc, option) => {
+    acc[option.value] = option.label
+    return acc
+  },
+  {} as Record<ClientBillingTypeValue, string>
+)
 
 export type ClientsTableSectionProps = {
   clients: ClientsTableClient[]
@@ -92,7 +96,7 @@ export function ClientsTableSection({
             </SortableTableHead>
             <TableHead className='w-[20%]'>Billing type</TableHead>
             <TableHead className='w-[18%]'>Active projects</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead className='w-[14%]'>Status</TableHead>
             <TableHead className='w-32 text-right'>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -172,12 +176,10 @@ export function ClientsTableSection({
                           variant='outline'
                           size='icon-sm'
                           onClick={() => onRestore(client)}
-                          title='Restore client'
                           aria-label='Restore client'
                           disabled={restoreDisabled}
                         >
-                          <RefreshCw className='h-4 w-4' />
-                          <span className='sr-only'>Restore</span>
+                          <RefreshCw />
                         </Button>
                       </DisabledFieldTooltip>
                     ) : null}
@@ -190,12 +192,10 @@ export function ClientsTableSection({
                           variant='destructive'
                           size='icon-sm'
                           onClick={() => onRequestDelete(client)}
-                          title='Delete client'
-                          aria-label='Delete client'
+                          aria-label='Archive client'
                           disabled={deleteDisabled}
                         >
-                          <Archive className='h-4 w-4' />
-                          <span className='sr-only'>Archive</span>
+                          <Archive />
                         </Button>
                       </DisabledFieldTooltip>
                     ) : null}
@@ -208,12 +208,10 @@ export function ClientsTableSection({
                           variant='destructive'
                           size='icon-sm'
                           onClick={() => onRequestDestroy(client)}
-                          title='Permanently delete client'
                           aria-label='Permanently delete client'
                           disabled={destroyDisabled}
                         >
-                          <Trash2 className='h-4 w-4' />
-                          <span className='sr-only'>Delete permanently</span>
+                          <Trash2 />
                         </Button>
                       </DisabledFieldTooltip>
                     ) : null}
@@ -224,11 +222,8 @@ export function ClientsTableSection({
           })}
           {clients.length === 0 ? (
             <TableRow>
-              <TableCell
-                colSpan={5}
-                className='text-muted-foreground py-10 text-center text-sm'
-              >
-                {emptyMessage}
+              <TableCell colSpan={5} className='p-4'>
+                <EmptyState message={emptyMessage} />
               </TableCell>
             </TableRow>
           ) : null}

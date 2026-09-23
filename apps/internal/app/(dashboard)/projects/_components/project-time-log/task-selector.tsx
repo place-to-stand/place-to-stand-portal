@@ -10,11 +10,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@pts/ui/popover'
+import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
 import type { TaskWithRelations } from '@/lib/types'
 
 import { formatTaskStatusLabel } from './task-status-utils'
@@ -60,7 +56,7 @@ export function TaskSelector(props: TaskSelectorProps) {
           </PopoverTrigger>
         </div>
       </DisabledFieldTooltip>
-      <PopoverContent className='w-[var(--radix-popover-trigger-width)] p-0' align='start'>
+      <PopoverContent className='w-(--anchor-width) p-0'>
         <Command>
           <CommandInput placeholder='Search tasks...' />
           <CommandEmpty>No matching tasks.</CommandEmpty>

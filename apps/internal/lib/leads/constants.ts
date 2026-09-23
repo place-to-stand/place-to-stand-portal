@@ -1,4 +1,5 @@
 import { leadSourceType, leadStatus } from '@/lib/db/schema'
+import { BADGE_TINTS } from '@pts/ui/badge-tints'
 import { TASK_STATUS_TOKENS } from '@/lib/projects/task-status'
 
 export const LEAD_STATUS_VALUES = leadStatus.enumValues
@@ -6,28 +7,22 @@ export const LEAD_STATUS_VALUES = leadStatus.enumValues
 export type LeadStatusValue = (typeof LEAD_STATUS_VALUES)[number]
 
 export const LEAD_STATUS_LABELS: Record<LeadStatusValue, string> = {
-  NEW_OPPORTUNITIES: 'New Opportunities',
-  ACTIVE_OPPORTUNITIES: 'Active Opportunities',
-  PROPOSAL_SENT: 'Proposal Sent',
-  ON_ICE: 'On Ice',
-  CLOSED_WON: 'Closed Won',
-  CLOSED_LOST: 'Closed Lost',
+  NEW_OPPORTUNITIES: 'New opportunities',
+  ACTIVE_OPPORTUNITIES: 'Active opportunities',
+  PROPOSAL_SENT: 'Proposal sent',
+  ON_ICE: 'On ice',
+  CLOSED_WON: 'Closed won',
+  CLOSED_LOST: 'Closed lost',
   UNQUALIFIED: 'Unqualified',
 }
 
 const LEAD_STATUS_TOKENS: Record<LeadStatusValue, string> = {
-  NEW_OPPORTUNITIES:
-    'border-transparent bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200',
-  ACTIVE_OPPORTUNITIES:
-    'border-transparent bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200',
-  PROPOSAL_SENT:
-    'border-transparent bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200',
-  ON_ICE:
-    'border-transparent bg-slate-200 text-slate-700 dark:bg-slate-700/60 dark:text-slate-200',
-  CLOSED_WON:
-    'border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200',
-  CLOSED_LOST:
-    'border-transparent bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200',
+  NEW_OPPORTUNITIES: BADGE_TINTS.sky,
+  ACTIVE_OPPORTUNITIES: BADGE_TINTS.violet,
+  PROPOSAL_SENT: BADGE_TINTS.amber,
+  ON_ICE: BADGE_TINTS.neutral,
+  CLOSED_WON: BADGE_TINTS.emerald,
+  CLOSED_LOST: BADGE_TINTS.rose,
   UNQUALIFIED: TASK_STATUS_TOKENS.ACCEPTED,
 }
 
@@ -55,7 +50,7 @@ export const LEAD_BOARD_COLUMNS = [
   {
     id: 'CLOSED_WON',
     label: LEAD_STATUS_LABELS.CLOSED_WON,
-    description: 'Leads that converted successfully.',
+    description: 'Leads that converted.',
   },
   {
     id: 'CLOSED_LOST',
@@ -89,7 +84,9 @@ export const LEAD_SOURCE_LABELS: Record<LeadSourceTypeValue, string> = {
   EVENT: 'Event',
 }
 
-export function getLeadSourceLabel(source?: LeadSourceTypeValue | null): string {
+export function getLeadSourceLabel(
+  source?: LeadSourceTypeValue | null
+): string {
   if (!source) {
     return ''
   }
@@ -102,5 +99,9 @@ export function getLeadSourceLabel(source?: LeadSourceTypeValue | null): string 
  * Terminal statuses set resolvedAt and may set conversion or loss fields.
  */
 export function isTerminalLeadStatus(status: LeadStatusValue): boolean {
-  return status === 'CLOSED_WON' || status === 'CLOSED_LOST' || status === 'UNQUALIFIED'
+  return (
+    status === 'CLOSED_WON' ||
+    status === 'CLOSED_LOST' ||
+    status === 'UNQUALIFIED'
+  )
 }

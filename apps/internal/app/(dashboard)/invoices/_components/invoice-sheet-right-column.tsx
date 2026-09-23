@@ -3,14 +3,14 @@
 import { useState, useCallback } from 'react'
 import { Ban, Calendar, Eye, Hash, Send, Undo2 } from 'lucide-react'
 
-import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Separator } from '@pts/ui/separator'
 import type { InvoiceWithClient } from '@/lib/invoices/invoice-form'
-import { formatCalendarDate } from '@/lib/dates'
+import { formatCalendarDate } from '@pts/ui/dates'
 
 import { InvoiceShareSection } from './invoice-share-section'
+import { InvoiceStatusBadge } from './invoice-status-badge'
 
 type InvoiceSheetRightColumnProps = {
   invoice: InvoiceWithClient
@@ -18,59 +18,6 @@ type InvoiceSheetRightColumnProps = {
   onSendInvoice: () => void
   onUnsendInvoice: () => void
   onVoidInvoice: () => void
-}
-
-// ---------------------------------------------------------------------------
-// Status badge (matches the table section badge styling)
-// ---------------------------------------------------------------------------
-
-function StatusBadge({ status }: { status: string }) {
-  if (status === 'DRAFT') {
-    return (
-      <Badge variant='secondary' className='text-xs'>
-        Draft
-      </Badge>
-    )
-  }
-  if (status === 'SENT') {
-    return (
-      <Badge variant='default' className='text-xs'>
-        Sent
-      </Badge>
-    )
-  }
-  if (status === 'VIEWED') {
-    return (
-      <Badge
-        variant='outline'
-        className='border-transparent bg-amber-100 text-xs text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'
-      >
-        Viewed
-      </Badge>
-    )
-  }
-  if (status === 'PAID') {
-    return (
-      <Badge
-        variant='outline'
-        className='border-transparent bg-emerald-100 text-xs text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'
-      >
-        Paid
-      </Badge>
-    )
-  }
-  if (status === 'VOID') {
-    return (
-      <Badge variant='destructive' className='text-xs'>
-        Void
-      </Badge>
-    )
-  }
-  return (
-    <Badge variant='secondary' className='text-xs'>
-      {status}
-    </Badge>
-  )
 }
 
 // ---------------------------------------------------------------------------
@@ -126,7 +73,7 @@ export function InvoiceSheetRightColumn({
         <Separator />
 
         {/* Actions */}
-        {(showSendButton || showUnsendButton || canVoid) ? (
+        {showSendButton || showUnsendButton || canVoid ? (
           <>
             <div className='space-y-4'>
               <span className='mb-2 block text-sm font-medium'>Actions</span>
@@ -140,12 +87,12 @@ export function InvoiceSheetRightColumn({
                       type='button'
                       variant='outline'
                       size='sm'
-                      className='w-full justify-start gap-2'
+                      className='w-full justify-start'
                       onClick={onSendInvoice}
                       disabled={isPending || !canSend}
                     >
-                      <Send className='h-4 w-4 text-green-500' />
-                      Mark as Sent
+                      <Send className='text-success' />
+                      Mark as sent
                     </Button>
                   </DisabledFieldTooltip>
                 ) : null}
@@ -154,12 +101,12 @@ export function InvoiceSheetRightColumn({
                     type='button'
                     variant='outline'
                     size='sm'
-                    className='w-full justify-start gap-2'
+                    className='w-full justify-start'
                     onClick={onUnsendInvoice}
                     disabled={isPending}
                   >
-                    <Undo2 className='h-4 w-4 text-amber-500' />
-                    Revert to Draft
+                    <Undo2 className='text-warning' />
+                    Revert to draft
                   </Button>
                 ) : null}
                 {canVoid ? (
@@ -167,12 +114,12 @@ export function InvoiceSheetRightColumn({
                     type='button'
                     variant='outline'
                     size='sm'
-                    className='w-full justify-start gap-2'
+                    className='w-full justify-start'
                     onClick={onVoidInvoice}
                     disabled={isPending}
                   >
-                    <Ban className='h-4 w-4 text-red-500' />
-                    Void Invoice
+                    <Ban className='text-destructive' />
+                    Void invoice
                   </Button>
                 ) : null}
               </div>
@@ -187,7 +134,7 @@ export function InvoiceSheetRightColumn({
           <div className='space-y-2'>
             <div className='flex items-center justify-between'>
               <span className='text-muted-foreground text-sm'>Status</span>
-              <StatusBadge status={invoice.status} />
+              <InvoiceStatusBadge status={invoice.status} />
             </div>
             {invoice.invoice_number ? (
               <div className='flex items-center justify-between'>

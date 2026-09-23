@@ -65,7 +65,7 @@ export function ReviewDoneSection({
               >
                 {getTaskStatusLabel('DONE')}
               </Badge>
-              <span className='text-muted-foreground text-[11px]'>
+              <span className='text-muted-foreground text-xs'>
                 {tasks.length}
               </span>
             </div>
@@ -85,9 +85,7 @@ export function ReviewDoneSection({
               onClick={onAcceptAllDone}
               disabled={acceptAllDisabled || isAcceptingDone}
             >
-              {isAcceptingDone ? (
-                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-              ) : null}
+              {isAcceptingDone ? <Loader2 className='animate-spin' /> : null}
               Accept all Done tasks
             </Button>
           </DisabledFieldTooltip>
@@ -136,7 +134,7 @@ export function ReviewDoneSection({
                 return (
                   <TableRow
                     key={task.id}
-                    data-state={isActive ? 'selected' : undefined}
+                    data-selected={isActive || undefined}
                     role='button'
                     tabIndex={0}
                     onClick={() => onEditTask(task)}
@@ -147,7 +145,7 @@ export function ReviewDoneSection({
                       }
                     }}
                     className={cn(
-                      'group cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-offset-0 focus-visible:outline-none',
+                      'group focus-visible:border-ring focus-visible:ring-ring/50 cursor-pointer transition-colors outline-none focus-visible:ring-[3px]',
                       isActive ? 'bg-primary/5' : 'hover:bg-muted/50'
                     )}
                   >

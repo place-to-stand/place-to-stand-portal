@@ -300,7 +300,7 @@ export function HoursWidget({ initialSnapshot, className }: HoursWidgetProps) {
     >
       <header className='flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5'>
         <h2 id='hours-widget-heading' className='text-sm font-semibold'>
-          Monthly Hours Snapshot
+          Monthly hours snapshot
         </h2>
         <div className='flex items-center gap-1.5'>
           <p className='mr-1 text-xs font-medium whitespace-nowrap'>

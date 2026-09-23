@@ -16,7 +16,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
+import { Input } from '@pts/ui/input'
 import { Label } from '@pts/ui/label'
 import { PhoneInput } from '@/components/ui/phone-input'
 import {
@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from '@pts/ui/select'
 import { Switch } from '@pts/ui/switch'
-import { Textarea } from '@/components/ui/textarea'
+import { Textarea } from '@pts/ui/textarea'
 
 import { DesignSection, Specimen } from './specimen'
 

@@ -1,16 +1,16 @@
 'use client'
 
-import { format, parseISO } from 'date-fns'
 import { Clock, Plus } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Button } from '@pts/ui/button'
+import { formatCalendarDate } from '@pts/ui/dates'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Skeleton } from '@pts/ui/skeleton'
 import { getInitials } from '@/lib/users/initials'
 import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 
-import { SheetEmptyState } from '@/components/sheets/sheet-empty-state'
+import { EmptyState } from '@pts/ui/empty-state'
 import { useTaskTimeLogs } from './use-task-time-logs'
 
 type TimeLogSectionProps = {
@@ -45,7 +45,7 @@ export function TimeLogSection({
       <div className='flex items-center justify-between gap-3'>
         <div className='flex items-center gap-2'>
           <Clock className='text-muted-foreground h-4 w-4' />
-          <h3 className='text-sm font-medium'>Time Logs</h3>
+          <h3 className='text-sm font-medium'>Time logs</h3>
           <span className='text-muted-foreground text-sm'>
             {totalHours}h logged
           </span>
@@ -78,7 +78,7 @@ export function TimeLogSection({
           Time logs could not be loaded.
         </p>
       ) : entries.length === 0 ? (
-        <SheetEmptyState
+        <EmptyState
           message='No time logged yet.'
           label='Log time'
           onClick={onLogTime}
@@ -91,7 +91,7 @@ export function TimeLogSection({
               <button
                 type='button'
                 onClick={() => onEditEntry(entry)}
-                className='hover:bg-muted/50 flex w-full cursor-pointer items-center gap-3 px-3 py-2 text-left text-sm transition-colors'
+                className='hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-ring/50 flex w-full cursor-pointer items-center gap-3 px-3 py-2 text-left text-sm transition-colors outline-none focus-visible:ring-[3px]'
               >
                 {/* Avatar instead of the logger's name: the row has one line
                     for date, hours, person and note, and the note is the part
@@ -99,14 +99,14 @@ export function TimeLogSection({
                     reading order as the comments thread above — with the name
                     still reachable by hover and by AT. */}
                 <span className='shrink-0' title={resolveLoggerName(entry)}>
-                  <Avatar className='h-5 w-5'>
+                  <Avatar size='xs'>
                     {entry.user?.avatar_url ? (
                       <AvatarImage
                         src={`/api/storage/user-avatar/${entry.user.id}`}
                         alt=''
                       />
                     ) : null}
-                    <AvatarFallback className='text-[9px]'>
+                    <AvatarFallback>
                       {getInitials(resolveLoggerName(entry))}
                     </AvatarFallback>
                   </Avatar>
@@ -137,11 +137,7 @@ export function TimeLogSection({
 }
 
 function formatLoggedOn(loggedOn: string): string {
-  try {
-    return format(parseISO(loggedOn), 'MMM d, yyyy')
-  } catch {
-    return loggedOn
-  }
+  return formatCalendarDate(loggedOn) ?? loggedOn
 }
 
 function resolveLoggerName(entry: TimeLogEntry): string {

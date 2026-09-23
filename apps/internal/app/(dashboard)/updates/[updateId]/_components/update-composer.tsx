@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation'
 import type { ClientHoursTotals } from '@pts/db/hours'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@pts/ui/input'
+import { Textarea } from '@pts/ui/textarea'
 import { useToast } from '@/components/ui/use-toast'
 import type { ClientUpdateRow } from '@/lib/updates'
 import type { ComposerTaskOption } from '@/lib/updates/composer-data'
@@ -126,7 +126,7 @@ export function UpdateComposer({
       const result = await sendClientUpdateTestAction({ id: update.id })
       if (!result.success) {
         toast({
-          title: 'Test not sent',
+          title: 'Unable to send test',
           description: result.error,
           variant: 'destructive',
         })
@@ -153,7 +153,7 @@ export function UpdateComposer({
       const result = await sendClientUpdateAction({ id: update.id })
       if (!result.success) {
         toast({
-          title: 'Not sent',
+          title: 'Unable to send update',
           description: result.error,
           variant: 'destructive',
         })

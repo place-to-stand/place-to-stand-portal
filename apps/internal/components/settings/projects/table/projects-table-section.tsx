@@ -8,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from '@pts/ui/table'
+import { EmptyState } from '@pts/ui/empty-state'
 
 import type { ProjectWithClient, ProjectsTableMode } from './types'
 import { ProjectsTableRow } from './projects-table-row'
@@ -102,11 +103,8 @@ export function ProjectsTableSection({
           ))}
           {projects.length === 0 ? (
             <TableRow>
-              <TableCell
-                colSpan={5}
-                className='text-muted-foreground py-10 text-center text-sm'
-              >
-                {emptyMessage}
+              <TableCell colSpan={5} className='p-4'>
+                <EmptyState message={emptyMessage} />
               </TableCell>
             </TableRow>
           ) : null}

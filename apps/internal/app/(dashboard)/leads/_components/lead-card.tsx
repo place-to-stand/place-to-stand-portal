@@ -135,7 +135,7 @@ export const LeadCard = memo(function LeadCard({
         }
       }}
       className={cn(
-        'group bg-card focus-visible:ring-ring focus-visible:ring-offset-background rounded-lg border p-4 text-left shadow-sm transition focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+        'group bg-card focus-visible:border-ring focus-visible:ring-ring/50 rounded-lg border p-4 text-left shadow-sm transition focus-visible:ring-[3px] focus-visible:outline-none',
         canManage ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
         isDragging && 'ring-primary ring-2',
         (isActive || isDragging) && 'border-primary/50 bg-primary/5 shadow-md',
@@ -161,6 +161,8 @@ function LeadCardContent({ lead }: { lead: LeadRecord }) {
       ? `${sourceLabel} · ${sourceDetail}`
       : sourceLabel
     : null
+  const openTasksLabel = `${lead.openTaskCount} open ${lead.openTaskCount === 1 ? 'task' : 'tasks'}`
+  const updatesLabel = `${lead.updateCount} ${lead.updateCount === 1 ? 'update' : 'updates'}`
 
   const sourceMark =
     SourceIcon && sourceSummary ? (
@@ -187,7 +189,7 @@ function LeadCardContent({ lead }: { lead: LeadRecord }) {
         <span
           role='img'
           aria-label='Converted to client'
-          className='inline-flex size-5 shrink-0 items-center justify-center text-green-600 dark:text-green-400'
+          className='text-success inline-flex size-5 shrink-0 items-center justify-center'
         >
           <CheckCircle className='size-4' aria-hidden />
         </span>
@@ -243,22 +245,32 @@ function LeadCardContent({ lead }: { lead: LeadRecord }) {
           {lead.openTaskCount > 0 || lead.updateCount > 0 ? (
             <div className='text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-2 text-xs'>
               {lead.openTaskCount > 0 ? (
-                <span
-                  className='inline-flex items-center gap-1'
-                  title={`${lead.openTaskCount} open ${lead.openTaskCount === 1 ? 'task' : 'tasks'}`}
-                >
-                  <ListTodo className='h-3.5 w-3.5' aria-hidden />
-                  {lead.openTaskCount}
-                </span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span
+                      className='inline-flex items-center gap-1'
+                      aria-label={openTasksLabel}
+                    >
+                      <ListTodo className='h-3.5 w-3.5' aria-hidden />
+                      {lead.openTaskCount}
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side='top'>{openTasksLabel}</TooltipContent>
+                </Tooltip>
               ) : null}
               {lead.updateCount > 0 ? (
-                <span
-                  className='inline-flex items-center gap-1'
-                  title={`${lead.updateCount} ${lead.updateCount === 1 ? 'update' : 'updates'}`}
-                >
-                  <MessageCircle className='h-3.5 w-3.5' aria-hidden />
-                  {lead.updateCount}
-                </span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span
+                      className='inline-flex items-center gap-1'
+                      aria-label={updatesLabel}
+                    >
+                      <MessageCircle className='h-3.5 w-3.5' aria-hidden />
+                      {lead.updateCount}
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side='top'>{updatesLabel}</TooltipContent>
+                </Tooltip>
               ) : null}
             </div>
           ) : null}
@@ -296,7 +308,7 @@ function AnchorRow({ icon: Icon, value, href }: AnchorRowProps) {
       title={value}
     >
       <Icon className='h-3.5 w-3.5 shrink-0' aria-hidden />
-      <span className='truncate'>{value}</span>
+      <span className='truncate-link'>{value}</span>
     </a>
   )
 }

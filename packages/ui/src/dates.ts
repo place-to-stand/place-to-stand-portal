@@ -56,3 +56,38 @@ export function formatCalendarDate(
   if (Number.isNaN(parsed.getTime())) return null
   return getFormatter(style, COMPANY_TIME_ZONE).format(parsed)
 }
+
+const RELATIVE_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
+  ['year', 365 * 24 * 60 * 60],
+  ['month', 30 * 24 * 60 * 60],
+  ['week', 7 * 24 * 60 * 60],
+  ['day', 24 * 60 * 60],
+  ['hour', 60 * 60],
+  ['minute', 60],
+]
+
+const relativeFormatter = new Intl.RelativeTimeFormat('en-US', {
+  numeric: 'auto',
+})
+
+/**
+ * "3 days ago", "yesterday", "in 2 hours", "just now". The one sanctioned way
+ * to show relative time. The text depends on `now`, so render it in a client
+ * component (or pass a fixed `now`) to keep server and client output equal.
+ */
+export function formatRelativeTime(
+  value: string | Date | null | undefined,
+  now: Date = new Date()
+): string | null {
+  if (!value) return null
+  const parsed = typeof value === 'string' ? new Date(value) : value
+  if (Number.isNaN(parsed.getTime())) return null
+
+  const seconds = Math.round((parsed.getTime() - now.getTime()) / 1000)
+  for (const [unit, unitSeconds] of RELATIVE_UNITS) {
+    if (Math.abs(seconds) >= unitSeconds) {
+      return relativeFormatter.format(Math.round(seconds / unitSeconds), unit)
+    }
+  }
+  return 'just now'
+}

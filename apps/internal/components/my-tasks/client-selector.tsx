@@ -170,7 +170,8 @@ export function ClientSelector({
               aria-haspopup='listbox'
               aria-label='Client scope'
               disabled={disabled}
-              className='h-8 w-full justify-between px-3 py-0 text-sm font-normal'
+              size='sm'
+              className='w-full justify-between px-3 py-0 font-normal'
             >
               <span className='flex min-w-0 items-center gap-2'>
                 <Building2 className='text-muted-foreground size-4 shrink-0' />
@@ -185,7 +186,7 @@ export function ClientSelector({
             </Button>
           </PopoverTrigger>
           <PopoverContent
-            className='w-(--radix-popover-trigger-width) min-w-64 p-0'
+            className='w-(--anchor-width) min-w-64 p-0'
             sideOffset={8}
           >
             <Command>

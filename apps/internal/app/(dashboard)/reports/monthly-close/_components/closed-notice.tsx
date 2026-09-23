@@ -1,5 +1,7 @@
 import { Lock, TriangleAlert } from 'lucide-react'
 
+import { formatCalendarDate } from '@pts/ui/dates'
+
 type ClosedNoticeProps = {
   closedAt?: string
   closedByName?: string | null
@@ -22,14 +24,17 @@ export function ClosedNotice({
         <TriangleAlert className='mt-0.5 h-4 w-4 shrink-0' />
         <div>
           <p className='font-medium'>Snapshot unreadable</p>
-          <p>{snapshotError} The figures below are a live derivation, not the frozen close.</p>
+          <p>
+            {snapshotError} The figures below are a live derivation, not the
+            frozen close.
+          </p>
         </div>
       </div>
     )
   }
 
   const closedLabel = closedAt
-    ? new Date(closedAt).toLocaleDateString('en-US', {
+    ? formatCalendarDate(closedAt, {
         month: 'long',
         day: 'numeric',
         year: 'numeric',

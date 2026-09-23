@@ -2,23 +2,14 @@ import { useCallback, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { useToast } from '@/components/ui/use-toast'
-import {
-  softDeleteUser,
-} from '@/app/(dashboard)/settings/users/actions'
+import { softDeleteUser } from '@/app/(dashboard)/settings/users/actions'
 import {
   finishSettingsInteraction,
   startSettingsInteraction,
 } from '@/lib/posthog/settings'
 
-import {
-  buildDeleteDialogDescription,
-  SELF_DELETE_REASON,
-} from '../constants'
-import type {
-  DeleteDialogState,
-  UserAssignments,
-  UserRow,
-} from '../types'
+import { buildDeleteDialogDescription, SELF_DELETE_REASON } from '../constants'
+import type { DeleteDialogState, UserAssignments, UserRow } from '../types'
 
 type UseDeleteUserActionArgs = {
   currentUserId: string
@@ -52,8 +43,9 @@ export function useDeleteUserAction({
 
   const notifySelfDeleteBlocked = useCallback(() => {
     toast({
-      title: 'Cannot archive your own account',
-      description: 'Switch to another administrator before removing your access.',
+      title: 'Unable to archive user',
+      description:
+        "You can't archive your own account. Switch to another administrator before removing your access.",
       variant: 'destructive',
     })
   }, [toast])
@@ -80,7 +72,7 @@ export function useDeleteUserAction({
 
       setDeleteTarget(user)
     },
-    [currentUserId, isPending, notifySelfDeleteBlocked],
+    [currentUserId, isPending, notifySelfDeleteBlocked]
   )
 
   const handleConfirmDelete = useCallback(() => {
@@ -156,7 +148,8 @@ export function useDeleteUserAction({
         })
         toast({
           title: 'Unable to delete user',
-          description: error instanceof Error ? error.message : 'Unknown error.',
+          description:
+            error instanceof Error ? error.message : 'Unknown error.',
           variant: 'destructive',
         })
       } finally {
@@ -164,7 +157,16 @@ export function useDeleteUserAction({
         setLastDeleteTarget(null)
       }
     })
-  }, [currentUserId, deleteTarget, lastDeleteTarget, isPending, notifySelfDeleteBlocked, router, startTransition, toast])
+  }, [
+    currentUserId,
+    deleteTarget,
+    lastDeleteTarget,
+    isPending,
+    notifySelfDeleteBlocked,
+    router,
+    startTransition,
+    toast,
+  ])
 
   const dialogTarget = deleteTarget ?? lastDeleteTarget
 
@@ -184,4 +186,3 @@ export function useDeleteUserAction({
     notifySelfDeleteReason: SELF_DELETE_REASON,
   }
 }
-

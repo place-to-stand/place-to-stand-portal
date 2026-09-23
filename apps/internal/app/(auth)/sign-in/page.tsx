@@ -14,7 +14,7 @@ type PageProps = {
 };
 
 export const metadata: Metadata = {
-  title: "Sign in | Place to Stand Portal",
+  title: 'Sign in',
 };
 
 export default async function SignInPage({ searchParams }: PageProps) {

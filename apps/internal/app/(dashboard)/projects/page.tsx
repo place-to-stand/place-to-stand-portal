@@ -19,7 +19,7 @@ import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui
 import type { ProjectWithRelations } from '@/lib/types'
 
 export const metadata: Metadata = {
-  title: 'Projects | Place to Stand Portal',
+  title: 'Projects',
 }
 
 type ProjectsPageProps = {

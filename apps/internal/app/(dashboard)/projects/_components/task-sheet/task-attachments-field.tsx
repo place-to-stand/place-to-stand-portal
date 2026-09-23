@@ -107,7 +107,7 @@ export function TaskAttachmentsField({
           href={attachment.url}
           target='_blank'
           rel='noreferrer'
-          className='text-primary inline-flex items-center gap-2 truncate font-medium hover:underline'
+          className='text-primary truncate-link inline-flex items-center gap-2 font-medium hover:underline'
         >
           <Paperclip className='h-4 w-4 shrink-0' />
           <span className='truncate'>{truncateName(attachment.name)}</span>
@@ -131,7 +131,7 @@ export function TaskAttachmentsField({
               <span>•</span>
               <span>{formatBytes(attachment.size)}</span>
               {attachment.isPending ? (
-                <span className='text-amber-600'>Pending save</span>
+                <span className='text-warning'>Pending save</span>
               ) : null}
             </div>
           </div>
@@ -164,7 +164,7 @@ export function TaskAttachmentsField({
   )
 
   const dropzoneClasses = clsx(
-    'border-border/60 bg-muted/40 relative flex items-center justify-center gap-2 rounded-md border-2 border-dashed p-6 text-sm text-muted-foreground transition w-full',
+    'border-border/60 bg-muted/40 relative flex items-center justify-center gap-2 rounded-md border-2 border-dashed p-6 text-sm text-muted-foreground transition w-full outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]',
     disabled ? 'opacity-60' : 'hover:border-primary cursor-pointer',
     isDragActive ? 'border-primary bg-primary/5 text-primary' : null
   )

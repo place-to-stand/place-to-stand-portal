@@ -9,7 +9,7 @@ import { UsersActivitySection } from '../_components/users-activity-section'
 import { USERS_TABS } from '../_lib/tabs'
 
 export const metadata: Metadata = {
-  title: 'User Activity | Settings',
+  title: 'User activity | Settings',
 }
 
 export default async function UsersActivityPage() {

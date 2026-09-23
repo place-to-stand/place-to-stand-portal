@@ -109,11 +109,11 @@ export default function SignInPage() {
 
   return (
     <AuthShell
-      label="Client Portal"
-      title="Welcome back"
-      description="Sign in to see your projects, hours, and invoices."
+      label='Client Portal'
+      title='Welcome back'
+      description='Sign in to see your projects, hours, and invoices.'
       footer={
-        <a href="/forgot-password" className={authLinkClass}>
+        <a href='/forgot-password' className={authLinkClass}>
           Forgot your password?
         </a>
       }
@@ -122,7 +122,7 @@ export default function SignInPage() {
 
       {notice && <div className={authNoticeClass}>{notice}</div>}
 
-      <div className="space-y-3">
+      <div className='space-y-3'>
         <GoogleSignInButton
           disabled={busy}
           onError={message => setError(message)}
@@ -130,7 +130,7 @@ export default function SignInPage() {
         />
 
         <button
-          type="button"
+          type='button'
           onClick={handleMagicLink}
           disabled={busy || cooldown > 0}
           className={authSecondaryButtonClass}
@@ -143,42 +143,39 @@ export default function SignInPage() {
         </button>
       </div>
 
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-[#2a2b30]" />
-        </div>
-        <div className="relative flex justify-center">
-          <span className="bg-[#16181c] px-2 font-mono text-[11px] uppercase tracking-[0.1em] text-[#a8a8ac]">
-            or
-          </span>
-        </div>
+      {/* Rules either side of the label rather than one rule behind it, so the
+          label needs no fill to mask it on the translucent panel. */}
+      <div className='flex items-center gap-2'>
+        <span className='bg-brand-border h-px flex-1' />
+        <span className={authFieldLabelClass}>or</span>
+        <span className='bg-brand-border h-px flex-1' />
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <label htmlFor="email" className={authFieldLabelClass}>
+      <form onSubmit={handleSubmit} className='space-y-4'>
+        <div className='space-y-2'>
+          <label htmlFor='email' className={authFieldLabelClass}>
             Email
           </label>
           <input
-            id="email"
-            type="email"
-            autoComplete="email"
+            id='email'
+            type='email'
+            autoComplete='email'
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
             className={authInputClass}
-            placeholder="you@example.com"
+            placeholder='you@example.com'
           />
         </div>
 
-        <div className="space-y-2">
-          <label htmlFor="password" className={authFieldLabelClass}>
+        <div className='space-y-2'>
+          <label htmlFor='password' className={authFieldLabelClass}>
             Password
           </label>
           <input
-            id="password"
-            type="password"
-            autoComplete="current-password"
+            id='password'
+            type='password'
+            autoComplete='current-password'
             value={password}
             onChange={e => setPassword(e.target.value)}
             required
@@ -187,7 +184,7 @@ export default function SignInPage() {
         </div>
 
         <button
-          type="submit"
+          type='submit'
           disabled={busy}
           className={authPrimaryButtonClass}
         >

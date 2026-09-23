@@ -24,6 +24,8 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 
+import { BADGE_TINTS } from '@pts/ui/badge-tints'
+
 /**
  * Icon + colour tone for each activity verb family. Tone is only ever a
  * secondary cue — the summary sentence carries the meaning — so a verb that
@@ -47,24 +49,19 @@ export type VerbPresentation = {
   tone: ActivityTone
 }
 
+/** Rail-icon tints, from the shared badge recipe so hues match status badges. */
 const TONE_CLASSES: Record<ActivityTone, string> = {
-  create:
-    'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-  update: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
-  status:
-    'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
-  archive:
-    'bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-300',
-  delete: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300',
-  comment:
-    'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
-  time: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300',
-  money:
-    'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-  view: 'bg-muted text-muted-foreground',
-  integration:
-    'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
-  neutral: 'bg-muted text-muted-foreground',
+  create: BADGE_TINTS.emerald,
+  update: BADGE_TINTS.sky,
+  status: BADGE_TINTS.violet,
+  archive: BADGE_TINTS.neutral,
+  delete: BADGE_TINTS.rose,
+  comment: BADGE_TINTS.amber,
+  time: BADGE_TINTS.teal,
+  money: BADGE_TINTS.emerald,
+  view: BADGE_TINTS.neutral,
+  integration: BADGE_TINTS.orange,
+  neutral: BADGE_TINTS.neutral,
 }
 
 export function getToneClasses(tone: ActivityTone): string {

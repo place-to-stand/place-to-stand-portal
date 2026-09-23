@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Search, X } from 'lucide-react'
 
-import { Input } from '@/components/ui/input'
+import { Input } from '@pts/ui/input'
 import { cn } from '@/lib/utils'
 
 const DEBOUNCE_MS = 300

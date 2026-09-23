@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { MessageSquareText, Plus } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { EmptyState } from '@pts/ui/empty-state'
 import { Skeleton } from '@pts/ui/skeleton'
 import { Badge } from '@pts/ui/badge'
 import type { LeadRecord, LeadUpdateRecord } from '@/lib/leads/types'
@@ -105,27 +106,25 @@ export function LeadUpdatesSection({
           <Skeleton className='h-16 w-full' />
         </div>
       ) : loadFailed ? (
-        <div className='space-y-2 rounded-lg border border-dashed p-3'>
-          <p className='text-muted-foreground text-sm'>
-            Couldn&apos;t load updates.
-          </p>
-          <Button
-            type='button'
-            variant='outline'
-            size='sm'
-            onClick={() => {
-              setIsLoading(true)
-              setLoadFailed(false)
-              void fetchUpdates()
-            }}
-          >
-            Retry
-          </Button>
-        </div>
+        <EmptyState
+          message='Unable to load updates.'
+          action={
+            <Button
+              type='button'
+              variant='outline'
+              size='sm'
+              onClick={() => {
+                setIsLoading(true)
+                setLoadFailed(false)
+                void fetchUpdates()
+              }}
+            >
+              Retry
+            </Button>
+          }
+        />
       ) : updates.length === 0 ? (
-        <p className='text-muted-foreground text-sm'>
-          No interactions logged yet.
-        </p>
+        <EmptyState message='No interactions logged yet.' />
       ) : (
         <div className='space-y-2'>
           {updates.map(update => (

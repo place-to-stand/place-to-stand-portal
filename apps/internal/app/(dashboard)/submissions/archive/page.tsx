@@ -20,7 +20,7 @@ import { resolveSubmissionDeepLink } from '../_lib/submission-deep-link'
 import { SUBMISSIONS_TABS } from '../_lib/tabs'
 
 export const metadata: Metadata = {
-  title: 'Submissions Archive',
+  title: 'Submission archive',
 }
 
 

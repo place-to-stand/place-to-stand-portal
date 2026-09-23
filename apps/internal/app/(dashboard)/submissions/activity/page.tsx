@@ -8,7 +8,7 @@ import { SubmissionsActivitySection } from '../_components/submissions-activity-
 import { SUBMISSIONS_TABS } from '../_lib/tabs'
 
 export const metadata: Metadata = {
-  title: 'Submissions Activity',
+  title: 'Submission activity',
 }
 
 export default async function SubmissionsActivityPage() {

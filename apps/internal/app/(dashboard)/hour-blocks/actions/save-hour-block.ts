@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { formatCalendarDate } from '@pts/ui/dates'
 import { and, eq, isNull } from 'drizzle-orm'
 
 import { requireUser } from '@/lib/auth/session'
@@ -28,7 +29,7 @@ import type { ActionResult, HourBlockInput } from './types'
 import { HOUR_BLOCKS_PATH } from './helpers'
 
 export async function saveHourBlock(
-  input: HourBlockInput,
+  input: HourBlockInput
 ): Promise<ActionResult> {
   const mode = input.id ? 'edit' : 'create'
   const targetId = input.id ?? null
@@ -42,7 +43,7 @@ export async function saveHourBlock(
         clientId: input.clientId,
       },
     },
-    async () => performSaveHourBlock(input),
+    async () => performSaveHourBlock(input)
   )
 }
 
@@ -58,7 +59,7 @@ type LinkedInvoice = {
  */
 async function resolveLinkedInvoice(
   invoiceId: string,
-  clientId: string,
+  clientId: string
 ): Promise<{ invoice?: LinkedInvoice; warning?: string; error?: string }> {
   const rows = await db
     .select({
@@ -90,7 +91,7 @@ async function resolveLinkedInvoice(
 }
 
 async function performSaveHourBlock(
-  input: HourBlockInput,
+  input: HourBlockInput
 ): Promise<ActionResult> {
   const user = await requireUser()
   assertAdmin(user)
@@ -183,10 +184,10 @@ async function performSaveHourBlock(
       // pending prepaid cutover. Non-blocking either way.
       warning = await closedMonthWarning(user, [billingMonth])
       if (!warning && billingMonth > currentMonthStartUtc()) {
-        const label = new Date(`${billingMonth}T00:00:00Z`).toLocaleDateString(
-          'en-US',
-          { month: 'long', year: 'numeric', timeZone: 'UTC' }
-        )
+        const label = formatCalendarDate(billingMonth, {
+          month: 'long',
+          year: 'numeric',
+        })
         warning = `${targetClientName} switches to prepaid later — this block will be billed in ${label}.`
       }
     } catch (error) {

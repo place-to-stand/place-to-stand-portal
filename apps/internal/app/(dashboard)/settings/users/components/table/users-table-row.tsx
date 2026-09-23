@@ -4,7 +4,7 @@ import { Archive, RefreshCw, Trash2 } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { TableCell, TableRow } from '@pts/ui/table'
-import { Button } from '@pts/ui/button'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { Badge } from '@pts/ui/badge'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Switch } from '@pts/ui/switch'
@@ -16,7 +16,7 @@ import {
 
 import type { UserRowState } from '@/lib/settings/users/state/use-users-table-state'
 import { cn } from '@/lib/utils'
-import { formatCalendarDate } from '@/lib/dates'
+import { formatCalendarDate } from '@pts/ui/dates'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
 import {
   CLICKABLE_ROW_CLASS,
@@ -64,11 +64,11 @@ export function UsersTableRow({
     >
       <TableCell>
         <div className='flex min-w-0 items-center gap-2'>
-          <Avatar className='h-6 w-6 shrink-0'>
+          <Avatar size='sm'>
             {user.avatar_url && (
               <AvatarImage src={`/api/storage/user-avatar/${user.id}`} />
             )}
-            <AvatarFallback className='text-[10px]'>{initials}</AvatarFallback>
+            <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
           <span className='truncate font-medium'>{displayName}</span>
         </div>
@@ -124,17 +124,13 @@ export function UsersTableRow({
               disabled={row.restoreDisabled}
               reason={row.restoreDisabledReason}
             >
-              <Button
+              <RowActionButton
                 variant='outline'
-                size='icon-sm'
                 onClick={row.onRestore}
-                title='Restore user'
-                aria-label='Restore user'
+                label='Restore user'
+                icon={<RefreshCw />}
                 disabled={row.restoreDisabled}
-              >
-                <RefreshCw className='h-4 w-4' />
-                <span className='sr-only'>Restore</span>
-              </Button>
+              />
             </DisabledFieldTooltip>
           ) : null}
           {showSoftDelete ? (
@@ -143,17 +139,13 @@ export function UsersTableRow({
               reason={row.deleteDisabledReason}
               className='w-auto'
             >
-              <Button
+              <RowActionButton
                 variant='destructive'
-                size='icon-sm'
                 onClick={row.onRequestDelete}
-                title={deleteTitle}
-                aria-label='Archive user'
+                label={deleteTitle}
+                icon={<Archive />}
                 disabled={row.deleteDisabled}
-              >
-                <Archive className='h-4 w-4' />
-                <span className='sr-only'>Archive</span>
-              </Button>
+              />
             </DisabledFieldTooltip>
           ) : null}
           {showDestroy ? (
@@ -162,17 +154,13 @@ export function UsersTableRow({
               reason={row.destroyDisabledReason}
               className='w-auto'
             >
-              <Button
+              <RowActionButton
                 variant='destructive'
-                size='icon-sm'
                 onClick={row.onRequestDestroy}
-                title='Permanently delete user'
-                aria-label='Permanently delete user'
+                label='Permanently delete user'
+                icon={<Trash2 />}
                 disabled={row.destroyDisabled}
-              >
-                <Trash2 className='h-4 w-4' />
-                <span className='sr-only'>Delete permanently</span>
-              </Button>
+              />
             </DisabledFieldTooltip>
           ) : null}
         </div>

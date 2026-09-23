@@ -55,7 +55,7 @@ export function SortableWidget({
       className={cn(
         'relative',
         isEditing &&
-          'ring-offset-background rounded-xl ring-2 ring-red-400/70 ring-offset-2',
+          'ring-offset-background ring-destructive/70 rounded-xl ring-2 ring-offset-2',
         isDragging && 'z-10 opacity-80 shadow-lg'
       )}
     >
@@ -64,7 +64,7 @@ export function SortableWidget({
         <div
           aria-label={`Move ${label}`}
           className={cn(
-            'group/drag focus-visible:ring-ring absolute inset-0 z-20 rounded-xl outline-none select-none focus-visible:ring-2',
+            'group/drag focus-visible:border-ring focus-visible:ring-ring/50 absolute inset-0 z-20 rounded-xl outline-none select-none focus-visible:ring-[3px]',
             isDragging ? 'cursor-grabbing' : 'cursor-grab'
           )}
           {...attributes}

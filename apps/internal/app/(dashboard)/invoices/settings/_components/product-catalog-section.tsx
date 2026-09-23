@@ -7,6 +7,8 @@ import { z } from 'zod'
 import { Pencil, Plus } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { EmptyState } from '@pts/ui/empty-state'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { Checkbox } from '@pts/ui/checkbox'
 import {
   Dialog,
@@ -16,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@pts/ui/dialog'
-import { Input } from '@/components/ui/input'
+import { Input } from '@pts/ui/input'
 import { Label } from '@pts/ui/label'
 import { Switch } from '@pts/ui/switch'
 import {
@@ -87,21 +89,17 @@ function ProductRow({
       <TableCell>
         <Switch
           size='sm'
-          className='data-[state=checked]:bg-emerald-600'
           checked={item.is_active}
           disabled={isPending}
           onCheckedChange={() => onToggleActive(item)}
         />
       </TableCell>
       <TableCell>
-        <Button
-          variant='ghost'
-          size='icon-sm'
-          className='h-7 w-7'
+        <RowActionButton
+          label='Edit product'
+          icon={<Pencil />}
           onClick={() => onEdit(item)}
-        >
-          <Pencil className='h-3.5 w-3.5' />
-        </Button>
+        />
       </TableCell>
     </TableRow>
   )
@@ -151,7 +149,10 @@ export function ProductCatalogSection({
   })
 
   const isActive = useWatch({ control: form.control, name: 'isActive' })
-  const createsHourBlockDefault = useWatch({ control: form.control, name: 'createsHourBlockDefault' })
+  const createsHourBlockDefault = useWatch({
+    control: form.control,
+    name: 'createsHourBlockDefault',
+  })
 
   const { requestConfirmation, dialog: discardDialog } =
     useUnsavedChangesWarning({
@@ -195,40 +196,36 @@ export function ProductCatalogSection({
         unitLabel: item.unit_label,
         createsHourBlockDefault: item.creates_hour_block_default,
         isActive: item.is_active,
-        minQuantity:
-          item.min_quantity != null ? String(item.min_quantity) : '',
+        minQuantity: item.min_quantity != null ? String(item.min_quantity) : '',
       })
       setDialogOpen(true)
     },
     [form]
   )
 
-  const handleToggleActive = useCallback(
-    (item: ProductCatalogItemRow) => {
-      startTransition(async () => {
-        const result = await saveProductCatalogItem({
-          id: item.id,
-          name: item.name,
-          description: item.description,
-          unitPrice: item.unit_price,
-          unitLabel: item.unit_label,
-          createsHourBlockDefault: item.creates_hour_block_default,
-          isActive: !item.is_active,
-          minQuantity: item.min_quantity,
-          sortOrder: item.sort_order,
-        })
-
-        if (result.ok) {
-          setItems(prev =>
-            prev.map(p =>
-              p.id === item.id ? { ...p, is_active: !p.is_active } : p
-            )
-          )
-        }
+  const handleToggleActive = useCallback((item: ProductCatalogItemRow) => {
+    startTransition(async () => {
+      const result = await saveProductCatalogItem({
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        unitPrice: item.unit_price,
+        unitLabel: item.unit_label,
+        createsHourBlockDefault: item.creates_hour_block_default,
+        isActive: !item.is_active,
+        minQuantity: item.min_quantity,
+        sortOrder: item.sort_order,
       })
-    },
-    []
-  )
+
+      if (result.ok) {
+        setItems(prev =>
+          prev.map(p =>
+            p.id === item.id ? { ...p, is_active: !p.is_active } : p
+          )
+        )
+      }
+    })
+  }, [])
 
   const onSubmit = useCallback(
     (values: ProductFormValues) => {
@@ -298,10 +295,10 @@ export function ProductCatalogSection({
   return (
     <section className='space-y-4'>
       <div className='flex items-center justify-between'>
-        <h2 className='text-lg font-semibold'>Product Catalog</h2>
+        <h2 className='text-lg font-semibold'>Product catalog</h2>
         <Button size='sm' onClick={openAddDialog}>
-          <Plus className='mr-1.5 h-4 w-4' />
-          Add Product
+          <Plus />
+          Add product
         </Button>
       </div>
 
@@ -314,13 +311,14 @@ export function ProductCatalogSection({
                 sort={sort}
                 defaultSort='name:asc'
                 onSortChange={setSort}
+                className='w-[36%]'
               >
                 Name
               </SortableTableHead>
-              <TableHead className='w-[13%]'>Unit Price</TableHead>
-              <TableHead className='w-[13%]'>Unit Label</TableHead>
-              <TableHead className='w-[11%]'>Min Qty</TableHead>
-              <TableHead className='w-[13%]'>Hour Block</TableHead>
+              <TableHead className='w-[13%]'>Unit price</TableHead>
+              <TableHead className='w-[13%]'>Unit label</TableHead>
+              <TableHead className='w-[11%]'>Min qty</TableHead>
+              <TableHead className='w-[13%]'>Hour block</TableHead>
               <TableHead className='w-[11%]'>Active</TableHead>
               <TableHead className='w-10' />
             </TableRow>
@@ -328,12 +326,8 @@ export function ProductCatalogSection({
           <TableBody>
             {sortedItems.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={7}
-                  className='text-muted-foreground py-8 text-center'
-                >
-                  No products yet. Click &ldquo;Add Product&rdquo; to get
-                  started.
+                <TableCell colSpan={7} className='p-4'>
+                  <EmptyState message='No products yet.' />
                 </TableCell>
               </TableRow>
             ) : (
@@ -356,7 +350,7 @@ export function ProductCatalogSection({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingItem ? 'Edit Product' : 'Add Product'}
+              {editingItem ? 'Edit product' : 'Add product'}
             </DialogTitle>
             <DialogDescription>
               {editingItem
@@ -369,13 +363,15 @@ export function ProductCatalogSection({
             <div className='flex items-center gap-3'>
               <Switch
                 id='product-is-active'
-                className='data-[state=checked]:bg-emerald-600'
                 checked={isActive}
                 onCheckedChange={(checked: boolean) =>
                   form.setValue('isActive', checked, { shouldDirty: true })
                 }
               />
-              <Label htmlFor='product-is-active' className='text-sm font-normal'>
+              <Label
+                htmlFor='product-is-active'
+                className='text-sm font-normal'
+              >
                 Active
               </Label>
             </div>
@@ -405,7 +401,7 @@ export function ProductCatalogSection({
 
             <div className='grid grid-cols-2 gap-4'>
               <div className='space-y-2'>
-                <Label htmlFor='product-unit-price'>Unit Price</Label>
+                <Label htmlFor='product-unit-price'>Unit price</Label>
                 <Input
                   id='product-unit-price'
                   placeholder='0.00'
@@ -418,7 +414,7 @@ export function ProductCatalogSection({
                 )}
               </div>
               <div className='space-y-2'>
-                <Label htmlFor='product-unit-label'>Unit Label</Label>
+                <Label htmlFor='product-unit-label'>Unit label</Label>
                 <Input
                   id='product-unit-label'
                   placeholder='hour'
@@ -434,7 +430,7 @@ export function ProductCatalogSection({
 
             <div className='space-y-2'>
               <Label htmlFor='product-min-quantity'>
-                Min Quantity (optional)
+                Min quantity (optional)
               </Label>
               <Input
                 id='product-min-quantity'
@@ -449,15 +445,21 @@ export function ProductCatalogSection({
                 className='mt-0.5'
                 checked={createsHourBlockDefault}
                 onCheckedChange={(checked: boolean) =>
-                  form.setValue('createsHourBlockDefault', checked === true, { shouldDirty: true })
+                  form.setValue('createsHourBlockDefault', checked === true, {
+                    shouldDirty: true,
+                  })
                 }
               />
               <div className='space-y-1'>
-                <Label htmlFor='product-creates-hour-block' className='text-sm font-normal'>
-                  Creates Hour Block
+                <Label
+                  htmlFor='product-creates-hour-block'
+                  className='text-sm font-normal'
+                >
+                  Creates hour block
                 </Label>
                 <p className='text-muted-foreground text-xs'>
-                  Automatically creates a prepaid hour block for the client when the invoice is paid.
+                  Automatically creates a prepaid hour block for the client when
+                  the invoice is paid.
                 </p>
               </div>
             </div>

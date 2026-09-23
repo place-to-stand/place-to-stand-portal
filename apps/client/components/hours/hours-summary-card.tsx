@@ -1,3 +1,5 @@
+import { Card } from '@pts/ui/card'
+
 import { SummaryHeader } from '@/components/ui/summary-header'
 import type { ClientHoursSummary } from '@/lib/data/hours'
 
@@ -26,24 +28,27 @@ export function HoursSummaryContent({
   summary,
   showClientName = false,
 }: HoursSummaryProps) {
-  const label = showClientName ? summary.clientName : 'Hours Remaining'
+  const label = showClientName ? summary.clientName : 'Hours'
 
   if (summary.kind === 'net_30') {
     return (
       <SummaryHeader
         label={label}
-        value="Net 30"
-        suffix="billed after work is performed"
+        value='Net 30'
+        suffix='billed after work is performed'
       />
     )
   }
 
-  const { purchased, used, remaining } = summary
+  const { purchased, remaining } = summary
   const isOverage = remaining < 0
 
-  // Guard the zero-blocks case rather than dividing by it.
-  const percentUsed =
-    purchased > 0 ? Math.min(100, Math.max(0, (used / purchased) * 100)) : 0
+  // The bar shows what's left, like the figure beside it. Guard the
+  // zero-blocks case rather than dividing by it.
+  const percentRemaining =
+    purchased > 0
+      ? Math.min(100, Math.max(0, (remaining / purchased) * 100))
+      : 0
 
   return (
     <SummaryHeader
@@ -51,10 +56,10 @@ export function HoursSummaryContent({
       // Overage reads as a negative figure in destructive colour; that plus the
       // full red bar is the whole signal.
       value={formatHours(remaining)}
-      suffix={`of ${formatHours(purchased)} purchased`}
-      percent={isOverage ? 100 : percentUsed}
+      suffix={`remaining of ${formatHours(purchased)} total purchased`}
+      percent={isOverage ? 100 : percentRemaining}
       isAlert={isOverage}
-      progressLabel="Hours used"
+      progressLabel='Hours remaining'
     />
   )
 }
@@ -62,8 +67,8 @@ export function HoursSummaryContent({
 /** Standalone card form, used on /hours. Not a link — hours is a readout. */
 export function HoursSummaryCard(props: HoursSummaryProps) {
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-card">
+    <Card className='gap-0 overflow-hidden py-0'>
       <HoursSummaryContent {...props} />
-    </div>
+    </Card>
   )
 }

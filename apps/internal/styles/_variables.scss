@@ -161,14 +161,10 @@
   --tt-destructive-contrast: 8%;
   --tt-foreground-contrast: 8%;
 
-  &,
-  *,
-  ::before,
-  ::after {
-    box-sizing: border-box;
-    transition: none var(--tt-transition-duration-default)
-      var(--tt-transition-easing-default);
-  }
+  /* No global transition reset here. The TipTap template shipped one, but
+     this file is unlayered, so it beat every Tailwind transition utility
+     app-wide. TipTap components set their own transitions, and the Tailwind
+     preflight already applies border-box sizing. */
 }
 
 :root {

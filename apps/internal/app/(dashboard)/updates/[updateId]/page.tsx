@@ -50,8 +50,8 @@ export async function generateMetadata({
 
   return {
     title: update
-      ? `${update.subject} | Updates | Place to Stand Portal`
-      : 'Update Not Found | Place to Stand Portal',
+      ? `${update.subject} | Updates`
+      : 'Update not found',
   }
 }
 

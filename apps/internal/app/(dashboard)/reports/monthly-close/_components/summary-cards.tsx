@@ -164,7 +164,7 @@ export function BillingInCard({
 }: BillingInCardProps) {
   return (
     <RollupCard
-      label='Billing In'
+      label='Billing in'
       icon={TrendingUp}
       total={total}
       caption='Cash collected this month — prepaid invoices plus net 30 hours logged.'
@@ -245,7 +245,7 @@ export function TotalPayoutsCard({
 
   return (
     <RollupCard
-      label='Billing Distribution'
+      label='Billing distribution'
       icon={Wallet}
       total={total}
       caption='How billing is distributed — Payroll + Origination + Closer + House (est.).'
@@ -269,7 +269,7 @@ export function HoursLoggedCard({ hours }: HoursLoggedCardProps) {
           <Briefcase className='text-muted-foreground h-5 w-5 shrink-0' />
           <div className='min-w-0 space-y-1.5'>
             <h3 className='text-xl leading-none font-semibold tracking-tight'>
-              Total Hours Logged
+              Total hours logged
             </h3>
             <p className='text-foreground/60 text-xs leading-snug'>
               Hours logged on client projects this month.

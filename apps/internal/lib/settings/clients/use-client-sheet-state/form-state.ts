@@ -47,22 +47,31 @@ export function useClientSheetFormState({
 }: ClientSheetFormStateArgs): BaseFormState {
   // Contact state
   const [isContactPickerOpen, setIsContactPickerOpen] = useState(false)
-  const [fetchedAllContacts, setFetchedAllContacts] = useState<ClientContactOption[]>([])
-  const [fetchedAllAdminUsers, setFetchedAllAdminUsers] = useState<PartnerUserOption[]>([])
-  const [selectedContacts, setSelectedContacts] = useState<ClientContactOption[]>([])
-  const [initialContacts, setInitialContacts] = useState<ClientContactOption[]>([])
+  const [fetchedAllContacts, setFetchedAllContacts] = useState<
+    ClientContactOption[]
+  >([])
+  const [fetchedAllAdminUsers, setFetchedAllAdminUsers] = useState<
+    PartnerUserOption[]
+  >([])
+  const [selectedContacts, setSelectedContacts] = useState<
+    ClientContactOption[]
+  >([])
+  const [initialContacts, setInitialContacts] = useState<ClientContactOption[]>(
+    []
+  )
   const [isLoadingContacts, setIsLoadingContacts] = useState(false)
   // Contacts created from inside the picker this session — the fetched list
   // predates them, so they're merged in to stay re-selectable after removal.
-  const [createdContacts, setCreatedContacts] = useState<ClientContactOption[]>([])
+  const [createdContacts, setCreatedContacts] = useState<ClientContactOption[]>(
+    []
+  )
   const { openNew } = useSheetParams()
 
   // Origination state — defaults to 'internal' for new clients; existing
   // clients with an external contact set get flipped to 'external' in the
   // open effect below.
-  const [originationMode, setOriginationMode] = useState<OriginationMode>(
-    'internal'
-  )
+  const [originationMode, setOriginationMode] =
+    useState<OriginationMode>('internal')
   const [isOriginationUserPickerOpen, setIsOriginationUserPickerOpen] =
     useState(false)
   const [isOriginationContactPickerOpen, setIsOriginationContactPickerOpen] =
@@ -79,9 +88,8 @@ export function useClientSheetFormState({
 
   // Closer state
   const [isCloserPickerOpen, setIsCloserPickerOpen] = useState(false)
-  const [selectedCloser, setSelectedCloser] = useState<PartnerUserOption | null>(
-    null
-  )
+  const [selectedCloser, setSelectedCloser] =
+    useState<PartnerUserOption | null>(null)
   const [initialCloserUserId, setInitialCloserUserId] = useState<string | null>(
     null
   )
@@ -340,10 +348,7 @@ export function useClientSheetFormState({
           setIsLoadingContacts(false)
         })
     } else {
-      hydrateSelectionsFromData(
-        allContactsProp ?? [],
-        allAdminUsersProp ?? []
-      )
+      hydrateSelectionsFromData(allContactsProp ?? [], allAdminUsersProp ?? [])
     }
   }, [
     open,
@@ -410,19 +415,16 @@ export function useClientSheetFormState({
   }, [open, handleAddContact])
 
   // Origination handlers
-  const handleOriginationModeChange = useCallback(
-    (mode: OriginationMode) => {
-      setOriginationMode(mode)
-      setOriginationError(null)
-      // Switching modes clears the opposite side to enforce mutex in UI
-      if (mode === 'internal') {
-        setSelectedOriginationContact(null)
-      } else {
-        setSelectedOriginationUser(null)
-      }
-    },
-    []
-  )
+  const handleOriginationModeChange = useCallback((mode: OriginationMode) => {
+    setOriginationMode(mode)
+    setOriginationError(null)
+    // Switching modes clears the opposite side to enforce mutex in UI
+    if (mode === 'internal') {
+      setSelectedOriginationContact(null)
+    } else {
+      setSelectedOriginationUser(null)
+    }
+  }, [])
 
   const handleOriginationUserPickerOpenChange = useCallback(
     (next: boolean) => {
@@ -446,15 +448,12 @@ export function useClientSheetFormState({
     [originationPickerDisabled]
   )
 
-  const handleSelectOriginationUser = useCallback(
-    (user: PartnerUserOption) => {
-      setSelectedOriginationUser(user)
-      setSelectedOriginationContact(null)
-      setIsOriginationUserPickerOpen(false)
-      setOriginationError(null)
-    },
-    []
-  )
+  const handleSelectOriginationUser = useCallback((user: PartnerUserOption) => {
+    setSelectedOriginationUser(user)
+    setSelectedOriginationContact(null)
+    setIsOriginationUserPickerOpen(false)
+    setOriginationError(null)
+  }, [])
 
   const handleSelectOriginationContact = useCallback(
     (contact: OriginationContactOption) => {
@@ -577,13 +576,17 @@ export function useClientSheetFormState({
           const clientIdForContacts = payload.id ?? result.clientId
           if (clientIdForContacts && contactsDirty) {
             const contactIds = selectedContacts.map(c => c.id)
-            const syncResult = await syncClientContacts(clientIdForContacts, contactIds)
+            const syncResult = await syncClientContacts(
+              clientIdForContacts,
+              contactIds
+            )
 
             if (!syncResult.ok) {
-              setFeedback(syncResult.error ?? 'Failed to update contact links.')
+              setFeedback(syncResult.error ?? 'Unable to update contact links.')
               toast({
-                title: 'Warning',
-                description: 'Client saved but contact links could not be updated.',
+                title: 'Unable to update contact links',
+                description:
+                  'The client was saved, but its contact links were not.',
                 variant: 'destructive',
               })
               // Still complete since the client was saved

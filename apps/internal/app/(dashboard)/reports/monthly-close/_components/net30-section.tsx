@@ -20,7 +20,7 @@ export function Net30Section({ data }: Net30SectionProps) {
       compact
       icon={Building2}
       iconTone='sky'
-      title='Net 30 Billing'
+      title='Net 30 billing'
       description={`Hours logged on net 30 clients × $${data.hourlyRate}/hr — what we'll invoice this month.`}
       total={formatCurrency(data.totalAmount)}
     >

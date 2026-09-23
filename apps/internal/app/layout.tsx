@@ -27,8 +27,11 @@ const spaceGrotesk = Space_Grotesk({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_BASE_URL || 'http://localhost:3000'),
-  title: 'Place to Stand Portal',
-  description: 'Client and project management for Place to Stand Agency.',
+  title: {
+    default: 'Place To Stand Portal',
+    template: '%s | Place To Stand Portal',
+  },
+  description: 'Client and project management for Place To Stand.',
 }
 
 export default async function RootLayout({

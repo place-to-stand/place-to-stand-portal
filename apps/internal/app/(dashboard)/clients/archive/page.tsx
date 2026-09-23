@@ -19,7 +19,7 @@ type ClientsArchivePageProps = {
 }
 
 export const metadata: Metadata = {
-  title: 'Client Archive | Place to Stand Portal',
+  title: 'Client archive',
 }
 
 export default async function ClientsArchivePage({

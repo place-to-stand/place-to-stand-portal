@@ -1,7 +1,7 @@
 /**
  * Entity accent colors — the object-identity color system documented in
- * docs/design-system.md. Class strings are written out literally (never
- * interpolated) so Tailwind's scanner can see them.
+ * docs/design-system/components/sheet.md. Class strings are written out
+ * literally (never interpolated) so Tailwind's scanner can see them.
  */
 
 export type AccentEntity =
@@ -15,6 +15,7 @@ export type AccentEntity =
   | 'hourBlock'
   | 'user'
   | 'submission'
+  | 'template'
 
 type EntityAccent = {
   /** 2px bottom border used by sheet form headers. */
@@ -75,5 +76,11 @@ export const ENTITY_ACCENTS: Record<AccentEntity, EntityAccent> = {
     sheetHeader: 'border-b-2 border-b-pink-500/60',
     card: 'border-pink-500/35 hover:border-pink-500/60 hover:bg-pink-500/5 hover:shadow-md',
     cardStatic: 'border-pink-500/35',
+  },
+  // Read-only catalog entries (Settings → Templates), so deliberately neutral.
+  template: {
+    sheetHeader: 'border-b-2 border-b-slate-500/60',
+    card: 'border-slate-500/35 hover:border-slate-500/60 hover:bg-slate-500/5 hover:shadow-md',
+    cardStatic: 'border-slate-500/35',
   },
 }

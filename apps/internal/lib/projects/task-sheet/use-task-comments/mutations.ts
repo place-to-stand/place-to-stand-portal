@@ -133,7 +133,11 @@ export function useCreateTaskCommentMutation({
         // Equal to created_at so the row doesn't render an "Edited" marker.
         updated_at: now,
         deleted_at: null,
-        author: resolveOptimisticAuthor(previous, currentUserId, currentUserName),
+        author: resolveOptimisticAuthor(
+          previous,
+          currentUserId,
+          currentUserName
+        ),
       }
 
       queryClient.setQueryData<CommentsCache>(queryKey, {
@@ -169,7 +173,7 @@ export function useCreateTaskCommentMutation({
       onRollback?.(body)
 
       toast({
-        title: 'Could not add comment',
+        title: 'Unable to add comment',
         description:
           'Please try again. If the issue continues contact support.',
         variant: 'destructive',
@@ -219,7 +223,7 @@ export function useUpdateTaskCommentMutation({
     onError: error => {
       console.error('Failed to update comment', error)
       toast({
-        title: 'Could not update comment',
+        title: 'Unable to update comment',
         description:
           'Please try again. If the issue continues contact support.',
         variant: 'destructive',
@@ -262,7 +266,7 @@ export function useDeleteTaskCommentMutation({
     onError: error => {
       console.error('Failed to delete comment', error)
       toast({
-        title: 'Could not delete comment',
+        title: 'Unable to delete comment',
         description:
           'Please try again. If the issue continues contact support.',
         variant: 'destructive',
@@ -271,7 +275,10 @@ export function useDeleteTaskCommentMutation({
   })
 }
 
-async function ensureOk(response: Response, fallbackMessage: string): Promise<void> {
+async function ensureOk(
+  response: Response,
+  fallbackMessage: string
+): Promise<void> {
   if (response.ok) {
     return
   }

@@ -15,10 +15,7 @@ import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { prefetchSheetInit } from '@/lib/sheets/wrappers/use-sheet-init'
 import { cn } from '@/lib/utils'
 import { ProjectsBoardEmpty } from '../projects-board-empty'
-import {
-  NO_SELECTION_DESCRIPTION,
-  NO_SELECTION_TITLE,
-} from './projects-board-tabs.constants'
+import { NO_SELECTION_MESSAGE } from './projects-board-tabs.constants'
 import type { ProjectsBoardActiveProject } from './board-tab-content'
 
 export type OverviewTabContentProps = {
@@ -39,10 +36,7 @@ export function OverviewTabContent(props: OverviewTabContentProps) {
       className='flex min-h-0 flex-1 flex-col gap-4 pb-8 sm:gap-6'
     >
       {!activeProject ? (
-        <ProjectsBoardEmpty
-          title={NO_SELECTION_TITLE}
-          description={NO_SELECTION_DESCRIPTION}
-        />
+        <ProjectsBoardEmpty message={NO_SELECTION_MESSAGE} />
       ) : (
         <div className='grid gap-4 lg:grid-cols-2'>
           <div className='space-y-4'>
@@ -100,13 +94,11 @@ function ProjectDetailsWidget({
         <div className='flex h-7 w-7 items-center justify-center rounded-md bg-emerald-500/10'>
           <Info className='h-4 w-4 text-emerald-500' />
         </div>
-        <h2 className='font-semibold'>Project Details</h2>
+        <h2 className='font-semibold'>Project details</h2>
       </div>
       <div className='divide-y'>
         <DetailRow label='Name' value={project.name} />
-        {project.slug && (
-          <DetailRow label='Slug' value={project.slug} mono />
-        )}
+        {project.slug && <DetailRow label='Slug' value={project.slug} mono />}
         <div className='flex items-center gap-3 px-4 py-2.5'>
           <span className='text-muted-foreground text-sm'>Status</span>
           <Badge className={cn('ml-auto text-[10px]', statusToken)}>
@@ -129,7 +121,9 @@ function ProjectDetailsWidget({
               </Link>
               {project.client.billing_type && (
                 <Badge variant='outline' className='text-[10px] font-medium'>
-                  {project.client.billing_type === 'net_30' ? 'Net 30' : 'Prepaid'}
+                  {project.client.billing_type === 'net_30'
+                    ? 'Net 30'
+                    : 'Prepaid'}
                 </Badge>
               )}
             </div>
@@ -141,18 +135,18 @@ function ProjectDetailsWidget({
             {owner ? (
               <button
                 type='button'
-                className='group flex cursor-pointer items-center gap-2'
+                className='group focus-visible:border-ring focus-visible:ring-ring/50 flex cursor-pointer items-center gap-2 rounded-md outline-none focus-visible:ring-[3px]'
                 onPointerEnter={() => prefetchSheetInit('user', owner.id)}
                 onClick={() => open('user', owner.id)}
               >
-                <Avatar className='h-6 w-6'>
+                <Avatar size='sm'>
                   {owner.avatar_url && (
                     <AvatarImage
                       src={`/api/storage/user-avatar/${owner.id}`}
                       alt={owner.full_name ?? 'Owner'}
                     />
                   )}
-                  <AvatarFallback className='text-[10px]'>
+                  <AvatarFallback>
                     {getInitials(owner.full_name)}
                   </AvatarFallback>
                 </Avatar>
@@ -259,4 +253,3 @@ function DetailRow({
     </div>
   )
 }
-

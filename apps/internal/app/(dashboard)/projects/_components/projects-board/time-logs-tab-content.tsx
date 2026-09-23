@@ -3,10 +3,7 @@
 import { TabsContent } from '@pts/ui/tabs'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { ProjectsBoardEmpty } from '../projects-board-empty'
-import {
-  NO_SELECTION_DESCRIPTION,
-  NO_SELECTION_TITLE,
-} from './projects-board-tabs.constants'
+import { NO_SELECTION_MESSAGE } from './projects-board-tabs.constants'
 import type { ProjectsBoardActiveProject } from './board-tab-content'
 import { ProjectTimeLogHistoryContent } from '../project-time-log/project-time-log-history-content'
 import { useProjectTimeLogHistory } from '@/lib/projects/time-log/use-project-time-log-history'
@@ -40,10 +37,7 @@ export function TimeLogsTabContent(props: TimeLogsTabContentProps) {
         value='timeLogs'
         className='flex min-h-0 flex-1 flex-col gap-4 sm:gap-6'
       >
-        <ProjectsBoardEmpty
-          title={NO_SELECTION_TITLE}
-          description={NO_SELECTION_DESCRIPTION}
-        />
+        <ProjectsBoardEmpty message={NO_SELECTION_MESSAGE} />
       </TabsContent>
     )
   }
@@ -81,4 +75,3 @@ export function TimeLogsTabContent(props: TimeLogsTabContentProps) {
     </TabsContent>
   )
 }
-

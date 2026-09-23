@@ -49,7 +49,6 @@ export type {
   ProjectWithClient,
 } from './project-sheet-form'
 
-
 export type UseProjectSheetStateArgs = {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -256,7 +255,7 @@ export function useProjectSheetState({
       if (failed.length > 0) {
         console.error('Failed to link some hosting projects', failed)
         toast({
-          title: 'Some hosting links were not saved',
+          title: 'Unable to link some hosting projects',
           description: 'Open the project again to retry linking them.',
           variant: 'destructive',
         })
@@ -282,7 +281,7 @@ export function useProjectSheetState({
       if (results.some(result => result.status === 'rejected')) {
         console.error('Failed to unlink some hosting projects')
         toast({
-          title: 'Some hosting links were not removed',
+          title: 'Unable to unlink some hosting projects',
           description: 'Open the project again to retry removing them.',
           variant: 'destructive',
         })
@@ -508,15 +507,7 @@ export function useProjectSheetState({
         })
       }
     })
-  }, [
-    form,
-    isPending,
-    onComplete,
-    onOpenChange,
-    project,
-    startSave,
-    toast,
-  ])
+  }, [form, isPending, onComplete, onOpenChange, project, startSave, toast])
 
   const submitButton = useMemo(
     () =>

@@ -9,7 +9,7 @@ import { LEADS_TABS } from '../_lib/tabs'
 import { LeadsActivitySection } from '../_components/leads-activity-section'
 
 export const metadata: Metadata = {
-  title: 'Lead Activity | Place to Stand Portal',
+  title: 'Lead activity',
 }
 
 export default async function LeadsActivityPage() {

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { ChevronDown, ListTodo, Plus } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { EmptyState } from '@pts/ui/empty-state'
 import {
   Collapsible,
   CollapsibleContent,
@@ -143,9 +144,7 @@ export function LeadTasksSection({
           <Skeleton className='h-24 w-full' />
         </div>
       ) : tasks.length === 0 ? (
-        <p className='text-muted-foreground text-sm'>
-          No tasks linked to this lead yet.
-        </p>
+        <EmptyState message='No tasks linked to this lead yet.' />
       ) : (
         <div className='space-y-2'>
           {activeTasks.length > 0 && (

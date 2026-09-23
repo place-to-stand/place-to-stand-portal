@@ -28,7 +28,7 @@ import {
 } from '@/lib/projects/tasks/done-window'
 
 export const metadata: Metadata = {
-  title: 'My Tasks | Place to Stand Portal',
+  title: 'My tasks',
 }
 
 type PageParams = {

@@ -143,7 +143,7 @@ export function useProjectsBoardReviewActions({
         'unaccept',
         taskId,
         () => unacceptTask({ taskId }),
-        { title: 'Task reopened for client review.' },
+        { title: 'Task reopened for client review' },
         'Unable to unaccept task'
       )
     },
