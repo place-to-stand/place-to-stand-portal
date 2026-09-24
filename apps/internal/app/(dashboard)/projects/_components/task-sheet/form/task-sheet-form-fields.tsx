@@ -7,7 +7,7 @@ import {
   FormControl,
   FormMessage,
 } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
+import { Input } from '@pts/ui/input'
 import {
   SearchableCombobox,
   type SearchableComboboxGroup,
@@ -112,13 +112,14 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
                 <DisabledFieldTooltip disabled={disabled} reason={reason}>
                   <Input
                     {...field}
-                    ref={(node) => {
+                    ref={node => {
                       firstFieldRef.current = node
                       if (typeof field.ref === 'function') {
                         field.ref(node)
                       } else if (field.ref) {
-                        ;(field.ref as React.MutableRefObject<HTMLInputElement | null>).current =
-                          node
+                        ;(
+                          field.ref as React.MutableRefObject<HTMLInputElement | null>
+                        ).current = node
                       }
                     }}
                     disabled={disabled}
@@ -228,7 +229,7 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
                       </SelectTrigger>
                     </DisabledFieldTooltip>
                   </FormControl>
-                  <SelectContent align='start'>
+                  <SelectContent>
                     {taskStatuses.map(status => (
                       <SelectItem key={status.value} value={status.value}>
                         <Badge

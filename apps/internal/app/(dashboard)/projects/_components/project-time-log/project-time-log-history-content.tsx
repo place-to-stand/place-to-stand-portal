@@ -1,8 +1,10 @@
-import { format } from 'date-fns'
 import { Archive, Loader2, Pencil, RotateCcw } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
+import { formatCalendarDate } from '@pts/ui/dates'
+import { EmptyState } from '@pts/ui/empty-state'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
   Table,
@@ -20,18 +22,6 @@ const HOURS_FORMATTER = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2,
   minimumFractionDigits: 0,
 })
-
-const resolveLoggedOnDate = (value: string | null) => {
-  if (!value) {
-    return null
-  }
-
-  if (value.includes('T')) {
-    return new Date(value)
-  }
-
-  return new Date(`${value}T00:00:00`)
-}
 
 type ProjectTimeLogHistoryContentProps = {
   state: ProjectTimeLogHistoryState
@@ -87,9 +77,7 @@ export function ProjectTimeLogHistoryContent(
           </Button>
         </div>
       ) : logs.length === 0 ? (
-        <div className='text-muted-foreground rounded-md border border-dashed px-4 py-6 text-center text-sm'>
-          No time entries logged for this project yet.
-        </div>
+        <EmptyState message='No time logged for this project yet.' />
       ) : (
         <div className='overflow-hidden rounded-lg border'>
           <Table>
@@ -147,10 +135,7 @@ function ProjectTimeLogHistoryRow(props: ProjectTimeLogHistoryRowProps) {
     props
 
   const authorName = log.user?.full_name ?? log.user?.email ?? 'Unknown user'
-  const loggedOnDate = resolveLoggedOnDate(log.logged_on)
-  const loggedDate = loggedOnDate
-    ? format(loggedOnDate, 'MMM d, yyyy')
-    : 'Unknown date'
+  const loggedDate = formatCalendarDate(log.logged_on) ?? 'Unknown date'
   const deleteDisabled = isDeleting
   const deleteReason = deleteDisabled ? 'Removing entry...' : null
 
@@ -212,40 +197,33 @@ function ProjectTimeLogHistoryRow(props: ProjectTimeLogHistoryRowProps) {
       </TableCell>
       <TableCell className='text-right'>
         <div className='flex justify-end gap-2'>
-          <Button
+          <RowActionButton
             type='button'
+            label='Edit time entry'
+            icon={<Pencil />}
             variant='outline'
-            size='icon'
-            className='h-8 w-8 rounded-md'
             onClick={() => onEditRequest(log)}
-            aria-label='Edit time entry'
-          >
-            <Pencil className='size-4' />
-          </Button>
-          <DisabledFieldTooltip
-            disabled={deleteDisabled}
-            reason={deleteReason}
-          >
-            <Button
+          />
+          <DisabledFieldTooltip disabled={deleteDisabled} reason={deleteReason}>
+            <RowActionButton
               type='button'
+              label='Delete time entry'
               variant='destructive'
-              size='icon'
               className={cn(
-                'h-8 w-8 rounded-md',
                 isDeleting && pendingDeleteId === log.id
                   ? 'pointer-events-none'
                   : undefined
               )}
               onClick={() => onDeleteRequest(log)}
               disabled={deleteDisabled}
-              aria-label='Delete time entry'
-            >
-              {isDeleting && pendingDeleteId === log.id ? (
-                <Loader2 className='size-4 animate-spin' />
-              ) : (
-                <Archive className='size-4' />
-              )}
-            </Button>
+              icon={
+                isDeleting && pendingDeleteId === log.id ? (
+                  <Loader2 className='animate-spin' />
+                ) : (
+                  <Archive />
+                )
+              }
+            />
           </DisabledFieldTooltip>
         </div>
       </TableCell>

@@ -7,8 +7,8 @@ import type { AssignedTaskSummary } from '@/lib/data/tasks'
 import { cn } from '@/lib/utils'
 import { useMyTasksWidgetState } from '@/lib/projects/tasks/use-my-tasks-widget-state'
 import { Button } from '@pts/ui/button'
+import { EmptyState } from '@pts/ui/empty-state'
 
-import { EmptyState } from './empty-state'
 import { TaskList } from './task-list'
 
 type MyTasksWidgetProps = {
@@ -45,7 +45,7 @@ export function MyTasksWidget({
       <header className='flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5'>
         <div className='min-w-0 flex-1'>
           <h2 id='my-tasks-heading' className='text-sm font-semibold'>
-            My Tasks
+            My tasks
           </h2>
         </div>
         <div className='flex items-center gap-2'>
@@ -69,7 +69,9 @@ export function MyTasksWidget({
             error={error}
           />
         ) : (
-          <EmptyState />
+          <div className='p-4'>
+            <EmptyState message='No tasks assigned to you yet.' />
+          </div>
         )}
       </div>
     </section>

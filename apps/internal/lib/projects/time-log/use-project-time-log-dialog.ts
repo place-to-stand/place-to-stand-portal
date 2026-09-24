@@ -416,7 +416,7 @@ export function useProjectTimeLogDialog(
       console.error('Failed to delete time log', error)
       setIsDeleteConfirmOpen(false)
       toast({
-        title: 'Could not delete time log',
+        title: 'Unable to delete time log',
         description: 'Please try again. If the issue persists contact support.',
         variant: 'destructive',
       })
@@ -426,10 +426,7 @@ export function useProjectTimeLogDialog(
   const isMutating = timeLogMutation.isPending || deleteMutation.isPending
 
   const disableSubmit =
-    isMutating ||
-    !hoursInput.trim() ||
-    !loggedOnInput.trim() ||
-    !selectedUserId
+    isMutating || !hoursInput.trim() || !loggedOnInput.trim() || !selectedUserId
 
   const taskPickerButtonDisabled = isMutating || availableTasks.length === 0
 

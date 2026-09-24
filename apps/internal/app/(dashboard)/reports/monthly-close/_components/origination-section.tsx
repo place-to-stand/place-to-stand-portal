@@ -1,11 +1,9 @@
 import { Handshake, LinkIcon } from 'lucide-react'
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from '@pts/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Badge } from '@pts/ui/badge'
+import { BADGE_TINTS } from '@pts/ui/badge-tints'
+import { cn } from '@/lib/utils'
 import type { OriginationData } from '@/lib/data/reports/types'
 
 import {
@@ -48,16 +46,16 @@ export function OriginationSection({ data }: OriginationSectionProps) {
                 ? `/api/storage/user-avatar/${row.originatorId}?v=${encodeURIComponent(row.originatorUpdatedAt)}`
                 : null
             const leading = isInternal ? (
-              <Avatar className='h-7 w-7'>
+              <Avatar size='md'>
                 {avatarSrc ? (
                   <AvatarImage src={avatarSrc} alt={row.originatorName} />
                 ) : null}
-                <AvatarFallback className='text-[10px]'>
+                <AvatarFallback>
                   {getInitials(row.originatorName)}
                 </AvatarFallback>
               </Avatar>
             ) : (
-              <div className='flex h-7 w-7 items-center justify-center rounded-full border border-dashed'>
+              <div className='flex size-8 items-center justify-center rounded-full border border-dashed'>
                 <LinkIcon className='text-muted-foreground h-3 w-3' />
               </div>
             )
@@ -67,7 +65,10 @@ export function OriginationSection({ data }: OriginationSectionProps) {
                 {!isInternal ? (
                   <Badge
                     variant='outline'
-                    className='border-sky-500/40 bg-sky-500/10 px-1.5 py-0 text-[9px] leading-tight text-sky-700 dark:text-sky-300'
+                    className={cn(
+                      BADGE_TINTS.sky,
+                      'px-1.5 py-0 text-[10px] leading-tight'
+                    )}
                   >
                     External
                   </Badge>

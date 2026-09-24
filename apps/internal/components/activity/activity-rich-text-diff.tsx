@@ -4,6 +4,12 @@ import { useMemo, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@pts/ui/collapsible'
+
+import {
   diffWords,
   htmlToPlainText,
   type DiffSegment,
@@ -33,12 +39,32 @@ export function ActivityRichTextDiff({
     const afterText = normalise(after, isHtml)
 
     if (!beforeText && !afterText) return null
-    if (!beforeText) return { mode: 'added' as const, beforeText, afterText, segments: null, counts: null }
-    if (!afterText) return { mode: 'cleared' as const, beforeText, afterText, segments: null, counts: null }
+    if (!beforeText)
+      return {
+        mode: 'added' as const,
+        beforeText,
+        afterText,
+        segments: null,
+        counts: null,
+      }
+    if (!afterText)
+      return {
+        mode: 'cleared' as const,
+        beforeText,
+        afterText,
+        segments: null,
+        counts: null,
+      }
     // Same words, different markup (a list became a paragraph, a stray space
     // went away): there is nothing to diff, so say so instead of "Edited".
     if (beforeText === afterText) {
-      return { mode: 'formatting' as const, beforeText, afterText, segments: null, counts: null }
+      return {
+        mode: 'formatting' as const,
+        beforeText,
+        afterText,
+        segments: null,
+        counts: null,
+      }
     }
 
     const segments = diffWords(beforeText, afterText)
@@ -65,16 +91,11 @@ export function ActivityRichTextDiff({
           : 'Edited'
 
   return (
-    <div className='min-w-0'>
-      <button
-        type='button'
-        onClick={() => setOpen(current => !current)}
-        aria-expanded={open}
-        className='text-foreground hover:text-primary inline-flex h-5 items-center gap-1 leading-5 font-medium'
-      >
+    <Collapsible open={open} onOpenChange={setOpen} className='min-w-0'>
+      <CollapsibleTrigger className='text-foreground hover:text-primary focus-visible:ring-ring/50 inline-flex h-5 cursor-pointer items-center gap-1 rounded-sm leading-5 font-medium outline-none focus-visible:ring-[3px]'>
         <ChevronDown
           className={cn(
-            'text-muted-foreground h-3 w-3 transition-transform',
+            'text-muted-foreground size-3 transition-transform motion-reduce:transition-none',
             open && 'rotate-180'
           )}
           aria-hidden='true'
@@ -83,15 +104,11 @@ export function ActivityRichTextDiff({
         {model.counts ? (
           <span className='text-muted-foreground ml-1 font-normal'>
             {model.counts.added > 0 ? (
-              <span className='text-emerald-700 dark:text-emerald-300'>
-                +{model.counts.added}
-              </span>
+              <span className='text-success'>+{model.counts.added}</span>
             ) : null}
             {model.counts.added > 0 && model.counts.removed > 0 ? ' ' : null}
             {model.counts.removed > 0 ? (
-              <span className='text-rose-700 dark:text-rose-300'>
-                −{model.counts.removed}
-              </span>
+              <span className='text-destructive'>−{model.counts.removed}</span>
             ) : null}
             {model.counts.added > 0 || model.counts.removed > 0
               ? ' words'
@@ -99,27 +116,18 @@ export function ActivityRichTextDiff({
           </span>
         ) : null}
         <span className='sr-only'>{open ? 'Hide' : 'Show'} change</span>
-      </button>
+      </CollapsibleTrigger>
 
-      {/* Grid-row transition animates height without measuring; content stays
-          mounted so the panel slides rather than pops. */}
-      <div
-        className={cn(
-          'grid transition-[grid-template-rows,opacity] duration-200 ease-out',
-          open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
-        )}
-        aria-hidden={!open}
-      >
-        <div className='min-h-0 overflow-hidden'>
-        <div className='bg-muted/30 mt-1.5 max-h-72 overflow-y-auto rounded-md border p-2.5 text-[12px] leading-relaxed whitespace-pre-wrap'>
+      {/* Base UI measures the panel into --collapsible-panel-height and marks
+          the open/close frames, so height can transition from and to zero. */}
+      <CollapsibleContent className='h-(--collapsible-panel-height) overflow-hidden transition-[height] duration-200 ease-out data-ending-style:h-0 data-starting-style:h-0 motion-reduce:transition-none'>
+        <div className='bg-muted/30 mt-1.5 max-h-72 overflow-y-auto rounded-md border p-2.5 text-xs leading-relaxed whitespace-pre-wrap'>
           {model.mode === 'added' ? (
-            <p className='rounded-sm bg-emerald-500/10 px-1 text-emerald-900 dark:text-emerald-100'>
-              {model.afterText}
-            </p>
+            <p className='bg-success/10 rounded-sm px-1'>{model.afterText}</p>
           ) : model.mode === 'formatting' ? (
             <p className='text-muted-foreground'>{model.afterText}</p>
           ) : model.mode === 'cleared' ? (
-            <p className='rounded-sm bg-rose-500/10 px-1 text-rose-900 line-through dark:text-rose-100'>
+            <p className='bg-destructive/10 rounded-sm px-1 line-through'>
               {model.beforeText}
             </p>
           ) : model.segments ? (
@@ -128,9 +136,8 @@ export function ActivityRichTextDiff({
             <SideBySide before={model.beforeText} after={model.afterText} />
           )}
         </div>
-        </div>
-      </div>
-    </div>
+      </CollapsibleContent>
+    </Collapsible>
   )
 }
 
@@ -148,8 +155,8 @@ function DiffText({ segments }: { segments: DiffSegment[] }) {
             className={cn(
               'rounded-sm px-0.5',
               segment.type === 'added'
-                ? 'bg-emerald-500/15 text-emerald-900 dark:text-emerald-100'
-                : 'bg-rose-500/15 text-rose-900 line-through dark:text-rose-100'
+                ? 'bg-success/15 text-foreground'
+                : 'bg-destructive/15 text-foreground line-through'
             )}
           >
             {segment.text}
@@ -164,13 +171,13 @@ function SideBySide({ before, after }: { before: string; after: string }) {
   return (
     <div className='grid gap-2 sm:grid-cols-2'>
       <div>
-        <p className='text-muted-foreground mb-1 text-[10px] font-semibold tracking-wide uppercase'>
+        <p className='text-muted-foreground mb-1 text-[11px] font-semibold tracking-wide uppercase'>
           Before
         </p>
         <p className='text-muted-foreground'>{before}</p>
       </div>
       <div>
-        <p className='text-muted-foreground mb-1 text-[10px] font-semibold tracking-wide uppercase'>
+        <p className='text-muted-foreground mb-1 text-[11px] font-semibold tracking-wide uppercase'>
           After
         </p>
         <p>{after}</p>
@@ -184,7 +191,10 @@ function normalise(value: string | null, isHtml: boolean): string {
   return (isHtml ? htmlToPlainText(value) : value).trim()
 }
 
-function countWords(segments: DiffSegment[]): { added: number; removed: number } {
+function countWords(segments: DiffSegment[]): {
+  added: number
+  removed: number
+} {
   let added = 0
   let removed = 0
 

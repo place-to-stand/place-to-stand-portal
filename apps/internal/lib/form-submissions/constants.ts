@@ -1,4 +1,5 @@
 import { formSubmissionKind, formSubmissionStatus } from '@/lib/db/schema'
+import { BADGE_TINTS } from '@pts/ui/badge-tints'
 
 import type { AttributionChannel } from './attribution'
 
@@ -18,7 +19,7 @@ export const FORM_SUBMISSION_STATUS_LABELS: Record<
   FormSubmissionStatus,
   string
 > = {
-  in_progress: 'In Progress',
+  in_progress: 'In progress',
   abandoned: 'Abandoned',
   completed: 'Completed',
   captured: 'Captured',
@@ -28,37 +29,26 @@ export const FORM_SUBMISSION_STATUS_TOKENS: Record<
   FormSubmissionStatus,
   string
 > = {
-  in_progress:
-    'border-transparent bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200',
-  abandoned:
-    'border-transparent bg-slate-200 text-slate-700 dark:bg-slate-700/60 dark:text-slate-200',
-  completed:
-    'border-transparent bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200',
-  captured:
-    'border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200',
+  in_progress: BADGE_TINTS.sky,
+  abandoned: BADGE_TINTS.neutral,
+  completed: BADGE_TINTS.violet,
+  captured: BADGE_TINTS.emerald,
 }
 
 /** Source column badges (PRD 008 §7). Always paired with the text label. */
 export const ATTRIBUTION_CHANNEL_TOKENS: Record<AttributionChannel, string> = {
-  paid: 'border-transparent bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200',
-  organic:
-    'border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200',
-  referral:
-    'border-transparent bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200',
-  social:
-    'border-transparent bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200',
-  email:
-    'border-transparent bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200',
-  campaign:
-    'border-transparent bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-200',
+  paid: BADGE_TINTS.rose,
+  organic: BADGE_TINTS.emerald,
+  referral: BADGE_TINTS.sky,
+  social: BADGE_TINTS.violet,
+  email: BADGE_TINTS.amber,
+  campaign: BADGE_TINTS.indigo,
   direct: 'text-muted-foreground',
 }
 
 export const FORM_SUBMISSION_KIND_TOKENS: Record<FormSubmissionKind, string> = {
-  audit:
-    'border-transparent bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-200',
-  contact:
-    'border-transparent bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200',
+  audit: BADGE_TINTS.indigo,
+  contact: BADGE_TINTS.amber,
 }
 
 /**

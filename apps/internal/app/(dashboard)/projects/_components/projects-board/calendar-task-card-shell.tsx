@@ -47,10 +47,7 @@ export const CalendarTaskCardShell = forwardRef<
           ? 'cursor-grab active:cursor-grabbing'
           : 'cursor-pointer',
         (isActive || isDragging) && 'border-primary/50 bg-primary/5 shadow-md',
-        !isActive &&
-          !isDragging &&
-          !isCompleted &&
-          ENTITY_ACCENTS.task.card,
+        !isActive && !isDragging && !isCompleted && ENTITY_ACCENTS.task.card,
         !isActive &&
           !isDragging &&
           isCompleted &&
@@ -69,13 +66,15 @@ export const CalendarTaskCardShell = forwardRef<
       >
         {task.title}
       </p>
-      <div className='text-muted-foreground mt-1 flex flex-wrap items-center gap-1.5 text-[11px]'>
+      <div className='text-muted-foreground mt-1 flex flex-wrap items-center gap-1.5 text-xs'>
         {primaryAssigneeId ? (
-          <Avatar className='h-3.5 w-3.5'>
+          <Avatar size='xs'>
             {primaryAssigneeAvatarUrl && (
-              <AvatarImage src={`/api/storage/user-avatar/${primaryAssigneeId}`} />
+              <AvatarImage
+                src={`/api/storage/user-avatar/${primaryAssigneeId}`}
+              />
             )}
-            <AvatarFallback className='text-[7px]'>
+            <AvatarFallback>
               {primaryAssignee.slice(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>

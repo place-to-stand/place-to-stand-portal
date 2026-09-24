@@ -3,7 +3,7 @@ import 'server-only'
 import { and, asc, between, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
-import { COMPANY_TIME_ZONE } from '@/lib/dates'
+import { COMPANY_TIME_ZONE } from '@pts/ui/dates'
 import { fetchProjectsForClient } from '@/lib/data/clients'
 import { db } from '@/lib/db'
 import { tasks, timeLogs, timeLogTasks } from '@/lib/db/schema'

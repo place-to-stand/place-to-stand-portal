@@ -13,19 +13,14 @@ import {
   type UniqueIdentifier,
 } from '@dnd-kit/core'
 import { arrayMove } from '@dnd-kit/sortable'
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  useTransition,
-} from 'react'
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 
 import { useProjectsBoardSensors } from '@/app/(dashboard)/projects/_hooks/use-projects-board-sensors'
 import { useScrollPersistence } from '@/hooks/use-scroll-persistence'
 import { useColumnScrollPersistence } from '@/hooks/use-column-scroll-persistence'
 import type { LeadBoardColumnData, LeadRecord } from '@/lib/leads/types'
 import type { LeadStatusValue } from '@/lib/leads/constants'
+import { EmptyState } from '@pts/ui/empty-state'
 import { useToast } from '@/components/ui/use-toast'
 import { moveLead } from '../actions'
 import { getRankAfter, getRankBefore, getRankBetween } from '@/lib/rank'
@@ -58,9 +53,7 @@ export function LeadsBoard({
     storageKey: 'leads-board',
     columnIds: initialColumns.map(col => col.id),
   })
-  const [columns, setColumns] = useState(() =>
-    cloneColumns(initialColumns)
-  )
+  const [columns, setColumns] = useState(() => cloneColumns(initialColumns))
   const columnsRef = useRef(columns)
   const [draggingLead, setDraggingLead] = useState<LeadRecord | null>(null)
   const dropPreviewRef = useRef<DropTarget | null>(null)
@@ -162,7 +155,7 @@ export function LeadsBoard({
         return
       }
 
-  const result = produceLeadReorder({
+      const result = produceLeadReorder({
         columns: currentColumns,
         leadId,
         targetColumnId: target.columnId,
@@ -402,82 +395,75 @@ export function LeadsBoard({
   return (
     <div className='flex min-h-0 flex-1 flex-col'>
       {totalLeads === 0 ? (
-        <div className='border-border/60 text-muted-foreground flex flex-1 items-center justify-center rounded-2xl border border-dashed px-6 py-16 text-center'>
-          <div className='space-y-2'>
-            <p className='text-lg font-semibold'>No leads yet</p>
-            <p className='text-sm'>
-              {canManage
-                ? 'Use the New Lead button above to start tracking opportunities.'
-                : 'Leads will appear here once your team adds them.'}
-            </p>
-          </div>
-        </div>
+        <EmptyState message='No leads yet.' />
       ) : (
         <div className='relative min-h-0 flex-1'>
-        <div className='absolute inset-0 overflow-hidden'>
-          <div
-            ref={boardViewportRef}
-            className='h-full min-h-0 overflow-x-auto'
-            onScroll={handleBoardScroll}
-          >
-            <DndContext
-              sensors={sensors}
-              onDragStart={event => {
-                lastLeadOverId.current = null
-                lastColumnOverId.current = null
-                handleDragStart(event)
-              }}
-              onDragOver={handleDragOver}
-              onDragEnd={event => {
-                lastLeadOverId.current = null
-                lastColumnOverId.current = null
-                handleDragEnd(event)
-              }}
-              onDragCancel={() => {
-                lastLeadOverId.current = null
-                lastColumnOverId.current = null
-                handleDragCancel()
-              }}
-              collisionDetection={collisionDetection}
+          <div className='absolute inset-0 overflow-hidden'>
+            <div
+              ref={boardViewportRef}
+              className='h-full min-h-0 overflow-x-auto'
+              onScroll={handleBoardScroll}
             >
-              <div className='flex h-full w-max gap-4 p-1'>
-                {columns.map(column => {
-                  const handleCreateForColumn =
-                    canManage && onCreateLead
-                      ? () => onCreateLead(column.id)
-                      : undefined
+              <DndContext
+                sensors={sensors}
+                onDragStart={event => {
+                  lastLeadOverId.current = null
+                  lastColumnOverId.current = null
+                  handleDragStart(event)
+                }}
+                onDragOver={handleDragOver}
+                onDragEnd={event => {
+                  lastLeadOverId.current = null
+                  lastColumnOverId.current = null
+                  handleDragEnd(event)
+                }}
+                onDragCancel={() => {
+                  lastLeadOverId.current = null
+                  lastColumnOverId.current = null
+                  handleDragCancel()
+                }}
+                collisionDetection={collisionDetection}
+              >
+                <div className='flex h-full w-max gap-4 p-1'>
+                  {columns.map(column => {
+                    const handleCreateForColumn =
+                      canManage && onCreateLead
+                        ? () => onCreateLead(column.id)
+                        : undefined
 
-                  return (
-                    <LeadColumn
-                      key={column.id}
-                      columnId={column.id}
-                      label={column.label}
-                      leads={column.leads}
-                      canManage={canManage && !isPending}
-                      enableCreateButton={canManage}
-                      onEditLead={onEditLead}
-                      onCreateLead={handleCreateForColumn}
-                      activeLeadId={activeLeadId}
-                      isDropTarget={dropPreview?.columnId === column.id}
-                      dropIndicatorIndex={
-                        dropPreview?.columnId === column.id ? dropPreview.index : null
-                      }
-                      draggingLeadId={draggingLead?.id ?? null}
-                      recentlyMovedLeadId={recentlyMovedLeadId}
-                      columnScrollRef={getColumnRef(column.id)}
-                      onColumnScroll={getScrollHandler(column.id)}
-                    />
-                  )
-                })}
-              </div>
-              <DragOverlay dropAnimation={null}>
-                {draggingLead ? (
-                  <LeadCardPreview lead={draggingLead} />
-                ) : null}
-              </DragOverlay>
-            </DndContext>
+                    return (
+                      <LeadColumn
+                        key={column.id}
+                        columnId={column.id}
+                        label={column.label}
+                        leads={column.leads}
+                        canManage={canManage && !isPending}
+                        enableCreateButton={canManage}
+                        onEditLead={onEditLead}
+                        onCreateLead={handleCreateForColumn}
+                        activeLeadId={activeLeadId}
+                        isDropTarget={dropPreview?.columnId === column.id}
+                        dropIndicatorIndex={
+                          dropPreview?.columnId === column.id
+                            ? dropPreview.index
+                            : null
+                        }
+                        draggingLeadId={draggingLead?.id ?? null}
+                        recentlyMovedLeadId={recentlyMovedLeadId}
+                        columnScrollRef={getColumnRef(column.id)}
+                        onColumnScroll={getScrollHandler(column.id)}
+                      />
+                    )
+                  })}
+                </div>
+                <DragOverlay dropAnimation={null}>
+                  {draggingLead ? (
+                    <LeadCardPreview lead={draggingLead} />
+                  ) : null}
+                </DragOverlay>
+              </DndContext>
+            </div>
           </div>
-        </div>
         </div>
       )}
     </div>
@@ -577,9 +563,7 @@ function resolveDropTarget(
   }
 
   const overData = over.data?.current as
-    | LeadDragData
-    | LeadColumnDropData
-    | undefined
+    LeadDragData | LeadColumnDropData | undefined
   const overId = over.id ? over.id.toString() : null
 
   if (overData?.type === 'column') {
@@ -636,14 +620,12 @@ function produceLeadReorder({
   leadId: string
   targetColumnId: LeadStatusValue
   targetIndex: number
-}):
-  | {
-      nextColumns: LeadBoardColumnData[]
-      previousColumns: LeadBoardColumnData[]
-      rank: string
-      targetColumnId: LeadStatusValue
-    }
-  | null {
+}): {
+  nextColumns: LeadBoardColumnData[]
+  previousColumns: LeadBoardColumnData[]
+  rank: string
+  targetColumnId: LeadStatusValue
+} | null {
   const previousColumns = cloneColumns(columns)
   const nextColumns = cloneColumns(columns)
 
@@ -731,7 +713,7 @@ function produceLeadReorder({
 }
 
 function computeRankFromNeighbors(leads: LeadRecord[], index: number) {
-  const previousRank = index > 0 ? leads[index - 1]?.rank ?? null : null
+  const previousRank = index > 0 ? (leads[index - 1]?.rank ?? null) : null
   const nextRank = leads[index + 1]?.rank ?? null
 
   if (previousRank && nextRank) {

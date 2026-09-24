@@ -1,24 +1,19 @@
 import Link from 'next/link'
 import { ArrowLeftIcon } from 'lucide-react'
 
+import { EmptyState } from '@pts/ui/empty-state'
+
 export default function ProjectNotFound() {
   return (
-    <div className="space-y-6">
+    <div className='space-y-6'>
       <Link
-        href="/"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+        href='/'
+        className='text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm'
       >
-        <ArrowLeftIcon className="size-4" />
+        <ArrowLeftIcon className='size-4' />
         Back to dashboard
       </Link>
-      <div className="rounded-lg border border-border p-8 text-center">
-        <h2 className="text-lg font-semibold text-foreground">
-          Project not found
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          This project doesn&apos;t exist or you don&apos;t have access to it.
-        </p>
-      </div>
+      <EmptyState message="This project doesn't exist or you don't have access to it." />
     </div>
   )
 }

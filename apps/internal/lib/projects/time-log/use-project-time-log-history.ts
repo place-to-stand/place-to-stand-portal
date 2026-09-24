@@ -41,12 +41,7 @@ export type ProjectTimeLogHistoryState = {
 export function useProjectTimeLogHistory(
   options: UseProjectTimeLogHistoryOptions
 ): ProjectTimeLogHistoryState {
-  const {
-    enabled = true,
-    projectId,
-    projectName,
-    clientName,
-  } = options
+  const { enabled = true, projectId, projectName, clientName } = options
 
   const queryClient = useQueryClient()
   const router = useRouter()
@@ -156,7 +151,7 @@ export function useProjectTimeLogHistory(
     onError: error => {
       console.error('Failed to delete time log', error)
       toast({
-        title: 'Could not delete time log',
+        title: 'Unable to delete time log',
         description: 'Please try again. If the issue persists contact support.',
         variant: 'destructive',
       })

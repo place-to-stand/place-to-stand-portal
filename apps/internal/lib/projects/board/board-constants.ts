@@ -1,16 +1,12 @@
 const TASK_STATUS_METADATA = [
-  { id: 'ON_DECK', label: 'On Deck' },
-  { id: 'IN_PROGRESS', label: 'In Progress' },
+  { id: 'ON_DECK', label: 'On deck' },
+  { id: 'IN_PROGRESS', label: 'In progress' },
   { id: 'BLOCKED', label: 'Blocked' },
   { id: 'DONE', label: 'Done' },
 ] as const
 
-const [
-  ON_DECK_STATUS,
-  IN_PROGRESS_STATUS,
-  BLOCKED_STATUS,
-  DONE_STATUS,
-] = TASK_STATUS_METADATA
+const [ON_DECK_STATUS, IN_PROGRESS_STATUS, BLOCKED_STATUS, DONE_STATUS] =
+  TASK_STATUS_METADATA
 
 export const BOARD_COLUMNS = [
   ON_DECK_STATUS,

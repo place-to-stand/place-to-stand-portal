@@ -18,9 +18,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const invoice = await getInvoiceByShareToken(token)
 
   return {
-    title: invoice?.invoice_number
-      ? `Invoice ${invoice.invoice_number} | Place to Stand`
-      : 'Invoice | Place to Stand',
+    // Absolute: a client-facing page, so no "Portal" suffix from the template.
+    title: {
+      absolute: invoice?.invoice_number
+        ? `Invoice ${invoice.invoice_number} | Place To Stand`
+        : 'Invoice | Place To Stand',
+    },
     robots: { index: false, follow: false },
   }
 }

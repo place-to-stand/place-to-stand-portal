@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
-import { formatDistanceToNowStrict } from 'date-fns'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Badge } from '@pts/ui/badge'
+import { BADGE_TINTS } from '@pts/ui/badge-tints'
 import { ActivityChangeList } from '@/components/activity/activity-change-list'
 import { getActivityChanges } from '@/lib/activity/changes'
 import {
@@ -14,7 +14,7 @@ import {
   getToneClasses,
   getVerbPresentation,
 } from '@/lib/activity/verb-presentation'
-import { formatCalendarDate } from '@/lib/dates'
+import { formatCalendarDate, formatRelativeTime } from '@pts/ui/dates'
 import type { ActivitySourceValue } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
@@ -26,16 +26,16 @@ export type ActivityFeedItemProps = {
  * Admin UI is the default source and carries no signal, so only CLI and
  * System actions get a badge.
  */
-const SOURCE_BADGES: Partial<Record<ActivitySourceValue, { label: string; className: string }>> = {
+const SOURCE_BADGES: Partial<
+  Record<ActivitySourceValue, { label: string; className: string }>
+> = {
   CLI: {
     label: 'CLI',
-    className:
-      'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-900',
+    className: BADGE_TINTS.orange,
   },
   SYSTEM: {
     label: 'System',
-    className:
-      'bg-slate-700 text-slate-50 border-slate-600 dark:bg-slate-950 dark:text-slate-300 dark:border-slate-800',
+    className: 'border-transparent bg-primary text-primary-foreground',
   },
 }
 
@@ -51,16 +51,12 @@ export function ActivityFeedItem({ log }: ActivityFeedItemProps) {
   const actorName = getActorDisplayName(log)
   const actorInitials = getActorInitials(actorName)
   const changes = useMemo(() => getActivityChanges(log), [log])
-  const hasChanges =
-    changes.fields.length > 0 || changes.memberships.length > 0
+  const hasChanges = changes.fields.length > 0 || changes.memberships.length > 0
   const summary = hasChanges ? stripTrailingFieldList(log.summary) : log.summary
 
   const { icon: Icon, tone } = getVerbPresentation(log.verb)
   const sourceBadge = SOURCE_BADGES[log.source]
-  const createdAt = new Date(log.created_at)
-  const relativeLabel = formatDistanceToNowStrict(createdAt, {
-    addSuffix: true,
-  })
+  const relativeLabel = formatRelativeTime(log.created_at)
   const absoluteLabel = formatCalendarDate(log.created_at, TIMESTAMP_STYLE)
 
   return (
@@ -79,16 +75,14 @@ export function ActivityFeedItem({ log }: ActivityFeedItemProps) {
         {/* 28px tall to match the rail icon, so the actor line centres on it. */}
         <div className='flex min-h-7 flex-wrap items-center gap-x-2 gap-y-1 text-sm leading-5'>
           <span className='inline-flex items-center gap-1.5 font-medium'>
-            <Avatar className='h-5 w-5'>
+            <Avatar size='xs'>
               {log.actor?.avatar_url ? (
                 <AvatarImage
                   src={`/api/storage/user-avatar/${log.actor.id}`}
                   alt=''
                 />
               ) : null}
-              <AvatarFallback className='text-[9px]'>
-                {actorInitials}
-              </AvatarFallback>
+              <AvatarFallback>{actorInitials}</AvatarFallback>
             </Avatar>
             {actorName}
           </span>
@@ -132,4 +126,3 @@ export function ActivityFeedItem({ log }: ActivityFeedItemProps) {
 function stripTrailingFieldList(summary: string): string {
   return summary.replace(/\s\([^()]*\)\s*$/, '')
 }
-

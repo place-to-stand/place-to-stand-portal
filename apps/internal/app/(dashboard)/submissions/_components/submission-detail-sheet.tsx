@@ -14,7 +14,6 @@ import {
   Trash2,
   Undo2,
 } from 'lucide-react'
-import { format, formatDistanceToNow } from 'date-fns'
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
@@ -25,7 +24,8 @@ import { SheetFooterBar } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import { useToast } from '@/components/ui/use-toast'
-import { formatCalendarDate } from '@/lib/dates'
+import { formatCalendarDate, formatRelativeTime } from '@pts/ui/dates'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { RETRY_MAX_AGE_HOURS } from '@/lib/form-submissions/delivery/constants'
 import { cn } from '@/lib/utils'
 import {
@@ -434,9 +434,7 @@ export function SubmissionDetailSheet({
                       {override
                         ? 'just now'
                         : acknowledgedAt
-                          ? formatDistanceToNow(new Date(acknowledgedAt), {
-                              addSuffix: true,
-                            })
+                          ? formatRelativeTime(acknowledgedAt)
                           : ''}
                     </span>
                   </li>
@@ -612,9 +610,9 @@ export function SubmissionDetailSheet({
                         ) : (
                           <span className='inline-flex items-center gap-1.5'>
                             {displaySubmission.feedbackHelpful ? (
-                              <ThumbsUp className='size-3.5 text-emerald-600 dark:text-emerald-400' />
+                              <ThumbsUp className='text-success size-3.5' />
                             ) : (
-                              <ThumbsDown className='size-3.5 text-red-600 dark:text-red-400' />
+                              <ThumbsDown className='text-destructive size-3.5' />
                             )}
                             {displaySubmission.feedbackHelpful ? 'Yes' : 'No'}
                           </span>
@@ -625,9 +623,9 @@ export function SubmissionDetailSheet({
                       label='Submitted'
                       value={
                         displaySubmission.feedbackAt
-                          ? format(
-                              new Date(displaySubmission.feedbackAt),
-                              'MMM d, yyyy h:mm a'
+                          ? formatCalendarDate(
+                              displaySubmission.feedbackAt,
+                              STARTED_STYLE
                             )
                           : '—'
                       }
@@ -747,7 +745,7 @@ export function SubmissionDetailSheet({
                     disabled={isPending}
                     onClick={handleAcknowledge}
                   >
-                    <Check className='mr-1 h-4 w-4' />
+                    <Check />
                     {isPending ? 'Acknowledging…' : 'Acknowledge'}
                   </Button>
                 ) : (
@@ -758,7 +756,7 @@ export function SubmissionDetailSheet({
                     disabled={isPending}
                     onClick={handleUnacknowledge}
                   >
-                    <Undo2 className='mr-1 h-4 w-4' />
+                    <Undo2 />
                     Unacknowledge
                   </Button>
                 )
@@ -777,33 +775,23 @@ export function SubmissionDetailSheet({
             )}
           </div>
           {mode === 'active' ? (
-            <Button
+            <RowActionButton
               type='button'
+              label='Archive submission'
+              icon={<Archive />}
               variant='destructive'
-              size='icon'
-              className='h-8 w-8'
-              title='Archive submission'
-              aria-label='Archive submission'
               disabled={isPending}
               onClick={() => setArchiveConfirmOpen(true)}
-            >
-              <Archive className='h-4 w-4' />
-              <span className='sr-only'>Archive</span>
-            </Button>
+            />
           ) : (
-            <Button
+            <RowActionButton
               type='button'
+              label='Permanently delete submission'
+              icon={<Trash2 />}
               variant='destructive'
-              size='icon'
-              className='h-8 w-8'
-              title='Permanently delete submission'
-              aria-label='Permanently delete submission'
               disabled={isPending}
               onClick={() => setDestroyConfirmOpen(true)}
-            >
-              <Trash2 className='h-4 w-4' />
-              <span className='sr-only'>Delete permanently</span>
-            </Button>
+            />
           )}
         </SheetFooterBar>
 

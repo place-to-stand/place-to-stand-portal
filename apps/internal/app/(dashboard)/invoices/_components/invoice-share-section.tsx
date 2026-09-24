@@ -5,7 +5,7 @@ import { Copy, Check, Link2, Link2Off } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
-import { Input } from '@/components/ui/input'
+import { Input } from '@pts/ui/input'
 import { Label } from '@pts/ui/label'
 import { useToast } from '@/components/ui/use-toast'
 
@@ -64,20 +64,27 @@ export function InvoiceShareSection({
       } else {
         toast({
           variant: 'destructive',
-          title: 'Failed to enable sharing',
+          title: 'Unable to enable sharing',
           description: data.error ?? 'Please try again.',
         })
       }
     } catch {
       toast({
         variant: 'destructive',
-        title: 'Failed to enable sharing',
+        title: 'Unable to enable sharing',
         description: 'Network error. Please check your connection.',
       })
     } finally {
       setIsLoading(false)
     }
-  }, [invoiceId, currentToken, invoiceStatus, onSendInvoice, onShareStateChange, toast])
+  }, [
+    invoiceId,
+    currentToken,
+    invoiceStatus,
+    onSendInvoice,
+    onShareStateChange,
+    toast,
+  ])
 
   const handleDisableSharing = useCallback(async () => {
     setIsLoading(true)
@@ -93,14 +100,14 @@ export function InvoiceShareSection({
       } else {
         toast({
           variant: 'destructive',
-          title: 'Failed to disable sharing',
+          title: 'Unable to disable sharing',
           description: data.error ?? 'Please try again.',
         })
       }
     } catch {
       toast({
         variant: 'destructive',
-        title: 'Failed to disable sharing',
+        title: 'Unable to disable sharing',
         description: 'Network error. Please check your connection.',
       })
     } finally {
@@ -130,30 +137,32 @@ export function InvoiceShareSection({
         open={showSendPrompt}
         title='Mark invoice as sent?'
         description='The invoice must be marked as sent before the client can make a payment. Would you like to mark it as sent now?'
-        confirmLabel='Mark as Sent'
-        cancelLabel='Not Now'
+        confirmLabel='Mark as sent'
+        cancelLabel='Not now'
         onConfirm={handleConfirmSend}
         onCancel={handleDeclineSend}
       />
-      <span className='mb-2 block text-sm font-medium'>Share Link</span>
+      <span className='mb-2 block text-sm font-medium'>Share link</span>
       {currentEnabled && shareUrl ? (
         <div className='space-y-3'>
           <div className='space-y-1.5'>
-            <Label className='sr-only'>Shareable Link</Label>
+            <Label className='sr-only'>Shareable link</Label>
             <div className='flex gap-2'>
-              <Input value={shareUrl} readOnly tabIndex={-1} className='text-xs' />
+              <Input
+                value={shareUrl}
+                readOnly
+                tabIndex={-1}
+                className='text-xs'
+              />
               <Button
                 type='button'
                 variant='outline'
                 size='icon'
                 className='flex-shrink-0'
                 onClick={handleCopy}
+                aria-label='Copy link'
               >
-                {copied ? (
-                  <Check className='h-4 w-4 text-green-600' />
-                ) : (
-                  <Copy className='h-4 w-4' />
-                )}
+                {copied ? <Check className='text-success' /> : <Copy />}
               </Button>
             </div>
           </div>
@@ -165,8 +174,8 @@ export function InvoiceShareSection({
             onClick={handleDisableSharing}
             disabled={isLoading}
           >
-            <Link2Off className='mr-2 h-4 w-4' />
-            Disable Sharing
+            <Link2Off />
+            Disable sharing
           </Button>
         </div>
       ) : (
@@ -177,8 +186,8 @@ export function InvoiceShareSection({
           onClick={handleEnableSharing}
           disabled={isLoading}
         >
-          <Link2 className='mr-2 h-4 w-4' />
-          {isLoading ? 'Generating link...' : 'Generate Shareable Link'}
+          <Link2 />
+          {isLoading ? 'Generating link...' : 'Generate shareable link'}
         </Button>
       )}
     </div>

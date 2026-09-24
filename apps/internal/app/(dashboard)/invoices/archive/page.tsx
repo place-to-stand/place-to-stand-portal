@@ -15,7 +15,7 @@ import { InvoicesManagementTable } from '../_components/invoices-management-tabl
 import { INVOICES_TABS } from '../_lib/tabs'
 
 export const metadata: Metadata = {
-  title: 'Invoices Archive',
+  title: 'Invoice archive',
 }
 
 

@@ -9,6 +9,8 @@ import {
   startOfWeek,
 } from 'date-fns'
 
+import { formatCalendarDate } from '@pts/ui/dates'
+
 export type CalendarRange = {
   start: Date
   end: Date
@@ -47,7 +49,7 @@ export const buildCalendarDays = (
     days.push({
       date,
       key,
-      label: format(date, 'd'),
+      label: formatCalendarDate(key, { day: 'numeric' }) ?? '',
       isCurrentMonth: isSameMonth(date, visibleMonth),
       isToday: key === todayKey,
       isWeekend: isWeekend(date),
@@ -62,8 +64,10 @@ export const buildWeekdayHeaders = (
 ): CalendarWeekdayHeader[] => {
   return Array.from({ length: 7 }, (_, index) => {
     const date = addDays(rangeStart, index)
+    // Local calendar key, then a timezone-stable label from it.
+    const key = format(date, 'yyyy-MM-dd')
     return {
-      label: format(date, 'EEE'),
+      label: formatCalendarDate(key, { weekday: 'short' }) ?? '',
       isWeekend: isWeekend(date),
     }
   })

@@ -58,16 +58,16 @@ export function UserMenu({ user, align = 'end', inSidebar = false }: Props) {
       <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
         <DropdownMenuTrigger
           className={cn(
-            'hover:bg-muted flex w-full items-center gap-2 rounded border px-2 py-1.5 text-[13px] font-medium transition',
+            'hover:bg-muted focus-visible:border-ring focus-visible:ring-ring/50 flex w-full items-center gap-2 rounded-md border px-2 py-1.5 text-sm font-medium transition outline-none focus-visible:ring-[3px]',
             inSidebar &&
               'group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:px-0'
           )}
         >
-          <Avatar className='h-6 w-6'>
+          <Avatar size='sm'>
             {avatarSrc ? (
               <AvatarImage src={avatarSrc} alt={user.full_name ?? user.email} />
             ) : null}
-            <AvatarFallback className='text-[10px]'>{initials}</AvatarFallback>
+            <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
           <div
             className={cn(
@@ -75,10 +75,10 @@ export function UserMenu({ user, align = 'end', inSidebar = false }: Props) {
               inSidebar && 'group-data-[collapsible=icon]:hidden'
             )}
           >
-            <span className='truncate text-[13px] font-medium'>
+            <span className='truncate text-sm font-medium'>
               {user.full_name ?? user.email}
             </span>
-            <span className='text-muted-foreground truncate text-[11px] capitalize'>
+            <span className='text-muted-foreground truncate text-xs capitalize'>
               {user.role.toLowerCase()}
             </span>
           </div>

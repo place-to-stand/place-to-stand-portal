@@ -8,7 +8,7 @@ import { Loader2, Mail, Plus } from 'lucide-react'
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { useToast } from '@/components/ui/use-toast'
-import { formatCalendarDate } from '@/lib/dates'
+import { formatCalendarDate } from '@pts/ui/dates'
 import { updateComposerHref } from '@/lib/sheets/hrefs'
 
 import { draftUpdateForClient } from '../actions'
@@ -64,9 +64,9 @@ export function ClientUpdatesSection({
         <Button
           onClick={handleDraft}
           disabled={isPending}
-          size='sm'
+          size='xs'
           variant='outline'
-          className='ml-auto h-7'
+          className='ml-auto'
         >
           {isPending ? (
             <Loader2 className='h-3.5 w-3.5 animate-spin' />
@@ -79,7 +79,10 @@ export function ClientUpdatesSection({
       {updates.length === 0 ? (
         <p className='text-muted-foreground px-4 py-6 text-center text-sm'>
           No updates yet. Draft one here or with{' '}
-          <code className='bg-muted rounded px-1 py-0.5 text-xs'>pts updates draft</code>.
+          <code className='bg-muted rounded px-1 py-0.5 text-xs'>
+            pts updates draft
+          </code>
+          .
         </p>
       ) : (
         <ul className='divide-y'>
@@ -89,7 +92,9 @@ export function ClientUpdatesSection({
                 href={updateComposerHref(update.id)}
                 className='hover:bg-muted/50 flex items-center gap-3 px-4 py-2.5 text-sm transition-colors'
               >
-                <span className='min-w-0 flex-1 truncate'>{update.subject}</span>
+                <span className='min-w-0 flex-1 truncate'>
+                  {update.subject}
+                </span>
                 <span className='text-muted-foreground shrink-0 text-xs'>
                   {formatCalendarDate(update.sentAt ?? update.createdAt)}
                 </span>

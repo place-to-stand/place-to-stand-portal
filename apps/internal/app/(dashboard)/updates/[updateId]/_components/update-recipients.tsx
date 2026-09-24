@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Plus, X } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
-import { Input } from '@/components/ui/input'
+import { Input } from '@pts/ui/input'
 import { Button } from '@pts/ui/button'
 import { Checkbox } from '@pts/ui/checkbox'
 import { Label } from '@pts/ui/label'

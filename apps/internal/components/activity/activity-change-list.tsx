@@ -11,8 +11,11 @@ import {
 import { formatFact } from '@/lib/activity/format-fact'
 import { formatHours } from '@/lib/activity/events/shared'
 import type { ActivityReferences } from '@/lib/activity/types'
-import { formatCalendarDate } from '@/lib/dates'
-import { getTaskStatusLabel, getTaskStatusToken } from '@/lib/projects/task-status'
+import { formatCalendarDate } from '@pts/ui/dates'
+import {
+  getTaskStatusLabel,
+  getTaskStatusToken,
+} from '@/lib/projects/task-status'
 import { cn } from '@/lib/utils'
 
 type ActivityChangeListProps = {
@@ -48,7 +51,7 @@ export function ActivityChangeList({
   // block reads as belonging to the line above it. Every row is a 20px line
   // box so labels, values, badges and the diff toggle share one baseline.
   return (
-    <dl className='mt-1.5 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-3 gap-y-1 pl-[26px] text-xs leading-5'>
+    <dl className='mt-1.5 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-3 gap-y-1 pl-6.5 text-xs leading-5'>
       {fields.map(field => (
         <FieldRow
           key={field.key}
@@ -63,7 +66,7 @@ export function ActivityChangeList({
           <dd
             className={cn(
               'text-foreground min-w-0 font-medium',
-              fact.kind === 'mono' && 'font-mono text-[11px]'
+              fact.kind === 'mono' && 'font-mono text-xs'
             )}
           >
             {formatFact(fact)}
@@ -175,9 +178,7 @@ function ValueChip({
       <span
         className={cn(
           'font-medium',
-          disabled
-            ? 'text-rose-700 dark:text-rose-300'
-            : 'text-emerald-700 dark:text-emerald-300',
+          disabled ? 'text-destructive' : 'text-success',
           muted && 'opacity-60'
         )}
       >
@@ -194,9 +195,11 @@ function ValueChip({
       className={cn(
         'min-w-0 break-words',
         isEmpty && 'text-muted-foreground italic',
-        !isEmpty && muted && 'text-muted-foreground line-through decoration-muted-foreground/50',
+        !isEmpty &&
+          muted &&
+          'text-muted-foreground decoration-muted-foreground/50 line-through',
         !isEmpty && !muted && 'text-foreground font-medium',
-        field.key === 'slug' && 'font-mono text-[11px]'
+        field.key === 'slug' && 'font-mono text-xs'
       )}
     >
       {isEmpty ? emptyLabel(field) : text}
@@ -287,7 +290,7 @@ function MembershipChips({
       {added.map(id => (
         <span
           key={`add:${id}`}
-          className='inline-flex items-center gap-0.5 rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-emerald-800 dark:text-emerald-200'
+          className='bg-success/10 text-success inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5'
         >
           <Plus className='h-3 w-3' aria-hidden='true' />
           <span className='sr-only'>Added </span>
@@ -297,7 +300,7 @@ function MembershipChips({
       {removed.map(id => (
         <span
           key={`rm:${id}`}
-          className='inline-flex items-center gap-0.5 rounded-md bg-rose-500/10 px-1.5 py-0.5 text-rose-800 dark:text-rose-200'
+          className='bg-destructive/10 text-destructive inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5'
         >
           <Minus className='h-3 w-3' aria-hidden='true' />
           <span className='sr-only'>Removed </span>

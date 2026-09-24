@@ -1,23 +1,26 @@
-"use client"
+'use client'
 
-import type { TransitionStartFunction } from "react"
+import type { TransitionStartFunction } from 'react'
 
 import {
   createUser,
   softDeleteUser,
   updateUser,
-} from "@/app/(dashboard)/settings/users/actions"
-import { finishSettingsInteraction, startSettingsInteraction } from "@/lib/posthog/settings"
-import { toast } from "@/components/ui/use-toast"
+} from '@/app/(dashboard)/settings/users/actions'
+import {
+  finishSettingsInteraction,
+  startSettingsInteraction,
+} from '@/lib/posthog/settings'
+import { toast } from '@/components/ui/use-toast'
 
 import {
   EMAIL_CHANGE_RESTRICTION,
   PENDING_REASON,
   ROLE_CHANGE_RESTRICTION,
   SELF_DELETE_RESTRICTION,
-} from "./constants"
-import type { UserFormValues } from "./form-schema"
-import type { UserRow } from "./types"
+} from './constants'
+import type { UserFormValues } from './form-schema'
+import type { UserRow } from './types'
 
 type SubmitHandlerArgs = {
   isEditing: boolean
@@ -44,14 +47,14 @@ export function createSubmitHandler({
     transition(async () => {
       setFeedback(null)
 
-      const trimmedPassword = values.password?.trim() ?? ""
+      const trimmedPassword = values.password?.trim() ?? ''
       const normalizedAvatarPath = values.avatarPath?.trim()
         ? values.avatarPath.trim()
         : undefined
       const avatarRemoved = Boolean(values.avatarRemoved)
       const baseInteraction = startSettingsInteraction({
-        entity: "user",
-        mode: isEditing ? "edit" : "create",
+        entity: 'user',
+        mode: isEditing ? 'edit' : 'create',
         targetId: user?.id ?? null,
         metadata: {
           role: values.role,
@@ -76,7 +79,7 @@ export function createSubmitHandler({
 
           if (result.error) {
             finishSettingsInteraction(baseInteraction, {
-              status: "error",
+              status: 'error',
               targetId: user.id,
               error: result.error,
             })
@@ -85,21 +88,20 @@ export function createSubmitHandler({
           }
 
           finishSettingsInteraction(baseInteraction, {
-            status: "success",
+            status: 'success',
             targetId: user.id,
           })
 
           toast({
-            title: "User updated",
-            description: "Changes saved successfully.",
+            title: 'User updated',
           })
         } catch (error) {
           finishSettingsInteraction(baseInteraction, {
-            status: "error",
+            status: 'error',
             targetId: user.id,
-            error: error instanceof Error ? error.message : "Unknown error",
+            error: error instanceof Error ? error.message : 'Unknown error',
           })
-          setFeedback("We could not update this user. Please try again.")
+          setFeedback('We could not update this user. Please try again.')
           return
         }
       } else {
@@ -113,7 +115,7 @@ export function createSubmitHandler({
 
           if (result.error) {
             finishSettingsInteraction(baseInteraction, {
-              status: "error",
+              status: 'error',
               error: result.error,
             })
             setFeedback(result.error)
@@ -124,21 +126,21 @@ export function createSubmitHandler({
             (result as { userId?: string | null }).userId ?? null
 
           finishSettingsInteraction(baseInteraction, {
-            status: "success",
+            status: 'success',
             targetId: createdUserId,
           })
 
           toast({
-            title: "Invite sent",
+            title: 'Invite sent',
             description:
-              "The new teammate received their login details via email.",
+              'The new teammate received their login details via email.',
           })
         } catch (error) {
           finishSettingsInteraction(baseInteraction, {
-            status: "error",
-            error: error instanceof Error ? error.message : "Unknown error",
+            status: 'error',
+            error: error instanceof Error ? error.message : 'Unknown error',
           })
-          setFeedback("We could not create this user. Please try again.")
+          setFeedback('We could not create this user. Please try again.')
           return
         }
       }
@@ -189,7 +191,7 @@ export function createDeleteRequestHandler({
 export function createDeleteCancelHandler({
   isPending,
   setIsDeleteDialogOpen,
-}: Pick<DeleteHandlerArgs, "isPending" | "setIsDeleteDialogOpen">) {
+}: Pick<DeleteHandlerArgs, 'isPending' | 'setIsDeleteDialogOpen'>) {
   return () => {
     if (isPending) {
       return
@@ -219,8 +221,8 @@ export function createDeleteConfirmHandler({
     transition(async () => {
       setFeedback(null)
       const interaction = startSettingsInteraction({
-        entity: "user",
-        mode: "delete",
+        entity: 'user',
+        mode: 'delete',
         targetId: user.id,
         metadata: {
           email: user.email,
@@ -232,7 +234,7 @@ export function createDeleteConfirmHandler({
 
         if (result.error) {
           finishSettingsInteraction(interaction, {
-            status: "error",
+            status: 'error',
             targetId: user.id,
             error: result.error,
           })
@@ -241,25 +243,25 @@ export function createDeleteConfirmHandler({
         }
 
         finishSettingsInteraction(interaction, {
-          status: "success",
+          status: 'success',
           targetId: user.id,
         })
 
         onClose(false)
         onComplete()
         toast({
-          title: "User deleted",
+          title: 'User deleted',
           description: `${
             user.full_name ?? user.email
           } can no longer access the portal.`,
         })
       } catch (error) {
         finishSettingsInteraction(interaction, {
-          status: "error",
+          status: 'error',
           targetId: user.id,
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: error instanceof Error ? error.message : 'Unknown error',
         })
-        setFeedback("We could not delete this user. Please try again.")
+        setFeedback('We could not delete this user. Please try again.')
       }
     })
   }
@@ -292,14 +294,10 @@ export function getSubmitDisabledReason(isPending: boolean) {
   return isPending ? PENDING_REASON : null
 }
 
-export function getDeleteDisabledReason(
-  isPending: boolean,
-  disable: boolean
-) {
+export function getDeleteDisabledReason(isPending: boolean, disable: boolean) {
   if (!disable && !isPending) {
     return null
   }
 
   return isPending ? PENDING_REASON : SELF_DELETE_RESTRICTION
 }
-

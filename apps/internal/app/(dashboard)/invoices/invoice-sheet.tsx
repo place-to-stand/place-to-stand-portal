@@ -32,7 +32,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
+import { Input } from '@pts/ui/input'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
@@ -40,7 +40,7 @@ import {
   SearchableCombobox,
   type SearchableComboboxGroup,
 } from '@/components/ui/searchable-combobox'
-import { Textarea } from '@/components/ui/textarea'
+import { Textarea } from '@pts/ui/textarea'
 import { Separator } from '@pts/ui/separator'
 import { useToast } from '@/components/ui/use-toast'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
@@ -644,10 +644,22 @@ function LineItemRow({
   isNet30,
   dragHandleProps,
 }: LineItemRowProps) {
-  const quantity = useWatch({ control: form.control, name: `lineItems.${index}.quantity` })
-  const unitPrice = useWatch({ control: form.control, name: `lineItems.${index}.unitPrice` })
-  const createsHourBlock = useWatch({ control: form.control, name: `lineItems.${index}.createsHourBlock` })
-  const productCatalogItemId = useWatch({ control: form.control, name: `lineItems.${index}.productCatalogItemId` })
+  const quantity = useWatch({
+    control: form.control,
+    name: `lineItems.${index}.quantity`,
+  })
+  const unitPrice = useWatch({
+    control: form.control,
+    name: `lineItems.${index}.unitPrice`,
+  })
+  const createsHourBlock = useWatch({
+    control: form.control,
+    name: `lineItems.${index}.createsHourBlock`,
+  })
+  const productCatalogItemId = useWatch({
+    control: form.control,
+    name: `lineItems.${index}.productCatalogItemId`,
+  })
   const amount = computeLineItemAmount(quantity ?? 0, unitPrice ?? 0)
 
   const isCatalogItem = Boolean(productCatalogItemId)
@@ -674,7 +686,7 @@ function LineItemRow({
     ]
     if (productCatalogOptions.length > 0) {
       groups.push({
-        label: 'Product Catalog',
+        label: 'Product catalog',
         items: productCatalogOptions.map(opt => ({
           ...opt,
           description: formatCurrency(Number(opt.unitPrice)),
@@ -703,113 +715,74 @@ function LineItemRow({
       {/* Content */}
       <div className='flex-1 space-y-3 p-4'>
         {/* Product / Custom selector + remove button */}
-      {!isReadOnly ? (
-        <div className='flex items-end gap-2'>
+        {!isReadOnly ? (
+          <div className='flex items-end gap-2'>
+            <FormField
+              control={form.control}
+              name={`lineItems.${index}.productCatalogItemId`}
+              render={({ field }) => (
+                <FormItem className='flex-1'>
+                  <FormLabel className='text-xs'>Item type</FormLabel>
+                  <FormControl>
+                    <SearchableCombobox
+                      name={field.name}
+                      value={selectorValue}
+                      onChange={value => onProductSelect(index, value)}
+                      onBlur={field.onBlur}
+                      groups={productGroups}
+                      searchPlaceholder='Search items...'
+                      emptyMessage='No items found.'
+                      disabled={disabled}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            {canRemove ? (
+              <Button
+                type='button'
+                variant='ghost'
+                size='icon'
+                className='shrink-0'
+                onClick={() => onRemove(index)}
+                disabled={disabled}
+                aria-label={`Remove item ${index + 1}`}
+              >
+                <Trash2 className='h-3.5 w-3.5' />
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {/* Description — only shown for custom items */}
+        {!isCatalogItem ? (
           <FormField
             control={form.control}
-            name={`lineItems.${index}.productCatalogItemId`}
+            name={`lineItems.${index}.description`}
             render={({ field }) => (
-              <FormItem className='flex-1'>
-                <FormLabel className='text-xs'>Item type</FormLabel>
+              <FormItem>
+                <FormLabel className='text-xs'>Description</FormLabel>
                 <FormControl>
-                  <SearchableCombobox
-                    name={field.name}
-                    value={selectorValue}
-                    onChange={value => onProductSelect(index, value)}
-                    onBlur={field.onBlur}
-                    groups={productGroups}
-                    searchPlaceholder='Search items...'
-                    emptyMessage='No items found.'
+                  <Input
+                    {...field}
+                    placeholder='Service or product description'
                     disabled={disabled}
                   />
                 </FormControl>
+                <FormMessage />
               </FormItem>
             )}
           />
-          {canRemove ? (
-            <Button
-              type='button'
-              variant='ghost'
-              size='icon'
-              className='h-9 w-9 shrink-0'
-              onClick={() => onRemove(index)}
-              disabled={disabled}
-              aria-label={`Remove item ${index + 1}`}
-            >
-              <Trash2 className='h-3.5 w-3.5' />
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
+        ) : null}
 
-      {/* Description — only shown for custom items */}
-      {!isCatalogItem ? (
-        <FormField
-          control={form.control}
-          name={`lineItems.${index}.description`}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className='text-xs'>Description</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  placeholder='Service or product description'
-                  disabled={disabled}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      ) : null}
-
-      {/* Quantity + Unit Price + Amount */}
-      <div className='grid grid-cols-3 gap-3'>
-        <FormField
-          control={form.control}
-          name={`lineItems.${index}.quantity`}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className='text-xs'>Qty</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  value={field.value ?? ''}
-                  onChange={e =>
-                    field.onChange(
-                      e.target.value === '' ? '' : Number(e.target.value)
-                    )
-                  }
-                  type='number'
-                  step='any'
-                  min='0'
-                  inputMode='decimal'
-                  disabled={disabled}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        {isCatalogItem ? (
-          <div className='space-y-1.5'>
-            <label className='text-xs font-medium'>Unit price</label>
-            <div
-              className={cn(
-                'flex h-9 items-center rounded-md border px-3 text-sm',
-                'bg-muted text-muted-foreground'
-              )}
-            >
-              {formatCurrency(unitPrice ?? 0)}
-            </div>
-          </div>
-        ) : (
+        {/* Quantity + Unit Price + Amount */}
+        <div className='grid grid-cols-3 gap-3'>
           <FormField
             control={form.control}
-            name={`lineItems.${index}.unitPrice`}
+            name={`lineItems.${index}.quantity`}
             render={({ field }) => (
               <FormItem>
-                <FormLabel className='text-xs'>Unit price</FormLabel>
+                <FormLabel className='text-xs'>Qty</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
@@ -820,7 +793,7 @@ function LineItemRow({
                       )
                     }
                     type='number'
-                    step='0.01'
+                    step='any'
                     min='0'
                     inputMode='decimal'
                     disabled={disabled}
@@ -830,35 +803,74 @@ function LineItemRow({
               </FormItem>
             )}
           />
-        )}
-        <div className='space-y-1.5'>
-          <label className='text-xs font-medium'>Amount</label>
-          <div
-            className={cn(
-              'flex h-9 items-center rounded-md border px-3 text-sm',
-              'bg-muted text-muted-foreground'
-            )}
-          >
-            {formatCurrency(amount)}
+          {isCatalogItem ? (
+            <div className='space-y-1.5'>
+              <label className='text-xs font-medium'>Unit price</label>
+              <div
+                className={cn(
+                  'flex h-9 items-center rounded-md border px-3 text-sm',
+                  'bg-muted text-muted-foreground'
+                )}
+              >
+                {formatCurrency(unitPrice ?? 0)}
+              </div>
+            </div>
+          ) : (
+            <FormField
+              control={form.control}
+              name={`lineItems.${index}.unitPrice`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className='text-xs'>Unit price</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      value={field.value ?? ''}
+                      onChange={e =>
+                        field.onChange(
+                          e.target.value === '' ? '' : Number(e.target.value)
+                        )
+                      }
+                      type='number'
+                      step='0.01'
+                      min='0'
+                      inputMode='decimal'
+                      disabled={disabled}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+          <div className='space-y-1.5'>
+            <label className='text-xs font-medium'>Amount</label>
+            <div
+              className={cn(
+                'flex h-9 items-center rounded-md border px-3 text-sm',
+                'bg-muted text-muted-foreground'
+              )}
+            >
+              {formatCurrency(amount)}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Hour block label — only shown for catalog items that create hour blocks (not net_30) */}
-      {isCatalogItem && createsHourBlock && !isNet30 ? (
-        <p className='text-muted-foreground text-xs'>
-          Creates hour block on payment
-        </p>
-      ) : null}
+        {/* Hour block label — only shown for catalog items that create hour blocks (not net_30) */}
+        {isCatalogItem && createsHourBlock && !isNet30 ? (
+          <p className='text-muted-foreground text-xs'>
+            Creates hour block on payment
+          </p>
+        ) : null}
 
-      {/* Min quantity advisory warning */}
-      {showMinQuantityWarning ? (
-        <div className='flex items-center gap-2 rounded-md border border-yellow-300/50 bg-yellow-50 px-3 py-1.5 text-xs text-yellow-800 dark:border-yellow-500/30 dark:bg-yellow-900/20 dark:text-yellow-300'>
-          <AlertTriangle className='h-3 w-3 shrink-0' />
-          Recommended minimum: {minQuantity}{' '}
-          {selectedProduct?.unitLabel ?? 'units'}.
-        </div>
-      ) : null}
+        {/* Min quantity advisory warning */}
+        {showMinQuantityWarning ? (
+          <div className='border-warning/30 bg-warning/10 text-warning flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs'>
+            <AlertTriangle className='h-3 w-3 shrink-0' />
+            Recommended minimum: {minQuantity}{' '}
+            {selectedProduct?.unitLabel ?? 'units'}.
+          </div>
+        ) : null}
       </div>
     </div>
   )

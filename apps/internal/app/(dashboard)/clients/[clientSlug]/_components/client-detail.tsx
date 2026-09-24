@@ -15,12 +15,13 @@ import {
   Pencil,
   UserPlus,
 } from 'lucide-react'
-import { formatCalendarDate } from '@/lib/dates'
+import { formatCalendarDate } from '@pts/ui/dates'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Button } from '@pts/ui/button'
 import { Badge } from '@pts/ui/badge'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { EmptyState } from '@pts/ui/empty-state'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Progress } from '@pts/ui/progress'
 import { useToast } from '@/components/ui/use-toast'
@@ -185,11 +186,7 @@ function ClientDetailsWidget({
           value={getBillingTypeLabel(client.billingType)}
         />
         {client.state ? (
-          <DetailRow
-            icon={MapPin}
-            label='State'
-            value={client.state}
-          />
+          <DetailRow icon={MapPin} label='State' value={client.state} />
         ) : null}
         <DetailRow
           icon={FolderKanban}
@@ -209,7 +206,7 @@ function ClientDetailsWidget({
               href={client.website}
               target='_blank'
               rel='noopener noreferrer'
-              className='ml-auto text-sm font-medium text-blue-600 hover:underline dark:text-blue-400'
+              className='ml-auto text-sm font-medium underline-offset-4 hover:underline'
             >
               {new URL(client.website).hostname}
             </a>
@@ -301,16 +298,14 @@ function SheetLink({
       onPointerEnter={() => prefetchSheetInit(entity, id)}
       onClick={() => open(entity, id)}
     >
-      <Avatar className='h-5 w-5'>
+      <Avatar size='xs'>
         {avatarUserId && (
           <AvatarImage
             src={`/api/storage/user-avatar/${avatarUserId}`}
             alt={label}
           />
         )}
-        <AvatarFallback className='text-[9px]'>
-          {getPersonInitials(label)}
-        </AvatarFallback>
+        <AvatarFallback>{getPersonInitials(label)}</AvatarFallback>
       </Avatar>
       <span className='underline-offset-4 group-hover:underline'>{label}</span>
     </button>
@@ -357,9 +352,7 @@ function ClientProjectsSection({
       </div>
       <div className='p-3'>
         {projects.length === 0 ? (
-          <div className='text-muted-foreground rounded-md border border-dashed px-4 py-6 text-center text-sm'>
-            No projects found for this client.
-          </div>
+          <EmptyState message='No projects yet.' />
         ) : (
           <div className='space-y-2'>
             {projects.map(project => (
@@ -478,10 +471,8 @@ function ClientOverviewActions({
           size='sm'
           onClick={() => setSheetOpen(true)}
           disabled={isPending}
-          aria-label='Edit client'
-          title='Edit client'
         >
-          <Pencil className='h-4 w-4' />
+          <Pencil />
           Edit client
         </Button>
       </DisabledFieldTooltip>

@@ -15,7 +15,7 @@ import { UsersManagementTable } from '../_components/users-management-table'
 import { USERS_TABS } from '../_lib/tabs'
 
 export const metadata: Metadata = {
-  title: 'User Archive | Settings',
+  title: 'User archive | Settings',
 }
 
 type UsersArchivePageProps = {

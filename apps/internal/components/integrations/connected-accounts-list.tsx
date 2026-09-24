@@ -6,8 +6,10 @@ import { Loader2, Trash2, Plus, RefreshCw } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Button } from '@pts/ui/button'
 import { Badge } from '@pts/ui/badge'
-import { formatCalendarDate } from '@/lib/dates'
+import { formatCalendarDate } from '@pts/ui/dates'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { EmptyState } from '@pts/ui/empty-state'
+import { RowActionButton } from '@pts/ui/row-action-button'
 
 const PROVIDER_NAMES = {
   google: 'Google',
@@ -103,21 +105,21 @@ export function ConnectedAccountsList({
 
   if (activeAccounts.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-4 py-6 text-center">
-        <p className="text-sm text-muted-foreground">
-          No {providerName} accounts connected
-        </p>
-        <Button onClick={onAddAccount} variant="outline" size="sm">
-          <Plus className="mr-2 h-4 w-4" />
-          Connect {providerName} Account
-        </Button>
-      </div>
+      <EmptyState
+        message={`No ${providerName} accounts connected.`}
+        action={
+          <Button onClick={onAddAccount} variant='outline' size='sm'>
+            <Plus />
+            Connect {providerName} account
+          </Button>
+        }
+      />
     )
   }
 
   return (
     <>
-      <div className="space-y-3">
+      <div className='space-y-3'>
         {activeAccounts.map(account => {
           const isCurrentlyDisconnecting =
             disconnectingId === account.id || isDisconnecting === account.id
@@ -125,61 +127,60 @@ export function ConnectedAccountsList({
           return (
             <div
               key={account.id}
-              className="flex items-center justify-between rounded-lg border p-3"
+              className='flex items-center justify-between rounded-lg border p-3'
             >
-              <div className="flex items-center gap-3">
-                <Avatar className="h-9 w-9">
+              <div className='flex items-center gap-3'>
+                <Avatar size='lg'>
                   <AvatarImage src={getAvatarUrl(account)} />
                   <AvatarFallback>{getInitials(account)}</AvatarFallback>
                 </Avatar>
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">
+                <div className='flex flex-col'>
+                  <span className='text-sm font-medium'>
                     {getDisplayLabel(account)}
                   </span>
                   {account.email && provider === 'github' && (
-                    <span className="text-xs text-muted-foreground">
+                    <span className='text-muted-foreground text-xs'>
                       {account.email}
                     </span>
                   )}
-                  <span className="text-xs text-muted-foreground">
+                  <span className='text-muted-foreground text-xs'>
                     Connected {formatDate(account.connectedAt)}
                   </span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className='flex items-center gap-2'>
                 <Badge
-                  variant={account.status === 'ACTIVE' ? 'default' : 'secondary'}
-                  className="text-xs"
+                  variant={
+                    account.status === 'ACTIVE' ? 'default' : 'secondary'
+                  }
+                  className='text-xs'
                 >
-                  {account.status}
+                  {account.status === 'ACTIVE' ? 'Active' : account.status}
                 </Badge>
 
                 {onUpdatePermissions && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  <RowActionButton
+                    label='Update permissions'
+                    icon={<RefreshCw />}
+                    className='text-muted-foreground hover:text-foreground'
                     onClick={onUpdatePermissions}
-                    title="Update permissions"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                  </Button>
+                  />
                 )}
 
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                <RowActionButton
+                  label='Disconnect account'
+                  icon={
+                    isCurrentlyDisconnecting ? (
+                      <Loader2 className='animate-spin' />
+                    ) : (
+                      <Trash2 />
+                    )
+                  }
+                  className='text-muted-foreground hover:text-destructive'
                   disabled={isCurrentlyDisconnecting}
                   onClick={() => handleDisconnectClick(account)}
-                >
-                  {isCurrentlyDisconnecting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-4 w-4" />
-                  )}
-                </Button>
+                />
               </div>
             </div>
           )
@@ -188,14 +189,14 @@ export function ConnectedAccountsList({
 
       <ConfirmDialog
         open={confirmDialogOpen}
-        title="Disconnect Account"
+        title='Disconnect account?'
         description={
           accountToDisconnect
             ? `Are you sure you want to disconnect ${getDisplayLabel(accountToDisconnect)}? This will revoke access to this ${providerName} account.`
             : ''
         }
-        confirmLabel="Disconnect"
-        confirmVariant="destructive"
+        confirmLabel='Disconnect'
+        confirmVariant='destructive'
         onConfirm={handleConfirmDisconnect}
         onCancel={handleCancelDisconnect}
       />

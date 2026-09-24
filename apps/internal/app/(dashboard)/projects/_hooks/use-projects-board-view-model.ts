@@ -19,9 +19,7 @@ import {
 import { useProjectsBoardNavigation } from './use-projects-board-navigation'
 import { useProjectsBoardSensors } from './use-projects-board-sensors'
 
-const NO_PROJECTS_TITLE = 'No projects assigned yet'
-const NO_PROJECTS_DESCRIPTION =
-  'Once an administrator links you to a project, the workspace will unlock here.'
+const NO_PROJECTS_MESSAGE = 'No projects assigned yet.'
 
 type BaseProps = Omit<UseProjectsBoardCoreStateArgs, 'currentView'>
 
@@ -56,7 +54,7 @@ export type ProjectsBoardViewModel = {
   tabs: ProjectsBoardTabsSectionProps
   dialogs: ProjectsBoardDialogsProps
   burndown: ProjectsBoardBurndownProps
-  emptyState: { title: string; description: string }
+  emptyState: { message: string }
   isEmpty: boolean
 }
 
@@ -64,7 +62,10 @@ export function useProjectsBoardViewModel({
   initialTab = 'board',
   ...props
 }: ProjectsBoardProps): ProjectsBoardViewModel {
-  const currentBoardView = initialTab === 'timeLogs' || initialTab === 'overview' ? 'board' : initialTab
+  const currentBoardView =
+    initialTab === 'timeLogs' || initialTab === 'overview'
+      ? 'board'
+      : initialTab
   const { sensors } = useProjectsBoardSensors()
   const {
     boardState,
@@ -219,10 +220,7 @@ export function useProjectsBoardViewModel({
     tabs,
     dialogs,
     burndown,
-    emptyState: {
-      title: NO_PROJECTS_TITLE,
-      description: NO_PROJECTS_DESCRIPTION,
-    },
+    emptyState: { message: NO_PROJECTS_MESSAGE },
     isEmpty: props.projects.length === 0,
   }
 }

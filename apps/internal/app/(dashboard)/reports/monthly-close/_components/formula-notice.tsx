@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { ChevronDown, Info } from 'lucide-react'
-import { format, parseISO } from 'date-fns'
 
+import { formatCalendarDate } from '@pts/ui/dates'
 import { cn } from '@/lib/utils'
 import {
   Collapsible,
@@ -18,7 +18,13 @@ type FormulaNoticeProps = {
 }
 
 function formatEffectiveDate(iso: string): string {
-  return format(parseISO(iso), 'MMMM d, yyyy')
+  return (
+    formatCalendarDate(iso, {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    }) ?? iso
+  )
 }
 
 function pct(part: number, whole: number): string {
@@ -31,7 +37,8 @@ function RateBreakdown({ rates }: { rates: PartnerRateSchedule }) {
       <div className='flex items-center justify-between gap-4 text-sm'>
         <span className='text-foreground/70'>Payroll</span>
         <span className='font-medium tabular-nums'>
-          ${rates.payrollPerHour}/hr ({pct(rates.payrollPerHour, rates.billablePerHour)})
+          ${rates.payrollPerHour}/hr (
+          {pct(rates.payrollPerHour, rates.billablePerHour)})
         </span>
       </div>
       <div className='flex items-center justify-between gap-4 text-sm'>
@@ -45,13 +52,15 @@ function RateBreakdown({ rates }: { rates: PartnerRateSchedule }) {
       <div className='flex items-center justify-between gap-4 text-sm'>
         <span className='text-foreground/70'>Origination</span>
         <span className='font-medium tabular-nums'>
-          ${rates.originationPerHour}/hr ({pct(rates.originationPerHour, rates.billablePerHour)})
+          ${rates.originationPerHour}/hr (
+          {pct(rates.originationPerHour, rates.billablePerHour)})
         </span>
       </div>
       <div className='flex items-center justify-between gap-4 text-sm'>
         <span className='text-foreground/70'>House (est.)</span>
         <span className='font-medium tabular-nums'>
-          ${rates.housePerHour}/hr ({pct(rates.housePerHour, rates.billablePerHour)})
+          ${rates.housePerHour}/hr (
+          {pct(rates.housePerHour, rates.billablePerHour)})
         </span>
       </div>
       {!rates.internalOriginationPayable ? (
@@ -68,41 +77,42 @@ export function FormulaNotice({ rates, latestRates }: FormulaNoticeProps) {
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
-      <div className='rounded-xl border border-amber-500/30 bg-amber-50/60 dark:bg-amber-950/20'>
-        <CollapsibleTrigger className='flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left'>
-          <Info className='h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400' />
+      <div className='border-warning/30 bg-warning/10 rounded-xl border'>
+        <CollapsibleTrigger className='focus-visible:ring-ring/50 flex w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-3 text-left outline-none focus-visible:ring-[3px]'>
+          <Info className='text-warning size-4 shrink-0' />
           <div className='min-w-0 flex-1'>
-            <p className='text-sm font-medium text-amber-900 dark:text-amber-200'>
+            <p className='text-sm font-medium'>
               This month uses an older payout formula
             </p>
-            <p className='text-xs text-amber-800/70 dark:text-amber-300/60'>
-              Effective since {formatEffectiveDate(rates.effectiveFrom)}.
-              The current formula took effect{' '}
+            <p className='text-muted-foreground text-xs'>
+              Effective since {formatEffectiveDate(rates.effectiveFrom)}. The
+              current formula took effect{' '}
               {formatEffectiveDate(latestRates.effectiveFrom)}.
             </p>
           </div>
           <ChevronDown
             className={cn(
-              'h-4 w-4 shrink-0 text-amber-600 transition-transform duration-200 dark:text-amber-400',
+              'text-warning size-4 shrink-0 transition-transform duration-200 motion-reduce:transition-none',
               open && 'rotate-180'
             )}
           />
         </CollapsibleTrigger>
 
         <CollapsibleContent>
-          <div className='border-t border-amber-500/20 px-4 pt-4 pb-4'>
+          <div className='border-warning/20 border-t px-4 pt-4 pb-4'>
             {/* This month's formula */}
             <div>
-              <h4 className='mb-2 text-xs font-semibold tracking-[0.1em] uppercase text-amber-900/80 dark:text-amber-200/80'>
+              <h4 className='text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase'>
                 This month&apos;s formula (${rates.billablePerHour}/hr split)
               </h4>
               <RateBreakdown rates={rates} />
             </div>
 
             {/* Current formula for comparison */}
-            <div className='mt-4 border-t border-amber-500/15 pt-4'>
-              <h4 className='mb-2 text-xs font-semibold tracking-[0.1em] uppercase text-amber-900/80 dark:text-amber-200/80'>
-                Current formula (since {formatEffectiveDate(latestRates.effectiveFrom)})
+            <div className='border-warning/15 mt-4 border-t pt-4'>
+              <h4 className='text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase'>
+                Current formula (since{' '}
+                {formatEffectiveDate(latestRates.effectiveFrom)})
               </h4>
               <RateBreakdown rates={latestRates} />
             </div>

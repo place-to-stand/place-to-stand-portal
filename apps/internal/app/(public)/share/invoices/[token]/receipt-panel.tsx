@@ -20,12 +20,12 @@ export function ReceiptPanel({
   return (
     <>
       <div className='flex items-center gap-3'>
-        <span className='inline-flex size-8 shrink-0 items-center justify-center border border-[#b5f542]/50 text-[#b5f542]'>
+        <span className='border-brand-lime/50 text-brand-lime inline-flex size-8 shrink-0 items-center justify-center border'>
           <Check className='size-4' strokeWidth={2} />
         </span>
         <h2 className={PANEL_TITLE}>Payment received</h2>
       </div>
-      <p className='text-sm leading-normal text-[#a8a8ac]'>
+      <p className='text-brand-text-muted text-sm leading-normal'>
         Thank you. This invoice is paid in full and nothing further is due.
       </p>
       <dl className='flex flex-col'>
@@ -46,13 +46,11 @@ function ReceiptRow({
   numeric?: boolean
 }) {
   return (
-    <div className='flex items-baseline justify-between border-t border-[#2a2b30] py-3 last:border-b'>
+    <div className='border-brand-border flex items-baseline justify-between border-t py-3 last:border-b'>
       <dt className={DARK_LABEL}>{label}</dt>
       <dd
         className={
-          numeric
-            ? 'font-mono text-sm font-medium tabular-nums'
-            : 'text-sm font-medium'
+          numeric ? 'text-sm font-medium tabular-nums' : 'text-sm font-medium'
         }
       >
         {value}

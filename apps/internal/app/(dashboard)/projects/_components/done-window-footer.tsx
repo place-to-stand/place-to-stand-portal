@@ -35,7 +35,7 @@ export function DoneWindowFooter({
         the rule is stated either way -- a column that silently drops finished
         work reads as a bug the first time you go looking for something.
       */}
-      <p className='text-muted-foreground/70 px-2 text-center text-[11px] leading-snug'>
+      <p className='text-muted-foreground/70 px-2 text-center text-xs leading-snug'>
         {hasMore
           ? `Tasks are hidden ${formatDoneWindowLabel(doneWeeks)} after they're completed.`
           : `Showing everything completed in the last ${formatDoneWindowLabel(doneWeeks)}.`}
@@ -44,8 +44,8 @@ export function DoneWindowFooter({
         <Button
           type='button'
           variant='ghost'
-          size='sm'
-          className='h-7 w-full text-xs'
+          size='xs'
+          className='w-full'
           onClick={onWiden}
           disabled={isLoading}
         >
@@ -63,7 +63,7 @@ export function DoneWindowFooter({
         </Button>
       ) : null}
       {error ? (
-        <p className='text-destructive px-2 text-center text-[11px]'>{error}</p>
+        <p className='text-destructive px-2 text-center text-xs'>{error}</p>
       ) : null}
     </div>
   )

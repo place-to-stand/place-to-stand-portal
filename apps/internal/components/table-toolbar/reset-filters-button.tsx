@@ -22,9 +22,8 @@ export function ResetFiltersButton({ show, onReset }: ResetFiltersButtonProps) {
     <Button
       type='button'
       variant='ghost'
-      size='sm'
       onClick={onReset}
-      className='text-muted-foreground hover:text-foreground h-7 px-2 text-xs'
+      className='text-muted-foreground hover:text-foreground'
     >
       Reset
     </Button>

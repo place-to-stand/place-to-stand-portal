@@ -11,6 +11,8 @@ import {
 } from '@pts/ui/dialog'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { EmptyState } from '@pts/ui/empty-state'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { toast } from '@/components/ui/use-toast'
 import type { GitHubRepoLink } from '@/lib/types/github'
 import { siGithub } from 'simple-icons/icons'
@@ -203,8 +205,8 @@ export function GitHubReposSection({
         })
         .catch(() => {
           toast({
-            title: 'Error',
-            description: 'Failed to load repositories',
+            title: 'Unable to load repositories',
+            description: 'Please try again.',
             variant: 'destructive',
           })
         })
@@ -271,19 +273,15 @@ export function GitHubReposSection({
   if (!isGitHubConnected) {
     return (
       <div className='space-y-1'>
-        <h3 className='text-sm font-medium'>GitHub Repositories</h3>
-        <div className='rounded-lg border border-dashed p-4 text-center'>
-          <SimpleIcon
-            icon={siGithub}
-            className='text-muted-foreground mx-auto h-5 w-5'
-          />
-          <p className='text-muted-foreground mt-2 text-sm'>
-            Connect your GitHub account in Settings to link repositories.
-          </p>
-          <Button variant='outline' size='sm' className='mt-3' asChild>
-            <a href='/settings/integrations'>Go to Integrations</a>
-          </Button>
-        </div>
+        <h3 className='text-sm font-medium'>GitHub repositories</h3>
+        <EmptyState
+          message='Connect your GitHub account in Settings to link repositories.'
+          action={
+            <Button variant='outline' size='sm' asChild>
+              <a href='/settings/integrations'>Go to integrations</a>
+            </Button>
+          }
+        />
       </div>
     )
   }
@@ -291,7 +289,7 @@ export function GitHubReposSection({
   if (loading && !isCreateMode) {
     return (
       <div className='space-y-1'>
-        <h3 className='text-sm font-medium'>GitHub Repositories</h3>
+        <h3 className='text-sm font-medium'>GitHub repositories</h3>
         <div className='text-muted-foreground flex items-center gap-2 text-sm'>
           <Loader2 className='h-4 w-4 animate-spin' />
           Loading linked repos...
@@ -329,28 +327,24 @@ export function GitHubReposSection({
   return (
     <div className='space-y-1'>
       <div className='flex items-center justify-between gap-3'>
-        <h3 className='text-sm font-medium'>GitHub Repositories</h3>
-        <Button
+        <h3 className='text-sm font-medium'>GitHub repositories</h3>
+        <RowActionButton
           type='button'
-          variant='ghost'
-          size='xs'
+          label='Link repository'
+          icon={<Plus />}
           onClick={() => handleDialogOpenChange(true)}
           disabled={disabled}
-          aria-label='Link repository'
-        >
-          <Plus className='h-4 w-4' />
-        </Button>
+        />
       </div>
 
       {hasNoRepos ? (
-        <div className='rounded-lg border border-dashed p-4 text-center'>
-          <SimpleIcon icon={siGithub} className='text-muted-foreground mx-auto h-6 w-6' />
-          <p className='text-muted-foreground mt-2 text-sm'>
-            {isCreateMode
-              ? 'No repositories selected. Add repos to link when you save.'
-              : 'No repositories linked. Link a repo to enable PR creation.'}
-          </p>
-        </div>
+        <EmptyState
+          message={
+            isCreateMode
+              ? 'No repositories selected.'
+              : 'No repositories linked.'
+          }
+        />
       ) : (
         <div className='space-y-2'>
           {/* Linked repos (edit mode) */}
@@ -361,12 +355,15 @@ export function GitHubReposSection({
             >
               <div className='flex min-w-0 flex-col gap-1'>
                 <div className='flex items-center gap-2 text-sm'>
-                  <SimpleIcon icon={siGithub} className='text-muted-foreground h-4 w-4 shrink-0' />
+                  <SimpleIcon
+                    icon={siGithub}
+                    className='text-muted-foreground h-4 w-4 shrink-0'
+                  />
                   <a
                     href={`https://github.com/${repo.repoFullName}`}
                     target='_blank'
                     rel='noopener noreferrer'
-                    className='truncate hover:underline'
+                    className='truncate-link hover:underline'
                   >
                     {repo.repoFullName}
                     <ExternalLink className='text-muted-foreground ml-1 inline h-3 w-3' />
@@ -375,22 +372,20 @@ export function GitHubReposSection({
                 <div className='text-muted-foreground flex items-center gap-2 pl-6 text-xs'>
                   <span>{repo.defaultBranch}</span>
                   {repo.githubAppInstallationId && (
-                    <span className='bg-muted rounded px-1.5 py-0.5 text-[10px] font-medium'>
+                    <span className='bg-muted rounded-sm px-1.5 py-0.5 text-[10px] font-medium'>
                       App
                     </span>
                   )}
                 </div>
               </div>
-              <Button
+              <RowActionButton
                 type='button'
-                variant='ghost'
-                size='icon'
-                className='text-muted-foreground hover:text-destructive h-7 w-7 shrink-0'
+                label='Remove repository'
+                icon={<Trash2 />}
+                className='text-muted-foreground hover:text-destructive shrink-0'
                 onClick={() => setDeleteConfirm(repo)}
                 disabled={disabled}
-              >
-                <Trash2 className='h-4 w-4' />
-              </Button>
+              />
             </div>
           ))}
           {/* Pending repos (both modes) */}
@@ -401,26 +396,27 @@ export function GitHubReposSection({
             >
               <div className='flex min-w-0 flex-col gap-1'>
                 <div className='flex items-center gap-2 text-sm'>
-                  <SimpleIcon icon={siGithub} className='text-muted-foreground h-4 w-4 shrink-0' />
+                  <SimpleIcon
+                    icon={siGithub}
+                    className='text-muted-foreground h-4 w-4 shrink-0'
+                  />
                   <span className='truncate'>{repo.repoFullName}</span>
                   {repo.source === 'app' && (
-                    <span className='bg-muted rounded px-1.5 py-0.5 text-[10px] font-medium'>
+                    <span className='bg-muted rounded-sm px-1.5 py-0.5 text-[10px] font-medium'>
                       App
                     </span>
                   )}
                 </div>
-                <div className='pl-6 text-xs text-amber-600'>Pending save</div>
+                <div className='text-warning pl-6 text-xs'>Pending save</div>
               </div>
-              <Button
+              <RowActionButton
                 type='button'
-                variant='ghost'
-                size='icon'
-                className='text-muted-foreground hover:text-destructive h-7 w-7 shrink-0'
+                label='Remove repository'
+                icon={<Trash2 />}
+                className='text-muted-foreground hover:text-destructive shrink-0'
                 onClick={() => setPendingDeleteConfirm(repo)}
                 disabled={disabled}
-              >
-                <Trash2 className='h-4 w-4' />
-              </Button>
+              />
             </div>
           ))}
           {/* Removed repos (edit mode) */}
@@ -431,16 +427,21 @@ export function GitHubReposSection({
             >
               <div className='flex min-w-0 flex-col gap-1'>
                 <div className='flex items-center gap-2 text-sm line-through'>
-                  <SimpleIcon icon={siGithub} className='text-muted-foreground h-4 w-4 shrink-0' />
+                  <SimpleIcon
+                    icon={siGithub}
+                    className='text-muted-foreground h-4 w-4 shrink-0'
+                  />
                   <span className='truncate'>{repo.repoFullName}</span>
                 </div>
-                <div className='pl-6 text-xs text-red-600'>Pending removal</div>
+                <div className='text-destructive pl-6 text-xs'>
+                  Pending removal
+                </div>
               </div>
               <Button
                 type='button'
                 variant='ghost'
-                size='icon'
-                className='text-muted-foreground h-7 w-7 shrink-0'
+                size='xs'
+                className='text-muted-foreground shrink-0'
                 onClick={() => {
                   const next = new Set(removedRepoIds)
                   next.delete(repo.id)
@@ -448,9 +449,8 @@ export function GitHubReposSection({
                 }}
                 disabled={disabled}
                 aria-label='Undo removal'
-                title='Undo removal'
               >
-                <span className='text-xs'>Undo</span>
+                Undo
               </Button>
             </div>
           ))}
@@ -461,7 +461,7 @@ export function GitHubReposSection({
       <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add GitHub Repository</DialogTitle>
+            <DialogTitle>Add GitHub repository</DialogTitle>
           </DialogHeader>
           <div className='space-y-4 pt-4'>
             {loadingRepos ? (
@@ -476,7 +476,7 @@ export function GitHubReposSection({
                 value={selectedRepo ?? ''}
                 onChange={setSelectedRepo}
                 searchPlaceholder='Search repositories...'
-                emptyMessage='No repositories found'
+                emptyMessage='No repositories found.'
               />
             )}
             <div className='flex justify-end gap-2'>
@@ -484,7 +484,7 @@ export function GitHubReposSection({
                 Cancel
               </Button>
               <Button onClick={handleLink} disabled={!selectedRepo}>
-                Add Repository
+                Add repository
               </Button>
             </div>
           </div>

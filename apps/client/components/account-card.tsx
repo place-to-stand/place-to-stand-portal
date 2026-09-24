@@ -1,3 +1,5 @@
+import { Card } from '@pts/ui/card'
+
 import { HoursSummaryContent } from '@/components/hours/hours-summary-card'
 import { NavRow } from '@/components/ui/nav-row'
 import { cn } from '@/lib/utils'
@@ -19,48 +21,35 @@ function invoiceLine(summary: ClientInvoiceSummary): string {
 }
 
 /**
- * Hours balance (read-only rows) plus a row through to the invoices page.
- *
- * Everything account-related shares one bordered container rather than
- * floating as separate blocks.
+ * One client's account: the hours balance (a read-only readout) plus a row
+ * through to that client's invoices. The dashboard renders one per client
+ * section, so the card never names the client itself.
  */
 export function AccountCard({
-  hoursSummaries,
+  clientId,
+  hoursSummary,
   invoiceSummary,
-  showClientName,
   className,
 }: {
-  hoursSummaries: ClientHoursSummary[]
+  clientId: string
+  /** Absent when the client has no billing terms on record yet. */
+  hoursSummary: ClientHoursSummary | undefined
   invoiceSummary: ClientInvoiceSummary
-  showClientName: boolean
   className?: string
 }) {
-  const text = invoiceLine(invoiceSummary)
-
   return (
-    <div
-      className={cn(
-        'divide-y divide-border overflow-hidden rounded-lg border border-border bg-card',
-        className
-      )}
-    >
-      {hoursSummaries.map(summary => (
-        <HoursSummaryContent
-          key={summary.clientId}
-          summary={summary}
-          showClientName={showClientName}
-        />
-      ))}
+    <Card className={cn('gap-0 divide-y overflow-hidden py-0', className)}>
+      {hoursSummary ? <HoursSummaryContent summary={hoursSummary} /> : null}
 
       <NavRow
-        href="/invoices"
-        title="Invoices"
+        href={`/invoices?client=${clientId}`}
+        title='Invoices'
         meta={
-          <span className='truncate text-sm text-muted-foreground'>
-            {text}
+          <span className='text-muted-foreground truncate text-sm'>
+            {invoiceLine(invoiceSummary)}
           </span>
         }
       />
-    </div>
+    </Card>
   )
 }

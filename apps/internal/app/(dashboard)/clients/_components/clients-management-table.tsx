@@ -36,8 +36,8 @@ type ClientsManagementTableProps = {
 }
 
 const EMPTY_MESSAGES = {
-  active: 'No clients yet. Create one to begin organizing projects.',
-  archive: 'No archived clients. Archived clients appear here once deleted.',
+  active: 'No clients yet.',
+  archive: 'No archived clients.',
 } as const
 
 export function ClientsManagementTable({
@@ -185,4 +185,3 @@ export function ClientsManagementTable({
     </div>
   )
 }
-

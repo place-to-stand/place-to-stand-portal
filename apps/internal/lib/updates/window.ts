@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { COMPANY_TIME_ZONE } from '@/lib/dates'
+import { COMPANY_TIME_ZONE } from '@pts/ui/dates'
 
 import { fetchLastSentPeriodEnd } from './queries'
 

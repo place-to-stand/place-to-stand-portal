@@ -3,12 +3,12 @@ import { TASK_STATUS_TOKENS } from '@/lib/projects/task-status'
 export const TASK_STATUSES = [
   {
     value: 'ON_DECK',
-    label: 'On Deck',
+    label: 'On deck',
     token: TASK_STATUS_TOKENS.ON_DECK,
   },
   {
     value: 'IN_PROGRESS',
-    label: 'In Progress',
+    label: 'In progress',
     token: TASK_STATUS_TOKENS.IN_PROGRESS,
   },
   {

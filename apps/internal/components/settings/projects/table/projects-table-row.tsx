@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
-import { Button } from '@pts/ui/button'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { TableCell, TableRow } from '@pts/ui/table'
 import {
@@ -123,7 +123,9 @@ export function ProjectsTableRow({
         ) : null}
       </TableCell>
       <TableCell>
-        <Badge className={cn('text-xs', statusTone)}>{statusLabel}</Badge>
+        <Badge variant='outline' className={statusTone}>
+          {statusLabel}
+        </Badge>
       </TableCell>
       <TableCell className='text-muted-foreground text-sm'>
         {formatProjectDateRange(project.starts_on, project.ends_on)}
@@ -135,17 +137,13 @@ export function ProjectsTableRow({
               disabled={restoreDisabled}
               reason={restoreDisabledReason}
             >
-              <Button
+              <RowActionButton
                 variant='outline'
-                size='icon-sm'
                 onClick={() => onRestore(project)}
-                title='Restore project'
-                aria-label='Restore project'
+                label='Restore project'
+                icon={<RefreshCw />}
                 disabled={restoreDisabled}
-              >
-                <RefreshCw className='h-4 w-4' />
-                <span className='sr-only'>Restore</span>
-              </Button>
+              />
             </DisabledFieldTooltip>
           ) : null}
           {showArchive ? (
@@ -153,17 +151,13 @@ export function ProjectsTableRow({
               disabled={deleteDisabled}
               reason={deleteDisabledReason}
             >
-              <Button
+              <RowActionButton
                 variant='destructive'
-                size='icon-sm'
                 onClick={() => onRequestDelete(project)}
-                title='Archive project'
-                aria-label='Archive project'
+                label='Archive project'
+                icon={<Archive />}
                 disabled={deleteDisabled}
-              >
-                <Archive className='h-4 w-4' />
-                <span className='sr-only'>Archive</span>
-              </Button>
+              />
             </DisabledFieldTooltip>
           ) : null}
           {showDestroy ? (
@@ -171,17 +165,13 @@ export function ProjectsTableRow({
               disabled={destroyDisabled}
               reason={destroyDisabledReason}
             >
-              <Button
+              <RowActionButton
                 variant='destructive'
-                size='icon-sm'
                 onClick={() => onRequestDestroy(project)}
-                title='Permanently delete project'
-                aria-label='Permanently delete project'
+                label='Permanently delete project'
+                icon={<Trash2 />}
                 disabled={destroyDisabled}
-              >
-                <Trash2 className='h-4 w-4' />
-                <span className='sr-only'>Delete permanently</span>
-              </Button>
+              />
             </DisabledFieldTooltip>
           ) : null}
         </div>

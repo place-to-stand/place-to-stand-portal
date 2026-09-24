@@ -2,8 +2,9 @@
 
 import { RefreshCw } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { TabsList, TabsTrigger } from '@pts/ui/tabs'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 import { TIMEFRAME_OPTIONS, type TimeframeOption } from './constants'
@@ -25,36 +26,36 @@ export function WidgetControls({
         id='recent-activity-overview-heading'
         className='text-sm font-semibold'
       >
-        Recent Activity Overview
+        Recent activity overview
       </h2>
       <div className='flex items-center gap-1.5'>
         <TabsList className='h-7'>
           {options.map(option => (
-            <TabsTrigger
-              key={option.value}
-              value={option.value}
-              title={option.description}
-              className='px-2 py-0.5 text-[11px]'
-            >
-              {option.label}
-            </TabsTrigger>
+            <Tooltip key={option.value}>
+              <TooltipTrigger asChild>
+                <TabsTrigger
+                  value={option.value}
+                  className='px-2 py-0.5 text-xs'
+                >
+                  {option.label}
+                </TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent>{option.description}</TooltipContent>
+            </Tooltip>
           ))}
         </TabsList>
-        <Button
+        <RowActionButton
           type='button'
-          variant='ghost'
-          size='icon-sm'
+          label='Refresh summary'
           onClick={onRefresh}
           disabled={isRefreshing}
-        >
-          <RefreshCw
-            className={cn('size-4', {
-              'animate-spin': isRefreshing,
-            })}
-            aria-hidden
-          />
-          <span className='sr-only'>Refresh summary</span>
-        </Button>
+          icon={
+            <RefreshCw
+              className={cn({ 'animate-spin': isRefreshing })}
+              aria-hidden
+            />
+          }
+        />
       </div>
     </header>
   )

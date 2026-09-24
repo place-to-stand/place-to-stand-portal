@@ -1,9 +1,9 @@
 'use client'
 
-import { format } from 'date-fns'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { formatCalendarDate } from '@pts/ui/dates'
 import {
   Select,
   SelectContent,
@@ -11,18 +11,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@pts/ui/select'
-import { Input } from '@/components/ui/input'
+import { Input } from '@pts/ui/input'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { useReportNavigation } from '@/lib/reports/use-report-navigation'
 import type { MonthCursor } from '@/lib/data/reports/types'
 
-const monthLabels = Array.from({ length: 12 }, (_, index) => {
-  const date = new Date(2025, index, 1)
-  return {
-    value: String(index),
-    label: format(date, 'MMMM'),
-  }
-})
+const monthLabels = Array.from({ length: 12 }, (_, index) => ({
+  value: String(index),
+  label:
+    formatCalendarDate(`2025-${String(index + 1).padStart(2, '0')}-01`, {
+      month: 'long',
+    }) ?? '',
+}))
 
 type ReportHeaderProps = {
   displayMonth: string
@@ -69,7 +69,7 @@ export function ReportHeader({
       </div>
       <div className='flex grow items-center justify-end gap-4'>
         <Button type='button' variant='outline' onClick={goToThisMonth}>
-          This Month
+          This month
         </Button>
         <div className='flex items-center gap-2'>
           <Select value={monthValue} onValueChange={selectMonth}>
@@ -113,7 +113,7 @@ export function ReportHeader({
               disabled={!canGoPrev}
               aria-label='View previous month'
             >
-              <ChevronLeft className='h-4 w-4' />
+              <ChevronLeft />
             </Button>
           </DisabledFieldTooltip>
           <DisabledFieldTooltip
@@ -128,7 +128,7 @@ export function ReportHeader({
               disabled={!canGoNext}
               aria-label='View next month'
             >
-              <ChevronRight className='h-4 w-4' />
+              <ChevronRight />
             </Button>
           </DisabledFieldTooltip>
         </div>

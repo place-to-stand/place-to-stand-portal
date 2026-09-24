@@ -19,8 +19,7 @@ import { useColumnScrollPersistence } from '@/hooks/use-column-scroll-persistenc
 
 import {
   FEEDBACK_CLASSES,
-  NO_SELECTION_DESCRIPTION,
-  NO_SELECTION_TITLE,
+  NO_SELECTION_MESSAGE,
 } from './projects-board-tabs.constants'
 import {
   BOARD_COLUMNS,
@@ -34,8 +33,17 @@ export type ProjectsBoardActiveProject = {
   name: string
   slug: string | null
   status: string
-  client: { id: string | null; name: string | null; slug: string | null; billing_type: string | null } | null
-  owner: { id: string; full_name: string | null; avatar_url: string | null } | null
+  client: {
+    id: string | null
+    name: string | null
+    slug: string | null
+    billing_type: string | null
+  } | null
+  owner: {
+    id: string
+    full_name: string | null
+    avatar_url: string | null
+  } | null
   starts_on: string | null
   ends_on: string | null
   githubRepos: { id: string; repoFullName: string; defaultBranch: string }[]
@@ -284,10 +292,7 @@ export function BoardTabContent(props: BoardTabContentProps) {
     >
       {feedback ? <p className={FEEDBACK_CLASSES}>{feedback}</p> : null}
       {!activeProject ? (
-        <ProjectsBoardEmpty
-          title={NO_SELECTION_TITLE}
-          description={NO_SELECTION_DESCRIPTION}
-        />
+        <ProjectsBoardEmpty message={NO_SELECTION_MESSAGE} />
       ) : (
         <div className='relative min-h-0 flex-1'>
           <div className='absolute inset-0 overflow-hidden'>

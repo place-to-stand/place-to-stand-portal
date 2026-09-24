@@ -14,7 +14,7 @@ const program = new Command()
 program
   .name('pts')
   .description(
-    'Admin CLI for the Place to Stand portal. Outputs JSON on stdout so it can be piped.'
+    'Admin CLI for the Place To Stand portal. Outputs JSON on stdout so it can be piped.'
   )
   .version('0.1.0')
   .option(

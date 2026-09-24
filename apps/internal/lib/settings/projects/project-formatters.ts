@@ -1,4 +1,4 @@
-import { format, parseISO } from 'date-fns'
+import { formatCalendarDate } from '@pts/ui/dates'
 
 /**
  * Normalizes a date string and formats it for display. Returns null when the
@@ -9,16 +9,8 @@ function formatProjectDate(value?: string | null): string | null {
     return null
   }
 
-  try {
-    const normalized = value.includes('T') ? value : `${value}T00:00:00`
-    // Ensure the stored date renders as the exact day selected, regardless of timezone.
-    return format(parseISO(normalized), 'MMM d, yyyy')
-  } catch (error) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.warn('Unable to format project date', { value, error })
-    }
-    return null
-  }
+  // Date-only values render as the stored calendar day in every timezone.
+  return formatCalendarDate(value)
 }
 
 /**

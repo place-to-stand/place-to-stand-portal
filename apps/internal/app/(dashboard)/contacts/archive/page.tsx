@@ -20,7 +20,7 @@ type ContactsArchivePageProps = {
 }
 
 export const metadata: Metadata = {
-  title: 'Contact Archive | Place to Stand Portal',
+  title: 'Contact archive',
 }
 
 

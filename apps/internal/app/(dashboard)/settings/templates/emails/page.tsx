@@ -4,7 +4,7 @@ import { PageShell } from '@/components/layout/page-shell'
 import { buildEmailTemplateCatalog } from '@/lib/email/catalog'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 
-import { EmailsBrowser } from '../_components/emails-browser'
+import { EmailsGallery } from '../_components/emails-gallery'
 import { TEMPLATES_TABS } from '../_lib/tabs'
 
 export const metadata: Metadata = {
@@ -19,8 +19,9 @@ export default function EmailTemplatesPage() {
       breadcrumbs={crumbsForNav('/settings/templates/emails')}
       tabs={TEMPLATES_TABS}
       activeTab='emails'
+      count={{ label: 'templates', total: entries.length }}
     >
-      <EmailsBrowser entries={entries} />
+      <EmailsGallery entries={entries} />
     </PageShell>
   )
 }

@@ -145,17 +145,15 @@ export function useInvoiceSheetState({
 
   const clientOptions = useMemo<ClientOption[]>(
     () => buildClientOptions(clients),
-    [clients],
+    [clients]
   )
 
   const productCatalogOptions = useMemo<ProductCatalogOption[]>(
     () => buildProductCatalogOptions(productCatalog),
-    [productCatalog],
+    [productCatalog]
   )
 
-  const resolver = zodResolver(
-    invoiceFormSchema,
-  ) as Resolver<InvoiceFormValues>
+  const resolver = zodResolver(invoiceFormSchema) as Resolver<InvoiceFormValues>
 
   const form = useForm<InvoiceFormValues>({
     resolver,
@@ -173,7 +171,7 @@ export function useInvoiceSheetState({
       form.clearErrors()
       setFeedback(null)
     },
-    [form],
+    [form]
   )
 
   const resetToLoadedInvoice = useCallback(() => {
@@ -214,7 +212,7 @@ export function useInvoiceSheetState({
       (li: InvoiceLineItemFormValues) => ({
         quantity: li.quantity ?? 0,
         unitPrice: li.unitPrice ?? 0,
-      }),
+      })
     )
     return computeInvoiceTotals(items, watchedTaxRate ?? 0)
   }, [watchedLineItems, watchedTaxRate])
@@ -248,7 +246,7 @@ export function useInvoiceSheetState({
       }
 
       // Mark the pre-filled client (if any) so auto-fill skips hydration
-      loadedClientIdRef.current = (prefillData?.clientId ?? null)
+      loadedClientIdRef.current = prefillData?.clientId ?? null
 
       startResetTransition(() => {
         if (prefillData) {
@@ -276,7 +274,7 @@ export function useInvoiceSheetState({
       try {
         const fullInvoice = await getInvoiceDetails(invoice.id)
         // Mark the loaded client so auto-fill skips hydration
-        loadedClientIdRef.current = (fullInvoice?.client_id ?? null)
+        loadedClientIdRef.current = fullInvoice?.client_id ?? null
         invoiceWithLineItemsRef.current = fullInvoice
         resetFormState(fullInvoice)
       } catch {
@@ -315,7 +313,7 @@ export function useInvoiceSheetState({
     if (watchedClientId === loadedClientIdRef.current) return
 
     // Mark this client as the "current" so switching back won't re-trigger
-    loadedClientIdRef.current = (watchedClientId)
+    loadedClientIdRef.current = watchedClientId
 
     const selectedClient = clients.find(c => c.id === watchedClientId)
     if (!selectedClient) return
@@ -358,13 +356,12 @@ export function useInvoiceSheetState({
         form.setError(field, { type: 'server', message })
       })
     },
-    [form],
+    [form]
   )
 
   // ---------------------------------------------------------------------------
   // Sheet open/close
   // ---------------------------------------------------------------------------
-
 
   // ---------------------------------------------------------------------------
   // Submit
@@ -380,7 +377,7 @@ export function useInvoiceSheetState({
 
         const payload = createInvoiceSavePayload(
           values,
-          invoiceWithLineItemsRef.current,
+          invoiceWithLineItemsRef.current
         )
 
         const interaction = startSettingsInteraction({
@@ -419,7 +416,7 @@ export function useInvoiceSheetState({
           toast({
             title: isEditing ? 'Invoice updated' : 'Invoice created',
             description: isEditing
-              ? 'Changes saved successfully.'
+              ? 'Changes saved.'
               : 'The invoice is ready to send.',
           })
 
@@ -429,12 +426,9 @@ export function useInvoiceSheetState({
         } catch (error) {
           finishSettingsInteraction(interaction, {
             status: 'error',
-            error:
-              error instanceof Error ? error.message : 'Unknown error',
+            error: error instanceof Error ? error.message : 'Unknown error',
           })
-          setFeedback(
-            'We could not save this invoice. Please try again.',
-          )
+          setFeedback('We could not save this invoice. Please try again.')
           toast({
             title: 'Unable to save invoice',
             description:
@@ -454,7 +448,7 @@ export function useInvoiceSheetState({
       resetFormState,
       startSave,
       toast,
-    ],
+    ]
   )
 
   // ---------------------------------------------------------------------------
@@ -528,12 +522,9 @@ export function useInvoiceSheetState({
         finishSettingsInteraction(interaction, {
           status: 'error',
           targetId: invoice.id,
-          error:
-            error instanceof Error ? error.message : 'Unknown error',
+          error: error instanceof Error ? error.message : 'Unknown error',
         })
-        setFeedback(
-          'We could not archive this invoice. Please try again.',
-        )
+        setFeedback('We could not archive this invoice. Please try again.')
         toast({
           title: 'Unable to archive invoice',
           description:
@@ -542,15 +533,7 @@ export function useInvoiceSheetState({
         })
       }
     })
-  }, [
-    form,
-    invoice,
-    isPending,
-    onComplete,
-    onOpenChange,
-    startSave,
-    toast,
-  ])
+  }, [form, invoice, isPending, onComplete, onOpenChange, startSave, toast])
 
   // ---------------------------------------------------------------------------
   // Line item helpers
@@ -565,14 +548,14 @@ export function useInvoiceSheetState({
       if (fieldArray.fields.length <= 1) return
       fieldArray.remove(index)
     },
-    [fieldArray],
+    [fieldArray]
   )
 
   const handleMoveLineItem = useCallback(
     (fromIndex: number, toIndex: number) => {
       fieldArray.move(fromIndex, toIndex)
     },
-    [fieldArray],
+    [fieldArray]
   )
 
   const handleProductSelect = useCallback(
@@ -606,15 +589,15 @@ export function useInvoiceSheetState({
       form.setValue(
         `lineItems.${index}.unitPrice`,
         Number(product.unit_price),
-        { shouldDirty: true },
+        { shouldDirty: true }
       )
       form.setValue(
         `lineItems.${index}.createsHourBlock`,
         product.creates_hour_block_default,
-        { shouldDirty: true },
+        { shouldDirty: true }
       )
     },
-    [form, productCatalog],
+    [form, productCatalog]
   )
 
   // ---------------------------------------------------------------------------
@@ -627,12 +610,12 @@ export function useInvoiceSheetState({
 
   const clientField: FieldState = useMemo(
     () => deriveClientFieldState(isBusy, clientOptions, invoiceStatus),
-    [clientOptions, invoiceStatus, isBusy],
+    [clientOptions, invoiceStatus, isBusy]
   )
 
   const standardField: FieldState = useMemo(
     () => deriveStandardFieldState(isBusy, invoiceStatus),
-    [invoiceStatus, isBusy],
+    [invoiceStatus, isBusy]
   )
 
   const submitButton: SubmitButtonState = useMemo(
@@ -642,14 +625,14 @@ export function useInvoiceSheetState({
         isEditing,
         clientOptions,
         invoiceStatus,
-        isBusy,
+        isBusy
       ),
-    [clientOptions, invoiceStatus, isEditing, isPending, isBusy],
+    [clientOptions, invoiceStatus, isEditing, isPending, isBusy]
   )
 
   const deleteButton: DeleteButtonState = useMemo(
     () => deriveDeleteButtonState(isEditing, isPending, invoice),
-    [invoice, isEditing, isPending],
+    [invoice, isEditing, isPending]
   )
 
   // ---------------------------------------------------------------------------

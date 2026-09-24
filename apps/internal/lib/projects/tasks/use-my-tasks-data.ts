@@ -36,7 +36,7 @@ export function useMyTasksReorderMutation() {
     onError: (error: Error) => {
       toast({
         variant: 'destructive',
-        title: 'Reorder failed',
+        title: 'Unable to reorder tasks',
         description: error.message,
       })
     },
@@ -50,4 +50,3 @@ async function safeJson(response: Response) {
     return null
   }
 }
-

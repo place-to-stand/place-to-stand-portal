@@ -9,6 +9,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { EmptyState } from '@pts/ui/empty-state'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import {
@@ -197,16 +199,13 @@ export function ClientsLanding({
     return (
       <>
         {sheet}
-        <div className='grid h-full w-full place-items-center rounded-xl border border-dashed p-12 text-center'>
-          <div className='space-y-2'>
-            <h2 className='text-lg font-semibold'>No clients found</h2>
-            <p className='text-muted-foreground text-sm'>
-              {hasActiveFilter
-                ? 'No clients match the current filters.'
-                : 'Clients will appear here once they are created.'}
-            </p>
-          </div>
-        </div>
+        <EmptyState
+          message={
+            hasActiveFilter
+              ? 'No clients match the current filters.'
+              : 'No clients yet.'
+          }
+        />
       </>
     )
   }
@@ -345,19 +344,19 @@ export function ClientsLanding({
                         className={cn(
                           'h-4 w-4',
                           client.hoursRemaining > 0
-                            ? 'text-emerald-600'
+                            ? 'text-success'
                             : client.hoursRemaining === 0
                               ? 'text-muted-foreground'
-                              : 'text-red-600'
+                              : 'text-destructive'
                         )}
                       />
                       <span
                         className={cn(
                           client.hoursRemaining > 0
-                            ? 'font-medium text-emerald-600'
+                            ? 'text-success font-medium'
                             : client.hoursRemaining === 0
                               ? 'text-muted-foreground'
-                              : 'font-medium text-red-600'
+                              : 'text-destructive font-medium'
                         )}
                       >
                         {formatHours(client.hoursRemaining)} remaining
@@ -375,14 +374,14 @@ export function ClientsLanding({
                     {client.originationUserId ? (
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Avatar className='h-6 w-6'>
+                          <Avatar size='sm'>
                             <AvatarImage
                               src={`/api/storage/user-avatar/${client.originationUserId}?v=${encodeURIComponent(client.originationUserUpdatedAt ?? '')}`}
                               alt={
                                 client.originationUserName ?? 'Internal partner'
                               }
                             />
-                            <AvatarFallback className='text-[9px]'>
+                            <AvatarFallback>
                               {getInitials(client.originationUserName)}
                             </AvatarFallback>
                           </Avatar>
@@ -395,7 +394,7 @@ export function ClientsLanding({
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <span className='cursor-default'>
-                            <CheckCircle2 className='h-4 w-4 text-emerald-600' />
+                            <CheckCircle2 className='text-success h-4 w-4' />
                           </span>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -415,12 +414,12 @@ export function ClientsLanding({
                     {client.closerUserId ? (
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Avatar className='h-6 w-6'>
+                          <Avatar size='sm'>
                             <AvatarImage
                               src={`/api/storage/user-avatar/${client.closerUserId}?v=${encodeURIComponent(client.closerUserUpdatedAt ?? '')}`}
                               alt={client.closerUserName ?? 'Closer'}
                             />
-                            <AvatarFallback className='text-[9px]'>
+                            <AvatarFallback>
                               {getInitials(client.closerUserName)}
                             </AvatarFallback>
                           </Avatar>
@@ -438,17 +437,13 @@ export function ClientsLanding({
                 </TableCell>
                 <TableCell className='text-right'>
                   <div className='flex justify-end gap-2'>
-                    <Button
+                    <RowActionButton
+                      label='Edit client'
+                      icon={<Pencil />}
                       variant='outline'
-                      size='icon-sm'
                       onClick={() => openEdit(tableClients[index])}
-                      title='Edit client'
-                      aria-label='Edit client'
                       disabled={isPending}
-                    >
-                      <Pencil className='h-4 w-4' />
-                      <span className='sr-only'>Edit</span>
-                    </Button>
+                    />
                     <DisabledFieldTooltip
                       disabled={isPending}
                       reason={isPending ? pendingReason : null}
@@ -457,12 +452,10 @@ export function ClientsLanding({
                         variant='destructive'
                         size='icon-sm'
                         onClick={() => handleRequestDelete(tableClients[index])}
-                        title='Archive client'
                         aria-label='Archive client'
                         disabled={isPending}
                       >
-                        <Archive className='h-4 w-4' />
-                        <span className='sr-only'>Archive</span>
+                        <Archive />
                       </Button>
                     </DisabledFieldTooltip>
                   </div>

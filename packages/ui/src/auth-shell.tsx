@@ -39,22 +39,22 @@ export function AuthShell({
 }: Props) {
   return (
     <div
-      className="flex min-h-screen flex-col items-center justify-center px-6 py-12"
+      className='flex min-h-screen flex-col items-center justify-center px-6 py-12'
       style={{ backgroundColor: BRAND.bg, ...BRAND_DOT_GRID }}
     >
       <div className={cn('w-full space-y-8', wide ? 'max-w-md' : 'max-w-sm')}>
         <BrandLockup label={label} />
 
         <div
-          className="space-y-6 border p-8"
+          className='space-y-6 border p-8'
           style={{
             backgroundColor: BRAND.bgPanel,
             borderColor: BRAND.border,
           }}
         >
-          <div className="space-y-2 text-center">
+          <div className='space-y-2 text-center'>
             <h1
-              className="text-2xl font-bold tracking-tight"
+              className='text-2xl font-bold tracking-tight'
               style={{
                 color: BRAND.text,
                 fontFamily: 'var(--font-space-grotesk, inherit)',
@@ -63,7 +63,7 @@ export function AuthShell({
               {title}
             </h1>
             {description ? (
-              <p className="text-sm" style={{ color: BRAND.textMuted }}>
+              <p className='text-sm' style={{ color: BRAND.textMuted }}>
                 {description}
               </p>
             ) : null}
@@ -73,7 +73,10 @@ export function AuthShell({
         </div>
 
         {footer ? (
-          <div className="text-center text-sm" style={{ color: BRAND.textMuted }}>
+          <div
+            className='text-center text-sm'
+            style={{ color: BRAND.textMuted }}
+          >
             {footer}
           </div>
         ) : null}
@@ -90,22 +93,24 @@ export function AuthShell({
  * only need to agree on how a field looks.
  */
 export const authFieldLabelClass =
-  'block font-mono text-[11px] uppercase tracking-[0.1em] text-[#a8a8ac]'
+  'block font-mono text-[11px] uppercase tracking-[0.1em] text-brand-text-muted'
 
 export const authInputClass =
-  'w-full border border-[#2a2b30] bg-[#0e0f11] px-3 py-2 text-sm text-[#e8e6e3] placeholder:text-[#a8a8ac]/50 transition-colors focus:border-[#b5f542] focus:outline-none focus:ring-1 focus:ring-[#b5f542] disabled:opacity-50'
+  'w-full border border-brand-border bg-brand-bg px-3 py-2 text-sm text-brand-text placeholder:text-brand-text-muted/50 transition-colors focus:border-brand-lime focus:outline-none focus:ring-1 focus:ring-brand-lime disabled:opacity-50'
 
 export const authPrimaryButtonClass =
-  'inline-flex w-full cursor-pointer items-center justify-center gap-2 bg-[#b5f542] px-3 py-2 text-sm font-semibold text-[#0e0f11] transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b5f542] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0e0f11] disabled:cursor-default disabled:opacity-50'
+  'inline-flex w-full cursor-pointer items-center justify-center gap-2 bg-brand-lime px-3 py-2 text-sm font-semibold text-brand-bg transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-lime focus-visible:ring-offset-2 focus-visible:ring-offset-brand-bg disabled:cursor-default disabled:opacity-50'
 
 export const authSecondaryButtonClass =
-  'inline-flex w-full cursor-pointer items-center justify-center gap-2 border border-[#3a3b40] bg-transparent px-3 py-2 text-sm font-medium text-[#e8e6e3] transition-colors hover:border-[#b5f542]/50 hover:text-[#b5f542] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b5f542] disabled:cursor-default disabled:opacity-50'
+  'inline-flex w-full cursor-pointer items-center justify-center gap-2 border border-brand-border-light bg-transparent px-3 py-2 text-sm font-medium text-brand-text transition-colors hover:border-brand-lime/50 hover:text-brand-lime focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-lime disabled:cursor-default disabled:opacity-50'
 
 export const authLinkClass =
-  'font-medium text-[#b5f542] underline-offset-4 hover:underline'
+  'font-medium text-brand-lime underline-offset-4 hover:underline'
 
 export const authErrorClass =
+  // Raw red on purpose: the auth ground is always dark, whatever the theme,
+  // and the theme's `destructive` is tuned for the light page in light mode.
   'border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300'
 
 export const authNoticeClass =
-  'border border-[#3a3b40] bg-[#0e0f11]/60 px-3 py-2 text-sm text-[#a8a8ac]'
+  'border border-brand-border-light bg-brand-bg/60 px-3 py-2 text-sm text-brand-text-muted'

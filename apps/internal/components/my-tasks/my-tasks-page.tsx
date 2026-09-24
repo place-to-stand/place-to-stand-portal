@@ -30,10 +30,7 @@ import { MyTasksBoard } from './my-tasks-board'
 import type { MyTasksBoardReorderUpdate, TaskLookup } from './my-tasks-board'
 import { MyTasksCalendar } from './my-tasks-calendar'
 import { PersonSelector } from './person-selector'
-import {
-  ClientSelector,
-  type ClientSelectorOption,
-} from './client-selector'
+import { ClientSelector, type ClientSelectorOption } from './client-selector'
 import { Plus } from 'lucide-react'
 
 export type MyTasksInitialEntry = {
@@ -318,7 +315,6 @@ export function MyTasksPage({
     [taskContexts]
   )
 
-
   // Resolve from the LOCAL selection, not the server's `activeTaskId`. The
   // board already holds every loaded task client-side, so this lands in the
   // same render as the open — whereas `activeTaskId` only updates when the
@@ -489,10 +485,7 @@ export function MyTasksPage({
         // "load previous two weeks" control never mounts and those tasks are
         // unreachable at any window size.
         boardEntries.length === 0 && olderDoneCount === 0 ? (
-          <ProjectsBoardEmpty
-            title='No tasks assigned'
-            description='Once a task is assigned to you, it will appear here.'
-          />
+          <ProjectsBoardEmpty message='No tasks assigned to you yet.' />
         ) : (
           <MyTasksBoard
             canReorder={selectedAssigneeId !== 'all'}

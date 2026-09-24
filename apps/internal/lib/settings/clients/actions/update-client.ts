@@ -1,5 +1,7 @@
 import { and, eq, isNull } from 'drizzle-orm'
 
+import { formatCalendarDate } from '@pts/ui/dates'
+
 import { logActivity } from '@/lib/activity/logger'
 import { clientUpdatedEvent } from '@/lib/activity/events'
 import type { UserRole } from '@/lib/auth/session'
@@ -50,10 +52,10 @@ type UpdateClientPayload = {
 
 class ClosedMonthError extends Error {
   constructor(effectiveFrom: string) {
-    const label = new Date(`${effectiveFrom}T00:00:00Z`).toLocaleDateString(
-      'en-US',
-      { month: 'long', year: 'numeric', timeZone: 'UTC' }
-    )
+    const label = formatCalendarDate(effectiveFrom, {
+      month: 'long',
+      year: 'numeric',
+    })
     super(
       `That month's books are closed. Reopen ${label} before changing its billing or commission basis.`
     )
@@ -176,7 +178,11 @@ export async function updateClient(
   // Closer + origination are one logical "commission split" (PRD 007): any
   // change to either writes one effective-dated term so closed months keep
   // resolving to the assignment they were paid under.
-  const nextAssignment = { closerUserId, originationUserId, originationContactId }
+  const nextAssignment = {
+    closerUserId,
+    originationUserId,
+    originationContactId,
+  }
   const commissionChanged = !commissionAssignmentsEqual(
     existingClient,
     nextAssignment

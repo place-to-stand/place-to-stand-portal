@@ -1,6 +1,7 @@
 'use client'
 
 import type { UseFormReturn } from 'react-hook-form'
+import { formatCalendarDate } from '@pts/ui/dates'
 
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
@@ -23,11 +24,8 @@ import type { ClientSheetFormValues } from '@/lib/settings/clients/client-sheet-
 function formatMonthStart(offset: number): string {
   const now = new Date()
   const target = new Date(now.getFullYear(), now.getMonth() + offset, 1)
-  return target.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
+  const month = String(target.getMonth() + 1).padStart(2, '0')
+  return formatCalendarDate(`${target.getFullYear()}-${month}-01`) ?? ''
 }
 
 type EffectiveField = 'billingEffective' | 'commissionEffective'

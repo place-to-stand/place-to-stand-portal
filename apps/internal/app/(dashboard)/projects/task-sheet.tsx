@@ -302,10 +302,7 @@ export function TaskSheet(props: TaskSheetProps) {
 
   const taskId = props.task?.id ?? null
 
-  const initialLinkedTaskIds = useMemo(
-    () => (taskId ? [taskId] : []),
-    [taskId]
-  )
+  const initialLinkedTaskIds = useMemo(() => (taskId ? [taskId] : []), [taskId])
 
   const handleLogTime = useCallback(() => {
     setTimeLogDialogMode('create')
@@ -387,7 +384,7 @@ export function TaskSheet(props: TaskSheetProps) {
               <div
                 // pb-6 matches the px-6 the sections inside use, so the gap
                 // under the last element reads the same as the side margins.
-                className='flex flex-1 flex-col gap-6 overflow-y-auto pb-6 pt-6'
+                className='flex flex-1 flex-col gap-6 overflow-y-auto pt-6 pb-6'
                 onDragEnter={handleDragEnter}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
@@ -482,24 +479,30 @@ export function TaskSheet(props: TaskSheetProps) {
             {/* Planning rail — vertical accordion tab, stays left of the panel */}
             {props.task ? (
               canDeploy ? (
-                <button
-                  type='button'
-                  onClick={() => {
-                    setHasPlanningMounted(true)
-                    setIsPlanningOpen(open => !open)
-                  }}
-                  aria-expanded={isPlanningOpen}
-                  title={isPlanningOpen ? 'Hide planning' : 'Show planning'}
-                  className={cn(
-                    'text-muted-foreground hover:text-foreground hover:bg-muted/60 flex w-9 shrink-0 cursor-pointer flex-col items-center gap-2 border-l py-3 transition-colors',
-                    isPlanningOpen ? 'bg-muted/60' : 'bg-muted/30'
-                  )}
-                >
-                  <ClipboardList className='h-4 w-4' />
-                  <span className='rotate-180 text-xs font-medium tracking-wide [writing-mode:vertical-rl]'>
-                    Planning
-                  </span>
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type='button'
+                      onClick={() => {
+                        setHasPlanningMounted(true)
+                        setIsPlanningOpen(open => !open)
+                      }}
+                      aria-expanded={isPlanningOpen}
+                      className={cn(
+                        'text-muted-foreground hover:text-foreground hover:bg-muted/60 focus-visible:border-ring focus-visible:ring-ring/50 flex w-9 shrink-0 cursor-pointer flex-col items-center gap-2 border-l py-3 transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-inset',
+                        isPlanningOpen ? 'bg-muted/60' : 'bg-muted/30'
+                      )}
+                    >
+                      <ClipboardList className='h-4 w-4' />
+                      <span className='rotate-180 text-xs font-medium tracking-wide [writing-mode:vertical-rl]'>
+                        Planning
+                      </span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side='left'>
+                    {isPlanningOpen ? 'Hide planning' : 'Show planning'}
+                  </TooltipContent>
+                </Tooltip>
               ) : (
                 <TooltipProvider>
                   <Tooltip>

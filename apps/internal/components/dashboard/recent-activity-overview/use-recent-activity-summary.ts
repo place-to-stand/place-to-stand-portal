@@ -1,18 +1,20 @@
-"use client"
+'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { startClientInteraction } from "@/lib/posthog/client"
-import { INTERACTION_EVENTS } from "@/lib/posthog/types"
-import type { InteractionHandle } from "@/lib/perf/interaction-marks"
+import { formatCalendarDate } from '@pts/ui/dates'
+
+import { startClientInteraction } from '@/lib/posthog/client'
+import { INTERACTION_EVENTS } from '@/lib/posthog/types'
+import type { InteractionHandle } from '@/lib/perf/interaction-marks'
 
 import {
   DEFAULT_TIMEFRAME_VALUE,
   TIMEFRAME_OPTIONS,
   type TimeframeValue,
-} from "./constants"
+} from './constants'
 
-type SummaryStatus = "idle" | "loading" | "success" | "error"
+type SummaryStatus = 'idle' | 'loading' | 'success' | 'error'
 
 type ActivityMetrics = {
   newLeads: number
@@ -28,13 +30,13 @@ export type SummaryState = {
 }
 
 type CacheMeta = {
-  cacheStatus: "hit" | "miss" | null
+  cacheStatus: 'hit' | 'miss' | null
   cachedAt?: string | null
   expiresAt?: string | null
   model?: string | null
 } | null
 
-type InteractionTrigger = "initial" | "refresh" | "timeframe"
+type InteractionTrigger = 'initial' | 'refresh' | 'timeframe'
 
 type UseRecentActivitySummaryReturn = {
   state: SummaryState
@@ -56,9 +58,9 @@ export function useRecentActivitySummary(
   const [refreshKey, setRefreshKey] = useState(0)
   // Starts in "loading": the fetch effect always kicks off on mount.
   const [state, setState] = useState<SummaryState>({
-    status: "loading",
+    status: 'loading',
     metrics: null,
-    highlight: "",
+    highlight: '',
     error: null,
   })
   const [cacheMeta, setCacheMeta] = useState<CacheMeta>(null)
@@ -70,7 +72,7 @@ export function useRecentActivitySummary(
   const [prevFetchKey, setPrevFetchKey] = useState(fetchKey)
   if (prevFetchKey !== fetchKey) {
     setPrevFetchKey(fetchKey)
-    setState({ status: "loading", metrics: null, highlight: "", error: null })
+    setState({ status: 'loading', metrics: null, highlight: '', error: null })
     setCacheMeta(null)
   }
 
@@ -86,13 +88,13 @@ export function useRecentActivitySummary(
   const beginInteraction = useCallback(
     (trigger: InteractionTrigger, timeframe: TimeframeValue) => {
       const base = {
-        widget: "recent_activity_overview",
+        widget: 'recent_activity_overview',
         trigger,
         timeframe,
       }
 
       interactionRef.current?.end({
-        status: "replaced",
+        status: 'replaced',
         ...base,
       })
 
@@ -110,7 +112,7 @@ export function useRecentActivitySummary(
 
   const finishInteraction = useCallback(
     (
-      status: "success" | "error" | "cancelled",
+      status: 'success' | 'error' | 'cancelled',
       properties?: Record<string, unknown>
     ) => {
       if (!interactionRef.current) {
@@ -133,7 +135,7 @@ export function useRecentActivitySummary(
 
   useEffect(() => {
     if (!interactionRef.current) {
-      beginInteraction("initial", selectedTimeframe)
+      beginInteraction('initial', selectedTimeframe)
     }
 
     const controller = new AbortController()
@@ -146,34 +148,32 @@ export function useRecentActivitySummary(
 
     async function loadSummary() {
       try {
-        const response = await fetch("/api/dashboard/recent-activity/summary", {
-          method: "POST",
+        const response = await fetch('/api/dashboard/recent-activity/summary', {
+          method: 'POST',
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             timeframeDays: Number(selectedTimeframe),
             forceRefresh: shouldForceRefresh,
           }),
           signal: controller.signal,
-          cache: "no-store",
+          cache: 'no-store',
         })
 
         if (!response.ok) {
-          throw new Error("Unable to generate summary right now.")
+          throw new Error('Unable to generate summary right now.')
         }
 
         const responseCacheStatus =
-          (response.headers.get("x-activity-overview-cache") as
-            | "hit"
-            | "miss"
-            | null) ?? null
+          (response.headers.get('x-activity-overview-cache') as
+            'hit' | 'miss' | null) ?? null
 
         setCacheMeta({
           cacheStatus: responseCacheStatus,
-          cachedAt: response.headers.get("x-activity-overview-cached-at"),
-          expiresAt: response.headers.get("x-activity-overview-expires-at"),
-          model: response.headers.get("x-activity-overview-model"),
+          cachedAt: response.headers.get('x-activity-overview-cached-at'),
+          expiresAt: response.headers.get('x-activity-overview-expires-at'),
+          model: response.headers.get('x-activity-overview-model'),
         })
 
         const data = (await response.json()) as {
@@ -182,32 +182,32 @@ export function useRecentActivitySummary(
         }
 
         setState({
-          status: "success",
+          status: 'success',
           metrics: data.metrics,
           highlight: data.highlight,
           error: null,
         })
-        finishInteraction("success", {
+        finishInteraction('success', {
           cacheStatus: responseCacheStatus,
           forceRefresh: shouldForceRefresh,
         })
       } catch (error) {
         if (controller.signal.aborted) {
-          finishInteraction("cancelled", { reason: "aborted" })
+          finishInteraction('cancelled', { reason: 'aborted' })
           return
         }
 
         const message =
           error instanceof Error
             ? error.message
-            : "Something went wrong while summarizing activity."
+            : 'Something went wrong while summarizing activity.'
         setState({
-          status: "error",
+          status: 'error',
           metrics: null,
-          highlight: "",
+          highlight: '',
           error: message,
         })
-        finishInteraction("error", {
+        finishInteraction('error', {
           errorMessage: message,
         })
       }
@@ -221,8 +221,8 @@ export function useRecentActivitySummary(
   }, [beginInteraction, finishInteraction, refreshKey, selectedTimeframe])
 
   const refresh = useCallback(() => {
-    beginInteraction("refresh", selectedTimeframe)
-    setRefreshKey((key) => key + 1)
+    beginInteraction('refresh', selectedTimeframe)
+    setRefreshKey(key => key + 1)
   }, [beginInteraction, selectedTimeframe])
 
   const changeTimeframe = useCallback(
@@ -232,13 +232,13 @@ export function useRecentActivitySummary(
       }
 
       const isValidOption = TIMEFRAME_OPTIONS.some(
-        (option) => option.value === value
+        option => option.value === value
       )
       if (!isValidOption) {
         return
       }
 
-      beginInteraction("timeframe", value)
+      beginInteraction('timeframe', value)
       setSelectedTimeframe(value)
     },
     [beginInteraction, selectedTimeframe]
@@ -246,37 +246,39 @@ export function useRecentActivitySummary(
 
   const statusLabel = useMemo(() => {
     switch (state.status) {
-      case "loading":
-        return "Loading"
-      case "error":
-        return "Error"
-      case "success":
-        return cacheMeta?.cacheStatus === "hit" ? "Cached" : "Fresh"
+      case 'loading':
+        return 'Loading'
+      case 'error':
+        return 'Error'
+      case 'success':
+        return cacheMeta?.cacheStatus === 'hit' ? 'Cached' : 'Fresh'
       default:
-        return "Idle"
+        return 'Idle'
     }
   }, [cacheMeta?.cacheStatus, state.status])
 
   const metaLabel = useMemo(() => {
-    if (!cacheMeta?.cachedAt || state.status === "error") {
+    if (!cacheMeta?.cachedAt || state.status === 'error') {
       return null
     }
 
-    const cachedDate = new Date(cacheMeta.cachedAt)
-    const formatter = new Intl.DateTimeFormat(undefined, {
-      dateStyle: "medium",
-      timeStyle: "short",
+    const updatedAt = formatCalendarDate(cacheMeta.cachedAt, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
     })
 
-    const freshness = cacheMeta.cacheStatus === "hit" ? "Cached" : "Fresh"
+    const freshness = cacheMeta.cacheStatus === 'hit' ? 'Cached' : 'Fresh'
 
-    return `${freshness} · updated ${formatter.format(cachedDate)}`
+    return `${freshness} · updated ${updatedAt}`
   }, [cacheMeta, state.status])
 
   const modelLabel =
-    state.status === "success" && cacheMeta?.model ? cacheMeta.model : null
+    state.status === 'success' && cacheMeta?.model ? cacheMeta.model : null
 
-  const isBusy = state.status === "loading"
+  const isBusy = state.status === 'loading'
 
   return {
     state,
@@ -289,4 +291,3 @@ export function useRecentActivitySummary(
     changeTimeframe,
   }
 }
-

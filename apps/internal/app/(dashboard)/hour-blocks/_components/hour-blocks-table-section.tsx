@@ -4,11 +4,12 @@ import Link from 'next/link'
 import { Archive, Building2, Info, RefreshCw, Trash2 } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { EmptyState } from '@pts/ui/empty-state'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
-import { formatCalendarDate } from '@/lib/dates'
+import { formatCalendarDate } from '@pts/ui/dates'
 import { invoiceHref } from '@/lib/sheets/hrefs'
 import { isHourBlockSortValue } from '@/lib/settings/hour-blocks/filters'
 import {
@@ -85,6 +86,7 @@ export function HourBlocksTableSection({
               sort={sort}
               defaultSort='created:desc'
               onSortChange={next => update({ sort: next })}
+              className='w-[18%]'
             >
               Created on
             </SortableTableHead>
@@ -144,7 +146,9 @@ export function HourBlocksTableSection({
                 <TableCell>
                   <div className='flex min-w-0 items-center gap-2 text-sm'>
                     <Building2 className='text-muted-foreground h-4 w-4 shrink-0' />
-                    <span className='truncate'>{client ? client.name : 'Unassigned'}</span>
+                    <span className='truncate'>
+                      {client ? client.name : 'Unassigned'}
+                    </span>
                   </div>
                   {client?.deleted_at ? (
                     <p className='text-destructive text-xs'>Client archived</p>
@@ -159,7 +163,9 @@ export function HourBlocksTableSection({
                       {block.invoice_number}
                     </Link>
                   ) : (
-                    <span className='text-muted-foreground'>{invoiceNumber}</span>
+                    <span className='text-muted-foreground'>
+                      {invoiceNumber}
+                    </span>
                   )}
                 </TableCell>
                 <TableCell className='text-sm'>
@@ -196,12 +202,10 @@ export function HourBlocksTableSection({
                           variant='outline'
                           size='icon-sm'
                           onClick={() => onRestore(block)}
-                          title='Restore hour block'
                           aria-label='Restore hour block'
                           disabled={restoreDisabled}
                         >
-                          <RefreshCw className='h-4 w-4' />
-                          <span className='sr-only'>Restore</span>
+                          <RefreshCw />
                         </Button>
                       </DisabledFieldTooltip>
                     ) : null}
@@ -214,12 +218,10 @@ export function HourBlocksTableSection({
                           variant='destructive'
                           size='icon-sm'
                           onClick={() => onRequestDelete(block)}
-                          title='Archive hour block'
                           aria-label='Archive hour block'
                           disabled={archiveDisabled}
                         >
-                          <Archive className='h-4 w-4' />
-                          <span className='sr-only'>Archive</span>
+                          <Archive />
                         </Button>
                       </DisabledFieldTooltip>
                     ) : null}
@@ -232,12 +234,10 @@ export function HourBlocksTableSection({
                           variant='destructive'
                           size='icon-sm'
                           onClick={() => onRequestDestroy(block)}
-                          title='Permanently delete hour block'
                           aria-label='Permanently delete hour block'
                           disabled={destroyDisabled}
                         >
-                          <Trash2 className='h-4 w-4' />
-                          <span className='sr-only'>Delete permanently</span>
+                          <Trash2 />
                         </Button>
                       </DisabledFieldTooltip>
                     ) : null}
@@ -248,11 +248,8 @@ export function HourBlocksTableSection({
           })}
           {hourBlocks.length === 0 ? (
             <TableRow>
-              <TableCell
-                colSpan={5}
-                className='text-muted-foreground py-10 text-center text-sm'
-              >
-                {emptyMessage}
+              <TableCell colSpan={5} className='p-4'>
+                <EmptyState message={emptyMessage} />
               </TableCell>
             </TableRow>
           ) : null}

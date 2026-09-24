@@ -1,9 +1,12 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+
+import { DropdownMenuItem } from '@pts/ui/dropdown-menu'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 
-export function SignOutButton() {
+/** The account menu's sign-out row. The item itself is the control. */
+export function SignOutMenuItem() {
   const router = useRouter()
 
   async function handleSignOut() {
@@ -13,11 +16,8 @@ export function SignOutButton() {
   }
 
   return (
-    <button
-      onClick={handleSignOut}
-      className="w-full text-left"
-    >
+    <DropdownMenuItem onSelect={() => void handleSignOut()}>
       Sign out
-    </button>
+    </DropdownMenuItem>
   )
 }

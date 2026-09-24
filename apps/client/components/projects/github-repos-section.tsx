@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { ExternalLinkIcon } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { Card } from '@pts/ui/card'
+import { EmptyState } from '@pts/ui/empty-state'
 import { GitHubMark } from '@/components/icons/github-mark'
 import { useGitHubCallbackNotice } from '@/lib/hooks/use-github-callback-notice'
 import { StaffAuthorizationModal } from '@/components/projects/staff-authorization-modal'
@@ -43,83 +45,72 @@ export function GitHubRepoSection({
   const clientOwnedLinks = links.filter(link => link.viaClientInstallation)
 
   return (
-    <section className="space-y-2">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+    <section className='space-y-2'>
+      <div className='flex flex-wrap items-center justify-between gap-3'>
+        <h2 className='text-muted-foreground text-xs font-medium tracking-wide uppercase'>
           GitHub
         </h2>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className='flex flex-wrap items-center gap-2'>
           {needsConnection && (
-            <Button type="button" size="xs" className="gap-1.5" asChild>
+            <Button type='button' size='xs' asChild>
               <a
                 href={`/api/github/install?clientId=${clientId}&projectId=${projectId}&returnTo=/projects/${projectId}`}
               >
-                <GitHubMark className="size-3.5" />
+                <GitHubMark />
                 Authorize agent
               </a>
             </Button>
           )}
           {clientOwnedLinks.length > 0 && (
             <Button
-              type="button"
-              variant="outline"
-              size="xs"
-              className="gap-1.5"
+              type='button'
+              variant='outline'
+              size='xs'
               onClick={() => setStaffModalOpen(true)}
             >
-              <GitHubMark className="size-3.5" />
+              <GitHubMark />
               Staff authorization
             </Button>
           )}
         </div>
       </div>
 
-      {notice && <p className="text-xs text-emerald-600">{notice}</p>}
+      {notice && <p className='text-success text-xs'>{notice}</p>}
       {error && (
-        <p className="text-xs text-destructive" role="alert">
+        <p className='text-destructive text-xs' role='alert'>
           {error}
         </p>
       )}
 
       {needsConnection ? (
-        <div className="flex items-center gap-3 rounded-lg border border-border p-4">
-          <GitHubMark className="size-4 shrink-0 text-muted-foreground" />
-          <p className="min-w-0 flex-1 text-sm text-muted-foreground">
-            Authorize our agent above to link repositories to this project.
-          </p>
-        </div>
+        <EmptyState message='Authorize our agent above to link repositories to this project.' />
       ) : links.length === 0 ? (
-        <div className="rounded-lg border border-border p-4 text-center">
-          <p className="text-sm text-muted-foreground">
-            No repositories linked yet. Contact your account manager to link
-            one.
-          </p>
-        </div>
+        <EmptyState message='No repositories linked yet.' />
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border bg-card px-4">
-          <ul className="divide-y divide-border">
+        <Card className='gap-0 overflow-hidden px-4 py-0'>
+          <ul className='divide-border divide-y'>
             {links.map(link => (
               <li
                 key={link.id}
-                className="flex items-center justify-between gap-3 py-2.5"
+                className='flex items-center justify-between gap-3 py-2.5'
               >
                 <a
                   href={`https://github.com/${link.repoFullName}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex min-w-0 items-center gap-1.5 text-sm text-card-foreground hover:underline"
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className='text-card-foreground flex min-w-0 items-center gap-1.5 text-sm hover:underline'
                 >
-                  <GitHubMark className="size-3.5 shrink-0 text-muted-foreground" />
-                  <span className="truncate">{link.repoFullName}</span>
-                  <ExternalLinkIcon className="size-3 shrink-0 text-muted-foreground" />
+                  <GitHubMark className='text-muted-foreground size-3.5 shrink-0' />
+                  <span className='truncate-link'>{link.repoFullName}</span>
+                  <ExternalLinkIcon className='text-muted-foreground size-3 shrink-0' />
                 </a>
-                <span className="shrink-0 text-xs text-muted-foreground">
+                <span className='text-muted-foreground shrink-0 text-xs'>
                   {link.defaultBranch}
                 </span>
               </li>
             ))}
           </ul>
-        </div>
+        </Card>
       )}
 
       <StaffAuthorizationModal

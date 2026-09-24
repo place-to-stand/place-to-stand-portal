@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { generateText } from 'ai'
+import { formatCalendarDate } from '@pts/ui/dates'
 import {
   and,
   countDistinct,
@@ -543,14 +544,13 @@ function formatActivityLog(
   context: ActivityContext
 ): string {
   const { project, client } = resolveProjectClientLabels(log, context)
-  const timestamp = new Date(log.created_at)
-  const formattedTimestamp = new Intl.DateTimeFormat('en-US', {
+  // formatCalendarDate pins timestamps to the company timezone (Pacific).
+  const formattedTimestamp = `${formatCalendarDate(log.created_at, {
     month: 'short',
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
-    timeZoneName: 'short',
-  }).format(timestamp)
+  })} PT`
 
   const targetLabel =
     TARGET_LABELS[log.target_type] || log.target_type || 'activity'

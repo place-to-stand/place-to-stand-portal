@@ -13,7 +13,7 @@ const BODY_CLASSES = [
   'text-foreground [&_a]:text-foreground [&_a]:underline [&_a]:underline-offset-4 [&_p]:my-3',
   '[&_.update-items]:mt-1 [&_.update-items]:mb-6 [&_.update-items]:border-b [&_.update-items]:border-border',
   '[&_.update-item]:w-full [&_.update-item]:border-collapse [&_.update-item]:border-t [&_.update-item]:border-border',
-  '[&_.update-item-index]:w-8 [&_.update-item-index]:py-4 [&_.update-item-index]:align-top [&_.update-item-index]:font-mono [&_.update-item-index]:text-xs [&_.update-item-index]:leading-6 [&_.update-item-index]:text-[#4d7c0f] dark:[&_.update-item-index]:text-[#b5f542]',
+  '[&_.update-item-index]:w-8 [&_.update-item-index]:py-4 [&_.update-item-index]:align-top [&_.update-item-index]:font-mono [&_.update-item-index]:text-xs [&_.update-item-index]:leading-6 [&_.update-item-index]:text-email-accent-ink dark:[&_.update-item-index]:text-brand-lime',
   '[&_.update-item-body]:pt-4 [&_.update-item-body]:pb-1 [&_.update-item-body]:align-top [&_.update-item-body_p:first-child]:mt-0',
   '[&_.update-hours]:mb-6 [&_.update-hours]:w-full [&_.update-hours]:border-collapse [&_.update-hours]:border [&_.update-hours]:border-border [&_.update-hours]:bg-muted/40',
   '[&_.update-hours-label]:px-5 [&_.update-hours-label]:py-4 [&_.update-hours-label]:font-mono [&_.update-hours-label]:text-[11px] [&_.update-hours-label]:uppercase [&_.update-hours-label]:tracking-[0.1em] [&_.update-hours-label]:text-muted-foreground',
@@ -34,12 +34,12 @@ export function UpdatePreview({ portalHref, ...body }: UpdatePreviewProps) {
           href={portalHref}
           target='_blank'
           rel='noreferrer'
-          className='inline-block border border-[#0e0f11] bg-[#0e0f11] px-7 py-3.5 text-[14px] font-bold tracking-[0.05em] text-[#b5f542] uppercase no-underline dark:border-[#3a3b40]'
+          className='border-brand-bg bg-brand-bg text-brand-lime dark:border-brand-border-light inline-block border px-7 py-3.5 text-sm font-bold tracking-[0.05em] uppercase no-underline'
         >
           {PORTAL_BUTTON_LABEL}
         </a>
       </p>
-      <p className='text-muted-foreground mb-4 font-mono text-[12px] leading-relaxed'>
+      <p className='text-muted-foreground mb-4 font-mono text-xs leading-relaxed'>
         Or paste this into your browser:
         <br />
         <span className='text-muted-foreground/70 break-all'>{portalHref}</span>

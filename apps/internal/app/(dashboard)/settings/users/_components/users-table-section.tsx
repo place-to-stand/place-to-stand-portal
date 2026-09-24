@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@pts/ui/table'
+import { EmptyState } from '@pts/ui/empty-state'
 import type { UsersSettingsAssignments } from '@/lib/queries/users/assignments'
 import { isUserSortValue } from '@/lib/settings/users/filters'
 import type { UserRowState } from '@/lib/settings/users/state/use-users-table-state'
@@ -84,11 +85,8 @@ export function UsersTableSection({
           ))}
           {rows.length === 0 ? (
             <TableRow>
-              <TableCell
-                colSpan={7}
-                className='text-muted-foreground py-10 text-center text-sm'
-              >
-                {emptyMessage}
+              <TableCell colSpan={7} className='p-4'>
+                <EmptyState message={emptyMessage} />
               </TableCell>
             </TableRow>
           ) : null}

@@ -1,3 +1,5 @@
+import { BADGE_TINTS } from '@pts/ui/badge-tints'
+
 /**
  * Client-facing subset of the internal app's invoice status presentation
  * (`apps/internal/app/(dashboard)/invoices/_components/invoices-table-section.tsx`).
@@ -15,11 +17,10 @@ const INVOICE_STATUS_LABELS = {
 } as const
 
 const INVOICE_STATUS_TOKENS = {
-  SENT: 'border-transparent bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200',
-  VIEWED:
-    'border-transparent bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200',
-  PAID: 'border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200',
-  VOID: 'border-transparent bg-slate-200 text-slate-700 dark:bg-slate-700/60 dark:text-slate-200',
+  SENT: BADGE_TINTS.sky,
+  VIEWED: BADGE_TINTS.sky,
+  PAID: BADGE_TINTS.emerald,
+  VOID: BADGE_TINTS.neutral,
 } as const
 
 type ClientInvoiceStatus = keyof typeof INVOICE_STATUS_LABELS
@@ -33,5 +34,5 @@ export function getInvoiceStatusLabel(value: string): string {
 export function getInvoiceStatusToken(value: string): string {
   return value in INVOICE_STATUS_TOKENS
     ? INVOICE_STATUS_TOKENS[value as ClientInvoiceStatus]
-    : 'border border-border bg-accent text-accent-foreground'
+    : BADGE_TINTS.neutral
 }

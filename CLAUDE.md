@@ -41,6 +41,7 @@ The two main apps are `apps/internal/` (admin portal) and `apps/client/` (client
 - `npm run lint` - Lint all apps via Turbo
 - `npm run type-check` - Type-check all apps via Turbo
 - `npm run cli:link` - Build the `pts` CLI and link it onto your PATH (see `packages/cli/README.md`)
+- `npm run design-tokens` - Regenerate `docs/design-system/tokens.json` from the theme sources (`npm run lint` checks it)
 
 ### Development (from `apps/internal/` or `apps/client/`)
 - `npm run dev` - Start app with Turbopack (internal: port 3000, client: port 3001)
@@ -251,6 +252,8 @@ Use standardized error classes from `apps/internal/lib/errors/http.ts`:
 API responses follow `{ ok: boolean, data?: T, error?: string }` pattern.
 
 ### UI Components
+
+**Design system:** `docs/design-system/` (README, `tokens.json`, `components/*.md`) documents colors, type, components, copy voice and house UI rules; the `design-system` skill loads it for UI work. Read it before any visual change, and update it when you change what it describes. `tokens.json` values are generated: run `npm run design-tokens` after changing `packages/ui/src/styles/theme.css`, `BRAND` or `EMAIL_COLORS`.
 
 **Component library:**
 - Radix UI primitives in `apps/internal/components/ui/`

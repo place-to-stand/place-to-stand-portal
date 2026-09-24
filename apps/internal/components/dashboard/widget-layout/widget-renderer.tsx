@@ -8,9 +8,9 @@ import { RecentActivityOverviewWidget } from '../recent-activity-overview-widget
 import type { DashboardWidgetData } from './types'
 
 export const DASHBOARD_WIDGET_LABELS: Record<DashboardWidgetId, string> = {
-  'my-tasks': 'My Tasks',
-  hours: 'Monthly Hours Snapshot',
-  'recent-activity': 'Recent Activity',
+  'my-tasks': 'My tasks',
+  hours: 'Monthly hours snapshot',
+  'recent-activity': 'Recent activity',
 }
 
 type WidgetRendererProps = {

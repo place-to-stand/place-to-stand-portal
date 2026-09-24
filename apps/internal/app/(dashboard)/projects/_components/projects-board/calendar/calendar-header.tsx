@@ -1,9 +1,9 @@
 'use client'
 
-import { format } from 'date-fns'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { formatCalendarDate } from '@pts/ui/dates'
 import {
   Select,
   SelectContent,
@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@pts/ui/select'
-import { Input } from '@/components/ui/input'
+import { Input } from '@pts/ui/input'
 
 type CalendarHeaderProps = {
   headerRef: React.Ref<HTMLDivElement | null>
@@ -26,13 +26,17 @@ type CalendarHeaderProps = {
   onGoToToday: () => void
 }
 
-const monthLabels = Array.from({ length: 12 }, (_, index) => {
-  const date = new Date(2025, index, 1)
-  return {
-    value: String(index),
-    label: format(date, 'MMMM'),
-  }
-})
+/**
+ * The first of a local-calendar month as a date-only string, so
+ * formatCalendarDate reads it back verbatim instead of shifting timezones.
+ */
+const toMonthStartKey = (year: number, monthIndex: number) =>
+  `${year}-${String(monthIndex + 1).padStart(2, '0')}-01`
+
+const monthLabels = Array.from({ length: 12 }, (_, index) => ({
+  value: String(index),
+  label: formatCalendarDate(toMonthStartKey(2025, index), { month: 'long' }),
+}))
 
 export function CalendarHeader({
   headerRef,
@@ -54,7 +58,13 @@ export function CalendarHeader({
       <div className='flex items-center justify-between'>
         <div>
           <p className='text-lg font-semibold'>
-            {format(currentMonth, 'MMMM yyyy')}
+            {formatCalendarDate(
+              toMonthStartKey(
+                currentMonth.getFullYear(),
+                currentMonth.getMonth()
+              ),
+              { month: 'long', year: 'numeric' }
+            )}
           </p>
         </div>
       </div>
@@ -99,7 +109,7 @@ export function CalendarHeader({
             onClick={onPrevMonth}
             aria-label='View previous month'
           >
-            <ChevronLeft className='h-4 w-4' />
+            <ChevronLeft />
           </Button>
           <Button
             type='button'
@@ -108,7 +118,7 @@ export function CalendarHeader({
             onClick={onNextMonth}
             aria-label='View next month'
           >
-            <ChevronRight className='h-4 w-4' />
+            <ChevronRight />
           </Button>
         </div>
       </div>

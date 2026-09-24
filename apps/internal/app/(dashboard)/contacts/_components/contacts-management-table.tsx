@@ -42,8 +42,8 @@ type ContactsManagementTableProps = {
 }
 
 const EMPTY_MESSAGES = {
-  active: 'No contacts yet. Add one to begin organizing client contacts.',
-  archive: 'No archived contacts. Archived contacts appear here once deleted.',
+  active: 'No contacts yet.',
+  archive: 'No archived contacts.',
 } as const
 
 export function ContactsManagementTable({
@@ -64,7 +64,8 @@ export function ContactsManagementTable({
   const searchParams = useSearchParams()
 
   const { toast } = useToast()
-  const [promoteTarget, setPromoteTarget] = useState<ContactsTableContact | null>(null)
+  const [promoteTarget, setPromoteTarget] =
+    useState<ContactsTableContact | null>(null)
   const [isPromotePending, startPromoteTransition] = useTransition()
 
   const {
@@ -224,7 +225,9 @@ export function ContactsManagementTable({
       />
       <PromoteToUserDialog
         open={Boolean(promoteTarget)}
-        onOpenChange={open => { if (!open) setPromoteTarget(null) }}
+        onOpenChange={open => {
+          if (!open) setPromoteTarget(null)
+        }}
         contactName={promoteTarget?.name || promoteTarget?.email || ''}
         contactEmail={promoteTarget?.email || ''}
         linkedClientCount={promoteTarget?.metrics.totalClients ?? 0}

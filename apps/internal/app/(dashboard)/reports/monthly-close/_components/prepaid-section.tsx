@@ -20,7 +20,7 @@ export function PrepaidSection({ data }: PrepaidSectionProps) {
       compact
       icon={CreditCard}
       iconTone='emerald'
-      title='Prepaid Billing'
+      title='Prepaid billing'
       description={`New hour blocks sold this month × $${data.hourlyRate}/hr — what we billed prepaid clients.`}
       total={formatCurrency(data.totalAmount)}
     >

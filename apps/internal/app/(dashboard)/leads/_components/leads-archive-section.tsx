@@ -3,10 +3,12 @@
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { RefreshCw, Trash2 } from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
 
 import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { formatRelativeTime } from '@pts/ui/dates'
+import { EmptyState } from '@pts/ui/empty-state'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { FilterBar } from '@/components/table-toolbar/filter-bar'
 import { FilterSelect } from '@/components/table-toolbar/filter-select'
 import { ResetFiltersButton } from '@/components/table-toolbar/reset-filters-button'
@@ -130,7 +132,7 @@ export function LeadsArchiveSection({
 
       if (!result.success) {
         toast({
-          title: 'Failed to restore lead',
+          title: 'Unable to restore lead',
           description: result.error,
           variant: 'destructive',
         })
@@ -166,7 +168,7 @@ export function LeadsArchiveSection({
 
       if (!result.success) {
         toast({
-          title: 'Failed to delete lead',
+          title: 'Unable to permanently delete lead',
           description: result.error,
           variant: 'destructive',
         })
@@ -190,7 +192,8 @@ export function LeadsArchiveSection({
   const statusFilter = isLeadStatus(rawStatus) ? rawStatus : undefined
   const searchQuery = getParam('q')?.trim() || undefined
   const rawSort = getParam('sort')
-  const sortParam = rawSort && isLeadArchiveSortValue(rawSort) ? rawSort : undefined
+  const sortParam =
+    rawSort && isLeadArchiveSortValue(rawSort) ? rawSort : undefined
   const sort = parseSortParam(
     sortParam,
     LEAD_ARCHIVE_SORT_FIELDS,
@@ -234,11 +237,7 @@ export function LeadsArchiveSection({
   }, [leads, searchQuery, sort.direction, sort.field, statusFilter])
 
   if (leads.length === 0) {
-    return (
-      <div className='text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm'>
-        No archived leads. Leads will appear here when archived from the board.
-      </div>
-    )
+    return <EmptyState message='No archived leads.' />
   }
 
   return (
@@ -311,12 +310,13 @@ export function LeadsArchiveSection({
               </SortableTableHead>
               <TableHead className='w-[16%]'>Company</TableHead>
               <TableHead className='w-[22%]'>Email</TableHead>
-              <TableHead className='w-[16%]'>Last Status</TableHead>
+              <TableHead className='w-[16%]'>Last status</TableHead>
               <SortableTableHead
                 field='archived'
                 sort={sortParam}
                 defaultSort='archived:desc'
                 onSortChange={next => update({ sort: next })}
+                className='w-[14%]'
               >
                 Archived
               </SortableTableHead>
@@ -329,9 +329,7 @@ export function LeadsArchiveSection({
               const isDestroying = isPending && pendingDestroyId === lead.id
               const rowDisabled = isRestoring || isDestroying
 
-              const statusLabel = lead.status
-                .replace(/_/g, ' ')
-                .replace(/\b\w/g, c => c.toUpperCase())
+              const statusLabel = LEAD_STATUS_LABELS[lead.status] ?? lead.status
 
               return (
                 <TableRow
@@ -365,35 +363,25 @@ export function LeadsArchiveSection({
                   </TableCell>
                   <TableCell>
                     <span className='text-muted-foreground text-sm'>
-                      {formatDistanceToNow(new Date(lead.deletedAt), {
-                        addSuffix: true,
-                      })}
+                      {formatRelativeTime(lead.deletedAt)}
                     </span>
                   </TableCell>
                   <TableCell className='text-right'>
                     <div className='flex justify-end gap-2'>
-                      <Button
+                      <RowActionButton
+                        label='Restore lead'
+                        icon={<RefreshCw />}
                         variant='outline'
-                        size='icon-sm'
                         onClick={() => handleRestore(lead)}
                         disabled={rowDisabled}
-                        title='Restore lead'
-                        aria-label={`Restore ${lead.contactName}`}
-                      >
-                        <RefreshCw className='h-4 w-4' />
-                        <span className='sr-only'>Restore</span>
-                      </Button>
-                      <Button
+                      />
+                      <RowActionButton
+                        label='Permanently delete lead'
+                        icon={<Trash2 />}
                         variant='destructive'
-                        size='icon-sm'
                         onClick={() => handleRequestDestroy(lead)}
                         disabled={rowDisabled}
-                        title='Permanently delete lead'
-                        aria-label={`Permanently delete ${lead.contactName}`}
-                      >
-                        <Trash2 className='h-4 w-4' />
-                        <span className='sr-only'>Delete permanently</span>
-                      </Button>
+                      />
                     </div>
                   </TableCell>
                 </TableRow>
@@ -401,11 +389,8 @@ export function LeadsArchiveSection({
             })}
             {visibleLeads.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className='text-muted-foreground py-10 text-center text-sm'
-                >
-                  No archived leads match the current filters.
+                <TableCell colSpan={6} className='p-4'>
+                  <EmptyState message='No archived leads match the current filters.' />
                 </TableCell>
               </TableRow>
             ) : null}

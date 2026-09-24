@@ -4,6 +4,7 @@ import { useCallback } from 'react'
 
 import { Badge } from '@pts/ui/badge'
 import { Tabs } from '@pts/ui/tabs'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 import { SummaryContent } from '@/components/dashboard/recent-activity-overview/summary-content'
@@ -78,12 +79,14 @@ export function RecentActivityOverviewWidget({
               {metaLabel ? <span>{metaLabel}</span> : null}
             </div>
             {modelLabel ? (
-              <span
-                className='ml-auto font-mono text-[10px]'
-                title='AI model used for the summary'
-              >
-                {modelLabel}
-              </span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className='ml-auto font-mono text-[10px]'>
+                    {modelLabel}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>AI model used for the summary</TooltipContent>
+              </Tooltip>
             ) : null}
           </footer>
         </div>

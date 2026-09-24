@@ -1,3 +1,5 @@
+import { Progress } from '@pts/ui/progress'
+
 import { cn } from '@/lib/utils'
 
 /**
@@ -30,10 +32,10 @@ export function SummaryHeader({
   return (
     // Shallowest layer. The interactive rows below step down through
     // surface-2 and surface-3; see the token definitions in globals.css.
-    <div className="flex min-h-[7rem] flex-col justify-center bg-surface-1 p-4">
-      <p className="text-sm font-medium text-muted-foreground">{label}</p>
+    <div className='bg-surface-1 flex min-h-28 flex-col justify-center p-4'>
+      <p className='text-muted-foreground text-sm font-medium'>{label}</p>
 
-      <div className="mt-1 flex items-baseline gap-2">
+      <div className='mt-1 flex items-baseline gap-2'>
         <span
           className={cn(
             'text-3xl font-bold tabular-nums',
@@ -42,29 +44,20 @@ export function SummaryHeader({
         >
           {value}
         </span>
-        <span className="text-sm text-muted-foreground">{suffix}</span>
+        <span className='text-muted-foreground text-sm'>{suffix}</span>
       </div>
 
       {percent !== undefined && (
-        <div
-          // foreground/15, not bg-muted: the track has to stay visible on the
-          // darkened header in both themes, and muted is only 0.03 off it in
-          // light mode.
-          className="mt-3 h-2 w-full overflow-hidden rounded-full bg-foreground/15"
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.round(percent)}
+        <Progress
+          value={percent}
           aria-label={progressLabel}
-        >
-          <div
-            className={cn(
-              'h-full rounded-full',
-              isAlert ? 'bg-destructive' : 'bg-primary'
-            )}
-            style={{ width: `${percent}%` }}
-          />
-        </div>
+          // foreground/15, not the default primary/20: the track has to stay
+          // visible on the darkened header in both themes.
+          className={cn(
+            'bg-foreground/15 mt-3',
+            isAlert && '[&_[data-slot=progress-indicator]]:bg-destructive'
+          )}
+        />
       )}
     </div>
   )

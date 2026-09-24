@@ -3,7 +3,7 @@ import { CalendarRange, Clock, UserCog, Users } from 'lucide-react'
 
 import type { ClientHoursTotals } from '@pts/db/hours'
 
-import { formatCalendarDate } from '@/lib/dates'
+import { formatCalendarDate } from '@pts/ui/dates'
 
 type SidebarCardProps = {
   icon: ReactNode

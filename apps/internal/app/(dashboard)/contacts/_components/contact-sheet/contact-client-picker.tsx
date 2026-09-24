@@ -5,7 +5,7 @@ import { Building2, Plus, X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { CommandCreateRows } from '@/components/ui/command-create-rows'
-import { SheetEmptyState } from '@/components/sheets/sheet-empty-state'
+import { EmptyState } from '@pts/ui/empty-state'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
   Command,
@@ -124,7 +124,7 @@ export function ContactClientList({
   if (selectedClients.length === 0) {
     return (
       <DisabledFieldTooltip disabled={linkDisabled} reason={linkDisabledReason}>
-        <SheetEmptyState
+        <EmptyState
           message='No clients linked yet.'
           label='Link client'
           onClick={onRequestLink}
@@ -153,8 +153,8 @@ export function ContactClientList({
             <Button
               type='button'
               variant='ghost'
-              size='icon'
-              className='text-muted-foreground hover:text-destructive h-8 w-8 shrink-0'
+              size='icon-sm'
+              className='text-muted-foreground hover:text-destructive shrink-0'
               onClick={() => onRequestRemoval(client)}
               disabled={isPending}
               aria-label={`Unlink ${client.name}`}

@@ -3,6 +3,7 @@ import 'server-only'
 import { generateInvoicePdf } from '@pts/pdf'
 
 import { buildSampleInvoice } from '@/lib/pdf/sample-invoice'
+import type { TemplateAudience } from '@/lib/templates/audience'
 
 type PdfTemplateVariant = {
   /** Stable key used in the preview URL. */
@@ -14,11 +15,12 @@ type PdfTemplateVariant = {
 export type PdfTemplateEntry = {
   id: string
   name: string
-  /** One line for the list: page size and renderer. */
+  /** One line for the sheet header: page size and renderer. */
   summary: string
-  /** Who reads it, as short chips: "Client", "Internal". */
-  audiences: string[]
+  audiences: TemplateAudience[]
   description: string
+  /** One plain sentence on when it is produced: no routes or file paths. */
+  overview: string
   usedBy: string[]
   /** What the renderer reads, so it is clear which fields shape the output. */
   inputs: { label: string; detail: string }[]
@@ -44,9 +46,10 @@ export function buildPdfTemplateCatalog(): PdfTemplateEntry[] {
   return [
     {
       id: 'invoice',
+      overview: 'Created when a client views or downloads an invoice.',
       name: 'Invoice',
       summary: 'A4 · jsPDF via @pts/pdf',
-      audiences: ['Client'],
+      audiences: ['client'],
       description:
         'The invoice document a client downloads from the portal. One renderer in @pts/pdf, so the internal and client apps cannot drift.',
       usedBy: [

@@ -2,10 +2,10 @@
 
 import { useCallback, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { formatDistanceToNow } from 'date-fns'
 import {
   Archive,
   Check,
+  Mail,
   RefreshCw,
   ThumbsDown,
   ThumbsUp,
@@ -16,6 +16,9 @@ import { SortableTableHead } from '@/components/table-toolbar/sortable-table-hea
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { EmptyState } from '@pts/ui/empty-state'
+import { RowActionButton } from '@pts/ui/row-action-button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 import {
   Table,
@@ -29,7 +32,7 @@ import { useToast } from '@/components/ui/use-toast'
 import { useListParams } from '@/hooks/use-list-params'
 import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
 import { cn } from '@/lib/utils'
-import { formatCalendarDate } from '@/lib/dates'
+import { formatCalendarDate, formatRelativeTime } from '@pts/ui/dates'
 import {
   ATTRIBUTION_CHANNEL_LABELS,
   describeAttribution,
@@ -386,11 +389,8 @@ export function SubmissionsTable({
           <TableBody>
             {submissions.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={columnCount}
-                  className='text-muted-foreground py-10 text-center text-sm'
-                >
-                  {emptyMessage}
+                <TableCell colSpan={columnCount} className='p-4'>
+                  <EmptyState message={emptyMessage} />
                 </TableCell>
               </TableRow>
             ) : (
@@ -437,10 +437,7 @@ export function SubmissionsTable({
                           <span className='sr-only'>Unacknowledged</span>
                         ) : null}
                         <span className='truncate'>
-                          {formatDistanceToNow(
-                            new Date(submission.lastActivityAt),
-                            { addSuffix: true }
-                          )}
+                          {formatRelativeTime(submission.lastActivityAt)}
                         </span>
                       </div>
                     </TableCell>
@@ -456,21 +453,30 @@ export function SubmissionsTable({
                     </TableCell>
                     <TableCell>
                       {submission.contactName || submission.contactEmail ? (
-                        // Single line so every row is the same height: name
-                        // first and never squeezed, email as muted secondary
-                        // text that gives way first. The detail sheet has the
-                        // full values.
-                        <div className='flex min-w-0 items-baseline gap-1.5'>
-                          <span className='max-w-full shrink-0 truncate'>
+                        // Single line so every row is the same height: the
+                        // name truncates, the email collapses to a mailto
+                        // icon (address in the tooltip) that never shrinks.
+                        // The row click ignores anchors, so the icon doesn't
+                        // also open the sheet.
+                        <div className='flex min-w-0 items-center gap-1.5'>
+                          <span className='min-w-0 truncate'>
                             {submission.contactName ?? submission.contactEmail}
                           </span>
-                          {submission.contactName && submission.contactEmail ? (
-                            <span
-                              className='text-muted-foreground min-w-0 truncate text-xs'
-                              title={submission.contactEmail}
-                            >
-                              {submission.contactEmail}
-                            </span>
+                          {submission.contactEmail ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <a
+                                  href={`mailto:${submission.contactEmail}`}
+                                  aria-label={`Email ${submission.contactEmail}`}
+                                  className='text-muted-foreground hover:text-foreground shrink-0 transition'
+                                >
+                                  <Mail className='h-3.5 w-3.5' aria-hidden />
+                                </a>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {submission.contactEmail}
+                              </TooltipContent>
+                            </Tooltip>
                           ) : null}
                         </div>
                       ) : (
@@ -505,12 +511,12 @@ export function SubmissionsTable({
                         ) : null}
                         {submission.feedbackHelpful === true ? (
                           <ThumbsUp
-                            className='size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400'
+                            className='text-success size-3.5 shrink-0'
                             aria-label='Found results helpful'
                           />
                         ) : submission.feedbackHelpful === false ? (
                           <ThumbsDown
-                            className='size-3.5 shrink-0 text-red-600 dark:text-red-400'
+                            className='text-destructive size-3.5 shrink-0'
                             aria-label='Did not find results helpful'
                           />
                         ) : null}
@@ -540,78 +546,57 @@ export function SubmissionsTable({
                     {mode === 'archive' ? (
                       <TableCell className='text-muted-foreground text-sm whitespace-nowrap'>
                         {submission.deletedAt
-                          ? formatDistanceToNow(
-                              new Date(submission.deletedAt),
-                              { addSuffix: true }
-                            )
+                          ? formatRelativeTime(submission.deletedAt)
                           : '—'}
                       </TableCell>
                     ) : null}
                     <TableCell className='text-right'>
                       <div className='flex justify-end gap-2'>
                         {unacknowledged ? (
-                          <Button
+                          <RowActionButton
+                            label='Acknowledge submission'
+                            icon={<Check />}
                             variant='outline'
-                            size='icon-sm'
-                            title='Acknowledge submission'
-                            aria-label='Acknowledge submission'
                             disabled={pendingId === submission.id}
                             onClick={event => {
                               event.stopPropagation()
                               handleAcknowledge(submission)
                             }}
-                          >
-                            <Check className='h-4 w-4' />
-                            <span className='sr-only'>Acknowledge</span>
-                          </Button>
+                          />
                         ) : null}
                         {mode === 'active' ? (
-                          <Button
+                          <RowActionButton
+                            label='Archive submission'
+                            icon={<Archive />}
                             variant='destructive'
-                            size='icon-sm'
-                            title='Archive submission'
-                            aria-label='Archive submission'
                             disabled={pendingId === submission.id}
                             onClick={event => {
                               event.stopPropagation()
                               setArchiveTarget(submission)
                             }}
-                          >
-                            <Archive className='h-4 w-4' />
-                            <span className='sr-only'>Archive</span>
-                          </Button>
+                          />
                         ) : (
                           <>
-                            <Button
+                            <RowActionButton
+                              label='Restore submission'
+                              icon={<RefreshCw />}
                               variant='outline'
-                              size='icon-sm'
-                              title='Restore submission'
-                              aria-label='Restore submission'
                               disabled={pendingId === submission.id}
                               onClick={event => {
                                 event.stopPropagation()
                                 handleRestore(submission)
                               }}
-                            >
-                              <RefreshCw className='h-4 w-4' />
-                              <span className='sr-only'>Restore</span>
-                            </Button>
-                            <Button
+                            />
+                            <RowActionButton
+                              label='Permanently delete submission'
+                              icon={<Trash2 />}
                               variant='destructive'
-                              size='icon-sm'
-                              title='Permanently delete submission'
-                              aria-label='Permanently delete submission'
                               disabled={pendingId === submission.id}
                               onClick={event => {
                                 event.stopPropagation()
                                 setDestroyTarget(submission)
                               }}
-                            >
-                              <Trash2 className='h-4 w-4' />
-                              <span className='sr-only'>
-                                Delete permanently
-                              </span>
-                            </Button>
+                            />
                           </>
                         )}
                       </div>

@@ -250,7 +250,7 @@ export function useHourBlockSheetState({
           // PRD 002 section 05: closed-month / future-billing notice.
           if (result.warning) {
             toast({
-              title: 'Heads up',
+              title: 'Review billing details',
               description: result.warning,
             })
           }
@@ -349,7 +349,7 @@ export function useHourBlockSheetState({
             'It will be hidden from active tracking but remains available historically.',
         })
         if (result.warning) {
-          toast({ title: 'Heads up', description: result.warning })
+          toast({ title: 'Closed month affected', description: result.warning })
         }
 
         onOpenChange(false)
@@ -369,15 +369,7 @@ export function useHourBlockSheetState({
         })
       }
     })
-  }, [
-    form,
-    hourBlock,
-    isPending,
-    onComplete,
-    onOpenChange,
-    startSave,
-    toast,
-  ])
+  }, [form, hourBlock, isPending, onComplete, onOpenChange, startSave, toast])
 
   const clientField: FieldState = useMemo(
     () => deriveClientFieldState(isPending, clientOptions),

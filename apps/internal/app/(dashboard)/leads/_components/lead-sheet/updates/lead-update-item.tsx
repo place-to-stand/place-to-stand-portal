@@ -14,7 +14,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Badge } from '@pts/ui/badge'
 import { sanitizeEditorHtml } from '@/components/ui/rich-text-editor/utils'
-import { formatCalendarDate } from '@/lib/dates'
+import { formatCalendarDate } from '@pts/ui/dates'
 import type { LeadUpdateRecord } from '@/lib/leads/types'
 import {
   LEAD_UPDATE_ICONS,
@@ -95,8 +95,8 @@ export function LeadUpdateItem({
                 <Button
                   type='button'
                   variant='ghost'
-                  size='sm'
-                  className='text-muted-foreground hover:text-foreground h-7 w-7 shrink-0 p-0'
+                  size='icon-sm'
+                  className='text-muted-foreground hover:text-foreground shrink-0'
                   disabled={isPending}
                   aria-label={`Actions for ${label.toLowerCase()} logged ${occurredLabel}`}
                 />

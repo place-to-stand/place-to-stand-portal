@@ -7,6 +7,8 @@ import { z } from 'zod'
 import { Pencil, Plus } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { EmptyState } from '@pts/ui/empty-state'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import {
   Dialog,
   DialogContent,
@@ -15,7 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@pts/ui/dialog'
-import { Input } from '@/components/ui/input'
+import { Input } from '@pts/ui/input'
 import { Label } from '@pts/ui/label'
 import {
   Select,
@@ -148,10 +150,7 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
 
   const handleToggleActive = useCallback((rate: TaxRateRow) => {
     startTransition(async () => {
-      const result = await toggleTaxRateActiveAction(
-        rate.id,
-        !rate.is_active
-      )
+      const result = await toggleTaxRateActiveAction(rate.id, !rate.is_active)
 
       if (result.ok) {
         setRates(prev =>
@@ -215,10 +214,10 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
   return (
     <section className='space-y-4'>
       <div className='flex items-center justify-between'>
-        <h2 className='text-lg font-semibold'>Tax Rates</h2>
+        <h2 className='text-lg font-semibold'>Tax rates</h2>
         <Button size='sm' onClick={openAddDialog}>
-          <Plus className='mr-1.5 h-4 w-4' />
-          Add Tax Rate
+          <Plus />
+          Add tax rate
         </Button>
       </div>
 
@@ -233,6 +232,7 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
                 sort={sort}
                 defaultSort='label:asc'
                 onSortChange={setSort}
+                className='w-[36%]'
               >
                 Label
               </SortableTableHead>
@@ -243,38 +243,35 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
           <TableBody>
             {sortedRates.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={5}
-                  className='text-muted-foreground py-8 text-center'
-                >
-                  No tax rates configured. Click &ldquo;Add Tax Rate&rdquo; to
-                  get started.
+                <TableCell colSpan={5} className='p-4'>
+                  <EmptyState message='No tax rates yet.' />
                 </TableCell>
               </TableRow>
             ) : (
               sortedRates.map(rate => (
                 <TableRow key={rate.id}>
-                  <TableCell className='truncate font-medium'>{rate.state}</TableCell>
-                  <TableCell>{(Number(rate.rate) * 100).toFixed(2).replace(/\.?0+$/, '')}%</TableCell>
+                  <TableCell className='truncate font-medium'>
+                    {rate.state}
+                  </TableCell>
+                  <TableCell>
+                    {(Number(rate.rate) * 100).toFixed(2).replace(/\.?0+$/, '')}
+                    %
+                  </TableCell>
                   <TableCell className='truncate'>{rate.label}</TableCell>
                   <TableCell>
                     <Switch
                       size='sm'
-                      className='data-[state=checked]:bg-emerald-600'
                       checked={rate.is_active}
                       disabled={isPending}
                       onCheckedChange={() => handleToggleActive(rate)}
                     />
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant='ghost'
-                      size='icon-sm'
-                      className='h-7 w-7'
+                    <RowActionButton
+                      label='Edit tax rate'
+                      icon={<Pencil />}
                       onClick={() => openEditDialog(rate)}
-                    >
-                      <Pencil className='h-3.5 w-3.5' />
-                    </Button>
+                    />
                   </TableCell>
                 </TableRow>
               ))
@@ -288,7 +285,7 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingRate ? 'Edit Tax Rate' : 'Add Tax Rate'}
+              {editingRate ? 'Edit tax rate' : 'Add tax rate'}
             </DialogTitle>
             <DialogDescription>
               {editingRate
@@ -301,7 +298,6 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
             <div className='flex items-center gap-3'>
               <Switch
                 id='tax-is-active'
-                className='data-[state=checked]:bg-emerald-600'
                 checked={isActive}
                 onCheckedChange={(checked: boolean) =>
                   form.setValue('isActive', checked, { shouldDirty: true })
@@ -316,12 +312,17 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
               <Label htmlFor='tax-state'>State</Label>
               <Select
                 value={watchedState}
-                onValueChange={value => form.setValue('state', value, { shouldValidate: true, shouldDirty: true })}
+                onValueChange={value =>
+                  form.setValue('state', value, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  })
+                }
               >
                 <SelectTrigger id='tax-state'>
                   <SelectValue placeholder='Select state' />
                 </SelectTrigger>
-                <SelectContent align='start'>
+                <SelectContent>
                   {US_STATES.map(state => (
                     <SelectItem key={state.value} value={state.value}>
                       {state.label} ({state.value})

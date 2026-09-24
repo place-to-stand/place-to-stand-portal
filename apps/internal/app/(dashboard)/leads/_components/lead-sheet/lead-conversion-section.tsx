@@ -15,7 +15,7 @@ import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { Skeleton } from '@pts/ui/skeleton'
 import { getProjectStatusLabel, getProjectStatusToken } from '@/lib/constants'
-import { formatCalendarDate } from '@/lib/dates'
+import { formatCalendarDate } from '@pts/ui/dates'
 import type { LeadConversionSummary, LeadRecord } from '@/lib/leads/types'
 import {
   clientDetailHref,
@@ -101,7 +101,8 @@ function ConvertedSummary({
         const body = (await response.json()) as {
           data?: LeadConversionSummary | null
         }
-        if (!cancelled) setState({ status: 'ready', summary: body.data ?? null })
+        if (!cancelled)
+          setState({ status: 'ready', summary: body.data ?? null })
       })
       .catch(error => {
         console.error('Failed to fetch lead conversion:', error)
@@ -118,7 +119,7 @@ function ConvertedSummary({
     <div className='space-y-3'>
       <div className='flex items-center justify-between'>
         <div className='flex items-center gap-2'>
-          <CheckCircle className='h-4 w-4 text-green-600 dark:text-green-400' />
+          <CheckCircle className='text-success h-4 w-4' />
           <span className='text-sm font-medium'>Converted</span>
         </div>
         {convertedOn && (
@@ -196,7 +197,8 @@ function ConvertedRecords({ summary }: { summary: LeadConversionSummary }) {
           href={clientHref}
           className='text-muted-foreground hover:text-foreground block text-xs'
         >
-          +{hiddenProjectCount} more {hiddenProjectCount === 1 ? 'project' : 'projects'}
+          +{hiddenProjectCount} more{' '}
+          {hiddenProjectCount === 1 ? 'project' : 'projects'}
         </Link>
       )}
     </div>
@@ -232,7 +234,7 @@ function RecordRow({
       {href ? (
         <Link
           href={href}
-          className='hover:bg-muted/60 focus-visible:bg-muted/60 flex items-center gap-3 px-3 py-2 transition-colors outline-none'
+          className='hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:ring-ring/50 flex items-center gap-3 px-3 py-2 transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-inset'
         >
           {content}
         </Link>

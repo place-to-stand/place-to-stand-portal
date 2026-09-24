@@ -61,26 +61,26 @@ function CursorPagination({
       {showPageSize ? <PageSizeSelect value={pageSize} /> : <span />}
       {hasMorePages ? (
         <div className='flex justify-end gap-1'>
-      <Button
-        type='button'
-        variant='outline'
-        size='icon-sm'
-        onClick={onPrevious}
-        disabled={isPrevDisabled}
-        aria-label='Previous page'
-      >
-        <ChevronLeft className='size-4' />
-      </Button>
-      <Button
-        type='button'
-        variant='outline'
-        size='icon-sm'
-        onClick={onNext}
-        disabled={isNextDisabled}
-        aria-label='Next page'
-      >
-        <ChevronRight className='size-4' />
-      </Button>
+          <Button
+            type='button'
+            variant='outline'
+            size='icon-sm'
+            onClick={onPrevious}
+            disabled={isPrevDisabled}
+            aria-label='Previous page'
+          >
+            <ChevronLeft />
+          </Button>
+          <Button
+            type='button'
+            variant='outline'
+            size='icon-sm'
+            onClick={onNext}
+            disabled={isNextDisabled}
+            aria-label='Next page'
+          >
+            <ChevronRight />
+          </Button>
         </div>
       ) : null}
     </div>
@@ -171,7 +171,7 @@ function PagedPagination({
         disabled={currentPage === 1}
         aria-label='Previous page'
       >
-        <ChevronLeft className='size-4' />
+        <ChevronLeft />
       </Button>
       <div className='flex items-center'>
         {paginationItems.map((item, index) => {
@@ -192,7 +192,7 @@ function PagedPagination({
             <button
               key={item}
               type='button'
-              className={`px-2 py-1 text-sm tabular-nums underline-offset-4 transition-colors hover:underline ${
+              className={`focus-visible:border-ring focus-visible:ring-ring/50 rounded-md px-2 py-1 text-sm tabular-nums underline-offset-4 transition-colors outline-none hover:underline focus-visible:ring-[3px] ${
                 isActive ? 'font-medium underline' : 'text-muted-foreground'
               }`}
               onClick={() => onPageChange(item)}
@@ -212,7 +212,7 @@ function PagedPagination({
         disabled={currentPage === totalPages}
         aria-label='Next page'
       >
-        <ChevronRight className='size-4' />
+        <ChevronRight />
       </Button>
     </div>
   ) : null

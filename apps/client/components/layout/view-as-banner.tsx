@@ -3,6 +3,7 @@
 import { useTransition } from 'react'
 import { CheckIcon, ChevronDownIcon, EyeIcon } from 'lucide-react'
 
+import { Button } from '@pts/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,23 +40,30 @@ export function ViewAsBanner({
     availableContacts.find(c => c.id === viewingAsContactId) ?? null
 
   return (
-    <div className="border-b border-amber-500/40 bg-amber-500/10">
-      <div className="mx-auto flex h-11 max-w-5xl items-center gap-3 px-4">
-        <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-amber-700 uppercase dark:text-amber-500">
-          <EyeIcon className="size-3.5" aria-hidden="true" />
+    <div className='border-b border-amber-500/40 bg-amber-500/10'>
+      <div className='mx-auto flex h-11 max-w-5xl items-center gap-3 px-4'>
+        <span className='flex items-center gap-1.5 text-xs font-semibold tracking-wide text-amber-700 uppercase dark:text-amber-500'>
+          <EyeIcon className='size-3.5' aria-hidden='true' />
           Admin preview
         </span>
 
         <DropdownMenu>
           <DropdownMenuTrigger
+            asChild
             disabled={isPending || availableContacts.length === 0}
-            className="flex items-center gap-1.5 rounded-md border border-amber-500/40 bg-background px-2.5 py-1 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
           >
-            {selectedContact?.name ?? 'Select a contact to preview'}
-            <ChevronDownIcon className="size-3.5" aria-hidden="true" />
+            {/* The amber edge ties the control to the preview band. */}
+            <Button
+              variant='outline'
+              size='sm'
+              className='border-amber-500/40 dark:border-amber-500/40'
+            >
+              {selectedContact?.name ?? 'Select a contact to preview'}
+              <ChevronDownIcon aria-hidden='true' />
+            </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="max-h-80 w-72 overflow-y-auto">
-            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+          <DropdownMenuContent className='max-h-80 w-72 overflow-y-auto'>
+            <DropdownMenuLabel className='text-muted-foreground text-xs font-normal'>
               Viewing as
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -71,14 +79,14 @@ export function ViewAsBanner({
                 <CheckIcon
                   className={
                     contact.id === viewingAsContactId
-                      ? 'size-3.5 opacity-100'
-                      : 'size-3.5 opacity-0'
+                      ? 'opacity-100'
+                      : 'opacity-0'
                   }
-                  aria-hidden="true"
+                  aria-hidden='true'
                 />
-                <span className="min-w-0 flex-1 truncate">{contact.name}</span>
+                <span className='min-w-0 flex-1 truncate'>{contact.name}</span>
                 {contact.isPromoted && (
-                  <span className="ml-2 shrink-0 rounded border border-amber-500/40 px-1 py-px text-[10px] font-medium leading-none text-amber-700 dark:text-amber-500">
+                  <span className='shrink-0 rounded border border-amber-500/40 px-1 py-px text-[10px] leading-none font-semibold text-amber-700 dark:text-amber-500'>
                     Portal
                   </span>
                 )}
@@ -88,12 +96,12 @@ export function ViewAsBanner({
         </DropdownMenu>
 
         {selectedContact && (
-          <span className="hidden text-xs text-muted-foreground sm:inline">
+          <span className='text-muted-foreground hidden text-xs sm:inline'>
             You are seeing {selectedContact.name}&rsquo;s portal view.
           </span>
         )}
         {!selectedContact && (
-          <span className="hidden text-xs text-muted-foreground sm:inline">
+          <span className='text-muted-foreground hidden text-xs sm:inline'>
             Select a contact above to preview the portal.
           </span>
         )}

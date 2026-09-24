@@ -113,7 +113,7 @@ export function useLeadSheetState({
         toast({
           title: isEditing ? 'Lead updated' : 'Lead created',
           description: isEditing
-            ? 'The lead has been updated successfully.'
+            ? 'Changes saved.'
             : 'Your new lead has been added to the pipeline.',
         })
 

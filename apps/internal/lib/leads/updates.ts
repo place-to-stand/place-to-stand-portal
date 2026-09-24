@@ -1,3 +1,4 @@
+import { BADGE_TINTS } from '@pts/ui/badge-tints'
 import {
   CalendarDays,
   Mail,
@@ -27,13 +28,10 @@ export const LEAD_UPDATE_LABELS: Record<LeadUpdateTypeValue, string> = {
  * down to a bare colored dot.
  */
 export const LEAD_UPDATE_TOKENS: Record<LeadUpdateTypeValue, string> = {
-  MEETING:
-    'border-transparent bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200',
-  PHONE_CALL:
-    'border-transparent bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200',
-  EMAIL:
-    'border-transparent bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200',
-  NOTE: 'border-transparent bg-slate-200 text-slate-700 dark:bg-slate-700/60 dark:text-slate-200',
+  MEETING: BADGE_TINTS.violet,
+  PHONE_CALL: BADGE_TINTS.sky,
+  EMAIL: BADGE_TINTS.amber,
+  NOTE: BADGE_TINTS.neutral,
 }
 
 export const LEAD_UPDATE_ICONS: Record<LeadUpdateTypeValue, LucideIcon> = {

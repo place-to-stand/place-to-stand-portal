@@ -7,8 +7,7 @@ import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { ProjectsBoardEmpty } from '../projects-board-empty'
 import {
   FEEDBACK_CLASSES,
-  NO_SELECTION_DESCRIPTION,
-  NO_SELECTION_TITLE,
+  NO_SELECTION_MESSAGE,
 } from './projects-board-tabs.constants'
 import type { ProjectsBoardActiveProject } from './board-tab-content'
 import type { TaskWithRelations } from '@/lib/types'
@@ -112,17 +111,14 @@ export function ReviewTabContent(props: ReviewTabContentProps) {
         confirmVariant='destructive'
         confirmDisabled={Boolean(
           isReviewActionPending &&
-            reviewActionType === 'destroy' &&
-            reviewActionTaskId === destroyTarget?.id
+          reviewActionType === 'destroy' &&
+          reviewActionTaskId === destroyTarget?.id
         )}
         onCancel={handleCancelDestroy}
         onConfirm={handleConfirmDestroy}
       />
       {!activeProject ? (
-        <ProjectsBoardEmpty
-          title={NO_SELECTION_TITLE}
-          description={NO_SELECTION_DESCRIPTION}
-        />
+        <ProjectsBoardEmpty message={NO_SELECTION_MESSAGE} />
       ) : (
         <div className='flex min-h-0 flex-1 flex-col gap-4 sm:gap-6'>
           <ReviewDoneSection

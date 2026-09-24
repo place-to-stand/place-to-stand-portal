@@ -1,5 +1,6 @@
 import type { ComponentType, ReactNode } from 'react'
 
+import { EmptyState } from '@pts/ui/empty-state'
 import { cn } from '@/lib/utils'
 
 type Icon = ComponentType<{ className?: string }>
@@ -77,7 +78,7 @@ export function SectionShell({
           <Icon
             className={cn(
               'shrink-0',
-              compact ? 'mt-[2px] h-4 w-4' : 'mt-[3px] h-5 w-5',
+              compact ? 'mt-0.5 size-4' : 'mt-0.75 size-5',
               iconAccent[iconTone]
             )}
           />
@@ -108,7 +109,7 @@ export function SectionShell({
             <div
               className={cn(
                 'text-muted-foreground/70 leading-none font-semibold tracking-[0.18em] uppercase',
-                compact ? 'mt-0 text-[9px]' : 'mt-1.5 text-[9px]'
+                compact ? 'mt-0 text-[10px]' : 'mt-1.5 text-[10px]'
               )}
             >
               {totalLabel}
@@ -177,19 +178,19 @@ export function SectionRow({
     <div className='hover:bg-muted/30 flex items-center gap-3 px-5 py-2 transition-colors'>
       {leading ? <div className='shrink-0'>{leading}</div> : null}
       <div className='min-w-0 flex-1'>
-        <div className='truncate text-[13px] font-medium'>{primary}</div>
+        <div className='truncate text-sm font-medium'>{primary}</div>
         {secondary ? (
-          <div className='text-muted-foreground truncate text-[11px]'>
+          <div className='text-muted-foreground truncate text-xs'>
             {secondary}
           </div>
         ) : null}
       </div>
       {hours != null ? (
-        <div className='text-muted-foreground w-16 shrink-0 text-right text-[11px] tabular-nums'>
+        <div className='text-muted-foreground w-16 shrink-0 text-right text-xs tabular-nums'>
           {formatHours(hours)} hrs
         </div>
       ) : null}
-      <div className='w-24 shrink-0 text-right text-[13px] font-semibold tabular-nums'>
+      <div className='w-24 shrink-0 text-right text-sm font-semibold tabular-nums'>
         {formatCurrency(amount)}
       </div>
     </div>
@@ -209,6 +210,8 @@ export function SectionRowList({ children }: { children: ReactNode }) {
  */
 export function SectionEmpty({ message }: { message: string }) {
   return (
-    <p className='text-muted-foreground py-8 text-center text-sm'>{message}</p>
+    <div className='p-4'>
+      <EmptyState message={message} />
+    </div>
   )
 }

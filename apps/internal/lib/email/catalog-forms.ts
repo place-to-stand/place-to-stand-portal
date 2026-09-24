@@ -64,11 +64,12 @@ export function buildFormEmailEntries(
   return [
     {
       id: 'contact-notification',
+      overview: 'Sent to the team when someone uses the website contact form.',
+      group: 'contact-form',
       status: 'active',
-      name: 'Contact form — team notification',
+      name: 'Team notification',
       description:
         'Tells the team someone used the marketing-site contact form. Leads with a link to the submission, then who, what they said, and a one-line summary of where they came from.',
-      portals: ['internal'],
       triggers: [
         'POST /api/integrations/contact-submissions with `deliver: true` (the marketing site’s contact form)',
       ],
@@ -80,7 +81,7 @@ export function buildFormEmailEntries(
       source: 'packages/email/src/templates/contact-notification.ts',
       variants: [
         {
-          label: 'Admin',
+          audience: 'team',
           sample: contactNotificationEmail({
             submissionUrl: `${internalOrigin}${submissionHref(SAMPLE_SUBMISSION_ID)}`,
             contact: SAMPLE_CONTACT,
@@ -98,11 +99,12 @@ export function buildFormEmailEntries(
     },
     {
       id: 'contact-confirmation',
+      overview: 'Sent to the visitor after they use the website contact form.',
+      group: 'contact-form',
       status: 'active',
-      name: 'Contact form — visitor confirmation',
+      name: 'Visitor confirmation',
       description:
         'Receipt for a visitor who used the contact form, echoing what they sent. Skipped when the address has requested more than three deliveries in fifteen minutes.',
-      portals: ['internal'],
       triggers: ['Same request as the team notification'],
       recipient: 'The address entered on the contact form',
       from: formAddresses.from,
@@ -112,7 +114,7 @@ export function buildFormEmailEntries(
       source: 'packages/email/src/templates/contact-confirmation.ts',
       variants: [
         {
-          label: 'Visitor',
+          audience: 'visitor',
           sample: contactConfirmationEmail({
             contact: SAMPLE_CONTACT,
             subject: 'Website redesign',
@@ -125,11 +127,13 @@ export function buildFormEmailEntries(
     },
     {
       id: 'audit-notification',
+      overview:
+        'Sent to the team when a visitor finishes the Opportunity Audit.',
+      group: 'audit',
       status: 'active',
-      name: 'Opportunity Audit — team notification',
+      name: 'Team notification',
       description:
         'Tells the team a visitor finished the Opportunity Audit and left their details. Same reading order as the contact notification, with the scored result and the full answer transcript.',
-      portals: ['internal'],
       triggers: [
         'POST /api/integrations/audit-responses with status `captured` and `deliver: true` (sent by the marketing site’s BotID-gated server action, never by a progress beacon)',
       ],
@@ -141,7 +145,7 @@ export function buildFormEmailEntries(
       source: 'packages/email/src/templates/audit-notification.ts',
       variants: [
         {
-          label: 'Admin',
+          audience: 'team',
           sample: auditNotificationEmail({
             submissionUrl: `${internalOrigin}${submissionHref(SAMPLE_SUBMISSION_ID)}`,
             contact: { ...SAMPLE_CONTACT, website: null },
@@ -165,11 +169,12 @@ export function buildFormEmailEntries(
     },
     {
       id: 'audit-results',
+      overview: 'Sent to the visitor with their Opportunity Audit results.',
+      group: 'audit',
       status: 'active',
-      name: 'Opportunity Audit — visitor results',
+      name: 'Visitor results',
       description:
         'The visitor’s copy of their audit result: business phase, summary, and where to start. Not sent when the stored audit has no scored result.',
-      portals: ['internal'],
       triggers: ['Same request as the team notification'],
       recipient: 'The address entered on the audit’s capture form',
       from: formAddresses.from,
@@ -179,7 +184,7 @@ export function buildFormEmailEntries(
       source: 'packages/email/src/templates/audit-results.ts',
       variants: [
         {
-          label: 'Visitor',
+          audience: 'visitor',
           sample: auditResultsEmail({
             name: SAMPLE_CONTACT.name,
             result: SAMPLE_AUDIT_RESULT,
