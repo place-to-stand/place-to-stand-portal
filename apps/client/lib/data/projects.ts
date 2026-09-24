@@ -1,10 +1,16 @@
 import 'server-only'
 
 import { cache } from 'react'
-import { and, inArray, isNull, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { clients, projects, tasks } from '@pts/db/schema'
+import {
+  clients,
+  githubAppInstallations,
+  githubRepoLinks,
+  projects,
+  tasks,
+} from '@pts/db/schema'
 import type { AppUser } from '@/lib/auth/session'
 import { resolvePortalScope } from '@/lib/auth/view-as'
 import { CURRENT_STATUSES } from '@/lib/data/tasks'
@@ -20,6 +26,12 @@ export type ClientProject = {
   openTaskCount: number
   /** Completed. Gives the dashboard progress bar its denominator. */
   doneTaskCount: number
+  /**
+   * No repo is linked and the client has no GitHub App install, so the client
+   * may need to grant access from the project page. A linked repo, however it
+   * was linked, means there is nothing for them to do.
+   */
+  needsGitHubConnection: boolean
 }
 
 export const fetchClientProjects = cache(
@@ -48,11 +60,13 @@ export const fetchClientProjects = cache(
 
     const clientNameMap = new Map(clientRows.map(c => [c.id, c.name]))
 
-    // One grouped count covering every project and both buckets. The dashboard
+    const projectIds = projectRows.map(p => p.id)
+    // Task counts: one grouped count covering every project and both buckets. The dashboard
     // only shows how many tasks there are, never which ones, so no task rows
     // need to leave the database.
-    const taskCounts = projectRows.length
-      ? await db
+    const [taskCounts, linkedRows, installationRows] = await Promise.all([
+      projectIds.length
+        ? db
           .select({
             projectId: tasks.projectId,
             status: tasks.status,
@@ -61,16 +75,38 @@ export const fetchClientProjects = cache(
           .from(tasks)
           .where(
             and(
-              inArray(
-                tasks.projectId,
-                projectRows.map(p => p.id)
-              ),
+              inArray(tasks.projectId, projectIds),
               isNull(tasks.deletedAt),
               inArray(tasks.status, [...CURRENT_STATUSES, 'DONE'])
             )
           )
           .groupBy(tasks.projectId, tasks.status)
-      : []
+        : [],
+      projectIds.length
+        ? db
+            .selectDistinct({ projectId: githubRepoLinks.projectId })
+            .from(githubRepoLinks)
+            .where(
+              and(
+                inArray(githubRepoLinks.projectId, projectIds),
+                isNull(githubRepoLinks.deletedAt)
+              )
+            )
+        : [],
+      db
+        .selectDistinct({ clientId: githubAppInstallations.clientId })
+        .from(githubAppInstallations)
+        .where(
+          and(
+            inArray(githubAppInstallations.clientId, clientIds),
+            eq(githubAppInstallations.status, 'ACTIVE'),
+            isNull(githubAppInstallations.deletedAt)
+          )
+        ),
+    ])
+
+    const linkedProjectIds = new Set(linkedRows.map(r => r.projectId))
+    const installedClientIds = new Set(installationRows.map(r => r.clientId))
 
     const countsByProject = new Map<string, { open: number; done: number }>()
     for (const row of taskCounts) {
@@ -91,6 +127,9 @@ export const fetchClientProjects = cache(
         clientName: p.clientId ? (clientNameMap.get(p.clientId) ?? null) : null,
         openTaskCount: counts?.open ?? 0,
         doneTaskCount: counts?.done ?? 0,
+        needsGitHubConnection:
+          !linkedProjectIds.has(p.id) &&
+          !(p.clientId && installedClientIds.has(p.clientId)),
       }
     })
   }

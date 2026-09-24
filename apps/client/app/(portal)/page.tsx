@@ -11,11 +11,8 @@ import {
   EMPTY_INVOICE_SUMMARY,
   fetchClientInvoiceSummaries,
 } from '@/lib/data/invoices'
-import { fetchClientGitHubStatus } from '@/lib/data/github'
-import { fetchPtsStaffGitHubAccounts } from '@/lib/data/staff-github-access'
 import { AccountCard } from '@/components/account-card'
 import { ProjectsCard } from '@/components/projects-card'
-import { GitHubStatusBadges } from '@/components/github-status-badges'
 
 export default async function DashboardPage() {
   const user = await requireClientUser()
@@ -23,15 +20,11 @@ export default async function DashboardPage() {
     projects,
     hoursSummaries,
     invoiceSummaries,
-    githubStatuses,
-    staffGitHubAccounts,
     scope,
   ] = await Promise.all([
     fetchClientProjects(user),
     fetchClientHoursSummaries(user),
     fetchClientInvoiceSummaries(user),
-    fetchClientGitHubStatus(user),
-    fetchPtsStaffGitHubAccounts(),
     resolvePortalScope(user),
   ])
 
@@ -44,7 +37,6 @@ export default async function DashboardPage() {
     hoursSummary: hoursSummaries.find(s => s.clientId === client.id),
     invoiceSummary: invoiceSummaries.get(client.id) ?? EMPTY_INVOICE_SUMMARY,
     projects: projects.filter(p => p.clientId === client.id),
-    githubStatuses: githubStatuses.filter(s => s.clientId === client.id),
   }))
 
   return (
@@ -72,27 +64,20 @@ export default async function DashboardPage() {
         />
       ) : (
         // The same layout for one client or several: every section is headed
-        // by its client, with that client's GitHub control beside it.
-        sections.map((section, index) => (
+        // by its client. GitHub setup lives on each project page; a project
+        // that still needs it is flagged on the projects card.
+        sections.map(section => (
           <section
             key={section.client.id}
             aria-labelledby={`client-${section.client.id}`}
             className='space-y-3'
           >
-            <div className='flex flex-wrap items-center justify-between gap-x-4 gap-y-2'>
-              <h2
-                id={`client-${section.client.id}`}
-                className='text-foreground text-lg font-semibold'
-              >
-                {section.client.name}
-              </h2>
-              <GitHubStatusBadges
-                statuses={section.githubStatuses}
-                showClientName={false}
-                staffAccounts={staffGitHubAccounts}
-                showCallbackNotice={index === 0}
-              />
-            </div>
+            <h2
+              id={`client-${section.client.id}`}
+              className='text-foreground text-lg font-semibold'
+            >
+              {section.client.name}
+            </h2>
 
             {/* items-start, so each card is only as tall as its content. The
                 two columns are aligned by their SummaryHeader rows sharing a

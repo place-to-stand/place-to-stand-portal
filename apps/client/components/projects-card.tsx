@@ -1,3 +1,5 @@
+import { CircleAlertIcon } from 'lucide-react'
+
 import { Card } from '@pts/ui/card'
 
 import { NavRow } from '@/components/ui/nav-row'
@@ -18,6 +20,9 @@ function openTaskLabel(count: number): string {
  * "Remaining" is every open status (on deck, in progress, and blocked);
  * blocked work is still owed, so leaving it out would quietly shrink the
  * figure. The bar shows what's left, the way the hours bar does.
+ *
+ * A project the client still has to connect GitHub for gets an alert icon;
+ * the connect flow itself lives on the project page, not here.
  */
 export function ProjectsCard({
   projects,
@@ -60,7 +65,20 @@ export function ProjectsCard({
         <NavRow
           key={project.id}
           href={`/projects/${project.id}`}
-          title={project.name}
+          title={
+            <span className='flex min-w-0 items-center gap-1.5'>
+              <span className='truncate'>{project.name}</span>
+              {project.needsGitHubConnection && (
+                <span className='shrink-0' title='GitHub needs connecting'>
+                  <CircleAlertIcon
+                    className='text-warning size-4'
+                    aria-hidden='true'
+                  />
+                  <span className='sr-only'>GitHub needs connecting</span>
+                </span>
+              )}
+            </span>
+          }
           meta={
             <span className='text-muted-foreground truncate text-sm'>
               {openTaskLabel(project.openTaskCount)}

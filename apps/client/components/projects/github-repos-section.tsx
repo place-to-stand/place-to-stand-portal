@@ -6,7 +6,6 @@ import { ExternalLinkIcon } from 'lucide-react'
 import { Button } from '@pts/ui/button'
 import { Card } from '@pts/ui/card'
 import { EmptyState } from '@pts/ui/empty-state'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { GitHubMark } from '@/components/icons/github-mark'
 import { useGitHubCallbackNotice } from '@/lib/hooks/use-github-callback-notice'
 import { StaffAuthorizationModal } from '@/components/projects/staff-authorization-modal'
@@ -18,6 +17,12 @@ import type { PtsStaffGitHubAccount } from '@/lib/data/staff-github-access'
  * from the server (`fetchProjectGitHubStatus`), so there is no loading state:
  * the section renders complete with the rest of the page. After the install
  * callback GitHub redirects back to this page, which re-renders it fresh.
+ *
+ * A linked repo settles it: once one exists the client has nothing to connect,
+ * whether it lives in the agency's org or theirs. The authorize button only
+ * appears while the project has no repo and the client has no App install.
+ * Staff authorization only applies to repos the client owns, i.e. those linked
+ * through their own install.
  */
 export function GitHubRepoSection({
   projectId,
@@ -36,18 +41,8 @@ export function GitHubRepoSection({
 
   const [staffModalOpen, setStaffModalOpen] = useState(false)
 
-  const staffButton = (
-    <Button
-      type='button'
-      variant='outline'
-      size='xs'
-      onClick={() => setStaffModalOpen(true)}
-      disabled={links.length === 0}
-    >
-      <GitHubMark />
-      Staff authorization
-    </Button>
-  )
+  const needsConnection = links.length === 0 && !hasInstallation
+  const clientOwnedLinks = links.filter(link => link.viaClientInstallation)
 
   return (
     <section className='space-y-2'>
@@ -56,40 +51,26 @@ export function GitHubRepoSection({
           GitHub
         </h2>
         <div className='flex flex-wrap items-center gap-2'>
-          <Button
-            type='button'
-            variant={hasInstallation ? 'outline' : 'default'}
-            size='xs'
-            disabled={hasInstallation}
-            asChild={!hasInstallation}
-          >
-            {hasInstallation ? (
-              <>
-                <GitHubMark />
-                Agent authorized
-              </>
-            ) : (
+          {needsConnection && (
+            <Button type='button' size='xs' asChild>
               <a
                 href={`/api/github/install?clientId=${clientId}&projectId=${projectId}&returnTo=/projects/${projectId}`}
               >
                 <GitHubMark />
                 Authorize agent
               </a>
-            )}
-          </Button>
-          {/* A disabled button takes no pointer events, so the reason hangs
-              off a wrapper instead. */}
-          {links.length === 0 ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className='inline-flex cursor-not-allowed'>
-                  {staffButton}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>Link a repository first</TooltipContent>
-            </Tooltip>
-          ) : (
-            staffButton
+            </Button>
+          )}
+          {clientOwnedLinks.length > 0 && (
+            <Button
+              type='button'
+              variant='outline'
+              size='xs'
+              onClick={() => setStaffModalOpen(true)}
+            >
+              <GitHubMark />
+              Staff authorization
+            </Button>
           )}
         </div>
       </div>
@@ -101,7 +82,7 @@ export function GitHubRepoSection({
         </p>
       )}
 
-      {!hasInstallation ? (
+      {needsConnection ? (
         <EmptyState message='Authorize our agent above to link repositories to this project.' />
       ) : links.length === 0 ? (
         <EmptyState message='No repositories linked yet.' />
@@ -135,7 +116,7 @@ export function GitHubRepoSection({
       <StaffAuthorizationModal
         open={staffModalOpen}
         onOpenChange={setStaffModalOpen}
-        links={links}
+        links={clientOwnedLinks}
         staffAccounts={staffAccounts}
       />
     </section>
