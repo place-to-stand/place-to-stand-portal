@@ -137,6 +137,9 @@ export function Sidebar({ user, badges }: Props) {
                         className={cn(
                           'h-auto gap-2 rounded-sm px-2 py-1.5 text-xs leading-normal',
                           'data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:font-normal',
+                          // The primitive's hover swaps to the accent surface,
+                          // inverting the active pill; just dim it instead.
+                          'data-[active=true]:hover:bg-primary/90 data-[active=true]:hover:text-primary-foreground',
                           !isActive &&
                             'text-muted-foreground hover:bg-muted hover:text-foreground'
                         )}
