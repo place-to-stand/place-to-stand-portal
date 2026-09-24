@@ -1,3 +1,5 @@
+import { CircleAlertIcon } from 'lucide-react'
+
 import { NavRow } from '@/components/ui/nav-row'
 import { SummaryHeader } from '@/components/ui/summary-header'
 import { cn } from '@/lib/utils'
@@ -15,6 +17,9 @@ function openTaskLabel(count: number): string {
  * The progress bar counts completed work against everything the client can see
  * — done plus every open status (on deck, in progress, and blocked). Blocked
  * work is still owed, so excluding it would quietly inflate the percentage.
+ *
+ * A project the client still has to connect GitHub for gets an alert icon;
+ * the connect flow itself lives on the project page, not here.
  */
 export function ProjectsCard({
   projects,
@@ -50,7 +55,20 @@ export function ProjectsCard({
         <NavRow
           key={project.id}
           href={`/projects/${project.id}`}
-          title={project.name}
+          title={
+            <span className="flex min-w-0 items-center gap-1.5">
+              <span className="truncate">{project.name}</span>
+              {project.needsGitHubConnection && (
+                <span className="shrink-0" title="GitHub needs connecting">
+                  <CircleAlertIcon
+                    className="size-4 text-amber-600 dark:text-amber-400"
+                    aria-hidden="true"
+                  />
+                  <span className="sr-only">GitHub needs connecting</span>
+                </span>
+              )}
+            </span>
+          }
           meta={
             <span className="truncate text-sm text-muted-foreground">
               {showClientName && project.clientName

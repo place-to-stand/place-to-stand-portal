@@ -6,11 +6,8 @@ import { resolvePortalScope } from '@/lib/auth/view-as'
 import { fetchClientProjects } from '@/lib/data/projects'
 import { fetchClientHoursSummaries } from '@/lib/data/hours'
 import { fetchClientInvoiceSummary } from '@/lib/data/invoices'
-import { fetchClientGitHubStatus } from '@/lib/data/github'
-import { fetchPtsStaffGitHubAccounts } from '@/lib/data/staff-github-access'
 import { AccountCard } from '@/components/account-card'
 import { ProjectsCard } from '@/components/projects-card'
-import { GitHubStatusBadges } from '@/components/github-status-badges'
 
 export default async function DashboardPage() {
   const user = await requireClientUser()
@@ -18,15 +15,11 @@ export default async function DashboardPage() {
     projects,
     hoursSummaries,
     invoiceSummary,
-    githubStatuses,
-    staffGitHubAccounts,
     scope,
   ] = await Promise.all([
     fetchClientProjects(user),
     fetchClientHoursSummaries(user),
     fetchClientInvoiceSummary(user),
-    fetchClientGitHubStatus(user),
-    fetchPtsStaffGitHubAccounts(),
     resolvePortalScope(user),
   ])
 
@@ -44,16 +37,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-          <h1 className="text-2xl font-bold text-foreground">{title}</h1>
-          {scope.clientIds.length > 0 && (
-            <GitHubStatusBadges
-              statuses={githubStatuses}
-              showClientName={showClientName}
-              staffAccounts={staffGitHubAccounts}
-            />
-          )}
-        </div>
+        <h1 className="text-2xl font-bold text-foreground">{title}</h1>
         {/* One paragraph, not two lines: text-balance only evens out the lines
             of a single block, and hard-splitting the sentences left a ragged
             first line beside a short second one at most widths.

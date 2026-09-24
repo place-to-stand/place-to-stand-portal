@@ -15,6 +15,12 @@ import type { PtsStaffGitHubAccount } from '@/lib/data/staff-github-access'
  * from the server (`fetchProjectGitHubStatus`), so there is no loading state:
  * the section renders complete with the rest of the page. After the install
  * callback GitHub redirects back to this page, which re-renders it fresh.
+ *
+ * A linked repo settles it: once one exists the client has nothing to connect,
+ * whether it lives in the agency's org or theirs. The authorize button only
+ * appears while the project has no repo and the client has no App install.
+ * Staff authorization only applies to repos the client owns, i.e. those linked
+ * through their own install.
  */
 export function GitHubRepoSection({
   projectId,
@@ -33,6 +39,9 @@ export function GitHubRepoSection({
 
   const [staffModalOpen, setStaffModalOpen] = useState(false)
 
+  const needsConnection = links.length === 0 && !hasInstallation
+  const clientOwnedLinks = links.filter(link => link.viaClientInstallation)
+
   return (
     <section className="space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -40,40 +49,28 @@ export function GitHubRepoSection({
           GitHub
         </h2>
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            variant={hasInstallation ? 'outline' : 'default'}
-            size="xs"
-            className="gap-1.5"
-            disabled={hasInstallation}
-            asChild={!hasInstallation}
-          >
-            {hasInstallation ? (
-              <>
-                <GitHubMark className="size-3.5" />
-                Agent authorized
-              </>
-            ) : (
+          {needsConnection && (
+            <Button type="button" size="xs" className="gap-1.5" asChild>
               <a
                 href={`/api/github/install?clientId=${clientId}&projectId=${projectId}&returnTo=/projects/${projectId}`}
               >
                 <GitHubMark className="size-3.5" />
                 Authorize agent
               </a>
-            )}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="xs"
-            className="gap-1.5"
-            onClick={() => setStaffModalOpen(true)}
-            disabled={links.length === 0}
-            title={links.length === 0 ? 'Link a repository first' : undefined}
-          >
-            <GitHubMark className="size-3.5" />
-            Staff authorization
-          </Button>
+            </Button>
+          )}
+          {clientOwnedLinks.length > 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              size="xs"
+              className="gap-1.5"
+              onClick={() => setStaffModalOpen(true)}
+            >
+              <GitHubMark className="size-3.5" />
+              Staff authorization
+            </Button>
+          )}
         </div>
       </div>
 
@@ -84,7 +81,7 @@ export function GitHubRepoSection({
         </p>
       )}
 
-      {!hasInstallation ? (
+      {needsConnection ? (
         <div className="flex items-center gap-3 rounded-lg border border-border p-4">
           <GitHubMark className="size-4 shrink-0 text-muted-foreground" />
           <p className="min-w-0 flex-1 text-sm text-muted-foreground">
@@ -128,7 +125,7 @@ export function GitHubRepoSection({
       <StaffAuthorizationModal
         open={staffModalOpen}
         onOpenChange={setStaffModalOpen}
-        links={links}
+        links={clientOwnedLinks}
         staffAccounts={staffAccounts}
       />
     </section>
