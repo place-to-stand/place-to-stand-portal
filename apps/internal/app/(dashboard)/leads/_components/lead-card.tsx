@@ -17,7 +17,7 @@ import {
   Handshake,
   ListTodo,
   Mail,
-  MessageCircle,
+  MessageSquareText,
   Phone,
   type LucideIcon,
 } from 'lucide-react'
@@ -265,7 +265,7 @@ function LeadCardContent({ lead }: { lead: LeadRecord }) {
                       className='inline-flex items-center gap-1'
                       aria-label={updatesLabel}
                     >
-                      <MessageCircle className='h-3.5 w-3.5' aria-hidden />
+                      <MessageSquareText className='h-3.5 w-3.5' aria-hidden />
                       {lead.updateCount}
                     </span>
                   </TooltipTrigger>

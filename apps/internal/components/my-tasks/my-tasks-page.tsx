@@ -31,6 +31,10 @@ import type { MyTasksBoardReorderUpdate, TaskLookup } from './my-tasks-board'
 import { MyTasksCalendar } from './my-tasks-calendar'
 import { PersonSelector } from './person-selector'
 import { ClientSelector, type ClientSelectorOption } from './client-selector'
+import {
+  filterEntriesToScope,
+  useOptimisticBoardScope,
+} from './use-optimistic-board-scope'
 import { Plus } from 'lucide-react'
 
 export type MyTasksInitialEntry = {
@@ -265,6 +269,24 @@ export function MyTasksPage({
     windowAnchor,
   ])
 
+  // The client selector updates this on click; the server props only catch
+  // up when the navigation lands. Narrowing applies right away because every
+  // loaded task knows its project. Widening still waits on the server, since
+  // those tasks were never loaded.
+  const {
+    scope: boardScope,
+    applyScope: applyBoardScope,
+    isPending: isScopePending,
+  } = useOptimisticBoardScope(selectedClientId, hiddenProjectTypes)
+  const visibleBoardEntries = useMemo(
+    () => filterEntriesToScope(boardEntries, taskLookup, boardScope),
+    [boardEntries, taskLookup, boardScope]
+  )
+  const visibleEntries = useMemo(
+    () => filterEntriesToScope(entries, taskLookup, boardScope),
+    [entries, taskLookup, boardScope]
+  )
+
   // Drop the create seed defaults once the create sheet's param is gone.
   const [prevTaskParam, setPrevTaskParam] = useState(taskParam)
   if (prevTaskParam !== taskParam) {
@@ -413,7 +435,7 @@ export function MyTasksPage({
     [reorderMutation, router, selectedAssigneeId, startRefresh]
   )
 
-  const totalTaskCount = entries.length
+  const totalTaskCount = visibleEntries.length
 
   // `?task=new` opens the create sheet (shared convention), so an "add task"
   // link is shareable; the local context only carries the seed defaults for
@@ -453,8 +475,9 @@ export function MyTasksPage({
         <div className='flex items-center gap-2'>
           <ClientSelector
             clients={clients}
-            selectedClientId={selectedClientId}
-            hiddenProjectTypes={hiddenProjectTypes}
+            selectedClientId={boardScope.clientId}
+            hiddenProjectTypes={boardScope.hiddenProjectTypes}
+            onScopeChange={applyBoardScope}
           />
           <PersonSelector
             admins={admins}
@@ -483,13 +506,17 @@ export function MyTasksPage({
         // Only truly empty when nothing is hidden either. With older DONE
         // tasks outside the window the board must still render, or its
         // "load previous two weeks" control never mounts and those tasks are
-        // unreachable at any window size.
-        boardEntries.length === 0 && olderDoneCount === 0 ? (
+        // unreachable at any window size. A scope change in flight can empty
+        // the board before the new client's tasks arrive, so the empty state
+        // waits for the server there.
+        visibleBoardEntries.length === 0 &&
+        olderDoneCount === 0 &&
+        !isScopePending ? (
           <ProjectsBoardEmpty message='No tasks assigned to you yet.' />
         ) : (
           <MyTasksBoard
             canReorder={selectedAssigneeId !== 'all'}
-            entries={boardEntries}
+            entries={visibleBoardEntries}
             taskLookup={taskLookup}
             renderAssignees={renderAssignees}
             getTaskCardOptions={getTaskCardOptions}
@@ -507,7 +534,7 @@ export function MyTasksPage({
         )
       ) : (
         <MyTasksCalendar
-          entries={entries}
+          entries={visibleEntries}
           taskLookup={taskLookup}
           renderAssignees={renderAssignees}
           onOpenTask={handleOpenTask}

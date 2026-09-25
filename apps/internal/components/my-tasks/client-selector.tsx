@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import { useCallback, useMemo, useState } from 'react'
+import { startTransition, useCallback, useMemo, useState } from 'react'
 import { Building2, Check, ChevronsUpDown } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
@@ -26,6 +26,7 @@ import {
 import { cn } from '@/lib/utils'
 
 import { ClientScopeRow } from './client-scope-row'
+import type { MyTasksBoardScopePatch } from './use-optimistic-board-scope'
 
 const ALL_CLIENTS_VALUE = 'all'
 const ALL_CLIENTS_LABEL = 'All clients'
@@ -46,10 +47,21 @@ export type ClientSelectorOption = {
 
 type ClientSelectorProps = {
   clients: ClientSelectorOption[]
-  /** A client id, or `'all'` (the default — no client filter). */
+  /**
+   * A client id, or `'all'` (the default — no client filter). Pass the
+   * parent's optimistic scope so the trigger updates on click.
+   */
   selectedClientId: string
-  /** Project types withheld from the board; empty = show everything. */
+  /**
+   * Project types withheld from the board; empty = show everything. Also
+   * optimistic, so rapid toggles build on each other.
+   */
   hiddenProjectTypes: ProjectTypeValue[]
+  /**
+   * Called inside the navigation transition, so a parent `useOptimistic`
+   * scope holds from the click until the server render lands.
+   */
+  onScopeChange: (patch: MyTasksBoardScopePatch) => void
   disabled?: boolean
 }
 
@@ -67,6 +79,7 @@ export function ClientSelector({
   clients,
   selectedClientId,
   hiddenProjectTypes,
+  onScopeChange,
   disabled = false,
 }: ClientSelectorProps) {
   const router = useRouter()
@@ -90,23 +103,32 @@ export function ClientSelector({
     ? describeHiddenProjectTypes(hiddenProjectTypes)
     : ''
 
-  const pushParams = useCallback(
-    (mutate: (params: URLSearchParams) => void) => {
-      // Unrelated params (sheet stack, assignee) ride along untouched.
-      const params = new URLSearchParams(searchParams.toString())
-      mutate(params)
-      const search = params.toString()
-      router.push(search ? `${pathname}?${search}` : pathname, {
-        scroll: false,
+  // Without the transition the trigger and checkboxes waited out the whole
+  // server render before changing. The optimistic patch and the push share
+  // one transition, so the patch holds until the new scope's data arrives.
+  const changeScope = useCallback(
+    (
+      patch: MyTasksBoardScopePatch,
+      mutate: (params: URLSearchParams) => void
+    ) => {
+      startTransition(() => {
+        onScopeChange(patch)
+        // Unrelated params (sheet stack, assignee) ride along untouched.
+        const params = new URLSearchParams(searchParams.toString())
+        mutate(params)
+        const search = params.toString()
+        router.push(search ? `${pathname}?${search}` : pathname, {
+          scroll: false,
+        })
       })
     },
-    [pathname, router, searchParams]
+    [onScopeChange, pathname, router, searchParams]
   )
 
   const handleSelectClient = useCallback(
     (clientId: string) => {
       setOpen(false)
-      pushParams(params => {
+      changeScope({ clientId }, params => {
         if (clientId !== ALL_CLIENTS_VALUE) {
           params.set('clientId', clientId)
         } else {
@@ -114,7 +136,7 @@ export function ClientSelector({
         }
       })
     },
-    [pushParams]
+    [changeScope]
   )
 
   const handleToggleType = useCallback(
@@ -123,7 +145,7 @@ export function ClientSelector({
         ? hiddenProjectTypes.filter(hidden => hidden !== type)
         : [...hiddenProjectTypes, type]
       const serialized = serializeHiddenProjectTypes(next)
-      pushParams(params => {
+      changeScope({ hiddenProjectTypes: next }, params => {
         if (serialized) {
           params.set(HIDE_PARAM, serialized)
         } else {
@@ -131,7 +153,7 @@ export function ClientSelector({
         }
       })
     },
-    [hiddenProjectTypes, pushParams]
+    [changeScope, hiddenProjectTypes]
   )
 
   return (
