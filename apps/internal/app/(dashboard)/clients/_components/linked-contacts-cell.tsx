@@ -1,6 +1,6 @@
 'use client'
 
-import { Contact } from 'lucide-react'
+import { Contact, Star } from 'lucide-react'
 
 import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
 import type { ClientContactSummary } from '@/lib/queries/clients/contact-summaries'
@@ -12,14 +12,15 @@ type LinkedContactsCellProps = {
 
 /**
  * Contact count on the clients landing table; hovering lists each linked
- * contact (name + email) and opens their sheet on the contacts page.
+ * contact (name + email), primary first and tagged, and opens their sheet on
+ * the contacts page.
  */
 export function LinkedContactsCell({ contacts }: LinkedContactsCellProps) {
   const count = contacts.length
 
   return (
     <div className='flex items-center gap-2 text-sm'>
-      <Contact className='text-muted-foreground h-4 w-4' />
+      <Contact className='text-muted-foreground h-4 w-4 shrink-0' />
       <LinkedRecordsHoverCell
         count={count}
         icon={Contact}
@@ -32,6 +33,13 @@ export function LinkedContactsCell({ contacts }: LinkedContactsCellProps) {
           label: contact.name ?? contact.email,
           sublabel: contact.name ? contact.email : null,
           href: contactSheetHref(contact.id),
+          trailing: contact.isPrimary ? (
+            <Star
+              role='img'
+              aria-label='Primary contact'
+              className='text-warning size-3.5 shrink-0 fill-current'
+            />
+          ) : null,
         }))}
       />
     </div>
