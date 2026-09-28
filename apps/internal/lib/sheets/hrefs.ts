@@ -20,6 +20,10 @@ export const invoiceHref = (id: string) => `/invoices?invoice=${id}`
 
 export const hourBlockHref = (id: string) => `/hour-blocks?hour-block=${id}`
 
+/** Hour blocks list searched by invoice number (the search matches it). */
+export const hourBlocksForInvoiceHref = (invoiceNumber: string) =>
+  `/hour-blocks?q=${encodeURIComponent(invoiceNumber)}`
+
 /** Client detail page; slugs are canonical but the page also resolves ids. */
 export const clientDetailHref = (client: { slug: string | null; id: string }) =>
   `/clients/${client.slug ?? client.id}`

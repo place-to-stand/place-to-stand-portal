@@ -16,7 +16,7 @@ import {
 
 import type { UserRowState } from '@/lib/settings/users/state/use-users-table-state'
 import { cn } from '@/lib/utils'
-import { formatCalendarDate } from '@pts/ui/dates'
+import { formatCalendarDate, formatRelativeTime } from '@pts/ui/dates'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
 import {
   CLICKABLE_ROW_CLASS,
@@ -24,6 +24,14 @@ import {
 } from '@/lib/table/clickable-row'
 
 import { UserAssignmentsCell } from './user-assignments-cell'
+
+const SIGN_IN_TITLE_STYLE = {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+} as const
 
 type UsersTableRowProps = {
   row: UserRowState
@@ -113,6 +121,17 @@ export function UsersTableRow({
       </TableCell>
       <TableCell>
         <UserAssignmentsCell assignment={assignment} role={user.role} />
+      </TableCell>
+      {/* Relative text can tick over a minute between SSR and hydration. */}
+      <TableCell
+        suppressHydrationWarning
+        className='text-muted-foreground truncate text-sm'
+        title={
+          formatCalendarDate(user.last_sign_in_at, SIGN_IN_TITLE_STYLE) ??
+          undefined
+        }
+      >
+        {formatRelativeTime(user.last_sign_in_at) ?? 'Never'}
       </TableCell>
       <TableCell className='text-muted-foreground text-sm'>
         {formatCalendarDate(user.created_at)}
