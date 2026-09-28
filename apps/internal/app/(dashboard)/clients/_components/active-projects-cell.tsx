@@ -63,7 +63,7 @@ export function ActiveProjectsCell({
 
   return (
     <div className='flex items-center gap-2 text-sm'>
-      <FolderKanban className='text-muted-foreground h-4 w-4' />
+      <FolderKanban className='text-muted-foreground h-4 w-4 shrink-0' />
       <LinkedRecordsHoverCell
         count={activeCount}
         label=' active'
