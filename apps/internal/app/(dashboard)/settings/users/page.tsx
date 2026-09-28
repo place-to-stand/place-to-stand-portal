@@ -21,9 +21,10 @@ export const metadata: Metadata = {
 const firstParam = (value: string | string[] | undefined) =>
   Array.isArray(value) ? value[0] : value
 
-type UserSelection = Awaited<
-  ReturnType<typeof listUsersForSettings>
->['items'][number]
+// The list rows carry `lastSignInAt`; a deep-linked `getUserById` row doesn't.
+type UserSelection = Awaited<ReturnType<typeof getUserById>> & {
+  lastSignInAt?: string | null
+}
 
 const toDbUser = (user: UserSelection): DbUser => ({
   id: user.id,
@@ -35,6 +36,7 @@ const toDbUser = (user: UserSelection): DbUser => ({
   updated_at: user.updatedAt,
   deleted_at: user.deletedAt,
   disabled_at: user.disabledAt,
+  last_sign_in_at: user.lastSignInAt ?? null,
 })
 
 type UsersPageProps = {

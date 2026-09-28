@@ -58,6 +58,7 @@ export default async function UsersArchivePage({
     updated_at: user.updatedAt,
     deleted_at: user.deletedAt,
     disabled_at: user.disabledAt,
+    last_sign_in_at: user.lastSignInAt,
   }))
 
   // Resolve `?user=` by id so a shared link opens even when the row isn't on

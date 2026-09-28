@@ -19,7 +19,10 @@ import {
   type UsersSettingsAssignments,
 } from './assignments'
 
-type UsersSettingsListItem = SelectUser
+type UsersSettingsListItem = SelectUser & {
+  /** From Supabase `auth.users`; null when the user has never signed in. */
+  lastSignInAt: string | null
+}
 
 export type ListUsersForSettingsInput = {
   status?: 'active' | 'archived'
@@ -150,13 +153,19 @@ export async function listUsersForSettings(
     .where(whereClause)
     .orderBy(...ordering)
     .limit(limit)
-    .offset((page - 1) * limit)) as UsersSettingsListItem[]
+    .offset((page - 1) * limit)) as SelectUser[]
 
   const userIds = items.map(item => item.id)
-  const assignments = await buildAssignmentsForUsers(userIds)
+  const [assignments, lastSignIns] = await Promise.all([
+    buildAssignmentsForUsers(userIds),
+    fetchLastSignIns(userIds),
+  ])
 
   return {
-    items,
+    items: items.map(item => ({
+      ...item,
+      lastSignInAt: lastSignIns.get(item.id) ?? null,
+    })),
     assignments,
     totalCount,
     unfilteredTotalCount,
@@ -164,4 +173,31 @@ export async function listUsersForSettings(
     pageSize: limit,
     totalPages,
   }
+}
+
+/**
+ * Sign-in times live only on Supabase's `auth.users`, so read them for the
+ * served page by id rather than joining the auth schema into the list query.
+ */
+async function fetchLastSignIns(
+  userIds: string[],
+): Promise<Map<string, string>> {
+  if (!userIds.length) return new Map()
+
+  const rows = await db.execute<{
+    id: string
+    last_sign_in_at: Date | string | null
+  }>(
+    sql`SELECT id, last_sign_in_at FROM auth.users WHERE id IN (${sql.join(
+      userIds.map(id => sql`${id}::uuid`),
+      sql`, `,
+    )})`,
+  )
+
+  const lastSignIns = new Map<string, string>()
+  for (const row of rows) {
+    if (!row.last_sign_in_at) continue
+    lastSignIns.set(row.id, new Date(row.last_sign_in_at).toISOString())
+  }
+  return lastSignIns
 }

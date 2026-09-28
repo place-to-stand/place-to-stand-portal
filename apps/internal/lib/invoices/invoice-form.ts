@@ -57,6 +57,16 @@ export type ClientRow = {
 
 export type InvoiceWithClient = InvoiceRow & {
   client: { id: string; name: string; slug: string | null; deleted_at: string | null } | null
+  /**
+   * Active hour blocks linked to this invoice (created on payment, or linked
+   * by hand). Only populated by the invoices list.
+   */
+  hour_blocks?: InvoiceHourBlockSummary[]
+}
+
+export type InvoiceHourBlockSummary = {
+  id: string
+  hours_purchased: number
 }
 
 export type InvoiceWithLineItems = InvoiceWithClient & {

@@ -89,6 +89,8 @@ export type DbUser = {
   // Optional: only populated where sign-in access matters (settings/users).
   // NULL/undefined means the user may sign in; set means auth rejects them.
   disabled_at?: string | null
+  // Optional: only populated by the settings/users list (from auth.users).
+  last_sign_in_at?: string | null
 }
 
 type DbTaskComment = {

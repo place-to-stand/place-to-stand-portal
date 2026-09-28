@@ -42,6 +42,7 @@ import {
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
 
+import { InvoiceHourBlocksCell } from './invoice-hour-blocks-cell'
 import { InvoiceStatusBadge } from './invoice-status-badge'
 
 type InvoicesTableMode = 'active' | 'archive'
@@ -243,17 +244,19 @@ export function InvoicesTableSection({
             >
               Invoice #
             </SortableTableHead>
+            {/* Unsized on purpose: in a fixed layout the one auto column
+                absorbs the slack, so Actions stays at its own width. */}
             <SortableTableHead
               field='client'
               sort={sort}
               defaultSort='created:desc'
               onSortChange={next => update({ sort: next })}
-              className='w-[18%]'
             >
               Client
             </SortableTableHead>
-            <TableHead className='w-[12%]'>Status</TableHead>
+            <TableHead className='w-20'>Status</TableHead>
             <TableHead className='w-[10%]'>Total</TableHead>
+            <TableHead className='w-20'>Hours</TableHead>
             <SortableTableHead
               field='created'
               sort={sort}
@@ -264,7 +267,15 @@ export function InvoicesTableSection({
               Issued
             </SortableTableHead>
             <TableHead className='w-[22%]'>Share link</TableHead>
-            <TableHead className='w-28 text-right'>Actions</TableHead>
+            {/* Sized to the row's buttons: one in active, two in archive. */}
+            <TableHead
+              className={cn(
+                'text-right',
+                mode === 'archive' ? 'w-24' : 'w-16'
+              )}
+            >
+              Actions
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -353,6 +364,12 @@ export function InvoicesTableSection({
                 <TableCell className='text-sm'>
                   {formatCurrency(invoice.total)}
                 </TableCell>
+                <TableCell>
+                  <InvoiceHourBlocksCell
+                    hourBlocks={invoice.hour_blocks ?? []}
+                    invoiceNumber={invoice.invoice_number}
+                  />
+                </TableCell>
                 <TableCell className='text-muted-foreground text-sm'>
                   {formatDate(invoice.issued_date)}
                 </TableCell>
@@ -420,7 +437,7 @@ export function InvoicesTableSection({
           })}
           {invoiceList.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className='p-4'>
+              <TableCell colSpan={8} className='p-4'>
                 <EmptyState message={emptyMessage} />
               </TableCell>
             </TableRow>

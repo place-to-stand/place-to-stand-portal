@@ -1,14 +1,20 @@
 import 'server-only'
 
-import { and, asc, desc, eq, isNull, sql, type SQL } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNull, sql, type SQL } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, invoices, invoiceLineItems } from '@/lib/db/schema'
+import {
+  clients,
+  hourBlocks,
+  invoices,
+  invoiceLineItems,
+} from '@/lib/db/schema'
 
 import type {
   ClientRow,
+  InvoiceHourBlockSummary,
   InvoiceLineItemRow,
   InvoiceWithClient,
   InvoiceWithLineItems,
@@ -251,15 +257,15 @@ export async function listInvoices(
     .limit(limit)
     .offset(offset)) as InvoiceSelectionRow[]
 
-  const invoicesList = rows.map(mapInvoiceWithClient)
-
   const [
+    hourBlocksByInvoice,
     totalResult,
     unfilteredTotalResult,
     clientDirectory,
     productCatalog,
     activeTaxRates,
   ] = await Promise.all([
+    fetchHourBlocksByInvoice(rows.map(row => row.invoice.id)),
     // Search touches the joined client name, so the filtered count needs
     // the same join as the page query.
     db
@@ -282,6 +288,11 @@ export async function listInvoices(
   const totalCount = Number(totalResult[0]?.count ?? 0)
   const unfilteredTotalCount = Number(unfilteredTotalResult[0]?.count ?? 0)
 
+  const invoicesList = rows.map(row => ({
+    ...mapInvoiceWithClient(row),
+    hour_blocks: hourBlocksByInvoice.get(row.invoice.id) ?? [],
+  }))
+
   return {
     items: invoicesList,
     clients: clientDirectory.map(mapClientRow),
@@ -290,6 +301,37 @@ export async function listInvoices(
     totalCount,
     unfilteredTotalCount,
   }
+}
+
+/** Active hour blocks per invoice, oldest first, for the list's hours cell. */
+async function fetchHourBlocksByInvoice(
+  invoiceIds: string[]
+): Promise<Map<string, InvoiceHourBlockSummary[]>> {
+  if (!invoiceIds.length) return new Map()
+
+  const rows = await db
+    .select({
+      id: hourBlocks.id,
+      invoiceId: hourBlocks.invoiceId,
+      hoursPurchased: hourBlocks.hoursPurchased,
+    })
+    .from(hourBlocks)
+    .where(
+      and(inArray(hourBlocks.invoiceId, invoiceIds), isNull(hourBlocks.deletedAt))
+    )
+    .orderBy(asc(hourBlocks.createdAt), asc(hourBlocks.id))
+
+  const byInvoice = new Map<string, InvoiceHourBlockSummary[]>()
+  for (const row of rows) {
+    if (!row.invoiceId) continue
+    const blocks = byInvoice.get(row.invoiceId) ?? []
+    blocks.push({
+      id: row.id,
+      hours_purchased: Number(row.hoursPurchased),
+    })
+    byInvoice.set(row.invoiceId, blocks)
+  }
+  return byInvoice
 }
 
 // ---------------------------------------------------------------------------

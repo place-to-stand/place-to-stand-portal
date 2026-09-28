@@ -13,6 +13,7 @@ import {
 import { EmptyState } from '@pts/ui/empty-state'
 import type { UsersSettingsAssignments } from '@/lib/queries/users/assignments'
 import { isUserSortValue } from '@/lib/settings/users/filters'
+import { cn } from '@/lib/utils'
 import type { UserRowState } from '@/lib/settings/users/state/use-users-table-state'
 
 import { UsersTableRow } from '../components/table/users-table-row'
@@ -57,10 +58,13 @@ export function UsersTableSection({
             >
               Name
             </SortableTableHead>
-            <TableHead className='w-[22%]'>Email</TableHead>
+            {/* Unsized on purpose: in a fixed layout the one auto column
+                absorbs the slack, so Actions stays at its own width. */}
+            <TableHead>Email</TableHead>
             <TableHead className='w-[8%]'>Role</TableHead>
             <TableHead className='w-[12%]'>Access</TableHead>
-            <TableHead className='w-[14%]'>Clients</TableHead>
+            <TableHead className='w-20'>Clients</TableHead>
+            <TableHead className='w-32'>Last sign-in</TableHead>
             <SortableTableHead
               field='created'
               sort={sort}
@@ -70,7 +74,15 @@ export function UsersTableSection({
             >
               Joined
             </SortableTableHead>
-            <TableHead className='w-32 text-right'>Actions</TableHead>
+            {/* Sized to the row's buttons: one in active, two in archive. */}
+            <TableHead
+              className={cn(
+                'text-right',
+                mode === 'archive' ? 'w-24' : 'w-16'
+              )}
+            >
+              Actions
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -85,7 +97,7 @@ export function UsersTableSection({
           ))}
           {rows.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className='p-4'>
+              <TableCell colSpan={8} className='p-4'>
                 <EmptyState message={emptyMessage} />
               </TableCell>
             </TableRow>
