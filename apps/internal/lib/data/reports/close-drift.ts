@@ -1,3 +1,5 @@
+import type { ProfitShareData } from '@/lib/billing/profit-share'
+
 import type { MonthlyCloseReport } from './types'
 
 /**
@@ -17,6 +19,7 @@ export type CloseDriftDelta = {
     | 'house'
     | 'summary'
     | 'rates'
+    | 'profitShare'
   /** Section name, or "Section · payee/client" for row-level differences. */
   label: string
   unit: 'hours' | 'amount' | 'rate' | 'flag'
@@ -329,4 +332,63 @@ export function computeDeltas(
   push('partnerPayouts', 'Payouts · grand total', 'amount', snapshot.partnerPayouts.totalAmount, live.partnerPayouts.totalAmount)
 
   return [...rowDeltas, ...totalDeltas]
+}
+
+const SHORT_MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+] as const
+
+/** "2026-07-31" → "Jul 31" without touching the ambient time zone. */
+function shortDayLabel(isoDate: string): string {
+  const [, mm, dd] = isoDate.split('-').map(Number)
+  return `${SHORT_MONTHS[(mm ?? 1) - 1]} ${dd}`
+}
+
+/**
+ * Profit-share drift: the month-end Mercury balance (a transaction dated in
+ * the month that posted after the close moves it) and each partner's share,
+ * which also moves whenever payouts do.
+ */
+export function computeProfitShareDeltas(
+  snapshot: ProfitShareData,
+  live: ProfitShareData
+): CloseDriftDelta[] {
+  const deltas: CloseDriftDelta[] = []
+
+  if (differs(snapshot.balance, live.balance)) {
+    deltas.push({
+      section: 'profitShare',
+      label: `Mercury balance · ${shortDayLabel(snapshot.asOfDate)}`,
+      unit: 'amount',
+      snapshotValue: snapshot.balance,
+      liveValue: live.balance,
+    })
+  }
+
+  const liveByUser = new Map(live.partners.map(p => [p.userId, p]))
+  for (const partner of snapshot.partners) {
+    const liveAmount = liveByUser.get(partner.userId)?.amount ?? 0
+    if (differs(partner.amount, liveAmount)) {
+      deltas.push({
+        section: 'profitShare',
+        label: `Profit share · ${partner.name}`,
+        unit: 'amount',
+        snapshotValue: partner.amount,
+        liveValue: liveAmount,
+      })
+    }
+  }
+
+  return deltas
 }

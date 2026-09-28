@@ -2,7 +2,7 @@
 
 import { siGithub } from 'simple-icons/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { toast } from '@/components/ui/use-toast'
 import { Button } from '@pts/ui/button'
@@ -17,6 +17,7 @@ import {
   ConnectedAccountsList,
   type ConnectedAccount,
 } from '@/components/integrations/connected-accounts-list'
+import { MercuryIntegrationCard } from '@/components/integrations/mercury-integration-card'
 import { TokenIntegrationCard } from '@/components/integrations/token-integration-card'
 
 function SimpleIcon({
@@ -243,8 +244,18 @@ export function IntegrationsPanel() {
   const githubAccounts = transformAccounts(githubData?.accounts)
 
   return (
-    <div className='relative'>
-      <div className='grid grid-cols-2 gap-4'>
+    <div className='space-y-8'>
+      <IntegrationSection
+        title='Company'
+        description='Shared by everyone. Set in the server environment.'
+      >
+        <MercuryIntegrationCard />
+      </IntegrationSection>
+
+      <IntegrationSection
+        title='Personal'
+        description='Your own accounts. Everyone connects their own.'
+      >
         {/* Google Card */}
         <Card>
           <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
@@ -345,7 +356,30 @@ export function IntegrationsPanel() {
           provider='SUPABASE'
           description='Connect your Supabase account to link databases to projects.'
         />
-      </div>
+      </IntegrationSection>
     </div>
+  )
+}
+
+function IntegrationSection({
+  title,
+  description,
+  children,
+}: {
+  title: string
+  description: string
+  children: ReactNode
+}) {
+  const headingId = `integrations-${title.toLowerCase()}`
+  return (
+    <section aria-labelledby={headingId} className='space-y-3'>
+      <div className='space-y-0.5'>
+        <h2 id={headingId} className='text-base font-semibold'>
+          {title}
+        </h2>
+        <p className='text-muted-foreground text-sm'>{description}</p>
+      </div>
+      <div className='grid items-start gap-4 lg:grid-cols-2'>{children}</div>
+    </section>
   )
 }

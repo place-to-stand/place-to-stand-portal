@@ -12,9 +12,7 @@ export const metadata: Metadata = {
 export default function IntegrationsSettingsPage() {
   return (
     <PageShell breadcrumbs={crumbsForNav('/settings/integrations')}>
-      <section className='bg-background rounded-xl border p-4 shadow-sm'>
-        <IntegrationsPanel />
-      </section>
+      <IntegrationsPanel />
     </PageShell>
   )
 }

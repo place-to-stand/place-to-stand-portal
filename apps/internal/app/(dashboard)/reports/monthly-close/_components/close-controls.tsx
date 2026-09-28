@@ -3,12 +3,23 @@
 import { useState, useTransition } from 'react'
 import { Lock, LockOpen } from 'lucide-react'
 
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@pts/ui/alert-dialog'
 import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { toast } from '@/components/ui/use-toast'
+import type { ProfitShareState } from '@/lib/data/reports/types'
 
 import { closeMonthAction } from '../actions/close-month'
 import { reopenMonthAction } from '../actions/reopen-month'
+import { formatMoney, formatShortDay } from './format'
 
 type CloseControlsProps = {
   /** 1-indexed month + year of the period being viewed (W4: page converts). */
@@ -16,7 +27,8 @@ type CloseControlsProps = {
   month: number
   displayMonth: string
   status: 'open' | 'closed'
-  isCurrentMonth: boolean
+  payoutsTotal: number
+  profitShare: ProfitShareState
 }
 
 export function CloseControls({
@@ -24,7 +36,8 @@ export function CloseControls({
   month,
   displayMonth,
   status,
-  isCurrentMonth,
+  payoutsTotal,
+  profitShare,
 }: CloseControlsProps) {
   const [confirming, setConfirming] = useState<'close' | 'reopen' | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -49,10 +62,6 @@ export function CloseControls({
             kind === 'close'
               ? `${displayMonth} closed`
               : `${displayMonth} reopened`,
-          description:
-            kind === 'close'
-              ? 'Numbers are frozen. Late changes will be flagged as drift.'
-              : 'The report is live again. Close again when you are done.',
         })
       }
       setConfirming(null)
@@ -60,14 +69,16 @@ export function CloseControls({
   }
 
   if (status === 'closed') {
-    // No status chip here — the ClosedNotice banner below the header already
-    // carries the closed-by/when message; duplicating it reads as clutter.
+    const reopenDescription =
+      profitShare.status === 'ready'
+        ? `Discards the saved numbers. Closing again re-reads the ${formatShortDay(profitShare.data.asOfDate)} Mercury balance and recalculates the profit share.`
+        : 'Discards the saved numbers. The report is live again until you close it.'
+
     return (
-      <div className='flex items-center gap-2'>
+      <>
         <Button
           type='button'
           variant='outline'
-          size='sm'
           disabled={isPending}
           onClick={() => setConfirming('reopen')}
         >
@@ -77,47 +88,117 @@ export function CloseControls({
         <ConfirmDialog
           open={confirming === 'reopen'}
           title={`Reopen ${displayMonth}?`}
-          description='Reopening discards the frozen numbers and re-derives the report live. Close again when you are done.'
+          description={reopenDescription}
           confirmLabel='Reopen'
           confirmVariant='destructive'
           confirmDisabled={isPending}
           onConfirm={() => runAction('reopen')}
           onCancel={() => setConfirming(null)}
         />
-      </div>
+      </>
     )
   }
 
-  // The in-progress month can't be closed from the UI — closing implies the
-  // period is over. (The server still allows re-close so a drift fix on an
-  // already-closed current month keeps working.)
-  if (isCurrentMonth) {
-    return null
-  }
-
-  const closeDescription = `Snapshot billing, payouts, and commissions for ${displayMonth}. Late changes will be flagged as drift.`
+  // A close freezes the profit share, so it needs a readable balance.
+  const blockedReason =
+    profitShare.status === 'unavailable'
+      ? 'Load the Mercury balance before closing.'
+      : null
 
   return (
     <>
-      <Button
-        type='button'
-        variant='outline'
-        size='sm'
-        disabled={isPending}
-        onClick={() => setConfirming('close')}
+      <DisabledFieldTooltip
+        disabled={Boolean(blockedReason)}
+        reason={blockedReason}
       >
-        <Lock />
-        Close {displayMonth}
-      </Button>
-      <ConfirmDialog
+        <Button
+          type='button'
+          disabled={isPending || Boolean(blockedReason)}
+          onClick={() => setConfirming('close')}
+        >
+          <Lock />
+          Close {displayMonth}
+        </Button>
+      </DisabledFieldTooltip>
+      <AlertDialog
         open={confirming === 'close'}
-        title={`Close ${displayMonth}?`}
-        description={closeDescription}
-        confirmLabel='Close month'
-        confirmDisabled={isPending}
-        onConfirm={() => runAction('close')}
-        onCancel={() => setConfirming(null)}
-      />
+        onOpenChange={next => {
+          if (!next) setConfirming(null)
+        }}
+      >
+        <AlertDialogContent onBackdropClick={() => setConfirming(null)}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Close {displayMonth}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {profitShare.status === 'ready'
+                ? `Saves these numbers and the ${formatShortDay(profitShare.data.asOfDate)} Mercury balance. Late changes will show as drift.`
+                : 'Saves these numbers. Late changes will show as drift.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <CloseSummary payoutsTotal={payoutsTotal} profitShare={profitShare} />
+          <AlertDialogFooter>
+            <Button
+              type='button'
+              variant='outline'
+              onClick={() => setConfirming(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type='button'
+              disabled={isPending}
+              onClick={() => runAction('close')}
+            >
+              {isPending ? 'Closing…' : 'Close month'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
+  )
+}
+
+function CloseSummary({
+  payoutsTotal,
+  profitShare,
+}: {
+  payoutsTotal: number
+  profitShare: ProfitShareState
+}) {
+  const data = profitShare.status === 'ready' ? profitShare.data : null
+
+  return (
+    <dl className='divide-border/60 divide-y rounded-lg border text-sm'>
+      <div className='flex items-center justify-between gap-3 px-3 py-2'>
+        <dt className='text-muted-foreground'>Partner payouts</dt>
+        <dd className='tabular-nums'>{formatMoney(payoutsTotal)}</dd>
+      </div>
+      {data ? (
+        <>
+          <div className='flex items-center justify-between gap-3 px-3 py-2'>
+            <dt className='text-muted-foreground flex flex-col'>
+              Mercury balance
+              <span className='text-xs'>
+                End of day {formatShortDay(data.asOfDate)}
+              </span>
+            </dt>
+            <dd className='tabular-nums'>{formatMoney(data.balance)}</dd>
+          </div>
+          <div className='bg-muted/50 flex items-center justify-between gap-3 px-3 py-2'>
+            <dt className='flex flex-col font-medium'>
+              Profit share
+              <span className='text-muted-foreground text-xs font-normal'>
+                {data.totalAmount > 0
+                  ? `${formatMoney(data.partners[0]?.amount ?? 0)} each`
+                  : 'No profit share this month'}
+              </span>
+            </dt>
+            <dd className='font-medium tabular-nums'>
+              {formatMoney(data.totalAmount)}
+            </dd>
+          </div>
+        </>
+      ) : null}
+    </dl>
   )
 }

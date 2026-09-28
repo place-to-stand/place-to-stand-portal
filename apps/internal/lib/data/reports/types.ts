@@ -1,6 +1,22 @@
 // Types for Monthly Close Report
 
 import type { PartnerRateSchedule } from '@/lib/billing/partner-rates'
+import type { ProfitShareData } from '@/lib/billing/profit-share'
+
+/**
+ * The profit share as the page shows it. `inactive`: the month predates the
+ * policy. `not_saved`: the month was closed without one (closed before the
+ * policy shipped). `unavailable`: Mercury couldn't be read for a live month.
+ */
+export type ProfitShareState =
+  | { status: 'inactive' }
+  | { status: 'ready'; data: ProfitShareData; source: 'live' | 'snapshot' }
+  | { status: 'not_saved' }
+  | {
+      status: 'unavailable'
+      reason: 'not_configured' | 'error'
+      message: string
+    }
 
 export type MonthCursor = {
   year: number
