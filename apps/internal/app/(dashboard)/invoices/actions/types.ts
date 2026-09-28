@@ -18,6 +18,8 @@ export type ActionResult = {
 export type SendResult = {
   error?: string
   invoiceNumber?: string
+  /** The now-live share link's token, so the caller can copy the link. */
+  shareToken?: string
 }
 
 export type InvoiceInput = z.infer<typeof invoiceSchema>

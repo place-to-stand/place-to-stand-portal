@@ -8,6 +8,8 @@ type Props = {
   paymentCancelled: boolean
   isDraft: boolean
   isVoid: boolean
+  /** Admin preview: replaces the draft notice, which is written for clients. */
+  isPreview?: boolean
 }
 
 const NOTICE = 'flex items-center gap-3 border px-4 py-3 text-sm leading-normal'
@@ -17,8 +19,13 @@ const INFO_NOTICE = cn(authNoticeClass, NOTICE)
 const ERROR_NOTICE = cn(authErrorClass, NOTICE)
 
 /** One-line notices above the document, in the auth screens' notice styles. */
-export function InvoiceNotices({ paymentCancelled, isDraft, isVoid }: Props) {
-  if (!paymentCancelled && !isDraft && !isVoid) return null
+export function InvoiceNotices({
+  paymentCancelled,
+  isDraft,
+  isVoid,
+  isPreview = false,
+}: Props) {
+  if (!paymentCancelled && !isDraft && !isVoid && !isPreview) return null
 
   return (
     <div className='mb-5 flex flex-col gap-3 sm:mb-6'>
@@ -32,7 +39,22 @@ export function InvoiceNotices({ paymentCancelled, isDraft, isVoid }: Props) {
         </div>
       ) : null}
 
-      {isDraft ? (
+      {isPreview ? (
+        <div
+          className={`${NOTICE} border-brand-lime/30 bg-brand-lime/[0.06] text-brand-text`}
+        >
+          <span className='border-brand-lime/50 text-brand-lime shrink-0 border px-2 py-0.5 font-mono text-[10px] tracking-[0.2em] uppercase'>
+            Preview
+          </span>
+          <p>
+            {isDraft
+              ? 'Only you can see this. The client gets this page once the invoice is sent.'
+              : 'Only you can see this preview. The client uses the link from the invoice.'}
+          </p>
+        </div>
+      ) : null}
+
+      {isDraft && !isPreview ? (
         <div
           className={`${NOTICE} border-brand-lime/30 bg-brand-lime/[0.06] text-brand-text`}
         >

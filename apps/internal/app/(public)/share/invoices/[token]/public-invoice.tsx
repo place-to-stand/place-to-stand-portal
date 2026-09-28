@@ -11,6 +11,7 @@ import { PublicHeader } from '../../../_components/public-header'
 import { InvoiceDocument } from './invoice-document'
 import { InvoiceNotices } from './invoice-notices'
 import { isStripeConfigured, PaymentPanel } from './payment-panel'
+import { PaymentPreview } from './payment-preview'
 import { ReceiptPanel } from './receipt-panel'
 import { DARK_LABEL } from './styles'
 
@@ -18,12 +19,18 @@ type PublicInvoiceProps = {
   invoice: InvoiceWithLineItems
   shareToken: string
   paymentStatus?: 'success' | 'cancelled' | null
+  /**
+   * An admin viewing the invoice by id (`/preview/invoices/[id]`), usually a
+   * draft: labelled as a preview, and no live checkout or PDF link.
+   */
+  preview?: boolean
 }
 
 export function PublicInvoice({
   invoice,
   shareToken,
   paymentStatus,
+  preview = false,
 }: PublicInvoiceProps) {
   const isDraft = invoice.status === 'DRAFT'
   const isVoid = invoice.status === 'VOID'
@@ -32,7 +39,9 @@ export function PublicInvoice({
   const isPaid = invoice.status === 'PAID' || paymentStatus === 'success'
   const isPayable =
     !isPaid && (invoice.status === 'SENT' || invoice.status === 'VIEWED')
-  const showPayment = isPayable && isStripeConfigured
+  const showPayment = isPayable && isStripeConfigured && !preview
+  // A preview shows the payment area as it will look once sent, not live.
+  const showPaymentPreview = preview && !isPaid && !isVoid
   const replyTo = serverEnv.RESEND_REPLY_TO_EMAIL
 
   return (
@@ -50,6 +59,7 @@ export function PublicInvoice({
           paymentCancelled={paymentStatus === 'cancelled'}
           isDraft={isDraft}
           isVoid={isVoid}
+          isPreview={preview}
         />
 
         <div className='grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8'>
@@ -62,6 +72,8 @@ export function PublicInvoice({
 
               {isPaid ? (
                 <ReceiptPanel total={invoice.total} paidAt={invoice.paid_at} />
+              ) : showPaymentPreview ? (
+                <PaymentPreview total={invoice.total} />
               ) : showPayment ? (
                 <PaymentPanel
                   total={invoice.total}
@@ -75,7 +87,8 @@ export function PublicInvoice({
                 className={cn(
                   'flex flex-col gap-1.5',
                   isPaid && 'pt-5',
-                  showPayment && 'border-brand-border border-t pt-5'
+                  (showPayment || showPaymentPreview) &&
+                    'border-brand-border border-t pt-5'
                 )}
               >
                 <span className={DARK_LABEL}>Questions?</span>
@@ -91,8 +104,8 @@ export function PublicInvoice({
               </div>
             </aside>
 
-            {/* The PDF route 404s drafts, so the button hides with them. */}
-            {isDraft ? null : (
+            {/* The PDF route is by share token and 404s drafts. */}
+            {isDraft || preview ? null : (
               <a
                 href={`/api/public/invoices/${shareToken}/pdf?download=1`}
                 download

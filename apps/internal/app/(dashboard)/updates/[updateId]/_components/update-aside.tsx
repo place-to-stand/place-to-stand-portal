@@ -4,14 +4,17 @@ import type { ClientHoursTotals } from '@pts/db/hours'
 
 import type { StaffMember } from '@/lib/updates/staff'
 
-import { UpdateRecipients, type RecipientContact } from './update-recipients'
+import {
+  ContactRecipients,
+  type RecipientContact,
+} from '@/components/email/contact-recipients'
 import {
   HoursCard,
   PeriodCard,
   RecipientsCard,
   StaffCard,
 } from './update-sidebar'
-import { UpdateStaffCc } from './update-staff-cc'
+import { StaffCc } from '@/components/email/staff-cc'
 
 type UpdateAsideProps = {
   isSent: boolean
@@ -51,7 +54,7 @@ export function UpdateAside({
         {isSent ? (
           <EmailList emails={to} empty='No recipients.' />
         ) : (
-          <UpdateRecipients
+          <ContactRecipients
             contacts={contacts}
             to={to}
             onChange={onToChange}
@@ -63,7 +66,7 @@ export function UpdateAside({
         {isSent ? (
           <EmailList emails={cc} empty='No one was copied.' />
         ) : (
-          <UpdateStaffCc
+          <StaffCc
             staff={staff}
             cc={cc}
             onChange={onCcChange}

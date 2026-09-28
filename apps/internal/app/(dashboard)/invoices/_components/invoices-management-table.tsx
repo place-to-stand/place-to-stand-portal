@@ -17,7 +17,6 @@ import type {
 import type { TaxRateData } from '@/lib/invoices/use-invoice-sheet-state'
 import { isInvoiceStatus } from '@/lib/invoices/filters'
 import { archiveInvoice, restoreInvoice, destroyInvoice } from '../actions'
-import { sendInvoiceAction } from '../actions/send-invoice'
 
 import { InvoiceArchiveDialog } from './invoice-archive-dialog'
 import { InvoicesTableSection } from './invoices-table-section'
@@ -287,34 +286,6 @@ export function InvoicesManagementTable({
     })
   }
 
-  // -------------------------------------------------------------------------
-  // Send invoice (from table share link generation)
-  // -------------------------------------------------------------------------
-
-  const handleSendInvoice = useCallback(
-    (invoiceId: string) => {
-      startTransition(async () => {
-        const result = await sendInvoiceAction({ id: invoiceId })
-        if (result.error) {
-          toast({
-            title: 'Unable to send invoice',
-            description: result.error,
-            variant: 'destructive',
-          })
-        } else {
-          toast({
-            title: 'Invoice marked as sent',
-            description: result.invoiceNumber
-              ? `${result.invoiceNumber} is now active.`
-              : 'The invoice is now active.',
-          })
-          router.refresh()
-        }
-      })
-    },
-    [router, startTransition, toast]
-  )
-
   const handleRefresh = useCallback(() => {
     router.refresh()
   }, [router])
@@ -376,7 +347,6 @@ export function InvoicesManagementTable({
         onRequestDelete={handleRequestDelete}
         onRestore={handleRestore}
         onRequestDestroy={handleRequestDestroy}
-        onSendInvoice={handleSendInvoice}
         onRefresh={handleRefresh}
         isPending={isPending}
         pendingReason={PENDING_REASON}
