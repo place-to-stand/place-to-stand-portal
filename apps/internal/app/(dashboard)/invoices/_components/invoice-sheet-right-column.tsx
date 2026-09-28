@@ -1,6 +1,6 @@
 'use client'
 
-import { Ban, Calendar, CheckCheck, Eye, Hash, Mail, Undo2 } from 'lucide-react'
+import { Ban, Calendar, CheckCheck, Eye, Mail, Undo2 } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { Separator } from '@pts/ui/separator'
@@ -143,11 +143,8 @@ export function InvoiceSheetRightColumn({
             </div>
             {invoice.invoice_number ? (
               <div className='flex items-center justify-between'>
-                <span className='text-muted-foreground flex items-center gap-1.5 text-sm'>
-                  <Hash className='h-3.5 w-3.5' />
-                  Invoice #
-                </span>
-                <span className='mb-2 block text-sm font-medium'>
+                <span className='text-muted-foreground text-sm'>Invoice #</span>
+                <span className='text-sm font-medium'>
                   {invoice.invoice_number}
                 </span>
               </div>
