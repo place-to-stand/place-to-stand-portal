@@ -18,6 +18,8 @@ export type ClientContactOption = {
   email: string
   phone: string | null
   hasPortalAccess: boolean
+  /** Set on linked contacts only: the client's primary contact. */
+  isPrimary?: boolean
 }
 
 /** A contact available as an external origination source (IC referrer). */
@@ -79,6 +81,10 @@ export type BaseFormState = {
   /** Open the contact create sheet on top, prefilled with the typed query. */
   handleCreateContact: (query: string) => void
   handleRemoveContact: (contact: ClientContactOption) => void
+  /** Linked contact addressed by default on invoice emails; at most one. */
+  primaryContactId: string | null
+  /** Make this contact primary, or clear it if it already is. */
+  handleTogglePrimaryContact: (contact: ClientContactOption) => void
   // Origination
   originationMode: OriginationMode
   selectedOriginationUser: PartnerUserOption | null
@@ -171,6 +177,10 @@ export type UseClientSheetStateReturn = {
   /** Open the contact create sheet on top, prefilled with the typed query. */
   handleCreateContact: (query: string) => void
   handleRemoveContact: (contact: ClientContactOption) => void
+  /** Linked contact addressed by default on invoice emails; at most one. */
+  primaryContactId: string | null
+  /** Make this contact primary, or clear it if it already is. */
+  handleTogglePrimaryContact: (contact: ClientContactOption) => void
   // Origination
   originationMode: OriginationMode
   selectedOriginationUser: PartnerUserOption | null

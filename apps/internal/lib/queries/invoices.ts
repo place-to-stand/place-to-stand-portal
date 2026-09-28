@@ -1,6 +1,16 @@
 import 'server-only'
 
-import { and, asc, desc, eq, inArray, isNull, sql, type SQL } from 'drizzle-orm'
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  inArray,
+  isNull,
+  ne,
+  sql,
+  type SQL,
+} from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
@@ -395,19 +405,27 @@ export async function getInvoiceById(
 
   const invoice = mapInvoiceWithClient(rows[0]!)
 
-  const lineItemRows = (await db
-    .select(lineItemSelection)
-    .from(invoiceLineItems)
-    .where(
-      and(
-        eq(invoiceLineItems.invoiceId, id),
-        isNull(invoiceLineItems.deletedAt)
+  // Hour blocks too, so a sheet opened outside the list (which loads them in
+  // bulk) still links to the hours this invoice bought.
+  const [lineItemRows, hourBlocksByInvoice] = await Promise.all([
+    db
+      .select(lineItemSelection)
+      .from(invoiceLineItems)
+      .where(
+        and(
+          eq(invoiceLineItems.invoiceId, id),
+          isNull(invoiceLineItems.deletedAt)
+        )
       )
-    )
-    .orderBy(asc(invoiceLineItems.sortOrder))) as LineItemSelectionRow[]
+      .orderBy(asc(invoiceLineItems.sortOrder)) as Promise<
+      LineItemSelectionRow[]
+    >,
+    fetchHourBlocksByInvoice([id]),
+  ])
 
   return {
     ...invoice,
+    hour_blocks: hourBlocksByInvoice.get(id) ?? [],
     line_items: lineItemRows.map(mapLineItemRow),
   }
 }
@@ -430,6 +448,9 @@ export async function getInvoiceByShareToken(
       and(
         eq(invoices.shareToken, token),
         eq(invoices.shareEnabled, true),
+        // Belt and braces: sending is what enables a link, so a draft should
+        // never get here — but if one does, it is still not public.
+        ne(invoices.status, 'DRAFT'),
         isNull(invoices.deletedAt)
       )
     )

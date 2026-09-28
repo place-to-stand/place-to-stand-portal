@@ -22,7 +22,7 @@ import { EmailCardFooter, EmailCardHeader } from './email-card-chrome'
 import { sendReadiness } from './readiness'
 import { UpdateAside } from './update-aside'
 import { UpdateItemsEditor } from './update-items-editor'
-import type { RecipientContact } from './update-recipients'
+import type { RecipientContact } from '@/components/email/contact-recipients'
 import { UpdatePreview } from './update-preview'
 import { UpdateToolbar } from './update-toolbar'
 

@@ -71,6 +71,9 @@ async function performUnsendInvoice(
       .set({
         status: 'DRAFT',
         issuedDate: null,
+        // Sent and shareable are one state: a draft's link never resolves.
+        // The token is kept, so re-sending revives links already handed out.
+        shareEnabled: false,
         updatedAt: nowIso,
       })
       .where(eq(invoices.id, invoiceId))

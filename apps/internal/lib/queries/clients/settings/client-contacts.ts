@@ -1,6 +1,6 @@
 'use server'
 
-import { asc, eq, and, inArray, isNull } from 'drizzle-orm'
+import { asc, eq, and, inArray, isNull, sql } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
@@ -14,6 +14,8 @@ type ContactOption = {
   email: string
   phone: string | null
   hasPortalAccess: boolean
+  /** Set on linked contacts only: the client's primary contact. */
+  isPrimary?: boolean
 }
 
 type AdminUserOption = {
@@ -74,6 +76,7 @@ async function listClientContacts(
       email: contacts.email,
       phone: contacts.phone,
       userId: contacts.userId,
+      isPrimary: contactClients.isPrimary,
     })
     .from(contactClients)
     .innerJoin(contacts, eq(contactClients.contactId, contacts.id))
@@ -91,6 +94,7 @@ async function listClientContacts(
     email: row.email,
     phone: row.phone,
     hasPortalAccess: Boolean(row.userId),
+    isPrimary: row.isPrimary,
   }))
 }
 
@@ -142,7 +146,8 @@ export async function getClientSheetContactData(
 
 /**
  * Syncs the contact links for a client.
- * Adds new links and removes unlinked ones.
+ * Adds new links and removes unlinked ones, then marks at most one of them
+ * primary — the contact an invoice email is addressed to by default.
  * Also manages client_members for contacts that have portal accounts.
  * `user` is the acting admin the server action resolved — it is the actor on
  * the link activity rows.
@@ -150,7 +155,9 @@ export async function getClientSheetContactData(
 export async function syncClientContacts(
   user: AppUser,
   clientId: string,
-  contactIds: string[]
+  contactIds: string[],
+  /** Must be one of `contactIds`; anything else clears the primary. */
+  primaryContactId: string | null
 ): Promise<{ ok: boolean; error?: string }> {
   assertAdmin(user)
 
@@ -191,6 +198,20 @@ export async function syncClientContacts(
           )
         )
     }
+
+    // One statement, so the client never has two primaries mid-update.
+    const primaryId =
+      primaryContactId && contactIds.includes(primaryContactId)
+        ? primaryContactId
+        : null
+    await db
+      .update(contactClients)
+      .set({
+        isPrimary: primaryId
+          ? sql`${contactClients.contactId} = ${primaryId}`
+          : false,
+      })
+      .where(eq(contactClients.clientId, clientId))
 
     // Sync client_members for contacts with portal accounts
     await syncPortalMemberships(clientId, toAdd, toRemove)

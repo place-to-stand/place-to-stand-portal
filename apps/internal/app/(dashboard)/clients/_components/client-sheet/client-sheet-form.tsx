@@ -83,6 +83,8 @@ type ClientSheetFormProps = {
   onAddContact: (contact: ClientContactOption) => void
   onCreateContact: (query: string) => void
   onRemoveContact: (contact: ClientContactOption) => void
+  primaryContactId: string | null
+  onTogglePrimaryContact: (contact: ClientContactOption) => void
   // Origination
   originationMode: OriginationMode
   selectedOriginationUser: PartnerUserOption | null
@@ -138,6 +140,8 @@ export function ClientSheetForm({
   onAddContact,
   onCreateContact,
   onRemoveContact,
+  primaryContactId,
+  onTogglePrimaryContact,
   originationMode,
   selectedOriginationUser,
   selectedOriginationContact,
@@ -535,6 +539,8 @@ export function ClientSheetForm({
               isPending={isPending}
               pendingReason={pendingReason}
               onRequestRemoval={onRemoveContact}
+              primaryContactId={primaryContactId}
+              onTogglePrimary={onTogglePrimaryContact}
               onRequestLink={() => onContactPickerOpenChange(true)}
               linkDisabled={contactsAddButtonDisabled}
               linkDisabledReason={contactsAddButtonDisabledReason}

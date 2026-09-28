@@ -4,7 +4,8 @@ import { getResendClient } from '@/lib/email/resend'
 
 export type OutboundEmail = {
   from: string
-  to: string
+  to: string | string[]
+  cc?: string[]
   replyTo?: string
   subject: string
   text: string
@@ -49,6 +50,7 @@ async function sendViaResend(message: OutboundEmail): Promise<void> {
     {
       from: message.from,
       to: message.to,
+      cc: message.cc?.length ? message.cc : undefined,
       replyTo: message.replyTo,
       subject: message.subject,
       text: message.text,
@@ -73,7 +75,10 @@ async function sendViaMailpit(message: OutboundEmail): Promise<void> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         From: parseAddress(message.from),
-        To: [{ Email: message.to }],
+        To: toList(message.to).map(email => ({ Email: email })),
+        ...(message.cc?.length
+          ? { Cc: message.cc.map(email => ({ Email: email })) }
+          : {}),
         ...(message.replyTo ? { ReplyTo: [{ Email: message.replyTo }] } : {}),
         Subject: message.subject,
         Text: message.text,
@@ -94,6 +99,10 @@ async function sendViaMailpit(message: OutboundEmail): Promise<void> {
       `Mailpit rejected the message (HTTP ${response.status}): ${await response.text()}`
     )
   }
+}
+
+function toList(to: string | string[]): string[] {
+  return Array.isArray(to) ? to : [to]
 }
 
 /** Splits `Name <addr@host>` into Mailpit's address shape. */

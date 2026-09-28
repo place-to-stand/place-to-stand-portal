@@ -41,13 +41,35 @@ export const invoiceSentEvent = (args: {
   invoiceNumber: string
   clientName?: string | null
   total?: string | null
+  /** Set when the portal emailed it; absent when it was only marked sent. */
+  recipients?: { to: string[]; cc: string[] }
 }): ActivityEvent => ({
   verb: ActivityVerbs.INVOICE_SENT,
-  summary: `Sent invoice ${args.invoiceNumber} to ${args.clientName ?? 'client'}`,
+  summary: args.recipients
+    ? `Emailed invoice ${args.invoiceNumber} to ${args.recipients.to.join(', ')}`
+    : `Sent invoice ${args.invoiceNumber} to ${args.clientName ?? 'client'}`,
   metadata: toMetadata({
     invoiceNumber: args.invoiceNumber,
     clientName: args.clientName ?? null,
     total: args.total ?? null,
+    recipients: args.recipients ?? null,
+  }),
+})
+
+/** A sent invoice emailed again — a reminder; the status does not change. */
+export const invoiceEmailedEvent = (args: {
+  invoiceNumber: string
+  clientName?: string | null
+  total?: string | null
+  recipients: { to: string[]; cc: string[] }
+}): ActivityEvent => ({
+  verb: ActivityVerbs.INVOICE_EMAILED,
+  summary: `Emailed invoice ${args.invoiceNumber} again to ${args.recipients.to.join(', ')}`,
+  metadata: toMetadata({
+    invoiceNumber: args.invoiceNumber,
+    clientName: args.clientName ?? null,
+    total: args.total ?? null,
+    recipients: args.recipients,
   }),
 })
 
@@ -93,24 +115,6 @@ export const invoiceVoidedEvent = (args: {
     invoiceNumber: args.invoiceNumber ?? null,
     clientName: args.clientName ?? null,
   }),
-})
-
-export const invoiceSharedEvent = (args: {
-  invoiceNumber?: string | null
-}): ActivityEvent => ({
-  verb: ActivityVerbs.INVOICE_SHARED,
-  summary: args.invoiceNumber
-    ? `Enabled sharing for invoice ${args.invoiceNumber}`
-    : 'Enabled sharing for invoice',
-})
-
-export const invoiceUnsharedEvent = (args: {
-  invoiceNumber?: string | null
-}): ActivityEvent => ({
-  verb: ActivityVerbs.INVOICE_UNSHARED,
-  summary: args.invoiceNumber
-    ? `Disabled sharing for invoice ${args.invoiceNumber}`
-    : 'Disabled sharing for invoice',
 })
 
 export const invoiceArchivedEvent = (args: {

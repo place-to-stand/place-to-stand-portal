@@ -70,7 +70,7 @@ function ContactRow({ contact }: { contact: ContactWithClientLink }) {
             </span>
           )}
           {contact.isPrimary && (
-            <Star className='h-3 w-3 shrink-0 fill-amber-400 text-amber-400' />
+            <Star className='text-warning h-3 w-3 shrink-0 fill-current' />
           )}
           {contact.userId && (
             <Tooltip>

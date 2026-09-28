@@ -9,8 +9,7 @@ import {
   Check,
   Copy,
   ExternalLink,
-  Link2,
-  Loader2,
+  Mail,
   RefreshCw,
   Trash2,
 } from 'lucide-react'
@@ -18,7 +17,6 @@ import {
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { BADGE_TINTS } from '@pts/ui/badge-tints'
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
@@ -36,12 +34,14 @@ import {
 import { useToast } from '@/components/ui/use-toast'
 import { cn } from '@/lib/utils'
 import type { InvoiceWithClient } from '@/lib/invoices/invoice-form'
+import { invoiceShareHref } from '@/lib/invoices/links'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
 import {
   CLICKABLE_ROW_CLASS,
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
 
+import { InvoiceEmailDialog } from './invoice-email-dialog'
 import { InvoiceHourBlocksCell } from './invoice-hour-blocks-cell'
 import { InvoiceStatusBadge } from './invoice-status-badge'
 
@@ -59,7 +59,6 @@ export type InvoicesTableSectionProps = {
   onRequestDelete: (invoice: InvoiceWithClient) => void
   onRestore: (invoice: InvoiceWithClient) => void
   onRequestDestroy: (invoice: InvoiceWithClient) => void
-  onSendInvoice: (invoiceId: string) => void
   onRefresh: () => void
   emptyMessage: string
   /** Route the sort/filter params live on (PRD 004 §03). */
@@ -91,99 +90,63 @@ function BillingTypeBadge() {
   )
 }
 
+/**
+ * A draft has no public link yet, so its cell is the way to send it; from
+ * then on the cell is the live link.
+ */
 function ShareLinkCell({
   invoice,
-  onSendInvoice,
   onRefresh,
 }: {
   invoice: InvoiceWithClient
-  onSendInvoice: (invoiceId: string) => void
   onRefresh: () => void
 }) {
   const { toast } = useToast()
   const [copied, setCopied] = useState(false)
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [showSendPrompt, setShowSendPrompt] = useState(false)
+  const [sendOpen, setSendOpen] = useState(false)
 
-  const handleCopy = useCallback(() => {
-    if (!invoice.share_token) return
-    const url = `${window.location.origin}/share/invoices/${invoice.share_token}`
-    navigator.clipboard.writeText(url)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }, [invoice.share_token])
-
-  const handleGenerateLink = useCallback(async () => {
-    setIsGenerating(true)
-    try {
-      const res = await fetch(`/api/invoices/${invoice.id}/share`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      })
-      const data = await res.json()
-      if (data.ok) {
-        toast({
-          title: 'Sharing enabled',
-          description: 'The invoice link is ready to share.',
-        })
-        if (invoice.status === 'DRAFT') {
-          // Show dialog before refreshing — refresh would unmount the dialog
-          setShowSendPrompt(true)
-        } else {
-          onRefresh()
-        }
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Unable to generate link',
-          description: data.error ?? 'Please try again.',
-        })
-      }
-    } catch {
+  const handleSent = useCallback(
+    ({ invoiceNumber }: { invoiceNumber: string }) => {
+      setSendOpen(false)
       toast({
-        variant: 'destructive',
-        title: 'Unable to generate link',
-        description: 'Network error. Please check your connection.',
+        title: 'Invoice sent',
+        description: `Invoice ${invoiceNumber} was emailed and marked as sent.`,
       })
-    } finally {
-      setIsGenerating(false)
-    }
-  }, [invoice.id, invoice.status, toast, onRefresh])
+      onRefresh()
+    },
+    [toast, onRefresh]
+  )
 
-  const handleConfirmSend = useCallback(() => {
-    setShowSendPrompt(false)
-    onSendInvoice(invoice.id)
-    onRefresh()
-  }, [invoice.id, onSendInvoice, onRefresh])
-
-  const handleDeclineSend = useCallback(() => {
-    setShowSendPrompt(false)
-    onRefresh()
-  }, [onRefresh])
-
-  if (!invoice.share_enabled || !invoice.share_token) {
+  if (invoice.status === 'DRAFT') {
     return (
       <>
-        <ConfirmDialog
-          open={showSendPrompt}
-          title='Mark invoice as sent?'
-          description='The invoice must be marked as sent before the client can make a payment. Would you like to mark it as sent now?'
-          confirmLabel='Mark as sent'
-          cancelLabel='Not now'
-          onConfirm={handleConfirmSend}
-          onCancel={handleDeclineSend}
-        />
-        <Button size='xs' onClick={handleGenerateLink} disabled={isGenerating}>
-          {isGenerating ? <Loader2 className='animate-spin' /> : <Link2 />}
-          {isGenerating ? 'Generating...' : 'Generate shareable link'}
+        <Button size='xs' variant='outline' onClick={() => setSendOpen(true)}>
+          <Mail />
+          Send
         </Button>
+        <InvoiceEmailDialog
+          invoiceId={invoice.id}
+          open={sendOpen}
+          onOpenChange={setSendOpen}
+          onSent={handleSent}
+        />
       </>
     )
   }
 
-  const truncatedPath = `/share/invoices/${invoice.share_token.slice(0, 8)}...`
+  if (!invoice.share_enabled || !invoice.share_token) {
+    return <span className='text-muted-foreground text-sm'>{'\u2014'}</span>
+  }
 
-  const shareUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/share/invoices/${invoice.share_token}`
+  const path = invoiceShareHref(invoice.share_token)
+  const shareUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}${path}`
+  const truncatedPath = `${path.slice(0, path.length - invoice.share_token.length)}${invoice.share_token.slice(0, 8)}...`
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(shareUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   return (
     <div className='flex min-w-0 items-center gap-1.5'>
@@ -218,7 +181,6 @@ export function InvoicesTableSection({
   onRequestDelete,
   onRestore,
   onRequestDestroy,
-  onSendInvoice,
   onRefresh,
   emptyMessage,
   basePath,
@@ -374,11 +336,7 @@ export function InvoicesTableSection({
                   {formatDate(invoice.issued_date)}
                 </TableCell>
                 <TableCell>
-                  <ShareLinkCell
-                    invoice={invoice}
-                    onSendInvoice={onSendInvoice}
-                    onRefresh={onRefresh}
-                  />
+                  <ShareLinkCell invoice={invoice} onRefresh={onRefresh} />
                 </TableCell>
                 <TableCell className='text-right'>
                   <div className='flex justify-end gap-2'>

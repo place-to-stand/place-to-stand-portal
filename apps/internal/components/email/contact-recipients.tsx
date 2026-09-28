@@ -16,7 +16,7 @@ export type RecipientContact = {
   isPrimary: boolean
 }
 
-type UpdateRecipientsProps = {
+type ContactRecipientsProps = {
   contacts: RecipientContact[]
   /** Current `to` list, lowercase emails. */
   to: string[]
@@ -31,12 +31,12 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
  * in below. Both feed the same `to` list; the split is only so the common
  * case is a click and the rare case is still possible.
  */
-export function UpdateRecipients({
+export function ContactRecipients({
   contacts,
   to,
   onChange,
   disabled,
-}: UpdateRecipientsProps) {
+}: ContactRecipientsProps) {
   const [draft, setDraft] = useState('')
   const [error, setError] = useState<string | null>(null)
 
@@ -88,7 +88,7 @@ export function UpdateRecipients({
                 />
                 <Label
                   htmlFor={inputId}
-                  className='flex min-w-0 flex-col gap-0.5 font-normal'
+                  className='flex min-w-0 flex-col items-start gap-0.5 font-normal'
                 >
                   <span className='flex items-center gap-1.5'>
                     <span className='truncate text-sm'>{contact.name}</span>

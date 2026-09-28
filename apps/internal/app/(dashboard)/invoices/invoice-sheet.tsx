@@ -45,6 +45,7 @@ import { Separator } from '@pts/ui/separator'
 import { useToast } from '@/components/ui/use-toast'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import { computeLineItemAmount } from '@/lib/invoices/invoice-form'
+import { invoiceShareHref } from '@/lib/invoices/links'
 import type {
   ClientRow,
   InvoiceFormValues,
@@ -59,6 +60,7 @@ import {
 import { cn } from '@/lib/utils'
 
 import { InvoiceArchiveDialog } from './_components/invoice-archive-dialog'
+import { InvoiceEmailDialog } from './_components/invoice-email-dialog'
 import { InvoiceSheetRightColumn } from './_components/invoice-sheet-right-column'
 import { InvoiceVoidDialog } from './_components/invoice-void-dialog'
 import { sendInvoiceAction, unsendInvoice, voidInvoice } from './actions'
@@ -130,6 +132,7 @@ export function InvoiceSheet({
   const router = useRouter()
   const { toast } = useToast()
   const [voidDialogOpen, setVoidDialogOpen] = useState(false)
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false)
   const [actionPending, setActionPending] = useState(false)
   // Status actions (send/revert/void) refresh the row and reset the form,
   // silently discarding edits — confirm first when the form is dirty.
@@ -232,9 +235,23 @@ export function InvoiceSheet({
           variant: 'destructive',
         })
       } else {
+        // One click: sent, link live, link on the clipboard to paste into
+        // whatever the admin is sending it with.
+        const copied = result.shareToken
+          ? await navigator.clipboard
+              .writeText(
+                `${window.location.origin}${invoiceShareHref(result.shareToken)}`
+              )
+              .then(
+                () => true,
+                () => false
+              )
+          : false
         toast({
           title: 'Invoice marked as sent',
-          description: `Invoice ${result.invoiceNumber ?? ''} has been assigned and marked as sent.`,
+          description: copied
+            ? 'The client link is copied to your clipboard.'
+            : 'Copy the client link from the top of this panel.',
         })
         router.refresh()
       }
@@ -248,6 +265,26 @@ export function InvoiceSheet({
       setActionPending(false)
     }
   }, [invoice, toast, router])
+
+  const handleEmailSent = useCallback(
+    ({
+      invoiceNumber,
+      markedSent,
+    }: {
+      invoiceNumber: string
+      markedSent: boolean
+    }) => {
+      setEmailDialogOpen(false)
+      toast({
+        title: markedSent ? 'Invoice sent' : 'Invoice emailed',
+        description: markedSent
+          ? `Invoice ${invoiceNumber} was emailed and marked as sent.`
+          : `Invoice ${invoiceNumber} was emailed again.`,
+      })
+      router.refresh()
+    },
+    [toast, router]
+  )
 
   const handleUnsendInvoice = useCallback(async () => {
     if (!invoice) return
@@ -560,6 +597,9 @@ export function InvoiceSheet({
                   <InvoiceSheetRightColumn
                     invoice={invoice}
                     isPending={combinedPending}
+                    onEmailInvoice={() =>
+                      runGuarded(() => setEmailDialogOpen(true))
+                    }
                     onSendInvoice={() => runGuarded(handleSendInvoice)}
                     onUnsendInvoice={() => runGuarded(handleUnsendInvoice)}
                     onVoidInvoice={() => runGuarded(handleRequestVoid)}
@@ -587,6 +627,14 @@ export function InvoiceSheet({
         onCancel={handleCancelDelete}
         onConfirm={handleConfirmDelete}
       />
+      {invoice ? (
+        <InvoiceEmailDialog
+          invoiceId={invoice.id}
+          open={emailDialogOpen}
+          onOpenChange={setEmailDialogOpen}
+          onSent={handleEmailSent}
+        />
+      ) : null}
       <InvoiceVoidDialog
         open={voidDialogOpen}
         confirmDisabled={combinedPending}

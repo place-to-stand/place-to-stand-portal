@@ -2,6 +2,7 @@ import 'server-only'
 
 import {
   adminInviteEmail,
+  invoiceEmail,
   magicLinkEmail,
   passwordChangedEmail,
   passwordResetEmail,
@@ -269,6 +270,42 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
             hoursRemaining: 1.25,
             closing: 'Let me know if you have any questions.',
             portalHref: clientOrigin,
+            replyTo: 'admin@example.com',
+          }),
+        },
+      ],
+    },
+    {
+      id: 'invoice',
+      overview: 'Sent when an admin sends a client an invoice.',
+      group: 'client',
+      status: 'active',
+      name: 'Invoice',
+      description:
+        'An invoice for a client: the admin’s own note, the invoice number, amount due and issue date, and one button to the public share page where the client views and pays. Every field is editable in the send dialog before it goes out.',
+      triggers: [
+        'Send to client on a draft invoice (also marks it sent)',
+        'Email again on a sent or viewed invoice (a reminder; the status is unchanged)',
+      ],
+      recipient:
+        'The client’s primary contact, with the sending admin cc’d — both editable before sending',
+      from,
+      replyTo: 'The signed-in admin’s email address',
+      delivery: INTERNAL_SDK_DELIVERY,
+      attachments: null,
+      source: 'packages/email/src/templates/invoice.ts',
+      variants: [
+        {
+          audience: 'client',
+          sample: invoiceEmail({
+            subject: 'Invoice INV-0042 from Place To Stand',
+            clientName: 'Sample Co',
+            invoiceNumber: 'INV-0042',
+            amountDue: '$1,000.00',
+            issuedDate: 'Sep 28, 2026',
+            message:
+              "Hi Jordan,\n\nHere's invoice INV-0042 for $1,000.00. You can view the details and pay online with the button below.\n\nThanks,\nAlex",
+            viewUrl: `${internalOrigin}/share/invoices/sample-token`,
             replyTo: 'admin@example.com',
           }),
         },

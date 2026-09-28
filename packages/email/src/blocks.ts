@@ -26,6 +26,7 @@ export type EmailListItem = {
 
 export type EmailBlock =
   | { type: 'heading'; text: string }
+  /** Line breaks are preserved, so a typed sign-off stays on its own lines. */
   | { type: 'paragraph'; text: string }
   /** Small mono section label, e.g. "Where they came from". */
   | { type: 'label'; text: string }
@@ -61,7 +62,7 @@ function blockHtml(block: EmailBlock): string {
       return `<h1 style="margin:0 0 16px;font-family:${F.head};font-size:24px;line-height:1.2;font-weight:700;letter-spacing:-0.02em;color:${C.ink};">${escapeHtml(block.text)}</h1>`
 
     case 'paragraph':
-      return `<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:${C.ink};">${escapeHtml(block.text)}</p>`
+      return `<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:${C.ink};">${withBreaks(block.text)}</p>`
 
     case 'label':
       return `<p style="margin:0 0 10px;font-family:${F.mono};font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:${C.faint};">${escapeHtml(block.text)}</p>`
@@ -73,9 +74,12 @@ function blockHtml(block: EmailBlock): string {
           const value = href
             ? `<a href="${escapeHtml(href)}" style="${LINK}">${escapeHtml(row.value)}</a>`
             : escapeHtml(row.value)
+          // Both cells share one 21px line and align on the text baseline, so
+          // the small mono label sits level with its value's first line.
+          // Clients that ignore `baseline` (Outlook) still get matched lines.
           return `<tr>
-            <td width="96" style="width:96px;padding:4px 12px 4px 0;vertical-align:top;font-family:${F.mono};font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:${C.faint};">${escapeHtml(row.label)}</td>
-            <td style="padding:4px 0;vertical-align:top;font-size:14px;line-height:1.5;color:${C.ink};word-break:break-word;">${value}</td>
+            <td width="96" valign="baseline" style="width:96px;padding:4px 12px 4px 0;vertical-align:baseline;font-family:${F.mono};font-size:11px;line-height:21px;letter-spacing:0.06em;text-transform:uppercase;color:${C.faint};">${escapeHtml(row.label)}</td>
+            <td valign="baseline" style="padding:4px 0;vertical-align:baseline;font-size:14px;line-height:21px;color:${C.ink};word-break:break-word;">${value}</td>
           </tr>`
         })
         .join('')

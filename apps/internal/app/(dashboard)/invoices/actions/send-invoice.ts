@@ -1,22 +1,24 @@
 'use server'
 
-import crypto from 'node:crypto'
-
 import { revalidatePath } from 'next/cache'
-import { and, eq, isNull } from 'drizzle-orm'
 
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
-import { logActivity } from '@/lib/activity/logger'
-import { invoiceSentEvent } from '@/lib/activity/events'
+import {
+  fetchSendableInvoice,
+  markInvoiceSent,
+} from '@/lib/invoices/send/mark-sent'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
-import { db } from '@/lib/db'
-import { invoices, clients } from '@/lib/db/schema'
 
 import { sendSchema } from './schemas'
 import type { SendResult, SendInput } from './types'
 import { INVOICES_PATH } from './helpers'
 
+/**
+ * "Mark as sent": for an invoice the admin delivers themselves. No email goes
+ * out (`emailInvoice` is the path that sends one); the link goes live and its
+ * token comes back so the button can copy it.
+ */
 export async function sendInvoiceAction(
   input: SendInput,
 ): Promise<SendResult> {
@@ -42,22 +44,7 @@ async function performSendInvoice(
     return { error: 'Invalid send request.' }
   }
 
-  const invoiceId = parsed.data.id
-
-  const existingRows = await db
-    .select({
-      id: invoices.id,
-      status: invoices.status,
-      clientId: invoices.clientId,
-      invoiceNumber: invoices.invoiceNumber,
-      total: invoices.total,
-      shareToken: invoices.shareToken,
-    })
-    .from(invoices)
-    .where(eq(invoices.id, invoiceId))
-    .limit(1)
-
-  const existing = existingRows[0]
+  const existing = await fetchSendableInvoice(parsed.data.id)
 
   if (!existing) {
     return { error: 'Invoice not found.' }
@@ -73,54 +60,15 @@ async function performSendInvoice(
     return { error: 'Invoice is missing an invoice number.' }
   }
 
-  const clientRows = await db
-    .select({ name: clients.name })
-    .from(clients)
-    .where(and(eq(clients.id, existing.clientId), isNull(clients.deletedAt)))
-    .limit(1)
-
-  const clientName = clientRows[0]?.name ?? null
-
   try {
-    const today = new Date().toISOString().split('T')[0]!
-    // Reuse existing share token if one was already generated (e.g. via
-    // "Generate Shareable Link" button) to avoid invalidating copied links.
-    const shareToken =
-      existing.shareToken ?? crypto.randomUUID().replace(/-/g, '')
-    const nowIso = new Date().toISOString()
-
-    await db
-      .update(invoices)
-      .set({
-        status: 'SENT',
-        issuedDate: today,
-        shareToken,
-        shareEnabled: true,
-        updatedAt: nowIso,
-      })
-      .where(eq(invoices.id, invoiceId))
-
-    const event = invoiceSentEvent({
+    const shareToken = await markInvoiceSent(user, {
+      ...existing,
       invoiceNumber,
-      clientName,
-      total: existing.total,
     })
-
-    await logActivity({
-      actorId: user.id,
-      actorRole: user.role,
-      verb: event.verb,
-      summary: event.summary,
-      targetType: 'INVOICE',
-      targetId: invoiceId,
-      targetClientId: existing.clientId,
-      metadata: event.metadata,
-    })
-
 
     revalidatePath(INVOICES_PATH)
 
-    return { invoiceNumber }
+    return { invoiceNumber, shareToken }
   } catch (error) {
     console.error('Failed to send invoice', error)
 

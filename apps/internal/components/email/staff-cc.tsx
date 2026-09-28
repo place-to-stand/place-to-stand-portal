@@ -5,27 +5,30 @@ import { Label } from '@pts/ui/label'
 
 import type { StaffMember } from '@/lib/updates/staff'
 
-type UpdateStaffCcProps = {
+type StaffCcProps = {
   staff: StaffMember[]
   /** Current `cc` list, lowercase emails. */
   cc: string[]
   onChange: (cc: string[]) => void
-  /** The sender is never listed — they get the message in Sent. */
-  senderEmail: string
+  /**
+   * Left off the list when set: a Gmail send already lands in the sender's
+   * Sent folder. Omit it when the sender needs copying like anyone else.
+   */
+  senderEmail?: string
   disabled?: boolean
 }
 
-/** Who on our side is copied. On by default; untick to leave someone out. */
-export function UpdateStaffCc({
+/** Who on our side is copied: one checkbox per active admin. */
+export function StaffCc({
   staff,
   cc,
   onChange,
   senderEmail,
   disabled,
-}: UpdateStaffCcProps) {
-  const others = staff.filter(
-    member => member.email !== senderEmail.toLowerCase()
-  )
+}: StaffCcProps) {
+  const others = senderEmail
+    ? staff.filter(member => member.email !== senderEmail.toLowerCase())
+    : staff
 
   if (others.length === 0) {
     return (
@@ -55,7 +58,7 @@ export function UpdateStaffCc({
             />
             <Label
               htmlFor={inputId}
-              className='flex min-w-0 flex-col gap-0.5 font-normal'
+              className='flex min-w-0 flex-col items-start gap-0.5 font-normal'
             >
               <span className='truncate text-sm'>{member.name}</span>
               <span className='text-muted-foreground truncate text-xs'>

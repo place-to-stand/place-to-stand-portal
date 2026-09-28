@@ -1,6 +1,10 @@
 export { getInvoiceDetails } from './get-invoice-details'
 export { saveInvoice } from './save-invoice'
 export { sendInvoiceAction } from './send-invoice'
+export {
+  emailInvoice,
+  getInvoiceEmailDraft,
+} from './email-invoice'
 export { unsendInvoice } from './unsend-invoice'
 export { voidInvoice } from './void-invoice'
 export { archiveInvoice } from './archive-invoice'
