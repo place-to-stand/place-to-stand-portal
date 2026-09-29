@@ -98,14 +98,21 @@ export async function getClientSheetContactData(
 }
 
 /**
- * Syncs the contact links for a client (adds new, removes unlinked).
+ * Syncs the contact links for a client (adds new, removes unlinked) and which
+ * of them is primary.
  */
 export async function syncClientContacts(
   clientId: string,
-  contactIds: string[]
+  contactIds: string[],
+  primaryContactId: string | null
 ): Promise<{ ok: boolean; error?: string }> {
   const user = await requireUser()
-  const result = await syncContacts(user, clientId, contactIds)
+  const result = await syncContacts(
+    user,
+    clientId,
+    contactIds,
+    primaryContactId
+  )
 
   if (result.ok) {
     revalidateClientPaths()

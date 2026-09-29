@@ -1,20 +1,22 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import { Ban, Calendar, Eye, Hash, Send, Undo2 } from 'lucide-react'
+import { Ban, Calendar, CheckCheck, Eye, Mail, Undo2 } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Separator } from '@pts/ui/separator'
 import type { InvoiceWithClient } from '@/lib/invoices/invoice-form'
 import { formatCalendarDate } from '@pts/ui/dates'
 
-import { InvoiceShareSection } from './invoice-share-section'
+import { InvoiceHourBlocksCell } from './invoice-hour-blocks-cell'
+import { InvoiceLinkField } from './invoice-link-field'
 import { InvoiceStatusBadge } from './invoice-status-badge'
 
 type InvoiceSheetRightColumnProps = {
   invoice: InvoiceWithClient
   isPending: boolean
+  /** Opens the send dialog: emails the invoice (and marks a draft sent). */
+  onEmailInvoice: () => void
+  /** "Mark as sent": for an invoice delivered some other way. */
   onSendInvoice: () => void
   onUnsendInvoice: () => void
   onVoidInvoice: () => void
@@ -32,6 +34,9 @@ const formatDate = (dateStr: string | null): string | null =>
 // ---------------------------------------------------------------------------
 
 const VOIDABLE_STATUSES = new Set(['DRAFT', 'SENT', 'VIEWED'])
+const RESENDABLE_STATUSES = new Set(['SENT', 'VIEWED'])
+
+const ACTION_CLASS = 'w-full justify-start'
 
 // ---------------------------------------------------------------------------
 // Component
@@ -40,68 +45,68 @@ const VOIDABLE_STATUSES = new Set(['DRAFT', 'SENT', 'VIEWED'])
 export function InvoiceSheetRightColumn({
   invoice,
   isPending,
+  onEmailInvoice,
   onSendInvoice,
   onUnsendInvoice,
   onVoidInvoice,
 }: InvoiceSheetRightColumnProps) {
-  // Track local optimistic override; null means "use prop value"
-  const [shareOverride, setShareOverride] = useState<boolean | null>(null)
-  const shareActive = shareOverride ?? invoice.share_enabled
-
-  const handleShareStateChange = useCallback((enabled: boolean) => {
-    setShareOverride(enabled)
-  }, [])
-
-  const canSend = invoice.status === 'DRAFT' && shareActive
+  const isDraft = invoice.status === 'DRAFT'
   const canVoid = VOIDABLE_STATUSES.has(invoice.status)
-  const showSendButton = invoice.status === 'DRAFT'
-  const showUnsendButton = invoice.status === 'SENT'
+  const canEmailAgain = RESENDABLE_STATUSES.has(invoice.status)
+  const canRevert = invoice.status === 'SENT'
+  // Live exactly while sent; a draft has no public link to show.
+  const liveToken =
+    !isDraft && invoice.share_enabled ? invoice.share_token : null
+  const hasActions = isDraft || canEmailAgain || canRevert || canVoid
 
   return (
     <div className='bg-muted/20 w-80 flex-shrink-0 overflow-y-auto lg:w-96'>
       <div className='space-y-6 p-6'>
-        {/* Share Link (inline) */}
-        <InvoiceShareSection
-          invoiceId={invoice.id}
-          shareToken={invoice.share_token}
-          shareEnabled={invoice.share_enabled}
-          invoiceStatus={invoice.status}
-          onShareStateChange={handleShareStateChange}
-          onSendInvoice={onSendInvoice}
-        />
+        {/* A draft reserves the link's space; sending fills it in. */}
+        {liveToken || isDraft ? (
+          <>
+            <InvoiceLinkField invoiceId={invoice.id} shareToken={liveToken} />
+            <Separator />
+          </>
+        ) : null}
 
-        <Separator />
-
-        {/* Actions */}
-        {showSendButton || showUnsendButton || canVoid ? (
+        {hasActions ? (
           <>
             <div className='space-y-4'>
               <span className='mb-2 block text-sm font-medium'>Actions</span>
               <div className='flex flex-col gap-2'>
-                {showSendButton ? (
-                  <DisabledFieldTooltip
-                    disabled={!canSend}
-                    reason={!canSend ? 'Generate a shareable link first' : null}
-                  >
-                    <Button
-                      type='button'
-                      variant='outline'
-                      size='sm'
-                      className='w-full justify-start'
-                      onClick={onSendInvoice}
-                      disabled={isPending || !canSend}
-                    >
-                      <Send className='text-success' />
-                      Mark as sent
-                    </Button>
-                  </DisabledFieldTooltip>
-                ) : null}
-                {showUnsendButton ? (
+                {isDraft || canEmailAgain ? (
                   <Button
                     type='button'
                     variant='outline'
                     size='sm'
-                    className='w-full justify-start'
+                    className={ACTION_CLASS}
+                    onClick={onEmailInvoice}
+                    disabled={isPending}
+                  >
+                    <Mail className='text-success' />
+                    {isDraft ? 'Send to client' : 'Email again'}
+                  </Button>
+                ) : null}
+                {isDraft ? (
+                  <Button
+                    type='button'
+                    variant='outline'
+                    size='sm'
+                    className={ACTION_CLASS}
+                    onClick={onSendInvoice}
+                    disabled={isPending}
+                  >
+                    <CheckCheck className='text-success' />
+                    Mark as sent
+                  </Button>
+                ) : null}
+                {canRevert ? (
+                  <Button
+                    type='button'
+                    variant='outline'
+                    size='sm'
+                    className={ACTION_CLASS}
                     onClick={onUnsendInvoice}
                     disabled={isPending}
                   >
@@ -114,7 +119,7 @@ export function InvoiceSheetRightColumn({
                     type='button'
                     variant='outline'
                     size='sm'
-                    className='w-full justify-start'
+                    className={ACTION_CLASS}
                     onClick={onVoidInvoice}
                     disabled={isPending}
                   >
@@ -138,13 +143,21 @@ export function InvoiceSheetRightColumn({
             </div>
             {invoice.invoice_number ? (
               <div className='flex items-center justify-between'>
-                <span className='text-muted-foreground flex items-center gap-1.5 text-sm'>
-                  <Hash className='h-3.5 w-3.5' />
-                  Invoice #
-                </span>
-                <span className='mb-2 block text-sm font-medium'>
+                <span className='text-muted-foreground text-sm'>Invoice #</span>
+                <span className='text-sm font-medium'>
                   {invoice.invoice_number}
                 </span>
+              </div>
+            ) : null}
+            {invoice.hour_blocks?.length ? (
+              <div className='flex items-center justify-between'>
+                <span className='text-muted-foreground text-sm'>
+                  Hour blocks
+                </span>
+                <InvoiceHourBlocksCell
+                  hourBlocks={invoice.hour_blocks}
+                  invoiceNumber={invoice.invoice_number}
+                />
               </div>
             ) : null}
           </div>

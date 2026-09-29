@@ -76,6 +76,7 @@ const EXACT: Record<string, VerbPresentation> = {
   TASK_ACCEPTANCE_REVERTED: { icon: RotateCcw, tone: 'status' },
   TIME_LOG_CREATED: { icon: Clock, tone: 'time' },
   INVOICE_SENT: { icon: Send, tone: 'money' },
+  INVOICE_EMAILED: { icon: Mail, tone: 'money' },
   INVOICE_PAID: { icon: DollarSign, tone: 'money' },
   INVOICE_VOIDED: { icon: XCircle, tone: 'delete' },
   INVOICE_UNSENT: { icon: RotateCcw, tone: 'status' },

@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { contactClients, contacts } from '@/lib/db/schema'
@@ -9,6 +9,8 @@ export type ClientContactSummary = {
   id: string
   name: string | null
   email: string
+  /** The client's primary contact — addressed by default on invoice emails. */
+  isPrimary: boolean
 }
 
 /**
@@ -31,6 +33,7 @@ export async function fetchContactSummariesByClient(
       id: contacts.id,
       name: contacts.name,
       email: contacts.email,
+      isPrimary: contactClients.isPrimary,
     })
     .from(contactClients)
     .innerJoin(contacts, eq(contactClients.contactId, contacts.id))
@@ -40,11 +43,20 @@ export async function fetchContactSummariesByClient(
         isNull(contacts.deletedAt)
       )
     )
-    .orderBy(asc(contacts.name), asc(contacts.email))
+    .orderBy(
+      desc(contactClients.isPrimary),
+      asc(contacts.name),
+      asc(contacts.email)
+    )
 
   for (const row of rows) {
     const existing = result.get(row.clientId) ?? []
-    existing.push({ id: row.id, name: row.name, email: row.email })
+    existing.push({
+      id: row.id,
+      name: row.name,
+      email: row.email,
+      isPrimary: row.isPrimary,
+    })
     result.set(row.clientId, existing)
   }
 

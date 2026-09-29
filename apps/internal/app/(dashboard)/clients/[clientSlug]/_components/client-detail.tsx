@@ -488,6 +488,7 @@ function ClientOverviewActions({
           email: c.email,
           phone: c.phone,
           hasPortalAccess: Boolean(c.userId),
+          isPrimary: c.isPrimary,
         }))}
       />
       <ConfirmDialog
