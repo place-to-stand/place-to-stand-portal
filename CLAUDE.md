@@ -300,6 +300,10 @@ await logTaskCreated(taskId, userId)
 - Feature flags stored in enums/const objects with UPPERCASE_WITH_UNDERSCORE naming
 - Gate flag-dependent code on value validation checks
 
+**Error tracking (both apps):**
+- `capture_exceptions` only sees *uncaught* errors. Anything an explicit error boundary renders (`global-error.tsx`, any `error.tsx`) counts as handled and is only `console.error`ed in production, so every boundary must call `posthog.captureException(error, { digest: error.digest })` itself
+- Server render/route/action errors go through `onRequestError` in each app's `instrumentation.ts`; the `digest` joins them to the browser-side capture
+
 **Rules:**
 - Use each feature flag in as few places as possible
 - For custom properties referenced in 2+ files/callsites, use enum or const object
