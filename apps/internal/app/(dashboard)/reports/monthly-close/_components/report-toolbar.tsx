@@ -92,7 +92,7 @@ export function ReportToolbar({
             onClick={goToThisMonth}
             disabled={isViewingToday}
           >
-            This month
+            Today
           </Button>
           <DisabledFieldTooltip
             disabled={!canGoNext}
