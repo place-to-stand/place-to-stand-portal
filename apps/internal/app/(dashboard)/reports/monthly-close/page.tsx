@@ -10,10 +10,7 @@ import {
   getLatestPartnerRates,
   getPartnerRatesEndDate,
 } from '@/lib/billing/partner-rates'
-import {
-  fetchClosedPeriodKeys,
-  fetchMonthlyCloseView,
-} from '@/lib/data/reports/close'
+import { fetchMonthlyCloseView } from '@/lib/data/reports/close'
 
 import { BillingInCard } from './_components/billing-in-card'
 import { CloseControls } from './_components/close-controls'
@@ -66,10 +63,10 @@ export default async function MonthlyClosePage({
   const closeMonthNumber = validMonth + 1
   const monthKey = `${validYear}-${String(closeMonthNumber).padStart(2, '0')}`
 
-  const [{ report, close, profitShare }, closedPeriods] = await Promise.all([
-    fetchMonthlyCloseView(validYear, closeMonthNumber),
-    fetchClosedPeriodKeys(),
-  ])
+  const { report, close, profitShare } = await fetchMonthlyCloseView(
+    validYear,
+    closeMonthNumber
+  )
 
   // Date-only strings format in UTC, so labels never drift a month.
   const displayMonth =
@@ -113,11 +110,9 @@ export default async function MonthlyClosePage({
     <PageShell breadcrumbs={crumbsForNav('/reports/monthly-close')}>
       <div className='space-y-6'>
         <ReportToolbar
-          displayMonth={displayMonth}
           minCursor={report.minCursor}
           maxCursor={report.maxCursor}
           today={{ year: getYear(now), month: getMonth(now) + 1 }}
-          closedPeriods={closedPeriods}
           status={close.status}
           isCurrentMonth={isCurrentMonth}
           closedAt={close.closedAt}

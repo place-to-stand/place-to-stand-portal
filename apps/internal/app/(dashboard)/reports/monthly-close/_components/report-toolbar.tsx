@@ -13,11 +13,9 @@ import { formatDay } from './format'
 import { MonthPicker } from './month-picker'
 
 type ReportToolbarProps = {
-  displayMonth: string
   minCursor: MonthCursor
   maxCursor: MonthCursor
   today: MonthCursor
-  closedPeriods: string[]
   status: 'open' | 'closed'
   isCurrentMonth: boolean
   closedAt?: string
@@ -28,11 +26,9 @@ type ReportToolbarProps = {
 }
 
 export function ReportToolbar({
-  displayMonth,
   minCursor,
   maxCursor,
   today,
-  closedPeriods,
   status,
   isCurrentMonth,
   closedAt,
@@ -51,6 +47,9 @@ export function ReportToolbar({
     minLimitLabel,
     maxLimitLabel,
   } = useReportNavigation({ minCursor, maxCursor })
+
+  const isViewingToday =
+    cursor.year === today.year && cursor.month === today.month
 
   const closedMeta = [
     closedAt ? formatDay(closedAt) : null,
@@ -80,15 +79,21 @@ export function ReportToolbar({
             </Button>
           </DisabledFieldTooltip>
           <MonthPicker
-            label={displayMonth}
             cursor={cursor}
             minCursor={minCursor}
             maxCursor={maxCursor}
             today={today}
-            closedPeriods={new Set(closedPeriods)}
             onSelect={goToMonth}
-            onSelectToday={goToThisMonth}
           />
+          <Button
+            type='button'
+            variant='ghost'
+            className='h-full rounded-none border-r px-3 font-normal'
+            onClick={goToThisMonth}
+            disabled={isViewingToday}
+          >
+            This month
+          </Button>
           <DisabledFieldTooltip
             disabled={!canGoNext}
             reason={canGoNext ? null : `No data beyond ${maxLimitLabel} yet.`}
@@ -109,7 +114,7 @@ export function ReportToolbar({
 
         {status === 'closed' ? (
           <>
-            <Badge variant='secondary'>
+            <Badge variant='outline'>
               <Lock />
               Closed
             </Badge>
@@ -122,7 +127,7 @@ export function ReportToolbar({
         ) : isCurrentMonth ? (
           <Badge variant='outline'>In progress</Badge>
         ) : (
-          <Badge variant='secondary'>Open</Badge>
+          <Badge variant='outline'>Open</Badge>
         )}
       </div>
 

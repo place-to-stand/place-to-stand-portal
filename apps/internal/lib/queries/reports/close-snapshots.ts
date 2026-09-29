@@ -129,19 +129,6 @@ export async function updateSnapshotReport(
   return Boolean(updated)
 }
 
-/** Every closed period, as 1-indexed { year, month } pairs. */
-export async function listClosedPeriods(): Promise<
-  Array<{ year: number; month: number }>
-> {
-  return db
-    .select({
-      year: monthlyCloseSnapshots.year,
-      month: monthlyCloseSnapshots.month,
-    })
-    .from(monthlyCloseSnapshots)
-    .where(isNull(monthlyCloseSnapshots.deletedAt))
-}
-
 export type LateRecordRow = {
   kind: 'time_log' | 'hour_block'
   id: string

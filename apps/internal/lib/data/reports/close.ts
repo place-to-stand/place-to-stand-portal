@@ -20,7 +20,6 @@ import {
   getActiveSnapshot,
   hasActiveSnapshotForDate,
   insertSnapshot,
-  listClosedPeriods,
   softDeleteSnapshot,
   updateSnapshotReport,
 } from '@/lib/queries/reports/close-snapshots'
@@ -586,12 +585,6 @@ export async function addProfitShareToClose(
   }
 
   return {}
-}
-
-/** Closed periods as `${year}-${month}` keys (1-indexed), for the month picker. */
-export async function fetchClosedPeriodKeys(): Promise<string[]> {
-  const rows = await listClosedPeriods()
-  return rows.map(row => `${row.year}-${row.month}`)
 }
 
 /**
