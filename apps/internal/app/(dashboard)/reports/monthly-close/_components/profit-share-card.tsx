@@ -159,6 +159,12 @@ function ReadyBody({
               <span className='text-muted-foreground text-xs tabular-nums'>
                 {formatMoney(data.shortfall)} short of the minimum
               </span>
+            ) : data.available > data.totalAmount ? (
+              <span className='text-muted-foreground text-xs tabular-nums'>
+                Split rounds down;{' '}
+                {formatMoney(data.available - data.totalAmount)} stays in the
+                account
+              </span>
             ) : null}
           </div>
           <span className='font-semibold tabular-nums'>

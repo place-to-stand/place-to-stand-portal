@@ -71,10 +71,12 @@ export function PartnerPayoutsTable({
     >
       <div className='flex items-center justify-between gap-4 px-5 py-3.5'>
         <h2 id='partner-payouts-title' className='text-base font-semibold'>
-          Partner payouts
+          Payouts to send
         </h2>
         <div className='flex items-baseline gap-2'>
-          <span className='text-muted-foreground text-xs'>Total to send</span>
+          <span className='text-muted-foreground text-xs'>
+            {showProfitShare ? 'Including profit share' : 'Total'}
+          </span>
           <span className='text-base font-semibold tabular-nums'>
             {formatMoney(table.totals.total)}
           </span>
@@ -83,7 +85,7 @@ export function PartnerPayoutsTable({
 
       {table.rows.length === 0 ? (
         <p className='text-muted-foreground border-t px-5 py-8 text-center text-sm'>
-          No partner payouts this month.
+          No payouts this month.
         </p>
       ) : (
         <Table layout='fixed'>
