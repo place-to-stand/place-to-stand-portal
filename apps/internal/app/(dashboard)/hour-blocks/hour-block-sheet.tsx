@@ -24,10 +24,10 @@ import {
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import type {
   ClientRow,
-  HourBlockInvoiceRow,
   HourBlockWithClient,
 } from '@/lib/settings/hour-blocks/hour-block-form'
 import { HourBlockArchiveDialog } from './_components/hour-block-archive-dialog'
+import { HourBlockInvoiceSection } from './_components/hour-block-invoice-section'
 
 const HOUR_BLOCK_FORM_ID = 'hour-block-form'
 
@@ -37,7 +37,6 @@ type Props = {
   onComplete: () => void
   hourBlock: HourBlockWithClient | null
   clients: ClientRow[]
-  invoices: HourBlockInvoiceRow[]
 }
 
 export function HourBlockSheet({
@@ -46,7 +45,6 @@ export function HourBlockSheet({
   onComplete,
   hourBlock,
   clients,
-  invoices,
 }: Props) {
   const {
     form,
@@ -54,11 +52,9 @@ export function HourBlockSheet({
     isEditing,
     isPending,
     clientOptions,
-    invoiceOptions,
-    invoiceHint,
     clientField,
     hoursField,
-    invoiceField,
+    notesField,
     submitButton,
     deleteButton,
     isDeleteDialogOpen,
@@ -74,7 +70,6 @@ export function HourBlockSheet({
     onComplete,
     hourBlock,
     clients,
-    invoices,
   })
 
   const handleSave = useCallback(
@@ -184,44 +179,6 @@ export function HourBlockSheet({
                 </div>
                 <FormField
                   control={form.control}
-                  name='invoiceId'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Invoice{' '}
-                        <span className='text-muted-foreground text-xs'>
-                          (optional)
-                        </span>
-                      </FormLabel>
-                      <FormControl>
-                        <DisabledFieldTooltip
-                          disabled={invoiceField.disabled}
-                          reason={invoiceField.reason}
-                        >
-                          <SearchableCombobox
-                            name={field.name}
-                            value={field.value ?? ''}
-                            onChange={field.onChange}
-                            onBlur={field.onBlur}
-                            items={invoiceOptions}
-                            placeholder='No invoice'
-                            searchPlaceholder='Search invoices...'
-                            emptyMessage='No invoices found for this client.'
-                            disabled={invoiceField.disabled}
-                          />
-                        </DisabledFieldTooltip>
-                      </FormControl>
-                      {invoiceHint ? (
-                        <p className='text-muted-foreground text-xs'>
-                          {invoiceHint}
-                        </p>
-                      ) : null}
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
                   name='notes'
                   render={({ field }) => (
                     <FormItem>
@@ -233,15 +190,15 @@ export function HourBlockSheet({
                       </FormLabel>
                       <FormControl>
                         <DisabledFieldTooltip
-                          disabled={invoiceField.disabled}
-                          reason={invoiceField.reason}
+                          disabled={notesField.disabled}
+                          reason={notesField.reason}
                         >
                           <Textarea
                             {...field}
                             value={field.value ?? ''}
                             placeholder='e.g. Comped 2 hours for leaving a review'
                             rows={3}
-                            disabled={invoiceField.disabled}
+                            disabled={notesField.disabled}
                           />
                         </DisabledFieldTooltip>
                       </FormControl>
@@ -249,6 +206,9 @@ export function HourBlockSheet({
                     </FormItem>
                   )}
                 />
+                {hourBlock ? (
+                  <HourBlockInvoiceSection hourBlock={hourBlock} />
+                ) : null}
                 {feedback ? (
                   <p className='border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm'>
                     {feedback}

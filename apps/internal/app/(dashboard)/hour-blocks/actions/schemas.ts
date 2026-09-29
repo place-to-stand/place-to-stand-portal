@@ -9,7 +9,6 @@ export const hourBlockSchema = z.object({
     .number()
     .int('Hours purchased must be a whole number.')
     .positive('Hours purchased must be greater than zero'),
-  invoiceId: z.string().uuid('Select a valid invoice.').optional().nullable(),
   notes: z
     .string()
     .trim()
