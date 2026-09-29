@@ -24,7 +24,7 @@ export function TreeBranch({
   return (
     <span
       aria-hidden
-      className='relative w-4 shrink-0 self-stretch'
+      className='relative w-6 shrink-0 self-stretch'
       style={{ marginBlock: -rowPaddingY }}
     >
       <span
@@ -34,7 +34,7 @@ export function TreeBranch({
           bottom: last ? '50%' : 0,
         }}
       />
-      <span className='bg-muted-foreground/40 absolute top-1/2 left-1 h-px w-2.5' />
+      <span className='bg-muted-foreground/40 absolute top-1/2 left-1 h-px w-4' />
     </span>
   )
 }
