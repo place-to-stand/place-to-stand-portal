@@ -190,7 +190,7 @@ function ReadyBody({
         ))}
       </div>
       <div className='bg-muted/50 text-foreground/80 flex items-center justify-between gap-3 border-t px-5 py-3 text-[13px]'>
-        <span>Balance left after every payout</span>
+        <span>Balance left after all payouts</span>
         <span className='text-foreground font-medium tabular-nums'>
           {formatMoney(leftAfter)}
         </span>
