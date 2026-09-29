@@ -73,8 +73,8 @@ export function MercuryIntegrationCard() {
   )
 
   return (
-    <Card>
-      <CardHeader className='pb-2'>
+    <Card className='gap-4'>
+      <CardHeader>
         <CardTitle className='flex items-center gap-2'>
           <Landmark className='size-5' />
           Mercury
@@ -162,9 +162,6 @@ export function MercuryIntegrationCard() {
                 ))}
               </div>
             ) : null}
-            <p className='text-muted-foreground text-xs'>
-              Set with <EnvName />
-            </p>
           </>
         ) : null}
       </CardContent>
