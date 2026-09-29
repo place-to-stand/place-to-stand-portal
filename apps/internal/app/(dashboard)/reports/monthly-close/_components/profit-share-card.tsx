@@ -105,7 +105,9 @@ function ReadyBody({
 
   return (
     <>
-      <div className='flex flex-col py-2'>
+      {/* Section padding tops up each section's edge rows so every divider
+          sits ~24px from the nearest text centre on both sides. */}
+      <div className='flex flex-col pt-2 pb-2.5'>
         <div className='flex items-center gap-3 px-5 py-2'>
           <div className='bg-muted text-foreground/80 flex size-8 shrink-0 items-center justify-center rounded-md'>
             {source === 'snapshot' ? (
@@ -152,8 +154,9 @@ function ReadyBody({
             <span className='tabular-nums'>{formatMoney(account.balance)}</span>
           </div>
         ))}
+      </div>
+      <div className='border-border/50 flex flex-col border-t py-1.5'>
         <Line
-          className='border-border/50 mt-1 border-t'
           label='Less partner payouts'
           value={formatDeduction(data.payouts)}
         />
@@ -161,7 +164,9 @@ function ReadyBody({
           label='Less minimum balance'
           value={formatDeduction(data.minimumBalance)}
         />
-        <div className='mt-1 flex items-start gap-3 border-t px-5 py-2.5 text-sm'>
+      </div>
+      <div className='flex flex-col border-t pt-1 pb-1.5'>
+        <div className='flex items-start gap-3 px-5 py-2.5 text-sm'>
           <div className='flex flex-1 flex-col'>
             <span className='font-semibold'>Available to share</span>
             {data.shortfall > 0 ? (
