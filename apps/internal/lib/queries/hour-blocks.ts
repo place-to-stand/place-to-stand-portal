@@ -10,7 +10,6 @@ import { PAGE_SIZE_LIMITS } from '@/lib/pagination/page-size'
 
 import type {
   ClientRow,
-  HourBlockInvoiceRow,
   HourBlockWithClient,
 } from '@/lib/settings/hour-blocks/hour-block-form'
 
@@ -43,6 +42,9 @@ type HourBlockSelection = {
     hoursPurchased: string | null
     invoiceId: string | null
     invoiceNumber: string | null
+    invoiceStatus: string | null
+    invoiceTotal: string | null
+    invoiceIssuedDate: string | null
     notes: string | null
     createdBy: string | null
     createdAt: string
@@ -63,14 +65,17 @@ type ClientSelection = {
   deletedAt: string | null
 }
 
-// invoiceNumber is derived from the linked invoice — every query using this
-// selection must leftJoin(invoices, eq(hourBlocks.invoiceId, invoices.id)).
+// The invoice* fields are derived from the linked invoice — every query using
+// this selection must leftJoin(invoices, eq(hourBlocks.invoiceId, invoices.id)).
 const hourBlockSelection = {
   id: hourBlocks.id,
   clientId: hourBlocks.clientId,
   hoursPurchased: hourBlocks.hoursPurchased,
   invoiceId: hourBlocks.invoiceId,
   invoiceNumber: invoices.invoiceNumber,
+  invoiceStatus: invoices.status,
+  invoiceTotal: invoices.total,
+  invoiceIssuedDate: invoices.issuedDate,
   notes: hourBlocks.notes,
   createdBy: hourBlocks.createdBy,
   createdAt: hourBlocks.createdAt,
@@ -203,7 +208,8 @@ export async function listHourBlocksForSettings(
 
     // Effective ordering combines the sort direction with the pagination
     // direction (backward pages scan the reversed order, then re-reverse).
-    const effectiveAsc = (sort.direction === 'asc') === (direction === 'forward')
+    const effectiveAsc =
+      (sort.direction === 'asc') === (direction === 'forward')
     const cursorCondition = cursorPayload
       ? sql`(${descriptor.compare(effectiveAsc ? 'gt' : 'lt', cursorPayload.value ?? '')} OR (${descriptor.equals(cursorPayload.value ?? '')} AND ${effectiveAsc ? sql`${hourBlocks.id} > ${cursorPayload.id}` : sql`${hourBlocks.id} < ${cursorPayload.id}`}))`
       : null
@@ -337,47 +343,6 @@ export async function listHourBlockClientDirectory(
   return rows.map(mapClientRow)
 }
 
-/**
- * Active, numbered invoices for the hour block sheet's invoice picker.
- * Drafts have no invoice number yet (numbers mint on DRAFT → SENT), so they
- * are excluded — a block can only reference an invoice a client has seen.
- */
-export async function listHourBlockInvoiceDirectory(
-  user: AppUser
-): Promise<HourBlockInvoiceRow[]> {
-  assertAdmin(user)
-
-  const rows = await db
-    .select({
-      id: invoices.id,
-      invoiceNumber: invoices.invoiceNumber,
-      clientId: invoices.clientId,
-      clientName: clients.name,
-      status: invoices.status,
-      total: invoices.total,
-      issuedDate: invoices.issuedDate,
-    })
-    .from(invoices)
-    .leftJoin(clients, eq(invoices.clientId, clients.id))
-    .where(
-      and(
-        isNull(invoices.deletedAt),
-        sql`${invoices.invoiceNumber} IS NOT NULL`
-      )
-    )
-    .orderBy(sql`${invoices.createdAt} DESC`)
-
-  return rows.map(row => ({
-    id: row.id,
-    invoice_number: row.invoiceNumber ?? '',
-    client_id: row.clientId,
-    client_name: row.clientName,
-    status: row.status,
-    total: Number(row.total ?? '0'),
-    issued_date: row.issuedDate,
-  }))
-}
-
 export async function getHourBlockWithClientById(
   user: AppUser,
   hourBlockId: string
@@ -418,6 +383,10 @@ function mapHourBlockWithClient(row: HourBlockSelection): HourBlockWithClient {
     hours_purchased: Number(row.block.hoursPurchased ?? '0'),
     invoice_id: row.block.invoiceId,
     invoice_number: row.block.invoiceNumber,
+    invoice_status: row.block.invoiceStatus,
+    invoice_total:
+      row.block.invoiceTotal === null ? null : Number(row.block.invoiceTotal),
+    invoice_issued_date: row.block.invoiceIssuedDate,
     notes: row.block.notes,
     created_by: row.block.createdBy,
     created_at: row.block.createdAt,

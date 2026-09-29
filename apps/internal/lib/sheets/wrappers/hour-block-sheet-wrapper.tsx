@@ -7,7 +7,11 @@ import { HourBlockSheet } from '@/app/(dashboard)/hour-blocks/hour-block-sheet'
 import { useSheetInit } from './use-sheet-init'
 import type { SheetWrapperProps } from './types'
 
-export function HourBlockSheetWrapper({ value, open, onRequestClose }: SheetWrapperProps) {
+export function HourBlockSheetWrapper({
+  value,
+  open,
+  onRequestClose,
+}: SheetWrapperProps) {
   const router = useRouter()
   const data = useSheetInit('hour-block', value)
 
@@ -29,7 +33,6 @@ export function HourBlockSheetWrapper({ value, open, onRequestClose }: SheetWrap
       }}
       hourBlock={data.hourBlock}
       clients={data.clients}
-      invoices={data.invoices}
     />
   )
 }

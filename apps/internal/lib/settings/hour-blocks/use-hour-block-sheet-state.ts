@@ -1,12 +1,7 @@
 'use client'
 
 import { useCallback, useMemo, useState } from 'react'
-import {
-  useForm,
-  useWatch,
-  type Resolver,
-  type UseFormReturn,
-} from 'react-hook-form'
+import { useForm, type Resolver, type UseFormReturn } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
 import {
@@ -28,16 +23,10 @@ import {
   sortClientsByName,
   type ClientRow,
   type HourBlockFormValues,
-  type HourBlockInvoiceRow,
   type HourBlockWithClient,
 } from './hour-block-form'
 export type { HourBlockFormValues } from './hour-block-form'
-import {
-  buildClientOptions,
-  buildInvoiceOptions,
-  type ClientOption,
-  type InvoiceOption,
-} from './hour-block-options'
+import { buildClientOptions, type ClientOption } from './hour-block-options'
 import {
   deriveClientFieldState,
   deriveDeleteButtonState,
@@ -54,7 +43,6 @@ export type UseHourBlockSheetStateArgs = {
   onComplete: () => void
   hourBlock: HourBlockWithClient | null
   clients: ClientRow[]
-  invoices: HourBlockInvoiceRow[]
 }
 
 export type UseHourBlockSheetStateReturn = {
@@ -63,12 +51,9 @@ export type UseHourBlockSheetStateReturn = {
   isEditing: boolean
   isPending: boolean
   clientOptions: ClientOption[]
-  invoiceOptions: InvoiceOption[]
-  /** Set when the selected invoice was issued to a different client. */
-  invoiceHint: string | null
   clientField: FieldState
   hoursField: FieldState
-  invoiceField: FieldState
+  notesField: FieldState
   submitButton: SubmitButtonState
   deleteButton: DeleteButtonState
   isDeleteDialogOpen: boolean
@@ -87,7 +72,6 @@ export function useHourBlockSheetState({
   onComplete,
   hourBlock,
   clients,
-  invoices,
 }: UseHourBlockSheetStateArgs): UseHourBlockSheetStateReturn {
   const isEditing = Boolean(hourBlock)
   const [feedback, setFeedback] = useState<string | null>(null)
@@ -109,63 +93,6 @@ export function useHourBlockSheetState({
     resolver,
     defaultValues: buildHourBlockFormDefaults(hourBlock),
   })
-
-  const selectedClientId = useWatch({
-    control: form.control,
-    name: 'clientId',
-  })
-
-  const invoiceOptions = useMemo<InvoiceOption[]>(() => {
-    // An invoice that dropped out of the directory (e.g. archived after the
-    // link was made) still needs to render on the existing block, so append
-    // it from the block's own denormalized number.
-    const directory =
-      hourBlock?.invoice_id &&
-      hourBlock.invoice_number &&
-      !invoices.some(invoice => invoice.id === hourBlock.invoice_id)
-        ? [
-            ...invoices,
-            {
-              id: hourBlock.invoice_id,
-              invoice_number: hourBlock.invoice_number,
-              client_id: hourBlock.client_id,
-              client_name: hourBlock.client?.name ?? null,
-              status: 'ARCHIVED',
-              total: 0,
-              issued_date: null,
-            },
-          ]
-        : invoices
-
-    return buildInvoiceOptions(
-      directory,
-      selectedClientId || null,
-      hourBlock?.invoice_id ?? null
-    )
-  }, [hourBlock, invoices, selectedClientId])
-
-  const selectedInvoiceId = useWatch({
-    control: form.control,
-    name: 'invoiceId',
-  })
-
-  // Cross-client links stay valid (hours transferred between clients keep
-  // the original purchase invoice) — but surface that it's intentional.
-  const invoiceHint = useMemo(() => {
-    if (!selectedInvoiceId || !selectedClientId) {
-      return null
-    }
-
-    const invoice = invoices.find(row => row.id === selectedInvoiceId)
-    const ownerClientId = invoice?.client_id ?? hourBlock?.client_id ?? null
-    const ownerName = invoice?.client_name ?? hourBlock?.client?.name ?? null
-
-    if (!ownerClientId || ownerClientId === selectedClientId) {
-      return null
-    }
-
-    return `This invoice was issued to ${ownerName ?? 'another client'} — keeping it preserves the original purchase record.`
-  }, [hourBlock, invoices, selectedClientId, selectedInvoiceId])
 
   const resetFormState = useCallback(() => {
     form.reset(buildHourBlockFormDefaults(hourBlock))
@@ -381,7 +308,7 @@ export function useHourBlockSheetState({
     [isPending]
   )
 
-  const invoiceField = hoursField
+  const notesField = hoursField
 
   const submitButton: SubmitButtonState = useMemo(
     () => deriveSubmitButtonState(isPending, isEditing, clientOptions),
@@ -399,11 +326,9 @@ export function useHourBlockSheetState({
     isEditing,
     isPending,
     clientOptions,
-    invoiceOptions,
-    invoiceHint,
     clientField,
     hoursField,
-    invoiceField,
+    notesField,
     submitButton,
     deleteButton,
     isDeleteDialogOpen,
