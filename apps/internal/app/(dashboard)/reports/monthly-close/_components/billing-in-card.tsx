@@ -51,7 +51,7 @@ function Group({
           key={row.clientId}
           className='flex items-center gap-3 px-5 py-1.5 text-sm'
         >
-          <span className='min-w-0 flex-1 truncate'>{row.clientName}</span>
+          <span className='min-w-0 flex-1'>{row.clientName}</span>
           <span className='text-muted-foreground w-18 text-right text-[13px] tabular-nums'>
             {formatHours(row.totalHours)}
           </span>

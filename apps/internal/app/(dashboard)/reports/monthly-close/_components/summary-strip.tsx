@@ -38,7 +38,7 @@ function Stat({
       >
         {value}
       </span>
-      <span className='text-muted-foreground truncate text-xs tabular-nums'>
+      <span className='text-muted-foreground text-xs tabular-nums'>
         {caption}
       </span>
     </div>

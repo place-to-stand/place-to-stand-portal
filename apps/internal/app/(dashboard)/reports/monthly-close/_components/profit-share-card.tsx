@@ -139,7 +139,7 @@ function ReadyBody({
             key={account.id}
             className='text-muted-foreground flex items-center gap-3 py-1 pr-5 pl-16 text-[13px]'
           >
-            <span className='flex-1 truncate'>{account.name}</span>
+            <span className='flex-1'>{account.name}</span>
             <span className='tabular-nums'>{formatMoney(account.balance)}</span>
           </div>
         ))}
@@ -183,7 +183,7 @@ function ReadyBody({
               avatarUpdatedAt={partner.avatarUpdatedAt}
               size='sm'
             />
-            <span className='flex-1 truncate'>{partner.name}</span>
+            <span className='flex-1'>{partner.name}</span>
             <span className='text-muted-foreground text-xs tabular-nums'>
               {percent}%
             </span>

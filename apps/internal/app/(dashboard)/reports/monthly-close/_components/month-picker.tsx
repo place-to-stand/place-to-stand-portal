@@ -55,14 +55,14 @@ export function MonthPicker({
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
-      {/* Three-letter month at a fixed width, so the stepper doesn't
-          resize as you page through months. */}
+      {/* Three-letter month at a fixed width sized to the widest label
+          ("May 2026"), so the stepper doesn't resize between months. */}
       <PopoverTrigger
         render={
           <Button
             type='button'
             variant='ghost'
-            className='h-full w-30 justify-between rounded-none border-x px-3 font-medium tabular-nums'
+            className='h-full w-30 rounded-none border-x px-3 font-medium tabular-nums'
           />
         }
       >

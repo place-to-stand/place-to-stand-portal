@@ -110,7 +110,7 @@ export function PartnerPayoutsTable({
               return (
                 <Fragment key={row.key}>
                   <TableRow className={cn(isOpen && 'bg-muted/30 border-b-0')}>
-                    <TableCell className='py-2.5 pl-3'>
+                    <TableCell className='py-2.5 pl-3 whitespace-normal'>
                       <div className='flex items-center gap-2'>
                         <Button
                           type='button'
@@ -131,12 +131,12 @@ export function PartnerPayoutsTable({
                         />
                         <div className='flex min-w-0 flex-col pl-1'>
                           <span className='flex min-w-0 items-center gap-2 font-medium'>
-                            <span className='truncate'>{row.name}</span>
+                            <span>{row.name}</span>
                             {row.kind === 'contact' ? (
                               <Badge variant='outline'>External</Badge>
                             ) : null}
                           </span>
-                          <span className='text-muted-foreground truncate text-xs tabular-nums'>
+                          <span className='text-muted-foreground text-xs tabular-nums'>
                             {row.secondary}
                           </span>
                         </div>

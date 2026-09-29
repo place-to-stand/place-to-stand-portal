@@ -151,7 +151,7 @@ export function DriftNotice({
           <tbody className='divide-border/50 divide-y'>
             {visible.map(delta => (
               <tr key={`${delta.section}:${delta.label}:${delta.unit}`}>
-                <td className='truncate py-1.5 pr-2 pl-11'>{delta.label}</td>
+                <td className='py-1.5 pr-2 pl-11'>{delta.label}</td>
                 <td className='text-muted-foreground px-2 py-1.5 text-right tabular-nums'>
                   {formatValue(delta.snapshotValue, delta.unit)}
                 </td>
