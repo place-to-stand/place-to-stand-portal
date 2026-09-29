@@ -75,17 +75,18 @@ function Line({
   )
 }
 
+/**
+ * Which balance this is. Nothing for a month still running: the summary strip
+ * already says "so far", and the accounts are listed right below.
+ */
 function balanceCaption(
   data: ProfitShareData,
   source: 'live' | 'snapshot'
-): string {
+): string | null {
   const day = formatShortDay(data.asOfDate)
   if (data.addedAfterCloseAt) return `End of day ${day} · added after close`
   if (source === 'snapshot') return `End of day ${day} · saved at close`
-  const accounts = `${data.accounts.length} account${data.accounts.length === 1 ? '' : 's'}`
-  return data.monthComplete
-    ? `End of day ${day} · ${accounts}`
-    : `Today so far · ${accounts}`
+  return data.monthComplete ? `End of day ${day}` : null
 }
 
 function ReadyBody({
@@ -99,6 +100,7 @@ function ReadyBody({
   const [isRefreshing, startRefresh] = useTransition()
   const percent = Math.round(100 / Math.max(data.partners.length, 1))
   const leftAfter = data.balance - data.payouts - data.totalAmount
+  const caption = balanceCaption(data, source)
 
   return (
     <>
@@ -113,9 +115,9 @@ function ReadyBody({
           </div>
           <div className='flex min-w-0 flex-1 flex-col'>
             <span className='text-sm font-medium'>Mercury balance</span>
-            <span className='text-muted-foreground text-xs'>
-              {balanceCaption(data, source)}
-            </span>
+            {caption ? (
+              <span className='text-muted-foreground text-xs'>{caption}</span>
+            ) : null}
           </div>
           {source === 'live' ? (
             <Button
@@ -158,12 +160,6 @@ function ReadyBody({
             {data.shortfall > 0 ? (
               <span className='text-muted-foreground text-xs tabular-nums'>
                 {formatMoney(data.shortfall)} short of the minimum
-              </span>
-            ) : data.available > data.totalAmount ? (
-              <span className='text-muted-foreground text-xs tabular-nums'>
-                Split rounds down;{' '}
-                {formatMoney(data.available - data.totalAmount)} stays in the
-                account
               </span>
             ) : null}
           </div>
