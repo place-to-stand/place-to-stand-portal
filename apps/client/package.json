@@ -10,6 +10,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@posthog/nextjs-config": "^1.11.1",
     "@pts/db": "*",
     "@pts/email": "*",
     "@pts/github": "*",
@@ -24,6 +25,8 @@
     "nanoid": "^6.0.1",
     "next": "^16.3.6",
     "postgres": "^3.4.9",
+    "posthog-js": "^1.434.8",
+    "posthog-node": "^5.52.5",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "tailwind-merge": "^3.7.0",

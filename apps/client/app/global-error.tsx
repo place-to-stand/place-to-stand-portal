@@ -6,7 +6,7 @@ import posthog from 'posthog-js'
 import { Button } from '@pts/ui/button'
 
 // global-error replaces the root layout, so it brings its own stylesheet.
-import './globals.css'
+import '@/styles/globals.css'
 
 export default function GlobalError({
   error,
