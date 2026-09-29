@@ -36,6 +36,8 @@ type UsersManagementTableProps = {
   deepLinkedUser?: UserRow | null
   /** True when `?user=` points at a user that no longer exists. */
   userNotFound?: boolean
+  /** Base URL of the client portal, for the row's preview action. */
+  clientPortalUrl: string
 }
 
 const EMPTY_MESSAGES = {
@@ -55,6 +57,7 @@ export function UsersManagementTable({
   basePath,
   deepLinkedUser = null,
   userNotFound = false,
+  clientPortalUrl,
 }: UsersManagementTableProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -161,6 +164,7 @@ export function UsersManagementTable({
         mode={mode}
         emptyMessage={emptyMessage}
         selfDeleteReason={selfDeleteReason}
+        clientPortalUrl={clientPortalUrl}
       />
       <PaginationControls
         mode='paged'

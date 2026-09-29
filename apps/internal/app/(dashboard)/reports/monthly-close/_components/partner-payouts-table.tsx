@@ -4,7 +4,7 @@ import { Fragment, useState } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
-import { Button } from '@pts/ui/button'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import {
   Table,
   TableBody,
@@ -112,17 +112,14 @@ export function PartnerPayoutsTable({
                   <TableRow className={cn(isOpen && 'bg-muted/30 border-b-0')}>
                     <TableCell className='py-2.5 pl-3 whitespace-normal'>
                       <div className='flex items-center gap-2'>
-                        <Button
+                        <RowActionButton
                           type='button'
-                          variant='ghost'
-                          size='icon-sm'
+                          label={`${isOpen ? 'Hide' : 'Show'} ${row.name}'s breakdown`}
+                          icon={isOpen ? <ChevronDown /> : <ChevronRight />}
                           className='text-muted-foreground'
                           aria-expanded={isOpen}
-                          aria-label={`${isOpen ? 'Hide' : 'Show'} ${row.name}'s breakdown`}
                           onClick={() => toggle(row.key)}
-                        >
-                          {isOpen ? <ChevronDown /> : <ChevronRight />}
-                        </Button>
+                        />
                         <PayeeAvatar
                           kind={row.kind}
                           id={row.id}

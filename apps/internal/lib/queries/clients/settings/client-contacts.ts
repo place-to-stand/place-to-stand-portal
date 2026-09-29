@@ -5,8 +5,12 @@ import { asc, eq, and, inArray, isNull, sql } from 'drizzle-orm'
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clientMembers, contacts, contactClients, users } from '@/lib/db/schema'
-import { logContactClientLinkChanges } from '@/lib/queries/contacts/settings/contact-client-link-activity'
+import { contacts, contactClients, users } from '@/lib/db/schema'
+import {
+  logContactClientLinkChanges,
+  type ContactClientLinkChange,
+} from '@/lib/queries/contacts/settings/contact-client-link-activity'
+import { syncPortalMembershipsForLinkChanges } from '@/lib/queries/contacts/settings/contact-client-portal-memberships'
 
 type ContactOption = {
   id: string
@@ -161,8 +165,7 @@ export async function syncClientContacts(
 ): Promise<{ ok: boolean; error?: string }> {
   assertAdmin(user)
 
-  let toAdd: string[] = []
-  let toRemove: string[] = []
+  let changes: ContactClientLinkChange[] = []
 
   try {
     // Get current links
@@ -175,8 +178,16 @@ export async function syncClientContacts(
     const newIds = new Set(contactIds)
 
     // Find links to add and remove
-    toAdd = contactIds.filter(id => !currentIds.has(id))
-    toRemove = [...currentIds].filter(id => !newIds.has(id))
+    const toAdd = contactIds.filter(id => !currentIds.has(id))
+    const toRemove = [...currentIds].filter(id => !newIds.has(id))
+    changes = [
+      ...toAdd.map(contactId => ({ contactId, clientId, action: 'linked' as const })),
+      ...toRemove.map(contactId => ({
+        contactId,
+        clientId,
+        action: 'unlinked' as const,
+      })),
+    ]
 
     // Perform the contact-client link updates
     if (toAdd.length > 0) {
@@ -213,89 +224,14 @@ export async function syncClientContacts(
       })
       .where(eq(contactClients.clientId, clientId))
 
-    // Sync client_members for contacts with portal accounts
-    await syncPortalMemberships(clientId, toAdd, toRemove)
+    // A promoted contact's portal access follows its links.
+    await syncPortalMembershipsForLinkChanges(changes)
   } catch {
     return { ok: false, error: 'Failed to update contact links.' }
   }
 
   // The links are committed; a logging failure must not report the sync as failed.
-  await logContactClientLinkChanges(user, [
-    ...toAdd.map(contactId => ({ contactId, clientId, action: 'linked' as const })),
-    ...toRemove.map(contactId => ({
-      contactId,
-      clientId,
-      action: 'unlinked' as const,
-    })),
-  ])
+  await logContactClientLinkChanges(user, changes)
 
   return { ok: true }
-}
-
-/**
- * When contacts are linked/unlinked from a client, ensure their portal
- * access (client_members) stays in sync. Contacts with a userId get
- * a client_members record; unlinking soft-deletes it.
- */
-async function syncPortalMemberships(
-  clientId: string,
-  addedContactIds: string[],
-  removedContactIds: string[]
-) {
-  // For added contacts, find those with portal accounts and upsert client_members
-  if (addedContactIds.length > 0) {
-    const portalContacts = await db
-      .select({ userId: contacts.userId })
-      .from(contacts)
-      .where(
-        and(
-          inArray(contacts.id, addedContactIds),
-          isNull(contacts.deletedAt)
-        )
-      )
-
-    const userIdsToAdd = portalContacts
-      .map(c => c.userId)
-      .filter((id): id is string => id !== null)
-
-    if (userIdsToAdd.length > 0) {
-      await db
-        .insert(clientMembers)
-        .values(userIdsToAdd.map(userId => ({ clientId, userId, deletedAt: null })))
-        .onConflictDoUpdate({
-          target: [clientMembers.clientId, clientMembers.userId],
-          set: { deletedAt: null },
-        })
-    }
-  }
-
-  // For removed contacts, find those with portal accounts and soft-delete client_members
-  if (removedContactIds.length > 0) {
-    const portalContacts = await db
-      .select({ userId: contacts.userId })
-      .from(contacts)
-      .where(
-        and(
-          inArray(contacts.id, removedContactIds),
-          isNull(contacts.deletedAt)
-        )
-      )
-
-    const userIdsToRemove = portalContacts
-      .map(c => c.userId)
-      .filter((id): id is string => id !== null)
-
-    if (userIdsToRemove.length > 0) {
-      await db
-        .update(clientMembers)
-        .set({ deletedAt: new Date().toISOString() })
-        .where(
-          and(
-            eq(clientMembers.clientId, clientId),
-            inArray(clientMembers.userId, userIdsToRemove),
-            isNull(clientMembers.deletedAt)
-          )
-        )
-    }
-  }
 }

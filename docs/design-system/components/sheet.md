@@ -14,3 +14,4 @@ The right-side panel where every entity is created and edited, on Base UI Dialog
 - Controls inside the sheet bind to the form and apply in the save action — no immediate mutations from inside an edit sheet.
 - Focus lands on the field marked `data-autofocus`, else the popup (not the close button).
 - Presses inside toasts or other popups (select, dropdown) don't count as outside presses.
+- A record linked to this sheet's entity (a contact's portal user, a user's contact) renders as a `LinkedRecordCard` (`components/sheets/linked-record-card.tsx`): name and email on top, an "Open …" link to the other record's list page with its sheet open (`lib/sheets/hrefs.ts`), and label/value details below a rule. Both sides of a link use it so they read as a pair.

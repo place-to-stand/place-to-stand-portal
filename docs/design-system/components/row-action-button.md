@@ -7,3 +7,5 @@ An icon-only action in a table row or toolbar. From `@pts/ui/row-action-button`.
 **Props:** `label` ("Archive client") becomes both the tooltip and the accessible name; `icon` is the lucide glyph; everything else passes to Button.
 
 **Rules:** never `title=` on a Button as a tooltip (it's delayed, unstyled, and absent on touch). Labels are verb-first, sentence case.
+
+Every icon-only row action uses `RowActionButton` so it has a hover tooltip; never mix it with plain icon Buttons in one Actions cell. A `DisabledFieldTooltip` that explains a disabled action wraps the `RowActionButton` itself.

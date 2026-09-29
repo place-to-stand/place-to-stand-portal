@@ -448,15 +448,13 @@ export function ClientsLanding({
                       disabled={isPending}
                       reason={isPending ? pendingReason : null}
                     >
-                      <Button
+                      <RowActionButton
+                        label='Archive client'
+                        icon={<Archive />}
                         variant='destructive'
-                        size='icon-sm'
                         onClick={() => handleRequestDelete(tableClients[index])}
-                        aria-label='Archive client'
                         disabled={isPending}
-                      >
-                        <Archive />
-                      </Button>
+                      />
                     </DisabledFieldTooltip>
                   </div>
                 </TableCell>

@@ -89,11 +89,26 @@ export function PasswordResetForm({ redirectTo, email }: Props) {
 
   return (
     <div className='space-y-6'>
-      {email ? (
-        <p className='text-brand-text-muted text-sm'>Signed in as {email}</p>
-      ) : null}
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-5'>
+          {email ? (
+            // Read-only, but a real `username` field: without one, password
+            // managers save the new password under a blank username.
+            <div className='space-y-2'>
+              <label htmlFor='account-email' className={authFieldLabelClass}>
+                Email
+              </label>
+              <Input
+                id='account-email'
+                name='username'
+                type='email'
+                autoComplete='username'
+                value={email}
+                readOnly
+                className={authInputClass}
+              />
+            </div>
+          ) : null}
           <FormField
             control={form.control}
             name='password'

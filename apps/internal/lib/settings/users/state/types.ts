@@ -1,10 +1,20 @@
+import type {
+  UserAssignedClient,
+  UserLinkedContact,
+} from '@/lib/queries/users/assignments'
 import type { DbUser } from '@/lib/types'
 
 export type UserRow = DbUser
 
 export type UserAssignments = Record<
   string,
-  { clients: number; projects: number; tasks: number }
+  {
+    clients: number
+    projects: number
+    tasks: number
+    clientList: UserAssignedClient[]
+    contact: UserLinkedContact | null
+  }
 >
 
 export type UserRowState = {

@@ -13,6 +13,7 @@ import { saveProject } from '@/lib/settings/projects/actions/save-project'
 import { extractLeadNotes } from '@/lib/leads/notes'
 import { leadConversionSchema, type LeadConversionFormValues } from '../conversion-schema'
 import type { LeadConversionResult } from '../conversion-types'
+import { syncPortalMembershipsForLinkChanges } from '@/lib/queries/contacts/settings/contact-client-portal-memberships'
 
 export async function convertLeadToClient(
   input: LeadConversionFormValues
@@ -171,6 +172,10 @@ export async function convertLeadToClient(
           clientId: finalClientId,
           isPrimary: true,
         })
+        // An existing contact may already have a portal account.
+        await syncPortalMembershipsForLinkChanges([
+          { contactId, clientId: finalClientId, action: 'linked' },
+        ])
       }
     } catch (err) {
       console.error('[convert-lead] Failed to create contact:', err)

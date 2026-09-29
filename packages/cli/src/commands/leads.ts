@@ -186,9 +186,12 @@ export function registerLeadCommands(program: Command): void {
   leads
     .command('log <leadId>')
     .description(
-      'Log an interaction (meeting, call, email, note) on the lead’s timeline'
+      'Log an interaction (meeting, call, text message, email, note) on the lead’s timeline'
     )
-    .requiredOption('--type <type>', 'MEETING | PHONE_CALL | EMAIL | NOTE')
+    .requiredOption(
+      '--type <type>',
+      'MEETING | PHONE_CALL | TEXT_MESSAGE | EMAIL | NOTE'
+    )
     .requiredOption('--body <text>', `What happened. ${MARKDOWN_HELP}`)
     .option(
       '--at <datetime>',

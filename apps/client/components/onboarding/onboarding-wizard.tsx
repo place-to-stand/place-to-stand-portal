@@ -189,7 +189,11 @@ function ChooseSignInStep({
 
   if (mode === 'password') {
     return (
-      <SetPasswordStep onBack={() => setMode('menu')} onComplete={onComplete} />
+      <SetPasswordStep
+        accountEmail={accountEmail}
+        onBack={() => setMode('menu')}
+        onComplete={onComplete}
+      />
     )
   }
 
@@ -324,9 +328,11 @@ async function unlinkGoogleIdentity(): Promise<void> {
 /* ------------------------------------------------------------------ */
 
 function SetPasswordStep({
+  accountEmail,
   onComplete,
   onBack,
 }: {
+  accountEmail: string
   onComplete: () => void
   onBack: () => void
 }) {
@@ -393,10 +399,26 @@ function SetPasswordStep({
           </div>
         )}
 
+        {/* Read-only, but a real `username` field: without one, password
+            managers save the new password under a blank username and nothing
+            tells the client their email is what they sign in with. */}
+        <div className='space-y-2'>
+          <Label htmlFor='account-email'>Email</Label>
+          <Input
+            id='account-email'
+            name='username'
+            type='email'
+            autoComplete='username'
+            value={accountEmail}
+            readOnly
+          />
+        </div>
+
         <div className='space-y-2'>
           <Label htmlFor='new-password'>New password</Label>
           <Input
             id='new-password'
+            name='new-password'
             type='password'
             autoComplete='new-password'
             value={password}
@@ -410,6 +432,7 @@ function SetPasswordStep({
           <Label htmlFor='confirm-password'>Confirm password</Label>
           <Input
             id='confirm-password'
+            name='confirm-password'
             type='password'
             autoComplete='new-password'
             value={confirm}

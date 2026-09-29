@@ -14,6 +14,7 @@ import {
 } from '@/lib/settings/contacts/use-contacts-table-state'
 import type { ContactSheetInput } from '@/lib/settings/contacts/use-contact-sheet-state'
 import type { ClientOption } from '@/lib/queries/contacts'
+import { openPortalPreview } from '@/lib/settings/contacts/portal-preview'
 
 import { promoteContactToUser } from '../actions'
 import { ContactsTableSection } from './contacts-table-section'
@@ -99,10 +100,8 @@ export function ContactsManagementTable({
     : EMPTY_MESSAGES[mode]
 
   const handleRequestPreview = useCallback(
-    (contact: ContactsTableContact) => {
-      const url = `${clientPortalUrl}/api/admin/preview-contact?contactId=${contact.id}`
-      window.open(url, '_blank', 'noopener,noreferrer')
-    },
+    (contact: ContactsTableContact) =>
+      openPortalPreview(clientPortalUrl, contact.id),
     [clientPortalUrl]
   )
 

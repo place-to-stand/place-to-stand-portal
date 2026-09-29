@@ -1,6 +1,6 @@
 'use client'
 
-import { Archive, RefreshCw, Trash2 } from 'lucide-react'
+import { Archive, Eye, RefreshCw, Trash2 } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { TableCell, TableRow } from '@pts/ui/table'
@@ -15,6 +15,7 @@ import {
 } from '@/lib/settings/users/filters'
 
 import type { UserRowState } from '@/lib/settings/users/state/use-users-table-state'
+import { openPortalPreview } from '@/lib/settings/contacts/portal-preview'
 import { cn } from '@/lib/utils'
 import { formatCalendarDate, formatRelativeTime } from '@pts/ui/dates'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
@@ -38,6 +39,7 @@ type UsersTableRowProps = {
   assignment: UserAssignmentSummary | undefined
   selfDeleteReason: string
   mode: 'active' | 'archive'
+  clientPortalUrl: string
 }
 
 export function UsersTableRow({
@@ -45,6 +47,7 @@ export function UsersTableRow({
   assignment,
   selfDeleteReason,
   mode,
+  clientPortalUrl,
 }: UsersTableRowProps) {
   const { user } = row
   const deleteTitle =
@@ -54,6 +57,12 @@ export function UsersTableRow({
   const showSoftDelete = mode === 'active'
   const showRestore = mode === 'archive'
   const showDestroy = mode === 'archive'
+  // Admins have no portal of their own to preview, so the action is
+  // portal-user only. It previews through the linked contact; a portal user
+  // created straight from this page has none, so it stays visible but
+  // explains why it's off rather than vanishing from that one row.
+  const showPreview = mode === 'active' && user.role === 'CLIENT'
+  const previewContactId = assignment?.contact?.id ?? null
 
   const displayName = user.full_name ?? user.email
   const initials = user.full_name
@@ -138,6 +147,26 @@ export function UsersTableRow({
       </TableCell>
       <TableCell className='text-right'>
         <div className='flex justify-end gap-2'>
+          {showPreview ? (
+            <DisabledFieldTooltip
+              disabled={!previewContactId}
+              reason='No linked contact. Create a portal account from their contact to link one.'
+              className='w-auto'
+            >
+              <RowActionButton
+                variant='outline'
+                label='Preview in client portal'
+                icon={<Eye />}
+                disabled={!previewContactId}
+                onClick={event => {
+                  event.stopPropagation()
+                  if (previewContactId) {
+                    openPortalPreview(clientPortalUrl, previewContactId)
+                  }
+                }}
+              />
+            </DisabledFieldTooltip>
+          ) : null}
           {showRestore ? (
             <DisabledFieldTooltip
               disabled={row.restoreDisabled}

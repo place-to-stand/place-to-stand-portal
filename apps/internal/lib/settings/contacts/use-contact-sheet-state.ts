@@ -44,6 +44,7 @@ export type ContactSheetInput = {
   email: string
   name: string
   phone: string | null
+  userId: string | null
 }
 
 export type UseContactSheetStateOptions = {
@@ -299,6 +300,8 @@ export function useContactSheetState({
             email: data.email,
             name: data.name,
             phone: data.phone || null,
+            // Just created, so never promoted yet.
+            userId: null,
           })
         }
 
@@ -330,9 +333,9 @@ export function useContactSheetState({
     setIsDeleteDialogOpen(false)
   }, [isPending])
 
-  const hasPortalAccess = Boolean(
-    contact && 'userId' in contact && contact.userId
-  )
+  // The portal user this contact was promoted to (`contacts.user_id`).
+  const portalUserId = contact?.userId ?? null
+  const hasPortalAccess = Boolean(portalUserId)
 
   const promoteDisabled = isPending || !isEditing || hasPortalAccess
   const promoteDisabledReason = isPending
@@ -469,7 +472,7 @@ export function useContactSheetState({
     availableClients,
     addClientButtonDisabled,
     addClientButtonDisabledReason,
-    hasPortalAccess,
+    portalUserId,
     promoteDisabled,
     promoteDisabledReason,
     unsavedChangesDialog,

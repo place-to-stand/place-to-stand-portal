@@ -2,14 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type React from 'react'
-import { Check, User2, UserPlus } from 'lucide-react'
+import { User2, UserPlus } from 'lucide-react'
 import type { UseFormReturn } from 'react-hook-form'
 
-import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetSection } from '@/components/sheets/sheet-section'
+import { LinkedRecordCard } from '@/components/sheets/linked-record-card'
 import {
   Form,
   FormControl,
@@ -29,6 +29,7 @@ import {
   ContactClientList,
   type ContactClientOption,
 } from './contact-client-picker'
+import { ContactPortalAccountCard } from './contact-portal-account-card'
 
 const FEEDBACK_CLASSES =
   'border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm'
@@ -69,7 +70,8 @@ type ContactSheetFormProps = {
   promoteDisabled: boolean
   promoteDisabledReason: string | null
   onRequestPromote: () => void
-  hasPortalAccess: boolean
+  /** The portal user this contact was promoted to, if any. */
+  portalUserId: string | null
 }
 
 export function ContactSheetForm({
@@ -98,7 +100,7 @@ export function ContactSheetForm({
   promoteDisabled,
   promoteDisabledReason,
   onRequestPromote,
-  hasPortalAccess,
+  portalUserId,
 }: ContactSheetFormProps) {
   const handleSave = useCallback(
     () => form.handleSubmit(onSubmit)(),
@@ -258,45 +260,43 @@ export function ContactSheetForm({
           {isEditing ? (
             <>
               <Separator />
-              <SheetSection title='Portal access'>
-                <div className='flex items-center gap-3 rounded-md border p-3'>
-                  <User2 className='text-muted-foreground h-4 w-4 shrink-0' />
-                  <div className='flex min-w-0 flex-1 flex-col gap-0.5 text-sm leading-tight'>
-                    <span className='font-medium'>
-                      {hasPortalAccess
-                        ? 'Portal account active'
-                        : 'No portal account'}
-                    </span>
-                    <span className='text-muted-foreground text-xs'>
-                      {hasPortalAccess
-                        ? 'They can sign in to every client linked above.'
-                        : 'They’ll get access to every client linked above.'}
-                    </span>
-                  </div>
-                  {hasPortalAccess ? (
-                    <Badge variant='secondary' className='gap-1.5'>
-                      <Check className='h-3 w-3' />
-                      Portal access
-                    </Badge>
-                  ) : (
-                    <DisabledFieldTooltip
-                      disabled={promoteDisabled}
-                      reason={promoteDisabledReason}
-                      className='w-auto'
-                    >
-                      <Button
-                        type='button'
-                        variant='outline'
-                        size='sm'
+              <SheetSection
+                title='Portal access'
+                description={
+                  portalUserId
+                    ? 'They can sign in to every client linked above.'
+                    : 'Creating an account gives them every client linked above.'
+                }
+              >
+                {portalUserId ? (
+                  <ContactPortalAccountCard
+                    key={portalUserId}
+                    userId={portalUserId}
+                  />
+                ) : (
+                  <LinkedRecordCard
+                    icon={User2}
+                    title='No portal account'
+                    action={
+                      <DisabledFieldTooltip
                         disabled={promoteDisabled}
-                        onClick={onRequestPromote}
+                        reason={promoteDisabledReason}
+                        className='w-auto'
                       >
-                        <UserPlus />
-                        Create account
-                      </Button>
-                    </DisabledFieldTooltip>
-                  )}
-                </div>
+                        <Button
+                          type='button'
+                          variant='outline'
+                          size='sm'
+                          disabled={promoteDisabled}
+                          onClick={onRequestPromote}
+                        >
+                          <UserPlus />
+                          Create account
+                        </Button>
+                      </DisabledFieldTooltip>
+                    }
+                  />
+                )}
               </SheetSection>
             </>
           ) : null}

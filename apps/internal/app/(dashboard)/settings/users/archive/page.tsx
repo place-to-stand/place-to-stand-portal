@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 
 import { PageShell } from '@/components/layout/page-shell'
 import { requireRole } from '@/lib/auth/session'
+import { serverEnv } from '@/lib/env.server'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { getUserById, listUsersForSettings } from '@/lib/queries/users'
 import { resolveSheetDeepLink } from '@/lib/sheets/resolve-deep-link'
@@ -111,6 +112,7 @@ export default async function UsersArchivePage({
           basePath='/settings/users/archive'
           deepLinkedUser={deepLinkedUser}
           userNotFound={userNotFound}
+          clientPortalUrl={serverEnv.CLIENT_PORTAL_URL}
         />
       </section>
     </PageShell>

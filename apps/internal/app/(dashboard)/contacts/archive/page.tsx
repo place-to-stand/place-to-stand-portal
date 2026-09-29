@@ -69,6 +69,7 @@ export default async function ContactsArchivePage({
         email: deepLink.record.email,
         name: deepLink.record.name,
         phone: deepLink.record.phone,
+        userId: deepLink.record.userId,
       }
     : null
 

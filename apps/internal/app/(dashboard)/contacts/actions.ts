@@ -26,6 +26,11 @@ import {
   syncContactClients as syncClients,
   type ContactSheetData,
 } from '@/lib/queries/contacts'
+import { UUID_PATTERN } from '@/lib/sheets/entities'
+import {
+  getPortalAccountSummary,
+  type PortalAccountSummary,
+} from '@/lib/queries/users/portal-account'
 
 const CONTACT_ROUTES_TO_REVALIDATE = [
   '/contacts',
@@ -85,6 +90,16 @@ export async function getContactSheetData(
 ): Promise<ContactSheetData> {
   const user = await requireUser()
   return getSheetData(user, contactId)
+}
+
+/** The portal user a contact was promoted to, for the sheet's Portal access card. */
+export async function getContactPortalAccount(
+  userId: string
+): Promise<PortalAccountSummary | null> {
+  const user = await requireUser()
+  // Server actions take arbitrary input; guard before the uuid cast.
+  if (!UUID_PATTERN.test(userId)) return null
+  return getPortalAccountSummary(user, userId)
 }
 
 export async function promoteContactToUser(
