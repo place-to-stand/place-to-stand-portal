@@ -13,10 +13,10 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "jose": "^6.2.11"
+    "jose": "^6.2.12"
   },
   "devDependencies": {
-    "@types/node": "^26.4.1",
+    "@types/node": "^26.6.2",
     "typescript": "^6.0.3"
   }
 }
