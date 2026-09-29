@@ -106,6 +106,29 @@ export async function softDeleteSnapshot(
   return updated?.id ?? null
 }
 
+/**
+ * Replaces the payload of an active snapshot in place, keeping its close
+ * cutoff and author. Only for additions that don't change what was frozen
+ * (the profit share added to a month closed before the policy existed).
+ */
+export async function updateSnapshotReport(
+  id: string,
+  report: unknown
+): Promise<boolean> {
+  const [updated] = await db
+    .update(monthlyCloseSnapshots)
+    .set({ report, updatedAt: new Date().toISOString() })
+    .where(
+      and(
+        eq(monthlyCloseSnapshots.id, id),
+        isNull(monthlyCloseSnapshots.deletedAt)
+      )
+    )
+    .returning({ id: monthlyCloseSnapshots.id })
+
+  return Boolean(updated)
+}
+
 export type LateRecordRow = {
   kind: 'time_log' | 'hour_block'
   id: string

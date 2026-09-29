@@ -10,6 +10,10 @@ import {
 } from '@/lib/activity/events'
 import { assertAdmin } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
+import {
+  profitShareAppliesTo,
+  type ProfitShareData,
+} from '@/lib/billing/profit-share'
 import { db } from '@/lib/db'
 import {
   fetchLateRecords,
@@ -17,11 +21,17 @@ import {
   hasActiveSnapshotForDate,
   insertSnapshot,
   softDeleteSnapshot,
+  updateSnapshotReport,
 } from '@/lib/queries/reports/close-snapshots'
 
 import { fetchMonthlyCloseReport } from './monthly-close'
-import { computeDeltas } from './close-drift'
-import type { MonthlyCloseReport } from './types'
+import { computeDeltas, computeProfitShareDeltas } from './close-drift'
+import {
+  buildProfitShare,
+  loadMonthEndBalance,
+  type MonthEndBalanceResult,
+} from './profit-share'
+import type { MonthlyCloseReport, ProfitShareState } from './types'
 
 const SNAPSHOT_SCHEMA_VERSION = 1
 
@@ -169,13 +179,43 @@ const snapshotReportSchema = z.object({
   rates: ratesSchema,
 })
 
+// Saved beside the report, not inside it: the report is DB-derived and the
+// profit share adds the Mercury balance. Optional so closes frozen before the
+// profit share existed still decode (they surface as "not saved").
+const profitShareSchema = z.object({
+  asOfDate: z.string(),
+  monthComplete: z.boolean(),
+  balance: z.number(),
+  accounts: z.array(
+    z.object({ id: z.string(), name: z.string(), balance: z.number() })
+  ),
+  fetchedAt: z.string(),
+  addedAfterCloseAt: z.string().nullable(),
+  payouts: z.number(),
+  minimumBalance: z.number(),
+  available: z.number(),
+  shortfall: z.number(),
+  partners: z.array(
+    z.object({
+      userId: z.string(),
+      name: z.string(),
+      email: z.string(),
+      avatarUpdatedAt: z.string().nullable(),
+      amount: z.number(),
+    })
+  ),
+  totalAmount: z.number(),
+})
+
 const snapshotEnvelopeSchema = z.object({
   schemaVersion: z.literal(SNAPSHOT_SCHEMA_VERSION),
   report: snapshotReportSchema,
+  profitShare: profitShareSchema.nullable().optional(),
 })
 
 type SnapshotParseResult =
-  { ok: true; report: SnapshotReport } | { ok: false; error: string }
+  | { ok: true; report: SnapshotReport; profitShare: ProfitShareData | null }
+  | { ok: false; error: string }
 
 /**
  * Single decode point for persisted snapshots. Version 1 is identity; future
@@ -199,7 +239,11 @@ function parseSnapshotReport(payload: unknown): SnapshotParseResult {
     }
   }
 
-  return { ok: true, report: parsed.data.report }
+  return {
+    ok: true,
+    report: parsed.data.report,
+    profitShare: parsed.data.profitShare ?? null,
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -263,18 +307,67 @@ function isUniqueViolation(error: unknown): boolean {
   )
 }
 
-function toSnapshotEnvelope(report: MonthlyCloseReport): {
+function toSnapshotEnvelope(
+  report: MonthlyCloseReport,
+  profitShare: ProfitShareData | null
+): {
   schemaVersion: number
   report: SnapshotReport
+  profitShare: ProfitShareData | null
 } {
   // Cursors are global navigation bounds, always computed live — excluded.
   const { minCursor, maxCursor, ...rest } = report
   void minCursor
   void maxCursor
-  return { schemaVersion: SNAPSHOT_SCHEMA_VERSION, report: rest }
+  return { schemaVersion: SNAPSHOT_SCHEMA_VERSION, report: rest, profitShare }
 }
 
 export type CloseActionOutcome = { error?: string }
+
+type ProfitShareForClose =
+  | { ok: true; profitShare: ProfitShareData | null }
+  | { ok: false; error: string }
+
+/**
+ * The profit share a close freezes. Months before the policy carry none. For
+ * the rest a close needs a final month-end Mercury balance, so an unreadable
+ * balance or a still-running month blocks the close rather than freezing a
+ * close with no profit share.
+ */
+async function resolveProfitShareForClose(params: {
+  year: number
+  month: number
+  payouts: number
+  addedAfterCloseAt?: string
+}): Promise<ProfitShareForClose> {
+  const { year, month } = params
+  if (!profitShareAppliesTo(year, month)) {
+    return { ok: true, profitShare: null }
+  }
+
+  const balance = await loadMonthEndBalance(year, month)
+  if (!balance.ok) {
+    return {
+      ok: false,
+      error: `Unable to read the Mercury balance. ${balance.message}`,
+    }
+  }
+  if (!balance.monthComplete) {
+    return {
+      ok: false,
+      error: `Close ${periodLabel(year, month)} after it ends, once the month-end Mercury balance is final.`,
+    }
+  }
+
+  const profitShare = await buildProfitShare({
+    year,
+    month,
+    balance,
+    payouts: params.payouts,
+    addedAfterCloseAt: params.addedAfterCloseAt,
+  })
+  return { ok: true, profitShare }
+}
 
 // ---------------------------------------------------------------------------
 // Close / reopen / re-close
@@ -300,13 +393,21 @@ export async function closeMonth(
   const closedAt = new Date().toISOString()
   const { startDate, endDate } = monthDateRange(year, month)
   const report = await fetchMonthlyCloseReport(startDate, endDate)
+  const profitShare = await resolveProfitShareForClose({
+    year,
+    month,
+    payouts: report.partnerPayouts.totalAmount,
+  })
+  if (!profitShare.ok) {
+    return { error: profitShare.error }
+  }
 
   let snapshotId: string | null = null
   try {
     snapshotId = await insertSnapshot(db, {
       year,
       month,
-      report: toSnapshotEnvelope(report),
+      report: toSnapshotEnvelope(report, profitShare.profitShare),
       closedAt,
       closedBy: user.id,
     })
@@ -387,6 +488,14 @@ export async function recloseMonth(
   const closedAt = new Date().toISOString()
   const { startDate, endDate } = monthDateRange(year, month)
   const report = await fetchMonthlyCloseReport(startDate, endDate)
+  const profitShare = await resolveProfitShareForClose({
+    year,
+    month,
+    payouts: report.partnerPayouts.totalAmount,
+  })
+  if (!profitShare.ok) {
+    return { error: profitShare.error }
+  }
 
   let snapshotId: string | null = null
   try {
@@ -395,7 +504,7 @@ export async function recloseMonth(
       return insertSnapshot(tx, {
         year,
         month,
-        report: toSnapshotEnvelope(report),
+        report: toSnapshotEnvelope(report, profitShare.profitShare),
         closedAt,
         closedBy: user.id,
       })
@@ -422,6 +531,57 @@ export async function recloseMonth(
       targetId: snapshotId,
       metadata: event.metadata,
     })
+  }
+
+  return {}
+}
+
+/**
+ * Adds the profit share to a month that was closed before the profit share
+ * existed (August 2026, whose distribution went out by hand). It uses the
+ * payouts frozen in that close, not live ones, and edits the snapshot in
+ * place: nothing else in the close changes, so it is not a re-close.
+ */
+export async function addProfitShareToClose(
+  user: AppUser,
+  params: { year: number; month: number }
+): Promise<CloseActionOutcome> {
+  assertAdmin(user)
+  const { year, month } = params
+
+  const existing = await getActiveSnapshot(year, month)
+  if (!existing) {
+    return { error: 'This month is not closed.' }
+  }
+
+  const parsed = parseSnapshotReport(existing.report)
+  if (!parsed.ok) {
+    return { error: parsed.error }
+  }
+  if (parsed.profitShare) {
+    return { error: 'This close already has a profit share.' }
+  }
+  if (!profitShareAppliesTo(year, month)) {
+    return { error: 'Profit share does not apply to this month.' }
+  }
+
+  const profitShare = await resolveProfitShareForClose({
+    year,
+    month,
+    payouts: parsed.report.partnerPayouts.totalAmount,
+    addedAfterCloseAt: new Date().toISOString(),
+  })
+  if (!profitShare.ok) {
+    return { error: profitShare.error }
+  }
+
+  const updated = await updateSnapshotReport(existing.id, {
+    schemaVersion: SNAPSHOT_SCHEMA_VERSION,
+    report: parsed.report,
+    profitShare: profitShare.profitShare,
+  })
+  if (!updated) {
+    return { error: 'Unable to save the profit share. Please try again.' }
   }
 
   return {}
@@ -493,14 +653,82 @@ export type MonthlyCloseView = {
     snapshotError?: string
     drift?: CloseDrift | null
   }
+  profitShare: ProfitShareState
+}
+
+/** The profit share recomputed from live payouts and the live balance. */
+async function liveProfitShare(
+  year: number,
+  month: number,
+  payouts: number,
+  balance: MonthEndBalanceResult
+): Promise<ProfitShareState> {
+  if (!profitShareAppliesTo(year, month)) {
+    return { status: 'inactive' }
+  }
+  if (!balance.ok) {
+    return {
+      status: 'unavailable',
+      reason: balance.reason,
+      message: balance.message,
+    }
+  }
+  const data = await buildProfitShare({ year, month, balance, payouts })
+  return { status: 'ready', data, source: 'live' }
+}
+
+/**
+ * Live profit share for drift. When Mercury can't be read, the frozen balance
+ * stands in, so payout changes still show their effect on each share.
+ */
+async function liveProfitShareForDrift(
+  year: number,
+  month: number,
+  frozen: ProfitShareData,
+  payouts: number,
+  balance: MonthEndBalanceResult
+): Promise<ProfitShareData> {
+  const usable: Extract<MonthEndBalanceResult, { ok: true }> =
+    balance.ok && balance.monthComplete
+      ? balance
+      : {
+          ok: true,
+          monthComplete: true,
+          value: {
+            cutoff: frozen.asOfDate,
+            accounts: frozen.accounts,
+            balance: frozen.balance,
+            fetchedAt: frozen.fetchedAt,
+          },
+        }
+  return buildProfitShare({ year, month, balance: usable, payouts })
 }
 
 async function computeDrift(
   snapshot: SnapshotReport,
   live: MonthlyCloseReport,
-  params: { year: number; month: number; closedAt: string }
+  params: {
+    year: number
+    month: number
+    closedAt: string
+    frozenProfitShare: ProfitShareData | null
+    balance: Promise<MonthEndBalanceResult> | null
+  }
 ): Promise<CloseDrift> {
   const deltas = computeDeltas(snapshot, live)
+  if (params.frozenProfitShare && params.balance) {
+    const liveShare = await liveProfitShareForDrift(
+      params.year,
+      params.month,
+      params.frozenProfitShare,
+      live.partnerPayouts.totalAmount,
+      await params.balance
+    )
+    // First, so a capped display never hides what changes the checks.
+    deltas.unshift(
+      ...computeProfitShareDeltas(params.frozenProfitShare, liveShare)
+    )
+  }
   const { startDate, endDate } = monthDateRange(params.year, params.month)
   const lateRows = await fetchLateRecords(startDate, endDate, params.closedAt)
 
@@ -544,14 +772,33 @@ export async function fetchMonthlyCloseView(
   month: number
 ): Promise<MonthlyCloseView> {
   const { startDate, endDate } = monthDateRange(year, month)
+  const applies = profitShareAppliesTo(year, month)
+  // Started up front so the Mercury round trip overlaps the database reads.
+  const balance = applies ? loadMonthEndBalance(year, month) : null
+
   // Always derived: cursors for month navigation, and the live half of the
   // drift comparison. React cache() dedupes within the request.
-  const live = await fetchMonthlyCloseReport(startDate, endDate)
+  const [live, snapshot] = await Promise.all([
+    fetchMonthlyCloseReport(startDate, endDate),
+    getActiveSnapshot(year, month),
+  ])
 
-  const snapshot = await getActiveSnapshot(year, month)
+  const liveShare = async () =>
+    balance
+      ? liveProfitShare(
+          year,
+          month,
+          live.partnerPayouts.totalAmount,
+          await balance
+        )
+      : ({ status: 'inactive' } as const)
 
   if (!snapshot) {
-    return { report: live, close: { status: 'open' } }
+    return {
+      report: live,
+      close: { status: 'open' },
+      profitShare: await liveShare(),
+    }
   }
 
   const parsed = parseSnapshotReport(snapshot.report)
@@ -566,6 +813,7 @@ export async function fetchMonthlyCloseView(
         snapshotError: parsed.error,
         drift: null,
       },
+      profitShare: await liveShare(),
     }
   }
 
@@ -573,7 +821,15 @@ export async function fetchMonthlyCloseView(
     year,
     month,
     closedAt: snapshot.closedAt,
+    frozenProfitShare: parsed.profitShare,
+    balance,
   })
+
+  const profitShare: ProfitShareState = parsed.profitShare
+    ? { status: 'ready', data: parsed.profitShare, source: 'snapshot' }
+    : applies
+      ? { status: 'not_saved' }
+      : { status: 'inactive' }
 
   return {
     report: {
@@ -587,5 +843,6 @@ export async function fetchMonthlyCloseView(
       closedByName: snapshot.closedByName,
       drift,
     },
+    profitShare,
   }
 }

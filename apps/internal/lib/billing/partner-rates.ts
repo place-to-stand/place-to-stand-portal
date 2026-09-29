@@ -111,3 +111,20 @@ export function getPartnerRatesForPeriod(
 export function getLatestPartnerRates(): PartnerRateSchedule {
   return RATE_SCHEDULE[0]
 }
+
+/**
+ * The last day (YYYY-MM-DD) a schedule entry applied: the day before the next
+ * entry took effect, or null for the current one.
+ */
+export function getPartnerRatesEndDate(
+  rates: PartnerRateSchedule
+): string | null {
+  const index = RATE_SCHEDULE.findIndex(
+    entry => entry.effectiveFrom === rates.effectiveFrom
+  )
+  if (index <= 0) return null
+  const next = RATE_SCHEDULE[index - 1].effectiveFrom
+  const dayBefore = new Date(`${next}T00:00:00Z`)
+  dayBefore.setUTCDate(dayBefore.getUTCDate() - 1)
+  return dayBefore.toISOString().slice(0, 10)
+}

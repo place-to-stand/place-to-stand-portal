@@ -6,27 +6,23 @@ import { formatCalendarDate } from '@pts/ui/dates'
 import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { requireRole } from '@/lib/auth/session'
-import { getLatestPartnerRates } from '@/lib/billing/partner-rates'
+import {
+  getLatestPartnerRates,
+  getPartnerRatesEndDate,
+} from '@/lib/billing/partner-rates'
 import { fetchMonthlyCloseView } from '@/lib/data/reports/close'
 
-import { BreakdownSheet } from './_components/breakdown-sheet'
+import { BillingInCard } from './_components/billing-in-card'
 import { CloseControls } from './_components/close-controls'
-import { ClosedNotice } from './_components/closed-notice'
-import { CloserSection } from './_components/closer-section'
-import { DriftBanner } from './_components/drift-banner'
+import { DriftNotice } from './_components/drift-notice'
 import { FormulaNotice } from './_components/formula-notice'
-import { HouseSection } from './_components/house-section'
-import { Net30Section } from './_components/net30-section'
-import { OriginationSection } from './_components/origination-section'
-import { PartnerPayoutsSection } from './_components/partner-payouts-section'
-import { PayrollSection } from './_components/payroll-section'
-import { PrepaidSection } from './_components/prepaid-section'
-import { ReportHeader } from './_components/report-header'
-import {
-  BillingInCard,
-  HoursLoggedCard,
-  TotalPayoutsCard,
-} from './_components/summary-cards'
+import { PartnerPayoutsTable } from './_components/partner-payouts-table'
+import { buildPayoutTable } from './_components/payout-rows'
+import { ProfitShareCard } from './_components/profit-share-card'
+import { RateSplitCard } from './_components/rate-split-card'
+import { ReportToolbar } from './_components/report-toolbar'
+import { SnapshotErrorNotice } from './_components/snapshot-error-notice'
+import { SummaryStrip } from './_components/summary-strip'
 
 export const metadata: Metadata = {
   title: 'Monthly close | Reports',
@@ -49,8 +45,7 @@ export default async function MonthlyClosePage({
 
   const params = searchParams ? await searchParams : {}
 
-  // Parse month and year from URL params
-  // Month is 0-indexed (0 = January, 11 = December)
+  // Month is 0-indexed in the URL (0 = January, 11 = December).
   const now = new Date()
   const monthParam = parseSearchParam(params.month)
   const yearParam = parseSearchParam(params.year)
@@ -58,7 +53,6 @@ export default async function MonthlyClosePage({
   const parsedMonth = monthParam ? parseInt(monthParam, 10) : getMonth(now)
   const parsedYear = yearParam ? parseInt(yearParam, 10) : getYear(now)
 
-  // Validate and default to current month if invalid
   const validMonth =
     Number.isFinite(parsedMonth) && parsedMonth >= 0 && parsedMonth <= 11
       ? parsedMonth
@@ -67,125 +61,128 @@ export default async function MonthlyClosePage({
 
   // W4: the URL month param is 0-indexed; the close layer is 1-indexed.
   const closeMonthNumber = validMonth + 1
+  const monthKey = `${validYear}-${String(closeMonthNumber).padStart(2, '0')}`
 
-  // Fetch report data — snapshot-backed when the month is closed
-  const { report, close } = await fetchMonthlyCloseView(
+  const { report, close, profitShare } = await fetchMonthlyCloseView(
     validYear,
     closeMonthNumber
   )
 
-  // Format month for display
-  // A date-only string formats in UTC, so the label never drifts a month.
+  // Date-only strings format in UTC, so labels never drift a month.
   const displayMonth =
-    formatCalendarDate(
-      `${validYear}-${String(closeMonthNumber).padStart(2, '0')}-01`,
-      { month: 'long', year: 'numeric' }
-    ) ?? ''
+    formatCalendarDate(`${monthKey}-01`, { month: 'long', year: 'numeric' }) ??
+    ''
+  const monthName =
+    formatCalendarDate(`${monthKey}-01`, { month: 'long' }) ?? ''
+  const lastDay = new Date(
+    Date.UTC(validYear, closeMonthNumber, 0)
+  ).getUTCDate()
+  const lastDayLabel =
+    formatCalendarDate(`${monthKey}-${String(lastDay).padStart(2, '0')}`, {
+      month: 'short',
+      day: 'numeric',
+    }) ?? ''
+
   const isCurrentMonth =
     validYear === getYear(now) && validMonth === getMonth(now)
-
-  // Hide the closer section + column entirely when the period pre-dates the
-  // closer cutover (closerPerHour === 0).
-  const hasCloser = report.rates.closerPerHour > 0
+  const inProgress = isCurrentMonth && close.status === 'open'
 
   const latestRates = getLatestPartnerRates()
   const isOlderFormula =
     report.rates.effectiveFrom !== latestRates.effectiveFrom
 
+  const profitShareData =
+    profitShare.status === 'ready' ? profitShare.data : null
+  const payoutTable = buildPayoutTable(report, profitShareData)
+
+  const detailCards = (
+    <>
+      <BillingInCard
+        prepaid={report.prepaidBilling}
+        net30={report.net30Billing}
+        total={report.combinedBillingTotal}
+      />
+      <RateSplitCard report={report} />
+    </>
+  )
+
   return (
     <PageShell breadcrumbs={crumbsForNav('/reports/monthly-close')}>
-      <div className='space-y-8'>
-        <ReportHeader
-          displayMonth={displayMonth}
+      <div className='space-y-6'>
+        <ReportToolbar
           minCursor={report.minCursor}
           maxCursor={report.maxCursor}
+          today={{ year: getYear(now), month: getMonth(now) + 1 }}
+          status={close.status}
+          isCurrentMonth={isCurrentMonth}
+          closedAt={close.closedAt}
+          closedByName={close.closedByName}
+          closesAfterLabel={`You can close ${monthName} after ${lastDayLabel}.`}
           closeControls={
             <CloseControls
               year={validYear}
               month={closeMonthNumber}
               displayMonth={displayMonth}
               status={close.status}
-              isCurrentMonth={isCurrentMonth}
+              payoutsTotal={report.partnerPayouts.totalAmount}
+              profitShare={profitShare}
             />
           }
         />
 
+        {close.snapshotError ? (
+          <SnapshotErrorNotice message={close.snapshotError} />
+        ) : null}
+
         {close.status === 'closed' && close.drift?.hasDrift ? (
-          <DriftBanner
+          <DriftNotice
             year={validYear}
             month={closeMonthNumber}
             displayMonth={displayMonth}
             drift={close.drift}
           />
-        ) : close.status === 'closed' ? (
-          <ClosedNotice
-            closedAt={close.closedAt}
-            closedByName={close.closedByName}
-            snapshotError={close.snapshotError}
-          />
         ) : null}
 
         {isOlderFormula ? (
-          <FormulaNotice rates={report.rates} latestRates={latestRates} />
+          <FormulaNotice
+            displayMonth={displayMonth}
+            rates={report.rates}
+            latestRates={latestRates}
+            endsOn={getPartnerRatesEndDate(report.rates)}
+          />
         ) : null}
 
-        {/* ─── Hero cards: left stack (Billing In + Work Billable) | right (Total Payouts) ── */}
-        <div className='grid gap-4 lg:grid-cols-2'>
-          <div className='flex flex-col gap-4'>
-            <BillingInCard
-              total={report.combinedBillingTotal}
-              prepaidTotal={report.prepaidBilling.totalAmount}
-              prepaidHours={report.prepaidBilling.totalHours}
-              net30Total={report.net30Billing.totalAmount}
-              net30Hours={report.net30Billing.totalHours}
-              action={
-                <BreakdownSheet
-                  triggerLabel='See breakdown'
-                  title='Billing breakdown'
-                  description='Prepaid hour block purchases and net 30 hours logged this month.'
-                >
-                  <PrepaidSection data={report.prepaidBilling} />
-                  <Net30Section data={report.net30Billing} />
-                </BreakdownSheet>
-              }
-            />
-            <HoursLoggedCard hours={report.workBillableHours} />
-          </div>
-          <TotalPayoutsCard
-            rates={report.rates}
-            total={report.combinedPayoutTotal}
-            payrollTotal={report.payroll.totalAmount}
-            originationTotal={report.origination.totalAmount}
-            closerTotal={report.closer.totalAmount}
-            houseTotal={report.house.totalAmount}
-            action={
-              <BreakdownSheet
-                triggerLabel='See breakdown'
-                title='Payout breakdown'
-                description='Payroll, origination, closer, and house (estimated) breakdown this month.'
-              >
-                <PayrollSection data={report.payroll} />
-                <OriginationSection data={report.origination} />
-                {hasCloser ? (
-                  <CloserSection
-                    data={report.closer}
-                    unassignedHours={report.house.unassignedCloserHours}
-                    unassignedAmount={report.house.unassignedCloserAmount}
-                  />
-                ) : null}
-                <HouseSection
-                  data={report.house}
-                  nominalPercent={`${Math.round((report.rates.housePerHour / report.rates.billablePerHour) * 100)}%`}
-                  closerPerHour={report.rates.closerPerHour}
-                  prepaidHours={report.prepaidBilling.totalHours}
-                  net30Hours={report.net30Billing.totalHours}
-                />
-              </BreakdownSheet>
-            }
-          />
-        </div>
+        <SummaryStrip
+          report={report}
+          profitShare={profitShare}
+          inProgress={inProgress}
+        />
 
-        <PartnerPayoutsSection data={report.partnerPayouts} />
+        <PartnerPayoutsTable
+          table={payoutTable}
+          showCloser={
+            report.rates.closerPerHour > 0 ||
+            report.partnerPayouts.totalCloser > 0
+          }
+          showProfitShare={profitShareData !== null}
+        />
+
+        <div className='grid items-start gap-6 lg:grid-cols-2'>
+          {profitShare.status === 'inactive' ? (
+            detailCards
+          ) : (
+            <>
+              <ProfitShareCard
+                state={profitShare}
+                year={validYear}
+                month={closeMonthNumber}
+                displayMonth={displayMonth}
+                lastDayLabel={lastDayLabel}
+              />
+              <div className='space-y-6'>{detailCards}</div>
+            </>
+          )}
+        </div>
       </div>
     </PageShell>
   )

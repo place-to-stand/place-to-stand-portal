@@ -84,6 +84,7 @@ Turbo v2 uses strict mode by default — only env vars listed in `turbo.json` ar
 - **Email**: Resend
 - **GitHub Integration**: GitHub App for repo linking (`packages/github`)
 - **Vercel / Supabase linking**: staff personal access tokens stored encrypted in `oauth_connections`; provider adapters in `apps/internal/lib/integrations/`, routes under `api/integrations/[provider]/`
+- **Mercury**: one company-wide read-only token (`MERCURY_API_TOKEN`, not per person) for the monthly close profit share — month-end balance in `lib/integrations/mercury/`, the split policy in `lib/billing/profit-share.ts`, frozen beside the report in each close snapshot
 
 ### Route Organization
 

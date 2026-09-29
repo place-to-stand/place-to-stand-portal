@@ -12,12 +12,9 @@ type UseReportNavigationOptions = {
 }
 
 type UseReportNavigationResult = {
-  currentMonth: Date
-  monthValue: string
-  yearValue: string
-  setYearValue: (value: string) => void
-  selectMonth: (value: string) => void
-  commitYearChange: () => void
+  /** The month being viewed, 1-indexed. */
+  cursor: MonthCursor
+  goToMonth: (cursor: MonthCursor) => void
   goToPrevMonth: () => void
   goToNextMonth: () => void
   goToThisMonth: () => void
@@ -47,7 +44,7 @@ function formatMonthLabel(cursor: MonthCursor): string {
   return `${label} ${cursor.year}`
 }
 
-function compareMonthCursor(a: MonthCursor, b: MonthCursor): number {
+export function compareMonthCursor(a: MonthCursor, b: MonthCursor): number {
   const aValue = a.year * 12 + (a.month - 1)
   const bValue = b.year * 12 + (b.month - 1)
 
@@ -63,8 +60,12 @@ function dateToCursor(date: Date): MonthCursor {
   }
 }
 
+function cursorToDate(cursor: MonthCursor): Date {
+  return startOfMonth(new Date(cursor.year, cursor.month - 1, 1))
+}
+
 /**
- * Hook for report month/year navigation with URL persistence and bounds checking.
+ * Hook for report month navigation with URL persistence and bounds checking.
  * Month values in URLs are 0-indexed (0 = January, 11 = December).
  * MonthCursor uses 1-indexed months (1 = January, 12 = December).
  */
@@ -86,7 +87,6 @@ export function useReportNavigation({
     const parsedMonth = monthParam ? parseInt(monthParam, 10) : getMonth(now)
     const parsedYear = yearParam ? parseInt(yearParam, 10) : getYear(now)
 
-    // Validate month (0-11) and year
     const validMonth =
       Number.isFinite(parsedMonth) && parsedMonth >= 0 && parsedMonth <= 11
         ? parsedMonth
@@ -97,12 +97,6 @@ export function useReportNavigation({
   }, [searchParams])
 
   const [currentMonth, setCurrentMonth] = useState(() => initialMonth)
-  const [monthValue, setMonthValue] = useState(() =>
-    String(getMonth(initialMonth))
-  )
-  const [yearValue, setYearValue] = useState(() =>
-    String(getYear(initialMonth))
-  )
 
   // Sync local state when the URL-derived month changes, using the
   // adjust-state-during-render pattern instead of a resync effect.
@@ -110,29 +104,19 @@ export function useReportNavigation({
   if (prevInitialMonth !== initialMonth) {
     setPrevInitialMonth(initialMonth)
     setCurrentMonth(initialMonth)
-    setMonthValue(String(getMonth(initialMonth)))
-    setYearValue(String(getYear(initialMonth)))
   }
 
-  // Compute navigation bounds
-  const currentCursor = useMemo(() => dateToCursor(currentMonth), [currentMonth])
+  const cursor = useMemo(() => dateToCursor(currentMonth), [currentMonth])
 
-  const canGoPrev = useMemo(
-    () => compareMonthCursor(currentCursor, minCursor) > 0,
-    [currentCursor, minCursor]
-  )
-
-  const canGoNext = useMemo(
-    () => compareMonthCursor(currentCursor, maxCursor) < 0,
-    [currentCursor, maxCursor]
-  )
+  const canGoPrev = compareMonthCursor(cursor, minCursor) > 0
+  const canGoNext = compareMonthCursor(cursor, maxCursor) < 0
 
   const minLimitLabel = useMemo(() => formatMonthLabel(minCursor), [minCursor])
   const maxLimitLabel = useMemo(() => formatMonthLabel(maxCursor), [maxCursor])
 
-  // Update URL when month changes
-  const updateUrl = useCallback(
+  const navigate = useCallback(
     (month: Date) => {
+      setCurrentMonth(month)
       const params = new URLSearchParams(searchParams.toString())
       // URL uses 0-indexed months
       params.set('month', String(getMonth(month)))
@@ -142,123 +126,44 @@ export function useReportNavigation({
     [router, searchParams]
   )
 
-  const selectMonth = useCallback(
-    (value: string) => {
-      setMonthValue(value)
-      const monthNumber = parseInt(value, 10)
-
-      if (Number.isNaN(monthNumber)) {
+  const goToMonth = useCallback(
+    (target: MonthCursor) => {
+      if (
+        compareMonthCursor(target, minCursor) < 0 ||
+        compareMonthCursor(target, maxCursor) > 0
+      ) {
         return
       }
-
-      const parsedYear = parseInt(yearValue, 10)
-      const yearNumber = Number.isNaN(parsedYear)
-        ? getYear(currentMonth)
-        : parsedYear
-
-      const nextMonth = startOfMonth(new Date(yearNumber, monthNumber, 1))
-
-      // Check if within bounds
-      const nextCursor = dateToCursor(nextMonth)
-      if (compareMonthCursor(nextCursor, minCursor) < 0) {
-        return // Before min
-      }
-      if (compareMonthCursor(nextCursor, maxCursor) > 0) {
-        return // After max
-      }
-
-      setCurrentMonth(nextMonth)
-      updateUrl(nextMonth)
+      navigate(cursorToDate(target))
     },
-    [currentMonth, minCursor, maxCursor, updateUrl, yearValue]
+    [minCursor, maxCursor, navigate]
   )
-
-  const commitYearChange = useCallback(() => {
-    const parsedYear = parseInt(yearValue, 10)
-
-    if (Number.isNaN(parsedYear)) {
-      setYearValue(String(getYear(currentMonth)))
-      return
-    }
-
-    const nextMonth = startOfMonth(
-      new Date(parsedYear, getMonth(currentMonth), 1)
-    )
-
-    // Check if within bounds
-    const nextCursor = dateToCursor(nextMonth)
-    if (compareMonthCursor(nextCursor, minCursor) < 0) {
-      // Clamp to min
-      const clampedMonth = startOfMonth(
-        new Date(minCursor.year, minCursor.month - 1, 1)
-      )
-      setCurrentMonth(clampedMonth)
-      setMonthValue(String(minCursor.month - 1))
-      setYearValue(String(minCursor.year))
-      updateUrl(clampedMonth)
-      return
-    }
-    if (compareMonthCursor(nextCursor, maxCursor) > 0) {
-      // Clamp to max
-      const clampedMonth = startOfMonth(
-        new Date(maxCursor.year, maxCursor.month - 1, 1)
-      )
-      setCurrentMonth(clampedMonth)
-      setMonthValue(String(maxCursor.month - 1))
-      setYearValue(String(maxCursor.year))
-      updateUrl(clampedMonth)
-      return
-    }
-
-    setCurrentMonth(nextMonth)
-    updateUrl(nextMonth)
-  }, [currentMonth, minCursor, maxCursor, updateUrl, yearValue])
 
   const goToPrevMonth = useCallback(() => {
     if (!canGoPrev) return
-
-    const nextMonth = startOfMonth(addMonths(currentMonth, -1))
-    setCurrentMonth(nextMonth)
-    setMonthValue(String(getMonth(nextMonth)))
-    setYearValue(String(getYear(nextMonth)))
-    updateUrl(nextMonth)
-  }, [canGoPrev, currentMonth, updateUrl])
+    navigate(startOfMonth(addMonths(currentMonth, -1)))
+  }, [canGoPrev, currentMonth, navigate])
 
   const goToNextMonth = useCallback(() => {
     if (!canGoNext) return
-
-    const nextMonth = startOfMonth(addMonths(currentMonth, 1))
-    setCurrentMonth(nextMonth)
-    setMonthValue(String(getMonth(nextMonth)))
-    setYearValue(String(getYear(nextMonth)))
-    updateUrl(nextMonth)
-  }, [canGoNext, currentMonth, updateUrl])
+    navigate(startOfMonth(addMonths(currentMonth, 1)))
+  }, [canGoNext, currentMonth, navigate])
 
   const goToThisMonth = useCallback(() => {
-    const now = startOfMonth(new Date())
-    const nowCursor = dateToCursor(now)
-
+    const nowCursor = dateToCursor(new Date())
     // Clamp to bounds
-    let targetMonth = now
-    if (compareMonthCursor(nowCursor, maxCursor) > 0) {
-      targetMonth = startOfMonth(new Date(maxCursor.year, maxCursor.month - 1, 1))
-    } else if (compareMonthCursor(nowCursor, minCursor) < 0) {
-      targetMonth = startOfMonth(new Date(minCursor.year, minCursor.month - 1, 1))
-    }
-
-    setCurrentMonth(targetMonth)
-    setMonthValue(String(getMonth(targetMonth)))
-    setYearValue(String(getYear(targetMonth)))
-    updateUrl(targetMonth)
-  }, [minCursor, maxCursor, updateUrl])
+    const target =
+      compareMonthCursor(nowCursor, maxCursor) > 0
+        ? maxCursor
+        : compareMonthCursor(nowCursor, minCursor) < 0
+          ? minCursor
+          : nowCursor
+    navigate(cursorToDate(target))
+  }, [minCursor, maxCursor, navigate])
 
   return {
-    currentMonth,
-    monthValue,
-    yearValue,
-    setYearValue,
-    selectMonth,
-    commitYearChange,
+    cursor,
+    goToMonth,
     goToPrevMonth,
     goToNextMonth,
     goToThisMonth,
