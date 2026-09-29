@@ -2,9 +2,9 @@
 
 import { Archive, Building2, RefreshCw, Trash2 } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
 import { Badge } from '@pts/ui/badge'
 import { EmptyState } from '@pts/ui/empty-state'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
@@ -172,15 +172,13 @@ export function ClientsTableSection({
                         disabled={restoreDisabled}
                         reason={restoreDisabledReason}
                       >
-                        <Button
+                        <RowActionButton
+                          label='Restore client'
+                          icon={<RefreshCw />}
                           variant='outline'
-                          size='icon-sm'
                           onClick={() => onRestore(client)}
-                          aria-label='Restore client'
                           disabled={restoreDisabled}
-                        >
-                          <RefreshCw />
-                        </Button>
+                        />
                       </DisabledFieldTooltip>
                     ) : null}
                     {showSoftDelete ? (
@@ -188,15 +186,13 @@ export function ClientsTableSection({
                         disabled={deleteDisabled}
                         reason={deleteDisabledReason}
                       >
-                        <Button
+                        <RowActionButton
+                          label='Archive client'
+                          icon={<Archive />}
                           variant='destructive'
-                          size='icon-sm'
                           onClick={() => onRequestDelete(client)}
-                          aria-label='Archive client'
                           disabled={deleteDisabled}
-                        >
-                          <Archive />
-                        </Button>
+                        />
                       </DisabledFieldTooltip>
                     ) : null}
                     {showDestroy ? (
@@ -204,15 +200,13 @@ export function ClientsTableSection({
                         disabled={destroyDisabled}
                         reason={destroyDisabledReason}
                       >
-                        <Button
+                        <RowActionButton
+                          label='Permanently delete client'
+                          icon={<Trash2 />}
                           variant='destructive'
-                          size='icon-sm'
                           onClick={() => onRequestDestroy(client)}
-                          aria-label='Permanently delete client'
                           disabled={destroyDisabled}
-                        >
-                          <Trash2 />
-                        </Button>
+                        />
                       </DisabledFieldTooltip>
                     ) : null}
                   </div>

@@ -13,7 +13,6 @@ import {
 import { EmptyState } from '@pts/ui/empty-state'
 import type { UsersSettingsAssignments } from '@/lib/queries/users/assignments'
 import { isUserSortValue } from '@/lib/settings/users/filters'
-import { cn } from '@/lib/utils'
 import type { UserRowState } from '@/lib/settings/users/state/use-users-table-state'
 
 import { UsersTableRow } from '../components/table/users-table-row'
@@ -27,6 +26,7 @@ type UsersTableSectionProps = {
   selfDeleteReason: string
   /** Route the sort/filter params live on (PRD 004 §03). */
   basePath: string
+  clientPortalUrl: string
 }
 
 export function UsersTableSection({
@@ -36,6 +36,7 @@ export function UsersTableSection({
   emptyMessage,
   selfDeleteReason,
   basePath,
+  clientPortalUrl,
 }: UsersTableSectionProps) {
   const { update, getParam } = useListParams({
     basePath,
@@ -74,13 +75,9 @@ export function UsersTableSection({
             >
               Joined
             </SortableTableHead>
-            {/* Sized to the row's buttons: one in active, two in archive. */}
-            <TableHead
-              className={cn(
-                'text-right',
-                mode === 'archive' ? 'w-24' : 'w-16'
-              )}
-            >
+            {/* Sized to the row's buttons: two at most in either mode
+                (preview + archive, or restore + delete). */}
+            <TableHead className='w-24 text-right'>
               Actions
             </TableHead>
           </TableRow>
@@ -93,6 +90,7 @@ export function UsersTableSection({
               assignment={assignments[row.user.id]}
               mode={mode}
               selfDeleteReason={selfDeleteReason}
+              clientPortalUrl={clientPortalUrl}
             />
           ))}
           {rows.length === 0 ? (

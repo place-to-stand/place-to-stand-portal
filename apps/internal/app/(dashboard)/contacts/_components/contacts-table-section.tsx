@@ -11,7 +11,6 @@ import {
   UserPlus,
 } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
 import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
@@ -224,16 +223,14 @@ export function ContactsTableSection({
                         disabled={promoteDisabled}
                         reason={promoteDisabledReason}
                       >
-                        <Button
+                        <RowActionButton
+                          label='Create portal account'
+                          icon={<UserPlus />}
                           variant='outline'
-                          size='icon-sm'
                           onClick={() => onRequestPromote(contact)}
-                          aria-label='Create portal account'
                           disabled={promoteDisabled}
                           className={PROMOTE_BUTTON_CLASS}
-                        >
-                          <UserPlus />
-                        </Button>
+                        />
                       </DisabledFieldTooltip>
                     ) : null}
                     {showPreview ? (
@@ -253,15 +250,13 @@ export function ContactsTableSection({
                         disabled={restoreDisabled}
                         reason={restoreDisabledReason}
                       >
-                        <Button
+                        <RowActionButton
+                          label='Restore contact'
+                          icon={<RefreshCw />}
                           variant='outline'
-                          size='icon-sm'
                           onClick={() => onRestore(contact)}
-                          aria-label='Restore contact'
                           disabled={restoreDisabled}
-                        >
-                          <RefreshCw />
-                        </Button>
+                        />
                       </DisabledFieldTooltip>
                     ) : null}
                     {showSoftDelete ? (
@@ -269,15 +264,13 @@ export function ContactsTableSection({
                         disabled={deleteDisabled}
                         reason={deleteDisabledReason}
                       >
-                        <Button
+                        <RowActionButton
+                          label='Archive contact'
+                          icon={<Archive />}
                           variant='destructive'
-                          size='icon-sm'
                           onClick={() => onRequestDelete(contact)}
-                          aria-label='Archive contact'
                           disabled={deleteDisabled}
-                        >
-                          <Archive />
-                        </Button>
+                        />
                       </DisabledFieldTooltip>
                     ) : null}
                     {showDestroy ? (
@@ -285,15 +278,13 @@ export function ContactsTableSection({
                         disabled={destroyDisabled}
                         reason={destroyDisabledReason}
                       >
-                        <Button
+                        <RowActionButton
+                          label='Permanently delete contact'
+                          icon={<Trash2 />}
                           variant='destructive'
-                          size='icon-sm'
                           onClick={() => onRequestDestroy(contact)}
-                          aria-label='Permanently delete contact'
                           disabled={destroyDisabled}
-                        >
-                          <Trash2 />
-                        </Button>
+                        />
                       </DisabledFieldTooltip>
                     ) : null}
                   </div>

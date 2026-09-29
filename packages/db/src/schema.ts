@@ -129,12 +129,14 @@ export const leadLossReason = pgEnum('lead_loss_reason', [
 
 /**
  * How a logged lead interaction happened.
- * Kept deliberately small at launch — see PRD 005 D3. Direction (inbound vs
- * outbound), SMS, and artifact-sent types are deferred to PRD 005 §07.
+ * Kept deliberately small at launch — see PRD 005 D3. TEXT_MESSAGE (SMS /
+ * iMessage) was added Sep 2026; direction (inbound vs outbound) and
+ * artifact-sent types are still deferred to PRD 005 §07.
  */
 export const leadUpdateType = pgEnum('lead_update_type', [
   'MEETING',
   'PHONE_CALL',
+  'TEXT_MESSAGE',
   'EMAIL',
   'NOTE',
 ])

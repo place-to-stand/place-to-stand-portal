@@ -45,7 +45,7 @@ export function ContactsSheet(props: ContactsSheetProps) {
     availableClients,
     addClientButtonDisabled,
     addClientButtonDisabledReason,
-    hasPortalAccess,
+    portalUserId,
     promoteDisabled,
     promoteDisabledReason,
     unsavedChangesDialog,
@@ -96,7 +96,7 @@ export function ContactsSheet(props: ContactsSheetProps) {
             promoteDisabled={promoteDisabled}
             promoteDisabledReason={promoteDisabledReason}
             onRequestPromote={handleRequestPromote}
-            hasPortalAccess={hasPortalAccess}
+            portalUserId={portalUserId}
           />
         </SheetContent>
       </Sheet>

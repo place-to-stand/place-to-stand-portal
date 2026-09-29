@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { Archive, Building2, Info, RefreshCw, Trash2 } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { EmptyState } from '@pts/ui/empty-state'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
@@ -198,15 +198,13 @@ export function HourBlocksTableSection({
                         disabled={restoreDisabled}
                         reason={restoreDisabledReason}
                       >
-                        <Button
+                        <RowActionButton
+                          label='Restore hour block'
+                          icon={<RefreshCw />}
                           variant='outline'
-                          size='icon-sm'
                           onClick={() => onRestore(block)}
-                          aria-label='Restore hour block'
                           disabled={restoreDisabled}
-                        >
-                          <RefreshCw />
-                        </Button>
+                        />
                       </DisabledFieldTooltip>
                     ) : null}
                     {showArchive ? (
@@ -214,15 +212,13 @@ export function HourBlocksTableSection({
                         disabled={archiveDisabled}
                         reason={archiveDisabledReason}
                       >
-                        <Button
+                        <RowActionButton
+                          label='Archive hour block'
+                          icon={<Archive />}
                           variant='destructive'
-                          size='icon-sm'
                           onClick={() => onRequestDelete(block)}
-                          aria-label='Archive hour block'
                           disabled={archiveDisabled}
-                        >
-                          <Archive />
-                        </Button>
+                        />
                       </DisabledFieldTooltip>
                     ) : null}
                     {showDestroy ? (
@@ -230,15 +226,13 @@ export function HourBlocksTableSection({
                         disabled={destroyDisabled}
                         reason={destroyDisabledReason}
                       >
-                        <Button
+                        <RowActionButton
+                          label='Permanently delete hour block'
+                          icon={<Trash2 />}
                           variant='destructive'
-                          size='icon-sm'
                           onClick={() => onRequestDestroy(block)}
-                          aria-label='Permanently delete hour block'
                           disabled={destroyDisabled}
-                        >
-                          <Trash2 />
-                        </Button>
+                        />
                       </DisabledFieldTooltip>
                     ) : null}
                   </div>

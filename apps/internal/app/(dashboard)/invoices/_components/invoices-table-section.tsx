@@ -345,15 +345,13 @@ export function InvoicesTableSection({
                         disabled={archiveDisabled}
                         reason={archiveDisabledReason}
                       >
-                        <Button
+                        <RowActionButton
+                          label='Archive invoice'
+                          icon={<Archive />}
                           variant='destructive'
-                          size='icon-sm'
                           onClick={() => onRequestDelete(invoice)}
-                          aria-label='Archive invoice'
                           disabled={archiveDisabled}
-                        >
-                          <Archive />
-                        </Button>
+                        />
                       </DisabledFieldTooltip>
                     ) : null}
                     {showRestore ? (
@@ -361,15 +359,13 @@ export function InvoicesTableSection({
                         disabled={restoreDisabled}
                         reason={restoreDisabledReason}
                       >
-                        <Button
+                        <RowActionButton
+                          label='Restore invoice'
+                          icon={<RefreshCw />}
                           variant='outline'
-                          size='icon-sm'
                           onClick={() => onRestore(invoice)}
-                          aria-label='Restore invoice'
                           disabled={restoreDisabled}
-                        >
-                          <RefreshCw />
-                        </Button>
+                        />
                       </DisabledFieldTooltip>
                     ) : null}
                     {showDestroy ? (
@@ -377,15 +373,13 @@ export function InvoicesTableSection({
                         disabled={destroyDisabled}
                         reason={destroyDisabledReason}
                       >
-                        <Button
+                        <RowActionButton
+                          label='Permanently delete invoice'
+                          icon={<Trash2 />}
                           variant='destructive'
-                          size='icon-sm'
                           onClick={() => onRequestDestroy(invoice)}
-                          aria-label='Permanently delete invoice'
                           disabled={destroyDisabled}
-                        >
-                          <Trash2 />
-                        </Button>
+                        />
                       </DisabledFieldTooltip>
                     ) : null}
                   </div>

@@ -67,6 +67,7 @@ export default async function ContactsPage({ searchParams }: ContactsPageProps) 
         email: deepLink.record.email,
         name: deepLink.record.name,
         phone: deepLink.record.phone,
+        userId: deepLink.record.userId,
       }
     : null
 

@@ -2,6 +2,7 @@ import { BADGE_TINTS } from '@pts/ui/badge-tints'
 import {
   CalendarDays,
   Mail,
+  MessageSquare,
   Phone,
   StickyNote,
   type LucideIcon,
@@ -16,6 +17,7 @@ export type LeadUpdateTypeValue = (typeof LEAD_UPDATE_TYPES)[number]
 export const LEAD_UPDATE_LABELS: Record<LeadUpdateTypeValue, string> = {
   MEETING: 'Meeting',
   PHONE_CALL: 'Phone call',
+  TEXT_MESSAGE: 'Text message',
   EMAIL: 'Email',
   NOTE: 'Note',
 }
@@ -30,6 +32,7 @@ export const LEAD_UPDATE_LABELS: Record<LeadUpdateTypeValue, string> = {
 export const LEAD_UPDATE_TOKENS: Record<LeadUpdateTypeValue, string> = {
   MEETING: BADGE_TINTS.violet,
   PHONE_CALL: BADGE_TINTS.sky,
+  TEXT_MESSAGE: BADGE_TINTS.teal,
   EMAIL: BADGE_TINTS.amber,
   NOTE: BADGE_TINTS.neutral,
 }
@@ -37,6 +40,7 @@ export const LEAD_UPDATE_TOKENS: Record<LeadUpdateTypeValue, string> = {
 export const LEAD_UPDATE_ICONS: Record<LeadUpdateTypeValue, LucideIcon> = {
   MEETING: CalendarDays,
   PHONE_CALL: Phone,
+  TEXT_MESSAGE: MessageSquare,
   EMAIL: Mail,
   NOTE: StickyNote,
 }

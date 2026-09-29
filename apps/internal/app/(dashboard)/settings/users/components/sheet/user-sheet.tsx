@@ -9,6 +9,7 @@ import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 
 import type { UserSheetProps } from './types'
+import { UserLinkedContactSection } from './user-linked-contact-section'
 import { UserSheetFormFields } from './user-sheet-form-fields'
 import { useUserSheetState } from './use-user-sheet-state'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
@@ -66,6 +67,9 @@ export function UserSheet(props: UserSheetProps) {
     historyKey: props.user?.id ?? 'user:new',
   })
 
+  const linkedSummary =
+    props.user?.role === 'CLIENT' ? props.assignments[props.user.id] : undefined
+
   const deleteDialogDescription = useMemo(
     () => buildDeleteDialogDescription(props.user, props.assignments),
     [props.assignments, props.user]
@@ -108,6 +112,15 @@ export function UserSheet(props: UserSheetProps) {
                   isEditing={isEditing}
                   isSheetOpen={props.open}
                 />
+                {/* Portal users only. A deep-linked user off the current
+                    page has no summary loaded, so the section hides rather
+                    than claiming there is no linked contact. */}
+                {linkedSummary ? (
+                  <UserLinkedContactSection
+                    contact={linkedSummary.contact}
+                    clients={linkedSummary.clientList}
+                  />
+                ) : null}
                 {feedback ? (
                   <p className='text-destructive text-sm'>{feedback}</p>
                 ) : null}

@@ -1,0 +1,1 @@
+ALTER TYPE "public"."lead_update_type" ADD VALUE 'TEXT_MESSAGE' BEFORE 'EMAIL';

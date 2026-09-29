@@ -82,7 +82,7 @@ pts leads create --name <n> [--status] [--source] [--source-detail] [--assignee]
                  [--company] [--website] [--notes <text|->]
 pts leads edit <leadId> [--name] [--status] [--source] [--source-detail] [--assignee] [--email] [--phone]
                         [--company] [--website] [--notes <text|->] [--clear-notes] [--clear-assignee]
-pts leads log <leadId> --type MEETING|PHONE_CALL|EMAIL|NOTE --body <text|-> [--at <iso-datetime>]
+pts leads log <leadId> --type MEETING|PHONE_CALL|TEXT_MESSAGE|EMAIL|NOTE --body <text|-> [--at <iso-datetime>]
 pts leads updates <leadId> [--limit n]
 
 pts updates draft --client <slug|uuid> [--items <file|->] [--subject] [--intro] [--closing] [--since]

@@ -589,6 +589,20 @@
       "when": 1790641564072,
       "tag": "0083_backfill_august_2026_profit_share",
       "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1790718893095,
+      "tag": "0084_add_text_message_lead_update_type",
+      "breakpoints": true
+    },
+    {
+      "idx": 85,
+      "version": "7",
+      "when": 1790720249558,
+      "tag": "0085_resync_portal_memberships",
+      "breakpoints": true
     }
   ]
 }

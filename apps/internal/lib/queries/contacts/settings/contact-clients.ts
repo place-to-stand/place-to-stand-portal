@@ -8,7 +8,11 @@ import { db } from '@/lib/db'
 import { clients, contactClients, contacts } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 
-import { logContactClientLinkChanges } from './contact-client-link-activity'
+import {
+  logContactClientLinkChanges,
+  type ContactClientLinkChange,
+} from './contact-client-link-activity'
+import { syncPortalMembershipsForLinkChanges } from './contact-client-portal-memberships'
 
 export type ClientOption = {
   id: string
@@ -21,6 +25,8 @@ export type ContactSheetInputRow = {
   email: string
   name: string
   phone: string | null
+  /** Portal user this contact was promoted to — drives the Portal access card. */
+  userId: string | null
 }
 
 /** Sheet row plus the archive flag the deep-link resolver needs. */
@@ -124,6 +130,7 @@ export async function getContactSheetInputById(
       email: contacts.email,
       name: contacts.name,
       phone: contacts.phone,
+      userId: contacts.userId,
     })
     .from(contacts)
     .where(and(eq(contacts.id, contactId), sql`${contacts.deletedAt} IS NULL`))
@@ -153,6 +160,7 @@ export async function getContactDeepLinkRowById(
       email: contacts.email,
       name: contacts.name,
       phone: contacts.phone,
+      userId: contacts.userId,
       deletedAt: contacts.deletedAt,
     })
     .from(contacts)
@@ -174,8 +182,7 @@ export async function syncContactClients(
 ): Promise<{ ok: boolean; error?: string }> {
   assertAdmin(user)
 
-  let toAdd: string[] = []
-  let toRemove: string[] = []
+  let changes: ContactClientLinkChange[] = []
 
   try {
     // Get current links
@@ -188,8 +195,16 @@ export async function syncContactClients(
     const newIds = new Set(clientIds)
 
     // Find links to add and remove
-    toAdd = clientIds.filter(id => !currentIds.has(id))
-    toRemove = [...currentIds].filter(id => !newIds.has(id))
+    const toAdd = clientIds.filter(id => !currentIds.has(id))
+    const toRemove = [...currentIds].filter(id => !newIds.has(id))
+    changes = [
+      ...toAdd.map(clientId => ({ contactId, clientId, action: 'linked' as const })),
+      ...toRemove.map(clientId => ({
+        contactId,
+        clientId,
+        action: 'unlinked' as const,
+      })),
+    ]
 
     // Perform the updates
     if (toAdd.length > 0) {
@@ -211,19 +226,15 @@ export async function syncContactClients(
           )
         )
     }
+
+    // A promoted contact's portal access follows its links.
+    await syncPortalMembershipsForLinkChanges(changes)
   } catch {
     return { ok: false, error: 'Failed to update client links.' }
   }
 
   // The links are committed; a logging failure must not report the sync as failed.
-  await logContactClientLinkChanges(user, [
-    ...toAdd.map(clientId => ({ contactId, clientId, action: 'linked' as const })),
-    ...toRemove.map(clientId => ({
-      contactId,
-      clientId,
-      action: 'unlinked' as const,
-    })),
-  ])
+  await logContactClientLinkChanges(user, changes)
 
   return { ok: true }
 }
