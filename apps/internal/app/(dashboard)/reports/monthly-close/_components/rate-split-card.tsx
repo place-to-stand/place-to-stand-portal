@@ -1,3 +1,6 @@
+import { Info } from 'lucide-react'
+
+import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import type { MonthlyCloseReport } from '@/lib/data/reports/types'
 
 import { formatHours, formatMoney, formatPercent } from './format'
@@ -22,11 +25,19 @@ function Row({
   muted?: boolean
 }) {
   return (
-    <div className='flex items-start gap-3 px-5 py-1.5 text-sm'>
-      <div className='flex min-w-0 flex-1 flex-col'>
+    <div className='flex items-center gap-3 px-5 py-1.5 text-sm'>
+      <div className='flex min-w-0 flex-1 items-center gap-1.5'>
         <span>{label}</span>
         {note ? (
-          <span className='text-muted-foreground text-xs'>{note}</span>
+          <Tooltip>
+            <TooltipTrigger
+              aria-label={note}
+              className='text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -m-0.5 cursor-help rounded-sm p-0.5 outline-none focus-visible:ring-[3px]'
+            >
+              <Info className='size-3.5' />
+            </TooltipTrigger>
+            <TooltipContent className='max-w-64'>{note}</TooltipContent>
+          </Tooltip>
         ) : null}
       </div>
       <span className='text-muted-foreground w-10 shrink-0 text-right text-[13px] tabular-nums'>
@@ -50,8 +61,8 @@ function Row({
 
 /**
  * How the billable rate splits this month. Payroll accrues on hours worked,
- * the rest on hours billed, so the four lines don't sum to billing in — the
- * footer says so rather than letting the gap look like an error.
+ * the rest on hours billed, so the four lines don't sum to billing in; the
+ * footer names the two bases. Row notes sit behind an info icon.
  */
 export function RateSplitCard({ report }: RateSplitCardProps) {
   const { rates, payroll, origination, closer, house } = report
@@ -110,8 +121,7 @@ export function RateSplitCard({ report }: RateSplitCardProps) {
         />
       </div>
       <p className='bg-muted/50 text-muted-foreground border-t px-5 py-3 text-xs'>
-        Payroll accrues on hours worked and the rest on hours billed, so this
-        won&apos;t sum to billing in.
+        Payroll accrues on hours worked and the rest on hours billed.
       </p>
     </section>
   )

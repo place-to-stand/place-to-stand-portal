@@ -9,6 +9,28 @@ type BillingInCardProps = {
   total: number
 }
 
+/**
+ * Tree connector for a client row: a vertical rule down from the group
+ * heading (stopping at the midline on the last row) and a tick into the row.
+ * -my-1.5 runs it through the row padding so consecutive rows join up.
+ */
+function TreeBranch({ first, last }: { first: boolean; last: boolean }) {
+  return (
+    <span aria-hidden className='relative -my-1.5 w-4 shrink-0 self-stretch'>
+      <span
+        className={cn(
+          'bg-muted-foreground/40 absolute left-1 w-px',
+          // The first branch reaches up through the heading's bottom padding
+          // so the line starts at the heading, not a gap below it.
+          first ? '-top-1.5' : 'top-0',
+          last ? 'bottom-1/2' : 'bottom-0'
+        )}
+      />
+      <span className='bg-muted-foreground/40 absolute top-1/2 left-1 h-px w-2.5' />
+    </span>
+  )
+}
+
 function Group({
   label,
   basis,
@@ -31,13 +53,11 @@ function Group({
 }) {
   if (rows.length === 0) return null
   return (
-    <>
-      {/* A full-width band, like a table's group header, so each billing
-          type reads as its own section rather than another row. */}
+    <div role='group' aria-label={`${label} · ${basis}`}>
       <div
         className={cn(
-          'bg-muted/50 flex items-baseline gap-3 border-y px-5 py-2 text-sm',
-          !first && 'mt-1'
+          'flex items-baseline gap-3 px-5 pb-1.5 text-sm',
+          first ? 'pt-3' : 'pt-4'
         )}
       >
         <span className='flex-1'>
@@ -51,23 +71,24 @@ function Group({
           {formatMoney(amount)}
         </span>
       </div>
-      <div className='flex flex-col py-1'>
-        {rows.map(row => (
-          <div
-            key={row.clientId}
-            className='flex items-center gap-3 px-5 py-1.5 text-sm'
-          >
-            <span className='min-w-0 flex-1'>{row.clientName}</span>
-            <span className='text-muted-foreground w-18 text-right text-[13px] tabular-nums'>
-              {formatHours(row.totalHours)}
-            </span>
-            <span className='w-24 text-right tabular-nums'>
-              {formatMoney(row.amount)}
-            </span>
-          </div>
-        ))}
-      </div>
-    </>
+      {rows.map((row, index) => (
+        <div
+          key={row.clientId}
+          className='flex items-center gap-3 px-5 py-1.5 text-sm'
+        >
+          <span className='flex min-w-0 flex-1 items-center gap-2'>
+            <TreeBranch first={index === 0} last={index === rows.length - 1} />
+            <span className='min-w-0'>{row.clientName}</span>
+          </span>
+          <span className='text-muted-foreground w-18 text-right text-[13px] tabular-nums'>
+            {formatHours(row.totalHours)}
+          </span>
+          <span className='w-24 text-right tabular-nums'>
+            {formatMoney(row.amount)}
+          </span>
+        </div>
+      ))}
+    </div>
   )
 }
 
@@ -79,7 +100,7 @@ export function BillingInCard({ prepaid, net30, total }: BillingInCardProps) {
       aria-labelledby='billing-in-title'
       className='bg-card overflow-hidden rounded-xl border shadow-sm'
     >
-      <div className='flex items-center justify-between gap-4 px-5 py-3.5'>
+      <div className='flex items-center justify-between gap-4 border-b px-5 py-3.5'>
         <h2 id='billing-in-title' className='text-base font-semibold'>
           Billing in
         </h2>
@@ -88,11 +109,11 @@ export function BillingInCard({ prepaid, net30, total }: BillingInCardProps) {
         </span>
       </div>
       {empty ? (
-        <p className='text-muted-foreground border-t px-5 py-8 text-center text-sm'>
+        <p className='text-muted-foreground px-5 py-8 text-center text-sm'>
           No billing this month.
         </p>
       ) : (
-        <div className='flex flex-col pb-1'>
+        <div className='flex flex-col pb-3'>
           <Group
             first
             label='Prepaid'
