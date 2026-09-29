@@ -2,33 +2,12 @@ import type { Net30Data, PrepaidBillingData } from '@/lib/data/reports/types'
 import { cn } from '@/lib/utils'
 
 import { formatHours, formatMoney } from './format'
+import { TreeBranch } from './tree-branch'
 
 type BillingInCardProps = {
   prepaid: PrepaidBillingData
   net30: Net30Data
   total: number
-}
-
-/**
- * Tree connector for a client row: a vertical rule down from the group
- * heading (stopping at the midline on the last row) and a tick into the row.
- * -my-1.5 runs it through the row padding so consecutive rows join up.
- */
-function TreeBranch({ first, last }: { first: boolean; last: boolean }) {
-  return (
-    <span aria-hidden className='relative -my-1.5 w-4 shrink-0 self-stretch'>
-      <span
-        className={cn(
-          'bg-muted-foreground/40 absolute left-1 w-px',
-          // The first branch reaches up through the heading's bottom padding
-          // so the line starts at the heading, not a gap below it.
-          first ? '-top-1.5' : 'top-0',
-          last ? 'bottom-1/2' : 'bottom-0'
-        )}
-      />
-      <span className='bg-muted-foreground/40 absolute top-1/2 left-1 h-px w-2.5' />
-    </span>
-  )
 }
 
 function Group({

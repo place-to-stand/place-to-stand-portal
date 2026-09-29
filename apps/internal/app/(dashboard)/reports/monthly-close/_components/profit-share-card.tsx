@@ -19,6 +19,7 @@ import {
   formatShortDay,
 } from './format'
 import { PayeeAvatar } from './payee-avatar'
+import { TreeBranch } from './tree-branch'
 
 type ProfitShareCardProps = {
   state: Exclude<ProfitShareState, { status: 'inactive' }>
@@ -136,11 +137,17 @@ function ReadyBody({
             {formatMoney(data.balance)}
           </span>
         </div>
-        {data.accounts.map(account => (
+        {data.accounts.map((account, index) => (
           <div
             key={account.id}
-            className='text-muted-foreground flex items-center gap-3 py-1 pr-5 pl-16 text-[13px]'
+            className='text-muted-foreground flex items-center gap-2 py-1 pr-5 pl-16 text-[13px]'
           >
+            <TreeBranch
+              first={index === 0}
+              last={index === data.accounts.length - 1}
+              rowPaddingY={4}
+              reachUp={8}
+            />
             <span className='flex-1'>{account.name}</span>
             <span className='tabular-nums'>{formatMoney(account.balance)}</span>
           </div>
@@ -167,11 +174,17 @@ function ReadyBody({
             {formatMoney(data.available)}
           </span>
         </div>
-        {data.partners.map(partner => (
+        {data.partners.map((partner, index) => (
           <div
             key={partner.userId}
             className='flex items-center gap-3 px-5 py-1.5 text-sm'
           >
+            <TreeBranch
+              first={index === 0}
+              last={index === data.partners.length - 1}
+              rowPaddingY={6}
+              reachUp={10}
+            />
             <PayeeAvatar
               kind='user'
               id={partner.userId}
