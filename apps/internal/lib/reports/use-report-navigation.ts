@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { addMonths, getMonth, getYear, startOfMonth } from 'date-fns'
 
@@ -23,6 +23,8 @@ type UseReportNavigationResult = {
   minLimitLabel: string
   maxLimitLabel: string
 }
+
+const NAVIGATION_SETTLE_MS = 300
 
 const MONTH_NAMES = [
   'January',
@@ -114,6 +116,18 @@ export function useReportNavigation({
   const minLimitLabel = useMemo(() => formatMonthLabel(minCursor), [minCursor])
   const maxLimitLabel = useMemo(() => formatMonthLabel(maxCursor), [maxCursor])
 
+  // The label moves on every click, but the URL (and the server render behind
+  // it) only follows once clicking settles. Next doesn't cancel superseded
+  // navigations, so a burst of arrow clicks used to stream a full report per
+  // month in parallel, and one dropped stream crashed the page.
+  const pushTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(
+    () => () => {
+      if (pushTimer.current) clearTimeout(pushTimer.current)
+    },
+    []
+  )
+
   const navigate = useCallback(
     (month: Date) => {
       setCurrentMonth(month)
@@ -121,7 +135,11 @@ export function useReportNavigation({
       // URL uses 0-indexed months
       params.set('month', String(getMonth(month)))
       params.set('year', String(getYear(month)))
-      router.push(`?${params.toString()}`)
+      if (pushTimer.current) clearTimeout(pushTimer.current)
+      pushTimer.current = setTimeout(() => {
+        pushTimer.current = null
+        router.push(`?${params.toString()}`)
+      }, NAVIGATION_SETTLE_MS)
     },
     [router, searchParams]
   )
