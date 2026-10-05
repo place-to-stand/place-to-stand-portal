@@ -27,6 +27,9 @@ export const metadata: Metadata = {
     template: '%s | Place To Stand Client Portal',
   },
   description: 'View your projects and remaining hours',
+  // A login-gated app — keep every route (sign-in, forgot-password, …) out of
+  // search indexes. The marketing site links here, so crawlers do find it.
+  robots: { index: false, follow: false },
 }
 
 export default function RootLayout({
