@@ -194,11 +194,19 @@ const snapshotReportSchema = z.object({
       nominalAmount: z.number().optional(),
       unassignedCloserHours: z.number().default(0),
       unassignedCloserAmount: z.number().default(0),
+      // Origination became optional in Oct 2026. Earlier snapshots froze a
+      // house total that never included an unassigned origination share, so
+      // zero is what they actually recorded.
+      unassignedOriginationHours: z.number().default(0),
+      unassignedOriginationAmount: z.number().default(0),
     })
     .transform(house => ({
       ...house,
       nominalAmount:
-        house.nominalAmount ?? house.totalAmount - house.unassignedCloserAmount,
+        house.nominalAmount ??
+        house.totalAmount -
+          house.unassignedCloserAmount -
+          house.unassignedOriginationAmount,
     })),
   workBillableHours: z.number(),
   workBillableTotal: z.number(),

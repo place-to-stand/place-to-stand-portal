@@ -33,7 +33,6 @@ import type {
   CloserCandidate,
   CloserDraft,
   OriginationContactOption,
-  OriginationMode,
   PartnerUserOption,
   UseClientSheetStateReturn,
 } from '@/lib/settings/clients/use-client-sheet-state'
@@ -48,10 +47,7 @@ import {
 } from './client-contact-picker'
 import { ClientClosersEditor } from './client-closers-editor'
 import { ClientEffectiveCallout } from './client-effective-callout'
-import {
-  ClientOriginationModeToggle,
-  ClientOriginationPicker,
-} from './client-origination-picker'
+import { ClientOriginationPicker } from './client-origination-picker'
 import { getSubmitLabel } from '@/lib/forms/form-controls'
 
 const FEEDBACK_CLASSES =
@@ -84,23 +80,20 @@ type ClientSheetFormProps = {
   onContactPickerOpenChange: (open: boolean) => void
   onAddContact: (contact: ClientContactOption) => void
   onCreateContact: (query: string) => void
+  onCreateOriginationContact: (query: string) => void
+  onCreateCloserContact: (query: string) => void
   onRemoveContact: (contact: ClientContactOption) => void
   primaryContactId: string | null
   onTogglePrimaryContact: (contact: ClientContactOption) => void
   // Origination
-  originationMode: OriginationMode
   selectedOriginationUser: PartnerUserOption | null
   selectedOriginationContact: OriginationContactOption | null
   availableOriginationUsers: PartnerUserOption[]
   availableOriginationContacts: OriginationContactOption[]
-  isOriginationUserPickerOpen: boolean
-  isOriginationContactPickerOpen: boolean
+  isOriginationPickerOpen: boolean
   originationPickerDisabled: boolean
   originationPickerDisabledReason: string | null
-  originationError: string | null
-  onOriginationModeChange: (mode: OriginationMode) => void
-  onOriginationUserPickerOpenChange: (open: boolean) => void
-  onOriginationContactPickerOpenChange: (open: boolean) => void
+  onOriginationPickerOpenChange: (open: boolean) => void
   onSelectOriginationUser: (user: PartnerUserOption) => void
   onSelectOriginationContact: (contact: OriginationContactOption) => void
   onClearOrigination: () => void
@@ -144,22 +137,19 @@ export function ClientSheetForm({
   onContactPickerOpenChange,
   onAddContact,
   onCreateContact,
+  onCreateOriginationContact,
+  onCreateCloserContact,
   onRemoveContact,
   primaryContactId,
   onTogglePrimaryContact,
-  originationMode,
   selectedOriginationUser,
   selectedOriginationContact,
   availableOriginationUsers,
   availableOriginationContacts,
-  isOriginationUserPickerOpen,
-  isOriginationContactPickerOpen,
+  isOriginationPickerOpen,
   originationPickerDisabled,
   originationPickerDisabledReason,
-  originationError,
-  onOriginationModeChange,
-  onOriginationUserPickerOpenChange,
-  onOriginationContactPickerOpenChange,
+  onOriginationPickerOpenChange,
   onSelectOriginationUser,
   onSelectOriginationContact,
   onClearOrigination,
@@ -449,40 +439,23 @@ export function ClientSheetForm({
             description='Origination pays 10% and closers share 20% of this client’s revenue.'
           >
             <div className='grid gap-2'>
-              <div className='flex items-center justify-between gap-2'>
-                <FormLabel
-                  data-error={Boolean(originationError)}
-                  className='data-[error=true]:text-destructive'
-                >
-                  Origination
-                </FormLabel>
-                <ClientOriginationModeToggle
-                  mode={originationMode}
-                  disabled={originationPickerDisabled || isPending}
-                  onModeChange={onOriginationModeChange}
-                />
-              </div>
+              <FormLabel optional>Origination</FormLabel>
               <ClientOriginationPicker
-                mode={originationMode}
                 selectedUser={selectedOriginationUser}
                 selectedContact={selectedOriginationContact}
                 availableUsers={availableOriginationUsers}
                 availableContacts={availableOriginationContacts}
                 disabled={originationPickerDisabled}
                 disabledReason={originationPickerDisabledReason}
-                isUserPickerOpen={isOriginationUserPickerOpen}
-                isContactPickerOpen={isOriginationContactPickerOpen}
+                isPickerOpen={isOriginationPickerOpen}
                 isPending={isPending}
                 pendingReason={pendingReason}
-                onUserPickerOpenChange={onOriginationUserPickerOpenChange}
-                onContactPickerOpenChange={onOriginationContactPickerOpenChange}
+                onPickerOpenChange={onOriginationPickerOpenChange}
                 onSelectUser={onSelectOriginationUser}
                 onSelectContact={onSelectOriginationContact}
                 onClear={onClearOrigination}
+                onCreateContact={onCreateOriginationContact}
               />
-              {originationError ? (
-                <p className='text-destructive text-xs'>{originationError}</p>
-              ) : null}
             </div>
             <div className='grid gap-2'>
               <FormLabel
@@ -507,6 +480,7 @@ export function ClientSheetForm({
                 onAdd={onAddCloser}
                 onRemove={onRemoveCloser}
                 onShareChange={onCloserShareChange}
+                onCreateContact={onCreateCloserContact}
               />
               {closerError ? (
                 <p className='text-destructive text-xs'>{closerError}</p>

@@ -175,6 +175,8 @@ export function computeDeltas(
   push('house', 'House rate', 'rate', snapshot.house.ratePerHour, live.house.ratePerHour)
   push('house', 'House · unassigned closer hours', 'hours', snapshot.house.unassignedCloserHours, live.house.unassignedCloserHours)
   push('house', 'House · unassigned closer', 'amount', snapshot.house.unassignedCloserAmount, live.house.unassignedCloserAmount)
+  push('house', 'House · unassigned origination hours', 'hours', snapshot.house.unassignedOriginationHours, live.house.unassignedOriginationHours)
+  push('house', 'House · unassigned origination', 'amount', snapshot.house.unassignedOriginationAmount, live.house.unassignedOriginationAmount)
 
   push('summary', 'Work billable hours', 'hours', snapshot.workBillableHours, live.workBillableHours)
   push('summary', 'Work billable total', 'amount', snapshot.workBillableTotal, live.workBillableTotal)

@@ -89,25 +89,21 @@ export const useClientSheetState = ({
     handleContactPickerOpenChange: formState.handleContactPickerOpenChange,
     handleAddContact: formState.handleAddContact,
     handleCreateContact: formState.handleCreateContact,
+    handleCreateOriginationContact: formState.handleCreateOriginationContact,
+    handleCreateCloserContact: formState.handleCreateCloserContact,
     handleRemoveContact: formState.handleRemoveContact,
     primaryContactId: formState.primaryContactId,
     handleTogglePrimaryContact: formState.handleTogglePrimaryContact,
     // Origination
-    originationMode: formState.originationMode,
     selectedOriginationUser: formState.selectedOriginationUser,
     selectedOriginationContact: formState.selectedOriginationContact,
     availableOriginationUsers: formState.availableOriginationUsers,
     availableOriginationContacts: formState.availableOriginationContacts,
-    isOriginationUserPickerOpen: formState.isOriginationUserPickerOpen,
-    isOriginationContactPickerOpen: formState.isOriginationContactPickerOpen,
+    isOriginationPickerOpen: formState.isOriginationPickerOpen,
     originationPickerDisabled: formState.originationPickerDisabled,
     originationPickerDisabledReason: formState.originationPickerDisabledReason,
-    originationError: formState.originationError,
-    handleOriginationModeChange: formState.handleOriginationModeChange,
-    handleOriginationUserPickerOpenChange:
-      formState.handleOriginationUserPickerOpenChange,
-    handleOriginationContactPickerOpenChange:
-      formState.handleOriginationContactPickerOpenChange,
+    handleOriginationPickerOpenChange:
+      formState.handleOriginationPickerOpenChange,
     handleSelectOriginationUser: formState.handleSelectOriginationUser,
     handleSelectOriginationContact: formState.handleSelectOriginationContact,
     handleClearOrigination: formState.handleClearOrigination,
@@ -134,7 +130,6 @@ export type {
   ClientContactOption,
   OriginationContactOption,
   PartnerUserOption,
-  OriginationMode,
   CloserCandidate,
   CloserDraft,
 } from './types'

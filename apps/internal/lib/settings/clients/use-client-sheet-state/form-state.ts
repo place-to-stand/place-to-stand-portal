@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
@@ -39,9 +39,11 @@ import type {
   CloserCandidate,
   CloserDraft,
   OriginationContactOption,
-  OriginationMode,
   PartnerUserOption,
 } from './types'
+
+/** Which picker opened the contact create sheet — gets the new record. */
+type ContactCreateTarget = 'contacts' | 'origination' | 'closer'
 
 function primaryIdOf(linked: ClientContactOption[]): string | null {
   return linked.find(contact => contact.isPrimary)?.id ?? null
@@ -122,15 +124,9 @@ export function useClientSheetFormState({
   )
   const { openNew } = useSheetParams()
 
-  // Origination state — defaults to 'internal' for new clients; existing
-  // clients with an external contact set get flipped to 'external' in the
-  // open effect below.
-  const [originationMode, setOriginationMode] =
-    useState<OriginationMode>('internal')
-  const [isOriginationUserPickerOpen, setIsOriginationUserPickerOpen] =
-    useState(false)
-  const [isOriginationContactPickerOpen, setIsOriginationContactPickerOpen] =
-    useState(false)
+  // Origination state — one picker offers admins and contacts; whichever is
+  // selected determines the kind, so the two selections are mutually exclusive.
+  const [isOriginationPickerOpen, setIsOriginationPickerOpen] = useState(false)
   const [selectedOriginationUser, setSelectedOriginationUser] =
     useState<PartnerUserOption | null>(null)
   const [selectedOriginationContact, setSelectedOriginationContact] =
@@ -146,10 +142,9 @@ export function useClientSheetFormState({
   const [closers, setClosers] = useState<CloserDraft[]>([])
   const [initialClosers, setInitialClosers] = useState<CloserShare[]>([])
 
-  // Field-level errors for the pickers — rendered inline (shadcn
-  // FormMessage pattern) below each picker. Cleared as the user interacts
-  // so they don't linger after a fix.
-  const [originationError, setOriginationError] = useState<string | null>(null)
+  // Field-level error for the closer split — rendered inline (shadcn
+  // FormMessage pattern) below the editor. Cleared as the user interacts
+  // so it doesn't linger after a fix.
   const [closerError, setCloserError] = useState<string | null>(null)
 
   const form = useForm<ClientSheetFormValues>({
@@ -223,9 +218,7 @@ export function useClientSheetFormState({
   const availableCloserUsers = useMemo<CloserCandidate[]>(
     () =>
       allAdminUsers
-        .filter(
-          u => isSelectableUser(u) && !closerKeys.has(`user:${u.id}`)
-        )
+        .filter(u => isSelectableUser(u) && !closerKeys.has(`user:${u.id}`))
         .map(u => ({
           kind: 'user' as const,
           id: u.id,
@@ -287,13 +280,11 @@ export function useClientSheetFormState({
 
     form.reset(defaults)
     setFeedback(null)
-    setOriginationError(null)
     setCloserError(null)
 
     // Reset pickers
     setIsContactPickerOpen(false)
-    setIsOriginationUserPickerOpen(false)
-    setIsOriginationContactPickerOpen(false)
+    setIsOriginationPickerOpen(false)
     setIsCloserPickerOpen(false)
   }, [client, form, initialName, setFeedback])
 
@@ -379,11 +370,6 @@ export function useClientSheetFormState({
         sharePercent: c.sharePercent,
       }))
     )
-
-    // Default origination mode: 'external' only if an external contact is
-    // already set on this client; otherwise default to 'internal' (for new
-    // clients and existing clients with an internal user or no origination).
-    setOriginationMode(clientOriginationContactId ? 'external' : 'internal')
 
     const hydrateSelectionsFromData = (
       contacts: ClientContactOption[],
@@ -480,62 +466,40 @@ export function useClientSheetFormState({
   )
 
   // Create-from-picker: stack the contact create sheet on top of this one
-  // (`?client=…&contact=new`); the wrapper announces the saved record below.
-  const handleCreateContact = useCallback(
-    (query: string) => {
+  // (`?client=…&contact=new`); the subscription below hands the saved record
+  // to whichever picker asked — only the contacts picker links it to the client.
+  const createContactTargetRef = useRef<ContactCreateTarget>('contacts')
+  const requestContactCreate = useCallback(
+    (target: ContactCreateTarget, query: string) => {
+      createContactTargetRef.current = target
       setIsContactPickerOpen(false)
+      setIsOriginationPickerOpen(false)
+      setIsCloserPickerOpen(false)
       openNew('contact', query ? { contactName: query } : undefined)
     },
     [openNew]
   )
-
-  useEffect(() => {
-    if (!open) return
-    return subscribeSheetCreated('contact', record => {
-      const option: ClientContactOption = {
-        id: record.id,
-        name: record.name,
-        email: record.email,
-        phone: record.phone,
-        hasPortalAccess: false,
-      }
-      setCreatedContacts(prev =>
-        prev.some(c => c.id === option.id) ? prev : [...prev, option]
-      )
-      handleAddContact(option)
-    })
-  }, [open, handleAddContact])
-
-  // Origination handlers
-  const handleOriginationModeChange = useCallback((mode: OriginationMode) => {
-    setOriginationMode(mode)
-    setOriginationError(null)
-    // Switching modes clears the opposite side to enforce mutex in UI
-    if (mode === 'internal') {
-      setSelectedOriginationContact(null)
-    } else {
-      setSelectedOriginationUser(null)
-    }
-  }, [])
-
-  const handleOriginationUserPickerOpenChange = useCallback(
-    (next: boolean) => {
-      if (originationPickerDisabled) {
-        setIsOriginationUserPickerOpen(false)
-        return
-      }
-      setIsOriginationUserPickerOpen(next)
-    },
-    [originationPickerDisabled]
+  const handleCreateContact = useCallback(
+    (query: string) => requestContactCreate('contacts', query),
+    [requestContactCreate]
+  )
+  const handleCreateOriginationContact = useCallback(
+    (query: string) => requestContactCreate('origination', query),
+    [requestContactCreate]
+  )
+  const handleCreateCloserContact = useCallback(
+    (query: string) => requestContactCreate('closer', query),
+    [requestContactCreate]
   )
 
-  const handleOriginationContactPickerOpenChange = useCallback(
+  // Origination handlers
+  const handleOriginationPickerOpenChange = useCallback(
     (next: boolean) => {
       if (originationPickerDisabled) {
-        setIsOriginationContactPickerOpen(false)
+        setIsOriginationPickerOpen(false)
         return
       }
-      setIsOriginationContactPickerOpen(next)
+      setIsOriginationPickerOpen(next)
     },
     [originationPickerDisabled]
   )
@@ -543,16 +507,14 @@ export function useClientSheetFormState({
   const handleSelectOriginationUser = useCallback((user: PartnerUserOption) => {
     setSelectedOriginationUser(user)
     setSelectedOriginationContact(null)
-    setIsOriginationUserPickerOpen(false)
-    setOriginationError(null)
+    setIsOriginationPickerOpen(false)
   }, [])
 
   const handleSelectOriginationContact = useCallback(
     (contact: OriginationContactOption) => {
       setSelectedOriginationContact(contact)
       setSelectedOriginationUser(null)
-      setIsOriginationContactPickerOpen(false)
-      setOriginationError(null)
+      setIsOriginationPickerOpen(false)
     },
     []
   )
@@ -599,6 +561,42 @@ export function useClientSheetFormState({
     []
   )
 
+  useEffect(() => {
+    if (!open) return
+    return subscribeSheetCreated('contact', record => {
+      const option: ClientContactOption = {
+        id: record.id,
+        name: record.name,
+        email: record.email,
+        phone: record.phone,
+        hasPortalAccess: false,
+      }
+      setCreatedContacts(prev =>
+        prev.some(c => c.id === option.id) ? prev : [...prev, option]
+      )
+      switch (createContactTargetRef.current) {
+        case 'origination':
+          handleSelectOriginationContact({
+            id: option.id,
+            name: option.name,
+            email: option.email,
+          })
+          break
+        case 'closer':
+          handleAddCloser({
+            kind: 'contact',
+            id: option.id,
+            name: option.name?.trim() || option.email,
+            email: option.email,
+          })
+          break
+        default:
+          handleAddContact(option)
+      }
+      createContactTargetRef.current = 'contacts'
+    })
+  }, [open, handleAddContact, handleSelectOriginationContact, handleAddCloser])
+
   const handleFormSubmit = useCallback(
     (values: ClientSheetFormValues) => {
       if (isEditing && !values.slug?.trim()) {
@@ -606,32 +604,14 @@ export function useClientSheetFormState({
         return
       }
 
-      // Origination is required — exactly one of user OR contact must be set.
-      // Closer is optional (PRD 007): with none, the closer share stays in
-      // house (estimated) on the Monthly Close.
-      const hasOriginationUser =
-        originationMode === 'internal' && selectedOriginationUser !== null
-      const hasOriginationContact =
-        originationMode === 'external' && selectedOriginationContact !== null
-      const originationMissing = !hasOriginationUser && !hasOriginationContact
-
-      if (originationMissing) {
-        setOriginationError(
-          originationMode === 'internal'
-            ? 'Pick an internal partner.'
-            : 'Pick an external referrer.'
-        )
-        return
-      }
-
+      // Origination and closers are both optional. With no closer the closer
+      // share stays in house (estimated) on the Monthly Close (PRD 007).
       const splitError = closerSplitError(closerShares)
       if (splitError) {
-        setOriginationError(null)
         setCloserError(splitError)
         return
       }
 
-      setOriginationError(null)
       setCloserError(null)
 
       startSave(async () => {
@@ -650,14 +630,8 @@ export function useClientSheetFormState({
           commissionEffective: values.commissionEffective,
           state: values.state?.trim() ? values.state.trim() : null,
           website: values.website?.trim() ? values.website.trim() : null,
-          originationContactId:
-            originationMode === 'external'
-              ? (selectedOriginationContact?.id ?? null)
-              : null,
-          originationUserId:
-            originationMode === 'internal'
-              ? (selectedOriginationUser?.id ?? null)
-              : null,
+          originationContactId: selectedOriginationContact?.id ?? null,
+          originationUserId: selectedOriginationUser?.id ?? null,
           closers: closerShares,
           notes: values.notes?.trim() ? values.notes.trim() : null,
         } satisfies Parameters<typeof saveClient>[0]
@@ -764,7 +738,6 @@ export function useClientSheetFormState({
       onComplete,
       onCreated,
       onOpenChange,
-      originationMode,
       primaryContactId,
       closerShares,
       selectedContacts,
@@ -796,22 +769,19 @@ export function useClientSheetFormState({
     handleAddContact,
     handleRemoveContact,
     handleCreateContact,
+    handleCreateOriginationContact,
+    handleCreateCloserContact,
     primaryContactId,
     handleTogglePrimaryContact,
     // Origination
-    originationMode,
     selectedOriginationUser,
     selectedOriginationContact,
     availableOriginationUsers,
     availableOriginationContacts,
-    isOriginationUserPickerOpen,
-    isOriginationContactPickerOpen,
+    isOriginationPickerOpen,
     originationPickerDisabled,
     originationPickerDisabledReason,
-    originationError,
-    handleOriginationModeChange,
-    handleOriginationUserPickerOpenChange,
-    handleOriginationContactPickerOpenChange,
+    handleOriginationPickerOpenChange,
     handleSelectOriginationUser,
     handleSelectOriginationContact,
     handleClearOrigination,

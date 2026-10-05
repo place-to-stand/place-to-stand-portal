@@ -46,23 +46,20 @@ export function ClientSheet(props: ClientSheetProps) {
     handleContactPickerOpenChange,
     handleAddContact,
     handleCreateContact,
+    handleCreateOriginationContact,
+    handleCreateCloserContact,
     handleRemoveContact,
     primaryContactId,
     handleTogglePrimaryContact,
     // Origination
-    originationMode,
     selectedOriginationUser,
     selectedOriginationContact,
     availableOriginationUsers,
     availableOriginationContacts,
-    isOriginationUserPickerOpen,
-    isOriginationContactPickerOpen,
+    isOriginationPickerOpen,
     originationPickerDisabled,
     originationPickerDisabledReason,
-    originationError,
-    handleOriginationModeChange,
-    handleOriginationUserPickerOpenChange,
-    handleOriginationContactPickerOpenChange,
+    handleOriginationPickerOpenChange,
     handleSelectOriginationUser,
     handleSelectOriginationContact,
     handleClearOrigination,
@@ -114,26 +111,19 @@ export function ClientSheet(props: ClientSheetProps) {
             onContactPickerOpenChange={handleContactPickerOpenChange}
             onAddContact={handleAddContact}
             onCreateContact={handleCreateContact}
+            onCreateOriginationContact={handleCreateOriginationContact}
+            onCreateCloserContact={handleCreateCloserContact}
             onRemoveContact={handleRemoveContact}
             primaryContactId={primaryContactId}
             onTogglePrimaryContact={handleTogglePrimaryContact}
-            originationMode={originationMode}
             selectedOriginationUser={selectedOriginationUser}
             selectedOriginationContact={selectedOriginationContact}
             availableOriginationUsers={availableOriginationUsers}
             availableOriginationContacts={availableOriginationContacts}
-            isOriginationUserPickerOpen={isOriginationUserPickerOpen}
-            isOriginationContactPickerOpen={isOriginationContactPickerOpen}
+            isOriginationPickerOpen={isOriginationPickerOpen}
             originationPickerDisabled={originationPickerDisabled}
             originationPickerDisabledReason={originationPickerDisabledReason}
-            originationError={originationError}
-            onOriginationModeChange={handleOriginationModeChange}
-            onOriginationUserPickerOpenChange={
-              handleOriginationUserPickerOpenChange
-            }
-            onOriginationContactPickerOpenChange={
-              handleOriginationContactPickerOpenChange
-            }
+            onOriginationPickerOpenChange={handleOriginationPickerOpenChange}
             onSelectOriginationUser={handleSelectOriginationUser}
             onSelectOriginationContact={handleSelectOriginationContact}
             onClearOrigination={handleClearOrigination}

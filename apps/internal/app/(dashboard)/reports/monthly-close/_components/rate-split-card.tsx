@@ -64,6 +64,22 @@ function Row({
  * the rest on hours billed, so the four lines don't sum to billing in; the
  * footer names the two bases. Row notes sit behind an info icon.
  */
+/** Names the unpaid commission shares house is holding, if any. */
+function houseNote(house: MonthlyCloseReport['house']): string | undefined {
+  const parts: string[] = []
+  if (house.unassignedOriginationAmount > 0) {
+    parts.push(
+      `${formatMoney(house.unassignedOriginationAmount)} origination share from ${formatHours(house.unassignedOriginationHours)} hrs with no originator`
+    )
+  }
+  if (house.unassignedCloserAmount > 0) {
+    parts.push(
+      `${formatMoney(house.unassignedCloserAmount)} closer share from ${formatHours(house.unassignedCloserHours)} hrs with no closer`
+    )
+  }
+  return parts.length > 0 ? `Includes ${parts.join(' and ')}` : undefined
+}
+
 export function RateSplitCard({ report }: RateSplitCardProps) {
   const { rates, payroll, origination, closer, house } = report
   const pct = (rate: number) => formatPercent(rate, rates.billablePerHour)
@@ -109,11 +125,7 @@ export function RateSplitCard({ report }: RateSplitCardProps) {
         ) : null}
         <Row
           label='House (est.)'
-          note={
-            house.unassignedCloserAmount > 0
-              ? `Includes ${formatMoney(house.unassignedCloserAmount)} closer share from ${formatHours(house.unassignedCloserHours)} hrs with no closer`
-              : undefined
-          }
+          note={houseNote(house)}
           percent={pct(rates.housePerHour)}
           basis={`${formatHours(house.billableHours)} hrs billed`}
           amount={house.totalAmount}

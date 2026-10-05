@@ -156,10 +156,7 @@ export const fetchMonthlyCloseReport = cache(
     const originationGroupRows: OriginationGroupRow[] = Array.from(
       originatorMap.values()
     ).map(group => {
-      const totalHours = group.clients.reduce(
-        (sum, c) => sum + c.hours,
-        0
-      )
+      const totalHours = group.clients.reduce((sum, c) => sum + c.hours, 0)
       return {
         originatorKind: group.originatorKind,
         originatorId: group.originatorId,
@@ -338,9 +335,7 @@ export const fetchMonthlyCloseReport = cache(
       payee.closerAmount += row.totalCommission
     }
 
-    const partnerPayoutRows: PartnerPayoutRow[] = Array.from(
-      payeeMap.values()
-    )
+    const partnerPayoutRows: PartnerPayoutRow[] = Array.from(payeeMap.values())
       .map(p => ({
         key: p.key,
         kind: p.kind,
@@ -444,24 +439,37 @@ export const fetchMonthlyCloseReport = cache(
     // origination/closer). Billing hours no closer is credited with (no
     // closer on the as-of term, or an archived one) keep their closer share
     // in house (PRD 007) — nobody is paid it, so it is reported here rather
-    // than vanishing from the split.
+    // than vanishing from the split. Origination is optional too (a client
+    // can come in from an ad), and its unpaid share stays in house the same way.
     // House is an ESTIMATE either way: it is the firm's nominal share, not a
     // cash residual.
-    const billingHours =
-      prepaidBilling.totalHours + net30Billing.totalHours
+    const billingHours = prepaidBilling.totalHours + net30Billing.totalHours
     const nominalHouseAmount = billingHours * rates.housePerHour
     const unassignedCloserHours = Math.max(
       0,
       round2(billingHours - closer.totalHours)
     )
     const unassignedCloserAmount = unassignedCloserHours * rates.closerPerHour
+    // Pre-April 2026 internal originators weren't paid by policy
+    // (`internalOriginationPayable`), so the gap there is that rule, not a
+    // missing originator — and those closes froze it outside this line.
+    const unassignedOriginationHours = rates.internalOriginationPayable
+      ? Math.max(0, round2(billingHours - origination.totalHours))
+      : 0
+    const unassignedOriginationAmount =
+      unassignedOriginationHours * rates.originationPerHour
     const house: HouseData = {
       billableHours: billingHours,
       ratePerHour: rates.housePerHour,
       nominalAmount: nominalHouseAmount,
       unassignedCloserHours,
       unassignedCloserAmount,
-      totalAmount: nominalHouseAmount + unassignedCloserAmount,
+      unassignedOriginationHours,
+      unassignedOriginationAmount,
+      totalAmount:
+        nominalHouseAmount +
+        unassignedCloserAmount +
+        unassignedOriginationAmount,
     }
 
     const combinedPayoutTotal =

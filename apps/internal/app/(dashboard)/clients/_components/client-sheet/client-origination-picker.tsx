@@ -1,184 +1,111 @@
 'use client'
 
-import { ChevronsUpDown, LinkIcon, User2, X } from 'lucide-react'
+import { useState } from 'react'
+import { LinkIcon, User2, X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { CommandCreateRows } from '@/components/ui/command-create-rows'
 import {
   Command,
-  CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
-import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
-import { Tabs, TabsList, TabsTrigger } from '@pts/ui/tabs'
 
 import type {
   OriginationContactOption,
-  OriginationMode,
   PartnerUserOption,
 } from '@/lib/settings/clients/use-client-sheet-state'
 
 export type ClientOriginationPickerProps = {
-  mode: OriginationMode
   selectedUser: PartnerUserOption | null
   selectedContact: OriginationContactOption | null
   availableUsers: PartnerUserOption[]
   availableContacts: OriginationContactOption[]
   disabled: boolean
   disabledReason: string | null
-  isUserPickerOpen: boolean
-  isContactPickerOpen: boolean
+  isPickerOpen: boolean
   isPending: boolean
   pendingReason: string
-  onUserPickerOpenChange: (open: boolean) => void
-  onContactPickerOpenChange: (open: boolean) => void
+  onPickerOpenChange: (open: boolean) => void
   onSelectUser: (user: PartnerUserOption) => void
   onSelectContact: (contact: OriginationContactOption) => void
   onClear: () => void
+  /** Open the contact create sheet; the new contact becomes the originator. */
+  onCreateContact: (query: string) => void
 }
 
-function UserDisplayName(user: PartnerUserOption): string {
-  return user.fullName?.trim() || user.email
+type OriginatorDisplay = {
+  kind: 'user' | 'contact'
+  name: string
+  email: string | null
 }
 
-type ClientOriginationModeToggleProps = {
-  mode: OriginationMode
-  disabled: boolean
-  onModeChange: (mode: OriginationMode) => void
+function userDisplay(user: PartnerUserOption): OriginatorDisplay {
+  return {
+    kind: 'user',
+    name: user.fullName?.trim() || user.email,
+    email: user.email,
+  }
 }
 
-/** The internal/external switch — rendered on the field's label row. */
-export function ClientOriginationModeToggle({
-  mode,
-  disabled,
-  onModeChange,
-}: ClientOriginationModeToggleProps) {
-  return (
-    <Tabs
-      value={mode}
-      onValueChange={next => onModeChange(next as OriginationMode)}
-    >
-      <TabsList aria-label='Origination source type' className='h-7 p-0.5'>
-        <TabsTrigger
-          value='internal'
-          className='px-2 text-xs'
-          disabled={disabled}
-        >
-          <User2 className='size-3.5' />
-          Internal partner
-        </TabsTrigger>
-        <TabsTrigger
-          value='external'
-          className='px-2 text-xs'
-          disabled={disabled}
-        >
-          <LinkIcon className='size-3.5' />
-          External referrer
-        </TabsTrigger>
-      </TabsList>
-    </Tabs>
-  )
+function contactDisplay(contact: OriginationContactOption): OriginatorDisplay {
+  return {
+    kind: 'contact',
+    name: contact.name?.trim() || contact.email,
+    email: contact.email,
+  }
 }
 
+/**
+ * The client's single originator — an admin or a contact, picked from one
+ * list the same way closers are. The selection itself says which kind it is.
+ */
 export function ClientOriginationPicker({
-  mode,
   selectedUser,
   selectedContact,
   availableUsers,
   availableContacts,
   disabled,
   disabledReason,
-  isUserPickerOpen,
-  isContactPickerOpen,
-  isPending,
-  pendingReason,
-  onUserPickerOpenChange,
-  onContactPickerOpenChange,
-  onSelectUser,
-  onSelectContact,
-  onClear,
-}: ClientOriginationPickerProps) {
-  if (mode === 'internal') {
-    return (
-      <InternalPartnerPicker
-        selectedUser={selectedUser}
-        availableUsers={availableUsers}
-        disabled={disabled}
-        disabledReason={disabledReason}
-        isPickerOpen={isUserPickerOpen}
-        isPending={isPending}
-        pendingReason={pendingReason}
-        onPickerOpenChange={onUserPickerOpenChange}
-        onSelect={onSelectUser}
-        onClear={onClear}
-      />
-    )
-  }
-
-  return (
-    <ExternalReferrerPicker
-      selectedContact={selectedContact}
-      availableContacts={availableContacts}
-      disabled={disabled}
-      disabledReason={disabledReason}
-      isPickerOpen={isContactPickerOpen}
-      isPending={isPending}
-      pendingReason={pendingReason}
-      onPickerOpenChange={onContactPickerOpenChange}
-      onSelect={onSelectContact}
-      onClear={onClear}
-    />
-  )
-}
-
-// ----------------------------------------------------------------------
-// Internal partner picker (admin users)
-// ----------------------------------------------------------------------
-
-type InternalPartnerPickerProps = {
-  selectedUser: PartnerUserOption | null
-  availableUsers: PartnerUserOption[]
-  disabled: boolean
-  disabledReason: string | null
-  isPickerOpen: boolean
-  isPending: boolean
-  pendingReason: string
-  onPickerOpenChange: (open: boolean) => void
-  onSelect: (user: PartnerUserOption) => void
-  onClear: () => void
-}
-
-function InternalPartnerPicker({
-  selectedUser,
-  availableUsers,
-  disabled,
-  disabledReason,
   isPickerOpen,
   isPending,
   pendingReason,
   onPickerOpenChange,
-  onSelect,
+  onSelectUser,
+  onSelectContact,
   onClear,
-}: InternalPartnerPickerProps) {
-  if (selectedUser) {
+  onCreateContact,
+}: ClientOriginationPickerProps) {
+  const [query, setQuery] = useState('')
+  const selected = selectedUser
+    ? userDisplay(selectedUser)
+    : selectedContact
+      ? contactDisplay(selectedContact)
+      : null
+
+  if (selected) {
+    const locked = isPending || disabled
     return (
       <div className='bg-muted/40 flex items-center gap-3 rounded-md border px-3 py-2'>
-        <User2 className='text-muted-foreground h-4 w-4 shrink-0' />
+        {selected.kind === 'user' ? (
+          <User2 className='text-muted-foreground h-4 w-4 shrink-0' />
+        ) : (
+          <LinkIcon className='text-muted-foreground h-4 w-4 shrink-0' />
+        )}
         <div className='flex min-w-0 flex-1 flex-col text-sm leading-tight'>
-          <span className='truncate font-medium'>
-            {UserDisplayName(selectedUser)}
-          </span>
-          {selectedUser.fullName ? (
+          <span className='truncate font-medium'>{selected.name}</span>
+          {selected.email && selected.email !== selected.name ? (
             <span className='text-muted-foreground truncate text-xs'>
-              {selectedUser.email}
+              {selected.email}
             </span>
           ) : null}
         </div>
         <DisabledFieldTooltip
-          disabled={isPending || disabled}
+          disabled={locked}
           reason={isPending ? pendingReason : disabledReason}
         >
           <Button
@@ -187,8 +114,8 @@ function InternalPartnerPicker({
             size='icon-sm'
             className='text-muted-foreground hover:text-destructive shrink-0'
             onClick={onClear}
-            disabled={isPending || disabled}
-            aria-label={`Clear internal origination ${UserDisplayName(selectedUser)}`}
+            disabled={locked}
+            aria-label={`Remove originator ${selected.name}`}
           >
             <X className='h-4 w-4' />
           </Button>
@@ -197,61 +124,65 @@ function InternalPartnerPicker({
     )
   }
 
-  const hasNoUsers = availableUsers.length === 0
-
   return (
     <Popover open={isPickerOpen} onOpenChange={onPickerOpenChange} modal>
-      <DisabledFieldTooltip
-        disabled={disabled || hasNoUsers}
-        reason={
-          disabledReason ?? (hasNoUsers ? 'No admin users available' : null)
-        }
-      >
+      {/* Never disabled for an empty list: the create row is the escape hatch. */}
+      <DisabledFieldTooltip disabled={disabled} reason={disabledReason}>
         <div className='w-full'>
           <PopoverTrigger asChild>
             <Button
               type='button'
               variant='outline'
-              className='w-full justify-between'
-              disabled={disabled || hasNoUsers}
+              className='w-full justify-start'
+              disabled={disabled}
             >
-              <span className='flex items-center gap-2'>
-                <User2 className='h-4 w-4' />
-                Select internal partner
-              </span>
-              <ChevronsUpDown className='h-4 w-4 opacity-50' />
+              <User2 className='h-4 w-4' />
+              No originator
             </Button>
           </PopoverTrigger>
         </div>
       </DisabledFieldTooltip>
-      <PopoverContent className='w-(--anchor-width) p-0'>
+      <PopoverContent className='w-80 p-0'>
         <Command>
-          <CommandInput placeholder='Search admin users...' />
-          <CommandEmpty>No matching users.</CommandEmpty>
+          <CommandInput
+            placeholder='Search admins and contacts...'
+            value={query}
+            onValueChange={setQuery}
+          />
           <CommandList>
-            <CommandGroup heading='Admin users'>
-              {availableUsers.map(user => (
-                <CommandItem
-                  key={user.id}
-                  value={`${user.fullName ?? ''} ${user.email}`}
-                  onSelect={() => {
-                    if (isPending) return
-                    onSelect(user)
-                  }}
-                >
-                  <div className='flex flex-col'>
-                    <span className='font-medium'>
-                      {user.fullName ?? user.email}
-                    </span>
-                    {user.fullName ? (
-                      <span className='text-muted-foreground text-xs'>
-                        {user.email}
-                      </span>
-                    ) : null}
-                  </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
+            {availableUsers.length > 0 ? (
+              <CommandGroup heading='Admin users'>
+                {availableUsers.map(user => (
+                  <CandidateItem
+                    key={`user:${user.id}`}
+                    display={userDisplay(user)}
+                    onSelect={() => {
+                      if (isPending) return
+                      onSelectUser(user)
+                    }}
+                  />
+                ))}
+              </CommandGroup>
+            ) : null}
+            {availableContacts.length > 0 ? (
+              <CommandGroup heading='Contacts'>
+                {availableContacts.map(contact => (
+                  <CandidateItem
+                    key={`contact:${contact.id}`}
+                    display={contactDisplay(contact)}
+                    onSelect={() => {
+                      if (isPending) return
+                      onSelectContact(contact)
+                    }}
+                  />
+                ))}
+              </CommandGroup>
+            ) : null}
+            <CommandCreateRows
+              query={query}
+              entityLabel='contact'
+              onCreate={onCreateContact}
+            />
           </CommandList>
         </Command>
       </PopoverContent>
@@ -259,135 +190,27 @@ function InternalPartnerPicker({
   )
 }
 
-// ----------------------------------------------------------------------
-// External referrer picker (contacts)
-// ----------------------------------------------------------------------
-
-type ExternalReferrerPickerProps = {
-  selectedContact: OriginationContactOption | null
-  availableContacts: OriginationContactOption[]
-  disabled: boolean
-  disabledReason: string | null
-  isPickerOpen: boolean
-  isPending: boolean
-  pendingReason: string
-  onPickerOpenChange: (open: boolean) => void
-  onSelect: (contact: OriginationContactOption) => void
-  onClear: () => void
-}
-
-function ExternalReferrerPicker({
-  selectedContact,
-  availableContacts,
-  disabled,
-  disabledReason,
-  isPickerOpen,
-  isPending,
-  pendingReason,
-  onPickerOpenChange,
+function CandidateItem({
+  display,
   onSelect,
-  onClear,
-}: ExternalReferrerPickerProps) {
-  if (selectedContact) {
-    return (
-      <div className='bg-muted/40 flex items-center gap-3 rounded-md border px-3 py-2'>
-        <LinkIcon className='text-muted-foreground h-4 w-4 shrink-0' />
-        <div className='flex min-w-0 flex-1 flex-col text-sm leading-tight'>
-          {selectedContact.name ? (
-            <>
-              <span className='truncate font-medium'>
-                {selectedContact.name}
-              </span>
-              <span className='text-muted-foreground truncate text-xs'>
-                {selectedContact.email}
-              </span>
-            </>
-          ) : (
-            <span className='truncate font-medium'>
-              {selectedContact.email}
-            </span>
-          )}
-        </div>
-        <DisabledFieldTooltip
-          disabled={isPending || disabled}
-          reason={isPending ? pendingReason : disabledReason}
-        >
-          <Button
-            type='button'
-            variant='ghost'
-            size='icon-sm'
-            className='text-muted-foreground hover:text-destructive shrink-0'
-            onClick={onClear}
-            disabled={isPending || disabled}
-            aria-label={`Clear external referrer ${selectedContact.name ?? selectedContact.email}`}
-          >
-            <X className='h-4 w-4' />
-          </Button>
-        </DisabledFieldTooltip>
-      </div>
-    )
-  }
-
-  const hasNoContacts = availableContacts.length === 0
-
+}: {
+  display: OriginatorDisplay
+  onSelect: () => void
+}) {
   return (
-    <Popover open={isPickerOpen} onOpenChange={onPickerOpenChange} modal>
-      <DisabledFieldTooltip
-        disabled={disabled || hasNoContacts}
-        reason={
-          disabledReason ?? (hasNoContacts ? 'No contacts available' : null)
-        }
-      >
-        <div className='w-full'>
-          <PopoverTrigger asChild>
-            <Button
-              type='button'
-              variant='outline'
-              className='w-full justify-between'
-              disabled={disabled || hasNoContacts}
-            >
-              <span className='flex items-center gap-2'>
-                <LinkIcon className='h-4 w-4' />
-                Select external referrer
-              </span>
-              <ChevronsUpDown className='h-4 w-4 opacity-50' />
-            </Button>
-          </PopoverTrigger>
-        </div>
-      </DisabledFieldTooltip>
-      <PopoverContent className='w-(--anchor-width) p-0'>
-        <Command>
-          <CommandInput placeholder='Search contacts...' />
-          <CommandEmpty>No matching contacts.</CommandEmpty>
-          <CommandList>
-            <CommandGroup heading='Contacts'>
-              {availableContacts.map(contact => (
-                <CommandItem
-                  key={contact.id}
-                  value={`${contact.name ?? ''} ${contact.email}`}
-                  onSelect={() => {
-                    if (isPending) return
-                    onSelect(contact)
-                  }}
-                >
-                  <div className='flex flex-col'>
-                    {contact.name ? (
-                      <>
-                        <span className='font-medium'>{contact.name}</span>
-                        <span className='text-muted-foreground text-xs'>
-                          {contact.email}
-                        </span>
-                      </>
-                    ) : (
-                      <span className='font-medium'>{contact.email}</span>
-                    )}
-                  </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+    <CommandItem
+      value={`${display.kind} ${display.name} ${display.email ?? ''}`}
+      onSelect={onSelect}
+    >
+      <User2 className='text-muted-foreground h-4 w-4' />
+      <div className='flex min-w-0 flex-col'>
+        <span className='truncate font-medium'>{display.name}</span>
+        {display.email && display.email !== display.name ? (
+          <span className='text-muted-foreground truncate text-xs'>
+            {display.email}
+          </span>
+        ) : null}
+      </div>
+    </CommandItem>
   )
 }
