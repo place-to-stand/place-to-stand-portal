@@ -1,3 +1,7 @@
+// Reads the session per request; without this the build tries to prerender
+// /sign-in and calls Supabase at build time.
+export const dynamic = 'force-dynamic'
+
 import { redirect } from 'next/navigation'
 
 import { getCurrentUser } from '@/lib/auth/session'
