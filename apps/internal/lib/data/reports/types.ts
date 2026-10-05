@@ -175,7 +175,11 @@ export type PartnerPayoutData = {
 //                            closer on the as-of term, or an archived one)
 //                            × rates.closerPerHour (PRD 007 — the closer
 //                            share is not paid out, it stays in house)
+//   unassignedOriginationAmount = billing hours on clients with no
+//                            originator on the as-of term (e.g. inbound from
+//                            ads) × rates.originationPerHour — likewise kept
 //   totalAmount          = nominalAmount + unassignedCloserAmount
+//                          + unassignedOriginationAmount
 // `billingHours = prepaidBilling.totalHours + net30Billing.totalHours`, the
 // same population as origination/closer. Payroll is on a work basis, so the
 // four buckets do not reconcile to Billing In in a single month; house is
@@ -191,7 +195,11 @@ export type HouseData = {
   unassignedCloserHours: number
   /** unassignedCloserHours × rates.closerPerHour — kept in house, not paid. */
   unassignedCloserAmount: number
-  /** nominalAmount + unassignedCloserAmount. Estimated. */
+  /** Billing hours on clients with no originator. */
+  unassignedOriginationHours: number
+  /** unassignedOriginationHours × rates.originationPerHour — kept in house, not paid. */
+  unassignedOriginationAmount: number
+  /** nominalAmount + both unassigned amounts. Estimated. */
   totalAmount: number
 }
 

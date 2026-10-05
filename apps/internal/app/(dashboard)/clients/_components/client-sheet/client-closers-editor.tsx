@@ -1,14 +1,15 @@
 'use client'
 
+import { useState } from 'react'
 import { Handshake, LinkIcon, Plus, User2, X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { Input } from '@pts/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { CommandCreateRows } from '@/components/ui/command-create-rows'
 import {
   Command,
-  CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
@@ -38,6 +39,8 @@ export type ClientClosersEditorProps = {
   onAdd: (candidate: CloserCandidate) => void
   onRemove: (key: string) => void
   onShareChange: (key: string, shareText: string) => void
+  /** Open the contact create sheet; the new contact is added as a closer. */
+  onCreateContact: (query: string) => void
 }
 
 /**
@@ -60,6 +63,7 @@ export function ClientClosersEditor({
   onAdd,
   onRemove,
   onShareChange,
+  onCreateContact,
 }: ClientClosersEditorProps) {
   const isSplit = closers.length > 1
   const locked = isPending || disabled
@@ -135,6 +139,7 @@ export function ClientClosersEditor({
           isPending={isPending}
           onPickerOpenChange={onPickerOpenChange}
           onAdd={onAdd}
+          onCreateContact={onCreateContact}
         />
         {isSplit ? (
           <span
@@ -161,6 +166,7 @@ type CloserAddButtonProps = {
   isPending: boolean
   onPickerOpenChange: (open: boolean) => void
   onAdd: (candidate: CloserCandidate) => void
+  onCreateContact: (query: string) => void
 }
 
 function CloserAddButton({
@@ -173,19 +179,14 @@ function CloserAddButton({
   isPending,
   onPickerOpenChange,
   onAdd,
+  onCreateContact,
 }: CloserAddButtonProps) {
-  const hasNoCandidates =
-    availableUsers.length === 0 && availableContacts.length === 0
+  const [query, setQuery] = useState('')
 
   return (
     <Popover open={isPickerOpen} onOpenChange={onPickerOpenChange} modal>
-      <DisabledFieldTooltip
-        disabled={disabled || hasNoCandidates}
-        reason={
-          disabledReason ??
-          (hasNoCandidates ? 'Everyone available is already a closer' : null)
-        }
-      >
+      {/* Never disabled for an empty list: the create row is the escape hatch. */}
+      <DisabledFieldTooltip disabled={disabled} reason={disabledReason}>
         <div className={hasClosers ? undefined : 'w-full'}>
           <PopoverTrigger asChild>
             <Button
@@ -193,7 +194,7 @@ function CloserAddButton({
               variant={hasClosers ? 'ghost' : 'outline'}
               size={hasClosers ? 'sm' : 'default'}
               className={hasClosers ? undefined : 'w-full justify-start'}
-              disabled={disabled || hasNoCandidates}
+              disabled={disabled}
             >
               {hasClosers ? (
                 <Plus className='h-4 w-4' />
@@ -207,8 +208,11 @@ function CloserAddButton({
       </DisabledFieldTooltip>
       <PopoverContent className='w-80 p-0'>
         <Command>
-          <CommandInput placeholder='Search admins and contacts...' />
-          <CommandEmpty>No matches.</CommandEmpty>
+          <CommandInput
+            placeholder='Search admins and contacts...'
+            value={query}
+            onValueChange={setQuery}
+          />
           <CommandList>
             {availableUsers.length > 0 ? (
               <CommandGroup heading='Admin users'>
@@ -234,6 +238,11 @@ function CloserAddButton({
                 ))}
               </CommandGroup>
             ) : null}
+            <CommandCreateRows
+              query={query}
+              entityLabel='contact'
+              onCreate={onCreateContact}
+            />
           </CommandList>
         </Command>
       </PopoverContent>

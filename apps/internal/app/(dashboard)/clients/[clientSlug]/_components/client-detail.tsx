@@ -40,10 +40,7 @@ import {
   getArchiveClientDialogDescription,
 } from '@/lib/settings/clients/client-sheet-constants'
 import type { ClientRow } from '@/lib/settings/clients/client-sheet-utils'
-import {
-  closerKey,
-  type ClientCloser,
-} from '@/lib/settings/clients/closers'
+import { closerKey, type ClientCloser } from '@/lib/settings/clients/closers'
 import type { SheetEntityKey } from '@/lib/sheets/entities'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { prefetchSheetInit } from '@/lib/sheets/wrappers/use-sheet-init'
@@ -166,11 +163,6 @@ function ClientDetailsWidget({
     : originationContact
       ? (originationContact.name ?? originationContact.email)
       : null
-  const originationKind = originationUser
-    ? 'Internal partner'
-    : originationContact
-      ? 'External referrer'
-      : null
 
   return (
     <section className='bg-card text-card-foreground overflow-hidden rounded-lg border'>
@@ -226,11 +218,6 @@ function ClientDetailsWidget({
                   originationUser?.avatarUrl ? originationUser.id : null
                 }
               />
-              {originationKind ? (
-                <span className='text-muted-foreground text-xs font-normal'>
-                  ({originationKind})
-                </span>
-              ) : null}
             </span>
           </div>
         ) : null}
@@ -242,7 +229,10 @@ function ClientDetailsWidget({
             </span>
             <span className='ml-auto flex flex-col items-end gap-1 text-sm font-medium'>
               {closers.map(closer => (
-                <span key={closerKey(closer)} className='flex items-center gap-2'>
+                <span
+                  key={closerKey(closer)}
+                  className='flex items-center gap-2'
+                >
                   <SheetLink
                     entity={closer.kind}
                     id={closer.id}

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useMemo } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { Archive, Building2, CheckCircle2, Clock, Pencil } from 'lucide-react'
+import { Archive, Building2, Clock, Pencil } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Badge } from '@pts/ui/badge'
@@ -101,6 +101,38 @@ function toTableClient(client: ClientWithMetrics): ClientsTableClient {
       total_projects: client.projectCount,
     },
   }
+}
+
+/** The client's originator — an admin (photo) or a contact (initials). */
+function OriginatorAvatar({ client }: { client: ClientWithMetrics }) {
+  const name = client.originationUserId
+    ? (client.originationUserName ?? 'Unknown admin')
+    : client.originationContactId
+      ? (client.originationContactName ?? 'Unknown contact')
+      : null
+
+  if (!name) {
+    return <span className='text-muted-foreground/40 text-sm'>—</span>
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span aria-label={`Originated by ${name}`}>
+          <Avatar size='sm'>
+            {client.originationUserId ? (
+              <AvatarImage
+                src={`/api/storage/user-avatar/${client.originationUserId}?v=${encodeURIComponent(client.originationUserUpdatedAt ?? '')}`}
+                alt={name}
+              />
+            ) : null}
+            <AvatarFallback>{getInitials(name)}</AvatarFallback>
+          </Avatar>
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>{name}</TooltipContent>
+    </Tooltip>
+  )
 }
 
 export function ClientsLanding({
@@ -372,42 +404,7 @@ export function ClientsLanding({
                 </TableCell>
                 <TableCell>
                   <div className='flex items-center justify-center'>
-                    {client.originationUserId ? (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Avatar size='sm'>
-                            <AvatarImage
-                              src={`/api/storage/user-avatar/${client.originationUserId}?v=${encodeURIComponent(client.originationUserUpdatedAt ?? '')}`}
-                              alt={
-                                client.originationUserName ?? 'Internal partner'
-                              }
-                            />
-                            <AvatarFallback>
-                              {getInitials(client.originationUserName)}
-                            </AvatarFallback>
-                          </Avatar>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          Internal — {client.originationUserName ?? 'partner'}
-                        </TooltipContent>
-                      </Tooltip>
-                    ) : client.originationContactId ? (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className='cursor-default'>
-                            <CheckCircle2 className='text-success h-4 w-4' />
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          External —{' '}
-                          {client.originationContactName ?? 'referrer'}
-                        </TooltipContent>
-                      </Tooltip>
-                    ) : (
-                      <span className='text-muted-foreground/40 text-sm'>
-                        —
-                      </span>
-                    )}
+                    <OriginatorAvatar client={client} />
                   </div>
                 </TableCell>
                 <TableCell>

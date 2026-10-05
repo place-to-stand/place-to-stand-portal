@@ -78,17 +78,7 @@ export const clientSchema = z
     data =>
       !(data.originationUserId !== null && data.originationContactId !== null),
     {
-      message:
-        'Pick either an internal partner or an external referrer for origination, not both.',
-      path: ['originationUserId'],
-    }
-  )
-  .refine(
-    data =>
-      data.originationUserId !== null || data.originationContactId !== null,
-    {
-      message:
-        'Origination is required. Pick an internal partner or an external referrer.',
+      message: 'Origination is one admin or one contact, not both.',
       path: ['originationUserId'],
     }
   )

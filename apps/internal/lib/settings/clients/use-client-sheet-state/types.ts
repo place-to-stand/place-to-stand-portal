@@ -39,8 +39,6 @@ export type PartnerUserOption = {
   disabledAt?: string | null
 }
 
-export type OriginationMode = 'internal' | 'external'
-
 /** An admin or contact the closer picker offers. */
 export type CloserCandidate = {
   kind: CloserKind
@@ -94,25 +92,22 @@ export type BaseFormState = {
   handleAddContact: (contact: ClientContactOption) => void
   /** Open the contact create sheet on top, prefilled with the typed query. */
   handleCreateContact: (query: string) => void
+  handleCreateOriginationContact: (query: string) => void
+  handleCreateCloserContact: (query: string) => void
   handleRemoveContact: (contact: ClientContactOption) => void
   /** Linked contact addressed by default on invoice emails; at most one. */
   primaryContactId: string | null
   /** Make this contact primary, or clear it if it already is. */
   handleTogglePrimaryContact: (contact: ClientContactOption) => void
   // Origination
-  originationMode: OriginationMode
   selectedOriginationUser: PartnerUserOption | null
   selectedOriginationContact: OriginationContactOption | null
   availableOriginationUsers: PartnerUserOption[]
   availableOriginationContacts: OriginationContactOption[]
-  isOriginationUserPickerOpen: boolean
-  isOriginationContactPickerOpen: boolean
+  isOriginationPickerOpen: boolean
   originationPickerDisabled: boolean
   originationPickerDisabledReason: string | null
-  originationError: string | null
-  handleOriginationModeChange: (mode: OriginationMode) => void
-  handleOriginationUserPickerOpenChange: (open: boolean) => void
-  handleOriginationContactPickerOpenChange: (open: boolean) => void
+  handleOriginationPickerOpenChange: (open: boolean) => void
   handleSelectOriginationUser: (user: PartnerUserOption) => void
   handleSelectOriginationContact: (contact: OriginationContactOption) => void
   handleClearOrigination: () => void
@@ -194,25 +189,22 @@ export type UseClientSheetStateReturn = {
   handleAddContact: (contact: ClientContactOption) => void
   /** Open the contact create sheet on top, prefilled with the typed query. */
   handleCreateContact: (query: string) => void
+  handleCreateOriginationContact: (query: string) => void
+  handleCreateCloserContact: (query: string) => void
   handleRemoveContact: (contact: ClientContactOption) => void
   /** Linked contact addressed by default on invoice emails; at most one. */
   primaryContactId: string | null
   /** Make this contact primary, or clear it if it already is. */
   handleTogglePrimaryContact: (contact: ClientContactOption) => void
   // Origination
-  originationMode: OriginationMode
   selectedOriginationUser: PartnerUserOption | null
   selectedOriginationContact: OriginationContactOption | null
   availableOriginationUsers: PartnerUserOption[]
   availableOriginationContacts: OriginationContactOption[]
-  isOriginationUserPickerOpen: boolean
-  isOriginationContactPickerOpen: boolean
+  isOriginationPickerOpen: boolean
   originationPickerDisabled: boolean
   originationPickerDisabledReason: string | null
-  originationError: string | null
-  handleOriginationModeChange: (mode: OriginationMode) => void
-  handleOriginationUserPickerOpenChange: (open: boolean) => void
-  handleOriginationContactPickerOpenChange: (open: boolean) => void
+  handleOriginationPickerOpenChange: (open: boolean) => void
   handleSelectOriginationUser: (user: PartnerUserOption) => void
   handleSelectOriginationContact: (contact: OriginationContactOption) => void
   handleClearOrigination: () => void
