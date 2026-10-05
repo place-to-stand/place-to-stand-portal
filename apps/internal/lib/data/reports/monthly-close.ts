@@ -186,36 +186,34 @@ export const fetchMonthlyCloseReport = cache(
     }
 
     // ------------------------------------------------------------------
-    // Closer — same pattern, grouped by closer user.
+    // Closer — same pattern, grouped by `${kind}:${id}`. A client with
+    // several closers contributes one detail per closer; each is credited
+    // its share of the client's billing hours.
     // ------------------------------------------------------------------
     const closerMap = new Map<
       string,
-      {
-        closerUserId: string
-        closerName: string | null
-        closerEmail: string
-        closerAvatarUrl: string | null
-        closerUpdatedAt: string
-        clients: CloserClientDetail[]
-      }
+      Omit<CloserGroupRow, 'totalHours' | 'totalCommission'>
     >()
 
     for (const row of closerRows) {
-      const hours = toFiniteNumber(row.hours)
+      const key = `${row.closerKind}:${row.closerId}`
+      const hours = (toFiniteNumber(row.hours) * row.sharePercent) / 100
       const detail: CloserClientDetail = {
         clientId: row.clientId,
         clientName: row.clientName,
         billingType: row.clientBillingType,
         hours,
+        sharePercent: row.sharePercent,
         commission: hours * rates.closerPerHour,
       }
 
-      const existing = closerMap.get(row.closerUserId)
+      const existing = closerMap.get(key)
       if (existing) {
         existing.clients.push(detail)
       } else {
-        closerMap.set(row.closerUserId, {
-          closerUserId: row.closerUserId,
+        closerMap.set(key, {
+          closerKind: row.closerKind,
+          closerId: row.closerId,
           closerName: row.closerName,
           closerEmail: row.closerEmail,
           closerAvatarUrl: row.closerAvatarUrl,
@@ -230,12 +228,7 @@ export const fetchMonthlyCloseReport = cache(
     ).map(group => {
       const totalHours = group.clients.reduce((sum, c) => sum + c.hours, 0)
       return {
-        closerUserId: group.closerUserId,
-        closerName: group.closerName,
-        closerEmail: group.closerEmail,
-        closerAvatarUrl: group.closerAvatarUrl,
-        closerUpdatedAt: group.closerUpdatedAt,
-        clients: group.clients,
+        ...group,
         totalHours,
         totalCommission: totalHours * rates.closerPerHour,
       }
@@ -257,7 +250,7 @@ export const fetchMonthlyCloseReport = cache(
     // Partner Payouts — lump-sum view by payee
     //
     // Merges Payroll (user), Origination (user or contact), and Closer
-    // (user) into a single "cut a check for this amount" row per person.
+    // (user or contact) into a single "cut a check for this amount" row per person.
     // Keyed on `${kind}:${id}` so users and contacts with the same UUID
     // don't collide.
     // ------------------------------------------------------------------
@@ -335,9 +328,9 @@ export const fetchMonthlyCloseReport = cache(
     }
     for (const row of closer.rows) {
       const payee = upsertPayee({
-        kind: 'user',
-        id: row.closerUserId,
-        name: row.closerName ?? row.closerEmail,
+        kind: row.closerKind,
+        id: row.closerId,
+        name: row.closerName,
         email: row.closerEmail,
         avatarUrl: row.closerAvatarUrl,
         avatarUpdatedAt: row.closerUpdatedAt,
@@ -448,9 +441,10 @@ export const fetchMonthlyCloseReport = cache(
       prepaidBilling.totalAmount + net30Billing.totalAmount
     // House is a rate × billing-hours calculation. Billing hours = prepaid
     // hours purchased + net_30 hours logged (same population as
-    // origination/closer). Billing on a client whose as-of commission term
-    // has no closer keeps its closer share in house (PRD 007) — nobody is
-    // paid it, so it is reported here rather than vanishing from the split.
+    // origination/closer). Billing hours no closer is credited with (no
+    // closer on the as-of term, or an archived one) keep their closer share
+    // in house (PRD 007) — nobody is paid it, so it is reported here rather
+    // than vanishing from the split.
     // House is an ESTIMATE either way: it is the firm's nominal share, not a
     // cash residual.
     const billingHours =

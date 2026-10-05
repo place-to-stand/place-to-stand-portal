@@ -37,7 +37,7 @@ export async function saveClientMutation(
     website,
     originationContactId,
     originationUserId,
-    closerUserId,
+    closers,
   } = parsed.data
   const normalizedMemberIds = memberIds
     ? Array.from(new Set(memberIds)).filter(Boolean)
@@ -73,7 +73,7 @@ export async function saveClientMutation(
           website: cleanedWebsite,
           originationContactId,
           originationUserId,
-          closerUserId,
+          closers,
           notes: cleanedNotes,
           memberIds: normalizedMemberIds,
         })
@@ -90,7 +90,7 @@ export async function saveClientMutation(
         website: cleanedWebsite,
         originationContactId,
         originationUserId,
-        closerUserId,
+        closers,
         notes: cleanedNotes,
         memberIds: normalizedMemberIds,
       })

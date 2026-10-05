@@ -24,7 +24,6 @@ export type DbClient = {
   state: string | null
   origination_contact_id: string | null
   origination_user_id: string | null
-  closer_user_id: string | null
   billing_type: ClientBillingTypeValue
   created_by: string | null
   created_at: string

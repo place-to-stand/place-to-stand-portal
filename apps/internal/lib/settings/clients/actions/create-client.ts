@@ -6,6 +6,7 @@ import { clients } from '@/lib/db/schema'
 import type { ClientBillingTypeValue } from '@/lib/types'
 import { insertInitialBillingTerm } from '@/lib/queries/clients/billing-terms'
 import { insertInitialCommissionTerm } from '@/lib/queries/clients/commission-terms'
+import type { CloserShare } from '@/lib/settings/clients/closers'
 import {
   assertClientPartnerUserRoles,
   generateUniqueClientSlug,
@@ -27,7 +28,7 @@ type CreateClientPayload = {
   website: string | null
   originationContactId: string | null
   originationUserId: string | null
-  closerUserId: string | null
+  closers: CloserShare[]
   notes: string | null
   memberIds?: string[]
 }
@@ -48,14 +49,14 @@ export async function createClient(
     website,
     originationContactId,
     originationUserId,
-    closerUserId,
+    closers,
     notes,
     memberIds,
   } = payload
 
   const partnerRoleError = await assertClientPartnerUserRoles({
     originationUserId,
-    closerUserId,
+    closers,
   })
   if (partnerRoleError) {
     return buildMutationResult(partnerRoleError)
@@ -83,7 +84,6 @@ export async function createClient(
             website,
             originationContactId,
             originationUserId,
-            closerUserId,
             notes,
             createdBy: user.id,
           })
@@ -102,10 +102,10 @@ export async function createClient(
         })
 
         // Same atomicity for the commission split (PRD 007): the client's
-        // first month must resolve its closer/origination.
+        // first month must resolve its closers/origination.
         await insertInitialCommissionTerm(tx, {
           clientId: insertedId,
-          closerUserId,
+          closers,
           originationUserId,
           originationContactId,
           createdBy: user.id,

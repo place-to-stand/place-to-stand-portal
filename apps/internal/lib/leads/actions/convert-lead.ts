@@ -91,7 +91,7 @@ export async function convertLeadToClient(
         website: lead.companyWebsite || null,
         originationContactId: null,
         originationUserId: null,
-        closerUserId: null,
+        closers: [],
         notes: resolvedNotes,
         memberIds: memberIds || [],
       }

@@ -34,6 +34,7 @@ export type PayoutTable = {
 type Draft = Omit<PayoutTableRow, 'secondary' | 'total'> & {
   hoursWorked: number | null
   referredClients: string[]
+  closedClients: string[]
 }
 
 /**
@@ -42,6 +43,17 @@ type Draft = Omit<PayoutTableRow, 'secondary' | 'total'> & {
  * closer amount. Each row carries the lines behind its numbers for the
  * expanded view.
  */
+/** "Referred Acme · Closed Dotfun" — a contact is paid for one or both. */
+function describeContactPayee(referred: string[], closed: string[]): string {
+  const list = (names: string[]) => Array.from(new Set(names)).join(', ')
+  return [
+    referred.length > 0 ? `Referred ${list(referred)}` : null,
+    closed.length > 0 ? `Closed ${list(closed)}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+}
+
 export function buildPayoutTable(
   report: MonthlyCloseReport,
   profitShare: ProfitShareData | null
@@ -67,6 +79,7 @@ export function buildPayoutTable(
         details: [],
         hoursWorked: null,
         referredClients: [],
+        closedClients: [],
       }
       drafts.set(key, draft)
     }
@@ -124,14 +137,21 @@ export function buildPayoutTable(
 
   for (const group of report.closer.rows) {
     const draft = ensure({
-      kind: 'user',
-      id: group.closerUserId,
-      name: group.closerName ?? group.closerEmail,
+      kind: group.closerKind,
+      id: group.closerId,
+      name: group.closerName,
       avatarUpdatedAt: group.closerAvatarUrl ? group.closerUpdatedAt : null,
     })
     for (const client of group.clients) {
+      draft.closedClients.push(client.clientName)
+      // A shared close credits a slice of the client's hours; show the slice
+      // against the whole so the line reads back to the billing.
+      const hoursLabel =
+        client.sharePercent === 100
+          ? `${formatHours(client.hours)} hrs`
+          : `${client.sharePercent}% of ${formatHours((client.hours * 100) / client.sharePercent)} hrs`
       draft.details.push({
-        label: `Closer · ${client.clientName} · ${formatHours(client.hours)} hrs`,
+        label: `Closer · ${client.clientName} · ${hoursLabel}`,
         column: 'closer',
         amount: client.commission,
       })
@@ -157,11 +177,11 @@ export function buildPayoutTable(
   }
 
   const rows = Array.from(drafts.values())
-    .map(({ hoursWorked, referredClients, ...draft }) => ({
+    .map(({ hoursWorked, referredClients, closedClients, ...draft }) => ({
       ...draft,
       secondary:
         draft.kind === 'contact'
-          ? `Referred ${Array.from(new Set(referredClients)).join(', ')}`
+          ? describeContactPayee(referredClients, closedClients)
           : hoursWorked !== null
             ? `${formatHours(hoursWorked)} hrs worked`
             : 'No hours this month',

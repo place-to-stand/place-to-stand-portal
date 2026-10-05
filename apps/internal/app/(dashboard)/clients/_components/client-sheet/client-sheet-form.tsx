@@ -30,6 +30,8 @@ import { Separator } from '@pts/ui/separator'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import type {
   ClientContactOption,
+  CloserCandidate,
+  CloserDraft,
   OriginationContactOption,
   OriginationMode,
   PartnerUserOption,
@@ -44,7 +46,7 @@ import {
   ClientContactLinkButton,
   ClientContactList,
 } from './client-contact-picker'
-import { ClientCloserPicker } from './client-closer-picker'
+import { ClientClosersEditor } from './client-closers-editor'
 import { ClientEffectiveCallout } from './client-effective-callout'
 import {
   ClientOriginationModeToggle,
@@ -102,18 +104,21 @@ type ClientSheetFormProps = {
   onSelectOriginationUser: (user: PartnerUserOption) => void
   onSelectOriginationContact: (contact: OriginationContactOption) => void
   onClearOrigination: () => void
-  // Closer
-  selectedCloser: PartnerUserOption | null
-  availableClosers: PartnerUserOption[]
+  // Closers
+  closers: CloserDraft[]
+  availableCloserUsers: CloserCandidate[]
+  availableCloserContacts: CloserCandidate[]
+  closerShareTotal: number | null
   isCloserPickerOpen: boolean
   closerPickerDisabled: boolean
   closerPickerDisabledReason: string | null
   closerError: string | null
-  /** Closer or origination differs from the saved assignment — reveals the boundary select. */
+  /** Closers or origination differ from the saved assignment — reveals the boundary select. */
   commissionDirty: boolean
   onCloserPickerOpenChange: (open: boolean) => void
-  onSelectCloser: (user: PartnerUserOption) => void
-  onClearCloser: () => void
+  onAddCloser: (candidate: CloserCandidate) => void
+  onRemoveCloser: (key: string) => void
+  onCloserShareChange: (key: string, shareText: string) => void
 }
 
 export function ClientSheetForm({
@@ -158,16 +163,19 @@ export function ClientSheetForm({
   onSelectOriginationUser,
   onSelectOriginationContact,
   onClearOrigination,
-  selectedCloser,
-  availableClosers,
+  closers,
+  availableCloserUsers,
+  availableCloserContacts,
+  closerShareTotal,
   isCloserPickerOpen,
   closerPickerDisabled,
   closerPickerDisabledReason,
   closerError,
   commissionDirty,
   onCloserPickerOpenChange,
-  onSelectCloser,
-  onClearCloser,
+  onAddCloser,
+  onRemoveCloser,
+  onCloserShareChange,
 }: ClientSheetFormProps) {
   // Subscribed value (not form.watch in JSX — that read proved unreliable
   // across the form-prop boundary): drives the boundary-select visibility.
@@ -438,7 +446,7 @@ export function ClientSheetForm({
 
           <SheetSection
             title='Commission'
-            description='Origination pays 10% and closer pays 20% of this client’s revenue.'
+            description='Origination pays 10% and closers share 20% of this client’s revenue.'
           >
             <div className='grid gap-2'>
               <div className='flex items-center justify-between gap-2'>
@@ -482,19 +490,23 @@ export function ClientSheetForm({
                 data-error={Boolean(closerError)}
                 className='data-[error=true]:text-destructive'
               >
-                Closer
+                {closers.length > 1 ? 'Closers' : 'Closer'}
               </FormLabel>
-              <ClientCloserPicker
-                selectedCloser={selectedCloser}
-                availableClosers={availableClosers}
+              <ClientClosersEditor
+                closers={closers}
+                availableUsers={availableCloserUsers}
+                availableContacts={availableCloserContacts}
+                shareTotal={closerShareTotal}
+                hasError={Boolean(closerError)}
                 disabled={closerPickerDisabled}
                 disabledReason={closerPickerDisabledReason}
                 isPickerOpen={isCloserPickerOpen}
                 isPending={isPending}
                 pendingReason={pendingReason}
                 onPickerOpenChange={onCloserPickerOpenChange}
-                onSelect={onSelectCloser}
-                onClear={onClearCloser}
+                onAdd={onAddCloser}
+                onRemove={onRemoveCloser}
+                onShareChange={onCloserShareChange}
               />
               {closerError ? (
                 <p className='text-destructive text-xs'>{closerError}</p>
@@ -509,7 +521,7 @@ export function ClientSheetForm({
                   current_month:
                     "This month's close pays commissions under the new assignment.",
                   next_month:
-                    'Earlier months keep paying the previous closer and originator.',
+                    'Earlier months keep paying the previous closers and originator.',
                 }}
                 isPending={isPending}
                 pendingReason={pendingReason}

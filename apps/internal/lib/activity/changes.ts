@@ -82,6 +82,7 @@ const FIELD_SPECS: Record<string, FieldSpec> = {
   endsOn: { label: 'End date', kind: 'date' },
   ownerId: { label: 'Owner', kind: 'user' },
   closerUserId: { label: 'Closer', kind: 'user' },
+  closers: { label: 'Closers', kind: 'text' },
   originationUserId: { label: 'Originated by', kind: 'user' },
   originationContactId: { label: 'Originating contact', kind: 'contact' },
   projectId: { label: 'Project', kind: 'project' },

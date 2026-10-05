@@ -17,8 +17,16 @@ import {
 } from '@/lib/queries/clients/billing-terms'
 import {
   commissionAssignmentsEqual,
+  fetchLatestClosersByClient,
+  resolveClosers,
   upsertCommissionTerm,
 } from '@/lib/queries/clients/commission-terms'
+import {
+  closerSplitsEqual,
+  describeClosers,
+  type ClientCloser,
+  type CloserShare,
+} from '@/lib/settings/clients/closers'
 import {
   assertClientPartnerUserRoles,
   clientSlugExists,
@@ -45,7 +53,7 @@ type UpdateClientPayload = {
   website: string | null
   originationContactId: string | null
   originationUserId: string | null
-  closerUserId: string | null
+  closers: CloserShare[]
   notes: string | null
   memberIds?: string[]
 }
@@ -71,7 +79,8 @@ type ExistingClientRecord = {
   notes: string | null
   originationContactId: string | null
   originationUserId: string | null
-  closerUserId: string | null
+  /** The newest commission term's closers — the saved split the sheet edited. */
+  closers: ClientCloser[]
 }
 
 export async function updateClient(
@@ -91,14 +100,14 @@ export async function updateClient(
     website,
     originationContactId,
     originationUserId,
-    closerUserId,
+    closers,
     notes,
     memberIds,
   } = payload
 
   const partnerRoleError = await assertClientPartnerUserRoles({
     originationUserId,
-    closerUserId,
+    closers,
   })
   if (partnerRoleError) {
     return buildMutationResult(partnerRoleError)
@@ -134,13 +143,17 @@ export async function updateClient(
         notes: clients.notes,
         originationContactId: clients.originationContactId,
         originationUserId: clients.originationUserId,
-        closerUserId: clients.closerUserId,
       })
       .from(clients)
       .where(eq(clients.id, id))
       .limit(1)
 
+    const closersByClient = rows[0]
+      ? await fetchLatestClosersByClient([id])
+      : null
     existingClient = rows[0]
+      ? { ...rows[0], closers: closersByClient?.get(id) ?? [] }
+      : undefined
   } catch (error) {
     console.error('Failed to load client for update', error)
     return buildMutationResult({ error: 'Unable to update client.' })
@@ -175,11 +188,11 @@ export async function updateClient(
       : nextMonthStartUtc()
     : null
 
-  // Closer + origination are one logical "commission split" (PRD 007): any
+  // Closers + origination are one logical "commission split" (PRD 007): any
   // change to either writes one effective-dated term so closed months keep
   // resolving to the assignment they were paid under.
   const nextAssignment = {
-    closerUserId,
+    closers,
     originationUserId,
     originationContactId,
   }
@@ -223,9 +236,10 @@ export async function updateClient(
         })
       }
 
-      // The billingType / closer / origination writes below are the
-      // current-value cache flip (what the client list, detail page and sheet
-      // show); the terms rows' effective_from controls report resolution.
+      // The billingType / origination writes below are the current-value
+      // cache flip (what the client list, detail page and sheet show); the
+      // terms rows' effective_from controls report resolution. Closers have
+      // no cache: displays read the newest term's closer rows.
       await tx
         .update(clients)
         .set({
@@ -236,7 +250,6 @@ export async function updateClient(
           website,
           originationContactId,
           originationUserId,
-          closerUserId,
           notes,
         })
         .where(eq(clients.id, id))
@@ -272,7 +285,7 @@ export async function updateClient(
       commissionEffectiveFrom,
       originationContactId,
       originationUserId,
-      closerUserId,
+      closers,
     },
     existingMemberIds: existingMemberIds ?? [],
     nextMemberIds: memberIds ?? [],
@@ -296,7 +309,7 @@ type RecordUpdateActivityArgs = {
     commissionEffectiveFrom: string | null
     originationContactId: string | null
     originationUserId: string | null
-    closerUserId: string | null
+    closers: CloserShare[]
   }
   existingMemberIds: string[]
   nextMemberIds: string[]
@@ -313,7 +326,7 @@ type ClientDiff = {
 }
 
 async function recordUpdateActivity(args: RecordUpdateActivityArgs) {
-  const diff = calculateDiff(args)
+  const diff = await calculateDiff(args)
 
   if (diff.changedFields.length === 0) {
     return
@@ -345,12 +358,12 @@ async function recordUpdateActivity(args: RecordUpdateActivityArgs) {
   })
 }
 
-function calculateDiff({
+async function calculateDiff({
   existingClient,
   updatedValues,
   existingMemberIds,
   nextMemberIds,
-}: Omit<RecordUpdateActivityArgs, 'userContext'>): ClientDiff {
+}: Omit<RecordUpdateActivityArgs, 'userContext'>): Promise<ClientDiff> {
   const changedFields: string[] = []
   const previousDetails: Record<string, unknown> = {}
   const nextDetails: Record<string, unknown> = {}
@@ -411,13 +424,14 @@ function calculateDiff({
     nextDetails.commissionEffectiveFrom = updatedValues.commissionEffectiveFrom
   }
 
-  const previousCloserUserId = existingClient.closerUserId ?? null
-  const nextCloserUserId = updatedValues.closerUserId ?? null
-
-  if (previousCloserUserId !== nextCloserUserId) {
-    changedFields.push('closer')
-    previousDetails.closerUserId = previousCloserUserId
-    nextDetails.closerUserId = nextCloserUserId
+  if (!closerSplitsEqual(existingClient.closers, updatedValues.closers)) {
+    changedFields.push('closers')
+    // Names, not ids: a split is a list with shares, which the feed's
+    // single-user field kind can't render. Captured at save time.
+    previousDetails.closers = describeClosersOrNone(existingClient.closers)
+    nextDetails.closers = describeClosersOrNone(
+      await resolveClosers(updatedValues.closers)
+    )
     // Month boundary the Monthly Close switches at (the cache flips at save).
     nextDetails.commissionEffectiveFrom = updatedValues.commissionEffectiveFrom
   }
@@ -443,6 +457,10 @@ function calculateDiff({
     previousDetails,
     nextDetails,
   }
+}
+
+function describeClosersOrNone(closers: ClientCloser[]): string {
+  return closers.length > 0 ? describeClosers(closers) : 'None'
 }
 
 function diff(primary: string[], comparison: string[]): string[] {

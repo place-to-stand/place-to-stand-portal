@@ -1,9 +1,20 @@
 import 'server-only'
 
-import { aliasedTable, and, eq, gte, isNull, lte, sql } from 'drizzle-orm'
+import {
+  aliasedTable,
+  and,
+  eq,
+  gte,
+  isNotNull,
+  isNull,
+  lte,
+  or,
+  sql,
+} from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import {
+  clientCommissionTermClosers,
   clients,
   contacts,
   hourBlocks,
@@ -13,7 +24,7 @@ import {
 } from '@/lib/db/schema'
 import { billingTypeAsOfSql } from '@/lib/queries/clients/billing-terms'
 import {
-  closerUserIdAsOfSql,
+  commissionTermIdAsOfSql,
   originationContactIdAsOfSql,
   originationUserIdAsOfSql,
 } from '@/lib/queries/clients/commission-terms'
@@ -26,8 +37,8 @@ import type { MonthCursor } from '@/lib/data/reports/types'
  * NULL resolution (no term at or before the period) fails both comparisons
  * and excludes the client from that month.
  *
- * Closer and origination resolve the same way from `client_commission_terms`
- * (PRD 007): the commission joins below match on the as-of assignment, never
+ * Closers and origination resolve the same way from `client_commission_terms`
+ * (PRD 007; closer rows hang off the resolved term): the commission joins below match on the as-of assignment, never
  * on the live `clients.*` cache columns, so reassigning a closer today leaves
  * every closed month exactly as it was paid.
  */
@@ -65,14 +76,19 @@ export type OriginationQueryRow = {
 }
 
 export type CloserQueryRow = {
-  closerUserId: string
-  closerName: string | null
+  closerKind: 'user' | 'contact'
+  closerId: string
+  closerName: string
   closerEmail: string
+  /** Users only. */
   closerAvatarUrl: string | null
-  closerUpdatedAt: string
+  closerUpdatedAt: string | null
+  /** Share of the closer rate this closer takes on this client (0–100]. */
+  sharePercent: number
   clientId: string
   clientName: string
   clientBillingType: 'prepaid' | 'net_30'
+  /** The client's full billing hours — the data layer applies the share. */
   hours: string | null
 }
 
@@ -403,68 +419,104 @@ export async function fetchOriginationCommissions(
  *   Prepaid → hour_blocks.hours_purchased
  *   Net_30  → time_logs.hours on net_30 client projects
  *
- * Closer is always an internal admin user (no contact branch). Clients whose
- * as-of term has no closer are simply absent here; the data layer reports
- * their closer share under House (estimated).
+ * One row per (closer, client): the as-of term's closer rows, each an admin
+ * user or a contact with a share of the closer rate. Clients whose as-of term
+ * has no closers are simply absent here, and an archived closer's row is
+ * dropped; the data layer reports the unpaid share under House (estimated).
  */
 export async function fetchCloserCommissions(
   startDate: string,
   endDate: string
 ): Promise<CloserQueryRow[]> {
   const closerUsers = aliasedTable(users, 'closer_users')
+  const closerContacts = aliasedTable(contacts, 'closer_contacts')
+
+  const closerFields = {
+    closerUserId: clientCommissionTermClosers.closerUserId,
+    closerContactId: clientCommissionTermClosers.closerContactId,
+    sharePercent: clientCommissionTermClosers.sharePercent,
+    userName: closerUsers.fullName,
+    userEmail: closerUsers.email,
+    userAvatarUrl: closerUsers.avatarUrl,
+    userUpdatedAt: closerUsers.updatedAt,
+    contactName: closerContacts.name,
+    contactEmail: closerContacts.email,
+    clientId: clients.id,
+    clientName: clients.name,
+  }
+  const closerGroupBy = [
+    clientCommissionTermClosers.id,
+    clientCommissionTermClosers.closerUserId,
+    clientCommissionTermClosers.closerContactId,
+    clientCommissionTermClosers.sharePercent,
+    closerUsers.fullName,
+    closerUsers.email,
+    closerUsers.avatarUrl,
+    closerUsers.updatedAt,
+    closerContacts.name,
+    closerContacts.email,
+    clients.id,
+    clients.name,
+  ] as const
+  const termClosersJoin = and(
+    eq(clientCommissionTermClosers.termId, commissionTermIdAsOfSql(startDate)),
+    isNull(clientCommissionTermClosers.deletedAt)
+  )
+  // A closer is paid only while their user/contact record is live — same rule
+  // the origination joins apply.
+  const payableCloser = or(
+    and(isNotNull(closerUsers.id), isNull(closerUsers.deletedAt)),
+    and(isNotNull(closerContacts.id), isNull(closerContacts.deletedAt))
+  )
 
   const [prepaid, net30] = await Promise.all([
-    // Prepaid: hour_blocks grouped by closer
+    // Prepaid: hour_blocks per closer row
     db
       .select({
-        closerUserId: closerUsers.id,
-        closerName: closerUsers.fullName,
-        closerEmail: closerUsers.email,
-        closerAvatarUrl: closerUsers.avatarUrl,
-        closerUpdatedAt: closerUsers.updatedAt,
-        clientId: clients.id,
-        clientName: clients.name,
+        ...closerFields,
         hours: sql<string | null>`SUM(${hourBlocks.hoursPurchased})`,
       })
       .from(hourBlocks)
       .innerJoin(clients, eq(hourBlocks.clientId, clients.id))
-      .innerJoin(closerUsers, eq(closerUserIdAsOfSql(startDate), closerUsers.id))
+      .innerJoin(clientCommissionTermClosers, termClosersJoin)
+      .leftJoin(
+        closerUsers,
+        eq(clientCommissionTermClosers.closerUserId, closerUsers.id)
+      )
+      .leftJoin(
+        closerContacts,
+        eq(clientCommissionTermClosers.closerContactId, closerContacts.id)
+      )
       .where(
         and(
           isPrepaidAsOf(startDate),
           isNull(hourBlocks.deletedAt),
           isNull(clients.deletedAt),
-          isNull(closerUsers.deletedAt),
+          payableCloser,
           gte(hourBlocks.billingMonth, startDate),
           lte(hourBlocks.billingMonth, endDate)
         )
       )
-      .groupBy(
-        closerUsers.id,
-        closerUsers.fullName,
-        closerUsers.email,
-        closerUsers.avatarUrl,
-        closerUsers.updatedAt,
-        clients.id,
-        clients.name
-      ),
+      .groupBy(...closerGroupBy),
 
-    // Net_30: time_logs on client projects grouped by closer
+    // Net_30: time_logs on client projects per closer row
     db
       .select({
-        closerUserId: closerUsers.id,
-        closerName: closerUsers.fullName,
-        closerEmail: closerUsers.email,
-        closerAvatarUrl: closerUsers.avatarUrl,
-        closerUpdatedAt: closerUsers.updatedAt,
-        clientId: clients.id,
-        clientName: clients.name,
+        ...closerFields,
         hours: sql<string | null>`SUM(${timeLogs.hours})`,
       })
       .from(timeLogs)
       .innerJoin(projects, eq(timeLogs.projectId, projects.id))
       .innerJoin(clients, eq(projects.clientId, clients.id))
-      .innerJoin(closerUsers, eq(closerUserIdAsOfSql(startDate), closerUsers.id))
+      .innerJoin(clientCommissionTermClosers, termClosersJoin)
+      .leftJoin(
+        closerUsers,
+        eq(clientCommissionTermClosers.closerUserId, closerUsers.id)
+      )
+      .leftJoin(
+        closerContacts,
+        eq(clientCommissionTermClosers.closerContactId, closerContacts.id)
+      )
       .where(
         and(
           isNet30AsOf(startDate),
@@ -472,52 +524,42 @@ export async function fetchCloserCommissions(
           isNull(timeLogs.deletedAt),
           isNull(projects.deletedAt),
           isNull(clients.deletedAt),
-          isNull(closerUsers.deletedAt),
+          payableCloser,
           gte(timeLogs.loggedOn, startDate),
           lte(timeLogs.loggedOn, endDate)
         )
       )
-      .groupBy(
-        closerUsers.id,
-        closerUsers.fullName,
-        closerUsers.email,
-        closerUsers.avatarUrl,
-        closerUsers.updatedAt,
-        clients.id,
-        clients.name
-      ),
+      .groupBy(...closerGroupBy),
   ])
 
-  const rows: CloserQueryRow[] = []
-
-  for (const row of prepaid) {
-    rows.push({
-      closerUserId: row.closerUserId,
-      closerName: row.closerName,
-      closerEmail: row.closerEmail,
-      closerAvatarUrl: row.closerAvatarUrl,
-      closerUpdatedAt: row.closerUpdatedAt,
+  type CloserSelectRow = (typeof prepaid)[number]
+  const toRow = (
+    row: CloserSelectRow,
+    clientBillingType: 'prepaid' | 'net_30'
+  ): CloserQueryRow => {
+    const isUser = row.closerUserId !== null
+    // Both email columns are NOT NULL; the outer joins only widen the type.
+    const email = (isUser ? row.userEmail : row.contactEmail) ?? ''
+    return {
+      closerKind: isUser ? 'user' : 'contact',
+      closerId: (row.closerUserId ?? row.closerContactId) as string,
+      closerName:
+        (isUser ? row.userName : row.contactName)?.trim() || email || 'Unknown',
+      closerEmail: email,
+      closerAvatarUrl: isUser ? row.userAvatarUrl : null,
+      closerUpdatedAt: isUser ? row.userUpdatedAt : null,
+      sharePercent: Number(row.sharePercent),
       clientId: row.clientId,
       clientName: row.clientName,
-      clientBillingType: 'prepaid',
+      clientBillingType,
       hours: row.hours,
-    })
-  }
-  for (const row of net30) {
-    rows.push({
-      closerUserId: row.closerUserId,
-      closerName: row.closerName,
-      closerEmail: row.closerEmail,
-      closerAvatarUrl: row.closerAvatarUrl,
-      closerUpdatedAt: row.closerUpdatedAt,
-      clientId: row.clientId,
-      clientName: row.clientName,
-      clientBillingType: 'net_30',
-      hours: row.hours,
-    })
+    }
   }
 
-  return rows
+  return [
+    ...prepaid.map(row => toRow(row, 'prepaid')),
+    ...net30.map(row => toRow(row, 'net_30')),
+  ]
 }
 
 /**

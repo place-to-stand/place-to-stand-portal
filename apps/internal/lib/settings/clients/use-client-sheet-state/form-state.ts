@@ -22,10 +22,22 @@ import {
   type ClientSheetFormValues,
 } from '../client-sheet-schema'
 
+import {
+  closerKey,
+  closerSplitError,
+  closerSplitsEqual,
+  closerSharesTotal,
+  evenCloserShares,
+  type ClientCloser,
+  type CloserShare,
+} from '../closers'
+
 import type {
   BaseFormState,
   ClientContactOption,
   ClientSheetFormStateArgs,
+  CloserCandidate,
+  CloserDraft,
   OriginationContactOption,
   OriginationMode,
   PartnerUserOption,
@@ -33,6 +45,41 @@ import type {
 
 function primaryIdOf(linked: ClientContactOption[]): string | null {
   return linked.find(contact => contact.isPrimary)?.id ?? null
+}
+
+const EMPTY_CLOSERS: ClientCloser[] = []
+
+function toCloserDrafts(closers: readonly ClientCloser[]): CloserDraft[] {
+  return closers.map(closer => ({
+    kind: closer.kind,
+    id: closer.id,
+    name: closer.name,
+    email: closer.email,
+    shareText: String(closer.sharePercent),
+  }))
+}
+
+/** Re-split evenly — adding or removing a closer resets hand-tuned shares. */
+function withEvenShares(drafts: CloserDraft[]): CloserDraft[] {
+  const shares = evenCloserShares(drafts.length)
+  return drafts.map((draft, index) => ({
+    ...draft,
+    shareText: String(shares[index]),
+  }))
+}
+
+/** A lone closer always takes 100; unparseable text becomes NaN (invalid). */
+function toCloserShares(drafts: readonly CloserDraft[]): CloserShare[] {
+  return drafts.map(draft => ({
+    kind: draft.kind,
+    id: draft.id,
+    sharePercent:
+      drafts.length === 1
+        ? 100
+        : draft.shareText.trim() === ''
+          ? Number.NaN
+          : Number(draft.shareText),
+  }))
 }
 
 export function useClientSheetFormState({
@@ -94,13 +141,10 @@ export function useClientSheetFormState({
   const [initialOriginationContactId, setInitialOriginationContactId] =
     useState<string | null>(null)
 
-  // Closer state
+  // Closer state — seeded from the client row on open (no fetch needed).
   const [isCloserPickerOpen, setIsCloserPickerOpen] = useState(false)
-  const [selectedCloser, setSelectedCloser] =
-    useState<PartnerUserOption | null>(null)
-  const [initialCloserUserId, setInitialCloserUserId] = useState<string | null>(
-    null
-  )
+  const [closers, setClosers] = useState<CloserDraft[]>([])
+  const [initialClosers, setInitialClosers] = useState<CloserShare[]>([])
 
   // Field-level errors for the pickers — rendered inline (shadcn
   // FormMessage pattern) below each picker. Cleared as the user interacts
@@ -172,12 +216,41 @@ export function useClientSheetFormState({
     [allContacts, selectedOriginationContact]
   )
 
-  // Closer picker: any selectable admin except the one already selected
-  const availableClosers = useMemo<PartnerUserOption[]>(() => {
-    return allAdminUsers.filter(
-      u => isSelectableUser(u) && u.id !== selectedCloser?.id
-    )
-  }, [allAdminUsers, selectedCloser])
+  // Closer picker: selectable admins and any contact, minus current closers.
+  // A contact can close too — e.g. an insider at the client who pushed the
+  // deal over the line.
+  const closerKeys = useMemo(() => new Set(closers.map(closerKey)), [closers])
+  const availableCloserUsers = useMemo<CloserCandidate[]>(
+    () =>
+      allAdminUsers
+        .filter(
+          u => isSelectableUser(u) && !closerKeys.has(`user:${u.id}`)
+        )
+        .map(u => ({
+          kind: 'user' as const,
+          id: u.id,
+          name: u.fullName?.trim() || u.email,
+          email: u.email,
+        })),
+    [allAdminUsers, closerKeys]
+  )
+  const availableCloserContacts = useMemo<CloserCandidate[]>(
+    () =>
+      allContacts
+        .filter(c => !closerKeys.has(`contact:${c.id}`))
+        .map(c => ({
+          kind: 'contact' as const,
+          id: c.id,
+          name: c.name?.trim() || c.email,
+          email: c.email,
+        })),
+    [allContacts, closerKeys]
+  )
+
+  const closerShares = useMemo(() => toCloserShares(closers), [closers])
+  const closerShareTotal = closerShares.some(c => Number.isNaN(c.sharePercent))
+    ? null
+    : closerSharesTotal(closerShares)
 
   // Origination dirty: either side differs from initial
   const originationDirty = useMemo(() => {
@@ -194,10 +267,7 @@ export function useClientSheetFormState({
     initialOriginationContactId,
   ])
 
-  const closerDirty = useMemo(() => {
-    const currentCloserId = selectedCloser?.id ?? null
-    return currentCloserId !== initialCloserUserId
-  }, [selectedCloser, initialCloserUserId])
+  const closerDirty = !closerSplitsEqual(closerShares, initialClosers)
 
   // Closer + origination are one effective-dated commission term (PRD 007);
   // the form reveals the boundary select when either side changed.
@@ -291,7 +361,7 @@ export function useClientSheetFormState({
     const clientId = client?.id
     const clientOriginationContactId = client?.origination_contact_id ?? null
     const clientOriginationUserId = client?.origination_user_id ?? null
-    const clientCloserUserId = client?.closer_user_id ?? null
+    const clientClosers = client?.closers ?? EMPTY_CLOSERS
     const shouldFetch =
       !allContactsProp ||
       allContactsProp.length === 0 ||
@@ -301,7 +371,14 @@ export function useClientSheetFormState({
     // Initialize origination/closer "initial" references
     setInitialOriginationUserId(clientOriginationUserId)
     setInitialOriginationContactId(clientOriginationContactId)
-    setInitialCloserUserId(clientCloserUserId)
+    setClosers(toCloserDrafts(clientClosers))
+    setInitialClosers(
+      clientClosers.map(c => ({
+        kind: c.kind,
+        id: c.id,
+        sharePercent: c.sharePercent,
+      }))
+    )
 
     // Default origination mode: 'external' only if an external contact is
     // already set on this client; otherwise default to 'internal' (for new
@@ -330,14 +407,6 @@ export function useClientSheetFormState({
         setSelectedOriginationUser(u ?? null)
       } else {
         setSelectedOriginationUser(null)
-      }
-
-      // Closer
-      if (clientCloserUserId) {
-        const u = adminUsers.find(u => u.id === clientCloserUserId)
-        setSelectedCloser(u ?? null)
-      } else {
-        setSelectedCloser(null)
       }
     }
 
@@ -370,7 +439,7 @@ export function useClientSheetFormState({
     client?.id,
     client?.origination_contact_id,
     client?.origination_user_id,
-    client?.closer_user_id,
+    client?.closers,
     allContactsProp,
     clientContactsProp,
     allAdminUsersProp,
@@ -505,15 +574,30 @@ export function useClientSheetFormState({
     [closerPickerDisabled]
   )
 
-  const handleSelectCloser = useCallback((user: PartnerUserOption) => {
-    setSelectedCloser(user)
+  const handleAddCloser = useCallback((candidate: CloserCandidate) => {
+    setClosers(prev =>
+      prev.some(c => closerKey(c) === closerKey(candidate))
+        ? prev
+        : withEvenShares([...prev, { ...candidate, shareText: '' }])
+    )
     setIsCloserPickerOpen(false)
     setCloserError(null)
   }, [])
 
-  const handleClearCloser = useCallback(() => {
-    setSelectedCloser(null)
+  const handleRemoveCloser = useCallback((key: string) => {
+    setClosers(prev => withEvenShares(prev.filter(c => closerKey(c) !== key)))
+    setCloserError(null)
   }, [])
+
+  const handleCloserShareChange = useCallback(
+    (key: string, shareText: string) => {
+      setClosers(prev =>
+        prev.map(c => (closerKey(c) === key ? { ...c, shareText } : c))
+      )
+      setCloserError(null)
+    },
+    []
+  )
 
   const handleFormSubmit = useCallback(
     (values: ClientSheetFormValues) => {
@@ -537,6 +621,13 @@ export function useClientSheetFormState({
             ? 'Pick an internal partner.'
             : 'Pick an external referrer.'
         )
+        return
+      }
+
+      const splitError = closerSplitError(closerShares)
+      if (splitError) {
+        setOriginationError(null)
+        setCloserError(splitError)
         return
       }
 
@@ -567,7 +658,7 @@ export function useClientSheetFormState({
             originationMode === 'internal'
               ? (selectedOriginationUser?.id ?? null)
               : null,
-          closerUserId: selectedCloser?.id ?? null,
+          closers: closerShares,
           notes: values.notes?.trim() ? values.notes.trim() : null,
         } satisfies Parameters<typeof saveClient>[0]
 
@@ -641,7 +732,7 @@ export function useClientSheetFormState({
           setInitialPrimaryContactId(primaryContactId)
           setInitialOriginationUserId(payload.originationUserId)
           setInitialOriginationContactId(payload.originationContactId)
-          setInitialCloserUserId(payload.closerUserId)
+          setInitialClosers(payload.closers)
           form.reset({
             name: payload.name,
             slug: payload.slug ?? '',
@@ -675,7 +766,7 @@ export function useClientSheetFormState({
       onOpenChange,
       originationMode,
       primaryContactId,
-      selectedCloser,
+      closerShares,
       selectedContacts,
       selectedOriginationContact,
       selectedOriginationUser,
@@ -724,16 +815,19 @@ export function useClientSheetFormState({
     handleSelectOriginationUser,
     handleSelectOriginationContact,
     handleClearOrigination,
-    // Closer
-    selectedCloser,
-    availableClosers,
+    // Closers
+    closers,
+    availableCloserUsers,
+    availableCloserContacts,
+    closerShareTotal,
     isCloserPickerOpen,
     closerPickerDisabled,
     closerPickerDisabledReason,
     closerError,
     commissionDirty,
     handleCloserPickerOpenChange,
-    handleSelectCloser,
-    handleClearCloser,
+    handleAddCloser,
+    handleRemoveCloser,
+    handleCloserShareChange,
   }
 }

@@ -74,28 +74,38 @@ export type OriginationData = {
   commissionPerHour: number
 }
 
-// Closer — internal PTS partner who finalized the deal.
+// Closer — whoever finalized the deal: admin users and/or contacts sharing
+// the closer rate by percentage. Each client detail is one closer's share of
+// one client: `hours` are the CREDITED hours (client billing hours × share),
+// so `commission = hours × rate` and the section totals stay rate × hours.
 export type CloserClientDetail = {
   clientId: string
   clientName: string
   billingType: 'prepaid' | 'net_30'
+  /** Credited hours: the client's billing hours × sharePercent / 100. */
   hours: number
+  /** This closer's share of the client's closer rate (100 for a sole closer). */
+  sharePercent: number
   commission: number
 }
 
 export type CloserGroupRow = {
-  closerUserId: string
-  closerName: string | null
+  closerKind: OriginatorKind
+  closerId: string
+  closerName: string
   closerEmail: string
+  /** Only populated for `closerKind === 'user'`. */
   closerAvatarUrl: string | null
-  closerUpdatedAt: string
+  closerUpdatedAt: string | null
   clients: CloserClientDetail[]
+  /** Sum of credited hours. */
   totalHours: number
   totalCommission: number
 }
 
 export type CloserData = {
   rows: CloserGroupRow[]
+  /** Credited hours across all closers — never more than billing hours. */
   totalHours: number
   totalAmount: number
   commissionPerHour: number
@@ -161,9 +171,10 @@ export type PartnerPayoutData = {
 
 // House — the firm's share of billing. ESTIMATED, not a payout:
 //   nominalAmount        = billingHours × rates.housePerHour
-//   unassignedCloserAmount = hours on clients whose as-of commission term has
-//                            no closer × rates.closerPerHour (PRD 007 — the
-//                            closer share is not paid out, it stays in house)
+//   unassignedCloserAmount = billing hours not credited to any closer (no
+//                            closer on the as-of term, or an archived one)
+//                            × rates.closerPerHour (PRD 007 — the closer
+//                            share is not paid out, it stays in house)
 //   totalAmount          = nominalAmount + unassignedCloserAmount
 // `billingHours = prepaidBilling.totalHours + net30Billing.totalHours`, the
 // same population as origination/closer. Payroll is on a work basis, so the
@@ -176,7 +187,7 @@ export type HouseData = {
   ratePerHour: number
   /** billingHours × ratePerHour — the firm's nominal share of billing. */
   nominalAmount: number
-  /** Billing hours whose as-of commission term has no closer. */
+  /** Billing hours not credited to a paid closer. */
   unassignedCloserHours: number
   /** unassignedCloserHours × rates.closerPerHour — kept in house, not paid. */
   unassignedCloserAmount: number

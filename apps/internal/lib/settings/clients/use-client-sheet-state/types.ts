@@ -5,6 +5,7 @@ import type { useToast } from '@/components/ui/use-toast'
 import type { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 
 import type { ClientRow } from '../client-sheet-utils'
+import type { CloserKind } from '../closers'
 import type { ClientSheetFormValues } from '../client-sheet-schema'
 
 type ToastFn = ReturnType<typeof useToast>['toast']
@@ -39,6 +40,19 @@ export type PartnerUserOption = {
 }
 
 export type OriginationMode = 'internal' | 'external'
+
+/** An admin or contact the closer picker offers. */
+export type CloserCandidate = {
+  kind: CloserKind
+  id: string
+  name: string
+  email: string | null
+}
+
+/** A closer row being edited; the share stays text until save. */
+export type CloserDraft = CloserCandidate & {
+  shareText: string
+}
 
 export type UseClientSheetStateArgs = {
   open: boolean
@@ -102,18 +116,22 @@ export type BaseFormState = {
   handleSelectOriginationUser: (user: PartnerUserOption) => void
   handleSelectOriginationContact: (contact: OriginationContactOption) => void
   handleClearOrigination: () => void
-  // Closer
-  selectedCloser: PartnerUserOption | null
-  availableClosers: PartnerUserOption[]
+  // Closers
+  closers: CloserDraft[]
+  availableCloserUsers: CloserCandidate[]
+  availableCloserContacts: CloserCandidate[]
+  /** Sum of the typed shares; null while one isn't a number. */
+  closerShareTotal: number | null
   isCloserPickerOpen: boolean
   closerPickerDisabled: boolean
   closerPickerDisabledReason: string | null
   closerError: string | null
-  /** True when closer or origination differs from the saved assignment. */
+  /** True when closers or origination differ from the saved assignment. */
   commissionDirty: boolean
   handleCloserPickerOpenChange: (open: boolean) => void
-  handleSelectCloser: (user: PartnerUserOption) => void
-  handleClearCloser: () => void
+  handleAddCloser: (candidate: CloserCandidate) => void
+  handleRemoveCloser: (key: string) => void
+  handleCloserShareChange: (key: string, shareText: string) => void
 }
 
 export type DeletionState = {
@@ -198,16 +216,20 @@ export type UseClientSheetStateReturn = {
   handleSelectOriginationUser: (user: PartnerUserOption) => void
   handleSelectOriginationContact: (contact: OriginationContactOption) => void
   handleClearOrigination: () => void
-  // Closer
-  selectedCloser: PartnerUserOption | null
-  availableClosers: PartnerUserOption[]
+  // Closers
+  closers: CloserDraft[]
+  availableCloserUsers: CloserCandidate[]
+  availableCloserContacts: CloserCandidate[]
+  /** Sum of the typed shares; null while one isn't a number. */
+  closerShareTotal: number | null
   isCloserPickerOpen: boolean
   closerPickerDisabled: boolean
   closerPickerDisabledReason: string | null
   closerError: string | null
-  /** True when closer or origination differs from the saved assignment. */
+  /** True when closers or origination differ from the saved assignment. */
   commissionDirty: boolean
   handleCloserPickerOpenChange: (open: boolean) => void
-  handleSelectCloser: (user: PartnerUserOption) => void
-  handleClearCloser: () => void
+  handleAddCloser: (candidate: CloserCandidate) => void
+  handleRemoveCloser: (key: string) => void
+  handleCloserShareChange: (key: string, shareText: string) => void
 }

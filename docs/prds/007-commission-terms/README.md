@@ -49,3 +49,22 @@ Two further gaps showed up in the same conversation:
 - A boundary that falls in a closed month is refused; reopen the month first (same rule as billing type).
 - Re-closing a month after a commission change re-derives with the as-of terms, so it only changes months whose boundary you actually moved.
 - House being "estimated" is not a bug to fix later. Payroll is on a work basis and house on a billing basis; they do not reconcile within one month by design.
+
+## Follow-up (October 2026): closer splits
+
+**Origin:** dotfun. Dave Pokk introduced the agency and gets origination; Chris Donahue, who works at
+dotfun, pushed the deal through internally. Jason and Kris agreed to split Jason's 20% closer share
+with Chris.
+
+| # | Decision |
+|---|----------|
+| S1 | A commission term now has **zero or more closers**: child table `client_commission_term_closers` (term_id, closer_user_id XOR closer_contact_id, `share_percent` NUMERIC(5,2) in (0, 100]). No rows means no closer, so the share stays in House exactly as before. |
+| S2 | Shares must total exactly 100% when there are any closers. A cross-row sum can't be a CHECK, so `closerSplitError` (`lib/settings/clients/closers.ts`) enforces it on the client and in the server schema. |
+| S3 | A closer can be an admin user **or a contact** (an insider at the client). Contact closers are paid through the same contact payout row as external originators. |
+| S4 | Each closer is paid `client billing hours × share × closer rate`. Report details carry **credited hours** (hours × share) plus `sharePercent`, so `commission = hours × rate`, and House's unassigned-closer top-up (`billing hours − credited hours`) still works unchanged. That includes the share of an archived closer. |
+| S5 | `client_commission_terms.closer_user_id` and the `clients.closer_user_id` cache were dropped (one column can't hold a split). Migration 0086 backfills every term's closer as one row at 100%, so every closed month resolves exactly as before. Lists, the detail page and the sheet read the **newest** term's closers (`fetchLatestClosersByClient`). |
+| S6 | Snapshots stay at schema version 1. The decoder maps legacy `closerUserId` groups to `closerKind: 'user'` / `closerId`, and a missing `sharePercent` defaults to 100. Both are exact for every pre-split close. |
+| S7 | In the sheet, adding or removing a closer re-splits evenly (33.34 / 33.33 / 33.33). Shares are then hand-tuned, and the share field only appears once there are two or more closers. A split change uses the same "New assignment starts" boundary as any other commission change. |
+
+**Deploy:** 0086 drops the old columns, so run `db:migrate:prod` and promote the deploy back to back.
+Code on either side of the migration errors on the closer reads until the other side lands.
