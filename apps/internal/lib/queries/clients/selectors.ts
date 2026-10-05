@@ -1,6 +1,8 @@
 import { clients } from "@/lib/db/schema"
 
-export type SelectClient = typeof clients.$inferSelect
+// `closer_user_id` is deprecated (closer splits live on the commission term)
+// and is never selected.
+export type SelectClient = Omit<typeof clients.$inferSelect, 'closerUserId'>
 
 export const clientFields = {
   id: clients.id,

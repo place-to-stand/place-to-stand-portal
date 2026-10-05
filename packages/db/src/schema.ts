@@ -205,9 +205,11 @@ export const clients = pgTable(
     // agreements use originationContactId. Both NULL means no origination.
     originationContactId: uuid('origination_contact_id'),
     originationUserId: uuid('origination_user_id'),
-    // Closers (20% commission, split by percentage) live only on the
-    // effective-dated `client_commission_term_closers` rows — there is no
-    // current-value cache here because one column cannot hold a split.
+    // DEPRECATED — never read or written since closer splits (0086). Closers
+    // (20%, split by percentage) live on `client_commission_term_closers`.
+    // Kept only so the deploy that stopped using it needed no column drop;
+    // remove in a follow-up migration once that deploy is live.
+    closerUserId: uuid('closer_user_id'),
     createdBy: uuid('created_by'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
@@ -242,6 +244,9 @@ export const clients = pgTable(
     index('idx_clients_origination_user_id')
       .using('btree', table.originationUserId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL AND origination_user_id IS NOT NULL)`),
+    index('idx_clients_closer_user_id')
+      .using('btree', table.closerUserId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND closer_user_id IS NOT NULL)`),
     foreignKey({
       columns: [table.createdBy],
       foreignColumns: [users.id],
@@ -251,6 +256,11 @@ export const clients = pgTable(
       columns: [table.originationUserId],
       foreignColumns: [users.id],
       name: 'clients_origination_user_id_fkey',
+    }),
+    foreignKey({
+      columns: [table.closerUserId],
+      foreignColumns: [users.id],
+      name: 'clients_closer_user_id_fkey',
     }),
     // Note: FK constraint for originationContactId -> contacts.id added in
     // migration to avoid forward reference (contacts table defined later).
@@ -884,6 +894,8 @@ export const clientCommissionTerms = pgTable(
     // Closers (20%, split by percentage) are child rows in
     // `client_commission_term_closers`. No rows means no closer for the
     // period: the share is not paid and is reported under House (estimated).
+    /** DEPRECATED — superseded by the closer rows (0086); drop in a follow-up. */
+    closerUserId: uuid('closer_user_id'),
     /** Origination (10%): at most ONE of user / contact per the mutex CHECK. */
     originationUserId: uuid('origination_user_id'),
     originationContactId: uuid('origination_contact_id'),
@@ -909,6 +921,11 @@ export const clientCommissionTerms = pgTable(
       columns: [table.clientId],
       foreignColumns: [clients.id],
       name: 'client_commission_terms_client_id_fkey',
+    }).onDelete('restrict'),
+    foreignKey({
+      columns: [table.closerUserId],
+      foreignColumns: [users.id],
+      name: 'client_commission_terms_closer_user_id_fkey',
     }).onDelete('restrict'),
     foreignKey({
       columns: [table.originationUserId],

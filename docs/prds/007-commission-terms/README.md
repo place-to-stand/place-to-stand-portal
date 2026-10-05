@@ -62,9 +62,13 @@ with Chris.
 | S2 | Shares must total exactly 100% when there are any closers. A cross-row sum can't be a CHECK, so `closerSplitError` (`lib/settings/clients/closers.ts`) enforces it on the client and in the server schema. |
 | S3 | A closer can be an admin user **or a contact** (an insider at the client). Contact closers are paid through the same contact payout row as external originators. |
 | S4 | Each closer is paid `client billing hours × share × closer rate`. Report details carry **credited hours** (hours × share) plus `sharePercent`, so `commission = hours × rate`, and House's unassigned-closer top-up (`billing hours − credited hours`) still works unchanged. That includes the share of an archived closer. |
-| S5 | `client_commission_terms.closer_user_id` and the `clients.closer_user_id` cache were dropped (one column can't hold a split). Migration 0086 backfills every term's closer as one row at 100%, so every closed month resolves exactly as before. Lists, the detail page and the sheet read the **newest** term's closers (`fetchLatestClosersByClient`). |
+| S5 | Migration 0086 is **additive only**: it creates the table and backfills every term's closer as one row at 100%, so every closed month resolves exactly as before. `client_commission_terms.closer_user_id` and the `clients.closer_user_id` cache stay in the schema, marked deprecated, and are never read or written again. One column can't hold a split, so the list, detail page and sheet read the **newest** term's closers (`fetchLatestClosersByClient`). A follow-up migration drops both columns. |
 | S6 | Snapshots stay at schema version 1. The decoder maps legacy `closerUserId` groups to `closerKind: 'user'` / `closerId`, and a missing `sharePercent` defaults to 100. Both are exact for every pre-split close. |
 | S7 | In the sheet, adding or removing a closer re-splits evenly (33.34 / 33.33 / 33.33). Shares are then hand-tuned, and the share field only appears once there are two or more closers. A split change uses the same "New assignment starts" boundary as any other commission change. |
 
-**Deploy:** 0086 drops the old columns, so run `db:migrate:prod` and promote the deploy back to back.
-Code on either side of the migration errors on the closer reads until the other side lands.
+**Deploy:**
+1. Run `db:migrate:prod` first. The old code keeps working on the old columns.
+2. Merge, and let Vercel deploy onto the new table.
+3. Check that the anon key gets a 401 on `/rest/v1/client_commission_term_closers`.
+
+If a client is saved between steps 1 and 2, the old code writes a term with `closer_user_id` but no closer rows. The follow-up drop migration must re-run the 0086 backfill, guarded on terms that have no closer rows, before it drops the columns.

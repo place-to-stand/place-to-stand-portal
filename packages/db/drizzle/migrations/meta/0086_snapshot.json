@@ -1,5 +1,5 @@
 {
-  "id": "9cfb3dc6-3ea7-4b80-87a8-c986a1e34293",
+  "id": "e3c35515-c850-4d0d-ae64-70ba916fc040",
   "prevId": "1e7b20c4-a27f-4a17-a9ef-682ce0ff1425",
   "version": "7",
   "dialect": "postgresql",
@@ -648,6 +648,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "closer_user_id": {
+          "name": "closer_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "origination_user_id": {
           "name": "origination_user_id",
           "type": "uuid",
@@ -740,6 +746,19 @@
           "tableTo": "clients",
           "columnsFrom": [
             "client_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "client_commission_terms_closer_user_id_fkey": {
+          "name": "client_commission_terms_closer_user_id_fkey",
+          "tableFrom": "client_commission_terms",
+          "tableTo": "users",
+          "columnsFrom": [
+            "closer_user_id"
           ],
           "columnsTo": [
             "id"
@@ -1184,6 +1203,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "closer_user_id": {
+          "name": "closer_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_by": {
           "name": "created_by",
           "type": "uuid",
@@ -1310,6 +1335,23 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "idx_clients_closer_user_id": {
+          "name": "idx_clients_closer_user_id",
+          "columns": [
+            {
+              "expression": "closer_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops"
+            }
+          ],
+          "isUnique": false,
+          "where": "(deleted_at IS NULL AND closer_user_id IS NOT NULL)",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -1332,6 +1374,19 @@
           "tableTo": "users",
           "columnsFrom": [
             "origination_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "clients_closer_user_id_fkey": {
+          "name": "clients_closer_user_id_fkey",
+          "tableFrom": "clients",
+          "tableTo": "users",
+          "columnsFrom": [
+            "closer_user_id"
           ],
           "columnsTo": [
             "id"
