@@ -66,17 +66,20 @@ export function ClientSheet(props: ClientSheetProps) {
     handleSelectOriginationUser,
     handleSelectOriginationContact,
     handleClearOrigination,
-    // Closer
-    selectedCloser,
-    availableClosers,
+    // Closers
+    closers,
+    availableCloserUsers,
+    availableCloserContacts,
+    closerShareTotal,
     isCloserPickerOpen,
     closerPickerDisabled,
     closerPickerDisabledReason,
     closerError,
     commissionDirty,
     handleCloserPickerOpenChange,
-    handleSelectCloser,
-    handleClearCloser,
+    handleAddCloser,
+    handleRemoveCloser,
+    handleCloserShareChange,
   } = useClientSheetState(props)
 
   return (
@@ -134,16 +137,19 @@ export function ClientSheet(props: ClientSheetProps) {
             onSelectOriginationUser={handleSelectOriginationUser}
             onSelectOriginationContact={handleSelectOriginationContact}
             onClearOrigination={handleClearOrigination}
-            selectedCloser={selectedCloser}
-            availableClosers={availableClosers}
+            closers={closers}
+            availableCloserUsers={availableCloserUsers}
+            availableCloserContacts={availableCloserContacts}
+            closerShareTotal={closerShareTotal}
             isCloserPickerOpen={isCloserPickerOpen}
             closerPickerDisabled={closerPickerDisabled}
             closerPickerDisabledReason={closerPickerDisabledReason}
             closerError={closerError}
             commissionDirty={commissionDirty}
             onCloserPickerOpenChange={handleCloserPickerOpenChange}
-            onSelectCloser={handleSelectCloser}
-            onClearCloser={handleClearCloser}
+            onAddCloser={handleAddCloser}
+            onRemoveCloser={handleRemoveCloser}
+            onCloserShareChange={handleCloserShareChange}
           />
         </SheetContent>
       </Sheet>

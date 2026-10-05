@@ -35,7 +35,7 @@ function sortKeyFor(
     case 'origination':
       return client.originationUserName ?? client.originationContactName ?? null
     case 'closer':
-      return client.closerUserName ?? null
+      return client.closers[0]?.name ?? null
     case 'name':
     default:
       return client.name

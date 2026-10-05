@@ -272,26 +272,23 @@ export function computeDeltas(
     prefix: 'Closer',
     snapRows: snapshot.closer.rows,
     liveRows: live.closer.rows,
-    key: row => row.closerUserId,
-    name: row => row.closerName ?? row.closerEmail,
+    key: row => `${row.closerKind}:${row.closerId}`,
+    name: row => row.closerName,
     fields: [
       { unit: 'hours', value: row => row.totalHours },
       { unit: 'amount', value: row => row.totalCommission },
     ],
   })
 
-  for (const closerId of new Set([
-    ...snapshot.closer.rows.map(r => r.closerUserId),
-    ...live.closer.rows.map(r => r.closerUserId),
+  for (const closerKey of new Set([
+    ...snapshot.closer.rows.map(r => `${r.closerKind}:${r.closerId}`),
+    ...live.closer.rows.map(r => `${r.closerKind}:${r.closerId}`),
   ])) {
-    const snapGroup = snapshot.closer.rows.find(r => r.closerUserId === closerId)
-    const liveGroup = live.closer.rows.find(r => r.closerUserId === closerId)
-    const who =
-      snapGroup?.closerName ??
-      liveGroup?.closerName ??
-      snapGroup?.closerEmail ??
-      liveGroup?.closerEmail ??
-      closerId
+    const keyOf = (r: { closerKind: string; closerId: string }) =>
+      `${r.closerKind}:${r.closerId}`
+    const snapGroup = snapshot.closer.rows.find(r => keyOf(r) === closerKey)
+    const liveGroup = live.closer.rows.find(r => keyOf(r) === closerKey)
+    const who = snapGroup?.closerName ?? liveGroup?.closerName ?? closerKey
 
     diffRows(rowDeltas, {
       section: 'closer',

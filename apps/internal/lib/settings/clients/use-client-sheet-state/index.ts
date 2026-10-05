@@ -111,17 +111,20 @@ export const useClientSheetState = ({
     handleSelectOriginationUser: formState.handleSelectOriginationUser,
     handleSelectOriginationContact: formState.handleSelectOriginationContact,
     handleClearOrigination: formState.handleClearOrigination,
-    // Closer
-    selectedCloser: formState.selectedCloser,
-    availableClosers: formState.availableClosers,
+    // Closers
+    closers: formState.closers,
+    availableCloserUsers: formState.availableCloserUsers,
+    availableCloserContacts: formState.availableCloserContacts,
+    closerShareTotal: formState.closerShareTotal,
     isCloserPickerOpen: formState.isCloserPickerOpen,
     closerPickerDisabled: formState.closerPickerDisabled,
     closerPickerDisabledReason: formState.closerPickerDisabledReason,
     closerError: formState.closerError,
     commissionDirty: formState.commissionDirty,
     handleCloserPickerOpenChange: formState.handleCloserPickerOpenChange,
-    handleSelectCloser: formState.handleSelectCloser,
-    handleClearCloser: formState.handleClearCloser,
+    handleAddCloser: formState.handleAddCloser,
+    handleRemoveCloser: formState.handleRemoveCloser,
+    handleCloserShareChange: formState.handleCloserShareChange,
   }
 }
 
@@ -132,4 +135,6 @@ export type {
   OriginationContactOption,
   PartnerUserOption,
   OriginationMode,
+  CloserCandidate,
+  CloserDraft,
 } from './types'

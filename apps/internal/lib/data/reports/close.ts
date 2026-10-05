@@ -76,16 +76,44 @@ const originationGroupRowSchema = z.object({
   totalCommission: z.number(),
 })
 
-const closerGroupRowSchema = z.object({
-  closerUserId: z.string(),
-  closerName: z.string().nullable(),
+// Closer details carry the closer's share. Snapshots taken before closer
+// splits had one closer per client, so a missing share is exactly 100.
+const closerClientDetailSchema = billingClientDetailSchema.extend({
+  sharePercent: z.number().default(100),
+})
+
+const closerGroupRowFields = {
+  closerName: z.string(),
   closerEmail: z.string(),
   closerAvatarUrl: z.string().nullable(),
-  closerUpdatedAt: z.string(),
-  clients: z.array(billingClientDetailSchema),
+  closerUpdatedAt: z.string().nullable(),
+  clients: z.array(closerClientDetailSchema),
   totalHours: z.number(),
   totalCommission: z.number(),
-})
+}
+
+// Pre-split snapshots keyed a closer by `closerUserId` (always an admin user)
+// and allowed a null name; normalize them to the `closerKind` / `closerId`
+// shape so drift compares like with like.
+const closerGroupRowSchema = z.union([
+  z.object({
+    closerKind: z.enum(['user', 'contact']),
+    closerId: z.string(),
+    ...closerGroupRowFields,
+  }),
+  z
+    .object({
+      ...closerGroupRowFields,
+      closerUserId: z.string(),
+      closerName: z.string().nullable(),
+    })
+    .transform(({ closerUserId, ...row }) => ({
+      ...row,
+      closerKind: 'user' as const,
+      closerId: closerUserId,
+      closerName: row.closerName ?? row.closerEmail,
+    })),
+])
 
 const partnerPayoutRowSchema = z.object({
   key: z.string(),

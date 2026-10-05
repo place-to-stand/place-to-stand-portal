@@ -8,8 +8,8 @@
  * wrapper + resolver.
  */
 
+import type { ClientRow } from '@/lib/settings/clients/client-sheet-utils'
 import type {
-  DbClient,
   DbUser,
   ProjectWithRelations,
   TaskWithRelations,
@@ -36,7 +36,7 @@ import type { UserAssignments } from '@/lib/settings/users/state/types'
 
 export type SheetInitPayloads = {
   /** `null` client = create mode (`?client=new`). */
-  client: { client: DbClient | null }
+  client: { client: ClientRow | null }
   submission: { submission: FormSubmissionRecord }
   /** The contact sheet self-fetches its client links; it only needs the row. */
   contact: { contact: ContactSheetInput | null }

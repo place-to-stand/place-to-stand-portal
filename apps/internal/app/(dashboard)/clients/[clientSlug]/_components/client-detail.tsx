@@ -40,6 +40,10 @@ import {
   getArchiveClientDialogDescription,
 } from '@/lib/settings/clients/client-sheet-constants'
 import type { ClientRow } from '@/lib/settings/clients/client-sheet-utils'
+import {
+  closerKey,
+  type ClientCloser,
+} from '@/lib/settings/clients/closers'
 import type { SheetEntityKey } from '@/lib/sheets/entities'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { prefetchSheetInit } from '@/lib/sheets/wrappers/use-sheet-init'
@@ -76,7 +80,7 @@ type ClientDetailProps = {
   clientRow: ClientRow
   originationContact: OriginationContactInfo
   originationUser: PartnerUserInfo
-  closerUser: PartnerUserInfo
+  closers: ClientCloser[]
 }
 
 export function ClientDetail({
@@ -87,7 +91,7 @@ export function ClientDetail({
   clientRow,
   originationContact,
   originationUser,
-  closerUser,
+  closers,
 }: ClientDetailProps) {
   const activeProjects = projects.filter(p => p.status === 'ACTIVE')
   const otherProjects = projects.filter(p => p.status !== 'ACTIVE')
@@ -114,7 +118,7 @@ export function ClientDetail({
             otherProjectCount={otherProjects.length}
             originationContact={originationContact}
             originationUser={originationUser}
-            closerUser={closerUser}
+            closers={closers}
           />
 
           {/* Notes Section */}
@@ -146,7 +150,7 @@ type ClientDetailsWidgetProps = {
   otherProjectCount: number
   originationContact: OriginationContactInfo
   originationUser: PartnerUserInfo
-  closerUser: PartnerUserInfo
+  closers: ClientCloser[]
 }
 
 function ClientDetailsWidget({
@@ -155,7 +159,7 @@ function ClientDetailsWidget({
   otherProjectCount,
   originationContact,
   originationUser,
-  closerUser,
+  closers,
 }: ClientDetailsWidgetProps) {
   const originationLabel = originationUser
     ? (originationUser.fullName ?? originationUser.email)
@@ -167,9 +171,6 @@ function ClientDetailsWidget({
     : originationContact
       ? 'External referrer'
       : null
-  const closerLabel = closerUser
-    ? (closerUser.fullName ?? closerUser.email)
-    : null
 
   return (
     <section className='bg-card text-card-foreground overflow-hidden rounded-lg border'>
@@ -233,17 +234,32 @@ function ClientDetailsWidget({
             </span>
           </div>
         ) : null}
-        {closerLabel ? (
-          <div className='flex items-center gap-3 px-4 py-2.5'>
-            <Handshake className='text-muted-foreground h-4 w-4' />
-            <span className='text-muted-foreground text-sm'>Closer</span>
-            <span className='ml-auto text-sm font-medium'>
-              <SheetLink
-                entity='user'
-                id={closerUser?.id ?? null}
-                label={closerLabel}
-                avatarUserId={closerUser?.avatarUrl ? closerUser.id : null}
-              />
+        {closers.length > 0 ? (
+          <div className='flex items-start gap-3 px-4 py-2.5'>
+            <Handshake className='text-muted-foreground mt-0.5 h-4 w-4' />
+            <span className='text-muted-foreground text-sm'>
+              {closers.length > 1 ? 'Closers' : 'Closer'}
+            </span>
+            <span className='ml-auto flex flex-col items-end gap-1 text-sm font-medium'>
+              {closers.map(closer => (
+                <span key={closerKey(closer)} className='flex items-center gap-2'>
+                  <SheetLink
+                    entity={closer.kind}
+                    id={closer.id}
+                    label={closer.name}
+                    avatarUserId={
+                      closer.kind === 'user' && closer.avatarUrl
+                        ? closer.id
+                        : null
+                    }
+                  />
+                  {closers.length > 1 ? (
+                    <span className='text-muted-foreground text-xs font-normal tabular-nums'>
+                      {closer.sharePercent}%
+                    </span>
+                  ) : null}
+                </span>
+              ))}
             </span>
           </div>
         ) : null}

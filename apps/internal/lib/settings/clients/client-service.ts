@@ -2,12 +2,16 @@ import { and, eq, inArray, isNull } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { db } from '@/lib/db'
-import { clientMembers, users } from '@/lib/db/schema'
+import { clientMembers, contacts, users } from '@/lib/db/schema'
 import {
   clientSlugExistsDrizzle,
   generateUniqueClientSlugDrizzle,
 } from '@/lib/queries/clients'
 import { CLIENT_BILLING_TYPE_VALUES } from '@/lib/settings/clients/billing-types'
+import {
+  closerSplitError,
+  type CloserShare,
+} from '@/lib/settings/clients/closers'
 
 export const clientSchema = z
   .object({
@@ -60,11 +64,15 @@ export const clientSchema = z
       .uuid()
       .nullish()
       .transform(value => value ?? null),
-    closerUserId: z
-      .string()
-      .uuid()
-      .nullish()
-      .transform(value => value ?? null),
+    closers: z
+      .array(
+        z.object({
+          kind: z.enum(['user', 'contact']),
+          id: z.string().uuid(),
+          sharePercent: z.number(),
+        })
+      )
+      .default([]),
   })
   .refine(
     data =>
@@ -84,21 +92,37 @@ export const clientSchema = z
       path: ['originationUserId'],
     }
   )
-  // Closer is deliberately optional (PRD 007): with no closer the 20% share
-  // is not paid out and the Monthly Close reports it under House (estimated).
+  // Closers are deliberately optional (PRD 007): with none the 20% share is
+  // not paid out and the Monthly Close reports it under House (estimated).
+  // With any, their shares must total exactly 100%.
+  .superRefine((data, ctx) => {
+    const error = closerSplitError(data.closers)
+    if (error) {
+      ctx.addIssue({ code: 'custom', message: error, path: ['closers'] })
+    }
+  })
 
 /**
  * Verifies that any user IDs referenced by origination / closer fields
- * correspond to active ADMIN users. Non-admin assignment could otherwise
- * silently accrue commissions to CLIENT-role users.
+ * correspond to active ADMIN users, and that closer contacts exist and are
+ * not archived. Non-admin assignment could otherwise silently accrue
+ * commissions to CLIENT-role users.
  */
 export async function assertClientPartnerUserRoles(params: {
   originationUserId: string | null
-  closerUserId: string | null
+  closers: CloserShare[]
 }): Promise<{ error: string } | null> {
-  const ids = [params.originationUserId, params.closerUserId].filter(
-    (id): id is string => typeof id === 'string' && id.length > 0
+  const contactError = await assertCloserContacts(
+    params.closers.filter(c => c.kind === 'contact').map(c => c.id)
   )
+  if (contactError) {
+    return contactError
+  }
+
+  const ids = [
+    params.originationUserId,
+    ...params.closers.filter(c => c.kind === 'user').map(c => c.id),
+  ].filter((id): id is string => typeof id === 'string' && id.length > 0)
 
   if (ids.length === 0) {
     return null
@@ -128,6 +152,35 @@ export async function assertClientPartnerUserRoles(params: {
     }
   } catch (error) {
     console.error('Failed to validate partner user roles', error)
+    return { error: 'Unable to validate partner assignments.' }
+  }
+
+  return null
+}
+
+async function assertCloserContacts(
+  contactIds: string[]
+): Promise<{ error: string } | null> {
+  if (contactIds.length === 0) return null
+
+  try {
+    const rows = await db
+      .select({ id: contacts.id, deletedAt: contacts.deletedAt })
+      .from(contacts)
+      .where(inArray(contacts.id, contactIds))
+    const found = new Map(rows.map(row => [row.id, row]))
+
+    for (const id of contactIds) {
+      const contact = found.get(id)
+      if (!contact) {
+        return { error: 'Selected closer contact no longer exists.' }
+      }
+      if (contact.deletedAt !== null) {
+        return { error: 'Selected closer contact is archived.' }
+      }
+    }
+  } catch (error) {
+    console.error('Failed to validate closer contacts', error)
     return { error: 'Unable to validate partner assignments.' }
   }
 

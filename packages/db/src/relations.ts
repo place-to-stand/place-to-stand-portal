@@ -4,6 +4,7 @@ import {
   clients,
   clientBillingTerms,
   clientCommissionTerms,
+  clientCommissionTermClosers,
   monthlyCloseSnapshots,
   tasks,
   githubAppInstallations,
@@ -56,11 +57,6 @@ export const clientsRelations = relations(clients, ({ one, many }) => ({
     references: [users.id],
     relationName: 'clients_originationUser_users_id',
   }),
-  closerUser: one(users, {
-    fields: [clients.closerUserId],
-    references: [users.id],
-    relationName: 'clients_closerUser_users_id',
-  }),
   hourBlocks: many(hourBlocks),
   billingTerms: many(clientBillingTerms),
   commissionTerms: many(clientCommissionTerms),
@@ -84,9 +80,6 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   }),
   clientsOriginated: many(clients, {
     relationName: 'clients_originationUser_users_id',
-  }),
-  clientsClosed: many(clients, {
-    relationName: 'clients_closerUser_users_id',
   }),
   taskAssignees: many(taskAssignees),
   taskAssigneeMetadata: many(taskAssigneeMetadata),
@@ -272,15 +265,12 @@ export const clientBillingTermsRelations = relations(
 
 export const clientCommissionTermsRelations = relations(
   clientCommissionTerms,
-  ({ one }) => ({
+  ({ one, many }) => ({
     client: one(clients, {
       fields: [clientCommissionTerms.clientId],
       references: [clients.id],
     }),
-    closerUser: one(users, {
-      fields: [clientCommissionTerms.closerUserId],
-      references: [users.id],
-    }),
+    closers: many(clientCommissionTermClosers),
     originationUser: one(users, {
       fields: [clientCommissionTerms.originationUserId],
       references: [users.id],
@@ -292,6 +282,24 @@ export const clientCommissionTermsRelations = relations(
     createdByUser: one(users, {
       fields: [clientCommissionTerms.createdBy],
       references: [users.id],
+    }),
+  })
+)
+
+export const clientCommissionTermClosersRelations = relations(
+  clientCommissionTermClosers,
+  ({ one }) => ({
+    term: one(clientCommissionTerms, {
+      fields: [clientCommissionTermClosers.termId],
+      references: [clientCommissionTerms.id],
+    }),
+    closerUser: one(users, {
+      fields: [clientCommissionTermClosers.closerUserId],
+      references: [users.id],
+    }),
+    closerContact: one(contacts, {
+      fields: [clientCommissionTermClosers.closerContactId],
+      references: [contacts.id],
     }),
   })
 )

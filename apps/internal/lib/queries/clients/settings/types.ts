@@ -1,4 +1,5 @@
 import type { CursorDirection, PageInfo } from '@/lib/pagination/cursor'
+import type { ClientCloser } from '@/lib/settings/clients/closers'
 import type { ParsedSort } from '@/lib/pagination/sort'
 import type {
   ClientBillingFilter,
@@ -13,6 +14,8 @@ type ClientListMetrics = {
 }
 
 export type ClientsSettingsListItem = SelectClient & {
+  /** Closers on the newest commission term, largest share first. */
+  closers: ClientCloser[]
   metrics: ClientListMetrics
 }
 

@@ -2,6 +2,7 @@ import 'server-only'
 
 import type { AppUser } from '@/lib/auth/session'
 import { getClientByIdIncludingArchived } from '@/lib/queries/clients'
+import { fetchLatestClosersByClient } from '@/lib/queries/clients/commission-terms'
 import type { ClientRow } from '@/lib/settings/clients/client-sheet-utils'
 import { clientSheetHref } from '@/lib/sheets/hrefs'
 import {
@@ -32,6 +33,8 @@ export function resolveClientDeepLink(
         return null
       }
 
+      const closersByClient = await fetchLatestClosersByClient([client.id])
+
       // The client sheet consumes the snake_case `DbClient` shape.
       return {
         id: client.id,
@@ -42,12 +45,12 @@ export function resolveClientDeepLink(
         state: client.state ?? null,
         origination_contact_id: client.originationContactId,
         origination_user_id: client.originationUserId,
-        closer_user_id: client.closerUserId,
         billing_type: client.billingType,
         created_by: client.createdBy,
         created_at: client.createdAt,
         updated_at: client.updatedAt,
         deleted_at: client.deletedAt,
+        closers: closersByClient.get(client.id) ?? [],
       }
     },
     tab,

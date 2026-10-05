@@ -13,6 +13,8 @@ import {
   type SortCursorPayload,
   type SortDirection,
 } from '@/lib/pagination/sort'
+import { fetchLatestClosersByClient } from '@/lib/queries/clients/commission-terms'
+import type { ClientCloser } from '@/lib/settings/clients/closers'
 import { DEFAULT_CLIENTS_SORT } from '@/lib/settings/clients/filters'
 
 import {
@@ -93,7 +95,10 @@ async function queryClientRows(
     .limit(limit + 1) as Promise<ClientMetricsResult[]>
 }
 
-function mapClientMetrics(rows: ClientMetricsResult[]): ClientsSettingsListItem[] {
+function mapClientMetrics(
+  rows: ClientMetricsResult[],
+  closersByClient: Map<string, ClientCloser[]>
+): ClientsSettingsListItem[] {
   return rows.map(row => ({
     id: row.id,
     name: row.name,
@@ -104,11 +109,11 @@ function mapClientMetrics(rows: ClientMetricsResult[]): ClientsSettingsListItem[
     state: row.state,
     originationContactId: row.originationContactId,
     originationUserId: row.originationUserId,
-    closerUserId: row.closerUserId,
     createdBy: row.createdBy,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
+    closers: closersByClient.get(row.id) ?? [],
     metrics: {
       totalProjects: Number(row.totalProjects ?? 0),
       activeProjects: Number(row.activeProjects ?? 0),
@@ -244,7 +249,10 @@ export async function listClientsForSettings(
   const normalizedRows =
     direction === 'backward' ? [...slicedRows].reverse() : slicedRows
 
-  const mappedItems = mapClientMetrics(normalizedRows)
+  const closersByClient = await fetchLatestClosersByClient(
+    normalizedRows.map(row => row.id)
+  )
+  const mappedItems = mapClientMetrics(normalizedRows, closersByClient)
 
   const [totalCount, unfilteredTotalCount] = await Promise.all([
     resolveCount(baseConditions),

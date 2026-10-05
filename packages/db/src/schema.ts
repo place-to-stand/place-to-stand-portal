@@ -205,8 +205,10 @@ export const clients = pgTable(
     // agreements use originationContactId. Both NULL means no origination.
     originationContactId: uuid('origination_contact_id'),
     originationUserId: uuid('origination_user_id'),
-    // Closer (internal PTS partner who finalized the deal / 20% commission).
-    // Must reference an admin user; enforced at application layer.
+    // DEPRECATED — never read or written since closer splits (0086). Closers
+    // (20%, split by percentage) live on `client_commission_term_closers`.
+    // Kept only so the deploy that stopped using it needed no column drop;
+    // remove in a follow-up migration once that deploy is live.
     closerUserId: uuid('closer_user_id'),
     createdBy: uuid('created_by'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
@@ -889,10 +891,10 @@ export const clientCommissionTerms = pgTable(
     clientId: uuid('client_id').notNull(),
     /** First day of the month this commission split takes effect (month-start CHECK). */
     effectiveFrom: date('effective_from').notNull(),
-    /**
-     * Closer (20%). NULL means no closer for the period — the closer share
-     * is not paid out and is reported under House (estimated).
-     */
+    // Closers (20%, split by percentage) are child rows in
+    // `client_commission_term_closers`. No rows means no closer for the
+    // period: the share is not paid and is reported under House (estimated).
+    /** DEPRECATED — superseded by the closer rows (0086); drop in a follow-up. */
     closerUserId: uuid('closer_user_id'),
     /** Origination (10%): at most ONE of user / contact per the mutex CHECK. */
     originationUserId: uuid('origination_user_id'),
@@ -947,6 +949,66 @@ export const clientCommissionTerms = pgTable(
     check(
       'chk_client_commission_terms_origination_mutex',
       sql`NOT (origination_user_id IS NOT NULL AND origination_contact_id IS NOT NULL)`
+    ),
+  ]
+)
+
+/**
+ * One closer's share of a commission term's closer pool. A term has zero or
+ * more closers whose `share_percent` totals 100 (enforced in the app layer —
+ * a cross-row sum can't be a CHECK). Each row is an admin user OR a contact
+ * (mutex CHECK): an insider at the client can help close a deal too. Rows are
+ * replaced as a set when a term's split is re-edited (old rows soft-deleted).
+ */
+export const clientCommissionTermClosers = pgTable(
+  'client_commission_term_closers',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    termId: uuid('term_id').notNull(),
+    closerUserId: uuid('closer_user_id'),
+    closerContactId: uuid('closer_contact_id'),
+    /** Share of the closer rate, 0 < share <= 100. */
+    sharePercent: numeric('share_percent', { precision: 5, scale: 2 }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    index('idx_client_commission_term_closers_term')
+      .using('btree', table.termId.asc())
+      .where(sql`(deleted_at IS NULL)`),
+    uniqueIndex('uq_client_commission_term_closers_user')
+      .on(table.termId, table.closerUserId)
+      .where(sql`(deleted_at IS NULL AND closer_user_id IS NOT NULL)`),
+    uniqueIndex('uq_client_commission_term_closers_contact')
+      .on(table.termId, table.closerContactId)
+      .where(sql`(deleted_at IS NULL AND closer_contact_id IS NOT NULL)`),
+    foreignKey({
+      columns: [table.termId],
+      foreignColumns: [clientCommissionTerms.id],
+      name: 'client_commission_term_closers_term_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.closerUserId],
+      foreignColumns: [users.id],
+      name: 'client_commission_term_closers_closer_user_id_fkey',
+    }).onDelete('restrict'),
+    foreignKey({
+      columns: [table.closerContactId],
+      foreignColumns: [contacts.id],
+      name: 'client_commission_term_closers_closer_contact_id_fkey',
+    }).onDelete('restrict'),
+    check(
+      'chk_client_commission_term_closers_one_party',
+      sql`(closer_user_id IS NULL) <> (closer_contact_id IS NULL)`
+    ),
+    check(
+      'chk_client_commission_term_closers_share',
+      sql`share_percent > 0 AND share_percent <= 100`
     ),
   ]
 )

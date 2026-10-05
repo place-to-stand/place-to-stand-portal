@@ -28,7 +28,9 @@ import {
 import { getProjectById } from '@/lib/queries/projects'
 import { buildAssignmentsForUsers, getUserById } from '@/lib/queries/users'
 import type { ProjectWithClient } from '@/lib/settings/projects/project-sheet-form'
-import type { DbClient, DbUser } from '@/lib/types'
+import { fetchLatestClosersByClient } from '@/lib/queries/clients/commission-terms'
+import type { ClientRow } from '@/lib/settings/clients/client-sheet-utils'
+import type { DbUser } from '@/lib/types'
 
 import { NEW_SHEET_VALUE } from '../entities'
 import type { SheetInitEntity, SheetInitPayloads } from './payloads'
@@ -45,7 +47,7 @@ const resolveClientInit: SheetInitResolver<'client'> = async (_user, id) => {
   }
 
   // The client sheet self-fetches its reference data (contacts/admins) —
-  // it only needs the row, in the snake_case `DbClient` shape it consumes.
+  // it only needs the row (snake_case `DbClient` plus its closer split).
   const rows = await db
     .select()
     .from(clients)
@@ -57,7 +59,8 @@ const resolveClientInit: SheetInitResolver<'client'> = async (_user, id) => {
     throw new NotFoundError('Client not found')
   }
 
-  const client: DbClient = {
+  const closersByClient = await fetchLatestClosersByClient([row.id])
+  const client: ClientRow = {
     id: row.id,
     name: row.name,
     slug: row.slug,
@@ -66,12 +69,12 @@ const resolveClientInit: SheetInitResolver<'client'> = async (_user, id) => {
     state: row.state ?? null,
     origination_contact_id: row.originationContactId,
     origination_user_id: row.originationUserId,
-    closer_user_id: row.closerUserId,
     billing_type: row.billingType,
     created_by: row.createdBy,
     created_at: row.createdAt,
     updated_at: row.updatedAt,
     deleted_at: row.deletedAt,
+    closers: closersByClient.get(row.id) ?? [],
   }
 
   return { client }

@@ -13,6 +13,8 @@ import {
 } from '@pts/db/hours'
 import { NotFoundError } from '@/lib/errors/http'
 import { createSearchPattern } from '@/lib/pagination/cursor'
+import { fetchLatestClosersByClient } from '@/lib/queries/clients/commission-terms'
+import type { ClientCloser } from '@/lib/settings/clients/closers'
 import {
   fetchContactSummariesByClient,
   type ClientContactSummary,
@@ -42,10 +44,8 @@ export type ClientWithMetrics = {
   originationUserName: string | null
   originationUserAvatarUrl: string | null
   originationUserUpdatedAt: string | null
-  closerUserId: string | null
-  closerUserName: string | null
-  closerUserAvatarUrl: string | null
-  closerUserUpdatedAt: string | null
+  /** Closers on the newest commission term, largest share first. */
+  closers: ClientCloser[]
   createdAt: string
   updatedAt: string
   deletedAt: string | null
@@ -69,7 +69,8 @@ export type ClientDetail = {
   state: string | null
   originationContactId: string | null
   originationUserId: string | null
-  closerUserId: string | null
+  /** Closers on the newest commission term, largest share first. */
+  closers: ClientCloser[]
   billingType: 'prepaid' | 'net_30'
   createdAt: string
   updatedAt: string
@@ -103,11 +104,9 @@ export const fetchClientsWithMetrics = cache(
       baseConditions.push(eq(clients.billingType, billingType))
     }
 
-    // Aliased user joins: the clients table references users three times
-    // (createdBy, origination, closer) so we need distinct table aliases for
-    // the two user joins we care about here.
+    // Aliased user join: the clients table references users twice
+    // (createdBy, origination). Closers live on the commission term.
     const originationUsers = aliasedTable(users, 'origination_users')
-    const closerUsers = aliasedTable(users, 'closer_users')
 
     // Base client data. Project counts are derived below from the per-client
     // project rows we fetch anyway — the previous projects join + 21-column
@@ -130,11 +129,6 @@ export const fetchClientsWithMetrics = cache(
         originationUserEmail: originationUsers.email,
         originationUserAvatarUrl: originationUsers.avatarUrl,
         originationUserUpdatedAt: originationUsers.updatedAt,
-        closerUserId: clients.closerUserId,
-        closerUserName: closerUsers.fullName,
-        closerUserEmail: closerUsers.email,
-        closerUserAvatarUrl: closerUsers.avatarUrl,
-        closerUserUpdatedAt: closerUsers.updatedAt,
         createdAt: clients.createdAt,
         updatedAt: clients.updatedAt,
         deletedAt: clients.deletedAt,
@@ -145,7 +139,6 @@ export const fetchClientsWithMetrics = cache(
         originationUsers,
         eq(clients.originationUserId, originationUsers.id)
       )
-      .leftJoin(closerUsers, eq(clients.closerUserId, closerUsers.id))
       .where(and(...baseConditions))
       .orderBy(asc(clients.name))
 
@@ -158,7 +151,8 @@ export const fetchClientsWithMetrics = cache(
     // Fetch every non-deleted project per client (any status). The active
     // list is derived below — the definition of "active" (ACTIVE/ONBOARDING)
     // is unchanged; "total" is any status, deletedAt IS NULL.
-    const [clientHours, projectsData, contactsByClient] = await Promise.all([
+    const [clientHours, projectsData, contactsByClient, closersByClient] =
+      await Promise.all([
       getClientHoursTotals(db, clientIds),
       db
         .select({
@@ -174,6 +168,7 @@ export const fetchClientsWithMetrics = cache(
         )
         .orderBy(asc(projects.name)),
       fetchContactSummariesByClient(clientIds),
+      fetchLatestClosersByClient(clientIds),
     ])
 
     // Group projects by client ID
@@ -216,10 +211,7 @@ export const fetchClientsWithMetrics = cache(
           row.originationUserName ?? row.originationUserEmail ?? null,
         originationUserAvatarUrl: row.originationUserAvatarUrl ?? null,
         originationUserUpdatedAt: row.originationUserUpdatedAt ?? null,
-        closerUserId: row.closerUserId,
-        closerUserName: row.closerUserName ?? row.closerUserEmail ?? null,
-        closerUserAvatarUrl: row.closerUserAvatarUrl ?? null,
-        closerUserUpdatedAt: row.closerUserUpdatedAt ?? null,
+        closers: closersByClient.get(row.id) ?? [],
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
         deletedAt: row.deletedAt,
@@ -306,7 +298,6 @@ export const fetchClientById = cache(
         state: clients.state,
         originationContactId: clients.originationContactId,
         originationUserId: clients.originationUserId,
-        closerUserId: clients.closerUserId,
         billingType: clients.billingType,
         createdAt: clients.createdAt,
         updatedAt: clients.updatedAt,
@@ -320,7 +311,8 @@ export const fetchClientById = cache(
       throw new NotFoundError('Client not found')
     }
 
-    return rows[0]
+    const closersByClient = await fetchLatestClosersByClient([clientId])
+    return { ...rows[0], closers: closersByClient.get(clientId) ?? [] }
   }
 )
 

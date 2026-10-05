@@ -27,6 +27,7 @@ import { useListParams } from '@/hooks/use-list-params'
 import type { ClientWithMetrics } from '@/lib/data/clients'
 import { getBillingTypeOption } from '@/lib/settings/clients/billing-types'
 import type { ClientRow } from '@/lib/settings/clients/client-sheet-utils'
+import { closerKey, describeClosers } from '@/lib/settings/clients/closers'
 import { isClientLandingSortValue } from '@/lib/settings/clients/filters'
 import {
   type ClientsTableClient,
@@ -89,12 +90,12 @@ function toTableClient(client: ClientWithMetrics): ClientsTableClient {
     state: client.state,
     origination_contact_id: client.originationContactId,
     origination_user_id: client.originationUserId,
-    closer_user_id: client.closerUserId,
     billing_type: client.billingType,
     created_by: null,
     created_at: client.createdAt,
     updated_at: client.updatedAt,
     deleted_at: client.deletedAt,
+    closers: client.closers,
     metrics: {
       active_projects: client.activeProjectCount,
       total_projects: client.projectCount,
@@ -411,21 +412,34 @@ export function ClientsLanding({
                 </TableCell>
                 <TableCell>
                   <div className='flex items-center justify-center'>
-                    {client.closerUserId ? (
+                    {client.closers.length > 0 ? (
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Avatar size='sm'>
-                            <AvatarImage
-                              src={`/api/storage/user-avatar/${client.closerUserId}?v=${encodeURIComponent(client.closerUserUpdatedAt ?? '')}`}
-                              alt={client.closerUserName ?? 'Closer'}
-                            />
-                            <AvatarFallback>
-                              {getInitials(client.closerUserName)}
-                            </AvatarFallback>
-                          </Avatar>
+                          <span
+                            className='flex items-center -space-x-1.5'
+                            aria-label={`Closed by ${describeClosers(client.closers)}`}
+                          >
+                            {client.closers.map(closer => (
+                              <Avatar
+                                key={closerKey(closer)}
+                                size='sm'
+                                className='ring-card ring-2'
+                              >
+                                {closer.kind === 'user' ? (
+                                  <AvatarImage
+                                    src={`/api/storage/user-avatar/${closer.id}?v=${encodeURIComponent(closer.avatarUpdatedAt ?? '')}`}
+                                    alt={closer.name}
+                                  />
+                                ) : null}
+                                <AvatarFallback>
+                                  {getInitials(closer.name)}
+                                </AvatarFallback>
+                              </Avatar>
+                            ))}
+                          </span>
                         </TooltipTrigger>
                         <TooltipContent>
-                          {client.closerUserName ?? 'Closer'}
+                          {describeClosers(client.closers)}
                         </TooltipContent>
                       </Tooltip>
                     ) : (

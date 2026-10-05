@@ -57,9 +57,9 @@ export default async function ClientDetailPage({
     notFound()
   }
 
-  // Build origination and closer lookups. Origination may be either a
-  // contact (external referrer) or an admin user (internal partner);
-  // closer is always an admin user.
+  // Build origination lookups. Origination may be either a contact
+  // (external referrer) or an admin user (internal partner). Closers arrive
+  // resolved on the client (`client.closers`).
   const originationContactPromise = client.originationContactId
     ? db
         .select({
@@ -97,25 +97,6 @@ export default async function ClientDetailPage({
         .then(rows => rows[0] ?? null)
     : Promise.resolve(null)
 
-  const closerUserPromise = client.closerUserId
-    ? db
-        .select({
-          id: users.id,
-          fullName: users.fullName,
-          email: users.email,
-          avatarUrl: users.avatarUrl,
-        })
-        .from(users)
-        .where(
-          and(
-            eq(users.id, client.closerUserId),
-            isNull(users.deletedAt)
-          )
-        )
-        .limit(1)
-        .then(rows => rows[0] ?? null)
-    : Promise.resolve(null)
-
   const [
     cycleClients,
     projects,
@@ -123,7 +104,6 @@ export default async function ClientDetailPage({
     recentUpdates,
     originationContact,
     originationUser,
-    closerUser,
   ] = await Promise.all([
     fetchClientCycleDirectory(user),
     fetchProjectsForClient(user, client.resolvedId),
@@ -131,7 +111,6 @@ export default async function ClientDetailPage({
     listClientUpdates({ clientId: client.resolvedId, limit: 3 }),
     originationContactPromise,
     originationUserPromise,
-    closerUserPromise,
   ])
 
   return (
@@ -157,7 +136,7 @@ export default async function ClientDetailPage({
         clientRow={mapClientDetailToRow(client)}
         originationContact={originationContact}
         originationUser={originationUser}
-        closerUser={closerUser}
+        closers={client.closers}
       />
     </PageShell>
   )
@@ -175,11 +154,11 @@ function mapClientDetailToRow(
     state: client.state ?? null,
     origination_contact_id: client.originationContactId,
     origination_user_id: client.originationUserId,
-    closer_user_id: client.closerUserId,
     billing_type: client.billingType,
     created_by: null,
     created_at: client.createdAt,
     updated_at: client.updatedAt,
     deleted_at: client.deletedAt,
+    closers: client.closers,
   }
 }
