@@ -1,5 +1,7 @@
 import 'server-only'
 
+import { createHash } from 'node:crypto'
+
 import type { RenderedEmail } from '@pts/email'
 
 import { sendEmail } from '@/lib/email/send'
@@ -10,12 +12,13 @@ import {
   getSubmissionForDelivery,
   markSubmissionEmailSent,
   releaseSubmissionEmail,
+  type ContactSnapshot,
   type SubmissionEmailKind,
 } from '@/lib/queries/form-submission-delivery'
 
 import { addToMarketingAudience } from './audience'
 import { resolveFormEmailAddresses, resolvePortalOrigin } from './addresses'
-import { renderSubmissionEmails } from './render'
+import { renderAuditDetailsEmail, renderSubmissionEmails } from './render'
 
 /**
  * `sent`    — the provider accepted it, now or in an earlier request.
@@ -167,4 +170,101 @@ export async function deliverSubmissionEmails(
   ])
 
   return { team, confirmation }
+}
+
+/**
+ * `sent`    — the provider accepted it.
+ * `failed`  — the send threw. Not retried: the details are stored and the row
+ *             re-flags unread in the portal, which is the backstop.
+ * `skipped` — nothing new to report, or the row is not eligible.
+ */
+export type DetailsEmailOutcome = 'sent' | 'failed' | 'skipped'
+
+type ContactDetails = Pick<
+  ContactSnapshot,
+  'contactName' | 'contactCompany' | 'message'
+>
+
+const DETAIL_FIELDS = ['contactName', 'contactCompany', 'message'] as const
+
+function normalized(value: string | null): string | null {
+  const trimmed = value?.trim()
+  return trimmed ? trimmed : null
+}
+
+/** True when `after` holds a detail that `before` lacked or said differently. */
+export function hasAddedDetails(
+  before: ContactDetails,
+  after: ContactDetails
+): boolean {
+  return DETAIL_FIELDS.some(field => {
+    const next = normalized(after[field])
+    return next !== null && next !== normalized(before[field])
+  })
+}
+
+/**
+ * Tells the team about details an audit gained after its notification went
+ * out. The marketing site captures an email alone and asks for a name,
+ * company and note afterwards, re-sending the captured push; that push cannot
+ * re-trigger the notification (it is sent once per submission), so without
+ * this the note would reach no one.
+ *
+ * `before` is the row as it was ahead of this request's upsert. Comparing the
+ * stored row against it, rather than the payload, means a stale replay that
+ * the upsert discarded, or an identical retry, finds nothing new and sends
+ * nothing. Concurrent duplicates that both see a change share an idempotency
+ * key derived from the details themselves, so the provider keeps one.
+ *
+ * Never throws: the submission is already stored.
+ */
+export async function deliverAddedDetails(
+  id: string,
+  before: ContactSnapshot | null
+): Promise<DetailsEmailOutcome> {
+  // Not yet notified: the notification is still owed, and it renders from the
+  // row, so it will carry these details itself.
+  if (!before?.teamNotifiedOrSending) return 'skipped'
+
+  try {
+    const row = await getSubmissionForDelivery(id)
+
+    if (
+      !row ||
+      row.kind !== 'audit' ||
+      row.status !== 'captured' ||
+      !row.deliveryRequestedAt ||
+      !row.contactEmail ||
+      !hasAddedDetails(before, row)
+    ) {
+      return 'skipped'
+    }
+
+    const email = renderAuditDetailsEmail(row, {
+      portalOrigin: resolvePortalOrigin(),
+    })
+    if (!email) return 'skipped'
+
+    const fingerprint = createHash('sha256')
+      .update(
+        JSON.stringify(DETAIL_FIELDS.map(field => normalized(row[field])))
+      )
+      .digest('hex')
+      .slice(0, 32)
+
+    const { from, teamInbox } = resolveFormEmailAddresses()
+
+    await sendEmail({
+      from,
+      to: teamInbox,
+      replyTo: row.contactEmail,
+      ...email,
+      idempotencyKey: `form-submission:${id}:details:${fingerprint}`,
+    })
+
+    return 'sent'
+  } catch (error) {
+    console.error('Submission details email failed', { id, error })
+    return 'failed'
+  }
 }

@@ -1,4 +1,5 @@
 import {
+  auditDetailsEmail,
   auditNotificationEmail,
   auditResultsEmail,
   contactConfirmationEmail,
@@ -114,6 +115,35 @@ function toEmailResult(result: AuditResult): AuditEmailResult {
   }
 }
 
+function buildContact(row: FormSubmission): SubmissionContact | null {
+  if (!row.contactEmail) return null
+
+  return {
+    name: row.contactName?.trim() || row.contactEmail,
+    email: row.contactEmail,
+    company: row.contactCompany,
+    website: row.contactWebsite,
+  }
+}
+
+/**
+ * The follow-up sent when an audit gains details after its team notification
+ * went out (see `deliverAddedDetails`). Null when there is no one to name.
+ */
+export function renderAuditDetailsEmail(
+  row: FormSubmission,
+  { portalOrigin }: Pick<SubmissionEmailContext, 'portalOrigin'>
+): RenderedEmail | null {
+  const contact = buildContact(row)
+  if (!contact) return null
+
+  return auditDetailsEmail({
+    submissionUrl: `${portalOrigin}${submissionHref(row.id)}`,
+    contact,
+    message: row.message?.trim() || null,
+  })
+}
+
 /**
  * Renders both emails for a captured submission. Returns null when the row has
  * no contact to write to, which the caller treats as "nothing to send".
@@ -122,14 +152,8 @@ export function renderSubmissionEmails(
   row: FormSubmission,
   { portalOrigin, teamInbox, repeat }: SubmissionEmailContext
 ): SubmissionEmails | null {
-  if (!row.contactEmail) return null
-
-  const contact: SubmissionContact = {
-    name: row.contactName?.trim() || row.contactEmail,
-    email: row.contactEmail,
-    company: row.contactCompany,
-    website: row.contactWebsite,
-  }
+  const contact = buildContact(row)
+  if (!contact) return null
 
   const submissionUrl = `${portalOrigin}${submissionHref(row.id)}`
   const source = buildSource(row)

@@ -1,6 +1,7 @@
 import 'server-only'
 
 import {
+  auditDetailsEmail,
   auditNotificationEmail,
   auditResultsEmail,
   contactConfirmationEmail,
@@ -163,6 +164,37 @@ export function buildFormEmailEntries(
             ],
             source: SAMPLE_SOURCE,
             repeat: null,
+          }),
+        },
+      ],
+    },
+    {
+      id: 'audit-details',
+      overview:
+        'Sent to the team when an audit visitor adds their name, company or a note after giving their email.',
+      group: 'audit',
+      status: 'active',
+      name: 'Team follow-up: details added',
+      description:
+        'The audit captures an email alone, so the team notification usually goes out before the visitor adds anything else. When a later push brings a new name, company or note, this tells the team what was added. Only the new details; the result and transcript are in the first notification.',
+      triggers: [
+        'POST /api/integrations/audit-responses with status `captured` and `deliver: true`, when the row gains contact details after its team notification went out',
+      ],
+      recipient: formAddresses.teamInbox,
+      from: formAddresses.from,
+      replyTo: 'The visitor’s address, so replying answers them directly',
+      delivery:
+        'Resend SDK through lib/email/send.ts, from lib/form-submissions/delivery; routed to Mailpit outside production. Sent once per distinct set of details (the idempotency key is derived from them). Not retried by the sweep: on failure the submission still re-flags unread in the portal.',
+      attachments: null,
+      source: 'packages/email/src/templates/audit-details.ts',
+      variants: [
+        {
+          audience: 'team',
+          sample: auditDetailsEmail({
+            submissionUrl: `${internalOrigin}${submissionHref(SAMPLE_SUBMISSION_ID)}`,
+            contact: { ...SAMPLE_CONTACT, website: null },
+            message:
+              'Sample note: our quoting process lives in three spreadsheets and nobody trusts the totals.',
           }),
         },
       ],

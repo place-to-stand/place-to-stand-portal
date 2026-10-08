@@ -4,12 +4,18 @@ import type { NewFormSubmission } from '@pts/db/types'
 
 import { submissionReceivedEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
-import { findDeliveryStateBySessionKey } from '@/lib/queries/form-submission-delivery'
+import {
+  findContactSnapshotBySessionKey,
+  findDeliveryStateBySessionKey,
+  type ContactSnapshot,
+} from '@/lib/queries/form-submission-delivery'
 import { upsertFormSubmission } from '@/lib/queries/form-submissions'
 
 import {
+  deliverAddedDetails,
   deliverSubmissionEmails,
   SKIPPED_OUTCOMES,
+  type DetailsEmailOutcome,
   type SubmissionEmailOutcomes,
 } from './deliver'
 
@@ -17,6 +23,26 @@ export type RecordedSubmission = {
   /** Null when the upsert was a no-op and no row exists for the session. */
   id: string | null
   emails: SubmissionEmailOutcomes
+  /** The follow-up for details added after the team was notified. */
+  details: DetailsEmailOutcome
+}
+
+/**
+ * Best-effort: losing the snapshot only costs the follow-up email (the row
+ * still re-flags unread), so a read failure must not fail the request.
+ */
+async function snapshotContact(
+  sessionKey: string
+): Promise<ContactSnapshot | null> {
+  try {
+    return await findContactSnapshotBySessionKey(sessionKey)
+  } catch (error) {
+    console.error('Unable to read contact snapshot before upsert', {
+      sessionKey,
+      error,
+    })
+    return null
+  }
 }
 
 /**
@@ -33,6 +59,10 @@ export async function recordSubmission(
   row: NewFormSubmission,
   { deliver }: { deliver: boolean }
 ): Promise<RecordedSubmission> {
+  // Only a delivering push can carry contact details, so only it needs to
+  // know what the row said before.
+  const before = deliver ? await snapshotContact(row.sessionKey) : null
+
   const result = await upsertFormSubmission(row)
 
   // A no-op upsert (an older replay, or a tombstone) still names a row. When
@@ -43,7 +73,7 @@ export async function recordSubmission(
     (deliver ? (await findDeliveryStateBySessionKey(row.sessionKey))?.id : null)
 
   if (!id) {
-    return { id: null, emails: SKIPPED_OUTCOMES }
+    return { id: null, emails: SKIPPED_OUTCOMES, details: 'skipped' }
   }
 
   // Only the first insert is an event; later beacons for the same session
@@ -72,19 +102,24 @@ export async function recordSubmission(
   }
 
   if (!deliver) {
-    return { id, emails: SKIPPED_OUTCOMES }
+    return { id, emails: SKIPPED_OUTCOMES, details: 'skipped' }
   }
 
   // Asked for by the payload, decided by the row (`delivery_requested_at`).
   // Nothing in here may fail the request: the row is stored, so any failure
   // past this point is a delayed email the sweep will retry, not a lost lead.
+  let emails: SubmissionEmailOutcomes
   try {
-    return { id, emails: await deliverSubmissionEmails(id) }
+    emails = await deliverSubmissionEmails(id)
   } catch (error) {
     console.error('Submission email delivery failed after recording', {
       id,
       error,
     })
-    return { id, emails: { team: 'queued', confirmation: 'queued' } }
+    emails = { team: 'queued', confirmation: 'queued' }
   }
+
+  // After the notification attempt, never instead of it: when the team has
+  // not been told yet, that notification is what carries the new details.
+  return { id, emails, details: await deliverAddedDetails(id, before) }
 }

@@ -44,7 +44,7 @@ site's Vercel project (all environments).
 
 | Status | Body | Meaning |
 | --- | --- | --- |
-| `200` | `{"ok":true,"data":{"id":"…","emails":{"team":"sent","confirmation":"sent"}}}` | Accepted. `id` is `null` when a stale beacon is intentionally discarded — see [§5](#5-idempotency-and-ordering). `emails` is described in [§6.1](#61-email-delivery-deliver). |
+| `200` | `{"ok":true,"data":{"id":"…","emails":{"team":"sent","confirmation":"sent"},"details":"skipped"}}` | Accepted. `id` is `null` when a stale beacon is intentionally discarded — see [§5](#5-idempotency-and-ordering). `emails` and `details` are described in [§6.1](#61-email-delivery-deliver). |
 | `400` | `{"ok":false,"error":"..."}` | Malformed JSON, or payload failed validation. `error` is the first validation message. |
 | `401` | `{"error":"Unauthorized"}` | Missing, malformed, or mismatched bearer token. |
 | `500` | `{"ok":false,"error":"..."}` | Token not configured portal-side, or a database failure. Safe to retry. |
@@ -372,6 +372,19 @@ flushes whatever that row owes.
 
 **Audit: only `captured` can deliver.** `deliver` is ignored unless `status` is `captured` and
 `lead` is present.
+
+**Audit: details added after the capture.** The site captures an email alone, then may re-send
+the `captured` push (with `deliver: true`) carrying a name, company and note. The notification is
+already stamped by then, so it cannot carry them. Instead, when a delivering push gives a row a
+name, company or note it lacked or said differently, *after* its team notification went out (or
+while it was being sent), the portal sends a short follow-up to the team inbox
+(`auditDetailsEmail`). If the notification has not gone out yet it is still owed, renders from the
+row, and carries the details itself, so no follow-up is sent. The snapshot is read before the
+upsert and compared with the stored row after it, so an identical replay or a stale push sends
+nothing; concurrent duplicates share the idempotency key `form-submission:<id>:details:<hash of
+the details>`. `details` in the response is `sent`, `failed` or `skipped`. It is **not** retried
+by the sweep; the backstop is that gaining details also clears `acknowledged_at`, so the row
+re-flags unread in the portal either way.
 
 > ⚠️ **`deliver: true` must only ever be sent from a BotID-verified server action.** It makes the
 > portal email an address the caller supplied. The marketing site's `/api/audit-progress` beacon

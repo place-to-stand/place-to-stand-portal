@@ -147,6 +147,54 @@ export async function findDeliveryStateBySessionKey(
 }
 
 /**
+ * What a row said about its contact before a payload lands, and whether the
+ * team has already been told about it. Read ahead of the upsert so the intake
+ * can tell which details are new (see `deliverAddedDetails`).
+ */
+export type ContactSnapshot = {
+  contactName: string | null
+  contactCompany: string | null
+  message: string | null
+  /** A team notification has gone out, or is being sent right now. */
+  teamNotifiedOrSending: boolean
+}
+
+export async function findContactSnapshotBySessionKey(
+  sessionKey: string
+): Promise<ContactSnapshot | null> {
+  const [row] = await db
+    .select({
+      contactName: formSubmissions.contactName,
+      contactCompany: formSubmissions.contactCompany,
+      message: formSubmissions.message,
+      teamNotifiedAt: formSubmissions.teamNotifiedAt,
+      teamEmailClaimedAt: formSubmissions.teamEmailClaimedAt,
+    })
+    .from(formSubmissions)
+    .where(
+      and(
+        eq(formSubmissions.sessionKey, sessionKey),
+        isNull(formSubmissions.destroyedAt)
+      )
+    )
+    .limit(1)
+
+  if (!row) return null
+
+  return {
+    contactName: row.contactName,
+    contactCompany: row.contactCompany,
+    message: row.message,
+    // A held lease means the notification was rendered from the row as it
+    // was then; details arriving now would miss it just the same. If that
+    // send fails and is retried, the retry includes them and the follow-up
+    // is merely redundant, which beats losing them.
+    teamNotifiedOrSending:
+      row.teamNotifiedAt !== null || row.teamEmailClaimedAt !== null,
+  }
+}
+
+/**
  * How many captured submissions this address has made, this one included.
  * Archived rows count: "have we heard from them before" does not depend on
  * whether someone tidied the list.
