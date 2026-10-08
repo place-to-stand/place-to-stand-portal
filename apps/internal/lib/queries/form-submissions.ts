@@ -164,6 +164,24 @@ export type UpsertFormSubmissionResult = {
  * beacon of a session from a later update via Postgres's `xmax = 0`
  * (a freshly inserted tuple has no updating transaction id).
  */
+/**
+ * True when the incoming row brings a name, company or note that is new or
+ * different. The marketing audit captures an email alone and sends these in a
+ * later push; progress beacons carry no contact, so they never match. Blank
+ * and whitespace count as absent on both sides.
+ */
+const gainedContactDetails = sql.join(
+  [
+    [sql`excluded.contact_name`, formSubmissions.contactName],
+    [sql`excluded.contact_company`, formSubmissions.contactCompany],
+    [sql`excluded.message`, formSubmissions.message],
+  ].map(
+    ([incoming, stored]) =>
+      sql`(NULLIF(btrim(${incoming}), '') IS NOT NULL AND NULLIF(btrim(${incoming}), '') IS DISTINCT FROM NULLIF(btrim(${stored}), ''))`
+  ),
+  sql` OR `
+)
+
 export async function upsertFormSubmission(
   row: NewFormSubmission
 ): Promise<UpsertFormSubmissionResult | null> {
@@ -212,8 +230,9 @@ export async function upsertFormSubmission(
         feedbackComment: sql`COALESCE(excluded.feedback_comment, ${formSubmissions.feedbackComment})`,
         feedbackAt: sql`COALESCE(excluded.feedback_at, ${formSubmissions.feedbackAt})`,
 
-        // Acknowledgement resets when status advances or feedback lands: a
-        // reviewed row that gains new signal must re-flag as unread. Status
+        // Acknowledgement resets when status advances, feedback lands, or the
+        // contact gains details: a reviewed row that gains new signal must
+        // re-flag as unread. Status
         // can only advance (GREATEST above), so a strict > comparison is
         // exactly "advanced". Feedback is "new" when the beacon's submit time
         // is later than what is stored (or nothing is stored yet).
@@ -221,6 +240,7 @@ export async function upsertFormSubmission(
           CASE
             WHEN excluded.status > ${formSubmissions.status}
               OR excluded.feedback_at > COALESCE(${formSubmissions.feedbackAt}, '-infinity'::timestamptz)
+              OR ${gainedContactDetails}
               THEN NULL
             ELSE ${formSubmissions.acknowledgedAt}
           END
@@ -229,6 +249,7 @@ export async function upsertFormSubmission(
           CASE
             WHEN excluded.status > ${formSubmissions.status}
               OR excluded.feedback_at > COALESCE(${formSubmissions.feedbackAt}, '-infinity'::timestamptz)
+              OR ${gainedContactDetails}
               THEN NULL
             ELSE ${formSubmissions.acknowledgedBy}
           END
@@ -297,14 +318,19 @@ export async function listFormSubmissions({
 }) {
   const direction = sort.direction === 'asc' ? asc : desc
 
-  return db
-    .select()
-    .from(formSubmissions)
-    .where(buildFilters(filters))
-    // Id tie-breaker keeps offset pages stable when timestamps collide.
-    .orderBy(direction(SORT_COLUMNS[sort.field]), direction(formSubmissions.id))
-    .limit(limit)
-    .offset(offset)
+  return (
+    db
+      .select()
+      .from(formSubmissions)
+      .where(buildFilters(filters))
+      // Id tie-breaker keeps offset pages stable when timestamps collide.
+      .orderBy(
+        direction(SORT_COLUMNS[sort.field]),
+        direction(formSubmissions.id)
+      )
+      .limit(limit)
+      .offset(offset)
+  )
 }
 
 /**

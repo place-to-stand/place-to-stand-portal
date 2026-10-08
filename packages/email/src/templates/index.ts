@@ -13,6 +13,7 @@ export {
   auditNotificationEmail,
   type AuditNotificationEmailArgs,
 } from './audit-notification'
+export { auditDetailsEmail, type AuditDetailsEmailArgs } from './audit-details'
 export { auditResultsEmail, type AuditResultsEmailArgs } from './audit-results'
 export type { AuditEmailResult } from './audit-shared'
 export {

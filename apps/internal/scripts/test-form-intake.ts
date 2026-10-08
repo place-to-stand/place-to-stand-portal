@@ -732,6 +732,73 @@ async function main() {
       )
     )
 
+    console.log('\nDelivery: details added after the capture')
+    // The site captures an email alone, then re-sends the captured push with
+    // name, company and a note. The notification is already stamped, so only
+    // the follow-up may go out, once, and the reviewed row must re-flag.
+    await db
+      .update(formSubmissions)
+      .set({ acknowledgedAt: new Date().toISOString() })
+      .where(eq(formSubmissions.sessionKey, auditSession))
+    const detailsBody = {
+      ...auditBody('captured', 10_000),
+      lead: {
+        name: `Audit Probe ${auditTag}`,
+        email: auditEmail,
+        company: 'Probe Co',
+        message: 'Quoting lives in three spreadsheets.',
+        marketingConsent: false,
+      },
+    }
+    const details = await submitAudit(detailsBody)
+    check(
+      'details push -> follow-up sent',
+      details.body?.data?.details === 'sent',
+      details.body?.data
+    )
+    check(
+      'details push -> notification not re-sent',
+      details.body?.data?.emails?.team === 'sent' &&
+        (await mailpitCount(auditTag)) === 3,
+      await mailpitCount(auditTag)
+    )
+    const detailedRow = await readRow(auditSession)
+    check(
+      'details stored',
+      detailedRow?.contactCompany === 'Probe Co' &&
+        detailedRow?.message === 'Quoting lives in three spreadsheets.',
+      detailedRow
+    )
+    check(
+      'details re-flag the row unread',
+      detailedRow?.acknowledgedAt === null,
+      detailedRow?.acknowledgedAt
+    )
+
+    const replayedDetails = await submitAudit(detailsBody)
+    check(
+      'identical replay -> follow-up skipped',
+      replayedDetails.body?.data?.details === 'skipped' &&
+        (await mailpitCount(auditTag)) === 3,
+      replayedDetails.body?.data
+    )
+
+    await db
+      .update(formSubmissions)
+      .set({ acknowledgedAt: new Date().toISOString() })
+      .where(eq(formSubmissions.sessionKey, auditSession))
+    await submitAudit({
+      ...auditBody('captured', 20_000),
+      lead: null,
+      deliver: false,
+    })
+    const quietRow = await readRow(auditSession)
+    check(
+      'a push without a lead leaves the row acknowledged',
+      quietRow?.acknowledgedAt !== null,
+      quietRow?.acknowledgedAt
+    )
+
     console.log('\nDelivery: unscored audit has nothing to confirm')
     const unscoredTag = randomUUID().slice(0, 8)
     const unscoredSession = randomUUID()

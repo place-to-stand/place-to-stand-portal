@@ -331,7 +331,9 @@ portal send the team notification and the visitor's confirmation *after* recordi
 sends with a Resend idempotency key, and stamps `team_notified_at` / `confirmation_sent_at` only on
 acceptance, so neither a crash nor a replay can double-send or fake a send; failed sends are retried
 by `/api/cron/retry-submission-emails` for 72h, and rows with `delivery_requested_at IS NULL`
-(everything before the cutover) are never mailed. Only a
+(everything before the cutover) are never mailed. An audit that gains a name, company or note after
+its team notification went out gets a one-off follow-up (`deliverAddedDetails`, not retried) and
+re-flags unread. Only a
 `captured` audit can deliver, and only the site's BotID-gated server action may set the flag —
 never its unauthenticated progress beacon. Templates live in `packages/email` and are registered in
 `lib/email/catalog-forms.ts`. Optional env: `RESEND_FORMS_FROM_EMAIL`, `FORMS_NOTIFY_EMAIL`,
