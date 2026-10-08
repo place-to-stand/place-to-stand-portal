@@ -6,7 +6,7 @@ import { resolveProviderParam } from '@/lib/integrations/route-helpers'
 
 export async function GET(
   _request: Request,
-  { params }: { params: Promise<{ provider: string }> }
+  { params }: RouteContext<'/api/integrations/[provider]/status'>
 ) {
   const user = await requireUser()
   const resolved = resolveProviderParam((await params).provider)

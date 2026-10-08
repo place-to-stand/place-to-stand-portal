@@ -17,7 +17,7 @@ const paramsSchema = z.object({
 
 export async function GET(
   _request: NextRequest,
-  context: { params: Promise<{ attachmentId: string }> }
+  context: RouteContext<'/api/storage/task-attachment/[attachmentId]'>
 ) {
   const actor = await requireUser()
   const parsedParams = paramsSchema.safeParse(await context.params)

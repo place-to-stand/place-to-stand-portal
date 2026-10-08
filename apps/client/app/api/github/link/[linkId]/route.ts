@@ -13,7 +13,7 @@ import { ensureClientAccess } from '@/lib/auth/permissions'
  */
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ linkId: string }> }
+  { params }: RouteContext<'/api/github/link/[linkId]'>
 ) {
   const user = await getCurrentUser()
   if (!user) {

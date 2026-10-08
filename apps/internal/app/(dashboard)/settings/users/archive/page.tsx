@@ -19,15 +19,11 @@ export const metadata: Metadata = {
   title: 'User archive | Settings',
 }
 
-type UsersArchivePageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>
-}
-
 export default async function UsersArchivePage({
   searchParams,
-}: UsersArchivePageProps) {
+}: PageProps<'/settings/users/archive'>) {
   const currentUser = await requireRole('ADMIN')
-  const params = searchParams ? await searchParams : {}
+  const params = await searchParams
   const preferredPageSize = await readPageSize()
   const { page, limit, role, search, sort } =
     parseUsersSearchParams(params)

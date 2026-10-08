@@ -24,17 +24,15 @@ export const metadata: Metadata = {
   title: 'Lead archive',
 }
 
-type PageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>
-}
-
 const firstParam = (value: string | string[] | undefined) =>
   Array.isArray(value) ? value[0] : value
 
-export default async function LeadsArchivePage({ searchParams }: PageProps) {
+export default async function LeadsArchivePage({
+  searchParams,
+}: PageProps<'/leads/archive'>) {
   const user = await requireUser()
   assertAdmin(user)
-  const params = searchParams ? await searchParams : {}
+  const params = await searchParams
   const leadParam = firstParam(params.lead) ?? null
 
   const [archivedLeads, assignees] = await Promise.all([

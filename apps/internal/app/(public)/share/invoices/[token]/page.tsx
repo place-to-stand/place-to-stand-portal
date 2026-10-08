@@ -8,12 +8,9 @@ import { logActivity } from '@/lib/activity/logger'
 
 import { PublicInvoice } from './public-invoice'
 
-type Props = {
-  params: Promise<{ token: string }>
-  searchParams: Promise<Record<string, string | string[] | undefined>>
-}
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps<'/share/invoices/[token]'>): Promise<Metadata> {
   const { token } = await params
   const invoice = await getInvoiceByShareToken(token)
 
@@ -28,7 +25,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export default async function PublicInvoicePage({ params, searchParams }: Props) {
+export default async function PublicInvoicePage({
+  params,
+  searchParams,
+}: PageProps<'/share/invoices/[token]'>) {
   const { token } = await params
   const invoice = await getInvoiceByShareToken(token)
 

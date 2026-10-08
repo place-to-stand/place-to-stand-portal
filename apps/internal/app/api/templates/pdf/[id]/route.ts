@@ -12,7 +12,7 @@ import { renderSamplePdf } from '@/lib/pdf/catalog'
  */
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: RouteContext<'/api/templates/pdf/[id]'>
 ) {
   const user = await requireUser()
   assertAdmin(user)

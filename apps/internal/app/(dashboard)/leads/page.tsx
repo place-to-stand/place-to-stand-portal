@@ -17,16 +17,14 @@ export const metadata: Metadata = {
   title: 'Leads',
 }
 
-type PageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>
-}
-
 const firstParam = (value: string | string[] | undefined) =>
   Array.isArray(value) ? value[0] : value
 
-export default async function LeadsBoardPage({ searchParams }: PageProps) {
+export default async function LeadsBoardPage({
+  searchParams,
+}: PageProps<'/leads'>) {
   const user = await requireUser()
-  const params = searchParams ? await searchParams : {}
+  const params = await searchParams
   const leadParam = firstParam(params.lead) ?? null
 
   const [board, assignees] = await Promise.all([

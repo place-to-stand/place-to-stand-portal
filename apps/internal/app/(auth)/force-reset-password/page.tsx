@@ -7,15 +7,13 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 import { PasswordResetForm } from "./force-reset-form";
 
-type PageProps = {
-  searchParams?: Promise<{ redirect?: string }>;
-};
-
 export const metadata: Metadata = {
   title: 'Update password',
 };
 
-export default async function ForceResetPasswordPage({ searchParams }: PageProps) {
+export default async function ForceResetPasswordPage({
+  searchParams,
+}: PageProps<'/force-reset-password'>) {
   const supabase = getSupabaseServerClient();
   const {
     data: { user },
@@ -32,7 +30,7 @@ export default async function ForceResetPasswordPage({ searchParams }: PageProps
     redirect("/");
   }
 
-  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const resolvedSearchParams = (await searchParams) as { redirect?: string };
   const redirectTo = resolvedSearchParams?.redirect;
 
   return (

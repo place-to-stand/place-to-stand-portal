@@ -14,7 +14,7 @@ const bodySchema = z.object({
 
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ provider: string }> }
+  { params }: RouteContext<'/api/integrations/[provider]/connect'>
 ) {
   const user = await requireUser()
   const resolved = resolveProviderParam((await params).provider)

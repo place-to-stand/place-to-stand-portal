@@ -20,13 +20,11 @@ export const metadata: Metadata = {
 }
 
 
-type ContactsPageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>
-}
-
-export default async function ContactsPage({ searchParams }: ContactsPageProps) {
+export default async function ContactsPage({
+  searchParams,
+}: PageProps<'/contacts'>) {
   const user = await requireUser()
-  const params = searchParams ? await searchParams : {}
+  const params = await searchParams
   const pageSize = await readPageSize()
   const {
     page: currentPage,

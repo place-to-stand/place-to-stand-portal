@@ -13,7 +13,7 @@ const paramsSchema = z.object({
 
 export async function GET(
   _request: NextRequest,
-  context: { params: Promise<{ userId: string }> }
+  context: RouteContext<'/api/storage/user-avatar/[userId]'>
 ) {
   await requireUser()
 

@@ -24,15 +24,11 @@ export const metadata: Metadata = {
 const firstParam = (value: string | string[] | undefined) =>
   Array.isArray(value) ? value[0] : value
 
-type HourBlocksArchivePageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>
-}
-
 export default async function HourBlocksArchivePage({
   searchParams,
-}: HourBlocksArchivePageProps) {
+}: PageProps<'/hour-blocks/archive'>) {
   const currentUser = await requireRole('ADMIN')
-  const params = searchParams ? await searchParams : {}
+  const params = await searchParams
   const pageSize = await readPageSize()
 
   const {

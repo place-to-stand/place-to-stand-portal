@@ -27,7 +27,7 @@ const idSchema = z.string().uuid()
  */
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: RouteContext<'/api/invoices/[id]/pdf'>
 ) {
   const user = await getCurrentUser()
   if (!user) {

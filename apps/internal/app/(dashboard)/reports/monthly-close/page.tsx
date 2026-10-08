@@ -28,10 +28,6 @@ export const metadata: Metadata = {
   title: 'Monthly close | Reports',
 }
 
-type MonthlyClosePageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>
-}
-
 function parseSearchParam(value: string | string[] | undefined): string | null {
   if (typeof value === 'string') return value
   if (Array.isArray(value)) return value[0] ?? null
@@ -40,10 +36,10 @@ function parseSearchParam(value: string | string[] | undefined): string | null {
 
 export default async function MonthlyClosePage({
   searchParams,
-}: MonthlyClosePageProps) {
+}: PageProps<'/reports/monthly-close'>) {
   await requireRole('ADMIN')
 
-  const params = searchParams ? await searchParams : {}
+  const params = await searchParams
 
   // Month is 0-indexed in the URL (0 = January, 11 = December).
   const now = new Date()

@@ -22,15 +22,11 @@ export const metadata: Metadata = {
   title: 'Project archive',
 }
 
-type ProjectsArchivePageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>
-}
-
 export default async function ProjectsArchivePage({
   searchParams,
-}: ProjectsArchivePageProps) {
+}: PageProps<'/projects/archive'>) {
   const admin = await requireRole('ADMIN')
-  const params = searchParams ? await searchParams : {}
+  const params = await searchParams
   const preferredPageSize = await readPageSize()
   const { searchQuery, cursor, direction, limit, sort } =
     parseProjectsSearchParams(params)

@@ -40,15 +40,11 @@ const toDbUser = (user: UserSelection): DbUser => ({
   last_sign_in_at: user.lastSignInAt ?? null,
 })
 
-type UsersPageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>
-}
-
 export default async function UsersPage({
   searchParams,
-}: UsersPageProps) {
+}: PageProps<'/settings/users'>) {
   const currentUser = await requireRole('ADMIN')
-  const params = searchParams ? await searchParams : {}
+  const params = await searchParams
   const preferredPageSize = await readPageSize()
   const { page, limit, role, access, search, sort } =
     parseUsersSearchParams(params)

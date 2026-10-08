@@ -33,13 +33,10 @@ const paramsSchema = z.object({
   taskId: z.string().uuid(),
 })
 
-type RouteParams = {
-  params: Promise<{
-    taskId: string
-  }>
-}
-
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
+export async function PATCH(
+  request: NextRequest,
+  { params }: RouteContext<'/api/v1/tasks/[taskId]/reorder'>
+) {
   const user = await getCurrentUser()
 
   if (!user) {

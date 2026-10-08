@@ -23,12 +23,6 @@ import { fetchActiveStaff } from '@/lib/updates/staff'
 
 import { UpdateComposer } from './_components/update-composer'
 
-type Params = Promise<{ updateId: string }>
-
-type UpdatePageProps = {
-  params: Params
-}
-
 async function loadUpdate(updateId: string): Promise<ClientUpdateRow | null> {
   // UUID-guard before the query so a stray path segment is a 404, not a
   // driver cast error.
@@ -43,7 +37,7 @@ async function loadUpdate(updateId: string): Promise<ClientUpdateRow | null> {
 
 export async function generateMetadata({
   params,
-}: UpdatePageProps): Promise<Metadata> {
+}: PageProps<'/updates/[updateId]'>): Promise<Metadata> {
   const { updateId } = await params
   await requireUser()
   const update = await loadUpdate(updateId)
@@ -55,7 +49,9 @@ export async function generateMetadata({
   }
 }
 
-export default async function UpdatePage({ params }: UpdatePageProps) {
+export default async function UpdatePage({
+  params,
+}: PageProps<'/updates/[updateId]'>) {
   const { updateId } = await params
   const user = await requireUser()
 

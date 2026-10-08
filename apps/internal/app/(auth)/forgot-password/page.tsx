@@ -5,16 +5,14 @@ import { AuthShell, authLinkClass } from "@pts/ui/auth-shell";
 
 import { ForgotPasswordForm } from "./forgot-password-form";
 
-type PageProps = {
-  searchParams?: Promise<{ redirect?: string }>;
-};
-
 export const metadata: Metadata = {
   title: 'Reset password',
 };
 
-export default async function ForgotPasswordPage({ searchParams }: PageProps) {
-  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+export default async function ForgotPasswordPage({
+  searchParams,
+}: PageProps<'/forgot-password'>) {
+  const resolvedSearchParams = (await searchParams) as { redirect?: string };
   const redirectTo = resolvedSearchParams?.redirect;
 
   return (

@@ -20,13 +20,10 @@ const createBodySchema = z.object({
     .max(10_000, 'Comment body exceeds the maximum length'),
 })
 
-type RouteContext = {
-  params: Promise<{
-    taskId: string
-  }>
-}
-
-export async function GET(request: NextRequest, context: RouteContext) {
+export async function GET(
+  request: NextRequest,
+  context: RouteContext<'/api/tasks/[taskId]/comments'>
+) {
   const user = await getCurrentUser()
 
   if (!user) {
@@ -62,7 +59,10 @@ export async function GET(request: NextRequest, context: RouteContext) {
   }
 }
 
-export async function POST(request: NextRequest, context: RouteContext) {
+export async function POST(
+  request: NextRequest,
+  context: RouteContext<'/api/tasks/[taskId]/comments'>
+) {
   const user = await getCurrentUser()
 
   if (!user) {

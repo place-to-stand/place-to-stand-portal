@@ -15,10 +15,6 @@ import { ContactsManagementTable } from '../_components/contacts-management-tabl
 import { resolveContactDeepLink } from '../_lib/contact-deep-link'
 import { mapContactToTableRow } from '../_lib/map-contact-to-table-row'
 
-type ContactsArchivePageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>
-}
-
 export const metadata: Metadata = {
   title: 'Contact archive',
 }
@@ -26,9 +22,9 @@ export const metadata: Metadata = {
 
 export default async function ContactsArchivePage({
   searchParams,
-}: ContactsArchivePageProps) {
+}: PageProps<'/contacts/archive'>) {
   const admin = await requireRole('ADMIN')
-  const params = searchParams ? await searchParams : {}
+  const params = await searchParams
   const pageSize = await readPageSize()
   const {
     page: currentPage,

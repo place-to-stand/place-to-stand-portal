@@ -22,15 +22,11 @@ export const metadata: Metadata = {
   title: 'Projects',
 }
 
-type ProjectsPageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>
-}
-
 export default async function ProjectsPage({
   searchParams,
-}: ProjectsPageProps) {
+}: PageProps<'/projects'>) {
   const user = await requireUser()
-  const params = searchParams ? await searchParams : {}
+  const params = await searchParams
   const { statuses, search, filtersActive } =
     parseProjectsLandingSearchParams(params)
 

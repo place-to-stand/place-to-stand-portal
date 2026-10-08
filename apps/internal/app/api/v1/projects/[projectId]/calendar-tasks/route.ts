@@ -9,13 +9,10 @@ import { fetchProjectCalendarTasks } from '@/lib/data/projects'
 
 const MAX_RANGE_DAYS = 90
 
-type RouteParams = {
-  params: Promise<{
-    projectId: string
-  }>
-}
-
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(
+  request: NextRequest,
+  { params }: RouteContext<'/api/v1/projects/[projectId]/calendar-tasks'>
+) {
   const user = await getCurrentUser()
 
   if (!user) {

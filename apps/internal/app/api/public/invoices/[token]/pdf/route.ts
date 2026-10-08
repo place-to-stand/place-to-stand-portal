@@ -28,7 +28,7 @@ const notFound = () =>
  */
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ token: string }> }
+  { params }: RouteContext<'/api/public/invoices/[token]/pdf'>
 ) {
   const { token } = await params
   if (!TOKEN_REGEX.test(token)) return notFound()

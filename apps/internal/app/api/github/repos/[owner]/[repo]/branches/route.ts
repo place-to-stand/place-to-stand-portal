@@ -8,7 +8,7 @@ import { listBranches } from '@/lib/github/client'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ owner: string; repo: string }> }
+  { params }: RouteContext<'/api/github/repos/[owner]/[repo]/branches'>
 ) {
   const user = await requireRole('ADMIN')
   const { owner, repo } = await params

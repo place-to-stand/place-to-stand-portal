@@ -10,7 +10,7 @@ import {
 /** Every external project the signed-in staff member's tokens can see. */
 export async function GET(
   _request: Request,
-  { params }: { params: Promise<{ provider: string }> }
+  { params }: RouteContext<'/api/integrations/[provider]/projects'>
 ) {
   const user = await requireRole('ADMIN')
   const resolved = resolveProviderParam((await params).provider)

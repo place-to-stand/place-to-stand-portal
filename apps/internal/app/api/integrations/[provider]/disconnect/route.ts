@@ -9,7 +9,7 @@ const bodySchema = z.object({ connectionId: z.string().uuid() })
 
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ provider: string }> }
+  { params }: RouteContext<'/api/integrations/[provider]/disconnect'>
 ) {
   const user = await requireUser()
   const resolved = resolveProviderParam((await params).provider)

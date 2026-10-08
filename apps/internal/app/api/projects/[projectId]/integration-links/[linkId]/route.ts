@@ -8,7 +8,9 @@ import {
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: Promise<{ projectId: string; linkId: string }> }
+  {
+    params,
+  }: RouteContext<'/api/projects/[projectId]/integration-links/[linkId]'>
 ) {
   const user = await requireRole('ADMIN')
   const { projectId, linkId } = await params

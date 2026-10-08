@@ -11,22 +11,20 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 import { PasswordResetForm } from "../force-reset-password/force-reset-form";
 
-type PageProps = {
-  searchParams?: Promise<{
-    code?: string;
-    error?: string;
-    error_description?: string;
-    redirect?: string;
-  }>;
-};
-
 export const metadata: Metadata = {
   title: 'Set new password',
 };
 
-export default async function ResetPasswordPage({ searchParams }: PageProps) {
+export default async function ResetPasswordPage({
+  searchParams,
+}: PageProps<'/reset-password'>) {
   const supabase = getSupabaseServerClient();
-  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const resolvedSearchParams = (await searchParams) as {
+    code?: string;
+    error?: string;
+    error_description?: string;
+    redirect?: string;
+  };
   const redirectTo = resolvedSearchParams?.redirect;
   let errorMessage: string | null = null;
 

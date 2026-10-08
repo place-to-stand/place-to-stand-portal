@@ -24,10 +24,6 @@ export const metadata: Metadata = {
 }
 
 
-type SubmissionsArchivePageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>
-}
-
 function firstParam(
   value: string | string[] | undefined
 ): string | undefined {
@@ -36,9 +32,9 @@ function firstParam(
 
 export default async function SubmissionsArchivePage({
   searchParams,
-}: SubmissionsArchivePageProps) {
+}: PageProps<'/submissions/archive'>) {
   const currentUser = await requireRole('ADMIN')
-  const params = searchParams ? await searchParams : {}
+  const params = await searchParams
   const pageSize = await readPageSize()
 
   const currentPage = Math.max(

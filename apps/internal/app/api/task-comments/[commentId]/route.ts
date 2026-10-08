@@ -20,13 +20,10 @@ const updateBodySchema = z.object({
     .max(10_000, 'Comment body exceeds the maximum length'),
 })
 
-type RouteContext = {
-  params: Promise<{
-    commentId: string
-  }>
-}
-
-export async function PATCH(request: NextRequest, context: RouteContext) {
+export async function PATCH(
+  request: NextRequest,
+  context: RouteContext<'/api/task-comments/[commentId]'>
+) {
   const user = await getCurrentUser()
 
   if (!user) {
@@ -68,7 +65,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 }
 
-export async function DELETE(_request: NextRequest, context: RouteContext) {
+export async function DELETE(
+  _request: NextRequest,
+  context: RouteContext<'/api/task-comments/[commentId]'>
+) {
   const user = await getCurrentUser()
 
   if (!user) {

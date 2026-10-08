@@ -19,14 +19,10 @@ const updateBodySchema = z.object({
   taskIds: z.array(z.string().uuid()).optional(),
 })
 
-type RouteContext = {
-  params: Promise<{
-    projectId: string
-    timeLogId: string
-  }>
-}
-
-export async function DELETE(_request: NextRequest, context: RouteContext) {
+export async function DELETE(
+  _request: NextRequest,
+  context: RouteContext<'/api/projects/[projectId]/time-logs/[timeLogId]'>
+) {
   const user = await getCurrentUser()
 
   if (!user) {
@@ -55,7 +51,10 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
   }
 }
 
-export async function PATCH(request: NextRequest, context: RouteContext) {
+export async function PATCH(
+  request: NextRequest,
+  context: RouteContext<'/api/projects/[projectId]/time-logs/[timeLogId]'>
+) {
   const user = await getCurrentUser()
 
   if (!user) {

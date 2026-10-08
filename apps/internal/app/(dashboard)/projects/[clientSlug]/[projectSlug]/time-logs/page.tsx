@@ -17,14 +17,9 @@ export const metadata: Metadata = {
   title: 'Projects',
 }
 
-type PageProps = {
-  params: Promise<{
-    clientSlug: string
-    projectSlug: string
-  }>
-}
-
-export default async function ProjectTimeLogsRoute({ params }: PageProps) {
+export default async function ProjectTimeLogsRoute({
+  params,
+}: PageProps<'/projects/[clientSlug]/[projectSlug]/time-logs'>) {
   const resolvedParams = await params
   const { clientSlug, projectSlug } = resolvedParams
   const user = await requireUser()
