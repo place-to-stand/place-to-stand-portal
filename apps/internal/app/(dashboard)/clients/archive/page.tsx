@@ -14,19 +14,15 @@ import { ClientsManagementTable } from '../_components/clients-management-table'
 import { resolveClientDeepLink } from '../_lib/client-deep-link'
 import { mapClientToTableRow } from '../_lib/map-client-to-table-row'
 
-type ClientsArchivePageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>
-}
-
 export const metadata: Metadata = {
   title: 'Client archive',
 }
 
 export default async function ClientsArchivePage({
   searchParams,
-}: ClientsArchivePageProps) {
+}: PageProps<'/clients/archive'>) {
   const admin = await requireRole('ADMIN')
-  const params = searchParams ? await searchParams : {}
+  const params = await searchParams
   const preferredPageSize = await readPageSize()
   const { cursor, direction, limit, billing, search, sort } =
     parseClientsSearchParams(params)

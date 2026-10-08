@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { after } from 'next/server'
 import { PostHog } from 'posthog-node'
 
 import { serverEnv } from '@/lib/env.server'
@@ -44,8 +45,10 @@ function createPostHogClient() {
   })
 }
 
-async function flushAndClose(client: PostHog) {
-  await client.shutdown()
+// Every caller is a server action, so the flush runs after the response is
+// sent instead of holding the save open on a PostHog round trip.
+function flushAndCloseAfterResponse(client: PostHog) {
+  after(() => client.shutdown())
 }
 
 async function trackServerInteraction<T>(
@@ -76,7 +79,7 @@ async function trackServerInteraction<T>(
       groups: options?.groups,
     })
 
-    await flushAndClose(client)
+    flushAndCloseAfterResponse(client)
     return result
   } catch (error) {
     const payload = interaction.end({ status: 'error' })
@@ -94,7 +97,7 @@ async function trackServerInteraction<T>(
       groups: options?.groups,
     })
 
-    await flushAndClose(client)
+    flushAndCloseAfterResponse(client)
     throw error
   }
 }

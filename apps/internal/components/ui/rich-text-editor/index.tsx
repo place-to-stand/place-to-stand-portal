@@ -66,6 +66,8 @@ export type RichTextEditorProps = {
    */
   contentHeader?: ReactNode
   contentFooter?: ReactNode
+  /** Pass false inside a sheet whose form history owns Cmd+Z. */
+  undoRedo?: boolean
 }
 
 const ClearFormattingButton = () => {
@@ -202,6 +204,7 @@ export function RichTextEditor({
   contentMinHeightClassName = '[&_.ProseMirror]:min-h-[160px]',
   contentHeader,
   contentFooter,
+  undoRedo,
 }: RichTextEditorProps) {
   useEffect(() => {
     ensureEditorStyles()
@@ -221,6 +224,7 @@ export function RichTextEditor({
     onBlur,
     placeholder,
     disabled,
+    undoRedo,
   })
 
   useEffect(() => {

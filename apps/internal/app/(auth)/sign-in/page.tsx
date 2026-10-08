@@ -9,21 +9,22 @@ import { serverEnv } from "@/lib/env.server";
 import { ClientPortalNotice } from "./client-portal-notice";
 import { SignInForm } from "./sign-in-form";
 
-type PageProps = {
-  searchParams?: Promise<{ redirect?: string; notice?: string }>;
-};
-
 export const metadata: Metadata = {
   title: 'Sign in',
 };
 
-export default async function SignInPage({ searchParams }: PageProps) {
+export default async function SignInPage({
+  searchParams,
+}: PageProps<'/sign-in'>) {
   const user = await getCurrentUser();
   if (user) {
     redirect("/");
   }
 
-  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const resolvedSearchParams = (await searchParams) as {
+    redirect?: string;
+    notice?: string;
+  };
   const redirectTo = resolvedSearchParams?.redirect;
   const showClientPortalNotice =
     resolvedSearchParams?.notice === "client-portal";

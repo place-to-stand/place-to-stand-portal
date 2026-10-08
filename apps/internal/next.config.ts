@@ -31,6 +31,10 @@ const nextConfig: NextConfig = {
   cacheComponents: false,
   reactCompiler: true,
   reactStrictMode: true,
+  experimental: {
+    // Dev only: prunes unreachable work from .next/dev's persistent cache.
+    turbopackGc: true,
+  },
   async headers() {
     return [
       { source: '/(.*)', headers: securityHeaders },

@@ -327,6 +327,7 @@ export function LeadSheetFormFields({
                 value={field.value ?? ''}
                 onChange={field.onChange}
                 contentMinHeightClassName='[&_.ProseMirror]:min-h-[180px]'
+                undoRedo={false}
               />
             </FormControl>
             <FormMessage />

@@ -9,13 +9,10 @@ const paramsSchema = z.object({
   taskId: z.string().uuid(),
 })
 
-type RouteContext = {
-  params: Promise<{
-    taskId: string
-  }>
-}
-
-export async function GET(_request: NextRequest, context: RouteContext) {
+export async function GET(
+  _request: NextRequest,
+  context: RouteContext<'/api/tasks/[taskId]/time-logs'>
+) {
   const user = await getCurrentUser()
 
   if (!user) {

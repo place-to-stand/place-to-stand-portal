@@ -16,7 +16,7 @@ const linkSchema = z.object({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ projectId: string }> }
+  { params }: RouteContext<'/api/projects/[projectId]/github-repos'>
 ) {
   await requireRole('ADMIN')
   const { projectId } = await params
@@ -28,7 +28,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ projectId: string }> }
+  { params }: RouteContext<'/api/projects/[projectId]/github-repos'>
 ) {
   const user = await requireRole('ADMIN')
   const { projectId } = await params

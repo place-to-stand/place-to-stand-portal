@@ -22,13 +22,11 @@ export const metadata: Metadata = {
   title: 'Clients',
 }
 
-type ClientsPageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>
-}
-
-export default async function ClientsPage({ searchParams }: ClientsPageProps) {
+export default async function ClientsPage({
+  searchParams,
+}: PageProps<'/clients'>) {
   const user = await requireUser()
-  const params = searchParams ? await searchParams : {}
+  const params = await searchParams
   const { billing, search } = parseClientsSearchParams(params)
   const landingSort = parseClientsLandingSort(params)
   const pageParam = Number.parseInt(

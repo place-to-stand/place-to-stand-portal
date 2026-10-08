@@ -4,7 +4,7 @@ import { unlinkRepo, getRepoLinkById } from '@/lib/data/github-repos'
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ projectId: string; linkId: string }> }
+  { params }: RouteContext<'/api/projects/[projectId]/github-repos/[linkId]'>
 ) {
   const user = await requireRole('ADMIN')
   const { projectId, linkId } = await params
@@ -29,7 +29,7 @@ export async function DELETE(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ projectId: string; linkId: string }> }
+  { params }: RouteContext<'/api/projects/[projectId]/github-repos/[linkId]'>
 ) {
   await requireRole('ADMIN')
   const { projectId, linkId } = await params

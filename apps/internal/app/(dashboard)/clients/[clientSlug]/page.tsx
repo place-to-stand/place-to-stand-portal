@@ -19,15 +19,9 @@ import { listClientUpdates } from '@/lib/updates'
 import { ClientRecordCycle } from '../_components/client-record-cycle'
 import { ClientDetail } from './_components/client-detail'
 
-type Params = Promise<{ clientSlug: string }>
-
-type ClientDetailPageProps = {
-  params: Params
-}
-
 export async function generateMetadata({
   params,
-}: ClientDetailPageProps): Promise<Metadata> {
+}: PageProps<'/clients/[clientSlug]'>): Promise<Metadata> {
   const { clientSlug } = await params
 
   try {
@@ -46,7 +40,7 @@ export async function generateMetadata({
 
 export default async function ClientDetailPage({
   params,
-}: ClientDetailPageProps) {
+}: PageProps<'/clients/[clientSlug]'>) {
   const { clientSlug } = await params
   const user = await requireUser()
 

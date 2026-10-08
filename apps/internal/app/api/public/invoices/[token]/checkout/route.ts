@@ -9,7 +9,7 @@ const TOKEN_REGEX = /^[a-f0-9]{32}$/
 
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ token: string }> }
+  { params }: RouteContext<'/api/public/invoices/[token]/checkout'>
 ) {
   try {
     const { token } = await params

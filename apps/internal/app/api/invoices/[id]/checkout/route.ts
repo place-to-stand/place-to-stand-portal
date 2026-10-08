@@ -9,7 +9,7 @@ import { getStripe } from '@/lib/stripe/client'
 
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: RouteContext<'/api/invoices/[id]/checkout'>
 ) {
   try {
     const user = await requireUser()

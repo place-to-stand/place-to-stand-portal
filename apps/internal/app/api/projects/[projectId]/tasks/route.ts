@@ -9,13 +9,10 @@ const paramsSchema = z.object({
   projectId: z.string().uuid(),
 })
 
-type RouteContext = {
-  params: Promise<{
-    projectId: string
-  }>
-}
-
-export async function GET(_request: NextRequest, context: RouteContext) {
+export async function GET(
+  _request: NextRequest,
+  context: RouteContext<'/api/projects/[projectId]/tasks'>
+) {
   const user = await getCurrentUser()
 
   if (!user) {

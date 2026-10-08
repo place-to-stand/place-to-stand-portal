@@ -3,14 +3,13 @@ import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 
-type RouteParams = {
-  params: Promise<{ projectId: string }>
-}
-
 // Communications (email threads + transcripts) were removed from the project
 // overview. The endpoint is retained for project-scoped overview data; it
 // currently returns an empty payload until non-comms overview data is added.
-export async function GET(_req: Request, { params }: RouteParams) {
+export async function GET(
+  _req: Request,
+  { params }: RouteContext<'/api/projects/[projectId]/overview'>
+) {
   const user = await getCurrentUser()
 
   if (!user) {

@@ -28,16 +28,12 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   reactCompiler: true,
   reactStrictMode: true,
+  experimental: {
+    // Dev only: prunes unreachable work from .next/dev's persistent cache.
+    turbopackGc: true,
+  },
   async headers() {
     return [{ source: '/(.*)', headers: securityHeaders }]
-  },
-  images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'avatars.githubusercontent.com',
-      },
-    ],
   },
   async rewrites() {
     // PostHog reverse proxy to avoid ad blockers

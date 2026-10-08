@@ -19,15 +19,11 @@ export const metadata: Metadata = {
 }
 
 
-type InvoicesPageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>
-}
-
 export default async function InvoicesPage({
   searchParams,
-}: InvoicesPageProps) {
+}: PageProps<'/invoices'>) {
   const currentUser = await requireRole('ADMIN')
-  const params = searchParams ? await searchParams : {}
+  const params = await searchParams
   const pageSize = await readPageSize()
 
   const { page: currentPage, status, search, sort } =

@@ -18,7 +18,7 @@ import { listLeadTasksWithRelations } from '@/lib/queries/tasks/relations'
  */
 export async function GET(
   _request: Request,
-  { params }: { params: Promise<{ leadId: string }> }
+  { params }: RouteContext<'/api/leads/[leadId]/tasks'>
 ) {
   const user = await requireRole('ADMIN')
   const { leadId } = await params

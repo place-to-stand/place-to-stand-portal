@@ -13,18 +13,15 @@ import { getEnv } from '@/lib/env.server'
 import { fetchClientInvoices, type ClientInvoice } from '@/lib/data/invoices'
 import { InvoiceList } from '@/components/invoices/invoice-list'
 
-type InvoicesPageProps = {
-  /** `?client=<id>` narrows the page to one client (the dashboard links here per client section). */
-  searchParams: Promise<{ client?: string | string[] }>
-}
-
 export default async function InvoicesPage({
   searchParams,
-}: InvoicesPageProps) {
+}: PageProps<'/invoices'>) {
   const user = await requireClientUser()
   const [allInvoices, scope, { client }] = await Promise.all([
     fetchClientInvoices(user),
     resolvePortalScope(user),
+    // `?client=<id>` narrows the page to one client (the dashboard links
+    // here per client section).
     searchParams,
   ])
 

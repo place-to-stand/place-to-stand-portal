@@ -16,9 +16,10 @@ const linkSchema = z.object({
   externalId: z.string().trim().min(1),
 })
 
-type RouteContext = { params: Promise<{ projectId: string }> }
-
-export async function GET(_request: Request, { params }: RouteContext) {
+export async function GET(
+  _request: Request,
+  { params }: RouteContext<'/api/projects/[projectId]/integration-links'>
+) {
   const user = await requireRole('ADMIN')
   const { projectId } = await params
 
@@ -43,7 +44,10 @@ export async function GET(_request: Request, { params }: RouteContext) {
  * caller's own connections rather than trusted from the body, so a link can
  * only be created for a project the staff member can actually see.
  */
-export async function POST(request: Request, { params }: RouteContext) {
+export async function POST(
+  request: Request,
+  { params }: RouteContext<'/api/projects/[projectId]/integration-links'>
+) {
   const user = await requireRole('ADMIN')
   const { projectId } = await params
 

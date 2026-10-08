@@ -7,7 +7,7 @@
     "build": "next build --turbopack",
     "start": "next start -p 3001",
     "lint": "eslint",
-    "type-check": "tsc --noEmit"
+    "type-check": "next typegen && tsc --noEmit"
   },
   "dependencies": {
     "@posthog/nextjs-config": "^1.11.1",
@@ -17,16 +17,16 @@
     "@pts/pdf": "^0.1.0",
     "@pts/ui": "*",
     "@supabase/ssr": "^0.12.7",
-    "@supabase/supabase-js": "^2.116.0",
+    "@supabase/supabase-js": "^2.117.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.3",
-    "lucide-react": "^1.47.0",
+    "lucide-react": "^1.49.0",
     "nanoid": "^6.0.1",
-    "next": "^16.3.6",
+    "next": "^16.4.0",
     "postgres": "^3.4.9",
-    "posthog-js": "^1.434.8",
-    "posthog-node": "^5.52.5",
+    "posthog-js": "^1.435.6",
+    "posthog-node": "^5.55.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "tailwind-merge": "^3.7.0",
@@ -34,11 +34,11 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
-    "@types/node": "^26.6.2",
+    "@types/node": "^26.6.3",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "eslint": "^9.39.5",
-    "eslint-config-next": "^16.3.6",
+    "eslint-config-next": "^16.4.0",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3"
   }

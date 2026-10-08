@@ -32,13 +32,10 @@ const createBodySchema = z.object({
   taskIds: z.array(z.string().uuid()).optional(),
 })
 
-type RouteContext = {
-  params: Promise<{
-    projectId: string
-  }>
-}
-
-export async function GET(request: NextRequest, context: RouteContext) {
+export async function GET(
+  request: NextRequest,
+  context: RouteContext<'/api/projects/[projectId]/time-logs'>
+) {
   const user = await getCurrentUser()
 
   if (!user) {
@@ -79,7 +76,10 @@ export async function GET(request: NextRequest, context: RouteContext) {
   }
 }
 
-export async function POST(request: NextRequest, context: RouteContext) {
+export async function POST(
+  request: NextRequest,
+  context: RouteContext<'/api/projects/[projectId]/time-logs'>
+) {
   const user = await getCurrentUser()
 
   if (!user) {

@@ -20,7 +20,7 @@ const UUID_PATTERN =
  */
 export async function GET(
   _request: Request,
-  { params }: { params: Promise<{ timeLogId: string }> }
+  { params }: RouteContext<'/api/dashboard/time-logs/[timeLogId]'>
 ) {
   const user = await requireUser()
   const { timeLogId } = await params

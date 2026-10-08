@@ -11,7 +11,7 @@ import { listLeadUpdates } from '@/lib/queries/lead-updates'
  */
 export async function GET(
   _request: Request,
-  { params }: { params: Promise<{ leadId: string }> }
+  { params }: RouteContext<'/api/leads/[leadId]/updates'>
 ) {
   const user = await requireRole('ADMIN')
   const { leadId } = await params

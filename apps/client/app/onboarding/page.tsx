@@ -4,11 +4,9 @@ import { requireClientUser } from '@/lib/auth/session'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { OnboardingWizard } from '@/components/onboarding/onboarding-wizard'
 
-type PageProps = {
-  searchParams?: Promise<{ step?: string }>
-}
-
-export default async function OnboardingPage({ searchParams }: PageProps) {
+export default async function OnboardingPage({
+  searchParams,
+}: PageProps<'/onboarding'>) {
   const user = await requireClientUser()
   const { data: authData } = await getSupabaseServerClient().auth.getUser()
 
@@ -43,7 +41,7 @@ export default async function OnboardingPage({ searchParams }: PageProps) {
   // `linkIdentity` does a full-page redirect to Google. The wizard's step lives in
   // component state, so without this the user returns to step 0 and the link looks
   // like it did nothing.
-  const resolved = searchParams ? await searchParams : undefined
+  const resolved = await searchParams
 
   return (
     <OnboardingWizard

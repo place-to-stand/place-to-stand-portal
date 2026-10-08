@@ -16,7 +16,7 @@ const leadIdSchema = z.string().uuid()
  */
 export async function GET(
   _request: Request,
-  { params }: { params: Promise<{ leadId: string }> }
+  { params }: RouteContext<'/api/leads/[leadId]/conversion'>
 ) {
   const user = await requireRole('ADMIN')
   const { leadId } = await params

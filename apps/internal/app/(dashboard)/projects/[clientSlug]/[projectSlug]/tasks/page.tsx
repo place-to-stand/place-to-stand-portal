@@ -19,24 +19,16 @@ export const metadata: Metadata = {
   title: 'Projects',
 }
 
-type PageProps = {
-  params: Promise<{
-    clientSlug: string
-    projectSlug: string
-  }>
-  searchParams?: Promise<Record<string, string | string[] | undefined>>
-}
-
 const firstParam = (value: string | string[] | undefined) =>
   Array.isArray(value) ? value[0] : value
 
 export default async function ProjectBoardRoute({
   params,
   searchParams,
-}: PageProps) {
+}: PageProps<'/projects/[clientSlug]/[projectSlug]/tasks'>) {
   const resolvedParams = await params
   const { clientSlug, projectSlug } = resolvedParams
-  const resolvedSearchParams = searchParams ? await searchParams : {}
+  const resolvedSearchParams = await searchParams
   const taskParam = firstParam(resolvedSearchParams.task) ?? null
   const user = await requireUser()
   // Lite list feeds the switcher and sheet selectors; only the active

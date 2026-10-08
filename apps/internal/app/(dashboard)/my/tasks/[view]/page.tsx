@@ -31,10 +31,6 @@ export const metadata: Metadata = {
   title: 'My tasks',
 }
 
-type PageParams = {
-  view: string
-}
-
 type PageSearchParams = {
   assignee?: string
   clientId?: string
@@ -43,20 +39,15 @@ type PageSearchParams = {
   task?: string
 }
 
-type PageProps = {
-  params: Promise<PageParams>
-  searchParams: Promise<PageSearchParams>
-}
-
 const DEFAULT_VIEW: MyTasksView = 'board'
 
 export default async function MyTasksViewRoute({
   params,
   searchParams,
-}: PageProps) {
+}: PageProps<'/my/tasks/[view]'>) {
   const user = await requireUser()
   const resolvedParams = await params
-  const resolvedSearchParams = await searchParams
+  const resolvedSearchParams = (await searchParams) as PageSearchParams
   const viewParam = resolvedParams.view
   const activeTaskId = resolvedSearchParams.task ?? null
 

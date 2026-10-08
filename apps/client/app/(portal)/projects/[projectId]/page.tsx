@@ -17,9 +17,7 @@ const UUID_RE =
 
 export default async function ProjectDetailPage({
   params,
-}: {
-  params: Promise<{ projectId: string }>
-}) {
+}: PageProps<'/projects/[projectId]'>) {
   const { projectId } = await params
 
   if (!UUID_RE.test(projectId)) {
