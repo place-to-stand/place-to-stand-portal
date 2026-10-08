@@ -29,8 +29,6 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   reactStrictMode: true,
   experimental: {
-    // Rust port of the React Compiler; replaces the Babel pass under Turbopack.
-    turbopackRustReactCompiler: true,
     // Dev only: prunes unreachable work from .next/dev's persistent cache.
     turbopackGc: true,
   },
