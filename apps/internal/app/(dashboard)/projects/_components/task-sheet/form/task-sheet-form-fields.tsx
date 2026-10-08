@@ -311,6 +311,7 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
                     onBlur={field.onBlur}
                     disabled={disabled}
                     placeholder='Add helpful context for collaborators'
+                    undoRedo={false}
                   />
                 </DisabledFieldTooltip>
               </FormControl>

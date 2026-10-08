@@ -13,7 +13,6 @@ import { Superscript } from '@tiptap/extension-superscript'
 import { Selection } from '@tiptap/extensions'
 import LinkExtension from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
-import Underline from '@tiptap/extension-underline'
 import { HorizontalRule } from '@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node-extension'
 
 // Import node styles
@@ -33,13 +32,21 @@ type UseRichTextEditorArgs = {
   onBlur?: () => void
   placeholder?: string
   disabled?: boolean
+  /**
+   * Tiptap's own undo stack. Turn it off inside a sheet whose form history
+   * (useSheetFormControls) already owns Cmd+Z, or the two stacks interleave.
+   */
+  undoRedo?: boolean
 }
 
 type UseRichTextEditorReturn = {
   editor: TipTapEditor | null
 }
 
-const buildExtensions = (placeholder?: string) => {
+const buildExtensions = (
+  placeholder: string | undefined,
+  undoRedo: boolean
+) => {
   // Extend Strike extension to add Cmd/Ctrl+Shift+X keyboard shortcut
   const StrikeWithShortcut = Strike.extend({
     addKeyboardShortcuts() {
@@ -124,9 +131,7 @@ const buildExtensions = (placeholder?: string) => {
   return [
     StarterKit.configure({
       horizontalRule: false,
-      // Disable history since form-level undo/redo is used
-      // @ts-expect-error - history is a valid option but not in TypeScript types
-      history: false,
+      undoRedo: undoRedo ? {} : false,
       link: false, // Disable link in StarterKit since we're using LinkWithShortcut
       strike: false, // Disable strike in StarterKit since we're using StrikeWithShortcut
       bulletList: {
@@ -147,7 +152,6 @@ const buildExtensions = (placeholder?: string) => {
     Superscript,
     Subscript,
     Selection,
-    Underline,
     LinkWithShortcut.configure({
       openOnClick: false,
       autolink: true,
@@ -174,12 +178,13 @@ export function useRichTextEditor({
   onBlur,
   placeholder,
   disabled = false,
+  undoRedo = true,
 }: UseRichTextEditorArgs): UseRichTextEditorReturn {
   const lastEmittedValueRef = useRef(value || '')
 
   const editor = useEditor(
     {
-      extensions: buildExtensions(placeholder),
+      extensions: buildExtensions(placeholder, undoRedo),
       content: value || '',
       editable: !disabled,
       immediatelyRender: false,
@@ -210,7 +215,7 @@ export function useRichTextEditor({
         onChange(normalized)
       },
     },
-    [placeholder]
+    [placeholder, undoRedo]
   )
 
   useEffect(() => {
@@ -231,7 +236,14 @@ export function useRichTextEditor({
       // Syncing from the form must not echo back into it: TipTap re-serializes
       // stored HTML (e.g. legacy notes), and an emitted update would report
       // that normalized HTML as a user edit, dirtying the form on open.
-      editor.commands.setContent(incoming || '', { emitUpdate: false })
+      // It is not an edit either, so keep it out of Tiptap's undo stack: else
+      // Cmd+Z would revert a form reset (or a sheet-level undo) and bring the
+      // discarded text back.
+      editor
+        .chain()
+        .setMeta('addToHistory', false)
+        .setContent(incoming || '', { emitUpdate: false })
+        .run()
     }
   }, [editor, value])
 
