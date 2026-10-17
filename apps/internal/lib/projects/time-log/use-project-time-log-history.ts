@@ -24,6 +24,8 @@ export type ProjectTimeLogHistoryState = {
   logs: TimeLogEntry[]
   totalCount: number
   isLoading: boolean
+  /** A bigger page is loading while the current rows stay on screen. */
+  isLoadingMore: boolean
   isError: boolean
   refresh: () => void
   showLoadMore: boolean
@@ -60,46 +62,53 @@ export function useProjectTimeLogHistory(
     [baseQueryKey, visibleCount]
   )
 
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey,
-    enabled,
-    queryFn: async () => {
-      const params = new URLSearchParams({ limit: visibleCount.toString() })
-      const response = await fetch(
-        `/api/projects/${projectId}/time-logs?${params.toString()}`
-      )
+  const { data, isLoading, isError, isFetching, isPlaceholderData, refetch } =
+    useQuery({
+      queryKey,
+      enabled,
+      // Keep the rows on screen while "Load more" fetches the next page.
+      // Swapping them for the loading line shrank the page and threw the
+      // scroll back to the top. Another project's rows are never reused.
+      placeholderData: (previous, previousQuery) =>
+        previousQuery?.queryKey[1] === projectId ? previous : undefined,
+      queryFn: async () => {
+        const params = new URLSearchParams({ limit: visibleCount.toString() })
+        const response = await fetch(
+          `/api/projects/${projectId}/time-logs?${params.toString()}`
+        )
 
-      let payload: unknown
-      try {
-        payload = await response.json()
-      } catch {
-        payload = null
-      }
+        let payload: unknown
+        try {
+          payload = await response.json()
+        } catch {
+          payload = null
+        }
 
-      if (!response.ok) {
-        const message =
-          typeof payload === 'object' && payload && 'error' in payload
-            ? String((payload as { error?: unknown }).error ?? '').trim()
-            : ''
+        if (!response.ok) {
+          const message =
+            typeof payload === 'object' && payload && 'error' in payload
+              ? String((payload as { error?: unknown }).error ?? '').trim()
+              : ''
 
-        throw new Error(message || 'Unable to load time logs.')
-      }
+          throw new Error(message || 'Unable to load time logs.')
+        }
 
-      const { logs, totalCount } = (payload ?? {}) as {
-        logs?: TimeLogEntry[]
-        totalCount?: number
-      }
+        const { logs, totalCount } = (payload ?? {}) as {
+          logs?: TimeLogEntry[]
+          totalCount?: number
+        }
 
-      return {
-        logs: logs ?? [],
-        totalCount: totalCount ?? logs?.length ?? 0,
-      }
-    },
-  })
+        return {
+          logs: logs ?? [],
+          totalCount: totalCount ?? logs?.length ?? 0,
+        }
+      },
+    })
 
   const logs = data?.logs ?? []
   const totalCount = data?.totalCount ?? 0
   const showLoadMore = totalCount > logs.length
+  const isLoadingMore = isFetching && isPlaceholderData
 
   const deleteLog = useMutation({
     mutationFn: async (id: string) => {
@@ -159,11 +168,11 @@ export function useProjectTimeLogHistory(
   })
 
   const loadMore = useCallback(() => {
-    if (isLoading) {
+    if (isLoading || isLoadingMore) {
       return
     }
     setVisibleCount(count => count + PAGE_SIZE)
-  }, [isLoading])
+  }, [isLoading, isLoadingMore])
 
   const refresh = useCallback(() => {
     void refetch()
@@ -198,6 +207,7 @@ export function useProjectTimeLogHistory(
     logs,
     totalCount,
     isLoading,
+    isLoadingMore,
     isError,
     refresh,
     showLoadMore,
