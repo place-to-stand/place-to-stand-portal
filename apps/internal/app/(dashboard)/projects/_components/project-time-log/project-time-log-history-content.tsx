@@ -36,6 +36,7 @@ export function ProjectTimeLogHistoryContent(
     logs,
     totalCount,
     isLoading,
+    isLoadingMore,
     isError,
     refresh,
     showLoadMore,
@@ -112,8 +113,10 @@ export function ProjectTimeLogHistoryContent(
             type='button'
             variant='outline'
             onClick={loadMore}
-            disabled={isLoading}
+            disabled={isLoading || isLoadingMore}
+            className='inline-flex items-center gap-2'
           >
+            {isLoadingMore ? <Loader2 className='size-4 animate-spin' /> : null}
             Load more
           </Button>
         </div>

@@ -2,7 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { addMonths, getMonth, getYear, startOfMonth } from 'date-fns'
+import {
+  addMonths,
+  getMonth,
+  getYear,
+  isSameMonth,
+  startOfMonth,
+} from 'date-fns'
 
 import type { MonthCursor } from '@/lib/data/reports/types'
 
@@ -98,15 +104,22 @@ export function useReportNavigation({
     return startOfMonth(new Date(validYear, validMonth, 1))
   }, [searchParams])
 
-  const [currentMonth, setCurrentMonth] = useState(() => initialMonth)
+  // The month the user picked that the URL hasn't reached yet. While set it
+  // wins over the URL, so a slower render for a month the user already
+  // clicked past can't drag the stepper back to it.
+  const [targetMonth, setTargetMonth] = useState<Date | null>(null)
 
-  // Sync local state when the URL-derived month changes, using the
+  // Clear the target once the URL lands on it, using the
   // adjust-state-during-render pattern instead of a resync effect.
   const [prevInitialMonth, setPrevInitialMonth] = useState(initialMonth)
   if (prevInitialMonth !== initialMonth) {
     setPrevInitialMonth(initialMonth)
-    setCurrentMonth(initialMonth)
+    if (targetMonth && isSameMonth(targetMonth, initialMonth)) {
+      setTargetMonth(null)
+    }
   }
+
+  const currentMonth = targetMonth ?? initialMonth
 
   const cursor = useMemo(() => dateToCursor(currentMonth), [currentMonth])
 
@@ -130,15 +143,25 @@ export function useReportNavigation({
 
   const navigate = useCallback(
     (month: Date) => {
-      setCurrentMonth(month)
+      setTargetMonth(month)
       const params = new URLSearchParams(searchParams.toString())
       // URL uses 0-indexed months
       params.set('month', String(getMonth(month)))
       params.set('year', String(getYear(month)))
+      const search = `?${params.toString()}`
       if (pushTimer.current) clearTimeout(pushTimer.current)
       pushTimer.current = setTimeout(() => {
         pushTimer.current = null
-        router.push(`?${params.toString()}`)
+        // Always push, even back to the month on screen: it supersedes any
+        // navigation still in flight for a month the user moved past.
+        router.push(search)
+        // Pushing the URL already showing leaves the search params as they
+        // are, so the target would never clear on its own.
+        if (window.location.search === search) {
+          setTargetMonth(current =>
+            current && isSameMonth(current, month) ? null : current
+          )
+        }
       }, NAVIGATION_SETTLE_MS)
     },
     [router, searchParams]
