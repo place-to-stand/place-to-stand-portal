@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 
 import { PageShell } from '@/components/layout/page-shell'
+import { requireUser } from '@/lib/auth/session'
 
 import { Foundations } from './_components/foundations'
 import { PrimitivesButtons } from './_components/primitives-buttons'
@@ -27,10 +28,12 @@ const SECTIONS = [
 
 /**
  * Hidden style guide (PRD 004 §05). Not in the nav — reachable only at
- * /design. Auth is inherited from the dashboard layout; every specimen is
+ * /design. Admin-only (requireUser); every specimen is
  * static inline data. The page header above is itself the PageShell specimen.
  */
-export default function DesignPage() {
+export default async function DesignPage() {
+  await requireUser()
+
   return (
     <PageShell breadcrumbs={[{ label: 'Design' }]}>
       <div className='space-y-10'>

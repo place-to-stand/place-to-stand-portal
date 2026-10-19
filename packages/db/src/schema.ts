@@ -32,7 +32,7 @@ export const taskStatus = pgEnum('task_status', [
   'BLOCKED',
   'DONE',
 ])
-export const userRole = pgEnum('user_role', ['ADMIN', 'CLIENT'])
+export const userRole = pgEnum('user_role', ['ADMIN', 'USER', 'CLIENT'])
 export const activitySource = pgEnum('activity_source', [
   'ADMIN_UI',
   'CLI',

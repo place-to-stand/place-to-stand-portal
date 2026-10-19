@@ -110,9 +110,10 @@ export async function createPortalUser(
   }
 
   try {
-    if (input.role === 'ADMIN') {
-      // Admin accounts keep the temp-password flow: the proxy forces a reset on
-      // first sign-in, and the sign-in-method choice is portal-only.
+    if (input.role === 'ADMIN' || input.role === 'USER') {
+      // Staff accounts (ADMIN, and USER for the CRM) sign in to this app, so
+      // they keep the temp-password flow: the proxy forces a reset on first
+      // sign-in, and the sign-in-method choice is portal-only.
       const headersList = await headers()
       const baseUrl =
         headersList.get('origin') ??

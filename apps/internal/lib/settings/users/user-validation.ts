@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
-export const USER_ROLES = ['ADMIN', 'CLIENT'] as const
+// USER: CRM staff (leads and contacts only). See lib/auth/roles.ts.
+export const USER_ROLES = ['ADMIN', 'USER', 'CLIENT'] as const
 
 export const createUserSchema = z.object({
   email: z.string().email(),

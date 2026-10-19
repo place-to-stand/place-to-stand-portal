@@ -7,12 +7,14 @@ export const USER_ROLE_VALUES = userRole.enumValues
 
 export const USER_ROLE_LABELS: Record<UserRoleValue, string> = {
   ADMIN: 'Admin',
+  USER: 'User',
   CLIENT: 'Client',
 }
 
 /** Badge tones for the role column, same palette recipe as billing types. */
 export const USER_ROLE_BADGE_CLASSES: Record<UserRoleValue, string> = {
   ADMIN: BADGE_TINTS.violet,
+  USER: BADGE_TINTS.emerald,
   CLIENT: BADGE_TINTS.sky,
 }
 

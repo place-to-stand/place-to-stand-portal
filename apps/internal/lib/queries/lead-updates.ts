@@ -2,7 +2,7 @@ import 'server-only'
 
 import { and, desc, eq, isNull } from 'drizzle-orm'
 
-import { assertAdmin } from '@/lib/auth/permissions'
+import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { leadUpdates, users } from '@/lib/db/schema'
@@ -12,14 +12,14 @@ import type { LeadUpdateTypeValue } from '@/lib/leads/updates'
 /**
  * Timeline rows for one lead, newest first, with author identity joined.
  *
- * Admin-asserted like `listTasksForLead` — leads are admin-only data and this
+ * CRM-asserted (ADMIN, USER) — leads are CRM data and this
  * project has no RLS backstop (W26).
  */
 export async function listLeadUpdates(
   user: AppUser,
   leadId: string
 ): Promise<LeadUpdateRecord[]> {
-  assertAdmin(user)
+  assertCrmAccess(user)
 
   const rows = await db
     .select({

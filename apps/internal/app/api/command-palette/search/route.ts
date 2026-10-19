@@ -1,18 +1,18 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { z } from 'zod'
 
-import { getCurrentUser } from '@/lib/auth/session'
+import { getCurrentAdmin } from '@/lib/auth/session'
 import { HttpError } from '@/lib/errors/http'
 import { searchCommandPalette } from '@/lib/queries/command-palette'
 
 // W5: validate before querying. R1: explicit null → 401 before any
-// admin assertion (getCurrentUser returns AppUser | null).
+// admin assertion (getCurrentAdmin returns AppUser | null).
 const querySchema = z.object({
   q: z.string().trim().min(2).max(100),
 })
 
 export async function GET(request: NextRequest) {
-  const user = await getCurrentUser()
+  const user = await getCurrentAdmin()
 
   if (!user) {
     return NextResponse.json(

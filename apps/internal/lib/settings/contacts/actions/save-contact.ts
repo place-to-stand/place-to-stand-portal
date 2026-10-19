@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 
 import { logActivity } from '@/lib/activity/logger'
 import { contactCreatedEvent, contactUpdatedEvent } from '@/lib/activity/events/contacts'
-import { assertAdmin } from '@/lib/auth/permissions'
+import { assertCrmAccess } from '@/lib/auth/permissions'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
 import { contacts } from '@/lib/db/schema'
@@ -40,12 +40,12 @@ export async function saveContactMutation(
     async () => {
       const { user } = context
       try {
-        assertAdmin(user)
+        assertCrmAccess(user)
       } catch (error) {
         if (error instanceof Error) {
           return buildMutationResult({ error: error.message })
         }
-        return buildMutationResult({ error: 'Admin privileges required.' })
+        return buildMutationResult({ error: 'CRM access required.' })
       }
 
       const { id, email, name, phone } = parsed.data

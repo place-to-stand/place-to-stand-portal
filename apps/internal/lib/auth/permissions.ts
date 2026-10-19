@@ -24,6 +24,16 @@ export function assertAdmin(user: AppUser) {
 }
 
 /**
+ * CRM access (leads, contacts and their activity): ADMIN or USER. Only the
+ * CRM layer calls this; every other guard stays `assertAdmin`.
+ */
+export function assertCrmAccess(user: AppUser) {
+  if (!user || (user.role !== 'ADMIN' && user.role !== 'USER')) {
+    throw new ForbiddenError('CRM access required')
+  }
+}
+
+/**
  * The internal portal is admin-only (CLIENT users are redirected to the
  * client portal at sign-in), so these guards assert the admin role and then
  * verify the target entity exists and is not soft-deleted.

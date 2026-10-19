@@ -5,8 +5,8 @@ import { z } from 'zod'
 
 import { leadUpdateEditedEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
-import { assertAdmin } from '@/lib/auth/permissions'
-import { requireUser } from '@/lib/auth/session'
+import { assertCrmAccess } from '@/lib/auth/permissions'
+import { requireCrmUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { leadUpdates } from '@/lib/db/schema'
 import { LEAD_UPDATE_LABELS } from '@/lib/leads/updates'
@@ -34,8 +34,8 @@ export type UpdateLeadUpdateInput = z.infer<typeof updateLeadUpdateSchema>
 export async function updateLeadUpdate(
   input: UpdateLeadUpdateInput
 ): Promise<LeadActionResult> {
-  const user = await requireUser()
-  assertAdmin(user)
+  const user = await requireCrmUser()
+  assertCrmAccess(user)
 
   const parsed = updateLeadUpdateSchema.safeParse(input)
 

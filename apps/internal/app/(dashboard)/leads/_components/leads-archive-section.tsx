@@ -40,6 +40,7 @@ import {
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
 import { cn } from '@/lib/utils'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { LeadSheet } from './lead-sheet'
 
 type LeadsArchiveSectionProps = {
@@ -82,6 +83,8 @@ export function LeadsArchiveSection({
 }: LeadsArchiveSectionProps) {
   const router = useRouter()
   const { toast } = useToast()
+  // Permanent delete is admin-only; USER staff can archive and restore.
+  const { isAdmin } = useViewerAccess()
   const { update, getParam, hasActiveFilters, reset } = useListParams({
     basePath: '/leads/archive',
     resetKeys: [],
@@ -375,13 +378,15 @@ export function LeadsArchiveSection({
                         onClick={() => handleRestore(lead)}
                         disabled={rowDisabled}
                       />
-                      <RowActionButton
-                        label='Permanently delete lead'
-                        icon={<Trash2 />}
-                        variant='destructive'
-                        onClick={() => handleRequestDestroy(lead)}
-                        disabled={rowDisabled}
-                      />
+                      {isAdmin ? (
+                        <RowActionButton
+                          label='Permanently delete lead'
+                          icon={<Trash2 />}
+                          variant='destructive'
+                          onClick={() => handleRequestDestroy(lead)}
+                          disabled={rowDisabled}
+                        />
+                      ) : null}
                     </div>
                   </TableCell>
                 </TableRow>

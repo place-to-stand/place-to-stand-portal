@@ -29,6 +29,7 @@ import {
 import type { ContactsTableContact } from '@/lib/settings/contacts/use-contacts-table-state'
 
 import { LinkedClientsCell } from './linked-clients-cell'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { cn } from '@/lib/utils'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
 import {
@@ -81,6 +82,7 @@ export function ContactsTableSection({
   pendingDestroyId,
   emptyMessage,
 }: ContactsTableSectionProps) {
+  const { isAdmin } = useViewerAccess()
   // Contacts tables paginate by offset — `page` is the pagination key
   // cleared on sort changes (not cursor/dir).
   const { update, getParam } = useListParams({
@@ -166,9 +168,10 @@ export function ContactsTableSection({
 
             const showSoftDelete = mode === 'active'
             const showRestore = mode === 'archive'
-            const showDestroy = mode === 'archive'
-            const showPreview = mode === 'active'
-            const showPromote = mode === 'active' && !contact.userId
+            // Hard delete, portal preview and portal accounts are admin-only.
+            const showDestroy = isAdmin && mode === 'archive'
+            const showPreview = isAdmin && mode === 'active'
+            const showPromote = isAdmin && mode === 'active' && !contact.userId
 
             const promoteDisabled = isDeleting || isRestoring || isDestroying
             const promoteDisabledReason = promoteDisabled ? pendingReason : null

@@ -4,7 +4,7 @@ import { cache } from 'react'
 import { and, asc, desc, eq, isNotNull, isNull, sql } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
-import { assertAdmin } from '@/lib/auth/permissions'
+import { assertCrmAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { leads, users } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
@@ -15,12 +15,12 @@ import type {
   LeadBoardColumnData,
   LeadRecord,
 } from '@/lib/leads/types'
-import { fetchAdminUsers } from '@/lib/data/users'
+import { fetchCrmUsers } from '@/lib/data/users'
 
 export const fetchLeadsBoard = cache(
   async (user: AppUser): Promise<LeadBoardColumnData[]> => {
-    // Leads are admin-only - enforce at data layer for defense in depth
-    assertAdmin(user)
+    // Leads are CRM-only (ADMIN, USER) - enforce at data layer for defense in depth
+    assertCrmAccess(user)
     let rows: LeadRow[]
 
     try {
@@ -86,8 +86,8 @@ export const fetchLeadsBoard = cache(
 
 export const fetchLeadById = cache(
   async (user: AppUser, leadId: string): Promise<LeadRecord> => {
-    // Leads are admin-only - enforce at data layer for defense in depth
-    assertAdmin(user)
+    // Leads are CRM-only (ADMIN, USER) - enforce at data layer for defense in depth
+    assertCrmAccess(user)
     let rows: LeadRow[]
 
     try {
@@ -152,7 +152,7 @@ export type ArchivedLead = LeadRecord & { deletedAt: string }
 
 export const fetchArchivedLeads = cache(
   async (user: AppUser): Promise<ArchivedLead[]> => {
-    assertAdmin(user)
+    assertCrmAccess(user)
     let rows: LeadRow[]
 
     try {
@@ -200,14 +200,14 @@ export const fetchArchivedLeads = cache(
 
 export const fetchLeadAssignees = cache(
   async (): Promise<LeadAssigneeOption[]> => {
-    const admins = await fetchAdminUsers()
+    const staff = await fetchCrmUsers()
 
-    return admins.map(admin => ({
-      id: admin.id,
-      name: admin.full_name ?? admin.email,
-      email: admin.email,
-      avatarUrl: admin.avatar_url,
-      disabledAt: admin.disabled_at ?? null,
+    return staff.map(member => ({
+      id: member.id,
+      name: member.full_name ?? member.email,
+      email: member.email,
+      avatarUrl: member.avatar_url,
+      disabledAt: member.disabled_at ?? null,
     }))
   }
 )

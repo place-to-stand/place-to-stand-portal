@@ -5,8 +5,8 @@ import { z } from 'zod'
 
 import { leadStatusChangedEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
-import { requireUser } from '@/lib/auth/session'
-import { assertAdmin } from '@/lib/auth/permissions'
+import { requireCrmUser } from '@/lib/auth/session'
+import { assertCrmAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { leads, leadStageHistory } from '@/lib/db/schema'
 import { LEAD_STATUS_VALUES, isTerminalLeadStatus } from '@/lib/leads/constants'
@@ -24,8 +24,8 @@ const moveLeadSchema = z.object({
 export type MoveLeadInput = z.infer<typeof moveLeadSchema>
 
 export async function moveLead(input: MoveLeadInput): Promise<LeadActionResult> {
-  const user = await requireUser()
-  assertAdmin(user)
+  const user = await requireCrmUser()
+  assertCrmAccess(user)
 
   const parsed = moveLeadSchema.safeParse(input)
 

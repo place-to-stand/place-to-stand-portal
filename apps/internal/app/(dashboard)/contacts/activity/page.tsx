@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 
 import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
-import { requireRole } from '@/lib/auth/session'
+import { requireCrmUser } from '@/lib/auth/session'
 
 import { CONTACTS_TABS } from '../_lib/tabs'
 import { ContactsAddButton } from '../_components/contacts-add-button'
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 }
 
 export default async function ContactsActivityPage() {
-  await requireRole('ADMIN')
+  await requireCrmUser()
 
   return (
     <PageShell

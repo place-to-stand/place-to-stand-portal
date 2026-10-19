@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react'
 
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import type { LeadRecord } from '@/lib/leads/types'
 
 import { ConvertLeadDialog } from '../convert-lead-dialog'
@@ -34,6 +35,8 @@ export function LeadSheetDialogs({
   onSuccess,
   unsavedChangesDialog,
 }: LeadSheetDialogsProps) {
+  const { isAdmin } = useViewerAccess()
+
   return (
     <>
       <ConfirmDialog
@@ -46,7 +49,7 @@ export function LeadSheetDialogs({
         onCancel={onArchiveCancel}
         onConfirm={onArchiveConfirm}
       />
-      {lead && (
+      {lead && isAdmin && (
         <ConvertLeadDialog
           lead={lead}
           open={isConvertDialogOpen}

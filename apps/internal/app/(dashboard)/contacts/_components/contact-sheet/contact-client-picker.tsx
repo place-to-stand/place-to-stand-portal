@@ -109,6 +109,8 @@ export type ContactClientListProps = {
   onRequestLink: () => void
   linkDisabled: boolean
   linkDisabledReason: string | null
+  /** Shows the links without link or unlink controls (non-admin viewers). */
+  readOnly?: boolean
 }
 
 /** The linked clients, one row each, with the unlink control on the right. */
@@ -120,8 +122,13 @@ export function ContactClientList({
   onRequestLink,
   linkDisabled,
   linkDisabledReason,
+  readOnly = false,
 }: ContactClientListProps) {
   if (selectedClients.length === 0) {
+    if (readOnly) {
+      return <EmptyState message='No clients linked.' />
+    }
+
     return (
       <DisabledFieldTooltip disabled={linkDisabled} reason={linkDisabledReason}>
         <EmptyState
@@ -145,6 +152,7 @@ export function ContactClientList({
             <Building2 className='text-muted-foreground h-4 w-4 shrink-0' />
             <span className='truncate font-medium'>{client.name}</span>
           </div>
+          {readOnly ? null : (
           <DisabledFieldTooltip
             disabled={isPending}
             reason={isPending ? pendingReason : null}
@@ -162,6 +170,7 @@ export function ContactClientList({
               <X className='h-4 w-4' />
             </Button>
           </DisabledFieldTooltip>
+          )}
         </div>
       ))}
     </div>

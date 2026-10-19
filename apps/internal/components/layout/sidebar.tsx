@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Search } from 'lucide-react'
@@ -29,6 +29,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { UserMenu } from './user-menu'
 import { useCommandPalette } from './command-palette'
 import { NAV_GROUPS } from './navigation-config'
+import { filterNavGroupsForRole, homePathForRole } from '@/lib/auth/roles'
 
 const isDev = process.env.NODE_ENV === 'development'
 
@@ -42,6 +43,10 @@ export function Sidebar({ user, badges }: Props) {
   const pathname = usePathname()
   const { state: sidebarState, setOpenMobile } = useSidebar()
   const { setOpen: setPaletteOpen } = useCommandPalette()
+  const navGroups = useMemo(
+    () => filterNavGroupsForRole(NAV_GROUPS, user.role),
+    [user.role]
+  )
 
   // The dashboard layout persists across client navigation, so the mobile
   // sheet stays open over the new page unless we close it on route change.
@@ -57,7 +62,7 @@ export function Sidebar({ user, badges }: Props) {
       <SidebarHeader className='space-y-[13px] px-3 pt-4 pb-4 group-data-[collapsible=icon]:space-y-3 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:pt-4'>
         <div className='flex flex-col items-center group-data-[collapsible=icon]:px-0'>
           <Link
-            href='/my/home'
+            href={homePathForRole(user.role)}
             aria-label='Place To Stand — home'
             className='block'
           >
@@ -114,7 +119,7 @@ export function Sidebar({ user, badges }: Props) {
         </Tooltip>
       </SidebarHeader>
       <SidebarContent className='px-1 group-data-[collapsible=icon]:px-0'>
-        {NAV_GROUPS.map((group, index) => (
+        {navGroups.map((group, index) => (
           <SidebarGroup key={group.title ?? `group-${index}`} className='py-1'>
             {group.title ? (
               <SidebarGroupLabel className='text-muted-foreground/60 h-6 px-1 pb-1 text-[11px] font-semibold tracking-wide uppercase duration-300 ease-in-out group-data-[collapsible=icon]:-mt-6 group-data-[collapsible=icon]:opacity-0'>

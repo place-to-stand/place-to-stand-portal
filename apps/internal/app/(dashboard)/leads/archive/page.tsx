@@ -7,8 +7,8 @@ import { Plus } from 'lucide-react'
 import { Button } from '@pts/ui/button'
 import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
-import { requireUser } from '@/lib/auth/session'
-import { assertAdmin } from '@/lib/auth/permissions'
+import { requireCrmUser } from '@/lib/auth/session'
+import { assertCrmAccess } from '@/lib/auth/permissions'
 import {
   fetchArchivedLeads,
   fetchLeadAssignees,
@@ -30,8 +30,8 @@ const firstParam = (value: string | string[] | undefined) =>
 export default async function LeadsArchivePage({
   searchParams,
 }: PageProps<'/leads/archive'>) {
-  const user = await requireUser()
-  assertAdmin(user)
+  const user = await requireCrmUser()
+  assertCrmAccess(user)
   const params = await searchParams
   const leadParam = firstParam(params.lead) ?? null
 

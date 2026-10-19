@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import { getCurrentUser } from '@/lib/auth/session'
+import { getCurrentAdmin } from '@/lib/auth/session'
 import { closedMonthWarning } from '@/lib/data/reports/close'
 import { HttpError } from '@/lib/errors/http'
 import { softDeleteTimeLog, updateTimeLog } from '@/lib/queries/time-logs'
@@ -23,7 +23,7 @@ export async function DELETE(
   _request: NextRequest,
   context: RouteContext<'/api/projects/[projectId]/time-logs/[timeLogId]'>
 ) {
-  const user = await getCurrentUser()
+  const user = await getCurrentAdmin()
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -55,7 +55,7 @@ export async function PATCH(
   request: NextRequest,
   context: RouteContext<'/api/projects/[projectId]/time-logs/[timeLogId]'>
 ) {
-  const user = await getCurrentUser()
+  const user = await getCurrentAdmin()
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

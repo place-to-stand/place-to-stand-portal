@@ -610,6 +610,13 @@
       "when": 1791231874946,
       "tag": "0086_closer_splits",
       "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1792445842397,
+      "tag": "0087_add_user_role",
+      "breakpoints": true
     }
   ]
 }

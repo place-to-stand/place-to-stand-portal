@@ -5,6 +5,7 @@ import { useMemo, type ReactNode } from 'react'
 
 import type { AppUser } from '@/lib/auth/session'
 import { SidebarProvider } from '@/components/ui/sidebar'
+import { ViewerAccessProvider } from '@/components/providers/viewer-access-provider'
 
 import { Sidebar } from './sidebar'
 import { CommandPaletteProvider } from './command-palette'
@@ -40,6 +41,7 @@ export function AppShell({
   return (
     // Palette provider wraps the sidebar too — the search affordance lives
     // there (user-revised placement of PW1).
+    <ViewerAccessProvider role={user.role}>
     <CommandPaletteProvider>
       <SidebarProvider
         defaultOpen={sidebarDefaultOpen}
@@ -52,5 +54,6 @@ export function AppShell({
         </div>
       </SidebarProvider>
     </CommandPaletteProvider>
+    </ViewerAccessProvider>
   )
 }

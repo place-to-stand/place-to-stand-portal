@@ -1,3 +1,4 @@
+import { canUseInternalPortal } from "@/lib/auth/roles";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { eq } from "drizzle-orm";
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest) {
 
     // Two distinct rejections, deliberately not collapsed into one role check.
     // "No account" and "wrong app" are different facts and get different pages;
-    // `profile?.role !== "ADMIN"` alone would be true for both.
+    // a bare role check alone would be true for both.
     if (result === "not_provisioned") {
       // Sign out rather than leaving a valid session that resolves to no profile —
       // otherwise every subsequent request re-runs this redirect.
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // The internal portal is admin-only. Portal (CLIENT) users belong on the
+    // The internal portal is staff-only (ADMIN, USER). Portal (CLIENT) users belong on the
     // client portal — drop the session and send them there.
     const [profile] = await db
       .select({ role: users.role })
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
       .where(eq(users.id, data.user.id))
       .limit(1);
 
-    if (profile?.role !== "ADMIN") {
+    if (!canUseInternalPortal(profile?.role)) {
       await supabase.auth.signOut();
       return NextResponse.redirect(
         new URL("/sign-in?notice=client-portal", request.url)

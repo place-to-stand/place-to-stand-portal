@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import { getCurrentUser } from '@/lib/auth/session'
+import { getCurrentAdmin } from '@/lib/auth/session'
 import { HttpError } from '@/lib/errors/http'
 import { listProjectTaskCollectionsWithRelations } from '@/lib/queries/tasks'
 
@@ -13,7 +13,7 @@ export async function GET(
   _request: NextRequest,
   context: RouteContext<'/api/projects/[projectId]/tasks'>
 ) {
-  const user = await getCurrentUser()
+  const user = await getCurrentAdmin()
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

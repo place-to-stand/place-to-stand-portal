@@ -4,7 +4,7 @@ import { z } from 'zod'
 
 import { leadUpdateLoggedEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
-import { assertAdmin } from '@/lib/auth/permissions'
+import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { leadUpdates } from '@/lib/db/schema'
@@ -46,7 +46,7 @@ export async function createLeadUpdateForActor(
   input: CreateLeadUpdateInput,
   source: ActivitySourceValue
 ): Promise<CreateLeadUpdateResult> {
-  assertAdmin(actor)
+  assertCrmAccess(actor)
 
   const parsed = createLeadUpdateSchema.safeParse(input)
 
