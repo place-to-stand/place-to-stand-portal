@@ -15,7 +15,7 @@ export function resolveFormEmailAddresses() {
   }
 }
 
-/** Origin for links back into the admin portal. */
+/** Origin for links back into the internal portal. */
 export function resolvePortalOrigin(): string {
   return (
     serverEnv.APP_BASE_URL ?? new URL(serverEnv.GOOGLE_REDIRECT_URI).origin

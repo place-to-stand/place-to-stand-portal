@@ -11,7 +11,7 @@ Read ALL files in the PRD directory. Use AskUserQuestion to surface anything tha
 - UX behaviors described differently in different places
 - Scope boundaries that are fuzzy (is feature X in or out?)
 - Component placement or URL formats that differ between files
-- App ambiguity — features that don't clearly state whether they live in `apps/internal` (admin portal) or `apps/client` (client portal), or both
+- App ambiguity — features that don't clearly state whether they live in `apps/internal` (internal portal) or `apps/client` (client portal), or both
 
 Do NOT silently pick an interpretation. Ask.
 

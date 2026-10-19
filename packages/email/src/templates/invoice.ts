@@ -22,7 +22,7 @@ export type InvoiceEmailArgs = {
 export const INVOICE_EMAIL_BUTTON_LABEL = 'View and pay invoice'
 
 /**
- * An invoice sent to a client from the admin portal: the admin's own note,
+ * An invoice sent to a client from the internal portal: the admin's own note,
  * the three facts a payer needs, and one button to the share page, which is
  * where the line items and the card form live.
  */

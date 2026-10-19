@@ -11,7 +11,7 @@ import {
 } from './submission-shared'
 
 export type ContactNotificationEmailArgs = {
-  /** Deep link to the submission sheet in the admin portal. */
+  /** Deep link to the submission sheet in the internal portal. */
   submissionUrl: string
   contact: SubmissionContact
   subject: string | null

@@ -4,7 +4,7 @@ Run automated browser tests against the TEST-PLAN.md for the specified PRD, fix 
 
 All browser interaction MUST use the `agent-browser` CLI via the Bash tool. NEVER use Playwright MCP tools (`mcp__plugin_playwright_*`) or browser MCP tools (`mcp__browser__*`).
 
-**Two apps, two ports.** This monorepo serves the internal admin portal at `http://localhost:3000` and the client portal at `http://localhost:3001`. `npm run dev` from the repo root starts both via Turbo. Each TEST-PLAN item belongs to one app — use the right base URL, and use a separate session per app (`--session autotest-internal`, `--session autotest-client`) so the two sign-ins don't clobber each other.
+**Two apps, two ports.** This monorepo serves the internal portal at `http://localhost:3000` and the client portal at `http://localhost:3001`. `npm run dev` from the repo root starts both via Turbo. Each TEST-PLAN item belongs to one app — use the right base URL, and use a separate session per app (`--session autotest-internal`, `--session autotest-client`) so the two sign-ins don't clobber each other.
 
 **Session pattern** — reuse the same `--session` for all commands against an app so browser state persists across calls:
 
@@ -37,7 +37,7 @@ agent-browser --session autotest-internal open http://localhost:3000/page && age
 
 **Login flows** (run once per app at start of Phase 2):
 ```bash
-# Internal admin portal
+# internal portal
 agent-browser --session autotest-internal open http://localhost:3000/sign-in && agent-browser --session autotest-internal wait --load networkidle && agent-browser --session autotest-internal snapshot -i
 # Client portal (when the PRD touches apps/client)
 agent-browser --session autotest-client open http://localhost:3001/sign-in && agent-browser --session autotest-client wait --load networkidle && agent-browser --session autotest-client snapshot -i

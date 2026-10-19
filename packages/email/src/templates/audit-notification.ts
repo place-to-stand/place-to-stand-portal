@@ -12,7 +12,7 @@ import {
 } from './submission-shared'
 
 export type AuditNotificationEmailArgs = {
-  /** Deep link to the submission sheet in the admin portal. */
+  /** Deep link to the submission sheet in the internal portal. */
   submissionUrl: string
   contact: SubmissionContact
   /** The optional "anything else we should know" note. */

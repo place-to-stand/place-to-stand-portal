@@ -9,7 +9,7 @@ This is a **Turborepo monorepo** using npm workspaces.
 ```
 place-to-stand-portal/
 ├── apps/
-│   ├── internal/          # Admin portal (Next.js, deployed to Vercel, port 3000)
+│   ├── internal/          # Internal portal (Next.js, deployed to Vercel, port 3000)
 │   │   ├── app/           # Next.js App Router routes
 │   │   ├── components/    # React components
 │   │   ├── hooks/         # Custom React hooks
@@ -31,7 +31,7 @@ place-to-stand-portal/
 └── package.json           # Workspace root
 ```
 
-The two main apps are `apps/internal/` (admin portal) and `apps/client/` (client portal). Unqualified paths like `lib/`, `app/`, `components/` refer to directories inside `apps/internal/` unless stated otherwise. Shared database schema, GitHub utilities, and the admin CLI live in `packages/`.
+The two main apps are `apps/internal/` (internal portal) and `apps/client/` (client portal). Unqualified paths like `lib/`, `app/`, `components/` refer to directories inside `apps/internal/` unless stated otherwise. Shared database schema, GitHub utilities, and the admin CLI live in `packages/`.
 
 ## Commands
 
@@ -88,7 +88,7 @@ Turbo v2 uses strict mode by default — only env vars listed in `turbo.json` ar
 
 ### Route Organization
 
-**Internal admin portal** (`apps/internal/app/`):
+**Internal portal** (`apps/internal/app/`):
 ```
 ├── (auth)/           # Sign-in, forgot/force-reset password (unauthenticated)
 ├── (dashboard)/      # Protected routes
@@ -138,7 +138,7 @@ Portal access is controlled via `client_members` table. Contacts promoted to por
 ### Database Schema
 
 **Core tables** (`packages/db/src/schema.ts`):
-- `users` - User accounts with roles (ADMIN, CLIENT)
+- `users` - User accounts with roles (ADMIN, SALES, CLIENT)
 - `clients` - Client records with billing types (prepaid, net_30)
 - `contacts` - Contact records (may have a `userId` for portal access)
 - `contact_clients` - Contact-to-client links
@@ -189,7 +189,7 @@ Portal access is controlled via `client_members` table. Contacts promoted to por
    - Uses React `cache()` for automatic deduplication
 
 **Access control:**
-- The internal portal is **admin-only**: CLIENT-role users are rejected at sign-in and any non-ADMIN session is redirected to the client portal (`CLIENT_PORTAL_URL`) by `requireUser()`
+- The internal portal is **admin-only by default**: `requireUser()` / `assertAdmin()` admit ADMIN only. SALES users reach just the CRM (leads, contacts), which opts in with `requireCrmUser()` / `assertCrmAccess()`; anywhere else `requireUser()` sends them to `/leads`. CLIENT-role users are rejected at sign-in and redirected to the client portal (`CLIENT_PORTAL_URL`). Shared rules (nav, activity types, sheet entities) live in `lib/auth/roles.ts`
 - Mutations and API routes still guard with `assertAdmin()`/`requireRole('ADMIN')` as defense-in-depth
 - `ensure*Access` helpers verify the target entity exists (NotFound) before mutations
 - Client-scoped access lives exclusively in `apps/client/` (via `client_members`)
@@ -228,6 +228,7 @@ This project does NOT use PostgreSQL Row Level Security. All access control is h
 
 **Roles:**
 - `ADMIN` - Full access to the internal portal
+- `SALES` - CRM only: leads and contacts. Conversion, lead tasks, hard deletes, client links and portal accounts stay admin-only
 - `CLIENT` - Client-portal users only; blocked from the internal portal at sign-in (redirected to `CLIENT_PORTAL_URL`). The role still exists so the internal portal can create/manage portal users.
 
 ### State Management
