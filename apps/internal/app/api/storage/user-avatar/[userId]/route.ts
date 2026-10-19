@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import { requireUser } from '@/lib/auth/session'
+import { requireCrmUser } from '@/lib/auth/session'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'
 import { AVATAR_BUCKET, ensureAvatarBucket } from '@/lib/storage/avatar'
 import { getUserAvatarPath } from '@/lib/queries/users'
@@ -15,7 +15,7 @@ export async function GET(
   _request: NextRequest,
   context: RouteContext<'/api/storage/user-avatar/[userId]'>
 ) {
-  await requireUser()
+  await requireCrmUser()
 
   const parsedParams = paramsSchema.safeParse(await context.params)
 

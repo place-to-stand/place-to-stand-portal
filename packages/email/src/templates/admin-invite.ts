@@ -5,7 +5,7 @@ export type AdminInviteEmailArgs = {
   email: string
   fullName?: string | null
   temporaryPassword: string
-  /** The admin portal's sign-in page — never the client portal. */
+  /** The internal portal's sign-in page — never the client portal. */
   signInUrl: string
   replyTo: string
 }
@@ -27,11 +27,11 @@ export function adminInviteEmail({
   const greeting = fullName?.trim() ? `Hi ${fullName.trim()}, you've` : "You've"
 
   return renderEmail("You're invited to the Place To Stand portal", {
-    preheader: 'Your sign-in details for the Place To Stand admin portal.',
-    label: 'Admin portal',
+    preheader: 'Your sign-in details for the Place To Stand internal portal.',
+    label: 'Internal portal',
     heading: "You've been given access",
     paragraphs: [
-      `${greeting} been given access to the Place To Stand admin portal. Sign in with the details below.`,
+      `${greeting} been given access to the Place To Stand internal portal. Sign in with the details below.`,
       `Email: ${email}`,
       `Temporary password: ${temporaryPassword}`,
       "For security, you'll be asked to create a new password the first time you sign in.",

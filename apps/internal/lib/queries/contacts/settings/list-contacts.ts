@@ -3,7 +3,7 @@
 import { and, asc, eq, inArray, sql, type SQL } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
-import { assertAdmin } from '@/lib/auth/permissions'
+import { assertCrmAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { clients, contacts, contactClients } from '@/lib/db/schema'
 import { type PageInfo } from '@/lib/pagination/cursor'
@@ -195,7 +195,7 @@ export async function listContactsForSettings(
   user: AppUser,
   input: ListContactsForSettingsInput = {}
 ): Promise<ContactsSettingsResult> {
-  assertAdmin(user)
+  assertCrmAccess(user)
 
   const direction = resolveContactDirection(input.direction)
   const limit = resolvePaginationLimit(input.limit)

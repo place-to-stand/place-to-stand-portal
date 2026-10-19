@@ -1,7 +1,7 @@
 'use server'
 
-import { requireUser } from '@/lib/auth/session'
-import { assertAdmin } from '@/lib/auth/permissions'
+import { requireCrmUser } from '@/lib/auth/session'
+import { assertCrmAccess } from '@/lib/auth/permissions'
 import { saveLeadForActor } from '@/lib/leads/save-lead-core'
 import type { SaveLeadInput } from '@/lib/leads/save-lead-fields'
 
@@ -15,8 +15,8 @@ export type { SaveLeadInput } from '@/lib/leads/save-lead-fields'
  * CLI API can share it without this module's session coupling.
  */
 export async function saveLead(input: SaveLeadInput): Promise<LeadActionResult> {
-  const user = await requireUser()
-  assertAdmin(user)
+  const user = await requireCrmUser()
+  assertCrmAccess(user)
 
   const result = await saveLeadForActor(user, input, 'ADMIN_UI')
 

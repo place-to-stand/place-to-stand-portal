@@ -19,6 +19,8 @@ import { db } from '@/lib/db'
 import { activityLogs, users } from '@/lib/db/schema'
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
+import { canReadActivity } from '@/lib/auth/roles'
+import { ForbiddenError } from '@/lib/errors/http'
 import type { ActivitySourceValue, UserRoleValue } from '@/lib/types'
 import type { Json } from '@/lib/types/json'
 
@@ -92,14 +94,16 @@ const actorSelection = {
 
 /**
  * Access control lives here, not in the callers (this project has NO RLS):
- * the internal portal is admin-only, so callers must be admins and see
- * everything. Requested filters narrow the result set.
+ * admins see everything; SALES (CRM staff) may read lead and contact activity
+ * only (`canReadActivity`). Requested filters narrow the result set.
  */
 export async function fetchActivityLogs(
   user: AppUser,
   filters: ActivityQueryFilters
 ): Promise<ActivityQueryResult> {
-  assertAdmin(user)
+  if (!user || !canReadActivity(user.role, filters)) {
+    throw new ForbiddenError('Not allowed to read this activity')
+  }
 
   const limit = Math.min(
     Math.max(filters.limit ?? DEFAULT_PAGE_SIZE, 1),

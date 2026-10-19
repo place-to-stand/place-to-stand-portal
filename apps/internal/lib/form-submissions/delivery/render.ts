@@ -27,7 +27,7 @@ export type SubmissionEmails = {
 }
 
 export type SubmissionEmailContext = {
-  /** Admin portal origin, no trailing slash. */
+  /** Internal portal origin, no trailing slash. */
   portalOrigin: string
   /** Reply-To on the visitor's copy. */
   teamInbox: string

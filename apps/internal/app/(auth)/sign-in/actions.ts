@@ -11,6 +11,7 @@ import { ensureUserProfile } from "@/lib/auth/profile";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { sendMagicLinkEmail } from "@/lib/email/auth-emails";
+import { canUseInternalPortal } from "@/lib/auth/roles";
 import { serverEnv } from "@/lib/env.server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseServiceClient } from "@/lib/supabase/service";
@@ -88,10 +89,11 @@ export async function signInWithPassword(
     };
   }
 
-  // The internal portal is admin-only. Portal (CLIENT) users sign in on the
-  // client portal instead — drop the session and point them there. The `profile &&`
-  // guard matters: a missing row is "no account", handled separately below.
-  if (profile && profile.role !== "ADMIN") {
+  // The internal portal is for staff (ADMIN, and SALES for the CRM). Portal
+  // (CLIENT) users sign in on the client portal instead — drop the session and
+  // point them there. The `profile &&` guard matters: a missing row is "no
+  // account", handled separately below.
+  if (profile && !canUseInternalPortal(profile.role)) {
     await supabase.auth.signOut();
     return { clientPortalUrl: serverEnv.CLIENT_PORTAL_URL };
   }

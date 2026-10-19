@@ -5,8 +5,8 @@ import { z } from 'zod'
 
 import { leadRestoredEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
-import { requireUser } from '@/lib/auth/session'
-import { assertAdmin } from '@/lib/auth/permissions'
+import { requireCrmUser } from '@/lib/auth/session'
+import { assertCrmAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { leads } from '@/lib/db/schema'
 
@@ -22,8 +22,8 @@ export type RestoreLeadInput = z.infer<typeof restoreLeadSchema>
 export async function restoreLead(
   input: RestoreLeadInput
 ): Promise<LeadActionResult> {
-  const user = await requireUser()
-  assertAdmin(user)
+  const user = await requireCrmUser()
+  assertCrmAccess(user)
 
   const parsed = restoreLeadSchema.safeParse(input)
 

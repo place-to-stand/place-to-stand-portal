@@ -1,7 +1,7 @@
 'use server'
 
-import { assertAdmin } from '@/lib/auth/permissions'
-import { requireUser } from '@/lib/auth/session'
+import { assertCrmAccess } from '@/lib/auth/permissions'
+import { requireCrmUser } from '@/lib/auth/session'
 import {
   createLeadUpdateForActor,
   type CreateLeadUpdateInput,
@@ -23,8 +23,8 @@ export type CreateLeadUpdateResult = LeadActionResult & {
 export async function createLeadUpdate(
   input: CreateLeadUpdateInput
 ): Promise<CreateLeadUpdateResult> {
-  const user = await requireUser()
-  assertAdmin(user)
+  const user = await requireCrmUser()
+  assertCrmAccess(user)
 
   const result = await createLeadUpdateForActor(user, input, 'ADMIN_UI')
 

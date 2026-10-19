@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 
-import { requireUser } from '@/lib/auth/session'
-import { assertAdmin } from '@/lib/auth/permissions'
+import { requireCrmUser } from '@/lib/auth/session'
+import { SALES_SHEET_ENTITIES } from '@/lib/auth/roles'
 import { NotFoundError } from '@/lib/errors/http'
 import { isValidSheetParamValue } from '@/lib/sheets/entities'
 import {
@@ -18,8 +18,7 @@ import {
  */
 export async function GET(request: Request) {
   try {
-    const user = await requireUser()
-    assertAdmin(user)
+    const user = await requireCrmUser()
 
     const url = new URL(request.url)
     const entity = url.searchParams.get('entity') ?? ''
@@ -29,6 +28,14 @@ export async function GET(request: Request) {
       return NextResponse.json(
         { ok: false, error: 'Unknown sheet entity' },
         { status: 400 }
+      )
+    }
+
+    // SALES staff may open lead and contact sheets only.
+    if (user.role !== 'ADMIN' && !SALES_SHEET_ENTITIES.has(entity)) {
+      return NextResponse.json(
+        { ok: false, error: 'Forbidden' },
+        { status: 403 }
       )
     }
 

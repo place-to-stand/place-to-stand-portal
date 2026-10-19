@@ -3,7 +3,7 @@ import { Buffer } from "node:buffer";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { requireUser } from "@/lib/auth/session";
+import { requireCrmUser } from "@/lib/auth/session";
 import { getSupabaseServiceClient } from "@/lib/supabase/service";
 import {
   ACCEPTED_AVATAR_MIME_TYPES,
@@ -19,7 +19,7 @@ import {
 const targetUserIdSchema = z.string().uuid();
 
 export async function POST(request: Request) {
-  const actor = await requireUser();
+  const actor = await requireCrmUser();
   const formData = await request.formData();
   const file = formData.get("file");
 
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const actor = await requireUser();
+  const actor = await requireCrmUser();
   const payload = await request.json().catch(() => null);
   const path = typeof payload?.path === "string" ? payload.path : null;
   let targetUserId: string | null = null;

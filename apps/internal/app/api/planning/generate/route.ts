@@ -6,7 +6,7 @@ import { z } from 'zod'
 
 import { planRevisionCreatedEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
-import { getCurrentUser } from '@/lib/auth/session'
+import { getCurrentAdmin } from '@/lib/auth/session'
 import { getRepoLinkById } from '@/lib/data/github-repos'
 import { getRepoTree, resolveRepoLinkAuth } from '@/lib/github/client'
 import { buildPlanningSystemPrompt, createPlanningTools } from '@/lib/ai/planning'
@@ -41,7 +41,7 @@ const requestSchema = z.object({
 })
 
 export async function POST(request: Request) {
-  const user = await getCurrentUser()
+  const user = await getCurrentAdmin()
   if (!user) {
     return new Response('Unauthorized', { status: 401 })
   }

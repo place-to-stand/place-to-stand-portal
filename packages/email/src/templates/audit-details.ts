@@ -7,7 +7,7 @@ import {
 } from './submission-shared'
 
 export type AuditDetailsEmailArgs = {
-  /** Deep link to the submission sheet in the admin portal. */
+  /** Deep link to the submission sheet in the internal portal. */
   submissionUrl: string
   contact: SubmissionContact
   /** The note they added, if any. */

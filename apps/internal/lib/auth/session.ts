@@ -11,6 +11,7 @@ import { users } from '@/lib/db/schema'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { ensureUserProfile } from '@/lib/auth/profile'
 import { serverEnv } from '@/lib/env.server'
+import { SALES_HOME_PATH } from '@/lib/auth/roles'
 
 export type AppUser = Database['public']['Tables']['users']['Row']
 export type UserRole = Database['public']['Enums']['user_role']
@@ -84,6 +85,16 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
     return null
   }
 })
+
+/**
+ * The signed-in user when they are an ADMIN, else null. For API routes that
+ * answer 401 themselves rather than redirecting: the internal portal also
+ * admits SALES (CRM staff), so "has a session" no longer means "is an admin".
+ */
+export const getCurrentAdmin = async (): Promise<AppUser | null> => {
+  const user = await getCurrentUser()
+  return user?.role === 'ADMIN' ? user : null
+}
 
 type UserProfile = {
   id: string
@@ -201,9 +212,33 @@ export const requireUser = async () => {
     redirect('/sign-in')
   }
 
-  // The internal portal is admin-only. Portal (CLIENT) users belong in the
-  // client portal — send any lingering session there rather than to a 403.
+  // Admin-only by default. SALES staff get only the CRM pages, which call
+  // `requireCrmUser()` instead; anywhere else sends them to their home page.
+  if (user.role === 'SALES') {
+    redirect(SALES_HOME_PATH)
+  }
+
+  // Portal (CLIENT) users belong in the client portal — send any lingering
+  // session there rather than to a 403.
   if (user.role !== 'ADMIN') {
+    redirect(serverEnv.CLIENT_PORTAL_URL)
+  }
+
+  return user
+}
+
+/**
+ * Guard for the CRM pages (leads, contacts) and the dashboard shell: admits
+ * ADMIN and SALES. Use `requireUser()` for everything else.
+ */
+export const requireCrmUser = async () => {
+  const user = await getCurrentUser()
+
+  if (!user) {
+    redirect('/sign-in')
+  }
+
+  if (user.role !== 'ADMIN' && user.role !== 'SALES') {
     redirect(serverEnv.CLIENT_PORTAL_URL)
   }
 

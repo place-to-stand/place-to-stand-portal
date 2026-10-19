@@ -8,7 +8,7 @@ import {
   leadUpdatedEvent,
 } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
-import { assertAdmin } from '@/lib/auth/permissions'
+import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { leads, leadStageHistory } from '@/lib/db/schema'
@@ -51,7 +51,7 @@ export async function saveLeadForActor(
   input: SaveLeadInput,
   source: ActivitySourceValue
 ): Promise<SaveLeadResult> {
-  assertAdmin(actor)
+  assertCrmAccess(actor)
 
   const parsed = saveLeadSchema.safeParse(input)
 

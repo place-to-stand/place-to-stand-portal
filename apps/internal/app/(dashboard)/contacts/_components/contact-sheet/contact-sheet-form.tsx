@@ -23,6 +23,7 @@ import { PhoneInput } from '@/components/ui/phone-input'
 import { Separator } from '@pts/ui/separator'
 
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 
 import {
   ContactClientLinkButton,
@@ -102,6 +103,9 @@ export function ContactSheetForm({
   onRequestPromote,
   portalUserId,
 }: ContactSheetFormProps) {
+  // Client links drive client-portal membership, and portal accounts grant
+  // client access, so both stay admin-only. SALES staff see the links only.
+  const { isAdmin } = useViewerAccess()
   const handleSave = useCallback(
     () => form.handleSubmit(onSubmit)(),
     [form, onSubmit]
@@ -234,6 +238,7 @@ export function ContactSheetForm({
           <SheetSection
             title='Clients'
             action={
+              isAdmin ? (
               <ContactClientLinkButton
                 availableClients={availableClients}
                 disabled={addClientButtonDisabled}
@@ -244,6 +249,7 @@ export function ContactSheetForm({
                 onAddClient={onAddClient}
                 onCreateClient={onCreateClient}
               />
+              ) : undefined
             }
           >
             <ContactClientList
@@ -254,10 +260,11 @@ export function ContactSheetForm({
               onRequestLink={() => onClientPickerOpenChange(true)}
               linkDisabled={addClientButtonDisabled}
               linkDisabledReason={addClientButtonDisabledReason}
+              readOnly={!isAdmin}
             />
           </SheetSection>
 
-          {isEditing ? (
+          {isEditing && isAdmin ? (
             <>
               <Separator />
               <SheetSection

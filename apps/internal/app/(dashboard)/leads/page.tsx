@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 
 import { redirect } from 'next/navigation'
 
-import { requireUser } from '@/lib/auth/session'
+import { requireCrmUser } from '@/lib/auth/session'
 import {
   fetchArchivedLeads,
   fetchLeadAssignees,
@@ -23,7 +23,7 @@ const firstParam = (value: string | string[] | undefined) =>
 export default async function LeadsBoardPage({
   searchParams,
 }: PageProps<'/leads'>) {
-  const user = await requireUser()
+  const user = await requireCrmUser()
   const params = await searchParams
   const leadParam = firstParam(params.lead) ?? null
 

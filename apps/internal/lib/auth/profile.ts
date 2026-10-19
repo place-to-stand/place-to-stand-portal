@@ -4,14 +4,9 @@ import type { User } from '@supabase/supabase-js'
 
 import { eq } from 'drizzle-orm'
 
-import type { UserRole } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { users as usersTable } from '@/lib/db/schema'
 import { isUserAvatarPath } from '@/lib/storage/avatar'
-
-const DEFAULT_ROLE: UserRole = 'CLIENT'
-
-const VALID_ROLES: readonly UserRole[] = ['ADMIN', 'CLIENT']
 
 /**
  * `not_provisioned` means the visitor authenticated successfully but has no `users` row.
@@ -20,18 +15,6 @@ const VALID_ROLES: readonly UserRole[] = ['ADMIN', 'CLIENT']
  */
 export type EnsureProfileResult = 'ok' | 'not_provisioned'
 
-function getMetadataRole(user: User): UserRole | null {
-  const rawRole = user.user_metadata?.role
-
-  if (typeof rawRole !== 'string') {
-    return null
-  }
-
-  const role = rawRole.toUpperCase() as UserRole
-
-  return VALID_ROLES.includes(role) ? role : null
-}
-
 export async function ensureUserProfile(
   user: User
 ): Promise<EnsureProfileResult> {
@@ -39,7 +22,6 @@ export async function ensureUserProfile(
     .select({
       id: usersTable.id,
       email: usersTable.email,
-      role: usersTable.role,
       fullName: usersTable.fullName,
       avatarUrl: usersTable.avatarUrl,
     })
@@ -48,9 +30,6 @@ export async function ensureUserProfile(
     .limit(1)
 
   const existing = existingRows[0]
-
-  const metadataRole = getMetadataRole(user)
-  const resolvedRole = metadataRole ?? existing?.role ?? DEFAULT_ROLE
 
   const nextEmail = user.email ?? ''
   const metadataFullName =
@@ -64,6 +43,11 @@ export async function ensureUserProfile(
   if (!existing) {
     return 'not_provisioned'
   }
+
+  // Role is never read from the auth user. `user_metadata` is writable by the
+  // signed-in user themselves (supabase.auth.updateUser), so trusting a role
+  // there would let any account promote itself. The `users` row is the only
+  // source of truth; admins change it in Settings → Users.
 
   // Name and avatar are seeded, never re-synced. Supabase merges the identity
   // provider's own values into `user_metadata` at every sign-in, so mirroring
@@ -80,7 +64,6 @@ export async function ensureUserProfile(
 
   const shouldUpdate =
     existing.email !== nextEmail ||
-    existing.role !== resolvedRole ||
     seedFullName !== null ||
     seedAvatar !== null
 
@@ -92,7 +75,6 @@ export async function ensureUserProfile(
     .update(usersTable)
     .set({
       email: nextEmail,
-      role: resolvedRole,
       deletedAt: null,
       ...(seedFullName ? { fullName: seedFullName } : {}),
       ...(seedAvatar ? { avatarUrl: seedAvatar } : {}),

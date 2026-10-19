@@ -7,6 +7,7 @@ import {
   type ActivityTargetType,
 } from '@/lib/activity/types'
 import { getCurrentUser } from '@/lib/auth/session'
+import { ForbiddenError } from '@/lib/errors/http'
 
 const VALID_TARGET_TYPES: readonly ActivityTargetType[] = ACTIVITY_TARGET_TYPES
 
@@ -98,6 +99,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(result)
   } catch (error) {
+    if (error instanceof ForbiddenError) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
     console.error('Failed to resolve activity logs', error)
     return NextResponse.json(
       { error: 'Unable to load activity history.' },

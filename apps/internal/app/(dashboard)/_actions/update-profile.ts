@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { requireUser, type AppUser } from "@/lib/auth/session";
+import { requireCrmUser, type AppUser } from "@/lib/auth/session";
 import { logActivity } from "@/lib/activity/logger";
 import {
   userPasswordChangedEvent,
@@ -52,7 +52,7 @@ const updateProfileSchema = z.object({
 });
 
 export async function updateProfile(input: UpdateProfileInput): Promise<UpdateProfileResult> {
-  const user = await requireUser();
+  const user = await requireCrmUser();
 
   const cleanedInput = {
     fullName: input.fullName?.trim() ?? "",

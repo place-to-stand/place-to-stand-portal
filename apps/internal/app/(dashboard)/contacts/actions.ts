@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 
-import { requireUser } from '@/lib/auth/session'
+import { requireCrmUser, requireUser } from '@/lib/auth/session'
 import {
   type ContactActionResult,
   type ContactInput,
@@ -69,7 +69,9 @@ async function runContactMutation<TInput>(
     payload: TInput
   ) => Promise<ContactMutationResult>
 ): Promise<ContactActionResult> {
-  const user = await requireUser()
+  // CRM staff may save, archive and restore; destroy re-checks admin inside
+  // its mutation.
+  const user = await requireCrmUser()
   const mutationResult = await mutate({ user }, input)
   const { didMutate, ...result } = mutationResult
 
@@ -88,7 +90,7 @@ async function runContactMutation<TInput>(
 export async function getContactSheetData(
   contactId?: string
 ): Promise<ContactSheetData> {
-  const user = await requireUser()
+  const user = await requireCrmUser()
   return getSheetData(user, contactId)
 }
 

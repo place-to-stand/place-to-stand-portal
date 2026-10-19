@@ -54,7 +54,7 @@ export type EmailTemplateEntry = {
  * `otp_expiry` (3600s) so the copy states the window the token actually has.
  */
 const LINK_EXPIRY_MINUTES = 60
-const INTERNAL_DESTINATION = 'the Place To Stand admin portal'
+const INTERNAL_DESTINATION = 'the Place To Stand internal portal'
 const CLIENT_DESTINATION = 'the Place To Stand client portal'
 
 const INTERNAL_SDK_DELIVERY =
@@ -165,7 +165,7 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
       status: 'active',
       name: 'Client portal invite',
       description:
-        'Welcomes a new client portal user with a one-time sign-in link. Sent from the admin portal, but lands with client contacts.',
+        'Welcomes a new client portal user with a one-time sign-in link. Sent from the internal portal, but lands with client contacts.',
       triggers: [
         'Promoting a contact to a portal user',
         'Creating a CLIENT-role user under Settings → Users',

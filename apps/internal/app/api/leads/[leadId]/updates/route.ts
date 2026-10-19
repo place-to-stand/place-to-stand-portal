@@ -1,19 +1,20 @@
 import { NextResponse } from 'next/server'
 
-import { requireRole } from '@/lib/auth/session'
+import { requireCrmUser } from '@/lib/auth/session'
 import { listLeadUpdates } from '@/lib/queries/lead-updates'
 
 /**
  * GET /api/leads/[leadId]/updates
  *
  * Timeline rows for one lead, newest first.
- * Admin-only endpoint, mirroring the sibling tasks route.
+ * CRM endpoint (ADMIN, SALES); the sibling tasks and conversion routes stay
+ * admin-only.
  */
 export async function GET(
   _request: Request,
   { params }: RouteContext<'/api/leads/[leadId]/updates'>
 ) {
-  const user = await requireRole('ADMIN')
+  const user = await requireCrmUser()
   const { leadId } = await params
 
   try {
