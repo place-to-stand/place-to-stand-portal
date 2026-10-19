@@ -24,11 +24,11 @@ export function assertAdmin(user: AppUser) {
 }
 
 /**
- * CRM access (leads, contacts and their activity): ADMIN or USER. Only the
+ * CRM access (leads, contacts and their activity): ADMIN or SALES. Only the
  * CRM layer calls this; every other guard stays `assertAdmin`.
  */
 export function assertCrmAccess(user: AppUser) {
-  if (!user || (user.role !== 'ADMIN' && user.role !== 'USER')) {
+  if (!user || (user.role !== 'ADMIN' && user.role !== 'SALES')) {
     throw new ForbiddenError('CRM access required')
   }
 }

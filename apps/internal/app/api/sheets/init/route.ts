@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 
 import { requireCrmUser } from '@/lib/auth/session'
-import { USER_SHEET_ENTITIES } from '@/lib/auth/roles'
+import { SALES_SHEET_ENTITIES } from '@/lib/auth/roles'
 import { NotFoundError } from '@/lib/errors/http'
 import { isValidSheetParamValue } from '@/lib/sheets/entities'
 import {
@@ -31,8 +31,8 @@ export async function GET(request: Request) {
       )
     }
 
-    // USER staff may open lead and contact sheets only.
-    if (user.role !== 'ADMIN' && !USER_SHEET_ENTITIES.has(entity)) {
+    // SALES staff may open lead and contact sheets only.
+    if (user.role !== 'ADMIN' && !SALES_SHEET_ENTITIES.has(entity)) {
       return NextResponse.json(
         { ok: false, error: 'Forbidden' },
         { status: 403 }

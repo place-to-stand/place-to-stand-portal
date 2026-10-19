@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/account-not-set-up', request.url))
     }
 
-    // The internal portal is staff-only (ADMIN, USER). Portal (CLIENT) users belong on the
+    // The internal portal is staff-only (ADMIN, SALES). Portal (CLIENT) users belong on the
     // client portal — drop the session and send them there.
     const [profile] = await db
       .select({ role: users.role })

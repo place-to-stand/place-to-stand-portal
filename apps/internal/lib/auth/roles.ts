@@ -5,39 +5,39 @@ import type { Database } from '@/lib/supabase/types'
  * imports so components can read the same lists the guards enforce.
  *
  * - ADMIN: the whole internal portal.
- * - USER: staff with CRM access only (leads, contacts and their activity).
+ * - SALES: staff with CRM access only (leads, contacts and their activity).
  *   Everything else stays behind `requireUser()` / `assertAdmin()`, so a page
- *   or route nobody opened up for USER is admin-only by default.
+ *   or route nobody opened up for SALES is admin-only by default.
  * - CLIENT: client-portal users; never let into the internal portal.
  */
 type Role = Database['public']['Enums']['user_role']
 
 export const ROLE_LABELS: Record<Role, string> = {
   ADMIN: 'Admin',
-  USER: 'User',
+  SALES: 'Sales',
   CLIENT: 'Client',
 }
 
 /** Roles that may sign in to the internal portal. */
-export const INTERNAL_ROLES: readonly Role[] = ['ADMIN', 'USER']
+export const INTERNAL_ROLES: readonly Role[] = ['ADMIN', 'SALES']
 
-/** Where a USER lands after sign-in, and where admin-only pages send them. */
-export const USER_HOME_PATH = '/leads'
+/** Where a SALES user lands after sign-in, and where admin-only pages send them. */
+export const SALES_HOME_PATH = '/leads'
 
-/** Nav entries a USER sees. Every other entry is admin-only. */
-export const USER_NAV_HREFS: ReadonlySet<string> = new Set([
+/** Nav entries a SALES user sees. Every other entry is admin-only. */
+export const SALES_NAV_HREFS: ReadonlySet<string> = new Set([
   '/leads',
   '/contacts',
 ])
 
-/** Activity feed target types a USER may read. */
-export const USER_ACTIVITY_TARGET_TYPES: ReadonlySet<string> = new Set([
+/** Activity feed target types a SALES user may read. */
+export const SALES_ACTIVITY_TARGET_TYPES: ReadonlySet<string> = new Set([
   'LEAD',
   'CONTACT',
 ])
 
-/** Global sheet-host entities a USER may open. */
-export const USER_SHEET_ENTITIES: ReadonlySet<string> = new Set([
+/** Global sheet-host entities a SALES user may open. */
+export const SALES_SHEET_ENTITIES: ReadonlySet<string> = new Set([
   'lead',
   'contact',
 ])
@@ -51,7 +51,7 @@ export function canUseInternalPortal(role: Role | null | undefined): boolean {
 }
 
 export function homePathForRole(role: Role): string {
-  return role === 'ADMIN' ? '/my/home' : USER_HOME_PATH
+  return role === 'ADMIN' ? '/my/home' : SALES_HOME_PATH
 }
 
 /** Drops the nav entries (and then empty groups) a role can't open. */
@@ -63,14 +63,14 @@ export function filterNavGroupsForRole<
   return groups
     .map(group => ({
       ...group,
-      items: group.items.filter(item => USER_NAV_HREFS.has(item.href)),
+      items: group.items.filter(item => SALES_NAV_HREFS.has(item.href)),
     }))
     .filter(group => group.items.length > 0)
 }
 
 /**
  * Whether a role may run an activity feed query with these filters. Admins
- * read everything. USER may read only lead and contact activity, and only
+ * read everything. SALES may read only lead and contact activity, and only
  * when the query names those target types (no project or client scoping,
  * which would reach admin-only records).
  */
@@ -83,7 +83,7 @@ export function canReadActivity(
   }
 ): boolean {
   if (role === 'ADMIN') return true
-  if (role !== 'USER') return false
+  if (role !== 'SALES') return false
   if (filters.projectId || filters.clientId) return false
 
   const types =
@@ -92,6 +92,6 @@ export function canReadActivity(
       : (filters.targetType ?? [])
 
   return (
-    types.length > 0 && types.every(type => USER_ACTIVITY_TARGET_TYPES.has(type))
+    types.length > 0 && types.every(type => SALES_ACTIVITY_TARGET_TYPES.has(type))
   )
 }

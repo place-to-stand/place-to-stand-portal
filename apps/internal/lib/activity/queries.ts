@@ -94,7 +94,7 @@ const actorSelection = {
 
 /**
  * Access control lives here, not in the callers (this project has NO RLS):
- * admins see everything; USER (CRM staff) may read lead and contact activity
+ * admins see everything; SALES (CRM staff) may read lead and contact activity
  * only (`canReadActivity`). Requested filters narrow the result set.
  */
 export async function fetchActivityLogs(

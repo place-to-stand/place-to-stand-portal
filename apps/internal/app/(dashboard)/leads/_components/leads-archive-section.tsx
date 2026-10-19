@@ -83,7 +83,7 @@ export function LeadsArchiveSection({
 }: LeadsArchiveSectionProps) {
   const router = useRouter()
   const { toast } = useToast()
-  // Permanent delete is admin-only; USER staff can archive and restore.
+  // Permanent delete is admin-only; SALES staff can archive and restore.
   const { isAdmin } = useViewerAccess()
   const { update, getParam, hasActiveFilters, reset } = useListParams({
     basePath: '/leads/archive',

@@ -11,12 +11,12 @@ export default async function DashboardLayout({
 }: {
   children: ReactNode;
 }) {
-  // The shell admits CRM staff (ADMIN, USER). Each page guards itself:
-  // admin-only pages call requireUser(), which sends USER to their home page.
+  // The shell admits CRM staff (ADMIN, SALES). Each page guards itself:
+  // admin-only pages call requireUser(), which sends SALES users to their home page.
   const user = await requireCrmUser();
   // D6 (PRD 001): server-fetched unacknowledged count; refreshed via
   // revalidatePath('/', 'layout') from the submissions actions. Submissions
-  // are admin-only, so USER gets no badge.
+  // are admin-only, so SALES users get no badge.
   const unacknowledgedSubmissionsCount =
     user.role === "ADMIN"
       ? await fetchUnacknowledgedSubmissionCount(user)

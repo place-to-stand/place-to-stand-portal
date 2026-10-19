@@ -7,7 +7,7 @@ import { listLeadUpdates } from '@/lib/queries/lead-updates'
  * GET /api/leads/[leadId]/updates
  *
  * Timeline rows for one lead, newest first.
- * CRM endpoint (ADMIN, USER); the sibling tasks and conversion routes stay
+ * CRM endpoint (ADMIN, SALES); the sibling tasks and conversion routes stay
  * admin-only.
  */
 export async function GET(

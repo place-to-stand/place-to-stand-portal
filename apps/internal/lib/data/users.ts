@@ -39,7 +39,7 @@ export const fetchAdminUsers = cache(async (): Promise<DbUser[]> => {
 })
 
 /**
- * Staff who can work leads: admins plus USER-role CRM staff. Used for lead
+ * Staff who can work leads: admins plus SALES-role CRM staff. Used for lead
  * assignee pickers; everything else that lists staff stays admin-only.
  */
 export const fetchCrmUsers = cache(async (): Promise<DbUser[]> => {
@@ -58,7 +58,7 @@ export const fetchCrmUsers = cache(async (): Promise<DbUser[]> => {
     .from(usersTable)
     .where(
       and(
-        inArray(usersTable.role, ['ADMIN', 'USER']),
+        inArray(usersTable.role, ['ADMIN', 'SALES']),
         isNull(usersTable.deletedAt)
       )
     )

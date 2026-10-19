@@ -121,7 +121,7 @@ function CommandPalette() {
   const debouncedQuery = useDebouncedValue(query.trim(), DEBOUNCE_MS)
 
   const trimmedQuery = query.trim()
-  // Record search spans clients and projects, so it is admin-only; USER
+  // Record search spans clients and projects, so it is admin-only; SALES
   // staff get page navigation only.
   const recordSearchEnabled =
     isAdmin && open && debouncedQuery.length >= MIN_QUERY_LENGTH

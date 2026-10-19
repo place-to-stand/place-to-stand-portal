@@ -23,7 +23,7 @@ export function LeadSheetRightColumn({
   onSuccess,
 }: LeadSheetRightColumnProps) {
   // Conversion creates clients and projects, and lead tasks live on the
-  // sales project board, so both stay admin-only. USER staff get updates.
+  // sales project board, so both stay admin-only. SALES staff get updates.
   const { isAdmin } = useViewerAccess()
 
   return (

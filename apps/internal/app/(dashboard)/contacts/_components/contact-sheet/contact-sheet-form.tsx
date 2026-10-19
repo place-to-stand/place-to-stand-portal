@@ -104,7 +104,7 @@ export function ContactSheetForm({
   portalUserId,
 }: ContactSheetFormProps) {
   // Client links drive client-portal membership, and portal accounts grant
-  // client access, so both stay admin-only. USER staff see the links only.
+  // client access, so both stay admin-only. SALES staff see the links only.
   const { isAdmin } = useViewerAccess()
   const handleSave = useCallback(
     () => form.handleSubmit(onSubmit)(),

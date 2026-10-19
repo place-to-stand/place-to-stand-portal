@@ -11,7 +11,7 @@ import { users } from '@/lib/db/schema'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { ensureUserProfile } from '@/lib/auth/profile'
 import { serverEnv } from '@/lib/env.server'
-import { USER_HOME_PATH } from '@/lib/auth/roles'
+import { SALES_HOME_PATH } from '@/lib/auth/roles'
 
 export type AppUser = Database['public']['Tables']['users']['Row']
 export type UserRole = Database['public']['Enums']['user_role']
@@ -89,7 +89,7 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
 /**
  * The signed-in user when they are an ADMIN, else null. For API routes that
  * answer 401 themselves rather than redirecting: the internal portal also
- * admits USER (CRM staff), so "has a session" no longer means "is an admin".
+ * admits SALES (CRM staff), so "has a session" no longer means "is an admin".
  */
 export const getCurrentAdmin = async (): Promise<AppUser | null> => {
   const user = await getCurrentUser()
@@ -212,10 +212,10 @@ export const requireUser = async () => {
     redirect('/sign-in')
   }
 
-  // Admin-only by default. USER staff get only the CRM pages, which call
+  // Admin-only by default. SALES staff get only the CRM pages, which call
   // `requireCrmUser()` instead; anywhere else sends them to their home page.
-  if (user.role === 'USER') {
-    redirect(USER_HOME_PATH)
+  if (user.role === 'SALES') {
+    redirect(SALES_HOME_PATH)
   }
 
   // Portal (CLIENT) users belong in the client portal — send any lingering
@@ -229,7 +229,7 @@ export const requireUser = async () => {
 
 /**
  * Guard for the CRM pages (leads, contacts) and the dashboard shell: admits
- * ADMIN and USER. Use `requireUser()` for everything else.
+ * ADMIN and SALES. Use `requireUser()` for everything else.
  */
 export const requireCrmUser = async () => {
   const user = await getCurrentUser()
@@ -238,7 +238,7 @@ export const requireCrmUser = async () => {
     redirect('/sign-in')
   }
 
-  if (user.role !== 'ADMIN' && user.role !== 'USER') {
+  if (user.role !== 'ADMIN' && user.role !== 'SALES') {
     redirect(serverEnv.CLIENT_PORTAL_URL)
   }
 

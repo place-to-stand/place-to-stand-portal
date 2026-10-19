@@ -89,7 +89,7 @@ export async function signInWithPassword(
     };
   }
 
-  // The internal portal is for staff (ADMIN, and USER for the CRM). Portal
+  // The internal portal is for staff (ADMIN, and SALES for the CRM). Portal
   // (CLIENT) users sign in on the client portal instead — drop the session and
   // point them there. The `profile &&` guard matters: a missing row is "no
   // account", handled separately below.

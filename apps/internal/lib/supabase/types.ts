@@ -799,7 +799,7 @@ export type Database = {
       hour_block_type: 'RETAINER' | 'PROJECT' | 'MAINTENANCE'
       member_role: 'OWNER' | 'CONTRIBUTOR' | 'VIEWER'
       task_status: 'ON_DECK' | 'IN_PROGRESS' | 'BLOCKED' | 'DONE'
-      user_role: 'ADMIN' | 'USER' | 'CLIENT'
+      user_role: 'ADMIN' | 'SALES' | 'CLIENT'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -930,7 +930,7 @@ export const Constants = {
       hour_block_type: ['RETAINER', 'PROJECT', 'MAINTENANCE'],
       member_role: ['OWNER', 'CONTRIBUTOR', 'VIEWER'],
       task_status: ['ON_DECK', 'IN_PROGRESS', 'BLOCKED', 'DONE'],
-      user_role: ['ADMIN', 'USER', 'CLIENT'],
+      user_role: ['ADMIN', 'SALES', 'CLIENT'],
     },
   },
 } as const

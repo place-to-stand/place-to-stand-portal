@@ -19,7 +19,7 @@ import { fetchCrmUsers } from '@/lib/data/users'
 
 export const fetchLeadsBoard = cache(
   async (user: AppUser): Promise<LeadBoardColumnData[]> => {
-    // Leads are CRM-only (ADMIN, USER) - enforce at data layer for defense in depth
+    // Leads are CRM-only (ADMIN, SALES) - enforce at data layer for defense in depth
     assertCrmAccess(user)
     let rows: LeadRow[]
 
@@ -86,7 +86,7 @@ export const fetchLeadsBoard = cache(
 
 export const fetchLeadById = cache(
   async (user: AppUser, leadId: string): Promise<LeadRecord> => {
-    // Leads are CRM-only (ADMIN, USER) - enforce at data layer for defense in depth
+    // Leads are CRM-only (ADMIN, SALES) - enforce at data layer for defense in depth
     assertCrmAccess(user)
     let rows: LeadRow[]
 
