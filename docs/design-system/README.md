@@ -97,7 +97,8 @@ Place To Stand is a small software agency. This system describes its two Next.js
 - **Borders do the work.** Every element defaults to `border-border`. Cards are `card` + border + `radius-xl` + `shadow-sm`. Popovers are `popover` + border + `radius-md` + `shadow-md`. Sheets and dialogs are `background` + `shadow-lg`, over a black backdrop (`overlay-sheet` 50%, `overlay-dialog` 70%).
 - **Layout.** The app shell is `muted`. Each page is a `PageShell`:
   - one compact header row (sidebar trigger, a vertical separator, the breadcrumb, then an optional right slot) on `background`, with a bottom border
-  - an optional toolbar row (tabs, the count, one primary action)
+  - an optional toolbar row (tabs, the count, one primary action). Tabs sit at the left at their own width and scroll sideways once they outgrow the screen; the count sits right, beside the primary action
+  - a list's `FilterBar`: search, then its filters inline. Below `md` the search keeps the row beside a Filters button and the filters open in a sheet (`FilterSheetButton`, `components/table-toolbar/filter-sheet.tsx`); reuse that button for any other page's filters on phones
   - the scrolling content. The body itself never scrolls.
 - **The left sidebar** uses the `sidebar-*` tokens and collapses to icons. When collapsed, the blueprint mark stands in for the logo.
 - **Entities open in sheets, not pages.** Sheets are right-side panels over the list, sized `sm`–`xwide`. They're addressed by a query param (`?task=<uuid>`, `?client=new`).
@@ -147,3 +148,4 @@ Signed-out screens (`AuthShell`) are always dark, whatever the user's theme, bec
 12. **Pick a size, don't override it.** Buttons take `size` (`xs` 28px, `sm` 32px, default 36px, `icon-sm`), Avatars take `size` (`xs`–`lg`, initials scale with it). No `h-*` or `text-[9px]` overrides.
 13. **Focus is `focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]`** on every custom interactive element. Never remove the outline without that replacement.
 14. **Toasts:** success is short and past tense ("Invoice sent"); failure is "Unable to <verb> <noun>" with the reason in the description. No "Failed to…", "Error", "…successfully", or exclamation marks.
+15. **A responsive grid declares its phone column.** Write `grid grid-cols-1 lg:grid-cols-2`, never a bare `grid lg:grid-cols-2`: the implicit column grows to its widest child (an editor toolbar, a row of amounts) and pushes the whole page sideways on a phone.

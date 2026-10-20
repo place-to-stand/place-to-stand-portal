@@ -18,6 +18,7 @@ import {
   clients,
   contacts,
   hourBlocks,
+  invoices,
   projects,
   timeLogs,
   users,
@@ -591,6 +592,57 @@ export async function fetchPrepaidBilling(
     .groupBy(clients.id, clients.name)
 
   return rows as PrepaidBillingQueryRow[]
+}
+
+export type SalesTaxQueryRow = {
+  invoiceId: string
+  invoiceNumber: string | null
+  clientId: string
+  clientName: string
+  paidOn: string
+  subtotal: string
+  taxRate: string | null
+  taxAmount: string
+}
+
+/**
+ * Fetches every paid invoice that carried sales tax, by the UTC day it was
+ * paid — the same clock the webhook uses to date the hour blocks behind
+ * Billing In, so the tax lands in the month its revenue does. The amounts are
+ * the ones copied onto the Stripe PaymentIntent's metadata at checkout.
+ */
+export async function fetchSalesTaxCollected(
+  startDate: string,
+  endDate: string
+): Promise<SalesTaxQueryRow[]> {
+  const paidOn = sql<string>`(${invoices.paidAt} AT TIME ZONE 'UTC')::date`
+
+  const rows = await db
+    .select({
+      invoiceId: invoices.id,
+      invoiceNumber: invoices.invoiceNumber,
+      clientId: clients.id,
+      clientName: clients.name,
+      paidOn: sql<string>`${paidOn}::text`,
+      subtotal: invoices.subtotal,
+      taxRate: invoices.taxRate,
+      taxAmount: sql<string>`${invoices.taxAmount}`,
+    })
+    .from(invoices)
+    .innerJoin(clients, eq(invoices.clientId, clients.id))
+    .where(
+      and(
+        eq(invoices.status, 'PAID'),
+        isNull(invoices.deletedAt),
+        isNotNull(invoices.paidAt),
+        sql`${invoices.taxAmount} > 0`,
+        gte(paidOn, startDate),
+        lte(paidOn, endDate)
+      )
+    )
+    .orderBy(invoices.paidAt)
+
+  return rows
 }
 
 /**

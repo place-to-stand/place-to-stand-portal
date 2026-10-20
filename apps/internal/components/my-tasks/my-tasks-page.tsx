@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 import { PageShell } from '@/components/layout/page-shell'
+import { FilterSheetButton } from '@/components/table-toolbar/filter-sheet'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { Button } from '@pts/ui/button'
 import type { AppUser } from '@/lib/auth/session'
@@ -465,6 +466,26 @@ export function MyTasksPage({
     },
   ]
 
+  const scopePickers = (
+    <>
+      <ClientSelector
+        clients={clients}
+        selectedClientId={boardScope.clientId}
+        hiddenProjectTypes={boardScope.hiddenProjectTypes}
+        onScopeChange={applyBoardScope}
+      />
+      <PersonSelector
+        admins={admins}
+        selectedUserId={selectedAssigneeId}
+        currentUserId={user.id}
+      />
+    </>
+  )
+  const scopeCount =
+    (boardScope.clientId !== 'all' ? 1 : 0) +
+    (boardScope.hiddenProjectTypes.length > 0 ? 1 : 0) +
+    (selectedAssigneeId !== user.id ? 1 : 0)
+
   return (
     <PageShell
       breadcrumbs={crumbsForNav('/my/tasks/board')}
@@ -472,18 +493,13 @@ export function MyTasksPage({
       activeTab={view}
       count={{ label: 'tasks', total: totalTaskCount }}
       primaryAction={
-        <div className='flex items-center gap-2'>
-          <ClientSelector
-            clients={clients}
-            selectedClientId={boardScope.clientId}
-            hiddenProjectTypes={boardScope.hiddenProjectTypes}
-            onScopeChange={applyBoardScope}
-          />
-          <PersonSelector
-            admins={admins}
-            selectedUserId={selectedAssigneeId}
-            currentUserId={user.id}
-          />
+        <div className='flex flex-wrap items-center justify-end gap-2 sm:flex-nowrap'>
+          {/* Below md the pickers move into a slide-out so Add task keeps
+              the row; from md up they sit inline as before. */}
+          <FilterSheetButton className='md:hidden' activeCount={scopeCount}>
+            {scopePickers}
+          </FilterSheetButton>
+          <div className='max-md:hidden md:contents'>{scopePickers}</div>
           <Button
             type='button'
             size='sm'

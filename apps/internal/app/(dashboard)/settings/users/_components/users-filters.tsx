@@ -2,7 +2,6 @@
 
 import { FilterBar } from '@/components/table-toolbar/filter-bar'
 import { FilterSelect } from '@/components/table-toolbar/filter-select'
-import { ResetFiltersButton } from '@/components/table-toolbar/reset-filters-button'
 import { SearchInput } from '@/components/table-toolbar/search-input'
 import { useListParams } from '@/hooks/use-list-params'
 import {
@@ -61,12 +60,21 @@ export function UsersFilters({
   })
 
   return (
-    <FilterBar>
-      <SearchInput
-        value={search}
-        onCommit={value => update({ q: value })}
-        placeholder='Search users…'
-      />
+    <FilterBar
+      search={
+        <SearchInput
+          value={search}
+          onCommit={value => update({ q: value })}
+          placeholder='Search users…'
+        />
+      }
+      activeFilterCount={
+        (role ? 1 : 0) +
+        (showAccessFilter && access !== DEFAULT_USER_ACCESS ? 1 : 0)
+      }
+      showReset={hasActiveFilters}
+      onReset={reset}
+    >
       <FilterSelect
         value={role}
         onChange={value => update({ role: value })}
@@ -88,7 +96,6 @@ export function UsersFilters({
           options={ACCESS_OPTIONS}
         />
       ) : null}
-      <ResetFiltersButton show={hasActiveFilters} onReset={reset} />
     </FilterBar>
   )
 }

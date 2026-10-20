@@ -94,7 +94,12 @@ export function ContactsTableSection({
 
   return (
     <div className='overflow-hidden rounded-lg border'>
-      <Table density='compact' layout='fixed'>
+      <Table
+        density='compact'
+        layout='fixed'
+        stack
+        className='md:min-w-[50rem]'
+      >
         <TableHeader>
           <TableRow className='bg-muted/40'>
             <SortableTableHead
@@ -200,7 +205,12 @@ export function ContactsTableSection({
                     <span className='truncate'>{contact.email}</span>
                   </a>
                 </TableCell>
-                <TableCell className='text-muted-foreground text-sm'>
+                <TableCell
+                  className={cn(
+                    'text-muted-foreground text-sm',
+                    !contact.phone && 'max-md:hidden'
+                  )}
+                >
                   {contact.phone ? (
                     <a
                       href={`tel:${contact.phone}`}
@@ -213,10 +223,10 @@ export function ContactsTableSection({
                     <span className='text-muted-foreground/50'>—</span>
                   )}
                 </TableCell>
-                <TableCell className='text-sm'>
+                <TableCell label='Clients' className='text-sm'>
                   <LinkedClientsCell clients={contact.metrics.clients} />
                 </TableCell>
-                <TableCell className='text-right'>
+                <TableCell className='text-right max-md:ml-auto'>
                   <div className='flex justify-end gap-2'>
                     {/* Promote renders first: it's conditional, so keeping
                         Preview adjacent to Archive holds the eye icon to one

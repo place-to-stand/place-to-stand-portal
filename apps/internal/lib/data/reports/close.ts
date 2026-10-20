@@ -184,6 +184,26 @@ const snapshotReportSchema = z.object({
     totalAmount: z.number(),
     hourlyRate: z.number(),
   }),
+  // Added Oct 2026. Closes frozen before it carry none, so it stays optional
+  // and the view fills it from live (paid-invoice tax doesn't move).
+  salesTax: z
+    .object({
+      rows: z.array(
+        z.object({
+          invoiceId: z.string(),
+          invoiceNumber: z.string().nullable(),
+          clientId: z.string(),
+          clientName: z.string(),
+          paidOn: z.string(),
+          taxableAmount: z.number(),
+          taxRate: z.number(),
+          taxAmount: z.number(),
+        })
+      ),
+      totalTaxable: z.number(),
+      totalAmount: z.number(),
+    })
+    .optional(),
   house: z
     .object({
       billableHours: z.number(),
@@ -249,8 +269,12 @@ const snapshotEnvelopeSchema = z.object({
   profitShare: profitShareSchema.nullable().optional(),
 })
 
+/** A decoded snapshot: older closes may predate the sales tax section. */
+type FrozenReport = Omit<SnapshotReport, 'salesTax'> &
+  Partial<Pick<SnapshotReport, 'salesTax'>>
+
 type SnapshotParseResult =
-  | { ok: true; report: SnapshotReport; profitShare: ProfitShareData | null }
+  | { ok: true; report: FrozenReport; profitShare: ProfitShareData | null }
   | { ok: false; error: string }
 
 /**
@@ -687,7 +711,18 @@ export type MonthlyCloseView = {
     closedByName?: string | null
     /** Set when the persisted snapshot failed validation (F9). */
     snapshotError?: string
-    drift?: CloseDrift | null
+    /**
+     * Streamed, not awaited: the profit-share half re-reads the Mercury
+     * month-end balance, which scans every transaction since the month
+     * ended and must not hold up a report already frozen in the snapshot.
+     * Resolves to null when the check itself fails.
+     */
+    drift?: Promise<CloseDrift | null> | null
+    /**
+     * True when a closed month predates frozen sales tax, so the figure shown
+     * is the live one rather than the one captured at close.
+     */
+    salesTaxIsLive?: boolean
   }
   profitShare: ProfitShareState
 }
@@ -853,12 +888,24 @@ export async function fetchMonthlyCloseView(
     }
   }
 
-  const drift = await computeDrift(parsed.report, live, {
+  // Closes frozen before sales tax was tracked fall back to the live figure;
+  // comparing live against itself keeps it out of drift.
+  const salesTaxIsLive = parsed.report.salesTax === undefined
+  const frozen: SnapshotReport = {
+    ...parsed.report,
+    salesTax: parsed.report.salesTax ?? live.salesTax,
+  }
+
+  const drift = computeDrift(frozen, live, {
     year,
     month,
     closedAt: snapshot.closedAt,
     frozenProfitShare: parsed.profitShare,
     balance,
+  }).catch((error: unknown) => {
+    // A failed drift check must not take the frozen report down with it.
+    console.error('Monthly close drift check failed', error)
+    return null
   })
 
   const profitShare: ProfitShareState = parsed.profitShare
@@ -869,7 +916,7 @@ export async function fetchMonthlyCloseView(
 
   return {
     report: {
-      ...parsed.report,
+      ...frozen,
       minCursor: live.minCursor,
       maxCursor: live.maxCursor,
     },
@@ -878,6 +925,7 @@ export async function fetchMonthlyCloseView(
       closedAt: snapshot.closedAt,
       closedByName: snapshot.closedByName,
       drift,
+      salesTaxIsLive,
     },
     profitShare,
   }

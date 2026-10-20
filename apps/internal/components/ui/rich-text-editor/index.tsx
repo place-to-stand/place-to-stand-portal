@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { EditorContent, EditorContext } from '@tiptap/react'
 
 import { cn } from '@/lib/utils'
@@ -40,8 +40,6 @@ import { LinkIcon } from '@/components/tiptap-icons/link-icon'
 
 // --- Hooks ---
 import { useIsMobile } from '@pts/ui/hooks/use-mobile'
-import { useWindowSize } from '@/hooks/use-window-size'
-import { useCursorVisibility } from '@/hooks/use-cursor-visibility'
 import { useTiptapEditor } from '@/hooks/use-tiptap-editor'
 
 // --- UI Primitives ---
@@ -211,12 +209,9 @@ export function RichTextEditor({
   }, [])
 
   const isMobile = useIsMobile()
-  const { height } = useWindowSize()
   const [mobileView, setMobileView] = useState<'main' | 'highlighter' | 'link'>(
     'main'
   )
-  const toolbarRef = useRef<HTMLDivElement>(null)
-  const [toolbarHeight, setToolbarHeight] = useState(0)
 
   const { editor } = useRichTextEditor({
     value,
@@ -225,25 +220,6 @@ export function RichTextEditor({
     placeholder,
     disabled,
     undoRedo,
-  })
-
-  useEffect(() => {
-    if (!toolbarRef.current) return
-
-    const updateHeight = () => {
-      setToolbarHeight(toolbarRef.current?.getBoundingClientRect().height ?? 0)
-    }
-
-    updateHeight()
-    const resizeObserver = new ResizeObserver(updateHeight)
-    resizeObserver.observe(toolbarRef.current)
-
-    return () => resizeObserver.disconnect()
-  }, [])
-
-  const rect = useCursorVisibility({
-    editor,
-    overlayHeight: toolbarHeight,
   })
 
   // Reset mobile view when switching to desktop, using the
@@ -299,16 +275,11 @@ export function RichTextEditor({
       style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
     >
       <EditorContext.Provider value={{ editor }}>
-        <Toolbar
-          ref={toolbarRef}
-          style={{
-            ...(isMobile
-              ? {
-                  bottom: `calc(100% - ${height - rect.y}px)`,
-                }
-              : {}),
-          }}
-        >
+        {/* The toolbar stays at the top of its editor on every width. The
+            TipTap template pins it to the screen bottom on phones, which
+            suits a full-page editor but detached it from these embedded
+            ones (sheet fields, the notes card) and left it over the page. */}
+        <Toolbar>
           {mobileView === 'main' ? (
             <MainToolbarContent
               onHighlighterClick={() => setMobileView('highlighter')}

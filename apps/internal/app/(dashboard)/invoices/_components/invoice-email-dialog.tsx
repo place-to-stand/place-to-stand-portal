@@ -244,7 +244,7 @@ function InvoiceEmailForm({
           <Skeleton className='h-40 w-full' />
         </div>
       ) : (
-        <div className='grid min-h-0 flex-1 md:grid-cols-[480px_minmax(0,1fr)]'>
+        <div className='grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[480px_minmax(0,1fr)]'>
           <div className='flex min-h-0 flex-col md:border-r'>
             <RecipientField
               label='To'

@@ -12,7 +12,7 @@ export default function DashboardLoading() {
         <Skeleton className='h-4 w-88 max-w-full' />
       </div>
 
-      <div className='dash:grid-cols-2 grid items-start gap-6'>
+      <div className='dash:grid-cols-2 grid grid-cols-1 items-start gap-6'>
         {/* Account: hours rows + the invoices row */}
         <Skeleton className='h-44 w-full rounded-xl' />
         {/* Projects */}

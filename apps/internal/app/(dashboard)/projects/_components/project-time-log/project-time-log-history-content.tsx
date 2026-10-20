@@ -81,7 +81,7 @@ export function ProjectTimeLogHistoryContent(
         <EmptyState message='No time logged for this project yet.' />
       ) : (
         <div className='overflow-hidden rounded-lg border'>
-          <Table>
+          <Table stack>
             <TableHeader>
               <TableRow className='bg-muted/40'>
                 <TableHead className='min-w-28'>Logged on</TableHead>
@@ -163,7 +163,7 @@ function ProjectTimeLogHistoryRow(props: ProjectTimeLogHistoryRowProps) {
 
   return (
     <TableRow>
-      <TableCell>
+      <TableCell className='max-md:first:basis-auto'>
         <div className='flex flex-col'>
           <span className='font-medium'>{loggedDate}</span>
         </div>
@@ -171,7 +171,7 @@ function ProjectTimeLogHistoryRow(props: ProjectTimeLogHistoryRowProps) {
       <TableCell className='font-semibold'>
         {HOURS_FORMATTER.format(Number(log.hours ?? 0))} hrs
       </TableCell>
-      <TableCell>
+      <TableCell className='max-md:basis-full'>
         {visibleTaskLinks.length === 0 ? (
           <span className='text-muted-foreground text-sm'>
             Logged to project
@@ -189,7 +189,9 @@ function ProjectTimeLogHistoryRow(props: ProjectTimeLogHistoryRowProps) {
       <TableCell>
         <span className='line-clamp-2 text-sm'>{authorName}</span>
       </TableCell>
-      <TableCell>
+      <TableCell
+        className={cn('max-md:basis-full', !log.note && 'max-md:hidden')}
+      >
         {log.note ? (
           <span className='text-muted-foreground line-clamp-3 text-sm whitespace-pre-wrap'>
             {log.note}
@@ -198,7 +200,7 @@ function ProjectTimeLogHistoryRow(props: ProjectTimeLogHistoryRowProps) {
           <span className='text-muted-foreground text-sm'>—</span>
         )}
       </TableCell>
-      <TableCell className='text-right'>
+      <TableCell className='text-right max-md:ml-auto'>
         <div className='flex justify-end gap-2'>
           <RowActionButton
             type='button'

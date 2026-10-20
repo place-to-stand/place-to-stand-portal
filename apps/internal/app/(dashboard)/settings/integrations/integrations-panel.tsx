@@ -17,7 +17,7 @@ import {
   ConnectedAccountsList,
   type ConnectedAccount,
 } from '@/components/integrations/connected-accounts-list'
-import { MercuryIntegrationCard } from '@/components/integrations/mercury-integration-card'
+import { CompanyServicesList } from '@/components/integrations/company-services-list'
 import { TokenIntegrationCard } from '@/components/integrations/token-integration-card'
 
 function SimpleIcon({
@@ -246,13 +246,6 @@ export function IntegrationsPanel() {
   return (
     <div className='space-y-8'>
       <IntegrationSection
-        title='Company'
-        description='Shared by everyone. Set in the server environment.'
-      >
-        <MercuryIntegrationCard />
-      </IntegrationSection>
-
-      <IntegrationSection
         title='Personal'
         description='Your own accounts. Everyone connects their own.'
       >
@@ -357,6 +350,14 @@ export function IntegrationsPanel() {
           description='Connect your Supabase account to link databases to projects.'
         />
       </IntegrationSection>
+
+      <IntegrationSection
+        title='Company'
+        description='Shared by everyone. Set in the internal app’s Vercel environment, then redeploy.'
+        fullWidth
+      >
+        <CompanyServicesList />
+      </IntegrationSection>
     </div>
   )
 }
@@ -364,10 +365,13 @@ export function IntegrationsPanel() {
 function IntegrationSection({
   title,
   description,
+  fullWidth,
   children,
 }: {
   title: string
   description: string
+  /** One full-width block instead of the two-column card grid. */
+  fullWidth?: boolean
   children: ReactNode
 }) {
   const headingId = `integrations-${title.toLowerCase()}`
@@ -379,7 +383,13 @@ function IntegrationSection({
         </h2>
         <p className='text-muted-foreground text-sm'>{description}</p>
       </div>
-      <div className='grid items-start gap-4 lg:grid-cols-2'>{children}</div>
+      {fullWidth ? (
+        children
+      ) : (
+        <div className='grid grid-cols-1 items-start gap-4 lg:grid-cols-2'>
+          {children}
+        </div>
+      )}
     </section>
   )
 }

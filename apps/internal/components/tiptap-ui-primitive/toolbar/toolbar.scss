@@ -2,7 +2,6 @@
   // 2.75rem left ~6px of dead space above and below a 2rem button row. 2.25rem
   // keeps a 2px collar without the toolbar reading as a padded band.
   --tt-toolbar-height: 2.25rem;
-  --tt-safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --tt-toolbar-bg-color: var(--white);
   --tt-toolbar-border-color: var(--tt-gray-light-a-100);
 }
@@ -56,13 +55,10 @@
       display: none;
     }
 
+    // Phones keep the toolbar at the top of its editor and scroll it
+    // sideways. (The TipTap template pinned it to the screen bottom here,
+    // which only suits a full-page editor.)
     @media (max-width: 480px) {
-      position: absolute;
-      top: auto;
-      height: calc(var(--tt-toolbar-height) + var(--tt-safe-area-bottom));
-      border-top: 1px solid var(--tt-toolbar-border-color);
-      border-bottom: none;
-      padding: 0 0.5rem var(--tt-safe-area-bottom);
       flex-wrap: nowrap;
       justify-content: flex-start;
 

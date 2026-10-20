@@ -59,7 +59,12 @@ export function ProjectsTableSection({
 
   return (
     <div className='overflow-hidden rounded-lg border'>
-      <Table density='compact' layout='fixed'>
+      <Table
+        density='compact'
+        layout='fixed'
+        stack
+        className='md:min-w-[48rem]'
+      >
         <TableHeader>
           <TableRow className='bg-muted/40'>
             <SortableTableHead

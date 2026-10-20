@@ -68,7 +68,7 @@ export function CalendarHeader({
           </p>
         </div>
       </div>
-      <div className='flex grow items-center justify-end gap-4'>
+      <div className='flex grow flex-wrap items-center justify-end gap-x-4 gap-y-2'>
         <Button type='button' variant='outline' onClick={onGoToToday}>
           Today
         </Button>

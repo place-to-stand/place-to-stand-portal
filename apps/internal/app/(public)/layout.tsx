@@ -14,7 +14,7 @@ import { PublicFooter } from './_components/public-footer'
  */
 export default function PublicLayout({ children }: { children: ReactNode }) {
   return (
-    <div className='h-screen overflow-auto [color-scheme:dark]'>
+    <div className='h-dvh overflow-auto [color-scheme:dark]'>
       <div
         className='text-brand-text flex min-h-full flex-col'
         style={{ backgroundColor: BRAND.bg, ...BRAND_DOT_GRID }}

@@ -192,8 +192,10 @@ const SheetContent = React.forwardRef<
             // read as slower than the close it was paired with.
             'bg-background data-open:animate-in data-closed:animate-out data-closed:fill-mode-forwards pointer-events-auto fixed z-50 flex flex-col gap-4 shadow-lg transition ease-in-out data-closed:duration-300 data-open:duration-300',
             skipMountAnimation && 'data-open:animate-none',
+            // Entity sheets take the whole phone screen: at 3/4 of a 375px
+            // viewport their forms and editors were too cramped to use.
             side === 'right' &&
-              'data-closed:slide-out-to-right data-open:slide-in-from-right inset-y-0 right-0 h-full w-3/4 border-l',
+              'data-closed:slide-out-to-right data-open:slide-in-from-right inset-y-0 right-0 h-full w-full border-l sm:w-3/4',
             side === 'left' &&
               'data-closed:slide-out-to-left data-open:slide-in-from-left inset-y-0 left-0 h-full w-3/4 border-r',
             side === 'top' &&

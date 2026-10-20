@@ -71,7 +71,7 @@ export function ReviewAcceptedSection({
         </div>
       </div>
       <div className='px-2 pt-1 pb-2'>
-        <Table density='compact'>
+        <Table density='compact' stack>
           <TableHeader>
             <TableRow className='bg-muted/40'>
               <TableHead>Task</TableHead>
@@ -130,7 +130,7 @@ export function ReviewAcceptedSection({
                       renderAssignees={renderAssignees}
                       updatedAtOverride={updatedOverride}
                     />
-                    <TableCell className='text-right'>
+                    <TableCell className='text-right max-md:ml-auto'>
                       <DisabledFieldTooltip
                         disabled={Boolean(disabledReason)}
                         reason={disabledReason}

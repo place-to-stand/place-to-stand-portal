@@ -12,6 +12,7 @@ export type CloseDriftDelta = {
   section:
     | 'prepaidBilling'
     | 'net30Billing'
+    | 'salesTax'
     | 'payroll'
     | 'origination'
     | 'closer'
@@ -182,6 +183,10 @@ export function computeDeltas(
   push('summary', 'Work billable total', 'amount', snapshot.workBillableTotal, live.workBillableTotal)
   push('summary', 'Combined billing in', 'amount', snapshot.combinedBillingTotal, live.combinedBillingTotal)
   push('summary', 'Combined payouts', 'amount', snapshot.combinedPayoutTotal, live.combinedPayoutTotal)
+
+  // A late Stripe payment or an edited rate moves what's owed to the state.
+  push('salesTax', 'Sales tax collected', 'amount', snapshot.salesTax.totalAmount, live.salesTax.totalAmount)
+  push('salesTax', 'Taxable sales', 'amount', snapshot.salesTax.totalTaxable, live.salesTax.totalTaxable)
 
   // ---- Rate schedule: an edit here silently re-prices every payout ----
   push('rates', 'Billable rate', 'rate', snapshot.rates.billablePerHour, live.rates.billablePerHour)

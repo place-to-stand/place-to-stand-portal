@@ -47,7 +47,12 @@ export function UsersTableSection({
 
   return (
     <div className='overflow-hidden rounded-lg border'>
-      <Table density='compact' layout='fixed'>
+      <Table
+        density='compact'
+        layout='fixed'
+        stack
+        className='md:min-w-[50rem]'
+      >
         <TableHeader>
           <TableRow className='bg-muted/40'>
             <SortableTableHead
@@ -77,9 +82,7 @@ export function UsersTableSection({
             </SortableTableHead>
             {/* Sized to the row's buttons: two at most in either mode
                 (preview + archive, or restore + delete). */}
-            <TableHead className='w-24 text-right'>
-              Actions
-            </TableHead>
+            <TableHead className='w-24 text-right'>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

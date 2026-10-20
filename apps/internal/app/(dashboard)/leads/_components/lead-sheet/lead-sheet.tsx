@@ -49,9 +49,10 @@ export function LeadSheet(props: LeadSheetProps) {
           size='2xl'
           className={cn(
             'flex h-full w-full flex-col gap-0 overflow-hidden p-0',
-            // Edit mode appends the fixed-width task sidebar (320px, 384px at
-            // lg) while the form column stays at the same 672px as add mode.
-            isEditing && 'sm:max-w-[992px] lg:max-w-[1056px]'
+            // Edit mode appends the fixed-width task sidebar (384px) while the
+            // form column stays at the same 672px as add mode. Below lg the
+            // sidebar stacks under the form, so the sheet keeps its add width.
+            isEditing && 'lg:max-w-[1056px]'
           )}
         >
           {/* Header */}
@@ -61,21 +62,23 @@ export function LeadSheet(props: LeadSheetProps) {
             className='flex-shrink-0'
           />
 
-          {/* Two Column Layout */}
+          {/* Two Column Layout. Below lg the columns stack into one scroll
+              (fields, then the right column) with the footer pinned to the
+              bottom: side by side, the form column was too narrow to use. */}
           <Form {...form}>
             <form
               id={LEAD_FORM_ID}
-              className='flex min-h-0 flex-1'
+              className='flex min-h-0 flex-1 max-lg:flex-col max-lg:overflow-y-auto'
               onSubmit={form.handleSubmit(handleFormSubmit)}
             >
               {/* Left Column - Form Fields */}
               <div
                 className={cn(
-                  'flex flex-1 flex-col overflow-hidden',
-                  isEditing && lead && 'border-r'
+                  'flex flex-1 flex-col overflow-hidden max-lg:contents',
+                  isEditing && lead && 'lg:border-r'
                 )}
               >
-                <div className='flex-1 overflow-y-auto p-6'>
+                <div className='flex-1 p-6 lg:overflow-y-auto'>
                   <LeadSheetFormFields
                     control={form.control}
                     assignees={assignees}
@@ -84,21 +87,23 @@ export function LeadSheet(props: LeadSheetProps) {
                 </div>
 
                 {/* Footer - Attached to left column */}
-                <SheetFormFooter
-                  formId={LEAD_FORM_ID}
-                  saveLabel={saveLabel}
-                  submitDisabled={submitDisabled}
-                  submitDisabledReason={submitDisabledReason}
-                  undo={undo}
-                  redo={redo}
-                  canUndo={canUndo}
-                  canRedo={canRedo}
-                  isEditing={isEditing}
-                  deleteDisabled={submitDisabled}
-                  deleteDisabledReason={archiveDisabledReason}
-                  onRequestDelete={() => setArchiveDialogOpen(true)}
-                  deleteAriaLabel='Archive lead'
-                />
+                <div className='max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:order-last'>
+                  <SheetFormFooter
+                    formId={LEAD_FORM_ID}
+                    saveLabel={saveLabel}
+                    submitDisabled={submitDisabled}
+                    submitDisabledReason={submitDisabledReason}
+                    undo={undo}
+                    redo={redo}
+                    canUndo={canUndo}
+                    canRedo={canRedo}
+                    isEditing={isEditing}
+                    deleteDisabled={submitDisabled}
+                    deleteDisabledReason={archiveDisabledReason}
+                    onRequestDelete={() => setArchiveDialogOpen(true)}
+                    deleteAriaLabel='Archive lead'
+                  />
+                </div>
               </div>
 
               {/* Right Column - Conversion, tasks, updates (only for editing) */}

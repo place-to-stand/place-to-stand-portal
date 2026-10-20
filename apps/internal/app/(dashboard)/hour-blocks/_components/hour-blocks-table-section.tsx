@@ -75,7 +75,12 @@ export function HourBlocksTableSection({
 
   return (
     <div className='overflow-hidden rounded-lg border'>
-      <Table density='compact' layout='fixed'>
+      <Table
+        density='compact'
+        layout='fixed'
+        stack
+        className='md:min-w-[42rem]'
+      >
         <TableHeader>
           <TableRow className='bg-muted/40'>
             <TableHead className='w-[34%]'>Client</TableHead>
@@ -154,7 +159,7 @@ export function HourBlocksTableSection({
                     <p className='text-destructive text-xs'>Client archived</p>
                   ) : null}
                 </TableCell>
-                <TableCell className='text-sm'>
+                <TableCell label='Invoice' className='text-sm'>
                   {block.invoice_id && block.invoice_number ? (
                     <Link
                       href={invoiceHref(block.invoice_id)}
@@ -168,7 +173,7 @@ export function HourBlocksTableSection({
                     </span>
                   )}
                 </TableCell>
-                <TableCell className='text-sm'>
+                <TableCell label='Hours' className='text-sm'>
                   <span className='inline-flex items-center gap-1.5'>
                     {toHours(block.hours_purchased)}
                     {block.notes ? (
@@ -188,10 +193,13 @@ export function HourBlocksTableSection({
                     ) : null}
                   </span>
                 </TableCell>
-                <TableCell className='text-muted-foreground text-sm'>
+                <TableCell
+                  label='Created'
+                  className='text-muted-foreground text-sm'
+                >
                   {formatTimestamp(block.created_at)}
                 </TableCell>
-                <TableCell className='text-right'>
+                <TableCell className='text-right max-md:ml-auto'>
                   <div className='flex justify-end gap-2'>
                     {showRestore ? (
                       <DisabledFieldTooltip

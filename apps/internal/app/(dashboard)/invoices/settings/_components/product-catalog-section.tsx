@@ -82,11 +82,15 @@ function ProductRow({
   return (
     <TableRow>
       <TableCell className='truncate font-medium'>{item.name}</TableCell>
-      <TableCell>${item.unit_price}</TableCell>
-      <TableCell className='truncate'>{item.unit_label}</TableCell>
-      <TableCell>{item.min_quantity ?? '\u2014'}</TableCell>
-      <TableCell>{item.creates_hour_block_default ? 'Yes' : 'No'}</TableCell>
-      <TableCell>
+      <TableCell label='Price'>${item.unit_price}</TableCell>
+      <TableCell label='Unit' className='truncate'>
+        {item.unit_label}
+      </TableCell>
+      <TableCell label='Min qty'>{item.min_quantity ?? '\u2014'}</TableCell>
+      <TableCell label='Hour block'>
+        {item.creates_hour_block_default ? 'Yes' : 'No'}
+      </TableCell>
+      <TableCell label='Active'>
         <Switch
           size='sm'
           checked={item.is_active}
@@ -94,7 +98,7 @@ function ProductRow({
           onCheckedChange={() => onToggleActive(item)}
         />
       </TableCell>
-      <TableCell>
+      <TableCell className='max-md:ml-auto'>
         <RowActionButton
           label='Edit product'
           icon={<Pencil />}
@@ -303,7 +307,12 @@ export function ProductCatalogSection({
       </div>
 
       <div className='rounded-lg border'>
-        <Table density='compact' layout='fixed'>
+        <Table
+          density='compact'
+          layout='fixed'
+          stack
+          className='md:min-w-[38rem]'
+        >
           <TableHeader>
             <TableRow className='bg-muted/40'>
               <SortableTableHead

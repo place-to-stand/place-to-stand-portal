@@ -119,7 +119,7 @@ export function PageShell({
             ) : (
               <div />
             )}
-            <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6'>
+            <div className='flex items-center justify-end gap-3 sm:gap-6'>
               {count ? (
                 <span className='text-muted-foreground text-sm whitespace-nowrap'>
                   {count.filteredTotal !== undefined &&
