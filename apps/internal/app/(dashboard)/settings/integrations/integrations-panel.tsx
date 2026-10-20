@@ -246,14 +246,6 @@ export function IntegrationsPanel() {
   return (
     <div className='space-y-8'>
       <IntegrationSection
-        title='Company'
-        description='Shared by everyone. Set in the internal app’s Vercel environment, then redeploy.'
-        fullWidth
-      >
-        <CompanyServicesList />
-      </IntegrationSection>
-
-      <IntegrationSection
         title='Personal'
         description='Your own accounts. Everyone connects their own.'
       >
@@ -357,6 +349,14 @@ export function IntegrationsPanel() {
           provider='SUPABASE'
           description='Connect your Supabase account to link databases to projects.'
         />
+      </IntegrationSection>
+
+      <IntegrationSection
+        title='Company'
+        description='Shared by everyone. Set in the internal app’s Vercel environment, then redeploy.'
+        fullWidth
+      >
+        <CompanyServicesList />
       </IntegrationSection>
     </div>
   )
