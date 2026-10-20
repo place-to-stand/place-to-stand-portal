@@ -32,13 +32,41 @@ declare const process: { env?: { NODE_ENV?: string } } | undefined
 // output is discarded whenever there is no valid child.
 const NO_CHILD = <span />
 
+const REACT_LAZY_TYPE = Symbol.for('react.lazy')
+
+type LazyNode = {
+  $$typeof: symbol
+  _payload: PromiseLike<React.ReactNode>
+}
+
+/**
+ * When a server component hands this client component a child that is itself
+ * a client component (`<Button asChild><Link …/></Button>` in a page), the RSC
+ * payload can deliver that child as a lazy node wrapping a pending chunk
+ * rather than an element. `isValidElement` rejects it, so without unwrapping,
+ * SSR renders nothing while the browser (chunk already resolved) renders the
+ * link — a hydration mismatch. Radix's Slot unwraps the same way.
+ */
+function isLazyNode(node: React.ReactNode): node is React.ReactNode & LazyNode {
+  return (
+    typeof node === 'object' &&
+    node !== null &&
+    (node as Partial<LazyNode>).$$typeof === REACT_LAZY_TYPE &&
+    typeof (node as Partial<LazyNode>)._payload?.then === 'function'
+  )
+}
+
 function Slot({
-  children,
+  children: rawChildren,
   ref,
   ...props
 }: React.ComponentProps<'span'> & {
   ref?: React.Ref<HTMLElement>
 }) {
+  // `use` may be called conditionally, unlike the other hooks.
+  const children = isLazyNode(rawChildren)
+    ? React.use(rawChildren._payload)
+    : rawChildren
   const child = React.isValidElement(children) ? children : null
 
   if (process?.env?.NODE_ENV !== 'production' && children != null && !child) {
