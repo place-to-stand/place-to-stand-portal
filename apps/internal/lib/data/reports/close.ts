@@ -711,7 +711,13 @@ export type MonthlyCloseView = {
     closedByName?: string | null
     /** Set when the persisted snapshot failed validation (F9). */
     snapshotError?: string
-    drift?: CloseDrift | null
+    /**
+     * Streamed, not awaited: the profit-share half re-reads the Mercury
+     * month-end balance, which scans every transaction since the month
+     * ended and must not hold up a report already frozen in the snapshot.
+     * Resolves to null when the check itself fails.
+     */
+    drift?: Promise<CloseDrift | null> | null
     /**
      * True when a closed month predates frozen sales tax, so the figure shown
      * is the live one rather than the one captured at close.
@@ -890,12 +896,16 @@ export async function fetchMonthlyCloseView(
     salesTax: parsed.report.salesTax ?? live.salesTax,
   }
 
-  const drift = await computeDrift(frozen, live, {
+  const drift = computeDrift(frozen, live, {
     year,
     month,
     closedAt: snapshot.closedAt,
     frozenProfitShare: parsed.profitShare,
     balance,
+  }).catch((error: unknown) => {
+    // A failed drift check must not take the frozen report down with it.
+    console.error('Monthly close drift check failed', error)
+    return null
   })
 
   const profitShare: ProfitShareState = parsed.profitShare

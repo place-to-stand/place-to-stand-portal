@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { getMonth, getYear } from 'date-fns'
 
 import { formatCalendarDate } from '@pts/ui/dates'
@@ -15,7 +16,6 @@ import { loadStripeFees } from '@/lib/stripe/fees'
 
 import { BillingInCard } from './_components/billing-in-card'
 import { CloseControls } from './_components/close-controls'
-import { DriftNotice } from './_components/drift-notice'
 import { FormulaNotice } from './_components/formula-notice'
 import { PartnerPayoutsTable } from './_components/partner-payouts-table'
 import { buildPayoutTable } from './_components/payout-rows'
@@ -27,7 +27,11 @@ import {
 } from './_components/report-navigation'
 import { ReportToolbar } from './_components/report-toolbar'
 import { SalesTaxCard } from './_components/sales-tax-card'
-import { StripeFeesCard } from './_components/stripe-fees-card'
+import {
+  StreamedDriftNotice,
+  StreamedStripeFeesCard,
+  StripeFeesCardSkeleton,
+} from './_components/streamed'
 import { SnapshotErrorNotice } from './_components/snapshot-error-notice'
 import { SummaryStrip } from './_components/summary-strip'
 
@@ -66,12 +70,13 @@ export default async function MonthlyClosePage({
   const closeMonthNumber = validMonth + 1
   const monthKey = `${validYear}-${String(closeMonthNumber).padStart(2, '0')}`
 
-  // Stripe is read alongside the report so its round trip overlaps the
-  // database reads.
-  const [{ report, close, profitShare }, stripeFees] = await Promise.all([
-    fetchMonthlyCloseView(validYear, closeMonthNumber),
-    loadStripeFees(validYear, closeMonthNumber),
-  ])
+  // Started before the report is awaited so the round trip overlaps the
+  // database reads; the card streams in when Stripe answers.
+  const stripeFees = loadStripeFees(validYear, closeMonthNumber)
+  const { report, close, profitShare } = await fetchMonthlyCloseView(
+    validYear,
+    closeMonthNumber
+  )
 
   // Date-only strings format in UTC, so labels never drift a month.
   const displayMonth =
@@ -116,12 +121,16 @@ export default async function MonthlyClosePage({
   const bookkeepingCards = (
     <>
       <SalesTaxCard salesTax={report.salesTax} isLive={close.salesTaxIsLive} />
-      <StripeFeesCard
-        state={stripeFees}
-        entryDate={entryDateLabel}
-        monthLabel={shortMonthLabel}
-        inProgress={isCurrentMonth}
-      />
+      {/* Keyed by month: a new boundary shows its skeleton at once, where a
+          reused one would hold the whole month switch until Stripe answers. */}
+      <Suspense key={monthKey} fallback={<StripeFeesCardSkeleton />}>
+        <StreamedStripeFeesCard
+          state={stripeFees}
+          entryDate={entryDateLabel}
+          monthLabel={shortMonthLabel}
+          inProgress={isCurrentMonth}
+        />
+      </Suspense>
     </>
   )
   const rateSplitCard = <RateSplitCard report={report} />
@@ -158,13 +167,15 @@ export default async function MonthlyClosePage({
               <SnapshotErrorNotice message={close.snapshotError} />
             ) : null}
 
-            {close.status === 'closed' && close.drift?.hasDrift ? (
-              <DriftNotice
-                year={validYear}
-                month={closeMonthNumber}
-                displayMonth={displayMonth}
-                drift={close.drift}
-              />
+            {close.status === 'closed' && close.drift ? (
+              <Suspense key={monthKey} fallback={null}>
+                <StreamedDriftNotice
+                  year={validYear}
+                  month={closeMonthNumber}
+                  displayMonth={displayMonth}
+                  drift={close.drift}
+                />
+              </Suspense>
             ) : null}
 
             {isOlderFormula ? (
