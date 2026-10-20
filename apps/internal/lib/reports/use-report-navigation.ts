@@ -20,6 +20,11 @@ type UseReportNavigationOptions = {
 type UseReportNavigationResult = {
   /** The month being viewed, 1-indexed. */
   cursor: MonthCursor
+  /**
+   * A month was picked whose report hasn't arrived yet. The page underneath
+   * still shows the previous month until it does.
+   */
+  isPending: boolean
   goToMonth: (cursor: MonthCursor) => void
   goToPrevMonth: () => void
   goToNextMonth: () => void
@@ -204,6 +209,7 @@ export function useReportNavigation({
 
   return {
     cursor,
+    isPending: targetMonth !== null,
     goToMonth,
     goToPrevMonth,
     goToNextMonth,
