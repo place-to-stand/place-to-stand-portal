@@ -98,7 +98,7 @@ export function ContactsTableSection({
         density='compact'
         layout='fixed'
         stack
-        className='md:min-w-[44rem]'
+        className='md:min-w-[50rem]'
       >
         <TableHeader>
           <TableRow className='bg-muted/40'>
