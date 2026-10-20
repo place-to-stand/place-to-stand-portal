@@ -6,6 +6,19 @@ import { getSupabaseServiceClient } from '@/lib/supabase/service'
 
 const SIGN_IN_HINT = 'Run `pts login` to authenticate.'
 
+/** How a bearer-token surface names itself in the errors it returns. */
+export type BearerSurface = {
+  /** Product name used in copy, e.g. "the CLI". */
+  name: string
+  /** Appended to authentication failures, e.g. "Run `pts login`…". */
+  signInHint: string
+}
+
+const CLI_SURFACE: BearerSurface = {
+  name: 'the CLI',
+  signInHint: SIGN_IN_HINT,
+}
+
 function readBearerToken(request: Request): string | null {
   const header = request.headers.get('authorization')
 
@@ -25,6 +38,58 @@ function readBearerToken(request: Request): string | null {
 }
 
 /**
+ * Resolve the admin behind a Supabase access token. Shared by every bearer
+ * surface (the CLI, the MCP server) so they cannot drift on who is admitted.
+ *
+ * `auth.getUser` validates the token against Supabase rather than just
+ * checking its signature, so a revoked session or OAuth grant stops working
+ * immediately instead of at token expiry.
+ */
+export async function resolveAdminFromToken(
+  token: string,
+  surface: BearerSurface
+): Promise<AppUser> {
+  const supabase = getSupabaseServiceClient()
+  const { data, error } = await supabase.auth.getUser(token)
+
+  if (error || !data.user?.id) {
+    throw new UnauthorizedError(
+      `Invalid or expired token. ${surface.signInHint}`
+    )
+  }
+
+  // Mirrors the proxy's force-reset gate: a user who must set a new password
+  // is mid-way through provisioning and should not be acting through the API.
+  if (data.user.user_metadata?.must_reset_password) {
+    throw new ForbiddenError(
+      `This account must reset its password in the portal before using ${surface.name}.`
+    )
+  }
+
+  const user = await loadAppUserById(data.user.id)
+
+  // The auth record outlived the profile — deleted, disabled, or never
+  // provisioned. Treat it as unauthenticated rather than leaking which.
+  if (!user) {
+    throw new UnauthorizedError(
+      `Account is not active. ${surface.signInHint}`
+    )
+  }
+
+  if (user.role !== 'ADMIN') {
+    throw new ForbiddenError(
+      `${capitalize(surface.name)} is available to admin users only.`
+    )
+  }
+
+  return user
+}
+
+function capitalize(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1)
+}
+
+/**
  * Resolve the admin behind a CLI request from its bearer token.
  *
  * Deliberately does not use `requireUser()`: that redirects rather than
@@ -40,32 +105,5 @@ export async function resolveCliUser(request: Request): Promise<AppUser> {
     throw new UnauthorizedError(`Missing bearer token. ${SIGN_IN_HINT}`)
   }
 
-  const supabase = getSupabaseServiceClient()
-  const { data, error } = await supabase.auth.getUser(token)
-
-  if (error || !data.user?.id) {
-    throw new UnauthorizedError(`Invalid or expired token. ${SIGN_IN_HINT}`)
-  }
-
-  // Mirrors the proxy's force-reset gate: a user who must set a new password
-  // is mid-way through provisioning and should not be acting through the API.
-  if (data.user.user_metadata?.must_reset_password) {
-    throw new ForbiddenError(
-      'This account must reset its password in the portal before using the CLI.'
-    )
-  }
-
-  const user = await loadAppUserById(data.user.id)
-
-  // The auth record outlived the profile — deleted, disabled, or never
-  // provisioned. Treat it as unauthenticated rather than leaking which.
-  if (!user) {
-    throw new UnauthorizedError(`Account is not active. ${SIGN_IN_HINT}`)
-  }
-
-  if (user.role !== 'ADMIN') {
-    throw new ForbiddenError('The CLI is available to admin users only.')
-  }
-
-  return user
+  return resolveAdminFromToken(token, CLI_SURFACE)
 }
