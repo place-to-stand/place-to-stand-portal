@@ -119,7 +119,7 @@ function EmailSheetBody({ entry }: { entry: EmailTemplateEntry }) {
 
       <TemplateSheetFooter title='Sending' summary={entry.overview}>
         <p className='text-sm'>{entry.description}</p>
-        <dl className='grid gap-x-6 gap-y-3.5 text-sm sm:grid-cols-2'>
+        <dl className='grid grid-cols-1 gap-x-6 gap-y-3.5 text-sm sm:grid-cols-2'>
           <Field label='Triggered by'>
             <ul className='flex flex-col gap-1'>
               {entry.triggers.map(trigger => (

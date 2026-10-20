@@ -184,7 +184,7 @@ export function ContactSheetForm({
                 </FormItem>
               )}
             />
-            <div className='grid items-start gap-4 sm:grid-cols-2'>
+            <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
               <FormField
                 control={form.control}
                 name='email'

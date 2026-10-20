@@ -4,7 +4,8 @@ import { useMemo, useState } from 'react'
 import {
   DndContext,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   closestCorners,
   useSensor,
   useSensors,
@@ -46,7 +47,11 @@ export function DashboardWidgetGrid({
     [gridElement]
   )
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+    // Press-and-hold on touch, so a swipe still scrolls the page.
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 250, tolerance: 5 },
+    }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   )
 

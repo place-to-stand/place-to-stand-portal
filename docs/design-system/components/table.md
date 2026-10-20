@@ -1,10 +1,13 @@
 # Table
 
-The data table: plain semantic markup with shadcn styling and two options, `density` and `layout`. From `@pts/ui/table`.
+The data table: plain semantic markup with shadcn styling and three options, `density`, `layout` and `stack`. From `@pts/ui/table`.
 
 **Look:** `text-sm`, rows `border-b hover:bg-muted/50`, selected `bg-muted`. `TableHead` is `h-10 px-2 font-medium text-foreground`; `TableCell` is `p-2`. `density="compact"`: heads `h-8 text-xs`, cells `px-2 py-1.5`. `TableFooter` is `bg-muted/50 border-t font-medium`. Cells are `whitespace-nowrap`.
 
+**Phones (`stack`):** below `md` a stacked table drops its header and turns each row into a compact card: the first cell is a full-width title line and the rest wrap beneath it. Pass `label` to a cell whose value needs a name once the header is gone ("Hours", "Last sign-in"); self-describing values (badges, icon + text) go without. Give the actions cell `max-md:ml-auto`, and drop an empty cell with `max-md:hidden` rather than showing a lone dash. A cell that should lead the card instead of the first one takes `max-md:order-first max-md:basis-full` (the first cell then needs `max-md:first:basis-auto`).
+
 **Rules**
+- Every list table sets `stack`. A grid read across its columns (the monthly close payouts) keeps its columns instead and scrolls inside its card from a floor width.
 - Every sortable table sets `layout='fixed'`, gives each `TableHead` a width class, and puts `truncate` on long-text cells, so sorting and paging can't make columns jump. (Unwidthed columns split leftover space equally — set widths before switching.)
 - Numbers (hours, money, counts) are right-aligned with `tabular-nums`.
 - Dates render through `formatCalendarDate` ("Sep 23, 2026").

@@ -147,3 +147,4 @@ Signed-out screens (`AuthShell`) are always dark, whatever the user's theme, bec
 12. **Pick a size, don't override it.** Buttons take `size` (`xs` 28px, `sm` 32px, default 36px, `icon-sm`), Avatars take `size` (`xs`–`lg`, initials scale with it). No `h-*` or `text-[9px]` overrides.
 13. **Focus is `focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]`** on every custom interactive element. Never remove the outline without that replacement.
 14. **Toasts:** success is short and past tense ("Invoice sent"); failure is "Unable to <verb> <noun>" with the reason in the description. No "Failed to…", "Error", "…successfully", or exclamation marks.
+15. **A responsive grid declares its phone column.** Write `grid grid-cols-1 lg:grid-cols-2`, never a bare `grid lg:grid-cols-2`: the implicit column grows to its widest child (an editor toolbar, a row of amounts) and pushes the whole page sideways on a phone.

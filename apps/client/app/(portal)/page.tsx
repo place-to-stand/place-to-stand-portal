@@ -82,7 +82,7 @@ export default async function DashboardPage() {
             {/* items-start, so each card is only as tall as its content. The
                 two columns are aligned by their SummaryHeader rows sharing a
                 min-height, not by stretching the cards. */}
-            <div className='dash:grid-cols-2 grid items-start gap-6'>
+            <div className='dash:grid-cols-2 grid grid-cols-1 items-start gap-6'>
               <AccountCard
                 clientId={section.client.id}
                 hoursSummary={section.hoursSummary}

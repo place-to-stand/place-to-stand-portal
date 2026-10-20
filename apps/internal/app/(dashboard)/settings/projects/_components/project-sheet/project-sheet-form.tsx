@@ -302,7 +302,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
               />
             ) : null}
           </div>
-          <div className='grid items-start gap-4 sm:grid-cols-2'>
+          <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
             <FormField
               control={form.control}
               name='projectType'
@@ -364,7 +364,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
               )}
             />
           </div>
-          <div className='grid gap-4 sm:grid-cols-2'>
+          <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
             <FormField
               control={form.control}
               name='startsOn'
@@ -413,7 +413,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
             />
           </div>
 
-          <div className='grid items-start gap-4 sm:grid-cols-2'>
+          <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
             <FormField
               control={form.control}
               name='status'

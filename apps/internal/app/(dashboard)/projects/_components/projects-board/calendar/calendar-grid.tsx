@@ -45,9 +45,11 @@ export function CalendarGrid({
   todayCellRef,
   enableTaskCreation = true,
 }: CalendarGridProps) {
+  // Below md a seven-column month can't fit a task title, so the grid
+  // becomes an agenda: one row per day of the month, each naming its weekday.
   return (
     <div className='flex-1 px-4 py-6'>
-      <div className='grid grid-cols-7 gap-2 text-center text-xs font-semibold tracking-wide uppercase'>
+      <div className='grid grid-cols-7 gap-2 text-center text-xs font-semibold tracking-wide uppercase max-md:hidden'>
         {weekdayHeaders.map(({ label, isWeekend }) => (
           <span
             key={label}
@@ -60,7 +62,7 @@ export function CalendarGrid({
           </span>
         ))}
       </div>
-      <div className='mt-2 grid grid-cols-7 gap-2'>
+      <div className='mt-2 grid grid-cols-1 gap-2 md:grid-cols-7'>
         {days.map(day => (
           <CalendarDayCell
             key={day.key}
@@ -140,9 +142,9 @@ function CalendarDayCell({
         }
       }}
       className={cn(
-        'border-border bg-background flex h-full min-h-[140px] flex-col gap-2 rounded-lg border p-2 text-xs transition-shadow',
+        'border-border bg-background flex h-full flex-col gap-2 rounded-lg border p-2 text-xs transition-shadow md:min-h-[140px]',
         !day.isCurrentMonth &&
-          'border-muted-foreground/40 bg-muted/60 text-muted-foreground border-dashed',
+          'border-muted-foreground/40 bg-muted/60 text-muted-foreground border-dashed max-md:hidden',
         day.isWeekend &&
           (day.isCurrentMonth ? 'bg-secondary/20' : 'bg-secondary/10'),
         day.isWeekend && 'ring-secondary/30 ring-1',
@@ -158,6 +160,9 @@ function CalendarDayCell({
             !day.isCurrentMonth && 'text-muted-foreground'
           )}
         >
+          <span className='md:hidden'>
+            {formatCalendarDate(day.key, { weekday: 'short' })}{' '}
+          </span>
           {day.label}
         </span>
         {canManageTasks ? (

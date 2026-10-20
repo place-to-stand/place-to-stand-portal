@@ -60,7 +60,7 @@ export function InvoiceSheetRightColumn({
   const hasActions = isDraft || canEmailAgain || canRevert || canVoid
 
   return (
-    <div className='bg-muted/20 w-80 flex-shrink-0 overflow-y-auto lg:w-96'>
+    <div className='bg-muted/20 flex-shrink-0 max-lg:border-t lg:w-96 lg:overflow-y-auto'>
       <div className='space-y-6 p-6'>
         {/* A draft reserves the link's space; sending fills it in. */}
         {liveToken || isDraft ? (

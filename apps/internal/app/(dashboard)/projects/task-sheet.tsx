@@ -377,9 +377,9 @@ export function TaskSheet(props: TaskSheetProps) {
           <SheetFormHeader entity='task' title={sheetTitle} />
 
           {/* Two-column body */}
-          <div className='flex flex-1 overflow-hidden'>
+          <div className='relative flex flex-1 overflow-hidden'>
             {/* Left column: task content */}
-            <div className='flex h-full w-full flex-col sm:w-[672px] sm:shrink-0'>
+            <div className='flex h-full w-full min-w-0 flex-col sm:w-[672px] sm:shrink-0'>
               {/* Scrollable area */}
               <div
                 // pb-6 matches the px-6 the sections inside use, so the gap
@@ -539,7 +539,11 @@ export function TaskSheet(props: TaskSheetProps) {
                 inert={!isPlanningOpen}
                 className={cn(
                   'shrink-0 overflow-hidden transition-[width] duration-300 ease-in-out',
-                  isPlanningOpen ? 'w-[560px]' : 'w-0'
+                  isPlanningOpen ? 'w-[560px]' : 'w-0',
+                  // A phone has no room beside the task: the open panel
+                  // covers it instead, leaving the rail as its toggle.
+                  isPlanningOpen &&
+                    'max-sm:bg-background max-sm:absolute max-sm:inset-y-0 max-sm:right-9 max-sm:left-0 max-sm:z-10 max-sm:w-auto'
                 )}
               >
                 {hasPlanningMounted &&

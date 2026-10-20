@@ -137,6 +137,10 @@ export const LeadCard = memo(function LeadCard({
       className={cn(
         'group bg-card focus-visible:border-ring focus-visible:ring-ring/50 rounded-lg border p-4 text-left shadow-sm transition focus-visible:ring-[3px] focus-visible:outline-none',
         canManage ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
+        // A touch drag starts on press-and-hold; keep iOS from selecting the
+        // card's text or opening its callout menu first.
+        canManage &&
+          'pointer-coarse:select-none pointer-coarse:[-webkit-touch-callout:none]',
         isDragging && 'ring-primary ring-2',
         (isActive || isDragging) && 'border-primary/50 bg-primary/5 shadow-md',
         !isActive && !isDragging && ENTITY_ACCENTS.lead.card

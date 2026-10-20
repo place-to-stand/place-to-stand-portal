@@ -299,7 +299,7 @@ export function LeadsArchiveSection({
         <ResetFiltersButton show={hasActiveFilters} onReset={reset} />
       </FilterBar>
       <div className='rounded-lg border'>
-        <Table density='compact' layout='fixed'>
+        <Table density='compact' layout='fixed' stack>
           <TableHeader>
             <TableRow className='bg-muted/40'>
               <SortableTableHead
@@ -345,12 +345,22 @@ export function LeadsArchiveSection({
                   <TableCell className='truncate font-medium'>
                     {lead.contactName}
                   </TableCell>
-                  <TableCell className='truncate'>
+                  <TableCell
+                    className={cn(
+                      'truncate',
+                      !lead.companyName && 'max-md:hidden'
+                    )}
+                  >
                     {lead.companyName ?? (
                       <span className='text-muted-foreground/40'>—</span>
                     )}
                   </TableCell>
-                  <TableCell className='truncate'>
+                  <TableCell
+                    className={cn(
+                      'truncate',
+                      !lead.contactEmail && 'max-md:hidden'
+                    )}
+                  >
                     {lead.contactEmail ? (
                       <span className='text-muted-foreground text-sm'>
                         {lead.contactEmail}
@@ -359,17 +369,17 @@ export function LeadsArchiveSection({
                       <span className='text-muted-foreground/40'>—</span>
                     )}
                   </TableCell>
-                  <TableCell className='truncate'>
+                  <TableCell label='Last status' className='truncate'>
                     <span className='text-muted-foreground text-sm'>
                       {statusLabel}
                     </span>
                   </TableCell>
-                  <TableCell>
+                  <TableCell label='Archived'>
                     <span className='text-muted-foreground text-sm'>
                       {formatRelativeTime(lead.deletedAt)}
                     </span>
                   </TableCell>
-                  <TableCell className='text-right'>
+                  <TableCell className='text-right max-md:ml-auto'>
                     <div className='flex justify-end gap-2'>
                       <RowActionButton
                         label='Restore lead'

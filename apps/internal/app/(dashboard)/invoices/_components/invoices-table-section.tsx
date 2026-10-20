@@ -194,7 +194,7 @@ export function InvoicesTableSection({
 
   return (
     <div className='overflow-hidden rounded-lg border'>
-      <Table density='compact' layout='fixed'>
+      <Table density='compact' layout='fixed' stack>
         <TableHeader>
           <TableRow className='bg-muted/40'>
             <SortableTableHead
@@ -326,19 +326,22 @@ export function InvoicesTableSection({
                 <TableCell className='text-sm'>
                   {formatCurrency(invoice.total)}
                 </TableCell>
-                <TableCell>
+                <TableCell label='Hours'>
                   <InvoiceHourBlocksCell
                     hourBlocks={invoice.hour_blocks ?? []}
                     invoiceNumber={invoice.invoice_number}
                   />
                 </TableCell>
-                <TableCell className='text-muted-foreground text-sm'>
+                <TableCell
+                  label='Issued'
+                  className='text-muted-foreground text-sm'
+                >
                   {formatDate(invoice.issued_date)}
                 </TableCell>
-                <TableCell>
+                <TableCell label='Share link'>
                   <ShareLinkCell invoice={invoice} onRefresh={onRefresh} />
                 </TableCell>
-                <TableCell className='text-right'>
+                <TableCell className='text-right max-md:ml-auto'>
                   <div className='flex justify-end gap-2'>
                     {showArchive ? (
                       <DisabledFieldTooltip

@@ -379,7 +379,9 @@ function IntegrationSection({
         </h2>
         <p className='text-muted-foreground text-sm'>{description}</p>
       </div>
-      <div className='grid items-start gap-4 lg:grid-cols-2'>{children}</div>
+      <div className='grid grid-cols-1 items-start gap-4 lg:grid-cols-2'>
+        {children}
+      </div>
     </section>
   )
 }

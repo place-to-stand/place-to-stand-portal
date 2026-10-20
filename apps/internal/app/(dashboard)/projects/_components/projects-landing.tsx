@@ -410,7 +410,7 @@ export function ProjectsLanding({
         <TableCell>
           <div className='flex min-w-0 items-center'>
             {treeLine && (
-              <span className='text-muted-foreground/30 mr-2 w-4 shrink-0 text-center font-mono'>
+              <span className='text-muted-foreground/30 mr-2 w-4 shrink-0 text-center font-mono max-md:hidden'>
                 {treeLine}
               </span>
             )}
@@ -435,7 +435,7 @@ export function ProjectsLanding({
             </span>
           </div>
         </TableCell>
-        <TableCell className='align-middle'>
+        <TableCell label='Owner' className='align-middle'>
           <ProjectOwnerCell
             projectId={project.id}
             owner={project.owner}
@@ -443,7 +443,12 @@ export function ProjectsLanding({
             onOwnerChange={handleProjectOwnerChange}
           />
         </TableCell>
-        <TableCell className='align-middle'>
+        <TableCell
+          className={cn(
+            'align-middle',
+            externalLinks.length === 0 && 'max-md:hidden'
+          )}
+        >
           <div className='flex h-full flex-wrap items-center gap-1.5'>
             {externalLinks.length > 0 ? (
               externalLinks.map(link => (
@@ -467,7 +472,7 @@ export function ProjectsLanding({
             )}
           </div>
         </TableCell>
-        <TableCell className='text-right'>
+        <TableCell className='text-right max-md:ml-auto'>
           <div className='flex justify-end gap-2'>
             <RowActionButton
               label='Edit project'
@@ -505,7 +510,7 @@ export function ProjectsLanding({
 
   const renderProjectTable = (items: LandingProject[]) => (
     <div className='rounded-lg border'>
-      <Table density='compact' layout='fixed'>
+      <Table density='compact' layout='fixed' stack>
         <TableHeader>
           <TableRow className='bg-muted/40'>
             <SortableTableHead
@@ -543,11 +548,11 @@ export function ProjectsLanding({
     return (
       <TableRow
         key={`client-${client.id}`}
-        className='border-t-muted hover:bg-transparent'
+        className='border-t-muted hover:bg-transparent max-md:p-0'
       >
         <TableCell
           colSpan={6}
-          className='bg-blue-100 py-2.5 align-middle dark:bg-blue-500/8'
+          className='bg-blue-100 py-2.5 align-middle max-md:px-3 max-md:py-2.5 dark:bg-blue-500/8'
         >
           <div className='flex items-center gap-4'>
             <Link
@@ -603,7 +608,7 @@ export function ProjectsLanding({
   const clientSectionContent =
     clientSections.length > 0 ? (
       <div className='rounded-lg border'>
-        <Table density='compact' layout='fixed'>
+        <Table density='compact' layout='fixed' stack>
           <TableHeader>
             <TableRow className='bg-muted/40'>
               <SortableTableHead

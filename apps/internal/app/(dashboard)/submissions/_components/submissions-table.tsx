@@ -360,8 +360,14 @@ export function SubmissionsTable({
             column and the Source detail drop out (both are in the sheet) so
             the values that remain are readable at laptop widths, and the
             min width makes the container scroll instead of crushing columns
-            when the window is narrower still. */}
-        <Table density='compact' layout='fixed' className='min-w-[50rem]'>
+            when the window is narrower still. On a phone the rows stack,
+            led by the contact instead of the time. */}
+        <Table
+          density='compact'
+          layout='fixed'
+          stack
+          className='min-w-[50rem] max-md:min-w-0'
+        >
           <TableHeader>
             <TableRow className='bg-muted/40'>
               <SortableTableHead
@@ -416,6 +422,7 @@ export function SubmissionsTable({
                     )}
                   >
                     <TableCell
+                      className='max-md:first:basis-auto'
                       title={
                         formatCalendarDate(
                           submission.lastActivityAt,
@@ -451,7 +458,7 @@ export function SubmissionsTable({
                         {FORM_SUBMISSION_KIND_LABELS[submission.kind]}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className='max-md:order-first max-md:basis-full'>
                       {submission.contactName || submission.contactEmail ? (
                         // Single line so every row is the same height: the
                         // name truncates, the email collapses to a mailto
@@ -544,13 +551,16 @@ export function SubmissionsTable({
                       </div>
                     </TableCell>
                     {mode === 'archive' ? (
-                      <TableCell className='text-muted-foreground text-sm whitespace-nowrap'>
+                      <TableCell
+                        label='Archived'
+                        className='text-muted-foreground text-sm whitespace-nowrap'
+                      >
                         {submission.deletedAt
                           ? formatRelativeTime(submission.deletedAt)
                           : '—'}
                       </TableCell>
                     ) : null}
-                    <TableCell className='text-right'>
+                    <TableCell className='text-right max-md:ml-auto'>
                       <div className='flex justify-end gap-2'>
                         {unacknowledged ? (
                           <RowActionButton

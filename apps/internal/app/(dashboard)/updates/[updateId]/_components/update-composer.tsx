@@ -179,7 +179,7 @@ export function UpdateComposer({
   )
 
   return (
-    <div className='grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]'>
+    <div className='grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]'>
       <div className='space-y-4'>
         <UpdateToolbar
           clientName={clientName}

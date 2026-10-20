@@ -251,7 +251,7 @@ export function ClientsLanding({
     <>
       {sheet}
       <div className='rounded-lg border'>
-        <Table density='compact' layout='fixed'>
+        <Table density='compact' layout='fixed' stack>
           <TableHeader>
             <TableRow className='bg-muted/40'>
               <SortableTableHead
@@ -402,12 +402,12 @@ export function ClientsLanding({
                     <span className='text-muted-foreground/40 text-sm'>—</span>
                   )}
                 </TableCell>
-                <TableCell>
+                <TableCell label='Origination'>
                   <div className='flex items-center justify-center'>
                     <OriginatorAvatar client={client} />
                   </div>
                 </TableCell>
-                <TableCell>
+                <TableCell label='Closer'>
                   <div className='flex items-center justify-center'>
                     {client.closers.length > 0 ? (
                       <Tooltip>
@@ -446,7 +446,7 @@ export function ClientsLanding({
                     )}
                   </div>
                 </TableCell>
-                <TableCell className='text-right'>
+                <TableCell className='text-right max-md:ml-auto'>
                   <div className='flex justify-end gap-2'>
                     <RowActionButton
                       label='Edit client'

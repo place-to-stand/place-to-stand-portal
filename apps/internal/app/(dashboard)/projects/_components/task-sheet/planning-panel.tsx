@@ -478,7 +478,7 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
 
   if (isSessionLoading) {
     return (
-      <div className='bg-muted/50 flex h-full w-[560px] shrink-0 flex-col items-center justify-center border-l'>
+      <div className='bg-muted/50 flex h-full w-full shrink-0 flex-col items-center justify-center border-l sm:w-[560px]'>
         <Loader2 className='text-muted-foreground h-5 w-5 animate-spin' />
         <p className='text-muted-foreground mt-2 text-xs'>
           Loading planning session...
@@ -488,7 +488,7 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
   }
 
   return (
-    <div className='bg-muted/50 flex h-full w-[560px] shrink-0 flex-col border-l'>
+    <div className='bg-muted/50 flex h-full w-full shrink-0 flex-col border-l sm:w-[560px]'>
       {/* Repo link + Version nav */}
       <div className='flex items-center justify-between border-b px-4 py-2'>
         <a
