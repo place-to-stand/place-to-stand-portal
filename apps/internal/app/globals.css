@@ -14,8 +14,10 @@
 }
 
 @layer base {
+  /* dvh, not vh: on iOS 100vh is the height without Safari's toolbars, so a
+     100vh document is taller than the screen and iOS scrolls it. */
   html {
-    @apply h-screen overflow-hidden;
+    @apply h-dvh overflow-hidden;
     scrollbar-gutter: stable;
   }
 }

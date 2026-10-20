@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/react'
 
 import { AppProviders } from '@/components/providers/app-providers'
 import { SupabaseListener } from '@/components/providers/supabase-listener'
+import { ViewportScrollReset } from '@/components/layout/viewport-scroll-reset'
 import { cn } from '@/lib/utils'
 
 import './globals.css'
@@ -63,7 +64,7 @@ export default async function RootLayout({
       </head>
       <body
         className={cn(
-          'bg-background h-screen overflow-hidden font-sans antialiased',
+          'bg-background h-dvh overflow-hidden font-sans antialiased',
           geistSans.variable,
           geistMono.variable,
           spaceGrotesk.variable
@@ -71,6 +72,7 @@ export default async function RootLayout({
       >
         <AppProviders>
           <SupabaseListener />
+          <ViewportScrollReset />
           {children}
         </AppProviders>
         <Analytics />

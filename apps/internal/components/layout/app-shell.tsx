@@ -46,10 +46,10 @@ export function AppShell({
       <SidebarProvider
         defaultOpen={sidebarDefaultOpen}
         style={{ '--sidebar-width': '13rem' } as React.CSSProperties}
-        className='bg-muted h-screen min-h-0 overflow-hidden'
+        className='bg-muted h-dvh min-h-0 overflow-hidden'
       >
         <Sidebar user={user} badges={navBadges} />
-        <div className='flex h-screen min-h-0 min-w-0 flex-1 flex-col'>
+        <div className='flex h-dvh min-h-0 min-w-0 flex-1 flex-col'>
           {children}
         </div>
       </SidebarProvider>
