@@ -1,16 +1,17 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { ChevronLeft, ChevronRight, Lock } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Loader2, Lock } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import type { MonthCursor } from '@/lib/data/reports/types'
-import { useReportNavigation } from '@/lib/reports/use-report-navigation'
+import { cn } from '@/lib/utils'
 
 import { formatDay } from './format'
 import { MonthPicker } from './month-picker'
+import { useReportNavigationContext } from './report-navigation'
 
 type ReportToolbarProps = {
   minCursor: MonthCursor
@@ -38,6 +39,7 @@ export function ReportToolbar({
 }: ReportToolbarProps) {
   const {
     cursor,
+    isPending,
     goToMonth,
     goToPrevMonth,
     goToNextMonth,
@@ -46,7 +48,7 @@ export function ReportToolbar({
     canGoNext,
     minLimitLabel,
     maxLimitLabel,
-  } = useReportNavigation({ minCursor, maxCursor })
+  } = useReportNavigationContext()
 
   const isViewingToday =
     cursor.year === today.year && cursor.month === today.month
@@ -112,7 +114,17 @@ export function ReportToolbar({
           </DisabledFieldTooltip>
         </div>
 
-        {status === 'closed' ? (
+        {/* The badge and close controls describe the month on screen, which
+            is the previous one until the new report arrives. */}
+        {isPending ? (
+          <span
+            role='status'
+            className='text-muted-foreground flex items-center gap-2 text-sm'
+          >
+            <Loader2 className='size-4 animate-spin motion-reduce:animate-none' />
+            Loading…
+          </span>
+        ) : status === 'closed' ? (
           <>
             <Badge variant='outline'>
               <Lock />
@@ -131,13 +143,21 @@ export function ReportToolbar({
         )}
       </div>
 
-      {status === 'open' && isCurrentMonth ? (
-        <span className='text-muted-foreground text-sm'>
-          {closesAfterLabel}
-        </span>
-      ) : (
-        closeControls
-      )}
+      <div
+        inert={isPending}
+        className={cn(
+          'transition-opacity duration-200 motion-reduce:transition-none',
+          isPending && 'opacity-50'
+        )}
+      >
+        {status === 'open' && isCurrentMonth ? (
+          <span className='text-muted-foreground text-sm'>
+            {closesAfterLabel}
+          </span>
+        ) : (
+          closeControls
+        )}
+      </div>
     </div>
   )
 }
