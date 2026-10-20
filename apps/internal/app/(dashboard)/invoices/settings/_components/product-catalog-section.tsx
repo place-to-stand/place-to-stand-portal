@@ -307,7 +307,12 @@ export function ProductCatalogSection({
       </div>
 
       <div className='rounded-lg border'>
-        <Table density='compact' layout='fixed' stack>
+        <Table
+          density='compact'
+          layout='fixed'
+          stack
+          className='md:min-w-[38rem]'
+        >
           <TableHeader>
             <TableRow className='bg-muted/40'>
               <SortableTableHead

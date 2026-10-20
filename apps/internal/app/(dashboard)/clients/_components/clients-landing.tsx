@@ -251,7 +251,12 @@ export function ClientsLanding({
     <>
       {sheet}
       <div className='rounded-lg border'>
-        <Table density='compact' layout='fixed' stack>
+        <Table
+          density='compact'
+          layout='fixed'
+          stack
+          className='md:min-w-[62.5rem]'
+        >
           <TableHeader>
             <TableRow className='bg-muted/40'>
               <SortableTableHead

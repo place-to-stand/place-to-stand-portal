@@ -194,7 +194,12 @@ export function InvoicesTableSection({
 
   return (
     <div className='overflow-hidden rounded-lg border'>
-      <Table density='compact' layout='fixed' stack>
+      <Table
+        density='compact'
+        layout='fixed'
+        stack
+        className='md:min-w-[50rem]'
+      >
         <TableHeader>
           <TableRow className='bg-muted/40'>
             <SortableTableHead
@@ -231,10 +236,7 @@ export function InvoicesTableSection({
             <TableHead className='w-[22%]'>Share link</TableHead>
             {/* Sized to the row's buttons: one in active, two in archive. */}
             <TableHead
-              className={cn(
-                'text-right',
-                mode === 'archive' ? 'w-24' : 'w-16'
-              )}
+              className={cn('text-right', mode === 'archive' ? 'w-24' : 'w-16')}
             >
               Actions
             </TableHead>

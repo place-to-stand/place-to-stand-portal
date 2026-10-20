@@ -94,7 +94,12 @@ export function ContactsTableSection({
 
   return (
     <div className='overflow-hidden rounded-lg border'>
-      <Table density='compact' layout='fixed' stack>
+      <Table
+        density='compact'
+        layout='fixed'
+        stack
+        className='md:min-w-[50rem]'
+      >
         <TableHeader>
           <TableRow className='bg-muted/40'>
             <SortableTableHead

@@ -510,7 +510,12 @@ export function ProjectsLanding({
 
   const renderProjectTable = (items: LandingProject[]) => (
     <div className='rounded-lg border'>
-      <Table density='compact' layout='fixed' stack>
+      <Table
+        density='compact'
+        layout='fixed'
+        stack
+        className='md:min-w-[50rem]'
+      >
         <TableHeader>
           <TableRow className='bg-muted/40'>
             <SortableTableHead
@@ -608,7 +613,12 @@ export function ProjectsLanding({
   const clientSectionContent =
     clientSections.length > 0 ? (
       <div className='rounded-lg border'>
-        <Table density='compact' layout='fixed' stack>
+        <Table
+          density='compact'
+          layout='fixed'
+          stack
+          className='md:min-w-[50rem]'
+        >
           <TableHeader>
             <TableRow className='bg-muted/40'>
               <SortableTableHead

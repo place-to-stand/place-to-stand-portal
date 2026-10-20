@@ -32,6 +32,10 @@ function useTableContext() {
  * cells wrap beneath it. Cells that need a name to make sense on a phone
  * pass `label`; a cell can drop out with `max-md:hidden` and an actions cell
  * usually takes `max-md:ml-auto` to sit at the end of the wrapped line.
+ *
+ * From `md` up the columns come back. A table whose columns don't fit a
+ * tablet-width content area passes an `md:min-w-[…]` floor in `className`
+ * so it scrolls inside its container instead of overprinting.
  */
 function Table({
   className,

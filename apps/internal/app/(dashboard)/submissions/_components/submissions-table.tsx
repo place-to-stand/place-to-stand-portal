@@ -80,6 +80,32 @@ const RECEIVED_TITLE_STYLE = {
   minute: '2-digit',
 } as const
 
+// Width classes for the columns that take a share of the table. The
+// archive's extra Archived column (w-32) leaves no room for Company at xl:
+// with the active grid, Contact — the column without a width — shrank to
+// ~80px at 1280 and 1440 with the sidebar open. So the archive holds Company
+// and the Source detail back until 2xl, gives Outcome a smaller share, and
+// narrows Company and Source once they return, which keeps Contact at about
+// 175px at 1280, 300px at 1440 and 200px at 1536.
+const COLUMN_CLASSES = {
+  active: {
+    company: 'hidden xl:table-cell xl:w-[12%]',
+    companyCell: 'hidden truncate xl:table-cell',
+    outcome: 'w-[30%] xl:w-[22%]',
+    source: 'w-24 xl:w-[18%]',
+    sourceDetail: 'xl:inline',
+    table: 'md:min-w-[50rem]',
+  },
+  archive: {
+    company: 'hidden 2xl:table-cell 2xl:w-[12%]',
+    companyCell: 'hidden truncate 2xl:table-cell',
+    outcome: 'w-[25%] 2xl:w-[20%]',
+    source: 'w-24 2xl:w-[14%]',
+    sourceDetail: '2xl:inline',
+    table: 'md:min-w-[60rem]',
+  },
+} as const satisfies Record<SubmissionsTableMode, Record<string, string>>
+
 const EMPTY_STATE_COPY: Record<SubmissionsTableMode, string> = {
   active: 'No submissions yet.',
   archive: 'No archived submissions.',
@@ -150,6 +176,7 @@ export function SubmissionsTable({
 
   // The archive tab shows when each row was archived; active mode doesn't.
   const columnCount = mode === 'archive' ? 8 : 7
+  const columnClasses = COLUMN_CLASSES[mode]
 
   // Sort changes route through useListParams so they reset offset paging
   // (PRD 004 §03); row-selection and page pushes keep the local helper.
@@ -360,13 +387,15 @@ export function SubmissionsTable({
             column and the Source detail drop out (both are in the sheet) so
             the values that remain are readable at laptop widths, and the
             min width makes the container scroll instead of crushing columns
-            when the window is narrower still. On a phone the rows stack,
-            led by the contact instead of the time. */}
+            when the window is narrower still. The archive's extra Archived
+            column needs a wider floor and holds Company back until 2xl (see
+            COLUMN_CLASSES). On a phone the rows stack, led by the contact
+            instead of the time. */}
         <Table
           density='compact'
           layout='fixed'
           stack
-          className='min-w-[50rem] max-md:min-w-0'
+          className={columnClasses.table}
         >
           <TableHeader>
             <TableRow className='bg-muted/40'>
@@ -381,11 +410,9 @@ export function SubmissionsTable({
               </SortableTableHead>
               <TableHead className='w-24'>Form</TableHead>
               <TableHead>Contact</TableHead>
-              <TableHead className='hidden xl:table-cell xl:w-[12%]'>
-                Company
-              </TableHead>
-              <TableHead className='w-[30%] xl:w-[22%]'>Outcome</TableHead>
-              <TableHead className='w-24 xl:w-[18%]'>Source</TableHead>
+              <TableHead className={columnClasses.company}>Company</TableHead>
+              <TableHead className={columnClasses.outcome}>Outcome</TableHead>
+              <TableHead className={columnClasses.source}>Source</TableHead>
               {mode === 'archive' ? (
                 <TableHead className='w-32'>Archived</TableHead>
               ) : null}
@@ -493,7 +520,7 @@ export function SubmissionsTable({
                       )}
                     </TableCell>
                     <TableCell
-                      className='hidden truncate xl:table-cell'
+                      className={columnClasses.companyCell}
                       title={submission.contactCompany ?? undefined}
                     >
                       {submission.contactCompany ?? '—'}
@@ -544,7 +571,12 @@ export function SubmissionsTable({
                           {ATTRIBUTION_CHANNEL_LABELS[source.channel]}
                         </Badge>
                         {source.detail ? (
-                          <span className='text-muted-foreground hidden min-w-0 truncate text-xs xl:inline'>
+                          <span
+                            className={cn(
+                              'text-muted-foreground hidden min-w-0 truncate text-xs',
+                              columnClasses.sourceDetail
+                            )}
+                          >
                             {source.detail}
                           </span>
                         ) : null}
