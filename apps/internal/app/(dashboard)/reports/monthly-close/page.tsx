@@ -102,13 +102,15 @@ export default async function MonthlyClosePage({
     profitShare.status === 'ready' ? profitShare.data : null
   const payoutTable = buildPayoutTable(report, profitShareData)
 
-  const detailCards = (
+  const billingInCard = (
+    <BillingInCard
+      prepaid={report.prepaidBilling}
+      net30={report.net30Billing}
+      total={report.combinedBillingTotal}
+    />
+  )
+  const bookkeepingCards = (
     <>
-      <BillingInCard
-        prepaid={report.prepaidBilling}
-        net30={report.net30Billing}
-        total={report.combinedBillingTotal}
-      />
       <SalesTaxCard
         salesTax={report.salesTax}
         isLive={close.salesTaxIsLive}
@@ -119,9 +121,9 @@ export default async function MonthlyClosePage({
         monthLabel={shortMonthLabel}
         inProgress={isCurrentMonth}
       />
-      <RateSplitCard report={report} />
     </>
   )
+  const rateSplitCard = <RateSplitCard report={report} />
 
   return (
     <PageShell breadcrumbs={crumbsForNav('/reports/monthly-close')}>
@@ -185,10 +187,12 @@ export default async function MonthlyClosePage({
         />
 
         <div className='grid grid-cols-1 items-start gap-6 lg:grid-cols-2'>
-          {profitShare.status === 'inactive' ? (
-            detailCards
-          ) : (
-            <>
+          {/* Two explicit columns, so the rate split sits under the left
+              card instead of stacking the right column far below it. */}
+          <div className='space-y-6'>
+            {profitShare.status === 'inactive' ? (
+              billingInCard
+            ) : (
               <ProfitShareCard
                 state={profitShare}
                 year={validYear}
@@ -196,9 +200,13 @@ export default async function MonthlyClosePage({
                 displayMonth={displayMonth}
                 lastDayLabel={lastDayLabel}
               />
-              <div className='space-y-6'>{detailCards}</div>
-            </>
-          )}
+            )}
+            {rateSplitCard}
+          </div>
+          <div className='space-y-6'>
+            {profitShare.status === 'inactive' ? null : billingInCard}
+            {bookkeepingCards}
+          </div>
         </div>
       </div>
     </PageShell>
