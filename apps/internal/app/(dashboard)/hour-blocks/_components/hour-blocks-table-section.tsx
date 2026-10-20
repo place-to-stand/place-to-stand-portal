@@ -75,7 +75,12 @@ export function HourBlocksTableSection({
 
   return (
     <div className='overflow-hidden rounded-lg border'>
-      <Table density='compact' layout='fixed' stack>
+      <Table
+        density='compact'
+        layout='fixed'
+        stack
+        className='md:min-w-[42rem]'
+      >
         <TableHeader>
           <TableRow className='bg-muted/40'>
             <TableHead className='w-[34%]'>Client</TableHead>

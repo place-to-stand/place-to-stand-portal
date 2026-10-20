@@ -360,13 +360,20 @@ export function SubmissionsTable({
             column and the Source detail drop out (both are in the sheet) so
             the values that remain are readable at laptop widths, and the
             min width makes the container scroll instead of crushing columns
-            when the window is narrower still. On a phone the rows stack,
+            when the window is narrower still. The archive's extra Archived
+            column needs a wider floor, and from xl (Company back in) one
+            that holds the grid it has at 1440 with the sidebar open, or
+            Contact is squeezed to nothing. On a phone the rows stack,
             led by the contact instead of the time. */}
         <Table
           density='compact'
           layout='fixed'
           stack
-          className='min-w-[50rem] max-md:min-w-0'
+          className={
+            mode === 'archive'
+              ? 'md:min-w-[60rem] xl:min-w-[72.75rem]'
+              : 'md:min-w-[50rem]'
+          }
         >
           <TableHeader>
             <TableRow className='bg-muted/40'>

@@ -303,7 +303,12 @@ export function LeadsArchiveSection({
         />
       </FilterBar>
       <div className='rounded-lg border'>
-        <Table density='compact' layout='fixed' stack>
+        <Table
+          density='compact'
+          layout='fixed'
+          stack
+          className='md:min-w-[46rem]'
+        >
           <TableHeader>
             <TableRow className='bg-muted/40'>
               <SortableTableHead
