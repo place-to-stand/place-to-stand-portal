@@ -1,5 +1,7 @@
 import type { InvoiceWithClient } from '@/lib/invoices/invoice-form'
 
+import { isoTimestamp } from './timestamp'
+
 export type CliInvoice = {
   id: string
   invoiceNumber: string | null
@@ -30,8 +32,8 @@ export function serializeInvoice(invoice: InvoiceWithClient): CliInvoice {
     subtotal: invoice.subtotal,
     taxAmount: invoice.tax_amount,
     total: invoice.total,
-    paidAt: invoice.paid_at,
-    createdAt: invoice.created_at,
-    updatedAt: invoice.updated_at,
+    paidAt: isoTimestamp(invoice.paid_at),
+    createdAt: isoTimestamp(invoice.created_at),
+    updatedAt: isoTimestamp(invoice.updated_at),
   }
 }

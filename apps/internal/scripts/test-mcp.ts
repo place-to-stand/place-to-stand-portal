@@ -257,6 +257,10 @@ async function rpc(
   return { status: response.status, body: json ? JSON.parse(json) : null }
 }
 
+/** Tools whose output carried a Postgres-text timestamp instead of ISO 8601. */
+const nonIsoTimestamps = new Set<string>()
+const POSTGRES_TIMESTAMP = /\d{4}-\d{2}-\d{2} \d{2}:\d{2}/
+
 async function callTool(
   token: string,
   name: string,
@@ -264,6 +268,10 @@ async function callTool(
 ) {
   const { body } = await rpc(token, 'tools/call', { name, arguments: args })
   const result = body?.result
+
+  if (POSTGRES_TIMESTAMP.test(JSON.stringify(result?.structuredContent ?? {}))) {
+    nonIsoTimestamps.add(name)
+  }
 
   return {
     ok: Boolean(result && !result.isError),
@@ -503,6 +511,9 @@ async function main() {
 
     const leadsList = await callTool(accessToken, 'list_leads', { search: 'MCP Smoke Test', limit: 5 })
     check('list_leads finds it by text', leadsList.data.items?.some((l: Loose) => l.id === created.leadId), leadsList.message)
+
+    check('every timestamp in tool output is ISO 8601', nonIsoTimestamps.size === 0,
+      [...nonIsoTimestamps])
 
     console.log('\nAttribution')
     const targetIds = [created.taskId, created.leadId].filter(Boolean) as string[]

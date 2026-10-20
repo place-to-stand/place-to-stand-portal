@@ -2,6 +2,7 @@ import type { SelectTask } from '@/lib/queries/tasks/common'
 import { boardTaskHref } from '@/lib/sheets/hrefs'
 
 import type { BoardLocation } from '../queries/tasks'
+import { isoTimestamp } from './timestamp'
 
 export type CliTask = {
   id: string
@@ -41,10 +42,10 @@ export function serializeTask(
     dueOn: task.dueOn,
     assigneeIds,
     rank: task.rank,
-    createdAt: task.createdAt,
-    updatedAt: task.updatedAt,
-    completedAt: task.completedAt,
-    acceptedAt: task.acceptedAt,
+    createdAt: isoTimestamp(task.createdAt),
+    updatedAt: isoTimestamp(task.updatedAt),
+    completedAt: isoTimestamp(task.completedAt),
+    acceptedAt: isoTimestamp(task.acceptedAt),
     githubIssueUrl: task.githubIssueUrl,
     workerStatus: task.workerStatus,
     path: location

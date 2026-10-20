@@ -1,5 +1,7 @@
 import type { ProjectWithRelations } from '@/lib/types'
 
+import { isoTimestamp } from './timestamp'
+
 export type CliProject = {
   id: string
   name: string
@@ -29,7 +31,7 @@ export function serializeProject(project: ProjectWithRelations): CliProject {
     ownerId: project.owner_id,
     startsOn: project.starts_on,
     endsOn: project.ends_on,
-    createdAt: project.created_at,
-    updatedAt: project.updated_at,
+    createdAt: isoTimestamp(project.created_at),
+    updatedAt: isoTimestamp(project.updated_at),
   }
 }

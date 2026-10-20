@@ -1,5 +1,7 @@
 import type { ClientWithMetrics } from '@/lib/data/clients'
 
+import { isoTimestamp } from './timestamp'
+
 export type CliClient = {
   id: string
   name: string
@@ -29,7 +31,7 @@ export function serializeClient(client: ClientWithMetrics): CliClient {
     totalHoursPurchased: client.totalHoursPurchased,
     totalHoursUsed: client.totalHoursUsed,
     hoursRemaining: client.hoursRemaining,
-    createdAt: client.createdAt,
-    updatedAt: client.updatedAt,
+    createdAt: isoTimestamp(client.createdAt),
+    updatedAt: isoTimestamp(client.updatedAt),
   }
 }

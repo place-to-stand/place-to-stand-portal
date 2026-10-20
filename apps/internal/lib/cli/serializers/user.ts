@@ -1,5 +1,7 @@
 import type { AppUser } from '@/lib/auth/session'
 
+import { isoTimestamp } from './timestamp'
+
 /**
  * Serializers exist so the CLI contract is stated once, explicitly, in
  * camelCase — rather than leaking whatever shape a query happens to return
@@ -47,6 +49,6 @@ export function serializeUserRow(user: {
     fullName: user.fullName,
     role: user.role,
     avatarUrl: user.avatarUrl,
-    createdAt: user.createdAt,
+    createdAt: isoTimestamp(user.createdAt),
   }
 }

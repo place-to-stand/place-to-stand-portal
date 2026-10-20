@@ -1,6 +1,6 @@
 # PRD 009 — PTS MCP server (internal, admin-only v1)
 
-**Status:** Built on the branch except §6 (connected apps). Implementation notes are at the end.
+**Status:** Built on the branch (PR #274). Implementation notes are at the end.
 **Created:** 2026-10-19
 **Branch:** `feat/mcp-server`
 **Repos touched:** `place-to-stand-portal` only
@@ -42,6 +42,9 @@ engagement standing) is explicitly out of scope until this one proves useful.
 | D9 | **No invoices in v1** (was Q1), not even read-only. |
 | D10 | **`list_tasks` matches the CLI** (was Q2): every project, other admins' PERSONAL projects included. |
 | D11 | **Agent attribution lives in the activity log only** (was Q4). No column on `task_comments` or `tasks`. |
+| D13 | **Hard allow-list of redirect hosts at consent** (was Q3): codes go only to `https://claude.ai`, `https://claude.com` or a loopback address (Claude Code, MCP Inspector). The security review found an MCP access token is a full Supabase session for the admin, so warn-and-allow would let a phished click hand an attacker the account. |
+| D14 | **Timestamps in CLI and MCP output are ISO 8601 UTC** (`isoTimestamp`, `lib/cli/serializers/timestamp.ts`), matching what `occurredAt` input takes. Date-only fields stay `YYYY-MM-DD`. |
+| D15 | **The connected-apps card ships in this PR** (§6), so an admin can revoke without the Supabase dashboard. |
 | D12 | **One PostHog event per tool call:** `mcp.tool_call`, dot style like the other server events, with properties `tool`, `outcome` (`ok` / `error`), `error_code`, `duration_ms`, `agent_name`. `distinct_id` is the user id. |
 
 ## Non-goals
@@ -89,10 +92,13 @@ than writing our own token endpoints.
   Supabase OAuth API. A non-ADMIN sees a refusal, never an approve button. This is UI only:
   Supabase's approve endpoint accepts any signed-in user, so the token check on `/api/mcp` (§3)
   is the real gate, and the smoke test proves it by approving as a SALES user directly.
-- **Redirect URI guard.** DCR lets any client register. The consent page shows the redirect host
-  prominently, and we keep an allow-list of known hosts (claude.ai, claude.com, localhost for
-  Claude Code / Inspector) that skip a "this app is not recognised" warning. Unknown hosts are
-  allowed only after the warning — open question Q3.
+- **Redirect URI guard (D13).** DCR lets any client register with any redirect URI. The consent
+  page and its server action both refuse any redirect outside the allow-list in
+  `lib/mcp/redirects.ts`, so an authorization code can only reach Claude or the admin's machine.
+- **The token is a full session.** A Supabase OAuth access token is an ordinary user session
+  with a `client_id` claim: whoever holds it can call Supabase Auth as the user (change their
+  password, edit `user_metadata`). PostgREST is closed (migration 0073 revoked the grants), but
+  the token is still a credential for the whole account, which is why D13 is a hard list.
 - **Proxy allowlist.** `/api/mcp` and `/.well-known/oauth-protected-resource` join the `proxy.ts`
   allowlist. As with `/api/cli/`, the route must authenticate itself — there is no edge fallback.
 
@@ -184,8 +190,10 @@ no meaningful balance.
 
 A "Connected AI apps" card on `settings/integrations` lists the signed-in user's OAuth grants
 (client name, first authorised, last used) with a **Revoke** action, using the Supabase OAuth
-grant APIs. Revoking kills the refresh token; the current access token expires on its normal
-schedule (Supabase default, ~1h) — documented on the card.
+grant APIs (`listGrants`, `revokeGrant`, run with the user's own session). Revoking deletes the
+app's sessions, and `/api/mcp` checks the session on every call (`auth.getUser`), so access ends
+at once rather than when the access token expires. Local Supabase needs a newer auth server for the
+grant endpoints (the CLI pinned `v2.180.0`, which 404s).
 
 ### §7 Observability
 
@@ -252,11 +260,10 @@ restart Supabase once (`supabase stop && supabase start`) after pulling, then ru
 
 ## Open questions
 
-Q1, Q2 and Q4 are answered (D9–D11).
+Q1–Q4 are answered (D9–D11, D13).
 
 | # | Question |
 | --- | --- |
-| Q3 | **Unknown redirect hosts** at consent — warn-and-allow, or hard allow-list only? *v1 ships warn-and-allow.* |
 | Q6 | **Agent identity granularity** — the OAuth client ("Claude") is all we get from the token. Is that enough, or do we want an optional `agentLabel` argument on writes (e.g. "Claude Code — acme-site repo")? Either way the name is self-reported at registration (the spike connected as "Claude Code (pts-local)"), so it is a label for attribution, never something to authorize on. *v1 ships the client name only.* |
 
 ## Implementation notes (2026-10-20)
@@ -284,7 +291,5 @@ Where the build departs from the design above, or settles something it left open
 - **Consent page client name.** auth-js types the client as `{ name }`, but the local auth server
   returns `{ client_name }`; the page reads both.
 - **Known rough edges from the first Claude Code test run**, not fixed in v1:
-  - timestamps are Postgres text (`2026-10-20 15:29:05.239+00`), not ISO 8601, while `occurredAt`
-    input requires ISO;
   - empty lead notes come back as `""` rather than `null`;
   - only `list_contacts` returns `totalCount`.

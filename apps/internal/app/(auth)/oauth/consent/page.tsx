@@ -12,6 +12,8 @@ import {
 } from '@pts/ui/auth-shell'
 
 import { getCurrentUser } from '@/lib/auth/session'
+import { oauthClientName } from '@/lib/mcp/grants'
+import { isAllowedRedirect } from '@/lib/mcp/redirects'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 
 import { decideAuthorization } from './actions'
@@ -20,34 +22,8 @@ export const metadata: Metadata = {
   title: 'Connect an app',
 }
 
-/**
- * Redirect hosts we expect MCP clients to come back to. Anything else can
- * still be approved (dynamic registration lets any client register), but the
- * admin is told the app is not one we recognise.
- */
-const KNOWN_REDIRECT_HOSTS = new Set([
-  'claude.ai',
-  'claude.com',
-  'localhost',
-  '127.0.0.1',
-])
-
 const ACCESS_SUMMARY =
   'It will act as you: read clients, contacts, projects, tasks and leads, and create and update tasks, task comments and leads.'
-
-/**
- * auth-js types the client as `{ name }`, but the auth server bundled with
- * the local Supabase CLI returns `{ client_name }`. Read both so the title
- * never renders "Connect undefined".
- */
-function clientDisplayName(client: object): string {
-  const { name, client_name } = client as {
-    name?: string
-    client_name?: string
-  }
-
-  return name || client_name || 'an app'
-}
 
 function redirectHost(uri: string): string | null {
   try {
@@ -123,19 +99,38 @@ export default async function OAuthConsentPage({
     )
   }
 
+  const target =
+    'authorization_id' in data ? data.redirect_uri : data.redirect_url
+
+  if (!isAllowedRedirect(target)) {
+    return (
+      <AuthShell
+        label='Internal Portal'
+        title='App not allowed'
+        description={`This app would send your access to ${redirectHost(target) ?? 'an unknown address'}. Only Claude (claude.ai, Claude Code) and apps on your own machine can be connected.`}
+        footer={
+          <Link className={authLinkClass} href='/'>
+            Back to the portal
+          </Link>
+        }
+      >
+        {null}
+      </AuthShell>
+    )
+  }
+
   // Already consented: Supabase hands back the redirect straight away.
   if (!('authorization_id' in data)) {
     redirect(data.redirect_url)
   }
 
   const host = redirectHost(data.redirect_uri)
-  const recognised = host !== null && KNOWN_REDIRECT_HOSTS.has(host)
 
   return (
     <AuthShell
       wide
       label='Internal Portal'
-      title={`Connect ${clientDisplayName(data.client)}`}
+      title={`Connect ${oauthClientName(data.client)}`}
       description={ACCESS_SUMMARY}
     >
       <div className='space-y-4'>
@@ -149,13 +144,6 @@ export default async function OAuthConsentPage({
           Signed in as {user.email}. Returns to{' '}
           <span className='font-mono'>{host ?? data.redirect_uri}</span>.
         </p>
-
-        {recognised ? null : (
-          <p className={authErrorClass}>
-            This app is not one we recognise. Only connect it if you started
-            this yourself.
-          </p>
-        )}
 
         <form action={decideAuthorization} className='space-y-2'>
           <input type='hidden' name='authorizationId' value={authorizationId} />
