@@ -1,0 +1,225 @@
+import 'server-only'
+
+import type { McpServer } from '@modelcontextprotocol/server'
+import { z } from 'zod'
+
+import { listUsersForCli } from '@/lib/cli/queries/users'
+import { serializeClient } from '@/lib/cli/serializers/client'
+import { serializeContact } from '@/lib/cli/serializers/contact'
+import { serializeProject } from '@/lib/cli/serializers/project'
+import { serializeUser, serializeUserRow } from '@/lib/cli/serializers/user'
+import {
+  fetchClientsWithMetrics,
+  resolveClientIdentifier,
+} from '@/lib/data/clients'
+import {
+  fetchProjectsLite,
+  fetchProjectsWithRelationsByIds,
+  resolveProjectIdentifier,
+} from '@/lib/data/projects'
+import { NotFoundError } from '@/lib/errors/http'
+import { listContactsForSettings } from '@/lib/queries/contacts/settings/list-contacts'
+import {
+  getContactSheetInputById,
+  listContactClients,
+} from '@/lib/queries/contacts/settings/contact-clients'
+
+import { listLimit, page, searchText } from '../output'
+import { defineTool } from '../tool'
+
+const clientRef = z
+  .string()
+  .trim()
+  .min(1)
+  .describe('Client slug or UUID.')
+
+/** People, clients, contacts and projects: everything read-only (D4). */
+export function registerDirectoryTools(server: McpServer) {
+  defineTool(server, {
+    name: 'whoami',
+    title: 'Who am I',
+    description:
+      'Return the Place To Stand portal user this connection acts as, and the app it is connected through.',
+    access: 'admin',
+    effect: 'read',
+    input: {},
+    run: async (_args, { user, agent }) => ({
+      user: serializeUser(user),
+      agent,
+    }),
+  })
+
+  defineTool(server, {
+    name: 'list_users',
+    title: 'List users',
+    description:
+      'List portal users (team members and client portal users). Use it to find the email or id to assign a task or lead to.',
+    access: 'admin',
+    effect: 'read',
+    input: {
+      search: searchText.optional(),
+      role: z.enum(['ADMIN', 'SALES', 'CLIENT']).optional(),
+      limit: listLimit,
+    },
+    run: async ({ search, role, limit }, { user }) => {
+      const rows = await listUsersForCli(user, {
+        search,
+        role,
+        limit: limit + 1,
+      })
+
+      return page(rows.map(serializeUserRow), limit)
+    },
+  })
+
+  defineTool(server, {
+    name: 'list_clients',
+    title: 'List clients',
+    description:
+      'List clients with their billing type, project counts and prepaid hours balance (purchased, used, remaining). hoursRemaining can be negative when a client is over; net_30 clients have no meaningful balance.',
+    access: 'admin',
+    effect: 'read',
+    input: {
+      search: searchText.optional(),
+      limit: listLimit,
+    },
+    run: async ({ search, limit }, { user }) => {
+      const clients = await fetchClientsWithMetrics(user, search)
+
+      return page(clients.map(serializeClient), limit)
+    },
+  })
+
+  defineTool(server, {
+    name: 'get_client',
+    title: 'Get client',
+    description:
+      'One client with its hours balance, linked contacts and projects.',
+    access: 'admin',
+    effect: 'read',
+    input: { client: clientRef },
+    run: async ({ client: reference }, { user }) => {
+      const resolved = await resolveClientIdentifier(user, reference)
+      // The metrics query is the only source of the hours balance, and it is
+      // per-request cached, so filtering the full list costs nothing extra.
+      const clients = await fetchClientsWithMetrics(user)
+      const client = clients.find(row => row.id === resolved.resolvedId)
+
+      if (!client) {
+        throw new NotFoundError('Client not found.')
+      }
+
+      return {
+        client: serializeClient(client),
+        contacts: client.contacts,
+        projects: client.allProjects,
+      }
+    },
+  })
+
+  defineTool(server, {
+    name: 'list_contacts',
+    title: 'List contacts',
+    description:
+      'List contacts (people at clients and prospects), optionally only those linked to one client.',
+    access: 'crm',
+    effect: 'read',
+    input: {
+      search: searchText.optional(),
+      client: clientRef.optional(),
+      limit: listLimit,
+    },
+    run: async ({ search, client, limit }, { user }) => {
+      // Resolving a client reference is admin-only today; revisit when SALES
+      // is admitted (D6).
+      const clientId = client
+        ? (await resolveClientIdentifier(user, client)).resolvedId
+        : null
+
+      const result = await listContactsForSettings(user, {
+        search: search ?? null,
+        clientId,
+        limit,
+      })
+
+      return {
+        items: result.items.map(contact => ({
+          ...serializeContact(contact),
+          clients: contact.metrics.clients,
+        })),
+        hasMore: result.totalCount > result.items.length,
+        totalCount: result.totalCount,
+      }
+    },
+  })
+
+  defineTool(server, {
+    name: 'get_contact',
+    title: 'Get contact',
+    description: 'One contact and the clients they are linked to.',
+    access: 'crm',
+    effect: 'read',
+    input: { contactId: z.string().uuid().describe('Contact UUID.') },
+    run: async ({ contactId }, { user }) => {
+      const [contact, clients] = await Promise.all([
+        getContactSheetInputById(user, contactId),
+        listContactClients(user, contactId),
+      ])
+
+      return { contact, clients }
+    },
+  })
+
+  defineTool(server, {
+    name: 'list_projects',
+    title: 'List projects',
+    description:
+      'List projects (CLIENT, INTERNAL and PERSONAL), optionally for one client. Use a project slug to scope task tools.',
+    access: 'admin',
+    effect: 'read',
+    input: {
+      search: searchText.optional(),
+      client: clientRef.optional(),
+      limit: listLimit,
+    },
+    run: async ({ search, client, limit }, { user }) => {
+      const clientId = client
+        ? (await resolveClientIdentifier(user, client)).resolvedId
+        : null
+      const needle = search?.toLowerCase()
+
+      const projects = (await fetchProjectsLite()).filter(
+        project =>
+          (!clientId || project.client_id === clientId) &&
+          (!needle ||
+            project.name.toLowerCase().includes(needle) ||
+            project.slug?.toLowerCase().includes(needle))
+      )
+
+      return page(projects.map(serializeProject), limit)
+    },
+  })
+
+  defineTool(server, {
+    name: 'get_project',
+    title: 'Get project',
+    description: 'One project by slug or UUID.',
+    access: 'admin',
+    effect: 'read',
+    input: {
+      project: z.string().trim().min(1).describe('Project slug or UUID.'),
+    },
+    run: async ({ project: reference }, { user }) => {
+      const resolved = await resolveProjectIdentifier(user, reference)
+      const [project] = await fetchProjectsWithRelationsByIds([
+        resolved.resolvedId,
+      ])
+
+      if (!project) {
+        throw new NotFoundError('Project not found.')
+      }
+
+      return { project: serializeProject(project) }
+    },
+  })
+}

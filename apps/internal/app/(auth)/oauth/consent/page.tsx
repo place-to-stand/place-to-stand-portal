@@ -35,6 +35,20 @@ const KNOWN_REDIRECT_HOSTS = new Set([
 const ACCESS_SUMMARY =
   'It will act as you: read clients, contacts, projects, tasks and leads, and create and update tasks, task comments and leads.'
 
+/**
+ * auth-js types the client as `{ name }`, but the auth server bundled with
+ * the local Supabase CLI returns `{ client_name }`. Read both so the title
+ * never renders "Connect undefined".
+ */
+function clientDisplayName(client: object): string {
+  const { name, client_name } = client as {
+    name?: string
+    client_name?: string
+  }
+
+  return name || client_name || 'an app'
+}
+
 function redirectHost(uri: string): string | null {
   try {
     return new URL(uri).hostname
@@ -121,7 +135,7 @@ export default async function OAuthConsentPage({
     <AuthShell
       wide
       label='Internal Portal'
-      title={`Connect ${data.client.name}`}
+      title={`Connect ${clientDisplayName(data.client)}`}
       description={ACCESS_SUMMARY}
     >
       <div className='space-y-4'>

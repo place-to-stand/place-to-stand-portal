@@ -145,7 +145,7 @@ Portal access is controlled via `client_members` table. Contacts promoted to por
 - `contact_leads` - Contact-to-lead links
 - `client_members` - Client-to-user portal memberships (auto-synced when contacts are linked/promoted)
 - `projects` - Projects with types: CLIENT (tied to clients), PERSONAL (individual), INTERNAL (team); status: ONBOARDING → ACTIVE → ON_HOLD → COMPLETED
-- `tasks` - Tasks with workflow: ON_DECK → IN_PROGRESS → BLOCKED → DONE → ARCHIVED
+- `tasks` - Tasks with workflow: ON_DECK → IN_PROGRESS → BLOCKED → DONE, then archived (soft delete via `deletedAt`, not a status value)
 - `leads` - Lead pipeline: NEW_OPPORTUNITIES → ACTIVE_OPPORTUNITIES → PROPOSAL_SENT → ON_ICE → CLOSED_WON/CLOSED_LOST/UNQUALIFIED
 - `lead_stage_history` - Lead stage transition history
 - `time_logs` + `time_log_tasks` - Time tracking linked to tasks/projects
