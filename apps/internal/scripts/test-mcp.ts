@@ -478,6 +478,9 @@ async function main() {
     const listed = await callTool(accessToken, 'list_tasks', { project: project.slug, assignee: EMAIL, limit: 5 })
     check('list_tasks filters by project and assignee email',
       listed.ok && listed.data.items.some((t: Loose) => t.id === created.taskId), listed.message)
+    const preview = listed.data.items?.find((t: Loose) => t.id === created.taskId)?.description
+    check('list_tasks previews the description as plain text',
+      typeof preview === 'string' && preview.includes('safe to delete') && !/<[a-z/]/i.test(preview), preview)
 
     const createLead = await callTool(accessToken, 'create_lead', {
       name: 'MCP Smoke Test', company: 'test-mcp.ts', notes: 'Safe to delete.',

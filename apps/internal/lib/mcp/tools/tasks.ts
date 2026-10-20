@@ -39,7 +39,7 @@ export function registerTaskTools(server: McpServer) {
     name: 'list_tasks',
     title: 'List tasks',
     description:
-      'List tasks, most recently updated first. Filter by project, lead, status or assignee. Descriptions are previews; get_task returns the full task and its comments.',
+      'List tasks, most recently updated first. Filter by project, lead, status or assignee. Descriptions are plain-text previews; get_task returns the full task and its comments.',
     access: 'admin',
     effect: 'read',
     input: {

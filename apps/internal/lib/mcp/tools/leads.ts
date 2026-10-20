@@ -33,7 +33,7 @@ export function registerLeadTools(server: McpServer) {
     name: 'list_leads',
     title: 'List leads',
     description:
-      'List sales pipeline leads, most recently updated first. Filter by stage, owner or text. Notes are previews; get_lead returns the full lead and its timeline.',
+      'List sales pipeline leads, most recently updated first. Filter by stage, owner or text. Notes are plain-text previews; get_lead returns the full lead and its timeline.',
     access: 'crm',
     effect: 'read',
     input: {
@@ -122,7 +122,7 @@ export function registerLeadTools(server: McpServer) {
     name: 'add_lead_update',
     title: 'Log lead update',
     description:
-      "Log a call, email, text or meeting on a lead's timeline, as the connected user.",
+      "Log a call, email, text, meeting or note on a lead's timeline, as the connected user.",
     access: 'crm',
     effect: 'write',
     input: { leadId, ...cliCreateLeadUpdateFields },

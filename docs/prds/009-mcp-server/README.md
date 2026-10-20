@@ -266,6 +266,8 @@ Where the build departs from the design above, or settles something it left open
 - **No cursors.** Lists cap at `limit` and return `hasMore` (§4).
 - **Rich text comes back as stored HTML**, not markdown: the repo has no HTML-to-markdown
   converter. Writes still take the CLI's markdown subset, so agents write markdown and read HTML.
+  List previews are the exception: they are converted to plain text before truncating, so a cut
+  never leaves a tag open.
 - **No archive, restore or delete** (Non-goals). `update_task` and `update_lead` say so in their
   descriptions and point at DONE, CLOSED_LOST / UNQUALIFIED, or the portal. Archived tasks are a
   soft delete (`deletedAt`), not a status value.
@@ -284,6 +286,5 @@ Where the build departs from the design above, or settles something it left open
 - **Known rough edges from the first Claude Code test run**, not fixed in v1:
   - timestamps are Postgres text (`2026-10-20 15:29:05.239+00`), not ISO 8601, while `occurredAt`
     input requires ISO;
-  - list previews can cut through an HTML tag;
   - empty lead notes come back as `""` rather than `null`;
   - only `list_contacts` returns `totalCount`.

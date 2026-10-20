@@ -2,6 +2,8 @@ import 'server-only'
 
 import { z } from 'zod'
 
+import { htmlToPlainText } from '@/lib/activity/text-diff'
+
 /**
  * Output bounds (PRD 009 §4): a list never floods the model's context. Lists
  * are limit-capped rather than cursor-paged — `hasMore` tells the agent to
@@ -32,13 +34,21 @@ export function page<T>(rows: T[], limit: number) {
 const LIST_TEXT_MAX = 400
 
 /**
- * Long rich-text fields in list results, cut to a preview. The `get_*` tool
- * for the same entity returns the full text, and the marker says so.
+ * Long rich-text fields in list results, as a plain-text preview: stripping
+ * the editor HTML first means a cut can never leave a tag open, and every
+ * preview reads the same whether or not it was cut. The `get_*` tool for the
+ * same entity returns the full stored HTML, and the marker says so.
  */
 export function clip(text: string | null, getTool: string): string | null {
-  if (!text || text.length <= LIST_TEXT_MAX) {
+  if (!text) {
     return text
   }
 
-  return `${text.slice(0, LIST_TEXT_MAX)}… [truncated; call ${getTool} for the full text]`
+  const plain = htmlToPlainText(text)
+
+  if (plain.length <= LIST_TEXT_MAX) {
+    return plain
+  }
+
+  return `${plain.slice(0, LIST_TEXT_MAX)}… [truncated; call ${getTool} for the full text]`
 }

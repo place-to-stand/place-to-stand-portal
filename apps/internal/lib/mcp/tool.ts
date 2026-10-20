@@ -51,7 +51,10 @@ export type ToolDefinition<Shape extends z.ZodRawShape> = {
   ) => Promise<Record<string, unknown>>
 }
 
-const ANNOTATIONS: Record<ToolDefinition<z.ZodRawShape>['effect'], ToolAnnotations> = {
+const ANNOTATIONS: Record<
+  ToolDefinition<z.ZodRawShape>['effect'],
+  ToolAnnotations
+> = {
   read: { readOnlyHint: true, openWorldHint: false },
   write: {
     readOnlyHint: false,

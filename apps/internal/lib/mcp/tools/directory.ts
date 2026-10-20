@@ -27,11 +27,7 @@ import {
 import { listLimit, page, searchText } from '../output'
 import { defineTool } from '../tool'
 
-const clientRef = z
-  .string()
-  .trim()
-  .min(1)
-  .describe('Client slug or UUID.')
+const clientRef = z.string().trim().min(1).describe('Client slug or UUID.')
 
 /** People, clients, contacts and projects: everything read-only (D4). */
 export function registerDirectoryTools(server: McpServer) {
