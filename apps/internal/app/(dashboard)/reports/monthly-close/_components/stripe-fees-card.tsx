@@ -4,6 +4,10 @@ import { formatMoney } from './format'
 
 type StripeFeesCardProps = {
   state: StripeFeesState
+  /** Last day of the month, e.g. "Sep 30, 2026" — the entry's date. */
+  entryDate: string
+  /** Short month for the memo, e.g. "Sep 2026". */
+  monthLabel: string
   /** The month is still running, so the figures are month-to-date. */
   inProgress?: boolean
 }
@@ -30,8 +34,16 @@ function Line({
   )
 }
 
-export function StripeFeesCard({ state, inProgress }: StripeFeesCardProps) {
+export function StripeFeesCard({
+  state,
+  entryDate,
+  monthLabel,
+  inProgress,
+}: StripeFeesCardProps) {
   const data = state.status === 'ready' ? state.data : null
+  // Payouts land in the bank net of fees and are booked that way, so the
+  // entry grosses revenue back up and moves the fees to cost of revenue.
+  const memo = `Stripe fees ${monthLabel}; payouts were booked net`
 
   return (
     <section
@@ -72,8 +84,17 @@ export function StripeFeesCard({ state, inProgress }: StripeFeesCardProps) {
             <span className='w-24 text-right'>Debit</span>
             <span className='w-24 text-right'>Credit</span>
           </div>
-          <Line label='Merchant fees (expense)' debit={data.totalFees} />
-          <Line label='Stripe balance' credit={data.totalFees} />
+          <Line
+            label='Cost of Revenue: Payment Processing Fees'
+            debit={data.totalFees}
+          />
+          <Line label='Services Revenue' credit={data.totalFees} />
+          <dl className='mx-5 mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[13px]'>
+            <dt className='text-muted-foreground'>Date</dt>
+            <dd>{entryDate}</dd>
+            <dt className='text-muted-foreground'>Memo</dt>
+            <dd className='select-all'>{memo}</dd>
+          </dl>
 
           <div className='mx-5 mt-3 space-y-1 border-t pt-3 text-[13px]'>
             <div className='flex justify-between gap-3'>

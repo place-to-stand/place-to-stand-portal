@@ -84,6 +84,12 @@ export default async function MonthlyClosePage({
       day: 'numeric',
     }) ?? ''
 
+  const entryDateLabel =
+    formatCalendarDate(`${monthKey}-${String(lastDay).padStart(2, '0')}`) ?? ''
+  const shortMonthLabel =
+    formatCalendarDate(`${monthKey}-01`, { month: 'short', year: 'numeric' }) ??
+    ''
+
   const isCurrentMonth =
     validYear === getYear(now) && validMonth === getMonth(now)
   const inProgress = isCurrentMonth && close.status === 'open'
@@ -107,7 +113,12 @@ export default async function MonthlyClosePage({
         salesTax={report.salesTax}
         isLive={close.salesTaxIsLive}
       />
-      <StripeFeesCard state={stripeFees} inProgress={isCurrentMonth} />
+      <StripeFeesCard
+        state={stripeFees}
+        entryDate={entryDateLabel}
+        monthLabel={shortMonthLabel}
+        inProgress={isCurrentMonth}
+      />
       <RateSplitCard report={report} />
     </>
   )
