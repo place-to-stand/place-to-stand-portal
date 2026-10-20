@@ -126,6 +126,27 @@ export type PrepaidBillingData = {
   hourlyRate: number
 }
 
+// Sales tax collected
+export type SalesTaxRow = {
+  invoiceId: string
+  invoiceNumber: string | null
+  clientId: string
+  clientName: string
+  /** UTC calendar day the payment landed ("yyyy-MM-dd"). */
+  paidOn: string
+  /** Pre-tax subtotal the rate was applied to. */
+  taxableAmount: number
+  /** Decimal rate, e.g. 0.0725. */
+  taxRate: number
+  taxAmount: number
+}
+
+export type SalesTaxData = {
+  rows: SalesTaxRow[]
+  totalTaxable: number
+  totalAmount: number
+}
+
 // Net 30 billing
 export type Net30Row = {
   clientId: string
@@ -210,6 +231,8 @@ export type MonthlyCloseReport = {
   partnerPayouts: PartnerPayoutData
   prepaidBilling: PrepaidBillingData
   net30Billing: Net30Data
+  /** Sales tax on invoices paid in the period — the month's tax liability. */
+  salesTax: SalesTaxData
   house: HouseData
   /** Admin hours logged on CLIENT projects in the period. */
   workBillableHours: number

@@ -17,6 +17,7 @@ import {
   ConnectedAccountsList,
   type ConnectedAccount,
 } from '@/components/integrations/connected-accounts-list'
+import { CompanyServicesCard } from '@/components/integrations/company-services-card'
 import { MercuryIntegrationCard } from '@/components/integrations/mercury-integration-card'
 import { TokenIntegrationCard } from '@/components/integrations/token-integration-card'
 
@@ -249,6 +250,7 @@ export function IntegrationsPanel() {
         title='Company'
         description='Shared by everyone. Set in the server environment.'
       >
+        <CompanyServicesCard />
         <MercuryIntegrationCard />
       </IntegrationSection>
 

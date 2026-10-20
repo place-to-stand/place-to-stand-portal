@@ -11,6 +11,7 @@ import {
   fetchOriginationCommissions,
   fetchPrepaidBilling,
   fetchReportDateBounds,
+  fetchSalesTaxCollected,
 } from '@/lib/queries/reports/monthly-close'
 import type {
   CloserClientDetail,
@@ -29,6 +30,7 @@ import type {
   PayrollRow,
   PrepaidBillingData,
   PrepaidBillingRow,
+  SalesTaxData,
 } from './types'
 
 /** Hours are NUMERIC(8,2) — settle float noise before comparing/subtracting. */
@@ -60,6 +62,7 @@ export const fetchMonthlyCloseReport = cache(
       prepaidRows,
       net30Rows,
       billableWorkHours,
+      salesTaxRows,
       bounds,
     ] = await Promise.all([
       fetchEmployeePayroll(startDate, endDate),
@@ -68,6 +71,7 @@ export const fetchMonthlyCloseReport = cache(
       fetchPrepaidBilling(startDate, endDate),
       fetchNet30Billing(startDate, endDate),
       fetchBillableWorkHours(startDate, endDate),
+      fetchSalesTaxCollected(startDate, endDate),
       fetchReportDateBounds(),
     ])
 
@@ -412,6 +416,31 @@ export const fetchMonthlyCloseReport = cache(
     }
 
     // ------------------------------------------------------------------
+    // Sales tax collected — a liability passed through, never revenue, so
+    // it stays out of Billing In and every split.
+    // ------------------------------------------------------------------
+    const salesTaxData = salesTaxRows.map(row => ({
+      invoiceId: row.invoiceId,
+      invoiceNumber: row.invoiceNumber,
+      clientId: row.clientId,
+      clientName: row.clientName,
+      paidOn: row.paidOn,
+      taxableAmount: toFiniteNumber(row.subtotal),
+      taxRate: toFiniteNumber(row.taxRate),
+      taxAmount: toFiniteNumber(row.taxAmount),
+    }))
+
+    const salesTax: SalesTaxData = {
+      rows: salesTaxData,
+      totalTaxable: round2(
+        salesTaxData.reduce((sum, row) => sum + row.taxableAmount, 0)
+      ),
+      totalAmount: round2(
+        salesTaxData.reduce((sum, row) => sum + row.taxAmount, 0)
+      ),
+    }
+
+    // ------------------------------------------------------------------
     // Totals + House (rate-based, billing basis)
     //
     // The reporting model:
@@ -485,6 +514,7 @@ export const fetchMonthlyCloseReport = cache(
       partnerPayouts,
       prepaidBilling,
       net30Billing,
+      salesTax,
       house,
       workBillableHours: billableWorkHours,
       workBillableTotal,

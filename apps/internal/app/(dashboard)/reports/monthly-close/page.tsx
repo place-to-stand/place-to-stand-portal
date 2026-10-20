@@ -11,6 +11,7 @@ import {
   getPartnerRatesEndDate,
 } from '@/lib/billing/partner-rates'
 import { fetchMonthlyCloseView } from '@/lib/data/reports/close'
+import { loadStripeFees } from '@/lib/stripe/fees'
 
 import { BillingInCard } from './_components/billing-in-card'
 import { CloseControls } from './_components/close-controls'
@@ -21,6 +22,8 @@ import { buildPayoutTable } from './_components/payout-rows'
 import { ProfitShareCard } from './_components/profit-share-card'
 import { RateSplitCard } from './_components/rate-split-card'
 import { ReportToolbar } from './_components/report-toolbar'
+import { SalesTaxCard } from './_components/sales-tax-card'
+import { StripeFeesCard } from './_components/stripe-fees-card'
 import { SnapshotErrorNotice } from './_components/snapshot-error-notice'
 import { SummaryStrip } from './_components/summary-strip'
 
@@ -59,10 +62,12 @@ export default async function MonthlyClosePage({
   const closeMonthNumber = validMonth + 1
   const monthKey = `${validYear}-${String(closeMonthNumber).padStart(2, '0')}`
 
-  const { report, close, profitShare } = await fetchMonthlyCloseView(
-    validYear,
-    closeMonthNumber
-  )
+  // Stripe is read alongside the report so its round trip overlaps the
+  // database reads.
+  const [{ report, close, profitShare }, stripeFees] = await Promise.all([
+    fetchMonthlyCloseView(validYear, closeMonthNumber),
+    loadStripeFees(validYear, closeMonthNumber),
+  ])
 
   // Date-only strings format in UTC, so labels never drift a month.
   const displayMonth =
@@ -78,6 +83,12 @@ export default async function MonthlyClosePage({
       month: 'short',
       day: 'numeric',
     }) ?? ''
+
+  const entryDateLabel =
+    formatCalendarDate(`${monthKey}-${String(lastDay).padStart(2, '0')}`) ?? ''
+  const shortMonthLabel =
+    formatCalendarDate(`${monthKey}-01`, { month: 'short', year: 'numeric' }) ??
+    ''
 
   const isCurrentMonth =
     validYear === getYear(now) && validMonth === getMonth(now)
@@ -97,6 +108,16 @@ export default async function MonthlyClosePage({
         prepaid={report.prepaidBilling}
         net30={report.net30Billing}
         total={report.combinedBillingTotal}
+      />
+      <SalesTaxCard
+        salesTax={report.salesTax}
+        isLive={close.salesTaxIsLive}
+      />
+      <StripeFeesCard
+        state={stripeFees}
+        entryDate={entryDateLabel}
+        monthLabel={shortMonthLabel}
+        inProgress={isCurrentMonth}
       />
       <RateSplitCard report={report} />
     </>
