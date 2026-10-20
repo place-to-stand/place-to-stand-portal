@@ -1,6 +1,10 @@
 import 'server-only'
 
 import { serverEnv } from '@/lib/env.server'
+import {
+  MercuryApiError,
+  fetchMercuryAccounts,
+} from '@/lib/integrations/mercury/api'
 import { getStripe } from '@/lib/stripe/client'
 import type {
   CompanyService,
@@ -36,8 +40,8 @@ function configured(
 }
 
 /**
- * Stripe is the one company service checked live: it takes the money and
- * carries each payment's sales tax, so a dead key matters right away.
+ * Stripe and Mercury are checked live: they hold the money, so a dead key
+ * matters right away. The rest only report whether their variables are set.
  */
 async function stripeStatus(): Promise<CompanyService> {
   const envVars = ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET']
@@ -46,16 +50,15 @@ async function stripeStatus(): Promise<CompanyService> {
     return { id: 'stripe', status: 'not_configured', envVars }
   }
 
-  const mode = key.startsWith('sk_live_') || key.startsWith('rk_live_')
-    ? 'Live mode'
-    : 'Test mode'
+  const mode =
+    key.startsWith('sk_live_') || key.startsWith('rk_live_') ? 'Live' : 'Test'
 
   if (!serverEnv.STRIPE_WEBHOOK_SECRET) {
     return {
       id: 'stripe',
       status: 'error',
       envVars,
-      detail: `${mode}. Missing STRIPE_WEBHOOK_SECRET, so paid invoices never get marked paid.`,
+      detail: `${mode} mode. Missing STRIPE_WEBHOOK_SECRET, so paid invoices never get marked paid.`,
     }
   }
 
@@ -89,19 +92,51 @@ async function stripeStatus(): Promise<CompanyService> {
   }
 }
 
-/** Company services configured in the server environment, in display order. */
+async function mercuryStatus(): Promise<CompanyService> {
+  const envVars = ['MERCURY_API_TOKEN']
+  const token = serverEnv.MERCURY_API_TOKEN
+  if (!token) {
+    return { id: 'mercury', status: 'not_configured', envVars }
+  }
+
+  try {
+    const accounts = await fetchMercuryAccounts(token)
+    return {
+      id: 'mercury',
+      status: 'connected',
+      envVars,
+      detail: `${accounts.length} account${accounts.length === 1 ? '' : 's'}`,
+    }
+  } catch (error) {
+    console.error('Mercury status check failed', error)
+    return {
+      id: 'mercury',
+      status: 'error',
+      envVars,
+      detail:
+        error instanceof MercuryApiError
+          ? error.status === 401 || error.status === 403
+            ? `Mercury rejected the token (${error.status}).`
+            : `${error.message}.`
+          : 'Mercury could not be reached.',
+    }
+  }
+}
+
+/** Company services configured in the server environment. */
 export async function fetchCompanyServices(): Promise<CompanyService[]> {
-  const stripe = await stripeStatus()
+  const [stripe, mercury] = await Promise.all([stripeStatus(), mercuryStatus()])
 
   return [
     stripe,
+    mercury,
     configured(
       'resend',
       {
         RESEND_API_KEY: serverEnv.RESEND_API_KEY,
         RESEND_FROM_EMAIL: serverEnv.RESEND_FROM_EMAIL,
       },
-      `Sends as ${serverEnv.RESEND_FROM_EMAIL}`
+      serverEnv.RESEND_FROM_EMAIL
     ),
     configured('posthog', {
       NEXT_PUBLIC_POSTHOG_KEY: serverEnv.NEXT_PUBLIC_POSTHOG_KEY,
