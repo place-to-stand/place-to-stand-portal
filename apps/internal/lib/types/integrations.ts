@@ -119,6 +119,7 @@ export function formatIntegrationLinkLabel(
 /** Company-wide services wired through server env vars, not per-user OAuth. */
 export type CompanyServiceId =
   | 'stripe'
+  | 'mercury'
   | 'resend'
   | 'posthog'
   | 'ai_gateway'
