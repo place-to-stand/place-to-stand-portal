@@ -4,7 +4,6 @@ import { useCallback } from 'react'
 
 import { FilterBar } from '@/components/table-toolbar/filter-bar'
 import { FilterSelect } from '@/components/table-toolbar/filter-select'
-import { ResetFiltersButton } from '@/components/table-toolbar/reset-filters-button'
 import { SearchInput } from '@/components/table-toolbar/search-input'
 import { useListParams } from '@/hooks/use-list-params'
 import {
@@ -82,12 +81,18 @@ export function ProjectsLandingFilters({
   )
 
   return (
-    <FilterBar>
-      <SearchInput
-        value={search}
-        onCommit={value => update({ q: value })}
-        placeholder='Search projects…'
-      />
+    <FilterBar
+      search={
+        <SearchInput
+          value={search}
+          onCommit={value => update({ q: value })}
+          placeholder='Search projects…'
+        />
+      }
+      activeFilterCount={getParam('status') !== undefined ? 1 : 0}
+      showReset={hasActiveFilters}
+      onReset={reset}
+    >
       <FilterSelect
         mode='multi'
         values={statuses}
@@ -95,7 +100,6 @@ export function ProjectsLandingFilters({
         placeholder='Status'
         options={STATUS_OPTIONS}
       />
-      <ResetFiltersButton show={hasActiveFilters} onReset={reset} />
     </FilterBar>
   )
 }

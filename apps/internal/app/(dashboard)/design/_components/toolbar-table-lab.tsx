@@ -44,12 +44,16 @@ export function ToolbarTableLab() {
     <>
       <DesignSection id='toolbar-lab' title='Toolbar lab'>
         <Specimen label='FilterBar — search + single + multi (local state)'>
-          <FilterBar>
-            <SearchInput
-              value={search}
-              onCommit={setSearch}
-              placeholder='Search things…'
-            />
+          <FilterBar
+            search={
+              <SearchInput
+                value={search}
+                onCommit={setSearch}
+                placeholder='Search things…'
+              />
+            }
+            activeFilterCount={(status ? 1 : 0) + (multi.length > 0 ? 1 : 0)}
+          >
             <FilterSelect
               value={status}
               onChange={setStatus}

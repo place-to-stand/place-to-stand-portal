@@ -48,11 +48,11 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
 
   return (
     <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-      {/* Five tabs outgrow a phone: scroll them instead of clipping. */}
-      <TabsList className='bg-muted/40 h-10 w-full [scrollbar-width:none] justify-start gap-2 overflow-x-auto rounded-lg p-1 sm:w-auto'>
+      {/* Left-aligned like every tab strip; scrolls once it outgrows a phone. */}
+      <TabsList className='bg-muted/40 h-10 w-fit max-w-full [scrollbar-width:none] justify-start gap-2 overflow-x-auto rounded-lg p-1'>
         <TabsTrigger
           value='overview'
-          className='shrink-0 px-3 py-1.5 text-sm'
+          className='flex-none px-3 py-1.5 text-sm'
           asChild
         >
           <Link
@@ -65,7 +65,7 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
         </TabsTrigger>
         <TabsTrigger
           value='board'
-          className='shrink-0 px-3 py-1.5 text-sm'
+          className='flex-none px-3 py-1.5 text-sm'
           asChild
         >
           <Link
@@ -78,7 +78,7 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
         </TabsTrigger>
         <TabsTrigger
           value='review'
-          className='shrink-0 px-3 py-1.5 text-sm'
+          className='flex-none px-3 py-1.5 text-sm'
           asChild
           disabled={reviewDisabled}
         >
@@ -103,7 +103,7 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
         </TabsTrigger>
         <TabsTrigger
           value='timeLogs'
-          className='shrink-0 px-3 py-1.5 text-sm'
+          className='flex-none px-3 py-1.5 text-sm'
           asChild
           disabled={timeLogsDisabled}
         >
@@ -128,7 +128,7 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
         </TabsTrigger>
         <TabsTrigger
           value='activity'
-          className='shrink-0 px-3 py-1.5 text-sm'
+          className='flex-none px-3 py-1.5 text-sm'
           asChild
           disabled={activityDisabled}
         >
@@ -153,7 +153,7 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
         </TabsTrigger>
       </TabsList>
       {projectActions ? (
-        <div className='flex w-full items-center justify-between gap-2 sm:w-auto'>
+        <div className='flex w-full items-center justify-end gap-2 sm:w-auto'>
           {activeProjectId && activeProjectStatus ? (
             <ProjectStatusCell
               projectId={activeProjectId}

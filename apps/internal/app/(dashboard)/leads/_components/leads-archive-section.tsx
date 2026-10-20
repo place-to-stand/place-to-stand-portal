@@ -11,7 +11,6 @@ import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { FilterBar } from '@/components/table-toolbar/filter-bar'
 import { FilterSelect } from '@/components/table-toolbar/filter-select'
-import { ResetFiltersButton } from '@/components/table-toolbar/reset-filters-button'
 import { SearchInput } from '@/components/table-toolbar/search-input'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import {
@@ -284,19 +283,24 @@ export function LeadsArchiveSection({
         onCancel={handleCancelDestroy}
         onConfirm={handleConfirmDestroy}
       />
-      <FilterBar>
-        <SearchInput
-          value={searchQuery}
-          onCommit={value => update({ q: value })}
-          placeholder='Search leads…'
-        />
+      <FilterBar
+        search={
+          <SearchInput
+            value={searchQuery}
+            onCommit={value => update({ q: value })}
+            placeholder='Search leads…'
+          />
+        }
+        activeFilterCount={statusFilter ? 1 : 0}
+        showReset={hasActiveFilters}
+        onReset={reset}
+      >
         <FilterSelect
           value={statusFilter}
           onChange={value => update({ status: value })}
           placeholder='All statuses'
           options={statusOptions}
         />
-        <ResetFiltersButton show={hasActiveFilters} onReset={reset} />
       </FilterBar>
       <div className='rounded-lg border'>
         <Table density='compact' layout='fixed' stack>

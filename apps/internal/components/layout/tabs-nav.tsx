@@ -42,14 +42,14 @@ export function TabsNav({ tabs, activeTab, className }: TabsNavProps) {
       onValueChange={handleValueChange}
       className={cn('w-full sm:w-auto', className)}
     >
-      {/* Scrolls sideways when the tabs outgrow a phone (the project
-          workspace has six), instead of clipping the last ones. */}
-      <TabsList className='bg-muted/40 h-10 w-full [scrollbar-width:none] justify-start gap-2 overflow-x-auto rounded-lg p-1 sm:w-auto'>
+      {/* Tabs hug the left edge at every width and scroll sideways once
+          they outgrow the screen, instead of stretching or clipping. */}
+      <TabsList className='bg-muted/40 h-10 w-fit max-w-full [scrollbar-width:none] justify-start gap-2 overflow-x-auto rounded-lg p-1'>
         {tabs.map(tab => (
           <TabsTrigger
             key={tab.value}
             value={tab.value}
-            className='shrink-0 px-3 py-1.5 text-sm'
+            className='flex-none px-3 py-1.5 text-sm'
           >
             {tab.label}
           </TabsTrigger>
