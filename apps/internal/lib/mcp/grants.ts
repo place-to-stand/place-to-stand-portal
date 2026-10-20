@@ -10,10 +10,10 @@ export type ConnectedApp = {
 }
 
 /**
- * auth-js types an OAuth client as `{ id, name }`, but the auth server
- * bundled with the local Supabase CLI returns `{ client_id, client_name }`.
- * Read both so the consent page and the connected-apps card never show
- * "undefined".
+ * auth-js types an OAuth client as `{ id, name }`, but older auth servers
+ * (v2.180, once pinned by the local Supabase CLI) return `{ client_id,
+ * client_name }`. Read both so the consent page and the connected-apps card
+ * never show "undefined".
  */
 export function oauthClientName(client: object): string {
   const { name, client_name } = client as {
