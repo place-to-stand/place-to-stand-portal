@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 
-import { requireUser } from "@/lib/auth/session";
+import { requireCrmUser } from "@/lib/auth/session";
 import { logActivity } from "@/lib/activity/logger";
 import { userPasswordChangedEvent } from "@/lib/activity/events";
 import { sendPasswordChangedEmail } from "@/lib/email/auth-emails";
@@ -29,7 +29,9 @@ export type CompletePasswordResetResult = {
 export async function completePasswordReset(
   input: CompletePasswordResetInput
 ): Promise<CompletePasswordResetResult> {
-  const user = await requireUser();
+  // Any internal-portal user resets their own password here. requireUser() is
+  // admin-only and would bounce a SALES user to the leads board mid-reset.
+  const user = await requireCrmUser();
   const parsed = schema.safeParse(input);
 
   if (!parsed.success) {
