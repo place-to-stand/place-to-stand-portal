@@ -115,3 +115,24 @@ export function formatIntegrationLinkLabel(
     ? `${link.ownerName} / ${link.externalName}`
     : link.externalName
 }
+
+/** Company-wide services wired through server env vars, not per-user OAuth. */
+export type CompanyServiceId =
+  | 'stripe'
+  | 'resend'
+  | 'posthog'
+  | 'ai_gateway'
+  | 'github_app'
+  | 'google_chat'
+  | 'marketing_forms'
+
+export type CompanyService = {
+  id: CompanyServiceId
+  /**
+   * `connected` was verified against the provider just now; `configured`
+   * only means its env vars are present.
+   */
+  status: 'connected' | 'configured' | 'not_configured' | 'error'
+  envVars: string[]
+  detail?: string
+}
