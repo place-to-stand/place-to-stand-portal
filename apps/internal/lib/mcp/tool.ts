@@ -32,7 +32,7 @@ const ACCESS_CHECKS: Record<ToolAccess, (user: AppUser) => void> = {
 }
 
 /** Agreed with Kris 2026-10-19 (PRD 009 §7). */
-export const MCP_TOOL_CALLED_EVENT = 'mcp_tool_called'
+export const MCP_TOOL_CALLED_EVENT = 'mcp.tool_call'
 
 export type ToolDefinition<Shape extends z.ZodRawShape> = {
   name: string

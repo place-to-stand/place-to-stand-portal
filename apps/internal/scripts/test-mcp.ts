@@ -13,8 +13,9 @@
  *   MCP_TEST_EMAIL=... MCP_TEST_PASSWORD=... npx tsx scripts/test-mcp.ts
  *
  * The user must be an ADMIN. Writes a task, a comment, a lead and a lead
- * update to whatever DATABASE_URL points at, then deletes them — do not aim
- * it at production.
+ * update to whatever DATABASE_URL points at, and creates two throwaway users
+ * (a SALES user and an admin mid password reset) to prove they are refused,
+ * then deletes all of it — do not aim it at production.
  */
 
 import { createHash, randomBytes } from 'crypto'
@@ -56,23 +57,23 @@ function base64url(buffer: Buffer): string {
   return buffer.toString('base64url')
 }
 
-/** Discovery → DCR → PKCE authorize → approve → token. Returns an access token. */
-async function connect(): Promise<{
-  accessToken: string
-  sessionToken: string
-  clientId: string
-}> {
-  const supabase = createClient(SUPABASE_URL, ANON_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  })
+/**
+ * Tool output is asserted field by field below, so a loose shape keeps those
+ * reads short; the server's own types are the contract, not this script.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Loose = any
 
-  const { data: signIn, error: signInError } =
-    await supabase.auth.signInWithPassword({ email: EMAIL!, password: PASSWORD! })
+/** Every OAuth client this run registers, deleted in cleanup. */
+const registeredClients: string[] = []
 
-  if (signInError || !signIn.session) {
-    fail(`Sign-in failed: ${signInError?.message ?? 'no session'}`)
-  }
+type Discovery = {
+  metadata: Loose
+  resource: Loose
+}
 
+/** The 401 challenge and the discovery documents it points at. */
+async function discover(): Promise<Discovery> {
   const challenge = await fetch(MCP_URL, { method: 'POST' })
   const resourceMetadata = challenge.headers
     .get('www-authenticate')
@@ -89,6 +90,33 @@ async function connect(): Promise<{
 
   check('discovery names an authorization server', Boolean(metadata.issuer))
 
+  return { metadata, resource }
+}
+
+/**
+ * DCR → PKCE authorize → approve → token, as one user. Throws rather than
+ * exiting so callers' cleanup still runs.
+ */
+async function authorizeAs(
+  { metadata, resource }: Discovery,
+  email: string,
+  password: string
+): Promise<{
+  accessToken: string
+  sessionToken: string
+  clientId: string
+}> {
+  const supabase = createClient(SUPABASE_URL, ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
+
+  const { data: signIn, error: signInError } =
+    await supabase.auth.signInWithPassword({ email, password })
+
+  if (signInError || !signIn.session) {
+    throw new Error(`Sign-in failed for ${email}: ${signInError?.message ?? 'no session'}`)
+  }
+
   const registration = await fetch(metadata.registration_endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -103,6 +131,7 @@ async function connect(): Promise<{
   const client = await registration.json()
 
   check('dynamic client registration succeeds', Boolean(client.client_id), client)
+  registeredClients.push(client.client_id)
 
   const verifier = base64url(randomBytes(32))
   const authorizeUrl = new URL(metadata.authorization_endpoint)
@@ -170,7 +199,7 @@ async function connect(): Promise<{
   check('token exchange issues an access token', Boolean(tokens.access_token), tokens)
 
   if (!tokens.access_token) {
-    fail('Cannot continue without an access token.')
+    throw new Error('Cannot continue without an access token.')
   }
 
   return {
@@ -192,13 +221,6 @@ type RpcResponse = {
     error?: { message: string }
   } | null
 }
-
-/**
- * Tool output is asserted field by field below, so a loose shape keeps those
- * reads short; the server's own types are the contract, not this script.
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Loose = any
 
 let rpcId = 0
 
@@ -250,9 +272,73 @@ async function callTool(
   }
 }
 
+function adminClient() {
+  return createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
+}
+
+/**
+ * Prove a valid OAuth token is still refused for a user who may not use the
+ * server. Supabase's approve endpoint answers to any signed-in user — the
+ * consent page's admin check is UI only — so the token check in
+ * `verifyMcpToken` is the gate, and this tests it directly.
+ */
+async function checkRefused(
+  discovery: Discovery,
+  label: string,
+  user: { role: 'ADMIN' | 'SALES'; mustReset: boolean },
+  expected: RegExp,
+  insertProfile: (row: { id: string; email: string; role: 'ADMIN' | 'SALES' }) => Promise<void>,
+  deleteProfile: (id: string) => Promise<void>
+) {
+  const admin = adminClient()
+  const email = `mcp-test-${randomBytes(4).toString('hex')}@example.com`
+  const password = base64url(randomBytes(18))
+  const { data, error } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: user.mustReset ? { must_reset_password: true } : {},
+  })
+
+  if (error || !data.user) {
+    throw new Error(`Could not create the ${label} test user: ${error?.message}`)
+  }
+
+  try {
+    await insertProfile({ id: data.user.id, email, role: user.role })
+
+    const { accessToken } = await authorizeAs(discovery, email, password)
+    const refused = await rpc(accessToken, 'tools/list')
+
+    check(
+      `${label} is refused with 403`,
+      refused.status === 403 && expected.test(refused.body?.error?.message ?? ''),
+      refused
+    )
+  } finally {
+    await deleteProfile(data.user.id)
+    await admin.auth.admin.deleteUser(data.user.id)
+  }
+}
+
+/** Each run registers fresh OAuth clients (and grants); remove them all. */
+async function deleteRegisteredClients() {
+  const admin = adminClient()
+
+  await Promise.all(
+    registeredClients.map(clientId => admin.auth.admin.oauth.deleteClient(clientId))
+  )
+}
+
 async function main() {
   if (!EMAIL || !PASSWORD) {
     fail('Set MCP_TEST_EMAIL and MCP_TEST_PASSWORD (a local ADMIN).')
+  }
+
+  if (!SERVICE_ROLE_KEY) {
+    fail('SUPABASE_SERVICE_ROLE_KEY is required to create and remove test users.')
   }
 
   if (!process.env.DATABASE_URL) {
@@ -262,18 +348,31 @@ async function main() {
   // Connect directly rather than via `@/lib/db` — that module is marked
   // `server-only`, which does not resolve outside the Next runtime.
   const { createDb } = await import('@pts/db/client')
-  const { activityLogs, leads, leadUpdates, taskComments, tasks } =
+  const { activityLogs, leads, leadUpdates, taskComments, tasks, users: userProfiles } =
     await import('@pts/db/schema')
   const db = createDb(process.env.DATABASE_URL)
 
   console.log(`\nTarget: ${MCP_URL}\n\nOAuth`)
-  const { accessToken, sessionToken, clientId } = await connect()
+  const discovery = await discover()
+  const { accessToken, sessionToken } = await authorizeAs(discovery, EMAIL!, PASSWORD!)
 
   console.log('\nRejections')
   const cliToken = await rpc(sessionToken, 'tools/list')
   check('a CLI session token (no client_id) is refused', cliToken.status === 401)
   const noToken = await rpc(null, 'tools/list')
   check('a call with no token is refused', noToken.status === 401)
+
+  const insertProfile = async (row: { id: string; email: string; role: 'ADMIN' | 'SALES' }) => {
+    await db.insert(userProfiles).values(row)
+  }
+  const deleteProfile = async (id: string) => {
+    await db.delete(userProfiles).where(eq(userProfiles.id, id))
+  }
+
+  await checkRefused(discovery, 'a SALES user', { role: 'SALES', mustReset: false },
+    /admin users only/, insertProfile, deleteProfile)
+  await checkRefused(discovery, 'an admin mid password reset', { role: 'ADMIN', mustReset: true },
+    /must reset its password/, insertProfile, deleteProfile)
 
   console.log('\nTools')
   const list = await rpc(accessToken, 'tools/list')
@@ -436,23 +535,17 @@ async function main() {
       await db.delete(leads).where(eq(leads.id, created.leadId))
     }
 
-    // Each run registers a fresh OAuth client (and its grant); remove it so
-    // local Supabase does not accumulate them.
-    if (SERVICE_ROLE_KEY) {
-      const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-        auth: { persistSession: false, autoRefreshToken: false },
-      })
-      await admin.auth.admin.oauth.deleteClient(clientId)
-    }
+    await deleteRegisteredClients()
 
-    console.log('  removed test rows and the OAuth client')
+    console.log('  removed test rows and the OAuth clients')
   }
 
   console.log(failures ? `\n${failures} check(s) failed.` : '\nAll checks passed.')
   process.exit(failures ? 1 : 0)
 }
 
-main().catch(error => {
+main().catch(async error => {
   console.error(error)
+  await deleteRegisteredClients().catch(() => {})
   process.exit(1)
 })

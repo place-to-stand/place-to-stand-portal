@@ -1,8 +1,8 @@
 # PRD 009 — PTS MCP server (internal, admin-only v1)
 
-**Status:** Draft, for audit (`/audit-prd`)
+**Status:** Built on the branch except §6 (connected apps). Implementation notes are at the end.
 **Created:** 2026-10-19
-**Branch:** not yet created
+**Branch:** `feat/mcp-server`
 **Repos touched:** `place-to-stand-portal` only
 
 ---
@@ -35,6 +35,15 @@ engagement standing) is explicitly out of scope until this one proves useful.
 | D7 | **Users manage their connected apps in Settings > Integrations**, alongside their Vercel / Supabase / GitHub connections. |
 | D8 | **Client-facing MCP is deferred.** Nothing in v1 is exposed to CLIENT users. |
 
+**Answered during the build (Kris, 2026-10-20)**
+
+| # | Decision |
+| --- | --- |
+| D9 | **No invoices in v1** (was Q1), not even read-only. |
+| D10 | **`list_tasks` matches the CLI** (was Q2): every project, other admins' PERSONAL projects included. |
+| D11 | **Agent attribution lives in the activity log only** (was Q4). No column on `task_comments` or `tasks`. |
+| D12 | **One PostHog event per tool call:** `mcp.tool_call`, dot style like the other server events, with properties `tool`, `outcome` (`ok` / `error`), `error_code`, `duration_ms`, `agent_name`. `distinct_id` is the user id. |
+
 ## Non-goals
 
 - Client-portal or CLIENT-role access of any kind.
@@ -55,9 +64,8 @@ claude.ai / Claude Code ──HTTP (streamable, stateless)──▶ apps/interna
 Supabase Auth OAuth server ◀── consent UI: /oauth/consent    └─ lib/cli/* + lib/data + serializers
 ```
 
-- One route: `apps/internal/app/api/mcp/route.ts`, built with Vercel's `mcp-handler` (or the
-  official `@modelcontextprotocol/sdk` streamable-HTTP transport — pick in the spike, §8), running
-  stateless so any function instance can serve any request.
+- One route: `apps/internal/app/api/mcp/route.ts`, built with Vercel's `mcp-handler` (chosen in
+  the spike), running stateless so any function instance can serve any request.
 - Tools call the same modules the CLI routes use (`lib/cli/tasks.ts`, `lib/cli/leads.ts`,
   `lib/cli/queries/`, `lib/cli/serializers/`). **The MCP never calls `/api/cli/v1` over HTTP.**
 - The serializers stay the contract. Tool output is the serializer's camelCase shape, so an
@@ -73,12 +81,14 @@ than writing our own token endpoints.
   `authorization_url_path = "/oauth/consent"`; mirror in the hosted projects' dashboards.
 - **Discovery.** `/api/mcp` answers unauthenticated requests with `401` +
   `WWW-Authenticate: Bearer resource_metadata=…`. The portal serves
-  `/.well-known/oauth-protected-resource` pointing at the Supabase project as its authorization
-  server, which publishes `/.well-known/oauth-authorization-server/auth/v1`.
+  `/.well-known/oauth-protected-resource/api/mcp` (RFC 9728 puts the resource path after the
+  well-known segment) pointing at the Supabase project as its authorization server, which publishes `/.well-known/oauth-authorization-server/auth/v1`.
 - **Consent page** `apps/internal/app/(auth)/oauth/consent/page.tsx`: requires a signed-in
   ADMIN (redirects to `/sign-in` and back, preserving the authorization request), shows the
   client name, redirect host and what it will be able to do, and approves or denies through the
-  Supabase OAuth API. A non-ADMIN sees a refusal, never an approve button.
+  Supabase OAuth API. A non-ADMIN sees a refusal, never an approve button. This is UI only:
+  Supabase's approve endpoint accepts any signed-in user, so the token check on `/api/mcp` (§3)
+  is the real gate, and the smoke test proves it by approving as a SALES user directly.
 - **Redirect URI guard.** DCR lets any client register. The consent page shows the redirect host
   prominently, and we keep an allow-list of known hosts (claude.ai, claude.com, localhost for
   Claude Code / Inspector) that skip a "this app is not recognised" warning. Unknown hosts are
@@ -110,10 +120,10 @@ type ApiPrincipal = {
   - `actor_id` / `actor_role` = the human.
   - `metadata.agent = { clientId, name }` — the agent.
 - The activity feed (`components/activity/activity-feed-item.tsx`, which already labels `CLI`)
-  renders MCP rows as **"Kris via Claude"**. The human half falls back to the email when
+  renders MCP rows with an **MCP** badge and **"via {client name}"** (e.g. "via Claude Code"). The human half falls back to the email when
   `fullName` is empty.
 - Task comments and created tasks keep `author` / `created_by` = the human. The agent half of the
-  attribution lives in the activity log, not new columns on every table — open question Q4.
+  attribution lives in the activity log, not new columns on every table (D11).
 
 ### §4 Tool registry
 
@@ -136,7 +146,7 @@ changing the resolver's role check alone.
 | `list_clients` / `get_client` | admin | client serializer (includes hours balance, §5) + contacts + projects |
 | `list_contacts` / `get_contact` | crm | contact serializer |
 | `list_projects` / `get_project` | admin | project serializer (slug or UUID) |
-| `list_tasks` / `get_task` | admin | task serializer, filters: project, status, assignee, due |
+| `list_tasks` / `get_task` | admin | task serializer, filters: project, lead, status, assignee |
 | `list_leads` / `get_lead` | crm | lead serializer + recent lead updates |
 | `list_users` | admin | user serializer (for resolving assignees and owners) |
 
@@ -155,9 +165,10 @@ Writes run the same validation, `ensure*Access` checks and activity logging as t
 Where a CLI route has that logic inline, it is lifted into `lib/cli/` first so both channels share
 one implementation.
 
-**Output bounds.** List tools page (default 25, max 100) and return a `nextCursor`; long rich-text
-fields are converted to markdown and truncated with a marker, so a large project cannot flood
-the model's context.
+**Output bounds.** List tools take a `limit` (default 25, max 100) and return `{ items, hasMore }`;
+`hasMore` tells the agent to narrow its filters rather than page. List results truncate long
+rich-text fields to a preview with a marker pointing at the `get_*` tool, so a large project
+cannot flood the model's context.
 
 ### §5 Client hours
 
@@ -178,8 +189,7 @@ schedule (Supabase default, ~1h) — documented on the card.
 
 ### §7 Observability
 
-- Every tool call logs through PostHog server-side with the tool name, success / error code and
-  duration — **event and property names to be agreed before implementation** (CLAUDE.md rule).
+- Every tool call logs one PostHog server-side event, `mcp.tool_call` (D12).
 - Unhandled errors go through `captureException`; tool errors return a generic message, never a
   driver message (same rule as `withCliAuth`).
 
@@ -201,21 +211,25 @@ All pre-deploy testing is local. There is no hosted or claude.ai test before lau
 internal, nothing is reachable until an admin adds the connector, and fixes ship as normal pushes.
 The first production connection is the end-to-end check (Rollout step 4).
 
-**Setup:** turn on the OAuth server locally (`[auth.oauth_server] enabled = true`,
-`allow_dynamic_registration = true`, then `supabase stop && supabase start`) and run
-`npm run dev` (internal on :3000).
+**Setup:** `supabase/config.toml` now enables the OAuth server and dynamic registration locally;
+restart Supabase once (`supabase stop && supabase start`) after pulling, then run `npm run dev`
+(internal on :3000).
 
 1. **MCP Inspector — the build loop.** `npx @modelcontextprotocol/inspector`, pointed at
    `http://localhost:3000/api/mcp`. Runs the real OAuth flow (discovery → DCR → consent → token),
    lists tools with their schemas and annotations, and calls each one by hand with the raw
    response visible.
-2. **Scripted smoke test.** `apps/internal/scripts/test-mcp.ts`, run with `tsx`, following
-   `scripts/test-form-intake.ts`. Uses the MCP SDK client to connect, list tools and call every
-   read and write against local data, asserting:
+2. **Scripted smoke test.** `apps/internal/scripts/test-mcp.ts`, run with `tsx` from
+   `apps/internal` (`MCP_TEST_EMAIL=… MCP_TEST_PASSWORD=… npx tsx scripts/test-mcp.ts`). Runs the
+   real OAuth flow with plain JSON-RPC over `fetch`, then calls every tool against local data,
+   asserting:
    - result shapes match the serializers;
    - each write logs `activity_logs.source = 'MCP'` with `actor_id` = the human and
      `metadata.agent` set;
-   - a non-ADMIN token, a reset-pending user and a CLI token (no `client_id`) are all rejected.
+   - a SALES user's token, a reset-pending admin's token, a CLI token (no `client_id`) and no
+     token are all rejected. The script creates the two throwaway users and deletes them.
+
+   It deletes everything it wrote, including its OAuth clients.
 3. **Claude Code against localhost.**
    `claude mcp add --transport http pts-local http://localhost:3000/api/mcp`, then `/mcp` to sign
    in. First test with a real model picking tools, so it checks that tool names, descriptions and
@@ -238,10 +252,38 @@ The first production connection is the end-to-end check (Rollout step 4).
 
 ## Open questions
 
+Q1, Q2 and Q4 are answered (D9–D11).
+
 | # | Question |
 | --- | --- |
-| Q1 | **Invoices** — read-only in v1 (status, amount, due) alongside client hours, or out entirely? |
-| Q2 | **Task scope** — should `list_tasks` include PERSONAL projects of other admins, or only CLIENT / INTERNAL? |
-| Q3 | **Unknown redirect hosts** at consent — warn-and-allow, or hard allow-list only? |
-| Q4 | **Agent attribution on rows** — is the activity log enough, or do task comments need a visible "via Claude" marker in the task sheet itself (a column on `task_comments`)? |
-| Q6 | **Agent identity granularity** — the OAuth client ("Claude") is all we get from the token. Is that enough, or do we want an optional `agentLabel` argument on writes (e.g. "Claude Code — acme-site repo")? Either way the name is self-reported at registration (the spike connected as "Claude Code (pts-local)"), so it is a label for attribution, never something to authorize on. |
+| Q3 | **Unknown redirect hosts** at consent — warn-and-allow, or hard allow-list only? *v1 ships warn-and-allow.* |
+| Q6 | **Agent identity granularity** — the OAuth client ("Claude") is all we get from the token. Is that enough, or do we want an optional `agentLabel` argument on writes (e.g. "Claude Code — acme-site repo")? Either way the name is self-reported at registration (the spike connected as "Claude Code (pts-local)"), so it is a label for attribution, never something to authorize on. *v1 ships the client name only.* |
+
+## Implementation notes (2026-10-20)
+
+Where the build departs from the design above, or settles something it left open:
+
+- **No cursors.** Lists cap at `limit` and return `hasMore` (§4).
+- **Rich text comes back as stored HTML**, not markdown: the repo has no HTML-to-markdown
+  converter. Writes still take the CLI's markdown subset, so agents write markdown and read HTML.
+- **No archive, restore or delete** (Non-goals). `update_task` and `update_lead` say so in their
+  descriptions and point at DONE, CLOSED_LOST / UNQUALIFIED, or the portal. Archived tasks are a
+  soft delete (`deletedAt`), not a status value.
+- **`crm`-tagged tools still need ADMIN underneath.** Contact and lead tools are tagged `crm`, but
+  some helpers behind them (`listLeadsForCli`, `resolveUserIds`, `resolveClientIdentifier`) assert
+  admin. Admitting SALES (D6) needs those opened up too; it is not yet the one-line change §4
+  promised.
+- **No shared `ApiPrincipal` type.** The CLI and MCP share `resolveAdminFromToken`
+  (`lib/cli/auth.ts`); the MCP adds the agent in `lib/mcp/auth.ts`. Attribution reaches
+  `logActivity` through a request-scoped context (`lib/activity/agent-context.ts`), so the
+  shared write paths in `lib/cli/tasks.ts` and `lib/cli/leads.ts` take no agent parameter.
+- **Write paths moved out of the CLI routes** into those two modules; the CLI routes are now thin
+  wrappers over the same functions the MCP calls.
+- **Consent page client name.** auth-js types the client as `{ name }`, but the local auth server
+  returns `{ client_name }`; the page reads both.
+- **Known rough edges from the first Claude Code test run**, not fixed in v1:
+  - timestamps are Postgres text (`2026-10-20 15:29:05.239+00`), not ISO 8601, while `occurredAt`
+    input requires ISO;
+  - list previews can cut through an HTML tag;
+  - empty lead notes come back as `""` rather than `null`;
+  - only `list_contacts` returns `totalCount`.
