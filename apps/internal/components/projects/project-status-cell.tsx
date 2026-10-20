@@ -91,7 +91,7 @@ export function ProjectStatusCell({
           className={cn(
             'text-foreground/70 h-3.5 w-3.5',
             variant === 'table' &&
-              'opacity-0 transition-opacity group-hover:opacity-100'
+              'opacity-0 transition-opacity group-hover:opacity-100 pointer-coarse:opacity-100'
           )}
         />
       </DropdownMenuTrigger>

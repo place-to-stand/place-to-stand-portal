@@ -11,7 +11,6 @@ import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { FilterBar } from '@/components/table-toolbar/filter-bar'
 import { FilterSelect } from '@/components/table-toolbar/filter-select'
-import { ResetFiltersButton } from '@/components/table-toolbar/reset-filters-button'
 import { SearchInput } from '@/components/table-toolbar/search-input'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import {
@@ -284,22 +283,32 @@ export function LeadsArchiveSection({
         onCancel={handleCancelDestroy}
         onConfirm={handleConfirmDestroy}
       />
-      <FilterBar>
-        <SearchInput
-          value={searchQuery}
-          onCommit={value => update({ q: value })}
-          placeholder='Search leads…'
-        />
+      <FilterBar
+        search={
+          <SearchInput
+            value={searchQuery}
+            onCommit={value => update({ q: value })}
+            placeholder='Search leads…'
+          />
+        }
+        activeFilterCount={statusFilter ? 1 : 0}
+        showReset={hasActiveFilters}
+        onReset={reset}
+      >
         <FilterSelect
           value={statusFilter}
           onChange={value => update({ status: value })}
           placeholder='All statuses'
           options={statusOptions}
         />
-        <ResetFiltersButton show={hasActiveFilters} onReset={reset} />
       </FilterBar>
       <div className='rounded-lg border'>
-        <Table density='compact' layout='fixed'>
+        <Table
+          density='compact'
+          layout='fixed'
+          stack
+          className='md:min-w-[46rem]'
+        >
           <TableHeader>
             <TableRow className='bg-muted/40'>
               <SortableTableHead
@@ -345,12 +354,22 @@ export function LeadsArchiveSection({
                   <TableCell className='truncate font-medium'>
                     {lead.contactName}
                   </TableCell>
-                  <TableCell className='truncate'>
+                  <TableCell
+                    className={cn(
+                      'truncate',
+                      !lead.companyName && 'max-md:hidden'
+                    )}
+                  >
                     {lead.companyName ?? (
                       <span className='text-muted-foreground/40'>—</span>
                     )}
                   </TableCell>
-                  <TableCell className='truncate'>
+                  <TableCell
+                    className={cn(
+                      'truncate',
+                      !lead.contactEmail && 'max-md:hidden'
+                    )}
+                  >
                     {lead.contactEmail ? (
                       <span className='text-muted-foreground text-sm'>
                         {lead.contactEmail}
@@ -359,17 +378,17 @@ export function LeadsArchiveSection({
                       <span className='text-muted-foreground/40'>—</span>
                     )}
                   </TableCell>
-                  <TableCell className='truncate'>
+                  <TableCell label='Last status' className='truncate'>
                     <span className='text-muted-foreground text-sm'>
                       {statusLabel}
                     </span>
                   </TableCell>
-                  <TableCell>
+                  <TableCell label='Archived'>
                     <span className='text-muted-foreground text-sm'>
                       {formatRelativeTime(lead.deletedAt)}
                     </span>
                   </TableCell>
-                  <TableCell className='text-right'>
+                  <TableCell className='text-right max-md:ml-auto'>
                     <div className='flex justify-end gap-2'>
                       <RowActionButton
                         label='Restore lead'

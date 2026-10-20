@@ -1,7 +1,6 @@
 'use client'
 
 import { FilterBar } from '@/components/table-toolbar/filter-bar'
-import { ResetFiltersButton } from '@/components/table-toolbar/reset-filters-button'
 import { SearchInput } from '@/components/table-toolbar/search-input'
 import { useListParams } from '@/hooks/use-list-params'
 
@@ -19,13 +18,16 @@ export function ProjectsArchiveFilters({ search }: ProjectsArchiveFiltersProps) 
   })
 
   return (
-    <FilterBar>
-      <SearchInput
-        value={search}
-        onCommit={value => update({ q: value })}
-        placeholder='Search projects…'
-      />
-      <ResetFiltersButton show={hasActiveFilters} onReset={reset} />
-    </FilterBar>
+    <FilterBar
+      search={
+        <SearchInput
+          value={search}
+          onCommit={value => update({ q: value })}
+          placeholder='Search projects…'
+        />
+      }
+      showReset={hasActiveFilters}
+      onReset={reset}
+    />
   )
 }

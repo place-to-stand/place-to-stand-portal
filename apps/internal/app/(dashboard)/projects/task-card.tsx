@@ -289,6 +289,10 @@ export function TaskCard({
       className={cn(
         'group bg-card rounded-lg border p-4 text-left shadow-sm transition',
         draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
+        // A touch drag starts on press-and-hold; keep iOS from selecting the
+        // card's text or opening its callout menu first.
+        draggable &&
+          'pointer-coarse:select-none pointer-coarse:[-webkit-touch-callout:none]',
         isDragging && 'ring-primary ring-2',
         (isActive || isDragging) && 'border-primary/50 bg-primary/5 shadow-md',
         !isActive && !isDragging && !isCompleted && ENTITY_ACCENTS.task.card,

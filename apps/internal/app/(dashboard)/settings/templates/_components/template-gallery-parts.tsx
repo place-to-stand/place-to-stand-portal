@@ -2,7 +2,6 @@
 
 import { FilterBar } from '@/components/table-toolbar/filter-bar'
 import { FilterSelect } from '@/components/table-toolbar/filter-select'
-import { ResetFiltersButton } from '@/components/table-toolbar/reset-filters-button'
 import { SearchInput } from '@/components/table-toolbar/search-input'
 import type { TemplateAudience } from '@/lib/templates/audience'
 
@@ -36,12 +35,18 @@ export function TemplateFilters({
   onChange: (next: TemplateFilterState) => void
 }) {
   return (
-    <FilterBar>
-      <SearchInput
-        value={value.query}
-        onCommit={query => onChange({ ...value, query })}
-        placeholder='Search templates…'
-      />
+    <FilterBar
+      search={
+        <SearchInput
+          value={value.query}
+          onCommit={query => onChange({ ...value, query })}
+          placeholder='Search templates…'
+        />
+      }
+      activeFilterCount={value.audiences.length > 0 ? 1 : 0}
+      showReset={Boolean(value.query) || value.audiences.length > 0}
+      onReset={() => onChange(EMPTY_TEMPLATE_FILTERS)}
+    >
       <FilterSelect
         mode='multi'
         values={value.audiences}
@@ -50,10 +55,6 @@ export function TemplateFilters({
         }
         placeholder='Recipients'
         options={AUDIENCE_OPTIONS}
-      />
-      <ResetFiltersButton
-        show={Boolean(value.query) || value.audiences.length > 0}
-        onReset={() => onChange(EMPTY_TEMPLATE_FILTERS)}
       />
     </FilterBar>
   )

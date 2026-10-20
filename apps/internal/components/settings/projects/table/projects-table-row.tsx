@@ -130,7 +130,7 @@ export function ProjectsTableRow({
       <TableCell className='text-muted-foreground text-sm'>
         {formatProjectDateRange(project.starts_on, project.ends_on)}
       </TableCell>
-      <TableCell className='text-right'>
+      <TableCell className='text-right max-md:ml-auto'>
         <div className='flex justify-end gap-2'>
           {showRestore ? (
             <DisabledFieldTooltip

@@ -27,7 +27,7 @@ export function LeadSheetRightColumn({
   const { isAdmin } = useViewerAccess()
 
   return (
-    <div className='bg-muted/20 w-80 flex-shrink-0 overflow-y-auto lg:w-96'>
+    <div className='bg-muted/20 flex-shrink-0 max-lg:border-t lg:w-96 lg:overflow-y-auto'>
       <div className='space-y-10 p-6'>
         {/* Conversion — renders nothing until the lead is closed won */}
         {isAdmin ? (

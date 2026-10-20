@@ -391,14 +391,17 @@ export function InvoiceSheet({
               {/* ────────────────────────────────────────────────────── */}
               {/* Two-column body                                       */}
               {/* ────────────────────────────────────────────────────── */}
-              <div className='flex min-h-0 flex-1'>
+              {/* Below lg the columns stack into one scroll with the footer
+                  pinned to the bottom: side by side, the form column was too
+                  narrow to use. */}
+              <div className='flex min-h-0 flex-1 max-lg:flex-col max-lg:overflow-y-auto'>
                 {/* Left Column - Form Fields */}
-                <div className='flex flex-1 flex-col overflow-hidden border-r'>
+                <div className='flex flex-1 flex-col overflow-hidden max-lg:contents lg:border-r'>
                   {/* Scrollable form body */}
-                  <div className='flex-1 overflow-y-auto p-6'>
+                  <div className='flex-1 p-6 lg:overflow-y-auto'>
                     <div className='flex flex-col gap-5'>
                       {/* ───── Header Fields ───── */}
-                      <div className='grid gap-x-4 gap-y-2 sm:grid-cols-2'>
+                      <div className='grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2'>
                         <FormField
                           control={form.control}
                           name='clientId'
@@ -523,7 +526,7 @@ export function InvoiceSheet({
                       <Separator />
 
                       {/* ───── Tax Rate (read-only, driven by client state) ───── */}
-                      <div className='grid items-center gap-4 sm:grid-cols-2'>
+                      <div className='grid grid-cols-1 items-center gap-4 sm:grid-cols-2'>
                         <span className='text-sm font-medium sm:text-right'>
                           {taxRateLabel ?? 'Tax rate'}
                         </span>
@@ -572,21 +575,23 @@ export function InvoiceSheet({
                   {/* Footer - attached to left column so the right sidebar
                       runs the full height of the sheet */}
                   {!isReadOnly ? (
-                    <SheetFormFooter
-                      formId={INVOICE_FORM_ID}
-                      saveLabel={submitButton.label}
-                      submitDisabled={submitButton.disabled}
-                      submitDisabledReason={submitButton.reason}
-                      undo={undo}
-                      redo={redo}
-                      canUndo={canUndo}
-                      canRedo={canRedo}
-                      isEditing={isEditing}
-                      deleteDisabled={deleteButton.disabled}
-                      deleteDisabledReason={deleteButton.reason}
-                      onRequestDelete={handleRequestDelete}
-                      deleteAriaLabel='Archive invoice'
-                    />
+                    <div className='max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:order-last'>
+                      <SheetFormFooter
+                        formId={INVOICE_FORM_ID}
+                        saveLabel={submitButton.label}
+                        submitDisabled={submitButton.disabled}
+                        submitDisabledReason={submitButton.reason}
+                        undo={undo}
+                        redo={redo}
+                        canUndo={canUndo}
+                        canRedo={canRedo}
+                        isEditing={isEditing}
+                        deleteDisabled={deleteButton.disabled}
+                        deleteDisabledReason={deleteButton.reason}
+                        onRequestDelete={handleRequestDelete}
+                        deleteAriaLabel='Archive invoice'
+                      />
+                    </div>
                   ) : null}
                 </div>
 
@@ -605,7 +610,7 @@ export function InvoiceSheet({
                     onVoidInvoice={() => runGuarded(handleRequestVoid)}
                   />
                 ) : (
-                  <div className='bg-muted/20 w-80 flex-shrink-0 lg:w-96'>
+                  <div className='bg-muted/20 flex-shrink-0 max-lg:border-t lg:w-96'>
                     <div className='flex h-full flex-col items-center justify-center p-6 text-center'>
                       <p className='text-muted-foreground text-sm'>
                         Save the invoice to access sharing, status actions, and

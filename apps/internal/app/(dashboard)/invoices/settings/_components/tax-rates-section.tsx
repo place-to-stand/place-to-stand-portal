@@ -222,7 +222,7 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
       </div>
 
       <div className='rounded-lg border'>
-        <Table density='compact' layout='fixed'>
+        <Table density='compact' layout='fixed' stack>
           <TableHeader>
             <TableRow className='bg-muted/40'>
               <TableHead className='w-[24%]'>State</TableHead>
@@ -253,12 +253,12 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
                   <TableCell className='truncate font-medium'>
                     {rate.state}
                   </TableCell>
-                  <TableCell>
+                  <TableCell label='Rate'>
                     {(Number(rate.rate) * 100).toFixed(2).replace(/\.?0+$/, '')}
                     %
                   </TableCell>
                   <TableCell className='truncate'>{rate.label}</TableCell>
-                  <TableCell>
+                  <TableCell label='Active'>
                     <Switch
                       size='sm'
                       checked={rate.is_active}
@@ -266,7 +266,7 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
                       onCheckedChange={() => handleToggleActive(rate)}
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className='max-md:ml-auto'>
                     <RowActionButton
                       label='Edit tax rate'
                       icon={<Pencil />}

@@ -1,6 +1,7 @@
 import { MessageCircle, Paperclip } from 'lucide-react'
 
 import { TableCell } from '@pts/ui/table'
+import { cn } from '@/lib/utils'
 import type { TaskWithRelations } from '@/lib/types'
 
 import type { RenderAssigneeFn } from '../../../../../../lib/projects/board/board-selectors'
@@ -28,7 +29,7 @@ export function ReviewTaskDataCells({
 
   return (
     <>
-      <TableCell className='align-top'>
+      <TableCell className='align-top max-md:whitespace-normal'>
         <div className='flex flex-col gap-1'>
           <span className='text-sm leading-snug font-medium'>{task.title}</span>
           <span className='text-muted-foreground text-xs'>
@@ -36,7 +37,12 @@ export function ReviewTaskDataCells({
           </span>
         </div>
       </TableCell>
-      <TableCell className='text-muted-foreground text-center text-xs'>
+      <TableCell
+        className={cn(
+          'text-muted-foreground text-center text-xs',
+          commentCount === 0 && 'max-md:hidden'
+        )}
+      >
         {commentCount > 0 ? (
           <span className='inline-flex items-center gap-1'>
             <MessageCircle className='h-3.5 w-3.5' />
@@ -46,7 +52,12 @@ export function ReviewTaskDataCells({
           '—'
         )}
       </TableCell>
-      <TableCell className='text-muted-foreground text-center text-xs'>
+      <TableCell
+        className={cn(
+          'text-muted-foreground text-center text-xs',
+          attachmentCount === 0 && 'max-md:hidden'
+        )}
+      >
         {attachmentCount > 0 ? (
           <span className='inline-flex items-center gap-1'>
             <Paperclip className='h-3.5 w-3.5' />
@@ -56,10 +67,10 @@ export function ReviewTaskDataCells({
           '—'
         )}
       </TableCell>
-      <TableCell className='text-muted-foreground text-sm'>
+      <TableCell label='Due' className='text-muted-foreground text-sm'>
         {formatDueDate(task.due_on ?? null)}
       </TableCell>
-      <TableCell className='text-muted-foreground text-sm'>
+      <TableCell label='Updated' className='text-muted-foreground text-sm'>
         {formatUpdatedAt(updatedValue)}
       </TableCell>
     </>

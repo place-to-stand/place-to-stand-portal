@@ -88,7 +88,14 @@ export function PartnerPayoutsTable({
           No payouts this month.
         </p>
       ) : (
-        <Table layout='fixed'>
+        // A money grid reads across its columns, so on a narrow screen it
+        // keeps a floor width and scrolls inside the card rather than
+        // squeezing the payee to nothing: 7rem per amount column (w-28), 8rem
+        // for Total (w-32) and about 13rem for the payee.
+        <Table
+          layout='fixed'
+          style={{ minWidth: `${columns.length * 7 + 21}rem` }}
+        >
           <TableHeader>
             <TableRow className='bg-muted/50 hover:bg-muted/50 border-t'>
               <TableHead className='text-muted-foreground pl-12 text-xs font-medium'>

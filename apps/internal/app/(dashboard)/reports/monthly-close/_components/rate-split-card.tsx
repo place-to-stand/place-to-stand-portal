@@ -26,24 +26,31 @@ function Row({
 }) {
   return (
     <div className='flex items-center gap-3 px-5 py-1.5 text-sm'>
-      <div className='flex min-w-0 flex-1 items-center gap-1.5'>
-        <span>{label}</span>
-        {note ? (
-          <Tooltip>
-            <TooltipTrigger
-              aria-label={note}
-              className='text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -m-0.5 cursor-help rounded-sm p-0.5 outline-none focus-visible:ring-[3px]'
-            >
-              <Info className='size-3.5' />
-            </TooltipTrigger>
-            <TooltipContent className='max-w-64'>{note}</TooltipContent>
-          </Tooltip>
-        ) : null}
+      {/* On a phone the basis drops under the label: as its own 120px
+          column it left the label too little room to read. */}
+      <div className='flex min-w-0 flex-1 flex-col'>
+        <div className='flex min-w-0 items-center gap-1.5'>
+          <span>{label}</span>
+          {note ? (
+            <Tooltip>
+              <TooltipTrigger
+                aria-label={note}
+                className='text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -m-0.5 cursor-help rounded-sm p-0.5 outline-none focus-visible:ring-[3px]'
+              >
+                <Info className='size-3.5' />
+              </TooltipTrigger>
+              <TooltipContent className='max-w-64'>{note}</TooltipContent>
+            </Tooltip>
+          ) : null}
+        </div>
+        <span className='text-muted-foreground text-xs tabular-nums sm:hidden'>
+          {basis}
+        </span>
       </div>
       <span className='text-muted-foreground w-10 shrink-0 text-right text-[13px] tabular-nums'>
         {percent}
       </span>
-      <span className='text-muted-foreground w-30 shrink-0 text-right text-[13px] tabular-nums'>
+      <span className='text-muted-foreground w-30 shrink-0 text-right text-[13px] tabular-nums max-sm:hidden'>
         {basis}
       </span>
       <span

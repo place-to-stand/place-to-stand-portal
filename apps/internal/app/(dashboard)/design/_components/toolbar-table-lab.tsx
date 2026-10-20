@@ -44,12 +44,16 @@ export function ToolbarTableLab() {
     <>
       <DesignSection id='toolbar-lab' title='Toolbar lab'>
         <Specimen label='FilterBar — search + single + multi (local state)'>
-          <FilterBar>
-            <SearchInput
-              value={search}
-              onCommit={setSearch}
-              placeholder='Search things…'
-            />
+          <FilterBar
+            search={
+              <SearchInput
+                value={search}
+                onCommit={setSearch}
+                placeholder='Search things…'
+              />
+            }
+            activeFilterCount={(status ? 1 : 0) + (multi.length > 0 ? 1 : 0)}
+          >
             <FilterSelect
               value={status}
               onChange={setStatus}
@@ -68,7 +72,7 @@ export function ToolbarTableLab() {
       </DesignSection>
       <DesignSection id='table-lab' title='Table lab'>
         <Specimen label="density='default' vs density='compact' — sortable Name/Created heads (click to cycle asc → desc → default)">
-          <div className='grid gap-4 lg:grid-cols-2'>
+          <div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
             {(['default', 'compact'] as const).map(density => (
               <div
                 key={density}

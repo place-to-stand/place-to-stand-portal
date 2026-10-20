@@ -84,7 +84,10 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
   const SubmitIcon = isEditMode ? Pencil : PlusCircle
 
   return (
-    <form onSubmit={handleSubmit} className='grid gap-4 sm:grid-cols-2'>
+    <form
+      onSubmit={handleSubmit}
+      className='grid grid-cols-1 gap-4 sm:grid-cols-2'
+    >
       <div className='space-y-2'>
         <label htmlFor='time-log-hours' className='text-sm font-medium'>
           Hours

@@ -110,7 +110,7 @@ export function SummaryStrip({
   return (
     <section
       aria-label='Summary'
-      className='bg-border [&>*]:bg-card grid gap-px overflow-hidden rounded-xl border shadow-sm sm:grid-cols-2 lg:grid-cols-4'
+      className='bg-border [&>*]:bg-card grid grid-cols-1 gap-px overflow-hidden rounded-xl border shadow-sm sm:grid-cols-2 lg:grid-cols-4'
     >
       <Stat
         label={`Billing in${soFar}`}

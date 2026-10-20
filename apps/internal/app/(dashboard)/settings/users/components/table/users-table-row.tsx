@@ -101,7 +101,7 @@ export function UsersTableRow({
           {USER_ROLE_LABELS[user.role]}
         </Badge>
       </TableCell>
-      <TableCell>
+      <TableCell label='Access'>
         {mode === 'active' ? (
           <DisabledFieldTooltip
             disabled={row.accessToggleDisabled}
@@ -128,11 +128,12 @@ export function UsersTableRow({
           <span className='text-muted-foreground text-xs'>—</span>
         )}
       </TableCell>
-      <TableCell>
+      <TableCell label='Clients'>
         <UserAssignmentsCell assignment={assignment} role={user.role} />
       </TableCell>
       {/* Relative text can tick over a minute between SSR and hydration. */}
       <TableCell
+        label='Last sign-in'
         suppressHydrationWarning
         className='text-muted-foreground truncate text-sm'
         title={
@@ -142,10 +143,10 @@ export function UsersTableRow({
       >
         {formatRelativeTime(user.last_sign_in_at) ?? 'Never'}
       </TableCell>
-      <TableCell className='text-muted-foreground text-sm'>
+      <TableCell label='Joined' className='text-muted-foreground text-sm'>
         {formatCalendarDate(user.created_at)}
       </TableCell>
-      <TableCell className='text-right'>
+      <TableCell className='text-right max-md:ml-auto'>
         <div className='flex justify-end gap-2'>
           {showPreview ? (
             <DisabledFieldTooltip

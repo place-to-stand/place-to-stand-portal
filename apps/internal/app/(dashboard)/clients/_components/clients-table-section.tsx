@@ -82,7 +82,7 @@ export function ClientsTableSection({
 
   return (
     <div className='overflow-hidden rounded-lg border'>
-      <Table density='compact' layout='fixed'>
+      <Table density='compact' layout='fixed' className='min-w-[38rem]'>
         <TableHeader>
           <TableRow className='bg-muted/40'>
             <SortableTableHead

@@ -156,7 +156,7 @@ export function ProjectOwnerCell({
               </AvatarFallback>
             </Avatar>
           )}
-          <ChevronDown className='text-foreground/70 h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100' />
+          <ChevronDown className='text-foreground/70 h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100 pointer-coarse:opacity-100' />
         </button>
       }
     />
