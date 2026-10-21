@@ -29,6 +29,11 @@ const PUBLIC_PATHS = new Set([
   // under this prefix must resolve its own user via `withCliAuth`
   // (lib/cli/handler.ts) — there is no edge-level fallback.
   '/api/cli/',
+  // Remote MCP server (PRD 009). Same reasoning as the CLI: OAuth bearer
+  // tokens, not cookies, and the route verifies them itself via `withMcpAuth`.
+  // The discovery document must be readable before the client has a token.
+  '/api/mcp',
+  '/.well-known/oauth-protected-resource',
 ])
 const FORCE_RESET_PATH = '/force-reset-password'
 

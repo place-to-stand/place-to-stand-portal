@@ -1,5 +1,7 @@
 import type { ContactsSettingsListItem } from '@/lib/queries/contacts/settings/types'
 
+import { isoTimestamp } from './timestamp'
+
 export type CliContact = {
   id: string
   name: string | null
@@ -20,7 +22,7 @@ export function serializeContact(
     email: contact.email,
     phone: contact.phone,
     userId: contact.userId,
-    createdAt: contact.createdAt,
-    updatedAt: contact.updatedAt,
+    createdAt: isoTimestamp(contact.createdAt),
+    updatedAt: isoTimestamp(contact.updatedAt),
   }
 }

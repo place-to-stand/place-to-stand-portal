@@ -1,5 +1,7 @@
 import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 
+import { isoTimestamp } from './timestamp'
+
 export type CliTimeLog = {
   id: string
   projectId: string
@@ -26,7 +28,7 @@ export function serializeTimeLog(entry: TimeLogEntry): CliTimeLog {
     taskIds: (entry.linked_tasks ?? [])
       .map(link => link.task?.id)
       .filter((id): id is string => Boolean(id)),
-    createdAt: entry.created_at,
-    updatedAt: entry.updated_at,
+    createdAt: isoTimestamp(entry.created_at),
+    updatedAt: isoTimestamp(entry.updated_at),
   }
 }

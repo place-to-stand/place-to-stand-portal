@@ -397,12 +397,14 @@ enabled = false
 
 # OAuth server configuration
 [auth.oauth_server]
-# Enable OAuth server functionality
-enabled = false
-# Path for OAuth consent flow UI
+# Enable OAuth server functionality. Issues the tokens for the portal's remote
+# MCP server (/api/mcp, PRD 009); the consent UI is apps/internal/app/(auth)/oauth/consent.
+enabled = true
+# Path for OAuth consent flow UI, relative to site_url
 authorization_url_path = "/oauth/consent"
-# Allow dynamic client registration
-allow_dynamic_registration = false
+# Allow dynamic client registration — MCP clients (claude.ai, Claude Code,
+# MCP Inspector) register themselves. Consent is still required per user.
+allow_dynamic_registration = true
 
 [edge_runtime]
 enabled = true

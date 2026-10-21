@@ -1,6 +1,8 @@
 import { updateComposerHref } from '@/lib/sheets/hrefs'
 import type { ClientUpdateRow } from '@/lib/updates/types'
 
+import { isoTimestamp } from './timestamp'
+
 export type CliClientUpdate = {
   id: string
   clientId: string
@@ -34,10 +36,10 @@ export function serializeClientUpdate(
     periodStart: update.periodStart,
     periodEnd: update.periodEnd,
     recipients: update.recipients,
-    sentAt: update.sentAt,
+    sentAt: isoTimestamp(update.sentAt),
     gmailThreadId: update.gmailThreadId,
     path: updateComposerHref(update.id),
-    createdAt: update.createdAt,
-    updatedAt: update.updatedAt,
+    createdAt: isoTimestamp(update.createdAt),
+    updatedAt: isoTimestamp(update.updatedAt),
   }
 }

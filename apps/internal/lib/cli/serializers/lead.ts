@@ -2,6 +2,7 @@ import { extractLeadNotes } from '@/lib/leads/notes'
 import { leadHref } from '@/lib/sheets/hrefs'
 
 import type { CliLeadRow } from '../queries/leads'
+import { isoTimestamp } from './timestamp'
 
 /**
  * `lastContactAt`, `awaitingReply` and `expectedCloseDate` exist on the row
@@ -49,14 +50,14 @@ export function serializeLead(lead: CliLeadRow): CliLead {
     website: lead.companyWebsite,
     notes: extractLeadNotes(lead.notes),
     rank: lead.rank,
-    currentStageEnteredAt: lead.currentStageEnteredAt,
-    resolvedAt: lead.resolvedAt,
+    currentStageEnteredAt: isoTimestamp(lead.currentStageEnteredAt),
+    resolvedAt: isoTimestamp(lead.resolvedAt),
     lossReason: lead.lossReason,
     lossNotes: lead.lossNotes,
-    convertedAt: lead.convertedAt,
+    convertedAt: isoTimestamp(lead.convertedAt),
     convertedToClientId: lead.convertedToClientId,
     path: leadHref(lead.id),
-    createdAt: lead.createdAt,
-    updatedAt: lead.updatedAt,
+    createdAt: isoTimestamp(lead.createdAt),
+    updatedAt: isoTimestamp(lead.updatedAt),
   }
 }

@@ -18,6 +18,7 @@ import {
   type ConnectedAccount,
 } from '@/components/integrations/connected-accounts-list'
 import { CompanyServicesList } from '@/components/integrations/company-services-list'
+import { ConnectedAppsCard } from '@/components/integrations/connected-apps-card'
 import { TokenIntegrationCard } from '@/components/integrations/token-integration-card'
 
 function SimpleIcon({
@@ -349,6 +350,8 @@ export function IntegrationsPanel() {
           provider='SUPABASE'
           description='Connect your Supabase account to link databases to projects.'
         />
+
+        <ConnectedAppsCard />
       </IntegrationSection>
 
       <IntegrationSection

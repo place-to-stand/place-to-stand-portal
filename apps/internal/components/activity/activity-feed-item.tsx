@@ -23,7 +23,7 @@ export type ActivityFeedItemProps = {
 }
 
 /**
- * Admin UI is the default source and carries no signal, so only CLI and
+ * Admin UI is the default source and carries no signal, so only CLI, MCP and
  * System actions get a badge.
  */
 const SOURCE_BADGES: Partial<
@@ -32,6 +32,10 @@ const SOURCE_BADGES: Partial<
   CLI: {
     label: 'CLI',
     className: BADGE_TINTS.orange,
+  },
+  MCP: {
+    label: 'MCP',
+    className: BADGE_TINTS.violet,
   },
   SYSTEM: {
     label: 'System',
@@ -56,6 +60,7 @@ export function ActivityFeedItem({ log }: ActivityFeedItemProps) {
 
   const { icon: Icon, tone } = getVerbPresentation(log.verb)
   const sourceBadge = SOURCE_BADGES[log.source]
+  const sourceLabel = getSourceLabel(log, sourceBadge?.label)
   const relativeLabel = formatRelativeTime(log.created_at)
   const absoluteLabel = formatCalendarDate(log.created_at, TIMESTAMP_STYLE)
 
@@ -92,7 +97,7 @@ export function ActivityFeedItem({ log }: ActivityFeedItemProps) {
               variant='outline'
               className={cn('h-5 px-1.5 text-[10px]', sourceBadge.className)}
             >
-              {sourceBadge.label}
+              {sourceLabel}
             </Badge>
           ) : null}
           <time
@@ -116,6 +121,24 @@ export function ActivityFeedItem({ log }: ActivityFeedItemProps) {
       </div>
     </article>
   )
+}
+
+/**
+ * MCP rows name the agent that acted for the human ("via Claude Code"), read
+ * from the `metadata.agent` the logger stamps on them.
+ */
+function getSourceLabel(
+  log: ActivityLogWithActor,
+  fallback: string | undefined
+): string | undefined {
+  if (log.source !== 'MCP') {
+    return fallback
+  }
+
+  const metadata = log.metadata as { agent?: { name?: unknown } } | null
+  const name = metadata?.agent?.name
+
+  return typeof name === 'string' && name ? `via ${name}` : fallback
 }
 
 /**

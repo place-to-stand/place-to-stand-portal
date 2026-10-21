@@ -160,3 +160,33 @@ export async function trackSettingsServerInteraction<
     throw error
   }
 }
+
+type ServerEventOptions = {
+  distinctId: string
+  properties?: Record<string, unknown>
+}
+
+/** A one-off server event, flushed after the response is sent. */
+export function captureServerEvent(
+  event: string,
+  { distinctId, properties }: ServerEventOptions
+) {
+  const client = createPostHogClient()
+
+  client.capture({ event, distinctId, properties })
+  flushAndCloseAfterResponse(client)
+}
+
+/**
+ * For errors a caller handles itself (so `onRequestError` never sees them)
+ * but still wants in error tracking.
+ */
+export function captureServerException(
+  error: unknown,
+  { distinctId, properties }: ServerEventOptions
+) {
+  const client = createPostHogClient()
+
+  client.captureException(error, distinctId, properties)
+  flushAndCloseAfterResponse(client)
+}

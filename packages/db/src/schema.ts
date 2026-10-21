@@ -36,6 +36,7 @@ export const userRole = pgEnum('user_role', ['ADMIN', 'SALES', 'CLIENT'])
 export const activitySource = pgEnum('activity_source', [
   'ADMIN_UI',
   'CLI',
+  'MCP',
   'SYSTEM',
 ])
 export const clientBillingType = pgEnum('client_billing_type', [

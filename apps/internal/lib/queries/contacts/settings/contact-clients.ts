@@ -67,7 +67,7 @@ export async function listAllActiveClients(
 /**
  * Fetches the clients linked to a specific contact.
  */
-async function listContactClients(
+export async function listContactClients(
   user: AppUser,
   contactId: string
 ): Promise<ClientOption[]> {

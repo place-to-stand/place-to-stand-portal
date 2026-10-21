@@ -1,5 +1,7 @@
 import type { TaskCommentWithAuthor } from '@/lib/types'
 
+import { isoTimestamp } from './timestamp'
+
 export type CliComment = {
   id: string
   taskId: string
@@ -20,7 +22,7 @@ export function serializeComment(comment: TaskCommentWithAuthor): CliComment {
     authorName: comment.author?.full_name ?? null,
     authorEmail: comment.author?.email ?? null,
     body: comment.body ?? '',
-    createdAt: comment.created_at,
-    updatedAt: comment.updated_at ?? null,
+    createdAt: isoTimestamp(comment.created_at),
+    updatedAt: isoTimestamp(comment.updated_at),
   }
 }

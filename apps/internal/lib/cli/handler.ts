@@ -59,12 +59,17 @@ export function jsonOk<T>(data: T, options: SuccessOptions = {}) {
   )
 }
 
+/** The stable error code agents branch on, shared by the CLI and the MCP. */
+export function errorCodeFor(status: number): string {
+  return ERROR_CODES[status] ?? 'INTERNAL_ERROR'
+}
+
 function jsonError(status: number, message: string, details?: unknown) {
   return NextResponse.json(
     {
       ok: false,
       error: message,
-      code: ERROR_CODES[status] ?? 'INTERNAL_ERROR',
+      code: errorCodeFor(status),
       ...(details === undefined ? {} : { details }),
     },
     { status }

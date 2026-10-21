@@ -1,14 +1,11 @@
-import { revalidateLeadsPath } from '@/app/(dashboard)/leads/_actions/utils'
-import { toRichTextHtml } from '@/lib/cli/description'
 import { jsonOk, readJsonBody, withCliAuth } from '@/lib/cli/handler'
+import { addLeadUpdate } from '@/lib/cli/leads'
 import { getLeadForCli } from '@/lib/cli/queries/leads'
 import {
   cliCreateLeadUpdateSchema,
   cliLeadUpdateListQuerySchema,
 } from '@/lib/cli/schemas/leads'
 import { serializeLeadUpdate } from '@/lib/cli/serializers/lead-update'
-import { BadRequestError, NotFoundError } from '@/lib/errors/http'
-import { createLeadUpdateForActor } from '@/lib/leads/lead-update-core'
 import { listLeadUpdates } from '@/lib/queries/lead-updates'
 
 type Params = { leadId: string }
@@ -28,38 +25,8 @@ export const GET = withCliAuth<Params>(async ({ user, request, params }) => {
 
 export const POST = withCliAuth<Params>(async ({ user, request, params }) => {
   const payload = cliCreateLeadUpdateSchema.parse(await readJsonBody(request))
-  const lead = await getLeadForCli(user, params.leadId)
 
-  const result = await createLeadUpdateForActor(
-    user,
-    {
-      leadId: lead.id,
-      type: payload.type,
-      // Timeline entries render through the same sanitizer as comments, so
-      // plain text needs the same conversion to keep its paragraphs.
-      body: toRichTextHtml(payload.body),
-      occurredAt: payload.occurredAt ?? undefined,
-    },
-    'CLI'
-  )
-
-  if (!result.success || !result.updateId) {
-    if (result.notFound) {
-      throw new NotFoundError(result.error ?? 'Lead not found.')
-    }
-
-    throw new BadRequestError(result.error ?? 'Unable to log update.')
-  }
-
-  revalidateLeadsPath()
-
-  const rows = await listLeadUpdates(user, lead.id)
-  const created = rows.find(row => row.id === result.updateId)
-
-  return jsonOk(
-    created
-      ? serializeLeadUpdate(created)
-      : { id: result.updateId, leadId: lead.id },
-    { status: 201 }
-  )
+  return jsonOk(await addLeadUpdate(user, params.leadId, payload, 'CLI'), {
+    status: 201,
+  })
 })

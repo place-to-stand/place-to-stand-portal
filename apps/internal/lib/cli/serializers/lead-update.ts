@@ -1,5 +1,7 @@
 import type { LeadUpdateRecord } from '@/lib/leads/types'
 
+import { isoTimestamp } from './timestamp'
+
 export type CliLeadUpdate = {
   id: string
   leadId: string
@@ -20,11 +22,11 @@ export function serializeLeadUpdate(update: LeadUpdateRecord): CliLeadUpdate {
     leadId: update.leadId,
     type: update.type,
     body: update.body,
-    occurredAt: update.occurredAt,
+    occurredAt: isoTimestamp(update.occurredAt),
     authorId: update.authorId,
     authorName: update.authorName,
     authorEmail: update.authorEmail,
-    createdAt: update.createdAt,
-    updatedAt: update.updatedAt,
+    createdAt: isoTimestamp(update.createdAt),
+    updatedAt: isoTimestamp(update.updatedAt),
   }
 }

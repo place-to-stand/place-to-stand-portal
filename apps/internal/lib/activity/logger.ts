@@ -8,6 +8,7 @@ import { db } from '@/lib/db'
 import { activityLogs, users } from '@/lib/db/schema'
 import type { ActivitySourceValue, UserRoleValue } from '@/lib/types'
 import type { Json } from '@/lib/types/json'
+import { currentActivityAgent } from './agent-context'
 import type { ActivityTargetType, ActivityVerb } from './types'
 
 export type LogActivityOptions = {
@@ -44,7 +45,7 @@ export async function logActivity(options: LogActivityOptions) {
       targetClientId: options.targetClientId ?? null,
       targetProjectId: options.targetProjectId ?? null,
       contextRoute: options.contextRoute ?? null,
-      metadata: normalizeMetadata(options.metadata),
+      metadata: withAgent(normalizeMetadata(options.metadata)),
     })
   } catch (error) {
     console.error('Failed to log activity', {
@@ -93,4 +94,18 @@ function normalizeMetadata(metadata?: Json): Json {
   }
 
   return JSON.parse(JSON.stringify(metadata)) as Json
+}
+
+/**
+ * Writes made through the MCP carry the agent alongside the human actor
+ * (`metadata.agent`), set by `runAsAgent` around each tool call.
+ */
+function withAgent(metadata: Json): Json {
+  const agent = currentActivityAgent()
+
+  if (!agent || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    return metadata
+  }
+
+  return { ...metadata, agent: { clientId: agent.clientId, name: agent.name } }
 }
