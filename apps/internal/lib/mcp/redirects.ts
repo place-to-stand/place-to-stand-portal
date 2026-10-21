@@ -9,6 +9,9 @@ import 'server-only'
  * without this list a phished admin could hand an attacker's server a token
  * by clicking Connect. Codes only ever go to Claude or the admin's own
  * machine.
+ *
+ * Admitting another MCP client means adding its OAuth callback host here;
+ * until then its users see "App not allowed" at consent.
  */
 const HTTPS_HOSTS = new Set(['claude.ai', 'claude.com'])
 
