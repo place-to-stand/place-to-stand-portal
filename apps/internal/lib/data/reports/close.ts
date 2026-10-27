@@ -930,3 +930,97 @@ export async function fetchMonthlyCloseView(
     profitShare,
   }
 }
+
+/**
+ * What an agent may say about the profit share without touching Mercury. A
+ * live month never reads the balance, so its share is `unavailable`.
+ */
+export type AgentProfitShareState =
+  | { status: 'inactive' }
+  | { status: 'not_saved' }
+  | { status: 'ready'; data: ProfitShareData }
+  | { status: 'unavailable'; message: string }
+
+export type MonthlyCloseForAgent = {
+  period: { year: number; month: number; label: string }
+  /** `snapshot`: the frozen close. `live`: derived from the database now. */
+  source: 'snapshot' | 'live'
+  status: 'open' | 'closed'
+  closedAt: string | null
+  closedByName: string | null
+  /** Set when the month is closed but its snapshot failed validation (F9). */
+  snapshotError: string | null
+  /** A closed month that predates frozen sales tax shows the live figure. */
+  salesTaxIsLive: boolean
+  report: Omit<MonthlyCloseReport, 'minCursor' | 'maxCursor'>
+  profitShare: AgentProfitShareState
+}
+
+const LIVE_PROFIT_SHARE_UNAVAILABLE =
+  'The month-end Mercury balance is not read outside the portal, so the profit share for a month without a readable close snapshot is unavailable. See Reports > Monthly close in the portal.'
+
+/**
+ * The monthly close for the MCP. Same report as `fetchMonthlyCloseView`, but
+ * it never calls Mercury (`loadMonthEndBalance`) and skips the drift check:
+ * a closed month is served from its snapshot, an open month from the live
+ * database queries with the profit share marked unavailable. Admin-only, and
+ * checked here because neither the snapshot read nor the live report guards.
+ */
+export async function fetchMonthlyCloseForAgent(
+  user: AppUser,
+  year: number,
+  month: number
+): Promise<MonthlyCloseForAgent> {
+  assertAdmin(user)
+
+  const { startDate, endDate } = monthDateRange(year, month)
+  const applies = profitShareAppliesTo(year, month)
+  const period = { year, month, label: periodLabel(year, month) }
+  const snapshot = await getActiveSnapshot(year, month)
+  const parsed = snapshot ? parseSnapshotReport(snapshot.report) : null
+
+  if (snapshot && parsed?.ok) {
+    // Only closes frozen before sales tax was tracked need a live read.
+    const salesTaxIsLive = parsed.report.salesTax === undefined
+    const salesTax =
+      parsed.report.salesTax ??
+      (await fetchMonthlyCloseReport(startDate, endDate)).salesTax
+
+    return {
+      period,
+      source: 'snapshot',
+      status: 'closed',
+      closedAt: snapshot.closedAt,
+      closedByName: snapshot.closedByName,
+      snapshotError: null,
+      salesTaxIsLive,
+      report: { ...parsed.report, salesTax },
+      profitShare: parsed.profitShare
+        ? { status: 'ready', data: parsed.profitShare }
+        : applies
+          ? { status: 'not_saved' }
+          : { status: 'inactive' },
+    }
+  }
+
+  const { minCursor, maxCursor, ...live } = await fetchMonthlyCloseReport(
+    startDate,
+    endDate
+  )
+  void minCursor
+  void maxCursor
+
+  return {
+    period,
+    source: 'live',
+    status: snapshot ? 'closed' : 'open',
+    closedAt: snapshot?.closedAt ?? null,
+    closedByName: snapshot?.closedByName ?? null,
+    snapshotError: parsed && !parsed.ok ? parsed.error : null,
+    salesTaxIsLive: false,
+    report: live,
+    profitShare: applies
+      ? { status: 'unavailable', message: LIVE_PROFIT_SHARE_UNAVAILABLE }
+      : { status: 'inactive' },
+  }
+}

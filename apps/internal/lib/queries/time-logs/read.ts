@@ -1,9 +1,10 @@
 import 'server-only'
 
-import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import { and, desc, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import {
+  assertAdmin,
   ensureProjectAccess,
   ensureTaskAccess,
   ensureTimeLogAccess,
@@ -197,6 +198,75 @@ export async function listProjectTimeLogs(
   return {
     logs,
     totalCount: Number(count ?? 0),
+  }
+}
+
+export type TimeLogFilters = {
+  projectId?: string
+  userId?: string
+  /** Inclusive `logged_on` bounds, `YYYY-MM-DD`. */
+  from?: string
+  to?: string
+  limit: number
+  offset?: number
+}
+
+export type TimeLogPage = {
+  logs: TimeLogEntry[]
+  /** Rows and summed hours across every page that matches the filters. */
+  totalCount: number
+  totalHours: number
+}
+
+/**
+ * Time logs across projects, filtered by project, person and `logged_on`
+ * window, newest first and offset-paged. Admin-only like every time-log read;
+ * a project filter also 404s an archived or unknown project, matching
+ * `listProjectTimeLogs`.
+ */
+export async function listTimeLogs(
+  user: AppUser,
+  { projectId, userId, from, to, limit, offset = 0 }: TimeLogFilters,
+): Promise<TimeLogPage> {
+  if (projectId) {
+    await ensureProjectAccess(user, projectId)
+  } else {
+    assertAdmin(user)
+  }
+
+  const where = and(
+    isNull(timeLogs.deletedAt),
+    projectId ? eq(timeLogs.projectId, projectId) : undefined,
+    userId ? eq(timeLogs.userId, userId) : undefined,
+    from ? gte(timeLogs.loggedOn, from) : undefined,
+    to ? lte(timeLogs.loggedOn, to) : undefined,
+  )
+
+  const [timeLogRows, [totals]] = await Promise.all([
+    db
+      .select(TIME_LOG_SELECTION)
+      .from(timeLogs)
+      .leftJoin(users, eq(timeLogs.userId, users.id))
+      .where(where)
+      // id makes the order total so offset paging cannot skip or repeat a row.
+      .orderBy(desc(timeLogs.loggedOn), desc(timeLogs.createdAt), desc(timeLogs.id))
+      .limit(Math.max(1, limit))
+      .offset(Math.max(0, offset))
+      .then(rows => rows as TimeLogSelection[]),
+    // numeric(8,2) values arrive as strings — sum in SQL, not JS floats.
+    db
+      .select({
+        count: sql<number>`count(*)`,
+        totalHours: sql<string>`coalesce(sum(${timeLogs.hours}), 0)`,
+      })
+      .from(timeLogs)
+      .where(where),
+  ])
+
+  return {
+    logs: await hydrateTimeLogEntries(timeLogRows),
+    totalCount: Number(totals?.count ?? 0),
+    totalHours: Number(totals?.totalHours ?? 0),
   }
 }
 

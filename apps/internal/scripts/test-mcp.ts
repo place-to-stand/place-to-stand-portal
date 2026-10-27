@@ -356,8 +356,9 @@ async function main() {
   // Connect directly rather than via `@/lib/db` — that module is marked
   // `server-only`, which does not resolve outside the Next runtime.
   const { createDb } = await import('@pts/db/client')
-  const { activityLogs, leads, leadUpdates, taskComments, tasks, users: userProfiles } =
-    await import('@pts/db/schema')
+  const {
+    activityLogs, leads, leadUpdates, monthlyCloseSnapshots, taskComments, tasks, users: userProfiles,
+  } = await import('@pts/db/schema')
   const db = createDb(process.env.DATABASE_URL)
 
   console.log(`\nTarget: ${MCP_URL}\n\nOAuth`)
@@ -389,7 +390,9 @@ async function main() {
     'whoami', 'list_users', 'list_clients', 'get_client', 'list_contacts',
     'get_contact', 'list_projects', 'get_project', 'list_tasks', 'get_task',
     'create_task', 'update_task', 'add_task_comment', 'list_leads', 'get_lead',
-    'create_lead', 'update_lead', 'add_lead_update',
+    'create_lead', 'update_lead', 'add_lead_update', 'list_activity',
+    'recent_activity', 'list_time_logs', 'list_invoices', 'get_invoice',
+    'list_hour_blocks', 'get_client_hour_balance', 'get_monthly_close',
   ]
   check(
     `tools/list has all ${expected.length} tools`,
@@ -397,8 +400,10 @@ async function main() {
     names
   )
   check(
-    'no time-log tool is exposed (D5)',
-    !names.some(name => name.includes('time'))
+    'the only time-log tool is read-only (D5)',
+    (list.body?.result?.tools ?? [])
+      .filter((tool: Loose) => tool.name.includes('time'))
+      .every((tool: Loose) => tool.name === 'list_time_logs' && tool.annotations?.readOnlyHint === true)
   )
 
   const whoami = await callTool(accessToken, 'whoami')
@@ -442,6 +447,106 @@ async function main() {
 
   const gotProject = await callTool(accessToken, 'get_project', { project: project.slug })
   check('get_project resolves a slug', gotProject.data.project?.id === project.id, gotProject.message)
+
+  const timeLogs = await callTool(accessToken, 'list_time_logs', { project: project.slug, limit: 3 })
+  check('list_time_logs filters by project with totals',
+    timeLogs.ok && timeLogs.data.items.every((t: Loose) => t.projectId === project.id)
+      && typeof timeLogs.data.totalHours === 'number' && typeof timeLogs.data.totalCount === 'number',
+    timeLogs.message)
+  const myTimeFilters = { user: EMAIL, from: '2000-01-01', to: new Date().toISOString().slice(0, 10), limit: 3 }
+  const myTime = await callTool(accessToken, 'list_time_logs', myTimeFilters)
+  check('list_time_logs filters by user email and date range',
+    myTime.ok && myTime.data.items.every((t: Loose) => t.userId === userId), myTime.message)
+  check('list_time_logs hasMore is true exactly when more entries match than were returned',
+    myTime.data.hasMore === (myTime.data.totalCount > myTime.data.items?.length)
+      && myTime.data.items?.length <= myTimeFilters.limit && !('nextOffset' in myTime.data), myTime.data)
+  const oneDay = myTime.data.items?.[0]?.loggedOn
+  if (oneDay) {
+    const narrowed = await callTool(accessToken, 'list_time_logs', { user: EMAIL, from: oneDay, to: oneDay, limit: 100 })
+    check('list_time_logs narrows to a single work date',
+      narrowed.ok && narrowed.data.items.every((t: Loose) => t.loggedOn === oneDay)
+        && narrowed.data.totalCount <= myTime.data.totalCount, narrowed.message)
+  }
+
+  console.log('\nBilling (read-only, D9)')
+  const billingTools = (list.body?.result?.tools ?? []).filter((tool: Loose) =>
+    ['list_invoices', 'get_invoice', 'list_hour_blocks', 'get_client_hour_balance', 'get_monthly_close'].includes(tool.name))
+  check('billing tools are all read-only',
+    billingTools.length === 5 && billingTools.every((tool: Loose) => tool.annotations?.readOnlyHint === true))
+
+  const invoices = await callTool(accessToken, 'list_invoices', { limit: 3 })
+  check('list_invoices returns items, hasMore and a total',
+    invoices.ok && Array.isArray(invoices.data.items) && typeof invoices.data.totalCount === 'number'
+      && invoices.data.hasMore === (invoices.data.totalCount > invoices.data.items.length)
+      && !('nextOffset' in invoices.data), invoices.message)
+  const invoiceClientId = invoices.data.items?.[0]?.clientId
+  if (invoiceClientId) {
+    const forClient = await callTool(accessToken, 'list_invoices', { client: invoiceClientId, limit: 100 })
+    check('list_invoices narrows by client',
+      forClient.ok && forClient.data.items.length > 0
+        && forClient.data.items.every((i: Loose) => i.clientId === invoiceClientId), forClient.message)
+  }
+  const firstInvoice = invoices.data.items?.[0]
+  if (firstInvoice) {
+    const invoice = await callTool(accessToken, 'get_invoice', { invoiceId: firstInvoice.id })
+    check('get_invoice returns line items', invoice.ok && Array.isArray(invoice.data.invoice?.lineItems), invoice.message)
+    check('get_invoice leaks no share token or Stripe ids',
+      !/share_?token|stripe|payment_?intent|checkout_?session/i.test(JSON.stringify(invoice.data)))
+  }
+
+  const blocks = await callTool(accessToken, 'list_hour_blocks', { limit: 3 })
+  check('list_hour_blocks returns items with hasMore set from the total',
+    blocks.ok && Array.isArray(blocks.data.items)
+      && blocks.data.hasMore === (blocks.data.totalCount > blocks.data.items.length)
+      && !('nextOffset' in blocks.data), blocks.message)
+  const blockClientId = blocks.data.items?.[0]?.clientId
+  if (blockClientId) {
+    const forClient = await callTool(accessToken, 'list_hour_blocks', { client: blockClientId, limit: 5 })
+    check('list_hour_blocks filters by client',
+      forClient.ok && forClient.data.items.every((b: Loose) => b.clientId === blockClientId), forClient.message)
+  }
+  const prepaid = clients.data.items?.find((c: Loose) => c.billingType === 'prepaid' && c.slug)
+  if (prepaid) {
+    const balance = await callTool(accessToken, 'get_client_hour_balance', { client: prepaid.slug })
+    check('get_client_hour_balance matches get_client by slug',
+      balance.ok && balance.data.hoursRemaining === prepaid.hoursRemaining, balance.message)
+  }
+
+  const lastMonth = new Date()
+  lastMonth.setUTCDate(1)
+  lastMonth.setUTCMonth(lastMonth.getUTCMonth() - 1)
+  const close = await callTool(accessToken, 'get_monthly_close', {
+    year: lastMonth.getUTCFullYear(), month: lastMonth.getUTCMonth() + 1,
+  })
+  check('get_monthly_close says where the data came from',
+    close.ok && ['snapshot', 'live'].includes(close.data.source)
+      && (close.data.source === 'live' || Boolean(close.data.closedAt)), close.message)
+  check('get_monthly_close returns per-person payroll',
+    Array.isArray(close.data.report?.payroll?.rows), close.data.report && Object.keys(close.data.report))
+  check('an open month never reports a profit share (no Mercury read)',
+    close.data.source === 'snapshot' || close.data.profitShare?.status !== 'ready', close.data.profitShare)
+
+  // Mercury account ids and names (which carry the account number's last
+  // digits) are frozen into every snapshot with a profit share; none may
+  // reach the agent. Checked against the newest snapshots that have one.
+  const frozen = (await db
+    .select({ year: monthlyCloseSnapshots.year, month: monthlyCloseSnapshots.month, report: monthlyCloseSnapshots.report })
+    .from(monthlyCloseSnapshots))
+    .map(row => ({ ...row, accounts: ((row.report as Loose)?.profitShare?.accounts ?? []) as Loose[] }))
+    .filter(row => row.accounts.length > 0)
+    .sort((a, b) => b.year - a.year || b.month - a.month)
+    .slice(0, 3)
+  const closes = [close, ...await Promise.all(frozen.map(row =>
+    callTool(accessToken, 'get_monthly_close', { year: row.year, month: row.month })))]
+  const bankIdentifiers = frozen.flatMap(row =>
+    row.accounts.flatMap((account: Loose) => [account.id, account.name])).filter(Boolean) as string[]
+  const leaked = bankIdentifiers.filter(identifier =>
+    closes.some(result => JSON.stringify(result.data).includes(identifier)))
+  check(`get_monthly_close leaks no Mercury account id or name (${frozen.length} snapshot(s) checked)`,
+    leaked.length === 0 && closes.every(result => result.ok), leaked.length ? `${leaked.length} identifier(s) leaked` : undefined)
+  check('get_monthly_close keeps per-account balances and nothing else',
+    closes.every(result => (result.data.profitShare?.data?.accounts ?? []).every((account: Loose) =>
+      Object.keys(account).join() === 'balance' && typeof account.balance === 'number')))
 
   const badInput = await callTool(accessToken, 'get_task', { taskId: 'not-a-uuid' })
   check('invalid input is a tool error, not a crash', !badInput.ok && Boolean(badInput.message))
@@ -511,6 +616,46 @@ async function main() {
 
     const leadsList = await callTool(accessToken, 'list_leads', { search: 'MCP Smoke Test', limit: 5 })
     check('list_leads finds it by text', leadsList.data.items?.some((l: Loose) => l.id === created.leadId), leadsList.message)
+
+    const taskActivity = await callTool(accessToken, 'list_activity', {
+      targetId: created.taskId, source: 'MCP', actor: EMAIL, limit: 1,
+    })
+    check('list_activity filters by target, source and actor email',
+      taskActivity.ok && taskActivity.data.items.length > 0 && taskActivity.data.items.every((a: Loose) =>
+        a.target?.id === created.taskId && a.source === 'MCP' && a.actor?.id === userId), taskActivity.message)
+    check('list_activity names the agent', taskActivity.data.items?.every((a: Loose) => a.agent === CLIENT_NAME),
+      taskActivity.data.items)
+    // This run wrote at least two rows on the task itself (create, then the
+    // status change), so a limit of 1 must report more.
+    check('list_activity sets hasMore when the limit cuts rows off',
+      taskActivity.data.items?.length === 1 && taskActivity.data.hasMore === true
+        && !('nextCursor' in taskActivity.data), taskActivity.data)
+    const allTaskActivity = await callTool(accessToken, 'list_activity', { targetId: created.taskId, limit: 100 })
+    check('list_activity hasMore is false once everything fits',
+      allTaskActivity.ok && allTaskActivity.data.hasMore === false, allTaskActivity.data.hasMore)
+    const windowed = await callTool(accessToken, 'list_activity', {
+      targetId: created.taskId, since: new Date(Date.now() - 60 * 60 * 1000).toISOString(), limit: 100,
+    })
+    check('list_activity narrows by since',
+      windowed.ok && windowed.data.items.length === allTaskActivity.data.items?.length, windowed.message)
+    const beforeRun = await callTool(accessToken, 'list_activity', {
+      targetId: created.taskId, until: '2000-01-01', limit: 100,
+    })
+    check('list_activity narrows by until', beforeRun.ok && beforeRun.data.items.length === 0, beforeRun.message)
+
+    const leadActivity = await callTool(accessToken, 'list_activity', { targetType: ['LEAD'], limit: 5 })
+    check('list_activity filters by target type',
+      leadActivity.ok && leadActivity.data.items.every((a: Loose) => a.target?.type === 'LEAD'), leadActivity.message)
+
+    const recent = await callTool(accessToken, 'recent_activity', {
+      since: new Date(Date.now() - 60 * 60 * 1000).toISOString(), source: 'MCP', actor: userId, limit: 50,
+    })
+    check('recent_activity returns this run\'s writes, oldest first',
+      recent.ok && recent.data.items.some((a: Loose) => a.target?.id === created.leadId)
+        && recent.data.items.every((a: Loose, i: number, all: Loose[]) => i === 0 || all[i - 1].occurredAt <= a.occurredAt),
+      recent.message)
+    const backwards = await callTool(accessToken, 'recent_activity', { since: '2026-02-02', until: '2026-02-01' })
+    check('recent_activity refuses an inverted window', !backwards.ok, backwards.message)
 
     check('every timestamp in tool output is ISO 8601', nonIsoTimestamps.size === 0,
       [...nonIsoTimestamps])
