@@ -1,4 +1,7 @@
-import type { InvoiceWithClient } from '@/lib/invoices/invoice-form'
+import type {
+  InvoiceWithClient,
+  InvoiceWithLineItems,
+} from '@/lib/invoices/invoice-form'
 
 import { isoTimestamp } from './timestamp'
 
@@ -35,5 +38,56 @@ export function serializeInvoice(invoice: InvoiceWithClient): CliInvoice {
     paidAt: isoTimestamp(invoice.paid_at),
     createdAt: isoTimestamp(invoice.created_at),
     updatedAt: isoTimestamp(invoice.updated_at),
+  }
+}
+
+export type CliInvoiceLineItem = {
+  id: string
+  description: string
+  quantity: string
+  unitPrice: string
+  amount: string
+  productCatalogItemId: string | null
+  /** Paying the invoice creates an hour block for this line. */
+  createsHourBlock: boolean
+}
+
+export type CliInvoiceDetail = CliInvoice & {
+  billingType: string | null
+  taxRate: string | null
+  notes: string | null
+  viewedAt: string | null
+  viewedCount: number
+  lineItems: CliInvoiceLineItem[]
+  hourBlocks: { id: string; hoursPurchased: number }[]
+}
+
+/**
+ * One invoice in full. Built field by field so the share token and the Stripe
+ * checkout-session and payment-intent ids never leave the server.
+ */
+export function serializeInvoiceDetail(
+  invoice: InvoiceWithLineItems
+): CliInvoiceDetail {
+  return {
+    ...serializeInvoice(invoice),
+    billingType: invoice.billing_type,
+    taxRate: invoice.tax_rate,
+    notes: invoice.notes,
+    viewedAt: isoTimestamp(invoice.viewed_at),
+    viewedCount: invoice.viewed_count,
+    lineItems: invoice.line_items.map(item => ({
+      id: item.id,
+      description: item.description,
+      quantity: item.quantity,
+      unitPrice: item.unit_price,
+      amount: item.amount,
+      productCatalogItemId: item.product_catalog_item_id,
+      createsHourBlock: item.creates_hour_block,
+    })),
+    hourBlocks: (invoice.hour_blocks ?? []).map(block => ({
+      id: block.id,
+      hoursPurchased: block.hours_purchased,
+    })),
   }
 }

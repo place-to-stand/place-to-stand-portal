@@ -30,7 +30,7 @@ engagement standing) is explicitly out of scope until this one proves useful.
 | D2 | **Proper OAuth from day one**, so it works as a claude.ai custom connector. No static tokens. |
 | D3 | **The agent acts on the connecting user's behalf**, and writes record both the human and the agent. |
 | D4 | **Reads plus a fixed set of writes**: tasks (create, update), task comments, leads (create, edit, move stage, log updates). Clients and contacts are read-only. |
-| D5 | **No time logging.** Hours stay a manual human process because they feed the shared bank account / profit share. |
+| D5 | **No time logging.** Hours stay a manual human process because they feed the shared bank account / profit share. Time logs are readable (`list_time_logs`, revised 2026-10-26). |
 | D6 | **ADMIN only for v1.** SALES is not admitted yet, but the tool registry is role-aware so admitting SALES to the CRM tools later is a config change, not a redesign. |
 | D7 | **Users manage their connected apps in Settings > Integrations**, alongside their Vercel / Supabase / GitHub connections. |
 | D8 | **Client-facing MCP is deferred.** Nothing in v1 is exposed to CLIENT users. |
@@ -39,7 +39,7 @@ engagement standing) is explicitly out of scope until this one proves useful.
 
 | # | Decision |
 | --- | --- |
-| D9 | **No invoices in v1** (was Q1), not even read-only. |
+| D9 | **Billing is read-only** (was Q1; revised 2026-10-26, which reversed "no invoices in v1, not even read-only"). Invoices, hour blocks and the monthly close are readable; nothing creates, sends, voids or closes them. The monthly close never calls Mercury: a closed month is served from its snapshot, and an open month's profit share is reported unavailable. |
 | D10 | **`list_tasks` matches the CLI** (was Q2): every project, other admins' PERSONAL projects included. |
 | D11 | **Agent attribution lives in the activity log only** (was Q4). No column on `task_comments` or `tasks`. |
 | D13 | **Hard allow-list of redirect hosts at consent** (was Q3): codes go only to `https://claude.ai`, `https://claude.com` or a loopback address (Claude Code, MCP Inspector). The security review found an MCP access token is a full Supabase session for the admin, so warn-and-allow would let a phished click hand an attacker the account. |
@@ -50,7 +50,7 @@ engagement standing) is explicitly out of scope until this one proves useful.
 ## Non-goals
 
 - Client-portal or CLIENT-role access of any kind.
-- Time-log writes, invoice writes, hour-block writes.
+- Time-log writes, invoice writes, hour-block writes, closing or reopening a month.
 - Archive, restore or delete of any entity.
 - Lead conversion, client-update emails, portal account management.
 - A local stdio MCP or an MCP wrapper around the `pts` binary.
@@ -155,6 +155,11 @@ changing the resolver's role check alone.
 | `list_tasks` / `get_task` | admin | task serializer, filters: project, lead, status, assignee |
 | `list_leads` / `get_lead` | crm | lead serializer + recent lead updates |
 | `list_users` | admin | user serializer (for resolving assignees and owners) |
+| `list_activity` / `recent_activity` | crm / admin | `fetchActivityLogs` / `fetchActivityLogsSince`, filters: target, project, client, source, actor, since/until (`recent_activity`: one time window, oldest first, `truncated` flag) |
+| `list_time_logs` | admin | `listTimeLogs`, filters: project, user, work-date range; `totalCount` / `totalHours` over every match (D5) |
+| `list_invoices` / `get_invoice` | admin | invoice serializer, filters: client, status, text; no share token or Stripe ids (D9) |
+| `list_hour_blocks` / `get_client_hour_balance` | admin | hour-block queries, filters: client, text; + client hours totals (D9) |
+| `get_monthly_close` | admin | `fetchMonthlyCloseForAgent`: snapshot or live, never Mercury, no bank account identifiers (D9) |
 
 **Writes**
 

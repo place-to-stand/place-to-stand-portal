@@ -93,6 +93,8 @@ const clientSelection = {
 export type ListHourBlocksForSettingsInput = {
   status?: 'active' | 'archived'
   search?: string | null
+  /** Only this client's blocks. */
+  clientId?: string | null
   cursor?: string | null
   direction?: CursorDirection | null
   limit?: number | null
@@ -166,6 +168,10 @@ export async function listHourBlocksForSettings(
     baseConditions.push(
       sql`(${invoices.invoiceNumber} ILIKE ${pattern} OR ${clients.name} ILIKE ${pattern})`
     )
+  }
+
+  if (input.clientId) {
+    baseConditions.push(eq(hourBlocks.clientId, input.clientId))
   }
 
   const useOffset = typeof input.offset === 'number' && input.offset >= 0

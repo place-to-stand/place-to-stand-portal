@@ -157,11 +157,13 @@ export async function fetchActivityLogsSince(
     since,
     until,
     limit,
+    source,
+    actorId,
   }: {
     since: string
     until?: string
     limit?: number
-  }
+  } & Pick<ActivityQueryFilters, 'source' | 'actorId'>
 ): Promise<ActivityLogWithActor[]> {
   assertAdmin(user)
 
@@ -174,6 +176,7 @@ export async function fetchActivityLogsSince(
     notInArray(activityLogs.verb, RETIRED_VERBS),
     gte(activityLogs.createdAt, since),
     until ? lte(activityLogs.createdAt, until) : undefined,
+    ...buildAttributionConditions({ source, actorId }),
   ])
 
   const baseQuery = db
@@ -213,6 +216,16 @@ function buildFilterConditions(filters: ActivityQueryFilters) {
     conditions.push(eq(activityLogs.targetClientId, filters.clientId))
   }
 
+  conditions.push(...buildAttributionConditions(filters))
+
+  if (filters.since) {
+    conditions.push(gte(activityLogs.createdAt, filters.since))
+  }
+
+  if (filters.until) {
+    conditions.push(lte(activityLogs.createdAt, filters.until))
+  }
+
   if (filters.targetType) {
     const values = Array.isArray(filters.targetType)
       ? filters.targetType
@@ -241,6 +254,17 @@ function buildFilterConditions(filters: ActivityQueryFilters) {
   }
 
   return combineConditions(conditions)
+}
+
+/** Who wrote a row and through which channel: shared by both readers. */
+function buildAttributionConditions({
+  source,
+  actorId,
+}: Pick<ActivityQueryFilters, 'source' | 'actorId'>) {
+  return [
+    source ? eq(activityLogs.source, source) : undefined,
+    actorId ? eq(activityLogs.actorId, actorId) : undefined,
+  ]
 }
 
 const CURSOR_SEPARATOR = "|"

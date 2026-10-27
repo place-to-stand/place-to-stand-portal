@@ -192,6 +192,13 @@ export type ActivityQueryFilters = {
   targetId?: string
   projectId?: string
   clientId?: string
+  /** Narrow to one channel (e.g. `MCP` for agent writes). */
+  source?: ActivitySourceValue
+  /** Narrow to rows one user acted on. */
+  actorId?: string
+  /** Inclusive `created_at` window, ISO 8601. */
+  since?: string
+  until?: string
   cursor?: string
   limit?: number
 }

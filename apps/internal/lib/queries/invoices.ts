@@ -174,6 +174,8 @@ export type ListInvoicesInput = {
   limit?: number | null
   /** Invoice status filter (DRAFT/SENT/…), distinct from the tab `status`. */
   invoiceStatus?: InvoiceStatusValue
+  /** Only this client's invoices. */
+  clientId?: string
   /** Fuzzy search on invoice number + client name (PRD 004 §03). */
   search?: string
   sort?: ParsedSort<InvoiceSortField>
@@ -238,6 +240,9 @@ export async function listInvoices(
 
   if (input.invoiceStatus) {
     baseConditions.push(eq(invoices.status, input.invoiceStatus))
+  }
+  if (input.clientId) {
+    baseConditions.push(eq(invoices.clientId, input.clientId))
   }
   const searchQuery = input.search?.trim() ?? ''
   if (searchQuery) {
