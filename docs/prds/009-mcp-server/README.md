@@ -1,4 +1,4 @@
-# PRD 009 — PTS MCP server (internal, admin-only v1)
+# PRD 009 — PTS MCP server (internal: ADMIN, and SALES for the CRM)
 
 **Status:** Built on the branch (PR #274). Implementation notes are at the end.
 **Created:** 2026-10-19
@@ -31,9 +31,9 @@ engagement standing) is explicitly out of scope until this one proves useful.
 | D3 | **The agent acts on the connecting user's behalf**, and writes record both the human and the agent. |
 | D4 | **Reads plus a fixed set of writes**: tasks (create, update), task comments, leads (create, edit, move stage, log updates). Clients and contacts are read-only. |
 | D5 | **No time logging.** Hours stay a manual human process because they feed the shared bank account / profit share. Time logs are readable (`list_time_logs`, revised 2026-10-26). |
-| D6 | **ADMIN only for v1.** SALES is not admitted yet, but the tool registry is role-aware so admitting SALES to the CRM tools later is a config change, not a redesign. |
-| D7 | **Users manage their connected apps in Settings > Integrations**, alongside their Vercel / Supabase / GitHub connections. |
-| D8 | **Client-facing MCP is deferred.** Nothing in v1 is exposed to CLIENT users. |
+| D6 | **ADMIN and SALES** (revised 2026-10-27; was "ADMIN only for v1"). SALES is admitted with exactly the portal's sales access: the CRM tools (leads, contacts and their activity), scoped the way the portal scopes them, and nothing else. Every other tool refuses a SALES caller. See "SALES access" below. |
+| D7 | **Users manage their connected apps in Settings > Integrations**, alongside their Vercel / Supabase / GitHub connections. Settings is admin-only, so SALES users have no portal settings access and cannot see or revoke their connected apps; an admin revokes a SALES user's grants in the Supabase dashboard when needed (Kris, 2026-10-27). |
+| D8 | **Client-facing MCP is deferred.** Nothing is exposed to CLIENT users. |
 
 **Answered during the build (Kris, 2026-10-20)**
 
@@ -87,14 +87,15 @@ than writing our own token endpoints.
   `/.well-known/oauth-protected-resource/api/mcp` (RFC 9728 puts the resource path after the
   well-known segment) pointing at the Supabase project as its authorization server, which publishes `/.well-known/oauth-authorization-server/auth/v1`.
 - **Consent page** `apps/internal/app/(auth)/oauth/consent/page.tsx`: requires a signed-in
-  ADMIN (redirects to `/sign-in` and back, preserving the authorization request), shows the
-  client name, redirect host and what it will be able to do, and approves or denies through the
-  Supabase OAuth API. A non-ADMIN sees a refusal, never an approve button. This is UI only:
-  Supabase's approve endpoint accepts any signed-in user, so the token check on `/api/mcp` (§3)
-  is the real gate, and the smoke test proves it by approving as a SALES user directly.
+  ADMIN or SALES user (`canUseInternalPortal`; redirects to `/sign-in` and back, preserving the
+  authorization request), shows the client name, redirect host and what it will be able to do
+  (a narrower summary for SALES), and approves or denies through the Supabase OAuth API. Anyone
+  else (CLIENT) sees a refusal, never an approve button. This is UI only: Supabase's approve
+  endpoint accepts any signed-in user, so the token check on `/api/mcp` (§3) is the real gate,
+  and the smoke test proves it by approving as a CLIENT user directly.
 - **Redirect URI guard (D13).** DCR lets any client register with any redirect URI. The consent
   page and its server action both refuse any redirect outside the allow-list in
-  `lib/mcp/redirects.ts`, so an authorization code can only reach Claude or the admin's machine.
+  `lib/mcp/redirects.ts`, so an authorization code can only reach Claude or the user's machine.
 - **The token is a full session.** A Supabase OAuth access token is an ordinary user session
   with a `client_id` claim: whoever holds it can call Supabase Auth as the user (change their
   password, edit `user_metadata`). PostgREST is closed (migration 0073 revoked the grants), but
@@ -115,8 +116,9 @@ type ApiPrincipal = {
 }
 ```
 
-- Same checks as the CLI: valid Supabase JWT, not `must_reset_password`, active profile,
-  `role === 'ADMIN'`.
+- Same checks as the CLI (`resolveUserFromToken`, `lib/cli/auth.ts`): valid Supabase JWT, not
+  `must_reset_password`, active profile. The role check differs: the CLI admits ADMIN only, the
+  MCP admits `INTERNAL_ROLES` (ADMIN, SALES — D6); a CLIENT token gets 403.
 - MCP tokens are OAuth-issued, so they carry a `client_id`; the resolver looks up the registered
   client's name (cached per instance). A token *without* a `client_id` is rejected on `/api/mcp`,
   so a CLI session token cannot be replayed against the MCP.
@@ -141,21 +143,24 @@ for confirmation.
 type ToolAccess = 'admin' | 'crm'   // 'crm' = assertCrmAccess (ADMIN or SALES)
 ```
 
-v1 admits ADMIN only (D6), but tools are tagged so SALES can later be let into `crm` tools by
-changing the resolver's role check alone.
+`admin` tools run `assertAdmin`, `crm` tools `assertCrmAccess` (ADMIN or SALES), before
+anything else (`lib/mcp/tool.ts`). The data helpers behind a `crm` tool still apply the portal's
+scoping for SALES (below). The server registers one tool list for every caller (the handler is
+built before any token is read), so `tools/list` shows a SALES user every tool, and an `admin`
+tool refuses them when called: `"<tool> is available to admin users only; your role is Sales."`
 
 **Reads**
 
 | Tool | Access | Backs onto |
 | --- | --- | --- |
-| `whoami` | admin | `/api/cli/v1/whoami` logic |
+| `whoami` | crm | `/api/cli/v1/whoami` logic |
 | `list_clients` / `get_client` | admin | client serializer (includes hours balance, §5) + contacts + projects |
-| `list_contacts` / `get_contact` | crm | contact serializer |
+| `list_contacts` / `get_contact` | crm | contact serializer; `list_contacts`' client filter resolves against the contacts page's own client list (`listAllActiveClients`) |
 | `list_projects` / `get_project` | admin | project serializer (slug or UUID) |
 | `list_tasks` / `get_task` | admin | task serializer, filters: project, lead, status, assignee |
 | `list_leads` / `get_lead` | crm | lead serializer + recent lead updates |
-| `list_users` | admin | user serializer (for resolving assignees and owners) |
-| `list_activity` / `recent_activity` | crm / admin | `fetchActivityLogs` / `fetchActivityLogsSince`, filters: target, project, client, source, actor, since/until (`recent_activity`: one time window, oldest first, `truncated` flag) |
+| `list_users` | crm (SALES: CRM staff only) | user serializer (for resolving assignees and owners) |
+| `list_activity` / `recent_activity` | crm (both scoped by `canReadActivity`) | `fetchActivityLogs` / `fetchActivityLogsSince`, filters: target, project, client, source, actor, since/until (`recent_activity`: one time window, oldest first, `truncated` flag; target type, source, actor) |
 | `list_time_logs` | admin | `listTimeLogs`, filters: project, user, work-date range; `totalCount` / `totalHours` over every match (D5) |
 | `list_invoices` / `get_invoice` | admin | invoice serializer, filters: client, status, text; no share token or Stripe ids (D9) |
 | `list_hour_blocks` / `get_client_hour_balance` | admin | hour-block queries, filters: client, text; + client hours totals (D9) |
@@ -181,6 +186,33 @@ one implementation.
 rich-text fields to a preview with a marker pointing at the `get_*` tool, so a large project
 cannot flood the model's context.
 
+### SALES access (D6, revised 2026-10-27)
+
+SALES reaches through the MCP exactly what the portal gives SALES: the CRM. The rules are the
+portal's own (`lib/auth/roles.ts`, `lib/auth/permissions.ts`); the MCP adds none.
+
+| Tool | SALES | Portal rule it mirrors |
+| --- | --- | --- |
+| `whoami` | allowed (self only) | any signed-in user sees their own profile |
+| `list_leads` / `get_lead` | allowed, every active lead | `fetchLeadsBoard` (`assertCrmAccess`, no per-owner scoping) |
+| `create_lead` / `update_lead` / `add_lead_update` | allowed | `saveLeadForActor`, `createLeadUpdateForActor` (`assertCrmAccess`) |
+| assignments: `create_task` / `update_task` `assigneeIds`, `create_lead` / `update_lead` `assignee` | staff only, for every role | `resolveAssigneeIds` resolves only `fetchCrmUsers` (ADMIN, SALES): no role, on the MCP or the CLI, can assign a CLIENT user (2026-10-27) |
+| read filters: `list_leads` / `list_tasks` `assignee`, activity `actor`, `list_time_logs` `user` | CRM staff only | `resolveUserIds` resolves only `fetchCrmUsers` for SALES (admins: any active user); anyone else reads as "no active user matches" |
+| `list_contacts` / `get_contact` | allowed, read-only | `/contacts` page, `listContactsForSettings`, `getContactSheetInputById`, `listContactClients`, client filter from `listAllActiveClients` |
+| `list_activity` | LEAD and CONTACT activity only; `targetType` required; no `project` / `client` filter | `canReadActivity` (checked up front with a clear error, and again in `fetchActivityLogs`) |
+| `recent_activity` | LEAD and CONTACT activity only; `targetType` defaults to both for SALES, and naming any other type is refused | `canReadActivity`, enforced inside `fetchActivityLogsSince` (2026-10-27) |
+| `list_tasks` / `get_task` / `create_task` / `update_task` / `add_task_comment` | denied | tasks are admin-only, lead tasks included (`/api/leads/[leadId]/tasks` is `requireRole('ADMIN')`; the lead sheet hides tasks from SALES) |
+| `list_clients` / `get_client` / `list_projects` / `get_project` | denied | `requireUser()` / `assertAdmin()` pages and data |
+| `list_users` | allowed, CRM staff (ADMIN, SALES) only | `fetchCrmUsers`, the lead assignee picker (2026-10-27) |
+| `list_time_logs`, `list_invoices` / `get_invoice`, `list_hour_blocks` / `get_client_hour_balance`, `get_monthly_close` | denied | admin-only pages and data |
+
+Writes by a SALES user log `actor_role = 'SALES'`, `source = 'MCP'` and the agent, like an
+admin's.
+
+**In the portal**, SALES has no settings access: Settings (including the connected-apps card,
+§6) stays admin-only. An admin revokes a SALES user's MCP grants in the Supabase dashboard when
+needed.
+
 ### §5 Client hours
 
 "Client hours" means the balance only — hours remaining on a prepaid client — not the client
@@ -199,6 +231,9 @@ grant APIs (`listGrants`, `revokeGrant`, run with the user's own session). Revok
 app's sessions, and `/api/mcp` checks the session on every call (`auth.getUser`), so access ends
 at once rather than when the access token expires. Local Supabase needs a newer auth server for the
 grant endpoints (the CLI pinned `v2.180.0`, which 404s).
+
+The card is admin-only, like the rest of Settings. SALES users cannot reach it; an admin revokes
+a SALES user's grants in the Supabase dashboard.
 
 ### §7 Observability
 
@@ -239,8 +274,18 @@ restart Supabase once (`supabase stop && supabase start`) after pulling, then ru
    - result shapes match the serializers;
    - each write logs `activity_logs.source = 'MCP'` with `actor_id` = the human and
      `metadata.agent` set;
-   - a SALES user's token, a reset-pending admin's token, a CLI token (no `client_id`) and no
-     token are all rejected. The script creates the two throwaway users and deletes them.
+   - a CLIENT user's token, a reset-pending admin's token, a CLI token (no `client_id`) and no
+     token are all rejected;
+   - a SALES user is admitted and gets exactly the "SALES access" table: CRM reads and writes
+     succeed and are scoped (`list_users`, assignees and actors limited to CRM staff;
+     `list_activity` and `recent_activity` limited to LEAD and CONTACT), every admin tool and
+     every out-of-scope activity query is refused with no data, and refused task writes change
+     nothing;
+   - no role can assign a CLIENT user: admin `create_task` / `update_task` / `create_lead` /
+     `update_lead` and the CLI's task and lead create are refused and write nothing.
+
+   The script creates the throwaway users (CLIENT x2, reset-pending admin, SALES) and deletes
+   them.
 
    It deletes everything it wrote, including its OAuth clients.
 3. **Claude Code against localhost.**
@@ -252,7 +297,7 @@ restart Supabase once (`supabase stop && supabase start`) after pulling, then ru
 
 1. Migration (`activity_source` + `MCP`) applies with the normal prod `db:migrate:prod` step.
 2. Enable the OAuth server and DCR on the hosted Supabase project; set the authorization path.
-3. Deploy. Nothing is reachable until an ADMIN adds the connector in claude.ai.
+3. Deploy. Nothing is reachable until an ADMIN or SALES user adds the connector in claude.ai.
 4. **Prod smoke test (the end-to-end check).** Kris adds the connector in claude.ai, completes
    consent, and calls `whoami`, one read and one write. This is the first time Anthropic's servers
    are the caller, so it is where hosted-only misconfiguration shows up: the hosted Supabase OAuth
@@ -283,10 +328,16 @@ Where the build departs from the design above, or settles something it left open
 - **No archive, restore or delete** (Non-goals). `update_task` and `update_lead` say so in their
   descriptions and point at DONE, CLOSED_LOST / UNQUALIFIED, or the portal. Archived tasks are a
   soft delete (`deletedAt`), not a status value.
-- **`crm`-tagged tools still need ADMIN underneath.** Contact and lead tools are tagged `crm`, but
-  some helpers behind them (`listLeadsForCli`, `resolveUserIds`, `resolveClientIdentifier`) assert
-  admin. Admitting SALES (D6) needs those opened up too; it is not yet the one-line change §4
-  promised.
+- **`crm`-tagged tools needed their helpers opened up** to admit SALES (2026-10-27):
+  `listLeadsForCli` / `getLeadForCli` now assert CRM access like the portal's lead data layer;
+  `listUsersForCli` and `resolveUserIds` admit CRM users but show SALES only CRM staff;
+  `fetchActivityLogsSince` checks `canReadActivity` instead of `assertAdmin`; `list_contacts`
+  resolves its client filter against `listAllActiveClients` instead of the admin-only
+  `resolveClientIdentifier`. The CLI still admits ADMIN only.
+- **Assignment is split from lookup** (2026-10-27). `resolveAssigneeIds` (task and lead
+  assignees, on the MCP and the CLI) resolves only staff for every role; `resolveUserIds` (read
+  filters) keeps admins resolving any active user. Existing CLIENT assignees on old rows are left
+  alone: an update that omits the assignee keeps them.
 - **No shared `ApiPrincipal` type.** The CLI and MCP share `resolveAdminFromToken`
   (`lib/cli/auth.ts`); the MCP adds the agent in `lib/mcp/auth.ts`. Attribution reaches
   `logActivity` through a request-scoped context (`lib/activity/agent-context.ts`), so the

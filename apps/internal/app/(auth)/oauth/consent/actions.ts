@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 
+import { canUseInternalPortal } from '@/lib/auth/roles'
 import { getCurrentUser } from '@/lib/auth/session'
 import { isAllowedRedirect } from '@/lib/mcp/redirects'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
@@ -13,8 +14,8 @@ const schema = z.object({
 })
 
 /**
- * Record the signed-in admin's consent decision with Supabase Auth and send
- * the browser back to the OAuth client. The admin and redirect checks are
+ * Record the signed-in staff user's consent decision with Supabase Auth and send
+ * the browser back to the OAuth client. The role and redirect checks are
  * repeated here because a server action is its own endpoint — the page
  * having rendered the buttons proves nothing about who is posting or where
  * the code will go.
@@ -28,7 +29,7 @@ export async function decideAuthorization(formData: FormData) {
   const back = `/oauth/consent?authorization_id=${encodeURIComponent(authorizationId)}`
   const user = await getCurrentUser()
 
-  if (!user || user.role !== 'ADMIN') {
+  if (!user || !canUseInternalPortal(user.role)) {
     redirect(back)
   }
 

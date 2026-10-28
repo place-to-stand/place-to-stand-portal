@@ -15,7 +15,7 @@ import type { ActivitySourceValue } from '@/lib/types'
 import { toRichTextHtml } from './description'
 import { jsonOk } from './handler'
 import { fetchBoardLocationsByProject, loadTaskForEdit } from './queries/tasks'
-import { resolveUserIds } from './queries/users'
+import { resolveAssigneeIds } from './queries/users'
 import type { cliCreateTaskSchema, cliUpdateTaskSchema } from './schemas/tasks'
 import { serializeComment, type CliComment } from './serializers/comment'
 import { serializeTask, type CliTask } from './serializers/task'
@@ -75,7 +75,7 @@ export async function createTaskFromInput(
   const projectId = payload.project
     ? await resolveProjectId(user, payload.project)
     : await getOrCreateSalesProject(user.id)
-  const assigneeIds = await resolveUserIds(user, payload.assigneeIds)
+  const assigneeIds = await resolveAssigneeIds(user, payload.assigneeIds)
 
   const result = await saveTaskForActor(
     user,
@@ -132,7 +132,7 @@ export async function updateTaskFromInput(
       assigneeIds:
         payload.assigneeIds === undefined
           ? assigneeIds
-          : await resolveUserIds(user, payload.assigneeIds),
+          : await resolveAssigneeIds(user, payload.assigneeIds),
       leadId: payload.leadId === undefined ? task.leadId : payload.leadId,
     },
     source

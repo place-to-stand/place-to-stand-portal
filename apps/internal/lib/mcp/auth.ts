@@ -2,8 +2,9 @@ import 'server-only'
 
 import type { AuthInfo } from '@modelcontextprotocol/server'
 
+import { INTERNAL_ROLES } from '@/lib/auth/roles'
 import type { AppUser } from '@/lib/auth/session'
-import { resolveAdminFromToken, type BearerSurface } from '@/lib/cli/auth'
+import { resolveUserFromToken, type BearerSurface } from '@/lib/cli/auth'
 import { ForbiddenError, UnauthorizedError } from '@/lib/errors/http'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'
 
@@ -44,7 +45,7 @@ type AccessTokenClaims = {
 
 /**
  * Read the payload of a JWT without verifying it. Only called after
- * `resolveAdminFromToken` has validated the token with Supabase, so the claims
+ * `resolveUserFromToken` has validated the token with Supabase, so the claims
  * are trusted by then; on its own this proves nothing.
  */
 function readClaims(token: string): AccessTokenClaims {
@@ -96,9 +97,12 @@ async function resolveAgentName(clientId: string): Promise<string> {
  * refused here even though it is a valid Supabase JWT — every MCP call must be
  * attributable to an agent.
  *
- * A valid token for a non-admin is not an authentication failure; a 401
- * would just send the client round the OAuth loop again. It is passed through
- * as `forbidden` so the route can answer 403.
+ * The MCP admits the internal portal's staff roles (ADMIN, SALES — PRD 009
+ * D6, revised 2026-10-27); each tool then applies the same role rule the
+ * portal does (`lib/mcp/tool.ts`). A valid token for anyone else (CLIENT) is
+ * not an authentication failure; a 401 would just send the client round the
+ * OAuth loop again. It is passed through as `forbidden` so the route can
+ * answer 403.
  */
 export async function verifyMcpToken(
   _request: Request,
@@ -122,7 +126,11 @@ export async function verifyMcpToken(
   }
 
   try {
-    const user = await resolveAdminFromToken(token, MCP_SURFACE)
+    const user = await resolveUserFromToken(
+      token,
+      MCP_SURFACE,
+      INTERNAL_ROLES
+    )
     const name = await resolveAgentName(claims.client_id)
     const extra: McpAuthExtra = {
       principal: { user, agent: { clientId: claims.client_id, name } },
@@ -144,7 +152,7 @@ export async function verifyMcpToken(
   }
 }
 
-/** The 403 reason for an authenticated non-admin, if this request is one. */
+/** The 403 reason for an authenticated non-staff user, if this request is one. */
 export function readForbiddenReason(auth?: AuthInfo): string | null {
   const extra = auth?.extra as McpAuthExtra | undefined
 

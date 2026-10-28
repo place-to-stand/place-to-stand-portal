@@ -9,9 +9,10 @@ import { z, ZodError } from 'zod'
 
 import { runAsAgent } from '@/lib/activity/agent-context'
 import { assertAdmin, assertCrmAccess } from '@/lib/auth/permissions'
+import { ROLE_LABELS } from '@/lib/auth/roles'
 import type { AppUser } from '@/lib/auth/session'
 import { errorCodeFor } from '@/lib/cli/handler'
-import { HttpError } from '@/lib/errors/http'
+import { ForbiddenError, HttpError } from '@/lib/errors/http'
 import {
   captureServerEvent,
   captureServerException,
@@ -20,15 +21,43 @@ import {
 import { requirePrincipal, type McpPrincipal } from './auth'
 
 /**
- * `crm` tools are the ones a SALES user may one day reach (`assertCrmAccess`).
- * v1 admits ADMIN only at the token check (PRD 009 D6), so today both tags
- * pass the same users; the tag is here so admitting SALES is a config change.
+ * The token check admits ADMIN and SALES (PRD 009 D6, revised 2026-10-27).
+ * Each tool then applies the portal's own guard for the same data: `crm`
+ * tools are the leads and contacts a SALES user works in the portal
+ * (`assertCrmAccess`); `admin` tools are everything the portal keeps behind
+ * `requireUser()` / `assertAdmin()`. Within a `crm` tool, the data helpers
+ * it calls still scope what a SALES user sees (e.g. `canReadActivity`).
  */
 export type ToolAccess = 'admin' | 'crm'
 
 const ACCESS_CHECKS: Record<ToolAccess, (user: AppUser) => void> = {
   admin: assertAdmin,
   crm: assertCrmAccess,
+}
+
+const ACCESS_LABELS: Record<ToolAccess, string> = {
+  admin: 'admin users',
+  crm: 'admin and sales users',
+}
+
+/**
+ * The server registers one tool list for every caller (the handler is built
+ * once, before any token is read), so a tool the caller's role cannot use
+ * is refused when called, with a message that names the tool and the roles
+ * that can, rather than the guard's generic one.
+ */
+function assertToolAccess(name: string, access: ToolAccess, user: AppUser) {
+  try {
+    ACCESS_CHECKS[access](user)
+  } catch (error) {
+    if (error instanceof ForbiddenError) {
+      throw new ForbiddenError(
+        `${name} is available to ${ACCESS_LABELS[access]} only; your role is ${ROLE_LABELS[user.role]}.`
+      )
+    }
+
+    throw error
+  }
 }
 
 /** Agreed with Kris 2026-10-19 (PRD 009 §7). */
@@ -131,7 +160,7 @@ export function defineTool<Shape extends z.ZodRawShape>(
       let failure: ToolFailure | null = null
 
       try {
-        ACCESS_CHECKS[definition.access](principal.user)
+        assertToolAccess(definition.name, definition.access, principal.user)
 
         const data = await runAsAgent(principal.agent, () =>
           definition.run(args, principal)

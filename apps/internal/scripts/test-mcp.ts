@@ -13,9 +13,11 @@
  *   MCP_TEST_EMAIL=... MCP_TEST_PASSWORD=... npx tsx scripts/test-mcp.ts
  *
  * The user must be an ADMIN. Writes a task, a comment, a lead and a lead
- * update to whatever DATABASE_URL points at, and creates two throwaway users
- * (a SALES user and an admin mid password reset) to prove they are refused,
- * then deletes all of it — do not aim it at production.
+ * update to whatever DATABASE_URL points at, and creates throwaway users: a
+ * CLIENT user and an admin mid password reset, to prove they are refused; a
+ * CLIENT user nobody may assign anything to; and a SALES user, to prove SALES
+ * reaches exactly the portal's CRM (leads, contacts and their activity) and
+ * nothing else. Then it deletes all of it — do not aim it at production.
  */
 
 import { createHash, randomBytes } from 'crypto'
@@ -286,20 +288,25 @@ function adminClient() {
   })
 }
 
+type Role = 'ADMIN' | 'SALES' | 'CLIENT'
+
+type ProfileStore = {
+  insert: (row: { id: string; email: string; role: Role }) => Promise<void>
+  remove: (id: string) => Promise<void>
+}
+
+type TestUser = { id: string; email: string; password: string }
+
 /**
- * Prove a valid OAuth token is still refused for a user who may not use the
- * server. Supabase's approve endpoint answers to any signed-in user — the
- * consent page's admin check is UI only — so the token check in
- * `verifyMcpToken` is the gate, and this tests it directly.
+ * A throwaway auth user plus profile with `role`. The caller must pass the
+ * result to `deleteTestUser`, even on failure.
  */
-async function checkRefused(
-  discovery: Discovery,
+async function createTestUser(
   label: string,
-  user: { role: 'ADMIN' | 'SALES'; mustReset: boolean },
-  expected: RegExp,
-  insertProfile: (row: { id: string; email: string; role: 'ADMIN' | 'SALES' }) => Promise<void>,
-  deleteProfile: (id: string) => Promise<void>
-) {
+  role: Role,
+  profiles: ProfileStore,
+  { mustReset = false }: { mustReset?: boolean } = {}
+): Promise<TestUser> {
   const admin = adminClient()
   const email = `mcp-test-${randomBytes(4).toString('hex')}@example.com`
   const password = base64url(randomBytes(18))
@@ -307,7 +314,7 @@ async function checkRefused(
     email,
     password,
     email_confirm: true,
-    user_metadata: user.mustReset ? { must_reset_password: true } : {},
+    user_metadata: mustReset ? { must_reset_password: true } : {},
   })
 
   if (error || !data.user) {
@@ -315,9 +322,39 @@ async function checkRefused(
   }
 
   try {
-    await insertProfile({ id: data.user.id, email, role: user.role })
+    await profiles.insert({ id: data.user.id, email, role })
+  } catch (insertError) {
+    await admin.auth.admin.deleteUser(data.user.id)
+    throw insertError
+  }
 
-    const { accessToken } = await authorizeAs(discovery, email, password)
+  return { id: data.user.id, email, password }
+}
+
+async function deleteTestUser(user: TestUser, profiles: ProfileStore) {
+  await profiles.remove(user.id)
+  await adminClient().auth.admin.deleteUser(user.id)
+}
+
+/**
+ * Prove a valid OAuth token is still refused for a user who may not use the
+ * server. Supabase's approve endpoint answers to any signed-in user — the
+ * consent page's role check is UI only — so the token check in
+ * `verifyMcpToken` is the gate, and this tests it directly.
+ */
+async function checkRefused(
+  discovery: Discovery,
+  label: string,
+  user: { role: Role; mustReset: boolean },
+  expected: RegExp,
+  profiles: ProfileStore
+) {
+  const testUser = await createTestUser(label, user.role, profiles, {
+    mustReset: user.mustReset,
+  })
+
+  try {
+    const { accessToken } = await authorizeAs(discovery, testUser.email, testUser.password)
     const refused = await rpc(accessToken, 'tools/list')
 
     check(
@@ -326,8 +363,7 @@ async function checkRefused(
       refused
     )
   } finally {
-    await deleteProfile(data.user.id)
-    await admin.auth.admin.deleteUser(data.user.id)
+    await deleteTestUser(testUser, profiles)
   }
 }
 
@@ -371,17 +407,20 @@ async function main() {
   const noToken = await rpc(null, 'tools/list')
   check('a call with no token is refused', noToken.status === 401)
 
-  const insertProfile = async (row: { id: string; email: string; role: 'ADMIN' | 'SALES' }) => {
-    await db.insert(userProfiles).values(row)
-  }
-  const deleteProfile = async (id: string) => {
-    await db.delete(userProfiles).where(eq(userProfiles.id, id))
+  const profiles: ProfileStore = {
+    insert: async row => {
+      await db.insert(userProfiles).values(row)
+    },
+    remove: async id => {
+      await db.delete(userProfiles).where(eq(userProfiles.id, id))
+    },
   }
 
-  await checkRefused(discovery, 'a SALES user', { role: 'SALES', mustReset: false },
-    /admin users only/, insertProfile, deleteProfile)
+  // SALES is admitted since PRD 009 D6 was revised; CLIENT never is.
+  await checkRefused(discovery, 'a CLIENT user', { role: 'CLIENT', mustReset: false },
+    /admin and sales users only/, profiles)
   await checkRefused(discovery, 'an admin mid password reset', { role: 'ADMIN', mustReset: true },
-    /must reset its password/, insertProfile, deleteProfile)
+    /must reset its password/, profiles)
 
   console.log('\nTools')
   const list = await rpc(accessToken, 'tools/list')
@@ -557,9 +596,13 @@ async function main() {
   check('an unknown task is a not-found tool error', !missing.ok && /not found/i.test(missing.message ?? ''), missing.message)
 
   console.log('\nWrites')
-  const created: { taskId?: string; leadId?: string } = {}
+  const created: { taskId?: string; leadId?: string; salesLeadId?: string } = {}
+  let salesUser: TestUser | null = null
+  // A portal (CLIENT) user nobody may assign anything to.
+  let clientUser: TestUser | null = null
 
   try {
+    clientUser = await createTestUser('CLIENT assignee', 'CLIENT', profiles)
     const createTask = await callTool(accessToken, 'create_task', {
       project: project.slug,
       title: `MCP smoke test ${new Date().toISOString()}`,
@@ -657,6 +700,41 @@ async function main() {
     const backwards = await callTool(accessToken, 'recent_activity', { since: '2026-02-02', until: '2026-02-01' })
     check('recent_activity refuses an inverted window', !backwards.ok, backwards.message)
 
+    console.log('\nAssignment (staff only, any role)')
+    const clientRef = clientUser.email
+    const assignChecks: [string, Record<string, unknown>][] = [
+      ['create_task', { project: project.slug, title: 'Must not be created (CLIENT assignee)', assigneeIds: [clientRef] }],
+      ['update_task', { taskId: created.taskId, assigneeIds: [EMAIL, clientUser.id] }],
+      ['create_lead', { name: 'Must not be created (CLIENT assignee)', assignee: clientRef }],
+      ['update_lead', { leadId: created.leadId, assignee: clientUser.id }],
+    ]
+    for (const [name, args] of assignChecks) {
+      const result = await callTool(accessToken, name, args)
+      check(`an admin cannot assign a CLIENT user with ${name}`,
+        !result.ok && /no assignable staff user matches/i.test(result.message ?? ''), result.message)
+    }
+    const cliHeaders = { Authorization: `Bearer ${sessionToken}`, 'Content-Type': 'application/json' }
+    const cliLead = await fetch(`${BASE_URL}/api/cli/v1/leads`, {
+      method: 'POST', headers: cliHeaders,
+      body: JSON.stringify({ name: 'Must not be created (CLIENT assignee)', assignee: clientRef }),
+    })
+    check('the CLI cannot assign a CLIENT user to a lead', cliLead.status === 404, cliLead.status)
+    const cliTask = await fetch(`${BASE_URL}/api/cli/v1/tasks`, {
+      method: 'POST', headers: cliHeaders,
+      body: JSON.stringify({ project: project.slug, title: 'Must not be created (CLIENT assignee)', assigneeIds: [clientRef] }),
+    })
+    check('the CLI cannot assign a CLIENT user to a task', cliTask.status === 404, cliTask.status)
+    const leftovers = [
+      ...await db.select({ id: tasks.id }).from(tasks).where(eq(tasks.title, 'Must not be created (CLIENT assignee)')),
+      ...await db.select({ id: leads.id }).from(leads).where(eq(leads.contactName, 'Must not be created (CLIENT assignee)')),
+    ]
+    check('refused assignments wrote nothing', leftovers.length === 0, leftovers.length)
+    const keptAssignees = await callTool(accessToken, 'get_task', { taskId: created.taskId })
+    check('a refused reassignment keeps the old assignees',
+      JSON.stringify(keptAssignees.data.task?.assigneeIds) === JSON.stringify([userId]), keptAssignees.data.task?.assigneeIds)
+    const clientFilter = await callTool(accessToken, 'list_leads', { assignee: clientUser.email, limit: 1 })
+    check('an admin can still filter leads by any user (read filters keep their behaviour)', clientFilter.ok, clientFilter.message)
+
     check('every timestamp in tool output is ISO 8601', nonIsoTimestamps.size === 0,
       [...nonIsoTimestamps])
 
@@ -676,6 +754,186 @@ async function main() {
     check('activity rows name the human as actor', rows.every(row => row.actorId === userId))
     check('activity rows carry the agent', rows.every(row =>
       (row.metadata as { agent?: { name?: string } })?.agent?.name === CLIENT_NAME))
+
+    console.log('\nSALES (the portal CRM: leads, contacts and their activity)')
+    salesUser = await createTestUser('SALES', 'SALES', profiles)
+    const sales = (await authorizeAs(discovery, salesUser.email, salesUser.password)).accessToken
+
+    const salesList = await rpc(sales, 'tools/list')
+    check('a SALES token is admitted (tools/list answers 200)', salesList.status === 200, salesList.status)
+
+    const salesWho = await callTool(sales, 'whoami')
+    check('whoami acts as the SALES user', salesWho.ok && salesWho.data.user?.email === salesUser.email
+      && salesWho.data.user?.role === 'SALES', salesWho.message)
+
+    // Everything the portal keeps behind requireUser() / assertAdmin().
+    const prepaidRef = clients.data.items?.[0]?.slug ?? clients.data.items?.[0]?.id ?? 'acme'
+    const denied: [string, Record<string, unknown>][] = [
+      ['list_clients', {}],
+      ['get_client', { client: prepaidRef }],
+      ['list_projects', {}],
+      ['get_project', { project: project.slug }],
+      ['list_tasks', {}],
+      ['list_tasks', { lead: created.leadId }],
+      ['get_task', { taskId: created.taskId }],
+      ['create_task', { leadId: created.leadId, title: 'SALES must not create this' }],
+      ['update_task', { taskId: created.taskId, status: 'DONE' }],
+      ['add_task_comment', { taskId: created.taskId, body: 'SALES must not post this.' }],
+      ['list_time_logs', {}],
+      ['list_invoices', {}],
+      ['get_invoice', { invoiceId: firstInvoice?.id ?? '00000000-0000-4000-8000-000000000000' }],
+      ['list_hour_blocks', {}],
+      ['get_client_hour_balance', { client: prepaidRef }],
+      ['get_monthly_close', { year: lastMonth.getUTCFullYear(), month: lastMonth.getUTCMonth() + 1 }],
+    ]
+    for (const [name, args] of denied) {
+      const result = await callTool(sales, name, args)
+      check(`SALES is refused ${name}${Object.keys(args).length ? ` (${Object.keys(args).join(', ')})` : ''}`,
+        !result.ok && /available to admin users only/.test(result.message ?? '')
+          && Object.keys(result.data).length === 0, result.message)
+    }
+
+    const taskAfter = await callTool(accessToken, 'get_task', { taskId: created.taskId })
+    check('refused task writes changed nothing', taskAfter.data.task?.status === 'IN_PROGRESS'
+      && taskAfter.data.comments?.length === 1, taskAfter.data.task?.status)
+    const salesTasks = await db.select({ id: tasks.id }).from(tasks).where(eq(tasks.title, 'SALES must not create this'))
+    check('refused create_task wrote no task', salesTasks.length === 0, salesTasks.length)
+
+    // Leads: SALES sees the whole board, as on /leads.
+    const salesLeads = await callTool(sales, 'list_leads', { search: 'MCP Smoke Test', limit: 5 })
+    check('SALES list_leads sees the board', salesLeads.ok && salesLeads.data.items.some((l: Loose) => l.id === created.leadId),
+      salesLeads.message)
+    const salesLead = await callTool(sales, 'get_lead', { leadId: created.leadId })
+    check('SALES get_lead returns the lead and its timeline', salesLead.ok && salesLead.data.updates?.length === 1,
+      salesLead.message)
+
+    const salesCreate = await callTool(sales, 'create_lead', {
+      name: 'MCP Smoke Test (sales)', company: 'test-mcp.ts', assignee: salesUser.email,
+    })
+    created.salesLeadId = salesCreate.data.lead?.id
+    check('SALES create_lead creates and self-assigns', salesCreate.ok && salesCreate.data.lead?.assigneeId === salesUser.id,
+      salesCreate.message)
+    const reassigned = await callTool(sales, 'update_lead', {
+      leadId: created.salesLeadId, status: 'PROPOSAL_SENT', assignee: EMAIL,
+    })
+    check('SALES update_lead moves the stage and assigns to CRM staff',
+      reassigned.ok && reassigned.data.lead?.status === 'PROPOSAL_SENT' && reassigned.data.lead?.assigneeId === userId,
+      reassigned.message)
+    const salesLogged = await callTool(sales, 'add_lead_update', {
+      leadId: created.salesLeadId, type: 'EMAIL', body: 'Smoke test email (sales).',
+    })
+    check('SALES add_lead_update logs the entry', salesLogged.ok && Boolean(salesLogged.data.update?.id), salesLogged.message)
+    const byOwner = await callTool(sales, 'list_leads', { assignee: EMAIL, limit: 100 })
+    check('SALES list_leads filters by a CRM owner email',
+      byOwner.ok && byOwner.data.items.some((l: Loose) => l.id === created.salesLeadId), byOwner.message)
+
+    // Assignees resolve only to staff for everyone; read filters resolve only
+    // CRM staff for SALES (the portal's lead assignee picker).
+    const toClient = await callTool(sales, 'update_lead', { leadId: created.salesLeadId, assignee: clientUser.email })
+    check('SALES cannot assign a lead to a CLIENT user', !toClient.ok && /no assignable staff user matches/i.test(toClient.message ?? ''),
+      toClient.message)
+    const byClient = await callTool(sales, 'list_leads', { assignee: clientUser.id })
+    check('SALES cannot resolve a CLIENT user as a lead owner', !byClient.ok && /no active user matches/i.test(byClient.message ?? ''),
+      byClient.message)
+
+    // list_users: CRM staff only for SALES.
+    const [adminUsers, salesUsers, salesClients, salesFind] = await Promise.all([
+      callTool(accessToken, 'list_users', { role: 'CLIENT', limit: 100 }),
+      callTool(sales, 'list_users', { limit: 100 }),
+      callTool(sales, 'list_users', { role: 'CLIENT', limit: 100 }),
+      callTool(sales, 'list_users', { search: clientUser.email, limit: 5 }),
+    ])
+    check('an admin list_users still sees CLIENT users',
+      adminUsers.ok && adminUsers.data.items.some((u: Loose) => u.id === clientUser!.id), adminUsers.message)
+    check('SALES list_users lists only admin and sales staff',
+      salesUsers.ok && salesUsers.data.items.length > 0
+        && salesUsers.data.items.every((u: Loose) => ['ADMIN', 'SALES'].includes(u.role))
+        && salesUsers.data.items.some((u: Loose) => u.id === salesUser!.id), salesUsers.message)
+    check('SALES list_users finds no CLIENT user by role or search',
+      salesClients.ok && salesClients.data.items.length === 0 && salesFind.ok && salesFind.data.items.length === 0,
+      [salesClients.data.items?.length, salesFind.data.items?.length])
+
+    // Contacts: read-only, with the contacts page's client filter.
+    const salesContacts = await callTool(sales, 'list_contacts', { limit: 3 })
+    check('SALES list_contacts returns items', salesContacts.ok && Array.isArray(salesContacts.data.items), salesContacts.message)
+    if (firstContact) {
+      const salesContact = await callTool(sales, 'get_contact', { contactId: firstContact.id })
+      check('SALES get_contact returns the contact and its client links',
+        salesContact.ok && salesContact.data.contact?.id === firstContact.id && Array.isArray(salesContact.data.clients),
+        salesContact.message)
+    }
+    const linkedClient = (contacts.data.items ?? []).flatMap((c: Loose) => c.clients ?? [])[0]
+    if (linkedClient) {
+      const ref = linkedClient.slug ?? linkedClient.id
+      const [asAdmin, asSales] = await Promise.all([
+        callTool(accessToken, 'list_contacts', { client: ref, limit: 100 }),
+        callTool(sales, 'list_contacts', { client: ref, limit: 100 }),
+      ])
+      check('SALES list_contacts filters by client exactly as an admin sees it',
+        asSales.ok && asAdmin.ok && JSON.stringify(asSales.data.items.map((c: Loose) => c.id))
+          === JSON.stringify(asAdmin.data.items.map((c: Loose) => c.id)), asSales.message)
+    }
+
+    // Activity: LEAD and CONTACT only, named by targetType, never by project
+    // or client (`canReadActivity`).
+    const salesLeadActivity = await callTool(sales, 'list_activity', {
+      targetType: ['LEAD', 'CONTACT'], since: new Date(Date.now() - 60 * 60 * 1000).toISOString(), limit: 100,
+    })
+    check('SALES list_activity reads lead and contact activity only',
+      salesLeadActivity.ok && salesLeadActivity.data.items.length > 0
+        && salesLeadActivity.data.items.every((a: Loose) => ['LEAD', 'CONTACT'].includes(a.target?.type)),
+      salesLeadActivity.message)
+    const ownActivity = await callTool(sales, 'list_activity', {
+      targetType: ['LEAD'], targetId: created.salesLeadId, source: 'MCP', actor: salesUser.email, limit: 100,
+    })
+    check('SALES list_activity filters by target, source and actor',
+      ownActivity.ok && ownActivity.data.items.length >= 3 && ownActivity.data.items.every((a: Loose) =>
+        a.actor?.id === salesUser!.id && a.source === 'MCP' && a.agent === CLIENT_NAME), ownActivity.message)
+    const taskViaLead = await callTool(sales, 'list_activity', { targetType: ['LEAD'], targetId: created.taskId })
+    check('SALES cannot reach task activity through a lead filter', taskViaLead.ok && taskViaLead.data.items.length === 0,
+      taskViaLead.data.items?.length)
+    const activityDenied: [string, Record<string, unknown>][] = [
+      ['no targetType', { targetId: created.taskId }],
+      ['targetType TASK', { targetType: ['TASK'] }],
+      ['LEAD plus TASK', { targetType: ['LEAD', 'TASK'] }],
+      ['a project', { targetType: ['LEAD'], project: project.slug }],
+      ['a client', { targetType: ['LEAD'], client: prepaidRef }],
+    ]
+    for (const [label, args] of activityDenied) {
+      const result = await callTool(sales, 'list_activity', args)
+      check(`SALES list_activity is refused with ${label}`,
+        !result.ok && /lead and contact activity only/.test(result.message ?? '') && Object.keys(result.data).length === 0,
+        result.message)
+    }
+
+    // recent_activity: LEAD and CONTACT only, by default or by name.
+    const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+    const salesRecent = await callTool(sales, 'recent_activity', { since: hourAgo, limit: 500 })
+    check('SALES recent_activity defaults to lead and contact activity',
+      salesRecent.ok && salesRecent.data.items.some((a: Loose) => a.target?.id === created.salesLeadId)
+        && salesRecent.data.items.every((a: Loose) => ['LEAD', 'CONTACT'].includes(a.target?.type)), salesRecent.message)
+    const adminRecent = await callTool(accessToken, 'recent_activity', { since: hourAgo, limit: 500 })
+    check('an admin recent_activity still sees task activity',
+      adminRecent.ok && adminRecent.data.items.some((a: Loose) => a.target?.id === created.taskId), adminRecent.message)
+    const salesRecentLeads = await callTool(sales, 'recent_activity', { since: hourAgo, targetType: ['LEAD'], actor: salesUser.email })
+    check('SALES recent_activity filters by target type and actor',
+      salesRecentLeads.ok && salesRecentLeads.data.items.length > 0 && salesRecentLeads.data.items.every((a: Loose) =>
+        a.target?.type === 'LEAD' && a.actor?.id === salesUser!.id), salesRecentLeads.message)
+    for (const targetType of [['TASK'], ['LEAD', 'PROJECT']]) {
+      const result = await callTool(sales, 'recent_activity', { since: hourAgo, targetType })
+      check(`SALES recent_activity is refused with targetType ${targetType.join(' + ')}`,
+        !result.ok && /lead and contact activity only/.test(result.message ?? '') && Object.keys(result.data).length === 0,
+        result.message)
+    }
+
+    const salesRows = created.salesLeadId
+      ? await db.select().from(activityLogs).where(eq(activityLogs.targetId, created.salesLeadId))
+      : []
+    check('SALES writes are attributed to the SALES user, via MCP',
+      salesRows.length >= 2 && salesRows.every(row => row.source === 'MCP' && row.actorId === salesUser!.id
+        && row.actorRole === 'SALES' && (row.metadata as { agent?: { name?: string } })?.agent?.name === CLIENT_NAME),
+      salesRows.map(row => [row.source, row.actorRole]))
+    check('every timestamp in SALES tool output is ISO 8601', nonIsoTimestamps.size === 0, [...nonIsoTimestamps])
   } finally {
     console.log('\nCleanup')
 
@@ -694,9 +952,24 @@ async function main() {
       await db.delete(leads).where(eq(leads.id, created.leadId))
     }
 
+    if (created.salesLeadId) {
+      const updateIds = (await db.select({ id: leadUpdates.id }).from(leadUpdates)
+        .where(eq(leadUpdates.leadId, created.salesLeadId))).map(row => row.id)
+      await db.delete(activityLogs).where(inArray(activityLogs.targetId, [created.salesLeadId, ...updateIds]))
+      await db.delete(leads).where(eq(leads.id, created.salesLeadId))
+    }
+
+    if (salesUser) {
+      await deleteTestUser(salesUser, profiles)
+    }
+
+    if (clientUser) {
+      await deleteTestUser(clientUser, profiles)
+    }
+
     await deleteRegisteredClients()
 
-    console.log('  removed test rows and the OAuth clients')
+    console.log('  removed test rows, the test users and the OAuth clients')
   }
 
   console.log(failures ? `\n${failures} check(s) failed.` : '\nAll checks passed.')

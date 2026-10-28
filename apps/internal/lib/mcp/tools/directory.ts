@@ -3,6 +3,7 @@ import 'server-only'
 import type { McpServer } from '@modelcontextprotocol/server'
 import { z } from 'zod'
 
+import type { AppUser } from '@/lib/auth/session'
 import { listUsersForCli } from '@/lib/cli/queries/users'
 import { serializeClient } from '@/lib/cli/serializers/client'
 import { serializeContact } from '@/lib/cli/serializers/contact'
@@ -21,6 +22,7 @@ import { NotFoundError } from '@/lib/errors/http'
 import { listContactsForSettings } from '@/lib/queries/contacts/settings/list-contacts'
 import {
   getContactSheetInputById,
+  listAllActiveClients,
   listContactClients,
 } from '@/lib/queries/contacts/settings/contact-clients'
 
@@ -29,14 +31,30 @@ import { defineTool } from '../tool'
 
 const clientRef = z.string().trim().min(1).describe('Client slug or UUID.')
 
+async function resolveContactFilterClient(
+  user: AppUser,
+  reference: string
+): Promise<string> {
+  const clients = await listAllActiveClients(user)
+  const match = clients.find(
+    client => client.id === reference || client.slug === reference
+  )
+
+  if (!match) {
+    throw new NotFoundError('Client not found.')
+  }
+
+  return match.id
+}
+
 /** People, clients, contacts and projects: everything read-only (D4). */
 export function registerDirectoryTools(server: McpServer) {
   defineTool(server, {
     name: 'whoami',
     title: 'Who am I',
     description:
-      'Return the Place To Stand portal user this connection acts as, and the app it is connected through.',
-    access: 'admin',
+      'Return the Place To Stand portal user this connection acts as (including their role), and the app it is connected through.',
+    access: 'crm',
     effect: 'read',
     input: {},
     run: async (_args, { user, agent }) => ({
@@ -49,8 +67,8 @@ export function registerDirectoryTools(server: McpServer) {
     name: 'list_users',
     title: 'List users',
     description:
-      'List portal users (team members and client portal users). Use it to find the email or id to assign a task or lead to.',
-    access: 'admin',
+      'List portal users (team members and client portal users) — for sales users, only the admin and sales staff. Use it to find the email or id to assign a task or lead to; only admin and sales users can be assigned.',
+    access: 'crm',
     effect: 'read',
     input: {
       search: searchText.optional(),
@@ -126,10 +144,11 @@ export function registerDirectoryTools(server: McpServer) {
       limit: listLimit,
     },
     run: async ({ search, client, limit }, { user }) => {
-      // Resolving a client reference is admin-only today; revisit when SALES
-      // is admitted (D6).
+      // The same client list the portal's contacts filter offers (ADMIN and
+      // SALES): active clients by id or slug. `resolveClientIdentifier` would
+      // load the full client record, which is admin-only.
       const clientId = client
-        ? (await resolveClientIdentifier(user, client)).resolvedId
+        ? await resolveContactFilterClient(user, client)
         : null
 
       const result = await listContactsForSettings(user, {

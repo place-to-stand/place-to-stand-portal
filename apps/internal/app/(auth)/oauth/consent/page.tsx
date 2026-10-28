@@ -11,6 +11,7 @@ import {
   authSecondaryButtonClass,
 } from '@pts/ui/auth-shell'
 
+import { canUseInternalPortal } from '@/lib/auth/roles'
 import { getCurrentUser } from '@/lib/auth/session'
 import { oauthClientName } from '@/lib/mcp/grants'
 import { isAllowedRedirect } from '@/lib/mcp/redirects'
@@ -22,8 +23,12 @@ export const metadata: Metadata = {
   title: 'Connect an app',
 }
 
-const ACCESS_SUMMARY =
+const ADMIN_ACCESS_SUMMARY =
   'It will act as you: read clients, contacts, projects, tasks and leads, and create and update tasks, task comments and leads.'
+
+/** SALES reaches the MCP's CRM tools only, as in the portal (PRD 009 D6). */
+const SALES_ACCESS_SUMMARY =
+  'It will act as you: read leads, contacts and their activity, and create and update leads and log lead updates.'
 
 function redirectHost(uri: string): string | null {
   try {
@@ -66,12 +71,12 @@ export default async function OAuthConsentPage({
     )
   }
 
-  if (user.role !== 'ADMIN') {
+  if (!canUseInternalPortal(user.role)) {
     return (
       <AuthShell
         label='Internal Portal'
-        title='Admins only'
-        description='Connecting apps to the portal is limited to admin accounts.'
+        title='Staff only'
+        description='Connecting apps to the portal is limited to admin and sales accounts.'
         footer={
           <Link className={authLinkClass} href='/'>
             Back to the portal
@@ -131,7 +136,9 @@ export default async function OAuthConsentPage({
       wide
       label='Internal Portal'
       title={`Connect ${oauthClientName(data.client)}`}
-      description={ACCESS_SUMMARY}
+      description={
+        user.role === 'ADMIN' ? ADMIN_ACCESS_SUMMARY : SALES_ACCESS_SUMMARY
+      }
     >
       <div className='space-y-4'>
         {params.error ? (
