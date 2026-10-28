@@ -16,7 +16,7 @@ import type { ActivitySourceValue } from '@/lib/types'
 
 import { toRichTextHtml } from './description'
 import { getLeadForCli } from './queries/leads'
-import { resolveUserIds } from './queries/users'
+import { resolveAssigneeIds } from './queries/users'
 import type {
   cliCreateLeadSchema,
   cliCreateLeadUpdateSchema,
@@ -32,7 +32,7 @@ export type CreateLeadInput = z.output<typeof cliCreateLeadSchema>
 export type UpdateLeadInput = z.output<typeof cliUpdateLeadSchema>
 export type CreateLeadUpdateInput = z.output<typeof cliCreateLeadUpdateSchema>
 
-/** A user UUID or email, or null to unassign. */
+/** A staff user's UUID or email, or null to unassign. Never a CLIENT user. */
 export async function resolveLeadAssignee(
   user: AppUser,
   reference: string | null | undefined
@@ -41,7 +41,7 @@ export async function resolveLeadAssignee(
     return null
   }
 
-  const [id] = await resolveUserIds(user, [reference])
+  const [id] = await resolveAssigneeIds(user, [reference])
 
   return id ?? null
 }

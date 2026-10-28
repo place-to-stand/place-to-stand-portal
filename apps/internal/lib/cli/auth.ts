@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { ROLE_LABELS } from '@/lib/auth/roles'
 import { loadAppUserById, type AppUser } from '@/lib/auth/session'
 import { ForbiddenError, UnauthorizedError } from '@/lib/errors/http'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'
@@ -38,16 +39,18 @@ function readBearerToken(request: Request): string | null {
 }
 
 /**
- * Resolve the admin behind a Supabase access token. Shared by every bearer
- * surface (the CLI, the MCP server) so they cannot drift on who is admitted.
+ * Resolve the user behind a Supabase access token, admitting only `roles`.
+ * Shared by every bearer surface (the CLI, the MCP server) so they cannot
+ * drift on how a token is validated; each surface passes the roles it admits.
  *
  * `auth.getUser` validates the token against Supabase rather than just
  * checking its signature, so a revoked session or OAuth grant stops working
  * immediately instead of at token expiry.
  */
-export async function resolveAdminFromToken(
+export async function resolveUserFromToken(
   token: string,
-  surface: BearerSurface
+  surface: BearerSurface,
+  roles: readonly AppUser['role'][]
 ): Promise<AppUser> {
   const supabase = getSupabaseServiceClient()
   const { data, error } = await supabase.auth.getUser(token)
@@ -76,13 +79,23 @@ export async function resolveAdminFromToken(
     )
   }
 
-  if (user.role !== 'ADMIN') {
+  if (!roles.includes(user.role)) {
+    const labels = roles.map(role => ROLE_LABELS[role].toLowerCase())
+
     throw new ForbiddenError(
-      `${capitalize(surface.name)} is available to admin users only.`
+      `${capitalize(surface.name)} is available to ${labels.join(' and ')} users only.`
     )
   }
 
   return user
+}
+
+/** The CLI admits ADMIN only. */
+export async function resolveAdminFromToken(
+  token: string,
+  surface: BearerSurface
+): Promise<AppUser> {
+  return resolveUserFromToken(token, surface, ['ADMIN'])
 }
 
 function capitalize(value: string): string {

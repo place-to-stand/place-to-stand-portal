@@ -2,7 +2,7 @@ import 'server-only'
 
 import { and, desc, eq, ilike, isNull, or } from 'drizzle-orm'
 
-import { assertAdmin } from '@/lib/auth/permissions'
+import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { leads } from '@/lib/db/schema'
@@ -53,7 +53,8 @@ export async function listLeadsForCli(
   user: AppUser,
   { status, assigneeId, search, limit }: CliLeadFilters
 ): Promise<CliLeadRow[]> {
-  assertAdmin(user)
+  // Leads are CRM data (ADMIN, SALES), like the portal's board.
+  assertCrmAccess(user)
 
   const conditions = [isNull(leads.deletedAt)]
 
@@ -95,7 +96,7 @@ export async function getLeadForCli(
   user: AppUser,
   leadId: string
 ): Promise<CliLeadRow> {
-  assertAdmin(user)
+  assertCrmAccess(user)
 
   // Guard before the query: a non-UUID would surface as a driver cast error.
   if (!UUID_PATTERN.test(leadId)) {

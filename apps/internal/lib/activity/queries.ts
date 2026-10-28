@@ -18,7 +18,6 @@ import {
 import { db } from '@/lib/db'
 import { activityLogs, users } from '@/lib/db/schema'
 import type { AppUser } from '@/lib/auth/session'
-import { assertAdmin } from '@/lib/auth/permissions'
 import { canReadActivity } from '@/lib/auth/roles'
 import { ForbiddenError } from '@/lib/errors/http'
 import type { ActivitySourceValue, UserRoleValue } from '@/lib/types'
@@ -145,11 +144,13 @@ export async function fetchActivityLogs(
 }
 
 /**
- * Returns the NEWEST logs in the window (oldest first, for prompting) with NO row scoping — admin-only, enforced
- * structurally: the caller must pass the current user and non-admins throw
- * ForbiddenError, so a future non-admin call site fails loudly instead of
- * silently leaking. (Sole caller today: the dashboard recent-activity
- * summary route, which additionally 403s non-admins up front.)
+ * Returns the NEWEST logs in the window (oldest first, for prompting), scoped
+ * by the same rule as `fetchActivityLogs` (`canReadActivity`): admins may
+ * read every row; SALES only LEAD and CONTACT rows, and only by naming those
+ * target types. A caller passing no `targetType` therefore gets the unscoped
+ * window, which is admin-only — a future non-admin call site fails loudly
+ * instead of silently leaking. (Callers: the dashboard recent-activity
+ * summary route, admin-only, and the MCP `recent_activity` tool.)
  */
 export async function fetchActivityLogsSince(
   user: AppUser,
@@ -159,13 +160,19 @@ export async function fetchActivityLogsSince(
     limit,
     source,
     actorId,
+    targetType,
   }: {
     since: string
     until?: string
     limit?: number
-  } & Pick<ActivityQueryFilters, 'source' | 'actorId'>
+  } & Pick<ActivityQueryFilters, 'source' | 'actorId' | 'targetType'>
 ): Promise<ActivityLogWithActor[]> {
-  assertAdmin(user)
+  if (!user || !canReadActivity(user.role, { targetType })) {
+    throw new ForbiddenError('Not allowed to read this activity')
+  }
+
+  const targetTypes =
+    typeof targetType === 'string' ? [targetType] : (targetType ?? [])
 
   const effectiveLimit = Math.min(
     Math.max(limit ?? DEFAULT_RECENT_ACTIVITY_LIMIT, 1),
@@ -177,6 +184,7 @@ export async function fetchActivityLogsSince(
     gte(activityLogs.createdAt, since),
     until ? lte(activityLogs.createdAt, until) : undefined,
     ...buildAttributionConditions({ source, actorId }),
+    targetTypes.length ? inArray(activityLogs.targetType, targetTypes) : undefined,
   ])
 
   const baseQuery = db

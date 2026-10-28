@@ -7,14 +7,21 @@ import {
   fetchActivityLogs,
   fetchActivityLogsSince,
 } from '@/lib/activity/queries'
-import { ACTIVITY_TARGET_TYPES } from '@/lib/activity/types'
+import {
+  ACTIVITY_TARGET_TYPES,
+  type ActivityTargetType,
+} from '@/lib/activity/types'
+import {
+  canReadActivity,
+  SALES_ACTIVITY_TARGET_TYPES,
+} from '@/lib/auth/roles'
 import type { AppUser } from '@/lib/auth/session'
 import { resolveUserIds } from '@/lib/cli/queries/users'
 import { serializeActivity } from '@/lib/cli/serializers/activity'
 import { resolveClientIdentifier } from '@/lib/data/clients'
 import { resolveProjectIdentifier } from '@/lib/data/projects'
 import { activitySource } from '@/lib/db/schema'
-import { BadRequestError } from '@/lib/errors/http'
+import { BadRequestError, ForbiddenError } from '@/lib/errors/http'
 
 import { listLimit } from '../output'
 import { defineTool } from '../tool'
@@ -71,7 +78,7 @@ export function registerActivityTools(server: McpServer) {
     name: 'list_activity',
     title: 'List activity',
     description:
-      'The audit trail for one thing or one area, newest first: who changed what, when, and through which channel (portal, CLI or an agent). Filter by target type, a target id (a task, lead, contact…), project, client, source, actor or time window; when hasMore is true, narrow the filters. For "what happened recently" across everything, use recent_activity.',
+      'The audit trail for one thing or one area, newest first: who changed what, when, and through which channel (portal, CLI or an agent). Filter by target type, a target id (a task, lead, contact…), project, client, source, actor or time window; when hasMore is true, narrow the filters. For "what happened recently" across everything, use recent_activity. Sales users must set targetType to LEAD and/or CONTACT and cannot filter by project or client.',
     access: 'crm',
     effect: 'read',
     input: {
@@ -132,9 +139,22 @@ export function registerActivityTools(server: McpServer) {
         assertWindow(from, to)
       }
 
-      // Resolving a project, client or user reference is admin-only today; a
-      // SALES caller may still read lead and contact activity by target type
-      // and id (`canReadActivity`). Revisit when SALES is admitted (D6).
+      // The portal's rule, checked before any reference is resolved so a SALES
+      // caller gets the reason rather than a project or client lookup error:
+      // SALES reads LEAD and CONTACT activity only, named by targetType, and
+      // never scoped by project or client. `fetchActivityLogs` re-checks it.
+      if (
+        !canReadActivity(user.role, {
+          targetType,
+          projectId: project,
+          clientId: client,
+        })
+      ) {
+        throw new ForbiddenError(
+          'Sales users can read lead and contact activity only: set targetType to LEAD and/or CONTACT, and leave project and client unset.'
+        )
+      }
+
       const [projectId, clientId, actorId] = await Promise.all([
         project
           ? resolveProjectIdentifier(user, project).then(p => p.resolvedId)
@@ -167,8 +187,8 @@ export function registerActivityTools(server: McpServer) {
   defineTool(server, {
     name: 'recent_activity',
     title: 'Recent activity',
-    description: `Everything that happened across the portal in a time window, oldest first, for questions like "what happened this week?". Returns the newest ${RECENT_DEFAULT} entries by default (max ${RECENT_MAX}); truncated: true means older entries in the window were left out, so narrow the window or filter by source or actor.`,
-    access: 'admin',
+    description: `Everything that happened across the portal in a time window, oldest first, for questions like "what happened this week?". Returns the newest ${RECENT_DEFAULT} entries by default (max ${RECENT_MAX}); truncated: true means older entries in the window were left out, so narrow the window or filter by source, actor or target type. Sales users see lead and contact activity only.`,
+    access: 'crm',
     effect: 'read',
     input: {
       since: windowBound.describe(
@@ -177,6 +197,13 @@ export function registerActivityTools(server: McpServer) {
       until: windowBound
         .describe(
           'End of the window, inclusive: ISO 8601 date (YYYY-MM-DD, the whole UTC day) or date-time with offset. Defaults to now.'
+        )
+        .optional(),
+      targetType: z
+        .array(z.enum(ACTIVITY_TARGET_TYPES))
+        .min(1)
+        .describe(
+          'Only activity on these kinds of record. For sales users it defaults to LEAD and CONTACT, the only kinds they may read.'
         )
         .optional(),
       source: source.optional(),
@@ -191,11 +218,24 @@ export function registerActivityTools(server: McpServer) {
           `Maximum entries, 1–${RECENT_MAX}. Default ${RECENT_DEFAULT}.`
         ),
     },
-    run: async ({ since, until, source, actor, limit }, { user }) => {
+    run: async ({ since, until, targetType, source, actor, limit }, { user }) => {
       const from = startOf(since)
       const to = until ? endOf(until) : undefined
 
       assertWindow(from, to)
+
+      // SALES reads only LEAD and CONTACT activity (`canReadActivity`). With
+      // no targetType that is the whole of what they may see, so default to
+      // it; naming any other type is refused, as on list_activity.
+      const scopedTypes =
+        targetType ??
+        (user.role === 'ADMIN' ? undefined : [...SALES_ACTIVITY_TARGET_TYPES])
+
+      if (!canReadActivity(user.role, { targetType: scopedTypes })) {
+        throw new ForbiddenError(
+          'Sales users can read lead and contact activity only: leave targetType unset, or set it to LEAD and/or CONTACT.'
+        )
+      }
 
       const actorId = await resolveActorId(user, actor)
 
@@ -205,6 +245,7 @@ export function registerActivityTools(server: McpServer) {
       const logs = await fetchActivityLogsSince(user, {
         since: from,
         until: to,
+        targetType: scopedTypes as ActivityTargetType[] | undefined,
         source,
         actorId,
         limit: limit + 1,

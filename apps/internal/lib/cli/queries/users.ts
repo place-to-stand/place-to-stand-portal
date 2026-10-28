@@ -2,8 +2,9 @@ import 'server-only'
 
 import { and, asc, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm'
 
-import { assertAdmin } from '@/lib/auth/permissions'
+import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
+import { fetchCrmUsers } from '@/lib/data/users'
 import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
@@ -15,13 +16,27 @@ export type CliUserFilters = {
   limit: number
 }
 
+/**
+ * Admins list every active user. SALES staff list only the CRM staff the
+ * portal shows them (`fetchCrmUsers`, the lead assignee picker).
+ */
 export async function listUsersForCli(
   user: AppUser,
   { search, role, limit }: CliUserFilters
 ): Promise<SelectUser[]> {
-  assertAdmin(user)
+  assertCrmAccess(user)
 
   const conditions = [isNull(users.deletedAt), isNull(users.disabledAt)]
+
+  if (user.role !== 'ADMIN') {
+    const staff = [...(await crmUserIds())]
+
+    if (!staff.length) {
+      return []
+    }
+
+    conditions.push(inArray(users.id, staff))
+  }
 
   if (role) {
     conditions.push(eq(users.role, role))
@@ -44,20 +59,23 @@ export async function listUsersForCli(
     .limit(limit)
 }
 
-/**
- * Resolve assignee references to user ids. Each reference is either a UUID or
- * an email address — agents and humans both reach for the email, and requiring
- * a UUID means a database trip before every assignment.
- *
- * Throws rather than silently dropping: assigning to a mistyped address should
- * fail loudly, not quietly leave the task unassigned.
- */
-export async function resolveUserIds(
-  user: AppUser,
-  references: string[]
-): Promise<string[]> {
-  assertAdmin(user)
+/** Ids of the staff the portal lets work leads and tasks (ADMIN, SALES). */
+async function crmUserIds(): Promise<Set<string>> {
+  return new Set((await fetchCrmUsers()).map(member => member.id))
+}
 
+/**
+ * Match UUID / email references against active users, optionally only those
+ * in `allowed`. Throws `notFound(reference)` for the first one that does not
+ * resolve, so a mistyped address fails loudly rather than quietly dropping.
+ * An existing user outside `allowed` reads the same as no user, so the lookup
+ * cannot be used to probe who exists.
+ */
+async function matchUserReferences(
+  references: string[],
+  allowed: Set<string> | null,
+  notFound: (reference: string) => string
+): Promise<string[]> {
   if (!references.length) {
     return []
   }
@@ -87,8 +105,10 @@ export async function resolveUserIds(
         .where(and(match, isNull(users.deletedAt), isNull(users.disabledAt)))
     : []
 
-  const byId = new Map(rows.map(row => [row.id, row.id]))
-  const byEmail = new Map(rows.map(row => [row.email.toLowerCase(), row.id]))
+  const visible = allowed ? rows.filter(row => allowed.has(row.id)) : rows
+
+  const byId = new Map(visible.map(row => [row.id, row.id]))
+  const byEmail = new Map(visible.map(row => [row.email.toLowerCase(), row.id]))
 
   return unique.map(reference => {
     const resolved = reference.includes('@')
@@ -96,9 +116,51 @@ export async function resolveUserIds(
       : byId.get(reference)
 
     if (!resolved) {
-      throw new NotFoundError(`No active user matches "${reference}".`)
+      throw new NotFoundError(notFound(reference))
     }
 
     return resolved
   })
+}
+
+/**
+ * Resolve user references for read filters (an owner, assignee, actor or
+ * person to filter by). Each reference is a UUID or an email address — agents
+ * and humans both reach for the email.
+ *
+ * Admins resolve any active user. SALES staff resolve only the CRM staff the
+ * portal shows them (`fetchCrmUsers`, the lead assignee picker).
+ *
+ * Never use this for a write: assignments go through `resolveAssigneeIds`.
+ */
+export async function resolveUserIds(
+  user: AppUser,
+  references: string[]
+): Promise<string[]> {
+  assertCrmAccess(user)
+
+  return matchUserReferences(
+    references,
+    user.role === 'ADMIN' ? null : await crmUserIds(),
+    reference => `No active user matches "${reference}".`
+  )
+}
+
+/**
+ * Resolve the users to assign to a task or lead. Only staff can be assigned —
+ * the CRM staff set (`fetchCrmUsers`: ADMIN, SALES), whatever the caller's
+ * role — so no channel can assign a CLIENT (portal) user to anything.
+ */
+export async function resolveAssigneeIds(
+  user: AppUser,
+  references: string[]
+): Promise<string[]> {
+  assertCrmAccess(user)
+
+  return matchUserReferences(
+    references,
+    await crmUserIds(),
+    reference =>
+      `No assignable staff user matches "${reference}". Only admin and sales users can be assigned.`
+  )
 }
