@@ -98,6 +98,9 @@ export const auditPayloadSchema = z.object({
       // Optional so a marketing deploy that predates the field still lands.
       message: z.string().trim().max(10000).nullable().optional(),
       marketingConsent: z.boolean(),
+      // "How did you hear about us?" Optional so a marketing deploy that
+      // predates the field still lands.
+      heardFrom: shortText.nullable().optional(),
     })
     .nullable(),
 
@@ -167,6 +170,7 @@ export function toAuditSubmissionRow(
     subject: null,
     message: lead?.message ?? null,
     marketingConsent: lead?.marketingConsent ?? null,
+    heardFrom: lead?.heardFrom || null,
 
     feedbackHelpful: feedback?.helpful ?? null,
     feedbackComment: feedback?.comment || null,
