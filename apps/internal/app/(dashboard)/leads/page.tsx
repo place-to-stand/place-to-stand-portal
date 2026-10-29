@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 
 import { redirect } from 'next/navigation'
 
+import { roleCan } from '@/lib/auth/capabilities'
 import { requireCrmUser } from '@/lib/auth/session'
 import {
   fetchArchivedLeads,
@@ -23,22 +24,19 @@ const firstParam = (value: string | string[] | undefined) =>
 export default async function LeadsBoardPage({
   searchParams,
 }: PageProps<'/leads'>) {
+  // permission: leads.manage
   const user = await requireCrmUser()
   const params = await searchParams
   const leadParam = firstParam(params.lead) ?? null
   // `?assignee=me`: only the viewer's leads (the My aging leads "See all").
   const onlyMine = firstParam(params.assignee) === 'me'
 
+  // The whole board goes to the client even with `?assignee=me`: it filters
+  // what shows, while deep links and drag ranks still see every lead.
   const [fullBoard, assignees] = await Promise.all([
     fetchLeadsBoard(user),
     fetchLeadAssignees(),
   ])
-  const board = onlyMine
-    ? fullBoard.map(column => ({
-        ...column,
-        leads: column.leads.filter(lead => lead.assigneeId === user.id),
-      }))
-    : fullBoard
 
   // Deep-link resolution: the board holds every active lead, so a uuid param
   // that isn't on it is either archived (cross-redirect so shared links keep
@@ -63,12 +61,14 @@ export default async function LeadsBoardPage({
 
   return (
     <LeadsWorkspace
-      initialColumns={board}
+      initialColumns={fullBoard}
       assignees={assignees}
       canManage
       senderName={user.full_name ?? user.email ?? ''}
       leadNotFound={leadNotFound}
       onlyMine={onlyMine}
+      viewerId={user.id}
+      canConvert={roleCan(user.role, 'leads.convert')}
     />
   )
 }

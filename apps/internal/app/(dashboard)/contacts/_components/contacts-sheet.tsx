@@ -1,5 +1,8 @@
 'use client'
 
+import { useCallback } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
@@ -21,11 +24,19 @@ function getArchiveContactDialogDescription(displayName: string) {
 type ContactsSheetProps = UseContactSheetStateOptions
 
 export function ContactsSheet(props: ContactsSheetProps) {
-  const { open, contact } = props
+  const { open, contact, onComplete } = props
+  const queryClient = useQueryClient()
+  // A company sheet stacked underneath lists this contact's title and
+  // primary star: refetch it so its Save doesn't write back stale values.
+  const handleComplete = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ['companySheet'] })
+    onComplete()
+  }, [onComplete, queryClient])
   const {
     form,
     feedback,
     isPending,
+    companiesLoadFailed,
     isEditing,
     pendingReason,
     sheetTitle,
@@ -48,7 +59,7 @@ export function ContactsSheet(props: ContactsSheetProps) {
     handleConfirmDelete,
     handleRequestPromote,
     handleConfirmPromote,
-  } = useContactSheetState(props)
+  } = useContactSheetState({ ...props, onComplete: handleComplete })
 
   return (
     <>
@@ -63,6 +74,7 @@ export function ContactsSheet(props: ContactsSheetProps) {
             form={form}
             feedback={feedback}
             isPending={isPending}
+            companiesLoadFailed={companiesLoadFailed}
             isEditing={isEditing}
             pendingReason={pendingReason}
             submitDisabled={submitDisabled}

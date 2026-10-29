@@ -6,6 +6,7 @@ import { Button } from '@pts/ui/button'
 import { EmptyState } from '@pts/ui/empty-state'
 import type { SalesHomeData, SalesLeadItem } from '@/lib/dashboard/sales-types'
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
+import { EmptyValue } from '@/components/table/empty-value'
 import { RecordRowButton } from '@/components/ui/record-row-button'
 import { LEAD_STATUS_LABELS } from '@/lib/leads/constants'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
@@ -123,13 +124,22 @@ export function PipelineWidget({
             className='flex items-center justify-between gap-3 px-4 py-2.5'
           >
             <LeadStatusBadge status={stage.status} label={stage.label} />
-            <span className='text-sm tabular-nums'>
-              <span className='font-semibold'>{stage.total}</span>
-              <span className='text-muted-foreground'>
-                {' '}
-                · {stage.mine} yours
+            {/* A zero count is a dash, like every count column. */}
+            {stage.total === 0 ? (
+              <span className='text-sm'>
+                <EmptyValue />
               </span>
-            </span>
+            ) : (
+              <span className='text-sm tabular-nums'>
+                <span className='font-semibold'>{stage.total}</span>
+                {stage.mine > 0 ? (
+                  <span className='text-muted-foreground'>
+                    {' '}
+                    · {stage.mine} yours
+                  </span>
+                ) : null}
+              </span>
+            )}
           </li>
         ))}
       </ul>

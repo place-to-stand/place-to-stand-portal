@@ -131,7 +131,7 @@ export function CompanyLinkedClientSection({
           className='opacity-60'
           note={
             <span className='text-destructive'>
-              Unlinks on save · portal access is kept
+              Unlinks on save · portal users lose access to this client
             </span>
           }
           actions={

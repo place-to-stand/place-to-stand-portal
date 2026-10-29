@@ -16,6 +16,7 @@ import { formatRelativeTime } from '@pts/ui/dates'
 import { Tabs, TabsList, TabsTrigger } from '@pts/ui/tabs'
 import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
+import { useToast } from '@/components/ui/use-toast'
 import type {
   NotificationFeed,
   NotificationFilter,
@@ -24,6 +25,12 @@ import type {
 import { cn } from '@/lib/utils'
 
 const QUERY_KEY = ['notifications'] as const
+
+const FAILURE_TITLES: Record<FeedAction['action'], string> = {
+  read: 'Unable to mark notifications read',
+  unread: 'Unable to mark notifications unread',
+  clear: 'Unable to clear notifications',
+}
 // Background refresh while the home page is open.
 const POLL_MS = 60_000
 
@@ -90,6 +97,7 @@ function applyLocally(
 export function useNotificationFeed() {
   const router = useRouter()
   const queryClient = useQueryClient()
+  const { toast } = useToast()
   const [filter, setFilter] = useState<NotificationFilter>('all')
   const key = [...QUERY_KEY, filter]
 
@@ -109,8 +117,13 @@ export function useNotificationFeed() {
       }
       return { previous }
     },
-    onError: (_error, _action, context) => {
+    onError: (error, action, context) => {
       if (context?.previous) queryClient.setQueryData(key, context.previous)
+      toast({
+        title: FAILURE_TITLES[action.action],
+        description: error instanceof Error ? error.message : undefined,
+        variant: 'destructive',
+      })
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
   })
@@ -279,7 +292,7 @@ export function NotificationList({
                       {item.body}
                     </span>
                   ) : null}
-                  <span className='text-muted-foreground block text-[11px]'>
+                  <span className='text-muted-foreground block text-xs'>
                     {formatRelativeTime(item.createdAt)}
                   </span>
                 </span>

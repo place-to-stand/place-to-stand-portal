@@ -312,7 +312,12 @@ export function InvoicesTableSection({
                 </TableCell>
                 <TableCell>
                   <div className='flex min-w-0 items-center gap-2 text-sm'>
-                    <Building2 className='text-muted-foreground h-4 w-4 shrink-0' />
+                    <Building2
+                      className={cn(
+                        ENTITY_ACCENTS.client.icon,
+                        'h-4 w-4 shrink-0'
+                      )}
+                    />
                     {client ? (
                       client.slug ? (
                         <Link

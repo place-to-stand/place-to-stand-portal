@@ -44,6 +44,7 @@ import {
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
 import { cn } from '@/lib/utils'
+import { ENTITY_ACCENTS } from '@/lib/entity-accents'
 
 export function CompaniesTable({
   companies,
@@ -203,6 +204,7 @@ export function CompaniesTable({
                     count={company.contactCount}
                     withIcon
                     icon={Contact}
+                    iconClassName={ENTITY_ACCENTS.contact.icon}
                     ariaLabel={`${company.contactCount} ${company.contactCount === 1 ? 'contact' : 'contacts'}`}
                     items={company.people.map(person => ({
                       id: person.id,
@@ -227,6 +229,7 @@ export function CompaniesTable({
                     count={company.openLeadCount}
                     withIcon
                     icon={Handshake}
+                    iconClassName={ENTITY_ACCENTS.client.icon}
                     ariaLabel={`${company.openLeadCount} open ${company.openLeadCount === 1 ? 'lead' : 'leads'}`}
                     contentClassName='min-w-72'
                     items={company.openLeads.map(lead => ({

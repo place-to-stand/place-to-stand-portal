@@ -34,6 +34,8 @@ import {
   CLICKABLE_ROW_CLASS,
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
+import { ENTITY_ACCENTS } from '@/lib/entity-accents'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 
 export type ContactsTableSectionProps = {
   contacts: ContactsTableContact[]
@@ -183,34 +185,46 @@ export function ContactsTableSection({
               >
                 <TableCell>
                   <div className='flex min-w-0 items-center gap-2'>
-                    <Contact className='h-4 w-4 shrink-0 text-cyan-500' />
+                    <Contact
+                      className={cn(
+                        ENTITY_ACCENTS.contact.icon,
+                        'h-4 w-4 shrink-0'
+                      )}
+                    />
                     <span className='truncate font-medium' title={contact.name}>
                       {contact.name}
                     </span>
                   </div>
                 </TableCell>
-                <TableCell
-                  label='Companies'
-                  className='text-sm'
-                  title={contact.companyName ?? undefined}
-                >
+                <TableCell label='Companies' className='text-sm'>
                   {contact.companyId && contact.companyName ? (
                     <span className='flex min-w-0 items-center gap-2'>
-                      <Briefcase className='text-muted-foreground h-4 w-4 shrink-0' />
+                      <Briefcase
+                        className={cn(
+                          ENTITY_ACCENTS.company.icon,
+                          'h-4 w-4 shrink-0'
+                        )}
+                      />
                       {/* The row ignores clicks on links, so this opens the
                           company, not the contact. */}
-                      <Link
-                        href={companySheetHref(contact.companyId)}
-                        className='hover:text-foreground min-w-0 truncate underline-offset-4 transition hover:underline'
-                      >
-                        {contact.companyName}
-                      </Link>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Link
+                            href={companySheetHref(contact.companyId)}
+                            className='hover:text-foreground truncate-link min-w-0 underline-offset-4 transition hover:underline'
+                          >
+                            {contact.companyName}
+                          </Link>
+                        </TooltipTrigger>
+                        <TooltipContent>{contact.companyName}</TooltipContent>
+                      </Tooltip>
                       {contact.companies.length > 1 ? (
                         <LinkedRecordsHoverCell
                           count={contact.companies.length}
                           triggerLabel={`+${contact.companies.length - 1}`}
                           triggerClassName='text-muted-foreground shrink-0'
                           icon={Briefcase}
+                          iconClassName={ENTITY_ACCENTS.company.icon}
                           ariaLabel={`${contact.companies.length} companies`}
                           items={contact.companies.map(company => ({
                             id: company.id,

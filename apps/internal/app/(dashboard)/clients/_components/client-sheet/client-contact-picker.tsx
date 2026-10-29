@@ -20,16 +20,16 @@ type ClientContactOption = {
   name: string | null
   email: string | null
   phone: string | null
-  /** Has a portal login (`contacts.user_id`). */
+  /** Has a portal user (`contacts.user_id`). */
   hasPortalAccess: boolean
-  /** Login switched off on the Users page: no access until it's back on. */
+  /** Portal user's sign-in switched off on the Users page: no access until it's back on. */
   signInDisabled?: boolean
   companyId?: string | null
   /** The company's primary contact (read-only here). */
   isPrimary?: boolean
 }
 
-function PortalLoginMark() {
+function PortalUserMark() {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -88,6 +88,8 @@ export function ClientPortalAccessList({
   const [createTarget, setCreateTarget] = useState<ClientContactOption | null>(
     null
   )
+  // Which row is creating, so only that row shows it (one at a time).
+  const [creatingId, setCreatingId] = useState<string | null>(null)
   const { createPortalUser, isPending: isCreatingUser } = useCreatePortalUser()
   const people = companyPeople.map(contact =>
     createdUserIds.has(contact.id)
@@ -104,9 +106,13 @@ export function ClientPortalAccessList({
     const target = createTarget
     setCreateTarget(null)
     if (!target) return
+    setCreatingId(target.id)
     createPortalUser(target, {
-      onSuccess: () =>
-        setCreatedUserIds(previous => new Set(previous).add(target.id)),
+      onSuccess: () => {
+        setCreatedUserIds(previous => new Set(previous).add(target.id))
+        setCreatingId(null)
+      },
+      onError: () => setCreatingId(null),
     })
   }
 
@@ -132,7 +138,7 @@ export function ClientPortalAccessList({
             <ContactRecordRow
               key={contact.id}
               contact={contact}
-              titleAddon={contact.hasPortalAccess ? <PortalLoginMark /> : null}
+              titleAddon={contact.hasPortalAccess ? <PortalUserMark /> : null}
               note={
                 contact.signInDisabled ? (
                   <span className='text-warning'>
@@ -148,15 +154,34 @@ export function ClientPortalAccessList({
                 // Access needs a portal user; create it here (same dialog and
                 // action as the contact sheet). The switch still saves with Save.
                 !contact.hasPortalAccess && !hasAccess ? (
-                  <Button
-                    type='button'
-                    variant='outline'
-                    size='xs'
-                    disabled={isPending || isCreatingUser}
-                    onClick={() => setCreateTarget(contact)}
-                  >
-                    {isCreatingUser ? 'Creating…' : 'Create user'}
-                  </Button>
+                  (() => {
+                    const isCreatingThis =
+                      isCreatingUser && creatingId === contact.id
+                    const createReason = isPending
+                      ? pendingReason
+                      : !contact.email
+                        ? 'Add an email to this contact first'
+                        : isCreatingUser && !isCreatingThis
+                          ? 'Creating another portal user'
+                          : null
+                    return (
+                      <DisabledFieldTooltip
+                        disabled={Boolean(createReason)}
+                        reason={createReason}
+                        className='w-auto'
+                      >
+                        <Button
+                          type='button'
+                          variant='outline'
+                          size='xs'
+                          disabled={Boolean(createReason) || isCreatingThis}
+                          onClick={() => setCreateTarget(contact)}
+                        >
+                          {isCreatingThis ? 'Creating…' : 'Create user'}
+                        </Button>
+                      </DisabledFieldTooltip>
+                    )
+                  })()
                 ) : (
                   <DisabledFieldTooltip
                     disabled={isPending}
@@ -192,7 +217,7 @@ export function ClientPortalAccessList({
             <ContactRecordRow
               key={contact.id}
               contact={contact}
-              titleAddon={contact.hasPortalAccess ? <PortalLoginMark /> : null}
+              titleAddon={contact.hasPortalAccess ? <PortalUserMark /> : null}
               note={
                 <span className='text-warning'>
                   {companyId ? 'Not at this company' : 'No linked company'}

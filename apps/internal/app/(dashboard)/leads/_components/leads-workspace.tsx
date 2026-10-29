@@ -1,15 +1,14 @@
 'use client'
 
 import { useCallback, useMemo, useState, useTransition } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-
-import { Button } from '@pts/ui/button'
 
 import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
 import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
+import { FilterSelect } from '@/components/table-toolbar/filter-select'
+import { useListParams } from '@/hooks/use-list-params'
 import {
   useSheetParams,
   useSheetParamSelection,
@@ -32,7 +31,12 @@ type LeadsWorkspaceProps = {
   leadNotFound?: boolean
   /** `?assignee=me`: the board shows only the viewer's leads. */
   onlyMine?: boolean
+  viewerId: string
+  /** `leads.convert`: dropping into Closed Won offers conversion. */
+  canConvert?: boolean
 }
+
+const ASSIGNEE_OPTIONS = [{ value: 'me', label: 'My leads' }] as const
 
 export function LeadsWorkspace({
   initialColumns,
@@ -41,6 +45,8 @@ export function LeadsWorkspace({
   senderName,
   leadNotFound = false,
   onlyMine = false,
+  viewerId,
+  canConvert = false,
 }: LeadsWorkspaceProps) {
   const router = useRouter()
   const { getAux } = useSheetParams()
@@ -53,13 +59,22 @@ export function LeadsWorkspace({
   )
   const [convertingLead, setConvertingLead] = useState<LeadRecord | null>(null)
   const [, startRefresh] = useTransition()
+  const { update: updateListParams } = useListParams({
+    basePath: '/leads',
+    resetKeys: [],
+  })
+  // The sheet opens any lead on the board, filtered out or not.
   const leadLookup = useMemo(
     () => buildLeadLookup(initialColumns),
     [initialColumns]
   )
+  const { visibleColumns, hiddenLeads } = useMemo(
+    () => splitByAssignee(initialColumns, onlyMine ? viewerId : null),
+    [initialColumns, onlyMine, viewerId]
+  )
   const totalLeads = useMemo(
-    () => initialColumns.reduce((sum, column) => sum + column.leads.length, 0),
-    [initialColumns]
+    () => visibleColumns.reduce((sum, column) => sum + column.leads.length, 0),
+    [visibleColumns]
   )
   const activeLead = selectedId ? (leadLookup.get(selectedId) ?? null) : null
   const initialAction = getAux('leadMode') === 'convert' ? 'convert' : null
@@ -109,9 +124,14 @@ export function LeadsWorkspace({
     })
   }, [router, startRefresh])
 
-  const handleLeadClosedWon = useCallback((lead: LeadRecord) => {
-    setConvertingLead(lead)
-  }, [])
+  // Only someone who may convert gets the dialog; anyone else just moves
+  // the stage.
+  const handleLeadClosedWon = useCallback(
+    (lead: LeadRecord) => {
+      if (canConvert) setConvertingLead(lead)
+    },
+    [canConvert]
+  )
 
   const isSheetOpen = canManage && (isCreating || Boolean(activeLead))
   // Keep the last-opened lead rendered while the close animation plays so
@@ -141,16 +161,14 @@ export function LeadsWorkspace({
       // Kanban board: pin to the viewport (columns scroll internally).
       contentClassName='flex h-full min-h-0 flex-col gap-4 sm:gap-6'
     >
-      {onlyMine ? (
-        <div className='bg-muted/40 flex flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm'>
-          <span className='text-muted-foreground'>
-            Showing leads assigned to you.
-          </span>
-          <Button asChild size='xs' variant='outline'>
-            <Link href='/leads'>Show all leads</Link>
-          </Button>
-        </div>
-      ) : null}
+      <div className='flex flex-wrap items-center gap-2'>
+        <FilterSelect
+          value={onlyMine ? 'me' : undefined}
+          onChange={value => updateListParams({ assignee: value })}
+          placeholder='All leads'
+          options={ASSIGNEE_OPTIONS}
+        />
+      </div>
       {leadNotFound && !isCreating ? (
         <DeepLinkNotFoundNotice entity='lead' onDismiss={clear} />
       ) : null}
@@ -183,7 +201,8 @@ export function LeadsWorkspace({
         />
       )}
       <LeadsBoard
-        initialColumns={initialColumns}
+        initialColumns={visibleColumns}
+        hiddenLeads={hiddenLeads}
         canManage={canManage}
         onEditLead={handleEditLead}
         onCreateLead={handleCreateLead}
@@ -192,6 +211,29 @@ export function LeadsWorkspace({
       />
     </PageShell>
   )
+}
+
+/**
+ * The columns to show, and the leads a filter hides (which still count when
+ * a drag works out a rank, so a reorder lands where it looks like it does).
+ */
+function splitByAssignee(
+  columns: LeadBoardColumnData[],
+  assigneeId: string | null
+) {
+  if (!assigneeId) {
+    return { visibleColumns: columns, hiddenLeads: [] as LeadRecord[] }
+  }
+  const hiddenLeads: LeadRecord[] = []
+  const visibleColumns = columns.map(column => ({
+    ...column,
+    leads: column.leads.filter(lead => {
+      if (lead.assigneeId === assigneeId) return true
+      hiddenLeads.push(lead)
+      return false
+    }),
+  }))
+  return { visibleColumns, hiddenLeads }
 }
 
 function buildLeadLookup(columns: LeadBoardColumnData[]) {

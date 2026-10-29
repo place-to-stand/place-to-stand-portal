@@ -12,12 +12,12 @@ type Change = 'archive' | 'restore'
 
 const SUCCESS_TOAST: Record<Change, { title: string; description: string }> = {
   archive: {
-    title: 'Time entry removed',
-    description: 'The log no longer counts toward the burndown total.',
+    title: 'Time log archived',
+    description: 'The time log no longer counts toward the burndown total.',
   },
   restore: {
-    title: 'Time entry restored',
-    description: 'The log counts toward the burndown total again.',
+    title: 'Time log restored',
+    description: 'The time log counts toward the burndown total again.',
   },
 }
 

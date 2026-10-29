@@ -10,6 +10,7 @@ import {
 import { getProjectStatusLabel, getProjectStatusToken } from '@/lib/constants'
 import type { ClientProjectSummary } from '@/lib/data/clients'
 import { cn } from '@/lib/utils'
+import { ENTITY_ACCENTS } from '@/lib/entity-accents'
 
 type ActiveProjectsCellProps = {
   projects: ClientProjectSummary[]
@@ -68,11 +69,14 @@ export function ActiveProjectsCell({
 
   return (
     <div className='flex items-center gap-2 text-sm'>
-      <FolderKanban className='text-muted-foreground h-4 w-4 shrink-0' />
+      <FolderKanban
+        className={cn(ENTITY_ACCENTS.project.icon, 'h-4 w-4 shrink-0')}
+      />
       <LinkedRecordsHoverCell
         count={activeCount}
         label=' active'
         icon={FolderKanban}
+        iconClassName={ENTITY_ACCENTS.project.icon}
         triggerClassName='text-muted-foreground'
         items={projects.map(project => ({
           id: project.id,

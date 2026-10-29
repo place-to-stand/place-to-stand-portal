@@ -20,6 +20,8 @@ import type { ContactCompanyEntry } from '@/lib/settings/contacts/use-contact-sh
 type ContactCompaniesSectionProps = {
   companies: ContactCompanyEntry[]
   disabled: boolean
+  /** Companies failed to load: show that instead of an empty list. */
+  loadFailed?: boolean
   onChange: (companies: ContactCompanyEntry[]) => void
 }
 
@@ -32,9 +34,12 @@ type ContactCompaniesSectionProps = {
  */
 export function ContactCompaniesSection({
   companies,
-  disabled,
+  disabled: disabledProp,
+  loadFailed = false,
   onChange,
 }: ContactCompaniesSectionProps) {
+  // A failed load must not look like "no companies": block edits until reopened.
+  const disabled = disabledProp || loadFailed
   const { role } = useViewerAccess()
   const canManageAccess = Boolean(role && roleCan(role, 'clients.manage'))
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -78,7 +83,9 @@ export function ContactCompaniesSection({
         )
       }
     >
-      {companies.length === 0 ? (
+      {loadFailed ? (
+        <EmptyState message="Couldn't load this contact's companies. Close and reopen the sheet to edit them." />
+      ) : companies.length === 0 ? (
         <EmptyState
           message='Not at any company yet. Add one or create it.'
           label={disabled ? undefined : 'Add company'}

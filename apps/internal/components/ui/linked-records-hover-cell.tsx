@@ -9,6 +9,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from '@/components/ui/hover-card'
+import { EmptyValue } from '@/components/table/empty-value'
 import { cn } from '@/lib/utils'
 
 export type LinkedRecordItem = {
@@ -27,7 +28,7 @@ type LinkedRecordsHoverCellProps = {
   count: number
   /** Text after the number, e.g. ' active'. */
   label?: string
-  /** Zero-state text; defaults to `0` followed by `label`. */
+  /** Zero-state text; defaults to the shared dash (`EmptyValue`). */
   zeroLabel?: string
   /** Replaces the `count + label` trigger text, e.g. `(4 total)`. */
   triggerLabel?: string
@@ -38,6 +39,11 @@ type LinkedRecordsHoverCellProps = {
   trigger?: ReactNode
   items: LinkedRecordItem[]
   icon: LucideIcon
+  /**
+   * The icon's tint: the record's entity accent (`ENTITY_ACCENTS.*.icon`).
+   * Defaults to muted.
+   */
+  iconClassName?: string
   /** Screen-reader name for the bare-number trigger, e.g. "3 clients". */
   ariaLabel?: string
   /** Controlled open state for coordinated cards (see useCoordinatedHoverCards). */
@@ -75,6 +81,7 @@ export function LinkedRecordsHoverCell({
   trigger,
   items,
   icon: Icon,
+  iconClassName,
   ariaLabel,
   open,
   onOpenChange,
@@ -83,11 +90,12 @@ export function LinkedRecordsHoverCell({
   align = 'start',
   withIcon = false,
 }: LinkedRecordsHoverCellProps) {
+  // A zero is a dash with no icon, like every count column.
   if (count === 0) {
-    return (
-      <span className='text-muted-foreground/50'>
-        {withIcon ? '—' : (zeroLabel ?? `0${label ?? ''}`)}
-      </span>
+    return zeroLabel ? (
+      <span className='text-muted-foreground/50'>{zeroLabel}</span>
+    ) : (
+      <EmptyValue />
     )
   }
 
@@ -113,7 +121,11 @@ export function LinkedRecordsHoverCell({
         <ul className='max-h-80 overflow-y-auto py-1'>
           {items.map(item => (
             <li key={item.id}>
-              <LinkedRecordRow item={item} icon={Icon} />
+              <LinkedRecordRow
+                item={item}
+                icon={Icon}
+                iconClassName={iconClassName}
+              />
             </li>
           ))}
         </ul>
@@ -123,7 +135,13 @@ export function LinkedRecordsHoverCell({
 
   return withIcon ? (
     <span className='inline-flex items-center gap-2'>
-      <Icon className='text-muted-foreground h-4 w-4 shrink-0' aria-hidden />
+      <Icon
+        className={cn(
+          iconClassName ?? 'text-muted-foreground',
+          'h-4 w-4 shrink-0'
+        )}
+        aria-hidden
+      />
       {card}
     </span>
   ) : (
@@ -134,13 +152,20 @@ export function LinkedRecordsHoverCell({
 function LinkedRecordRow({
   item,
   icon: Icon,
+  iconClassName,
 }: {
   item: LinkedRecordItem
   icon: LucideIcon
+  iconClassName?: string
 }) {
   const content = (
     <>
-      <Icon className='text-muted-foreground h-4 w-4 shrink-0' />
+      <Icon
+        className={cn(
+          iconClassName ?? 'text-muted-foreground',
+          'h-4 w-4 shrink-0'
+        )}
+      />
       <span className='min-w-0 flex-1'>
         <span className='block truncate'>{item.label}</span>
         {item.sublabel ? (

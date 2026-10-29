@@ -260,7 +260,7 @@ function CapabilityRow({
           })}
           <div className='hidden flex-wrap gap-1 sm:flex'>
             {definition.surfaces.map(surface => (
-              <Badge key={surface} variant='outline' className='text-[10px]'>
+              <Badge key={surface} variant='outline' className='text-xs'>
                 {SURFACE_LABELS[surface]}
               </Badge>
             ))}
@@ -277,7 +277,7 @@ function CapabilityRow({
                 {capability.mcpTools.map(tool => (
                   <code
                     key={tool}
-                    className='bg-muted rounded px-1.5 py-0.5 font-mono text-[11px]'
+                    className='bg-muted rounded px-1.5 py-0.5 font-mono text-xs'
                   >
                     {tool}
                   </code>

@@ -18,16 +18,27 @@ import {
   listCompanyOptions,
   saveCompany as saveCompanyQuery,
   setCompanyArchived,
-  setCompanyPrimaryContact,
 } from '@/lib/queries/companies'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
 
-const COMPANY_ROUTES = ['/companies', '/companies/archive', '/contacts', '/leads']
+// A client is named after (and linked to) its company, so company saves also
+// refresh the client and project lists that show client names.
+const COMPANY_ROUTES = [
+  '/companies',
+  '/companies/archive',
+  '/companies/activity',
+  '/contacts',
+  '/leads',
+  '/clients',
+  '/clients/archive',
+  '/projects',
+]
 
 function revalidateCompanyRoutes() {
   for (const path of COMPANY_ROUTES) {
     revalidatePath(path)
   }
+  revalidatePath('/clients/[clientSlug]', 'page')
 }
 
 export type CompanySheetData = {
@@ -88,22 +99,6 @@ export async function restoreCompany(
   const user = await requireCrmUser()
   if (!UUID_PATTERN.test(companyId)) return { ok: false, error: 'Not found.' }
   const result = await setCompanyArchived(user, companyId, false)
-  if (result.ok) revalidateCompanyRoutes()
-  return result
-}
-
-export async function makeCompanyPrimaryContact(
-  companyId: string,
-  contactId: string | null
-): Promise<CompanyActionResult> {
-  const user = await requireCrmUser()
-  if (
-    !UUID_PATTERN.test(companyId) ||
-    (contactId !== null && !UUID_PATTERN.test(contactId))
-  ) {
-    return { ok: false, error: 'Not found.' }
-  }
-  const result = await setCompanyPrimaryContact(user, companyId, contactId)
   if (result.ok) revalidateCompanyRoutes()
   return result
 }

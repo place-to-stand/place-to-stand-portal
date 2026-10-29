@@ -1,12 +1,13 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type React from 'react'
 import { useWatch, type UseFormReturn } from 'react-hook-form'
 
 import { X } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { Button } from '@pts/ui/button'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
@@ -113,6 +114,8 @@ type ClientSheetFormProps = {
   onCloserShareChange: (key: string, shareText: string) => void
 }
 
+type SubmitValues = Parameters<ClientSheetFormProps['onSubmit']>[0]
+
 export function ClientSheetForm({
   form,
   feedback,
@@ -192,9 +195,24 @@ export function ClientSheetForm({
     ? (companyOptions.find(option => option.id === savedCompanyId) ?? null)
     : null
 
+  // Unlinking (or replacing) the saved company ends its portal users'
+  // access to this client, so Save asks first.
+  const [unlinkConfirmValues, setUnlinkConfirmValues] =
+    useState<SubmitValues | null>(null)
+  const submitWithConfirm = useCallback(
+    (values: SubmitValues) => {
+      if (isEditing && savedCompanyId && values.companyId !== savedCompanyId) {
+        setUnlinkConfirmValues(values)
+        return
+      }
+      onSubmit(values)
+    },
+    [isEditing, onSubmit, savedCompanyId]
+  )
+
   const handleSave = useCallback(
-    () => form.handleSubmit(onSubmit)(),
-    [form, onSubmit]
+    () => form.handleSubmit(submitWithConfirm)(),
+    [form, submitWithConfirm]
   )
 
   const { undo, redo, canUndo, canRedo } = useSheetFormControls({
@@ -234,7 +252,7 @@ export function ClientSheetForm({
       <div className='flex-1 overflow-y-auto'>
         <form
           id={CLIENT_FORM_ID}
-          onSubmit={form.handleSubmit(onSubmit)}
+          onSubmit={form.handleSubmit(submitWithConfirm)}
           className='flex flex-col gap-6 px-6 pt-6 pb-8'
         >
           <SheetSection title='Details'>
@@ -265,14 +283,15 @@ export function ClientSheetForm({
                       }
                     />
                   ) : isEditing && !field.value && savedCompany ? (
-                    // Staged: unlinks on Save. Portal access is kept, and
-                    // the list below flags who isn't at a linked company.
+                    // Staged: unlinks on Save, which ends portal access to
+                    // this client for the company's portal users.
                     <CompanyRecordRow
                       company={savedCompany}
                       className='opacity-60'
                       note={
                         <span className='text-destructive'>
-                          Unlinks on save · portal access is kept
+                          Unlinks on save · portal users lose access to this
+                          client
                         </span>
                       }
                       actions={
@@ -569,6 +588,20 @@ export function ClientSheetForm({
         deleteDisabledReason={deleteDisabledReason}
         onRequestDelete={onRequestDelete}
         deleteAriaLabel='Archive client'
+      />
+      <ConfirmDialog
+        open={Boolean(unlinkConfirmValues)}
+        title='Unlink company?'
+        description={`Portal users at ${savedCompany?.name ?? 'the company'} lose access to this client.`}
+        confirmLabel='Unlink and save'
+        confirmVariant='destructive'
+        confirmDisabled={isPending}
+        onCancel={() => setUnlinkConfirmValues(null)}
+        onConfirm={() => {
+          const values = unlinkConfirmValues
+          setUnlinkConfirmValues(null)
+          if (values) onSubmit(values)
+        }}
       />
     </Form>
   )

@@ -42,6 +42,8 @@ type ContactSheetFormProps = {
   feedback: string | null
   isPending: boolean
   isEditing: boolean
+  /** The contact's companies failed to load; the list can't be edited. */
+  companiesLoadFailed: boolean
   pendingReason: string
   submitDisabled: boolean
   submitDisabledReason: string | null
@@ -63,6 +65,7 @@ export function ContactSheetForm({
   form,
   feedback,
   isPending,
+  companiesLoadFailed,
   isEditing,
   pendingReason,
   submitDisabled,
@@ -239,6 +242,7 @@ export function ContactSheetForm({
               <ContactCompaniesSection
                 companies={field.value}
                 disabled={isPending}
+                loadFailed={companiesLoadFailed}
                 onChange={next => field.onChange(next)}
               />
             )}

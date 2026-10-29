@@ -27,7 +27,9 @@ import { SortableTableHead } from '@/components/table-toolbar/sortable-table-hea
 import { useListParams } from '@/hooks/use-list-params'
 import { PersonAvatar } from '@/components/ui/user-avatar'
 import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
+import { ENTITY_ACCENTS } from '@/lib/entity-accents'
 import { clientSheetHref, projectTasksHref } from '@/lib/sheets/hrefs'
+import { cn } from '@/lib/utils'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import type { DashboardTimeLogEntry } from '@/lib/dashboard/types'
 import { useTimeLogEditContext } from '@/lib/projects/time-log/use-time-log-edit-context'
@@ -174,7 +176,12 @@ export function TimeLogsTable({
                   <TableCell label='Client' className='text-sm'>
                     {item.clientName ? (
                       <div className='flex min-w-0 items-center gap-2'>
-                        <Building2 className='text-muted-foreground h-4 w-4 shrink-0' />
+                        <Building2
+                          className={cn(
+                            ENTITY_ACCENTS.client.icon,
+                            'h-4 w-4 shrink-0'
+                          )}
+                        />
                         {item.clientId ? (
                           // The row ignores clicks on links.
                           <Link
@@ -196,7 +203,12 @@ export function TimeLogsTable({
                   </TableCell>
                   <TableCell label='Project' className='text-sm'>
                     <div className='flex min-w-0 items-center gap-2'>
-                      <FolderKanban className='text-muted-foreground h-4 w-4 shrink-0' />
+                      <FolderKanban
+                        className={cn(
+                          ENTITY_ACCENTS.project.icon,
+                          'h-4 w-4 shrink-0'
+                        )}
+                      />
                       {projectTasksHref(item) ? (
                         <Link
                           href={projectTasksHref(item)!}
@@ -220,6 +232,7 @@ export function TimeLogsTable({
                       withIcon
                       count={item.tasks.length}
                       icon={ListTodo}
+                      iconClassName={ENTITY_ACCENTS.task.icon}
                       ariaLabel={`${item.tasks.length} ${item.tasks.length === 1 ? 'task' : 'tasks'}`}
                       items={item.tasks.map(task => ({
                         id: task.id,
@@ -242,7 +255,7 @@ export function TimeLogsTable({
                       {isArchive ? (
                         <RecordRowAction
                           kind='restore'
-                          entity='time entry'
+                          entity='time log'
                           onClick={() => actions.restore(item)}
                           disabled={actions.isMutating}
                           pending={actions.busyEntryId === item.id}
@@ -251,13 +264,13 @@ export function TimeLogsTable({
                         <>
                           <RecordRowAction
                             kind='edit'
-                            entity='time entry'
+                            entity='time log'
                             onClick={() => void editor.open(item.id)}
                             pending={editor.openingEntryId === item.id}
                           />
                           <RecordRowAction
                             kind='archive'
-                            entity='time entry'
+                            entity='time log'
                             onClick={() => actions.archiveConfirm.request(item)}
                             disabled={actions.isMutating}
                             pending={actions.busyEntryId === item.id}
@@ -282,7 +295,7 @@ export function TimeLogsTable({
       />
       <ConfirmDialog
         open={actions.archiveConfirm.open}
-        title='Archive time entry?'
+        title='Archive time log?'
         description='This removes the log from the project burndown.'
         confirmLabel='Archive'
         confirmVariant='destructive'

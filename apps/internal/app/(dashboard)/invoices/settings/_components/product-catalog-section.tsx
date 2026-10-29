@@ -363,8 +363,8 @@ export function ProductCatalogSection({
             </DialogTitle>
             <DialogDescription>
               {editingItem
-                ? 'Update product catalog item details.'
-                : 'Create a new item to the product catalog.'}
+                ? 'Update the product details.'
+                : 'Create a product for the catalog.'}
             </DialogDescription>
           </DialogHeader>
 

@@ -31,6 +31,8 @@ import { LeadCardPreview } from './lead-card'
 
 type LeadsBoardProps = {
   initialColumns: LeadBoardColumnData[]
+  /** Leads a filter hides; ranks are worked out around them too. */
+  hiddenLeads?: LeadRecord[]
   canManage: boolean
   onEditLead: (lead: LeadRecord) => void
   onCreateLead?: (status: LeadStatusValue) => void
@@ -40,6 +42,7 @@ type LeadsBoardProps = {
 
 export function LeadsBoard({
   initialColumns,
+  hiddenLeads = NO_LEADS,
   canManage,
   onEditLead,
   onCreateLead,
@@ -160,6 +163,7 @@ export function LeadsBoard({
         leadId,
         targetColumnId: target.columnId,
         targetIndex: target.index,
+        hiddenLeads,
       })
 
       if (!result) {
@@ -208,6 +212,7 @@ export function LeadsBoard({
     },
     [
       canManage,
+      hiddenLeads,
       onLeadClosedWon,
       scheduleRecentlyMovedReset,
       setDropPreview,
@@ -470,6 +475,8 @@ export function LeadsBoard({
   )
 }
 
+const NO_LEADS: LeadRecord[] = []
+
 function cloneColumns(columns: LeadBoardColumnData[]): LeadBoardColumnData[] {
   return columns.map(column => ({
     ...column,
@@ -615,11 +622,13 @@ function produceLeadReorder({
   leadId,
   targetColumnId,
   targetIndex,
+  hiddenLeads,
 }: {
   columns: LeadBoardColumnData[]
   leadId: string
   targetColumnId: LeadStatusValue
   targetIndex: number
+  hiddenLeads: LeadRecord[]
 }): {
   nextColumns: LeadBoardColumnData[]
   previousColumns: LeadBoardColumnData[]
@@ -684,7 +693,11 @@ function produceLeadReorder({
     return null
   }
 
-  const rank = computeRankFromNeighbors(reorderedLeads, insertedIndex)
+  const rank = computeRankAmongHidden(
+    reorderedLeads,
+    insertedIndex,
+    hiddenLeads.filter(lead => lead.status === targetColumnId)
+  )
 
   reorderedLeads[insertedIndex] = {
     ...reorderedLeads[insertedIndex],
@@ -710,6 +723,36 @@ function produceLeadReorder({
     rank,
     targetColumnId,
   }
+}
+
+/**
+ * The rank for the lead at `index` of the visible column, placed in the full
+ * column (visible plus filtered-out leads, by rank): straight after the
+ * visible lead above it, or straight before the one below.
+ */
+function computeRankAmongHidden(
+  visible: LeadRecord[],
+  index: number,
+  hidden: LeadRecord[]
+) {
+  if (!hidden.length) return computeRankFromNeighbors(visible, index)
+
+  const moved = visible[index]
+  const full = [...visible.filter(lead => lead !== moved), ...hidden].sort(
+    (a, b) => (a.rank < b.rank ? -1 : a.rank > b.rank ? 1 : 0)
+  )
+  const above = visible[index - 1]
+  const below = visible[index + 1]
+  let position: number
+  if (above) {
+    position = full.indexOf(above) + 1
+  } else if (below) {
+    position = full.indexOf(below)
+  } else {
+    position = full.length
+  }
+  full.splice(position, 0, moved!)
+  return computeRankFromNeighbors(full, position)
 }
 
 function computeRankFromNeighbors(leads: LeadRecord[], index: number) {
