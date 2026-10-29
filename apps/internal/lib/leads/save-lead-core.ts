@@ -35,7 +35,7 @@ import {
   findOrCreateCompanyByName,
   getLinkableCompany,
 } from '@/lib/queries/companies'
-import { joinCompany } from '@/lib/queries/memberships'
+import { joinCompany, mainCompanyIdSql } from '@/lib/queries/memberships'
 import type { ActivitySourceValue } from '@/lib/types'
 
 import {
@@ -168,10 +168,7 @@ async function resolveLeadContact(
     name: contacts.name,
     email: contacts.email,
     phone: contacts.phone,
-    hasCompany: sql<boolean>`exists (
-      select 1 from memberships m
-      where m.contact_id = ${contacts.id} and m.ended_at is null
-    )`,
+    hasCompany: sql<boolean>`${mainCompanyIdSql(contacts.id)} is not null`,
   }
   const timestamp = new Date().toISOString()
 

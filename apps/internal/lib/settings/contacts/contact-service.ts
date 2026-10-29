@@ -28,12 +28,15 @@ export const contactSchema = z.object({
     .array(
       z.object({
         companyId: z.string().uuid(),
+        // Omitted keeps their title; blank clears it.
         title: z
           .string()
           .max(160)
           .nullable()
           .optional()
-          .transform(value => (value?.trim() ? value.trim() : null)),
+          .transform(value =>
+            value === undefined ? undefined : value?.trim() ? value.trim() : null
+          ),
         /** Sees the company's client in the client portal (admin only). */
         portalAccess: z.boolean().optional(),
       })

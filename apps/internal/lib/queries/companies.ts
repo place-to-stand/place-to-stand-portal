@@ -10,6 +10,7 @@ import {
   isNotNull,
   isNull,
   sql,
+  TransactionRollbackError,
 } from 'drizzle-orm'
 
 import {
@@ -784,6 +785,7 @@ export async function setCompanyPrimaryContact(
 
   const set = await db.transaction(async tx => {
     // Only a member can be primary; one with no companies joins this one.
+    // A refusal throws so nothing in the transaction commits.
     if (contactId) {
       const [anyMembership] = await tx
         .select({ id: memberships.id })
@@ -794,7 +796,12 @@ export async function setCompanyPrimaryContact(
         .limit(1)
       if (!anyMembership) await joinCompany(tx, contactId, companyId)
     }
-    return setCompanyPrimary(tx, companyId, contactId)
+    const ok = await setCompanyPrimary(tx, companyId, contactId)
+    if (!ok) tx.rollback()
+    return ok
+  }).catch(error => {
+    if (error instanceof TransactionRollbackError) return false
+    throw error
   })
   if (!set) {
     return { ok: false, error: 'That contact is not at this company.' }

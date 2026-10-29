@@ -277,6 +277,22 @@ export async function setCompanyPrimary(
   companyId: string,
   contactId: string | null
 ): Promise<boolean> {
+  // Check the new primary is a member before touching the current one, so a
+  // refused change leaves the company's primary as it was.
+  if (contactId) {
+    const [member] = await executor
+      .select({ id: memberships.id })
+      .from(memberships)
+      .where(
+        and(
+          isCurrentMembership,
+          eq(memberships.companyId, companyId),
+          eq(memberships.contactId, contactId)
+        )
+      )
+      .limit(1)
+    if (!member) return false
+  }
   await executor
     .update(memberships)
     .set({ isPrimary: false, updatedAt: now })

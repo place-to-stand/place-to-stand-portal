@@ -56,6 +56,25 @@ WHERE cm."deleted_at" IS NULL
   );
 --> statement-breakpoint
 
+-- Stop before dropping anything if a live grant did not carry over: an
+-- archive keeps the record, but the person would lose access. Fix them
+-- (give the person a contact and a membership with portal access) and
+-- re-run. Nothing above has dropped anything yet.
+DO $$
+DECLARE
+  unmapped text;
+BEGIN
+  SELECT string_agg(
+           format('%s: contact %s, login %s, client %s',
+                  u."source", u."contact_id", u."user_id", u."client_id"),
+           E'\n')
+    INTO unmapped
+  FROM "archive_sales_tools"."unmapped_portal_access" u;
+
+  IF unmapped IS NOT NULL THEN
+    RAISE EXCEPTION E'These portal grants have no matching membership. Fix them before 0107:\n%', unmapped;
+  END IF;
+END $$;--> statement-breakpoint
 DROP TABLE "contact_clients";
 --> statement-breakpoint
 DROP TABLE "client_members";

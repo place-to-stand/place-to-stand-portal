@@ -89,6 +89,9 @@ export function useContactSheetState({
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isPromoteDialogOpen, setIsPromoteDialogOpen] = useState(false)
+  // An edit's Companies list arrives after the sheet opens. Until it has,
+  // a save leaves their companies alone rather than sending an empty list.
+  const [companiesLoaded, setCompaniesLoaded] = useState(false)
 
   const { toast } = useToast()
   const isEditing = Boolean(contact?.id)
@@ -138,6 +141,7 @@ export function useContactSheetState({
           : [],
     })
 
+    setCompaniesLoaded(!contactId)
     if (!contactId) {
       return
     }
@@ -146,6 +150,7 @@ export function useContactSheetState({
     getContactSheetData(contactId)
       .then(data => {
         if (cancelled) return
+        setCompaniesLoaded(true)
         // Loaded after the reset: becomes the saved state, not an edit.
         form.resetField('companies', {
           defaultValue: data.memberships.map(membership => ({
@@ -213,12 +218,14 @@ export function useContactSheetState({
           name: data.name,
           phone: data.phone || null,
           linkedinUrl: data.linkedinUrl?.trim() || null,
-          companies: data.companies.map(entry => ({
-            companyId: entry.companyId,
-            title: entry.title.trim() || null,
-            // Only a company with a client has portal access to give.
-            portalAccess: entry.clientId ? entry.portalAccess : undefined,
-          })),
+          companies: companiesLoaded
+            ? data.companies.map(entry => ({
+                companyId: entry.companyId,
+                title: entry.title.trim() || null,
+                // Only a company with a client has portal access to give.
+                portalAccess: entry.clientId ? entry.portalAccess : undefined,
+              }))
+            : undefined,
         })
 
         if (result.error) {
@@ -255,7 +262,7 @@ export function useContactSheetState({
         onComplete()
       })
     },
-    [contact?.id, isEditing, toast, onComplete, onCreated]
+    [contact?.id, companiesLoaded, isEditing, toast, onComplete, onCreated]
   )
 
   const handleRequestDelete = useCallback(() => {

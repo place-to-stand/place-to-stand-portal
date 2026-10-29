@@ -30,17 +30,21 @@ export const leadDisplayFields = {
   companyWebsite: leadCompany.website,
 }
 
+// Correlated subqueries on `leads`, the outer column written out
+// table-qualified (drizzle drops the table name from an interpolated
+// column inside a selected fragment).
+
 /** The lead contact's name, as a correlated subquery on `leads`. */
 export const leadContactNameSql = sql<string>`(
-  select lc.name from contacts lc where lc.id = ${leads.contactId}
+  select lc.name from contacts lc where lc.id = "leads"."contact_id"
 )`
 
 /** The lead contact's email, as a correlated subquery on `leads`. */
 export const leadContactEmailSql = sql<string | null>`(
-  select lc.email from contacts lc where lc.id = ${leads.contactId}
+  select lc.email from contacts lc where lc.id = "leads"."contact_id"
 )`
 
 /** The lead company's name, as a correlated subquery on `leads`. */
 export const leadCompanyNameSql = sql<string | null>`(
-  select lco.name from companies lco where lco.id = ${leads.companyId}
+  select lco.name from companies lco where lco.id = "leads"."company_id"
 )`
