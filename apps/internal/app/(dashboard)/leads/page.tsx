@@ -26,11 +26,19 @@ export default async function LeadsBoardPage({
   const user = await requireCrmUser()
   const params = await searchParams
   const leadParam = firstParam(params.lead) ?? null
+  // `?assignee=me`: only the viewer's leads (the My aging leads "See all").
+  const onlyMine = firstParam(params.assignee) === 'me'
 
-  const [board, assignees] = await Promise.all([
+  const [fullBoard, assignees] = await Promise.all([
     fetchLeadsBoard(user),
     fetchLeadAssignees(),
   ])
+  const board = onlyMine
+    ? fullBoard.map(column => ({
+        ...column,
+        leads: column.leads.filter(lead => lead.assigneeId === user.id),
+      }))
+    : fullBoard
 
   // Deep-link resolution: the board holds every active lead, so a uuid param
   // that isn't on it is either archived (cross-redirect so shared links keep
@@ -40,7 +48,7 @@ export default async function LeadsBoardPage({
     if (!UUID_PATTERN.test(leadParam)) {
       leadNotFound = true
     } else {
-      const onBoard = board.some(column =>
+      const onBoard = fullBoard.some(column =>
         column.leads.some(lead => lead.id === leadParam)
       )
       if (!onBoard) {
@@ -60,6 +68,7 @@ export default async function LeadsBoardPage({
       canManage
       senderName={user.full_name ?? user.email ?? ''}
       leadNotFound={leadNotFound}
+      onlyMine={onlyMine}
     />
   )
 }

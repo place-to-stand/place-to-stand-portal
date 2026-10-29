@@ -75,6 +75,13 @@ export function QuietLeadsWidget({
       title='My aging leads'
       meta='Longest since contact first'
       className={className}
+      action={
+        <Button asChild size='xs' variant='outline'>
+          <Link href='/leads?assignee=me' aria-label='See all your leads'>
+            See all
+          </Link>
+        </Button>
+      }
     >
       <LeadList
         leads={data.quietLeads}

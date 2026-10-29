@@ -1,7 +1,10 @@
 'use client'
 
 import { useCallback, useMemo, useState, useTransition } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+
+import { Button } from '@pts/ui/button'
 
 import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
@@ -27,6 +30,8 @@ type LeadsWorkspaceProps = {
   senderName?: string
   /** True when the `?lead=` share link points at a lead that no longer exists. */
   leadNotFound?: boolean
+  /** `?assignee=me`: the board shows only the viewer's leads. */
+  onlyMine?: boolean
 }
 
 export function LeadsWorkspace({
@@ -35,6 +40,7 @@ export function LeadsWorkspace({
   canManage,
   senderName,
   leadNotFound = false,
+  onlyMine = false,
 }: LeadsWorkspaceProps) {
   const router = useRouter()
   const { getAux } = useSheetParams()
@@ -135,6 +141,16 @@ export function LeadsWorkspace({
       // Kanban board: pin to the viewport (columns scroll internally).
       contentClassName='flex h-full min-h-0 flex-col gap-4 sm:gap-6'
     >
+      {onlyMine ? (
+        <div className='bg-muted/40 flex flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm'>
+          <span className='text-muted-foreground'>
+            Showing leads assigned to you.
+          </span>
+          <Button asChild size='xs' variant='outline'>
+            <Link href='/leads'>Show all leads</Link>
+          </Button>
+        </div>
+      ) : null}
       {leadNotFound && !isCreating ? (
         <DeepLinkNotFoundNotice entity='lead' onDismiss={clear} />
       ) : null}
