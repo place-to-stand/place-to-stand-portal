@@ -249,32 +249,22 @@ function LeadCardContent({ lead }: { lead: LeadRecord }) {
           {lead.openTaskCount > 0 || lead.updateCount > 0 ? (
             <div className='text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-2 text-xs'>
               {lead.openTaskCount > 0 ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span
-                      className='inline-flex items-center gap-1'
-                      aria-label={openTasksLabel}
-                    >
-                      <ListTodo className='h-3.5 w-3.5' aria-hidden />
-                      {lead.openTaskCount}
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent side='top'>{openTasksLabel}</TooltipContent>
-                </Tooltip>
+                <span
+                  className='inline-flex items-center gap-1'
+                  aria-label={openTasksLabel}
+                >
+                  <ListTodo className='h-3.5 w-3.5' aria-hidden />
+                  {lead.openTaskCount}
+                </span>
               ) : null}
               {lead.updateCount > 0 ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span
-                      className='inline-flex items-center gap-1'
-                      aria-label={updatesLabel}
-                    >
-                      <MessageSquareText className='h-3.5 w-3.5' aria-hidden />
-                      {lead.updateCount}
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent side='top'>{updatesLabel}</TooltipContent>
-                </Tooltip>
+                <span
+                  className='inline-flex items-center gap-1'
+                  aria-label={updatesLabel}
+                >
+                  <MessageSquareText className='h-3.5 w-3.5' aria-hidden />
+                  {lead.updateCount}
+                </span>
               ) : null}
             </div>
           ) : null}

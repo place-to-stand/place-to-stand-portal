@@ -24,7 +24,6 @@ import {
 
 import { Badge } from '@pts/ui/badge'
 import { BADGE_TINTS } from '@pts/ui/badge-tints'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 
 import {
   CardAssigneeAvatars,
@@ -194,18 +193,11 @@ function CardContent({
                 </span>
               ) : null}
               {loggedHours > 0 ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className='inline-flex items-center gap-1'>
-                      <Clock className='h-3.5 w-3.5' aria-hidden />
-                      {formatLoggedHours(loggedHours)}
-                      <span className='sr-only'> logged</span>
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {formatLoggedHours(loggedHours)} logged
-                  </TooltipContent>
-                </Tooltip>
+                <span className='inline-flex items-center gap-1'>
+                  <Clock className='h-3.5 w-3.5' aria-hidden />
+                  {formatLoggedHours(loggedHours)}
+                  <span className='sr-only'> logged</span>
+                </span>
               ) : null}
             </div>
           ) : null}
