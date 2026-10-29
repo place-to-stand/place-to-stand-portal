@@ -22,6 +22,9 @@ export const useClientSheetState = ({
   allContacts,
   clientContacts,
   allAdminUsers,
+  initialName,
+  initialCompanyId,
+  onCreated,
 }: UseClientSheetStateArgs): UseClientSheetStateReturn => {
   const isEditing = Boolean(client)
   const [feedback, setFeedback] = useState<string | null>(null)
@@ -35,6 +38,9 @@ export const useClientSheetState = ({
     allContacts,
     clientContacts,
     allAdminUsers,
+    initialName,
+    initialCompanyId,
+    onCreated,
     isEditing,
     setFeedback,
     toast,
@@ -88,7 +94,6 @@ export const useClientSheetState = ({
     isLoadingContacts: formState.isLoadingContacts,
     handleContactPickerOpenChange: formState.handleContactPickerOpenChange,
     handleAddContact: formState.handleAddContact,
-    handleCreateContact: formState.handleCreateContact,
     handleCreateOriginationContact: formState.handleCreateOriginationContact,
     handleCreateCloserContact: formState.handleCreateCloserContact,
     handleRemoveContact: formState.handleRemoveContact,

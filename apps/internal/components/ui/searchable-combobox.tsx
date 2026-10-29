@@ -213,6 +213,8 @@ export const SearchableCombobox = React.forwardRef<
 
       onChange(nextValue)
       setOpen(false)
+      // The next open starts a fresh search (an "add" picker opens again).
+      setQuery('')
 
       if (onBlur) {
         onBlur()

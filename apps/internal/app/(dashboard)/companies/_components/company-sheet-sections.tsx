@@ -1,109 +1,22 @@
 'use client'
 
-import { ExternalLink, Star } from 'lucide-react'
+import { X } from 'lucide-react'
 
 import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
+import {
+  ClientLinkPicker,
+  type ClientLink,
+} from '@/components/clients/client-link-picker'
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { RecordRowButton } from '@/components/ui/record-row-button'
-import type {
-  CompanyContactSummary,
-  CompanyLeadSummary,
-} from '@/lib/companies/types'
+import { roleCan } from '@/lib/auth/capabilities'
+import type { CompanyLeadSummary } from '@/lib/companies/types'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
-import { cn } from '@/lib/utils'
 
-export function CompanyContactsSection({
-  contacts,
-  primaryContactId,
-  disabled,
-  primaryLocked,
-  onSetPrimary,
-}: {
-  contacts: CompanyContactSummary[]
-  /** The form's current choice, so the star follows unsaved edits. */
-  primaryContactId: string | null
-  disabled: boolean
-  /** A client's primary contact is admin-only; explains the disabled stars. */
-  primaryLocked: boolean
-  onSetPrimary: (contactId: string | null) => void
-}) {
-  const { open } = useSheetParams()
-
-  return (
-    <SheetSection
-      title='People'
-      description={
-        primaryLocked
-          ? 'Everyone we know here. This company is a client, so an admin stars its primary contact.'
-          : 'Everyone we know here. Star the primary contact; clients use them too, e.g. for invoice emails.'
-      }
-      action={
-        <span className='text-muted-foreground text-xs'>{contacts.length}</span>
-      }
-    >
-      {contacts.length === 0 ? (
-        <EmptyState message='No contacts yet. Set this company on a contact to list them here.' />
-      ) : (
-        <ul className='-mx-2 space-y-0.5'>
-          {contacts.map(contact => (
-            <li key={contact.id} className='flex items-center gap-1'>
-              <RecordRowButton
-                variant='inset'
-                onClick={() => open('contact', contact.id)}
-                title={contact.name}
-                subtitle={contact.jobTitle ?? contact.email}
-              />
-              {contact.linkedinUrl ? (
-                <RowActionButton
-                  type='button'
-                  label={`${contact.name} on LinkedIn`}
-                  icon={<ExternalLink />}
-                  onClick={() =>
-                    window.open(
-                      contact.linkedinUrl ?? '',
-                      '_blank',
-                      'noopener,noreferrer'
-                    )
-                  }
-                />
-              ) : null}
-              <RowActionButton
-                type='button'
-                disabled={disabled}
-                aria-pressed={contact.id === primaryContactId}
-                label={
-                  contact.id === primaryContactId
-                    ? `Remove ${contact.name} as primary contact`
-                    : `Make ${contact.name} the primary contact`
-                }
-                onClick={() =>
-                  onSetPrimary(
-                    contact.id === primaryContactId ? null : contact.id
-                  )
-                }
-                className={cn(
-                  'text-muted-foreground',
-                  contact.id === primaryContactId &&
-                    'text-warning hover:text-warning'
-                )}
-                icon={
-                  <Star
-                    className={cn(
-                      contact.id === primaryContactId && 'fill-current'
-                    )}
-                  />
-                }
-              />
-            </li>
-          ))}
-        </ul>
-      )}
-    </SheetSection>
-  )
-}
+import { SectionAddButton } from './section-add-button'
 
 export function CompanyLeadsSection({
   leads,
@@ -141,18 +54,58 @@ export function CompanyLeadsSection({
 }
 
 export function CompanyClientsSection({
+  companyId,
   clients,
+  added,
+  movesFrom,
+  disabled,
+  onAdd,
+  onRemoveAdded,
 }: {
+  companyId: string
   clients: { id: string; name: string; slug: string | null }[]
+  /** Existing clients picked here, linked on Save. */
+  added: ClientLink[]
+  /** "Moves from …" for a picked client at another company now. */
+  movesFrom: (clientId: string) => string | null
+  disabled: boolean
+  onAdd: (client: ClientLink) => void
+  onRemoveAdded: (clientId: string) => void
 }) {
   const { open } = useSheetParams()
   // Client records are admin-only; others just see the name.
-  const { isAdmin } = useViewerAccess()
+  const { isAdmin, role } = useViewerAccess()
+  const canManageClients = Boolean(role && roleCan(role, 'clients.manage'))
+  const linkedIds = new Set(clients.map(client => client.id))
+  const pending = added.filter(client => !linkedIds.has(client.id))
 
   return (
-    <SheetSection title='Clients'>
-      {clients.length === 0 ? (
-        <EmptyState message='Not a client yet. Converting a lead or setting this company on a client links it here.' />
+    <SheetSection
+      title='Clients'
+      action={
+        canManageClients && !disabled ? (
+          // Link an existing client, or create one on top with this company
+          // picked.
+          <ClientLinkPicker
+            value={null}
+            onChange={client => (client ? onAdd(client) : undefined)}
+            excludeIds={[...linkedIds, ...pending.map(client => client.id)]}
+            createParams={{ clientCompanyId: companyId }}
+            trigger={<SectionAddButton label='Add client' />}
+          />
+        ) : (
+          <SectionAddButton
+            label='Add client'
+            disabled={disabled}
+            disabledReason={
+              canManageClients ? null : 'Only an admin can add clients.'
+            }
+          />
+        )
+      }
+    >
+      {clients.length === 0 && pending.length === 0 ? (
+        <EmptyState message='Not a client yet. Add a client, or convert a lead, to link one here.' />
       ) : (
         <ul className='-mx-2 space-y-0.5'>
           {clients.map(client => (
@@ -168,6 +121,31 @@ export function CompanyClientsSection({
               )}
             </li>
           ))}
+          {pending.map(client => {
+            const from = movesFrom(client.id)
+            return (
+              <li key={`added-${client.id}`} className='flex items-center gap-1'>
+                <RecordRowButton
+                  variant='inset'
+                  onClick={() => open('client', client.id)}
+                  title={client.name}
+                  subtitle={
+                    <span className='text-warning'>
+                      {from ? `Moves from ${from}` : 'Pending save'}
+                    </span>
+                  }
+                />
+                <RowActionButton
+                  type='button'
+                  disabled={disabled}
+                  label={`Don't link ${client.name}`}
+                  onClick={() => onRemoveAdded(client.id)}
+                  className='text-muted-foreground hover:text-destructive'
+                  icon={<X />}
+                />
+              </li>
+            )
+          })}
         </ul>
       )}
     </SheetSection>

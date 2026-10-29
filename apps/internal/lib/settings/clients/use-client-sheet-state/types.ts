@@ -15,17 +15,14 @@ type UnsavedChangesDialog = ReturnType<
 
 export type ClientContactOption = {
   id: string
+  /** The contact's company; portal access is picked from the client's. */
+  companyId?: string | null
   name: string | null
   email: string | null
   phone: string | null
   hasPortalAccess: boolean
   /** Set on linked contacts only: the client's primary contact. */
   isPrimary?: boolean
-  /**
-   * Works at the client's company. They're the company's people, so they
-   * can't be unlinked here (change their company on the contact).
-   */
-  atCompany?: boolean
 }
 
 /** A contact available as an external origination source (IC referrer). */
@@ -64,6 +61,8 @@ export type UseClientSheetStateArgs = {
   onArchived?: () => void
   /** Name prefill for the create sheet (create-from-picker). */
   initialName?: string
+  /** Company prefill for the create sheet ("Add client" on a company). */
+  initialCompanyId?: string
   /** Fires once with the new client after a successful create (not on edit). */
   onCreated?: (client: { id: string; name: string; slug: string }) => void
   client: ClientRow | null
@@ -95,8 +94,6 @@ export type BaseFormState = {
   isLoadingContacts: boolean
   handleContactPickerOpenChange: (open: boolean) => void
   handleAddContact: (contact: ClientContactOption) => void
-  /** Open the contact create sheet on top, prefilled with the typed query. */
-  handleCreateContact: (query: string) => void
   handleCreateOriginationContact: (query: string) => void
   handleCreateCloserContact: (query: string) => void
   handleRemoveContact: (contact: ClientContactOption) => void
@@ -192,8 +189,6 @@ export type UseClientSheetStateReturn = {
   isLoadingContacts: boolean
   handleContactPickerOpenChange: (open: boolean) => void
   handleAddContact: (contact: ClientContactOption) => void
-  /** Open the contact create sheet on top, prefilled with the typed query. */
-  handleCreateContact: (query: string) => void
   handleCreateOriginationContact: (query: string) => void
   handleCreateCloserContact: (query: string) => void
   handleRemoveContact: (contact: ClientContactOption) => void

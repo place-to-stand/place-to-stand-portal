@@ -2,7 +2,13 @@
 
 import { Button } from '@pts/ui/button'
 
-import { useEffect, useMemo, useRef, type ComponentType } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  type ComponentType,
+  type ReactElement,
+} from 'react'
 import { ExternalLink } from 'lucide-react'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
@@ -38,11 +44,18 @@ type EntityLinkPickerProps<E extends SheetCreatedEntity> = {
   toOption: (record: SheetCreatedRecords[E]) => EntityLinkOption
   /** Query param that prefills the create sheet's name (`companyName`). */
   createPrefillParam: string
+  /** More aux params for the create sheet (e.g. `clientCompanyId`). */
+  createParams?: Record<string, string>
   /** Hide "Create new…" (roles that can't create the entity). */
   allowCreate?: boolean
   id?: string
   'aria-label'?: string
   icon?: ComponentType<{ className?: string }>
+  /**
+   * A custom trigger (e.g. a section's "Add person" button) in place of the
+   * field. Use with `value={null}` to add records to a list one at a time.
+   */
+  trigger?: ReactElement
 }
 
 const pluralize = (noun: string) =>
@@ -65,10 +78,12 @@ export function EntityLinkPicker<E extends SheetCreatedEntity>({
   placeholder,
   toOption,
   createPrefillParam,
+  createParams,
   allowCreate = true,
   id,
   'aria-label': ariaLabel,
   icon,
+  trigger,
 }: EntityLinkPickerProps<E>) {
   const { open: openSheet, openNew } = useSheetParams()
   // Only the picker that asked for the create sheet takes its record.
@@ -130,18 +145,19 @@ export function EntityLinkPicker<E extends SheetCreatedEntity>({
       emptyMessage={`No ${plural} found.`}
       disabled={disabled}
       ariaLabel={ariaLabel}
+      trigger={trigger}
+      // A button trigger sizes to itself, not the row.
+      className={trigger ? 'w-auto' : undefined}
       createEntityLabel={entityLabel}
       clearLabel={entityLabel}
       onCreate={
         allowCreate
           ? typed => {
               awaitingCreate.current = true
-              openNew(
-                entity,
-                typed.trim()
-                  ? { [createPrefillParam]: typed.trim() }
-                  : undefined
-              )
+              openNew(entity, {
+                ...createParams,
+                ...(typed.trim() ? { [createPrefillParam]: typed.trim() } : {}),
+              })
             }
           : undefined
       }

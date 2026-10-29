@@ -78,7 +78,6 @@ type ClientSheetFormProps = {
   isContactPickerOpen: boolean
   onContactPickerOpenChange: (open: boolean) => void
   onAddContact: (contact: ClientContactOption) => void
-  onCreateContact: (query: string) => void
   onCreateOriginationContact: (query: string) => void
   onCreateCloserContact: (query: string) => void
   onRemoveContact: (contact: ClientContactOption) => void
@@ -135,7 +134,6 @@ export function ClientSheetForm({
   isContactPickerOpen,
   onContactPickerOpenChange,
   onAddContact,
-  onCreateContact,
   onCreateOriginationContact,
   onCreateCloserContact,
   onRemoveContact,
@@ -172,6 +170,9 @@ export function ClientSheetForm({
     control: form.control,
     name: 'billingType',
   })
+  // Portal access lists this company's people first.
+  const selectedCompanyId =
+    useWatch({ control: form.control, name: 'companyId' }) || null
 
   const handleSave = useCallback(
     () => form.handleSubmit(onSubmit)(),
@@ -508,17 +509,18 @@ export function ClientSheetForm({
           <Separator />
 
           <SheetSection
-            title='Contacts'
+            title='Portal access'
+            description='Who can see this client in the client portal: usually its company’s people. Star the primary contact.'
             action={
               <ClientContactLinkButton
                 availableContacts={availableContacts}
+                companyId={selectedCompanyId}
                 disabled={contactsAddButtonDisabled}
                 disabledReason={contactsAddButtonDisabledReason}
                 isPickerOpen={isContactPickerOpen}
                 isPending={isPending}
                 onPickerOpenChange={onContactPickerOpenChange}
                 onAddContact={onAddContact}
-                onCreateContact={onCreateContact}
               />
             }
           >

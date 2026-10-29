@@ -4,11 +4,11 @@ import { useState } from 'react'
 import { Plus, Star, UserCheck, X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
-import { CommandCreateRows } from '@/components/ui/command-create-rows'
 import { EmptyState } from '@pts/ui/empty-state'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
   Command,
+  CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
@@ -25,7 +25,7 @@ type ClientContactOption = {
   email: string | null
   phone: string | null
   hasPortalAccess: boolean
-  atCompany?: boolean
+  companyId?: string | null
 }
 
 function PortalAccessMark() {
@@ -43,26 +43,30 @@ function PortalAccessMark() {
 
 export type ClientContactLinkButtonProps = {
   availableContacts: ClientContactOption[]
+  /** The client's company: its people are listed first. */
+  companyId: string | null
   disabled: boolean
   disabledReason: string | null
   isPickerOpen: boolean
   isPending: boolean
   onPickerOpenChange: (open: boolean) => void
   onAddContact: (contact: ClientContactOption) => void
-  /** Open the contact create sheet, prefilled with the typed query. */
-  onCreateContact: (query: string) => void
 }
 
-/** The "Link contact" popover trigger — sits on the Contacts section title row. */
+/**
+ * The "Add person" picker on the Portal access section: the company's people
+ * first, then anyone else (an outside accountant, say). Adding someone here
+ * doesn't add them to the company.
+ */
 export function ClientContactLinkButton({
   availableContacts,
+  companyId,
   disabled,
   disabledReason,
   isPickerOpen,
   isPending,
   onPickerOpenChange,
   onAddContact,
-  onCreateContact,
 }: ClientContactLinkButtonProps) {
   const [query, setQuery] = useState('')
 
@@ -76,49 +80,64 @@ export function ClientContactLinkButton({
         <PopoverTrigger asChild>
           <Button type='button' variant='outline' size='xs' disabled={disabled}>
             <Plus />
-            Link contact
+            Add person
           </Button>
         </PopoverTrigger>
       </DisabledFieldTooltip>
       <PopoverContent className='w-72 p-0' align='end'>
         <Command>
           <CommandInput
-            placeholder='Search contacts...'
+            placeholder='Search people…'
             value={query}
             onValueChange={setQuery}
           />
           <CommandList>
-            <CommandGroup heading='Contacts'>
-              {availableContacts.map(contact => (
-                <CommandItem
-                  key={contact.id}
-                  value={`${contact.name ?? ''} ${contact.email}`}
-                  onSelect={() => {
-                    if (isPending) {
-                      return
-                    }
-                    onAddContact(contact)
-                  }}
-                >
-                  <div className='flex flex-col'>
-                    <span className='flex items-center gap-1.5 font-medium'>
-                      {contact.name ?? contact.email}
-                      {contact.hasPortalAccess ? <PortalAccessMark /> : null}
-                    </span>
-                    {contact.name ? (
-                      <span className='text-muted-foreground text-xs'>
-                        {contact.email}
-                      </span>
-                    ) : null}
-                  </div>
-                </CommandItem>
+            <CommandEmpty>No one found.</CommandEmpty>
+            {[
+              {
+                heading: 'At this company',
+                people: availableContacts.filter(
+                  c => companyId && c.companyId === companyId
+                ),
+              },
+              {
+                heading: companyId ? 'Other people' : 'People',
+                people: availableContacts.filter(
+                  c => !companyId || c.companyId !== companyId
+                ),
+              },
+            ]
+              .filter(group => group.people.length > 0)
+              .map(group => (
+                <CommandGroup key={group.heading} heading={group.heading}>
+                  {group.people.map(contact => (
+                    <CommandItem
+                      key={contact.id}
+                      value={`${contact.name ?? ''} ${contact.email}`}
+                      onSelect={() => {
+                        if (isPending) {
+                          return
+                        }
+                        onAddContact(contact)
+                      }}
+                    >
+                      <div className='flex flex-col'>
+                        <span className='flex items-center gap-1.5 font-medium'>
+                          {contact.name ?? contact.email}
+                          {contact.hasPortalAccess ? (
+                            <PortalAccessMark />
+                          ) : null}
+                        </span>
+                        {contact.name ? (
+                          <span className='text-muted-foreground text-xs'>
+                            {contact.email}
+                          </span>
+                        ) : null}
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
               ))}
-            </CommandGroup>
-            <CommandCreateRows
-              query={query}
-              entityLabel='contact'
-              onCreate={onCreateContact}
-            />
           </CommandList>
         </Command>
       </PopoverContent>
@@ -133,14 +152,14 @@ export type ClientContactListProps = {
   onRequestRemoval: (contact: ClientContactOption) => void
   primaryContactId: string | null
   onTogglePrimary: (contact: ClientContactOption) => void
-  /** Empty state: opens the same picker as the header's "Link contact". */
+  /** Empty state: opens the same picker as the header's "Add person". */
   onRequestLink: () => void
   linkDisabled: boolean
   linkDisabledReason: string | null
 }
 
 /**
- * The linked contacts, one row each, with the primary star and the unlink
+ * The Portal access people, one row each, with the primary star and the unlink
  * control on the right.
  */
 export function ClientContactList({
@@ -158,8 +177,8 @@ export function ClientContactList({
     return (
       <DisabledFieldTooltip disabled={linkDisabled} reason={linkDisabledReason}>
         <EmptyState
-          message='No contacts linked yet.'
-          label='Link contact'
+          message='No one has portal access yet.'
+          label='Add person'
           onClick={onRequestLink}
           disabled={linkDisabled}
         />

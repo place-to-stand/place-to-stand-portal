@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
-import { Check, ChevronRight, Minus } from 'lucide-react'
+import { Check, ChevronRight, Info, Minus } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { PageShell } from '@/components/layout/page-shell'
 import {
   CAPABILITIES,
@@ -31,7 +32,8 @@ const SURFACE_LABELS: Record<CapabilitySurface, string> = {
   cli: 'CLI',
 }
 
-const GRID = 'grid grid-cols-[minmax(0,1fr)_5.5rem_5.5rem] items-center gap-3 sm:grid-cols-[minmax(0,1fr)_7rem_7rem_9rem]'
+const GRID =
+  'grid grid-cols-[minmax(0,1fr)_5.5rem_5.5rem] items-center gap-3 sm:grid-cols-[minmax(0,1fr)_7rem_7rem_9rem]'
 
 /**
  * Settings → Roles & permissions, generated from the registry: what each
@@ -55,8 +57,13 @@ export default async function PermissionsPage() {
       <div className='mx-auto w-full max-w-5xl space-y-6'>
         <section className='grid gap-3 sm:grid-cols-3'>
           {roleTotals.map(({ role, count }) => (
-            <div key={role} className='bg-background rounded-xl border p-4 shadow-sm'>
-              <p className='text-muted-foreground text-xs font-medium'>{ROLE_LABELS[role]}</p>
+            <div
+              key={role}
+              className='bg-background rounded-xl border p-4 shadow-sm'
+            >
+              <p className='text-muted-foreground text-xs font-medium'>
+                {ROLE_LABELS[role]}
+              </p>
               <p className='mt-1 text-2xl font-semibold tabular-nums'>
                 {count}
                 <span className='text-muted-foreground text-sm font-normal'>
@@ -67,19 +74,24 @@ export default async function PermissionsPage() {
             </div>
           ))}
           <div className='bg-background rounded-xl border p-4 shadow-sm'>
-            <p className='text-muted-foreground text-xs font-medium'>Endpoints checked</p>
-            <p className='mt-1 text-2xl font-semibold tabular-nums'>{registry.totals.all}</p>
+            <p className='text-muted-foreground text-xs font-medium'>
+              Endpoints checked
+            </p>
+            <p className='mt-1 text-2xl font-semibold tabular-nums'>
+              {registry.totals.all}
+            </p>
             <p className='text-muted-foreground text-xs'>
-              {registry.totals.capability} by permission · {registry.totals.admin} admin only ·{' '}
+              {registry.totals.capability} by permission ·{' '}
+              {registry.totals.admin} admin only ·{' '}
               {registry.totals.public + registry.totals.token} public or token
             </p>
           </div>
         </section>
 
         <p className='text-muted-foreground text-sm'>
-          Generated from the code: each permission lists the pages, actions and API
-          routes that check it, and the MCP tools behind it. Anything not listed is
-          admin only.
+          Generated from the code: each permission lists the pages, actions and
+          API routes that check it, and the MCP tools behind it. Anything not
+          listed is admin only.
         </p>
 
         {registry.areas.map(({ area, capabilities }) => (
@@ -93,7 +105,10 @@ export default async function PermissionsPage() {
                 {area}
               </h2>
               {PERMISSION_ROLES.map(role => (
-                <span key={role} className='text-muted-foreground text-center text-xs font-medium'>
+                <span
+                  key={role}
+                  className='text-muted-foreground text-center text-xs font-medium'
+                >
                   {ROLE_LABELS[role]}
                 </span>
               ))}
@@ -122,7 +137,9 @@ export default async function PermissionsPage() {
                 <details className='group'>
                   <summary className='hover:bg-muted/40 flex cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-sm'>
                     <ChevronRight className='text-muted-foreground size-4 transition-transform group-open:rotate-90' />
-                    <span className='font-medium capitalize'>{section.replace(/-/g, ' ')}</span>
+                    <span className='font-medium capitalize'>
+                      {section.replace(/-/g, ' ')}
+                    </span>
                     <span className='text-muted-foreground ml-auto text-xs tabular-nums'>
                       {endpoints.length}
                     </span>
@@ -140,15 +157,17 @@ export default async function PermissionsPage() {
           <details className='group'>
             <summary className='bg-muted/40 flex cursor-pointer list-none items-center gap-2 px-4 py-2.5'>
               <ChevronRight className='text-muted-foreground size-4 transition-transform group-open:rotate-90' />
-              <span className='text-sm font-semibold'>Public and token-checked</span>
+              <span className='text-sm font-semibold'>
+                Public and token-checked
+              </span>
               <span className='text-muted-foreground ml-auto text-xs tabular-nums'>
                 {registry.open.length}
               </span>
             </summary>
             <div className='px-10 py-3'>
               <p className='text-muted-foreground mb-2 text-xs'>
-                Sign-in, share links, webhooks and crons. Each says why in a
-                `// permission: public` comment or checks a token.
+                Sign-in, share links, webhooks and crons. Each says why in a `//
+                permission: public` comment or checks a token.
               </p>
               <EndpointList endpoints={registry.open} />
             </div>
@@ -159,14 +178,29 @@ export default async function PermissionsPage() {
   )
 }
 
-function CapabilityRow({ capability }: { capability: CapabilityWithEndpoints }) {
+function CapabilityRow({
+  capability,
+}: {
+  capability: CapabilityWithEndpoints
+}) {
   const definition = CAPABILITIES[capability.key]
   const total = capability.endpoints.length + capability.mcpTools.length
+  const limits = PERMISSION_ROLES.flatMap(role => {
+    const scope = roleCan(role, capability.key)
+      ? capabilityScope(capability.key, role)
+      : undefined
+    return scope ? [{ role: ROLE_LABELS[role], detail: scope.detail }] : []
+  })
 
   return (
     <li>
       <details className='group'>
-        <summary className={cn(GRID, 'hover:bg-muted/40 cursor-pointer list-none px-4 py-3')}>
+        <summary
+          className={cn(
+            GRID,
+            'hover:bg-muted/40 cursor-pointer list-none px-4 py-3'
+          )}
+        >
           <div className='flex min-w-0 items-start gap-2'>
             <ChevronRight
               className={cn(
@@ -175,25 +209,52 @@ function CapabilityRow({ capability }: { capability: CapabilityWithEndpoints }) 
               )}
             />
             <div className='min-w-0'>
-              <p className='text-sm font-medium'>{definition.label}</p>
-              <p className='text-muted-foreground text-xs'>{definition.description}</p>
+              <p className='flex items-center gap-1 text-sm font-medium'>
+                {definition.label}
+                {limits.length ? (
+                  // The roles a data rule narrows, once per row, not under
+                  // every tick.
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span
+                        className='text-muted-foreground cursor-help'
+                        aria-label={limits
+                          .map(limit => `${limit.role}: ${limit.detail}`)
+                          .join(' ')}
+                      >
+                        <Info className='size-3.5' aria-hidden />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {limits.map(limit => (
+                        <p key={limit.role}>
+                          {limit.role}: {limit.detail}
+                        </p>
+                      ))}
+                    </TooltipContent>
+                  </Tooltip>
+                ) : null}
+              </p>
+              <p className='text-muted-foreground text-xs'>
+                {definition.description}
+              </p>
             </div>
           </div>
           {PERMISSION_ROLES.map(role => {
             const allowed = roleCan(role, capability.key)
-            const scope = capabilityScope(capability.key, role)
             return (
-              <div key={role} className='flex flex-col items-center text-center'>
+              <div
+                key={role}
+                className='flex flex-col items-center text-center'
+              >
                 {allowed ? (
                   <Check className='text-success size-4' aria-label='Allowed' />
                 ) : (
-                  <Minus className='text-muted-foreground/40 size-4' aria-label='Not allowed' />
+                  <Minus
+                    className='text-muted-foreground/40 size-4'
+                    aria-label='Not allowed'
+                  />
                 )}
-                {allowed && scope ? (
-                  <span className='text-muted-foreground mt-0.5 text-[11px] leading-tight'>
-                    {scope}
-                  </span>
-                ) : null}
               </div>
             )
           })}
@@ -210,9 +271,14 @@ function CapabilityRow({ capability }: { capability: CapabilityWithEndpoints }) 
             <EndpointList endpoints={capability.endpoints} />
             {capability.mcpTools.length ? (
               <div className='flex flex-wrap items-center gap-1.5'>
-                <span className='text-muted-foreground text-xs'>MCP tools:</span>
+                <span className='text-muted-foreground text-xs'>
+                  MCP tools:
+                </span>
                 {capability.mcpTools.map(tool => (
-                  <code key={tool} className='bg-muted rounded px-1.5 py-0.5 font-mono text-[11px]'>
+                  <code
+                    key={tool}
+                    className='bg-muted rounded px-1.5 py-0.5 font-mono text-[11px]'
+                  >
                     {tool}
                   </code>
                 ))}

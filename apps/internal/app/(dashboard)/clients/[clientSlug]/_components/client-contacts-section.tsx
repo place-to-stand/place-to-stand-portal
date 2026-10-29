@@ -25,7 +25,7 @@ export function ClientContactsSection({ contacts }: Props) {
         <div className='flex h-7 w-7 items-center justify-center rounded-md bg-cyan-500/10'>
           <Users className='h-4 w-4 text-cyan-500' />
         </div>
-        <h2 className='font-semibold'>Contacts</h2>
+        <h2 className='font-semibold'>Portal access</h2>
         <Badge variant='secondary' className='ml-auto'>
           {contacts.length}
         </Badge>
@@ -33,7 +33,7 @@ export function ClientContactsSection({ contacts }: Props) {
 
       <div className='p-3'>
         {contacts.length === 0 ? (
-          <EmptyState message='No contacts linked yet.' />
+          <EmptyState message='No one has portal access yet.' />
         ) : (
           <div className='space-y-0.5'>
             {contacts.map(contact => (

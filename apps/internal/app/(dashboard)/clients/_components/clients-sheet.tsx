@@ -14,10 +14,20 @@ import { useClientSheetState } from '@/lib/settings/clients/use-client-sheet-sta
 
 import { ClientSheetForm } from './client-sheet/client-sheet-form'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
+import { UUID_PATTERN } from '@/lib/sheets/entities'
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 
 type ClientSheetProps = UseClientSheetStateArgs
 
 export function ClientSheet(props: ClientSheetProps) {
+  // "Add client" on a company sheet (`clientCompanyId=`) preselects that
+  // company on whichever instance renders the create sheet.
+  const { getAux } = useSheetParams()
+  const companyParam = props.client ? null : getAux('clientCompanyId')
+  const initialCompanyId =
+    props.initialCompanyId ??
+    (companyParam && UUID_PATTERN.test(companyParam) ? companyParam : undefined)
+
   const {
     form,
     isEditing,
@@ -45,7 +55,6 @@ export function ClientSheet(props: ClientSheetProps) {
     contactsAddButtonDisabledReason,
     handleContactPickerOpenChange,
     handleAddContact,
-    handleCreateContact,
     handleCreateOriginationContact,
     handleCreateCloserContact,
     handleRemoveContact,
@@ -77,7 +86,7 @@ export function ClientSheet(props: ClientSheetProps) {
     handleAddCloser,
     handleRemoveCloser,
     handleCloserShareChange,
-  } = useClientSheetState(props)
+  } = useClientSheetState({ ...props, initialCompanyId })
 
   return (
     <>
@@ -110,7 +119,6 @@ export function ClientSheet(props: ClientSheetProps) {
             isContactPickerOpen={isContactPickerOpen}
             onContactPickerOpenChange={handleContactPickerOpenChange}
             onAddContact={handleAddContact}
-            onCreateContact={handleCreateContact}
             onCreateOriginationContact={handleCreateOriginationContact}
             onCreateCloserContact={handleCreateCloserContact}
             onRemoveContact={handleRemoveContact}

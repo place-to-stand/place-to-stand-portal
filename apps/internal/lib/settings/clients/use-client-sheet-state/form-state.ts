@@ -93,6 +93,7 @@ export function useClientSheetFormState({
   clientContacts: clientContactsProp,
   allAdminUsers: allAdminUsersProp,
   initialName,
+  initialCompanyId,
   onCreated,
   isEditing,
   setFeedback,
@@ -171,7 +172,8 @@ export function useClientSheetFormState({
   }, [baseContacts, createdContacts])
   const allAdminUsers = allAdminUsersProp ?? fetchedAllAdminUsers
 
-  // Compute available contacts (all contacts minus selected ones)
+  // Anyone not on Portal access yet; the picker lists the company's people
+  // first, then everyone else.
   const availableContacts = useMemo(() => {
     const selectedIds = new Set(selectedContacts.map(c => c.id))
     return allContacts.filter(c => !selectedIds.has(c.id))
@@ -276,7 +278,7 @@ export function useClientSheetFormState({
       commissionEffective: 'next_month' as const,
       state: client?.state ?? '',
       notes: client?.notes ?? '',
-      companyId: client?.company_id ?? '',
+      companyId: client?.company_id ?? initialCompanyId ?? '',
       label: client?.label ?? '',
     }
 
@@ -288,7 +290,7 @@ export function useClientSheetFormState({
     setIsContactPickerOpen(false)
     setIsOriginationPickerOpen(false)
     setIsCloserPickerOpen(false)
-  }, [client, form, initialName, setFeedback])
+  }, [client, form, initialCompanyId, initialName, setFeedback])
 
   const hasUnsavedChanges =
     form.formState.isDirty || contactsDirty || originationDirty || closerDirty
@@ -480,10 +482,6 @@ export function useClientSheetFormState({
       openNew('contact', query ? { contactName: query } : undefined)
     },
     [openNew]
-  )
-  const handleCreateContact = useCallback(
-    (query: string) => requestContactCreate('contacts', query),
-    [requestContactCreate]
   )
   const handleCreateOriginationContact = useCallback(
     (query: string) => requestContactCreate('origination', query),
@@ -777,7 +775,6 @@ export function useClientSheetFormState({
     handleContactPickerOpenChange,
     handleAddContact,
     handleRemoveContact,
-    handleCreateContact,
     handleCreateOriginationContact,
     handleCreateCloserContact,
     primaryContactId,

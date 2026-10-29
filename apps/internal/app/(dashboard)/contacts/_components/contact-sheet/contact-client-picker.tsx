@@ -18,7 +18,7 @@ export type ContactClientListProps = {
  */
 export function ContactClientList({ clients }: ContactClientListProps) {
   if (clients.length === 0) {
-    return <EmptyState message='No clients yet.' />
+    return <EmptyState message='No client access yet.' />
   }
 
   return (

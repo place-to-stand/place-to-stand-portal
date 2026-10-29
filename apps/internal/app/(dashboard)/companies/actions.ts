@@ -2,9 +2,11 @@
 
 import { revalidatePath } from 'next/cache'
 
+import { roleCan } from '@/lib/auth/capabilities'
 import { requireCrmUser } from '@/lib/auth/session'
 import type { SaveCompanyInput } from '@/lib/companies/schema'
 import type {
+  ClientLinkOption,
   CompanyActionResult,
   CompanyDetail,
   CompanyOption,
@@ -12,6 +14,7 @@ import type {
 import { NotFoundError } from '@/lib/errors/http'
 import {
   getCompanyDetail,
+  listClientLinkOptions,
   listCompanyOptions,
   saveCompany as saveCompanyQuery,
   setCompanyArchived,
@@ -51,6 +54,13 @@ export async function loadCompanySheet(
 export async function fetchCompanyOptions(): Promise<CompanyOption[]> {
   const user = await requireCrmUser()
   return listCompanyOptions(user)
+}
+
+/** Clients the company sheet can link; client records are admin-only. */
+export async function fetchClientLinkOptions(): Promise<ClientLinkOption[]> {
+  const user = await requireCrmUser()
+  if (!roleCan(user.role, 'clients.manage')) return []
+  return listClientLinkOptions()
 }
 
 export async function saveCompany(

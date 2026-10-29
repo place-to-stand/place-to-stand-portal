@@ -12,6 +12,7 @@ export type ContactOption = {
   name: string
   email: string | null
   phone: string | null
+  companyId: string | null
   companyName: string | null
 }
 
@@ -25,6 +26,7 @@ export async function listContactOptions(user: AppUser): Promise<ContactOption[]
       name: contacts.name,
       email: contacts.email,
       phone: contacts.phone,
+      companyId: contacts.companyId,
       companyName: companies.name,
     })
     .from(contacts)

@@ -6,6 +6,7 @@ import {
   desc,
   eq,
   ilike,
+  inArray,
   isNotNull,
   isNull,
   sql,
@@ -16,13 +17,17 @@ import {
   companyPrimaryContactSetEvent,
   companyCreatedEvent,
   companyRestoredEvent,
+  clientUpdatedEvent,
   companyUpdatedEvent,
+  contactUpdatedEvent,
 } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
 import { roleCan } from '@/lib/auth/capabilities'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
+import { clientDisplayName } from '@/lib/companies/client-name'
 import type {
+  ClientLinkOption,
   CompanyActionResult,
   CompanyDetail,
   CompanyListItem,
@@ -321,24 +326,58 @@ export async function saveCompany(
     }
   }
 
-  if (!changedFields.length) {
+  const people = await resolvePeopleChanges(
+    existing.id,
+    values.addContactIds ?? [],
+    values.removeContactIds ?? []
+  )
+
+  const clientMoves = await resolveClientMoves(
+    existing.id,
+    values.addClientIds ?? []
+  )
+
+  if (!changedFields.length && !people.moves.length && !clientMoves.length) {
     return { ok: true, id: existing.id }
   }
 
   const renamed = next.name !== existing.name
-  // A client's name is its company's name, and client records are admin-only.
-  if (renamed && !roleCan(actor.role, 'clients.manage')) {
-    const [client] = await db
-      .select({ id: clients.id })
-      .from(clients)
-      .where(and(eq(clients.companyId, existing.id), isNull(clients.deletedAt)))
-      .limit(1)
-    if (client) {
+  // A client's name is its company's name, its people are who it bills and
+  // gives portal access, and client records are admin-only.
+  if (!roleCan(actor.role, 'clients.manage')) {
+    if (clientMoves.length) {
+      return { ok: false, error: 'Only an admin can link clients.' }
+    }
+    if (renamed && (await companyHasClient(existing.id))) {
       return {
         ok: false,
         error: 'This company is a client, so only an admin can rename it.',
       }
     }
+    if (people.moves.length) {
+      const touched = new Set([existing.id])
+      for (const move of people.moves) {
+        if (move.fromCompanyId) touched.add(move.fromCompanyId)
+      }
+      for (const companyId of touched) {
+        if (await companyHasClient(companyId)) {
+          return {
+            ok: false,
+            error:
+              companyId === existing.id
+                ? 'This company is a client, so only an admin can change its people.'
+                : 'Someone you added works at a client, so only an admin can move them.',
+          }
+        }
+      }
+    }
+  }
+
+  if (people.moves.length) {
+    changedFields.push('people')
+  }
+  if (clientMoves.length) {
+    changedFields.push('clients')
   }
 
   try {
@@ -363,6 +402,38 @@ export async function saveCompany(
           })
           .where(eq(clients.companyId, existing.id))
       }
+
+      // A client is named after its company (plus its label).
+      for (const move of clientMoves) {
+        await tx
+          .update(clients)
+          .set({
+            companyId: existing.id,
+            name: clientDisplayName(next.name, move.label),
+            updatedAt: timestamp,
+          })
+          .where(eq(clients.id, move.clientId))
+      }
+
+      for (const move of people.moves) {
+        await tx
+          .update(contacts)
+          .set({ companyId: move.toCompanyId, updatedAt: timestamp })
+          .where(eq(contacts.id, move.contactId))
+        // Leaving a company gives up being its primary contact (as on the
+        // contact sheet).
+        if (move.fromCompanyId) {
+          await tx
+            .update(companies)
+            .set({ primaryContactId: null })
+            .where(
+              and(
+                eq(companies.id, move.fromCompanyId),
+                eq(companies.primaryContactId, move.contactId)
+              )
+            )
+        }
+      }
     })
   } catch (error) {
     if (isUniqueViolation(error)) {
@@ -380,11 +451,165 @@ export async function saveCompany(
     ...companyUpdatedEvent({
       name: next.name,
       changedFields,
-      details: { before, after },
+      details: {
+        before,
+        after,
+        ...(people.moves.length
+          ? {
+              peopleAdded: people.moves
+                .filter(move => move.toCompanyId)
+                .map(move => move.name),
+              peopleRemoved: people.moves
+                .filter(move => !move.toCompanyId)
+                .map(move => move.name),
+            }
+          : {}),
+        ...(clientMoves.length
+          ? { clientsLinked: clientMoves.map(move => move.name) }
+          : {}),
+      },
     }),
   })
 
+  // Each moved person's own trail reads like a company change made on the
+  // contact sheet.
+  for (const move of people.moves) {
+    await logActivity({
+      actorId: actor.id,
+      actorRole: actor.role,
+      targetType: 'CONTACT',
+      targetId: move.contactId,
+      ...contactUpdatedEvent({
+        email: move.email,
+        name: move.name,
+        changedFields: ['company'],
+        details: {
+          before: { companyId: move.fromCompanyId },
+          after: { companyId: move.toCompanyId },
+        },
+      }),
+    })
+  }
+
+  for (const move of clientMoves) {
+    const nextName = clientDisplayName(next.name, move.label)
+    const nameChanged = nextName !== move.name
+    await logActivity({
+      actorId: actor.id,
+      actorRole: actor.role,
+      targetType: 'CLIENT',
+      targetId: move.clientId,
+      targetClientId: move.clientId,
+      ...clientUpdatedEvent({
+        name: nextName,
+        changedFields: nameChanged ? ['company', 'name'] : ['company'],
+        details: {
+          before: {
+            companyId: move.fromCompanyId,
+            ...(nameChanged ? { name: move.name } : {}),
+          },
+          after: {
+            companyId: existing.id,
+            ...(nameChanged ? { name: nextName } : {}),
+          },
+        },
+      }),
+    })
+  }
+
   return { ok: true, id: existing.id }
+}
+
+/** Live clients being linked here that aren't already. */
+async function resolveClientMoves(companyId: string, clientIds: string[]) {
+  const ids = [...new Set(clientIds)]
+  if (!ids.length) return []
+  const rows = await db
+    .select({
+      clientId: clients.id,
+      name: clients.name,
+      label: clients.label,
+      fromCompanyId: clients.companyId,
+    })
+    .from(clients)
+    .where(and(inArray(clients.id, ids), isNull(clients.deletedAt)))
+  return rows.filter(row => row.fromCompanyId !== companyId)
+}
+
+/** Live clients for the company sheet's client picker, with their company. */
+export async function listClientLinkOptions(): Promise<ClientLinkOption[]> {
+  const rows = await db
+    .select({
+      id: clients.id,
+      name: clients.name,
+      companyId: clients.companyId,
+      companyName: companies.name,
+    })
+    .from(clients)
+    .leftJoin(companies, eq(companies.id, clients.companyId))
+    .where(isNull(clients.deletedAt))
+    .orderBy(asc(sql`lower(${clients.name})`))
+  return rows
+}
+
+async function companyHasClient(companyId: string) {
+  const [client] = await db
+    .select({ id: clients.id })
+    .from(clients)
+    .where(and(eq(clients.companyId, companyId), isNull(clients.deletedAt)))
+    .limit(1)
+  return Boolean(client)
+}
+
+type PeopleMove = {
+  contactId: string
+  name: string
+  email: string | null
+  fromCompanyId: string | null
+  /** This company for an add, null for a removal. */
+  toCompanyId: string | null
+}
+
+/**
+ * The staged People edits that actually change something: live contacts not
+ * already here (added) and people here now (removed). Anything else is a
+ * stale stage and is skipped.
+ */
+async function resolvePeopleChanges(
+  companyId: string,
+  addIds: string[],
+  removeIds: string[]
+): Promise<{ moves: PeopleMove[] }> {
+  const removeSet = new Set(removeIds)
+  const adds = [...new Set(addIds)].filter(id => !removeSet.has(id))
+  const ids = [...new Set([...adds, ...removeSet])]
+  if (!ids.length) return { moves: [] }
+
+  const rows = await db
+    .select({
+      id: contacts.id,
+      name: contacts.name,
+      email: contacts.email,
+      companyId: contacts.companyId,
+    })
+    .from(contacts)
+    .where(and(inArray(contacts.id, ids), isNull(contacts.deletedAt)))
+
+  const moves: PeopleMove[] = []
+  for (const row of rows) {
+    const base = {
+      contactId: row.id,
+      name: row.name,
+      email: row.email,
+      fromCompanyId: row.companyId,
+    }
+    if (removeSet.has(row.id)) {
+      if (row.companyId === companyId) moves.push({ ...base, toCompanyId: null })
+    } else if (row.companyId !== companyId) {
+      moves.push({ ...base, toCompanyId: companyId })
+    }
+  }
+  return { moves }
 }
 
 /**
@@ -478,17 +703,13 @@ export async function setCompanyPrimaryContact(
 
   // A client's company primary contact is its default invoice and update
   // recipient, and client records are admin-only.
-  if (!roleCan(actor.role, 'clients.manage')) {
-    const [client] = await db
-      .select({ id: clients.id })
-      .from(clients)
-      .where(and(eq(clients.companyId, companyId), isNull(clients.deletedAt)))
-      .limit(1)
-    if (client) {
-      return {
-        ok: false,
-        error: 'This company is a client, so only an admin can change its primary contact.',
-      }
+  if (
+    !roleCan(actor.role, 'clients.manage') &&
+    (await companyHasClient(companyId))
+  ) {
+    return {
+      ok: false,
+      error: 'This company is a client, so only an admin can change its primary contact.',
     }
   }
 

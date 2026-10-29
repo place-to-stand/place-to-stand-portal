@@ -36,8 +36,11 @@ type CapabilityDefinition = {
   roles: readonly Role[]
   /** Where the capability is enforced. */
   surfaces: readonly CapabilitySurface[]
-  /** A data rule that narrows it further, shown next to the role. */
-  scope?: Partial<Record<Role, string>>
+  /**
+   * A data rule that narrows it further for a role, shown once per row as a
+   * footnote on the permission's label.
+   */
+  scope?: Partial<Record<Role, CapabilityScope>>
 }
 
 const ADMIN_ONLY = ['ADMIN'] as const satisfies readonly Role[]
@@ -81,7 +84,7 @@ export const CAPABILITIES = {
     description: 'Open tasks assigned to you.',
     roles: STAFF,
     surfaces: ['app'],
-    scope: { SALES: 'Only projects they are a member of' },
+    scope: { SALES: { detail: 'Only projects they are a member of.' } },
   },
   'widget.next_steps': {
     area: 'Dashboard',
@@ -89,7 +92,7 @@ export const CAPABILITIES = {
     description: 'Your open tasks, late and due-soon first.',
     roles: STAFF,
     surfaces: ['app'],
-    scope: { SALES: 'Only projects they are a member of' },
+    scope: { SALES: { detail: 'Only projects they are a member of.' } },
   },
   'widget.pipeline': {
     area: 'Dashboard',
@@ -135,7 +138,7 @@ export const CAPABILITIES = {
       'Create, edit and move tasks, comment and attach files, on projects you’re a member of and your personal boards.',
     roles: STAFF,
     surfaces: ['app'],
-    scope: { SALES: 'Only projects they are a member of' },
+    scope: { SALES: { detail: 'Only projects they are a member of.' } },
   },
   'projects.create': {
     area: 'Projects & tasks',
@@ -144,7 +147,7 @@ export const CAPABILITIES = {
       'The project sheet only offers the project types and fields the role can use.',
     roles: STAFF,
     surfaces: ['app'],
-    scope: { SALES: 'Personal projects only' },
+    scope: { SALES: { detail: 'Only their own personal projects.' } },
   },
   'projects.manage': {
     area: 'Projects & tasks',
@@ -198,7 +201,7 @@ export const CAPABILITIES = {
     description: 'Lead tasks live in the Sales project.',
     roles: STAFF,
     surfaces: ['app', 'mcp', 'cli'],
-    scope: { SALES: 'Must be a member of the Sales project' },
+    scope: { SALES: { detail: 'Only if they are a member of the Sales project.' } },
   },
   'leads.convert': {
     area: 'Sales',
@@ -361,10 +364,12 @@ export function creatableProjectTypes<T extends string>(
   return []
 }
 
+export type CapabilityScope = { detail: string }
+
 export function capabilityScope(
   capability: Capability,
   role: Role
-): string | undefined {
+): CapabilityScope | undefined {
   const scope = (CAPABILITIES[capability] as CapabilityDefinition).scope
   return scope?.[role]
 }

@@ -296,55 +296,42 @@ export function ContactSheetForm({
           <Separator />
 
           <SheetSection
-            title='Clients'
-            description='Each client has its own people list. Add or remove them on the client.'
+            title='Portal access'
+            description='The clients they can see in the client portal, set on each client’s Portal access.'
           >
             <ContactClientList clients={linkedClients} />
-          </SheetSection>
-
-          {isEditing && isAdmin ? (
-            <>
-              <Separator />
-              <SheetSection
-                title='Portal access'
-                description={
-                  portalUserId
-                    ? 'They can sign in to every client linked above.'
-                    : 'Creating an account gives them every client linked above.'
-                }
-              >
-                {portalUserId ? (
-                  <ContactPortalAccountCard
-                    key={portalUserId}
-                    userId={portalUserId}
-                  />
-                ) : (
-                  <LinkedRecordCard
-                    icon={User2}
-                    title='No portal account'
-                    action={
-                      <DisabledFieldTooltip
+            {isEditing && isAdmin ? (
+              portalUserId ? (
+                <ContactPortalAccountCard
+                  key={portalUserId}
+                  userId={portalUserId}
+                />
+              ) : (
+                <LinkedRecordCard
+                  icon={User2}
+                  title='No portal account'
+                  action={
+                    <DisabledFieldTooltip
+                      disabled={promoteDisabled}
+                      reason={promoteDisabledReason}
+                      className='w-auto'
+                    >
+                      <Button
+                        type='button'
+                        variant='outline'
+                        size='sm'
                         disabled={promoteDisabled}
-                        reason={promoteDisabledReason}
-                        className='w-auto'
+                        onClick={onRequestPromote}
                       >
-                        <Button
-                          type='button'
-                          variant='outline'
-                          size='sm'
-                          disabled={promoteDisabled}
-                          onClick={onRequestPromote}
-                        >
-                          <UserPlus />
-                          Create account
-                        </Button>
-                      </DisabledFieldTooltip>
-                    }
-                  />
-                )}
-              </SheetSection>
-            </>
-          ) : null}
+                        <UserPlus />
+                        Create account
+                      </Button>
+                    </DisabledFieldTooltip>
+                  }
+                />
+              )
+            ) : null}
+          </SheetSection>
           <FormFeedback>{feedback}</FormFeedback>
         </form>
       </div>

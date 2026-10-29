@@ -24,7 +24,7 @@ export function LinkedContactsCell({ contacts }: LinkedContactsCellProps) {
       <LinkedRecordsHoverCell
         count={count}
         icon={Contact}
-        ariaLabel={`${count} ${count === 1 ? 'contact' : 'contacts'}`}
+        ariaLabel={`${count} with portal access`}
         triggerClassName='text-muted-foreground'
         contentClassName='w-72'
         items={contacts.map(contact => ({

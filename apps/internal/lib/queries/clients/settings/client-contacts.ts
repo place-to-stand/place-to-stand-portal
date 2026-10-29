@@ -19,14 +19,13 @@ import { ForbiddenError } from '@/lib/errors/http'
 
 type ContactOption = {
   id: string
+  companyId?: string | null
   name: string | null
   email: string | null
   phone: string | null
   hasPortalAccess: boolean
   /** Set on linked contacts only: the client's primary contact. */
   isPrimary?: boolean
-  /** Set on linked contacts only: works at the client's company. */
-  atCompany?: boolean
 }
 
 type AdminUserOption = {
@@ -59,6 +58,7 @@ async function listAllActiveContacts(
       email: contacts.email,
       phone: contacts.phone,
       userId: contacts.userId,
+      companyId: contacts.companyId,
     })
     .from(contacts)
     .where(isNull(contacts.deletedAt))
@@ -76,6 +76,7 @@ async function listAllActiveContacts(
     email: row.email,
     phone: row.phone,
     hasPortalAccess: Boolean(row.userId),
+    companyId: row.companyId,
   }))
 }
 
@@ -96,11 +97,9 @@ async function listClientContacts(
       phone: contacts.phone,
       userId: contacts.userId,
       isPrimary: isClientPrimaryContactSql,
-      atCompany: sql<boolean>`${contacts.companyId} is not distinct from ${clients.companyId} and ${clients.companyId} is not null`,
     })
     .from(contactClients)
     .innerJoin(contacts, eq(contactClients.contactId, contacts.id))
-    .innerJoin(clients, eq(clients.id, contactClients.clientId))
     .where(
       and(eq(contactClients.clientId, clientId), isNull(contacts.deletedAt))
     )
@@ -113,7 +112,6 @@ async function listClientContacts(
     phone: row.phone,
     hasPortalAccess: Boolean(row.userId),
     isPrimary: row.isPrimary,
-    atCompany: Boolean(row.atCompany),
   }))
 }
 

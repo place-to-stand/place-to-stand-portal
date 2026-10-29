@@ -259,16 +259,16 @@ export function ClientsLanding({
               >
                 Projects
               </SortableTableHead>
-              {/* Ordered by linked contact count — the number the cell shows. */}
+              {/* Ordered by Portal access count — the number the cell shows. */}
               <SortableTableHead
                 field='contacts'
                 sort={sort}
                 defaultSort='name:asc'
                 onSortChange={next => update({ sort: next })}
                 align='center'
-                className='w-[8%]'
+                className='w-[11%]'
               >
-                Contacts
+                Portal access
               </SortableTableHead>
               {/* Ordered by hours remaining; net_30 rows have none and sort last. */}
               <SortableTableHead
@@ -276,7 +276,7 @@ export function ClientsLanding({
                 sort={sort}
                 defaultSort='name:asc'
                 onSortChange={next => update({ sort: next })}
-                className='w-[22%]'
+                className='w-[19%]'
               >
                 Hours
               </SortableTableHead>
@@ -347,7 +347,7 @@ export function ClientsLanding({
                     totalProjectCount={client.projectCount}
                   />
                 </TableCell>
-                <TableCell label='Contacts' className='text-sm md:text-center'>
+                <TableCell label='Portal access' className='text-sm md:text-center'>
                   <LinkedContactsCell contacts={client.contacts} />
                 </TableCell>
                 <TableCell>

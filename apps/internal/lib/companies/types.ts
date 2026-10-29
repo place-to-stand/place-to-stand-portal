@@ -53,6 +53,14 @@ export type CompanyDetail = {
   leads: CompanyLeadSummary[]
 }
 
+/** A client offered on the company sheet's client picker. */
+export type ClientLinkOption = {
+  id: string
+  name: string
+  companyId: string | null
+  companyName: string | null
+}
+
 /** Picker option on the lead and contact sheets. */
 export type CompanyOption = {
   id: string

@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactElement } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Contact } from 'lucide-react'
 
@@ -12,11 +13,23 @@ import type { ContactOption } from '@/lib/queries/contacts/options'
 
 export const CONTACT_OPTIONS_QUERY_KEY = ['contactOptions'] as const
 
+/** Every live contact, for the contact pickers. */
+export function useContactOptions() {
+  return useQuery<ContactOption[]>({
+    queryKey: CONTACT_OPTIONS_QUERY_KEY,
+    queryFn: () => fetchContactOptions(),
+    staleTime: 0,
+  })
+}
+
 export type ContactLink = {
   id: string
   name: string
   email: string | null
   phone: string | null
+  /** Where they work now, when known (null for a just-created contact). */
+  companyId?: string | null
+  companyName?: string | null
 }
 
 type ContactLinkPickerProps = {
@@ -24,6 +37,10 @@ type ContactLinkPickerProps = {
   onChange: (value: ContactLink | null) => void
   disabled?: boolean
   id?: string
+  /** Contacts not to offer (e.g. people already on the list). */
+  excludeIds?: readonly string[]
+  /** A button in place of the field; see `EntityLinkPicker`. */
+  trigger?: ReactElement
 }
 
 /** "Email · Company", the second line under a contact's name. */
@@ -37,19 +54,20 @@ export function ContactLinkPicker({
   onChange,
   disabled,
   id,
+  excludeIds,
+  trigger,
 }: ContactLinkPickerProps) {
-  const { data = [] } = useQuery<ContactOption[]>({
-    queryKey: CONTACT_OPTIONS_QUERY_KEY,
-    queryFn: () => fetchContactOptions(),
-    staleTime: 0,
-  })
+  const { data = [] } = useContactOptions()
 
   const byId = new Map(data.map(contact => [contact.id, contact]))
-  const options: EntityLinkOption[] = data.map(contact => ({
-    id: contact.id,
-    label: contact.name,
-    description: describe(contact),
-  }))
+  const excluded = new Set(excludeIds)
+  const options: EntityLinkOption[] = data
+    .filter(contact => !excluded.has(contact.id))
+    .map(contact => ({
+      id: contact.id,
+      label: contact.name,
+      description: describe(contact),
+    }))
 
   return (
     <EntityLinkPicker
@@ -71,6 +89,8 @@ export function ContactLinkPicker({
           name: known?.name ?? option.label,
           email: known?.email ?? value?.email ?? null,
           phone: known?.phone ?? value?.phone ?? null,
+          companyId: known?.companyId ?? null,
+          companyName: known?.companyName ?? null,
         })
       }}
       options={options}
@@ -81,6 +101,7 @@ export function ContactLinkPicker({
         description: record.email,
       })}
       createPrefillParam='contactName'
+      trigger={trigger}
     />
   )
 }

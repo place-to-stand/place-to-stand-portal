@@ -37,6 +37,17 @@ export const saveCompanySchema = z.object({
   linkedinUrl: optionalUrl(255),
   /** Rich text (TipTap HTML), as the sheet's editor produces it. */
   notes: optionalText(20000),
+  /**
+   * People staged on the sheet's People list (edit only). Adding someone at
+   * another company moves them here; removing someone clears their company.
+   */
+  addContactIds: z.array(z.string().uuid()).max(500).optional(),
+  removeContactIds: z.array(z.string().uuid()).max(500).optional(),
+  /**
+   * Existing clients linked on the sheet's Clients list (edit only, admin
+   * only). One at another company moves here and is renamed to match.
+   */
+  addClientIds: z.array(z.string().uuid()).max(100).optional(),
 })
 
 export type SaveCompanyInput = z.input<typeof saveCompanySchema>
