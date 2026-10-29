@@ -9,7 +9,13 @@ import { db } from '@/lib/db'
 import { leads, users } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 import { extractLeadNotes } from '@/lib/leads/notes'
-import { leadCompanyWebsiteSql } from '@/lib/leads/company-website-sql'
+import {
+  leadCompany,
+  leadCompanyJoin,
+  leadContact,
+  leadContactJoin,
+  leadDisplayFields,
+} from '@/lib/leads/lead-display'
 import { LEAD_BOARD_COLUMNS, type LeadStatusValue } from '@/lib/leads/constants'
 import type {
   LeadAssigneeOption,
@@ -231,7 +237,7 @@ async function selectLeadRows({
   const selection = {
     deletedAt: leads.deletedAt,
     id: leads.id,
-    contactName: leads.contactName,
+    contactName: leadDisplayFields.contactName,
     status: leads.status,
     sourceType: leads.sourceType,
     sourceDetail: leads.sourceDetail,
@@ -239,10 +245,10 @@ async function selectLeadRows({
     assigneeName: users.fullName,
     assigneeEmail: users.email,
     assigneeAvatarUrl: users.avatarUrl,
-    contactEmail: leads.contactEmail,
-    contactPhone: leads.contactPhone,
-    companyName: leads.companyName,
-    companyWebsite: leadCompanyWebsiteSql,
+    contactEmail: leadDisplayFields.contactEmail,
+    contactPhone: leadDisplayFields.contactPhone,
+    companyName: leadDisplayFields.companyName,
+    companyWebsite: leadDisplayFields.companyWebsite,
     companyId: leads.companyId,
     contactId: leads.contactId,
     notes: leads.notes,
@@ -276,6 +282,8 @@ async function selectLeadRows({
   return db
     .select(selection)
     .from(leads)
+    .innerJoin(leadContact, leadContactJoin)
+    .leftJoin(leadCompany, leadCompanyJoin)
     .leftJoin(users, eq(users.id, leads.assigneeId))
     .where(where ? and(where, deletedFilter) : deletedFilter)
     .orderBy(

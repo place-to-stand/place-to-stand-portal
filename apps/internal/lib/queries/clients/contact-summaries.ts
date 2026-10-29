@@ -3,22 +3,20 @@ import 'server-only'
 import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { contactClients, contacts } from '@/lib/db/schema'
-import { isClientPrimaryContactSql } from '@/lib/queries/clients/primary-contact'
+import { clients, contacts, memberships } from '@/lib/db/schema'
 
 export type ClientContactSummary = {
   id: string
   name: string | null
   email: string | null
-  /** The client's primary contact — addressed by default on invoice emails. */
+  /** The company's primary contact — addressed by default on invoice emails. */
   isPrimary: boolean
 }
 
 /**
- * Live contacts linked to each client, keyed by client id — one grouped
- * query for the clients landing Contacts column. `contact_clients` has no
- * soft-delete column (links are hard-deleted on unlink), so only the
- * contact's own `deleted_at` is filtered.
+ * Who has portal access to each client (company members with access),
+ * keyed by client id — one grouped query for the clients landing's Portal
+ * access column. `isPrimary` marks the company's primary contact.
  */
 export async function fetchContactSummariesByClient(
   clientIds: string[]
@@ -30,22 +28,25 @@ export async function fetchContactSummariesByClient(
 
   const rows = await db
     .select({
-      clientId: contactClients.clientId,
+      clientId: clients.id,
       id: contacts.id,
       name: contacts.name,
       email: contacts.email,
-      isPrimary: isClientPrimaryContactSql,
+      isPrimary: memberships.isPrimary,
     })
-    .from(contactClients)
-    .innerJoin(contacts, eq(contactClients.contactId, contacts.id))
+    .from(clients)
+    .innerJoin(memberships, eq(memberships.companyId, clients.companyId))
+    .innerJoin(contacts, eq(contacts.id, memberships.contactId))
     .where(
       and(
-        inArray(contactClients.clientId, clientIds),
+        inArray(clients.id, clientIds),
+        isNull(memberships.endedAt),
+        eq(memberships.portalAccess, true),
         isNull(contacts.deletedAt)
       )
     )
     .orderBy(
-      desc(isClientPrimaryContactSql),
+      desc(memberships.isPrimary),
       asc(contacts.name),
       asc(contacts.email)
     )

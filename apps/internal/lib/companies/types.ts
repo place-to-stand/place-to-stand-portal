@@ -32,6 +32,10 @@ export type CompanyContactSummary = {
   linkedinUrl: string | null
   /** The company's primary contact (clients use it too). */
   isPrimary: boolean
+  /** Can see the company's client in the client portal. */
+  portalAccess: boolean
+  /** Has a portal login. */
+  hasPortalLogin: boolean
 }
 
 export type CompanyLeadSummary = {

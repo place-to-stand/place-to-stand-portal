@@ -14,7 +14,6 @@ import {
   getContactSheetData,
 } from '@/app/(dashboard)/contacts/actions'
 import type { ContactsTableContact } from '@/lib/settings/contacts/use-contacts-table-state'
-import type { ContactClientOption } from '@/app/(dashboard)/contacts/_components/contact-sheet/contact-client-picker'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
 
 /** The record handed to `onCreated` (and to a host picker underneath). */
@@ -27,11 +26,25 @@ const contactFormSchema = z.object({
   ]),
   name: z.string().min(1, 'Name is required').max(160),
   phone: z.string().max(40).optional(),
-  jobTitle: z.string().max(160).optional(),
   linkedinUrl: z.string().max(255).optional(),
-  /** The linked company, chosen with the company picker. */
-  company: z.object({ id: z.string().uuid(), name: z.string() }).nullable(),
+  /** Every company they belong to, staged until Save. */
+  companies: z.array(
+    z.object({
+      companyId: z.string().uuid(),
+      companyName: z.string(),
+      title: z.string().max(160),
+      /** Set on the company sheet; shown read-only here. */
+      isPrimary: z.boolean(),
+      portalAccess: z.boolean(),
+      clientId: z.string().nullable(),
+      clientName: z.string().nullable(),
+    })
+  ),
 })
+
+export type ContactCompanyEntry = z.infer<
+  typeof contactFormSchema
+>['companies'][number]
 
 export type ContactFormData = z.infer<typeof contactFormSchema>
 
@@ -63,12 +76,6 @@ export type UseContactSheetStateOptions = {
   contact?: ContactsTableContact | ContactSheetInput | null
 }
 
-function hasMetrics(
-  c: ContactsTableContact | ContactSheetInput | null | undefined
-): c is ContactsTableContact {
-  return Boolean(c && 'metrics' in c && c.metrics)
-}
-
 export function useContactSheetState({
   open,
   onOpenChange,
@@ -82,9 +89,6 @@ export function useContactSheetState({
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isPromoteDialogOpen, setIsPromoteDialogOpen] = useState(false)
-  // The contact's clients, shown read-only: each client manages its own
-  // people list on the client sheet.
-  const [linkedClients, setLinkedClients] = useState<ContactClientOption[]>([])
 
   const { toast } = useToast()
   const isEditing = Boolean(contact?.id)
@@ -95,9 +99,8 @@ export function useContactSheetState({
       email: '',
       name: '',
       phone: '',
-      jobTitle: '',
       linkedinUrl: '',
-      company: null,
+      companies: [],
     },
   })
 
@@ -116,28 +119,25 @@ export function useContactSheetState({
       email: contact?.email ?? '',
       name: contact?.name ?? initialName ?? '',
       phone: contact?.phone ?? '',
-      jobTitle: contact?.jobTitle ?? '',
       linkedinUrl: contact?.linkedinUrl ?? '',
-      company: contact?.companyId
-        ? { id: contact.companyId, name: contact.companyName ?? '' }
-        : !contact && initialCompanyId
-          ? { id: initialCompanyId, name: '' }
-          : null,
+      // A create from a company (e.g. the lead sheet) starts there; the
+      // picker names it.
+      companies:
+        !contact && initialCompanyId
+          ? [
+              {
+                companyId: initialCompanyId,
+                companyName: '',
+                title: '',
+                isPrimary: false,
+                portalAccess: false,
+                clientId: null,
+                clientName: null,
+              },
+            ]
+          : [],
     })
 
-    // Table rows carry their clients; other hosts fetch them.
-    if (hasMetrics(contact)) {
-      setLinkedClients(
-        contact.metrics.clients.map(c => ({
-          id: c.id,
-          name: c.name,
-          slug: c.slug,
-        }))
-      )
-      return
-    }
-
-    setLinkedClients([])
     if (!contactId) {
       return
     }
@@ -145,7 +145,19 @@ export function useContactSheetState({
     let cancelled = false
     getContactSheetData(contactId)
       .then(data => {
-        if (!cancelled) setLinkedClients(data.linkedClients)
+        if (cancelled) return
+        // Loaded after the reset: becomes the saved state, not an edit.
+        form.resetField('companies', {
+          defaultValue: data.memberships.map(membership => ({
+            companyId: membership.companyId,
+            companyName: membership.companyName,
+            title: membership.title ?? '',
+            isPrimary: membership.isPrimary,
+            portalAccess: membership.portalAccess,
+            clientId: membership.clientId,
+            clientName: membership.clientName,
+          })),
+        })
       })
       .catch(err => {
         console.error('Failed to fetch contact sheet data:', err)
@@ -200,10 +212,13 @@ export function useContactSheetState({
           email: data.email,
           name: data.name,
           phone: data.phone || null,
-          jobTitle: data.jobTitle?.trim() || null,
           linkedinUrl: data.linkedinUrl?.trim() || null,
-          companyId: data.company?.id ?? null,
-          companyName: data.company?.name ?? null,
+          companies: data.companies.map(entry => ({
+            companyId: entry.companyId,
+            title: entry.title.trim() || null,
+            // Only a company with a client has portal access to give.
+            portalAccess: entry.clientId ? entry.portalAccess : undefined,
+          })),
         })
 
         if (result.error) {
@@ -356,7 +371,6 @@ export function useContactSheetState({
     isDeleteDialogOpen,
     isPromoteDialogOpen,
     setIsPromoteDialogOpen,
-    linkedClients,
     portalUserId,
     promoteDisabled,
     promoteDisabledReason,

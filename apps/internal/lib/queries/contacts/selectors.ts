@@ -1,6 +1,9 @@
-import { sql } from 'drizzle-orm'
-
 import { contacts } from '@/lib/db/schema'
+import {
+  mainCompanyIdSql,
+  mainCompanyNameSql,
+  mainTitleSql,
+} from '@/lib/queries/memberships'
 
 export type SelectContact = typeof contacts.$inferSelect
 
@@ -16,29 +19,26 @@ export const contactFields = {
   deletedAt: contacts.deletedAt,
 }
 
-/** Sales profile fields a contact carries beyond its identity. */
+/**
+ * Sales profile fields a contact carries beyond its identity. Company and
+ * title are their main company's (oldest current membership); the full list
+ * is `listContactMemberships`.
+ */
 export type ContactProfile = {
   jobTitle: string | null
   linkedinUrl: string | null
   companyId: string | null
-  /**
-   * Linked company's name, archived companies included, so an edit that
-   * leaves the field alone keeps the link.
-   */
+  /** Main company's name. */
   companyName: string | null
 }
 
 /**
- * Select fragment for `ContactProfile`. The company name is a correlated
- * subquery on the raw column name, so every select on `contacts` can spread
- * it without adding a join.
+ * Select fragment for `ContactProfile`: correlated subqueries, so every
+ * select on `contacts` can spread it without adding a join.
  */
 export const contactProfileFields = {
-  jobTitle: contacts.jobTitle,
+  jobTitle: mainTitleSql(contacts.id),
   linkedinUrl: contacts.linkedinUrl,
-  companyId: contacts.companyId,
-  companyName: sql<string | null>`(
-    select co.name from companies co
-    where co.id = contacts.company_id
-  )`,
+  companyId: mainCompanyIdSql(contacts.id),
+  companyName: mainCompanyNameSql(contacts.id),
 }

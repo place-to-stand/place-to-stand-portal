@@ -1,9 +1,9 @@
-import { and, eq, inArray, isNull } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import {
+  clientPortalAccess,
   clients as clientsTable,
-  clientMembers as clientMembersTable,
   users as usersTable,
 } from '@/lib/db/schema'
 import type { DbClient, DbUser } from '@/lib/types'
@@ -26,12 +26,12 @@ export type ClientRow = {
 }
 
 export type MemberRow = {
+  /** A portal login with access to the client (`client_portal_access`). */
   membership: {
-    id: number
+    /** The contact behind the login. */
+    id: string
     clientId: string
     userId: string
-    createdAt: string
-    deletedAt: string | null
   }
   user: {
     id: string
@@ -46,7 +46,9 @@ export type MemberRow = {
   } | null
 }
 
-export async function loadClientRows(clientIds: string[]): Promise<ClientRow[]> {
+export async function loadClientRows(
+  clientIds: string[]
+): Promise<ClientRow[]> {
   if (!clientIds.length) {
     return []
   }
@@ -67,22 +69,24 @@ export async function loadClientRows(clientIds: string[]): Promise<ClientRow[]> 
       deletedAt: clientsTable.deletedAt,
     })
     .from(clientsTable)
-    .where(and(inArray(clientsTable.id, clientIds), isNull(clientsTable.deletedAt)))
+    .where(
+      and(inArray(clientsTable.id, clientIds), isNull(clientsTable.deletedAt))
+    )
 }
 
-export async function loadMemberRows(clientIds: string[]): Promise<MemberRow[]> {
+export async function loadMemberRows(
+  clientIds: string[]
+): Promise<MemberRow[]> {
   if (!clientIds.length) {
     return []
   }
 
-  return db
+  const rows = await db
     .select({
       membership: {
-        id: clientMembersTable.id,
-        clientId: clientMembersTable.clientId,
-        userId: clientMembersTable.userId,
-        createdAt: clientMembersTable.createdAt,
-        deletedAt: clientMembersTable.deletedAt,
+        id: clientPortalAccess.contactId,
+        clientId: clientPortalAccess.clientId,
+        userId: clientPortalAccess.userId,
       },
       user: {
         id: usersTable.id,
@@ -96,9 +100,25 @@ export async function loadMemberRows(clientIds: string[]): Promise<MemberRow[]> 
         disabledAt: usersTable.disabledAt,
       },
     })
-    .from(clientMembersTable)
-    .leftJoin(usersTable, eq(clientMembersTable.userId, usersTable.id))
-    .where(and(inArray(clientMembersTable.clientId, clientIds), isNull(clientMembersTable.deletedAt)))
+    .from(clientPortalAccess)
+    .leftJoin(usersTable, eq(clientPortalAccess.userId, usersTable.id))
+    .where(
+      and(
+        inArray(clientPortalAccess.clientId, clientIds),
+        isNotNull(clientPortalAccess.userId)
+      )
+    )
+  // Only people with a portal login are members of a client's projects.
+  return rows.flatMap(row =>
+    row.membership.userId
+      ? [
+          {
+            ...row,
+            membership: { ...row.membership, userId: row.membership.userId },
+          },
+        ]
+      : []
+  )
 }
 
 export function mapClientRows(rows: ClientRow[]): DbClient[] {
@@ -123,8 +143,9 @@ export function mapMemberRows(rows: MemberRow[]): MemberWithUser[] {
     id: row.membership.id,
     client_id: row.membership.clientId,
     user_id: row.membership.userId,
-    created_at: row.membership.createdAt,
-    deleted_at: row.membership.deletedAt,
+    // Access has no date of its own; the login's creation stands in.
+    created_at: row.user?.createdAt ?? '',
+    deleted_at: null,
     user: row.user
       ? {
           id: row.user.id,
@@ -140,5 +161,3 @@ export function mapMemberRows(rows: MemberRow[]): MemberWithUser[] {
       : null,
   }))
 }
-
-

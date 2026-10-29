@@ -736,6 +736,27 @@
       "when": 1793307130587,
       "tag": "0104_client_company_one_to_one",
       "breakpoints": true
+    },
+    {
+      "idx": 105,
+      "version": "7",
+      "when": 1793309949692,
+      "tag": "0105_memberships_and_portal_access",
+      "breakpoints": true
+    },
+    {
+      "idx": 106,
+      "version": "7",
+      "when": 1793309950415,
+      "tag": "0106_lead_contact_required",
+      "breakpoints": true
+    },
+    {
+      "idx": 107,
+      "version": "7",
+      "when": 1793309951215,
+      "tag": "0107_archive_and_drop_copied_fields",
+      "breakpoints": true
     }
   ]
 }

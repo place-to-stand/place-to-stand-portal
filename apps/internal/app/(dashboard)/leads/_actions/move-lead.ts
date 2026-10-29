@@ -9,6 +9,7 @@ import { requireCrmUser } from '@/lib/auth/session'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { leads, leadStageHistory } from '@/lib/db/schema'
+import { leadContactNameSql } from '@/lib/leads/lead-display'
 import { LEAD_STATUS_VALUES, isTerminalLeadStatus } from '@/lib/leads/constants'
 import { normalizeRank } from '@/lib/rank'
 
@@ -23,7 +24,9 @@ const moveLeadSchema = z.object({
 
 export type MoveLeadInput = z.infer<typeof moveLeadSchema>
 
-export async function moveLead(input: MoveLeadInput): Promise<LeadActionResult> {
+export async function moveLead(
+  input: MoveLeadInput
+): Promise<LeadActionResult> {
   const user = await requireCrmUser()
   assertCrmAccess(user)
 
@@ -51,7 +54,7 @@ export async function moveLead(input: MoveLeadInput): Promise<LeadActionResult> 
   try {
     // Fetch current status before update
     const currentRows = await db
-      .select({ status: leads.status, contactName: leads.contactName })
+      .select({ status: leads.status, contactName: leadContactNameSql })
       .from(leads)
       .where(and(eq(leads.id, parsed.data.leadId), isNull(leads.deletedAt)))
       .limit(1)
@@ -91,7 +94,10 @@ export async function moveLead(input: MoveLeadInput): Promise<LeadActionResult> 
       }
 
       // Reset conversion/resolution fields when moving back to an active stage
-      if (isTerminalLeadStatus(current.status) && !isTerminalLeadStatus(parsed.data.targetStatus)) {
+      if (
+        isTerminalLeadStatus(current.status) &&
+        !isTerminalLeadStatus(parsed.data.targetStatus)
+      ) {
         setPayload.resolvedAt = null
         setPayload.convertedAt = null
         setPayload.convertedToClientId = null

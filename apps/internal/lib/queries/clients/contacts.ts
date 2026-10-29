@@ -1,10 +1,9 @@
 import 'server-only'
 
-import { and, desc, eq, isNull } from 'drizzle-orm'
+import { and, asc, desc, eq, isNull, or } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { clients, companies, contacts, contactClients } from '@/lib/db/schema'
-import { isClientPrimaryContactSql } from '@/lib/queries/clients/primary-contact'
+import { clients, contacts, memberships } from '@/lib/db/schema'
 
 export type ClientContactRow = {
   id: string
@@ -20,47 +19,37 @@ export type ClientContactRow = {
 }
 
 /**
- * Contacts linked to a client through `contact_clients`, plus its company's
- * primary contact even when they aren't linked (clients use their
- * company's primary contact), primary first then by email. Shared by the
- * client detail page, invoice emails and the update composer so all agree
- * on who a client's people are.
+ * A client's people: the members of its company with portal access, plus
+ * the company's primary contact even without access (clients use it),
+ * primary first then by email. Shared by the client detail page, invoice
+ * emails and the update composer so all agree on who a client's people are.
  */
 export async function fetchContactsForClient(
   clientId: string
 ): Promise<ClientContactRow[]> {
-  const fields = {
-    id: contacts.id,
-    email: contacts.email,
-    name: contacts.name,
-    phone: contacts.phone,
-    createdBy: contacts.createdBy,
-    userId: contacts.userId,
-    createdAt: contacts.createdAt,
-    updatedAt: contacts.updatedAt,
-    deletedAt: contacts.deletedAt,
-  }
-
-  const [linked, [primary]] = await Promise.all([
-    db
-      .select({ ...fields, isPrimary: isClientPrimaryContactSql })
-      .from(contactClients)
-      .innerJoin(contacts, eq(contactClients.contactId, contacts.id))
-      .where(
-        and(eq(contactClients.clientId, clientId), isNull(contacts.deletedAt))
+  return db
+    .select({
+      id: contacts.id,
+      email: contacts.email,
+      name: contacts.name,
+      phone: contacts.phone,
+      createdBy: contacts.createdBy,
+      userId: contacts.userId,
+      createdAt: contacts.createdAt,
+      updatedAt: contacts.updatedAt,
+      deletedAt: contacts.deletedAt,
+      isPrimary: memberships.isPrimary,
+    })
+    .from(clients)
+    .innerJoin(memberships, eq(memberships.companyId, clients.companyId))
+    .innerJoin(contacts, eq(contacts.id, memberships.contactId))
+    .where(
+      and(
+        eq(clients.id, clientId),
+        isNull(memberships.endedAt),
+        or(eq(memberships.portalAccess, true), eq(memberships.isPrimary, true)),
+        isNull(contacts.deletedAt)
       )
-      .orderBy(desc(isClientPrimaryContactSql), contacts.email),
-    db
-      .select(fields)
-      .from(clients)
-      .innerJoin(companies, eq(companies.id, clients.companyId))
-      .innerJoin(contacts, eq(contacts.id, companies.primaryContactId))
-      .where(and(eq(clients.id, clientId), isNull(contacts.deletedAt)))
-      .limit(1),
-  ])
-
-  if (!primary || linked.some(contact => contact.id === primary.id)) {
-    return linked
-  }
-  return [{ ...primary, isPrimary: true }, ...linked]
+    )
+    .orderBy(desc(memberships.isPrimary), asc(contacts.email))
 }

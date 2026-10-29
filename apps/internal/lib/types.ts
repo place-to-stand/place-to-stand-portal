@@ -34,8 +34,10 @@ export type DbClient = {
   deleted_at: string | null
 }
 
+/** A portal login with access to a client (from `client_portal_access`). */
 export type DbClientMember = {
-  id: number
+  /** The contact behind the login. */
+  id: string
   client_id: string
   user_id: string
   created_at: string
@@ -150,7 +152,7 @@ export type DbTaskDeployment = {
 // ProjectMemberWithUser represents a client member who has access to a project
 // The project_id is derived from the client_id for backwards compatibility
 export type ProjectMemberWithUser = {
-  id: number
+  id: string
   project_id: string
   user_id: string
   created_at: string

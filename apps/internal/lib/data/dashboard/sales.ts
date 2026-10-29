@@ -11,6 +11,13 @@ import type {
 } from '@/lib/dashboard/sales-types'
 import { db } from '@/lib/db'
 import { leads } from '@/lib/db/schema'
+import {
+  leadCompany,
+  leadCompanyJoin,
+  leadContact,
+  leadContactJoin,
+  leadDisplayFields,
+} from '@/lib/leads/lead-display'
 import { LEAD_STATUS_LABELS, type LeadStatusValue } from '@/lib/leads/constants'
 import { todayCalendarDate } from '@/lib/updates/window'
 
@@ -66,8 +73,8 @@ export async function fetchSalesHomeData(
 
   const leadFields = {
     id: leads.id,
-    contactName: leads.contactName,
-    companyName: leads.companyName,
+    contactName: leadDisplayFields.contactName,
+    companyName: leadDisplayFields.companyName,
     status: leads.status,
     lastTouchedAt: lastTouchedSql,
   }
@@ -76,6 +83,8 @@ export async function fetchSalesHomeData(
     db
       .select(leadFields)
       .from(leads)
+      .innerJoin(leadContact, leadContactJoin)
+      .leftJoin(leadCompany, leadCompanyJoin)
       .where(
         and(
           isNull(leads.deletedAt),

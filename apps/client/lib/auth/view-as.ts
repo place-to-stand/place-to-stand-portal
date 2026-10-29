@@ -5,7 +5,7 @@ import { cookies } from 'next/headers'
 import { and, asc, eq, isNotNull, isNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { clientMembers, clients, contactClients, contacts } from '@pts/db/schema'
+import { clientPortalAccess, clients, contacts } from '@pts/db/schema'
 import type { AppUser } from '@/lib/auth/session'
 import { isAdmin } from '@/lib/auth/permissions'
 
@@ -23,12 +23,13 @@ export const VIEW_AS_COOKIE = 'pts_view_as_client'
 /**
  * Cookie holding the contact an ADMIN is currently previewing the portal as.
  *
- * When set, the portal is scoped to all clients linked to that contact via
- * contact_clients. Takes precedence over VIEW_AS_COOKIE.
+ * When set, the portal is scoped to every client that contact has portal
+ * access to (`client_portal_access`). Takes precedence over VIEW_AS_COOKIE.
  */
 export const VIEW_AS_CONTACT_COOKIE = 'pts_view_as_contact'
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export type PortalClientOption = {
   id: string
@@ -76,22 +77,17 @@ export const resolvePortalScope = cache(
       return resolveAdminScope()
     }
 
-    const memberships = await db
+    // The view only lists live clients and live contacts.
+    const accessible = await db
       .select({ id: clients.id, name: clients.name })
-      .from(clientMembers)
-      .innerJoin(clients, eq(clients.id, clientMembers.clientId))
-      .where(
-        and(
-          eq(clientMembers.userId, user.id),
-          isNull(clientMembers.deletedAt),
-          isNull(clients.deletedAt)
-        )
-      )
+      .from(clientPortalAccess)
+      .innerJoin(clients, eq(clients.id, clientPortalAccess.clientId))
+      .where(eq(clientPortalAccess.userId, user.id))
       .orderBy(asc(clients.name))
 
     return {
-      clientIds: memberships.map(m => m.id),
-      scopedClients: memberships,
+      clientIds: accessible.map(m => m.id),
+      scopedClients: accessible,
       isAdminPreview: false,
       viewingAsClientId: null,
       viewingAsContactId: null,
@@ -127,7 +123,8 @@ export const fetchPortalContactOptions = cache(
 
 async function resolveAdminScope(): Promise<PortalScope> {
   const cookieStore = await cookies()
-  const selectedContactId = cookieStore.get(VIEW_AS_CONTACT_COOKIE)?.value ?? null
+  const selectedContactId =
+    cookieStore.get(VIEW_AS_CONTACT_COOKIE)?.value ?? null
 
   // Fail closed: an admin with no selection sees an empty portal.
   if (!selectedContactId || !UUID_RE.test(selectedContactId)) {
@@ -141,10 +138,13 @@ async function resolveAdminScope(): Promise<PortalScope> {
   const rows = await db
     .select({ clientId: clients.id, clientName: clients.name })
     .from(contacts)
-    .leftJoin(contactClients, eq(contactClients.contactId, contacts.id))
+    .leftJoin(clientPortalAccess, eq(clientPortalAccess.contactId, contacts.id))
     .leftJoin(
       clients,
-      and(eq(clients.id, contactClients.clientId), isNull(clients.deletedAt))
+      and(
+        eq(clients.id, clientPortalAccess.clientId),
+        isNull(clients.deletedAt)
+      )
     )
     .where(and(eq(contacts.id, selectedContactId), isNull(contacts.deletedAt)))
     .orderBy(asc(clients.name))

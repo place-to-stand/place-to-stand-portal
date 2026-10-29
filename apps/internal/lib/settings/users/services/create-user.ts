@@ -101,7 +101,10 @@ export async function createPortalUser(
       try {
         await db.delete(users).where(eq(users.id, userId))
       } catch (dbError) {
-        console.error('Failed to rollback user profile after metadata error', dbError)
+        console.error(
+          'Failed to rollback user profile after metadata error',
+          dbError
+        )
       }
       await adminClient.auth.admin.deleteUser(userId)
       await cleanupAvatar(adminClient, normalizedAvatarPath)
@@ -140,7 +143,10 @@ export async function createPortalUser(
     try {
       await db.delete(users).where(eq(users.id, userId))
     } catch (dbError) {
-      console.error('Failed to rollback user profile after invite error', dbError)
+      console.error(
+        'Failed to rollback user profile after invite error',
+        dbError
+      )
     }
     await adminClient.auth.admin.deleteUser(userId)
     await cleanupAvatar(adminClient, normalizedAvatarPath)

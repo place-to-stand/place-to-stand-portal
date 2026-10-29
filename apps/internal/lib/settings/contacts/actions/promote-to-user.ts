@@ -1,11 +1,11 @@
-import { and, eq, isNull } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 
 import { logActivity } from '@/lib/activity/logger'
 import { contactInvitedToPortalEvent } from '@/lib/activity/events/contacts'
 import { userCreatedEvent } from '@/lib/activity/events/users'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clientMembers, contactClients, contacts } from '@/lib/db/schema'
+import { clientPortalAccess, contacts } from '@/lib/db/schema'
 import { findOrCreatePortalUser } from '@/lib/settings/users/services/find-or-create-portal-user'
 
 import {
@@ -91,29 +91,12 @@ export async function promoteContactToUserMutation(
     })
     .where(eq(contacts.id, contact.id))
 
-  // 4. Grant portal access to linked clients
+  // 4. Portal access follows the contact's memberships
+  // (client_portal_access), so the new login sees those clients at once.
   const linkedClients = await db
-    .select({ clientId: contactClients.clientId })
-    .from(contactClients)
-    .innerJoin(contacts, and(
-      eq(contactClients.contactId, contacts.id),
-      isNull(contacts.deletedAt)
-    ))
-    .where(eq(contactClients.contactId, contact.id))
-
-  if (linkedClients.length > 0) {
-    await db
-      .insert(clientMembers)
-      .values(linkedClients.map(lc => ({
-        clientId: lc.clientId,
-        userId,
-        deletedAt: null,
-      })))
-      .onConflictDoUpdate({
-        target: [clientMembers.clientId, clientMembers.userId],
-        set: { deletedAt: null },
-      })
-  }
+    .select({ clientId: clientPortalAccess.clientId })
+    .from(clientPortalAccess)
+    .where(eq(clientPortalAccess.contactId, contact.id))
 
   // 5. Log activity events. A contact can be linked to several clients; the
   // rows are scoped to the first one and carry the full list in metadata.

@@ -1,5 +1,7 @@
 'use client'
 
+import { useWatch } from 'react-hook-form'
+
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
@@ -10,8 +12,6 @@ import {
 
 import { ContactSheetForm } from './contact-sheet/contact-sheet-form'
 import { PromoteToUserDialog } from './contact-sheet/promote-to-user-dialog'
-
-
 
 const ARCHIVE_CONTACT_DIALOG_TITLE = 'Archive contact?'
 const ARCHIVE_CONTACT_CONFIRM_LABEL = 'Archive'
@@ -39,7 +39,6 @@ export function ContactsSheet(props: ContactsSheetProps) {
     isDeleteDialogOpen,
     isPromoteDialogOpen,
     setIsPromoteDialogOpen,
-    linkedClients,
     portalUserId,
     promoteDisabled,
     promoteDisabledReason,
@@ -52,6 +51,7 @@ export function ContactsSheet(props: ContactsSheetProps) {
     handleRequestPromote,
     handleConfirmPromote,
   } = useContactSheetState(props)
+  const companies = useWatch({ control: form.control, name: 'companies' })
 
   return (
     <>
@@ -76,7 +76,6 @@ export function ContactsSheet(props: ContactsSheetProps) {
             onRequestDelete={handleRequestDelete}
             isSheetOpen={open}
             historyKey={contact?.id ?? 'contact:new'}
-            linkedClients={linkedClients}
             promoteDisabled={promoteDisabled}
             promoteDisabledReason={promoteDisabledReason}
             onRequestPromote={handleRequestPromote}
@@ -99,7 +98,11 @@ export function ContactsSheet(props: ContactsSheetProps) {
         onOpenChange={setIsPromoteDialogOpen}
         contactName={contactDisplayName}
         contactEmail={contact?.email ?? ''}
-        linkedClientCount={linkedClients.length}
+        linkedClientCount={
+          (companies ?? []).filter(
+            entry => entry.portalAccess && entry.clientId
+          ).length
+        }
         isPending={isPending}
         onConfirm={handleConfirmPromote}
       />

@@ -71,9 +71,7 @@ export function LeadUpdateDialog({
   const isEditing = update !== null
   const [type, setType] = useState<LeadUpdateTypeValue>('PHONE_CALL')
   const [body, setBody] = useState('')
-  const [occurredOn, setOccurredOn] = useState(() =>
-    toCalendarDate(new Date())
-  )
+  const [occurredOn, setOccurredOn] = useState(() => toCalendarDate(new Date()))
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   // Any user edit arms the discard guard. The RTE's onChange only fires on

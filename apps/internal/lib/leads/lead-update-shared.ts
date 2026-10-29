@@ -5,6 +5,7 @@ import { z } from 'zod'
 
 import { db } from '@/lib/db'
 import { leads } from '@/lib/db/schema'
+import { leadContactNameSql } from '@/lib/leads/lead-display'
 import { LEAD_UPDATE_TYPES } from '@/lib/leads/updates'
 
 // The body is TipTap HTML (like task_comments), so markup overhead counts
@@ -43,7 +44,7 @@ export async function findActiveLead(
   leadId: string
 ): Promise<{ id: string; contactName: string } | null> {
   const [lead] = await db
-    .select({ id: leads.id, contactName: leads.contactName })
+    .select({ id: leads.id, contactName: leadContactNameSql })
     .from(leads)
     .where(and(eq(leads.id, leadId), isNull(leads.deletedAt)))
     .limit(1)

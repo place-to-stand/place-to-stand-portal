@@ -9,6 +9,7 @@ import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { leads } from '@/lib/db/schema'
+import { leadContactNameSql } from '@/lib/leads/lead-display'
 
 import { revalidateLeadsPath } from './utils'
 import type { LeadActionResult } from './types'
@@ -40,7 +41,7 @@ export async function destroyLead(
       .where(and(eq(leads.id, parsed.data.leadId), isNotNull(leads.deletedAt)))
       // RETURNING captures the name from the row being deleted so it is
       // available for the audit entry after the row is gone.
-      .returning({ id: leads.id, contactName: leads.contactName })
+      .returning({ id: leads.id, contactName: leadContactNameSql })
 
     const deleted = result[0]
 

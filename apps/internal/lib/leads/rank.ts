@@ -18,4 +18,3 @@ export async function resolveNextLeadRank(status: LeadStatusValue) {
 
   return getRankAfter(previousRank)
 }
-

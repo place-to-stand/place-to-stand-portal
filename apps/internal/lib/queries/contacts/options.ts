@@ -1,11 +1,12 @@
 import 'server-only'
 
-import { asc, eq, isNull, sql } from 'drizzle-orm'
+import { asc, isNull, sql } from 'drizzle-orm'
 
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { companies, contacts } from '@/lib/db/schema'
+import { contacts } from '@/lib/db/schema'
+import { mainCompanyIdSql, mainCompanyNameSql } from '@/lib/queries/memberships'
 
 export type ContactOption = {
   id: string
@@ -17,7 +18,9 @@ export type ContactOption = {
 }
 
 /** Live contacts for the contact pickers (lead sheet), A–Z. */
-export async function listContactOptions(user: AppUser): Promise<ContactOption[]> {
+export async function listContactOptions(
+  user: AppUser
+): Promise<ContactOption[]> {
   assertCrmAccess(user)
 
   return db
@@ -26,11 +29,11 @@ export async function listContactOptions(user: AppUser): Promise<ContactOption[]
       name: contacts.name,
       email: contacts.email,
       phone: contacts.phone,
-      companyId: contacts.companyId,
-      companyName: companies.name,
+      // Their main company (oldest current membership).
+      companyId: mainCompanyIdSql(contacts.id),
+      companyName: mainCompanyNameSql(contacts.id),
     })
     .from(contacts)
-    .leftJoin(companies, eq(companies.id, contacts.companyId))
     .where(isNull(contacts.deletedAt))
     .orderBy(asc(sql`lower(${contacts.name})`))
 }

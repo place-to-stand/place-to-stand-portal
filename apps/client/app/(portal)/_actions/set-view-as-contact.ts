@@ -15,7 +15,7 @@ import { VIEW_AS_CONTACT_COOKIE, VIEW_AS_COOKIE } from '@/lib/auth/view-as'
  * Select which contact an ADMIN previews the portal as.
  *
  * The portal will be scoped to all clients linked to that contact via
- * contact_clients.
+ * client_portal_access.
  *
  * SECURITY: server actions are POST endpoints reachable by any authenticated
  * user who knows the action id, so the admin check here is the real guard —

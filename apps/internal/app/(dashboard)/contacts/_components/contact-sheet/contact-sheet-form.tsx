@@ -22,29 +22,20 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@pts/ui/input'
 import { UrlInput } from '@/components/ui/url-input'
-import { CompanyLinkPicker } from '@/components/companies/company-link-picker'
 import { PhoneInput } from '@/components/ui/phone-input'
 import { Separator } from '@pts/ui/separator'
 
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 
-import {
-  ContactClientList,
-  type ContactClientOption,
-} from './contact-client-picker'
+import type { ContactFormData } from '@/lib/settings/contacts/use-contact-sheet-state'
+
+import { ContactCompaniesSection } from './contact-companies-section'
 import { ContactPortalAccountCard } from './contact-portal-account-card'
 
 const CONTACT_FORM_ID = 'contact-form'
 
-type ContactFormValues = {
-  email: string
-  name: string
-  phone?: string
-  jobTitle?: string
-  linkedinUrl?: string
-  company: { id: string; name: string } | null
-}
+type ContactFormValues = ContactFormData
 
 type ContactSheetFormProps = {
   form: UseFormReturn<ContactFormValues>
@@ -60,8 +51,6 @@ type ContactSheetFormProps = {
   onRequestDelete: () => void
   isSheetOpen: boolean
   historyKey: string
-  /** The contact's clients — derived from its company, shown read-only. */
-  linkedClients: ContactClientOption[]
   // Promote to client props
   promoteDisabled: boolean
   promoteDisabledReason: string | null
@@ -84,7 +73,6 @@ export function ContactSheetForm({
   onRequestDelete,
   isSheetOpen,
   historyKey,
-  linkedClients,
   promoteDisabled,
   promoteDisabledReason,
   onRequestPromote,
@@ -219,89 +207,50 @@ export function ContactSheetForm({
 
           <Separator />
 
-          <SheetSection title='Work'>
-            <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
-              <FormField
-                control={form.control}
-                name='company'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel optional>Company</FormLabel>
-                    <FormControl>
-                      <DisabledFieldTooltip
-                        disabled={isPending}
-                        reason={fieldDisabledReason}
-                      >
-                        <CompanyLinkPicker
-                          value={field.value ?? null}
-                          onChange={next => field.onChange(next)}
-                          disabled={isPending}
-                        />
-                      </DisabledFieldTooltip>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+          <FormField
+            control={form.control}
+            name='companies'
+            render={({ field }) => (
+              <ContactCompaniesSection
+                companies={field.value}
+                disabled={isPending}
+                onChange={next => field.onChange(next)}
               />
-              <FormField
-                control={form.control}
-                name='jobTitle'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel optional>Job title</FormLabel>
-                    <FormControl>
-                      <DisabledFieldTooltip
-                        disabled={isPending}
-                        reason={fieldDisabledReason}
-                      >
-                        <Input
-                          {...field}
-                          value={field.value ?? ''}
-                          placeholder='Head of Marketing'
-                          disabled={isPending}
-                        />
-                      </DisabledFieldTooltip>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <FormField
-              control={form.control}
-              name='linkedinUrl'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel optional>LinkedIn</FormLabel>
-                  <FormControl>
-                    <DisabledFieldTooltip
+            )}
+          />
+          <FormField
+            control={form.control}
+            name='linkedinUrl'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel optional>LinkedIn</FormLabel>
+                <FormControl>
+                  <DisabledFieldTooltip
+                    disabled={isPending}
+                    reason={fieldDisabledReason}
+                  >
+                    <UrlInput
+                      {...field}
+                      value={field.value ?? ''}
+                      openLabel='Open LinkedIn'
+                      placeholder='linkedin.com/in/jane-doe'
                       disabled={isPending}
-                      reason={fieldDisabledReason}
-                    >
-                      <UrlInput
-                        {...field}
-                        value={field.value ?? ''}
-                        openLabel='Open LinkedIn'
-                        placeholder='linkedin.com/in/jane-doe'
-                        disabled={isPending}
-                      />
-                    </DisabledFieldTooltip>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </SheetSection>
+                    />
+                  </DisabledFieldTooltip>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           <Separator />
 
-          <SheetSection
-            title='Portal access'
-            description='The clients they can see in the client portal, set on each client’s Portal access.'
-          >
-            <ContactClientList clients={linkedClients} />
-            {isEditing && isAdmin ? (
-              portalUserId ? (
+          {isEditing && isAdmin ? (
+            <SheetSection
+              title='Portal account'
+              description='Lets them sign in to the client portal. What they can see is the portal access switch on each company above.'
+            >
+              {portalUserId ? (
                 <ContactPortalAccountCard
                   key={portalUserId}
                   userId={portalUserId}
@@ -329,9 +278,9 @@ export function ContactSheetForm({
                     </DisabledFieldTooltip>
                   }
                 />
-              )
-            ) : null}
-          </SheetSection>
+              )}
+            </SheetSection>
+          ) : null}
           <FormFeedback>{feedback}</FormFeedback>
         </form>
       </div>

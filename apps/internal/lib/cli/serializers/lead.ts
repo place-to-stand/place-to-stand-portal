@@ -20,12 +20,12 @@ export type CliLead = {
   email: string | null
   phone: string | null
   company: string | null
-  /** The company's website, falling back to the lead's legacy copy. */
+  /** The company's website (read from the company). */
   website: string | null
   /** The linked company record, when the company name matched one. */
   companyId: string | null
   /** The lead's contact record; name, email and phone are its details. */
-  contactId: string | null
+  contactId: string
   /** Editor HTML, as stored. Empty string when the lead has no notes. */
   notes: string
   rank: string

@@ -37,7 +37,11 @@ export async function setPortalUserDisabled(
       return { error: flagError }
     }
 
-    const banError = await setAuthBan(adminClient, input.id, DISABLED_BAN_DURATION)
+    const banError = await setAuthBan(
+      adminClient,
+      input.id,
+      DISABLED_BAN_DURATION
+    )
     if (banError) {
       return { error: banError }
     }
@@ -47,8 +51,13 @@ export async function setPortalUserDisabled(
     try {
       await revokeUserOauthConnections(input.id)
     } catch (error) {
-      console.error('Failed to revoke provider connections for disabled user', error)
-      return { error: 'User disabled, but provider connections could not be revoked.' }
+      console.error(
+        'Failed to revoke provider connections for disabled user',
+        error
+      )
+      return {
+        error: 'User disabled, but provider connections could not be revoked.',
+      }
     }
 
     return {}

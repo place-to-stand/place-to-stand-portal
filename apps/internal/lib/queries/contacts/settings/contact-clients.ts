@@ -5,11 +5,15 @@ import { asc, eq, and, sql } from 'drizzle-orm'
 import type { AppUser } from '@/lib/auth/session'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, contactClients, contacts } from '@/lib/db/schema'
+import { clientPortalAccess, clients, contacts } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 
-import { contactProfileFields, type ContactProfile } from '../selectors'
+import {
+  listContactMemberships,
+  type ContactMembership,
+} from '@/lib/queries/memberships'
 
+import { contactProfileFields, type ContactProfile } from '../selectors'
 
 export type ClientOption = {
   id: string
@@ -32,7 +36,8 @@ export type ContactDeepLinkRow = ContactSheetInputRow & {
 }
 
 export type ContactSheetData = {
-  linkedClients: ClientOption[]
+  /** Their current companies, main company first. */
+  memberships: ContactMembership[]
 }
 
 /** Fetches all active clients (contacts client filter, MCP directory). */
@@ -73,11 +78,11 @@ export async function listContactClients(
       name: clients.name,
       slug: clients.slug,
     })
-    .from(contactClients)
-    .innerJoin(clients, eq(contactClients.clientId, clients.id))
+    .from(clientPortalAccess)
+    .innerJoin(clients, eq(clientPortalAccess.clientId, clients.id))
     .where(
       and(
-        eq(contactClients.contactId, contactId),
+        eq(clientPortalAccess.contactId, contactId),
         sql`${clients.deletedAt} IS NULL`
       )
     )
@@ -90,19 +95,15 @@ export async function listContactClients(
   }))
 }
 
-/**
- * Fetches the contact sheet's read-only client list. A contact's clients
- * follow its company, so the sheet only displays them.
- */
+/** The contact sheet's Companies list (title, primary, portal access). */
 export async function getContactSheetData(
   user: AppUser,
   contactId: string
 ): Promise<ContactSheetData> {
   assertCrmAccess(user)
 
-  const linkedClients = await listContactClients(user, contactId)
-
-  return { linkedClients }
+  const byContact = await listContactMemberships([contactId])
+  return { memberships: byContact.get(contactId) ?? [] }
 }
 
 /**

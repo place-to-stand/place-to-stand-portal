@@ -1,6 +1,13 @@
 'use client'
 
-import { useCallback, useRef, useEffect, useMemo, useState, useTransition } from 'react'
+import {
+  useCallback,
+  useRef,
+  useEffect,
+  useMemo,
+  useState,
+  useTransition,
+} from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, useWatch } from 'react-hook-form'
 
@@ -61,10 +68,9 @@ export function useLeadSheetState({
             phone: lead.contactPhone ?? null,
           }
         : null,
-      company:
-        lead?.companyId
-          ? { id: lead.companyId, name: lead.companyName ?? '' }
-          : null,
+      company: lead?.companyId
+        ? { id: lead.companyId, name: lead.companyName ?? '' }
+        : null,
       sourceType: lead?.sourceType ?? null,
       sourceDetail: lead?.sourceDetail ?? '',
       status: lead?.status ?? initialStatus ?? 'NEW_OPPORTUNITIES',
@@ -83,7 +89,9 @@ export function useLeadSheetState({
   // router refresh hands over a fresh but identical `lead` object, e.g. after
   // a sheet stacked on top saves, and must not wipe unsaved edits such as a
   // company just picked from that sheet.
-  const resetKey = lead ? `${lead.id}:${lead.updatedAt}` : `new:${initialStatus ?? ''}`
+  const resetKey = lead
+    ? `${lead.id}:${lead.updatedAt}`
+    : `new:${initialStatus ?? ''}`
   const lastResetKey = useRef<string | null>(null)
   useEffect(() => {
     // Closing forgets the key, so reopening always starts from the record.

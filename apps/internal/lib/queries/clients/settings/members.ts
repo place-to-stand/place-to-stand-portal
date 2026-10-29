@@ -3,12 +3,17 @@ import 'server-only'
 import { and, eq, inArray, isNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { clientMembers, users } from '@/lib/db/schema'
+import { clientPortalAccess, users } from '@/lib/db/schema'
 
 import type { ClientsSettingsMembersMap } from './types'
 
+/**
+ * Portal logins with access to each client: people with a current,
+ * portal-enabled membership at the client's company (`client_portal_access`)
+ * whose live CLIENT login exists.
+ */
 export async function buildMembersByClient(
-  clientIds: string[],
+  clientIds: string[]
 ): Promise<ClientsSettingsMembersMap> {
   if (!clientIds.length) {
     return {}
@@ -16,29 +21,22 @@ export async function buildMembersByClient(
 
   const rows = await db
     .select({
-      clientId: clientMembers.clientId,
-      userId: clientMembers.userId,
+      clientId: clientPortalAccess.clientId,
+      userId: users.id,
       email: users.email,
       fullName: users.fullName,
-      memberDeletedAt: clientMembers.deletedAt,
-      userDeletedAt: users.deletedAt,
     })
-    .from(clientMembers)
-    .innerJoin(users, eq(users.id, clientMembers.userId))
+    .from(clientPortalAccess)
+    .innerJoin(users, eq(users.id, clientPortalAccess.userId))
     .where(
       and(
-        inArray(clientMembers.clientId, clientIds),
-        isNull(clientMembers.deletedAt),
+        inArray(clientPortalAccess.clientId, clientIds),
         eq(users.role, 'CLIENT'),
-        isNull(users.deletedAt),
-      ),
+        isNull(users.deletedAt)
+      )
     )
 
   return rows.reduce<ClientsSettingsMembersMap>((acc, row) => {
-    if (row.memberDeletedAt || row.userDeletedAt) {
-      return acc
-    }
-
     const list = acc[row.clientId] ?? []
     list.push({
       id: row.userId,
@@ -49,4 +47,3 @@ export async function buildMembersByClient(
     return acc
   }, {})
 }
-

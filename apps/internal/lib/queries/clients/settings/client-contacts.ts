@@ -1,17 +1,21 @@
 import 'server-only'
 
-import { asc, eq, and, inArray, isNull, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, contacts, contactClients, users } from '@/lib/db/schema'
+import { clients, contacts, memberships, users } from '@/lib/db/schema'
 import {
   logContactClientLinkChanges,
   type ContactClientLinkChange,
 } from '@/lib/queries/contacts/settings/contact-client-link-activity'
-import { syncPortalMembershipsForLinkChanges } from '@/lib/queries/contacts/settings/contact-client-portal-memberships'
-import { isClientPrimaryContactSql } from '@/lib/queries/clients/primary-contact'
+import {
+  isMemberSql,
+  mainCompanyIdSql,
+  primaryContactIdSql,
+  setPortalAccess,
+} from '@/lib/queries/memberships'
 
 type ContactOption = {
   id: string
@@ -38,7 +42,10 @@ export type ClientSheetContactData = {
 }
 
 /**
- * Fetches all active contacts for use in the client sheet contact picker.
+ * Every live contact, for the client sheet's pickers (origination, closers)
+ * and Portal access list. `companyId` is the client's company when they are
+ * a member of it (so the Portal access list can pick them out), otherwise
+ * their main company; `isPrimary` is the client's company's primary.
  */
 async function listAllActiveContacts(
   user: AppUser,
@@ -47,6 +54,9 @@ async function listAllActiveContacts(
 ): Promise<ContactOption[]> {
   assertAdmin(user)
 
+  const atClientCompany = companyId
+    ? isMemberSql(contacts.id, sql`${companyId}::uuid`)
+    : sql<boolean>`false`
   const rows = await db
     .select({
       id: contacts.id,
@@ -54,21 +64,15 @@ async function listAllActiveContacts(
       email: contacts.email,
       phone: contacts.phone,
       userId: contacts.userId,
-      companyId: contacts.companyId,
-      isPrimary: sql<boolean>`exists (
-        select 1 from companies co
-        where co.primary_contact_id = ${contacts.id} and co.deleted_at is null
-      )`,
+      atClientCompany,
+      mainCompanyId: mainCompanyIdSql(contacts.id),
+      isPrimary: companyId
+        ? sql<boolean>`${contacts.id} = ${primaryContactIdSql(sql`${companyId}::uuid`)}`
+        : sql<boolean>`false`,
     })
     .from(contacts)
     .where(isNull(contacts.deletedAt))
-    .orderBy(
-      ...(companyId
-        ? [sql`${contacts.companyId} is not distinct from ${companyId} desc`]
-        : []),
-      asc(contacts.name),
-      asc(contacts.email)
-    )
+    .orderBy(desc(atClientCompany), asc(contacts.name), asc(contacts.email))
 
   return rows.map(row => ({
     id: row.id,
@@ -76,14 +80,12 @@ async function listAllActiveContacts(
     email: row.email,
     phone: row.phone,
     hasPortalAccess: Boolean(row.userId),
-    companyId: row.companyId,
+    companyId: row.atClientCompany ? (companyId ?? null) : row.mainCompanyId,
     isPrimary: Boolean(row.isPrimary),
   }))
 }
 
-/**
- * Fetches the contacts linked to a specific client.
- */
+/** The client's company members who have portal access. */
 async function listClientContacts(
   user: AppUser,
   clientId: string
@@ -97,13 +99,19 @@ async function listClientContacts(
       email: contacts.email,
       phone: contacts.phone,
       userId: contacts.userId,
-      companyId: contacts.companyId,
-      isPrimary: isClientPrimaryContactSql,
+      companyId: memberships.companyId,
+      isPrimary: memberships.isPrimary,
     })
-    .from(contactClients)
-    .innerJoin(contacts, eq(contactClients.contactId, contacts.id))
+    .from(clients)
+    .innerJoin(memberships, eq(memberships.companyId, clients.companyId))
+    .innerJoin(contacts, eq(contacts.id, memberships.contactId))
     .where(
-      and(eq(contactClients.clientId, clientId), isNull(contacts.deletedAt))
+      and(
+        eq(clients.id, clientId),
+        isNull(memberships.endedAt),
+        eq(memberships.portalAccess, true),
+        isNull(contacts.deletedAt)
+      )
     )
     .orderBy(asc(contacts.name), asc(contacts.email))
 
@@ -170,12 +178,11 @@ export async function getClientSheetContactData(
 }
 
 /**
- * Saves the client sheet's people list: who belongs to this client and so
- * gets its portal (for contacts with a portal account). It's the client's
- * own list, picked from the company's people: being at the company grants
- * nothing by itself, since not every company wants everyone to have access.
- * Links and portal access commit together. The primary contact is the
- * company's, set on the company sheet.
+ * Saves the client sheet's Portal access switches: which of the company's
+ * people can see this client in the client portal (those with a portal
+ * login see it right away). Being at the company grants nothing by itself.
+ * Access is a flag on each person's membership, so only members can have
+ * it. The primary contact is the company's, set on the company sheet.
  */
 export async function syncClientContacts(
   user: AppUser,
@@ -184,87 +191,85 @@ export async function syncClientContacts(
 ): Promise<{ ok: boolean; error?: string }> {
   assertAdmin(user)
 
-  const currentLinks = await db
-    .select({ contactId: contactClients.contactId })
-    .from(contactClients)
-    .where(eq(contactClients.clientId, clientId))
-  const currentIds = new Set(currentLinks.map(link => link.contactId))
+  const [client] = await db
+    .select({ companyId: clients.companyId })
+    .from(clients)
+    .where(eq(clients.id, clientId))
+    .limit(1)
+  const companyId = client?.companyId ?? null
+  if (!companyId) {
+    return contactIds.length
+      ? {
+          ok: false,
+          error:
+            'Link this client to a company before giving people portal access.',
+        }
+      : { ok: true }
+  }
+
+  const members = await db
+    .select({
+      contactId: memberships.contactId,
+      name: contacts.name,
+      portalAccess: memberships.portalAccess,
+    })
+    .from(memberships)
+    .innerJoin(contacts, eq(contacts.id, memberships.contactId))
+    .where(
+      and(eq(memberships.companyId, companyId), isNull(memberships.endedAt))
+    )
+  const memberIds = new Set(members.map(member => member.contactId))
   const wanted = new Set(contactIds)
-  const toAdd = contactIds.filter(id => !currentIds.has(id))
-  const toRemove = [...currentIds].filter(id => !wanted.has(id))
-  // Portal access is only for people at the client's company.
-  if (toAdd.length) {
-    const [client] = await db
-      .select({ companyId: clients.companyId })
-      .from(clients)
-      .where(eq(clients.id, clientId))
-      .limit(1)
-    const companyId = client?.companyId ?? null
+
+  const outsiderIds = contactIds.filter(id => !memberIds.has(id))
+  if (outsiderIds.length) {
     const outsiders = await db
       .select({ name: contacts.name })
       .from(contacts)
-      .where(
-        and(
-          inArray(contacts.id, toAdd),
-          companyId
-            ? sql`${contacts.companyId} is distinct from ${companyId}`
-            : undefined
-        )
-      )
-    if (!companyId || outsiders.length) {
-      return {
-        ok: false,
-        error: companyId
-          ? `${outsiders.map(c => c.name).join(', ')} ${
-              outsiders.length === 1 ? 'isn’t' : 'aren’t'
-            } at this client’s company. Add them to the company first.`
-          : 'Link this client to a company before giving people portal access.',
-      }
+      .where(inArray(contacts.id, outsiderIds))
+    return {
+      ok: false,
+      error: `${outsiders.map(c => c.name).join(', ')} ${
+        outsiders.length === 1 ? 'isn’t' : 'aren’t'
+      } at this client’s company. Add them to the company first.`,
     }
   }
 
+  const toGrant = members.filter(
+    m => wanted.has(m.contactId) && !m.portalAccess
+  )
+  const toRevoke = members.filter(
+    m => !wanted.has(m.contactId) && m.portalAccess
+  )
   const changes: ContactClientLinkChange[] = [
-    ...toAdd.map(contactId => ({
-      contactId,
+    ...toGrant.map(m => ({
+      contactId: m.contactId,
       clientId,
       action: 'linked' as const,
     })),
-    ...toRemove.map(contactId => ({
-      contactId,
+    ...toRevoke.map(m => ({
+      contactId: m.contactId,
       clientId,
       action: 'unlinked' as const,
     })),
   ]
+  if (!changes.length) return { ok: true }
 
   try {
     await db.transaction(async tx => {
-      if (toAdd.length > 0) {
-        await tx
-          .insert(contactClients)
-          .values(toAdd.map(contactId => ({ contactId, clientId })))
-          .onConflictDoNothing({
-            target: [contactClients.contactId, contactClients.clientId],
-          })
+      for (const member of toGrant) {
+        await setPortalAccess(tx, member.contactId, companyId, true)
       }
-      if (toRemove.length > 0) {
-        await tx
-          .delete(contactClients)
-          .where(
-            and(
-              eq(contactClients.clientId, clientId),
-              inArray(contactClients.contactId, toRemove)
-            )
-          )
+      for (const member of toRevoke) {
+        await setPortalAccess(tx, member.contactId, companyId, false)
       }
-      // A promoted contact's portal access follows its links.
-      await syncPortalMembershipsForLinkChanges(changes, tx)
     })
   } catch (error) {
-    console.error('Failed to update client contacts', error)
-    return { ok: false, error: 'Failed to update contact links.' }
+    console.error('Failed to update portal access', error)
+    return { ok: false, error: 'Failed to update portal access.' }
   }
 
-  // The links are committed; a logging failure must not report the sync as failed.
+  // Committed; a logging failure must not report the save as failed.
   await logContactClientLinkChanges(user, changes)
 
   return { ok: true }

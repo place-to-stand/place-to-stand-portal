@@ -87,13 +87,13 @@ async function runContactMutation<TInput>(
   return result
 }
 
-/** The contact sheet's read-only client list. */
+/** The contact sheet's Companies list. */
 export async function getContactSheetData(
   contactId: string
 ): Promise<ContactSheetData> {
   const user = await requireCrmUser()
   // Server actions take arbitrary input; guard before the uuid cast.
-  if (!UUID_PATTERN.test(contactId)) return { linkedClients: [] }
+  if (!UUID_PATTERN.test(contactId)) return { memberships: [] }
   return getSheetData(user, contactId)
 }
 

@@ -10,11 +10,7 @@ import { extractLeadNotes } from '@/lib/leads/notes'
 
 export const saveLeadSchema = z.object({
   id: z.string().uuid().optional(),
-  contactName: z
-    .string()
-    .trim()
-    .min(1, 'Contact name is required')
-    .max(160),
+  contactName: z.string().trim().min(1, 'Contact name is required').max(160),
   status: z.enum(LEAD_STATUS_VALUES).optional(),
   sourceType: z.enum(LEAD_SOURCE_TYPES).optional().nullable(),
   sourceDetail: z
@@ -118,13 +114,23 @@ export function diffLeadFields(
   compare('name', 'contactName', existing.contactName, next.contactName)
   compare('status', 'status', existing.status, next.status)
   compare('source', 'sourceType', existing.sourceType, next.sourceType)
-  compare('source detail', 'sourceDetail', existing.sourceDetail, next.sourceDetail)
+  compare(
+    'source detail',
+    'sourceDetail',
+    existing.sourceDetail,
+    next.sourceDetail
+  )
   compare('assignee', 'assigneeId', existing.assigneeId, next.assigneeId)
   compare('email', 'contactEmail', existing.contactEmail, next.contactEmail)
   compare('phone', 'contactPhone', existing.contactPhone, next.contactPhone)
   compare('company', 'companyName', existing.companyName, next.companyName)
   if (next.companyWebsite !== undefined) {
-    compare('website', 'companyWebsite', existing.companyWebsite, next.companyWebsite)
+    compare(
+      'website',
+      'companyWebsite',
+      existing.companyWebsite,
+      next.companyWebsite
+    )
   }
   compare(
     'notes',

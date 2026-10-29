@@ -13,8 +13,20 @@ import { logActivity } from '@/lib/activity/logger'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { contactLeads, contacts, leads, leadStageHistory } from '@/lib/db/schema'
+import {
+  contactLeads,
+  contacts,
+  leads,
+  leadStageHistory,
+} from '@/lib/db/schema'
 import { isTerminalLeadStatus } from '@/lib/leads/constants'
+import {
+  leadCompany,
+  leadCompanyJoin,
+  leadContact,
+  leadContactJoin,
+  leadDisplayFields,
+} from '@/lib/leads/lead-display'
 import { serializeLeadNotes } from '@/lib/leads/notes'
 import { resolveNextLeadRank } from '@/lib/leads/rank'
 import { notifyLeadAssigned } from '@/lib/notifications/in-app/events'
@@ -23,6 +35,7 @@ import {
   findOrCreateCompanyByName,
   getLinkableCompany,
 } from '@/lib/queries/companies'
+import { joinCompany } from '@/lib/queries/memberships'
 import type { ActivitySourceValue } from '@/lib/types'
 
 import {
@@ -119,7 +132,9 @@ async function resolveLeadCompany(
     (existing?.companyName ?? '').trim().toLowerCase() ===
     (normalized.companyName ?? '').trim().toLowerCase()
   if (existing?.companyId && nameUnchanged) {
-    return { company: { id: existing.companyId, name: existing.companyName ?? '' } }
+    return {
+      company: { id: existing.companyId, name: existing.companyName ?? '' },
+    }
   }
   return {
     company: await findOrCreateCompanyByName(actor, normalized.companyName, {
@@ -136,8 +151,8 @@ type LeadContact = {
 }
 
 /**
- * Which contact a save links the lead to; the lead keeps a display copy of
- * its name, email and phone. The sheet's picker sends `contactId`. The CLI,
+ * Which contact a save links the lead to; the lead reads its name, email and
+ * phone from it. The sheet's picker sends `contactId`. The CLI,
  * MCP and intake send contact fields instead: an existing lead edits its
  * linked contact; a new lead links the contact with that email, or a new
  * contact (name-only when there's no email).
@@ -153,32 +168,30 @@ async function resolveLeadContact(
     name: contacts.name,
     email: contacts.email,
     phone: contacts.phone,
-    companyId: contacts.companyId,
-    userId: contacts.userId,
+    hasCompany: sql<boolean>`exists (
+      select 1 from memberships m
+      where m.contact_id = ${contacts.id} and m.ended_at is null
+    )`,
   }
   const timestamp = new Date().toISOString()
 
-  // A contact with no company joins the lead's. Company membership grants
-  // no client access (that's each client's own people list).
-  const linkCompany = async (contact: {
-    id: string
-    companyId: string | null
-    userId: string | null
-  }) => {
-    if (!companyId || contact.companyId) return
-    await db
-      .update(contacts)
-      .set({ companyId, updatedAt: timestamp })
-      .where(eq(contacts.id, contact.id))
+  // A contact with no company joins the lead's. Membership grants no client
+  // access (that's switched on per person on the client).
+  const linkCompany = async (contact: { id: string; hasCompany: boolean }) => {
+    if (!companyId || contact.hasCompany) return
+    await joinCompany(db, contact.id, companyId)
   }
 
   if (normalized.contactId) {
     const [contact] = await db
       .select(fields)
       .from(contacts)
-      .where(and(eq(contacts.id, normalized.contactId), isNull(contacts.deletedAt)))
+      .where(
+        and(eq(contacts.id, normalized.contactId), isNull(contacts.deletedAt))
+      )
       .limit(1)
-    if (!contact) return { error: 'That contact no longer exists. Pick another.' }
+    if (!contact)
+      return { error: 'That contact no longer exists. Pick another.' }
     await linkCompany(contact)
     return { contact }
   }
@@ -191,14 +204,16 @@ async function resolveLeadContact(
   }
 
   // An existing lead keeps its contact unless the email now names someone
-  // else. Name and phone edits update the contact (and its other leads'
-  // display copies) in place; an email change relinks the lead instead, so
-  // a correction never renames a contact other records share.
+  // else. Name and phone edits update the contact in place (its other leads
+  // read it too); an email change relinks the lead instead, so a correction
+  // never renames a contact other records share.
   if (existing?.contactId) {
     const [contact] = await db
       .select(fields)
       .from(contacts)
-      .where(and(eq(contacts.id, existing.contactId), isNull(contacts.deletedAt)))
+      .where(
+        and(eq(contacts.id, existing.contactId), isNull(contacts.deletedAt))
+      )
       .limit(1)
     const sameEmail =
       (contact?.email ?? '').toLowerCase() === (details.email ?? '')
@@ -207,16 +222,14 @@ async function resolveLeadContact(
         contact.name !== details.name ||
         (contact.phone ?? null) !== details.phone
       if (changed) {
-        await db.transaction(async tx => {
-          await tx
-            .update(contacts)
-            .set({ name: details.name, phone: details.phone, updatedAt: timestamp })
-            .where(eq(contacts.id, contact.id))
-          await tx
-            .update(leads)
-            .set({ contactName: details.name, contactPhone: details.phone })
-            .where(eq(leads.contactId, contact.id))
-        })
+        await db
+          .update(contacts)
+          .set({
+            name: details.name,
+            phone: details.phone,
+            updatedAt: timestamp,
+          })
+          .where(eq(contacts.id, contact.id))
         await logActivity({
           actorId: actor.id,
           actorRole: actor.role,
@@ -272,16 +285,27 @@ async function resolveLeadContact(
       }
       await linkCompany(match)
       return {
-        contact: { id: match.id, name: match.name, email: match.email, phone: match.phone },
+        contact: {
+          id: match.id,
+          name: match.name,
+          email: match.email,
+          phone: match.phone,
+        },
       }
     }
   }
 
   const [created] = await db
     .insert(contacts)
-    .values({ ...details, companyId, createdBy: actor.id })
-    .returning(fields)
+    .values({ ...details, createdBy: actor.id })
+    .returning({
+      id: contacts.id,
+      name: contacts.name,
+      email: contacts.email,
+      phone: contacts.phone,
+    })
   if (!created) return { error: 'Unable to save the contact.' }
+  await linkCompany({ id: created.id, hasCompany: false })
 
   await logActivity({
     actorId: actor.id,
@@ -298,7 +322,9 @@ async function linkContactToLead(contactId: string, leadId: string) {
   await db
     .insert(contactLeads)
     .values({ contactId, leadId })
-    .onConflictDoNothing({ target: [contactLeads.contactId, contactLeads.leadId] })
+    .onConflictDoNothing({
+      target: [contactLeads.contactId, contactLeads.leadId],
+    })
 }
 
 async function createLead(
@@ -312,26 +338,30 @@ async function createLead(
   if ('error' in resolved) return { success: false, error: resolved.error }
   const { company } = resolved
   if (company) {
-    await fillCompanyWebsiteIfBlank(actor, company.id, normalized.companyWebsite)
+    await fillCompanyWebsiteIfBlank(
+      actor,
+      company.id,
+      normalized.companyWebsite
+    )
   }
-  const contactResult = await resolveLeadContact(actor, normalized, company?.id ?? null)
-  if ('error' in contactResult) return { success: false, error: contactResult.error }
+  const contactResult = await resolveLeadContact(
+    actor,
+    normalized,
+    company?.id ?? null
+  )
+  if ('error' in contactResult)
+    return { success: false, error: contactResult.error }
   const { contact } = contactResult
 
   const [inserted] = await db
     .insert(leads)
     .values({
       contactId: contact.id,
-      contactName: contact.name,
       status: normalized.status,
       sourceType: normalized.sourceType,
       sourceDetail: normalized.sourceDetail,
       assigneeId: normalized.assigneeId,
-      contactEmail: contact.email,
-      contactPhone: contact.phone,
-      companyName: company?.name ?? normalized.companyName,
       companyId: company?.id ?? null,
-      companyWebsite: normalized.companyWebsite ?? null,
       notes: serializeLeadNotes(normalized.notes),
       rank,
       currentStageEnteredAt: timestamp,
@@ -392,21 +422,23 @@ async function updateLead(
   const [existing] = await db
     .select({
       id: leads.id,
-      contactName: leads.contactName,
+      contactName: leadDisplayFields.contactName,
       status: leads.status,
       sourceType: leads.sourceType,
       sourceDetail: leads.sourceDetail,
       assigneeId: leads.assigneeId,
-      contactEmail: leads.contactEmail,
-      contactPhone: leads.contactPhone,
-      companyName: leads.companyName,
-      companyWebsite: leads.companyWebsite,
+      contactEmail: leadDisplayFields.contactEmail,
+      contactPhone: leadDisplayFields.contactPhone,
+      companyName: leadDisplayFields.companyName,
+      companyWebsite: leadDisplayFields.companyWebsite,
       companyId: leads.companyId,
       contactId: leads.contactId,
       notes: leads.notes,
       rank: leads.rank,
     })
     .from(leads)
+    .innerJoin(leadContact, leadContactJoin)
+    .leftJoin(leadCompany, leadCompanyJoin)
     .where(and(eq(leads.id, leadId), isNull(leads.deletedAt)))
     .limit(1)
 
@@ -418,7 +450,11 @@ async function updateLead(
   if ('error' in resolved) return { success: false, error: resolved.error }
   const { company } = resolved
   if (company) {
-    await fillCompanyWebsiteIfBlank(actor, company.id, normalized.companyWebsite)
+    await fillCompanyWebsiteIfBlank(
+      actor,
+      company.id,
+      normalized.companyWebsite
+    )
   }
   // Always store the company's own spelling, so a case-only edit can't
   // drift from the linked record.
@@ -431,14 +467,17 @@ async function updateLead(
     company?.id ?? null,
     existing
   )
-  if ('error' in contactResult) return { success: false, error: contactResult.error }
+  if ('error' in contactResult)
+    return { success: false, error: contactResult.error }
   const { contact } = contactResult
-  // The lead shows its contact's details.
+  // The lead shows its contact's details. The website belongs to the
+  // company (filled above only when it had none), so it isn't a lead change.
   normalized = {
     ...normalized,
     contactName: contact.name,
     contactEmail: contact.email,
     contactPhone: contact.phone,
+    companyWebsite: undefined,
   }
 
   const statusChanged = existing.status !== normalized.status
@@ -449,26 +488,14 @@ async function updateLead(
 
   const setPayload: Record<string, unknown> = {
     contactId: contact.id,
-    contactName: normalized.contactName,
     status: normalized.status,
     sourceType: normalized.sourceType,
     sourceDetail: normalized.sourceDetail,
     assigneeId: normalized.assigneeId,
-    contactEmail: normalized.contactEmail,
-    contactPhone: normalized.contactPhone,
-    companyName: normalized.companyName,
     companyId: company?.id ?? null,
     notes: serializeLeadNotes(normalized.notes),
     rank,
     updatedAt: timestamp,
-  }
-
-  // The lead's website copy (dropped later) follows an explicit value; a
-  // save without one keeps it, unless the lead moved to another company.
-  if (normalized.companyWebsite !== undefined) {
-    setPayload.companyWebsite = normalized.companyWebsite
-  } else if ((company?.id ?? null) !== existing.companyId) {
-    setPayload.companyWebsite = null
   }
 
   if (statusChanged) {

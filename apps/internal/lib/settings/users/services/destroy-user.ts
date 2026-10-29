@@ -3,11 +3,7 @@ import { eq } from 'drizzle-orm'
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import {
-  clientMembers,
-  taskAssignees,
-  users,
-} from '@/lib/db/schema'
+import { taskAssignees, users } from '@/lib/db/schema'
 import { revokeUserOauthConnections } from '@/lib/oauth/revoke-user-connections'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'
 import { getUserById } from '@/lib/queries/users'
@@ -34,12 +30,8 @@ export async function destroyPortalUser(
     return { error: 'Unable to permanently delete user.' }
   }
 
+  // Portal access follows the contact's memberships, not the login.
   const associationDeletions = [
-    {
-      context: 'client memberships',
-      executor: async () =>
-        db.delete(clientMembers).where(eq(clientMembers.userId, input.id)),
-    },
     {
       context: 'task assignments',
       executor: async () =>

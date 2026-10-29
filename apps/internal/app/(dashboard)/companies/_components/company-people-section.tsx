@@ -16,7 +16,7 @@ import { SheetRecordList } from '@/components/sheets/sheet-record-row'
 import type { CompanyContactSummary } from '@/lib/companies/types'
 import { cn } from '@/lib/utils'
 
-import { SectionAddButton } from './section-add-button'
+import { SectionAddButton } from '@/components/sheets/section-add-button'
 
 /** Someone picked on the People list, joining the company on Save. */
 export type StagedPerson = {
@@ -29,7 +29,7 @@ type CompanyPeopleSectionProps = {
   contacts: CompanyContactSummary[]
   added: StagedPerson[]
   removedIds: string[]
-  /** "Moves from …" for an added person who works somewhere else now. */
+  /** "Also at …" for an added person who belongs to another company. */
   movesFrom: (contactId: string) => string | null
   /** The form's current choice, so the star follows unsaved edits. */
   primaryContactId: string | null
@@ -49,7 +49,7 @@ type CompanyPeopleSectionProps = {
 
 /**
  * The company's people. Adding, removing and starring are staged and saved
- * with the sheet; adding someone from another company moves them here.
+ * with the sheet; someone added here keeps their other companies.
  */
 export function CompanyPeopleSection({
   contacts,
@@ -192,7 +192,7 @@ export function CompanyPeopleSection({
                 contact={contact}
                 note={
                   <span className='text-warning'>
-                    {from ? `Moves from ${from}` : 'Pending save'}
+                    {from ? `Joins on save · also at ${from}` : 'Joins on save'}
                   </span>
                 }
                 actions={

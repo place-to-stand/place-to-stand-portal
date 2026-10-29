@@ -1,5 +1,7 @@
 'use client'
 
+import type { ReactElement } from 'react'
+
 import { useQuery } from '@tanstack/react-query'
 import { Building2 } from 'lucide-react'
 
@@ -30,6 +32,13 @@ type CompanyLinkPickerProps = {
   placeholder?: string
   /** A "Create" button beside the field; see `EntityLinkPicker`. */
   showCreateButton?: boolean
+  /** Companies not to offer (e.g. ones already on the list). */
+  excludeIds?: readonly string[]
+  /** A button in place of the field; see `EntityLinkPicker`. */
+  trigger?: ReactElement
+  /** Controlled open state; see `EntityLinkPicker`. */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 const toOption = (company: CompanyLink): EntityLinkOption => ({
@@ -45,8 +54,13 @@ export function CompanyLinkPicker({
   id,
   placeholder,
   showCreateButton,
+  excludeIds,
+  trigger,
+  open,
+  onOpenChange,
 }: CompanyLinkPickerProps) {
   const { data = [] } = useCompanyOptions()
+  const excluded = new Set(excludeIds)
 
   return (
     <EntityLinkPicker
@@ -67,12 +81,15 @@ export function CompanyLinkPicker({
       onChange={option =>
         onChange(option ? { id: option.id, name: option.label } : null)
       }
-      options={data.map(toOption)}
+      options={data.filter(company => !excluded.has(company.id)).map(toOption)}
       disabled={disabled}
       placeholder={placeholder}
       toOption={toOption}
       createPrefillParam='companyName'
       showCreateButton={showCreateButton}
+      trigger={trigger}
+      open={open}
+      onOpenChange={onOpenChange}
     />
   )
 }

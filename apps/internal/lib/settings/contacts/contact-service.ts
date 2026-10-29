@@ -17,9 +17,36 @@ export const contactSchema = z.object({
     .optional()
     .nullable()
     .transform(value => (value?.trim() ? value.trim() : null)),
-  // Sales profile. Omitted (undefined) keeps the stored value, so callers
-  // that only know name, email and phone don't wipe it.
-  jobTitle: z
+  linkedinUrl: linkedinUrlSchema.optional(),
+  /**
+   * Every company the person belongs to (the sheet's Companies list), with
+   * their title and portal access at each. When present it is the full set:
+   * missing companies are left (history kept), new ones joined. Omitted
+   * keeps their companies as they are.
+   */
+  companies: z
+    .array(
+      z.object({
+        companyId: z.string().uuid(),
+        title: z
+          .string()
+          .max(160)
+          .nullable()
+          .optional()
+          .transform(value => (value?.trim() ? value.trim() : null)),
+        /** Sees the company's client in the client portal (admin only). */
+        portalAccess: z.boolean().optional(),
+      })
+    )
+    .max(50)
+    .optional(),
+  /**
+   * Shorthand for one company (CLI, MCP, create-from-picker): joins it if
+   * they aren't a member yet, keeping their other companies. `companyId`
+   * wins over `companyName` (matched case-insensitively, created when new).
+   */
+  companyId: z.string().uuid().nullable().optional(),
+  companyName: z
     .string()
     .max(160)
     .optional()
@@ -27,14 +54,8 @@ export const contactSchema = z.object({
     .transform(value =>
       value === undefined ? undefined : value?.trim() ? value.trim() : null
     ),
-  linkedinUrl: linkedinUrlSchema.optional(),
-  /**
-   * The linked company (the sheet's picker). When present it wins over
-   * `companyName`; null clears it.
-   */
-  companyId: z.string().uuid().nullable().optional(),
-  /** Company by name (CLI, MCP): matched case-insensitively, created when new. */
-  companyName: z
+  /** Their title at that one company (with `companyId`/`companyName`). */
+  jobTitle: z
     .string()
     .max(160)
     .optional()
@@ -52,7 +73,7 @@ export const deleteContactSchema = z.object(contactIdentifierSchema)
 export const restoreContactSchema = z.object(contactIdentifierSchema)
 export const destroyContactSchema = z.object(contactIdentifierSchema)
 
-export type ContactInput = z.infer<typeof contactSchema>
+export type ContactInput = z.input<typeof contactSchema>
 export type DeleteContactInput = z.infer<typeof deleteContactSchema>
 export type RestoreContactInput = z.infer<typeof restoreContactSchema>
 export type DestroyContactInput = z.infer<typeof destroyContactSchema>

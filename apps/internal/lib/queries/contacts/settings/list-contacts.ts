@@ -5,7 +5,7 @@ import { and, asc, eq, inArray, sql, type SQL } from 'drizzle-orm'
 import type { AppUser } from '@/lib/auth/session'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, contacts, contactClients } from '@/lib/db/schema'
+import { clientPortalAccess, clients, contacts } from '@/lib/db/schema'
 import { type PageInfo } from '@/lib/pagination/cursor'
 import {
   decodeSortCursor,
@@ -85,7 +85,9 @@ async function queryContactRows(
     .orderBy(...ordering)
 
   if (typeof opts?.offset === 'number') {
-    return query.limit(limit).offset(opts.offset) as Promise<ContactMetricsResult[]>
+    return query.limit(limit).offset(opts.offset) as Promise<
+      ContactMetricsResult[]
+    >
   }
 
   return query.limit(limit + 1) as Promise<ContactMetricsResult[]>
@@ -100,16 +102,16 @@ async function fetchClientDetails(
 
   const rows = await db
     .select({
-      contactId: contactClients.contactId,
+      contactId: clientPortalAccess.contactId,
       clientId: clients.id,
       clientName: clients.name,
       clientSlug: clients.slug,
     })
-    .from(contactClients)
-    .innerJoin(clients, eq(contactClients.clientId, clients.id))
+    .from(clientPortalAccess)
+    .innerJoin(clients, eq(clientPortalAccess.clientId, clients.id))
     .where(
       and(
-        inArray(contactClients.contactId, contactIds),
+        inArray(clientPortalAccess.contactId, contactIds),
         sql`${clients.deletedAt} IS NULL`
       )
     )

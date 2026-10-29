@@ -19,6 +19,7 @@ import {
 
 import type { ProjectTypeValue } from '@/lib/types'
 import { db } from '@/lib/db'
+import { leadContactNameSql } from '@/lib/leads/lead-display'
 import {
   clients as clientsTable,
   leads as leadsTable,
@@ -254,7 +255,7 @@ async function loadAssignedTaskSummaries({
       },
       lead: {
         id: leadsTable.id,
-        name: leadsTable.contactName,
+        name: leadContactNameSql,
       },
     })
     .from(tasksTable)

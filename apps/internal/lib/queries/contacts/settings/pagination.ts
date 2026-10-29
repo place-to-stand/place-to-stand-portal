@@ -28,7 +28,9 @@ export function buildStatusCondition(status: StatusFilter): SQL {
   return sql`${contacts.deletedAt} IS NULL`
 }
 
-export function buildSearchCondition(search: string | null | undefined): SQL | null {
+export function buildSearchCondition(
+  search: string | null | undefined
+): SQL | null {
   const trimmed = search?.trim()
   if (!trimmed) {
     return null
@@ -53,12 +55,9 @@ export function buildClientCondition(
 
   return sql`exists (
     select 1
-    from contact_clients cc
-    inner join clients c
-      on c.id = cc.client_id
-      and c.deleted_at is null
-    where cc.contact_id = contacts.id
-      and cc.client_id = ${clientId}
+    from client_portal_access cpa
+    where cpa.contact_id = contacts.id
+      and cpa.client_id = ${clientId}
   )`
 }
 
@@ -74,11 +73,8 @@ export function buildClientCondition(
  */
 export const linkedClientsCountSql = sql<number>`(
   select count(*)
-  from contact_clients cc
-  inner join clients c
-    on c.id = cc.client_id
-    and c.deleted_at is null
-  where cc.contact_id = contacts.id
+  from client_portal_access cpa
+  where cpa.contact_id = contacts.id
 )`
 
 /**
@@ -162,11 +158,12 @@ export const CONTACT_SORT_DESCRIPTORS: Record<
   },
 }
 
-
 export function resolvePaginationLimit(limit: number | null | undefined) {
   return clampLimit(limit, PAGE_SIZE_LIMITS)
 }
 
-export function resolveContactDirection(direction: CursorDirection | null | undefined) {
+export function resolveContactDirection(
+  direction: CursorDirection | null | undefined
+) {
   return resolveDirection(direction)
 }

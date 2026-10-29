@@ -3,7 +3,7 @@ import 'server-only'
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import {
-  clientMembers,
+  clientPortalAccess,
   clients,
   contacts,
   projects,
@@ -64,22 +64,17 @@ export async function buildAssignmentsForUsers(
 
   const [clientRows, projectCounts, taskCounts, contactRows] =
     await Promise.all([
+      // Clients each login can see in the portal (live clients only).
       db
         .select({
-          userId: clientMembers.userId,
+          userId: sql<string>`${clientPortalAccess.userId}`,
           id: clients.id,
           name: clients.name,
           slug: clients.slug,
         })
-        .from(clientMembers)
-        .innerJoin(clients, eq(clientMembers.clientId, clients.id))
-        .where(
-          and(
-            inArray(clientMembers.userId, userIds),
-            isNull(clientMembers.deletedAt),
-            isNull(clients.deletedAt)
-          )
-        )
+        .from(clientPortalAccess)
+        .innerJoin(clients, eq(clientPortalAccess.clientId, clients.id))
+        .where(inArray(clientPortalAccess.userId, userIds))
         .orderBy(asc(clients.name)),
       db
         .select({

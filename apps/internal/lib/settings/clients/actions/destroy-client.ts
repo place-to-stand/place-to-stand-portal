@@ -5,7 +5,7 @@ import { clientDeletedEvent } from '@/lib/activity/events'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
-import { clientMembers, clients } from '@/lib/db/schema'
+import { clients } from '@/lib/db/schema'
 import {
   countHourBlocksForClient,
   countProjectsForClient,
@@ -126,20 +126,8 @@ export async function destroyClientMutation(
         })
       }
 
-      try {
-        await db
-          .delete(clientMembers)
-          .where(eq(clientMembers.clientId, parsed.data.id))
-      } catch (error) {
-        console.error(
-          'Failed to remove client memberships before delete',
-          error
-        )
-        return buildMutationResult({
-          error: 'Unable to remove client memberships.',
-        })
-      }
-
+      // Portal access is derived from the company's memberships, so a
+      // deleted client simply drops out of client_portal_access.
       try {
         await db.delete(clients).where(eq(clients.id, parsed.data.id))
       } catch (error) {

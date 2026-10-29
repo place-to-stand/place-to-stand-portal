@@ -76,7 +76,7 @@ export function ConvertLeadDialog({
       clientSlug: '',
       billingType: 'net_30',
       copyNotesToClient: true,
-      createContact: !!lead.contactEmail,
+      createContact: true,
       createProject: false,
       projectName: '',
       existingClientId: undefined,
@@ -327,7 +327,7 @@ export function ConvertLeadDialog({
               />
             )}
 
-            {lead.contactEmail && (
+            {
               <FormField
                 control={form.control}
                 name='createContact'
@@ -340,16 +340,16 @@ export function ConvertLeadDialog({
                       />
                     </FormControl>
                     <div className='space-y-1 leading-none'>
-                      <FormLabel>Create contact record</FormLabel>
+                      <FormLabel>Give portal access</FormLabel>
                       <FormDescription>
-                        Create a contact for {lead.contactName} (
-                        {lead.contactEmail}) and link to the client.
+                        {lead.contactName} joins the client’s company (keeping
+                        any others) and can see it in the client portal.
                       </FormDescription>
                     </div>
                   </FormItem>
                 )}
               />
-            )}
+            }
 
             <FormField
               control={form.control}

@@ -6,7 +6,11 @@ import { z } from 'zod'
 import type { AppUser } from '@/lib/auth/session'
 import { listUsersForCli } from '@/lib/cli/queries/users'
 import { serializeClient } from '@/lib/cli/serializers/client'
-import { serializeContact } from '@/lib/cli/serializers/contact'
+import {
+  serializeContact,
+  serializeContactCompanies,
+} from '@/lib/cli/serializers/contact'
+import { listContactMemberships } from '@/lib/queries/memberships'
 import { serializeProject } from '@/lib/cli/serializers/project'
 import { serializeUser, serializeUserRow } from '@/lib/cli/serializers/user'
 import {
@@ -152,9 +156,12 @@ export function registerDirectoryTools(server: McpServer) {
         limit,
       })
 
+      const memberships = await listContactMemberships(
+        result.items.map(contact => contact.id)
+      )
       return {
         items: result.items.map(contact => ({
-          ...serializeContact(contact),
+          ...serializeContact(contact, memberships.get(contact.id)),
           clients: contact.metrics.clients,
         })),
         hasMore: result.totalCount > result.items.length,
@@ -166,16 +173,22 @@ export function registerDirectoryTools(server: McpServer) {
   defineTool(server, {
     name: 'get_contact',
     title: 'Get contact',
-    description: 'One contact and the clients they are linked to.',
+    description:
+      'One contact, the companies they belong to (title, primary, portal access) and the clients they can see in the portal.',
     effect: 'read',
     input: { contactId: z.string().uuid().describe('Contact UUID.') },
     run: async ({ contactId }, { user }) => {
-      const [contact, clients] = await Promise.all([
+      const [contact, clients, memberships] = await Promise.all([
         getContactSheetInputById(user, contactId),
         listContactClients(user, contactId),
+        listContactMemberships([contactId]),
       ])
 
-      return { contact, clients }
+      return {
+        contact,
+        companies: serializeContactCompanies(memberships.get(contactId) ?? []),
+        clients,
+      }
     },
   })
 

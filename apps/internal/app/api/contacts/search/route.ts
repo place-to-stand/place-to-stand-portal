@@ -4,7 +4,7 @@ import { sql } from 'drizzle-orm'
 
 import { requireUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { contacts, leads } from '@/lib/db/schema'
+import { contacts } from '@/lib/db/schema'
 
 const searchSchema = z.object({
   q: z.string().min(1).max(100),
@@ -27,10 +27,7 @@ export async function GET(request: Request) {
   })
 
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: 'Invalid search query' },
-      { status: 400 }
-    )
+    return NextResponse.json({ error: 'Invalid search query' }, { status: 400 })
   }
 
   const { q, limit } = parsed.data
@@ -52,26 +49,11 @@ export async function GET(request: Request) {
       )
       .limit(limit)
 
-    // Search leads table
-    const leadResults = await db
-      .select({
-        email: leads.contactEmail,
-        name: leads.contactName,
-      })
-      .from(leads)
-      .where(
-        sql`${leads.deletedAt} IS NULL AND ${leads.contactEmail} IS NOT NULL AND (
-          ${leads.contactEmail} ILIKE ${searchPattern} OR
-          ${leads.contactName} ILIKE ${searchPattern}
-        )`
-      )
-      .limit(limit)
-
     // Combine and deduplicate results
     const seen = new Set<string>()
     const results: ContactSearchResult[] = []
 
-    // Add contacts first (highest priority)
+    // A lead's person is a contact, so contacts cover leads too.
     for (const c of contactResults) {
       // Recipient search: a contact without an email can't be addressed.
       if (!c.email) continue
@@ -79,16 +61,6 @@ export async function GET(request: Request) {
       if (!seen.has(emailLower)) {
         seen.add(emailLower)
         results.push({ email: c.email, name: c.name, source: 'contact' })
-      }
-    }
-
-    // Add leads
-    for (const l of leadResults) {
-      if (!l.email) continue
-      const emailLower = l.email.toLowerCase()
-      if (!seen.has(emailLower)) {
-        seen.add(emailLower)
-        results.push({ email: l.email, name: l.name, source: 'lead' })
       }
     }
 

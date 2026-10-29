@@ -39,7 +39,8 @@ export const saveCompanySchema = z.object({
   notes: optionalText(20000),
   /**
    * People staged on the sheet's People list (edit only). Adding someone at
-   * another company moves them here; removing someone clears their company.
+   * another company keeps them there too; removing someone ends their
+   * membership here (and with it portal access to this company's client).
    */
   addContactIds: z.array(z.string().uuid()).max(500).optional(),
   removeContactIds: z.array(z.string().uuid()).max(500).optional(),

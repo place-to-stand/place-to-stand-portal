@@ -9,6 +9,7 @@ import { requireCrmUser } from '@/lib/auth/session'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { leads } from '@/lib/db/schema'
+import { leadContactNameSql } from '@/lib/leads/lead-display'
 
 import { revalidateLeadsPath } from './utils'
 import type { LeadActionResult } from './types'
@@ -41,7 +42,7 @@ export async function restoreLead(
         deletedAt: null,
       })
       .where(and(eq(leads.id, parsed.data.leadId), isNotNull(leads.deletedAt)))
-      .returning({ id: leads.id, contactName: leads.contactName })
+      .returning({ id: leads.id, contactName: leadContactNameSql })
 
     const restored = result[0]
 

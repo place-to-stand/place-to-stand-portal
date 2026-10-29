@@ -2,6 +2,7 @@ import { jsonOk, withCliAuth } from '@/lib/cli/handler'
 import { cliListQuerySchema } from '@/lib/cli/schemas/listing'
 import { serializeContact } from '@/lib/cli/serializers/contact'
 import { listContactsForSettings } from '@/lib/queries/contacts/settings/list-contacts'
+import { listContactMemberships } from '@/lib/queries/memberships'
 
 export const GET = withCliAuth(async ({ user, request }) => {
   const query = cliListQuerySchema.parse(
@@ -13,7 +14,15 @@ export const GET = withCliAuth(async ({ user, request }) => {
     limit: query.limit,
   })
 
-  return jsonOk(result.items.map(serializeContact), {
-    meta: { totalCount: result.totalCount },
-  })
+  const memberships = await listContactMemberships(
+    result.items.map(contact => contact.id)
+  )
+  return jsonOk(
+    result.items.map(contact =>
+      serializeContact(contact, memberships.get(contact.id))
+    ),
+    {
+      meta: { totalCount: result.totalCount },
+    }
+  )
 })

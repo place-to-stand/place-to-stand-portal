@@ -13,7 +13,6 @@ import type {
   taskAttachments,
   taskAssignees,
   taskAssigneeMetadata,
-  clientMembers,
   activityLogs,
   oauthConnections,
   githubRepoLinks,
@@ -24,7 +23,7 @@ import type {
   planRevisions,
   planMessages,
   contacts,
-  contactClients,
+  memberships,
   contactLeads,
   invoices,
   invoiceLineItems,
@@ -50,7 +49,6 @@ export type TaskComment = InferSelectModel<typeof taskComments>
 export type TaskAttachment = InferSelectModel<typeof taskAttachments>
 export type TaskAssignee = InferSelectModel<typeof taskAssignees>
 export type TaskAssigneeMetadata = InferSelectModel<typeof taskAssigneeMetadata>
-export type ClientMember = InferSelectModel<typeof clientMembers>
 export type ActivityLog = InferSelectModel<typeof activityLogs>
 export type OauthConnection = InferSelectModel<typeof oauthConnections>
 export type GithubAppInstallation = InferSelectModel<typeof githubAppInstallations>
@@ -61,7 +59,7 @@ export type PlanThread = InferSelectModel<typeof planThreads>
 export type PlanRevision = InferSelectModel<typeof planRevisions>
 export type PlanMessage = InferSelectModel<typeof planMessages>
 export type Contact = InferSelectModel<typeof contacts>
-export type ContactClient = InferSelectModel<typeof contactClients>
+export type Membership = InferSelectModel<typeof memberships>
 export type ContactLead = InferSelectModel<typeof contactLeads>
 export type Invoice = InferSelectModel<typeof invoices>
 export type InvoiceLineItem = InferSelectModel<typeof invoiceLineItems>
@@ -83,7 +81,6 @@ export type NewHourBlock = InferInsertModel<typeof hourBlocks>
 export type NewTaskComment = InferInsertModel<typeof taskComments>
 export type NewTaskAttachment = InferInsertModel<typeof taskAttachments>
 export type NewTaskAssignee = InferInsertModel<typeof taskAssignees>
-export type NewClientMember = InferInsertModel<typeof clientMembers>
 export type NewActivityLog = InferInsertModel<typeof activityLogs>
 export type NewOauthConnection = InferInsertModel<typeof oauthConnections>
 export type NewGithubAppInstallation = InferInsertModel<typeof githubAppInstallations>

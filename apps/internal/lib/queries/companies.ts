@@ -23,10 +23,14 @@ import {
 } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
 import {
-  logContactClientLinkChanges,
-  type ContactClientLinkChange,
-} from '@/lib/queries/contacts/settings/contact-client-link-activity'
-import { revokeAccessOnLeavingCompany } from '@/lib/queries/contacts/settings/leave-company-access'
+  isMemberSql,
+  joinCompany,
+  leaveCompany,
+  listCompanyMembers,
+  primaryContactIdSql,
+  primaryContactNameSql,
+  setCompanyPrimary,
+} from '@/lib/queries/memberships'
 import { roleCan } from '@/lib/auth/capabilities'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
@@ -45,7 +49,14 @@ import {
   type SaveCompanyInput,
 } from '@/lib/companies/schema'
 import { db } from '@/lib/db'
-import { clients, companies, contacts, leads, users } from '@/lib/db/schema'
+import {
+  clients,
+  companies,
+  contacts,
+  leads,
+  memberships,
+  users,
+} from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 import type { LeadStatusValue } from '@/lib/leads/constants'
 
@@ -98,27 +109,26 @@ export async function listCompanies(
         select json_agg(
           json_build_object(
             'id', ct.id, 'name', ct.name, 'email', ct.email,
-            'jobTitle', ct.job_title
+            'jobTitle', m.title
           ) order by lower(ct.name)
         )
-        from contacts ct
-        where ct.company_id = companies.id and ct.deleted_at is null
+        from memberships m
+        join contacts ct on ct.id = m.contact_id and ct.deleted_at is null
+        where m.company_id = companies.id and m.ended_at is null
       ), '[]'::json)`,
       openLeads: sql<CompanyListItem['openLeads']>`coalesce((
         select json_agg(
           json_build_object(
-            'id', l.id, 'contactName', l.contact_name, 'status', l.status
+            'id', l.id, 'contactName', lc.name, 'status', l.status
           ) order by l.updated_at desc
         )
         from leads l
+        join contacts lc on lc.id = l.contact_id
         where l.company_id = companies.id
           and l.deleted_at is null
           and l.status not in ${CLOSED_LEAD_STATUSES_SQL}
       ), '[]'::json)`,
-      primaryContactName: sql<string | null>`(
-        select ct.name from contacts ct
-        where ct.id = companies.primary_contact_id and ct.deleted_at is null
-      )`,
+      primaryContactName: primaryContactNameSql(companies.id),
     })
     .from(companies)
     .where(
@@ -181,7 +191,6 @@ export async function getCompanyDetail(
       website: companies.website,
       linkedinUrl: companies.linkedinUrl,
       notes: companies.notes,
-      primaryContactId: companies.primaryContactId,
       createdAt: companies.createdAt,
       updatedAt: companies.updatedAt,
       deletedAt: companies.deletedAt,
@@ -194,28 +203,19 @@ export async function getCompanyDetail(
     throw new NotFoundError('Company not found')
   }
 
-  const [contactRows, leadRows, clientRows] = await Promise.all([
-    db
-      .select({
-        id: contacts.id,
-        name: contacts.name,
-        email: contacts.email,
-        jobTitle: contacts.jobTitle,
-        linkedinUrl: contacts.linkedinUrl,
-      })
-      .from(contacts)
-      .where(and(eq(contacts.companyId, companyId), isNull(contacts.deletedAt)))
-      .orderBy(asc(contacts.name)),
+  const [memberRows, leadRows, clientRows] = await Promise.all([
+    listCompanyMembers(companyId),
     db
       .select({
         id: leads.id,
-        contactName: leads.contactName,
+        contactName: contacts.name,
         status: leads.status,
         assigneeName: users.fullName,
         assigneeEmail: users.email,
         updatedAt: leads.updatedAt,
       })
       .from(leads)
+      .innerJoin(contacts, eq(contacts.id, leads.contactId))
       .leftJoin(users, eq(users.id, leads.assigneeId))
       .where(and(eq(leads.companyId, companyId), isNull(leads.deletedAt)))
       .orderBy(desc(leads.updatedAt)),
@@ -226,19 +226,24 @@ export async function getCompanyDetail(
       .orderBy(asc(clients.name)),
   ])
 
-  const primary = contactRows.find(
-    contact => contact.id === row.primaryContactId
-  )
-  const people = contactRows
-    .map(contact => ({
-      ...contact,
-      isPrimary: contact.id === row.primaryContactId,
+  const people = memberRows
+    .map(member => ({
+      id: member.contactId,
+      name: member.name,
+      email: member.email,
+      jobTitle: member.title,
+      linkedinUrl: member.linkedinUrl,
+      isPrimary: member.isPrimary,
+      portalAccess: member.portalAccess,
+      hasPortalLogin: Boolean(member.userId),
     }))
     // Primary contact first.
     .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary))
+  const primary = people.find(person => person.isPrimary)
 
   return {
     ...row,
+    primaryContactId: primary?.id ?? null,
     primaryContactName: primary?.name ?? null,
     clients: clientRows,
     contacts: people,
@@ -411,21 +416,11 @@ export async function saveCompany(
         error: 'This company is a client, so only an admin can rename it.',
       }
     }
-    if (people.moves.length) {
-      const touched = new Set([existing.id])
-      for (const move of people.moves) {
-        if (move.fromCompanyId) touched.add(move.fromCompanyId)
-      }
-      for (const companyId of touched) {
-        if (await companyHasClient(companyId)) {
-          return {
-            ok: false,
-            error:
-              companyId === existing.id
-                ? 'This company is a client, so only an admin can change its people.'
-                : 'Someone you added works at a client, so only an admin can move them.',
-          }
-        }
+    if (people.moves.length && (await companyHasClient(existing.id))) {
+      return {
+        ok: false,
+        error:
+          'This company is a client, so only an admin can change its people.',
       }
     }
   }
@@ -437,7 +432,6 @@ export async function saveCompany(
     changedFields.push('linked client')
   }
 
-  const accessChanges: ContactClientLinkChange[] = []
   try {
     await db.transaction(async tx => {
       await tx
@@ -445,13 +439,8 @@ export async function saveCompany(
         .set({ ...next, updatedAt: timestamp })
         .where(eq(companies.id, existing.id))
 
-      // Leads keep a display copy of the company name, and a client is
-      // named after its company; follow a rename.
+      // A client is named after its company; follow a rename.
       if (renamed) {
-        await tx
-          .update(leads)
-          .set({ companyName: next.name, updatedAt: timestamp })
-          .where(eq(leads.companyId, existing.id))
         await tx
           .update(clients)
           .set({
@@ -481,30 +470,14 @@ export async function saveCompany(
           .where(eq(clients.id, move.clientId))
       }
 
+      // Joining keeps the person's other companies. Leaving ends their
+      // membership here, and with it being this company's primary contact
+      // and portal access to its client.
       for (const move of people.moves) {
-        await tx
-          .update(contacts)
-          .set({ companyId: move.toCompanyId, updatedAt: timestamp })
-          .where(eq(contacts.id, move.contactId))
-        // Leaving a company gives up being its primary contact and portal
-        // access to its client (as on the contact sheet).
-        if (move.fromCompanyId) {
-          accessChanges.push(
-            ...(await revokeAccessOnLeavingCompany(
-              tx,
-              move.contactId,
-              move.fromCompanyId
-            ))
-          )
-          await tx
-            .update(companies)
-            .set({ primaryContactId: null })
-            .where(
-              and(
-                eq(companies.id, move.fromCompanyId),
-                eq(companies.primaryContactId, move.contactId)
-              )
-            )
+        if (move.joins) {
+          await joinCompany(tx, move.contactId, existing.id)
+        } else {
+          await leaveCompany(tx, move.contactId, existing.id)
         }
       }
     })
@@ -530,10 +503,10 @@ export async function saveCompany(
         ...(people.moves.length
           ? {
               peopleAdded: people.moves
-                .filter(move => move.toCompanyId)
+                .filter(move => move.joins)
                 .map(move => move.name),
               peopleRemoved: people.moves
-                .filter(move => !move.toCompanyId)
+                .filter(move => !move.joins)
                 .map(move => move.name),
             }
           : {}),
@@ -544,8 +517,7 @@ export async function saveCompany(
     }),
   })
 
-  // Each moved person's own trail reads like a company change made on the
-  // contact sheet.
+  // Each person's own trail shows the company they joined or left.
   for (const move of people.moves) {
     await logActivity({
       actorId: actor.id,
@@ -555,16 +527,13 @@ export async function saveCompany(
       ...contactUpdatedEvent({
         email: move.email,
         name: move.name,
-        changedFields: ['company'],
-        details: {
-          before: { companyId: move.fromCompanyId },
-          after: { companyId: move.toCompanyId },
-        },
+        changedFields: ['companies'],
+        details: move.joins
+          ? { after: { joinedCompany: next.name } }
+          : { before: { leftCompany: next.name } },
       }),
     })
   }
-
-  await logContactClientLinkChanges(actor, accessChanges)
 
   for (const client of unlinkIds) {
     await logActivity({
@@ -658,15 +627,14 @@ type PeopleMove = {
   contactId: string
   name: string
   email: string | null
-  fromCompanyId: string | null
-  /** This company for an add, null for a removal. */
-  toCompanyId: string | null
+  /** Joins this company (true) or leaves it (false). */
+  joins: boolean
 }
 
 /**
- * The staged People edits that actually change something: live contacts not
- * already here (added) and people here now (removed). Anything else is a
- * stale stage and is skipped.
+ * The staged People edits that actually change something: live contacts
+ * not yet members (they join; their other companies are untouched) and
+ * current members (they leave). Anything else is a stale stage, skipped.
  */
 async function resolvePeopleChanges(
   companyId: string,
@@ -683,24 +651,18 @@ async function resolvePeopleChanges(
       id: contacts.id,
       name: contacts.name,
       email: contacts.email,
-      companyId: contacts.companyId,
+      isMember: isMemberSql(contacts.id, sql`${companyId}::uuid`),
     })
     .from(contacts)
     .where(and(inArray(contacts.id, ids), isNull(contacts.deletedAt)))
 
   const moves: PeopleMove[] = []
   for (const row of rows) {
-    const base = {
-      contactId: row.id,
-      name: row.name,
-      email: row.email,
-      fromCompanyId: row.companyId,
-    }
+    const base = { contactId: row.id, name: row.name, email: row.email }
     if (removeSet.has(row.id)) {
-      if (row.companyId === companyId)
-        moves.push({ ...base, toCompanyId: null })
-    } else if (row.companyId !== companyId) {
-      moves.push({ ...base, toCompanyId: companyId })
+      if (row.isMember) moves.push({ ...base, joins: false })
+    } else if (!row.isMember) {
+      moves.push({ ...base, joins: true })
     }
   }
   return { moves }
@@ -781,7 +743,7 @@ export async function setCompanyPrimaryContact(
     .select({
       id: companies.id,
       name: companies.name,
-      primaryContactId: companies.primaryContactId,
+      primaryContactId: primaryContactIdSql(companies.id),
     })
     .from(companies)
     .where(and(eq(companies.id, companyId), isNull(companies.deletedAt)))
@@ -808,35 +770,35 @@ export async function setCompanyPrimaryContact(
   }
 
   let contactName: string | null = null
-  const timestamp = new Date().toISOString()
-
   if (contactId) {
     const [contact] = await db
-      .select({
-        id: contacts.id,
-        name: contacts.name,
-        companyId: contacts.companyId,
-      })
+      .select({ id: contacts.id, name: contacts.name })
       .from(contacts)
       .where(and(eq(contacts.id, contactId), isNull(contacts.deletedAt)))
       .limit(1)
-
-    if (!contact || (contact.companyId && contact.companyId !== companyId)) {
+    if (!contact) {
       return { ok: false, error: 'That contact is not at this company.' }
     }
     contactName = contact.name
-    if (!contact.companyId) {
-      await db
-        .update(contacts)
-        .set({ companyId, updatedAt: timestamp })
-        .where(eq(contacts.id, contactId))
-    }
   }
 
-  await db
-    .update(companies)
-    .set({ primaryContactId: contactId, updatedAt: timestamp })
-    .where(eq(companies.id, companyId))
+  const set = await db.transaction(async tx => {
+    // Only a member can be primary; one with no companies joins this one.
+    if (contactId) {
+      const [anyMembership] = await tx
+        .select({ id: memberships.id })
+        .from(memberships)
+        .where(
+          and(isNull(memberships.endedAt), eq(memberships.contactId, contactId))
+        )
+        .limit(1)
+      if (!anyMembership) await joinCompany(tx, contactId, companyId)
+    }
+    return setCompanyPrimary(tx, companyId, contactId)
+  })
+  if (!set) {
+    return { ok: false, error: 'That contact is not at this company.' }
+  }
 
   await logActivity({
     actorId: actor.id,

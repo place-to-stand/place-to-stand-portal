@@ -20,7 +20,7 @@ import { SheetRecordList } from '@/components/sheets/sheet-record-row'
 import { roleCan } from '@/lib/auth/capabilities'
 import type { CompanyLeadSummary } from '@/lib/companies/types'
 
-import { SectionAddButton } from './section-add-button'
+import { SectionAddButton } from '@/components/sheets/section-add-button'
 
 export function CompanyLeadsSection({
   leads,

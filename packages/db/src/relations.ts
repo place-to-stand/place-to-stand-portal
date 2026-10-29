@@ -11,7 +11,6 @@ import {
   taskAssignees,
   taskAssigneeMetadata,
   hourBlocks,
-  clientMembers,
   projects,
   taskComments,
   timeLogs,
@@ -26,7 +25,7 @@ import {
   contacts,
   companies,
   projectMembers,
-  contactClients,
+  memberships,
   contactLeads,
   githubRepoLinks,
   projectIntegrationLinks,
@@ -67,9 +66,7 @@ export const clientsRelations = relations(clients, ({ one, many }) => ({
   hourBlocks: many(hourBlocks),
   billingTerms: many(clientBillingTerms),
   commissionTerms: many(clientCommissionTerms),
-  clientMembers: many(clientMembers),
   projects: many(projects),
-  contactClients: many(contactClients),
   invoices: many(invoices),
   githubAppInstallations: many(githubAppInstallations),
   updates: many(clientUpdates),
@@ -91,7 +88,6 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   taskAssignees: many(taskAssignees),
   taskAssigneeMetadata: many(taskAssigneeMetadata),
   hourBlocks: many(hourBlocks),
-  clientMembers: many(clientMembers),
   projects: many(projects),
   projectsOwned: many(projects, {
     relationName: 'projects_owner_users_id',
@@ -320,17 +316,6 @@ export const clientCommissionTermClosersRelations = relations(
   })
 )
 
-export const clientMembersRelations = relations(clientMembers, ({ one }) => ({
-  client: one(clients, {
-    fields: [clientMembers.clientId],
-    references: [clients.id],
-  }),
-  user: one(users, {
-    fields: [clientMembers.userId],
-    references: [users.id],
-  }),
-}))
-
 export const projectsRelations = relations(projects, ({ one, many }) => ({
   client: one(clients, {
     fields: [projects.clientId],
@@ -438,13 +423,9 @@ export const contactsRelations = relations(contacts, ({ one, many }) => ({
     references: [users.id],
     relationName: 'contacts_userId_users_id',
   }),
-  contactClients: many(contactClients),
+  memberships: many(memberships),
   contactLeads: many(contactLeads),
   clientsOriginated: many(clients),
-  company: one(companies, {
-    fields: [contacts.companyId],
-    references: [companies.id],
-  }),
 }))
 
 export const companiesRelations = relations(companies, ({ one, many }) => ({
@@ -454,12 +435,7 @@ export const companiesRelations = relations(companies, ({ one, many }) => ({
     relationName: 'companies_createdBy_users_id',
   }),
   clients: many(clients),
-  primaryContact: one(contacts, {
-    fields: [companies.primaryContactId],
-    references: [contacts.id],
-    relationName: 'companies_primaryContactId_contacts_id',
-  }),
-  contacts: many(contacts),
+  memberships: many(memberships),
   leads: many(leads),
 }))
 
@@ -475,14 +451,14 @@ export const projectMembersRelations = relations(projectMembers, ({ one }) => ({
   }),
 }))
 
-export const contactClientsRelations = relations(contactClients, ({ one }) => ({
+export const membershipsRelations = relations(memberships, ({ one }) => ({
   contact: one(contacts, {
-    fields: [contactClients.contactId],
+    fields: [memberships.contactId],
     references: [contacts.id],
   }),
-  client: one(clients, {
-    fields: [contactClients.clientId],
-    references: [clients.id],
+  company: one(companies, {
+    fields: [memberships.companyId],
+    references: [companies.id],
   }),
 }))
 

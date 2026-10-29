@@ -304,11 +304,6 @@ export const companies = pgTable(
     linkedinUrl: text('linkedin_url'),
     /** Rich text (TipTap HTML). */
     notes: text(),
-    /**
-     * Our main person there; clients use their company's. FK to contacts
-     * added in migration 0096 (contacts is defined later).
-     */
-    primaryContactId: uuid('primary_contact_id'),
     createdBy: uuid('created_by'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
@@ -341,11 +336,7 @@ export const contacts = pgTable(
     email: text(),
     name: text().notNull(),
     phone: text(),
-    /** Job title at their company, e.g. "Head of Marketing". */
-    jobTitle: text('job_title'),
     linkedinUrl: text('linkedin_url'),
-    /** The company this person works at (sales CRM). */
-    companyId: uuid('company_id'),
     createdBy: uuid('created_by'),
     userId: uuid('user_id'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
@@ -378,14 +369,6 @@ export const contacts = pgTable(
     index('idx_contacts_user_id')
       .using('btree', table.userId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(user_id IS NOT NULL)`),
-    index('idx_contacts_company')
-      .using('btree', table.companyId.asc().nullsLast().op('uuid_ops'))
-      .where(sql`(deleted_at IS NULL AND company_id IS NOT NULL)`),
-    foreignKey({
-      columns: [table.companyId],
-      foreignColumns: [companies.id],
-      name: 'contacts_company_id_fkey',
-    }).onDelete('set null'),
     foreignKey({
       columns: [table.createdBy],
       foreignColumns: [users.id],
@@ -399,31 +382,61 @@ export const contacts = pgTable(
   ]
 )
 
-export const contactClients = pgTable(
-  'contact_clients',
+/**
+ * A person at a company: their title there, whether they're the company's
+ * primary contact and whether they can see its client in the client portal.
+ * A person can belong to several companies (one current row per pair); the
+ * oldest current one is their main company for list columns. Ending a
+ * membership (`ended_at`) keeps the history. One current primary per
+ * company. Portal access lives only here (see `clientPortalAccess`).
+ */
+export const memberships = pgTable(
+  'memberships',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
     contactId: uuid('contact_id').notNull(),
-    clientId: uuid('client_id').notNull(),
+    companyId: uuid('company_id').notNull(),
+    /** Job title at this company, e.g. "Head of Marketing". */
+    title: text(),
+    isPrimary: boolean('is_primary').default(false).notNull(),
+    portalAccess: boolean('portal_access').default(false).notNull(),
+    startedAt: timestamp('started_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    endedAt: timestamp('ended_at', { withTimezone: true, mode: 'string' }),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
       .notNull(),
   },
   table => [
-    unique('contact_clients_contact_client_key').on(table.contactId, table.clientId),
-    index('idx_contact_clients_contact')
-      .using('btree', table.contactId.asc().nullsLast().op('uuid_ops')),
-    index('idx_contact_clients_client')
-      .using('btree', table.clientId.asc().nullsLast().op('uuid_ops')),
+    uniqueIndex('memberships_one_current_per_contact_company')
+      .on(table.contactId, table.companyId)
+      .where(sql`(ended_at IS NULL)`),
+    index('idx_memberships_contact_current')
+      .on(table.contactId)
+      .where(sql`(ended_at IS NULL)`),
+    uniqueIndex('memberships_one_primary_per_company')
+      .on(table.companyId)
+      .where(sql`(is_primary AND ended_at IS NULL)`),
+    index('idx_memberships_company_current')
+      .on(table.companyId)
+      .where(sql`(ended_at IS NULL)`),
+    check(
+      'memberships_ended_has_no_flags',
+      sql`ended_at IS NULL OR (NOT is_primary AND NOT portal_access)`
+    ),
     foreignKey({
       columns: [table.contactId],
       foreignColumns: [contacts.id],
-      name: 'contact_clients_contact_id_fkey',
+      name: 'memberships_contact_id_fkey',
     }).onDelete('cascade'),
     foreignKey({
-      columns: [table.clientId],
-      foreignColumns: [clients.id],
-      name: 'contact_clients_client_id_fkey',
+      columns: [table.companyId],
+      foreignColumns: [companies.id],
+      name: 'memberships_company_id_fkey',
     }).onDelete('cascade'),
   ]
 )
@@ -454,48 +467,6 @@ export const contactLeads = pgTable(
       foreignColumns: [leads.id],
       name: 'contact_leads_lead_id_fkey',
     }).onDelete('cascade'),
-  ]
-)
-
-export const clientMembers = pgTable(
-  'client_members',
-  {
-    id: bigint({ mode: 'number' }).primaryKey().generatedByDefaultAsIdentity({
-      name: 'client_members_id_seq',
-      startWith: 1,
-      increment: 1,
-      minValue: 1,
-      maxValue: 9223372036854775807,
-      cache: 1,
-    }),
-    clientId: uuid('client_id').notNull(),
-    userId: uuid('user_id').notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
-      .notNull(),
-    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
-  },
-  table => [
-    index('idx_client_members_client')
-      .using('btree', table.clientId.asc().nullsLast().op('uuid_ops'))
-      .where(sql`(deleted_at IS NULL)`),
-    index('idx_client_members_user')
-      .using('btree', table.userId.asc().nullsLast().op('uuid_ops'))
-      .where(sql`(deleted_at IS NULL)`),
-    foreignKey({
-      columns: [table.clientId],
-      foreignColumns: [clients.id],
-      name: 'client_members_client_id_fkey',
-    }).onDelete('cascade'),
-    foreignKey({
-      columns: [table.userId],
-      foreignColumns: [users.id],
-      name: 'client_members_user_id_fkey',
-    }).onDelete('cascade'),
-    unique('client_members_client_id_user_id_key').on(
-      table.clientId,
-      table.userId
-    ),
   ]
 )
 
@@ -1225,19 +1196,14 @@ export const leads = pgTable(
   'leads',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
-    contactName: text('contact_name').notNull(),
     status: leadStatus().default('NEW_OPPORTUNITIES').notNull(),
     sourceType: leadSourceType('source_type'),
     sourceDetail: text('source_detail'),
     assigneeId: uuid('assignee_id'),
-    contactEmail: text('contact_email'),
-    contactPhone: text('contact_phone'),
-    companyName: text('company_name'),
-    companyWebsite: text('company_website'),
-    /** The company record; `company_name` stays as its display copy. */
+    /** The lead's company (optional: a lead can be just a person). */
     companyId: uuid('company_id'),
-    /** The lead's contact; contact_name/email/phone are its display copy. */
-    contactId: uuid('contact_id'),
+    /** The lead's person; their name, email and phone are read from it. */
+    contactId: uuid('contact_id').notNull(),
     notes: jsonb('notes').default({}).notNull(),
     rank: text().default('zzzzzzzz').notNull(),
 
@@ -1300,7 +1266,7 @@ export const leads = pgTable(
       columns: [table.contactId],
       foreignColumns: [contacts.id],
       name: 'leads_contact_id_fkey',
-    }).onDelete('set null'),
+    }).onDelete('restrict'),
   ]
 )
 
@@ -2477,3 +2443,15 @@ export const currentUserWithRole = pgView('current_user_with_role', {
 }).as(
   sql`SELECT id, role FROM users u WHERE id = auth.uid() AND deleted_at IS NULL`
 )
+
+/**
+ * Who can see which client in the client portal, derived from memberships:
+ * a current, portal-enabled membership at the client's company. The one
+ * source both portals read; there is nothing to keep in sync.
+ */
+export const clientPortalAccess = pgView('client_portal_access', {
+  clientId: uuid('client_id').notNull(),
+  contactId: uuid('contact_id').notNull(),
+  /** The contact's portal login, if they have one. */
+  userId: uuid('user_id'),
+}).existing()
