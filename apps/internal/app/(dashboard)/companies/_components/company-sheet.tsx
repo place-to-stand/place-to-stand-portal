@@ -562,6 +562,7 @@ export function CompanySheet({
                         removedIds={removedContactIds}
                         movesFrom={movesFrom}
                         primaryContactId={primaryContactId}
+                        clientName={company.clients[0]?.name ?? null}
                         disabled={fieldsDisabled || peopleLocked}
                         lockedReason={
                           peopleLocked

@@ -96,6 +96,7 @@ async function listClientContacts(
       email: contacts.email,
       phone: contacts.phone,
       userId: contacts.userId,
+      companyId: contacts.companyId,
       isPrimary: isClientPrimaryContactSql,
     })
     .from(contactClients)
@@ -111,6 +112,7 @@ async function listClientContacts(
     email: row.email,
     phone: row.phone,
     hasPortalAccess: Boolean(row.userId),
+    companyId: row.companyId,
     isPrimary: row.isPrimary,
   }))
 }
@@ -190,6 +192,37 @@ export async function syncClientContacts(
   const wanted = new Set(contactIds)
   const toAdd = contactIds.filter(id => !currentIds.has(id))
   const toRemove = [...currentIds].filter(id => !wanted.has(id))
+  // Portal access is only for people at the client's company.
+  if (toAdd.length) {
+    const [client] = await db
+      .select({ companyId: clients.companyId })
+      .from(clients)
+      .where(eq(clients.id, clientId))
+      .limit(1)
+    const companyId = client?.companyId ?? null
+    const outsiders = await db
+      .select({ name: contacts.name })
+      .from(contacts)
+      .where(
+        and(
+          inArray(contacts.id, toAdd),
+          companyId
+            ? sql`${contacts.companyId} is distinct from ${companyId}`
+            : undefined
+        )
+      )
+    if (!companyId || outsiders.length) {
+      return {
+        ok: false,
+        error: companyId
+          ? `${outsiders.map(c => c.name).join(', ')} ${
+              outsiders.length === 1 ? 'isn’t' : 'aren’t'
+            } at this client’s company. Add them to the company first.`
+          : 'Link this client to a company before giving people portal access.',
+      }
+    }
+  }
+
   const changes: ContactClientLinkChange[] = [
     ...toAdd.map(contactId => ({
       contactId,

@@ -32,6 +32,8 @@ type CompanyPeopleSectionProps = {
   movesFrom: (contactId: string) => string | null
   /** The form's current choice, so the star follows unsaved edits. */
   primaryContactId: string | null
+  /** The company's client, if any: removing someone ends their access to it. */
+  clientName?: string | null
   disabled: boolean
   /**
    * Why the list is locked (a client company, for a non-admin), shown on the
@@ -54,6 +56,7 @@ export function CompanyPeopleSection({
   removedIds,
   movesFrom,
   primaryContactId,
+  clientName = null,
   disabled,
   lockedReason,
   onSetPrimary,
@@ -124,7 +127,13 @@ export function CompanyPeopleSection({
                 key={contact.id}
                 contact={contact}
                 className='opacity-60'
-                note={<span className='text-destructive'>Pending removal</span>}
+                note={
+                  <span className='text-destructive'>
+                    {clientName
+                      ? `Pending removal · loses portal access to ${clientName}`
+                      : 'Pending removal'}
+                  </span>
+                }
                 actions={
                   <Button
                     type='button'

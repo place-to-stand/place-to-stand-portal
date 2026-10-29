@@ -56,9 +56,8 @@ export type ClientContactLinkButtonProps = {
 }
 
 /**
- * The "Add person" picker on the Portal access section: the company's people
- * first, then anyone else (an outside accountant, say). Adding someone here
- * doesn't add them to the company.
+ * The "Add person" picker on the Portal access section: only people at the
+ * client's company (the server enforces it). Add others to the company first.
  */
 export function ClientContactLinkButton({
   availableContacts,
@@ -89,57 +88,44 @@ export function ClientContactLinkButton({
       <PopoverContent className='w-72 p-0' align='end'>
         <Command>
           <CommandInput
-            placeholder='Search people…'
+            placeholder='Search company people…'
             value={query}
             onValueChange={setQuery}
           />
           <CommandList>
-            <CommandEmpty>No one found.</CommandEmpty>
-            {[
-              {
-                heading: 'At this company',
-                people: availableContacts.filter(
-                  c => companyId && c.companyId === companyId
-                ),
-              },
-              {
-                heading: companyId ? 'Other people' : 'People',
-                people: availableContacts.filter(
-                  c => !companyId || c.companyId !== companyId
-                ),
-              },
-            ]
-              .filter(group => group.people.length > 0)
-              .map(group => (
-                <CommandGroup key={group.heading} heading={group.heading}>
-                  {group.people.map(contact => (
-                    <CommandItem
-                      key={contact.id}
-                      value={`${contact.name ?? ''} ${contact.email}`}
-                      onSelect={() => {
-                        if (isPending) {
-                          return
-                        }
-                        onAddContact(contact)
-                      }}
-                    >
-                      <div className='flex flex-col'>
-                        <span className='flex items-center gap-1.5 font-medium'>
-                          {contact.name ?? contact.email}
-                          {contact.hasPortalAccess ? (
-                            <PortalAccessMark />
-                          ) : null}
+            <CommandEmpty>
+              {companyId
+                ? 'No one else at this company. Add people on the company.'
+                : 'Link a company first.'}
+            </CommandEmpty>
+            <CommandGroup>
+              {availableContacts
+                .filter(c => companyId && c.companyId === companyId)
+                .map(contact => (
+                  <CommandItem
+                    key={contact.id}
+                    value={`${contact.name ?? ''} ${contact.email}`}
+                    onSelect={() => {
+                      if (isPending) {
+                        return
+                      }
+                      onAddContact(contact)
+                    }}
+                  >
+                    <div className='flex flex-col'>
+                      <span className='flex items-center gap-1.5 font-medium'>
+                        {contact.name ?? contact.email}
+                        {contact.hasPortalAccess ? <PortalAccessMark /> : null}
+                      </span>
+                      {contact.name ? (
+                        <span className='text-muted-foreground text-xs'>
+                          {contact.email}
                         </span>
-                        {contact.name ? (
-                          <span className='text-muted-foreground text-xs'>
-                            {contact.email}
-                          </span>
-                        ) : null}
-                      </div>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              ))}
+                      ) : null}
+                    </div>
+                  </CommandItem>
+                ))}
+            </CommandGroup>
           </CommandList>
         </Command>
       </PopoverContent>
@@ -158,6 +144,8 @@ export type ClientContactListProps = {
   onRequestLink: () => void
   linkDisabled: boolean
   linkDisabledReason: string | null
+  /** The client's company: anyone else is flagged, with remove only. */
+  companyId: string | null
 }
 
 /**
@@ -174,6 +162,7 @@ export function ClientContactList({
   onRequestLink,
   linkDisabled,
   linkDisabledReason,
+  companyId,
 }: ClientContactListProps) {
   if (selectedContacts.length === 0) {
     return (
@@ -193,27 +182,43 @@ export function ClientContactList({
       {selectedContacts.map(contact => {
         const label = contact.name ?? contact.email
         const isPrimary = contact.id === primaryContactId
+        // Older access rows can point outside the company: show them so
+        // they can be removed, but no star.
+        const outsider = Boolean(
+          companyId &&
+          contact.companyId !== undefined &&
+          contact.companyId !== companyId
+        )
         return (
           <ContactRecordRow
             key={contact.id}
             contact={contact}
             titleAddon={contact.hasPortalAccess ? <PortalAccessMark /> : null}
+            note={
+              outsider ? (
+                <span className='text-warning'>Not at this company</span>
+              ) : undefined
+            }
             actions={
               <>
-                <RowActionButton
-                  type='button'
-                  label={
-                    isPrimary ? 'Unset primary contact' : 'Make primary contact'
-                  }
-                  icon={<Star className={cn(isPrimary && 'fill-current')} />}
-                  className={cn(
-                    'text-muted-foreground',
-                    isPrimary && 'text-warning hover:text-warning'
-                  )}
-                  onClick={() => onTogglePrimary(contact)}
-                  disabled={isPending}
-                  aria-pressed={isPrimary}
-                />
+                {outsider ? null : (
+                  <RowActionButton
+                    type='button'
+                    label={
+                      isPrimary
+                        ? 'Unset primary contact'
+                        : 'Make primary contact'
+                    }
+                    icon={<Star className={cn(isPrimary && 'fill-current')} />}
+                    className={cn(
+                      'text-muted-foreground',
+                      isPrimary && 'text-warning hover:text-warning'
+                    )}
+                    onClick={() => onTogglePrimary(contact)}
+                    disabled={isPending}
+                    aria-pressed={isPrimary}
+                  />
+                )}
                 <DisabledFieldTooltip
                   disabled={isPending}
                   reason={isPending ? pendingReason : null}

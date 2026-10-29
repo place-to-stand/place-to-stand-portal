@@ -248,7 +248,7 @@ export function ClientSheetForm({
                 </FormItem>
               )}
             />
-                        {isEditing ? (
+            {isEditing ? (
               <FormField
                 control={form.control}
                 name='slug'
@@ -472,7 +472,7 @@ export function ClientSheetForm({
 
           <SheetSection
             title='Portal access'
-            description='Who can see this client in the client portal: usually its company’s people. Star the primary contact.'
+            description='Who from the company can see this client in the client portal. Star the primary contact.'
             action={
               <ClientContactLinkButton
                 availableContacts={availableContacts}
@@ -496,6 +496,7 @@ export function ClientSheetForm({
               onRequestLink={() => onContactPickerOpenChange(true)}
               linkDisabled={contactsAddButtonDisabled}
               linkDisabledReason={contactsAddButtonDisabledReason}
+              companyId={selectedCompanyId}
             />
           </SheetSection>
 

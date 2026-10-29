@@ -5,11 +5,23 @@ import {
   contactCreatedEvent,
   contactUpdatedEvent,
 } from '@/lib/activity/events/contacts'
+import { roleCan } from '@/lib/auth/capabilities'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
+import {
+  logContactClientLinkChanges,
+  type ContactClientLinkChange,
+} from '@/lib/queries/contacts/settings/contact-client-link-activity'
+import { revokeAccessOnLeavingCompany } from '@/lib/queries/contacts/settings/leave-company-access'
 import { db } from '@/lib/db'
-import { companies, contacts, leads } from '@/lib/db/schema'
+import {
+  clients,
+  companies,
+  contactClients,
+  contacts,
+  leads,
+} from '@/lib/db/schema'
 import {
   findOrCreateCompanyByName,
   getLinkableCompany,
@@ -185,6 +197,33 @@ export async function saveContactMutation(
           }
         }
 
+        // Moving someone with portal access out of a client's company
+        // removes that access, which is admin-only (as on the company sheet).
+        if (
+          existingContact.companyId &&
+          existingContact.companyId !== companyId &&
+          !roleCan(user.role, 'clients.manage')
+        ) {
+          const [access] = await db
+            .select({ clientId: contactClients.clientId })
+            .from(contactClients)
+            .innerJoin(clients, eq(clients.id, contactClients.clientId))
+            .where(
+              and(
+                eq(contactClients.contactId, id),
+                eq(clients.companyId, existingContact.companyId)
+              )
+            )
+            .limit(1)
+          if (access) {
+            return buildMutationResult({
+              error:
+                'They have portal access to this company’s client, so only an admin can move them to another company.',
+            })
+          }
+        }
+
+        let accessChanges: ContactClientLinkChange[] = []
         try {
           await db.transaction(async tx => {
             await tx
@@ -192,8 +231,14 @@ export async function saveContactMutation(
               .set({ ...next, updatedAt: new Date().toISOString() })
               .where(eq(contacts.id, id))
 
-            // Leaving a company gives up being its primary contact.
+            // Leaving a company gives up being its primary contact and
+            // portal access to its client.
             if (existingContact.companyId && existingContact.companyId !== next.companyId) {
+              accessChanges = await revokeAccessOnLeavingCompany(
+                tx,
+                id,
+                existingContact.companyId
+              )
               await tx
                 .update(companies)
                 .set({ primaryContactId: null })
@@ -229,6 +274,8 @@ export async function saveContactMutation(
           }
           return buildMutationResult({ error: 'Unable to update contact.' })
         }
+
+        await logContactClientLinkChanges(user, accessChanges)
 
         if (changedFields.length > 0) {
           const event = contactUpdatedEvent({

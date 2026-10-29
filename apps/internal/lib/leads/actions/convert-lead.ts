@@ -7,11 +7,20 @@ import { logActivity } from '@/lib/activity/logger'
 import { contactCreatedEvent, leadConvertedEvent } from '@/lib/activity/events'
 import { requireRole } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { clients, companies, contacts, contactClients, leads } from '@/lib/db/schema'
+import {
+  clients,
+  companies,
+  contacts,
+  contactClients,
+  leads,
+} from '@/lib/db/schema'
 import { createClient } from '@/lib/settings/clients/actions/create-client'
 import { saveProject } from '@/lib/settings/projects/actions/save-project'
 import { extractLeadNotes } from '@/lib/leads/notes'
-import { leadConversionSchema, type LeadConversionFormValues } from '../conversion-schema'
+import {
+  leadConversionSchema,
+  type LeadConversionFormValues,
+} from '../conversion-schema'
 import type { LeadConversionResult } from '../conversion-types'
 import { syncPortalMembershipsForLinkChanges } from '@/lib/queries/contacts/settings/contact-client-portal-memberships'
 import { getLinkableCompany } from '@/lib/queries/companies'
@@ -151,13 +160,18 @@ export async function convertLeadToClient(
         ? await db
             .select({ id: contacts.id })
             .from(contacts)
-            .where(and(eq(contacts.id, lead.contactId), isNull(contacts.deletedAt)))
+            .where(
+              and(eq(contacts.id, lead.contactId), isNull(contacts.deletedAt))
+            )
             .limit(1)
         : await db
             .select({ id: contacts.id })
             .from(contacts)
             .where(
-              and(eq(contacts.email, contactEmail ?? ''), isNull(contacts.deletedAt))
+              and(
+                eq(contacts.email, contactEmail ?? ''),
+                isNull(contacts.deletedAt)
+              )
             )
             .limit(1)
 
@@ -192,6 +206,35 @@ export async function convertLeadToClient(
         })
       }
 
+      // Winning the lead is the one deliberate step that puts its contact
+      // on the client: they join its company when they're on record nowhere
+      // else, then get portal access.
+      await db
+        .update(contacts)
+        .set({
+          companyId: sql`(select company_id from clients where id = ${finalClientId})`,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(and(eq(contacts.id, contactId), isNull(contacts.companyId)))
+      // Portal access is only for people at the client's company.
+      const [placement] = await db
+        .select({
+          contactCompanyId: contacts.companyId,
+          clientCompanyId: clients.companyId,
+        })
+        .from(contacts)
+        .innerJoin(clients, eq(clients.id, finalClientId))
+        .where(eq(contacts.id, contactId))
+        .limit(1)
+      const atClientCompany =
+        Boolean(placement?.clientCompanyId) &&
+        placement?.contactCompanyId === placement?.clientCompanyId
+      if (!atClientCompany) {
+        warnings.push(
+          `${lead.contactName} isn’t at this client’s company, so they weren’t given portal access. Add them to the company first.`
+        )
+      }
+
       // Link contact to client (ignore if already linked)
       const [existingLink] = await db
         .select({ id: contactClients.id })
@@ -204,7 +247,7 @@ export async function convertLeadToClient(
         )
         .limit(1)
 
-      if (!existingLink) {
+      if (atClientCompany && !existingLink) {
         await db.insert(contactClients).values({
           contactId,
           clientId: finalClientId,
@@ -215,21 +258,14 @@ export async function convertLeadToClient(
         ])
       }
 
-      // Winning the lead is the one deliberate step that puts its contact
-      // on the client. They also join the client's company when they're on
-      // record nowhere else (that grants no access by itself).
-      await db
-        .update(contacts)
-        .set({
-          companyId: sql`(select company_id from clients where id = ${finalClientId})`,
-          updatedAt: new Date().toISOString(),
-        })
-        .where(and(eq(contacts.id, contactId), isNull(contacts.companyId)))
       // The client's company takes this contact as its primary when it has
       // none yet, and the contact works there (or nowhere on record).
       await db
         .update(companies)
-        .set({ primaryContactId: contactId, updatedAt: new Date().toISOString() })
+        .set({
+          primaryContactId: contactId,
+          updatedAt: new Date().toISOString(),
+        })
         .where(
           and(
             isNull(companies.primaryContactId),
@@ -243,7 +279,9 @@ export async function convertLeadToClient(
         )
     } catch (err) {
       console.error('[convert-lead] Failed to create contact:', err)
-      warnings.push('Contact record could not be created. You can add it manually from the client page.')
+      warnings.push(
+        'Contact record could not be created. You can add it manually from the client page.'
+      )
     }
   }
 
@@ -263,14 +301,19 @@ export async function convertLeadToClient(
       })
 
       if (projectResult.error) {
-        console.error('[convert-lead] Failed to create project:', projectResult.error)
+        console.error(
+          '[convert-lead] Failed to create project:',
+          projectResult.error
+        )
         warnings.push(`Project could not be created: ${projectResult.error}`)
       } else {
         projectId = projectResult.projectId
       }
     } catch (err) {
       console.error('[convert-lead] Failed to create project:', err)
-      warnings.push('Project could not be created. You can create it manually from settings.')
+      warnings.push(
+        'Project could not be created. You can create it manually from settings.'
+      )
     }
   }
 

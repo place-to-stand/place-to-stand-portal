@@ -22,6 +22,11 @@ import {
   contactUpdatedEvent,
 } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
+import {
+  logContactClientLinkChanges,
+  type ContactClientLinkChange,
+} from '@/lib/queries/contacts/settings/contact-client-link-activity'
+import { revokeAccessOnLeavingCompany } from '@/lib/queries/contacts/settings/leave-company-access'
 import { roleCan } from '@/lib/auth/capabilities'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
@@ -399,6 +404,7 @@ export async function saveCompany(
     changedFields.push('clients')
   }
 
+  const accessChanges: ContactClientLinkChange[] = []
   try {
     await db.transaction(async tx => {
       await tx
@@ -439,9 +445,16 @@ export async function saveCompany(
           .update(contacts)
           .set({ companyId: move.toCompanyId, updatedAt: timestamp })
           .where(eq(contacts.id, move.contactId))
-        // Leaving a company gives up being its primary contact (as on the
-        // contact sheet).
+        // Leaving a company gives up being its primary contact and portal
+        // access to its client (as on the contact sheet).
         if (move.fromCompanyId) {
+          accessChanges.push(
+            ...(await revokeAccessOnLeavingCompany(
+              tx,
+              move.contactId,
+              move.fromCompanyId
+            ))
+          )
           await tx
             .update(companies)
             .set({ primaryContactId: null })
@@ -509,6 +522,8 @@ export async function saveCompany(
       }),
     })
   }
+
+  await logContactClientLinkChanges(actor, accessChanges)
 
   for (const move of clientMoves) {
     const nextName = clientDisplayName(next.name)
