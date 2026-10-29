@@ -1,7 +1,9 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { Briefcase, Building2, Contact, Handshake } from 'lucide-react'
+import { Briefcase, Building2, Contact, Handshake, Link2 } from 'lucide-react'
+
+import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
@@ -17,6 +19,11 @@ import { useSheetParams } from '@/lib/sheets/use-sheet-params'
  */
 
 type RowExtras = {
+  /**
+   * Shows the link mark: this record is linked one-to-one to the sheet's
+   * own record (a company's client, a client's company).
+   */
+  linked?: boolean
   /** Replaces the default detail line (e.g. "Pending save"). */
   note?: ReactNode
   actions?: ReactNode
@@ -57,7 +64,9 @@ export function ContactRecordRow({
           name
         )
       }
-      description={note ?? contact.jobTitle ?? (contact.name ? contact.email : null)}
+      description={
+        note ?? contact.jobTitle ?? (contact.name ? contact.email : null)
+      }
       onOpen={openable ? () => open('contact', contact.id) : undefined}
       openLabel={`Open ${name}`}
       actions={actions}
@@ -68,6 +77,7 @@ export function ContactRecordRow({
 
 export function ClientRecordRow({
   client,
+  linked = false,
   note,
   actions,
   openable = true,
@@ -81,7 +91,7 @@ export function ClientRecordRow({
       description={note}
       onOpen={openable ? () => open('client', client.id) : undefined}
       openLabel={`Open ${client.name}`}
-      actions={actions}
+      actions={withLinkMark(linked, actions)}
       className={className}
     />
   )
@@ -89,6 +99,7 @@ export function ClientRecordRow({
 
 export function CompanyRecordRow({
   company,
+  linked = false,
   note,
   actions,
   openable = true,
@@ -102,7 +113,7 @@ export function CompanyRecordRow({
       description={note}
       onOpen={openable ? () => open('company', company.id) : undefined}
       openLabel={`Open ${company.name}`}
-      actions={actions}
+      actions={withLinkMark(linked, actions)}
       className={className}
     />
   )
@@ -140,5 +151,25 @@ export function LeadRecordRow({
       }
       className={className}
     />
+  )
+}
+
+function withLinkMark(linked: boolean, actions: ReactNode) {
+  if (!linked) return actions
+  return (
+    <>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            className='text-muted-foreground inline-flex size-7 items-center justify-center'
+            aria-label='Linked'
+          >
+            <Link2 className='size-3.5' aria-hidden />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>Linked</TooltipContent>
+      </Tooltip>
+      {actions}
+    </>
   )
 }

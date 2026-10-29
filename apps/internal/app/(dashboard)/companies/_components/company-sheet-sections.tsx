@@ -3,6 +3,7 @@
 import { X } from 'lucide-react'
 
 import { EmptyState } from '@pts/ui/empty-state'
+import { Button } from '@pts/ui/button'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import {
   ClientLinkPicker,
@@ -45,95 +46,120 @@ export function CompanyLeadsSection({
   )
 }
 
-export function CompanyClientsSection({
+/**
+ * A company and its client are one record linked: this slot holds the
+ * linked client (or links one). Changes are staged until Save.
+ */
+export function CompanyLinkedClientSection({
   companyId,
-  clients,
-  added,
-  movesFrom,
+  client,
+  staged,
+  unlinking,
   disabled,
-  onAdd,
-  onRemoveAdded,
+  onLink,
+  onClearStaged,
+  onUnlink,
+  onUndoUnlink,
 }: {
   companyId: string
-  clients: { id: string; name: string; slug: string | null }[]
-  /** Existing clients picked here, linked on Save. */
-  added: ClientLink[]
-  /** "Moves from …" for a picked client at another company now. */
-  movesFrom: (clientId: string) => string | null
+  /** The client linked now, if any. */
+  client: { id: string; name: string } | null
+  /** A client picked here, linked on Save. */
+  staged: ClientLink | null
+  /** The linked client is set to unlink on Save. */
+  unlinking: boolean
   disabled: boolean
-  onAdd: (client: ClientLink) => void
-  onRemoveAdded: (clientId: string) => void
+  onLink: (client: ClientLink) => void
+  onClearStaged: () => void
+  onUnlink: () => void
+  onUndoUnlink: () => void
 }) {
   // Client records are admin-only; others just see the name.
   const { isAdmin, role } = useViewerAccess()
   const canManageClients = Boolean(role && roleCan(role, 'clients.manage'))
-  const linkedIds = new Set(clients.map(client => client.id))
-  const pending = added.filter(client => !linkedIds.has(client.id))
-  // A company has one client: the slot takes one, then the add goes away.
-  const hasClient = clients.length + pending.length > 0
+  const shown = staged ?? (client && !unlinking ? client : null)
+  const locked = disabled || !canManageClients
+  const lockedReason = canManageClients
+    ? null
+    : 'Only an admin can link clients.'
 
   return (
     <SheetSection
-      title='Client'
+      title='Linked client'
       action={
-        hasClient ? null : canManageClients && !disabled ? (
-          // Link an existing client, or create one on top with this company
-          // picked.
-          <ClientLinkPicker
-            value={null}
-            onChange={client => (client ? onAdd(client) : undefined)}
-            excludeIds={[...linkedIds, ...pending.map(client => client.id)]}
-            createParams={{ clientCompanyId: companyId }}
-            trigger={<SectionAddButton label='Add client' />}
+        shown ? null : locked ? (
+          <SectionAddButton
+            label='Link client'
+            disabled={disabled}
+            disabledReason={lockedReason}
           />
         ) : (
-          <SectionAddButton
-            label='Add client'
-            disabled={disabled}
-            disabledReason={
-              canManageClients ? null : 'Only an admin can add clients.'
-            }
+          // An unlinked client, or a new one created on top with this
+          // company picked.
+          <ClientLinkPicker
+            value={null}
+            onChange={picked => (picked ? onLink(picked) : undefined)}
+            createParams={{ clientCompanyId: companyId }}
+            trigger={<SectionAddButton label='Link client' />}
           />
         )
       }
     >
-      {clients.length === 0 && pending.length === 0 ? (
-        <EmptyState message='Not a client yet. Add one here, or convert a lead.' />
-      ) : (
-        <SheetRecordList>
-          {clients.map(client => (
-            <ClientRecordRow
-              key={client.id}
-              client={client}
-              // Client records are admin-only; others just see the name.
-              openable={isAdmin}
+      {staged ? (
+        <ClientRecordRow
+          client={staged}
+          linked
+          note={<span className='text-warning'>Links on save</span>}
+          actions={
+            <RowActionButton
+              type='button'
+              disabled={disabled}
+              label={`Don't link ${staged.name}`}
+              onClick={onClearStaged}
+              className='text-muted-foreground hover:text-destructive'
+              icon={<X />}
             />
-          ))}
-          {pending.map(client => {
-            const from = movesFrom(client.id)
-            return (
-              <ClientRecordRow
-                key={`added-${client.id}`}
-                client={client}
-                note={
-                  <span className='text-warning'>
-                    {from ? `Moves from ${from}` : 'Pending save'}
-                  </span>
-                }
-                actions={
-                  <RowActionButton
-                    type='button'
-                    disabled={disabled}
-                    label={`Don't link ${client.name}`}
-                    onClick={() => onRemoveAdded(client.id)}
-                    className='text-muted-foreground hover:text-destructive'
-                    icon={<X />}
-                  />
-                }
-              />
+          }
+        />
+      ) : client && unlinking ? (
+        <ClientRecordRow
+          client={client}
+          className='opacity-60'
+          note={<span className='text-destructive'>Unlinks on save</span>}
+          actions={
+            <Button
+              type='button'
+              variant='ghost'
+              size='xs'
+              className='text-muted-foreground'
+              disabled={disabled}
+              onClick={onUndoUnlink}
+            >
+              Undo
+            </Button>
+          }
+        />
+      ) : client ? (
+        <ClientRecordRow
+          client={client}
+          linked
+          openable={isAdmin}
+          actions={
+            locked ? null : (
+              <Button
+                type='button'
+                variant='ghost'
+                size='xs'
+                className='text-muted-foreground hover:text-destructive'
+                onClick={onUnlink}
+              >
+                Unlink
+              </Button>
             )
-          })}
-        </SheetRecordList>
+          }
+        />
+      ) : (
+        <EmptyState message='Not a client yet. Link one here, or convert a lead.' />
       )}
     </SheetSection>
   )

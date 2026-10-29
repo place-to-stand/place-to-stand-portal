@@ -350,10 +350,25 @@ export async function saveCompany(
     existing.id,
     values.addClientIds ?? []
   )
-  // A company has one client.
+  // Unlinking only applies to a client linked here now.
+  const unlinkIds = (values.unlinkClientIds ?? []).length
+    ? await db
+        .select({ id: clients.id, name: clients.name })
+        .from(clients)
+        .where(
+          and(
+            inArray(clients.id, values.unlinkClientIds ?? []),
+            eq(clients.companyId, existing.id),
+            isNull(clients.deletedAt)
+          )
+        )
+    : []
+  // A company has one client (an unlink in the same save frees the slot).
   if (
     clientMoves.length > 1 ||
-    (clientMoves.length === 1 && (await companyHasClient(existing.id)))
+    (clientMoves.length === 1 &&
+      !unlinkIds.length &&
+      (await companyHasClient(existing.id)))
   ) {
     return {
       ok: false,
@@ -361,7 +376,12 @@ export async function saveCompany(
     }
   }
 
-  if (!changedFields.length && !people.moves.length && !clientMoves.length) {
+  if (
+    !changedFields.length &&
+    !people.moves.length &&
+    !clientMoves.length &&
+    !unlinkIds.length
+  ) {
     return { ok: true, id: existing.id }
   }
 
@@ -369,8 +389,8 @@ export async function saveCompany(
   // A client's name is its company's name, its people are who it bills and
   // gives portal access, and client records are admin-only.
   if (!roleCan(actor.role, 'clients.manage')) {
-    if (clientMoves.length) {
-      return { ok: false, error: 'Only an admin can link clients.' }
+    if (clientMoves.length || unlinkIds.length) {
+      return { ok: false, error: 'Only an admin can link or unlink clients.' }
     }
     if (renamed && (await companyHasClient(existing.id))) {
       return {
@@ -400,8 +420,8 @@ export async function saveCompany(
   if (people.moves.length) {
     changedFields.push('people')
   }
-  if (clientMoves.length) {
-    changedFields.push('clients')
+  if (clientMoves.length || unlinkIds.length) {
+    changedFields.push('linked client')
   }
 
   const accessChanges: ContactClientLinkChange[] = []
@@ -426,6 +446,14 @@ export async function saveCompany(
             updatedAt: timestamp,
           })
           .where(eq(clients.companyId, existing.id))
+      }
+
+      // Unlink first so the one-client index allows the new link.
+      for (const client of unlinkIds) {
+        await tx
+          .update(clients)
+          .set({ companyId: null, updatedAt: timestamp })
+          .where(eq(clients.id, client.id))
       }
 
       // A client is named after its company.
@@ -525,6 +553,24 @@ export async function saveCompany(
 
   await logContactClientLinkChanges(actor, accessChanges)
 
+  for (const client of unlinkIds) {
+    await logActivity({
+      actorId: actor.id,
+      actorRole: actor.role,
+      targetType: 'CLIENT',
+      targetId: client.id,
+      targetClientId: client.id,
+      ...clientUpdatedEvent({
+        name: client.name,
+        changedFields: ['company'],
+        details: {
+          before: { companyId: existing.id },
+          after: { companyId: null },
+        },
+      }),
+    })
+  }
+
   for (const move of clientMoves) {
     const nextName = clientDisplayName(next.name)
     const nameChanged = nextName !== move.name
@@ -569,7 +615,7 @@ async function resolveClientMoves(companyId: string, clientIds: string[]) {
   return rows.filter(row => row.fromCompanyId !== companyId)
 }
 
-/** Live clients for the company sheet's client picker, with their company. */
+/** Unlinked live clients for the company sheet's Linked client picker. */
 export async function listClientLinkOptions(): Promise<ClientLinkOption[]> {
   const rows = await db
     .select({
@@ -580,7 +626,8 @@ export async function listClientLinkOptions(): Promise<ClientLinkOption[]> {
     })
     .from(clients)
     .leftJoin(companies, eq(companies.id, clients.companyId))
-    .where(isNull(clients.deletedAt))
+    // Only clients not linked to a company: a company has one client.
+    .where(and(isNull(clients.deletedAt), isNull(clients.companyId)))
     .orderBy(asc(sql`lower(${clients.name})`))
   return rows
 }

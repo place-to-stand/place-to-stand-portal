@@ -30,7 +30,6 @@ import { useToast } from '@/components/ui/use-toast'
 import { COMPANY_OPTIONS_QUERY_KEY } from '@/components/companies/company-link-picker'
 import {
   CLIENT_LINK_OPTIONS_QUERY_KEY,
-  useClientLinkOptions,
   type ClientLink,
 } from '@/components/clients/client-link-picker'
 import {
@@ -52,7 +51,7 @@ import {
 } from '../actions'
 import { CompanyPeopleSection } from './company-people-section'
 import {
-  CompanyClientsSection,
+  CompanyLinkedClientSection,
   CompanyLeadsSection,
 } from './company-sheet-sections'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
@@ -74,6 +73,8 @@ const companyFormSchema = z.object({
   removedContactIds: z.array(z.string()),
   /** Existing clients picked on the Clients list; linked here on Save. */
   addedClients: z.array(z.object({ id: z.string(), name: z.string() })),
+  /** Unlink the client linked now, on Save. */
+  unlinkClient: z.boolean(),
 })
 
 type CompanyFormValues = z.infer<typeof companyFormSchema>
@@ -127,6 +128,7 @@ export function CompanySheet({
       addedContacts: [],
       removedContactIds: [],
       addedClients: [],
+      unlinkClient: false,
     },
   })
 
@@ -146,6 +148,7 @@ export function CompanySheet({
       addedContacts: [],
       removedContactIds: [],
       addedClients: [],
+      unlinkClient: false,
     })
   }, [company, data, form, initialName])
 
@@ -165,6 +168,7 @@ export function CompanySheet({
     router.refresh()
   }, [queryClient, router])
 
+  const linkedClientId = company?.clients[0]?.id ?? null
   const handleSubmit = useCallback(
     (values: CompanyFormValues) => {
       setFeedback(null)
@@ -178,6 +182,8 @@ export function CompanySheet({
           addContactIds: values.addedContacts.map(contact => contact.id),
           removeContactIds: values.removedContactIds,
           addClientIds: values.addedClients.map(client => client.id),
+          unlinkClientIds:
+            values.unlinkClient && linkedClientId ? [linkedClientId] : [],
         })
 
         if (!result.ok) {
@@ -214,6 +220,7 @@ export function CompanySheet({
       })
     },
     [
+      linkedClientId,
       company?.primaryContactId,
       companyId,
       form,
@@ -365,40 +372,24 @@ export function CompanySheet({
   )
 
   const addedClients = useWatch({ control: form.control, name: 'addedClients' })
-  const { data: clientOptions = [] } = useClientLinkOptions(isAdmin)
 
-  const handleAddClient = useCallback(
+  const unlinkClient = useWatch({ control: form.control, name: 'unlinkClient' })
+  // The slot holds one client: picking one replaces any staged pick.
+  const handleLinkClient = useCallback(
     (client: ClientLink) => {
-      const added = form.getValues('addedClients')
-      if (
-        added.some(item => item.id === client.id) ||
-        company?.clients.some(item => item.id === client.id)
-      ) {
-        return
-      }
-      form.setValue('addedClients', [...added, client], { shouldDirty: true })
+      if (company?.clients.some(item => item.id === client.id)) return
+      form.setValue('addedClients', [client], { shouldDirty: true })
     },
     [company?.clients, form]
   )
-
-  const handleRemoveAddedClient = useCallback(
-    (clientId: string) =>
-      form.setValue(
-        'addedClients',
-        form.getValues('addedClients').filter(item => item.id !== clientId),
-        { shouldDirty: true }
-      ),
+  const handleClearStagedClient = useCallback(
+    () => form.setValue('addedClients', [], { shouldDirty: true }),
     [form]
   )
-
-  const clientMovesFrom = useCallback(
-    (clientId: string) => {
-      const option = clientOptions.find(client => client.id === clientId)
-      return option?.companyId && option.companyId !== companyId
-        ? (option.companyName ?? 'another company')
-        : null
-    },
-    [clientOptions, companyId]
+  const handleSetUnlinkClient = useCallback(
+    (next: boolean) =>
+      form.setValue('unlinkClient', next, { shouldDirty: true }),
+    [form]
   )
 
   // "Add client → Create new client" saves the client already linked here:
@@ -546,14 +537,16 @@ export function CompanySheet({
                   {company ? (
                     <>
                       <Separator />
-                      <CompanyClientsSection
+                      <CompanyLinkedClientSection
                         companyId={company.id}
-                        clients={company.clients}
-                        added={addedClients}
-                        movesFrom={clientMovesFrom}
+                        client={company.clients[0] ?? null}
+                        staged={addedClients[0] ?? null}
+                        unlinking={unlinkClient}
                         disabled={fieldsDisabled}
-                        onAdd={handleAddClient}
-                        onRemoveAdded={handleRemoveAddedClient}
+                        onLink={handleLinkClient}
+                        onClearStaged={handleClearStagedClient}
+                        onUnlink={() => handleSetUnlinkClient(true)}
+                        onUndoUnlink={() => handleSetUnlinkClient(false)}
                       />
                       <Separator />
                       <CompanyPeopleSection

@@ -634,8 +634,12 @@ export function useClientSheetFormState({
           companyId: values.companyId || undefined,
         } satisfies Parameters<typeof saveClient>[0]
 
-        if (isEditing && !payload.companyId) {
-          setFeedback('Pick the company this client is.')
+        // A new client needs its company; an existing one is linked or
+        // unlinked from the company's sheet.
+        if (!isEditing && !payload.companyId) {
+          form.setError('companyId', {
+            message: 'Pick or create the company this client is',
+          })
           return
         }
 

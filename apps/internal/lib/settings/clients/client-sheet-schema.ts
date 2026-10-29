@@ -22,7 +22,8 @@ export const clientSheetFormSchema = z.object({
   state: z.string().max(2).optional(),
   notes: z.string().optional(),
   /** The company this client is. */
-  companyId: z.string().min(1, 'Pick or create the company this client is'),
+  /** Required on create; on edit it's shown, not changed (see the company). */
+  companyId: z.string(),
 })
 
 export type ClientSheetFormValues = z.infer<typeof clientSheetFormSchema>

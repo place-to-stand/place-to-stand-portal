@@ -18,7 +18,10 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@pts/ui/input'
-import { CompanyLinkPicker } from '@/components/companies/company-link-picker'
+import {
+  CompanyLinkPicker,
+  useCompanyOptions,
+} from '@/components/companies/company-link-picker'
 import {
   Select,
   SelectContent,
@@ -51,6 +54,7 @@ import { ClientEffectiveCallout } from './client-effective-callout'
 import { ClientOriginationPicker } from './client-origination-picker'
 import { getSubmitLabel } from '@/lib/forms/form-controls'
 import { FormFeedback } from '@/components/sheets/form-feedback'
+import { CompanyRecordRow } from '@/components/sheets/entity-record-rows'
 
 const CLIENT_FORM_ID = 'client-form'
 
@@ -173,6 +177,10 @@ export function ClientSheetForm({
   // Portal access lists this company's people first.
   const selectedCompanyId =
     useWatch({ control: form.control, name: 'companyId' }) || null
+  const { data: companyOptions = [] } = useCompanyOptions()
+  const linkedCompany = selectedCompanyId
+    ? (companyOptions.find(option => option.id === selectedCompanyId) ?? null)
+    : null
 
   const handleSave = useCallback(
     () => form.handleSubmit(onSubmit)(),
@@ -220,34 +228,49 @@ export function ClientSheetForm({
           className='flex flex-col gap-6 px-6 pt-6 pb-8'
         >
           <SheetSection title='Details'>
-            <FormField
-              control={form.control}
-              name='companyId'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Company</FormLabel>
-                  <FormControl>
-                    <DisabledFieldTooltip
-                      disabled={isPending}
-                      reason={fieldDisabledReason}
-                    >
-                      <CompanyLinkPicker
-                        value={
-                          field.value ? { id: field.value, name: '' } : null
-                        }
-                        onChange={next => field.onChange(next?.id ?? '')}
-                        disabled={isPending}
-                      />
-                    </DisabledFieldTooltip>
-                  </FormControl>
-                  <p className='text-muted-foreground text-xs'>
-                    The client takes the company’s name and uses its primary
-                    contact.
+            {isEditing ? (
+              // One record linked: the client's company is shown here and
+              // changed from the company's Linked client slot.
+              <FormItem>
+                <FormLabel>Linked company</FormLabel>
+                {linkedCompany ? (
+                  <CompanyRecordRow company={linkedCompany} linked />
+                ) : (
+                  <p className='text-muted-foreground text-sm'>
+                    Not linked to a company. Link it from a company.
                   </p>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                )}
+              </FormItem>
+            ) : (
+              <FormField
+                control={form.control}
+                name='companyId'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Linked company</FormLabel>
+                    <FormControl>
+                      <DisabledFieldTooltip
+                        disabled={isPending}
+                        reason={fieldDisabledReason}
+                      >
+                        <CompanyLinkPicker
+                          value={
+                            field.value ? { id: field.value, name: '' } : null
+                          }
+                          onChange={next => field.onChange(next?.id ?? '')}
+                          disabled={isPending}
+                        />
+                      </DisabledFieldTooltip>
+                    </FormControl>
+                    <p className='text-muted-foreground text-xs'>
+                      The client takes the company’s name and uses its primary
+                      contact.
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             {isEditing ? (
               <FormField
                 control={form.control}
