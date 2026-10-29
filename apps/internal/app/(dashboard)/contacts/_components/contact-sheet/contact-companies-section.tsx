@@ -4,13 +4,13 @@ import { useState } from 'react'
 import { Star, X } from 'lucide-react'
 
 import { EmptyState } from '@pts/ui/empty-state'
-import { Input } from '@pts/ui/input'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { Switch } from '@pts/ui/switch'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { CompanyLinkPicker } from '@/components/companies/company-link-picker'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { CompanyRecordRow } from '@/components/sheets/entity-record-rows'
+import { MembershipTitleInput } from '@/components/sheets/membership-title-input'
 import { SectionAddButton } from '@/components/sheets/section-add-button'
 import { SheetRecordList } from '@/components/sheets/sheet-record-row'
 import { SheetSection } from '@/components/sheets/sheet-section'
@@ -104,15 +104,11 @@ export function ContactCompaniesSection({
                 }
                 actions={
                   <>
-                    <Input
+                    <MembershipTitleInput
                       value={entry.title}
-                      onChange={event =>
-                        update(entry.companyId, { title: event.target.value })
-                      }
-                      placeholder='Title'
-                      aria-label={`Title at ${name}`}
+                      onChange={title => update(entry.companyId, { title })}
+                      ariaLabel={`Title at ${name}`}
                       disabled={disabled}
-                      className='h-8 w-36'
                     />
                     {entry.clientId ? (
                       <Tooltip>

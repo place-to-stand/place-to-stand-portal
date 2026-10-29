@@ -75,6 +75,8 @@ const companyFormSchema = z.object({
   addedClients: z.array(z.object({ id: z.string(), name: z.string() })),
   /** Unlink the client linked now, on Save. */
   unlinkClient: z.boolean(),
+  /** Each contact's title here, by contact id; saved with the sheet. */
+  titles: z.record(z.string(), z.string().max(160)),
 })
 
 type CompanyFormValues = z.infer<typeof companyFormSchema>
@@ -129,6 +131,7 @@ export function CompanySheet({
       removedContactIds: [],
       addedClients: [],
       unlinkClient: false,
+      titles: {},
     },
   })
 
@@ -149,6 +152,12 @@ export function CompanySheet({
       removedContactIds: [],
       addedClients: [],
       unlinkClient: false,
+      titles: Object.fromEntries(
+        (company?.contacts ?? []).map(contact => [
+          contact.id,
+          contact.jobTitle ?? '',
+        ])
+      ),
     })
   }, [company, data, form, initialName])
 
@@ -184,6 +193,17 @@ export function CompanySheet({
           addClientIds: values.addedClients.map(client => client.id),
           unlinkClientIds:
             values.unlinkClient && linkedClientId ? [linkedClientId] : [],
+          // Only titles that changed (or that people joining here bring).
+          contactTitles: Object.entries(values.titles)
+            .filter(([contactId, title]) => {
+              if (values.removedContactIds.includes(contactId)) return false
+              const saved = company?.contacts.find(c => c.id === contactId)
+              return saved
+                ? (saved.jobTitle ?? '') !== title.trim()
+                : values.addedContacts.some(c => c.id === contactId) &&
+                    title.trim() !== ''
+            })
+            .map(([contactId, title]) => ({ contactId, title })),
         })
 
         if (!result.ok) {
@@ -221,6 +241,7 @@ export function CompanySheet({
     },
     [
       linkedClientId,
+      company?.contacts,
       company?.primaryContactId,
       companyId,
       form,
@@ -268,6 +289,12 @@ export function CompanySheet({
 
   // The star on the People list is the one control for this field; it saves
   // with the form.
+  const titles = useWatch({ control: form.control, name: 'titles' }) ?? {}
+  const handleTitleChange = useCallback(
+    (contactId: string, title: string) =>
+      form.setValue(`titles.${contactId}`, title, { shouldDirty: true }),
+    [form]
+  )
   const primaryContactId = useWatch({
     control: form.control,
     name: 'primaryContactId',
@@ -562,6 +589,9 @@ export function CompanySheet({
                             ? 'This company is a client, so an admin changes its contacts and primary contact.'
                             : null
                         }
+                        titles={titles}
+                        titleDisabled={fieldsDisabled}
+                        onTitleChange={handleTitleChange}
                         onSetPrimary={handleSetPrimary}
                         onAdd={handleAddPerson}
                         onRemove={handleRemovePerson}

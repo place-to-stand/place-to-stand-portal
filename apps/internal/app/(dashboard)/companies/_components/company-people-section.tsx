@@ -10,6 +10,7 @@ import {
   ContactLinkPicker,
   type ContactLink,
 } from '@/components/contacts/contact-link-picker'
+import { MembershipTitleInput } from '@/components/sheets/membership-title-input'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import { ContactRecordRow } from '@/components/sheets/entity-record-rows'
 import { SheetRecordList } from '@/components/sheets/sheet-record-row'
@@ -41,6 +42,11 @@ type CompanyPeopleSectionProps = {
    * Add button and in the description. Null when it isn't.
    */
   lockedReason: string | null
+  /** Each contact's title here, by contact id (staged). */
+  titles: Record<string, string>
+  /** Titles stay editable where the list is locked (as on the contact sheet). */
+  titleDisabled: boolean
+  onTitleChange: (contactId: string, title: string) => void
   onSetPrimary: (contactId: string | null) => void
   onAdd: (contact: ContactLink) => void
   onRemove: (contactId: string) => void
@@ -60,6 +66,9 @@ export function CompanyPeopleSection({
   clientName = null,
   disabled,
   lockedReason,
+  titles,
+  titleDisabled,
+  onTitleChange,
   onSetPrimary,
   onAdd,
   onRemove,
@@ -92,6 +101,15 @@ export function CompanyPeopleSection({
       />
     )
   }
+
+  const titleInput = (contact: { id: string; name: string }) => (
+    <MembershipTitleInput
+      value={titles[contact.id] ?? ''}
+      onChange={title => onTitleChange(contact.id, title)}
+      ariaLabel={`${contact.name}'s title`}
+      disabled={titleDisabled}
+    />
+  )
 
   const removeButton = (contact: { id: string; name: string }) => (
     <RowActionButton
@@ -177,6 +195,7 @@ export function CompanyPeopleSection({
                         }
                       />
                     ) : null}
+                    {titleInput(contact)}
                     {star(contact)}
                     {removeButton(contact)}
                   </>
@@ -197,6 +216,7 @@ export function CompanyPeopleSection({
                 }
                 actions={
                   <>
+                    {titleInput(contact)}
                     {star(contact)}
                     {removeButton(contact)}
                   </>

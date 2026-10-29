@@ -31,6 +31,7 @@ import {
   primaryContactIdSql,
   primaryContactNameSql,
   setCompanyPrimary,
+  setMembershipTitle,
 } from '@/lib/queries/memberships'
 import { roleCan } from '@/lib/auth/capabilities'
 import { assertCrmAccess } from '@/lib/auth/permissions'
@@ -398,6 +399,7 @@ export async function saveCompany(
   if (
     !changedFields.length &&
     !people.moves.length &&
+    !(values.contactTitles ?? []).length &&
     !clientMoves.length &&
     !unlinkIds.length
   ) {
@@ -428,6 +430,9 @@ export async function saveCompany(
 
   if (people.moves.length) {
     changedFields.push('contacts')
+  }
+  if ((values.contactTitles ?? []).length) {
+    changedFields.push('titles')
   }
   if (clientMoves.length || unlinkIds.length) {
     changedFields.push('linked client')
@@ -480,6 +485,9 @@ export async function saveCompany(
         } else {
           await leaveCompany(tx, move.contactId, existing.id)
         }
+      }
+      for (const entry of values.contactTitles ?? []) {
+        await setMembershipTitle(tx, entry.contactId, existing.id, entry.title)
       }
     })
   } catch (error) {

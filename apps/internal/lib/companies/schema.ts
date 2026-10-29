@@ -50,6 +50,23 @@ export const saveCompanySchema = z.object({
    * company has one client.
    */
   addClientIds: z.array(z.string().uuid()).max(1).optional(),
+  /**
+   * Titles at this company, set on the Contacts list (edit only): for
+   * current members and people joining in this save. Blank clears it.
+   */
+  contactTitles: z
+    .array(
+      z.object({
+        contactId: z.string().uuid(),
+        title: z
+          .string()
+          .trim()
+          .max(160)
+          .transform(value => (value ? value : null)),
+      })
+    )
+    .max(500)
+    .optional(),
   /** The linked client to unlink (admin only); it keeps its own records. */
   unlinkClientIds: z.array(z.string().uuid()).max(1).optional(),
 })
