@@ -1,27 +1,43 @@
 'use client'
 
-import { Pencil, RotateCcw } from 'lucide-react'
+import { Eye, Pencil, RotateCcw } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@pts/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import type { DashboardWidgetId } from '@/lib/dashboard/layout'
+
+import { DASHBOARD_WIDGET_LABELS } from './widget-renderer'
 
 type LayoutEditControlsProps = {
   isEditing: boolean
   canReset: boolean
+  /** Widgets the viewer may show but has hidden. */
+  hiddenWidgets: readonly DashboardWidgetId[]
+  onShowWidget: (id: DashboardWidgetId) => void
   onStartEditing: () => void
   onStopEditing: () => void
   onReset: () => void
 }
 
 /**
- * Header-right slot for the home page: pencil to enter edit mode, Reset +
- * Done while editing. Saves are optimistic (revert + toast on failure), so
+ * Header-right slot for the home page: pencil to enter edit mode; while
+ * editing, a menu to show hidden widgets, Reset and Done. Widgets are hidden
+ * from the button on each card. Saves are optimistic (revert + toast on failure), so
  * the buttons deliberately don't reflect the in-flight save: toggling
  * disabled/spinner state on every drop reads as a flicker.
  */
 export function LayoutEditControls({
   isEditing,
   canReset,
+  hiddenWidgets,
+  onShowWidget,
   onStartEditing,
   onStopEditing,
   onReset,
@@ -53,6 +69,28 @@ export function LayoutEditControls({
       >
         Editing widget layout
       </span>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type='button'
+            variant='ghost'
+            size='xs'
+            disabled={hiddenWidgets.length === 0}
+          >
+            <Eye aria-hidden />
+            Show widget
+            {hiddenWidgets.length ? ` (${hiddenWidgets.length})` : ''}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align='end'>
+          <DropdownMenuLabel>Hidden widgets</DropdownMenuLabel>
+          {hiddenWidgets.map(id => (
+            <DropdownMenuItem key={id} onClick={() => onShowWidget(id)}>
+              {DASHBOARD_WIDGET_LABELS[id]}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
       <Button
         type='button'
         variant='ghost'

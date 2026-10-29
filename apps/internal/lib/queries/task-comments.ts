@@ -8,11 +8,13 @@ import {
   taskCommentUpdatedEvent,
 } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
+import { htmlToPlainText } from '@/lib/activity/text-diff'
 import type { AppUser } from '@/lib/auth/session'
 import { ensureTaskWorkAccess } from '@/lib/projects/access'
 import { db } from '@/lib/db'
 import { projects, taskComments, tasks, users } from '@/lib/db/schema'
 import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
+import { notifyTaskComment } from '@/lib/notifications/in-app/events'
 import {
   clampLimit,
   decodeCursor,
@@ -289,6 +291,20 @@ export async function createTaskComment(
     commentId: comment.id,
     buildEvent: taskCommentCreatedEvent,
   })
+
+  const [task] = await db
+    .select({ title: tasks.title })
+    .from(tasks)
+    .where(eq(tasks.id, input.taskId))
+    .limit(1)
+  if (task) {
+    const text = htmlToPlainText(input.body).trim()
+    await notifyTaskComment(
+      user,
+      { id: input.taskId, title: task.title },
+      text.length > 140 ? `${text.slice(0, 139)}…` : text
+    )
+  }
 
   return { commentId: comment.id }
 }

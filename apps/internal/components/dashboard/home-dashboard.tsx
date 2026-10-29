@@ -1,7 +1,9 @@
 'use client'
 
+import { EmptyState } from '@pts/ui/empty-state'
 import { PageShell } from '@/components/layout/page-shell'
-import type { DashboardKind, DashboardLayout } from '@/lib/dashboard/layout'
+import type { Role } from '@/lib/auth/capabilities'
+import type { DashboardLayout } from '@/lib/dashboard/layout'
 
 import { DashboardWidgetGrid } from './widget-layout/dashboard-widget-grid'
 import { LayoutEditControls } from './widget-layout/layout-edit-controls'
@@ -10,7 +12,7 @@ import { useDashboardLayoutEditor } from './widget-layout/use-dashboard-layout-e
 
 type HomeDashboardProps = DashboardWidgetData & {
   initialLayout: DashboardLayout
-  kind?: DashboardKind
+  role: Role
 }
 
 export function HomeDashboard({
@@ -19,9 +21,9 @@ export function HomeDashboard({
   initialHoursSnapshot,
   sales,
   initialLayout,
-  kind = 'admin',
+  role,
 }: HomeDashboardProps) {
-  const editor = useDashboardLayoutEditor({ initialLayout, kind })
+  const editor = useDashboardLayoutEditor({ initialLayout, role })
 
   return (
     <PageShell
@@ -30,16 +32,26 @@ export function HomeDashboard({
         <LayoutEditControls
           isEditing={editor.isEditing}
           canReset={!editor.isDefault}
+          hiddenWidgets={editor.layout.hidden}
+          onShowWidget={editor.show}
           onStartEditing={editor.startEditing}
           onStopEditing={editor.stopEditing}
           onReset={editor.reset}
         />
       }
     >
+      {!editor.isEditing && editor.layout.columns.every(c => c.length === 0) ? (
+        <EmptyState
+          message='Every widget is hidden.'
+          onClick={editor.startEditing}
+          label='Edit widgets to show some'
+        />
+      ) : null}
       <DashboardWidgetGrid
         layout={editor.layout}
         data={{ tasks, totalTaskCount, initialHoursSnapshot, sales }}
         isEditing={editor.isEditing}
+        onHideWidget={editor.hide}
         onDragStart={editor.handleDragStart}
         onDragOver={editor.handleDragOver}
         onDragEnd={editor.handleDragEnd}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import type { DragEndEvent, DragOverEvent } from '@dnd-kit/core'
 import { arrayMove } from '@dnd-kit/sortable'
 
@@ -9,12 +10,14 @@ import {
   saveDashboardLayout,
 } from '@/app/(dashboard)/my/home/_actions/save-dashboard-layout'
 import { useToast } from '@/components/ui/use-toast'
+import type { Role } from '@/lib/auth/capabilities'
 import {
-  DEFAULT_DASHBOARD_LAYOUTS,
   cloneLayout,
+  defaultLayoutForRole,
+  hideWidget,
   isDefaultDashboardLayout,
   layoutsEqual,
-  type DashboardKind,
+  showWidget,
   type DashboardLayout,
   type DashboardWidgetId,
 } from '@/lib/dashboard/layout'
@@ -23,7 +26,7 @@ import { parseColumnDroppableId } from './types'
 
 type UseDashboardLayoutEditorArgs = {
   initialLayout: DashboardLayout
-  kind?: DashboardKind
+  role: Role
 }
 
 /**
@@ -33,8 +36,9 @@ type UseDashboardLayoutEditorArgs = {
  */
 export function useDashboardLayoutEditor({
   initialLayout,
-  kind = 'admin',
+  role,
 }: UseDashboardLayoutEditorArgs) {
+  const router = useRouter()
   const [layout, setLayout] = useState(() => cloneLayout(initialLayout))
   const [isEditing, setIsEditing] = useState(false)
   const [, startTransition] = useTransition()
@@ -48,10 +52,17 @@ export function useDashboardLayoutEditor({
   }, [layout])
 
   const persist = useCallback(
-    (next: DashboardLayout, previous: DashboardLayout) => {
+    (
+      next: DashboardLayout,
+      previous: DashboardLayout,
+      options: { refresh?: boolean } = {}
+    ) => {
       startTransition(async () => {
         const result = await saveDashboardLayout(next)
-        if (!result.success) {
+        if (result.success) {
+          // A newly shown widget needs its server data.
+          if (options.refresh) router.refresh()
+        } else {
           layoutRef.current = previous
           setLayout(previous)
           toast({
@@ -62,7 +73,29 @@ export function useDashboardLayoutEditor({
         }
       })
     },
-    [toast]
+    [router, toast]
+  )
+
+  const hide = useCallback(
+    (id: DashboardWidgetId) => {
+      const previous = cloneLayout(layoutRef.current)
+      const next = hideWidget(previous, id)
+      layoutRef.current = next
+      setLayout(next)
+      persist(next, previous)
+    },
+    [persist]
+  )
+
+  const show = useCallback(
+    (id: DashboardWidgetId) => {
+      const previous = cloneLayout(layoutRef.current)
+      const next = showWidget(previous, id)
+      layoutRef.current = next
+      setLayout(next)
+      persist(next, previous, { refresh: true })
+    },
+    [persist]
   )
 
   const handleDragStart = useCallback(() => {
@@ -140,12 +173,14 @@ export function useDashboardLayoutEditor({
 
   const reset = useCallback(() => {
     const previous = cloneLayout(layoutRef.current)
-    const next = cloneLayout(DEFAULT_DASHBOARD_LAYOUTS[kind])
+    const next = defaultLayoutForRole(role)
     layoutRef.current = next
     setLayout(next)
     startTransition(async () => {
       const result = await resetDashboardLayout()
-      if (!result.success) {
+      if (result.success) {
+        router.refresh()
+      } else {
         layoutRef.current = previous
         setLayout(previous)
         toast({
@@ -155,12 +190,14 @@ export function useDashboardLayoutEditor({
         })
       }
     })
-  }, [kind, toast])
+  }, [role, router, toast])
 
   return {
     layout,
     isEditing,
-    isDefault: isDefaultDashboardLayout(layout, kind),
+    isDefault: isDefaultDashboardLayout(layout, role),
+    hide,
+    show,
     startEditing: () => setIsEditing(true),
     stopEditing: () => setIsEditing(false),
     reset,

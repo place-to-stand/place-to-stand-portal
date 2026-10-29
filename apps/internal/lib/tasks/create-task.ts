@@ -20,6 +20,7 @@ import { resolveCompletedAt } from '@/lib/projects/task-status'
 
 import { assigneeAccessError } from './assignee-access'
 import type { SaveTaskResult, TaskWriteContext } from './types'
+import { notifyTaskAssigned } from '@/lib/notifications/in-app/events'
 
 export async function createTaskForActor({
   actor,
@@ -134,6 +135,8 @@ export async function createTaskForActor({
       error: 'Task saved but assignees could not be updated.',
     }
   }
+
+  await notifyTaskAssigned(actor, { id: insertedId, title }, assigneeIds)
 
   try {
     const event = taskCreatedEvent({

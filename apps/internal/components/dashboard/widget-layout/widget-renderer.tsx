@@ -4,6 +4,7 @@ import type { DashboardWidgetId } from '@/lib/dashboard/layout'
 
 import { HoursWidget } from '../hours-widget'
 import { MyTasksWidget } from '../my-tasks-widget'
+import { NotificationsWidget } from '../notifications-widget'
 import { RecentActivityOverviewWidget } from '../recent-activity-overview-widget'
 import {
   NextStepsWidget,
@@ -13,6 +14,7 @@ import {
 import type { DashboardWidgetData } from './types'
 
 export const DASHBOARD_WIDGET_LABELS: Record<DashboardWidgetId, string> = {
+  notifications: 'Notifications',
   'my-tasks': 'My tasks',
   hours: 'Monthly hours snapshot',
   'recent-activity': 'Recent activity',
@@ -29,6 +31,8 @@ type WidgetRendererProps = {
 
 export function WidgetRenderer({ id, data, className }: WidgetRendererProps) {
   switch (id) {
+    case 'notifications':
+      return <NotificationsWidget className={className} />
     case 'my-tasks':
       return (
         <MyTasksWidget

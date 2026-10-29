@@ -79,7 +79,6 @@ export function registerActivityTools(server: McpServer) {
     title: 'List activity',
     description:
       'The audit trail for one thing or one area, newest first: who changed what, when, and through which channel (portal, CLI or an agent). Filter by target type, a target id (a task, lead, contact…), project, client, source, actor or time window; when hasMore is true, narrow the filters. For "what happened recently" across everything, use recent_activity. Sales users must set targetType to LEAD and/or CONTACT and cannot filter by project or client.',
-    access: 'crm',
     effect: 'read',
     input: {
       targetType: z
@@ -188,7 +187,6 @@ export function registerActivityTools(server: McpServer) {
     name: 'recent_activity',
     title: 'Recent activity',
     description: `Everything that happened across the portal in a time window, oldest first, for questions like "what happened this week?". Returns the newest ${RECENT_DEFAULT} entries by default (max ${RECENT_MAX}); truncated: true means older entries in the window were left out, so narrow the window or filter by source, actor or target type. Sales users see lead and contact activity only.`,
-    access: 'crm',
     effect: 'read',
     input: {
       since: windowBound.describe(

@@ -1,6 +1,5 @@
 'use client'
 
-import type { ReactNode } from 'react'
 import Link from 'next/link'
 
 import { Badge } from '@pts/ui/badge'
@@ -15,47 +14,10 @@ import { getLeadStatusToken, LEAD_STATUS_LABELS } from '@/lib/leads/constants'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { cn } from '@/lib/utils'
 
+import { WidgetCard } from './widget-card'
+
 const ROW_CLASS =
   'hover:bg-muted/50 focus-visible:bg-muted/50 flex w-full items-center gap-3 px-4 py-2.5 text-left outline-none'
-
-function WidgetCard({
-  id,
-  title,
-  meta,
-  action,
-  children,
-  className,
-}: {
-  id: string
-  title: string
-  meta?: ReactNode
-  action?: ReactNode
-  children: ReactNode
-  className?: string
-}) {
-  return (
-    <section
-      className={cn(
-        'bg-card flex flex-col overflow-hidden rounded-xl border shadow-sm',
-        className
-      )}
-      aria-labelledby={`${id}-heading`}
-    >
-      <header className='flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5'>
-        <h2 id={`${id}-heading`} className='text-sm font-semibold'>
-          {title}
-        </h2>
-        <div className='flex items-center gap-2'>
-          {meta ? (
-            <p className='text-muted-foreground text-xs font-medium'>{meta}</p>
-          ) : null}
-          {action}
-        </div>
-      </header>
-      <div className='flex-1'>{children}</div>
-    </section>
-  )
-}
 
 /** "Due today", "3 days late", "Due Fri, Nov 6". */
 function describeDue(dueOn: string, today: string) {

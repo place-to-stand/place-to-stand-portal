@@ -22,6 +22,7 @@ import { pinTaskToTopOfAssigneeBoards } from './assignee-sort'
 import { buildTaskUpdateEvent } from './save-task-activity'
 import { assigneeAccessError } from './assignee-access'
 import type { SaveTaskResult, TaskWriteContext } from './types'
+import { notifyTaskAssigned } from '@/lib/notifications/in-app/events'
 
 export async function updateTaskForActor(
   taskId: string,
@@ -182,6 +183,12 @@ export async function updateTaskForActor(
     console.error('Failed to sync task assignees', assigneeError)
     return { error: 'Task saved but assignees could not be updated.' }
   }
+
+  await notifyTaskAssigned(
+    actor,
+    { id: taskId, title },
+    assigneeIds.filter(id => !existingAssigneeIds.includes(id))
+  )
 
   // After the assignee sync, so the pin lands on the final assignee set.
   if (statusChanged) {

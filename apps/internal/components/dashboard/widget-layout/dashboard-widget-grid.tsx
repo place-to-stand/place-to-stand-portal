@@ -15,7 +15,7 @@ import {
 } from '@dnd-kit/core'
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 
-import type { DashboardLayout } from '@/lib/dashboard/layout'
+import type { DashboardLayout, DashboardWidgetId } from '@/lib/dashboard/layout'
 
 import { LayoutColumn } from './layout-column'
 import { createRestrictToGrid } from './restrict-to-grid'
@@ -25,6 +25,7 @@ type DashboardWidgetGridProps = {
   layout: DashboardLayout
   data: DashboardWidgetData
   isEditing: boolean
+  onHideWidget: (id: DashboardWidgetId) => void
   onDragStart: (event: DragStartEvent) => void
   onDragOver: (event: DragOverEvent) => void
   onDragEnd: (event: DragEndEvent) => void
@@ -35,6 +36,7 @@ export function DashboardWidgetGrid({
   layout,
   data,
   isEditing,
+  onHideWidget,
   onDragStart,
   onDragOver,
   onDragEnd,
@@ -77,6 +79,7 @@ export function DashboardWidgetGrid({
             widgetIds={widgetIds}
             data={data}
             isEditing={isEditing}
+            onHideWidget={onHideWidget}
           />
         ))}
       </div>

@@ -15,6 +15,7 @@ type LayoutColumnProps = {
   widgetIds: DashboardWidgetId[]
   data: DashboardWidgetData
   isEditing: boolean
+  onHideWidget: (id: DashboardWidgetId) => void
 }
 
 export function LayoutColumn({
@@ -22,6 +23,7 @@ export function LayoutColumn({
   widgetIds,
   data,
   isEditing,
+  onHideWidget,
 }: LayoutColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: columnDroppableId(columnIndex),
@@ -52,6 +54,7 @@ export function LayoutColumn({
             label={DASHBOARD_WIDGET_LABELS[id]}
             columnIndex={columnIndex}
             isEditing={isEditing}
+            onHide={onHideWidget}
           >
             <WidgetRenderer id={id} data={data} />
           </SortableWidget>

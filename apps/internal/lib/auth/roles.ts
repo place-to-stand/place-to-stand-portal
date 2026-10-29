@@ -1,8 +1,11 @@
+import { roleCan, type Capability } from '@/lib/auth/capabilities'
 import type { Database } from '@/lib/supabase/types'
 
 /**
  * Role rules shared by server guards and client UI. Kept free of server-only
- * imports so components can read the same lists the guards enforce.
+ * imports so components can read the same lists the guards enforce. What
+ * each role may do lives in `lib/auth/capabilities.ts`; this file holds the
+ * helpers built on it and the data scopes (activity types, sheet entities).
  *
  * - ADMIN: the whole internal portal.
  * - SALES: staff with CRM access (home, leads, companies, contacts and their
@@ -20,21 +23,8 @@ export const ROLE_LABELS: Record<Role, string> = {
   CLIENT: 'Client',
 }
 
-/** Roles that may sign in to the internal portal. */
-export const INTERNAL_ROLES: readonly Role[] = ['ADMIN', 'SALES']
-
 /** Where a SALES user lands after sign-in, and where admin-only pages send them. */
 export const SALES_HOME_PATH = '/my/home'
-
-/** Nav entries a SALES user sees. Every other entry is admin-only. */
-export const SALES_NAV_HREFS: ReadonlySet<string> = new Set([
-  '/my/home',
-  '/my/tasks/board',
-  '/leads',
-  '/companies',
-  '/projects',
-  '/contacts',
-])
 
 /** Activity feed target types a SALES user may read. */
 export const SALES_ACTIVITY_TARGET_TYPES: ReadonlySet<string> = new Set([
@@ -57,7 +47,7 @@ export function isAdminRole(role: Role | null | undefined): boolean {
 }
 
 export function canUseInternalPortal(role: Role | null | undefined): boolean {
-  return !!role && INTERNAL_ROLES.includes(role)
+  return roleCan(role, 'portal.sign_in')
 }
 
 export function homePathForRole(role: Role): string {
@@ -66,14 +56,12 @@ export function homePathForRole(role: Role): string {
 
 /** Drops the nav entries (and then empty groups) a role can't open. */
 export function filterNavGroupsForRole<
-  G extends { items: ReadonlyArray<{ href: string }> },
+  G extends { items: ReadonlyArray<{ capability: Capability }> },
 >(groups: readonly G[], role: Role): G[] {
-  if (role === 'ADMIN') return [...groups]
-
   return groups
     .map(group => ({
       ...group,
-      items: group.items.filter(item => SALES_NAV_HREFS.has(item.href)),
+      items: group.items.filter(item => roleCan(role, item.capability)),
     }))
     .filter(group => group.items.length > 0)
 }

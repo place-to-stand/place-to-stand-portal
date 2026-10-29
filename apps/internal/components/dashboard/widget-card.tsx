@@ -1,0 +1,43 @@
+import type { ReactNode } from 'react'
+
+import { cn } from '@/lib/utils'
+
+/** The shared frame for home widgets: titled header, meta/action slot, body. */
+export function WidgetCard({
+  id,
+  title,
+  meta,
+  action,
+  children,
+  className,
+}: {
+  id: string
+  title: string
+  meta?: ReactNode
+  action?: ReactNode
+  children: ReactNode
+  className?: string
+}) {
+  return (
+    <section
+      className={cn(
+        'bg-card flex flex-col overflow-hidden rounded-xl border shadow-sm',
+        className
+      )}
+      aria-labelledby={`${id}-heading`}
+    >
+      <header className='flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5'>
+        <h2 id={`${id}-heading`} className='text-sm font-semibold'>
+          {title}
+        </h2>
+        <div className='flex items-center gap-2'>
+          {meta ? (
+            <p className='text-muted-foreground text-xs font-medium'>{meta}</p>
+          ) : null}
+          {action}
+        </div>
+      </header>
+      <div className='flex-1'>{children}</div>
+    </section>
+  )
+}

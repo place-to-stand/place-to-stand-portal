@@ -2,7 +2,7 @@ import 'server-only'
 
 import type { AuthInfo } from '@modelcontextprotocol/server'
 
-import { INTERNAL_ROLES } from '@/lib/auth/roles'
+import { rolesWith } from '@/lib/auth/capabilities'
 import type { AppUser } from '@/lib/auth/session'
 import { resolveUserFromToken, type BearerSurface } from '@/lib/cli/auth'
 import { ForbiddenError, UnauthorizedError } from '@/lib/errors/http'
@@ -129,7 +129,7 @@ export async function verifyMcpToken(
     const user = await resolveUserFromToken(
       token,
       MCP_SURFACE,
-      INTERNAL_ROLES
+      rolesWith('integrations.mcp')
     )
     const name = await resolveAgentName(claims.client_id)
     const extra: McpAuthExtra = {

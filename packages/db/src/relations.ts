@@ -22,6 +22,7 @@ import {
   leads,
   oauthConnections,
   userDashboardLayouts,
+  notifications,
   contacts,
   companies,
   projectMembers,
@@ -683,3 +684,16 @@ export const userDashboardLayoutsRelations = relations(
     }),
   })
 )
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, {
+    fields: [notifications.userId],
+    references: [users.id],
+    relationName: 'notifications_userId_users_id',
+  }),
+  actor: one(users, {
+    fields: [notifications.actorId],
+    references: [users.id],
+    relationName: 'notifications_actorId_users_id',
+  }),
+}))

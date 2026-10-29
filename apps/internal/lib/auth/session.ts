@@ -11,6 +11,7 @@ import { users } from '@/lib/db/schema'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { ensureUserProfile } from '@/lib/auth/profile'
 import { serverEnv } from '@/lib/env.server'
+import { roleCan } from '@/lib/auth/capabilities'
 import { SALES_HOME_PATH } from '@/lib/auth/roles'
 
 export type AppUser = Database['public']['Tables']['users']['Row']
@@ -93,7 +94,7 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
  */
 export const getCurrentStaff = async (): Promise<AppUser | null> => {
   const user = await getCurrentUser()
-  return user?.role === 'ADMIN' || user?.role === 'SALES' ? user : null
+  return roleCan(user?.role, 'portal.sign_in') ? user : null
 }
 
 /**
@@ -248,7 +249,7 @@ export const requireCrmUser = async () => {
     redirect('/sign-in')
   }
 
-  if (user.role !== 'ADMIN' && user.role !== 'SALES') {
+  if (!roleCan(user.role, 'portal.sign_in')) {
     redirect(serverEnv.CLIENT_PORTAL_URL)
   }
 

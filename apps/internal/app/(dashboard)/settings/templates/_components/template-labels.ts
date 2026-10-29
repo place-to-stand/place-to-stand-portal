@@ -8,7 +8,6 @@ export const EMAIL_GROUP_LABELS: Record<EmailTemplateGroup, string> = {
   'contact-form': 'Contact form',
   audit: 'Opportunity Audit',
   client: 'Client updates',
-  tasks: 'Tasks & reminders',
 }
 
 export const TEMPLATE_AUDIENCES: TemplateAudience[] = [

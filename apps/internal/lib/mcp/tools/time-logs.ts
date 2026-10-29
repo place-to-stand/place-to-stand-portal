@@ -25,7 +25,6 @@ export function registerTimeLogTools(server: McpServer) {
     title: 'List time logs',
     description:
       'List logged hours, newest work date first. Filter by project, person and work-date range. totalHours and totalCount cover every matching entry, not just the ones returned; when hasMore is true, narrow the filters. No tool logs or edits time.',
-    access: 'admin',
     effect: 'read',
     input: {
       project: z

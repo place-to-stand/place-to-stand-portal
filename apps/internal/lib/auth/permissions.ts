@@ -8,6 +8,7 @@ import {
   tasks,
   timeLogs,
 } from '@/lib/db/schema'
+import { CAPABILITIES, roleCan, type Capability } from '@/lib/auth/capabilities'
 import type { AppUser } from '@/lib/auth/session'
 import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
 
@@ -15,6 +16,23 @@ type UUID = string
 
 function isAdmin(user: AppUser | null | undefined): boolean {
   return !!user && user.role === 'ADMIN'
+}
+
+/** Whether the user's role holds a capability (`lib/auth/capabilities.ts`). */
+export function can(
+  user: AppUser | null | undefined,
+  capability: Capability
+): boolean {
+  return roleCan(user?.role, capability)
+}
+
+/** Throws ForbiddenError unless the user's role holds the capability. */
+export function assertCan(user: AppUser, capability: Capability) {
+  if (!can(user, capability)) {
+    throw new ForbiddenError(
+      `Not allowed: ${CAPABILITIES[capability].label.toLowerCase()}`
+    )
+  }
 }
 
 export function assertAdmin(user: AppUser) {
@@ -28,7 +46,7 @@ export function assertAdmin(user: AppUser) {
  * CRM layer calls this; every other guard stays `assertAdmin`.
  */
 export function assertCrmAccess(user: AppUser) {
-  if (!user || (user.role !== 'ADMIN' && user.role !== 'SALES')) {
+  if (!can(user, 'leads.manage')) {
     throw new ForbiddenError('CRM access required')
   }
 }

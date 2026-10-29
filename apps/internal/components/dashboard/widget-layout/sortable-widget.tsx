@@ -3,7 +3,9 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GripVertical } from 'lucide-react'
+import { EyeOff, GripVertical } from 'lucide-react'
+
+import { Button } from '@pts/ui/button'
 
 import { cn } from '@/lib/utils'
 import type { DashboardWidgetId } from '@/lib/dashboard/layout'
@@ -13,6 +15,7 @@ type SortableWidgetProps = {
   label: string
   columnIndex: number
   isEditing: boolean
+  onHide: (id: DashboardWidgetId) => void
   children: ReactNode
 }
 
@@ -28,6 +31,7 @@ export function SortableWidget({
   label,
   columnIndex,
   isEditing,
+  onHide,
   children,
 }: SortableWidgetProps) {
   const {
@@ -84,6 +88,20 @@ export function SortableWidget({
             </span>
           </div>
         </div>
+      ) : null}
+      {isEditing ? (
+        // Above the drag layer so the press hides instead of dragging.
+        <Button
+          type='button'
+          variant='secondary'
+          size='xs'
+          className='absolute top-2 right-2 z-30 shadow-sm'
+          onClick={() => onHide(id)}
+          aria-label={`Hide ${label}`}
+        >
+          <EyeOff aria-hidden />
+          Hide
+        </Button>
       ) : null}
     </div>
   )

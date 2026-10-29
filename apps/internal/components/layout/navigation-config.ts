@@ -1,4 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
+
+import type { Capability } from '@/lib/auth/capabilities'
 import {
   Clock3,
   FolderKanban,
@@ -14,6 +16,7 @@ import {
   Inbox,
   Mail,
   Briefcase,
+  ShieldCheck,
 } from 'lucide-react'
 
 type NavItem = {
@@ -21,6 +24,8 @@ type NavItem = {
   label: string
   icon: LucideIcon
   matchHrefs?: string[]
+  /** Who sees the entry (`lib/auth/capabilities.ts`). */
+  capability: Capability
 }
 
 export type NavGroup = {
@@ -34,11 +39,13 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       {
         href: '/my/home',
+        capability: 'dashboard.home',
         label: 'Home',
         icon: HomeIcon,
       },
       {
         href: '/my/tasks/board',
+        capability: 'projects.view_member',
         label: 'Tasks',
         icon: ListTodo,
         matchHrefs: ['/my/tasks', '/my/tasks/calendar'],
@@ -50,28 +57,33 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       {
         href: '/submissions',
+        capability: 'submissions.manage',
         label: 'Submissions',
         icon: Inbox,
         matchHrefs: ['/submissions'],
       },
       {
         href: '/leads',
+        capability: 'leads.manage',
         label: 'Leads',
         icon: Handshake,
       },
       {
         href: '/companies',
+        capability: 'companies.manage',
         label: 'Companies',
         icon: Briefcase,
       },
       {
         href: '/invoices',
+        capability: 'billing.manage',
         label: 'Invoices',
         icon: Receipt,
         matchHrefs: ['/invoices'],
       },
       {
         href: '/hour-blocks',
+        capability: 'billing.manage',
         label: 'Hour blocks',
         icon: Clock3,
       },
@@ -82,16 +94,19 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       {
         href: '/projects',
+        capability: 'projects.view_member',
         label: 'Projects',
         icon: FolderKanban,
       },
       {
         href: '/clients',
+        capability: 'clients.manage',
         label: 'Clients',
         icon: Building2,
       },
       {
         href: '/contacts',
+        capability: 'contacts.manage',
         label: 'Contacts',
         icon: Contact,
       },
@@ -102,6 +117,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       {
         href: '/reports/monthly-close',
+        capability: 'reports.view',
         label: 'Monthly close',
         icon: FileText,
         matchHrefs: ['/reports'],
@@ -113,16 +129,25 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       {
         href: '/settings/users',
+        capability: 'settings.users',
         label: 'Users',
         icon: Users,
       },
       {
+        href: '/settings/permissions',
+        capability: 'settings.permissions',
+        label: 'Roles & permissions',
+        icon: ShieldCheck,
+      },
+      {
         href: '/settings/integrations',
+        capability: 'integrations.manage',
         label: 'Integrations',
         icon: Plug,
       },
       {
         href: '/settings/templates/emails',
+        capability: 'settings.templates',
         label: 'Templates',
         icon: Mail,
         matchHrefs: ['/settings/templates'],

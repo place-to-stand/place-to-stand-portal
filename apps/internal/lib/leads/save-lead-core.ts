@@ -15,6 +15,7 @@ import { leads, leadStageHistory } from '@/lib/db/schema'
 import { isTerminalLeadStatus } from '@/lib/leads/constants'
 import { serializeLeadNotes } from '@/lib/leads/notes'
 import { resolveNextLeadRank } from '@/lib/leads/rank'
+import { notifyLeadAssigned } from '@/lib/notifications/in-app/events'
 import { findOrCreateCompanyByName } from '@/lib/queries/companies'
 import type { ActivitySourceValue } from '@/lib/types'
 
@@ -143,6 +144,18 @@ async function createLead(
       status: normalized.status,
     }),
   })
+
+  if (normalized.assigneeId) {
+    await notifyLeadAssigned(
+      actor,
+      {
+        id: inserted.id,
+        contactName: normalized.contactName,
+        companyName: normalized.companyName,
+      },
+      normalized.assigneeId
+    )
+  }
 
   return { success: true, leadId: inserted.id }
 }
@@ -279,6 +292,18 @@ async function updateLead(
         details: { before: diff.before, after: diff.after },
       }),
     })
+  }
+
+  if (normalized.assigneeId && normalized.assigneeId !== existing.assigneeId) {
+    await notifyLeadAssigned(
+      actor,
+      {
+        id: leadId,
+        contactName: normalized.contactName,
+        companyName: normalized.companyName,
+      },
+      normalized.assigneeId
+    )
   }
 
   return { success: true, leadId }

@@ -54,7 +54,6 @@ export function registerDirectoryTools(server: McpServer) {
     title: 'Who am I',
     description:
       'Return the Place To Stand portal user this connection acts as (including their role), and the app it is connected through.',
-    access: 'crm',
     effect: 'read',
     input: {},
     run: async (_args, { user, agent }) => ({
@@ -68,7 +67,6 @@ export function registerDirectoryTools(server: McpServer) {
     title: 'List users',
     description:
       'List portal users (team members and client portal users) — for sales users, only the admin and sales staff. Use it to find the email or id to assign a task or lead to; only admin and sales users can be assigned.',
-    access: 'crm',
     effect: 'read',
     input: {
       search: searchText.optional(),
@@ -91,7 +89,6 @@ export function registerDirectoryTools(server: McpServer) {
     title: 'List clients',
     description:
       'List clients with their billing type, project counts and prepaid hours balance (purchased, used, remaining). hoursRemaining can be negative when a client is over; net_30 clients have no meaningful balance.',
-    access: 'admin',
     effect: 'read',
     input: {
       search: searchText.optional(),
@@ -109,7 +106,6 @@ export function registerDirectoryTools(server: McpServer) {
     title: 'Get client',
     description:
       'One client with its hours balance, linked contacts and projects.',
-    access: 'admin',
     effect: 'read',
     input: { client: clientRef },
     run: async ({ client: reference }, { user }) => {
@@ -136,7 +132,6 @@ export function registerDirectoryTools(server: McpServer) {
     title: 'List contacts',
     description:
       'List contacts (people at clients and prospects), optionally only those linked to one client.',
-    access: 'crm',
     effect: 'read',
     input: {
       search: searchText.optional(),
@@ -172,7 +167,6 @@ export function registerDirectoryTools(server: McpServer) {
     name: 'get_contact',
     title: 'Get contact',
     description: 'One contact and the clients they are linked to.',
-    access: 'crm',
     effect: 'read',
     input: { contactId: z.string().uuid().describe('Contact UUID.') },
     run: async ({ contactId }, { user }) => {
@@ -190,7 +184,6 @@ export function registerDirectoryTools(server: McpServer) {
     title: 'List projects',
     description:
       'List projects (CLIENT, INTERNAL and PERSONAL), optionally for one client. Use a project slug to scope task tools.',
-    access: 'admin',
     effect: 'read',
     input: {
       search: searchText.optional(),
@@ -219,7 +212,6 @@ export function registerDirectoryTools(server: McpServer) {
     name: 'get_project',
     title: 'Get project',
     description: 'One project by slug or UUID.',
-    access: 'admin',
     effect: 'read',
     input: {
       project: z.string().trim().min(1).describe('Project slug or UUID.'),

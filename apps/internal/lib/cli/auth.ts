@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { rolesWith } from '@/lib/auth/capabilities'
 import { ROLE_LABELS } from '@/lib/auth/roles'
 import { loadAppUserById, type AppUser } from '@/lib/auth/session'
 import { ForbiddenError, UnauthorizedError } from '@/lib/errors/http'
@@ -90,12 +91,12 @@ export async function resolveUserFromToken(
   return user
 }
 
-/** The CLI admits ADMIN only. */
+/** The CLI admits the roles holding `integrations.cli` (admins today). */
 export async function resolveAdminFromToken(
   token: string,
   surface: BearerSurface
 ): Promise<AppUser> {
-  return resolveUserFromToken(token, surface, ['ADMIN'])
+  return resolveUserFromToken(token, surface, rolesWith('integrations.cli'))
 }
 
 function capitalize(value: string): string {

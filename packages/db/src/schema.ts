@@ -2391,6 +2391,52 @@ export const rateLimitBuckets = pgTable(
  * apps/internal/lib/dashboard/layout.ts (unknown widget ids are dropped,
  * missing ones appended), so stale JSON never breaks rendering.
  */
+/**
+ * In-app notifications: one row per recipient. Shown in the home
+ * Notifications widget. `type` is a plain string (validated in the app) so
+ * a new kind of notification needs no migration. `dedupeKey` stops the same
+ * event notifying twice (e.g. "task due today" once per task per date).
+ */
+export const notifications = pgTable(
+  'notifications',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    userId: uuid('user_id').notNull(),
+    type: text().notNull(),
+    title: text().notNull(),
+    body: text(),
+    /** In-app link to the record, e.g. `/leads?lead=<id>`. */
+    href: text(),
+    /** Who caused it, when a person did. */
+    actorId: uuid('actor_id'),
+    dedupeKey: text('dedupe_key'),
+    readAt: timestamp('read_at', { withTimezone: true, mode: 'string' }),
+    /** Cleared from the widget; kept for history. */
+    clearedAt: timestamp('cleared_at', { withTimezone: true, mode: 'string' }),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+  },
+  table => [
+    index('idx_notifications_user_feed')
+      .using('btree', table.userId.asc().nullsLast().op('uuid_ops'), table.createdAt.desc().nullsFirst().op('timestamptz_ops'))
+      .where(sql`(cleared_at IS NULL)`),
+    uniqueIndex('idx_notifications_user_dedupe')
+      .using('btree', table.userId.asc().nullsLast().op('uuid_ops'), table.dedupeKey.asc().nullsLast().op('text_ops'))
+      .where(sql`(dedupe_key IS NOT NULL)`),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [users.id],
+      name: 'notifications_user_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.actorId],
+      foreignColumns: [users.id],
+      name: 'notifications_actor_id_fkey',
+    }).onDelete('set null'),
+  ]
+)
+
 export const userDashboardLayouts = pgTable(
   'user_dashboard_layouts',
   {

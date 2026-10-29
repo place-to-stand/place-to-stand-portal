@@ -2,10 +2,8 @@
 
 import { requireCrmUser } from '@/lib/auth/session'
 import {
-  DEFAULT_DASHBOARD_LAYOUTS,
-  cloneLayout,
-  dashboardKindForRole,
   dashboardLayoutInputSchema,
+  defaultLayoutForRole,
   isDefaultDashboardLayout,
   normalizeDashboardLayout,
   type DashboardLayout,
@@ -28,16 +26,15 @@ export async function saveDashboardLayout(
   input: unknown
 ): Promise<SaveDashboardLayoutResult> {
   const user = await requireCrmUser()
-  const kind = dashboardKindForRole(user.role)
 
   if (!dashboardLayoutInputSchema.safeParse(input).success) {
     return { success: false, error: 'Invalid layout.' }
   }
 
-  const layout = normalizeDashboardLayout(input, kind)
+  const layout = normalizeDashboardLayout(input, user.role)
 
   try {
-    if (isDefaultDashboardLayout(layout, kind)) {
+    if (isDefaultDashboardLayout(layout, user.role)) {
       await deleteDashboardLayoutRow(user.id)
     } else {
       await upsertDashboardLayoutRow(user.id, layout)
@@ -62,6 +59,6 @@ export async function resetDashboardLayout(): Promise<SaveDashboardLayoutResult>
 
   return {
     success: true,
-    layout: cloneLayout(DEFAULT_DASHBOARD_LAYOUTS[dashboardKindForRole(user.role)]),
+    layout: defaultLayoutForRole(user.role),
   }
 }
