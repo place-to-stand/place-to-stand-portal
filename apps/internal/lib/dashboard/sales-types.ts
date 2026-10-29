@@ -1,6 +1,6 @@
 import type { LeadStatusValue } from '@/lib/leads/constants'
 
-/** A lead on the Aging leads list. */
+/** A lead on the My aging leads list. */
 export type SalesLeadItem = {
   id: string
   contactName: string

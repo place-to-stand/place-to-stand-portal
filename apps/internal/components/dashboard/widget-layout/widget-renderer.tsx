@@ -14,7 +14,7 @@ export const DASHBOARD_WIDGET_LABELS: Record<DashboardWidgetId, string> = {
   'my-tasks': 'My tasks',
   hours: 'Monthly hours snapshot',
   'recent-activity': 'Recent activity',
-  'quiet-leads': 'Aging leads',
+  'quiet-leads': 'My aging leads',
   pipeline: 'Leads pipeline',
 }
 

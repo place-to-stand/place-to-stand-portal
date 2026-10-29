@@ -72,8 +72,8 @@ export function QuietLeadsWidget({
   return (
     <WidgetCard
       id='quiet-leads'
-      title='Aging leads'
-      meta='Your open leads, longest since contact first'
+      title='My aging leads'
+      meta='Longest since contact first'
       className={className}
     >
       <LeadList

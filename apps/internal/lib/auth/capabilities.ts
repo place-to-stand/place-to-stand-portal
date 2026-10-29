@@ -95,7 +95,7 @@ export const CAPABILITIES = {
   },
   'widget.quiet_leads': {
     area: 'Dashboard',
-    label: 'Aging leads widget',
+    label: 'My aging leads widget',
     description: 'Your open leads, longest since contact first.',
     roles: STAFF,
     surfaces: ['app'],
