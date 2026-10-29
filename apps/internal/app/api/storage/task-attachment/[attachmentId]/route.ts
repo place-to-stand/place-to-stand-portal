@@ -3,7 +3,7 @@ import { Buffer } from 'node:buffer'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import { requireUser } from '@/lib/auth/session'
+import { requireStaffUser } from '@/lib/auth/session'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'
 import { getTaskAttachmentForDownload } from '@/lib/queries/task-attachments'
 import { ensureTaskAttachmentBucket } from '@/lib/storage/task-attachments'
@@ -19,7 +19,7 @@ export async function GET(
   _request: NextRequest,
   context: RouteContext<'/api/storage/task-attachment/[attachmentId]'>
 ) {
-  const actor = await requireUser()
+  const actor = await requireStaffUser()
   const parsedParams = paramsSchema.safeParse(await context.params)
 
   if (!parsedParams.success) {

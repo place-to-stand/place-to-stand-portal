@@ -22,12 +22,12 @@ export function LeadSheetRightColumn({
   onConvertToClient,
   onSuccess,
 }: LeadSheetRightColumnProps) {
-  // Conversion creates clients and projects, and lead tasks live on the
-  // sales project board, so both stay admin-only. SALES staff get updates.
+  // Conversion creates clients and projects, so it stays admin-only. SALES
+  // staff see the lead's tasks on projects they are members of.
   const { isAdmin } = useViewerAccess()
 
   return (
-    <div className='bg-muted/20 flex-shrink-0 max-lg:border-t lg:w-96 lg:overflow-y-auto'>
+    <div className='bg-muted/20 flex-shrink-0 max-lg:border-t lg:w-[480px] lg:overflow-y-auto'>
       <div className='space-y-10 p-6'>
         {/* Conversion — renders nothing until the lead is closed won */}
         {isAdmin ? (
@@ -38,13 +38,11 @@ export function LeadSheetRightColumn({
           />
         ) : null}
         {/* Tasks */}
-        {isAdmin ? (
-          <LeadTasksSection
-            lead={lead}
-            canManage={canManage}
-            onSuccess={onSuccess}
-          />
-        ) : null}
+        <LeadTasksSection
+          lead={lead}
+          canManage={canManage}
+          onSuccess={onSuccess}
+        />
         {/* Updates sit below Tasks (D6) — keeps the at-a-glance "last touched
             12 days ago, 2 open tasks" read that tabs would hide. */}
         <LeadUpdatesSection

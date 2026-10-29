@@ -137,6 +137,8 @@ type ProjectsLandingProps = {
   unfilteredCounts: LandingUnfilteredCounts
   /** True when the URL deviates from the clean landing (status or search). */
   filtersActive: boolean
+  /** Project members: view and open projects, no status, owner or row edits. */
+  readOnly?: boolean
 }
 
 type SectionConfig = {
@@ -180,6 +182,7 @@ export function ProjectsLanding({
   clientHoursMap = {},
   unfilteredCounts,
   filtersActive,
+  readOnly = false,
 }: ProjectsLandingProps) {
   const router = useRouter()
   const { toast } = useToast()
@@ -425,6 +428,7 @@ export function ProjectsLanding({
             projectId={project.id}
             status={project.status}
             onStatusChange={handleProjectStatusChange}
+            disabled={readOnly}
           />
         </TableCell>
         <TableCell>
@@ -441,6 +445,7 @@ export function ProjectsLanding({
             owner={project.owner}
             admins={admins}
             onOwnerChange={handleProjectOwnerChange}
+            readOnly={readOnly}
           />
         </TableCell>
         <TableCell
@@ -473,27 +478,29 @@ export function ProjectsLanding({
           </div>
         </TableCell>
         <TableCell className='text-right max-md:ml-auto'>
-          <div className='flex justify-end gap-2'>
-            <RowActionButton
-              label='Edit project'
-              icon={<Pencil />}
-              variant='outline'
-              onClick={() => openProjectSheet(project.id)}
-              disabled={isArchivePending}
-            />
-            <DisabledFieldTooltip
-              disabled={isArchivePending}
-              reason={isArchivePending ? PENDING_REASON : null}
-            >
+          {readOnly ? null : (
+            <div className='flex justify-end gap-2'>
               <RowActionButton
-                label='Archive project'
-                icon={<Archive />}
-                variant='destructive'
-                onClick={() => handleRequestDelete(project)}
+                label='Edit project'
+                icon={<Pencil />}
+                variant='outline'
+                onClick={() => openProjectSheet(project.id)}
                 disabled={isArchivePending}
               />
-            </DisabledFieldTooltip>
-          </div>
+              <DisabledFieldTooltip
+                disabled={isArchivePending}
+                reason={isArchivePending ? PENDING_REASON : null}
+              >
+                <RowActionButton
+                  label='Archive project'
+                  icon={<Archive />}
+                  variant='destructive'
+                  onClick={() => handleRequestDelete(project)}
+                  disabled={isArchivePending}
+                />
+              </DisabledFieldTooltip>
+            </div>
+          )}
         </TableCell>
       </TableRow>
     )

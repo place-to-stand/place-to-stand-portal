@@ -23,6 +23,8 @@ export type ProjectOwnerCellProps = {
   admins: AdminUserForOwner[]
   /** Throw on failure so the cell can roll back its optimistic owner. */
   onOwnerChange: (projectId: string, ownerId: string | null) => Promise<void>
+  /** Show the owner without the picker (viewers who can't change it). */
+  readOnly?: boolean
 }
 
 function getInitials(name: string | null): string {
@@ -43,6 +45,7 @@ export function ProjectOwnerCell({
   owner,
   admins,
   onOwnerChange,
+  readOnly = false,
 }: ProjectOwnerCellProps) {
   const [isPending, startTransition] = useTransition()
   const [optimisticOwnerId, setOptimisticOwnerId] = useState<string | null>(
@@ -106,6 +109,17 @@ export function ProjectOwnerCell({
     ? `Change owner (currently ${displayOwner.full_name ?? 'unnamed'})`
     : 'Assign owner'
 
+  if (readOnly) {
+    return displayOwner ? (
+      <div
+        className='flex w-fit p-0.5'
+        title={displayOwner.full_name ?? 'Owner'}
+      >
+        <OwnerAvatar owner={displayOwner} />
+      </div>
+    ) : null
+  }
+
   return (
     <SearchableCombobox
       items={ownerOptions}
@@ -138,17 +152,7 @@ export function ProjectOwnerCell({
           )}
         >
           {displayOwner ? (
-            <Avatar size='sm'>
-              {displayOwner.avatar_url && (
-                <AvatarImage
-                  src={`/api/storage/user-avatar/${displayOwner.id}`}
-                  alt={displayOwner.full_name ?? 'Owner'}
-                />
-              )}
-              <AvatarFallback>
-                {getInitials(displayOwner.full_name)}
-              </AvatarFallback>
-            </Avatar>
+            <OwnerAvatar owner={displayOwner} />
           ) : (
             <Avatar size='sm' className='border border-dashed'>
               <AvatarFallback className='bg-transparent'>
@@ -160,5 +164,19 @@ export function ProjectOwnerCell({
         </button>
       }
     />
+  )
+}
+
+function OwnerAvatar({ owner }: { owner: ProjectOwnerSummary }) {
+  return (
+    <Avatar size='sm'>
+      {owner.avatar_url && (
+        <AvatarImage
+          src={`/api/storage/user-avatar/${owner.id}`}
+          alt={owner.full_name ?? 'Owner'}
+        />
+      )}
+      <AvatarFallback>{getInitials(owner.full_name)}</AvatarFallback>
+    </Avatar>
   )
 }

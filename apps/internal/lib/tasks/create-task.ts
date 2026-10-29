@@ -9,12 +9,16 @@ import {
 } from '@/app/(dashboard)/projects/actions/task-helpers'
 import { taskCreatedEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
-import { ensureProjectAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { projects, tasks } from '@/lib/db/schema'
 import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
+import {
+  ensureProjectWorkAccess,
+  findAssigneesWithoutAccess,
+} from '@/lib/projects/access'
 import { resolveCompletedAt } from '@/lib/projects/task-status'
 
+import { assigneeAccessError } from './assignee-access'
 import type { SaveTaskResult, TaskWriteContext } from './types'
 
 export async function createTaskForActor({
@@ -28,7 +32,7 @@ export async function createTaskForActor({
     input
 
   try {
-    await ensureProjectAccess(actor, projectId)
+    await ensureProjectWorkAccess(actor, projectId)
   } catch (error) {
     if (error instanceof NotFoundError) {
       return { error: 'Selected project is unavailable.' }
@@ -52,6 +56,14 @@ export async function createTaskForActor({
 
   if (!projectContext.length) {
     return { error: 'Selected project is unavailable.' }
+  }
+
+  const blockedAssignees = await findAssigneesWithoutAccess(
+    projectId,
+    assigneeIds
+  )
+  if (blockedAssignees.length) {
+    return { error: assigneeAccessError(blockedAssignees) }
   }
 
   let nextRank: string

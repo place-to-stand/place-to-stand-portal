@@ -6,8 +6,9 @@ import {
   fetchProjectsLite,
   fetchProjectsWithRelationsByIds,
 } from '@/lib/data/projects'
-import { fetchAdminUsers } from '@/lib/data/users'
-import { requireUser } from '@/lib/auth/session'
+import { fetchAdminUsers, fetchCrmUsers } from '@/lib/data/users'
+import { requireStaffUser } from '@/lib/auth/session'
+import { scopeProjectsForViewer } from '@/lib/projects/viewer-scope'
 import { getProjectClientSegment } from '@/lib/projects/board/board-utils'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
 import { buildQuerySuffix } from '@/lib/sheets/hrefs'
@@ -30,14 +31,20 @@ export default async function ProjectBoardRoute({
   const { clientSlug, projectSlug } = resolvedParams
   const resolvedSearchParams = await searchParams
   const taskParam = firstParam(resolvedSearchParams.task) ?? null
-  const user = await requireUser()
+  const user = await requireStaffUser()
+  const isAdmin = user.role === 'ADMIN'
   // Lite list feeds the switcher and sheet selectors; only the active
-  // project (resolved below) gets its task graph hydrated.
-  const [liteProjects, admins, clientDirectory] = await Promise.all([
-    fetchProjectsLite(),
-    fetchAdminUsers(),
-    fetchClientDirectory(),
-  ])
+  // project (resolved below) gets its task graph hydrated. Non-admins
+  // (project members) see only their projects, without billing or the
+  // client directory the project editor needs.
+  const [allLiteProjects, admins, assignableUsers, clientDirectory] =
+    await Promise.all([
+      fetchProjectsLite(),
+      isAdmin ? fetchAdminUsers() : Promise.resolve([]),
+      fetchCrmUsers(),
+      isAdmin ? fetchClientDirectory() : Promise.resolve([]),
+    ])
+  const liteProjects = await scopeProjectsForViewer(user, allLiteProjects)
 
   const allClients: ClientRow[] = clientDirectory.map(c => ({
     id: c.id,
@@ -97,7 +104,10 @@ export default async function ProjectBoardRoute({
 
   // Hydrate the task graph for the active project only (after the
   // canonical-slug redirects above, so redirects stay cheap).
-  const [hydratedProject] = await fetchProjectsWithRelationsByIds([project.id])
+  const [hydratedProject] = await scopeProjectsForViewer(
+    user,
+    await fetchProjectsWithRelationsByIds([project.id])
+  )
   const projects = liteProjects.map(item =>
     item.id === project.id && hydratedProject ? hydratedProject : item
   )
@@ -107,7 +117,7 @@ export default async function ProjectBoardRoute({
       projects={projects}
       clients={clients}
       currentUserId={user.id}
-      admins={admins}
+      admins={assignableUsers}
       adminUsers={adminUsers}
       allClients={allClients}
       activeClientId={activeClientId}

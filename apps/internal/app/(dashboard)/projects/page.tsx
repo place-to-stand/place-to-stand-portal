@@ -12,7 +12,10 @@ import {
   type ClientHoursSummary,
 } from '@/lib/data/clients'
 import { fetchAdminUsers } from '@/lib/data/users'
-import { requireUser } from '@/lib/auth/session'
+import { requireStaffUser } from '@/lib/auth/session'
+import type { AppUser } from '@/lib/auth/session'
+import { scopeProjectsForViewer } from '@/lib/projects/viewer-scope'
+import type { LandingProject } from '@/lib/data/projects'
 import { fetchClientDirectory } from '@/lib/queries/clients'
 import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
 import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
@@ -25,10 +28,14 @@ export const metadata: Metadata = {
 export default async function ProjectsPage({
   searchParams,
 }: PageProps<'/projects'>) {
-  const user = await requireUser()
+  const user = await requireStaffUser()
   const params = await searchParams
   const { statuses, search, filtersActive } =
     parseProjectsLandingSearchParams(params)
+
+  if (user.role !== 'ADMIN') {
+    return renderMemberLanding(user, { statuses, search, filtersActive })
+  }
 
   // One wave: nothing below depends on anything else here, and the old
   // second Promise.all added a full serial round-trip level per request.
@@ -78,6 +85,56 @@ export default async function ProjectsPage({
         clientHoursMap={clientHoursMap}
       />
   )
+}
+
+/**
+ * Project members (SALES) get a read-only list of the projects they were
+ * added to plus their own personal boards, with no hours, billing or
+ * project editing, and a button to start a personal board.
+ */
+async function renderMemberLanding(
+  user: AppUser,
+  filters: ReturnType<typeof parseProjectsLandingSearchParams>
+) {
+  const { statuses, search, filtersActive } = filters
+  const [filtered, unfiltered] = await Promise.all([
+    fetchProjectsForLanding({ statuses, search: search ?? undefined }).then(
+      projects => scopeProjectsForViewer(user, projects)
+    ),
+    fetchProjectsForLanding({}).then(projects =>
+      scopeProjectsForViewer(user, projects)
+    ),
+  ])
+  const counts = countByType(unfiltered)
+
+  return (
+    <ProjectsLandingAdminSection
+      projects={filtered}
+      landingClients={buildLandingClients(filtered)}
+      clients={[]}
+      admins={[]}
+      currentUserId={user.id}
+      totalProjectCount={counts.total}
+      filteredProjectCount={filtered.length}
+      statuses={statuses}
+      search={search ?? undefined}
+      filtersActive={filtersActive}
+      unfilteredCounts={counts}
+      memberView
+    />
+  )
+}
+
+function countByType(projects: LandingProject[]) {
+  const clientCount = projects.filter(p => p.type === 'CLIENT').length
+  const internalCount = projects.filter(p => p.type === 'INTERNAL').length
+  const personalCount = projects.filter(p => p.type === 'PERSONAL').length
+  return {
+    total: projects.length,
+    clientCount,
+    internalCount,
+    personalCount,
+  }
 }
 
 type LandingClient = { id: string; name: string; slug: string | null }

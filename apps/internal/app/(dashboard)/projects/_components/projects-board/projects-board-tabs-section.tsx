@@ -82,6 +82,8 @@ export type ProjectsBoardTabsSectionProps = {
 }
 
 type ProjectsBoardTabsSectionComponentProps = ProjectsBoardTabsSectionProps & {
+  /** Project members see the Tasks tab only. */
+  tasksOnly?: boolean
   projectActions: ProjectsBoardTabsProps['projectActions']
   onProjectStatusChange: ProjectsBoardTabsProps['onProjectStatusChange']
 }
@@ -94,6 +96,7 @@ export function ProjectsBoardTabsSection({
   review,
   drop,
   timeLogs,
+  tasksOnly = false,
   projectActions,
   onProjectStatusChange,
 }: ProjectsBoardTabsSectionComponentProps) {
@@ -106,6 +109,7 @@ export function ProjectsBoardTabsSection({
       {...review}
       {...drop}
       {...timeLogs}
+      tasksOnly={tasksOnly}
       projectActions={projectActions}
       onProjectStatusChange={onProjectStatusChange}
     />

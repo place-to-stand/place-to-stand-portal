@@ -1,0 +1,439 @@
+'use client'
+
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
+import { useForm, useWatch } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useRouter } from 'next/navigation'
+import { z } from 'zod'
+
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { Input } from '@pts/ui/input'
+import { Separator } from '@pts/ui/separator'
+import { Skeleton } from '@pts/ui/skeleton'
+import { Textarea } from '@pts/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@pts/ui/select'
+import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
+import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
+import { SheetSection } from '@/components/sheets/sheet-section'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { useToast } from '@/components/ui/use-toast'
+import { COMPANY_OPTIONS_QUERY_KEY } from '@/components/companies/company-name-input'
+import { PENDING_REASON } from '@/lib/forms/form-controls'
+import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
+import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
+
+import {
+  archiveCompany,
+  loadCompanySheet,
+  makeCompanyChampion,
+  restoreCompany,
+  saveCompany,
+} from '../actions'
+import { CompanyContactsSection, CompanyLeadsSection } from './company-sheet-sections'
+
+const COMPANY_FORM_ID = 'company-form'
+const NO_OWNER = '__none__'
+
+const companyFormSchema = z.object({
+  name: z.string().trim().min(1, 'Company name is required').max(160),
+  website: z.string().trim().max(255),
+  linkedinUrl: z.string().trim().max(255),
+  ownerId: z.string(),
+  notes: z.string().max(5000),
+})
+
+type CompanyFormValues = z.infer<typeof companyFormSchema>
+
+export const companySheetQueryKey = (companyId: string | null) =>
+  ['companySheet', companyId] as const
+
+type CompanySheetProps = {
+  /** `null` opens the create sheet. */
+  companyId: string | null
+  open: boolean
+  onClose: () => void
+}
+
+export function CompanySheet({ companyId, open, onClose }: CompanySheetProps) {
+  const router = useRouter()
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  const [isPending, startTransition] = useTransition()
+  const [feedback, setFeedback] = useState<string | null>(null)
+  const [archiveOpen, setArchiveOpen] = useState(false)
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: companySheetQueryKey(companyId),
+    queryFn: () => loadCompanySheet(companyId),
+    staleTime: 0,
+  })
+
+  const company = data?.company ?? null
+  const isEditing = Boolean(companyId)
+  const isArchived = Boolean(company?.deletedAt)
+
+  const form = useForm<CompanyFormValues>({
+    resolver: zodResolver(companyFormSchema),
+    defaultValues: {
+      name: '',
+      website: '',
+      linkedinUrl: '',
+      ownerId: NO_OWNER,
+      notes: '',
+    },
+  })
+
+  // Seed the form once per loaded record.
+  const seededFor = useRef<string | null>(null)
+  useEffect(() => {
+    if (!data) return
+    const key = company ? `${company.id}:${company.updatedAt}` : 'new'
+    if (seededFor.current === key) return
+    seededFor.current = key
+    form.reset({
+      name: company?.name ?? '',
+      website: company?.website ?? '',
+      linkedinUrl: company?.linkedinUrl ?? '',
+      ownerId: company?.ownerId ?? NO_OWNER,
+      notes: company?.notes ?? '',
+    })
+  }, [company, data, form])
+
+  const isDirty = form.formState.isDirty
+  const { requestConfirmation, dialog: unsavedChangesDialog } =
+    useUnsavedChangesWarning({ isDirty })
+
+  const refresh = useCallback(async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['companySheet'] }),
+      queryClient.invalidateQueries({ queryKey: COMPANY_OPTIONS_QUERY_KEY }),
+    ])
+    router.refresh()
+  }, [queryClient, router])
+
+  const handleSubmit = useCallback(
+    (values: CompanyFormValues) => {
+      setFeedback(null)
+      startTransition(async () => {
+        const result = await saveCompany({
+          id: companyId ?? undefined,
+          name: values.name,
+          website: values.website,
+          linkedinUrl: values.linkedinUrl,
+          notes: values.notes,
+          ownerId: values.ownerId === NO_OWNER ? null : values.ownerId,
+        })
+
+        if (!result.ok) {
+          setFeedback(result.error ?? 'Unable to save the company.')
+          return
+        }
+
+        toast({
+          title: isEditing ? 'Company updated' : 'Company created',
+          description: values.name,
+        })
+        form.reset(values)
+        await refresh()
+        // Save = done = close, for create and edit alike.
+        onClose()
+      })
+    },
+    [companyId, form, isEditing, onClose, refresh, toast]
+  )
+
+  const handleSave = useCallback(
+    () => form.handleSubmit(handleSubmit)(),
+    [form, handleSubmit]
+  )
+
+  const submitDisabled = isPending || isLoading || isArchived
+  const { undo, redo, canUndo, canRedo } = useSheetFormControls({
+    form,
+    isActive: open,
+    canSave: !submitDisabled,
+    onSave: handleSave,
+    historyKey: companyId ?? 'company:new',
+  })
+
+  const handleArchiveToggle = useCallback(() => {
+    if (!companyId) return
+    startTransition(async () => {
+      const result = isArchived
+        ? await restoreCompany(companyId)
+        : await archiveCompany(companyId)
+      setArchiveOpen(false)
+      if (!result.ok) {
+        setFeedback(result.error ?? 'Unable to update the company.')
+        return
+      }
+      toast({
+        title: isArchived ? 'Company restored' : 'Company archived',
+        description: company?.name,
+      })
+      await refresh()
+      if (!isArchived) onClose()
+    })
+  }, [company?.name, companyId, isArchived, onClose, refresh, toast])
+
+  const handleChampion = useCallback(
+    (contactId: string | null) => {
+      if (!companyId) return
+      startTransition(async () => {
+        const result = await makeCompanyChampion(companyId, contactId)
+        if (!result.ok) {
+          setFeedback(result.error ?? 'Unable to set the champion.')
+          return
+        }
+        await refresh()
+      })
+    },
+    [companyId, refresh]
+  )
+
+  const handleOpenChange = useCallback(
+    (next: boolean) => {
+      if (next || isPending) return
+      requestConfirmation(onClose)
+    },
+    [isPending, onClose, requestConfirmation]
+  )
+
+  const owners = data?.owners ?? []
+  const ownerId = useWatch({ control: form.control, name: 'ownerId' })
+  // Keep a disabled or removed owner selectable so the value still renders.
+  const currentOwnerId = company?.ownerId ?? null
+  const ownerOptions =
+    !currentOwnerId || owners.some(owner => owner.id === currentOwnerId)
+      ? owners
+      : [...owners, { id: currentOwnerId, name: 'Former user', avatarUrl: null }]
+
+  const fieldsDisabled = isPending || isArchived
+
+  return (
+    <>
+      <Sheet open={open} onOpenChange={handleOpenChange}>
+        <SheetContent
+          hideCloseButton
+          size='lg'
+          className='flex w-full flex-col gap-0 overflow-hidden p-0'
+        >
+          <SheetFormHeader
+            entity='company'
+            title={isEditing ? (isArchived ? 'Archived company' : 'Edit company') : 'Add company'}
+          />
+          {isError || (isEditing && data === null) ? (
+            <p className='text-muted-foreground p-6 text-sm'>
+              This company could not be found.
+            </p>
+          ) : isLoading || !data ? (
+            <div className='space-y-4 p-6'>
+              <Skeleton className='h-9 w-full' />
+              <Skeleton className='h-9 w-full' />
+              <Skeleton className='h-24 w-full' />
+            </div>
+          ) : (
+            <Form {...form}>
+              <div className='flex-1 overflow-y-auto'>
+                <form
+                  id={COMPANY_FORM_ID}
+                  onSubmit={form.handleSubmit(handleSubmit)}
+                  className='flex flex-col gap-6 px-6 pt-6 pb-8'
+                >
+                  <SheetSection title='Details'>
+                    <FormField
+                      control={form.control}
+                      name='name'
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Name</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              placeholder='Acme Inc.'
+                              disabled={fieldsDisabled}
+                              data-autofocus
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
+                      <FormField
+                        control={form.control}
+                        name='website'
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel optional>Website</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder='acme.com'
+                                disabled={fieldsDisabled}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name='linkedinUrl'
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel optional>LinkedIn</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder='linkedin.com/company/acme'
+                                disabled={fieldsDisabled}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <FormField
+                      control={form.control}
+                      name='ownerId'
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel optional>Owner</FormLabel>
+                          <Select
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            disabled={fieldsDisabled}
+                          >
+                            <FormControl>
+                              <SelectTrigger aria-label='Owner'>
+                                <SelectValue placeholder='No owner' />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value={NO_OWNER}>No owner</SelectItem>
+                              {ownerOptions.map(owner => (
+                                <SelectItem key={owner.id} value={owner.id}>
+                                  {owner.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {ownerId === NO_OWNER ? null : (
+                            <p className='text-muted-foreground text-xs'>
+                              The one person who works this account.
+                            </p>
+                          )}
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name='notes'
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel optional>Notes</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              {...field}
+                              rows={4}
+                              disabled={fieldsDisabled}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    {company?.clientName ? (
+                      <p className='text-muted-foreground text-sm'>
+                        Signed as client{' '}
+                        <span className='text-foreground font-medium'>
+                          {company.clientName}
+                        </span>
+                        .
+                      </p>
+                    ) : null}
+                  </SheetSection>
+
+                  {company ? (
+                    <>
+                      <Separator />
+                      <CompanyContactsSection
+                        contacts={company.contacts}
+                        disabled={fieldsDisabled}
+                        onSetChampion={handleChampion}
+                      />
+                      <Separator />
+                      <CompanyLeadsSection leads={company.leads} />
+                    </>
+                  ) : null}
+
+                  {feedback ? (
+                    <p className='border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm'>
+                      {feedback}
+                    </p>
+                  ) : null}
+                </form>
+              </div>
+              <SheetFormFooter
+                formId={COMPANY_FORM_ID}
+                saveLabel={
+                  isPending ? 'Saving...' : isEditing ? 'Save changes' : 'Create company'
+                }
+                submitDisabled={submitDisabled}
+                submitDisabledReason={
+                  isPending
+                    ? PENDING_REASON
+                    : isArchived
+                      ? 'Restore the company to edit it.'
+                      : null
+                }
+                undo={undo}
+                redo={redo}
+                canUndo={canUndo}
+                canRedo={canRedo}
+                isEditing={isEditing}
+                deleteDisabled={isPending || !isEditing}
+                deleteDisabledReason={isPending ? PENDING_REASON : null}
+                onRequestDelete={() => setArchiveOpen(true)}
+                deleteAriaLabel={isArchived ? 'Restore company' : 'Archive company'}
+              />
+            </Form>
+          )}
+        </SheetContent>
+      </Sheet>
+      <ConfirmDialog
+        open={archiveOpen}
+        title={isArchived ? 'Restore company?' : 'Archive company?'}
+        description={
+          isArchived
+            ? `${company?.name ?? 'This company'} comes back to the Companies list.`
+            : `Archiving ${company?.name ?? 'this company'} hides it from the Companies list. Its contacts and leads stay as they are.`
+        }
+        confirmLabel={isArchived ? 'Restore' : 'Archive'}
+        confirmVariant={isArchived ? 'default' : 'destructive'}
+        confirmDisabled={isPending}
+        onCancel={() => setArchiveOpen(false)}
+        onConfirm={handleArchiveToggle}
+      />
+      {unsavedChangesDialog}
+    </>
+  )
+}

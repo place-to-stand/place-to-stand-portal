@@ -5,9 +5,11 @@ import type { Database } from '@/lib/supabase/types'
  * imports so components can read the same lists the guards enforce.
  *
  * - ADMIN: the whole internal portal.
- * - SALES: staff with CRM access only (leads, contacts and their activity).
- *   Everything else stays behind `requireUser()` / `assertAdmin()`, so a page
- *   or route nobody opened up for SALES is admin-only by default.
+ * - SALES: staff with CRM access (home, leads, companies, contacts and their
+ *   activity) plus the task boards of projects they are members of and their
+ *   own personal boards (`lib/projects/access.ts`). Everything else stays
+ *   behind `requireUser()` / `assertAdmin()`, so a page or route nobody
+ *   opened up for SALES is admin-only by default.
  * - CLIENT: client-portal users; never let into the internal portal.
  */
 type Role = Database['public']['Enums']['user_role']
@@ -22,11 +24,15 @@ export const ROLE_LABELS: Record<Role, string> = {
 export const INTERNAL_ROLES: readonly Role[] = ['ADMIN', 'SALES']
 
 /** Where a SALES user lands after sign-in, and where admin-only pages send them. */
-export const SALES_HOME_PATH = '/leads'
+export const SALES_HOME_PATH = '/my/home'
 
 /** Nav entries a SALES user sees. Every other entry is admin-only. */
 export const SALES_NAV_HREFS: ReadonlySet<string> = new Set([
+  '/my/home',
+  '/my/tasks/board',
   '/leads',
+  '/companies',
+  '/projects',
   '/contacts',
 ])
 
@@ -34,12 +40,16 @@ export const SALES_NAV_HREFS: ReadonlySet<string> = new Set([
 export const SALES_ACTIVITY_TARGET_TYPES: ReadonlySet<string> = new Set([
   'LEAD',
   'CONTACT',
+  'COMPANY',
 ])
 
 /** Global sheet-host entities a SALES user may open. */
 export const SALES_SHEET_ENTITIES: ReadonlySet<string> = new Set([
   'lead',
   'contact',
+  'company',
+  // Task sheets check project membership in their own resolver.
+  'task',
 ])
 
 export function isAdminRole(role: Role | null | undefined): boolean {

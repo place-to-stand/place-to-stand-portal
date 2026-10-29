@@ -13,6 +13,7 @@ import {
   Receipt,
   Inbox,
   Mail,
+  Briefcase,
 } from 'lucide-react'
 
 type NavItem = {
@@ -57,6 +58,11 @@ export const NAV_GROUPS: NavGroup[] = [
         href: '/leads',
         label: 'Leads',
         icon: Handshake,
+      },
+      {
+        href: '/companies',
+        label: 'Companies',
+        icon: Briefcase,
       },
       {
         href: '/invoices',

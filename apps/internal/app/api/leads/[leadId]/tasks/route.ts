@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 
 import { inArray } from 'drizzle-orm'
 
-import { requireRole } from '@/lib/auth/session'
+import { requireCrmUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 import { normalizeRawTask } from '@/lib/data/projects/normalize-task'
@@ -14,13 +14,13 @@ import { listLeadTasksWithRelations } from '@/lib/queries/tasks/relations'
  * Tasks linked to a lead, in the same hydrated shape the project board's
  * cards consume, plus the assignee identities the cards render (the board
  * gets those from its own admins payload; this sheet section is self-fed).
- * Admin-only endpoint.
+ * CRM staff; SALES get only tasks on projects they can work.
  */
 export async function GET(
   _request: Request,
   { params }: RouteContext<'/api/leads/[leadId]/tasks'>
 ) {
-  const user = await requireRole('ADMIN')
+  const user = await requireCrmUser()
   const { leadId } = await params
 
   try {

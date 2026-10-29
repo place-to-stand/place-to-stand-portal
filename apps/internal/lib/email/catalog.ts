@@ -11,6 +11,7 @@ import {
 } from '@pts/email'
 import { serverEnv } from '@/lib/env.server'
 import type { TemplateAudience } from '@/lib/templates/audience'
+import { sampleTaskDueDigest } from '@/lib/tasks/due-digest'
 import { renderUpdateEmail } from '@/lib/updates/render-email'
 
 import { buildFormEmailEntries } from './catalog-forms'
@@ -25,7 +26,7 @@ type EmailTemplateStatus = 'active' | 'disabled'
 
 /** The flow an email belongs to; the list is sectioned by it. */
 export type EmailTemplateGroup =
-  'accounts' | 'contact-form' | 'audit' | 'client'
+  'accounts' | 'contact-form' | 'audit' | 'client' | 'tasks'
 
 export type EmailTemplateEntry = {
   id: string
@@ -308,6 +309,28 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
             viewUrl: `${internalOrigin}/share/invoices/sample-token`,
             replyTo: 'admin@example.com',
           }),
+        },
+      ],
+    },
+    {
+      id: 'task-due-digest',
+      overview: 'Sent on weekday mornings to anyone with tasks late or due that day.',
+      group: 'tasks',
+      status: 'active',
+      name: 'Tasks due today',
+      description:
+        'One email per person listing their open tasks that are late or due today, latest first, with a button to their task board. Sales users get every task on projects they can work; admins only get tasks tied to a lead. Nobody with nothing due gets mail.',
+      triggers: ['Weekday mornings at 8am Pacific (7am in winter)'],
+      recipient: 'Each assignee with something late or due today',
+      from,
+      replyTo,
+      delivery: `${INTERNAL_SDK_DELIVERY}. One send per person per day; a re-run the same day is deduplicated.`,
+      attachments: null,
+      source: 'packages/email/src/templates/task-due-digest.ts',
+      variants: [
+        {
+          audience: 'team',
+          sample: sampleTaskDueDigest(internalOrigin, replyTo),
         },
       ],
     },

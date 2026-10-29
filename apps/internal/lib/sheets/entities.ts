@@ -20,6 +20,7 @@ const SHEET_ENTITY_KEYS = [
   'hour-block',
   'user',
   'project',
+  'company',
 ] as const
 
 export type SheetEntityKey = (typeof SHEET_ENTITY_KEYS)[number]
@@ -100,6 +101,12 @@ export const SHEET_ENTITIES: Record<SheetEntityKey, SheetEntityConfig> = {
     // project id from their own rows (the landing's row type omits fields
     // the sheet needs), so the host serves `?project=` on every route and
     // those tables keep their own local-state sheet for row clicks.
+    claimsPathname: () => false,
+  },
+  company: {
+    auxParams: [],
+    // The company sheet loads its own data, so the global host serves it on
+    // every route, the Companies page included.
     claimsPathname: () => false,
   },
 }

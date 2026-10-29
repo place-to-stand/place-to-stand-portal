@@ -35,6 +35,8 @@ import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui
 import type { UserAssignments } from '@/lib/settings/users/state/types'
 
 export type SheetInitPayloads = {
+  /** The company sheet loads its own record; init only confirms access. */
+  company: { companyId: string | null }
   /** `null` client = create mode (`?client=new`). */
   client: { client: ClientRow | null }
   submission: { submission: FormSubmissionRecord }

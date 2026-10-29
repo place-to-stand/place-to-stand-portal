@@ -1,11 +1,13 @@
-import { eq } from 'drizzle-orm'
+import { and, eq, ne } from 'drizzle-orm'
 
 import { logActivity } from '@/lib/activity/logger'
 import { contactCreatedEvent, contactUpdatedEvent } from '@/lib/activity/events/contacts'
 import { assertCrmAccess } from '@/lib/auth/permissions'
+import type { AppUser } from '@/lib/auth/session'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
 import { contacts } from '@/lib/db/schema'
+import { findOrCreateCompanyByName } from '@/lib/queries/companies'
 import {
   contactSchema,
   type ContactInput,
@@ -16,6 +18,46 @@ import {
   type ContactMutationContext,
   type ContactMutationResult,
 } from './types'
+
+type ExistingContact = {
+  id: string
+  email: string
+  name: string
+  phone: string | null
+  jobTitle: string | null
+  linkedinUrl: string | null
+  companyId: string | null
+  isChampion: boolean
+}
+
+/**
+ * The company a save points at: `undefined` keeps the current one, a blank
+ * name clears it, anything else finds or creates the company by name.
+ */
+async function resolveCompanyId(
+  user: AppUser,
+  companyName: string | null | undefined,
+  current: string | null
+): Promise<string | null> {
+  if (companyName === undefined) return current
+  if (companyName === null) return null
+  const company = await findOrCreateCompanyByName(user, companyName)
+  return company?.id ?? null
+}
+
+/** A company has one champion: clear the flag on everyone else there. */
+async function clearOtherChampions(companyId: string, contactId: string) {
+  await db
+    .update(contacts)
+    .set({ isChampion: false, updatedAt: new Date().toISOString() })
+    .where(
+      and(
+        eq(contacts.companyId, companyId),
+        eq(contacts.isChampion, true),
+        ne(contacts.id, contactId)
+      )
+    )
+}
 
 export async function saveContactMutation(
   context: ContactMutationContext,
@@ -51,10 +93,7 @@ export async function saveContactMutation(
       const { id, email, name, phone } = parsed.data
 
       if (isUpdate && id) {
-        // Update existing contact
-        let existingContact:
-          | { id: string; email: string; name: string; phone: string | null }
-          | undefined
+        let existingContact: ExistingContact | undefined
 
         try {
           const rows = await db
@@ -63,6 +102,10 @@ export async function saveContactMutation(
               email: contacts.email,
               name: contacts.name,
               phone: contacts.phone,
+              jobTitle: contacts.jobTitle,
+              linkedinUrl: contacts.linkedinUrl,
+              companyId: contacts.companyId,
+              isChampion: contacts.isChampion,
             })
             .from(contacts)
             .where(eq(contacts.id, id))
@@ -78,43 +121,80 @@ export async function saveContactMutation(
           return buildMutationResult({ error: 'Contact not found.' })
         }
 
+        let companyId: string | null
+        try {
+          companyId = await resolveCompanyId(
+            user,
+            parsed.data.companyName,
+            existingContact.companyId
+          )
+        } catch (error) {
+          console.error('Failed to resolve contact company', error)
+          return buildMutationResult({ error: 'Unable to save the company.' })
+        }
+
+        const next = {
+          email,
+          name,
+          phone: phone ?? null,
+          jobTitle:
+            parsed.data.jobTitle === undefined
+              ? existingContact.jobTitle
+              : parsed.data.jobTitle,
+          linkedinUrl:
+            parsed.data.linkedinUrl === undefined
+              ? existingContact.linkedinUrl
+              : parsed.data.linkedinUrl,
+          companyId,
+          // No company, no champion.
+          isChampion: companyId
+            ? (parsed.data.isChampion ?? existingContact.isChampion)
+            : false,
+        }
+
+        const labels: Record<keyof typeof next, string> = {
+          email: 'email',
+          name: 'name',
+          phone: 'phone',
+          jobTitle: 'job title',
+          linkedinUrl: 'LinkedIn',
+          companyId: 'company',
+          isChampion: 'champion',
+        }
         const changedFields: string[] = []
         const before: Record<string, unknown> = {}
         const after: Record<string, unknown> = {}
-        const nextPhone = phone ?? null
 
-        if (existingContact.email !== email) {
-          changedFields.push('email')
-          before.email = existingContact.email
-          after.email = email
-        }
-        if (existingContact.name !== name) {
-          changedFields.push('name')
-          before.name = existingContact.name
-          after.name = name
-        }
-        if (existingContact.phone !== nextPhone) {
-          changedFields.push('phone')
-          before.phone = existingContact.phone
-          after.phone = nextPhone
+        for (const key of Object.keys(next) as (keyof typeof next)[]) {
+          if (existingContact[key] !== next[key]) {
+            changedFields.push(labels[key])
+            before[key] = existingContact[key]
+            after[key] = next[key]
+          }
         }
 
         try {
           await db
             .update(contacts)
-            .set({
-              email,
-              name,
-              phone,
-              updatedAt: new Date().toISOString(),
-            })
+            .set({ ...next, updatedAt: new Date().toISOString() })
             .where(eq(contacts.id, id))
+
+          if (next.isChampion && next.companyId) {
+            await clearOtherChampions(next.companyId, id)
+          }
         } catch (error) {
           console.error('Failed to update contact', error)
-          return buildMutationResult({
-            error:
-              error instanceof Error ? error.message : 'Unable to update contact.',
-          })
+          if (
+            error instanceof Error &&
+            String(error.message + String(error.cause ?? '')).includes(
+              'contacts_email_key'
+            )
+          ) {
+            return buildMutationResult({
+              error: 'A contact with this email already exists.',
+            })
+          }
+          return buildMutationResult({ error: 'Unable to update contact.' })
         }
 
         if (changedFields.length > 0) {
@@ -141,6 +221,14 @@ export async function saveContactMutation(
 
       // Create new contact
       let newContactId: string
+      let companyId: string | null
+
+      try {
+        companyId = await resolveCompanyId(user, parsed.data.companyName, null)
+      } catch (error) {
+        console.error('Failed to resolve contact company', error)
+        return buildMutationResult({ error: 'Unable to save the company.' })
+      }
 
       try {
         const result = await db
@@ -149,6 +237,10 @@ export async function saveContactMutation(
             email,
             name,
             phone,
+            jobTitle: parsed.data.jobTitle ?? null,
+            linkedinUrl: parsed.data.linkedinUrl ?? null,
+            companyId,
+            isChampion: Boolean(companyId && parsed.data.isChampion),
             createdBy: user.id,
           })
           .returning({ id: contacts.id })
@@ -159,16 +251,19 @@ export async function saveContactMutation(
         // Check for unique constraint violation on email
         if (
           error instanceof Error &&
-          error.message.includes('contacts_email_key')
+          String(error.message + String(error.cause ?? '')).includes(
+            'contacts_email_key'
+          )
         ) {
           return buildMutationResult({
             error: 'A contact with this email already exists.',
           })
         }
-        return buildMutationResult({
-          error:
-            error instanceof Error ? error.message : 'Unable to create contact.',
-        })
+        return buildMutationResult({ error: 'Unable to create contact.' })
+      }
+
+      if (companyId && parsed.data.isChampion && newContactId) {
+        await clearOtherChampions(companyId, newContactId)
       }
 
       const event = contactCreatedEvent({ email, name })

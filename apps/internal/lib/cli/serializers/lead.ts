@@ -5,10 +5,11 @@ import type { CliLeadRow } from '../queries/leads'
 import { isoTimestamp } from './timestamp'
 
 /**
- * `lastContactAt`, `awaitingReply` and `expectedCloseDate` exist on the row
- * but nothing in the app writes them (PRD 006 left them write-never), so they
- * are deliberately not exported — a null there reads as "never contacted",
- * which is wrong. Last touch is the newest entry in `leads updates`.
+ * `lastContactAt` and `expectedCloseDate` exist on the row but nothing in the
+ * app writes them (PRD 006 left them write-never), so they are deliberately
+ * not exported: a null there reads as "never contacted", which is wrong. Last
+ * touch is the newest entry in `leads updates`. `awaitingReply` is set by hand
+ * on the lead sheet ("Waiting on their reply").
  */
 export type CliLead = {
   id: string
@@ -21,6 +22,10 @@ export type CliLead = {
   phone: string | null
   company: string | null
   website: string | null
+  /** The linked company record, when the company name matched one. */
+  companyId: string | null
+  /** Ticked on the lead sheet while we wait on the lead to answer. */
+  awaitingReply: boolean
   /** Editor HTML, as stored. Empty string when the lead has no notes. */
   notes: string
   rank: string
@@ -48,6 +53,8 @@ export function serializeLead(lead: CliLeadRow): CliLead {
     phone: lead.contactPhone,
     company: lead.companyName,
     website: lead.companyWebsite,
+    companyId: lead.companyId,
+    awaitingReply: lead.awaitingReply ?? false,
     notes: extractLeadNotes(lead.notes),
     rank: lead.rank,
     currentStageEnteredAt: isoTimestamp(lead.currentStageEnteredAt),

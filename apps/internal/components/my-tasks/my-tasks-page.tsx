@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 import { PageShell } from '@/components/layout/page-shell'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { FilterSheetButton } from '@/components/table-toolbar/filter-sheet'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { Button } from '@pts/ui/button'
@@ -83,6 +84,7 @@ export function MyTasksPage({
   initialOlderDoneCount,
 }: MyTasksPageProps) {
   const router = useRouter()
+  const { isAdmin } = useViewerAccess()
   const reorderMutation = useMyTasksReorderMutation()
   // Sheet selection goes through the shared hook like every other entity
   // sheet: the URL stays the source of truth, mirrored in local state so open
@@ -474,11 +476,14 @@ export function MyTasksPage({
         hiddenProjectTypes={boardScope.hiddenProjectTypes}
         onScopeChange={applyBoardScope}
       />
-      <PersonSelector
-        admins={admins}
-        selectedUserId={selectedAssigneeId}
-        currentUserId={user.id}
-      />
+      {/* Sales users only ever see their own board. */}
+      {isAdmin ? (
+        <PersonSelector
+          admins={admins}
+          selectedUserId={selectedAssigneeId}
+          currentUserId={user.id}
+        />
+      ) : null}
     </>
   )
   const scopeCount =

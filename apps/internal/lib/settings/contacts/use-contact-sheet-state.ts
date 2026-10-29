@@ -34,6 +34,10 @@ const contactFormSchema = z.object({
   email: z.string().email({ message: 'Valid email is required' }),
   name: z.string().min(1, 'Name is required').max(160),
   phone: z.string().max(40).optional(),
+  jobTitle: z.string().max(160).optional(),
+  linkedinUrl: z.string().max(255).optional(),
+  companyName: z.string().max(160).optional(),
+  isChampion: z.boolean().optional(),
 })
 
 export type ContactFormData = z.infer<typeof contactFormSchema>
@@ -45,6 +49,13 @@ export type ContactSheetInput = {
   name: string
   phone: string | null
   userId: string | null
+  // Sales profile. Optional so older callers (pickers handing back a
+  // just-created contact) still type-check; the sheet treats missing as empty.
+  jobTitle?: string | null
+  linkedinUrl?: string | null
+  isChampion?: boolean
+  companyId?: string | null
+  companyName?: string | null
 }
 
 export type UseContactSheetStateOptions = {
@@ -116,6 +127,10 @@ export function useContactSheetState({
       email: '',
       name: '',
       phone: '',
+      jobTitle: '',
+      linkedinUrl: '',
+      companyName: '',
+      isChampion: false,
     },
   })
 
@@ -137,6 +152,10 @@ export function useContactSheetState({
       email: contact?.email ?? '',
       name: contact?.name ?? initialName ?? '',
       phone: contact?.phone ?? '',
+      jobTitle: contact?.jobTitle ?? '',
+      linkedinUrl: contact?.linkedinUrl ?? '',
+      companyName: contact?.companyName ?? '',
+      isChampion: contact?.isChampion ?? false,
     })
 
     // If we have metrics (from ContactsTableContact), use them directly
@@ -253,6 +272,10 @@ export function useContactSheetState({
           email: data.email,
           name: data.name,
           phone: data.phone || null,
+          jobTitle: data.jobTitle?.trim() || null,
+          linkedinUrl: data.linkedinUrl?.trim() || null,
+          companyName: data.companyName?.trim() || null,
+          isChampion: Boolean(data.companyName?.trim() && data.isChampion),
         })
 
         if (result.error) {

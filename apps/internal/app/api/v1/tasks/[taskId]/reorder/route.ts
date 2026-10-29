@@ -2,12 +2,12 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { z } from 'zod'
 
-import { getCurrentUser } from '@/lib/auth/session'
+import { getCurrentStaff } from '@/lib/auth/session'
 import { eq } from 'drizzle-orm'
 
 import { logActivity } from '@/lib/activity/logger'
 import { taskStatusChangedEvent } from '@/lib/activity/events'
-import { ensureTaskAccess } from '@/lib/auth/permissions'
+import { ensureTaskWorkAccess } from '@/lib/projects/access'
 import { db } from '@/lib/db'
 import { projects, tasks } from '@/lib/db/schema'
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
@@ -37,7 +37,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: RouteContext<'/api/v1/tasks/[taskId]/reorder'>
 ) {
-  const user = await getCurrentUser()
+  const user = await getCurrentStaff()
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -75,7 +75,7 @@ export async function PATCH(
   const taskId = parsedParams.data.taskId
 
   try {
-    await ensureTaskAccess(user, taskId)
+    await ensureTaskWorkAccess(user, taskId)
   } catch (error) {
     if (error instanceof NotFoundError) {
       return NextResponse.json({ error: 'Task not found.' }, { status: 404 })

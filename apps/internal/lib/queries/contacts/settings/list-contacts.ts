@@ -15,7 +15,12 @@ import {
 } from '@/lib/pagination/sort'
 import { DEFAULT_CONTACTS_SORT } from '@/lib/settings/contacts/filters'
 
-import { contactFields, type SelectContact } from '../selectors'
+import {
+  contactFields,
+  contactProfileFields,
+  type ContactProfile,
+  type SelectContact,
+} from '../selectors'
 import {
   buildClientCondition,
   buildSearchCondition,
@@ -35,9 +40,10 @@ import type {
   ListContactsForSettingsInput,
 } from './types'
 
-type ContactMetricsResult = SelectContact & {
-  totalClients: number | string | null
-}
+type ContactMetricsResult = SelectContact &
+  ContactProfile & {
+    totalClients: number | string | null
+  }
 
 function buildBaseConditions(
   status: StatusFilter,
@@ -71,6 +77,7 @@ async function queryContactRows(
   const query = db
     .select({
       ...contactFields,
+      ...contactProfileFields,
       totalClients: linkedClientsCountSql,
     })
     .from(contacts)
@@ -136,6 +143,11 @@ function mapContactMetrics(
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
+    jobTitle: row.jobTitle,
+    linkedinUrl: row.linkedinUrl,
+    isChampion: row.isChampion,
+    companyId: row.companyId,
+    companyName: row.companyName,
     metrics: {
       totalClients: Number(row.totalClients ?? 0),
       clients: clientsMap.get(row.id) ?? [],

@@ -41,6 +41,7 @@ import type {
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import type { ProjectSheetFieldState } from './project-sheet-field-state'
 import { GitHubReposSection, type PendingRepo } from './github-repos-section'
+import { ProjectMembersField } from './project-members-field'
 import {
   IntegrationLinksSection,
   type PendingIntegrationLink,
@@ -497,6 +498,12 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
               )}
             />
           </div>
+
+          <ProjectMembersField
+            form={form}
+            projectId={projectId}
+            disabled={fieldState.owner.disabled}
+          />
 
           <GitHubReposSection
             projectId={projectId}

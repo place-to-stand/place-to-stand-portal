@@ -49,10 +49,11 @@ export function LeadSheet(props: LeadSheetProps) {
           size='2xl'
           className={cn(
             'flex h-full w-full flex-col gap-0 overflow-hidden p-0',
-            // Edit mode appends the fixed-width task sidebar (384px) while the
-            // form column stays at the same 672px as add mode. Below lg the
-            // sidebar stacks under the form, so the sheet keeps its add width.
-            isEditing && 'lg:max-w-[1056px]'
+            // Edit mode appends the fixed-width tasks and updates sidebar
+            // (480px) while the form column stays at the same 672px as add
+            // mode. Below lg the sidebar stacks under the form, so the sheet
+            // keeps its add width.
+            isEditing && 'lg:max-w-[1152px]'
           )}
         >
           {/* Header */}
@@ -83,6 +84,7 @@ export function LeadSheet(props: LeadSheetProps) {
                     control={form.control}
                     assignees={assignees}
                     selectedSourceType={selectedSourceType}
+                    companyId={lead?.companyId ?? null}
                   />
                 </div>
 

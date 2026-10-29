@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type React from 'react'
-import { User2, UserPlus } from 'lucide-react'
+import { ExternalLink, User2, UserPlus } from 'lucide-react'
 import type { UseFormReturn } from 'react-hook-form'
 
 import { Button } from '@pts/ui/button'
@@ -18,7 +18,9 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
+import { Checkbox } from '@pts/ui/checkbox'
 import { Input } from '@pts/ui/input'
+import { CompanyNameInput } from '@/components/companies/company-name-input'
 import { PhoneInput } from '@/components/ui/phone-input'
 import { Separator } from '@pts/ui/separator'
 
@@ -37,10 +39,27 @@ const FEEDBACK_CLASSES =
 
 const CONTACT_FORM_ID = 'contact-form'
 
+/** A safe https link from what was typed, or null. */
+function toLinkedinHref(value: string | undefined | null): string | null {
+  const trimmed = value?.trim()
+  if (!trimmed) return null
+  const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
+  try {
+    const url = new URL(withScheme)
+    return url.hostname.includes('.') ? url.toString() : null
+  } catch {
+    return null
+  }
+}
+
 type ContactFormValues = {
   email: string
   name: string
   phone?: string
+  jobTitle?: string
+  linkedinUrl?: string
+  companyName?: string
+  isChampion?: boolean
 }
 
 type ContactSheetFormProps = {
@@ -73,6 +92,8 @@ type ContactSheetFormProps = {
   onRequestPromote: () => void
   /** The portal user this contact was promoted to, if any. */
   portalUserId: string | null
+  /** The saved company link, for the "open company" button. */
+  companyId?: string | null
 }
 
 export function ContactSheetForm({
@@ -102,6 +123,7 @@ export function ContactSheetForm({
   promoteDisabledReason,
   onRequestPromote,
   portalUserId,
+  companyId = null,
 }: ContactSheetFormProps) {
   // Client links drive client-portal membership, and portal accounts grant
   // client access, so both stay admin-only. SALES staff see the links only.
@@ -231,6 +253,124 @@ export function ContactSheetForm({
                 )}
               />
             </div>
+          </SheetSection>
+
+          <Separator />
+
+          <SheetSection title='Work'>
+            <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
+              <FormField
+                control={form.control}
+                name='companyName'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel optional>Company</FormLabel>
+                    <FormControl>
+                      <DisabledFieldTooltip
+                        disabled={isPending}
+                        reason={fieldDisabledReason}
+                      >
+                        <CompanyNameInput
+                          name={field.name}
+                          value={field.value ?? ''}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          disabled={isPending}
+                          linkedCompanyId={companyId}
+                        />
+                      </DisabledFieldTooltip>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='jobTitle'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel optional>Job title</FormLabel>
+                    <FormControl>
+                      <DisabledFieldTooltip
+                        disabled={isPending}
+                        reason={fieldDisabledReason}
+                      >
+                        <Input
+                          {...field}
+                          value={field.value ?? ''}
+                          placeholder='Head of Marketing'
+                          disabled={isPending}
+                        />
+                      </DisabledFieldTooltip>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <FormField
+              control={form.control}
+              name='linkedinUrl'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel optional>LinkedIn</FormLabel>
+                  <div className='flex items-center gap-2'>
+                    <FormControl>
+                      <DisabledFieldTooltip
+                        disabled={isPending}
+                        reason={fieldDisabledReason}
+                      >
+                        <Input
+                          {...field}
+                          value={field.value ?? ''}
+                          placeholder='linkedin.com/in/jane-doe'
+                          disabled={isPending}
+                        />
+                      </DisabledFieldTooltip>
+                    </FormControl>
+                    <Button
+                      type='button'
+                      variant='outline'
+                      size='icon'
+                      className='shrink-0'
+                      aria-label='Open LinkedIn profile'
+                      title='Open LinkedIn profile'
+                      disabled={!toLinkedinHref(field.value)}
+                      onClick={() => {
+                        const href = toLinkedinHref(field.value)
+                        if (href) window.open(href, '_blank', 'noopener,noreferrer')
+                      }}
+                    >
+                      <ExternalLink className='h-4 w-4' />
+                    </Button>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='isChampion'
+              render={({ field }) => {
+                const hasCompany = Boolean(form.watch('companyName')?.trim())
+                return (
+                  <FormItem className='flex flex-row items-center gap-2 space-y-0'>
+                    <FormControl>
+                      <Checkbox
+                        checked={hasCompany && Boolean(field.value)}
+                        onCheckedChange={checked =>
+                          field.onChange(checked === true)
+                        }
+                        disabled={isPending || !hasCompany}
+                      />
+                    </FormControl>
+                    <FormLabel className='font-normal'>
+                      Champion at their company
+                    </FormLabel>
+                  </FormItem>
+                )
+              }}
+            />
           </SheetSection>
 
           <Separator />

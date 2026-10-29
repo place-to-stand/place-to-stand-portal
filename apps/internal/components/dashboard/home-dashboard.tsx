@@ -1,7 +1,7 @@
 'use client'
 
 import { PageShell } from '@/components/layout/page-shell'
-import type { DashboardLayout } from '@/lib/dashboard/layout'
+import type { DashboardKind, DashboardLayout } from '@/lib/dashboard/layout'
 
 import { DashboardWidgetGrid } from './widget-layout/dashboard-widget-grid'
 import { LayoutEditControls } from './widget-layout/layout-edit-controls'
@@ -10,15 +10,18 @@ import { useDashboardLayoutEditor } from './widget-layout/use-dashboard-layout-e
 
 type HomeDashboardProps = DashboardWidgetData & {
   initialLayout: DashboardLayout
+  kind?: DashboardKind
 }
 
 export function HomeDashboard({
   tasks,
   totalTaskCount,
   initialHoursSnapshot,
+  sales,
   initialLayout,
+  kind = 'admin',
 }: HomeDashboardProps) {
-  const editor = useDashboardLayoutEditor({ initialLayout })
+  const editor = useDashboardLayoutEditor({ initialLayout, kind })
 
   return (
     <PageShell
@@ -35,7 +38,7 @@ export function HomeDashboard({
     >
       <DashboardWidgetGrid
         layout={editor.layout}
-        data={{ tasks, totalTaskCount, initialHoursSnapshot }}
+        data={{ tasks, totalTaskCount, initialHoursSnapshot, sales }}
         isEditing={editor.isEditing}
         onDragStart={editor.handleDragStart}
         onDragOver={editor.handleDragOver}

@@ -20,6 +20,7 @@ import { ProjectsLanding } from './projects-landing'
 import type { ClientHoursData, LandingUnfilteredCounts } from './projects-landing'
 import { ProjectsLandingFilters } from './projects-landing-filters'
 import { PROJECTS_TABS } from '../_lib/tabs'
+import { NewPersonalBoardButton } from './new-personal-board-button'
 
 export type ProjectsLandingAdminSectionProps = {
   projects: LandingProject[]
@@ -37,6 +38,11 @@ export type ProjectsLandingAdminSectionProps = {
   filtersActive: boolean
   unfilteredCounts: LandingUnfilteredCounts
   clientHoursMap?: Record<string, ClientHoursData>
+  /**
+   * Project members (non-admins): read-only list, no tabs, and a "New
+   * personal board" button instead of "Add project".
+   */
+  memberView?: boolean
 }
 
 export function ProjectsLandingAdminSection({
@@ -52,6 +58,7 @@ export function ProjectsLandingAdminSection({
   filtersActive,
   unfilteredCounts,
   clientHoursMap = {},
+  memberView = false,
 }: ProjectsLandingAdminSectionProps) {
   const sortedClients = useMemo(() => sortClientsByName(clients), [clients])
 
@@ -68,8 +75,8 @@ export function ProjectsLandingAdminSection({
   return (
     <PageShell
       breadcrumbs={crumbsForNav('/projects')}
-      tabs={PROJECTS_TABS}
-      activeTab='projects'
+      tabs={memberView ? undefined : PROJECTS_TABS}
+      activeTab={memberView ? undefined : 'projects'}
       count={
         // R2/03.E5: the implicit default status view must not read as
         // filtered — show a plain visible-count until a filter is active.
@@ -82,6 +89,9 @@ export function ProjectsLandingAdminSection({
           : { label: 'projects', total: filteredProjectCount }
       }
       primaryAction={
+        memberView ? (
+          <NewPersonalBoardButton />
+        ) : (
         <DisabledFieldTooltip
           disabled={createDisabled}
           reason={createDisabledReason}
@@ -97,6 +107,7 @@ export function ProjectsLandingAdminSection({
             Add project
           </Button>
         </DisabledFieldTooltip>
+        )
       }
     >
       <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
@@ -109,6 +120,7 @@ export function ProjectsLandingAdminSection({
           clientHoursMap={clientHoursMap}
           unfilteredCounts={unfilteredCounts}
           filtersActive={filtersActive}
+          readOnly={memberView}
         />
       </section>
     </PageShell>

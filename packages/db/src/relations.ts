@@ -23,6 +23,8 @@ import {
   oauthConnections,
   userDashboardLayouts,
   contacts,
+  companies,
+  projectMembers,
   contactClients,
   contactLeads,
   githubRepoLinks,
@@ -177,6 +179,10 @@ export const leadsRelations = relations(leads, ({ one, many }) => ({
     references: [clients.id],
   }),
   contactLeads: many(contactLeads),
+  company: one(companies, {
+    fields: [leads.companyId],
+    references: [companies.id],
+  }),
   tasks: many(tasks),
   stageHistory: many(leadStageHistory),
   updates: many(leadUpdates),
@@ -332,6 +338,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   timeLogs: many(timeLogs),
   tasks: many(tasks),
   githubRepos: many(githubRepoLinks),
+  members: many(projectMembers),
 }))
 
 export const taskCommentsRelations = relations(taskComments, ({ one }) => ({
@@ -424,6 +431,41 @@ export const contactsRelations = relations(contacts, ({ one, many }) => ({
   contactClients: many(contactClients),
   contactLeads: many(contactLeads),
   clientsOriginated: many(clients),
+  company: one(companies, {
+    fields: [contacts.companyId],
+    references: [companies.id],
+  }),
+}))
+
+export const companiesRelations = relations(companies, ({ one, many }) => ({
+  owner: one(users, {
+    fields: [companies.ownerId],
+    references: [users.id],
+    relationName: 'companies_ownerId_users_id',
+  }),
+  createdByUser: one(users, {
+    fields: [companies.createdBy],
+    references: [users.id],
+    relationName: 'companies_createdBy_users_id',
+  }),
+  client: one(clients, {
+    fields: [companies.clientId],
+    references: [clients.id],
+  }),
+  contacts: many(contacts),
+  leads: many(leads),
+}))
+
+export const projectMembersRelations = relations(projectMembers, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectMembers.projectId],
+    references: [projects.id],
+  }),
+  user: one(users, {
+    fields: [projectMembers.userId],
+    references: [users.id],
+    relationName: 'projectMembers_userId_users_id',
+  }),
 }))
 
 export const contactClientsRelations = relations(contactClients, ({ one }) => ({

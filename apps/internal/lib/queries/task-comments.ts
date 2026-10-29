@@ -9,10 +9,10 @@ import {
 } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
 import type { AppUser } from '@/lib/auth/session'
-import { ensureTaskAccess } from '@/lib/auth/permissions'
+import { ensureTaskWorkAccess } from '@/lib/projects/access'
 import { db } from '@/lib/db'
 import { projects, taskComments, tasks, users } from '@/lib/db/schema'
-import { NotFoundError } from '@/lib/errors/http'
+import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
 import {
   clampLimit,
   decodeCursor,
@@ -76,6 +76,13 @@ function mapCommentSelectionToTaskComment(
     updated_at: selection.updatedAt,
     deleted_at: selection.deletedAt,
     author: mapUserToCommentAuthor(selection.author),
+  }
+}
+
+/** Admins may edit or delete any comment; everyone else only their own. */
+function assertCanChangeComment(user: AppUser, authorId: string | null) {
+  if (user.role !== 'ADMIN' && authorId !== user.id) {
+    throw new ForbiddenError('You can only change your own comments')
   }
 }
 
@@ -190,7 +197,7 @@ export async function listTaskComments(
   taskId: string,
   input: ListTaskCommentsInput = {},
 ): Promise<TaskCommentsPage> {
-  await ensureTaskAccess(user, taskId)
+  await ensureTaskWorkAccess(user, taskId)
 
   const limit = clampLimit(input.limit, { defaultLimit: 20, maxLimit: 100 })
   const cursorPayload = decodeCursor<{ createdAt?: string; id?: string }>(
@@ -258,7 +265,7 @@ export async function createTaskComment(
   },
   options: TaskCommentMutationOptions = {},
 ): Promise<{ commentId: string }> {
-  await ensureTaskAccess(user, input.taskId)
+  await ensureTaskWorkAccess(user, input.taskId)
 
   const result = await db
     .insert(taskComments)
@@ -300,7 +307,8 @@ export async function updateTaskComment(
     throw new NotFoundError('Task comment not found')
   }
 
-  await ensureTaskAccess(user, comment.taskId)
+  await ensureTaskWorkAccess(user, comment.taskId)
+  assertCanChangeComment(user, comment.authorId)
 
   // Re-saving an unchanged body is a no-op: no write, no activity row.
   if (comment.body === input.body) {
@@ -335,7 +343,8 @@ export async function softDeleteTaskComment(
     throw new NotFoundError('Task comment not found')
   }
 
-  await ensureTaskAccess(user, comment.taskId)
+  await ensureTaskWorkAccess(user, comment.taskId)
+  assertCanChangeComment(user, comment.authorId)
 
   const now = new Date().toISOString()
 

@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import { requireUser } from '@/lib/auth/session'
-import { assertAdmin } from '@/lib/auth/permissions'
+import { requireStaffUser } from '@/lib/auth/session'
+import { listWorkableProjectIds } from '@/lib/projects/access'
+import { scopeProjectsForViewer } from '@/lib/projects/viewer-scope'
 import { listAssignedDoneSlice } from '@/lib/data/tasks'
 import { fetchProjectsWithRelationsByIds } from '@/lib/data/projects'
 import { HIDEABLE_PROJECT_TYPE_VALUES } from '@/lib/my-tasks/project-scope'
@@ -35,8 +36,7 @@ const payloadSchema = z.object({
 })
 
 export async function POST(request: Request) {
-  const user = await requireUser()
-  assertAdmin(user)
+  const user = await requireStaffUser()
 
   let payload: z.infer<typeof payloadSchema>
 
@@ -66,17 +66,23 @@ export async function POST(request: Request) {
     )
   }
 
-  // The internal portal is admin-only, so any admin may view another admin's
-  // board — same rule the reorder route applies.
-  // 'all' widens to every assignee (null); absent defaults to self.
-  const boardOwnerId =
-    payload.assigneeId === 'all' ? null : (payload.assigneeId ?? user.id)
+  // Admins may view anyone's board — same rule the reorder route applies.
+  // 'all' widens to every assignee (null); absent defaults to self. Sales
+  // users only ever see their own board, on projects they can work.
+  const isAdmin = user.role === 'ADMIN'
+  const boardOwnerId = !isAdmin
+    ? user.id
+    : payload.assigneeId === 'all'
+      ? null
+      : (payload.assigneeId ?? user.id)
+  const workableProjectIds = await listWorkableProjectIds(user)
 
   try {
     const slice = await listAssignedDoneSlice({
       userId: boardOwnerId,
       clientId: payload.clientId ?? null,
       hiddenProjectTypes: payload.hiddenProjectTypes ?? [],
+      projectIds: workableProjectIds,
       since: resolveDoneWindowStart(payload.toWeeks, payload.now),
       before: resolveDoneWindowStart(payload.fromWeeks, payload.now),
     })
@@ -84,7 +90,10 @@ export async function POST(request: Request) {
     const projectIds = Array.from(
       new Set(slice.items.map(item => item.project.id))
     )
-    const projects = await fetchProjectsWithRelationsByIds(projectIds)
+    const projects = await scopeProjectsForViewer(
+      user,
+      await fetchProjectsWithRelationsByIds(projectIds)
+    )
 
     return NextResponse.json({
       ok: true,

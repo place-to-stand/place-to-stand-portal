@@ -1,9 +1,10 @@
 'use server'
 
-import { requireUser } from '@/lib/auth/session'
+import { requireCrmUser } from '@/lib/auth/session'
 import {
-  DEFAULT_DASHBOARD_LAYOUT,
+  DEFAULT_DASHBOARD_LAYOUTS,
   cloneLayout,
+  dashboardKindForRole,
   dashboardLayoutInputSchema,
   isDefaultDashboardLayout,
   normalizeDashboardLayout,
@@ -26,16 +27,17 @@ type SaveDashboardLayoutResult =
 export async function saveDashboardLayout(
   input: unknown
 ): Promise<SaveDashboardLayoutResult> {
-  const user = await requireUser()
+  const user = await requireCrmUser()
+  const kind = dashboardKindForRole(user.role)
 
   if (!dashboardLayoutInputSchema.safeParse(input).success) {
     return { success: false, error: 'Invalid layout.' }
   }
 
-  const layout = normalizeDashboardLayout(input)
+  const layout = normalizeDashboardLayout(input, kind)
 
   try {
-    if (isDefaultDashboardLayout(layout)) {
+    if (isDefaultDashboardLayout(layout, kind)) {
       await deleteDashboardLayoutRow(user.id)
     } else {
       await upsertDashboardLayoutRow(user.id, layout)
@@ -49,7 +51,7 @@ export async function saveDashboardLayout(
 }
 
 export async function resetDashboardLayout(): Promise<SaveDashboardLayoutResult> {
-  const user = await requireUser()
+  const user = await requireCrmUser()
 
   try {
     await deleteDashboardLayoutRow(user.id)
@@ -58,5 +60,8 @@ export async function resetDashboardLayout(): Promise<SaveDashboardLayoutResult>
     return { success: false, error: 'Unable to reset layout.' }
   }
 
-  return { success: true, layout: cloneLayout(DEFAULT_DASHBOARD_LAYOUT) }
+  return {
+    success: true,
+    layout: cloneLayout(DEFAULT_DASHBOARD_LAYOUTS[dashboardKindForRole(user.role)]),
+  }
 }

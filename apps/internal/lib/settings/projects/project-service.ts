@@ -39,6 +39,11 @@ export const projectSchema = z
       .or(z.literal(''))
       .nullish()
       .transform(value => (value ? value : null)),
+    /**
+     * Sales users who may see the project. Omitted = leave members as they
+     * are (the sheet sends it only once it has loaded the current list).
+     */
+    memberIds: z.array(z.string().uuid()).max(100).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.startsOn && data.endsOn) {

@@ -13,6 +13,11 @@ export function mapContactToTableRow(
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
     deletedAt: item.deletedAt,
+    jobTitle: item.jobTitle,
+    linkedinUrl: item.linkedinUrl,
+    isChampion: item.isChampion,
+    companyId: item.companyId,
+    companyName: item.companyName,
     metrics: {
       totalClients: item.metrics.totalClients,
       clients: item.metrics.clients,

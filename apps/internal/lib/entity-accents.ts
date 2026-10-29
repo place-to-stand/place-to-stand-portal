@@ -10,6 +10,7 @@ export type AccentEntity =
   | 'project'
   | 'client'
   | 'contact'
+  | 'company'
   | 'suggestion'
   | 'invoice'
   | 'hourBlock'
@@ -51,6 +52,11 @@ export const ENTITY_ACCENTS: Record<AccentEntity, EntityAccent> = {
     sheetHeader: 'border-b-2 border-b-cyan-500/60',
     card: 'border-cyan-500/35 hover:border-cyan-500/60 hover:bg-cyan-500/5 hover:shadow-md',
     cardStatic: 'border-cyan-500/35',
+  },
+  company: {
+    sheetHeader: 'border-b-2 border-b-indigo-500/60',
+    card: 'border-indigo-500/35 hover:border-indigo-500/60 hover:bg-indigo-500/5 hover:shadow-md',
+    cardStatic: 'border-indigo-500/35',
   },
   suggestion: {
     sheetHeader: 'border-b-2 border-b-fuchsia-500/60',

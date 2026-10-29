@@ -98,6 +98,7 @@ const EXACT: Record<string, VerbPresentation> = {
   CLIENT_UPDATE_EDITED: { icon: Mail, tone: 'update' },
   CONTACT_CLIENT_LINKED: { icon: Link2, tone: 'create' },
   CONTACT_CLIENT_UNLINKED: { icon: Link2, tone: 'archive' },
+  COMPANY_CHAMPION_SET: { icon: Sparkles, tone: 'update' },
   USER_PASSWORD_CHANGED: { icon: Lock, tone: 'update' },
   SUBMISSION_RECEIVED: { icon: Inbox, tone: 'create' },
   SUBMISSIONS_ABANDONED: { icon: Archive, tone: 'archive' },

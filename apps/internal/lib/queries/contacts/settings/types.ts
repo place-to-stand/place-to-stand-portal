@@ -2,7 +2,7 @@ import type { CursorDirection, PageInfo } from '@/lib/pagination/cursor'
 import type { ParsedSort } from '@/lib/pagination/sort'
 import type { ContactSortField } from '@/lib/settings/contacts/filters'
 
-import type { SelectContact } from '../selectors'
+import type { ContactProfile, SelectContact } from '../selectors'
 
 export type LinkedClient = {
   id: string
@@ -15,9 +15,10 @@ type ContactListMetrics = {
   clients: LinkedClient[]
 }
 
-export type ContactsSettingsListItem = SelectContact & {
-  metrics: ContactListMetrics
-}
+export type ContactsSettingsListItem = SelectContact &
+  ContactProfile & {
+    metrics: ContactListMetrics
+  }
 
 export type ContactsSettingsResult = {
   items: ContactsSettingsListItem[]

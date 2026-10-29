@@ -1,5 +1,6 @@
 'use client'
 
+import type { ContactProfile } from '@/lib/queries/contacts/selectors'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 
@@ -14,7 +15,7 @@ import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
 
 import type { ContactSheetInput } from './use-contact-sheet-state'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
-export type ContactsTableContact = {
+export type ContactsTableContact = ContactProfile & {
   id: string
   email: string
   name: string

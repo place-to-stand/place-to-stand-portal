@@ -1,8 +1,12 @@
 import type { InferSelectModel } from 'drizzle-orm'
 import type { contacts } from '@/lib/db/schema'
 
-// Base contact types
-type Contact = InferSelectModel<typeof contacts>
+// Base contact types. The sales profile columns aren't part of a client's
+// contact list, so they're left off.
+type Contact = Omit<
+  InferSelectModel<typeof contacts>,
+  'jobTitle' | 'linkedinUrl' | 'companyId' | 'isChampion'
+>
 // Junction table types
 // Contact with linked clients
 // Contact with isPrimary from a specific client's junction record

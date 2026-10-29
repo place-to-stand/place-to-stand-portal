@@ -7,7 +7,7 @@ import { logActivity } from '@/lib/activity/logger'
 import { contactCreatedEvent, leadConvertedEvent } from '@/lib/activity/events'
 import { requireRole } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { clients, contacts, contactClients, leads } from '@/lib/db/schema'
+import { clients, companies, contacts, contactClients, leads } from '@/lib/db/schema'
 import { createClient } from '@/lib/settings/clients/actions/create-client'
 import { saveProject } from '@/lib/settings/projects/actions/save-project'
 import { extractLeadNotes } from '@/lib/leads/notes'
@@ -220,6 +220,22 @@ export async function convertLeadToClient(
     })
     .where(eq(leads.id, leadId))
 
+  // 5b. The lead's company signed: point it at the client. A company that
+  // already became a client keeps its first link.
+  const [leadCompany] = await db
+    .select({ companyId: leads.companyId })
+    .from(leads)
+    .where(eq(leads.id, leadId))
+    .limit(1)
+  if (leadCompany?.companyId) {
+    await db
+      .update(companies)
+      .set({ clientId: finalClientId, updatedAt: new Date().toISOString() })
+      .where(
+        and(eq(companies.id, leadCompany.companyId), isNull(companies.clientId))
+      )
+  }
+
   // 6. Log activity
   const resolvedName = clientName || lead.companyName || lead.contactName
   const event = leadConvertedEvent({
@@ -242,6 +258,7 @@ export async function convertLeadToClient(
 
   revalidatePath('/leads')
   revalidatePath('/clients')
+  revalidatePath('/companies')
 
   return {
     clientId: finalClientId,

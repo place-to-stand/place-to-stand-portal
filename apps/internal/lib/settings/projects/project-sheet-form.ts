@@ -66,6 +66,8 @@ export const projectSheetFormSchema = z
       .or(z.literal(''))
       .optional(),
     ownerId: z.string().uuid().or(z.literal('')).optional(),
+    /** Undefined until the members field has loaded the current list. */
+    memberIds: z.array(z.string().uuid()).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.startsOn && data.endsOn) {
@@ -143,6 +145,7 @@ export const buildProjectFormDefaults = (
   endsOn: project?.ends_on ? project.ends_on.slice(0, 10) : '',
   slug: project?.slug ?? '',
   ownerId: project?.owner_id ?? '',
+  memberIds: undefined,
 })
 
 export type ProjectSavePayload = {
@@ -155,6 +158,7 @@ export type ProjectSavePayload = {
   endsOn: string | null
   slug: string | null
   ownerId: string | null
+  memberIds?: string[]
 }
 
 type CreatePayloadArgs = {
@@ -183,6 +187,7 @@ export const createProjectSavePayload = ({
     endsOn: values.endsOn ? values.endsOn : null,
     slug: isEditing ? (values.slug?.trim() ? values.slug.trim() : null) : null,
     ownerId: trimmedOwnerId ? trimmedOwnerId : null,
+    memberIds: values.memberIds,
   }
 }
 

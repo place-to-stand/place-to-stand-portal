@@ -21,6 +21,8 @@ const leadFields = {
   contactPhone: leads.contactPhone,
   companyName: leads.companyName,
   companyWebsite: leads.companyWebsite,
+  companyId: leads.companyId,
+  awaitingReply: leads.awaitingReply,
   notes: leads.notes,
   rank: leads.rank,
   currentStageEnteredAt: leads.currentStageEnteredAt,

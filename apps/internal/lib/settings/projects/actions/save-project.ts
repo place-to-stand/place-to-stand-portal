@@ -10,6 +10,11 @@ import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
 import { projects } from '@/lib/db/schema'
 import {
+  assertValidProjectMemberIds,
+  InvalidProjectMemberError,
+  syncProjectMembers,
+} from '@/lib/projects/members'
+import {
   generateUniqueProjectSlug,
   projectSchema,
   projectSlugExists,
@@ -38,8 +43,31 @@ export async function saveProject(
     return { error: message, fieldErrors }
   }
 
-  const { id, name, clientId, projectType, status, startsOn, endsOn, slug, ownerId } =
-    parsed.data
+  const {
+    id,
+    name,
+    clientId,
+    projectType,
+    status,
+    startsOn,
+    endsOn,
+    slug,
+    ownerId,
+    memberIds,
+  } = parsed.data
+
+  // Check members before writing anything, so a bad list can't leave a new
+  // project behind that a retry would duplicate.
+  if (memberIds !== undefined) {
+    try {
+      await assertValidProjectMemberIds(memberIds)
+    } catch (error) {
+      if (error instanceof InvalidProjectMemberError) {
+        return { error: error.message }
+      }
+      throw error
+    }
+  }
 
   const trimmedName = name.trim()
   const providedSlug = slug?.trim() ?? null
@@ -303,6 +331,25 @@ export async function saveProject(
       return {}
     }
   )
+
+  // Members are synced after the row is written (a new project has no id
+  // before). An omitted list leaves the current members untouched.
+  const savedProjectId = result.projectId ?? id
+  if (!result.error && savedProjectId && memberIds !== undefined) {
+    try {
+      await syncProjectMembers({
+        actor: user,
+        projectId: savedProjectId,
+        memberIds,
+      })
+    } catch (error) {
+      console.error('Failed to update project members', error)
+      return {
+        ...result,
+        error: 'Project saved but its members could not be updated.',
+      }
+    }
+  }
 
   if (!result.error) {
     await revalidateProjectSettings()

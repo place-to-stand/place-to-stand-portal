@@ -5,12 +5,22 @@ import type { DashboardWidgetId } from '@/lib/dashboard/layout'
 import { HoursWidget } from '../hours-widget'
 import { MyTasksWidget } from '../my-tasks-widget'
 import { RecentActivityOverviewWidget } from '../recent-activity-overview-widget'
+import {
+  AwaitingReplyWidget,
+  NextStepsWidget,
+  PipelineWidget,
+  QuietLeadsWidget,
+} from '../sales-widgets'
 import type { DashboardWidgetData } from './types'
 
 export const DASHBOARD_WIDGET_LABELS: Record<DashboardWidgetId, string> = {
   'my-tasks': 'My tasks',
   hours: 'Monthly hours snapshot',
   'recent-activity': 'Recent activity',
+  'next-steps': 'Next steps',
+  'quiet-leads': 'Leads gone quiet',
+  'awaiting-reply': 'Waiting on a reply',
+  pipeline: 'Pipeline',
 }
 
 type WidgetRendererProps = {
@@ -24,19 +34,35 @@ export function WidgetRenderer({ id, data, className }: WidgetRendererProps) {
     case 'my-tasks':
       return (
         <MyTasksWidget
-          tasks={data.tasks}
-          totalCount={data.totalTaskCount}
+          tasks={data.tasks ?? []}
+          totalCount={data.totalTaskCount ?? 0}
           className={className}
         />
       )
     case 'hours':
-      return (
+      return data.initialHoursSnapshot ? (
         <HoursWidget
           initialSnapshot={data.initialHoursSnapshot}
           className={className}
         />
-      )
+      ) : null
     case 'recent-activity':
       return <RecentActivityOverviewWidget className={className} />
+    case 'next-steps':
+      return data.sales ? (
+        <NextStepsWidget data={data.sales} className={className} />
+      ) : null
+    case 'quiet-leads':
+      return data.sales ? (
+        <QuietLeadsWidget data={data.sales} className={className} />
+      ) : null
+    case 'awaiting-reply':
+      return data.sales ? (
+        <AwaitingReplyWidget data={data.sales} className={className} />
+      ) : null
+    case 'pipeline':
+      return data.sales ? (
+        <PipelineWidget data={data.sales} className={className} />
+      ) : null
   }
 }

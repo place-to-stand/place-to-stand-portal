@@ -19,6 +19,7 @@ import { db } from '@/lib/db'
 import { activityLogs, users } from '@/lib/db/schema'
 import type { AppUser } from '@/lib/auth/session'
 import { canReadActivity } from '@/lib/auth/roles'
+import { canWorkTask } from '@/lib/projects/access'
 import { ForbiddenError } from '@/lib/errors/http'
 import type { ActivitySourceValue, UserRoleValue } from '@/lib/types'
 import type { Json } from '@/lib/types/json'
@@ -92,6 +93,27 @@ const actorSelection = {
 } as const
 
 /**
+ * `canReadActivity` plus one async case: a project member (SALES) may read
+ * the history of a single task they can work, which the task sheet shows.
+ */
+async function canReadActivityFor(
+  user: AppUser,
+  filters: ActivityQueryFilters
+): Promise<boolean> {
+  if (canReadActivity(user.role, filters)) return true
+  if (user.role !== 'SALES') return false
+  if (filters.projectId || filters.clientId || !filters.targetId) return false
+
+  const types =
+    typeof filters.targetType === 'string'
+      ? [filters.targetType]
+      : (filters.targetType ?? [])
+  if (types.length !== 1 || types[0] !== 'TASK') return false
+
+  return canWorkTask(user, filters.targetId)
+}
+
+/**
  * Access control lives here, not in the callers (this project has NO RLS):
  * admins see everything; SALES (CRM staff) may read lead and contact activity
  * only (`canReadActivity`). Requested filters narrow the result set.
@@ -100,7 +122,7 @@ export async function fetchActivityLogs(
   user: AppUser,
   filters: ActivityQueryFilters
 ): Promise<ActivityQueryResult> {
-  if (!user || !canReadActivity(user.role, filters)) {
+  if (!user || !(await canReadActivityFor(user, filters))) {
     throw new ForbiddenError('Not allowed to read this activity')
   }
 

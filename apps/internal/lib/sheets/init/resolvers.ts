@@ -13,8 +13,10 @@ import { getActiveTaskProjectId } from '@/lib/data/tasks'
 import { fetchFormSubmissionById } from '@/lib/data/form-submissions'
 import { fetchLeadAssignees, fetchLeadById } from '@/lib/data/leads'
 import { getOrCreateSalesProject } from '@/lib/leads/sales-project'
-import { fetchAdminUsers } from '@/lib/data/users'
+import { fetchAdminUsers, fetchCrmUsers } from '@/lib/data/users'
 import { NotFoundError } from '@/lib/errors/http'
+import { ensureTaskWorkAccess } from '@/lib/projects/access'
+import { scopeProjectsForViewer } from '@/lib/projects/viewer-scope'
 import { fetchClientDirectory } from '@/lib/queries/clients'
 import { getContactSheetInputById } from '@/lib/queries/contacts'
 import {
@@ -234,12 +236,15 @@ const resolveLeadInit: SheetInitResolver<'lead'> = async (user, id) => {
 
 const resolveTaskInit: SheetInitResolver<'task'> = async (user, id) => {
   // The sheet only reads project identity fields for its selector — no need
-  // to hydrate every project's task graph.
-  const [admins, allProjects, salesProjectId] = await Promise.all([
-    fetchAdminUsers(),
+  // to hydrate every project's task graph. Assignees come from every CRM
+  // user; the save path checks each one can reach the task's project.
+  const [admins, liteProjects, salesProjectId] = await Promise.all([
+    fetchCrmUsers(),
     fetchProjectsLite(),
     getOrCreateSalesProject(user.id),
   ])
+  // Non-admins only see (redacted) projects they can work.
+  const allProjects = await scopeProjectsForViewer(user, liteProjects)
 
   const base = {
     admins,
@@ -258,10 +263,14 @@ const resolveTaskInit: SheetInitResolver<'task'> = async (user, id) => {
   if (!holdingProjectId) {
     throw new NotFoundError('Task not found')
   }
+  if (user.role !== 'ADMIN') {
+    await ensureTaskWorkAccess(user, id)
+  }
 
-  const [hydratedProject] = await fetchProjectsWithRelationsByIds([
-    holdingProjectId,
-  ])
+  const [hydratedProject] = await scopeProjectsForViewer(
+    user,
+    await fetchProjectsWithRelationsByIds([holdingProjectId])
+  )
   const task = hydratedProject?.tasks.find(item => item.id === id) ?? null
 
   if (!task) {
@@ -279,6 +288,10 @@ const resolveTaskInit: SheetInitResolver<'task'> = async (user, id) => {
   }
 }
 
+const resolveCompanyInit: SheetInitResolver<'company'> = async (_user, id) => ({
+  companyId: id === NEW_SHEET_VALUE ? null : id,
+})
+
 const RESOLVERS: {
   [E in SheetInitEntity]: SheetInitResolver<E>
 } = {
@@ -291,6 +304,7 @@ const RESOLVERS: {
   user: resolveUserInit,
   project: resolveProjectInit,
   lead: resolveLeadInit,
+  company: resolveCompanyInit,
 }
 
 export const isSheetInitEntity = (value: string): value is SheetInitEntity =>

@@ -8,14 +8,19 @@ import {
   syncAttachments,
 } from '@/app/(dashboard)/projects/actions/task-helpers'
 import { logActivity } from '@/lib/activity/logger'
-import { ensureProjectAccess, ensureTaskAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { projects, taskAssignees, tasks } from '@/lib/db/schema'
 import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
+import {
+  ensureProjectWorkAccess,
+  ensureTaskWorkAccess,
+  findAssigneesWithoutAccess,
+} from '@/lib/projects/access'
 import { resolveCompletedAt } from '@/lib/projects/task-status'
 
 import { pinTaskToTopOfAssigneeBoards } from './assignee-sort'
 import { buildTaskUpdateEvent } from './save-task-activity'
+import { assigneeAccessError } from './assignee-access'
 import type { SaveTaskResult, TaskWriteContext } from './types'
 
 export async function updateTaskForActor(
@@ -26,7 +31,7 @@ export async function updateTaskForActor(
     input
 
   try {
-    await ensureTaskAccess(actor, taskId)
+    await ensureTaskWorkAccess(actor, taskId)
   } catch (error) {
     if (error instanceof NotFoundError) {
       return { error: 'Task not found.' }
@@ -69,7 +74,7 @@ export async function updateTaskForActor(
   // destination project (mirrors the create path) and resolve its client.
   if (projectChanged) {
     try {
-      await ensureProjectAccess(actor, projectId)
+      await ensureProjectWorkAccess(actor, projectId)
     } catch (error) {
       if (error instanceof NotFoundError) {
         return { error: 'Selected project is unavailable.' }
@@ -102,6 +107,18 @@ export async function updateTaskForActor(
     )
 
   const existingAssigneeIds = existingAssignees.map(assignee => assignee.userId)
+
+  // Check new assignees only (all of them when the task changes project), so
+  // an older assignment never blocks an unrelated edit.
+  const blockedAssignees = await findAssigneesWithoutAccess(
+    projectId,
+    projectChanged
+      ? assigneeIds
+      : assigneeIds.filter(id => !existingAssigneeIds.includes(id))
+  )
+  if (blockedAssignees.length) {
+    return { error: assigneeAccessError(blockedAssignees) }
+  }
 
   const statusChanged = existingTask.status !== status
   let nextRank = existingTask.rank

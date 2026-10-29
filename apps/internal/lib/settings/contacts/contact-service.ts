@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { linkedinUrlSchema } from '@/lib/companies/schema'
+
 export const contactSchema = z.object({
   id: z.string().uuid().optional(),
   email: z.string().email('Valid email is required'),
@@ -10,6 +12,27 @@ export const contactSchema = z.object({
     .optional()
     .nullable()
     .transform(value => (value?.trim() ? value.trim() : null)),
+  // Sales profile. Omitted (undefined) keeps the stored value, so callers
+  // that only know name, email and phone don't wipe it.
+  jobTitle: z
+    .string()
+    .max(160)
+    .optional()
+    .nullable()
+    .transform(value =>
+      value === undefined ? undefined : value?.trim() ? value.trim() : null
+    ),
+  linkedinUrl: linkedinUrlSchema.optional(),
+  /** Company by name: matched case-insensitively, created when new. */
+  companyName: z
+    .string()
+    .max(160)
+    .optional()
+    .nullable()
+    .transform(value =>
+      value === undefined ? undefined : value?.trim() ? value.trim() : null
+    ),
+  isChampion: z.boolean().optional(),
 })
 
 const contactIdentifierSchema = {

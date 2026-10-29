@@ -4,6 +4,7 @@ import { useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { PageShell } from '@/components/layout/page-shell'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { useRecordCycle } from '@/hooks/use-record-cycle'
 import { ProjectSheet } from '@/app/(dashboard)/settings/projects/project-sheet'
@@ -38,6 +39,9 @@ type ProjectsBoardComponentProps = ProjectsBoardProps & {
 export function ProjectsBoard(props: ProjectsBoardComponentProps) {
   const viewModel = useProjectsBoardViewModel(props)
   const router = useRouter()
+  // Project members (non-admins) get the task board only: no hours, time
+  // logs, review, project editing or the other tabs.
+  const { isAdmin } = useViewerAccess()
   const { toast } = useToast()
 
   const clientRows = useMemo<ClientRow[]>(
@@ -114,7 +118,7 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
     [router, toast]
   )
 
-  const projectActions = activeProjectForSheet
+  const projectActions = activeProjectForSheet && isAdmin
     ? {
         canEdit: !projectMutationPending,
         canArchive: !projectMutationPending,
@@ -160,7 +164,7 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
     <PageShell
       breadcrumbs={boardBreadcrumbs}
       headerRight={
-        viewModel.burndown.visible ? (
+        viewModel.burndown.visible && isAdmin ? (
           <ProjectBurndownWidget
             totalClientRemainingHours={
               viewModel.burndown.totalClientRemainingHours
@@ -187,6 +191,7 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
     >
       <ProjectsBoardTabsSection
         {...viewModel.tabs}
+        tasksOnly={!isAdmin}
         projectActions={projectActions}
         onProjectStatusChange={handleProjectStatusChange}
       />

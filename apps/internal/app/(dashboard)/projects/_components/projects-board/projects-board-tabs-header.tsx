@@ -20,6 +20,8 @@ export type ProjectsBoardTabsHeaderProps = {
   activityDisabled: boolean
   reviewDisabled: boolean
   timeLogsDisabled: boolean
+  /** Project members see the Tasks tab only. */
+  tasksOnly?: boolean
   projectActions: ProjectActionControls
   activeProjectId: string | null
   activeProjectStatus: string | null
@@ -40,6 +42,7 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
     activityDisabled,
     reviewDisabled,
     timeLogsDisabled,
+    tasksOnly = false,
     projectActions,
     activeProjectId,
     activeProjectStatus,
@@ -50,19 +53,21 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
     <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
       {/* Left-aligned like every tab strip; scrolls once it outgrows a phone. */}
       <TabsList className='bg-muted/40 h-10 w-fit max-w-full [scrollbar-width:none] justify-start gap-2 overflow-x-auto rounded-lg p-1'>
-        <TabsTrigger
-          value='overview'
-          className='flex-none px-3 py-1.5 text-sm'
-          asChild
-        >
-          <Link
-            href={overviewHref}
-            prefetch={false}
-            onClick={() => startBoardTabInteraction(initialTab, 'overview')}
+        {tasksOnly ? null : (
+          <TabsTrigger
+            value='overview'
+            className='flex-none px-3 py-1.5 text-sm'
+            asChild
           >
-            Overview
-          </Link>
-        </TabsTrigger>
+            <Link
+              href={overviewHref}
+              prefetch={false}
+              onClick={() => startBoardTabInteraction(initialTab, 'overview')}
+            >
+              Overview
+            </Link>
+          </TabsTrigger>
+        )}
         <TabsTrigger
           value='board'
           className='flex-none px-3 py-1.5 text-sm'
@@ -76,81 +81,89 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
             Tasks
           </Link>
         </TabsTrigger>
-        <TabsTrigger
-          value='review'
-          className='flex-none px-3 py-1.5 text-sm'
-          asChild
-          disabled={reviewDisabled}
-        >
-          <Link
-            href={reviewHref}
-            prefetch={false}
-            aria-disabled={reviewDisabled}
-            tabIndex={reviewDisabled ? -1 : undefined}
-            onClick={event => {
-              if (reviewDisabled) {
-                event.preventDefault()
-                return
-              }
-              startBoardTabInteraction(initialTab, 'review')
-            }}
-            className={
-              reviewDisabled ? 'pointer-events-none opacity-50' : undefined
-            }
-          >
-            Review
-          </Link>
-        </TabsTrigger>
-        <TabsTrigger
-          value='timeLogs'
-          className='flex-none px-3 py-1.5 text-sm'
-          asChild
-          disabled={timeLogsDisabled}
-        >
-          <Link
-            href={timeLogsHref}
-            prefetch={false}
-            aria-disabled={timeLogsDisabled}
-            tabIndex={timeLogsDisabled ? -1 : undefined}
-            onClick={event => {
-              if (timeLogsDisabled) {
-                event.preventDefault()
-                return
-              }
-              startBoardTabInteraction(initialTab, 'timeLogs')
-            }}
-            className={
-              timeLogsDisabled ? 'pointer-events-none opacity-50' : undefined
-            }
-          >
-            Time logs
-          </Link>
-        </TabsTrigger>
-        <TabsTrigger
-          value='activity'
-          className='flex-none px-3 py-1.5 text-sm'
-          asChild
-          disabled={activityDisabled}
-        >
-          <Link
-            href={activityHref}
-            prefetch={false}
-            aria-disabled={activityDisabled}
-            tabIndex={activityDisabled ? -1 : undefined}
-            onClick={event => {
-              if (activityDisabled) {
-                event.preventDefault()
-                return
-              }
-              startBoardTabInteraction(initialTab, 'activity')
-            }}
-            className={
-              activityDisabled ? 'pointer-events-none opacity-50' : undefined
-            }
-          >
-            Activity
-          </Link>
-        </TabsTrigger>
+        {tasksOnly ? null : (
+          <>
+            <TabsTrigger
+              value='review'
+              className='flex-none px-3 py-1.5 text-sm'
+              asChild
+              disabled={reviewDisabled}
+            >
+              <Link
+                href={reviewHref}
+                prefetch={false}
+                aria-disabled={reviewDisabled}
+                tabIndex={reviewDisabled ? -1 : undefined}
+                onClick={event => {
+                  if (reviewDisabled) {
+                    event.preventDefault()
+                    return
+                  }
+                  startBoardTabInteraction(initialTab, 'review')
+                }}
+                className={
+                  reviewDisabled ? 'pointer-events-none opacity-50' : undefined
+                }
+              >
+                Review
+              </Link>
+            </TabsTrigger>
+            <TabsTrigger
+              value='timeLogs'
+              className='flex-none px-3 py-1.5 text-sm'
+              asChild
+              disabled={timeLogsDisabled}
+            >
+              <Link
+                href={timeLogsHref}
+                prefetch={false}
+                aria-disabled={timeLogsDisabled}
+                tabIndex={timeLogsDisabled ? -1 : undefined}
+                onClick={event => {
+                  if (timeLogsDisabled) {
+                    event.preventDefault()
+                    return
+                  }
+                  startBoardTabInteraction(initialTab, 'timeLogs')
+                }}
+                className={
+                  timeLogsDisabled
+                    ? 'pointer-events-none opacity-50'
+                    : undefined
+                }
+              >
+                Time logs
+              </Link>
+            </TabsTrigger>
+            <TabsTrigger
+              value='activity'
+              className='flex-none px-3 py-1.5 text-sm'
+              asChild
+              disabled={activityDisabled}
+            >
+              <Link
+                href={activityHref}
+                prefetch={false}
+                aria-disabled={activityDisabled}
+                tabIndex={activityDisabled ? -1 : undefined}
+                onClick={event => {
+                  if (activityDisabled) {
+                    event.preventDefault()
+                    return
+                  }
+                  startBoardTabInteraction(initialTab, 'activity')
+                }}
+                className={
+                  activityDisabled
+                    ? 'pointer-events-none opacity-50'
+                    : undefined
+                }
+              >
+                Activity
+              </Link>
+            </TabsTrigger>
+          </>
+        )}
       </TabsList>
       {projectActions ? (
         <div className='flex w-full items-center justify-end gap-2 sm:w-auto'>

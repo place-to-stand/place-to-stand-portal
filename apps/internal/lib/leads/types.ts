@@ -29,6 +29,8 @@ export type LeadRecord = {
   contactPhone: string | null
   companyName: string | null
   companyWebsite: string | null
+  /** The linked company record; `companyName` is its display copy. */
+  companyId: string | null
   notesHtml: string
   rank: string
   createdAt: string

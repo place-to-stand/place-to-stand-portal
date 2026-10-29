@@ -366,9 +366,12 @@ export function useProjectSheetState({
             // The sheet stays mounted between opens, so the links section's
             // query never remounts — invalidate it or the next open shows
             // the pre-save list.
-            await queryClient.invalidateQueries({
-              queryKey: ['projectIntegrationLinks', targetProjectId],
-            })
+            await Promise.all([
+              queryClient.invalidateQueries({
+                queryKey: ['projectIntegrationLinks', targetProjectId],
+              }),
+              queryClient.invalidateQueries({ queryKey: ['projectMembers'] }),
+            ])
           }
 
           finishSettingsInteraction(interaction, {
@@ -392,6 +395,7 @@ export function useProjectSheetState({
             endsOn: payload.endsOn ?? '',
             slug: payload.slug ?? '',
             ownerId: payload.ownerId ?? '',
+            memberIds: payload.memberIds,
           })
 
           onOpenChange(false)

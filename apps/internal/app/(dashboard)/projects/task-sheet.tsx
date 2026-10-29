@@ -21,6 +21,7 @@ import {
   TooltipTrigger,
 } from '@pts/ui/tooltip'
 import { cn } from '@/lib/utils'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 
 import type {
@@ -70,6 +71,7 @@ type TaskSheetProps = {
 }
 
 export function TaskSheet(props: TaskSheetProps) {
+  const { isAdmin } = useViewerAccess()
   const {
     form,
     feedback,
@@ -345,8 +347,12 @@ export function TaskSheet(props: TaskSheetProps) {
 
   const taskPanelProjectId = props.task?.project_id ?? null
   const taskPanelClientId = taskProject?.client?.id ?? null
+  // Project members (non-admins) don't see time logs or planning.
   const canDeploy = Boolean(
-    props.task && taskProject?.githubRepos && taskProject.githubRepos.length > 0
+    isAdmin &&
+      props.task &&
+      taskProject?.githubRepos &&
+      taskProject.githubRepos.length > 0
   )
 
   return (
@@ -415,7 +421,7 @@ export function TaskSheet(props: TaskSheetProps) {
                 />
                 {/* Time is only tracked against client work — internal and
                     personal projects have no billing target for it. */}
-                {props.task && taskProject?.type === 'CLIENT' ? (
+                {isAdmin && props.task && taskProject?.type === 'CLIENT' ? (
                   <TimeLogSection
                     taskId={props.task.id}
                     enabled={props.open}
@@ -477,7 +483,7 @@ export function TaskSheet(props: TaskSheetProps) {
             </div>
 
             {/* Planning rail — vertical accordion tab, stays left of the panel */}
-            {props.task ? (
+            {props.task && isAdmin ? (
               canDeploy ? (
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -563,14 +569,14 @@ export function TaskSheet(props: TaskSheetProps) {
       {/* Params are built lazily inside this branch (W4): the lead overlay's
           init payload doesn't guarantee the full ProjectWithRelations shape,
           and it never renders the section (create-only). */}
-      {props.task && taskProject ? (
+      {isAdmin && props.task && taskProject ? (
         <ProjectTimeLogDialog
           open={isTimeLogDialogOpen}
           onOpenChange={handleTimeLogDialogOpenChange}
           {...buildProjectTimeLogDialogParams(taskProject, {
             tasks: taskProject.tasks,
             currentUserId: props.currentUserId,
-            admins: props.admins,
+            admins: props.admins.filter(user => user.role === 'ADMIN'),
           })}
           mode={timeLogDialogMode}
           timeLogEntry={editingTimeLogEntry}

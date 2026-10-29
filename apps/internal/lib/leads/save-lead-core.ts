@@ -15,6 +15,7 @@ import { leads, leadStageHistory } from '@/lib/db/schema'
 import { isTerminalLeadStatus } from '@/lib/leads/constants'
 import { serializeLeadNotes } from '@/lib/leads/notes'
 import { resolveNextLeadRank } from '@/lib/leads/rank'
+import { findOrCreateCompanyByName } from '@/lib/queries/companies'
 import type { ActivitySourceValue } from '@/lib/types'
 
 import {
@@ -93,6 +94,9 @@ async function createLead(
 ): Promise<SaveLeadResult> {
   const timestamp = new Date().toISOString()
   const rank = await resolveNextLeadRank(normalized.status)
+  const company = await findOrCreateCompanyByName(actor, normalized.companyName, {
+    website: normalized.companyWebsite,
+  })
 
   const [inserted] = await db
     .insert(leads)
@@ -104,9 +108,11 @@ async function createLead(
       assigneeId: normalized.assigneeId,
       contactEmail: normalized.contactEmail,
       contactPhone: normalized.contactPhone,
-      companyName: normalized.companyName,
+      companyName: company?.name ?? normalized.companyName,
+      companyId: company?.id ?? null,
       companyWebsite: normalized.companyWebsite,
       notes: serializeLeadNotes(normalized.notes),
+      awaitingReply: normalized.awaitingReply ?? false,
       rank,
       currentStageEnteredAt: timestamp,
       createdAt: timestamp,
@@ -162,7 +168,9 @@ async function updateLead(
       contactPhone: leads.contactPhone,
       companyName: leads.companyName,
       companyWebsite: leads.companyWebsite,
+      companyId: leads.companyId,
       notes: leads.notes,
+      awaitingReply: leads.awaitingReply,
       rank: leads.rank,
     })
     .from(leads)
@@ -171,6 +179,21 @@ async function updateLead(
 
   if (!existing) {
     return { success: false, error: 'Lead not found.', notFound: true }
+  }
+
+  // The company follows the name: an unchanged name keeps its link, a new
+  // one finds or creates the company, and a blank one clears it.
+  const companyNameUnchanged =
+    (existing.companyName ?? '').trim().toLowerCase() ===
+    (normalized.companyName ?? '').trim().toLowerCase()
+  const company =
+    companyNameUnchanged && existing.companyId
+      ? { id: existing.companyId, name: existing.companyName ?? '' }
+      : await findOrCreateCompanyByName(actor, normalized.companyName, {
+          website: normalized.companyWebsite,
+        })
+  if (company && !companyNameUnchanged) {
+    normalized = { ...normalized, companyName: company.name }
   }
 
   const statusChanged = existing.status !== normalized.status
@@ -188,10 +211,15 @@ async function updateLead(
     contactEmail: normalized.contactEmail,
     contactPhone: normalized.contactPhone,
     companyName: normalized.companyName,
+    companyId: company?.id ?? null,
     companyWebsite: normalized.companyWebsite,
     notes: serializeLeadNotes(normalized.notes),
     rank,
     updatedAt: timestamp,
+  }
+
+  if (normalized.awaitingReply !== undefined) {
+    setPayload.awaitingReply = normalized.awaitingReply
   }
 
   if (statusChanged) {

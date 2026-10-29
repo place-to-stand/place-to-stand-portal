@@ -527,6 +527,7 @@ const TARGET_LABELS: Record<string, string> = {
   USER: 'team members',
   SETTINGS: 'settings changes',
   CONTACT: 'contact updates',
+  COMPANY: 'company updates',
   LEAD: 'lead activity',
   INVOICE: 'invoicing',
   SUBMISSION: 'website submissions',

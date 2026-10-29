@@ -91,6 +91,16 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
  * answer 401 themselves rather than redirecting: the internal portal also
  * admits SALES (CRM staff), so "has a session" no longer means "is an admin".
  */
+/**
+ * The signed-in ADMIN or SALES user, or null. For API routes on the task-board
+ * surfaces opened to project members; pair with the guards in
+ * `lib/projects/access.ts`.
+ */
+export const getCurrentStaff = async (): Promise<AppUser | null> => {
+  const user = await getCurrentUser()
+  return user?.role === 'ADMIN' || user?.role === 'SALES' ? user : null
+}
+
 export const getCurrentAdmin = async (): Promise<AppUser | null> => {
   const user = await getCurrentUser()
   return user?.role === 'ADMIN' ? user : null
@@ -244,6 +254,14 @@ export const requireCrmUser = async () => {
 
   return user
 }
+
+/**
+ * Guard for the task-board surfaces opened to project members (boards, task
+ * sheet, My tasks): admits ADMIN and SALES. It does NOT check project access;
+ * pair it with `ensureProjectWorkAccess` / `ensureTaskWorkAccess` or a query
+ * scoped by `listWorkableProjectIds`.
+ */
+export const requireStaffUser = requireCrmUser
 
 export const requireRole = async (allowed: UserRole | UserRole[]) => {
   const user = await requireUser()

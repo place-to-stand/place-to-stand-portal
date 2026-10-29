@@ -193,7 +193,18 @@ export function ContactsTableSection({
                 <TableCell>
                   <div className='flex min-w-0 items-center gap-2'>
                     <Contact className='h-4 w-4 shrink-0 text-cyan-500' />
-                    <span className='truncate font-medium'>{contact.name}</span>
+                    <div className='min-w-0'>
+                      <span className='block truncate font-medium'>
+                        {contact.name}
+                      </span>
+                      {contact.jobTitle || contact.companyName ? (
+                        <span className='text-muted-foreground block truncate text-xs'>
+                          {[contact.jobTitle, contact.companyName]
+                            .filter(Boolean)
+                            .join(' at ')}
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
                 </TableCell>
                 <TableCell className='text-muted-foreground text-sm'>

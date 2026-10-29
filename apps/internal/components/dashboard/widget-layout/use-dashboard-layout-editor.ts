@@ -10,10 +10,11 @@ import {
 } from '@/app/(dashboard)/my/home/_actions/save-dashboard-layout'
 import { useToast } from '@/components/ui/use-toast'
 import {
-  DEFAULT_DASHBOARD_LAYOUT,
+  DEFAULT_DASHBOARD_LAYOUTS,
   cloneLayout,
   isDefaultDashboardLayout,
   layoutsEqual,
+  type DashboardKind,
   type DashboardLayout,
   type DashboardWidgetId,
 } from '@/lib/dashboard/layout'
@@ -22,6 +23,7 @@ import { parseColumnDroppableId } from './types'
 
 type UseDashboardLayoutEditorArgs = {
   initialLayout: DashboardLayout
+  kind?: DashboardKind
 }
 
 /**
@@ -31,6 +33,7 @@ type UseDashboardLayoutEditorArgs = {
  */
 export function useDashboardLayoutEditor({
   initialLayout,
+  kind = 'admin',
 }: UseDashboardLayoutEditorArgs) {
   const [layout, setLayout] = useState(() => cloneLayout(initialLayout))
   const [isEditing, setIsEditing] = useState(false)
@@ -137,7 +140,7 @@ export function useDashboardLayoutEditor({
 
   const reset = useCallback(() => {
     const previous = cloneLayout(layoutRef.current)
-    const next = cloneLayout(DEFAULT_DASHBOARD_LAYOUT)
+    const next = cloneLayout(DEFAULT_DASHBOARD_LAYOUTS[kind])
     layoutRef.current = next
     setLayout(next)
     startTransition(async () => {
@@ -152,12 +155,12 @@ export function useDashboardLayoutEditor({
         })
       }
     })
-  }, [toast])
+  }, [kind, toast])
 
   return {
     layout,
     isEditing,
-    isDefault: isDefaultDashboardLayout(layout),
+    isDefault: isDefaultDashboardLayout(layout, kind),
     startEditing: () => setIsEditing(true),
     stopEditing: () => setIsEditing(false),
     reset,

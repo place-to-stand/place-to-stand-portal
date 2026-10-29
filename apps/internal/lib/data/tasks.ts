@@ -7,6 +7,7 @@ import {
   desc,
   eq,
   gte,
+  inArray,
   isNotNull,
   isNull,
   lt,
@@ -87,9 +88,16 @@ function assigneeJoinCondition(userId: string | null) {
  */
 function projectScopeConditions(
   clientId: string | null,
-  hiddenProjectTypes: readonly ProjectTypeValue[]
+  hiddenProjectTypes: readonly ProjectTypeValue[],
+  projectIds: readonly string[] | null = null
 ) {
   return [
+    // Non-admin viewers: only projects they can work (null = every project).
+    ...(projectIds === null
+      ? []
+      : projectIds.length > 0
+        ? [inArray(projectsTable.id, [...projectIds])]
+        : [sql`false`]),
     ...(clientId ? [eq(projectsTable.clientId, clientId)] : []),
     ...(hiddenProjectTypes.length > 0
       ? [notInArray(projectsTable.type, [...hiddenProjectTypes])]
@@ -126,6 +134,8 @@ type FetchAssignedTasksSummaryOptions = {
   clientId?: string | null
   /** Project types to withhold (e.g. PERSONAL, INTERNAL); empty = show all. */
   hiddenProjectTypes?: readonly ProjectTypeValue[]
+  /** Only these projects (a non-admin's workable set); null = every project. */
+  projectIds?: readonly string[] | null
   limit?: number | null
   /**
    * Rows to skip before `limit` applies. Only meaningful with a `userId`:
@@ -146,6 +156,7 @@ async function loadAssignedTaskSummaries({
   userId,
   clientId = null,
   hiddenProjectTypes = [],
+  projectIds = null,
   limit = DEFAULT_LIMIT,
   offset = 0,
   includeCompletedStatuses = true,
@@ -162,7 +173,7 @@ async function loadAssignedTaskSummaries({
 
   const baseConditions = [
     ...assignedTaskConditions(userId),
-    ...projectScopeConditions(clientId, hiddenProjectTypes),
+    ...projectScopeConditions(clientId, hiddenProjectTypes, projectIds),
   ]
 
   if (!includeCompletedStatuses) {
@@ -265,7 +276,8 @@ async function loadAssignedTaskSummaries({
         userId,
         doneSince,
         clientId,
-        hiddenProjectTypes
+        hiddenProjectTypes,
+        projectIds
       )
     : 0
 
@@ -322,7 +334,8 @@ async function countAssignedDoneBefore(
   userId: string | null,
   before: string,
   clientId: string | null = null,
-  hiddenProjectTypes: readonly ProjectTypeValue[] = []
+  hiddenProjectTypes: readonly ProjectTypeValue[] = [],
+  projectIds: readonly string[] | null = null
 ): Promise<number> {
   const [result] = await db
     // Distinct: the all-assignees view joins one row per assignee.
@@ -333,7 +346,7 @@ async function countAssignedDoneBefore(
     .where(
       and(
         ...assignedTaskConditions(userId),
-        ...projectScopeConditions(clientId, hiddenProjectTypes),
+        ...projectScopeConditions(clientId, hiddenProjectTypes, projectIds),
         eq(tasksTable.status, 'DONE'),
         isNotNull(tasksTable.completedAt),
         lt(tasksTable.completedAt, before)
@@ -361,12 +374,14 @@ export async function listAssignedDoneSlice({
   userId,
   clientId = null,
   hiddenProjectTypes = [],
+  projectIds = null,
   since,
   before,
 }: {
   userId: string | null
   clientId?: string | null
   hiddenProjectTypes?: readonly ProjectTypeValue[]
+  projectIds?: readonly string[] | null
   since: string
   before: string
 }): Promise<AssignedDoneSliceResult> {
@@ -408,7 +423,7 @@ export async function listAssignedDoneSlice({
     .where(
       and(
         ...assignedTaskConditions(userId),
-        ...projectScopeConditions(clientId, hiddenProjectTypes),
+        ...projectScopeConditions(clientId, hiddenProjectTypes, projectIds),
         eq(tasksTable.status, 'DONE'),
         isNotNull(tasksTable.completedAt),
         gte(tasksTable.completedAt, since),
@@ -457,7 +472,8 @@ export async function listAssignedDoneSlice({
       userId,
       since,
       clientId,
-      hiddenProjectTypes
+      hiddenProjectTypes,
+      projectIds
     ),
   }
 }

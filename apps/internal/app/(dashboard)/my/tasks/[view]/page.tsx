@@ -6,13 +6,15 @@ import {
   type MyTasksInitialEntry,
   type MyTasksView,
 } from '@/components/my-tasks/my-tasks-page'
-import { requireUser } from '@/lib/auth/session'
+import { requireStaffUser } from '@/lib/auth/session'
 import { buildQuerySuffix } from '@/lib/sheets/hrefs'
 import {
   fetchProjectsLite,
   fetchProjectsWithRelationsByIds,
 } from '@/lib/data/projects'
-import { fetchAdminUsers } from '@/lib/data/users'
+import { fetchCrmUsers } from '@/lib/data/users'
+import { canWorkTask, listWorkableProjectIds } from '@/lib/projects/access'
+import { scopeProjectsForViewer } from '@/lib/projects/viewer-scope'
 import { fetchClientDirectory } from '@/lib/queries/clients'
 import {
   HIDE_PARAM,
@@ -45,7 +47,8 @@ export default async function MyTasksViewRoute({
   params,
   searchParams,
 }: PageProps<'/my/tasks/[view]'>) {
-  const user = await requireUser()
+  const user = await requireStaffUser()
+  const isAdmin = user.role === 'ADMIN'
   const resolvedParams = await params
   const resolvedSearchParams = (await searchParams) as PageSearchParams
   const viewParam = resolvedParams.view
@@ -59,16 +62,30 @@ export default async function MyTasksViewRoute({
 
   // Lite projects feed only the sheet's project selector; the task graph is
   // hydrated below for just the projects that hold assigned tasks.
-  const [admins, liteProjects, clientDirectory] = await Promise.all([
-    fetchAdminUsers(),
-    fetchProjectsLite(),
-    fetchClientDirectory(),
-  ])
+  // `admins` is every CRM user: the people a task can be assigned to, and
+  // the boards an admin can switch to. Sales users only see their own board,
+  // on projects they can work.
+  const [admins, allLiteProjects, allClientDirectory, workableProjectIds] =
+    await Promise.all([
+      fetchCrmUsers(),
+      fetchProjectsLite(),
+      fetchClientDirectory(),
+      listWorkableProjectIds(user),
+    ])
+  const liteProjects = await scopeProjectsForViewer(user, allLiteProjects)
+  const visibleClientIds = new Set(
+    liteProjects.flatMap(project => (project.client ? [project.client.id] : []))
+  )
+  const clientDirectory = isAdmin
+    ? allClientDirectory
+    : allClientDirectory.filter(client => visibleClientIds.has(client.id))
 
-  // Allow viewing another admin's tasks via the assignee param.
+  // Admins may view another person's tasks via the assignee param.
   // `assignee=all` is the everyone view (weekly planning); landing with no
   // param defaults to the signed-in user's own board.
-  const requestedAssigneeId = resolvedSearchParams.assignee ?? user.id
+  const requestedAssigneeId = isAdmin
+    ? (resolvedSearchParams.assignee ?? user.id)
+    : user.id
   const selectedAssigneeId =
     requestedAssigneeId === 'all'
       ? 'all'
@@ -106,6 +123,7 @@ export default async function MyTasksViewRoute({
     userId: selectedAssigneeId === 'all' ? null : selectedAssigneeId,
     clientId: selectedClientId,
     hiddenProjectTypes,
+    projectIds: workableProjectIds,
     limit: null,
     doneSince: isBoardView
       ? resolveDoneWindowStart(DONE_WINDOW_WEEKS, now)
@@ -136,7 +154,10 @@ export default async function MyTasksViewRoute({
 
   if (activeTaskId && UUID_PATTERN.test(activeTaskId)) {
     const holdingProjectId = await getActiveTaskProjectId(activeTaskId)
-    if (holdingProjectId) {
+    if (
+      holdingProjectId &&
+      (isAdmin || (await canWorkTask(user, activeTaskId)))
+    ) {
       resolvedActiveTaskId = activeTaskId
       if (!includedProjectIds.has(holdingProjectId)) {
         includedProjectIds.add(holdingProjectId)
@@ -147,8 +168,9 @@ export default async function MyTasksViewRoute({
 
   // Hydrate the task graph for only the projects that hold assigned (or
   // deep-linked) tasks — previously this loaded every project in the DB.
-  const hydratedProjects = await fetchProjectsWithRelationsByIds(
-    orderedProjectIds
+  const hydratedProjects = await scopeProjectsForViewer(
+    user,
+    await fetchProjectsWithRelationsByIds(orderedProjectIds)
   )
   const hydratedById = new Map(
     hydratedProjects.map(project => [project.id, project])

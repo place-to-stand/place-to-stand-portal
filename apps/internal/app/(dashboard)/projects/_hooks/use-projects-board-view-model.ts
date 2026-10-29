@@ -200,7 +200,9 @@ export function useProjectsBoardViewModel({
       timeLogProjectId: timeLogDialogs.timeLogProjectId,
       tasks: boardState.activeProjectTasks,
       currentUserId: props.currentUserId,
-      admins: props.admins,
+      // `admins` carries every assignable staff user; time is logged by
+      // admins only.
+      admins: props.admins.filter(user => user.role === 'ADMIN'),
       mode: timeLogDialogs.mode,
       editingEntry: timeLogDialogs.editingEntry,
     },

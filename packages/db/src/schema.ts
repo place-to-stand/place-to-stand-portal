@@ -273,6 +273,60 @@ export const clients = pgTable(
   ]
 )
 
+/**
+ * A business we sell to (sales CRM). Contacts and leads hang under it so the
+ * team can see everyone tried at one company and who the champion is. Paying
+ * customers stay in `clients`; a company points at its client once it signs.
+ */
+export const companies = pgTable(
+  'companies',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    name: text().notNull(),
+    website: text(),
+    linkedinUrl: text('linkedin_url'),
+    notes: text(),
+    /** The one rep who owns this account, so others don't step on toes. */
+    ownerId: uuid('owner_id'),
+    /** Set once the company signs and becomes a client. */
+    clientId: uuid('client_id'),
+    createdBy: uuid('created_by'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    // One live company per name (case-insensitive), so pickers and the lead
+    // backfill can't fork "Lasso Group" into two records.
+    uniqueIndex('idx_companies_name_unique')
+      .using('btree', sql`lower(btrim(name))`)
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_companies_name_trgm').using('gin', table.name.op('gin_trgm_ops')),
+    index('idx_companies_owner')
+      .using('btree', table.ownerId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL)`),
+    foreignKey({
+      columns: [table.ownerId],
+      foreignColumns: [users.id],
+      name: 'companies_owner_id_fkey',
+    }),
+    foreignKey({
+      columns: [table.clientId],
+      foreignColumns: [clients.id],
+      name: 'companies_client_id_fkey',
+    }).onDelete('set null'),
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [users.id],
+      name: 'companies_created_by_fkey',
+    }),
+  ]
+)
+
 export const contacts = pgTable(
   'contacts',
   {
@@ -280,6 +334,13 @@ export const contacts = pgTable(
     email: text().notNull(),
     name: text().notNull(),
     phone: text(),
+    /** Job title at their company, e.g. "Head of Marketing". */
+    jobTitle: text('job_title'),
+    linkedinUrl: text('linkedin_url'),
+    /** The company this person works at (sales CRM). */
+    companyId: uuid('company_id'),
+    /** Our champion at their company: the person pushing the deal inside. */
+    isChampion: boolean('is_champion').default(false).notNull(),
     createdBy: uuid('created_by'),
     userId: uuid('user_id'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
@@ -312,6 +373,14 @@ export const contacts = pgTable(
     index('idx_contacts_user_id')
       .using('btree', table.userId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(user_id IS NOT NULL)`),
+    index('idx_contacts_company')
+      .using('btree', table.companyId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND company_id IS NOT NULL)`),
+    foreignKey({
+      columns: [table.companyId],
+      foreignColumns: [companies.id],
+      name: 'contacts_company_id_fkey',
+    }).onDelete('set null'),
     foreignKey({
       columns: [table.createdBy],
       foreignColumns: [users.id],
@@ -501,6 +570,46 @@ export const projects = pgTable(
         )
       )`
     ),
+  ]
+)
+
+/**
+ * Staff who may see and work a project's tasks. Admins see every project
+ * regardless; for everyone else (SALES today) membership is the only way in,
+ * apart from their own PERSONAL boards.
+ */
+export const projectMembers = pgTable(
+  'project_members',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    projectId: uuid('project_id').notNull(),
+    userId: uuid('user_id').notNull(),
+    createdBy: uuid('created_by'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    unique('project_members_project_user_key').on(table.projectId, table.userId),
+    index('idx_project_members_user')
+      .using('btree', table.userId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL)`),
+    foreignKey({
+      columns: [table.projectId],
+      foreignColumns: [projects.id],
+      name: 'project_members_project_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [users.id],
+      name: 'project_members_user_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [users.id],
+      name: 'project_members_created_by_fkey',
+    }),
   ]
 )
 
@@ -1121,6 +1230,8 @@ export const leads = pgTable(
     contactPhone: text('contact_phone'),
     companyName: text('company_name'),
     companyWebsite: text('company_website'),
+    /** The company record; `company_name` stays as its display copy. */
+    companyId: uuid('company_id'),
     notes: jsonb('notes').default({}).notNull(),
     rank: text().default('zzzzzzzz').notNull(),
 
@@ -1169,6 +1280,14 @@ export const leads = pgTable(
       foreignColumns: [clients.id],
       name: 'leads_converted_to_client_id_fkey',
     }),
+    index('idx_leads_company')
+      .using('btree', table.companyId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND company_id IS NOT NULL)`),
+    foreignKey({
+      columns: [table.companyId],
+      foreignColumns: [companies.id],
+      name: 'leads_company_id_fkey',
+    }).onDelete('set null'),
   ]
 )
 

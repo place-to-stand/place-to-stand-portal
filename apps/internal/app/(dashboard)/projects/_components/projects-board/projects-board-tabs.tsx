@@ -76,6 +76,8 @@ export type ProjectsBoardTabsProps = {
   recentlyMovedTaskId: string | null
   currentUserId: string
   onEditTimeLogEntry: (entry: TimeLogEntry) => void
+  /** Project members see the Tasks tab only. */
+  tasksOnly?: boolean
   projectActions: ProjectActionControls
   onProjectStatusChange: (
     projectId: string,
@@ -132,6 +134,7 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
     recentlyMovedTaskId,
     currentUserId,
     onEditTimeLogEntry,
+    tasksOnly = false,
     projectActions,
     onProjectStatusChange,
   } = props
@@ -152,6 +155,7 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
         activityDisabled={activityDisabled}
         reviewDisabled={reviewDisabled}
         timeLogsDisabled={timeLogsDisabled}
+        tasksOnly={tasksOnly}
         projectActions={projectActions}
         activeProjectId={activeProject?.id ?? null}
         activeProjectStatus={activeProject?.status ?? null}

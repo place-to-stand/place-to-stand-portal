@@ -8,6 +8,8 @@ import { db } from '@/lib/db'
 import { clients, contactClients, contacts } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 
+import { contactProfileFields, type ContactProfile } from '../selectors'
+
 import {
   logContactClientLinkChanges,
   type ContactClientLinkChange,
@@ -20,7 +22,7 @@ export type ClientOption = {
   slug: string
 }
 
-export type ContactSheetInputRow = {
+export type ContactSheetInputRow = ContactProfile & {
   id: string
   email: string
   name: string
@@ -131,6 +133,7 @@ export async function getContactSheetInputById(
       name: contacts.name,
       phone: contacts.phone,
       userId: contacts.userId,
+      ...contactProfileFields,
     })
     .from(contacts)
     .where(and(eq(contacts.id, contactId), sql`${contacts.deletedAt} IS NULL`))
@@ -162,6 +165,7 @@ export async function getContactDeepLinkRowById(
       phone: contacts.phone,
       userId: contacts.userId,
       deletedAt: contacts.deletedAt,
+      ...contactProfileFields,
     })
     .from(contacts)
     .where(eq(contacts.id, contactId))

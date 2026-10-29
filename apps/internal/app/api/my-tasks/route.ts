@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 
-import { requireUser } from '@/lib/auth/session'
+import { requireStaffUser } from '@/lib/auth/session'
+import { listWorkableProjectIds } from '@/lib/projects/access'
 import { listAssignedTaskSummaries } from '@/lib/data/tasks'
 import {
   HIDE_PARAM,
@@ -8,7 +9,7 @@ import {
 } from '@/lib/my-tasks/project-scope'
 
 export async function GET(request: Request) {
-  const user = await requireUser()
+  const user = await requireStaffUser()
   const { searchParams } = new URL(request.url)
 
   const limitParam = searchParams.get('limit')
@@ -28,6 +29,7 @@ export async function GET(request: Request) {
       userId: user.id,
       // Same `?hide=personal,internal` shape as the board URL.
       hiddenProjectTypes: parseHiddenProjectTypes(searchParams.get(HIDE_PARAM)),
+      projectIds: await listWorkableProjectIds(user),
       limit,
     })
 

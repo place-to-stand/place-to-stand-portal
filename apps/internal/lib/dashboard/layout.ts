@@ -6,13 +6,21 @@ import { z } from 'zod'
  * 0 then column 1). Persisted per user in `user_dashboard_layouts`.
  *
  * Adding a widget: add its id here, render it in `widget-layout/widget-renderer.tsx`,
- * and place it in DEFAULT_DASHBOARD_LAYOUT. Existing saved layouts pick it up
- * via `normalizeDashboardLayout`, which appends missing widgets.
+ * and place it in the default layout of each home that shows it. Existing
+ * saved layouts pick it up via `normalizeDashboardLayout`, which appends
+ * missing widgets.
+ *
+ * Admins and sales users get different homes (`DashboardKind`), each with
+ * its own widget set; a widget outside a home's set is dropped there.
  */
 export const DASHBOARD_WIDGET_IDS = [
   'my-tasks',
   'hours',
   'recent-activity',
+  'next-steps',
+  'quiet-leads',
+  'awaiting-reply',
+  'pipeline',
 ] as const
 
 export type DashboardWidgetId = (typeof DASHBOARD_WIDGET_IDS)[number]
@@ -25,9 +33,32 @@ export type DashboardLayout = {
   columns: DashboardWidgetId[][]
 }
 
-export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayout = {
-  version: 1,
-  columns: [['my-tasks'], ['hours', 'recent-activity']],
+export type DashboardKind = 'admin' | 'sales'
+
+export function dashboardKindForRole(role: string): DashboardKind {
+  return role === 'ADMIN' ? 'admin' : 'sales'
+}
+
+export const DEFAULT_DASHBOARD_LAYOUTS: Record<DashboardKind, DashboardLayout> = {
+  admin: {
+    version: 1,
+    columns: [['my-tasks'], ['hours', 'recent-activity']],
+  },
+  sales: {
+    version: 1,
+    columns: [
+      ['next-steps', 'awaiting-reply'],
+      ['pipeline', 'quiet-leads'],
+    ],
+  },
+}
+
+/** The admin home's default, kept under its old name for existing callers. */
+export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayout =
+  DEFAULT_DASHBOARD_LAYOUTS.admin
+
+function widgetsForKind(kind: DashboardKind): ReadonlySet<DashboardWidgetId> {
+  return new Set(DEFAULT_DASHBOARD_LAYOUTS[kind].columns.flat())
 }
 
 const widgetIdSchema = z.enum(DASHBOARD_WIDGET_IDS)
@@ -49,12 +80,17 @@ export const dashboardLayoutInputSchema = z.object({
  * and duplicate ids, pad/trim to the column count, and append any widget
  * that isn't placed to its default column.
  */
-export function normalizeDashboardLayout(input: unknown): DashboardLayout {
+export function normalizeDashboardLayout(
+  input: unknown,
+  kind: DashboardKind = 'admin'
+): DashboardLayout {
+  const defaults = DEFAULT_DASHBOARD_LAYOUTS[kind]
   const parsed = dashboardLayoutInputSchema.safeParse(input)
   if (!parsed.success) {
-    return cloneLayout(DEFAULT_DASHBOARD_LAYOUT)
+    return cloneLayout(defaults)
   }
 
+  const allowed = widgetsForKind(kind)
   const seen = new Set<DashboardWidgetId>()
   const columns: DashboardWidgetId[][] = []
 
@@ -63,14 +99,14 @@ export function normalizeDashboardLayout(input: unknown): DashboardLayout {
     const column: DashboardWidgetId[] = []
     for (const candidate of raw) {
       const id = widgetIdSchema.safeParse(candidate)
-      if (!id.success || seen.has(id.data)) continue
+      if (!id.success || seen.has(id.data) || !allowed.has(id.data)) continue
       seen.add(id.data)
       column.push(id.data)
     }
     columns.push(column)
   }
 
-  DEFAULT_DASHBOARD_LAYOUT.columns.forEach((defaultColumn, columnIndex) => {
+  defaults.columns.forEach((defaultColumn, columnIndex) => {
     for (const id of defaultColumn) {
       if (!seen.has(id)) {
         seen.add(id)
@@ -89,8 +125,11 @@ export function cloneLayout(layout: DashboardLayout): DashboardLayout {
   }
 }
 
-export function isDefaultDashboardLayout(layout: DashboardLayout) {
-  return layoutsEqual(layout, DEFAULT_DASHBOARD_LAYOUT)
+export function isDefaultDashboardLayout(
+  layout: DashboardLayout,
+  kind: DashboardKind = 'admin'
+) {
+  return layoutsEqual(layout, DEFAULT_DASHBOARD_LAYOUTS[kind])
 }
 
 export function layoutsEqual(a: DashboardLayout, b: DashboardLayout) {
