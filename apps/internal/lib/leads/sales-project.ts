@@ -8,7 +8,7 @@ import { db } from '@/lib/db'
 import { projects } from '@/lib/db/schema'
 
 const SALES_PROJECT_NAME = 'Sales'
-const SALES_PROJECT_SLUG = 'sales'
+export const SALES_PROJECT_SLUG = 'sales'
 
 /**
  * Find (or, only if absent, create) the internal "Sales" project — the single

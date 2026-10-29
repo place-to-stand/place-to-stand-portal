@@ -87,11 +87,6 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
 })
 
 /**
- * The signed-in user when they are an ADMIN, else null. For API routes that
- * answer 401 themselves rather than redirecting: the internal portal also
- * admits SALES (CRM staff), so "has a session" no longer means "is an admin".
- */
-/**
  * The signed-in ADMIN or SALES user, or null. For API routes on the task-board
  * surfaces opened to project members; pair with the guards in
  * `lib/projects/access.ts`.
@@ -101,6 +96,11 @@ export const getCurrentStaff = async (): Promise<AppUser | null> => {
   return user?.role === 'ADMIN' || user?.role === 'SALES' ? user : null
 }
 
+/**
+ * The signed-in user when they are an ADMIN, else null. For API routes that
+ * answer 401 themselves rather than redirecting: the internal portal also
+ * admits SALES (CRM staff), so "has a session" no longer means "is an admin".
+ */
 export const getCurrentAdmin = async (): Promise<AppUser | null> => {
   const user = await getCurrentUser()
   return user?.role === 'ADMIN' ? user : null

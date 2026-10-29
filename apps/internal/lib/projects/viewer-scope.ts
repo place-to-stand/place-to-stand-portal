@@ -14,6 +14,11 @@ const EMPTY_BURNDOWN: ProjectWithRelations['burndown'] = {
   lastLogAt: null,
 }
 
+/** Time logged on a task is admin-only, like every other hours figure. */
+function redactTaskHours<T extends { loggedHours: number }>(tasks: T[]): T[] {
+  return tasks.map(task => ({ ...task, loggedHours: 0 }))
+}
+
 /**
  * Strips what only admins should see from a project payload: hours and
  * billing, client notes and billing details, portal members, GitHub and
@@ -31,9 +36,18 @@ export function redactProjectForMember<P extends ProjectWithRelations>(
           state: null,
           origination_contact_id: null,
           origination_user_id: null,
+          closer_user_id: null,
+          // Billing terms are admin-only. The board reads this field as
+          // optional already, so null hides it rather than faking a value.
+          billing_type: null as unknown as NonNullable<
+            P['client']
+          >['billing_type'],
         }
       : null,
     members: [],
+    tasks: redactTaskHours(project.tasks),
+    acceptedTasks: redactTaskHours(project.acceptedTasks),
+    archivedTasks: redactTaskHours(project.archivedTasks),
     burndown: EMPTY_BURNDOWN,
     githubRepos: [],
     integrationLinks: [],

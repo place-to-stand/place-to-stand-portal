@@ -1,6 +1,16 @@
 import 'server-only'
 
-import { and, asc, desc, eq, ilike, isNotNull, isNull, ne, sql } from 'drizzle-orm'
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  ilike,
+  isNotNull,
+  isNull,
+  ne,
+  sql,
+} from 'drizzle-orm'
 
 import {
   companyArchivedEvent,
@@ -103,7 +113,9 @@ export async function listCompanies(
       )
     )
     .orderBy(
-      status === 'active' ? asc(sql`lower(${companies.name})`) : desc(companies.deletedAt)
+      status === 'active'
+        ? asc(sql`lower(${companies.name})`)
+        : desc(companies.deletedAt)
     )
 
   return rows.map(row => ({
@@ -229,8 +241,20 @@ export async function listCompanyOptions(
     .orderBy(asc(sql`lower(${companies.name})`))
 }
 
-async function assertValidOwner(ownerId: string | null | undefined) {
+async function assertValidOwner(
+  ownerId: string | null | undefined,
+  companyId?: string
+) {
   if (!ownerId) return
+  // Keeping the current owner is always fine, even one since disabled.
+  if (companyId) {
+    const [current] = await db
+      .select({ ownerId: companies.ownerId })
+      .from(companies)
+      .where(eq(companies.id, companyId))
+      .limit(1)
+    if (current?.ownerId === ownerId) return
+  }
   const [owner] = await db
     .select({ id: users.id })
     .from(users)
@@ -238,12 +262,13 @@ async function assertValidOwner(ownerId: string | null | undefined) {
       and(
         eq(users.id, ownerId),
         isNull(users.deletedAt),
+        isNull(users.disabledAt),
         sql`${users.role} in ('ADMIN', 'SALES')`
       )
     )
     .limit(1)
   if (!owner) {
-    throw new Error('The owner must be an admin or sales user.')
+    throw new Error('The owner must be an active admin or sales user.')
   }
 }
 
@@ -264,7 +289,7 @@ export async function saveCompany(
   const values = parsed.data
 
   try {
-    await assertValidOwner(values.ownerId)
+    await assertValidOwner(values.ownerId, values.id ?? undefined)
   } catch (error) {
     return { ok: false, error: (error as Error).message }
   }
@@ -396,7 +421,11 @@ export async function setCompanyArchived(
   assertCrmAccess(actor)
 
   const [existing] = await db
-    .select({ id: companies.id, name: companies.name, deletedAt: companies.deletedAt })
+    .select({
+      id: companies.id,
+      name: companies.name,
+      deletedAt: companies.deletedAt,
+    })
     .from(companies)
     .where(eq(companies.id, companyId))
     .limit(1)
@@ -437,6 +466,53 @@ export async function setCompanyArchived(
   })
 
   return { ok: true, id: existing.id }
+}
+
+type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+/** True for a write that would leave a company with two champions. */
+export function isChampionConflict(error: unknown): boolean {
+  const text =
+    error instanceof Error
+      ? `${error.message} ${String(error.cause ?? '')}`
+      : ''
+  return text.includes('idx_contacts_one_champion')
+}
+
+/**
+ * Inside a transaction: makes `contactId` the company's only champion, or
+ * clears the champion with `null`. Locks the company row first so two
+ * champion changes at one company run one after the other; the unique
+ * index `idx_contacts_one_champion` backs this up.
+ */
+export async function assignChampion(
+  tx: DbTransaction,
+  companyId: string,
+  contactId: string | null
+): Promise<void> {
+  await tx.execute(
+    sql`select 1 from companies where id = ${companyId} for update`
+  )
+
+  const timestamp = new Date().toISOString()
+
+  await tx
+    .update(contacts)
+    .set({ isChampion: false, updatedAt: timestamp })
+    .where(
+      and(
+        eq(contacts.companyId, companyId),
+        eq(contacts.isChampion, true),
+        contactId ? ne(contacts.id, contactId) : undefined
+      )
+    )
+
+  if (contactId) {
+    await tx
+      .update(contacts)
+      .set({ isChampion: true, updatedAt: timestamp })
+      .where(eq(contacts.id, contactId))
+  }
 }
 
 /**
@@ -482,27 +558,17 @@ export async function setCompanyChampion(
     contactName = contact.name
   }
 
-  const timestamp = new Date().toISOString()
-
-  await db.transaction(async tx => {
-    await tx
-      .update(contacts)
-      .set({ isChampion: false, updatedAt: timestamp })
-      .where(
-        and(
-          eq(contacts.companyId, companyId),
-          eq(contacts.isChampion, true),
-          contactId ? ne(contacts.id, contactId) : undefined
-        )
-      )
-
-    if (contactId) {
-      await tx
-        .update(contacts)
-        .set({ isChampion: true, updatedAt: timestamp })
-        .where(eq(contacts.id, contactId))
+  try {
+    await db.transaction(tx => assignChampion(tx, companyId, contactId))
+  } catch (error) {
+    if (isChampionConflict(error)) {
+      return {
+        ok: false,
+        error: 'Someone else just changed the champion. Reload and try again.',
+      }
     }
-  })
+    throw error
+  }
 
   await logActivity({
     actorId: actor.id,

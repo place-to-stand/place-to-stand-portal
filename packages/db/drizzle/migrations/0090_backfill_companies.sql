@@ -2,12 +2,22 @@
 -- company only as free text (company_name). Turn each distinct name on a live
 -- lead into a company record, then link leads and their contacts to it.
 
--- One company per name (case- and space-insensitive). The website and owner
--- come from the most recently touched lead with that name.
+-- One company per name (case- and space-insensitive). The spelling and owner
+-- come from the most recently touched lead, preferring a spelling that isn't
+-- all lower case; the website from the newest lead that has one.
 INSERT INTO "companies" ("name", "website", "owner_id", "created_at", "updated_at")
 SELECT DISTINCT ON (lower(btrim(l."company_name")))
   btrim(l."company_name"),
-  NULLIF(btrim(l."company_website"), ''),
+  (
+    SELECT btrim(w."company_website")
+    FROM "leads" w
+    WHERE w."deleted_at" IS NULL
+      AND lower(btrim(w."company_name")) = lower(btrim(l."company_name"))
+      -- Only values the company sheet accepts: a URL or a bare domain.
+      AND btrim(w."company_website") ~* '^(https?://)?[^[:space:]/]+\.[^[:space:]]+$'
+    ORDER BY w."updated_at" DESC
+    LIMIT 1
+  ),
   l."assignee_id",
   l."created_at",
   timezone('utc'::text, now())
@@ -15,12 +25,20 @@ FROM "leads" l
 WHERE l."deleted_at" IS NULL
   AND l."company_name" IS NOT NULL
   AND btrim(l."company_name") <> ''
-ORDER BY lower(btrim(l."company_name")), l."updated_at" DESC;
+  -- The app caps names at 160 characters; longer legacy text stays on the
+  -- lead unlinked rather than overflowing the unique name index.
+  AND length(btrim(l."company_name")) <= 160
+ORDER BY
+  lower(btrim(l."company_name")),
+  (btrim(l."company_name") = lower(btrim(l."company_name"))),
+  l."updated_at" DESC
+ON CONFLICT (lower(btrim("name"))) WHERE "deleted_at" IS NULL DO NOTHING;
 --> statement-breakpoint
 
--- Link every lead (archived ones too) whose name matches.
+-- Link every lead (archived ones too) whose name matches, and give it the
+-- company's spelling, as a lead save does.
 UPDATE "leads" l
-SET "company_id" = c."id"
+SET "company_id" = c."id", "company_name" = c."name"
 FROM "companies" c
 WHERE l."company_id" IS NULL
   AND l."company_name" IS NOT NULL
@@ -49,6 +67,7 @@ SET "client_id" = sub."client_id"
 FROM (
   SELECT DISTINCT ON (l."company_id") l."company_id", l."converted_to_client_id" AS "client_id"
   FROM "leads" l
+  JOIN "clients" cl ON cl."id" = l."converted_to_client_id" AND cl."deleted_at" IS NULL
   WHERE l."company_id" IS NOT NULL
     AND l."converted_to_client_id" IS NOT NULL
   ORDER BY l."company_id", l."converted_at" DESC NULLS LAST

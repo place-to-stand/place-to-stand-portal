@@ -7,13 +7,15 @@ import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { projectMembers, projects, tasks, users } from '@/lib/db/schema'
 import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
+import { SALES_PROJECT_SLUG } from '@/lib/leads/sales-project'
 
 /**
  * Who may see and work a project's tasks.
  *
  * - ADMIN: every project.
- * - SALES: projects they were added to (`project_members`) plus their own
- *   PERSONAL boards. Nothing else, and only the task board: time logs,
+ * - SALES: projects they were added to (`project_members`), their own
+ *   PERSONAL boards, and the internal Sales project every lead task lives in
+ *   (lead tasks are their job, so nobody has to remember to add them). Nothing else, and only the task board: time logs,
  *   review, overview, billing, GitHub and planning stay admin-only and keep
  *   using `ensureProjectAccess` / `ensureTaskAccess`, which still assert ADMIN.
  *
@@ -51,7 +53,11 @@ export const listWorkableProjectIds = cache(
           isNull(projects.deletedAt),
           or(
             eq(projectMembers.userId, user.id),
-            and(eq(projects.type, 'PERSONAL'), eq(projects.createdBy, user.id))
+            and(eq(projects.type, 'PERSONAL'), eq(projects.createdBy, user.id)),
+            and(
+              eq(projects.type, 'INTERNAL'),
+              eq(projects.slug, SALES_PROJECT_SLUG)
+            )
           )
         )
       )
@@ -59,26 +65,6 @@ export const listWorkableProjectIds = cache(
     return rows.map(row => row.id)
   }
 )
-
-/** True when the user may work this (live) project's tasks. */
-export async function canWorkProject(
-  user: AppUser,
-  projectId: string
-): Promise<boolean> {
-  if (!isProjectStaff(user)) return false
-
-  const [project] = await db
-    .select({ id: projects.id })
-    .from(projects)
-    .where(and(eq(projects.id, projectId), isNull(projects.deletedAt)))
-    .limit(1)
-
-  if (!project) return false
-  if (user.role === 'ADMIN') return true
-
-  const ids = await listWorkableProjectIds(user)
-  return ids === null || ids.includes(projectId)
-}
 
 /**
  * Task-board guard for a project: NotFound when it is missing or archived,
@@ -164,7 +150,11 @@ export async function findAssigneesWithoutAccess(
   if (!assigneeIds.length) return []
 
   const [project] = await db
-    .select({ type: projects.type, createdBy: projects.createdBy })
+    .select({
+      type: projects.type,
+      slug: projects.slug,
+      createdBy: projects.createdBy,
+    })
     .from(projects)
     .where(eq(projects.id, projectId))
     .limit(1)
@@ -176,6 +166,8 @@ export async function findAssigneesWithoutAccess(
       fullName: users.fullName,
       email: users.email,
       memberId: projectMembers.id,
+      deletedAt: users.deletedAt,
+      disabledAt: users.disabledAt,
     })
     .from(users)
     .leftJoin(
@@ -196,11 +188,20 @@ export async function findAssigneesWithoutAccess(
       blocked.push('Unknown user')
       continue
     }
-    if (row.role === 'ADMIN') continue
+    const active = !row.deletedAt && !row.disabledAt
+    if (active && row.role === 'ADMIN') continue
 
     const ownsPersonalBoard =
       project?.type === 'PERSONAL' && project.createdBy === row.id
-    if (row.role === 'SALES' && (row.memberId || ownsPersonalBoard)) continue
+    const isSalesProject =
+      project?.type === 'INTERNAL' && project.slug === SALES_PROJECT_SLUG
+    if (
+      active &&
+      row.role === 'SALES' &&
+      (row.memberId || ownsPersonalBoard || isSalesProject)
+    ) {
+      continue
+    }
 
     blocked.push(row.fullName?.trim() || row.email)
   }

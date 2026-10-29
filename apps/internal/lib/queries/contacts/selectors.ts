@@ -22,7 +22,10 @@ export type ContactProfile = {
   linkedinUrl: string | null
   isChampion: boolean
   companyId: string | null
-  /** Live company name, or null when unset or archived. */
+  /**
+   * Linked company's name, archived companies included, so an edit that
+   * leaves the field alone keeps the link.
+   */
   companyName: string | null
 }
 
@@ -38,6 +41,6 @@ export const contactProfileFields = {
   companyId: contacts.companyId,
   companyName: sql<string | null>`(
     select co.name from companies co
-    where co.id = contacts.company_id and co.deleted_at is null
+    where co.id = contacts.company_id
   )`,
 }

@@ -376,6 +376,10 @@ export const contacts = pgTable(
     index('idx_contacts_company')
       .using('btree', table.companyId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL AND company_id IS NOT NULL)`),
+    // One champion per company among live contacts.
+    uniqueIndex('idx_contacts_one_champion')
+      .using('btree', table.companyId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(is_champion AND deleted_at IS NULL)`),
     foreignKey({
       columns: [table.companyId],
       foreignColumns: [companies.id],

@@ -73,6 +73,12 @@ export async function updateTaskForActor(
   // When moving the task to a different project, authorize access to the
   // destination project (mirrors the create path) and resolve its client.
   if (projectChanged) {
+    // A client task's time logs stay on its client project, so moving it
+    // elsewhere breaks billing. Only admins may do that.
+    if (actor.role !== 'ADMIN' && existingTask.clientId) {
+      return { error: 'Only an admin can move a task off a client project.' }
+    }
+
     try {
       await ensureProjectWorkAccess(actor, projectId)
     } catch (error) {

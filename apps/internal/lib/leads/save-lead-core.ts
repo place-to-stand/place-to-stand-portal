@@ -192,7 +192,9 @@ async function updateLead(
       : await findOrCreateCompanyByName(actor, normalized.companyName, {
           website: normalized.companyWebsite,
         })
-  if (company && !companyNameUnchanged) {
+  // Always store the company's own spelling, so a case-only edit can't
+  // drift from the linked record.
+  if (company) {
     normalized = { ...normalized, companyName: company.name }
   }
 

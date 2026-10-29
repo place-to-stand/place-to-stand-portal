@@ -1,5 +1,3 @@
-'use server'
-
 import 'server-only'
 
 import {
@@ -8,6 +6,7 @@ import {
   eq,
   gte,
   inArray,
+  isNull,
   lt,
   lte,
   notInArray,
@@ -19,7 +18,7 @@ import { db } from '@/lib/db'
 import { activityLogs, users } from '@/lib/db/schema'
 import type { AppUser } from '@/lib/auth/session'
 import { canReadActivity } from '@/lib/auth/roles'
-import { canWorkTask } from '@/lib/projects/access'
+import { canWorkTask, listWorkableProjectIds } from '@/lib/projects/access'
 import { ForbiddenError } from '@/lib/errors/http'
 import type { ActivitySourceValue, UserRoleValue } from '@/lib/types'
 import type { Json } from '@/lib/types/json'
@@ -131,7 +130,23 @@ export async function fetchActivityLogs(
     MAX_PAGE_SIZE
   )
 
-  const whereClause = combineConditions([buildFilterConditions(filters)])
+  // A member reading a task's history sees only the events from projects
+  // they can work: a task moved in from elsewhere keeps its past there.
+  const visibleProjectIds = await listWorkableProjectIds(user)
+  const projectScope =
+    visibleProjectIds === null
+      ? undefined
+      : visibleProjectIds.length
+        ? or(
+            isNull(activityLogs.targetProjectId),
+            inArray(activityLogs.targetProjectId, visibleProjectIds)
+          )
+        : isNull(activityLogs.targetProjectId)
+
+  const whereClause = combineConditions([
+    buildFilterConditions(filters),
+    projectScope,
+  ])
 
   const baseQuery = db
     .select({
@@ -152,7 +167,8 @@ export async function fetchActivityLogs(
   const hasMore = rows.length > limit
   const limitedRows = hasMore ? rows.slice(0, limit) : rows
   const logs = await attachActivityReferences(
-    limitedRows.map(mapToActivityLog)
+    limitedRows.map(mapToActivityLog),
+    visibleProjectIds
   )
   const lastRow = limitedRows[limitedRows.length - 1]
   const nextCursor =

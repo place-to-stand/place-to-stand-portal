@@ -155,7 +155,12 @@ export async function syncAttachments({
         and(
           eq(taskAttachments.taskId, taskId),
           inArray(taskAttachments.id, toRemove),
-          isNull(taskAttachments.deletedAt)
+          isNull(taskAttachments.deletedAt),
+          // Deleting a file can't be undone, so only admins may remove files
+          // someone else uploaded.
+          actorRole === 'ADMIN'
+            ? undefined
+            : eq(taskAttachments.uploadedBy, actorId)
         )
       )
 

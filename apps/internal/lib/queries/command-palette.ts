@@ -1,4 +1,4 @@
-'use server'
+import 'server-only'
 
 import { and, asc, eq, isNull, ne, or, sql, type SQL } from 'drizzle-orm'
 

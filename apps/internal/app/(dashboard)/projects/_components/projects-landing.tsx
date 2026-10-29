@@ -567,17 +567,25 @@ export function ProjectsLanding({
           className='bg-blue-100 py-2.5 align-middle max-md:px-3 max-md:py-2.5 dark:bg-blue-500/8'
         >
           <div className='flex items-center gap-4'>
-            <Link
-              href={
-                client.slug
-                  ? `/clients/${client.slug}`
-                  : `/clients/${client.id}`
-              }
-              className='flex w-fit shrink items-center gap-2 underline-offset-4 opacity-65 hover:underline'
-            >
-              <Building2 className='h-4 w-4 shrink-0 text-blue-500/80' />
-              <span className='text-sm font-semibold'>{client.name}</span>
-            </Link>
+            {readOnly ? (
+              // Client pages are admin-only, so members get the name alone.
+              <span className='flex w-fit shrink items-center gap-2 opacity-65'>
+                <Building2 className='h-4 w-4 shrink-0 text-blue-500/80' />
+                <span className='text-sm font-semibold'>{client.name}</span>
+              </span>
+            ) : (
+              <Link
+                href={
+                  client.slug
+                    ? `/clients/${client.slug}`
+                    : `/clients/${client.id}`
+                }
+                className='flex w-fit shrink items-center gap-2 underline-offset-4 opacity-65 hover:underline'
+              >
+                <Building2 className='h-4 w-4 shrink-0 text-blue-500/80' />
+                <span className='text-sm font-semibold'>{client.name}</span>
+              </Link>
+            )}
             {hours && hours.billingType === 'prepaid' && (
               <div className='flex items-center gap-1 text-xs'>
                 <Clock

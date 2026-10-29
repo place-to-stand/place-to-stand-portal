@@ -1,11 +1,14 @@
 import 'server-only'
 
+import { createHash } from 'node:crypto'
+
 import { and, eq, inArray, isNull, lte, ne, sql } from 'drizzle-orm'
 
 import { taskDueDigestEmail } from '@pts/email'
 import { db } from '@/lib/db'
 import { leads, projects, taskAssignees, tasks, users } from '@/lib/db/schema'
 import { sendEmail } from '@/lib/email/send'
+import { SALES_PROJECT_SLUG } from '@/lib/leads/sales-project'
 import { serverEnv } from '@/lib/env.server'
 import { todayCalendarDate } from '@/lib/updates/window'
 
@@ -56,7 +59,7 @@ async function loadDueRows(today: string): Promise<DigestRow[]> {
       title: tasks.title,
       dueOn: tasks.dueOn,
       projectName: projects.name,
-      leadId: tasks.leadId,
+      leadId: leads.id,
       leadName: leads.contactName,
       canWork: sql<boolean>`(
         exists (
@@ -66,6 +69,7 @@ async function loadDueRows(today: string): Promise<DigestRow[]> {
             and pm.deleted_at is null
         )
         or (${projects.type} = 'PERSONAL' and ${projects.createdBy} = ${users.id})
+        or (${projects.type} = 'INTERNAL' and ${projects.slug} = ${SALES_PROJECT_SLUG})
       )`,
     })
     .from(tasks)
@@ -92,10 +96,14 @@ async function loadDueRows(today: string): Promise<DigestRow[]> {
     .map(row => ({ ...row, canWork: Boolean(row.canWork) }))
 }
 
+function digestHash(text: string): string {
+  return createHash('sha256').update(text).digest('hex').slice(0, 16)
+}
+
 /**
  * Sends each person one email listing their late and due-today tasks.
  * Nobody with nothing due gets mail. Safe to re-run the same day: each send
- * carries an idempotency key for the person and the date.
+ * carries an idempotency key for the person, the date and the list.
  */
 export async function sendTaskDueDigests(): Promise<DueDigestResult> {
   const today = todayCalendarDate()
@@ -135,7 +143,10 @@ export async function sendTaskDueDigests(): Promise<DueDigestResult> {
         subject: email.subject,
         text: email.text,
         html: email.html,
-        idempotencyKey: `task-due-digest:${userId}:${today}`,
+        // Same person, day and list: a re-run is dropped. A list that changed
+        // since the last run gets a new key, since Resend rejects a reused
+        // key with a different body.
+        idempotencyKey: `task-due-digest:${userId}:${today}:${digestHash(email.text)}`,
       })
       sent += 1
     } catch (error) {

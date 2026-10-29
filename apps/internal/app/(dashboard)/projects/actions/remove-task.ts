@@ -73,18 +73,24 @@ export async function removeTask(input: {
     .set({ deletedAt: timestamp })
     .where(eq(tasks.id, taskId))
 
-  const attachmentRows = await db
-    .select({
-      id: taskAttachments.id,
-      storagePath: taskAttachments.storagePath,
-    })
-    .from(taskAttachments)
-    .where(
-      and(
-        eq(taskAttachments.taskId, taskId),
-        isNull(taskAttachments.deletedAt)
-      )
-    )
+  // Archiving deletes the task's files for good. Only admins may do that;
+  // a task another staff member archives keeps its files, so an admin
+  // restore brings everything back.
+  const attachmentRows =
+    user.role !== 'ADMIN'
+      ? []
+      : await db
+          .select({
+            id: taskAttachments.id,
+            storagePath: taskAttachments.storagePath,
+          })
+          .from(taskAttachments)
+          .where(
+            and(
+              eq(taskAttachments.taskId, taskId),
+              isNull(taskAttachments.deletedAt)
+            )
+          )
 
   if (attachmentRows.length) {
     await db

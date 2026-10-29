@@ -1,4 +1,4 @@
-'use server'
+import 'server-only'
 
 import { asc, eq } from 'drizzle-orm'
 

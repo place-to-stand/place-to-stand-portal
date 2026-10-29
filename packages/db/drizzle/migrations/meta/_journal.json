@@ -638,6 +638,13 @@
       "when": 1793246213446,
       "tag": "0090_backfill_companies",
       "breakpoints": true
+    },
+    {
+      "idx": 91,
+      "version": "7",
+      "when": 1793248597917,
+      "tag": "0091_one_champion_per_company",
+      "breakpoints": true
     }
   ]
 }
