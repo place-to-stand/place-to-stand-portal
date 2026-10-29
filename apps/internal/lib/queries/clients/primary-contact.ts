@@ -1,9 +1,10 @@
 import 'server-only'
 
-import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
+import { and, eq, inArray, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { clients, companies, contactClients, contacts } from '@/lib/db/schema'
+import { ForbiddenError } from '@/lib/errors/http'
 
 /**
  * A client's primary contact is its company's primary contact. For a row of
@@ -19,13 +20,15 @@ export const isClientPrimaryContactSql = sql<boolean>`coalesce(${contacts.id} = 
 
 /**
  * Sets (or, with null, clears) the primary contact of a client's company from
- * the client sheet. Clearing only clears it when the current primary is one
- * of this client's linked contacts, so a client can't unset someone it
- * doesn't show. A contact without a company joins this one.
+ * the client sheet. The contact must work at that company (one with no
+ * company on record joins it). Clearing only clears it when the current
+ * primary was one of this client's contacts before or after the change, so
+ * a client can't unset someone it never showed.
  */
 export async function setClientPrimaryContact(
   clientId: string,
   primaryContactId: string | null,
+  /** The client's contact ids before and after this save. */
   linkedContactIds: readonly string[]
 ) {
   const [client] = await db
@@ -37,14 +40,28 @@ export async function setClientPrimaryContact(
   if (!companyId) return
 
   if (primaryContactId) {
-    await db
-      .update(companies)
-      .set({ primaryContactId, updatedAt: sql`timezone('utc'::text, now())` })
-      .where(eq(companies.id, companyId))
-    await db
-      .update(contacts)
-      .set({ companyId })
-      .where(and(eq(contacts.id, primaryContactId), isNull(contacts.companyId)))
+    const [contact] = await db
+      .select({ companyId: contacts.companyId })
+      .from(contacts)
+      .where(eq(contacts.id, primaryContactId))
+      .limit(1)
+    if (contact?.companyId && contact.companyId !== companyId) {
+      throw new ForbiddenError(
+        'That contact works at another company, so they can’t be this client’s primary contact.'
+      )
+    }
+    await db.transaction(async tx => {
+      await tx
+        .update(companies)
+        .set({ primaryContactId, updatedAt: sql`timezone('utc'::text, now())` })
+        .where(eq(companies.id, companyId))
+      if (!contact?.companyId) {
+        await tx
+          .update(contacts)
+          .set({ companyId })
+          .where(eq(contacts.id, primaryContactId))
+      }
+    })
     return
   }
 

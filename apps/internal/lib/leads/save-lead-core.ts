@@ -4,6 +4,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm'
 
 import {
   contactCreatedEvent,
+  contactUpdatedEvent,
   leadCreatedEvent,
   leadStatusChangedEvent,
   leadUpdatedEvent,
@@ -182,53 +183,90 @@ async function resolveLeadContact(
     phone: normalized.contactPhone,
   }
 
+  // An existing lead keeps its contact unless the email now names someone
+  // else. Name and phone edits update the contact (and its other leads'
+  // display copies) in place; an email change relinks the lead instead, so
+  // a correction never renames a contact other records share.
   if (existing?.contactId) {
     const [contact] = await db
       .select(fields)
       .from(contacts)
-      .where(eq(contacts.id, existing.contactId))
+      .where(and(eq(contacts.id, existing.contactId), isNull(contacts.deletedAt)))
       .limit(1)
-    if (contact) {
+    const sameEmail =
+      (contact?.email ?? '').toLowerCase() === (details.email ?? '')
+    if (contact && sameEmail) {
       const changed =
         contact.name !== details.name ||
-        (contact.email ?? null) !== details.email ||
         (contact.phone ?? null) !== details.phone
       if (changed) {
-        try {
-          await db
+        await db.transaction(async tx => {
+          await tx
             .update(contacts)
-            .set({ ...details, updatedAt: timestamp })
+            .set({ name: details.name, phone: details.phone, updatedAt: timestamp })
             .where(eq(contacts.id, contact.id))
-        } catch (error) {
-          if (isUniqueViolation(error)) {
-            return { error: 'Another contact already has that email.' }
-          }
-          throw error
-        }
-        // Every lead of this contact shows the new details.
-        await db
-          .update(leads)
-          .set({
-            contactName: details.name,
-            contactEmail: details.email,
-            contactPhone: details.phone,
-          })
-          .where(eq(leads.contactId, contact.id))
+          await tx
+            .update(leads)
+            .set({ contactName: details.name, contactPhone: details.phone })
+            .where(eq(leads.contactId, contact.id))
+        })
+        await logActivity({
+          actorId: actor.id,
+          actorRole: actor.role,
+          targetType: 'CONTACT',
+          targetId: contact.id,
+          ...contactUpdatedEvent({
+            email: contact.email,
+            name: details.name,
+            changedFields: [
+              ...(contact.name !== details.name ? ['name'] : []),
+              ...((contact.phone ?? null) !== details.phone ? ['phone'] : []),
+            ],
+            details: {
+              before: { name: contact.name, phone: contact.phone },
+              after: { name: details.name, phone: details.phone },
+            },
+          }),
+        })
       }
       await linkCompany(contact)
-      return { contact: { id: contact.id, ...details } }
+      return {
+        contact: {
+          id: contact.id,
+          name: details.name,
+          // Keep the contact's own spelling of its email.
+          email: contact.email,
+          phone: details.phone,
+        },
+      }
     }
   }
 
   if (email) {
+    // Same rule as the 0096 backfill: a live contact wins, then an
+    // exact-case match, then the oldest. An archived match is restored,
+    // since a live lead now points at them.
     const [match] = await db
-      .select(fields)
+      .select({ ...fields, deletedAt: contacts.deletedAt })
       .from(contacts)
       .where(sql`lower(${contacts.email}) = ${email}`)
+      .orderBy(
+        sql`${contacts.deletedAt} is not null`,
+        sql`${contacts.email} = ${email} desc`,
+        contacts.createdAt
+      )
       .limit(1)
     if (match) {
+      if (match.deletedAt) {
+        await db
+          .update(contacts)
+          .set({ deletedAt: null, updatedAt: timestamp })
+          .where(eq(contacts.id, match.id))
+      }
       await linkCompany(match)
-      return { contact: match }
+      return {
+        contact: { id: match.id, name: match.name, email: match.email, phone: match.phone },
+      }
     }
   }
 
@@ -246,12 +284,6 @@ async function resolveLeadContact(
     ...contactCreatedEvent({ email: created.email, name: created.name }),
   })
   return { contact: created }
-}
-
-function isUniqueViolation(error: unknown) {
-  const text =
-    error instanceof Error ? `${error.message} ${String(error.cause ?? '')}` : ''
-  return text.includes('contacts_email_key')
 }
 
 /** Keeps the many-to-many link table in step with `leads.contact_id`. */
@@ -483,6 +515,17 @@ async function updateLead(
   }
 
   await linkContactToLead(contact.id, leadId)
+  if (existing.contactId && existing.contactId !== contact.id) {
+    // The lead moved to another contact: drop the old link.
+    await db
+      .delete(contactLeads)
+      .where(
+        and(
+          eq(contactLeads.contactId, existing.contactId),
+          eq(contactLeads.leadId, leadId)
+        )
+      )
+  }
 
   if (normalized.assigneeId && normalized.assigneeId !== existing.assigneeId) {
     await notifyLeadAssigned(

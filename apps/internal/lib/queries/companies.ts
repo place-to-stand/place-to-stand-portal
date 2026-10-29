@@ -19,6 +19,7 @@ import {
   companyUpdatedEvent,
 } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
+import { roleCan } from '@/lib/auth/capabilities'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
 import type {
@@ -449,6 +450,22 @@ export async function setCompanyPrimaryContact(
   }
   if (company.primaryContactId === contactId) {
     return { ok: true, id: company.id }
+  }
+
+  // A client's company primary contact is its default invoice and update
+  // recipient, and client records are admin-only.
+  if (!roleCan(actor.role, 'clients.manage')) {
+    const [client] = await db
+      .select({ id: clients.id })
+      .from(clients)
+      .where(and(eq(clients.companyId, companyId), isNull(clients.deletedAt)))
+      .limit(1)
+    if (client) {
+      return {
+        ok: false,
+        error: 'This company is a client, so only an admin can change its primary contact.',
+      }
+    }
   }
 
   let contactName: string | null = null

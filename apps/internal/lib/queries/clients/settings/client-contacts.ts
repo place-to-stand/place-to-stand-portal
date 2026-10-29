@@ -15,6 +15,7 @@ import {
   isClientPrimaryContactSql,
   setClientPrimaryContact,
 } from '@/lib/queries/clients/primary-contact'
+import { ForbiddenError } from '@/lib/errors/http'
 
 type ContactOption = {
   id: string
@@ -181,6 +182,24 @@ export async function syncClientContacts(
     const currentIds = new Set(currentLinks.map(l => l.contactId))
     const newIds = new Set(contactIds)
 
+    // The primary contact lives on the client's company. Set it first: it
+    // can be refused (someone from another company), and then nothing else
+    // should change. Clearing considers the links before and after.
+    const primaryId =
+      primaryContactId && contactIds.includes(primaryContactId)
+        ? primaryContactId
+        : null
+    try {
+      await setClientPrimaryContact(clientId, primaryId, [
+        ...new Set([...currentIds, ...contactIds]),
+      ])
+    } catch (error) {
+      if (error instanceof ForbiddenError) {
+        return { ok: false, error: error.message }
+      }
+      throw error
+    }
+
     // Find links to add and remove
     const toAdd = contactIds.filter(id => !currentIds.has(id))
     const toRemove = [...currentIds].filter(id => !newIds.has(id))
@@ -214,12 +233,6 @@ export async function syncClientContacts(
         )
     }
 
-    // The primary contact lives on the client's company.
-    const primaryId =
-      primaryContactId && contactIds.includes(primaryContactId)
-        ? primaryContactId
-        : null
-    await setClientPrimaryContact(clientId, primaryId, contactIds)
 
     // A promoted contact's portal access follows its links.
     await syncPortalMembershipsForLinkChanges(changes)

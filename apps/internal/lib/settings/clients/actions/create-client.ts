@@ -78,7 +78,11 @@ export async function createClient(
     }
     companyId = company.id
   } else {
-    const company = await findOrCreateCompanyByName(user, name, { website })
+    // Company names are capped at 160 characters; a longer client name
+    // gets a company with its first 160.
+    const company = await findOrCreateCompanyByName(user, name.trim().slice(0, 160), {
+      website,
+    })
     companyId = company?.id ?? null
   }
 

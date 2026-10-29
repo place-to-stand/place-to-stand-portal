@@ -1264,9 +1264,8 @@ export const leads = pgTable(
     index('idx_leads_assignee')
       .using('btree', table.assigneeId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
-    uniqueIndex('idx_leads_contact_email_unique')
-      .using('btree', table.contactEmail.asc().nullsLast().op('text_ops'))
-      .where(sql`(deleted_at IS NULL AND contact_email IS NOT NULL)`),
+    // One person per email is the contacts table's job now (a contact can
+    // have several leads), so live leads no longer need unique emails.
     foreignKey({
       columns: [table.assigneeId],
       foreignColumns: [users.id],

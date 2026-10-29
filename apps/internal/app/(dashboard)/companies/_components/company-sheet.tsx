@@ -43,6 +43,7 @@ import {
   CompanyLeadsSection,
 } from './company-sheet-sections'
 import { EntityLinkPicker } from '@/components/ui/entity-link-picker'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 
 const COMPANY_FORM_ID = 'company-form'
 
@@ -222,6 +223,9 @@ export function CompanySheet({
     control: form.control,
     name: 'primaryContactId',
   })
+  // Changing a client's primary contact is admin-only (the server agrees).
+  const { isAdmin } = useViewerAccess()
+  const primaryLocked = !isAdmin && Boolean(company?.clients.length)
   const handleSetPrimary = useCallback(
     (contactId: string | null) =>
       form.setValue('primaryContactId', contactId, { shouldDirty: true }),
@@ -372,15 +376,20 @@ export function CompanySheet({
                                   }
                                   onChange={next => field.onChange(next?.id ?? null)}
                                   options={people}
-                                  disabled={fieldsDisabled || people.length === 0}
+                                  disabled={
+                                    fieldsDisabled ||
+                                    people.length === 0 ||
+                                    primaryLocked
+                                  }
                                   toOption={record => ({ id: record.id, label: record.name })}
                                   createPrefillParam='contactName'
                                   allowCreate={false}
                                 />
                               </FormControl>
                               <p className='text-muted-foreground text-xs'>
-                                Clients use their company’s primary contact, e.g.
-                                for invoice emails.
+                                {primaryLocked
+                                  ? 'This company is a client; an admin sets its primary contact.'
+                                  : 'Clients use their company’s primary contact, e.g. for invoice emails.'}
                               </p>
                               <FormMessage />
                             </FormItem>
@@ -398,7 +407,7 @@ export function CompanySheet({
                       <CompanyContactsSection
                         contacts={company.contacts}
                         primaryContactId={primaryContactId}
-                        disabled={fieldsDisabled}
+                        disabled={fieldsDisabled || primaryLocked}
                         onSetPrimary={handleSetPrimary}
                       />
                       <Separator />

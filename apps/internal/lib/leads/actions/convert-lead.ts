@@ -14,6 +14,7 @@ import { extractLeadNotes } from '@/lib/leads/notes'
 import { leadConversionSchema, type LeadConversionFormValues } from '../conversion-schema'
 import type { LeadConversionResult } from '../conversion-types'
 import { syncPortalMembershipsForLinkChanges } from '@/lib/queries/contacts/settings/contact-client-portal-memberships'
+import { getLinkableCompany } from '@/lib/queries/companies'
 
 export async function convertLeadToClient(
   input: LeadConversionFormValues
@@ -57,6 +58,11 @@ export async function convertLeadToClient(
     return { error: 'Only CLOSED_WON leads can be converted.' }
   }
 
+  // The lead's company, when it's still live (an archived one isn't reused).
+  const leadCompanyId = lead.companyId
+    ? ((await getLinkableCompany(lead.companyId))?.id ?? null)
+    : null
+
   let finalClientId: string
   let finalClientSlug: string | undefined
 
@@ -95,8 +101,8 @@ export async function convertLeadToClient(
         notes: resolvedNotes,
         memberIds: memberIds || [],
         // The client is the lead's company (createClient finds or creates
-        // one by name when the lead has none).
-        companyId: lead.companyId ?? null,
+        // one by name when the lead has none, or it was archived).
+        companyId: leadCompanyId,
       }
     )
 
@@ -112,6 +118,14 @@ export async function convertLeadToClient(
 
     finalClientId = clientResult.clientId
     finalClientSlug = createdClient?.slug ?? undefined
+  }
+
+  // An existing client becomes the lead's company when it has none yet.
+  if (existingClientId && leadCompanyId) {
+    await db
+      .update(clients)
+      .set({ companyId: leadCompanyId, updatedAt: new Date().toISOString() })
+      .where(and(eq(clients.id, finalClientId), isNull(clients.companyId)))
   }
 
   // 3. Link the lead's contact to the client (creating it from the lead's
@@ -189,14 +203,19 @@ export async function convertLeadToClient(
       }
 
       // The client's company takes this contact as its primary when it has
-      // none yet.
+      // none yet, and the contact works there (or nowhere on record).
       await db
         .update(companies)
         .set({ primaryContactId: contactId, updatedAt: new Date().toISOString() })
         .where(
           and(
             isNull(companies.primaryContactId),
-            sql`${companies.id} = (select company_id from clients where id = ${finalClientId})`
+            sql`${companies.id} = (select company_id from clients where id = ${finalClientId})`,
+            sql`exists (
+              select 1 from contacts ct
+              where ct.id = ${contactId}
+                and (ct.company_id is null or ct.company_id = ${companies.id})
+            )`
           )
         )
     } catch (err) {
@@ -241,15 +260,6 @@ export async function convertLeadToClient(
       updatedAt: new Date().toISOString(),
     })
     .where(eq(leads.id, leadId))
-
-  // 5b. Linking an existing client: it becomes the lead's company when it
-  // has none yet.
-  if (existingClientId && lead.companyId) {
-    await db
-      .update(clients)
-      .set({ companyId: lead.companyId, updatedAt: new Date().toISOString() })
-      .where(and(eq(clients.id, finalClientId), isNull(clients.companyId)))
-  }
 
   // 6. Log activity
   const resolvedName = clientName || lead.companyName || lead.contactName

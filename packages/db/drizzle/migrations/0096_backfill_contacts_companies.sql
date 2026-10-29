@@ -6,7 +6,11 @@
 --   3. Contacts without a company take it from their lead or their client.
 --   4. Each company's primary contact comes from its champion, else from
 --      its client's primary contact flag.
--- Safe to re-run: every step only fills what is still empty.
+-- Each data step only fills what is still empty, so re-running them is a
+-- no-op. The two ADD CONSTRAINT statements are not repeatable: if this
+-- migration fails, retry only after it has fully rolled back.
+-- Run 0097 (which drops the old columns) only after this has succeeded and
+-- the new code is deployed.
 
 ALTER TABLE "clients" ADD CONSTRAINT "clients_company_id_fkey"
   FOREIGN KEY ("company_id") REFERENCES "public"."companies"("id")
@@ -36,19 +40,24 @@ WHERE c."company_id" IS NULL
   AND lower(btrim(co."name")) = lower(btrim(c."name"));
 --> statement-breakpoint
 
--- 1c. Otherwise a new company named after the client (one per name; names
--- are capped at the app's 160 characters).
+-- 1c. Otherwise a new company named after the client (one per name). A name
+-- over the app's 160-character cap is shortened and tagged with the client
+-- id, so two long names sharing a prefix never merge into one company.
 INSERT INTO "companies" ("name", "website", "created_by", "created_at", "updated_at")
-SELECT DISTINCT ON (lower(btrim(left(c."name", 160))))
-  btrim(left(c."name", 160)),
+SELECT DISTINCT ON (lower("company_name"))
+  "company_name",
   c."website",
   c."created_by",
   c."created_at",
   timezone('utc'::text, now())
-FROM "clients" c
+FROM (
+  SELECT c.*, CASE WHEN btrim(c."name") = '' THEN 'Client ' || left(c."id"::text, 8)
+       WHEN length(btrim(c."name")) <= 160 THEN btrim(c."name")
+       ELSE left(btrim(c."name"), 149) || ' (' || left(c."id"::text, 8) || ')' END AS "company_name"
+  FROM "clients" c
+) c
 WHERE c."company_id" IS NULL
-  AND btrim(c."name") <> ''
-ORDER BY lower(btrim(left(c."name", 160))), c."deleted_at" NULLS FIRST, c."created_at"
+ORDER BY lower("company_name"), c."deleted_at" NULLS FIRST, c."created_at"
 ON CONFLICT (lower(btrim("name"))) WHERE "deleted_at" IS NULL DO NOTHING;
 --> statement-breakpoint
 
@@ -57,28 +66,50 @@ SET "company_id" = co."id"
 FROM "companies" co
 WHERE c."company_id" IS NULL
   AND co."deleted_at" IS NULL
-  AND lower(btrim(co."name")) = lower(btrim(left(c."name", 160)));
+  AND lower(btrim(co."name")) = lower(CASE WHEN btrim(c."name") = '' THEN 'Client ' || left(c."id"::text, 8)
+       WHEN length(btrim(c."name")) <= 160 THEN btrim(c."name")
+       ELSE left(btrim(c."name"), 149) || ' (' || left(c."id"::text, 8) || ')' END);
 --> statement-breakpoint
 
--- 2a. Leads whose email matches an existing contact link to it.
+-- 2a. Leads whose email matches an existing contact (ignoring case) link to
+-- it. When several contacts match, a live one wins, then an exact-case
+-- match, then the oldest.
 UPDATE "leads" l
-SET "contact_id" = ct."id"
-FROM "contacts" ct
+SET "contact_id" = m."id"
+FROM (
+  SELECT DISTINCT ON (lower(btrim(le."contact_email")))
+    lower(btrim(le."contact_email")) AS "email_key",
+    ct."id"
+  FROM "leads" le
+  JOIN "contacts" ct ON lower(ct."email") = lower(btrim(le."contact_email"))
+  WHERE le."contact_id" IS NULL
+    AND btrim(coalesce(le."contact_email", '')) <> ''
+  ORDER BY
+    lower(btrim(le."contact_email")),
+    ct."deleted_at" NULLS FIRST,
+    (ct."email" = btrim(le."contact_email")) DESC,
+    ct."created_at"
+) m
 WHERE l."contact_id" IS NULL
-  AND btrim(coalesce(l."contact_email", '')) <> ''
-  AND lower(ct."email") = lower(btrim(l."contact_email"));
+  AND lower(btrim(l."contact_email")) = m."email_key";
 --> statement-breakpoint
 
 -- 2b. One new contact per remaining email, named from that email's earliest
--- lead (leads sharing an email become one contact).
-INSERT INTO "contacts" ("email", "name", "phone", "company_id", "created_at", "updated_at")
+-- lead (leads sharing an email become one contact). A contact only archived
+-- leads point to is created archived, so old leads don't crowd the pickers.
+INSERT INTO "contacts" ("email", "name", "phone", "company_id", "created_at", "updated_at", "deleted_at")
 SELECT DISTINCT ON (lower(btrim(l."contact_email")))
   lower(btrim(l."contact_email")),
   l."contact_name",
   nullif(btrim(coalesce(l."contact_phone", '')), ''),
   l."company_id",
   l."created_at",
-  timezone('utc'::text, now())
+  timezone('utc'::text, now()),
+  (
+    SELECT CASE WHEN bool_and(x."deleted_at" IS NOT NULL) THEN max(x."deleted_at") END
+    FROM "leads" x
+    WHERE lower(btrim(x."contact_email")) = lower(btrim(l."contact_email"))
+  )
 FROM "leads" l
 WHERE l."contact_id" IS NULL
   AND btrim(coalesce(l."contact_email", '')) <> ''
@@ -91,7 +122,7 @@ SET "contact_id" = ct."id"
 FROM "contacts" ct
 WHERE l."contact_id" IS NULL
   AND btrim(coalesce(l."contact_email", '')) <> ''
-  AND lower(ct."email") = lower(btrim(l."contact_email"));
+  AND ct."email" = lower(btrim(l."contact_email"));
 --> statement-breakpoint
 
 -- 2c. Leads with no email each get a name-only contact.
@@ -102,13 +133,15 @@ WITH "src" AS (
     l."contact_name",
     nullif(btrim(coalesce(l."contact_phone", '')), '') AS "phone",
     l."company_id",
-    l."created_at"
+    l."created_at",
+    l."deleted_at"
   FROM "leads" l
   WHERE l."contact_id" IS NULL
 ),
 "created" AS (
-  INSERT INTO "contacts" ("id", "email", "name", "phone", "company_id", "created_at", "updated_at")
-  SELECT "contact_id", NULL, "contact_name", "phone", "company_id", "created_at", timezone('utc'::text, now())
+  -- An archived lead's name-only contact is created archived too.
+  INSERT INTO "contacts" ("id", "email", "name", "phone", "company_id", "created_at", "updated_at", "deleted_at")
+  SELECT "contact_id", NULL, "contact_name", "phone", "company_id", "created_at", timezone('utc'::text, now()), "deleted_at"
   FROM "src"
   RETURNING "id"
 )
@@ -117,6 +150,17 @@ SET "contact_id" = s."contact_id"
 FROM "src" s
 WHERE l."id" = s."lead_id"
   AND s."contact_id" IN (SELECT "id" FROM "created");
+--> statement-breakpoint
+
+-- 2d. A live lead's contact is live: restore any archived contact matched
+-- by email in 2a.
+UPDATE "contacts" ct
+SET "deleted_at" = NULL, "updated_at" = timezone('utc'::text, now())
+WHERE ct."deleted_at" IS NOT NULL
+  AND EXISTS (
+    SELECT 1 FROM "leads" l
+    WHERE l."contact_id" = ct."id" AND l."deleted_at" IS NULL
+  );
 --> statement-breakpoint
 
 -- Keep the many-to-many link table in step with the new column.
