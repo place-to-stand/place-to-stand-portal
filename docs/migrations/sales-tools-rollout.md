@@ -12,10 +12,11 @@ Covers PR #279's database chain, migrations **0089 → 0107**, and the matching 
    - leads read their person's name, email and phone from the linked **contact**.
 3. Every backfill runs **before** any drop.
 4. 0107 copies every table and column it drops into the `archive_sales_tools` schema.
-5. 0097 also archives the three columns it drops (see [Required before release](#required-before-release)).
-6. **Two migrations stop the release on bad data:**
+5. 0097 also archives the three columns it drops, and 0090 archives every lead's company name as typed before it respells them (see [Archives made before 0107](#archives-made-before-0107)).
+6. **Three migrations stop the release on bad data** (drizzle runs the whole batch in one transaction, so a stop leaves production at 0088):
    - 0104: a company would end up with two live clients;
-   - 0106: a lead with no contact.
+   - 0106: a lead with no contact;
+   - 0107: a live portal grant would be lost, or someone would gain portal access they didn't have.
 7. **Rollout shape:** one short maintenance window. Run 0089–0107, then immediately promote the new internal app and client portal builds. Old code can't run on the new schema, and the new code can't run before it, so a split rollout doesn't help (see [Order of steps](#1-order-of-steps)).
 8. **Rehearse first** on a Supabase branch or restored snapshot, using the same commands and checks.
 9. **Rollback:**
@@ -25,7 +26,7 @@ Covers PR #279's database chain, migrations **0089 → 0107**, and the matching 
 
 ## Expected pre-flight values
 
-Run the read-only pre-flight queries (P0–P10) and compare with the values shared in the project thread before the window. Anything different is a reason to stop and look before migrating. In particular: P1 (people with access at two companies) should list exactly the known cases, and P2–P5 should all be 0.
+Run the read-only pre-flight queries (P0–P12) and compare with the values shared in the project thread before the window. Anything different is a reason to stop and look before migrating. In particular: P1 (people with access at two companies) should list exactly the known cases, P2–P5 and P11 should all be 0, and P12 should show no `broken` trigger on a table the batch updates.
 
 ## The migrations
 
@@ -34,40 +35,33 @@ Run the read-only pre-flight queries (P0–P10) and compare with the values shar
 | # | What it does to existing rows | Idempotent | Guard |
 | --- | --- | --- | --- |
 | 0089 `sales_tools` | Creates `companies` and `project_members`. Adds `contacts.job_title`, `linkedin_url`, `company_id`, `is_champion`, and `leads.company_id`. No row changes. | No (DDL) | — |
-| 0090 `backfill_companies` | One company per distinct live lead company name (≤160 chars; longer ones stay unlinked). Links leads by name and normalises their spelling. Contacts take their latest lead's company via `contact_leads` (empty in prod, so no effect). Companies point at the client a lead converted to. | Yes | — |
+| 0090 `backfill_companies` | First copies every lead's `company_name` as typed into `archive_sales_tools.lead_company_names`. One company per distinct live lead company name (≤160 chars; longer ones stay unlinked). Links leads by name and normalises their spelling. Contacts take their latest lead's company via `contact_leads` (empty in prod, so no effect). Companies point at the client a lead converted to. | Data steps yes; the archive `CREATE TABLE` runs once | Stops if the archive table already exists. |
 | 0091 `one_champion_per_company` | Unique index: one champion per company. | No (DDL) | Fails on two champions per company. None exist yet. |
 | 0092 `notifications` | New table. | No (DDL) | — |
 | 0093 `drop_company_owner` | Drops `companies.owner_id`. It only existed since 0089; the assignee stays on `leads.assignee_id`. | No | — |
 | 0094 `contact_email_optional` | `contacts.email` becomes nullable. | Yes | — |
 | 0095 `client_company_primary_contact_lead_contact` | Adds `clients.company_id`, `companies.primary_contact_id`, `leads.contact_id`. | No (DDL) | — |
 | 0096 `backfill_contacts_companies` | 1) Every client gets a company: the converted-lead link, then a name match, else a new company named after it. 2) Every lead gets a contact: match by email (ignoring case), else one new contact per email, else a name-only contact. Archived-only leads get archived contacts. Fills `contact_leads`. 3) Contacts without a company take their lead's company, then their client's (primary client first). 4) Company primary contact comes from the champion, else the client's primary contact (only someone at that company). | Data steps yes. The two `ADD CONSTRAINT`s are not repeatable. | — |
-| 0097 `drop_champion_company_client_primary_flag` | Drops `companies.client_id`, `contact_clients.is_primary`, `contacts.is_champion`. **Not archived** (see below). | No | — |
+| 0097 `drop_champion_company_client_primary_flag` | Archives, then drops, `companies.client_id`, `contact_clients.is_primary`, `contacts.is_champion` (see below). | No | Stops if an archive table already exists. |
 | 0098 `drop_lead_email_unique` | Drops the unique-email index on leads (a contact can have several leads). | No | — |
 | 0099 `client_label` | Adds `clients.label` (now unused; harmless). | No | — |
 | 0100 `contacts_company_from_clients` | Contacts with no company join the company of their linked clients, when those are all one company. | Yes | — |
 | 0101 `company_website_from_leads` | Company website ← newest live lead's website, only where the company has none. | Yes | — |
 | 0102 `company_website_from_clients` | Company website ← newest live client's website, only where still empty. | Yes | — |
-| 0103 `single_task_assignee` | Tasks with several assignees keep the first. The others are soft-deleted (`deleted_at`), so history stays. | Yes | — |
+| 0103 `single_task_assignee` | Tasks with several assignees keep the first. The others are soft-deleted (`deleted_at`), so history stays. Then a partial unique index (`task_assignees_one_current_per_task`) keeps one current assignee per task. | Dedupe yes; index is DDL | Index can't fail: the dedupe runs first. |
 | 0104 `client_company_one_to_one` | Unique index: one live client per company. | No (DDL) | **Stops** and lists companies with 2+ live clients. Nothing is merged automatically. |
-| 0105 `memberships_and_portal_access` | Creates `memberships`. Step 1: everyone at a company (`contacts.company_id`) gets a membership with their title and primary flag. **Portal access carries over only where it was real:** a portal login (`client_members`) for that company's client. `contact_clients` was a CRM link (who belongs to a client), not access, so it only creates the membership, with access off. Step 2: every other tie (a client link or a login at another company, or being primary without working there) becomes an extra membership, so no link is lost. Archived clients count, so restoring one brings its people back. Creates the `client_portal_access` view, which also requires the contact to have a portal login. | Yes | Unique: one current membership per person per company; one primary per company. |
+| 0105 `memberships_and_portal_access` | Creates `memberships`. Step 1: everyone at a company (`contacts.company_id`) gets a membership with their title and primary flag. **Portal access carries over only where it was real:** a portal login (`client_members`) for that company's **live** client. `contact_clients` was a CRM link (who belongs to a client), not access, so it only creates the membership, with access off. Step 2: every other tie (a client link or a login at another company, or being primary without working there) becomes an extra membership, so no link is lost. Ties to archived clients become memberships with access off: 0096 can put an archived and a live client of the same name on one company, and carrying the archived grant would open the live client. Creates the `client_portal_access` view, which also requires the contact to have a portal login. | Yes | Unique: one current membership per person per company; one primary per company. |
 | 0106 `lead_contact_required` | Leads that still only have a typed company name (archived leads and long names, which 0090 skipped) get a company: an existing one with that name, else a new archived one. Then `leads.contact_id` becomes NOT NULL with `ON DELETE RESTRICT`, so a contact with leads can't be hard-deleted. | Yes (finds nothing the second time) | **Stops** and lists any lead with no contact. |
-| 0107 `archive_and_drop_copied_fields` | Copies everything it drops into `archive_sales_tools` (below) and records any client link that didn't become a membership and any real login grant missing from the view. **Stops before dropping anything** if that list isn't empty (rehearsed: drizzle rolls the whole batch back and the old tables stay). Then drops `contact_clients`, `client_members`, `contacts.company_id`, `contacts.job_title`, `companies.primary_contact_id`, and the lead copies (`contact_name`, `contact_email`, `contact_phone`, `company_name`, `company_website`). | No | **Stops** on any unmapped live grant. |
+| 0107 `archive_and_drop_copied_fields` | Copies everything it drops into `archive_sales_tools` (below) and records any client link that didn't become a membership and any real login grant missing from the view, including a grant whose contact is archived. **Stops before dropping anything** if that list isn't empty, or if the view grants any (login, client) pair that wasn't a live `client_members` grant (drizzle rolls the whole batch back and the old tables stay). Then drops `contact_clients`, `client_members`, `contacts.company_id`, `contacts.job_title`, `companies.primary_contact_id`, and the lead copies (`contact_name`, `contact_email`, `contact_phone`, `company_name`, `company_website`). | No | **Stops** on any lost live grant (P3, P11) or any gained access; stops if an archive table already exists. |
 
-### Required before release
+### Archives made before 0107
 
-0097 drops `contact_clients.is_primary`, `contacts.is_champion` and `companies.client_id` with no archive. 0096 carries their meaning forward: the primary contact becomes `companies.primary_contact_id` and then a membership flag, and the converted-client link becomes `clients.company_id`. But a primary flag on someone at a different company is not carried. Before release, do one of these:
+Both are done; neither migration has run in production, so editing them was safe. Every archive is a plain `CREATE TABLE ... AS` (no `IF NOT EXISTS`): a leftover table from an earlier attempt stops the migration instead of being reused.
 
-- **Done:** 0097 now starts with these archive statements (same pattern as 0107):
-  ```sql
-  CREATE SCHEMA IF NOT EXISTS "archive_sales_tools";
-  CREATE TABLE "archive_sales_tools"."contact_clients_is_primary" AS
-    SELECT "id", "contact_id", "client_id", "is_primary" FROM "contact_clients";
-  CREATE TABLE "archive_sales_tools"."contacts_is_champion" AS
-    SELECT "id" AS "contact_id", "is_champion" FROM "contacts" WHERE "is_champion";
-  CREATE TABLE "archive_sales_tools"."companies_client_id" AS
-    SELECT "id" AS "company_id", "client_id" FROM "companies" WHERE "client_id" IS NOT NULL;
-  ```
-  0097 has never run in production, so editing it was safe. The rehearsal (section 5) runs the whole chain from a production copy, which exercises them.
+- **0090** copies `leads.id, company_name` into `archive_sales_tools.lead_company_names` before it respells lead company names to match their company. The 2a/2b lead fingerprint reads `company_name` from here.
+- **0097** drops `contact_clients.is_primary`, `contacts.is_champion` and `companies.client_id`. 0096 carries their meaning forward (the primary contact becomes `companies.primary_contact_id` and then a membership flag; the converted-client link becomes `clients.company_id`), but a primary flag on someone at a different company is not carried, so 0097 first copies them into `contact_clients_is_primary`, `contacts_is_champion` and `companies_client_id`.
+
+The rehearsal (section 4) runs the whole chain from a production copy, which exercises them.
 
 ## 1. Order of steps
 
@@ -100,6 +94,7 @@ Steps:
    - drizzle-kit can hide error text, so check the exit code is 0.
    - Confirm `select count(*) from drizzle.__drizzle_migrations` returns 108.
 8. **Promote both deployments** together: internal app, then client portal.
+   - **Add Dave to the Sales project** (project members) so his Sales role sees it from the first sign-in.
 9. **Run the "after" checks** (section 2b) and the click-test (section 4, step 5) on production.
 10. **Close the window.** Keep `archive_sales_tools` for at least one billing cycle. A later migration can drop it.
 
@@ -113,7 +108,7 @@ Steps:
   - `company_primary_contact` (company → old `primary_contact_id`)
   - `lead_contact_copies` (lead → old name, email, phone, company name, website)
   - `unmapped_portal_access` (grants with no matching membership; **expected empty**)
-  - plus the three 0097 tables, once added as above.
+  - plus `lead_company_names` (0090) and the three 0097 tables.
 - **Checks before and after.** If any check differs from expected, stop and roll back.
 
 ### 2a. Before (current production schema, read-only)
@@ -154,16 +149,20 @@ BEGIN READ ONLY;
 SELECT 'contact_clients', count(*) FROM archive_sales_tools.contact_clients
 UNION ALL SELECT 'client_members', count(*) FROM archive_sales_tools.client_members
 UNION ALL SELECT 'lead_copies', count(*) FROM archive_sales_tools.lead_contact_copies
-UNION ALL SELECT 'leads', count(*) FROM leads;           -- = lead_copies
+UNION ALL SELECT 'lead_company_names', count(*) FROM archive_sales_tools.lead_company_names
+UNION ALL SELECT 'leads', count(*) FROM leads;           -- = lead_copies = lead_company_names
 SELECT md5(string_agg(contact_id || ':' || client_id, ',' ORDER BY contact_id, client_id))
 FROM archive_sales_tools.contact_clients;                -- = contact_clients_md5
 SELECT md5(string_agg(user_id || ':' || client_id || ':' || coalesce(deleted_at::text, ''), ','
                       ORDER BY user_id, client_id))
 FROM archive_sales_tools.client_members;                 -- = client_members_md5
-SELECT md5(string_agg(lead_id || ':' || contact_name || ':' || coalesce(contact_email, '') || ':' ||
-                      coalesce(contact_phone, '') || ':' || coalesce(company_name, ''), ','
-                      ORDER BY lead_id))
-FROM archive_sales_tools.lead_contact_copies;            -- = lead_copies_md5
+-- company_name comes from 0090's copy: 0090 respelled leads.company_name,
+-- so the 0107 copy would not match 2a.
+SELECT md5(string_agg(a.lead_id || ':' || a.contact_name || ':' || coalesce(a.contact_email, '') || ':' ||
+                      coalesce(a.contact_phone, '') || ':' || coalesce(n.company_name, ''), ','
+                      ORDER BY a.lead_id))
+FROM archive_sales_tools.lead_contact_copies a
+JOIN archive_sales_tools.lead_company_names n ON n.lead_id = a.lead_id;  -- = lead_copies_md5
 
 -- Every client link is now a company membership, and every real login
 -- grant still exists (expect 0 rows each).
@@ -180,6 +179,12 @@ JOIN clients cl ON cl.id = a.client_id AND cl.deleted_at IS NULL
 LEFT JOIN client_portal_access v ON v.user_id = a.user_id AND v.client_id = a.client_id
 WHERE a.deleted_at IS NULL AND v.client_id IS NULL;
 SELECT count(*) AS unmapped FROM archive_sales_tools.unmapped_portal_access;  -- 0
+-- Nobody gained access (0107 already stopped on this; expect 0 rows).
+SELECT 'gained access', v.user_id, v.client_id
+FROM client_portal_access v
+LEFT JOIN archive_sales_tools.client_members a
+  ON a.user_id = v.user_id AND a.client_id = v.client_id AND a.deleted_at IS NULL
+WHERE a.user_id IS NULL;
 
 -- Portal access did not grow: view rows should equal live_grants from 2a
 -- (the real logins), not the number of client links.
@@ -237,8 +242,8 @@ SELECT user_id, count(*) FROM client_members
 WHERE deleted_at IS NULL GROUP BY user_id HAVING count(*) > 1;
 ROLLBACK;
 
--- P3. Portal members with no contact (expect 0; these would be the only
---     unmapped grants after 0107).
+-- P3. Portal members with no contact (expect 0; with P11a, these are the
+--     grants 0107 would stop on).
 BEGIN READ ONLY;
 SELECT cm.user_id, cm.client_id
 FROM client_members cm
@@ -317,7 +322,63 @@ JOIN clients cl ON cl.deleted_at IS NULL
 WHERE l.deleted_at IS NULL AND btrim(coalesce(l.company_name, '')) <> ''
 GROUP BY 1 HAVING count(DISTINCT cl.id) > 1;
 ROLLBACK;
+
+-- P11. Live portal grants 0105 does not carry (expect 0 each; 0107 stops
+--      on a): a) grants whose contact is archived; b) grants on archived
+--      clients (not carried, by design: they could open a live client of
+--      the same name).
+BEGIN READ ONLY;
+SELECT count(*) AS grants_archived_contact
+FROM client_members cm
+JOIN contacts c ON c.user_id = cm.user_id AND c.deleted_at IS NOT NULL
+WHERE cm.deleted_at IS NULL;
+SELECT count(*) AS grants_archived_client
+FROM client_members cm
+JOIN clients cl ON cl.id = cm.client_id AND cl.deleted_at IS NOT NULL
+WHERE cm.deleted_at IS NULL;
+ROLLBACK;
+
+-- P12. Triggers on public tables, and whether each still fits its table.
+--      A set_updated_at() trigger on a table with no updated_at column makes
+--      every UPDATE on that table fail. The batch UPDATEs leads, contacts,
+--      clients, companies and task_assignees (0103; it has no updated_at),
+--      so any row with broken = true on those tables would abort the
+--      release. Then check every function body for columns/tables this
+--      batch drops.
+BEGIN READ ONLY;
+SELECT c.relname AS table_name, t.tgname, p.proname AS function_name,
+       p.prosrc ~ 'updated_at' AS touches_updated_at,
+       EXISTS (SELECT 1 FROM information_schema.columns col
+               WHERE col.table_schema = 'public' AND col.table_name = c.relname
+                 AND col.column_name = 'updated_at') AS has_updated_at,
+       (p.prosrc ~ 'updated_at' AND NOT EXISTS (
+          SELECT 1 FROM information_schema.columns col
+          WHERE col.table_schema = 'public' AND col.table_name = c.relname
+            AND col.column_name = 'updated_at')) AS broken
+FROM pg_trigger t
+JOIN pg_class c ON c.oid = t.tgrelid
+JOIN pg_namespace n ON n.oid = c.relnamespace AND n.nspname = 'public'
+JOIN pg_proc p ON p.oid = t.tgfoid
+WHERE NOT t.tgisinternal
+ORDER BY 1, 2;
+SELECT n.nspname, p.proname
+FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE n.nspname NOT IN ('pg_catalog', 'information_schema')
+  AND p.prosrc ~* '(contact_clients|client_members|is_champion|is_primary|primary_contact_id|job_title|contact_name|contact_email|contact_phone|company_name|company_website)';
+-- Views or rules on what 0097/0107 drop would make the DROP fail (expect 0).
+SELECT DISTINCT view_schema, view_name, table_name, column_name
+FROM information_schema.view_column_usage
+WHERE table_schema = 'public'
+  AND (table_name IN ('contact_clients', 'client_members')
+       OR (table_name, column_name) IN (
+         ('contacts', 'company_id'), ('contacts', 'job_title'), ('contacts', 'is_champion'),
+         ('companies', 'primary_contact_id'), ('companies', 'client_id'),
+         ('leads', 'contact_name'), ('leads', 'contact_email'), ('leads', 'contact_phone'),
+         ('leads', 'company_name'), ('leads', 'company_website')));
+ROLLBACK;
 ```
+
+**Known P12 finding:** production has `activity_logs_set_updated_at` calling `set_updated_at()`, but `activity_logs` has no `updated_at` column, so any `UPDATE` on `activity_logs` fails. Nothing in 0089–0107 updates `activity_logs` (the batch never touches it) and the app only inserts and deletes there (retention prune, submission delete), which this trigger does not fire on, so the release is not affected and 0089–0107 do not drop it. Drop it in a follow-up migration (`DROP TRIGGER IF EXISTS activity_logs_set_updated_at ON activity_logs;`). Any other `broken = true` row on a table the batch updates (above) must be fixed before the window.
 
 Any non-empty P10 result has to be fixed in the app before release: rename, archive, or merge one of the clients. Otherwise 0104 stops the release, safely.
 
@@ -352,7 +413,7 @@ Any non-empty P10 result has to be fixed in the app before release: rename, arch
 | When | How |
 | --- | --- |
 | Pre-flight fails | Nothing has changed. Fix the data in the app, then re-run pre-flight. |
-| A migration fails | Confirm with P0. If production is still at 89 rows, nothing applied: fix and rehearse again. If it partly applied, restore the step-3 backup. Confirm in rehearsal whether drizzle runs the batch in one transaction. |
+| A migration fails | drizzle-orm's pg migrator runs every pending migration in **one transaction**, so a failure anywhere (including the 0104/0106/0107 guards) rolls back the whole batch. Confirm with P0 that production is still at 89 rows, then fix and rehearse again. |
 | Problem after migrating, **before promoting** the apps | Production is on the new schema with old code. Restore the step-3 backup (preferred: no writes happened during the window), or promote the new code and fix forward. |
 | Problem after promoting, within hours | **Option A, restore:** restore the step-3 backup (point in time) and promote the previous deployments of both apps. Writes made since the window are lost, so list them from `activity_logs` first. **Option B, rebuild old tables from the archive** (keeps new writes to everything else; see SQL below), then deploy a build matching the 0104 schema. |
 | Later | Fix forward. The archive stays available. |
@@ -407,7 +468,7 @@ Memberships made through the app after the release, such as new access grants, a
 
 Approve:
 
-1. Amend 0097 with the archive statements in [Required before release](#required-before-release), or accept the backup as the only copy of those three columns.
+1. ~~Amend 0097 with archive statements~~ **Done:** 0097 archives its three columns and 0090 archives lead company names (see [Archives made before 0107](#archives-made-before-0107)).
 2. Use the single maintenance window approach and pick a time (off-hours, about 15 minutes).
 3. Pre-flight results (section 3), in particular:
    - P1: the two people at two companies each get memberships at both, with portal access carried over.

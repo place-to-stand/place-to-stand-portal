@@ -3,8 +3,13 @@
 -- into the "archive_sales_tools" schema first, plus a list of any portal
 -- link or grant that did not carry over (expected empty: 0105 makes every
 -- client link a company membership and keeps every real portal login's
--- access; a portal login with no contact is the one case it can't).
--- Restore from there if anything is missed.
+-- access on a live client, unless the login has no contact or only an
+-- archived one). Two guards stop the whole batch before anything is
+-- dropped: a live grant was lost, or someone gained access they didn't have.
+-- Restore from there if anything is missed. Plain CREATE TABLE on purpose:
+-- an archive table that already exists stops the migration rather than
+-- being reused. leads.company_name was respelled by 0090; the name as typed
+-- is in archive_sales_tools.lead_company_names (made by 0090).
 CREATE SCHEMA IF NOT EXISTS "archive_sales_tools";
 --> statement-breakpoint
 CREATE TABLE "archive_sales_tools"."contact_clients" AS
@@ -57,9 +62,12 @@ FROM "client_members" cm
 JOIN "clients" cl ON cl."id" = cm."client_id" AND cl."deleted_at" IS NULL
 LEFT JOIN "contacts" c ON c."user_id" = cm."user_id"
 WHERE cm."deleted_at" IS NULL
-  -- An archived contact losing access is intended (archiving revokes it).
-  AND (c."id" IS NULL OR c."deleted_at" IS NULL)
-  -- Nor for a login switched off or archived on the Users page.
+  -- A grant whose contact is archived counts too: the view drops it
+  -- (0105 starts archived contacts with access off), and before this
+  -- release archiving a contact did not revoke its grant, so stop rather
+  -- than silently remove access. Production pre-flight P11 expects none.
+  -- A login switched off or archived on the Users page already had no
+  -- access, so it is not counted.
   AND NOT EXISTS (
     SELECT 1 FROM "users" u
     WHERE u."id" = cm."user_id"
@@ -73,7 +81,7 @@ WHERE cm."deleted_at" IS NULL
 
 -- Stop before dropping anything if a live grant did not carry over: an
 -- archive keeps the record, but the person would lose access. Fix them
--- (give the person a contact and a membership with portal access) and
+-- (give the person a live contact and a membership with portal access) and
 -- re-run. Nothing above has dropped anything yet.
 DO $$
 DECLARE
@@ -88,6 +96,34 @@ BEGIN
 
   IF unmapped IS NOT NULL THEN
     RAISE EXCEPTION E'These client links or portal logins did not carry over to memberships. Fix them before 0107:\n%', unmapped;
+  END IF;
+END $$;--> statement-breakpoint
+
+-- And stop if anyone gained access: every (login, client) pair the new
+-- client_portal_access view grants must have been a live client_members
+-- grant before. 0105 only carries access from such grants, but a grant on
+-- an archived client that shares its company with a live one (0096 name
+-- matching), or any membership with access at a company whose client the
+-- person never had, would widen access silently.
+DO $$
+DECLARE
+  gained text;
+BEGIN
+  SELECT string_agg(
+           format('login %s, contact %s, client %s',
+                  a."user_id", a."contact_id", a."client_id"),
+           E'\n')
+    INTO gained
+  FROM "client_portal_access" a
+  WHERE NOT EXISTS (
+    SELECT 1 FROM "client_members" cm
+    WHERE cm."user_id" = a."user_id"
+      AND cm."client_id" = a."client_id"
+      AND cm."deleted_at" IS NULL
+  );
+
+  IF gained IS NOT NULL THEN
+    RAISE EXCEPTION E'These people would gain client portal access they did not have. Fix their memberships before 0107:\n%', gained;
   END IF;
 END $$;--> statement-breakpoint
 DROP TABLE "contact_clients";

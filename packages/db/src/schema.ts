@@ -212,8 +212,8 @@ export const clients = pgTable(
     // remove in a follow-up migration once that deploy is live.
     closerUserId: uuid('closer_user_id'),
     /**
-     * The organization this client is (every client has one). FK to
-     * companies added in migration 0096 (companies is defined later).
+     * The organization this client is (every client has one). FK
+     * `clients_company_id_fkey` (added in 0096) is declared below.
      */
     companyId: uuid('company_id'),
     /**
@@ -280,6 +280,12 @@ export const clients = pgTable(
       foreignColumns: [users.id],
       name: 'clients_closer_user_id_fkey',
     }),
+    // companies is defined below; the callback runs lazily, so this is safe.
+    foreignKey({
+      columns: [table.companyId],
+      foreignColumns: [companies.id],
+      name: 'clients_company_id_fkey',
+    }).onDelete('set null'),
     // Note: FK constraint for originationContactId -> contacts.id added in
     // migration to avoid forward reference (contacts table defined later).
     check(
@@ -291,9 +297,10 @@ export const clients = pgTable(
 )
 
 /**
- * A business we sell to (sales CRM). Contacts and leads hang under it so the
- * team can see everyone tried at one company and who the champion is. Paying
- * customers stay in `clients`; a company points at its client once it signs.
+ * An organization (sales CRM): prospects and customers alike. People belong
+ * to it through `memberships` (one of them can be its primary contact) and
+ * leads hang under it. Once it signs, its paying customer record is the one
+ * live `clients` row whose `company_id` points here (`clients_company_id_live_key`).
  */
 export const companies = pgTable(
   'companies',
@@ -414,9 +421,6 @@ export const memberships = pgTable(
   table => [
     uniqueIndex('memberships_one_current_per_contact_company')
       .on(table.contactId, table.companyId)
-      .where(sql`(ended_at IS NULL)`),
-    index('idx_memberships_contact_current')
-      .on(table.contactId)
       .where(sql`(ended_at IS NULL)`),
     uniqueIndex('memberships_one_primary_per_company')
       .on(table.companyId)
@@ -710,6 +714,10 @@ export const taskAssignees = pgTable(
       name: 'task_assignees_user_id_fkey',
     }).onDelete('cascade'),
     unique('task_assignees_task_id_user_id_key').on(table.taskId, table.userId),
+    // A task has one (current) assignee (0103).
+    uniqueIndex('task_assignees_one_current_per_task')
+      .on(table.taskId)
+      .where(sql`(deleted_at IS NULL)`),
   ]
 )
 
@@ -2361,12 +2369,6 @@ export const rateLimitBuckets = pgTable(
 )
 
 /**
- * Per-user home dashboard widget arrangement. One row per user; absent row
- * means the default layout. `layout` is validated/normalized in
- * apps/internal/lib/dashboard/layout.ts (unknown widget ids are dropped,
- * missing ones appended), so stale JSON never breaks rendering.
- */
-/**
  * In-app notifications: one row per recipient. Shown in the home
  * Notifications widget. `type` is a plain string (validated in the app) so
  * a new kind of notification needs no migration. `dedupeKey` stops the same
@@ -2412,6 +2414,12 @@ export const notifications = pgTable(
   ]
 )
 
+/**
+ * Per-user home dashboard widget arrangement. One row per user; absent row
+ * means the default layout. `layout` is validated/normalized in
+ * apps/internal/lib/dashboard/layout.ts (unknown widget ids are dropped,
+ * missing ones appended), so stale JSON never breaks rendering.
+ */
 export const userDashboardLayouts = pgTable(
   'user_dashboard_layouts',
   {
@@ -2452,6 +2460,6 @@ export const currentUserWithRole = pgView('current_user_with_role', {
 export const clientPortalAccess = pgView('client_portal_access', {
   clientId: uuid('client_id').notNull(),
   contactId: uuid('contact_id').notNull(),
-  /** The contact's portal login, if they have one. */
+  /** The contact's portal login (always set: access needs a login). */
   userId: uuid('user_id'),
 }).existing()

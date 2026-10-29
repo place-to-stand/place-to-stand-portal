@@ -27,9 +27,6 @@ CREATE TABLE IF NOT EXISTS "memberships" (
 CREATE UNIQUE INDEX IF NOT EXISTS "memberships_one_current_per_contact_company"
   ON "memberships" ("contact_id", "company_id") WHERE (ended_at IS NULL);
 --> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "idx_memberships_contact_current"
-  ON "memberships" ("contact_id") WHERE (ended_at IS NULL);
---> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "memberships_one_primary_per_company"
   ON "memberships" ("company_id") WHERE (is_primary AND ended_at IS NULL);
 --> statement-breakpoint
@@ -39,11 +36,14 @@ CREATE INDEX IF NOT EXISTS "idx_memberships_company_current"
 
 -- 1. Everyone at a company today. They are its primary contact if the
 -- company says so. Portal access carries over only where it was real: a
--- portal login (client_members) for that company's client. contact_clients
+-- portal login (client_members) for that company's LIVE client. contact_clients
 -- was a CRM link (who belongs to a client), not access, so it only makes
--- the membership (step 2), never switches access on. Archived clients count
--- too, so restoring one later brings its people's access back. Archived
--- contacts start with access off, as archiving a contact does now.
+-- the membership (step 2), never switches access on. A grant on an archived
+-- client is not carried: 0096 can put an archived client and a live client
+-- of the same name on one company, and access is per company, so carrying
+-- it would open the live client to someone who never had it (0107 stops if
+-- anyone gains access). Archived contacts start with access off; 0107 stops
+-- if that would drop a live grant.
 INSERT INTO "memberships" ("contact_id", "company_id", "title", "is_primary", "portal_access", "started_at", "created_at", "updated_at")
 SELECT
   c."id",
@@ -57,6 +57,7 @@ SELECT
       AND c."deleted_at" IS NULL
       AND cm."user_id" = c."user_id"
       AND cm."deleted_at" IS NULL
+      AND cl."deleted_at" IS NULL
       AND cl."company_id" = c."company_id"
   ),
   c."created_at",
@@ -76,6 +77,8 @@ WHERE NOT EXISTS (
 -- no access), a portal login for that client (client_members, access), or
 -- being named a company's primary contact without working there. These
 -- start now, so the person's own company (step 1) stays their main one.
+-- As in step 1, access comes only from a login on a live client; ties to
+-- archived clients still become memberships, with access off.
 -- The pre-release check lists the ones added here for review.
 WITH "ties" AS (
   SELECT cc."contact_id", cl."company_id", false AS "access"
@@ -83,7 +86,8 @@ WITH "ties" AS (
   JOIN "clients" cl ON cl."id" = cc."client_id"
   WHERE cl."company_id" IS NOT NULL
   UNION ALL
-  SELECT c."id", cl."company_id", c."deleted_at" IS NULL
+  SELECT c."id", cl."company_id",
+         c."deleted_at" IS NULL AND cl."deleted_at" IS NULL
   FROM "client_members" cm
   JOIN "contacts" c ON c."user_id" = cm."user_id"
   JOIN "clients" cl ON cl."id" = cm."client_id"

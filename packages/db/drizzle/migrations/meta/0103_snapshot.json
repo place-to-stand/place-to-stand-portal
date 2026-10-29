@@ -1422,6 +1422,19 @@
           ],
           "onUpdate": "no action",
           "onDelete": "no action"
+        },
+        "clients_company_id_fkey": {
+          "name": "clients_company_id_fkey",
+          "tableFrom": "clients",
+          "tableTo": "companies",
+          "columnsFrom": [
+            "company_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -1558,6 +1571,19 @@
           ],
           "onUpdate": "no action",
           "onDelete": "no action"
+        },
+        "companies_primary_contact_id_fkey": {
+          "name": "companies_primary_contact_id_fkey",
+          "tableFrom": "companies",
+          "tableTo": "contacts",
+          "columnsFrom": [
+            "primary_contact_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -5857,6 +5883,22 @@
           "method": "btree",
           "where": "(deleted_at IS NULL)",
           "concurrently": false
+        },
+        "task_assignees_one_current_per_task": {
+          "name": "task_assignees_one_current_per_task",
+          "columns": [
+            {
+              "expression": "task_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {

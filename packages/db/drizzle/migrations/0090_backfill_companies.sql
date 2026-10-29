@@ -2,6 +2,17 @@
 -- company only as free text (company_name). Turn each distinct name on a live
 -- lead into a company record, then link leads and their contacts to it.
 
+-- The link step below rewrites leads.company_name to the company's spelling,
+-- so first keep every lead's company name exactly as typed. 0107 archives
+-- the rest of the lead copies into the same schema; the rollout doc's lead
+-- fingerprint reads company_name from here so before/after compare equal.
+CREATE SCHEMA IF NOT EXISTS "archive_sales_tools";
+--> statement-breakpoint
+CREATE TABLE "archive_sales_tools"."lead_company_names" AS
+SELECT "id" AS "lead_id", "company_name"
+FROM "leads";
+--> statement-breakpoint
+
 -- One company per name (case- and space-insensitive). The spelling and owner
 -- come from the most recently touched lead, preferring a spelling that isn't
 -- all lower case; the website from the newest lead that has one.
