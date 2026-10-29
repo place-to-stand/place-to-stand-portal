@@ -202,6 +202,31 @@ export function ContactSheetForm({
                   </FormItem>
                 )}
               />
+              {/* Under Email, in its column. */}
+              <FormField
+                control={form.control}
+                name='linkedinUrl'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel optional>LinkedIn</FormLabel>
+                    <FormControl>
+                      <DisabledFieldTooltip
+                        disabled={isPending}
+                        reason={fieldDisabledReason}
+                      >
+                        <UrlInput
+                          {...field}
+                          value={field.value ?? ''}
+                          openLabel='Open LinkedIn'
+                          placeholder='linkedin.com/in/jane-doe'
+                          disabled={isPending}
+                        />
+                      </DisabledFieldTooltip>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
           </SheetSection>
 
@@ -217,30 +242,6 @@ export function ContactSheetForm({
                 hasPortalLogin={Boolean(portalUserId)}
                 onChange={next => field.onChange(next)}
               />
-            )}
-          />
-          <FormField
-            control={form.control}
-            name='linkedinUrl'
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel optional>LinkedIn</FormLabel>
-                <FormControl>
-                  <DisabledFieldTooltip
-                    disabled={isPending}
-                    reason={fieldDisabledReason}
-                  >
-                    <UrlInput
-                      {...field}
-                      value={field.value ?? ''}
-                      openLabel='Open LinkedIn'
-                      placeholder='linkedin.com/in/jane-doe'
-                      disabled={isPending}
-                    />
-                  </DisabledFieldTooltip>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
             )}
           />
 

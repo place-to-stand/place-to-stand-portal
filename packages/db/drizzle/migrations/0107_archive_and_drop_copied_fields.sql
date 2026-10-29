@@ -57,6 +57,8 @@ FROM "client_members" cm
 JOIN "clients" cl ON cl."id" = cm."client_id" AND cl."deleted_at" IS NULL
 LEFT JOIN "contacts" c ON c."user_id" = cm."user_id"
 WHERE cm."deleted_at" IS NULL
+  -- An archived contact losing access is intended (archiving revokes it).
+  AND (c."id" IS NULL OR c."deleted_at" IS NULL)
   AND NOT EXISTS (
     SELECT 1 FROM "client_portal_access" a
     WHERE a."user_id" = cm."user_id" AND a."client_id" = cm."client_id"

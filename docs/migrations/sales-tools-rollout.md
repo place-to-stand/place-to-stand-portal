@@ -49,9 +49,9 @@ Run the read-only pre-flight queries (P0–P10) and compare with the values shar
 | 0102 `company_website_from_clients` | Company website ← newest live client's website, only where still empty. | Yes | — |
 | 0103 `single_task_assignee` | Tasks with several assignees keep the first. The others are soft-deleted (`deleted_at`), so history stays. | Yes | — |
 | 0104 `client_company_one_to_one` | Unique index: one live client per company. | No (DDL) | **Stops** and lists companies with 2+ live clients. Nothing is merged automatically. |
-| 0105 `memberships_and_portal_access` | Creates `memberships`. Step 1: everyone at a company (`contacts.company_id`) gets a membership carrying title, primary flag, and portal access if they had it to that company's client (archived clients included, so restoring one brings its people's access back) (directly or through their portal login). Step 2: every other tie (access to a client at another company, or being primary without working there) becomes an extra membership with that access, so nothing is lost. Creates the `client_portal_access` view. | Yes | Unique: one current membership per person per company; one primary per company. |
+| 0105 `memberships_and_portal_access` | Creates `memberships`. Step 1: everyone at a company (`contacts.company_id`) gets a membership with their title and primary flag. **Portal access carries over only where it was real:** a portal login (`client_members`) for that company's client. `contact_clients` was a CRM link (who belongs to a client), not access, so it only creates the membership, with access off. Step 2: every other tie (a client link or a login at another company, or being primary without working there) becomes an extra membership, so no link is lost. Archived clients count, so restoring one brings its people back. Creates the `client_portal_access` view, which also requires the contact to have a portal login. | Yes | Unique: one current membership per person per company; one primary per company. |
 | 0106 `lead_contact_required` | Leads that still only have a typed company name (archived leads and long names, which 0090 skipped) get a company: an existing one with that name, else a new archived one. Then `leads.contact_id` becomes NOT NULL with `ON DELETE RESTRICT`, so a contact with leads can't be hard-deleted. | Yes (finds nothing the second time) | **Stops** and lists any lead with no contact. |
-| 0107 `archive_and_drop_copied_fields` | Copies everything it drops into `archive_sales_tools` (below) and records any live portal grant with no matching membership. **Stops before dropping anything** if that list isn't empty (rehearsed: drizzle rolls the whole batch back and the old tables stay). Then drops `contact_clients`, `client_members`, `contacts.company_id`, `contacts.job_title`, `companies.primary_contact_id`, and the lead copies (`contact_name`, `contact_email`, `contact_phone`, `company_name`, `company_website`). | No | **Stops** on any unmapped live grant. |
+| 0107 `archive_and_drop_copied_fields` | Copies everything it drops into `archive_sales_tools` (below) and records any client link that didn't become a membership and any real login grant missing from the view. **Stops before dropping anything** if that list isn't empty (rehearsed: drizzle rolls the whole batch back and the old tables stay). Then drops `contact_clients`, `client_members`, `contacts.company_id`, `contacts.job_title`, `companies.primary_contact_id`, and the lead copies (`contact_name`, `contact_email`, `contact_phone`, `company_name`, `company_website`). | No | **Stops** on any unmapped live grant. |
 
 ### Required before release
 
@@ -137,11 +137,12 @@ SELECT md5(string_agg(id || ':' || contact_name || ':' || coalesce(contact_email
                       ORDER BY id)) AS lead_copies_md5
 FROM leads;
 
--- Live grants (live contact, live client), the set portal access must keep.
+-- Live grants: real portal access is a login on a client (client_members),
+-- live client. contact_clients is a CRM link, not access.
 SELECT count(*) AS live_grants
-FROM contact_clients cc
-JOIN contacts c ON c.id = cc.contact_id AND c.deleted_at IS NULL
-JOIN clients cl ON cl.id = cc.client_id AND cl.deleted_at IS NULL;
+FROM client_members cm
+JOIN clients cl ON cl.id = cm.client_id AND cl.deleted_at IS NULL
+WHERE cm.deleted_at IS NULL;
 ROLLBACK;
 ```
 
@@ -164,13 +165,15 @@ SELECT md5(string_agg(lead_id || ':' || contact_name || ':' || coalesce(contact_
                       ORDER BY lead_id))
 FROM archive_sales_tools.lead_contact_copies;            -- = lead_copies_md5
 
--- Every live grant still exists (expect 0 rows each).
-SELECT 'lost contact grant', a.contact_id, a.client_id
+-- Every client link is now a company membership, and every real login
+-- grant still exists (expect 0 rows each).
+SELECT 'lost client link', a.contact_id, a.client_id
 FROM archive_sales_tools.contact_clients a
 JOIN contacts c ON c.id = a.contact_id AND c.deleted_at IS NULL
 JOIN clients cl ON cl.id = a.client_id AND cl.deleted_at IS NULL
-LEFT JOIN client_portal_access v ON v.contact_id = a.contact_id AND v.client_id = a.client_id
-WHERE v.client_id IS NULL;
+LEFT JOIN memberships m ON m.contact_id = a.contact_id
+  AND m.company_id = cl.company_id AND m.ended_at IS NULL
+WHERE cl.company_id IS NOT NULL AND m.id IS NULL;
 SELECT 'lost login grant', a.user_id, a.client_id
 FROM archive_sales_tools.client_members a
 JOIN clients cl ON cl.id = a.client_id AND cl.deleted_at IS NULL
@@ -178,7 +181,8 @@ LEFT JOIN client_portal_access v ON v.user_id = a.user_id AND v.client_id = a.cl
 WHERE a.deleted_at IS NULL AND v.client_id IS NULL;
 SELECT count(*) AS unmapped FROM archive_sales_tools.unmapped_portal_access;  -- 0
 
--- Portal access did not grow: view rows should equal live_grants from 2a.
+-- Portal access did not grow: view rows should equal live_grants from 2a
+-- (the real logins), not the number of client links.
 SELECT count(*) AS view_rows FROM client_portal_access;
 
 -- Memberships sanity.

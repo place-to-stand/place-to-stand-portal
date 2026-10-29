@@ -38,6 +38,8 @@ const contactFormSchema = z.object({
       portalAccess: z.boolean(),
       clientId: z.string().nullable(),
       clientName: z.string().nullable(),
+      /** The company or its client is archived: shown muted, kept on save. */
+      archived: z.boolean().optional(),
     })
   ),
 })
@@ -161,6 +163,7 @@ export function useContactSheetState({
             portalAccess: membership.portalAccess,
             clientId: membership.clientId,
             clientName: membership.clientName,
+            archived: membership.archived,
           })),
         })
       })

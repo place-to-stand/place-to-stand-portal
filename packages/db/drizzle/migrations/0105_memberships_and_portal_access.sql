@@ -42,7 +42,8 @@ CREATE INDEX IF NOT EXISTS "idx_memberships_company_current"
 -- portal login (client_members) for that company's client. contact_clients
 -- was a CRM link (who belongs to a client), not access, so it only makes
 -- the membership (step 2), never switches access on. Archived clients count
--- too, so restoring one later brings its people's access back.
+-- too, so restoring one later brings its people's access back. Archived
+-- contacts start with access off, as archiving a contact does now.
 INSERT INTO "memberships" ("contact_id", "company_id", "title", "is_primary", "portal_access", "started_at", "created_at", "updated_at")
 SELECT
   c."id",
@@ -53,6 +54,7 @@ SELECT
     SELECT 1 FROM "client_members" cm
     JOIN "clients" cl ON cl."id" = cm."client_id"
     WHERE c."user_id" IS NOT NULL
+      AND c."deleted_at" IS NULL
       AND cm."user_id" = c."user_id"
       AND cm."deleted_at" IS NULL
       AND cl."company_id" = c."company_id"
@@ -81,7 +83,7 @@ WITH "ties" AS (
   JOIN "clients" cl ON cl."id" = cc."client_id"
   WHERE cl."company_id" IS NOT NULL
   UNION ALL
-  SELECT c."id", cl."company_id", true
+  SELECT c."id", cl."company_id", c."deleted_at" IS NULL
   FROM "client_members" cm
   JOIN "contacts" c ON c."user_id" = cm."user_id"
   JOIN "clients" cl ON cl."id" = cm."client_id"

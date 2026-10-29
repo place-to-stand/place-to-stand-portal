@@ -88,7 +88,10 @@ export function ContactCompaniesSection({
         />
       ) : (
         <SheetRecordList>
-          {companies.map(entry => {
+          {[
+            ...companies.filter(entry => !entry.archived),
+            ...companies.filter(entry => entry.archived),
+          ].map(entry => {
             const name = entry.companyName || 'this company'
             const accessLocked =
               disabled ||
@@ -98,8 +101,11 @@ export function ContactCompaniesSection({
               <CompanyRecordRow
                 key={entry.companyId}
                 company={{ id: entry.companyId, name: entry.companyName }}
+                className={entry.archived ? 'opacity-60' : undefined}
                 note={
-                  entry.isPrimary ? (
+                  entry.archived ? (
+                    'Archived'
+                  ) : entry.isPrimary ? (
                     <span className='inline-flex items-center gap-1'>
                       <Star className='text-warning size-3 fill-current' />
                       Primary contact

@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, asc, desc, eq, isNull } from 'drizzle-orm'
+import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { clients, contacts, memberships } from '@/lib/db/schema'
@@ -16,6 +16,8 @@ export type ClientContactRow = {
   updatedAt: string
   deletedAt: string | null
   isPrimary: boolean
+  /** Can see the client in the portal (switch on and a portal login). */
+  hasPortalAccess: boolean
 }
 
 /**
@@ -39,6 +41,7 @@ export async function fetchContactsForClient(
       updatedAt: contacts.updatedAt,
       deletedAt: contacts.deletedAt,
       isPrimary: memberships.isPrimary,
+      hasPortalAccess: sql<boolean>`(${memberships.portalAccess} and ${contacts.userId} is not null)`,
     })
     .from(clients)
     .innerJoin(memberships, eq(memberships.companyId, clients.companyId))

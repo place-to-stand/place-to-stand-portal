@@ -40,10 +40,27 @@ const ref = (value: AnyPgColumn | SQL): SQL =>
     ? sql.raw(`"${getTableName(value.table)}"."${value.name}"`)
     : (value as SQL)
 
-/** The contact's main company id (oldest current membership). */
+/**
+ * True when the company (aliased `co`) is active: not archived itself, and
+ * not a client company whose client is archived. Memberships at inactive
+ * companies stay in the database as history but are hidden from active
+ * views (lists, counts, main company, CLI/MCP).
+ */
+const activeCompanyCondition = (co: string) => `${co}.deleted_at is null
+  and (
+    exists (select 1 from clients ac where ac.company_id = ${co}.id and ac.deleted_at is null)
+    or not exists (select 1 from clients ac where ac.company_id = ${co}.id)
+  )`
+
+/** SQL predicate for an active company, by table alias. */
+export const activeCompanySql = (alias: string) =>
+  sql.raw(`(${activeCompanyCondition(alias)})`)
+
+/** The contact's main company id (oldest current membership at an active company). */
 export const mainCompanyIdSql = (contactId: AnyPgColumn | SQL) =>
   sql<string | null>`(
     select m.company_id from memberships m
+    join companies co on co.id = m.company_id and ${activeCompanySql('co')}
     where m.contact_id = ${ref(contactId)} and m.ended_at is null
     order by m.started_at, m.created_at, m.company_id limit 1
   )`
@@ -52,7 +69,7 @@ export const mainCompanyIdSql = (contactId: AnyPgColumn | SQL) =>
 export const mainCompanyNameSql = (contactId: AnyPgColumn | SQL) =>
   sql<string | null>`(
     select co.name from memberships m
-    join companies co on co.id = m.company_id
+    join companies co on co.id = m.company_id and ${activeCompanySql('co')}
     where m.contact_id = ${ref(contactId)} and m.ended_at is null
     order by m.started_at, m.created_at, m.company_id limit 1
   )`
@@ -61,6 +78,7 @@ export const mainCompanyNameSql = (contactId: AnyPgColumn | SQL) =>
 export const mainTitleSql = (contactId: AnyPgColumn | SQL) =>
   sql<string | null>`(
     select m.title from memberships m
+    join companies co on co.id = m.company_id and ${activeCompanySql('co')}
     where m.contact_id = ${ref(contactId)} and m.ended_at is null
     order by m.started_at, m.created_at, m.company_id limit 1
   )`
@@ -103,12 +121,19 @@ export type ContactMembership = {
   clientId: string | null
   clientName: string | null
   startedAt: string
+  /** The company is archived, or its client is (history; hidden in active views). */
+  archived: boolean
 }
 
-/** A contact's current companies, main company first. */
+/**
+ * A contact's current companies, main company first. Archived companies
+ * (or ones whose client is archived) are left out unless `includeArchived`
+ * (the contact sheet shows them muted, and saves the full set).
+ */
 export async function listContactMemberships(
   contactIds: readonly string[],
-  executor: Executor = db
+  executor: Executor = db,
+  { includeArchived = false }: { includeArchived?: boolean } = {}
 ): Promise<Map<string, ContactMembership[]>> {
   const byContact = new Map<string, ContactMembership[]>()
   if (contactIds.length === 0) return byContact
@@ -124,6 +149,7 @@ export async function listContactMemberships(
       clientId: clients.id,
       clientName: clients.name,
       startedAt: memberships.startedAt,
+      archived: sql<boolean>`not ${activeCompanySql('companies')}`,
     })
     .from(memberships)
     .innerJoin(companies, eq(companies.id, memberships.companyId))
@@ -132,7 +158,11 @@ export async function listContactMemberships(
       and(eq(clients.companyId, companies.id), isNull(clients.deletedAt))
     )
     .where(
-      and(isCurrentMembership, inArray(memberships.contactId, [...contactIds]))
+      and(
+        isCurrentMembership,
+        inArray(memberships.contactId, [...contactIds]),
+        includeArchived ? undefined : activeCompanySql('companies')
+      )
     )
     .orderBy(
       asc(memberships.startedAt),
@@ -151,6 +181,7 @@ export async function listContactMemberships(
       clientId: row.clientId ?? null,
       clientName: row.clientName ?? null,
       startedAt: row.startedAt,
+      archived: row.archived,
     })
     byContact.set(row.contactId, list)
   }

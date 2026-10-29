@@ -102,7 +102,9 @@ export async function getContactSheetData(
 ): Promise<ContactSheetData> {
   assertCrmAccess(user)
 
-  const byContact = await listContactMemberships([contactId])
+  const byContact = await listContactMemberships([contactId], undefined, {
+    includeArchived: true,
+  })
   return { memberships: byContact.get(contactId) ?? [] }
 }
 
