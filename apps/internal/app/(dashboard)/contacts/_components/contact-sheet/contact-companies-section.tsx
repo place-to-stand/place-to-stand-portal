@@ -5,8 +5,6 @@ import { Star, X } from 'lucide-react'
 
 import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
-import { Switch } from '@pts/ui/switch'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { CompanyLinkPicker } from '@/components/companies/company-link-picker'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { CompanyRecordRow } from '@/components/sheets/entity-record-rows'
@@ -20,21 +18,19 @@ import type { ContactCompanyEntry } from '@/lib/settings/contacts/use-contact-sh
 type ContactCompaniesSectionProps = {
   companies: ContactCompanyEntry[]
   disabled: boolean
-  /** Access needs a portal login; without one the switches stay off. */
-  hasPortalLogin: boolean
   onChange: (companies: ContactCompanyEntry[]) => void
 }
 
 /**
- * The companies a person belongs to: title at each, the primary-contact
- * star (set on the company sheet, read-only here) and portal access to the
- * company's client. All staged until Save, like the rest of the sheet.
+ * The companies a person belongs to: title at each and the primary-contact
+ * star (set on the company sheet, read-only here). Portal access is set on
+ * the client (Edit client > Portal access), not here. All staged until
+ * Save, like the rest of the sheet.
  * The first one is their main company in lists.
  */
 export function ContactCompaniesSection({
   companies,
   disabled,
-  hasPortalLogin,
   onChange,
 }: ContactCompaniesSectionProps) {
   const { role } = useViewerAccess()
@@ -93,10 +89,6 @@ export function ContactCompaniesSection({
             ...companies.filter(entry => entry.archived),
           ].map(entry => {
             const name = entry.companyName || 'this company'
-            const accessLocked =
-              disabled ||
-              !canManageAccess ||
-              (!hasPortalLogin && !entry.portalAccess)
             return (
               <CompanyRecordRow
                 key={entry.companyId}
@@ -122,31 +114,6 @@ export function ContactCompaniesSection({
                       ariaLabel={`Title at ${name}`}
                       disabled={disabled}
                     />
-                    {entry.clientId ? (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className='inline-flex px-2'>
-                            <Switch
-                              checked={entry.portalAccess}
-                              disabled={accessLocked}
-                              aria-label={`Portal access to ${entry.clientName ?? name}`}
-                              onCheckedChange={checked =>
-                                update(entry.companyId, {
-                                  portalAccess: checked,
-                                })
-                              }
-                            />
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {!canManageAccess
-                            ? 'Only an admin can change portal access.'
-                            : !hasPortalLogin && !entry.portalAccess
-                              ? 'Create a portal login (Portal account, below) first.'
-                              : `Portal access to ${entry.clientName ?? name}`}
-                        </TooltipContent>
-                      </Tooltip>
-                    ) : null}
                     <RowActionButton
                       type='button'
                       label={`Remove from ${name}`}

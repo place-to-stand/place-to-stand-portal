@@ -338,7 +338,7 @@ Any non-empty P10 result has to be fixed in the app before release: rename, arch
      - Portal access lists the company's people, and the switches save.
      - Linked company: link and unlink.
      - Invoice email recipients still default to the primary contact.
-   - **Contact sheet:** Companies list, where the two P1 people each show both companies, each with title, primary star and portal access switch. Link company / Create.
+   - **Contact sheet:** Companies list, where the two P1 people each show both companies, each with title and primary star. Add company / Create. Portal access is set only on the client (Edit client > Portal access).
    - **Leads:** board cards and sheet show name, email, phone and company from the contact/company. Create a lead with a new person and a new company. Edit a lead's contact.
    - **Lead conversion:** creates a client on the lead's company, and the lead's contact gets a membership.
    - **Client portal:**

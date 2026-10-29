@@ -239,7 +239,6 @@ export function ContactSheetForm({
               <ContactCompaniesSection
                 companies={field.value}
                 disabled={isPending}
-                hasPortalLogin={Boolean(portalUserId)}
                 onChange={next => field.onChange(next)}
               />
             )}
@@ -250,7 +249,7 @@ export function ContactSheetForm({
           {isEditing && isAdmin ? (
             <SheetSection
               title='Portal account'
-              description='Lets them sign in to the client portal. What they can see is the portal access switch on each company above.'
+              description='Lets them sign in to the client portal. Which clients they can see is set on each client (Edit client > Portal access).'
             >
               {portalUserId ? (
                 <ContactPortalAccountCard
