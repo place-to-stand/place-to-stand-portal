@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Briefcase, Building2, Contact, Mail, Phone } from 'lucide-react'
+import { Briefcase, Contact, Mail, Phone } from 'lucide-react'
 
 import { EmptyState } from '@pts/ui/empty-state'
 import {
@@ -216,12 +216,6 @@ export function ContactsTableSection({
                             id: company.id,
                             label: company.name,
                             href: companySheetHref(company.id),
-                            trailing: company.isClient ? (
-                              <Building2
-                                className='text-muted-foreground size-3.5 shrink-0'
-                                aria-label='Client'
-                              />
-                            ) : null,
                           }))}
                         />
                       ) : null}
