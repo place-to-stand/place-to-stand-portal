@@ -65,7 +65,15 @@ export function UsersTableSection({
             {/* Unsized on purpose: in a fixed layout the one auto column
                 absorbs the slack, so Actions stays at its own width. */}
             <TableHead>Email</TableHead>
-            <TableHead className='w-[8%]'>Role</TableHead>
+            <SortableTableHead
+              field='role'
+              sort={sort}
+              defaultSort='name:asc'
+              onSortChange={next => update({ sort: next })}
+              className='w-[8%]'
+            >
+              Role
+            </SortableTableHead>
             <TableHead className='w-[12%]'>Access</TableHead>
             <TableHead className='w-20'>Clients</TableHead>
             <TableHead className='w-32'>Last sign-in</TableHead>
