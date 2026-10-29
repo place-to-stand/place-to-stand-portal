@@ -20,7 +20,7 @@ export const DASHBOARD_WIDGET_LABELS: Record<DashboardWidgetId, string> = {
   'recent-activity': 'Recent activity',
   'next-steps': 'Next steps',
   'quiet-leads': 'Aging leads',
-  pipeline: 'Pipeline',
+  pipeline: 'Leads pipeline',
 }
 
 type WidgetRendererProps = {

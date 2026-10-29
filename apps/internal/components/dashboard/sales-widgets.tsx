@@ -178,13 +178,13 @@ export function PipelineWidget({
   return (
     <WidgetCard
       id='pipeline'
-      title='Pipeline'
+      title='Leads pipeline'
       meta={`${total} open, ${mine} yours`}
       className={className}
       action={
         <Button asChild size='xs' variant='outline'>
-          <Link href='/leads' aria-label='Open the leads board'>
-            Board
+          <Link href='/leads' aria-label='See all leads'>
+            See all
           </Link>
         </Button>
       }

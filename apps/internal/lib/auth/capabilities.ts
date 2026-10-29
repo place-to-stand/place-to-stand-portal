@@ -96,7 +96,7 @@ export const CAPABILITIES = {
   },
   'widget.pipeline': {
     area: 'Dashboard',
-    label: 'Pipeline widget',
+    label: 'Leads pipeline widget',
     description: 'Open leads per stage, yours and everyone’s.',
     roles: STAFF,
     surfaces: ['app'],
