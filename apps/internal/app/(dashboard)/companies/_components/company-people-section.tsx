@@ -103,11 +103,6 @@ export function CompanyPeopleSection({
   return (
     <SheetSection
       title='People'
-      description={
-        lockedReason
-          ? `Everyone we know here. ${lockedReason}`
-          : 'Everyone we know here. Star the primary contact; clients use them too, e.g. for invoice emails.'
-      }
       action={
         lockedReason || disabled ? (
           <SectionAddButton label='Add person' disabledReason={lockedReason} />
