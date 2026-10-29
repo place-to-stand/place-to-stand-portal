@@ -4,6 +4,7 @@ import { FilterBar } from '@/components/table-toolbar/filter-bar'
 import { FilterSelect } from '@/components/table-toolbar/filter-select'
 import { SearchInput } from '@/components/table-toolbar/search-input'
 import { useListParams } from '@/hooks/use-list-params'
+import { getBillingTypeOption } from '@/lib/settings/clients/billing-types'
 import {
   CLIENT_BILLING_LABELS,
   CLIENT_BILLING_VALUES,
@@ -14,6 +15,7 @@ import {
 const BILLING_OPTIONS = CLIENT_BILLING_VALUES.map(value => ({
   value,
   label: CLIENT_BILLING_LABELS[value],
+  badgeClassName: getBillingTypeOption(value)?.badgeClassName,
 }))
 
 type ClientsFiltersProps = {

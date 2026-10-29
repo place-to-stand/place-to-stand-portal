@@ -20,7 +20,10 @@ const ALL = 'all'
 type FilterOption = {
   value: string
   label: string
-  /** Optional badge class token: multi mode shows the option as a badge (project statuses). */
+  /**
+   * Badge class token: the option (and the selected value) shows as the same
+   * badge its table column uses (statuses, forms, billing).
+   */
   badgeClassName?: string
 }
 
@@ -78,7 +81,16 @@ function SingleFilterSelect({
         <SelectItem value={ALL}>{placeholder}</SelectItem>
         {options.map(option => (
           <SelectItem key={option.value} value={option.value}>
-            {option.label}
+            {option.badgeClassName ? (
+              <Badge
+                variant='outline'
+                className={cn('text-xs', option.badgeClassName)}
+              >
+                {option.label}
+              </Badge>
+            ) : (
+              option.label
+            )}
           </SelectItem>
         ))}
       </SelectContent>

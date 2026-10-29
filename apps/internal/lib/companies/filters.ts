@@ -3,11 +3,11 @@ import { parseSortParam, type ParsedSort } from '@/lib/pagination/sort'
 import type { CompanyListItem } from './types'
 
 /** Companies list filters and sort (`?type=&leads=&sort=`). Client-safe. */
-export const COMPANY_TYPE_VALUES = ['client', 'prospect'] as const
+// Only "Clients": any other `?type=` (an old `prospect` link) means All.
+export const COMPANY_TYPE_VALUES = ['client'] as const
 export type CompanyTypeFilter = (typeof COMPANY_TYPE_VALUES)[number]
 export const COMPANY_TYPE_LABELS: Record<CompanyTypeFilter, string> = {
   client: 'Clients',
-  prospect: 'Prospects',
 }
 
 export const COMPANY_LEADS_VALUES = ['open', 'none'] as const
@@ -17,7 +17,8 @@ export const COMPANY_LEADS_LABELS: Record<CompanyLeadsFilter, string> = {
   none: 'No open leads',
 }
 
-const COMPANY_SORT_FIELDS = ['name', 'people', 'leads', 'updated'] as const
+// An old `?sort=updated` falls back to the default (the column is gone).
+const COMPANY_SORT_FIELDS = ['name', 'people', 'leads'] as const
 export type CompanySortField = (typeof COMPANY_SORT_FIELDS)[number]
 export const DEFAULT_COMPANY_SORT = {
   field: 'name',
@@ -41,11 +42,17 @@ export type CompaniesListParams = {
   sortParam?: string
 }
 
-export function parseCompaniesSearchParams(params: RawParams): CompaniesListParams {
+export function parseCompaniesSearchParams(
+  params: RawParams
+): CompaniesListParams {
   const type = first(params.type)
   const leads = first(params.leads)
   const sortParam = first(params.sort)
-  const sort = parseSortParam(sortParam, COMPANY_SORT_FIELDS, DEFAULT_COMPANY_SORT)
+  const sort = parseSortParam(
+    sortParam,
+    COMPANY_SORT_FIELDS,
+    DEFAULT_COMPANY_SORT
+  )
   return {
     search: (first(params.q) ?? '').slice(0, 160),
     type: type && isCompanyType(type) ? type : undefined,
@@ -71,8 +78,6 @@ export function applyCompanyListParams(
         return row.contactCount
       case 'leads':
         return row.openLeadCount
-      case 'updated':
-        return row.updatedAt
       default:
         return row.name.toLowerCase()
     }

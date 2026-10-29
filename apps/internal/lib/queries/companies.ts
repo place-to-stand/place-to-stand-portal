@@ -94,16 +94,27 @@ export async function listCompanies(
       )`,
       updatedAt: companies.updatedAt,
       deletedAt: companies.deletedAt,
-      contactCount: sql<number>`(
-        select count(*) from contacts ct
+      people: sql<CompanyListItem['people']>`coalesce((
+        select json_agg(
+          json_build_object(
+            'id', ct.id, 'name', ct.name, 'email', ct.email,
+            'jobTitle', ct.job_title
+          ) order by lower(ct.name)
+        )
+        from contacts ct
         where ct.company_id = companies.id and ct.deleted_at is null
-      )`,
-      openLeadCount: sql<number>`(
-        select count(*) from leads l
+      ), '[]'::json)`,
+      openLeads: sql<CompanyListItem['openLeads']>`coalesce((
+        select json_agg(
+          json_build_object(
+            'id', l.id, 'contactName', l.contact_name, 'status', l.status
+          ) order by l.updated_at desc
+        )
+        from leads l
         where l.company_id = companies.id
           and l.deleted_at is null
           and l.status not in ${CLOSED_LEAD_STATUSES_SQL}
-      )`,
+      ), '[]'::json)`,
       primaryContactName: sql<string | null>`(
         select ct.name from contacts ct
         where ct.id = companies.primary_contact_id and ct.deleted_at is null
@@ -130,8 +141,10 @@ export async function listCompanies(
     website: row.website,
     clientId: row.clientId ?? null,
     clientName: row.clientName ?? null,
-    contactCount: Number(row.contactCount ?? 0),
-    openLeadCount: Number(row.openLeadCount ?? 0),
+    people: row.people ?? [],
+    openLeads: row.openLeads ?? [],
+    contactCount: row.people?.length ?? 0,
+    openLeadCount: row.openLeads?.length ?? 0,
     primaryContactName: row.primaryContactName ?? null,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,

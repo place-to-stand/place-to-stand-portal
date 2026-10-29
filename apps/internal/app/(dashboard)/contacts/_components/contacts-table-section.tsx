@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { Contact, Mail, Phone } from 'lucide-react'
 
 import { EmptyState } from '@pts/ui/empty-state'
@@ -25,6 +26,7 @@ import type { ContactsTableContact } from '@/lib/settings/contacts/use-contacts-
 import { LinkedClientsCell } from './linked-clients-cell'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { cn } from '@/lib/utils'
+import { companySheetHref } from '@/lib/sheets/hrefs'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
 import {
   CLICKABLE_ROW_CLASS,
@@ -190,7 +192,18 @@ export function ContactsTableSection({
                   className='truncate text-sm'
                   title={contact.companyName ?? undefined}
                 >
-                  {contact.companyName ?? <EmptyValue />}
+                  {contact.companyId && contact.companyName ? (
+                    // The row ignores clicks on links, so this opens the
+                    // company, not the contact.
+                    <Link
+                      href={companySheetHref(contact.companyId)}
+                      className='hover:text-foreground underline-offset-4 transition hover:underline'
+                    >
+                      {contact.companyName}
+                    </Link>
+                  ) : (
+                    (contact.companyName ?? <EmptyValue />)
+                  )}
                 </TableCell>
                 <TableCell className='text-muted-foreground text-sm'>
                   {contact.email ? (

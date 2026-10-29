@@ -8,8 +8,16 @@ export type CompanyListItem = {
   /** The company's (first live) client, when it has signed. */
   clientId: string | null
   clientName: string | null
-  contactCount: number
+  /** The company's people, for the People hover card. */
+  people: {
+    id: string
+    name: string
+    email: string | null
+    jobTitle: string | null
+  }[]
   /** Leads not yet won, lost or unqualified. */
+  openLeads: { id: string; contactName: string; status: LeadStatusValue }[]
+  contactCount: number
   openLeadCount: number
   primaryContactName: string | null
   updatedAt: string

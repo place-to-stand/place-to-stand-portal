@@ -2,9 +2,15 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Briefcase, Building2, Star } from 'lucide-react'
+import {
+  Briefcase,
+  Building2,
+  Contact,
+  ExternalLink,
+  Handshake,
+  Star,
+} from 'lucide-react'
 
-import { formatRelativeTime } from '@pts/ui/dates'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { EmptyState } from '@pts/ui/empty-state'
 import {
@@ -21,12 +27,13 @@ import {
 } from '@/components/table/record-row-action'
 import { EmptyValue } from '@/components/table/empty-value'
 import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
-import { clientSheetHref } from '@/lib/sheets/hrefs'
+import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
+import { clientSheetHref, contactSheetHref, leadHref } from '@/lib/sheets/hrefs'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
 import { useToast } from '@/components/ui/use-toast'
 import type { CompanyListItem } from '@/lib/companies/types'
-import { displayWebsiteHost } from '@/lib/companies/website'
+import { displayWebsiteHost, toWebsiteHref } from '@/lib/companies/website'
 import { archiveCompany, restoreCompany } from '../actions'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
@@ -115,13 +122,12 @@ export function CompaniesTable({
       >
         <TableHeader>
           <TableRow className='bg-muted/40'>
-            {sortHead('name', 'Company', 'w-[26%]')}
-            <TableHead className='w-[16%]'>Website</TableHead>
-            <TableHead className='w-[11%]'>Client</TableHead>
-            <TableHead className='w-[17%]'>Primary contact</TableHead>
-            {sortHead('people', 'People', 'w-[8%]', 'center')}
-            {sortHead('leads', 'Open leads', 'w-[10%]', 'center')}
-            {sortHead('updated', 'Updated', 'w-[12%]')}
+            {sortHead('name', 'Company', 'w-[30%]')}
+            <TableHead className='w-[19%]'>Website</TableHead>
+            <TableHead className='w-[8%] text-center'>Client</TableHead>
+            <TableHead className='w-[20%]'>Primary contact</TableHead>
+            {sortHead('people', 'People', 'w-[9%]', 'center')}
+            {sortHead('leads', 'Open leads', 'w-[11%]', 'center')}
             <TableHead className='w-16 text-right'>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -150,17 +156,28 @@ export function CompaniesTable({
                   className='text-muted-foreground truncate text-sm'
                   title={host ?? undefined}
                 >
-                  {host ?? <EmptyValue />}
+                  {host && company.website ? (
+                    // Opens the site; the row ignores clicks on links.
+                    <a
+                      href={toWebsiteHref(company.website)}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      className='group/link hover:text-foreground inline-flex max-w-full items-center gap-1 underline-offset-4 transition hover:underline'
+                    >
+                      <span className='truncate'>{host}</span>
+                      <ExternalLink className='size-3 shrink-0 opacity-0 transition group-hover/link:opacity-100' />
+                    </a>
+                  ) : (
+                    <EmptyValue />
+                  )}
                 </TableCell>
-                <TableCell label='Client' className='text-sm'>
+                <TableCell label='Client' className='text-sm md:text-center'>
                   {company.clientId && company.clientName ? (
                     <LinkedRecordsHoverCell
                       count={1}
                       icon={Building2}
                       trigger={<Building2 className='h-4 w-4' />}
                       ariaLabel={`Client: ${company.clientName}`}
-                      // The Clients list's client colour.
-                      triggerClassName='text-blue-500 hover:text-blue-400'
                       items={[
                         {
                           id: company.clientId,
@@ -191,19 +208,36 @@ export function CompaniesTable({
                   label='People'
                   className='text-sm tabular-nums md:text-center'
                 >
-                  {company.contactCount}
+                  <LinkedRecordsHoverCell
+                    count={company.contactCount}
+                    zeroLabel='—'
+                    icon={Contact}
+                    ariaLabel={`${company.contactCount} people`}
+                    items={company.people.map(person => ({
+                      id: person.id,
+                      label: person.name,
+                      sublabel: person.jobTitle ?? person.email,
+                      href: contactSheetHref(person.id),
+                    }))}
+                  />
                 </TableCell>
                 <TableCell
                   label='Open leads'
                   className='text-sm tabular-nums md:text-center'
                 >
-                  {company.openLeadCount}
-                </TableCell>
-                <TableCell
-                  label='Updated'
-                  className='text-muted-foreground truncate text-sm'
-                >
-                  {formatRelativeTime(company.updatedAt)}
+                  <LinkedRecordsHoverCell
+                    count={company.openLeadCount}
+                    zeroLabel='—'
+                    icon={Handshake}
+                    ariaLabel={`${company.openLeadCount} open leads`}
+                    contentClassName='min-w-72'
+                    items={company.openLeads.map(lead => ({
+                      id: lead.id,
+                      label: lead.contactName,
+                      href: leadHref(lead.id),
+                      trailing: <LeadStatusBadge status={lead.status} />,
+                    }))}
+                  />
                 </TableCell>
                 <TableCell className='text-right max-md:ml-auto'>
                   <RecordRowActions>
