@@ -437,13 +437,15 @@ export function ProjectsLanding({
           </div>
         </TableCell>
         <TableCell label='Owner' className='align-middle'>
-          <ProjectOwnerCell
-            projectId={project.id}
-            owner={project.owner}
-            admins={admins}
-            onOwnerChange={handleProjectOwnerChange}
-            readOnly={readOnly}
-          />
+          <div className='flex items-center md:justify-center'>
+            <ProjectOwnerCell
+              projectId={project.id}
+              owner={project.owner}
+              admins={admins}
+              onOwnerChange={handleProjectOwnerChange}
+              readOnly={readOnly}
+            />
+          </div>
         </TableCell>
         <TableCell
           className={cn(
@@ -530,7 +532,9 @@ export function ProjectsLanding({
             <TableHead className={tableColumnWidths.progress}>
               Progress
             </TableHead>
-            <TableHead className={tableColumnWidths.owner}>Owner</TableHead>
+            <TableHead className={cn(tableColumnWidths.owner, 'text-center')}>
+              Owner
+            </TableHead>
             <TableHead className={tableColumnWidths.links}>Links</TableHead>
             <TableHead className={`${tableColumnWidths.actions} text-right`}>
               Actions
