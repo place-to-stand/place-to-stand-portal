@@ -73,7 +73,7 @@ export const CAPABILITIES = {
   },
   'widget.notifications': {
     area: 'Dashboard',
-    label: 'Notifications widget',
+    label: 'My notifications widget',
     description: 'Assignments, comments and due dates, with read and clear.',
     roles: STAFF,
     surfaces: ['app'],

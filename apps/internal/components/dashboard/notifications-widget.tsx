@@ -15,7 +15,7 @@ export function NotificationsWidget({ className }: { className?: string }) {
   return (
     <WidgetCard
       id='notifications'
-      title='Notifications'
+      title='My notifications'
       meta={feed.unread ? `${feed.unread} unread` : null}
       className={className}
       titleAddon={<NotificationFilterToggle feed={feed} />}

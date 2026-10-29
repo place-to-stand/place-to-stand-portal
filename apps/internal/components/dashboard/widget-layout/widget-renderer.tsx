@@ -10,7 +10,7 @@ import { PipelineWidget, QuietLeadsWidget } from '../sales-widgets'
 import type { DashboardWidgetData } from './types'
 
 export const DASHBOARD_WIDGET_LABELS: Record<DashboardWidgetId, string> = {
-  notifications: 'Notifications',
+  notifications: 'My notifications',
   'my-tasks': 'My tasks',
   hours: 'Monthly hours snapshot',
   'recent-activity': 'Recent activity',
