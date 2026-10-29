@@ -41,7 +41,6 @@ const contactFormSchema = z.object({
   linkedinUrl: z.string().max(255).optional(),
   /** The linked company, chosen with the company picker. */
   company: z.object({ id: z.string().uuid(), name: z.string() }).nullable(),
-  isChampion: z.boolean().optional(),
 })
 
 export type ContactFormData = z.infer<typeof contactFormSchema>
@@ -57,7 +56,6 @@ export type ContactSheetInput = {
   // just-created contact) still type-check; the sheet treats missing as empty.
   jobTitle?: string | null
   linkedinUrl?: string | null
-  isChampion?: boolean
   companyId?: string | null
   companyName?: string | null
 }
@@ -134,7 +132,6 @@ export function useContactSheetState({
       jobTitle: '',
       linkedinUrl: '',
       company: null,
-      isChampion: false,
     },
   })
 
@@ -161,7 +158,6 @@ export function useContactSheetState({
       company: contact?.companyId
         ? { id: contact.companyId, name: contact.companyName ?? '' }
         : null,
-      isChampion: contact?.isChampion ?? false,
     })
 
     // If we have metrics (from ContactsTableContact), use them directly
@@ -282,7 +278,6 @@ export function useContactSheetState({
           linkedinUrl: data.linkedinUrl?.trim() || null,
           companyId: data.company?.id ?? null,
           companyName: data.company?.name ?? null,
-          isChampion: Boolean(data.company && data.isChampion),
         })
 
         if (result.error) {

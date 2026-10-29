@@ -15,7 +15,6 @@ export function mapContactToTableRow(
     deletedAt: item.deletedAt,
     jobTitle: item.jobTitle,
     linkedinUrl: item.linkedinUrl,
-    isChampion: item.isChampion,
     companyId: item.companyId,
     companyName: item.companyName,
     metrics: {

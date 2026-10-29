@@ -42,7 +42,6 @@ export const contactSchema = z.object({
     .transform(value =>
       value === undefined ? undefined : value?.trim() ? value.trim() : null
     ),
-  isChampion: z.boolean().optional(),
 })
 
 const contactIdentifierSchema = {

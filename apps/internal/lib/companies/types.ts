@@ -5,12 +5,13 @@ export type CompanyListItem = {
   id: string
   name: string
   website: string | null
+  /** The company's (first live) client, when it has signed. */
   clientId: string | null
   clientName: string | null
   contactCount: number
   /** Leads not yet won, lost or unqualified. */
   openLeadCount: number
-  championName: string | null
+  primaryContactName: string | null
   updatedAt: string
   deletedAt: string | null
 }
@@ -21,7 +22,8 @@ export type CompanyContactSummary = {
   email: string | null
   jobTitle: string | null
   linkedinUrl: string | null
-  isChampion: boolean
+  /** The company's primary contact (clients use it too). */
+  isPrimary: boolean
 }
 
 export type CompanyLeadSummary = {
@@ -40,9 +42,10 @@ export type CompanyDetail = {
   linkedinUrl: string | null
   /** Rich text (TipTap HTML); older rows may be plain text. */
   notes: string | null
-  clientId: string | null
-  clientName: string | null
-  clientSlug: string | null
+  primaryContactId: string | null
+  primaryContactName: string | null
+  /** Clients that are this company (usually one). */
+  clients: { id: string; name: string; slug: string | null }[]
   createdAt: string
   updatedAt: string
   deletedAt: string | null

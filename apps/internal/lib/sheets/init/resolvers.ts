@@ -74,6 +74,7 @@ const resolveClientInit: SheetInitResolver<'client'> = async (_user, id) => {
     origination_contact_id: row.originationContactId,
     origination_user_id: row.originationUserId,
     billing_type: row.billingType,
+    company_id: row.companyId,
     created_by: row.createdBy,
     created_at: row.createdAt,
     updated_at: row.updatedAt,

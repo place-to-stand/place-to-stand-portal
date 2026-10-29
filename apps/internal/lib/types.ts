@@ -25,6 +25,8 @@ export type DbClient = {
   origination_contact_id: string | null
   origination_user_id: string | null
   billing_type: ClientBillingTypeValue
+  /** The client's company. Optional: only the client sheet's loaders set it. */
+  company_id?: string | null
   created_by: string | null
   created_at: string
   updated_at: string

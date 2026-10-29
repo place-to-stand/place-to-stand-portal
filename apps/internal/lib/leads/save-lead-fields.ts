@@ -26,6 +26,12 @@ export const saveLeadSchema = z.object({
   assigneeId: z.string().uuid().optional().nullable(),
   contactEmail: z.string().trim().max(160).optional().nullable(),
   contactPhone: z.string().trim().max(40).optional().nullable(),
+  /**
+   * The lead's contact (the lead sheet's picker). Its name, email and phone
+   * are copied onto the lead. Omitted (CLI, MCP) = find or create the contact
+   * from contactName/contactEmail/contactPhone.
+   */
+  contactId: z.string().uuid().optional(),
   companyName: z.string().trim().max(160).optional().nullable(),
   /**
    * The linked company (the lead sheet's picker). When present it wins over
@@ -48,6 +54,8 @@ export type NormalizedLead = {
   assigneeId: string | null
   contactEmail: string | null
   contactPhone: string | null
+  /** `undefined` = resolve the contact from the contact fields. */
+  contactId?: string
   companyName: string | null
   /** `undefined` = resolve the company from `companyName`. */
   companyId?: string | null
@@ -133,6 +141,7 @@ export function normalizeLeadPayload(payload: SaveLeadInput): NormalizedLead {
     contactPhone: normalizeOptionalString(payload.contactPhone, 40),
     companyName: normalizeOptionalString(payload.companyName, 160),
     companyId: payload.companyId,
+    contactId: payload.contactId,
     companyWebsite: normalizeOptionalString(payload.companyWebsite, 255),
     notes: (payload.notes ?? '').trim() || null,
   }

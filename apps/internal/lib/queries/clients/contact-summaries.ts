@@ -4,6 +4,7 @@ import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { contactClients, contacts } from '@/lib/db/schema'
+import { isClientPrimaryContactSql } from '@/lib/queries/clients/primary-contact'
 
 export type ClientContactSummary = {
   id: string
@@ -33,7 +34,7 @@ export async function fetchContactSummariesByClient(
       id: contacts.id,
       name: contacts.name,
       email: contacts.email,
-      isPrimary: contactClients.isPrimary,
+      isPrimary: isClientPrimaryContactSql,
     })
     .from(contactClients)
     .innerJoin(contacts, eq(contactClients.contactId, contacts.id))
@@ -44,7 +45,7 @@ export async function fetchContactSummariesByClient(
       )
     )
     .orderBy(
-      desc(contactClients.isPrimary),
+      desc(isClientPrimaryContactSql),
       asc(contacts.name),
       asc(contacts.email)
     )

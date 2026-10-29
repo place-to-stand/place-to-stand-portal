@@ -211,6 +211,11 @@ export const clients = pgTable(
     // Kept only so the deploy that stopped using it needed no column drop;
     // remove in a follow-up migration once that deploy is live.
     closerUserId: uuid('closer_user_id'),
+    /**
+     * The organization this client is (every client has one). FK to
+     * companies added in migration 0096 (companies is defined later).
+     */
+    companyId: uuid('company_id'),
     createdBy: uuid('created_by'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
@@ -221,6 +226,9 @@ export const clients = pgTable(
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
   table => [
+    index('idx_clients_company')
+      .using('btree', table.companyId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND company_id IS NOT NULL)`),
     index('idx_clients_created_by')
       .using('btree', table.createdBy.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
@@ -287,8 +295,11 @@ export const companies = pgTable(
     linkedinUrl: text('linkedin_url'),
     /** Rich text (TipTap HTML). */
     notes: text(),
-    /** Set once the company signs and becomes a client. */
-    clientId: uuid('client_id'),
+    /**
+     * Our main person there; clients use their company's. FK to contacts
+     * added in migration 0096 (contacts is defined later).
+     */
+    primaryContactId: uuid('primary_contact_id'),
     createdBy: uuid('created_by'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
@@ -305,11 +316,6 @@ export const companies = pgTable(
       .using('btree', sql`lower(btrim(name))`)
       .where(sql`(deleted_at IS NULL)`),
     index('idx_companies_name_trgm').using('gin', table.name.op('gin_trgm_ops')),
-    foreignKey({
-      columns: [table.clientId],
-      foreignColumns: [clients.id],
-      name: 'companies_client_id_fkey',
-    }).onDelete('set null'),
     foreignKey({
       columns: [table.createdBy],
       foreignColumns: [users.id],
@@ -331,8 +337,6 @@ export const contacts = pgTable(
     linkedinUrl: text('linkedin_url'),
     /** The company this person works at (sales CRM). */
     companyId: uuid('company_id'),
-    /** Our champion at their company: the person pushing the deal inside. */
-    isChampion: boolean('is_champion').default(false).notNull(),
     createdBy: uuid('created_by'),
     userId: uuid('user_id'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
@@ -368,10 +372,6 @@ export const contacts = pgTable(
     index('idx_contacts_company')
       .using('btree', table.companyId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL AND company_id IS NOT NULL)`),
-    // One champion per company among live contacts.
-    uniqueIndex('idx_contacts_one_champion')
-      .using('btree', table.companyId.asc().nullsLast().op('uuid_ops'))
-      .where(sql`(is_champion AND deleted_at IS NULL)`),
     foreignKey({
       columns: [table.companyId],
       foreignColumns: [companies.id],
@@ -396,7 +396,6 @@ export const contactClients = pgTable(
     id: uuid().defaultRandom().primaryKey().notNull(),
     contactId: uuid('contact_id').notNull(),
     clientId: uuid('client_id').notNull(),
-    isPrimary: boolean('is_primary').default(false).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
       .notNull(),
@@ -1228,6 +1227,8 @@ export const leads = pgTable(
     companyWebsite: text('company_website'),
     /** The company record; `company_name` stays as its display copy. */
     companyId: uuid('company_id'),
+    /** The lead's contact; contact_name/email/phone are its display copy. */
+    contactId: uuid('contact_id'),
     notes: jsonb('notes').default({}).notNull(),
     rank: text().default('zzzzzzzz').notNull(),
 
@@ -1283,6 +1284,14 @@ export const leads = pgTable(
       columns: [table.companyId],
       foreignColumns: [companies.id],
       name: 'leads_company_id_fkey',
+    }).onDelete('set null'),
+    index('idx_leads_contact')
+      .using('btree', table.contactId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(deleted_at IS NULL AND contact_id IS NOT NULL)`),
+    foreignKey({
+      columns: [table.contactId],
+      foreignColumns: [contacts.id],
+      name: 'leads_contact_id_fkey',
     }).onDelete('set null'),
   ]
 )

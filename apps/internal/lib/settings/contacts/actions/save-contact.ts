@@ -1,4 +1,4 @@
-import { and, eq, isNull, ne } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 
 import { logActivity } from '@/lib/activity/logger'
 import {
@@ -9,12 +9,10 @@ import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
-import { companies, contacts } from '@/lib/db/schema'
+import { companies, contacts, leads } from '@/lib/db/schema'
 import {
-  assignChampion,
   findOrCreateCompanyByName,
   getLinkableCompany,
-  isChampionConflict,
 } from '@/lib/queries/companies'
 import {
   contactSchema,
@@ -35,7 +33,6 @@ type ExistingContact = {
   jobTitle: string | null
   linkedinUrl: string | null
   companyId: string | null
-  isChampion: boolean
 }
 
 /**
@@ -78,26 +75,6 @@ async function resolveCompanyId(
   const company = await findOrCreateCompanyByName(user, companyName)
   return company?.id ?? null
 }
-
-/** Whether someone other than `contactId` is already champion there. */
-async function hasOtherChampion(companyId: string, contactId: string | null) {
-  const [row] = await db
-    .select({ id: contacts.id })
-    .from(contacts)
-    .where(
-      and(
-        eq(contacts.companyId, companyId),
-        eq(contacts.isChampion, true),
-        isNull(contacts.deletedAt),
-        contactId ? ne(contacts.id, contactId) : undefined
-      )
-    )
-    .limit(1)
-  return Boolean(row)
-}
-
-const CHAMPION_CONFLICT =
-  'Someone else just changed the champion. Reload and try again.'
 
 export async function saveContactMutation(
   context: ContactMutationContext,
@@ -145,7 +122,6 @@ export async function saveContactMutation(
               jobTitle: contacts.jobTitle,
               linkedinUrl: contacts.linkedinUrl,
               companyId: contacts.companyId,
-              isChampion: contacts.isChampion,
             })
             .from(contacts)
             .where(eq(contacts.id, id))
@@ -187,21 +163,6 @@ export async function saveContactMutation(
               ? existingContact.linkedinUrl
               : parsed.data.linkedinUrl,
           companyId,
-          // No company, no champion.
-          isChampion: companyId
-            ? (parsed.data.isChampion ?? existingContact.isChampion)
-            : false,
-        }
-
-        // Moving a champion to another company doesn't take the title from
-        // that company's own champion; it's set from the company sheet.
-        if (
-          next.isChampion &&
-          next.companyId &&
-          next.companyId !== existingContact.companyId &&
-          (await hasOtherChampion(next.companyId, id))
-        ) {
-          next.isChampion = false
         }
 
         const labels: Record<keyof typeof next, string> = {
@@ -211,7 +172,6 @@ export async function saveContactMutation(
           jobTitle: 'job title',
           linkedinUrl: 'LinkedIn',
           companyId: 'company',
-          isChampion: 'champion',
         }
         const changedFields: string[] = []
         const before: Record<string, unknown> = {}
@@ -227,26 +187,36 @@ export async function saveContactMutation(
 
         try {
           await db.transaction(async tx => {
-            const { isChampion, ...rest } = next
             await tx
               .update(contacts)
-              .set({ ...rest, updatedAt: new Date().toISOString() })
+              .set({ ...next, updatedAt: new Date().toISOString() })
               .where(eq(contacts.id, id))
 
-            if (isChampion && next.companyId) {
-              await assignChampion(tx, next.companyId, id)
-            } else if (existingContact.isChampion) {
+            // Leaving a company gives up being its primary contact.
+            if (existingContact.companyId && existingContact.companyId !== next.companyId) {
               await tx
-                .update(contacts)
-                .set({ isChampion: false })
-                .where(eq(contacts.id, id))
+                .update(companies)
+                .set({ primaryContactId: null })
+                .where(
+                  and(
+                    eq(companies.id, existingContact.companyId),
+                    eq(companies.primaryContactId, id)
+                  )
+                )
             }
+
+            // Leads keep a display copy of their contact's details.
+            await tx
+              .update(leads)
+              .set({
+                contactName: next.name,
+                contactEmail: next.email,
+                contactPhone: next.phone,
+              })
+              .where(eq(leads.contactId, id))
           })
         } catch (error) {
           console.error('Failed to update contact', error)
-          if (isChampionConflict(error)) {
-            return buildMutationResult({ error: CHAMPION_CONFLICT })
-          }
           if (
             error instanceof Error &&
             String(error.message + String(error.cause ?? '')).includes(
@@ -313,17 +283,10 @@ export async function saveContactMutation(
             })
             .returning({ id: contacts.id })
 
-          const createdId = result[0]?.id ?? ''
-          if (companyId && parsed.data.isChampion && createdId) {
-            await assignChampion(tx, companyId, createdId)
-          }
-          return createdId
+          return result[0]?.id ?? ''
         })
       } catch (error) {
         console.error('Failed to create contact', error)
-        if (isChampionConflict(error)) {
-          return buildMutationResult({ error: CHAMPION_CONFLICT })
-        }
         // Check for unique constraint violation on email
         if (
           error instanceof Error &&

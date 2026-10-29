@@ -33,13 +33,13 @@ export const companyRestoredEvent = (args: { name: string }): ActivityEvent => (
   summary: `Restored company "${args.name}"`,
 })
 
-export const companyChampionSetEvent = (args: {
+export const companyPrimaryContactSetEvent = (args: {
   companyName: string
   contactName: string | null
 }): ActivityEvent => ({
-  verb: ActivityVerbs.COMPANY_CHAMPION_SET,
+  verb: ActivityVerbs.COMPANY_PRIMARY_CONTACT_SET,
   summary: args.contactName
-    ? `Made ${args.contactName} the champion at "${args.companyName}"`
-    : `Cleared the champion at "${args.companyName}"`,
+    ? `Made ${args.contactName} the primary contact at "${args.companyName}"`
+    : `Cleared the primary contact at "${args.companyName}"`,
   metadata: toMetadata({ contactName: args.contactName }),
 })

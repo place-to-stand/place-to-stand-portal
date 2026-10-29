@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 
 import { logActivity } from '@/lib/activity/logger'
 import { contactRestoredEvent } from '@/lib/activity/events/contacts'
@@ -73,15 +73,6 @@ export async function restoreContactMutation(
           .update(contacts)
           .set({
             deletedAt: null,
-            // Their company may have named a new champion meanwhile; it keeps
-            // that one, since a company has only one.
-            isChampion: sql`case when exists (
-              select 1 from contacts other
-              where other.company_id = contacts.company_id
-                and other.is_champion
-                and other.deleted_at is null
-                and other.id <> contacts.id
-            ) then false else contacts.is_champion end`,
           })
           .where(eq(contacts.id, parsed.data.id))
       } catch (error) {

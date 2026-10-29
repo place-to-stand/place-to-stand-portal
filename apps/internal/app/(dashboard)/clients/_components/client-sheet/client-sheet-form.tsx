@@ -18,6 +18,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@pts/ui/input'
+import { CompanyLinkPicker } from '@/components/companies/company-link-picker'
 import {
   Select,
   SelectContent,
@@ -249,6 +250,33 @@ export function ClientSheetForm({
                       />
                     </DisabledFieldTooltip>
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='companyId'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel optional={!isEditing}>Company</FormLabel>
+                  <FormControl>
+                    <DisabledFieldTooltip
+                      disabled={isPending}
+                      reason={fieldDisabledReason}
+                    >
+                      <CompanyLinkPicker
+                        value={field.value ? { id: field.value, name: '' } : null}
+                        onChange={next => field.onChange(next?.id ?? '')}
+                        disabled={isPending}
+                      />
+                    </DisabledFieldTooltip>
+                  </FormControl>
+                  <p className='text-muted-foreground text-xs'>
+                    {isEditing
+                      ? 'Every client is a company. Its primary contact is this client’s primary contact.'
+                      : 'Leave empty to create a company with the client’s name.'}
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}

@@ -20,7 +20,6 @@ export const contactFields = {
 export type ContactProfile = {
   jobTitle: string | null
   linkedinUrl: string | null
-  isChampion: boolean
   companyId: string | null
   /**
    * Linked company's name, archived companies included, so an edit that
@@ -37,7 +36,6 @@ export type ContactProfile = {
 export const contactProfileFields = {
   jobTitle: contacts.jobTitle,
   linkedinUrl: contacts.linkedinUrl,
-  isChampion: contacts.isChampion,
   companyId: contacts.companyId,
   companyName: sql<string | null>`(
     select co.name from companies co

@@ -1,8 +1,9 @@
 import 'server-only'
 
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull, sql } from 'drizzle-orm'
 
 import {
+  contactCreatedEvent,
   leadCreatedEvent,
   leadStatusChangedEvent,
   leadUpdatedEvent,
@@ -11,7 +12,7 @@ import { logActivity } from '@/lib/activity/logger'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { leads, leadStageHistory } from '@/lib/db/schema'
+import { contactLeads, contacts, leads, leadStageHistory } from '@/lib/db/schema'
 import { isTerminalLeadStatus } from '@/lib/leads/constants'
 import { serializeLeadNotes } from '@/lib/leads/notes'
 import { resolveNextLeadRank } from '@/lib/leads/rank'
@@ -125,6 +126,142 @@ async function resolveLeadCompany(
   }
 }
 
+type LeadContact = {
+  id: string
+  name: string
+  email: string | null
+  phone: string | null
+}
+
+/**
+ * Which contact a save links the lead to; the lead keeps a display copy of
+ * its name, email and phone. The sheet's picker sends `contactId`. The CLI,
+ * MCP and intake send contact fields instead: an existing lead edits its
+ * linked contact; a new lead links the contact with that email, or a new
+ * contact (name-only when there's no email).
+ */
+async function resolveLeadContact(
+  actor: AppUser,
+  normalized: NormalizedLead,
+  companyId: string | null,
+  existing?: { contactId: string | null }
+): Promise<{ contact: LeadContact } | { error: string }> {
+  const fields = {
+    id: contacts.id,
+    name: contacts.name,
+    email: contacts.email,
+    phone: contacts.phone,
+    companyId: contacts.companyId,
+  }
+  const timestamp = new Date().toISOString()
+
+  const linkCompany = async (contact: { id: string; companyId: string | null }) => {
+    if (companyId && !contact.companyId) {
+      await db
+        .update(contacts)
+        .set({ companyId, updatedAt: timestamp })
+        .where(eq(contacts.id, contact.id))
+    }
+  }
+
+  if (normalized.contactId) {
+    const [contact] = await db
+      .select(fields)
+      .from(contacts)
+      .where(and(eq(contacts.id, normalized.contactId), isNull(contacts.deletedAt)))
+      .limit(1)
+    if (!contact) return { error: 'That contact no longer exists. Pick another.' }
+    await linkCompany(contact)
+    return { contact }
+  }
+
+  const email = normalized.contactEmail?.trim().toLowerCase() || null
+  const details = {
+    name: normalized.contactName,
+    email,
+    phone: normalized.contactPhone,
+  }
+
+  if (existing?.contactId) {
+    const [contact] = await db
+      .select(fields)
+      .from(contacts)
+      .where(eq(contacts.id, existing.contactId))
+      .limit(1)
+    if (contact) {
+      const changed =
+        contact.name !== details.name ||
+        (contact.email ?? null) !== details.email ||
+        (contact.phone ?? null) !== details.phone
+      if (changed) {
+        try {
+          await db
+            .update(contacts)
+            .set({ ...details, updatedAt: timestamp })
+            .where(eq(contacts.id, contact.id))
+        } catch (error) {
+          if (isUniqueViolation(error)) {
+            return { error: 'Another contact already has that email.' }
+          }
+          throw error
+        }
+        // Every lead of this contact shows the new details.
+        await db
+          .update(leads)
+          .set({
+            contactName: details.name,
+            contactEmail: details.email,
+            contactPhone: details.phone,
+          })
+          .where(eq(leads.contactId, contact.id))
+      }
+      await linkCompany(contact)
+      return { contact: { id: contact.id, ...details } }
+    }
+  }
+
+  if (email) {
+    const [match] = await db
+      .select(fields)
+      .from(contacts)
+      .where(sql`lower(${contacts.email}) = ${email}`)
+      .limit(1)
+    if (match) {
+      await linkCompany(match)
+      return { contact: match }
+    }
+  }
+
+  const [created] = await db
+    .insert(contacts)
+    .values({ ...details, companyId, createdBy: actor.id })
+    .returning(fields)
+  if (!created) return { error: 'Unable to save the contact.' }
+
+  await logActivity({
+    actorId: actor.id,
+    actorRole: actor.role,
+    targetType: 'CONTACT',
+    targetId: created.id,
+    ...contactCreatedEvent({ email: created.email, name: created.name }),
+  })
+  return { contact: created }
+}
+
+function isUniqueViolation(error: unknown) {
+  const text =
+    error instanceof Error ? `${error.message} ${String(error.cause ?? '')}` : ''
+  return text.includes('contacts_email_key')
+}
+
+/** Keeps the many-to-many link table in step with `leads.contact_id`. */
+async function linkContactToLead(contactId: string, leadId: string) {
+  await db
+    .insert(contactLeads)
+    .values({ contactId, leadId })
+    .onConflictDoNothing({ target: [contactLeads.contactId, contactLeads.leadId] })
+}
+
 async function createLead(
   actor: AppUser,
   normalized: NormalizedLead,
@@ -135,17 +272,21 @@ async function createLead(
   const resolved = await resolveLeadCompany(actor, normalized)
   if ('error' in resolved) return { success: false, error: resolved.error }
   const { company } = resolved
+  const contactResult = await resolveLeadContact(actor, normalized, company?.id ?? null)
+  if ('error' in contactResult) return { success: false, error: contactResult.error }
+  const { contact } = contactResult
 
   const [inserted] = await db
     .insert(leads)
     .values({
-      contactName: normalized.contactName,
+      contactId: contact.id,
+      contactName: contact.name,
       status: normalized.status,
       sourceType: normalized.sourceType,
       sourceDetail: normalized.sourceDetail,
       assigneeId: normalized.assigneeId,
-      contactEmail: normalized.contactEmail,
-      contactPhone: normalized.contactPhone,
+      contactEmail: contact.email,
+      contactPhone: contact.phone,
       companyName: company?.name ?? normalized.companyName,
       companyId: company?.id ?? null,
       companyWebsite: normalized.companyWebsite,
@@ -160,6 +301,7 @@ async function createLead(
   if (!inserted) {
     return { success: false, error: 'Unable to save lead. Please try again.' }
   }
+  await linkContactToLead(contact.id, inserted.id)
 
   await db.insert(leadStageHistory).values({
     leadId: inserted.id,
@@ -218,6 +360,7 @@ async function updateLead(
       companyName: leads.companyName,
       companyWebsite: leads.companyWebsite,
       companyId: leads.companyId,
+      contactId: leads.contactId,
       notes: leads.notes,
       rank: leads.rank,
     })
@@ -237,6 +380,21 @@ async function updateLead(
   if (company) {
     normalized = { ...normalized, companyName: company.name }
   }
+  const contactResult = await resolveLeadContact(
+    actor,
+    normalized,
+    company?.id ?? null,
+    existing
+  )
+  if ('error' in contactResult) return { success: false, error: contactResult.error }
+  const { contact } = contactResult
+  // The lead shows its contact's details.
+  normalized = {
+    ...normalized,
+    contactName: contact.name,
+    contactEmail: contact.email,
+    contactPhone: contact.phone,
+  }
 
   const statusChanged = existing.status !== normalized.status
   const diff = diffLeadFields(existing, normalized)
@@ -245,6 +403,7 @@ async function updateLead(
     : existing.rank
 
   const setPayload: Record<string, unknown> = {
+    contactId: contact.id,
     contactName: normalized.contactName,
     status: normalized.status,
     sourceType: normalized.sourceType,
@@ -322,6 +481,8 @@ async function updateLead(
       }),
     })
   }
+
+  await linkContactToLead(contact.id, leadId)
 
   if (normalized.assigneeId && normalized.assigneeId !== existing.assigneeId) {
     await notifyLeadAssigned(

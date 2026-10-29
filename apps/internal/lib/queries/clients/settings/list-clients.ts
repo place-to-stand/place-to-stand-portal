@@ -109,6 +109,7 @@ function mapClientMetrics(
     state: row.state,
     originationContactId: row.originationContactId,
     originationUserId: row.originationUserId,
+    companyId: row.companyId,
     createdBy: row.createdBy,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,

@@ -158,6 +158,7 @@ export function useClientSheetFormState({
       state: client?.state ?? '',
       website: client?.website ?? '',
       notes: client?.notes ?? '',
+      companyId: client?.company_id ?? '',
     },
   })
 
@@ -276,6 +277,7 @@ export function useClientSheetFormState({
       state: client?.state ?? '',
       website: client?.website ?? '',
       notes: client?.notes ?? '',
+      companyId: client?.company_id ?? '',
     }
 
     form.reset(defaults)
@@ -634,7 +636,13 @@ export function useClientSheetFormState({
           originationUserId: selectedOriginationUser?.id ?? null,
           closers: closerShares,
           notes: values.notes?.trim() ? values.notes.trim() : null,
+          companyId: values.companyId || undefined,
         } satisfies Parameters<typeof saveClient>[0]
+
+        if (isEditing && !payload.companyId) {
+          setFeedback('Pick the company this client is.')
+          return
+        }
 
         if (payload.slug && payload.slug.length < 3) {
           setFeedback('Slug must be at least 3 characters when provided.')
@@ -716,6 +724,7 @@ export function useClientSheetFormState({
             state: payload.state ?? '',
             website: payload.website ?? '',
             notes: payload.notes ?? '',
+            companyId: payload.companyId ?? '',
           })
 
           onOpenChange(false)

@@ -25,6 +25,8 @@ export const clientSheetFormSchema = z.object({
     .or(z.literal(''))
     .optional(),
   notes: z.string().optional(),
+  /** The company this client is ('' = found or created from the name on create). */
+  companyId: z.string(),
 })
 
 export type ClientSheetFormValues = z.infer<typeof clientSheetFormSchema>

@@ -26,6 +26,10 @@ import {
   syncContactClients as syncClients,
   type ContactSheetData,
 } from '@/lib/queries/contacts'
+import {
+  listContactOptions,
+  type ContactOption,
+} from '@/lib/queries/contacts/options'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
 import {
   getPortalAccountSummary,
@@ -141,4 +145,10 @@ export async function syncContactClients(
   }
 
   return result
+}
+
+/** Options for the contact picker (lead sheet). */
+export async function fetchContactOptions(): Promise<ContactOption[]> {
+  const user = await requireCrmUser()
+  return listContactOptions(user)
 }

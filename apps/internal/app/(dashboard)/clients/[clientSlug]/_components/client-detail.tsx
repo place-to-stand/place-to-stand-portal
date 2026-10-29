@@ -14,6 +14,7 @@ import {
   MapPin,
   Pencil,
   UserPlus,
+  Briefcase,
 } from 'lucide-react'
 import { formatCalendarDate } from '@pts/ui/dates'
 
@@ -191,6 +192,13 @@ function ClientDetailsWidget({
           label='Created'
           value={formatCalendarDate(client.createdAt) ?? '—'}
         />
+        {client.companyId ? (
+          <div className='flex items-center gap-3 px-4 py-2.5'>
+            <Briefcase className='text-muted-foreground h-4 w-4' />
+            <span className='text-muted-foreground text-sm'>Company</span>
+            <CompanyLink id={client.companyId} name={client.companyName ?? 'Company'} />
+          </div>
+        ) : null}
         {client.website ? (
           <div className='flex items-center gap-3 px-4 py-2.5'>
             <Globe className='text-muted-foreground h-4 w-4' />
@@ -272,6 +280,19 @@ function ClientDetailsWidget({
  * contacts get the initials fallback. Falls back to plain text when the id
  * is missing.
  */
+function CompanyLink({ id, name }: { id: string; name: string }) {
+  const { open } = useSheetParams()
+  return (
+    <button
+      type='button'
+      className='ml-auto cursor-pointer text-sm font-medium underline-offset-4 hover:underline'
+      onClick={() => open('company', id)}
+    >
+      {name}
+    </button>
+  )
+}
+
 function SheetLink({
   entity,
   id,

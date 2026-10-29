@@ -68,7 +68,6 @@ export default async function ContactsArchivePage({
         userId: deepLink.record.userId,
         jobTitle: deepLink.record.jobTitle,
         linkedinUrl: deepLink.record.linkedinUrl,
-        isChampion: deepLink.record.isChampion,
         companyId: deepLink.record.companyId,
         companyName: deepLink.record.companyName,
       }

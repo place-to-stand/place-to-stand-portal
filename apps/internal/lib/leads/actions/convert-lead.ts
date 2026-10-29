@@ -1,6 +1,6 @@
 'use server'
 
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 
 import { logActivity } from '@/lib/activity/logger'
@@ -94,6 +94,9 @@ export async function convertLeadToClient(
         closers: [],
         notes: resolvedNotes,
         memberIds: memberIds || [],
+        // The client is the lead's company (createClient finds or creates
+        // one by name when the lead has none).
+        companyId: lead.companyId ?? null,
       }
     )
 
@@ -111,17 +114,25 @@ export async function convertLeadToClient(
     finalClientSlug = createdClient?.slug ?? undefined
   }
 
-  // 3. Create a contact from lead info (if requested and lead has an email)
+  // 3. Link the lead's contact to the client (creating it from the lead's
+  // details for an older lead without one).
   const warnings: string[] = []
   const contactEmail = lead.contactEmail
-  if (createContact && contactEmail) {
+  if (createContact && (lead.contactId || contactEmail)) {
     try {
-      // Check if contact already exists with this email
-      const [existingContact] = await db
-        .select({ id: contacts.id })
-        .from(contacts)
-        .where(and(eq(contacts.email, contactEmail), isNull(contacts.deletedAt)))
-        .limit(1)
+      const [existingContact] = lead.contactId
+        ? await db
+            .select({ id: contacts.id })
+            .from(contacts)
+            .where(and(eq(contacts.id, lead.contactId), isNull(contacts.deletedAt)))
+            .limit(1)
+        : await db
+            .select({ id: contacts.id })
+            .from(contacts)
+            .where(
+              and(eq(contacts.email, contactEmail ?? ''), isNull(contacts.deletedAt))
+            )
+            .limit(1)
 
       let contactId = existingContact?.id
 
@@ -170,13 +181,24 @@ export async function convertLeadToClient(
         await db.insert(contactClients).values({
           contactId,
           clientId: finalClientId,
-          isPrimary: true,
         })
         // An existing contact may already have a portal account.
         await syncPortalMembershipsForLinkChanges([
           { contactId, clientId: finalClientId, action: 'linked' },
         ])
       }
+
+      // The client's company takes this contact as its primary when it has
+      // none yet.
+      await db
+        .update(companies)
+        .set({ primaryContactId: contactId, updatedAt: new Date().toISOString() })
+        .where(
+          and(
+            isNull(companies.primaryContactId),
+            sql`${companies.id} = (select company_id from clients where id = ${finalClientId})`
+          )
+        )
     } catch (err) {
       console.error('[convert-lead] Failed to create contact:', err)
       warnings.push('Contact record could not be created. You can add it manually from the client page.')
@@ -220,20 +242,13 @@ export async function convertLeadToClient(
     })
     .where(eq(leads.id, leadId))
 
-  // 5b. The lead's company signed: point it at the client. A company that
-  // already became a client keeps its first link.
-  const [leadCompany] = await db
-    .select({ companyId: leads.companyId })
-    .from(leads)
-    .where(eq(leads.id, leadId))
-    .limit(1)
-  if (leadCompany?.companyId) {
+  // 5b. Linking an existing client: it becomes the lead's company when it
+  // has none yet.
+  if (existingClientId && lead.companyId) {
     await db
-      .update(companies)
-      .set({ clientId: finalClientId, updatedAt: new Date().toISOString() })
-      .where(
-        and(eq(companies.id, leadCompany.companyId), isNull(companies.clientId))
-      )
+      .update(clients)
+      .set({ companyId: lead.companyId, updatedAt: new Date().toISOString() })
+      .where(and(eq(clients.id, finalClientId), isNull(clients.companyId)))
   }
 
   // 6. Log activity

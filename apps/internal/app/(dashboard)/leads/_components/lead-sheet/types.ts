@@ -8,13 +8,16 @@ import {
 import type { LeadAssigneeOption, LeadRecord } from '@/lib/leads/types'
 
 export const leadFormSchema = z.object({
-  contactName: z.string().trim().min(1, 'Contact name is required').max(160),
-  contactEmail: z
-    .union([z.string().trim().email('Enter a valid email address'), z.literal('')])
-    .transform(val => (val === '' ? null : val))
-    .optional()
-    .nullable(),
-  contactPhone: z.string().trim().max(40).optional().nullable(),
+  /** The lead's contact, chosen (or created) with the contact picker. */
+  contact: z
+    .object({
+      id: z.string().uuid(),
+      name: z.string(),
+      email: z.string().nullable(),
+      phone: z.string().nullable(),
+    })
+    .nullable()
+    .refine(value => Boolean(value), 'Pick or create a contact'),
   /** The linked company, chosen with the company picker. */
   company: z.object({ id: z.string().uuid(), name: z.string() }).nullable(),
   companyWebsite: z
@@ -44,5 +47,5 @@ export type LeadSheetProps = {
   /** Called with the new lead's ID after successful creation (not editing) */
   onCreated?: (leadId: string) => void
   /** Pre-fill form fields when creating a new lead (ignored when editing) */
-  initialValues?: Partial<Pick<LeadFormValues, 'contactName' | 'contactEmail' | 'notes'>>
+  initialValues?: Partial<Pick<LeadFormValues, 'notes'>>
 }

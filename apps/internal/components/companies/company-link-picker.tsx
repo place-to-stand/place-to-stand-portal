@@ -50,7 +50,15 @@ export function CompanyLinkPicker({
       entityLabel='company'
       aria-label='Company'
       icon={Building2}
-      value={value ? toOption(value) : null}
+      value={
+        value
+          ? toOption({
+              id: value.id,
+              // A caller holding only the id gets the name from the list.
+              name: value.name || data.find(c => c.id === value.id)?.name || '',
+            })
+          : null
+      }
       onChange={option =>
         onChange(option ? { id: option.id, name: option.label } : null)
       }

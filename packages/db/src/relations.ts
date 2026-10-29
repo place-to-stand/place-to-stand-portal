@@ -46,6 +46,10 @@ import {
 } from './schema'
 
 export const clientsRelations = relations(clients, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [clients.companyId],
+    references: [companies.id],
+  }),
   user: one(users, {
     fields: [clients.createdBy],
     references: [users.id],
@@ -171,6 +175,11 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
 }))
 
 export const leadsRelations = relations(leads, ({ one, many }) => ({
+  contact: one(contacts, {
+    fields: [leads.contactId],
+    references: [contacts.id],
+    relationName: 'leads_contactId_contacts_id',
+  }),
   assignee: one(users, {
     fields: [leads.assigneeId],
     references: [users.id],
@@ -444,9 +453,11 @@ export const companiesRelations = relations(companies, ({ one, many }) => ({
     references: [users.id],
     relationName: 'companies_createdBy_users_id',
   }),
-  client: one(clients, {
-    fields: [companies.clientId],
-    references: [clients.id],
+  clients: many(clients),
+  primaryContact: one(contacts, {
+    fields: [companies.primaryContactId],
+    references: [contacts.id],
+    relationName: 'companies_primaryContactId_contacts_id',
   }),
   contacts: many(contacts),
   leads: many(leads),

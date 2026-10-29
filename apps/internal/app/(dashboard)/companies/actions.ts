@@ -15,7 +15,7 @@ import {
   listCompanyOptions,
   saveCompany as saveCompanyQuery,
   setCompanyArchived,
-  setCompanyChampion,
+  setCompanyPrimaryContact,
 } from '@/lib/queries/companies'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
 
@@ -82,7 +82,7 @@ export async function restoreCompany(
   return result
 }
 
-export async function makeCompanyChampion(
+export async function makeCompanyPrimaryContact(
   companyId: string,
   contactId: string | null
 ): Promise<CompanyActionResult> {
@@ -93,7 +93,7 @@ export async function makeCompanyChampion(
   ) {
     return { ok: false, error: 'Not found.' }
   }
-  const result = await setCompanyChampion(user, companyId, contactId)
+  const result = await setCompanyPrimaryContact(user, companyId, contactId)
   if (result.ok) revalidateCompanyRoutes()
   return result
 }

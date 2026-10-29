@@ -39,6 +39,7 @@ import {
   type ClientMutationContext,
   type ClientMutationResult,
 } from './types'
+import { getLinkableCompany } from '@/lib/queries/companies'
 
 type UpdateClientPayload = {
   id: string
@@ -56,6 +57,8 @@ type UpdateClientPayload = {
   closers: CloserShare[]
   notes: string | null
   memberIds?: string[]
+  /** Omitted keeps the client's company. */
+  companyId?: string
 }
 
 class ClosedMonthError extends Error {
@@ -103,7 +106,12 @@ export async function updateClient(
     closers,
     notes,
     memberIds,
+    companyId,
   } = payload
+
+  if (companyId && !(await getLinkableCompany(companyId))) {
+    return buildMutationResult({ error: 'That company no longer exists.' })
+  }
 
   const partnerRoleError = await assertClientPartnerUserRoles({
     originationUserId,
@@ -251,6 +259,7 @@ export async function updateClient(
           originationContactId,
           originationUserId,
           notes,
+          ...(companyId ? { companyId } : {}),
         })
         .where(eq(clients.id, id))
     })

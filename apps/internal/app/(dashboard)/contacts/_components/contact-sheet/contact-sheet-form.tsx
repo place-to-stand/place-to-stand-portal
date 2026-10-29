@@ -18,7 +18,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { Checkbox } from '@pts/ui/checkbox'
 import { Input } from '@pts/ui/input'
 import { CompanyLinkPicker } from '@/components/companies/company-link-picker'
 import { PhoneInput } from '@/components/ui/phone-input'
@@ -59,7 +58,6 @@ type ContactFormValues = {
   jobTitle?: string
   linkedinUrl?: string
   company: { id: string; name: string } | null
-  isChampion?: boolean
 }
 
 type ContactSheetFormProps = {
@@ -341,29 +339,6 @@ export function ContactSheetForm({
                   <FormMessage />
                 </FormItem>
               )}
-            />
-            <FormField
-              control={form.control}
-              name='isChampion'
-              render={({ field }) => {
-                const hasCompany = Boolean(form.watch('company'))
-                return (
-                  <FormItem className='flex flex-row items-center gap-2 space-y-0'>
-                    <FormControl>
-                      <Checkbox
-                        checked={hasCompany && Boolean(field.value)}
-                        onCheckedChange={checked =>
-                          field.onChange(checked === true)
-                        }
-                        disabled={isPending || !hasCompany}
-                      />
-                    </FormControl>
-                    <FormLabel className='font-normal'>
-                      Champion at their company
-                    </FormLabel>
-                  </FormItem>
-                )
-              }}
             />
           </SheetSection>
 

@@ -5,7 +5,7 @@ import type { contacts } from '@/lib/db/schema'
 // contact list, so they're left off.
 type Contact = Omit<
   InferSelectModel<typeof contacts>,
-  'jobTitle' | 'linkedinUrl' | 'companyId' | 'isChampion'
+  'jobTitle' | 'linkedinUrl' | 'companyId'
 >
 // Junction table types
 // Contact with linked clients

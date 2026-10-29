@@ -5,6 +5,7 @@ import { useWatch, type Control } from 'react-hook-form'
 
 import { Badge } from '@pts/ui/badge'
 import { CompanyLinkPicker } from '@/components/companies/company-link-picker'
+import { ContactLinkPicker } from '@/components/contacts/contact-link-picker'
 import {
   FormControl,
   FormField,
@@ -13,7 +14,6 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@pts/ui/input'
-import { PhoneInput } from '@/components/ui/phone-input'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import {
@@ -90,57 +90,25 @@ export function LeadSheetFormFields({
     <div className='space-y-6'>
       <FormField
         control={control}
-        name='contactName'
+        name='contact'
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Contact name</FormLabel>
+            <FormLabel>Contact</FormLabel>
             <FormControl>
-              <Input
-                {...field}
-                value={field.value ?? ''}
-                placeholder='Jordan Smith'
+              <ContactLinkPicker
+                value={field.value ?? null}
+                onChange={next => field.onChange(next)}
               />
             </FormControl>
+            {field.value && (field.value.email || field.value.phone) ? (
+              <p className='text-muted-foreground text-xs'>
+                {[field.value.email, field.value.phone].filter(Boolean).join(' · ')}
+              </p>
+            ) : null}
             <FormMessage />
           </FormItem>
         )}
       />
-      <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-        <FormField
-          control={control}
-          name='contactEmail'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Contact email</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  value={field.value ?? ''}
-                  type='email'
-                  placeholder='name@org.com'
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={control}
-          name='contactPhone'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Contact phone</FormLabel>
-              <FormControl>
-                <PhoneInput
-                  value={field.value ?? ''}
-                  onChange={field.onChange}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
       <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
         <FormField
           control={control}

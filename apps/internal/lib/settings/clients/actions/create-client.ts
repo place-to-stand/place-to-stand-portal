@@ -19,6 +19,10 @@ import {
   type ClientMutationContext,
   type ClientMutationResult,
 } from './types'
+import {
+  findOrCreateCompanyByName,
+  getLinkableCompany,
+} from '@/lib/queries/companies'
 
 type CreateClientPayload = {
   name: string
@@ -31,6 +35,8 @@ type CreateClientPayload = {
   closers: CloserShare[]
   notes: string | null
   memberIds?: string[]
+  /** The client's company; null finds or creates one named after the client. */
+  companyId?: string | null
 }
 
 const INSERT_RETRY_LIMIT = 3
@@ -52,6 +58,7 @@ export async function createClient(
     closers,
     notes,
     memberIds,
+    companyId: requestedCompanyId,
   } = payload
 
   const partnerRoleError = await assertClientPartnerUserRoles({
@@ -60,6 +67,19 @@ export async function createClient(
   })
   if (partnerRoleError) {
     return buildMutationResult(partnerRoleError)
+  }
+
+  // Every client is a company.
+  let companyId: string | null = null
+  if (requestedCompanyId) {
+    const company = await getLinkableCompany(requestedCompanyId)
+    if (!company) {
+      return buildMutationResult({ error: 'That company no longer exists.' })
+    }
+    companyId = company.id
+  } else {
+    const company = await findOrCreateCompanyByName(user, name, { website })
+    companyId = company?.id ?? null
   }
 
   const baseSlug = providedSlug
@@ -85,6 +105,7 @@ export async function createClient(
             originationContactId,
             originationUserId,
             notes,
+            companyId,
             createdBy: user.id,
           })
           .returning({ id: clients.id })

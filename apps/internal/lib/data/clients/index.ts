@@ -6,7 +6,7 @@ import { aliasedTable, and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, contacts, projects, users } from '@/lib/db/schema'
+import { clients, companies, contacts, projects, users } from '@/lib/db/schema'
 import {
   clientHoursTotalsFor,
   getClientHoursTotals,
@@ -33,6 +33,9 @@ export type ClientProjectSummary = {
 export type ClientWithMetrics = {
   id: string
   name: string
+  /** The company this client is. */
+  companyId: string | null
+  companyName: string | null
   slug: string | null
   notes: string | null
   website: string | null
@@ -63,6 +66,9 @@ export type ClientWithMetrics = {
 export type ClientDetail = {
   id: string
   name: string
+  /** The company this client is. */
+  companyId: string | null
+  companyName: string | null
   slug: string | null
   notes: string | null
   website: string | null
@@ -129,11 +135,14 @@ export const fetchClientsWithMetrics = cache(
         originationUserEmail: originationUsers.email,
         originationUserAvatarUrl: originationUsers.avatarUrl,
         originationUserUpdatedAt: originationUsers.updatedAt,
+        companyId: clients.companyId,
+        companyName: companies.name,
         createdAt: clients.createdAt,
         updatedAt: clients.updatedAt,
         deletedAt: clients.deletedAt,
       })
       .from(clients)
+      .leftJoin(companies, eq(companies.id, clients.companyId))
       .leftJoin(contacts, eq(clients.originationContactId, contacts.id))
       .leftJoin(
         originationUsers,
@@ -211,6 +220,8 @@ export const fetchClientsWithMetrics = cache(
           row.originationUserName ?? row.originationUserEmail ?? null,
         originationUserAvatarUrl: row.originationUserAvatarUrl ?? null,
         originationUserUpdatedAt: row.originationUserUpdatedAt ?? null,
+        companyId: row.companyId,
+        companyName: row.companyName ?? null,
         closers: closersByClient.get(row.id) ?? [],
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
@@ -299,11 +310,14 @@ export const fetchClientById = cache(
         originationContactId: clients.originationContactId,
         originationUserId: clients.originationUserId,
         billingType: clients.billingType,
+        companyId: clients.companyId,
+        companyName: companies.name,
         createdAt: clients.createdAt,
         updatedAt: clients.updatedAt,
         deletedAt: clients.deletedAt,
       })
       .from(clients)
+      .leftJoin(companies, eq(companies.id, clients.companyId))
       .where(and(eq(clients.id, clientId), isNull(clients.deletedAt)))
       .limit(1)
 

@@ -666,6 +666,27 @@
       "when": 1793289172875,
       "tag": "0094_contact_email_optional",
       "breakpoints": true
+    },
+    {
+      "idx": 95,
+      "version": "7",
+      "when": 1793290634459,
+      "tag": "0095_client_company_primary_contact_lead_contact",
+      "breakpoints": true
+    },
+    {
+      "idx": 96,
+      "version": "7",
+      "when": 1793290667162,
+      "tag": "0096_backfill_contacts_companies",
+      "breakpoints": true
+    },
+    {
+      "idx": 97,
+      "version": "7",
+      "when": 1793290758189,
+      "tag": "0097_drop_champion_company_client_primary_flag",
+      "breakpoints": true
     }
   ]
 }

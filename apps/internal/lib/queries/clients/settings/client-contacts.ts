@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { asc, eq, and, inArray, isNull, sql } from 'drizzle-orm'
+import { asc, eq, and, inArray, isNull } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
@@ -11,6 +11,10 @@ import {
   type ContactClientLinkChange,
 } from '@/lib/queries/contacts/settings/contact-client-link-activity'
 import { syncPortalMembershipsForLinkChanges } from '@/lib/queries/contacts/settings/contact-client-portal-memberships'
+import {
+  isClientPrimaryContactSql,
+  setClientPrimaryContact,
+} from '@/lib/queries/clients/primary-contact'
 
 type ContactOption = {
   id: string
@@ -80,7 +84,7 @@ async function listClientContacts(
       email: contacts.email,
       phone: contacts.phone,
       userId: contacts.userId,
-      isPrimary: contactClients.isPrimary,
+      isPrimary: isClientPrimaryContactSql,
     })
     .from(contactClients)
     .innerJoin(contacts, eq(contactClients.contactId, contacts.id))
@@ -210,19 +214,12 @@ export async function syncClientContacts(
         )
     }
 
-    // One statement, so the client never has two primaries mid-update.
+    // The primary contact lives on the client's company.
     const primaryId =
       primaryContactId && contactIds.includes(primaryContactId)
         ? primaryContactId
         : null
-    await db
-      .update(contactClients)
-      .set({
-        isPrimary: primaryId
-          ? sql`${contactClients.contactId} = ${primaryId}`
-          : false,
-      })
-      .where(eq(contactClients.clientId, clientId))
+    await setClientPrimaryContact(clientId, primaryId, contactIds)
 
     // A promoted contact's portal access follows its links.
     await syncPortalMembershipsForLinkChanges(changes)

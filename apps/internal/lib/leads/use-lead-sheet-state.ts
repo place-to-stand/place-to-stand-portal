@@ -53,9 +53,14 @@ export function useLeadSheetState({
 
   const defaultValues = useMemo<LeadFormValues>(
     () => ({
-      contactName: lead?.contactName ?? initialValues?.contactName ?? '',
-      contactEmail: lead?.contactEmail ?? initialValues?.contactEmail ?? '',
-      contactPhone: lead?.contactPhone ?? '',
+      contact: lead?.contactId
+        ? {
+            id: lead.contactId,
+            name: lead.contactName,
+            email: lead.contactEmail ?? null,
+            phone: lead.contactPhone ?? null,
+          }
+        : null,
       company:
         lead?.companyId
           ? { id: lead.companyId, name: lead.companyName ?? '' }
@@ -112,10 +117,15 @@ export function useLeadSheetState({
   const handleFormSubmit = useCallback(
     (values: LeadFormValues) => {
       startSaveTransition(async () => {
-        const { company, ...fields } = values
+        const { company, contact, ...fields } = values
         const result = await saveLead({
           id: lead?.id,
           ...fields,
+          // The server copies the contact's details onto the lead.
+          contactId: contact?.id,
+          contactName: contact?.name ?? '',
+          contactEmail: contact?.email ?? null,
+          contactPhone: contact?.phone ?? null,
           companyId: company?.id ?? null,
           companyName: company?.name ?? null,
         })
@@ -138,9 +148,7 @@ export function useLeadSheetState({
 
         form.reset({
           ...values,
-          contactName: values.contactName ?? '',
-          contactEmail: values.contactEmail ?? '',
-          contactPhone: values.contactPhone ?? '',
+          contact: values.contact ?? null,
           company: values.company ?? null,
           companyWebsite: values.companyWebsite ?? '',
           sourceType: values.sourceType ?? null,

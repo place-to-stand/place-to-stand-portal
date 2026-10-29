@@ -4,6 +4,7 @@ import { and, desc, eq, isNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { contacts, contactClients } from '@/lib/db/schema'
+import { isClientPrimaryContactSql } from '@/lib/queries/clients/primary-contact'
 
 export type ClientContactRow = {
   id: string
@@ -37,12 +38,12 @@ export async function fetchContactsForClient(
       createdAt: contacts.createdAt,
       updatedAt: contacts.updatedAt,
       deletedAt: contacts.deletedAt,
-      isPrimary: contactClients.isPrimary,
+      isPrimary: isClientPrimaryContactSql,
     })
     .from(contactClients)
     .innerJoin(contacts, eq(contactClients.contactId, contacts.id))
     .where(
       and(eq(contactClients.clientId, clientId), isNull(contacts.deletedAt))
     )
-    .orderBy(desc(contactClients.isPrimary), contacts.email)
+    .orderBy(desc(isClientPrimaryContactSql), contacts.email)
 }

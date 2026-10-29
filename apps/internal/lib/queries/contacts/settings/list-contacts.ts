@@ -145,7 +145,6 @@ function mapContactMetrics(
     deletedAt: row.deletedAt,
     jobTitle: row.jobTitle,
     linkedinUrl: row.linkedinUrl,
-    isChampion: row.isChampion,
     companyId: row.companyId,
     companyName: row.companyName,
     metrics: {

@@ -149,6 +149,7 @@ function mapClientDetailToRow(
     origination_contact_id: client.originationContactId,
     origination_user_id: client.originationUserId,
     billing_type: client.billingType,
+    company_id: client.companyId ?? null,
     created_by: null,
     created_at: client.createdAt,
     updated_at: client.updatedAt,

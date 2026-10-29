@@ -69,7 +69,7 @@ export function CompaniesTable({
         <TableHeader>
           <TableRow className='bg-muted/40'>
             {sortHead('name', 'Company', 'w-[36%]')}
-            <TableHead className='w-[24%]'>Champion</TableHead>
+            <TableHead className='w-[24%]'>Primary contact</TableHead>
             {sortHead('people', 'People', 'w-[11%]', 'center')}
             {sortHead('leads', 'Open leads', 'w-[13%]', 'center')}
             {sortHead('updated', 'Updated', 'w-[16%]')}
@@ -103,10 +103,10 @@ export function CompaniesTable({
                 </div>
               </TableCell>
               <TableCell className='truncate text-sm'>
-                {company.championName ? (
+                {company.primaryContactName ? (
                   <span className='inline-flex items-center gap-1.5'>
                     <Star className='h-3.5 w-3.5 fill-amber-400 text-amber-500' />
-                    {company.championName}
+                    {company.primaryContactName}
                   </span>
                 ) : (
                   <span className='text-muted-foreground'>None yet</span>

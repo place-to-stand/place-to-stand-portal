@@ -8,13 +8,12 @@ import {
   ilike,
   isNotNull,
   isNull,
-  ne,
   sql,
 } from 'drizzle-orm'
 
 import {
   companyArchivedEvent,
-  companyChampionSetEvent,
+  companyPrimaryContactSetEvent,
   companyCreatedEvent,
   companyRestoredEvent,
   companyUpdatedEvent,
@@ -71,8 +70,17 @@ export async function listCompanies(
       id: companies.id,
       name: companies.name,
       website: companies.website,
-      clientId: companies.clientId,
-      clientName: clients.name,
+      // A company's client: its earliest live client (most have one).
+      clientId: sql<string | null>`(
+        select cl.id from clients cl
+        where cl.company_id = companies.id and cl.deleted_at is null
+        order by cl.created_at limit 1
+      )`,
+      clientName: sql<string | null>`(
+        select cl.name from clients cl
+        where cl.company_id = companies.id and cl.deleted_at is null
+        order by cl.created_at limit 1
+      )`,
       updatedAt: companies.updatedAt,
       deletedAt: companies.deletedAt,
       contactCount: sql<number>`(
@@ -85,20 +93,12 @@ export async function listCompanies(
           and l.deleted_at is null
           and l.status not in ${CLOSED_LEAD_STATUSES_SQL}
       )`,
-      championName: sql<string | null>`(
+      primaryContactName: sql<string | null>`(
         select ct.name from contacts ct
-        where ct.company_id = companies.id
-          and ct.deleted_at is null
-          and ct.is_champion
-        order by ct.updated_at desc
-        limit 1
+        where ct.id = companies.primary_contact_id and ct.deleted_at is null
       )`,
     })
     .from(companies)
-    .leftJoin(
-      clients,
-      and(eq(clients.id, companies.clientId), isNull(clients.deletedAt))
-    )
     .where(
       and(
         status === 'active'
@@ -117,11 +117,11 @@ export async function listCompanies(
     id: row.id,
     name: row.name,
     website: row.website,
-    clientId: row.clientName ? row.clientId : null,
+    clientId: row.clientId ?? null,
     clientName: row.clientName ?? null,
     contactCount: Number(row.contactCount ?? 0),
     openLeadCount: Number(row.openLeadCount ?? 0),
-    championName: row.championName ?? null,
+    primaryContactName: row.primaryContactName ?? null,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
   }))
@@ -157,18 +157,12 @@ export async function getCompanyDetail(
       website: companies.website,
       linkedinUrl: companies.linkedinUrl,
       notes: companies.notes,
-      clientId: companies.clientId,
-      clientName: clients.name,
-      clientSlug: clients.slug,
+      primaryContactId: companies.primaryContactId,
       createdAt: companies.createdAt,
       updatedAt: companies.updatedAt,
       deletedAt: companies.deletedAt,
     })
     .from(companies)
-    .leftJoin(
-      clients,
-      and(eq(clients.id, companies.clientId), isNull(clients.deletedAt))
-    )
     .where(eq(companies.id, companyId))
     .limit(1)
 
@@ -176,7 +170,7 @@ export async function getCompanyDetail(
     throw new NotFoundError('Company not found')
   }
 
-  const [contactRows, leadRows] = await Promise.all([
+  const [contactRows, leadRows, clientRows] = await Promise.all([
     db
       .select({
         id: contacts.id,
@@ -184,11 +178,10 @@ export async function getCompanyDetail(
         email: contacts.email,
         jobTitle: contacts.jobTitle,
         linkedinUrl: contacts.linkedinUrl,
-        isChampion: contacts.isChampion,
       })
       .from(contacts)
       .where(and(eq(contacts.companyId, companyId), isNull(contacts.deletedAt)))
-      .orderBy(desc(contacts.isChampion), asc(contacts.name)),
+      .orderBy(asc(contacts.name)),
     db
       .select({
         id: leads.id,
@@ -202,14 +195,24 @@ export async function getCompanyDetail(
       .leftJoin(users, eq(users.id, leads.assigneeId))
       .where(and(eq(leads.companyId, companyId), isNull(leads.deletedAt)))
       .orderBy(desc(leads.updatedAt)),
+    db
+      .select({ id: clients.id, name: clients.name, slug: clients.slug })
+      .from(clients)
+      .where(and(eq(clients.companyId, companyId), isNull(clients.deletedAt)))
+      .orderBy(asc(clients.name)),
   ])
+
+  const primary = contactRows.find(contact => contact.id === row.primaryContactId)
+  const people = contactRows
+    .map(contact => ({ ...contact, isPrimary: contact.id === row.primaryContactId }))
+    // Primary contact first.
+    .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary))
 
   return {
     ...row,
-    clientId: row.clientName ? row.clientId : null,
-    clientName: row.clientName ?? null,
-    clientSlug: row.clientSlug ?? null,
-    contacts: contactRows,
+    primaryContactName: primary?.name ?? null,
+    clients: clientRows,
+    contacts: people,
     leads: leadRows.map(lead => ({
       id: lead.id,
       contactName: lead.contactName,
@@ -418,59 +421,13 @@ export async function setCompanyArchived(
   return { ok: true, id: existing.id }
 }
 
-type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
-
-/** True for a write that would leave a company with two champions. */
-export function isChampionConflict(error: unknown): boolean {
-  const text =
-    error instanceof Error
-      ? `${error.message} ${String(error.cause ?? '')}`
-      : ''
-  return text.includes('idx_contacts_one_champion')
-}
 
 /**
- * Inside a transaction: makes `contactId` the company's only champion, or
- * clears the champion with `null`. Locks the company row first so two
- * champion changes at one company run one after the other; the unique
- * index `idx_contacts_one_champion` backs this up.
+ * Makes one contact the company's primary contact (or clears it with
+ * `null`). Clients use their company's primary contact. The contact must be
+ * at this company; one with no company on record joins it.
  */
-export async function assignChampion(
-  tx: DbTransaction,
-  companyId: string,
-  contactId: string | null
-): Promise<void> {
-  await tx.execute(
-    sql`select 1 from companies where id = ${companyId} for update`
-  )
-
-  const timestamp = new Date().toISOString()
-
-  await tx
-    .update(contacts)
-    .set({ isChampion: false, updatedAt: timestamp })
-    .where(
-      and(
-        eq(contacts.companyId, companyId),
-        eq(contacts.isChampion, true),
-        contactId ? ne(contacts.id, contactId) : undefined
-      )
-    )
-
-  if (contactId) {
-    await tx
-      .update(contacts)
-      .set({ isChampion: true, updatedAt: timestamp })
-      .where(eq(contacts.id, contactId))
-  }
-}
-
-/**
- * Makes one contact the company's champion (or clears it with `null`).
- * A company has at most one champion, so every other contact there loses
- * the flag.
- */
-export async function setCompanyChampion(
+export async function setCompanyPrimaryContact(
   actor: AppUser,
   companyId: string,
   contactId: string | null
@@ -478,7 +435,11 @@ export async function setCompanyChampion(
   assertCrmAccess(actor)
 
   const [company] = await db
-    .select({ id: companies.id, name: companies.name })
+    .select({
+      id: companies.id,
+      name: companies.name,
+      primaryContactId: companies.primaryContactId,
+    })
     .from(companies)
     .where(and(eq(companies.id, companyId), isNull(companies.deletedAt)))
     .limit(1)
@@ -486,46 +447,43 @@ export async function setCompanyChampion(
   if (!company) {
     return { ok: false, error: 'Company not found.' }
   }
+  if (company.primaryContactId === contactId) {
+    return { ok: true, id: company.id }
+  }
 
   let contactName: string | null = null
+  const timestamp = new Date().toISOString()
 
   if (contactId) {
     const [contact] = await db
-      .select({ id: contacts.id, name: contacts.name })
+      .select({ id: contacts.id, name: contacts.name, companyId: contacts.companyId })
       .from(contacts)
-      .where(
-        and(
-          eq(contacts.id, contactId),
-          eq(contacts.companyId, companyId),
-          isNull(contacts.deletedAt)
-        )
-      )
+      .where(and(eq(contacts.id, contactId), isNull(contacts.deletedAt)))
       .limit(1)
 
-    if (!contact) {
+    if (!contact || (contact.companyId && contact.companyId !== companyId)) {
       return { ok: false, error: 'That contact is not at this company.' }
     }
     contactName = contact.name
+    if (!contact.companyId) {
+      await db
+        .update(contacts)
+        .set({ companyId, updatedAt: timestamp })
+        .where(eq(contacts.id, contactId))
+    }
   }
 
-  try {
-    await db.transaction(tx => assignChampion(tx, companyId, contactId))
-  } catch (error) {
-    if (isChampionConflict(error)) {
-      return {
-        ok: false,
-        error: 'Someone else just changed the champion. Reload and try again.',
-      }
-    }
-    throw error
-  }
+  await db
+    .update(companies)
+    .set({ primaryContactId: contactId, updatedAt: timestamp })
+    .where(eq(companies.id, companyId))
 
   await logActivity({
     actorId: actor.id,
     actorRole: actor.role,
     targetType: 'COMPANY',
     targetId: company.id,
-    ...companyChampionSetEvent({ companyName: company.name, contactName }),
+    ...companyPrimaryContactSetEvent({ companyName: company.name, contactName }),
   })
 
   return { ok: true, id: company.id }
