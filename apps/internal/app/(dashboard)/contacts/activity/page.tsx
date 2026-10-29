@@ -5,8 +5,8 @@ import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { requireCrmUser } from '@/lib/auth/session'
 
 import { CONTACTS_TABS } from '../_lib/tabs'
-import { ContactsAddButton } from '../_components/contacts-add-button'
-import { ContactsActivitySection } from '../_components/contacts-activity-section'
+import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
+import { ActivitySection } from '@/components/activity/activity-section'
 
 export const metadata: Metadata = {
   title: 'Contact activity',
@@ -20,10 +20,14 @@ export default async function ContactsActivityPage() {
       breadcrumbs={[...crumbsForNav('/contacts'), { label: 'Activity' }]}
       tabs={CONTACTS_TABS}
       activeTab='activity'
-      primaryAction={<ContactsAddButton />}
+      primaryAction={<SheetCreateButton entity='contact' label='Add contact' />}
     >
       <section className='bg-background rounded-xl border p-4 shadow-sm'>
-        <ContactsActivitySection />
+        <ActivitySection
+          targetType='CONTACT'
+          emptyState='No recent contact activity.'
+          description='Review contact creation, edits, archives, and restorations in one place.'
+        />
       </section>
     </PageShell>
   )

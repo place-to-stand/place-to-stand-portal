@@ -5,7 +5,6 @@ import { useQuery } from '@tanstack/react-query'
 import { useWatch, type UseFormReturn } from 'react-hook-form'
 import { Plus, X } from 'lucide-react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Button } from '@pts/ui/button'
 import { Skeleton } from '@pts/ui/skeleton'
 import {
@@ -19,9 +18,9 @@ import type { ProjectSheetFormValues } from '@/lib/settings/projects/use-project
 
 import {
   buildMemberOptions,
-  memberInitials,
   type MemberCandidate,
 } from './project-members-utils'
+import { UserAvatar } from '@/components/ui/user-avatar'
 
 type ProjectMembersResponse = {
   candidates: MemberCandidate[]
@@ -111,15 +110,12 @@ export function ProjectMembersField({
                   key={member.id}
                   className='bg-muted/60 flex items-center gap-1.5 rounded-full border py-0.5 pr-1 pl-0.5 text-sm'
                 >
-                  <Avatar size='sm'>
-                    {member.avatarUrl ? (
-                      <AvatarImage
-                        src={`/api/storage/user-avatar/${member.id}`}
-                        alt={member.fullName ?? member.email}
-                      />
-                    ) : null}
-                    <AvatarFallback>{memberInitials(member)}</AvatarFallback>
-                  </Avatar>
+                  <UserAvatar
+                    userId={member.id}
+                    name={member.fullName ?? member.email}
+                    hasPhoto={Boolean(member.avatarUrl)}
+                    alt=''
+                  />
                   {member.fullName ?? member.email}
                   <Button
                     type='button'

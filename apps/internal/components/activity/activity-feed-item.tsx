@@ -1,14 +1,10 @@
 import { useMemo } from 'react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Badge } from '@pts/ui/badge'
 import { BADGE_TINTS } from '@pts/ui/badge-tints'
 import { ActivityChangeList } from '@/components/activity/activity-change-list'
 import { getActivityChanges } from '@/lib/activity/changes'
-import {
-  getActorDisplayName,
-  getActorInitials,
-} from '@/lib/activity/feed-highlights'
+import { getActorDisplayName } from '@/lib/activity/feed-highlights'
 import type { ActivityLogWithActor } from '@/lib/activity/types'
 import {
   getToneClasses,
@@ -17,6 +13,7 @@ import {
 import { formatCalendarDate, formatRelativeTime } from '@pts/ui/dates'
 import type { ActivitySourceValue } from '@/lib/types'
 import { cn } from '@/lib/utils'
+import { UserAvatar } from '@/components/ui/user-avatar'
 
 export type ActivityFeedItemProps = {
   log: ActivityLogWithActor
@@ -53,7 +50,6 @@ const TIMESTAMP_STYLE = {
 
 export function ActivityFeedItem({ log }: ActivityFeedItemProps) {
   const actorName = getActorDisplayName(log)
-  const actorInitials = getActorInitials(actorName)
   const changes = useMemo(() => getActivityChanges(log), [log])
   const hasChanges = changes.fields.length > 0 || changes.memberships.length > 0
   const summary = hasChanges ? stripTrailingFieldList(log.summary) : log.summary
@@ -80,15 +76,13 @@ export function ActivityFeedItem({ log }: ActivityFeedItemProps) {
         {/* 28px tall to match the rail icon, so the actor line centres on it. */}
         <div className='flex min-h-7 flex-wrap items-center gap-x-2 gap-y-1 text-sm leading-5'>
           <span className='inline-flex items-center gap-1.5 font-medium'>
-            <Avatar size='xs'>
-              {log.actor?.avatar_url ? (
-                <AvatarImage
-                  src={`/api/storage/user-avatar/${log.actor.id}`}
-                  alt=''
-                />
-              ) : null}
-              <AvatarFallback>{actorInitials}</AvatarFallback>
-            </Avatar>
+            <UserAvatar
+              size='xs'
+              userId={log.actor?.id}
+              name={actorName}
+              hasPhoto={Boolean(log.actor?.avatar_url)}
+              alt=''
+            />
             {actorName}
           </span>
           <span className='text-foreground/90 min-w-0'>{summary}</span>

@@ -3,13 +3,14 @@
 import { useMemo, useState, useTransition } from 'react'
 import { ChevronDown, UserRoundPlus } from 'lucide-react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
+import { Avatar, AvatarFallback } from '@pts/ui/avatar'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import {
   buildOwnerOptions,
   type AdminUserForOwner,
 } from '@/lib/settings/projects/project-sheet-ui-state'
 import { cn } from '@/lib/utils'
+import { UserAvatar } from '@/components/ui/user-avatar'
 
 export type ProjectOwnerSummary = {
   id: string
@@ -25,13 +26,6 @@ export type ProjectOwnerCellProps = {
   onOwnerChange: (projectId: string, ownerId: string | null) => Promise<void>
   /** Show the owner without the picker (viewers who can't change it). */
   readOnly?: boolean
-}
-
-function getInitials(name: string | null): string {
-  if (!name) return '?'
-  const parts = name.trim().split(/\s+/)
-  if (parts.length === 1) return parts[0].charAt(0).toUpperCase()
-  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
 }
 
 /**
@@ -169,14 +163,11 @@ export function ProjectOwnerCell({
 
 function OwnerAvatar({ owner }: { owner: ProjectOwnerSummary }) {
   return (
-    <Avatar size='sm'>
-      {owner.avatar_url && (
-        <AvatarImage
-          src={`/api/storage/user-avatar/${owner.id}`}
-          alt={owner.full_name ?? 'Owner'}
-        />
-      )}
-      <AvatarFallback>{getInitials(owner.full_name)}</AvatarFallback>
-    </Avatar>
+    <UserAvatar
+      userId={owner.id}
+      name={owner.full_name}
+      hasPhoto={Boolean(owner.avatar_url)}
+      alt={owner.full_name ?? 'Owner'}
+    />
   )
 }

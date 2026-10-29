@@ -17,7 +17,6 @@ import {
 } from 'lucide-react'
 import { formatCalendarDate } from '@pts/ui/dates'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Button } from '@pts/ui/button'
 import { Badge } from '@pts/ui/badge'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
@@ -53,6 +52,7 @@ import {
   ClientUpdatesSection,
   type ClientUpdateSummary,
 } from './client-updates-section'
+import { UserAvatar } from '@/components/ui/user-avatar'
 
 type HydratedClientDetail = ClientDetailType & { resolvedId: string }
 
@@ -265,13 +265,6 @@ function ClientDetailsWidget({
   )
 }
 
-function getPersonInitials(name: string): string {
-  const parts = name.trim().split(/\s+/)
-  if (!parts[0]) return '?'
-  if (parts.length === 1) return parts[0].charAt(0).toUpperCase()
-  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
-}
-
 /**
  * Inline avatar + name that opens the person's sheet over this page via its
  * deep-link param (`?user=` / `?contact=`), served by the global SheetHost.
@@ -304,15 +297,7 @@ function SheetLink({
       onPointerEnter={() => prefetchSheetInit(entity, id)}
       onClick={() => open(entity, id)}
     >
-      <Avatar size='xs'>
-        {avatarUserId && (
-          <AvatarImage
-            src={`/api/storage/user-avatar/${avatarUserId}`}
-            alt={label}
-          />
-        )}
-        <AvatarFallback>{getPersonInitials(label)}</AvatarFallback>
-      </Avatar>
+      <UserAvatar size='xs' userId={avatarUserId} name={label} />
       <span className='underline-offset-4 group-hover:underline'>{label}</span>
     </button>
   )

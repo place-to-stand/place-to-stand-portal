@@ -26,10 +26,3 @@ export function buildMemberOptions(
     }))
 }
 
-export function memberInitials(candidate: MemberCandidate): string {
-  const name = candidate.fullName?.trim() || candidate.email
-  const parts = name.split(/\s+/)
-  return parts.length > 1
-    ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-    : name.charAt(0).toUpperCase()
-}

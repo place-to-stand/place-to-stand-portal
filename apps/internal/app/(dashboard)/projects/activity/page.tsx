@@ -6,7 +6,7 @@ import { requireRole } from '@/lib/auth/session'
 import { listProjectsForSettings } from '@/lib/queries/projects'
 import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
 
-import { ProjectsActivitySection } from '../_components/projects-activity-section'
+import { ActivitySection } from '@/components/activity/activity-section'
 import { ProjectsAddButton } from '../_components/projects-add-button'
 import { PROJECTS_TABS } from '../_lib/tabs'
 
@@ -36,7 +36,11 @@ export default async function ProjectsActivityPage() {
       primaryAction={<ProjectsAddButton clients={clientRows} />}
     >
       <section className='bg-background rounded-xl border p-4 shadow-sm'>
-        <ProjectsActivitySection />
+        <ActivitySection
+          targetType='PROJECT'
+          emptyState='No recent project activity.'
+          description='Audit project creation, edits, archives, and deletions in one place.'
+        />
       </section>
     </PageShell>
   )

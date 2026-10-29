@@ -8,7 +8,7 @@ import { parseClientsSearchParams } from '@/lib/settings/clients/filters'
 import { readPageSize } from '@/lib/pagination/page-size.server'
 
 import { CLIENTS_TABS } from '../_lib/tabs'
-import { ClientsAddButton } from '../_components/clients-add-button'
+import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
 import { ClientsFilters } from '../_components/clients-filters'
 import { ClientsManagementTable } from '../_components/clients-management-table'
 import { resolveClientDeepLink } from '../_lib/client-deep-link'
@@ -59,7 +59,7 @@ export default async function ClientsArchivePage({
         total: unfilteredTotalCount,
         filteredTotal: totalCount,
       }}
-      primaryAction={<ClientsAddButton />}
+      primaryAction={<SheetCreateButton entity='client' label='Add client' />}
     >
       <section className='bg-background rounded-xl border p-4 shadow-sm space-y-4'>
         <ClientsFilters

@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 
-import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { EmptyState } from '@pts/ui/empty-state'
 import type {
@@ -10,38 +9,17 @@ import type {
   SalesLeadItem,
   SalesTaskItem,
 } from '@/lib/dashboard/sales-types'
-import { getLeadStatusToken, LEAD_STATUS_LABELS } from '@/lib/leads/constants'
+import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
+import { RecordRowButton } from '@/components/ui/record-row-button'
+import { LEAD_STATUS_LABELS } from '@/lib/leads/constants'
+import {
+  TASK_DUE_TONE_CLASSES,
+  getTaskDueMeta,
+} from '@/lib/projects/task-due-date'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { cn } from '@/lib/utils'
 
 import { WidgetCard } from './widget-card'
-
-const ROW_CLASS =
-  'hover:bg-muted/50 focus-visible:bg-muted/50 flex w-full items-center gap-3 px-4 py-2.5 text-left outline-none'
-
-/** "Due today", "3 days late", "Due Fri, Nov 6". */
-function describeDue(dueOn: string, today: string) {
-  const dayMs = 24 * 60 * 60 * 1000
-  const diff = Math.round(
-    (Date.parse(`${dueOn}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / dayMs
-  )
-  if (diff === 0) return { label: 'Due today', tone: 'today' as const }
-  if (diff < 0) {
-    const late = -diff
-    return {
-      label: `${late} ${late === 1 ? 'day' : 'days'} late`,
-      tone: 'late' as const,
-    }
-  }
-  if (diff === 1) return { label: 'Due tomorrow', tone: 'soon' as const }
-  const label = new Date(`${dueOn}T12:00:00Z`).toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    timeZone: 'UTC',
-  })
-  return { label: `Due ${label}`, tone: 'later' as const }
-}
 
 function describeDays(days: number) {
   if (days === 0) return 'Today'
@@ -77,11 +55,7 @@ export function NextStepsWidget({
         <ul className='divide-y'>
           {items.map(task => (
             <li key={task.id}>
-              <TaskRow
-                task={task}
-                today={data.today}
-                onOpen={() => open('task', task.id)}
-              />
+              <TaskRow task={task} onOpen={() => open('task', task.id)} />
             </li>
           ))}
         </ul>
@@ -96,40 +70,31 @@ export function NextStepsWidget({
 
 function TaskRow({
   task,
-  today,
   onOpen,
 }: {
   task: SalesTaskItem
-  today: string
   onOpen: () => void
 }) {
-  const due = task.dueOn ? describeDue(task.dueOn, today) : null
+  const due = task.dueOn
+    ? getTaskDueMeta(task.dueOn, { status: task.status })
+    : null
 
   return (
-    <button type='button' className={ROW_CLASS} onClick={onOpen}>
-      <span className='min-w-0 flex-1'>
-        <span className='block truncate text-sm font-medium'>{task.title}</span>
-        <span className='text-muted-foreground block truncate text-xs'>
-          {task.leadName ? `${task.leadName} · ` : ''}
-          {task.projectName}
-        </span>
-      </span>
-      {due ? (
+    <RecordRowButton
+      onClick={onOpen}
+      title={task.title}
+      subtitle={`${task.leadName ? `${task.leadName} · ` : ''}${task.projectName}`}
+      trailing={
         <span
           className={cn(
-            'shrink-0 text-xs font-medium',
-            due.tone === 'late' && 'text-destructive',
-            due.tone === 'today' && 'text-amber-600 dark:text-amber-400',
-            (due.tone === 'soon' || due.tone === 'later') &&
-              'text-muted-foreground'
+            'shrink-0 text-xs',
+            due ? TASK_DUE_TONE_CLASSES[due.tone] : 'text-muted-foreground'
           )}
         >
-          {due.label}
+          {due ? due.label : 'No date'}
         </span>
-      ) : (
-        <span className='text-muted-foreground shrink-0 text-xs'>No date</span>
-      )}
-    </button>
+      }
+    />
   )
 }
 
@@ -156,29 +121,21 @@ function LeadList({
     <ul className='divide-y'>
       {leads.map(lead => (
         <li key={lead.id}>
-          <button
-            type='button'
-            className={ROW_CLASS}
+          <RecordRowButton
             onClick={() => open('lead', lead.id)}
-          >
-            <span className='min-w-0 flex-1'>
-              <span className='block truncate text-sm font-medium'>
-                {lead.contactName}
+            title={lead.contactName}
+            subtitle={`${lead.companyName ? `${lead.companyName} · ` : ''}${LEAD_STATUS_LABELS[lead.status]}`}
+            trailing={
+              <span className='shrink-0 text-right'>
+                <span className='block text-sm font-semibold tabular-nums'>
+                  {describeDays(lead.daysSinceTouch)}
+                </span>
+                <span className='text-muted-foreground block text-xs'>
+                  {daysLabel}
+                </span>
               </span>
-              <span className='text-muted-foreground block truncate text-xs'>
-                {lead.companyName ? `${lead.companyName} · ` : ''}
-                {LEAD_STATUS_LABELS[lead.status]}
-              </span>
-            </span>
-            <span className='shrink-0 text-right'>
-              <span className='block text-sm font-semibold tabular-nums'>
-                {describeDays(lead.daysSinceTouch)}
-              </span>
-              <span className='text-muted-foreground block text-xs'>
-                {daysLabel}
-              </span>
-            </span>
-          </button>
+            }
+          />
         </li>
       ))}
     </ul>
@@ -238,15 +195,7 @@ export function PipelineWidget({
             key={stage.status}
             className='flex items-center justify-between gap-3 px-4 py-2.5'
           >
-            <Badge
-              variant='outline'
-              className={cn(
-                'text-xs font-semibold tracking-wide uppercase',
-                getLeadStatusToken(stage.status)
-              )}
-            >
-              {stage.label}
-            </Badge>
+            <LeadStatusBadge status={stage.status} label={stage.label} />
             <span className='text-sm tabular-nums'>
               <span className='font-semibold'>{stage.total}</span>
               <span className='text-muted-foreground'>

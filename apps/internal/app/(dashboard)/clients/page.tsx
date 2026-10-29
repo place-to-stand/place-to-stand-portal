@@ -12,7 +12,7 @@ import {
 } from '@/lib/settings/clients/filters'
 
 import { ClientsLanding } from './_components/clients-landing'
-import { ClientsAddButton } from './_components/clients-add-button'
+import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
 import { ClientsFilters } from './_components/clients-filters'
 import { resolveClientDeepLink } from './_lib/client-deep-link'
 import { sortLandingClients } from './_lib/sort-landing-clients'
@@ -71,7 +71,7 @@ export default async function ClientsPage({
         total: counts.unfilteredTotalCount,
         filteredTotal: counts.totalCount,
       }}
-      primaryAction={<ClientsAddButton />}
+      primaryAction={<SheetCreateButton entity='client' label='Add client' />}
     >
       <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
         <ClientsFilters basePath='/clients' search={search} billing={billing} />

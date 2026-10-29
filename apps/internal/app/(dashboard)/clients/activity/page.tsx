@@ -5,8 +5,8 @@ import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { requireRole } from '@/lib/auth/session'
 
 import { CLIENTS_TABS } from '../_lib/tabs'
-import { ClientsAddButton } from '../_components/clients-add-button'
-import { ClientsActivitySection } from '../_components/clients-activity-section'
+import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
+import { ActivitySection } from '@/components/activity/activity-section'
 
 export const metadata: Metadata = {
   title: 'Client activity',
@@ -20,10 +20,14 @@ export default async function ClientsActivityPage() {
       breadcrumbs={[...crumbsForNav('/clients'), { label: 'Activity' }]}
       tabs={CLIENTS_TABS}
       activeTab='activity'
-      primaryAction={<ClientsAddButton />}
+      primaryAction={<SheetCreateButton entity='client' label='Add client' />}
     >
       <section className='bg-background rounded-xl border p-4 shadow-sm'>
-        <ClientsActivitySection />
+        <ActivitySection
+          targetType='CLIENT'
+          emptyState='No recent client activity.'
+          description='Review client creation, edits, archives, and restorations in one place.'
+        />
       </section>
     </PageShell>
   )

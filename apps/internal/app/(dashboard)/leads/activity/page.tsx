@@ -6,7 +6,7 @@ import { requireCrmUser } from '@/lib/auth/session'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 
 import { LEADS_TABS } from '../_lib/tabs'
-import { LeadsActivitySection } from '../_components/leads-activity-section'
+import { ActivitySection } from '@/components/activity/activity-section'
 
 export const metadata: Metadata = {
   title: 'Lead activity',
@@ -22,7 +22,7 @@ export default async function LeadsActivityPage() {
       tabs={LEADS_TABS}
       activeTab='activity'
     >
-      <section className='bg-background rounded-xl border p-4 shadow-sm space-y-3'>
+      <section className='bg-background space-y-3 rounded-xl border p-4 shadow-sm'>
         <div>
           <h3 className='text-lg font-semibold'>Recent activity</h3>
           <p className='text-muted-foreground text-sm'>
@@ -30,7 +30,10 @@ export default async function LeadsActivityPage() {
             place.
           </p>
         </div>
-        <LeadsActivitySection />
+        <ActivitySection
+          targetType='LEAD'
+          emptyState='No recent lead activity.'
+        />
       </section>
     </PageShell>
   )

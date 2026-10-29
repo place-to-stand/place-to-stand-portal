@@ -9,7 +9,7 @@ import { serverEnv } from '@/lib/env.server'
 import { readPageSize } from '@/lib/pagination/page-size.server'
 
 import { CONTACTS_TABS } from './_lib/tabs'
-import { ContactsAddButton } from './_components/contacts-add-button'
+import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
 import { ContactsFilters } from './_components/contacts-filters'
 import { ContactsManagementTable } from './_components/contacts-management-table'
 import { resolveContactDeepLink } from './_lib/contact-deep-link'
@@ -84,7 +84,7 @@ export default async function ContactsPage({
         total: unfilteredTotalCount,
         filteredTotal: totalCount,
       }}
-      primaryAction={<ContactsAddButton />}
+      primaryAction={<SheetCreateButton entity='contact' label='Add contact' />}
     >
       <section className='bg-background rounded-xl border p-4 shadow-sm space-y-4'>
         <ContactsFilters

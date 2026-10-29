@@ -2,9 +2,9 @@
 
 import { User } from 'lucide-react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { cn } from '@/lib/utils'
+import { UserAvatar } from '@/components/ui/user-avatar'
 
 export type CardAssignee = {
   id: string
@@ -57,14 +57,14 @@ export function CardAssigneeAvatars({
           aria-label={`Assigned to ${names}`}
         >
           {visible.map(assignee => (
-            <Avatar key={assignee.id} size='xs' className='ring-card ring-2'>
-              {assignee.avatarUrl && (
-                <AvatarImage src={`/api/storage/user-avatar/${assignee.id}`} />
-              )}
-              <AvatarFallback>
-                {assignee.name.slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
+            <UserAvatar
+              key={assignee.id}
+              size='xs'
+              className='ring-card ring-2'
+              userId={assignee.id}
+              name={assignee.name}
+              hasPhoto={Boolean(assignee.avatarUrl)}
+            />
           ))}
           {overflow > 0 ? (
             <span className='bg-muted text-muted-foreground ring-card inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-medium ring-2'>

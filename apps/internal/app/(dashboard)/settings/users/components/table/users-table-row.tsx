@@ -2,7 +2,6 @@
 
 import { Archive, Eye, RefreshCw, Trash2 } from 'lucide-react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { TableCell, TableRow } from '@pts/ui/table'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { Badge } from '@pts/ui/badge'
@@ -25,6 +24,7 @@ import {
 } from '@/lib/table/clickable-row'
 
 import { UserAssignmentsCell } from './user-assignments-cell'
+import { UserAvatar } from '@/components/ui/user-avatar'
 
 const SIGN_IN_TITLE_STYLE = {
   month: 'short',
@@ -65,15 +65,6 @@ export function UsersTableRow({
   const previewContactId = assignment?.contact?.id ?? null
 
   const displayName = user.full_name ?? user.email
-  const initials = user.full_name
-    ? user.full_name
-        .split(' ')
-        .map(segment => segment[0])
-        .join('')
-        .slice(0, 2)
-        .toUpperCase()
-    : user.email.slice(0, 2).toUpperCase()
-
   return (
     <TableRow
       {...getClickableRowProps(row.onEdit)}
@@ -81,12 +72,12 @@ export function UsersTableRow({
     >
       <TableCell>
         <div className='flex min-w-0 items-center gap-2'>
-          <Avatar size='sm'>
-            {user.avatar_url && (
-              <AvatarImage src={`/api/storage/user-avatar/${user.id}`} />
-            )}
-            <AvatarFallback>{initials}</AvatarFallback>
-          </Avatar>
+          <UserAvatar
+            userId={user.id}
+            name={displayName}
+            hasPhoto={Boolean(user.avatar_url)}
+            alt=''
+          />
           <span className='truncate font-medium'>{displayName}</span>
         </div>
       </TableCell>

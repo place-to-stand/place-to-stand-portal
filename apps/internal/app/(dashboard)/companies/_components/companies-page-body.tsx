@@ -4,7 +4,7 @@ import type { CompanyListItem } from '@/lib/companies/types'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 
 import { COMPANIES_TABS } from '../_lib/tabs'
-import { CompaniesAddButton } from './companies-add-button'
+import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
 import { CompaniesFilters } from './companies-filters'
 import { CompaniesTable } from './companies-table'
 
@@ -36,7 +36,7 @@ export function CompaniesPageBody({
         total: totalCount,
         filteredTotal: companies.length,
       }}
-      primaryAction={<CompaniesAddButton />}
+      primaryAction={<SheetCreateButton entity='company' label='Add company' />}
     >
       <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
         <CompaniesFilters

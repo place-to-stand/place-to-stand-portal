@@ -10,7 +10,8 @@ import { parseUsersSearchParams } from '@/lib/settings/users/filters'
 import type { DbUser } from '@/lib/types'
 import { readPageSize } from '@/lib/pagination/page-size.server'
 
-import { UsersAddButton } from '../_components/users-add-button'
+import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
+import { UserPlus } from 'lucide-react'
 import { UsersFilters } from '../_components/users-filters'
 import { UsersManagementTable } from '../_components/users-management-table'
 import { USERS_TABS } from '../_lib/tabs'
@@ -86,7 +87,7 @@ export default async function UsersArchivePage({
       activeTab='archive'
       count={{ label: 'archived users', total: unfilteredTotalCount, filteredTotal: totalCount }}
       primaryAction={
-        <UsersAddButton />
+        <SheetCreateButton entity='user' label='Add user' icon={UserPlus} />
       }
     >
       <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>

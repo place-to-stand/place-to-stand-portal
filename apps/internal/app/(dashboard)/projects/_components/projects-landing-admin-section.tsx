@@ -1,17 +1,14 @@
 'use client'
 
 import { useMemo } from 'react'
-import { Plus } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
 import { sortClientsByName } from '@/lib/settings/projects/project-sheet-form'
 import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
 import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
 import type { LandingProject } from '@/lib/data/projects'
 
 import { PageShell } from '@/components/layout/page-shell'
+import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 
 import type { ProjectStatusValue } from '@/lib/constants'
@@ -64,7 +61,6 @@ export function ProjectsLandingAdminSection({
   // This section only ever *creates* projects (row clicks go to the project
   // workspace), so it opens `?project=new` and lets the global SheetHost
   // render the sheet instead of owning a second instance.
-  const { openCreate } = useSheetParamSelection('project')
 
   const createDisabled = sortedClients.length === 0
   const createDisabledReason = createDisabled
@@ -89,21 +85,11 @@ export function ProjectsLandingAdminSection({
       }
       primaryAction={
         // Everyone gets the same sheet; it offers only what the role can use.
-        <DisabledFieldTooltip
-          disabled={!memberView && createDisabled}
-          reason={memberView ? null : createDisabledReason}
-        >
-          <Button
-            type='button'
-            size='sm'
-            onClick={openCreate}
-            disabled={!memberView && createDisabled}
-            className='gap-2'
-          >
-            <Plus className='h-4 w-4' />
-            Add project
-          </Button>
-        </DisabledFieldTooltip>
+        <SheetCreateButton
+          entity='project'
+          label='Add project'
+          disabledReason={memberView ? null : createDisabledReason}
+        />
       }
     >
       <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
