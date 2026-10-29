@@ -1,4 +1,4 @@
-import { and, eq, isNull } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 
 import { formatCalendarDate } from '@pts/ui/dates'
 
@@ -7,7 +7,7 @@ import { clientUpdatedEvent } from '@/lib/activity/events'
 import type { UserRole } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clientMembers, clients } from '@/lib/db/schema'
+import { clients } from '@/lib/db/schema'
 import type { ClientBillingTypeValue } from '@/lib/types'
 import { isMonthClosed } from '@/lib/data/reports/close'
 import {
@@ -30,7 +30,6 @@ import {
 import {
   assertClientPartnerUserRoles,
   clientSlugExists,
-  syncClientMembers,
   toClientSlug,
 } from '@/lib/settings/clients/client-service'
 
@@ -64,7 +63,6 @@ type UpdateClientPayload = {
   originationUserId: string | null
   closers: CloserShare[]
   notes: string | null
-  memberIds?: string[]
   /** Omitted keeps the client's company; null unlinks it. */
   companyId?: string | null
   /** Deprecated and ignored: a company has one client. */
@@ -116,7 +114,6 @@ export async function updateClient(
     originationUserId,
     closers,
     notes,
-    memberIds,
     companyId,
   } = payload
 
@@ -181,24 +178,6 @@ export async function updateClient(
 
   if (!existingClient) {
     return buildMutationResult({ error: 'Client not found.' })
-  }
-
-  let existingMemberIds: string[] | undefined = undefined
-
-  if (memberIds) {
-    try {
-      const memberRows = await db
-        .select({ userId: clientMembers.userId })
-        .from(clientMembers)
-        .where(
-          and(eq(clientMembers.clientId, id), isNull(clientMembers.deletedAt))
-        )
-
-      existingMemberIds = memberRows.map(member => member.userId)
-    } catch (error) {
-      console.error('Failed to load client members', error)
-      return buildMutationResult({ error: 'Unable to update client members.' })
-    }
   }
 
   const billingTypeChanged = existingClient.billingType !== billingType
@@ -295,14 +274,6 @@ export async function updateClient(
     }
   }
 
-  if (memberIds) {
-    const syncResult = await syncClientMembers(id, memberIds)
-
-    if (syncResult.error) {
-      return buildMutationResult(syncResult)
-    }
-  }
-
   await recordUpdateActivity({
     userContext: { id: user.id, role: user.role },
     existingClient,
@@ -318,8 +289,6 @@ export async function updateClient(
       closers,
       companyId: companyId === undefined ? existingClient.companyId : companyId,
     },
-    existingMemberIds: existingMemberIds ?? [],
-    nextMemberIds: memberIds ?? [],
   })
 
   return buildMutationResult({})
@@ -343,8 +312,6 @@ type RecordUpdateActivityArgs = {
     closers: CloserShare[]
     companyId: string | null
   }
-  existingMemberIds: string[]
-  nextMemberIds: string[]
 }
 
 type ClientDiff = {
@@ -393,8 +360,6 @@ async function recordUpdateActivity(args: RecordUpdateActivityArgs) {
 async function calculateDiff({
   existingClient,
   updatedValues,
-  existingMemberIds,
-  nextMemberIds,
 }: Omit<RecordUpdateActivityArgs, 'userContext'>): Promise<ClientDiff> {
   const changedFields: string[] = []
   const previousDetails: Record<string, unknown> = {}
@@ -474,22 +439,6 @@ async function calculateDiff({
     nextDetails.commissionEffectiveFrom = updatedValues.commissionEffectiveFrom
   }
 
-  const addedMembers = diff(nextMemberIds, existingMemberIds)
-  const removedMembers = diff(existingMemberIds, nextMemberIds)
-
-  if (addedMembers.length > 0 || removedMembers.length > 0) {
-    changedFields.push('members')
-    return {
-      changedFields,
-      previousDetails,
-      nextDetails,
-      memberChanges: {
-        added: addedMembers,
-        removed: removedMembers,
-      },
-    }
-  }
-
   return {
     changedFields,
     previousDetails,
@@ -499,8 +448,4 @@ async function calculateDiff({
 
 function describeClosersOrNone(closers: ClientCloser[]): string {
   return closers.length > 0 ? describeClosers(closers) : 'None'
-}
-
-function diff(primary: string[], comparison: string[]): string[] {
-  return primary.filter(id => !comparison.includes(id))
 }

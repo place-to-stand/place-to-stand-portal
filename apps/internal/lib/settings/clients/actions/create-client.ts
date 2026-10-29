@@ -12,7 +12,6 @@ import type { CloserShare } from '@/lib/settings/clients/closers'
 import {
   assertClientPartnerUserRoles,
   generateUniqueClientSlug,
-  syncClientMembers,
   toClientSlug,
 } from '@/lib/settings/clients/client-service'
 
@@ -41,7 +40,6 @@ type CreateClientPayload = {
   originationUserId: string | null
   closers: CloserShare[]
   notes: string | null
-  memberIds?: string[]
   /** The client's company; null finds or creates one named after the client. */
   companyId?: string | null
   /** Deprecated and ignored: a company has one client. */
@@ -66,7 +64,6 @@ export async function createClient(
     originationUserId,
     closers,
     notes,
-    memberIds,
     companyId: requestedCompanyId,
   } = payload
 
@@ -89,9 +86,13 @@ export async function createClient(
   } else {
     // Company names are capped at 160 characters; a longer client name
     // gets a company with its first 160.
-    const company = await findOrCreateCompanyByName(user, name.trim().slice(0, 160), {
-      website,
-    })
+    const company = await findOrCreateCompanyByName(
+      user,
+      name.trim().slice(0, 160),
+      {
+        website,
+      }
+    )
     companyId = company?.id ?? null
   }
   if (companyId) {
@@ -170,19 +171,9 @@ export async function createClient(
         return buildMutationResult({ error: 'Unable to create client.' })
       }
 
-      if (memberIds && memberIds.length > 0) {
-        const syncResult = await syncClientMembers(clientId, memberIds)
-
-        if (syncResult.error) {
-          console.error('Failed to sync client members after create', syncResult)
-          return buildMutationResult(syncResult)
-        }
-      }
-
-
       const event = clientCreatedEvent({
         name,
-        memberIds: memberIds ?? [],
+        memberIds: [],
       })
 
       await logActivity({

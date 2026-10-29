@@ -45,7 +45,6 @@ export async function convertLeadToClient(
     createProject,
     projectName,
     existingClientId,
-    memberIds,
   } = parsed.data
 
   // 1. Fetch the lead
@@ -121,7 +120,6 @@ export async function convertLeadToClient(
         originationUserId: null,
         closers: [],
         notes: resolvedNotes,
-        memberIds: memberIds || [],
         // The client is the lead's company (createClient finds or creates
         // one by name when the lead has none, or it was archived).
         companyId: leadCompanyId,

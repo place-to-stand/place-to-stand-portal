@@ -35,7 +35,6 @@ export async function saveClientMutation(
     name,
     slug,
     notes,
-    memberIds,
     billingType,
     billingEffective,
     commissionEffective,
@@ -46,9 +45,6 @@ export async function saveClientMutation(
     closers,
     companyId,
   } = parsed.data
-  const normalizedMemberIds = memberIds
-    ? Array.from(new Set(memberIds)).filter(Boolean)
-    : undefined
 
   // A client is named after its company, and a company has one client.
   let trimmedName = name.trim()
@@ -90,9 +86,6 @@ export async function saveClientMutation(
       entity: 'client',
       mode,
       targetId: id ?? null,
-      metadata: {
-        hasMembers: normalizedMemberIds ? normalizedMemberIds.length > 0 : undefined,
-      },
     },
     async () => {
       if (!id) {
@@ -106,7 +99,6 @@ export async function saveClientMutation(
           originationUserId,
           closers,
           notes: cleanedNotes,
-          memberIds: normalizedMemberIds,
           companyId: companyId ?? null,
         })
       }
@@ -124,7 +116,6 @@ export async function saveClientMutation(
         originationUserId,
         closers,
         notes: cleanedNotes,
-        memberIds: normalizedMemberIds,
         companyId,
       })
     }

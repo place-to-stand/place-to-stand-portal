@@ -1,8 +1,8 @@
-import { and, eq, inArray, isNull } from 'drizzle-orm'
+import { inArray } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { db } from '@/lib/db'
-import { clientMembers, contacts, users } from '@/lib/db/schema'
+import { contacts, users } from '@/lib/db/schema'
 import {
   clientSlugExistsDrizzle,
   generateUniqueClientSlugDrizzle,
@@ -65,7 +65,6 @@ export const clientSchema = z
       .string()
       .nullish()
       .transform(value => (value ? value : null)),
-    memberIds: z.array(z.string().uuid()).optional(),
     /**
      * The company this client is. On edit, omitted keeps the current one and
      * null unlinks it; a new client without one gets a company found or
@@ -260,86 +259,4 @@ export async function generateUniqueClientSlug(base: string): Promise<string> {
     initialCandidate: candidate,
     startSuffix: suffix,
   })
-}
-
-export async function syncClientMembers(
-  clientId: string,
-  memberIds: string[]
-): Promise<ClientActionResult> {
-  const uniqueMemberIds = Array.from(new Set(memberIds))
-
-  if (uniqueMemberIds.length) {
-    try {
-      const memberUsers = await db
-        .select({
-          id: users.id,
-          role: users.role,
-          deletedAt: users.deletedAt,
-        })
-        .from(users)
-        .where(inArray(users.id, uniqueMemberIds))
-
-      if (memberUsers.length !== uniqueMemberIds.length) {
-        const foundIds = new Set(memberUsers.map(user => user.id))
-        const missingIds = uniqueMemberIds.filter(id => !foundIds.has(id))
-
-        return {
-          error: `Some selected users no longer exist: ${missingIds.join(', ')}`,
-        }
-      }
-
-      const invalidUsers = memberUsers.filter(
-        user => user.deletedAt !== null || user.role !== 'CLIENT'
-      )
-
-      if (invalidUsers.length > 0) {
-        return { error: 'Only active client users can be assigned.' }
-      }
-    } catch (error) {
-      console.error('Failed to validate client members', error)
-      return { error: 'Unable to validate selected client users.' }
-    }
-  }
-
-  const archiveTimestamp = new Date().toISOString()
-
-  try {
-    await db
-      .update(clientMembers)
-      .set({ deletedAt: archiveTimestamp })
-      .where(
-        and(
-          eq(clientMembers.clientId, clientId),
-          isNull(clientMembers.deletedAt)
-        )
-      )
-  } catch (error) {
-    console.error('Failed to archive prior client members', error)
-    return { error: 'Unable to update client members.' }
-  }
-
-  if (uniqueMemberIds.length === 0) {
-    return {}
-  }
-
-  try {
-    await db
-      .insert(clientMembers)
-      .values(
-        uniqueMemberIds.map(userId => ({
-          clientId,
-          userId,
-          deletedAt: null,
-        }))
-      )
-      .onConflictDoUpdate({
-        target: [clientMembers.clientId, clientMembers.userId],
-        set: { deletedAt: null },
-      })
-  } catch (error) {
-    console.error('Failed to upsert client members', error)
-    return { error: 'Unable to update client members.' }
-  }
-
-  return {}
 }

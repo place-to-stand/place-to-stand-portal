@@ -80,7 +80,6 @@ export function ConvertLeadDialog({
       createProject: false,
       projectName: '',
       existingClientId: undefined,
-      memberIds: [],
     },
   })
 
