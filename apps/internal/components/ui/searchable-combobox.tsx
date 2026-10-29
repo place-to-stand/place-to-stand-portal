@@ -234,12 +234,16 @@ export const SearchableCombobox = React.forwardRef<
           className='pr-3'
           title={item.label}
         >
-          <CheckIcon
-            className={cn(
-              'mr-2 size-4 shrink-0',
-              selectedItem?.value === item.value ? 'opacity-100' : 'opacity-0'
-            )}
-          />
+          {/* The check column only exists while something is selected: an
+              "Add …" picker (no value) shouldn't indent every option. */}
+          {selectedItem ? (
+            <CheckIcon
+              className={cn(
+                'mr-2 size-4 shrink-0',
+                selectedItem.value === item.value ? 'opacity-100' : 'opacity-0'
+              )}
+            />
+          ) : null}
           {item.userId ? (
             <Avatar size='xs' className='mr-2 shrink-0'>
               {item.avatarUrl && (
