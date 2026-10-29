@@ -27,3 +27,5 @@ export type NotificationFeed = {
   items: NotificationItem[]
   unreadCount: number
 }
+
+export type NotificationFilter = 'all' | 'unread'

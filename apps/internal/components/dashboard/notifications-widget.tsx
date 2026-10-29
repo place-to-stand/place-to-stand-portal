@@ -17,9 +17,11 @@ export function NotificationsWidget({ className }: { className?: string }) {
       title='Notifications'
       meta={feed.unread ? `${feed.unread} unread` : null}
       className={className}
-      action={<NotificationControls feed={feed} />}
     >
-      <NotificationList feed={feed} />
+      <div className='space-y-2'>
+        <NotificationControls feed={feed} />
+        <NotificationList feed={feed} />
+      </div>
     </WidgetCard>
   )
 }

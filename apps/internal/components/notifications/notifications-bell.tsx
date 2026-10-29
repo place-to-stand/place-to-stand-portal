@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Bell } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
@@ -19,6 +19,8 @@ import {
  */
 export function NotificationsBell() {
   const [open, setOpen] = useState(false)
+  // The Clear all confirm takes focus; don't let that close the popover.
+  const confirmOpenRef = useRef(false)
   const feed = useNotificationFeed()
   const count = feed.unread
   const label = count ? `Notifications, ${count} unread` : 'Notifications'
@@ -27,8 +29,7 @@ export function NotificationsBell() {
     <Popover
       open={open}
       onOpenChange={next => {
-        // The "Clear read" confirm sits outside the popover; keep it open.
-        if (!next && feed.confirmingClearRead) return
+        if (!next && confirmOpenRef.current) return
         setOpen(next)
       }}
     >
@@ -55,9 +56,14 @@ export function NotificationsBell() {
         align='end'
         className='w-[min(26rem,calc(100vw-1.5rem))] overflow-hidden p-0'
       >
-        <div className='flex items-center justify-between gap-2 border-b px-4 py-2.5'>
+        <div className='space-y-2 border-b px-4 py-2.5'>
           <h2 className='text-sm font-semibold'>Notifications</h2>
-          <NotificationControls feed={feed} />
+          <NotificationControls
+            feed={feed}
+            onConfirmOpenChange={next => {
+              confirmOpenRef.current = next
+            }}
+          />
         </div>
         <div
           onClickCapture={event => {
