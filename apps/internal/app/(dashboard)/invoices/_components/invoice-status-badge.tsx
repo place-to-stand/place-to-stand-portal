@@ -1,3 +1,5 @@
+import { Receipt } from 'lucide-react'
+
 import { Badge } from '@pts/ui/badge'
 import { BADGE_TINTS } from '@pts/ui/badge-tints'
 
@@ -25,5 +27,28 @@ export function InvoiceStatusBadge({ status }: { status: string }) {
     >
       {INVOICE_STATUS_BADGES[status]?.label ?? status}
     </Badge>
+  )
+}
+
+// The status badge's ink, for the invoice icon. Written out in full so
+// Tailwind's scanner sees them.
+const INVOICE_STATUS_ICON: Record<string, string> = {
+  DRAFT: 'text-muted-foreground',
+  SENT: 'text-blue-600 dark:text-blue-300',
+  VIEWED: 'text-amber-600 dark:text-amber-300',
+  PAID: 'text-emerald-600 dark:text-emerald-300',
+  VOID: 'text-rose-600 dark:text-rose-300',
+}
+
+/** The invoice icon, coloured by status (same hues as the status badge). */
+export function InvoiceStatusIcon({ status }: { status: string }) {
+  return (
+    <Receipt
+      aria-hidden
+      className={cn(
+        'h-4 w-4 shrink-0',
+        INVOICE_STATUS_ICON[status] ?? 'text-muted-foreground'
+      )}
+    />
   )
 }

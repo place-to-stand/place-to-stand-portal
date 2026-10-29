@@ -3,14 +3,7 @@
 import { useState, useCallback } from 'react'
 import Link from 'next/link'
 import { formatCalendarDate } from '@pts/ui/dates'
-import {
-  Building2,
-  Check,
-  Copy,
-  ExternalLink,
-  Mail,
-  Receipt,
-} from 'lucide-react'
+import { Building2, Check, Copy, ExternalLink, Mail } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
@@ -45,7 +38,7 @@ import {
 
 import { InvoiceEmailDialog } from './invoice-email-dialog'
 import { InvoiceHourBlocksCell } from './invoice-hour-blocks-cell'
-import { InvoiceStatusBadge } from './invoice-status-badge'
+import { InvoiceStatusBadge, InvoiceStatusIcon } from './invoice-status-badge'
 
 type InvoicesTableMode = 'active' | 'archive'
 
@@ -290,7 +283,7 @@ export function InvoicesTableSection({
               >
                 <TableCell className='text-sm font-medium'>
                   <div className='flex items-center gap-2'>
-                    <Receipt className='text-muted-foreground h-4 w-4 shrink-0' />
+                    <InvoiceStatusIcon status={invoice.status} />
                     {invoice.invoice_number ? (
                       invoice.invoice_number
                     ) : (

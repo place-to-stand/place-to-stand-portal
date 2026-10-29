@@ -321,7 +321,8 @@ export const SearchableCombobox = React.forwardRef<
           // A custom trigger (an "Add …" button) keeps its own width.
           trigger
             ? 'inline-flex min-w-0 items-center gap-1'
-            : 'flex w-full min-w-0 items-center gap-1',
+            : // Same gap as the form grid's columns (gap-4) before Open/Create.
+              'flex w-full min-w-0 items-center gap-4',
           className
         )}
       >
