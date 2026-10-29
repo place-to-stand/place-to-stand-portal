@@ -1,7 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { ExternalLink, Star, X } from 'lucide-react'
+import { ExternalLink, Star, User, X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { EmptyState } from '@pts/ui/empty-state'
@@ -11,7 +11,10 @@ import {
   type ContactLink,
 } from '@/components/contacts/contact-link-picker'
 import { SheetSection } from '@/components/sheets/sheet-section'
-import { RecordRowButton } from '@/components/ui/record-row-button'
+import {
+  SheetRecordList,
+  SheetRecordRow,
+} from '@/components/sheets/sheet-record-row'
 import type { CompanyContactSummary } from '@/lib/companies/types'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { cn } from '@/lib/utils'
@@ -119,7 +122,7 @@ export function CompanyPeopleSection({
       {isEmpty ? (
         <EmptyState message='No one here yet. Add the people you know at this company.' />
       ) : (
-        <ul className='-mx-2 space-y-0.5'>
+        <SheetRecordList>
           {contacts.map(contact =>
             removed.has(contact.id) ? (
               <PersonRow
@@ -127,7 +130,9 @@ export function CompanyPeopleSection({
                 className='opacity-60'
                 onOpen={() => open('contact', contact.id)}
                 title={<span className='line-through'>{contact.name}</span>}
-                subtitle={<span className='text-destructive'>Pending removal</span>}
+                subtitle={
+                  <span className='text-destructive'>Pending removal</span>
+                }
               >
                 <Button
                   type='button'
@@ -185,7 +190,7 @@ export function CompanyPeopleSection({
               </PersonRow>
             )
           })}
-        </ul>
+        </SheetRecordList>
       )}
     </SheetSection>
   )
@@ -205,14 +210,13 @@ function PersonRow({
   children: ReactNode
 }) {
   return (
-    <li className={cn('flex items-center gap-1', className)}>
-      <RecordRowButton
-        variant='inset'
-        onClick={onOpen}
-        title={title}
-        subtitle={subtitle}
-      />
-      {children}
-    </li>
+    <SheetRecordRow
+      icon={User}
+      title={title}
+      description={subtitle}
+      onOpen={onOpen}
+      actions={children}
+      className={className}
+    />
   )
 }

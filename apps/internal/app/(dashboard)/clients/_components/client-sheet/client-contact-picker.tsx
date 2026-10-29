@@ -1,10 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Star, UserCheck, X } from 'lucide-react'
+import { Plus, Star, User, UserCheck, X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { EmptyState } from '@pts/ui/empty-state'
+import {
+  SheetRecordList,
+  SheetRecordRow,
+} from '@/components/sheets/sheet-record-row'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
   Command,
@@ -187,64 +191,62 @@ export function ClientContactList({
   }
 
   return (
-    <div className='flex flex-col gap-2'>
+    <SheetRecordList>
       {selectedContacts.map(contact => {
         const label = contact.name ?? contact.email
         const isPrimary = contact.id === primaryContactId
         return (
-          <div
+          <SheetRecordRow
             key={contact.id}
-            className='bg-muted/40 flex items-center justify-between gap-3 rounded-md border py-1.5 pr-1.5 pl-3'
-          >
-            <div className='flex min-w-0 flex-col text-sm leading-tight'>
-              <span className='flex items-center gap-1.5 font-medium'>
+            icon={User}
+            title={
+              <span className='flex items-center gap-1.5'>
                 {contact.name ?? contact.email}
                 {contact.hasPortalAccess ? <PortalAccessMark /> : null}
               </span>
-              {contact.name || contact.phone ? (
-                <span className='text-muted-foreground truncate text-xs'>
-                  {[contact.name ? contact.email : null, contact.phone]
+            }
+            description={
+              contact.name || contact.phone
+                ? [contact.name ? contact.email : null, contact.phone]
                     .filter(Boolean)
-                    .join(' · ')}
-                </span>
-              ) : null}
-            </div>
-            <div className='flex shrink-0 items-center'>
-              <RowActionButton
-                type='button'
-                label={
-                  isPrimary ? 'Unset primary contact' : 'Make primary contact'
-                }
-                icon={<Star className={cn(isPrimary && 'fill-current')} />}
-                className={cn(
-                  'text-muted-foreground',
-                  isPrimary && 'text-warning hover:text-warning'
-                )}
-                onClick={() => onTogglePrimary(contact)}
-                disabled={isPending}
-                aria-pressed={isPrimary}
-              />
-              <DisabledFieldTooltip
-                disabled={isPending}
-                reason={isPending ? pendingReason : null}
-                className='w-auto'
-              >
-                <Button
+                    .join(' · ')
+                : null
+            }
+            actions={
+              <>
+                <RowActionButton
                   type='button'
-                  variant='ghost'
-                  size='icon-sm'
-                  className='text-muted-foreground hover:text-destructive'
+                  label={
+                    isPrimary ? 'Unset primary contact' : 'Make primary contact'
+                  }
+                  icon={<Star className={cn(isPrimary && 'fill-current')} />}
+                  className={cn(
+                    'text-muted-foreground',
+                    isPrimary && 'text-warning hover:text-warning'
+                  )}
+                  onClick={() => onTogglePrimary(contact)}
                   disabled={isPending}
-                  onClick={() => onRequestRemoval(contact)}
-                  aria-label={`Unlink ${label}`}
+                  aria-pressed={isPrimary}
+                />
+                <DisabledFieldTooltip
+                  disabled={isPending}
+                  reason={isPending ? pendingReason : null}
+                  className='w-auto'
                 >
-                  <X className='h-4 w-4' />
-                </Button>
-              </DisabledFieldTooltip>
-            </div>
-          </div>
+                  <RowActionButton
+                    type='button'
+                    label={`Remove ${label} from Portal access`}
+                    icon={<X />}
+                    className='text-muted-foreground hover:text-destructive'
+                    disabled={isPending}
+                    onClick={() => onRequestRemoval(contact)}
+                  />
+                </DisabledFieldTooltip>
+              </>
+            }
+          />
         )
       })}
-    </div>
+    </SheetRecordList>
   )
 }

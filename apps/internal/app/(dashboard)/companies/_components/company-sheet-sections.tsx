@@ -1,6 +1,6 @@
 'use client'
 
-import { X } from 'lucide-react'
+import { Building2, Handshake, X } from 'lucide-react'
 
 import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
@@ -11,7 +11,10 @@ import {
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
-import { RecordRowButton } from '@/components/ui/record-row-button'
+import {
+  SheetRecordList,
+  SheetRecordRow,
+} from '@/components/sheets/sheet-record-row'
 import { roleCan } from '@/lib/auth/capabilities'
 import type { CompanyLeadSummary } from '@/lib/companies/types'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
@@ -35,19 +38,22 @@ export function CompanyLeadsSection({
       {leads.length === 0 ? (
         <EmptyState message='No leads at this company.' />
       ) : (
-        <ul className='-mx-2 space-y-0.5'>
+        <SheetRecordList>
           {leads.map(lead => (
-            <li key={lead.id}>
-              <RecordRowButton
-                variant='inset'
-                onClick={() => open('lead', lead.id)}
-                title={lead.contactName}
-                subtitle={lead.assigneeName}
-                trailing={<LeadStatusBadge status={lead.status} />}
-              />
-            </li>
+            <SheetRecordRow
+              key={lead.id}
+              icon={Handshake}
+              onOpen={() => open('lead', lead.id)}
+              title={lead.contactName}
+              description={lead.assigneeName}
+              actions={
+                <span className='pr-1.5'>
+                  <LeadStatusBadge status={lead.status} />
+                </span>
+              }
+            />
           ))}
-        </ul>
+        </SheetRecordList>
       )}
     </SheetSection>
   )
@@ -107,46 +113,43 @@ export function CompanyClientsSection({
       {clients.length === 0 && pending.length === 0 ? (
         <EmptyState message='Not a client yet. Add a client, or convert a lead, to link one here.' />
       ) : (
-        <ul className='-mx-2 space-y-0.5'>
+        <SheetRecordList>
           {clients.map(client => (
-            <li key={client.id}>
-              {isAdmin ? (
-                <RecordRowButton
-                  variant='inset'
-                  onClick={() => open('client', client.id)}
-                  title={client.name}
-                />
-              ) : (
-                <p className='px-2 py-2 text-sm font-medium'>{client.name}</p>
-              )}
-            </li>
+            <SheetRecordRow
+              key={client.id}
+              icon={Building2}
+              title={client.name}
+              // Client records are admin-only; others just see the name.
+              onOpen={isAdmin ? () => open('client', client.id) : undefined}
+            />
           ))}
           {pending.map(client => {
             const from = movesFrom(client.id)
             return (
-              <li key={`added-${client.id}`} className='flex items-center gap-1'>
-                <RecordRowButton
-                  variant='inset'
-                  onClick={() => open('client', client.id)}
-                  title={client.name}
-                  subtitle={
-                    <span className='text-warning'>
-                      {from ? `Moves from ${from}` : 'Pending save'}
-                    </span>
-                  }
-                />
-                <RowActionButton
-                  type='button'
-                  disabled={disabled}
-                  label={`Don't link ${client.name}`}
-                  onClick={() => onRemoveAdded(client.id)}
-                  className='text-muted-foreground hover:text-destructive'
-                  icon={<X />}
-                />
-              </li>
+              <SheetRecordRow
+                key={`added-${client.id}`}
+                icon={Building2}
+                onOpen={() => open('client', client.id)}
+                title={client.name}
+                description={
+                  <span className='text-warning'>
+                    {from ? `Moves from ${from}` : 'Pending save'}
+                  </span>
+                }
+                actions={
+                  <RowActionButton
+                    type='button'
+                    disabled={disabled}
+                    label={`Don't link ${client.name}`}
+                    onClick={() => onRemoveAdded(client.id)}
+                    className='text-muted-foreground hover:text-destructive'
+                    icon={<X />}
+                  />
+                }
+              />
             )
           })}
-        </ul>
+        </SheetRecordList>
       )}
     </SheetSection>
   )

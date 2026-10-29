@@ -1,6 +1,14 @@
+'use client'
+
 import { Building2 } from 'lucide-react'
 
 import { EmptyState } from '@pts/ui/empty-state'
+import {
+  SheetRecordList,
+  SheetRecordRow,
+} from '@/components/sheets/sheet-record-row'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 
 export type ContactClientOption = {
   id: string
@@ -13,25 +21,27 @@ export type ContactClientListProps = {
 }
 
 /**
- * The contact's clients, one row each. Read-only: a contact's clients follow
- * its company, so they change by changing the company.
+ * The clients this contact can see in the portal, one row each. Read-only:
+ * set on each client's Portal access. Admins can open the client.
  */
 export function ContactClientList({ clients }: ContactClientListProps) {
+  const { open } = useSheetParams()
+  const { isAdmin } = useViewerAccess()
+
   if (clients.length === 0) {
     return <EmptyState message='No client access yet.' />
   }
 
   return (
-    <div className='flex flex-col gap-2'>
+    <SheetRecordList>
       {clients.map(client => (
-        <div
+        <SheetRecordRow
           key={client.id}
-          className='bg-muted/40 flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm leading-tight'
-        >
-          <Building2 className='text-muted-foreground h-4 w-4 shrink-0' />
-          <span className='truncate font-medium'>{client.name}</span>
-        </div>
+          icon={Building2}
+          title={client.name}
+          onOpen={isAdmin ? () => open('client', client.id) : undefined}
+        />
       ))}
-    </div>
+    </SheetRecordList>
   )
 }

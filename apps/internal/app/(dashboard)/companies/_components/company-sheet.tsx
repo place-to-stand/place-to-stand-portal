@@ -274,7 +274,10 @@ export function CompanySheet({
     [form]
   )
 
-  const addedContacts = useWatch({ control: form.control, name: 'addedContacts' })
+  const addedContacts = useWatch({
+    control: form.control,
+    name: 'addedContacts',
+  })
   const removedContactIds = useWatch({
     control: form.control,
     name: 'removedContactIds',
@@ -301,7 +304,10 @@ export function CompanySheet({
       }
       form.setValue(
         'addedContacts',
-        [...added, { id: contact.id, name: contact.name, email: contact.email }],
+        [
+          ...added,
+          { id: contact.id, name: contact.name, email: contact.email },
+        ],
         { shouldDirty: true }
       )
       // A contact just created on the stacked sheet isn't in the list yet.
