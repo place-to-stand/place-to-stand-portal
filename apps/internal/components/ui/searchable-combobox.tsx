@@ -15,6 +15,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
+import { CommandCreateRows } from '@/components/ui/command-create-rows'
 
 export type SearchableComboboxItem = {
   value: string
@@ -58,6 +59,12 @@ type SearchableComboboxProps = {
    * disabled state; the popover behaves identically either way.
    */
   trigger?: React.ReactElement
+  /**
+   * Adds the "Create new …" rows (`CommandCreateRows`); fires with the typed
+   * search text. Pair with `createEntityLabel` ("company").
+   */
+  onCreate?: (query: string) => void
+  createEntityLabel?: string
 }
 
 const baseTriggerClasses =
@@ -90,10 +97,13 @@ export const SearchableCombobox = React.forwardRef<
       ariaDescribedBy,
       ariaInvalid,
       trigger,
+      onCreate,
+      createEntityLabel = 'record',
     },
     forwardedRef
   ) => {
     const [open, setOpen] = React.useState(false)
+    const [query, setQuery] = React.useState('')
     const triggerRef = React.useRef<HTMLButtonElement | null>(null)
     const [contentWidth, setContentWidth] = React.useState<number>()
     // Natural width of the popup measured once per open, while every option
@@ -159,6 +169,7 @@ export const SearchableCombobox = React.forwardRef<
       }
 
       setOpen(next)
+      if (!next) setQuery('')
 
       if (!next && onBlur) {
         onBlur()
@@ -269,8 +280,10 @@ export const SearchableCombobox = React.forwardRef<
               <CommandInput
                 placeholder={searchPlaceholder ?? resolvedPlaceholder}
                 className='h-9'
+                value={query}
+                onValueChange={setQuery}
               />
-              <CommandEmpty>{emptyMessage}</CommandEmpty>
+              {onCreate ? null : <CommandEmpty>{emptyMessage}</CommandEmpty>}
               <CommandList
                 className='max-h-[min(60vh,260px)] overflow-y-auto overscroll-contain'
                 onWheel={stopScrollPropagation}
@@ -396,6 +409,17 @@ export const SearchableCombobox = React.forwardRef<
                     })}
                   </CommandGroup>
                 )}
+                {onCreate ? (
+                  <CommandCreateRows
+                    query={query}
+                    entityLabel={createEntityLabel}
+                    onCreate={typed => {
+                      setOpen(false)
+                      setQuery('')
+                      onCreate(typed)
+                    }}
+                  />
+                ) : null}
               </CommandList>
             </Command>
           </PopoverContent>

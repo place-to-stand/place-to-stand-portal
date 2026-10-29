@@ -135,10 +135,12 @@ const deriveInitialStatus = (
 }
 
 export const buildProjectFormDefaults = (
-  project: ProjectWithClient | null
+  project: ProjectWithClient | null,
+  /** New projects start as this type; non-admins can only make personal boards. */
+  defaultType: ProjectTypeValue = 'CLIENT'
 ): ProjectSheetFormValues => ({
   name: project?.name ?? '',
-  projectType: project?.type ?? 'CLIENT',
+  projectType: project?.type ?? defaultType,
   clientId: project?.client_id ?? '',
   status: deriveInitialStatus(project),
   startsOn: project?.starts_on ? project.starts_on.slice(0, 10) : '',

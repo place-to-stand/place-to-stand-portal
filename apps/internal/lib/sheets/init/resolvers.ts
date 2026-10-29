@@ -15,6 +15,8 @@ import { fetchLeadAssignees, fetchLeadById } from '@/lib/data/leads'
 import { getOrCreateSalesProject } from '@/lib/leads/sales-project'
 import { fetchAdminUsers, fetchCrmUsers } from '@/lib/data/users'
 import { NotFoundError } from '@/lib/errors/http'
+import { ForbiddenError } from '@/lib/errors/http'
+import { roleCan } from '@/lib/auth/capabilities'
 import { ensureTaskWorkAccess } from '@/lib/projects/access'
 import { scopeProjectsForViewer } from '@/lib/projects/viewer-scope'
 import { fetchClientDirectory } from '@/lib/queries/clients'
@@ -167,6 +169,14 @@ const resolveUserInit: SheetInitResolver<'user'> = async (user, id) => {
 }
 
 const resolveProjectInit: SheetInitResolver<'project'> = async (user, id) => {
+  // Non-admins may only start a personal board: no client or team lists.
+  if (user.role !== 'ADMIN') {
+    if (id !== NEW_SHEET_VALUE || !roleCan(user.role, 'projects.create_personal_board')) {
+      throw new ForbiddenError('Only admins can edit projects.')
+    }
+    return { project: null, clients: [], adminUsers: [] }
+  }
+
   const [clientDirectory, adminUsersResult] = await Promise.all([
     fetchClientDirectory(),
     fetchAdminUsers(),

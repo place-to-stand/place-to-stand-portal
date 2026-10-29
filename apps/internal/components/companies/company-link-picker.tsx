@@ -41,7 +41,7 @@ export function CompanyLinkPicker({
   disabled,
   id,
 }: CompanyLinkPickerProps) {
-  const { data = [], isLoading } = useCompanyOptions()
+  const { data = [] } = useCompanyOptions()
 
   return (
     <EntityLinkPicker
@@ -49,13 +49,12 @@ export function CompanyLinkPicker({
       entity='company'
       entityLabel='company'
       aria-label='Company'
-      icon={<Building2 className='text-muted-foreground size-4 shrink-0' />}
+      icon={Building2}
       value={value ? toOption(value) : null}
       onChange={option =>
         onChange(option ? { id: option.id, name: option.label } : null)
       }
       options={data.map(toOption)}
-      isLoading={isLoading}
       disabled={disabled}
       toOption={toOption}
       createPrefillParam='companyName'

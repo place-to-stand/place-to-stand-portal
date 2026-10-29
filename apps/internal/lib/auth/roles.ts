@@ -40,6 +40,8 @@ export const SALES_SHEET_ENTITIES: ReadonlySet<string> = new Set([
   'company',
   // Task sheets check project membership in their own resolver.
   'task',
+  // Only `?project=new` (a personal board); the resolver refuses the rest.
+  'project',
 ])
 
 export function isAdminRole(role: Role | null | undefined): boolean {

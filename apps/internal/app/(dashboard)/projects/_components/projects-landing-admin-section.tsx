@@ -20,7 +20,6 @@ import { ProjectsLanding } from './projects-landing'
 import type { ClientHoursData, LandingUnfilteredCounts } from './projects-landing'
 import { ProjectsLandingFilters } from './projects-landing-filters'
 import { PROJECTS_TABS } from '../_lib/tabs'
-import { NewPersonalBoardButton } from './new-personal-board-button'
 
 export type ProjectsLandingAdminSectionProps = {
   projects: LandingProject[]
@@ -89,25 +88,22 @@ export function ProjectsLandingAdminSection({
           : { label: 'projects', total: filteredProjectCount }
       }
       primaryAction={
-        memberView ? (
-          <NewPersonalBoardButton />
-        ) : (
+        // Members get the same sheet, limited to a personal board.
         <DisabledFieldTooltip
-          disabled={createDisabled}
-          reason={createDisabledReason}
+          disabled={!memberView && createDisabled}
+          reason={memberView ? null : createDisabledReason}
         >
           <Button
             type='button'
             size='sm'
             onClick={openCreate}
-            disabled={createDisabled}
+            disabled={!memberView && createDisabled}
             className='gap-2'
           >
             <Plus className='h-4 w-4' />
-            Add project
+            {memberView ? 'New personal board' : 'Add project'}
           </Button>
         </DisabledFieldTooltip>
-        )
       }
     >
       <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>

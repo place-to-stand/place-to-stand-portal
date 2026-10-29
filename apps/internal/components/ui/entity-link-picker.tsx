@@ -1,26 +1,20 @@
 'use client'
 
-import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { ChevronsUpDown, ExternalLink, X } from 'lucide-react'
+import { useEffect, useMemo, useRef, type ComponentType } from 'react'
+import { ExternalLink, X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import {
-  Command,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
-import { CommandCreateRows } from '@/components/ui/command-create-rows'
+  SearchableCombobox,
+  type SearchableComboboxItem,
+} from '@/components/ui/searchable-combobox'
 import {
   subscribeSheetCreated,
   type SheetCreatedEntity,
   type SheetCreatedRecords,
 } from '@/lib/sheets/created'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
-import { cn } from '@/lib/utils'
 
 export type EntityLinkOption = {
   id: string
@@ -37,26 +31,28 @@ type EntityLinkPickerProps<E extends SheetCreatedEntity> = {
   value: EntityLinkOption | null
   onChange: (value: EntityLinkOption | null) => void
   options: readonly EntityLinkOption[]
-  isLoading?: boolean
   disabled?: boolean
   placeholder?: string
   /** Turns a record from the create sheet into an option. */
   toOption: (record: SheetCreatedRecords[E]) => EntityLinkOption
   /** Query param that prefills the create sheet's name (`companyName`). */
   createPrefillParam: string
-  /** Hide the "Create new…" rows (roles that can't create the entity). */
+  /** Hide "Create new…" (roles that can't create the entity). */
   allowCreate?: boolean
   id?: string
   'aria-label'?: string
-  icon?: ReactNode
+  icon?: ComponentType<{ className?: string }>
 }
 
+const pluralize = (noun: string) =>
+  noun.endsWith('y') ? `${noun.slice(0, -1)}ies` : `${noun}s`
+
 /**
- * The portal's one pattern for linking a record to another: a combobox that
- * searches existing records, offers "Create new …" (which opens that
- * entity's create sheet on top of the current one and selects the new
- * record when it saves), clears with one click, and opens the linked record.
- * The link itself is saved with the host form, never on selection.
+ * The portal's one pattern for linking a record to another, built on
+ * `SearchableCombobox`: search existing records, "Create new …" (opens that
+ * entity's create sheet on top of the current one and selects the new record
+ * when it saves), clear with one click, and open the linked record. The link
+ * itself is saved with the host form, never on selection.
  */
 export function EntityLinkPicker<E extends SheetCreatedEntity>({
   entity,
@@ -64,7 +60,6 @@ export function EntityLinkPicker<E extends SheetCreatedEntity>({
   value,
   onChange,
   options,
-  isLoading = false,
   disabled = false,
   placeholder,
   toOption,
@@ -75,8 +70,6 @@ export function EntityLinkPicker<E extends SheetCreatedEntity>({
   icon,
 }: EntityLinkPickerProps<E>) {
   const { open: openSheet, openNew } = useSheetParams()
-  const [isOpen, setIsOpen] = useState(false)
-  const [query, setQuery] = useState('')
   // Only the picker that asked for the create sheet takes its record.
   const awaitingCreate = useRef(false)
   const onChangeRef = useRef(onChange)
@@ -96,104 +89,63 @@ export function EntityLinkPicker<E extends SheetCreatedEntity>({
     [entity]
   )
 
-  const handleCreate = (typed: string) => {
-    awaitingCreate.current = true
-    setIsOpen(false)
-    setQuery('')
-    openNew(entity, typed.trim() ? { [createPrefillParam]: typed.trim() } : undefined)
-  }
+  // The selected record stays listed even before the options refetch (a
+  // just-created record) or when it's no longer offered (archived).
+  const items = useMemo<SearchableComboboxItem[]>(() => {
+    const all =
+      value && !options.some(option => option.id === value.id)
+        ? [value, ...options]
+        : options
+    return all.map(option => ({
+      value: option.id,
+      label: option.label,
+      description: option.description ?? undefined,
+      keywords: option.description ? [option.description] : undefined,
+      icon,
+    }))
+  }, [icon, options, value])
 
-  const plural = entityLabel.endsWith('y')
-    ? `${entityLabel.slice(0, -1)}ies`
-    : `${entityLabel}s`
+  const plural = pluralize(entityLabel)
 
   return (
     <div className='flex items-center gap-1'>
-      <Popover
-        open={isOpen}
-        onOpenChange={next => {
-          setIsOpen(next)
-          if (!next) setQuery('')
+      <SearchableCombobox
+        id={id}
+        className='flex-1'
+        items={items}
+        value={value?.id ?? ''}
+        onChange={nextId => {
+          const next = items.find(item => item.value === nextId)
+          onChange(
+            next
+              ? {
+                  id: next.value,
+                  label: next.label,
+                  description: next.description,
+                }
+              : null
+          )
         }}
-        modal
-      >
-        <PopoverTrigger asChild>
-          <Button
-            id={id}
-            type='button'
-            variant='outline'
-            role='combobox'
-            aria-expanded={isOpen}
-            aria-label={ariaLabel}
-            disabled={disabled}
-            className='min-w-0 flex-1 justify-between font-normal'
-          >
-            <span className='flex min-w-0 items-center gap-2'>
-              {icon}
-              <span
-                className={cn('truncate', !value && 'text-muted-foreground')}
-              >
-                {value?.label ?? placeholder ?? `Select a ${entityLabel}`}
-              </span>
-            </span>
-            <ChevronsUpDown className='text-muted-foreground size-4 shrink-0' />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent
-          className='w-(--anchor-width) min-w-72 p-0'
-          align='start'
-        >
-          <Command>
-            <CommandInput
-              placeholder={`Search ${plural}…`}
-              value={query}
-              onValueChange={setQuery}
-            />
-            <CommandList>
-              {isLoading ? (
-                <p className='text-muted-foreground px-3 py-2 text-sm'>Loading…</p>
-              ) : (
-                <CommandGroup>
-                  {options.map(option => (
-                    <CommandItem
-                      key={option.id}
-                      value={`${option.label} ${option.description ?? ''} ${option.id}`}
-                      onSelect={() => {
-                        onChange(option)
-                        setIsOpen(false)
-                        setQuery('')
-                      }}
-                    >
-                      <div className='flex min-w-0 flex-col'>
-                        <span
-                          className={cn(
-                            'truncate',
-                            option.id === value?.id && 'font-semibold'
-                          )}
-                        >
-                          {option.label}
-                        </span>
-                        {option.description ? (
-                          <span className='text-muted-foreground truncate text-xs'>
-                            {option.description}
-                          </span>
-                        ) : null}
-                      </div>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              )}
-              {allowCreate ? (
-                <CommandCreateRows
-                  query={query}
-                  entityLabel={entityLabel}
-                  onCreate={handleCreate}
-                />
-              ) : null}
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+        placeholder={placeholder ?? `Select a ${entityLabel}`}
+        searchPlaceholder={`Search ${plural}…`}
+        emptyMessage={`No ${plural} found.`}
+        disabled={disabled}
+        ariaLabel={ariaLabel}
+        createEntityLabel={entityLabel}
+        onCreate={
+          allowCreate
+            ? typed => {
+                awaitingCreate.current = true
+                openNew(
+                  entity,
+                  typed.trim()
+                    ? { [createPrefillParam]: typed.trim() }
+                    : undefined
+                )
+              }
+            : undefined
+        }
+      />
       {value ? (
         <>
           <Tooltip>

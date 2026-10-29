@@ -23,6 +23,7 @@ import {
   finishSettingsInteraction,
   startSettingsInteraction,
 } from '@/lib/posthog/settings'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import {
   buildProjectFormDefaults,
   createProjectSavePayload,
@@ -113,6 +114,9 @@ export function useProjectSheetState({
   project,
   clients,
 }: UseProjectSheetStateArgs): UseProjectSheetStateReturn {
+  // Non-admins can only create personal boards (`saveProject` enforces it).
+  const { isAdmin } = useViewerAccess()
+  const newProjectType = isAdmin ? 'CLIENT' : 'PERSONAL'
   const isEditing = Boolean(project)
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -133,7 +137,7 @@ export function useProjectSheetState({
 
   const form = useForm<ProjectSheetFormValues>({
     resolver,
-    defaultValues: buildProjectFormDefaults(project),
+    defaultValues: buildProjectFormDefaults(project, newProjectType),
   })
 
   const hasUnsavedChanges = form.formState.isDirty || isReposDirty
@@ -145,13 +149,13 @@ export function useProjectSheetState({
   const requiresClientSelection = projectType === 'CLIENT'
 
   const resetFormState = useCallback(() => {
-    const defaults = buildProjectFormDefaults(project)
+    const defaults = buildProjectFormDefaults(project, newProjectType)
 
     form.reset(defaults, { keepDefaultValues: false })
     form.clearErrors()
     setFeedback(null)
     setIsReposDirty(false)
-  }, [form, project])
+  }, [form, newProjectType, project])
 
   const handleReposDirtyChange = useCallback((isDirty: boolean) => {
     setIsReposDirty(isDirty)

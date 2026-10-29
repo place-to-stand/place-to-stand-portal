@@ -7,7 +7,9 @@ import { CheckCheck, Circle, X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { formatRelativeTime } from '@pts/ui/dates'
+import { Tabs, TabsList, TabsTrigger } from '@pts/ui/tabs'
 import { EmptyState } from '@pts/ui/empty-state'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import type {
   NotificationFeed,
@@ -24,7 +26,9 @@ const POLL_MS = 60_000
 
 type FeedAction = { action: 'read' | 'unread' | 'clear'; ids?: string[] }
 
-async function fetchFeed(filter: NotificationFilter): Promise<NotificationFeed> {
+async function fetchFeed(
+  filter: NotificationFilter
+): Promise<NotificationFeed> {
   const response = await fetch(`/api/notifications?filter=${filter}`)
   const payload = await response.json()
   if (!response.ok || !payload.ok) {
@@ -59,17 +63,22 @@ function applyLocally(
     items = items.filter(item => !hits(item))
   } else {
     items = items.map(item =>
-      hits(item) ? { ...item, readAt: action === 'read' ? (item.readAt ?? now) : null } : item
+      hits(item)
+        ? { ...item, readAt: action === 'read' ? (item.readAt ?? now) : null }
+        : item
     )
     if (filter === 'unread' && action === 'read') {
       items = items.filter(item => !item.readAt)
     }
   }
 
-  const changedUnread = feed.items.filter(item => hits(item) && !item.readAt).length
+  const changedUnread = feed.items.filter(
+    item => hits(item) && !item.readAt
+  ).length
   const unreadCount =
     action === 'unread'
-      ? feed.unreadCount + feed.items.filter(item => hits(item) && item.readAt).length
+      ? feed.unreadCount +
+        feed.items.filter(item => hits(item) && item.readAt).length
       : Math.max(0, feed.unreadCount - (ids ? changedUnread : feed.unreadCount))
 
   return { items, unreadCount }
@@ -119,24 +128,19 @@ export function NotificationsWidget({ className }: { className?: string }) {
       className={className}
       action={
         <div className='flex items-center gap-1'>
-          <div role='group' aria-label='Show' className='bg-muted flex rounded-md p-0.5'>
-            {(['all', 'unread'] as const).map(value => (
-              <button
-                key={value}
-                type='button'
-                aria-pressed={filter === value}
-                onClick={() => setFilter(value)}
-                className={cn(
-                  'rounded px-2 py-0.5 text-xs font-medium capitalize outline-none focus-visible:ring-2',
-                  filter === value
-                    ? 'bg-background shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                {value}
-              </button>
-            ))}
-          </div>
+          <Tabs
+            value={filter}
+            onValueChange={value => setFilter(value as NotificationFilter)}
+          >
+            <TabsList className='h-7' aria-label='Show'>
+              <TabsTrigger value='all' className='px-2 py-0.5 text-xs'>
+                All
+              </TabsTrigger>
+              <TabsTrigger value='unread' className='px-2 py-0.5 text-xs'>
+                Unread
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -231,15 +235,14 @@ export function NotificationsWidget({ className }: { className?: string }) {
                 >
                   {item.readAt ? 'Mark unread' : 'Mark read'}
                 </Button>
-                <Button
+                <RowActionButton
                   type='button'
-                  variant='ghost'
-                  size='icon-sm'
-                  aria-label='Clear notification'
-                  onClick={() => mutation.mutate({ action: 'clear', ids: [item.id] })}
-                >
-                  <X aria-hidden />
-                </Button>
+                  label='Clear notification'
+                  icon={<X aria-hidden />}
+                  onClick={() =>
+                    mutation.mutate({ action: 'clear', ids: [item.id] })
+                  }
+                />
               </div>
             </li>
           ))}

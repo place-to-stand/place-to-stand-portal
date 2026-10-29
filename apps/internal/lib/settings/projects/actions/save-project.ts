@@ -2,7 +2,8 @@
 
 import { eq } from 'drizzle-orm'
 
-import { requireRole } from '@/lib/auth/session'
+import { roleCan } from '@/lib/auth/capabilities'
+import { requireStaffUser } from '@/lib/auth/session'
 import { logActivity } from '@/lib/activity/logger'
 import { projectCreatedEvent, projectUpdatedEvent } from '@/lib/activity/events'
 import type { ProjectStatusValue } from '@/lib/constants'
@@ -33,8 +34,9 @@ const INSERT_RETRY_LIMIT = 3
 export async function saveProject(
   input: ProjectInput
 ): Promise<ProjectActionResult> {
-  const user = await requireRole('ADMIN')
+  const user = await requireStaffUser()
   const parsed = projectSchema.safeParse(input)
+  const canManage = roleCan(user.role, 'projects.manage')
 
   if (!parsed.success) {
     const { fieldErrors, formErrors } = parsed.error.flatten()
@@ -56,11 +58,25 @@ export async function saveProject(
     memberIds,
   } = parsed.data
 
+  // Without `projects.manage`, the sheet only creates the user's own
+  // personal board: no edits, no client, no other owner, no members.
+  if (!canManage) {
+    if (
+      id ||
+      projectType !== 'PERSONAL' ||
+      !roleCan(user.role, 'projects.create_personal_board')
+    ) {
+      return { error: 'You can only create personal boards.' }
+    }
+  }
+  const ownerIdToSave = canManage ? ownerId : user.id
+  const memberIdsToSave = canManage ? memberIds : undefined
+
   // Check members before writing anything, so a bad list can't leave a new
   // project behind that a retry would duplicate.
-  if (memberIds !== undefined) {
+  if (memberIdsToSave !== undefined) {
     try {
-      await assertValidProjectMemberIds(memberIds)
+      await assertValidProjectMemberIds(memberIdsToSave)
     } catch (error) {
       if (error instanceof InvalidProjectMemberError) {
         return { error: error.message }
@@ -117,7 +133,7 @@ export async function saveProject(
                 endsOn: endsOn ?? null,
                 createdBy: user.id,
                 slug: slugCandidate,
-                ownerId: ownerId ?? null,
+                ownerId: ownerIdToSave ?? null,
               })
               .returning({ id: projects.id })
 
@@ -335,12 +351,12 @@ export async function saveProject(
   // Members are synced after the row is written (a new project has no id
   // before). An omitted list leaves the current members untouched.
   const savedProjectId = result.projectId ?? id
-  if (!result.error && savedProjectId && memberIds !== undefined) {
+  if (!result.error && savedProjectId && memberIdsToSave !== undefined) {
     try {
       await syncProjectMembers({
         actor: user,
         projectId: savedProjectId,
-        memberIds,
+        memberIds: memberIdsToSave,
       })
     } catch (error) {
       console.error('Failed to update project members', error)

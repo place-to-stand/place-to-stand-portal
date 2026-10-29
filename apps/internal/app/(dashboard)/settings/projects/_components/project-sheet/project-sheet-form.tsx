@@ -40,6 +40,8 @@ import type {
 } from '@/lib/settings/projects/project-sheet-ui-state'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import type { ProjectSheetFieldState } from './project-sheet-field-state'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
+
 import { GitHubReposSection, type PendingRepo } from './github-repos-section'
 import { ProjectMembersField } from './project-members-field'
 import {
@@ -72,6 +74,9 @@ export type ProjectSheetFormProps = {
 }
 
 export function ProjectSheetForm(props: ProjectSheetFormProps) {
+  // Non-admins get a personal-board sheet: no client, owner, members or
+  // integrations (`saveProject` enforces the same rule).
+  const { isAdmin } = useViewerAccess()
   const {
     form,
     fieldState,
@@ -326,7 +331,9 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                       </DisabledFieldTooltip>
                     </FormControl>
                     <SelectContent>
-                      {PROJECT_TYPE_OPTIONS.map(option => (
+                      {PROJECT_TYPE_OPTIONS.filter(
+                        option => isAdmin || option.value === 'PERSONAL'
+                      ).map(option => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>
@@ -337,33 +344,35 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name='clientId'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Client</FormLabel>
-                  <FormControl>
-                    <DisabledFieldTooltip
-                      disabled={fieldState.client.disabled}
-                      reason={fieldState.client.reason}
-                    >
-                      <SearchableCombobox
-                        name={field.name}
-                        value={field.value ?? ''}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        items={clientOptions}
-                        searchPlaceholder='Search clients...'
-                        emptyMessage='No clients found.'
+            {isAdmin ? (
+              <FormField
+                control={form.control}
+                name='clientId'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Client</FormLabel>
+                    <FormControl>
+                      <DisabledFieldTooltip
                         disabled={fieldState.client.disabled}
-                      />
-                    </DisabledFieldTooltip>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                        reason={fieldState.client.reason}
+                      >
+                        <SearchableCombobox
+                          name={field.name}
+                          value={field.value ?? ''}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          items={clientOptions}
+                          searchPlaceholder='Search clients...'
+                          emptyMessage='No clients found.'
+                          disabled={fieldState.client.disabled}
+                        />
+                      </DisabledFieldTooltip>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : null}
           </div>
           <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
             <FormField
@@ -470,67 +479,73 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                 )
               }}
             />
-            <FormField
-              control={form.control}
-              name='ownerId'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Project owner</FormLabel>
-                  <FormControl>
-                    <DisabledFieldTooltip
-                      disabled={fieldState.owner.disabled}
-                      reason={fieldState.owner.reason}
-                    >
-                      <SearchableCombobox
-                        name={field.name}
-                        value={field.value ?? ''}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        items={ownerOptions}
-                        searchPlaceholder='Search team members...'
-                        emptyMessage='No team members found.'
+            {isAdmin ? (
+              <FormField
+                control={form.control}
+                name='ownerId'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Project owner</FormLabel>
+                    <FormControl>
+                      <DisabledFieldTooltip
                         disabled={fieldState.owner.disabled}
-                      />
-                    </DisabledFieldTooltip>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                        reason={fieldState.owner.reason}
+                      >
+                        <SearchableCombobox
+                          name={field.name}
+                          value={field.value ?? ''}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          items={ownerOptions}
+                          searchPlaceholder='Search team members...'
+                          emptyMessage='No team members found.'
+                          disabled={fieldState.owner.disabled}
+                        />
+                      </DisabledFieldTooltip>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : null}
           </div>
 
-          <ProjectMembersField
-            form={form}
-            projectId={projectId}
-            disabled={fieldState.owner.disabled}
-          />
+          {isAdmin ? (
+            <>
+              <ProjectMembersField
+                form={form}
+                projectId={projectId}
+                disabled={fieldState.owner.disabled}
+              />
 
-          <GitHubReposSection
-            projectId={projectId}
-            pendingRepos={pendingRepos}
-            removedRepoIds={removedRepoIds}
-            onPendingReposChange={handlePendingReposChange}
-            onRemovedRepoIdsChange={handleRemovedRepoIdsChange}
-            onDirtyChange={setReposDirty}
-          />
+              <GitHubReposSection
+                projectId={projectId}
+                pendingRepos={pendingRepos}
+                removedRepoIds={removedRepoIds}
+                onPendingReposChange={handlePendingReposChange}
+                onRemovedRepoIdsChange={handleRemovedRepoIdsChange}
+                onDirtyChange={setReposDirty}
+              />
 
-          <IntegrationLinksSection
-            provider='VERCEL'
-            projectId={projectId}
-            pendingLinks={pendingLinks}
-            removedLinkIds={removedLinkIds}
-            onPendingLinksChange={setPendingLinks}
-            onRemovedLinkIdsChange={setRemovedLinkIds}
-          />
+              <IntegrationLinksSection
+                provider='VERCEL'
+                projectId={projectId}
+                pendingLinks={pendingLinks}
+                removedLinkIds={removedLinkIds}
+                onPendingLinksChange={setPendingLinks}
+                onRemovedLinkIdsChange={setRemovedLinkIds}
+              />
 
-          <IntegrationLinksSection
-            provider='SUPABASE'
-            projectId={projectId}
-            pendingLinks={pendingLinks}
-            removedLinkIds={removedLinkIds}
-            onPendingLinksChange={setPendingLinks}
-            onRemovedLinkIdsChange={setRemovedLinkIds}
-          />
+              <IntegrationLinksSection
+                provider='SUPABASE'
+                projectId={projectId}
+                pendingLinks={pendingLinks}
+                removedLinkIds={removedLinkIds}
+                onPendingLinksChange={setPendingLinks}
+                onRemovedLinkIdsChange={setRemovedLinkIds}
+              />
+            </>
+          ) : null}
 
           {feedback ? (
             <p className='border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm'>
