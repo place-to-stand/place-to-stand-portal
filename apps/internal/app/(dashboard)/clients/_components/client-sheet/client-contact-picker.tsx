@@ -202,13 +202,11 @@ export function ClientContactList({
       {selectedContacts.map(contact => {
         const label = contact.name ?? contact.email
         const isPrimary = contact.id === primaryContactId
-        // Older access rows can point outside the company: show them so
-        // they can be removed, but no star.
-        const outsider = Boolean(
-          companyId &&
+        // Access rows can point outside the company (older rows, or the
+        // client was unlinked): show them so they can be removed, no star.
+        const outsider =
           contact.companyId !== undefined &&
-          contact.companyId !== companyId
-        )
+          (!companyId || contact.companyId !== companyId)
         return (
           <ContactRecordRow
             key={contact.id}
@@ -216,7 +214,9 @@ export function ClientContactList({
             titleAddon={contact.hasPortalAccess ? <PortalAccessMark /> : null}
             note={
               outsider ? (
-                <span className='text-warning'>Not at this company</span>
+                <span className='text-warning'>
+                  {companyId ? 'Not at this company' : 'No linked company'}
+                </span>
               ) : undefined
             }
             actions={

@@ -36,6 +36,9 @@ type ClientLinkPickerProps = {
   createParams?: Record<string, string>
   /** A button in place of the field; see `EntityLinkPicker`. */
   trigger?: ReactElement
+  /** Controlled open state; see `EntityLinkPicker`. */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 /** Link a record to a client: search, create (stacked sheet), clear, open. */
@@ -47,6 +50,8 @@ export function ClientLinkPicker({
   excludeIds,
   createParams,
   trigger,
+  open,
+  onOpenChange,
 }: ClientLinkPickerProps) {
   const { data = [] } = useClientLinkOptions()
   const excluded = new Set(excludeIds)
@@ -75,6 +80,8 @@ export function ClientLinkPicker({
       createPrefillParam='clientName'
       createParams={createParams}
       trigger={trigger}
+      open={open}
+      onOpenChange={onOpenChange}
     />
   )
 }

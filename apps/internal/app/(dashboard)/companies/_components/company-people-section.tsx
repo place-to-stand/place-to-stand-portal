@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { ExternalLink, Star, X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
@@ -67,6 +68,8 @@ export function CompanyPeopleSection({
   const removed = new Set(removedIds)
   const listedIds = [...contacts.map(c => c.id), ...added.map(c => c.id)]
   const isEmpty = contacts.length === 0 && added.length === 0
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const canAdd = !lockedReason && !disabled
 
   const star = (contact: { id: string; name: string }) => {
     const isPrimary = contact.id === primaryContactId
@@ -105,7 +108,7 @@ export function CompanyPeopleSection({
     <SheetSection
       title='People'
       action={
-        lockedReason || disabled ? (
+        !canAdd ? (
           <SectionAddButton label='Add person' disabledReason={lockedReason} />
         ) : (
           <ContactLinkPicker
@@ -113,12 +116,18 @@ export function CompanyPeopleSection({
             onChange={contact => (contact ? onAdd(contact) : undefined)}
             excludeIds={listedIds.filter(id => !removed.has(id))}
             trigger={<SectionAddButton label='Add person' />}
+            open={pickerOpen}
+            onOpenChange={setPickerOpen}
           />
         )
       }
     >
       {isEmpty ? (
-        <EmptyState message='No one here yet. Add the people you know at this company.' />
+        <EmptyState
+          message='No one here yet. Add the people you know at this company.'
+          label={canAdd ? 'Add person' : undefined}
+          onClick={canAdd ? () => setPickerOpen(true) : undefined}
+        />
       ) : (
         <SheetRecordList>
           {contacts.map(contact =>

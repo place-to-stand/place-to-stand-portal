@@ -4,7 +4,11 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type React from 'react'
 import { useWatch, type UseFormReturn } from 'react-hook-form'
 
+import { X } from 'lucide-react'
+
 import { Badge } from '@pts/ui/badge'
+import { Button } from '@pts/ui/button'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
@@ -181,6 +185,11 @@ export function ClientSheetForm({
   const linkedCompany = selectedCompanyId
     ? (companyOptions.find(option => option.id === selectedCompanyId) ?? null)
     : null
+  // The company saved on the client, so an unlink can be shown and undone.
+  const savedCompanyId = form.formState.defaultValues?.companyId ?? ''
+  const savedCompany = savedCompanyId
+    ? (companyOptions.find(option => option.id === savedCompanyId) ?? null)
+    : null
 
   const handleSave = useCallback(
     () => form.handleSubmit(onSubmit)(),
@@ -228,26 +237,58 @@ export function ClientSheetForm({
           className='flex flex-col gap-6 px-6 pt-6 pb-8'
         >
           <SheetSection title='Details'>
-            {isEditing ? (
-              // One record linked: the client's company is shown here and
-              // changed from the company's Linked client slot.
-              <FormItem>
-                <FormLabel>Linked company</FormLabel>
-                {linkedCompany ? (
-                  <CompanyRecordRow company={linkedCompany} linked />
-                ) : (
-                  <p className='text-muted-foreground text-sm'>
-                    Not linked to a company. Link it from a company.
-                  </p>
-                )}
-              </FormItem>
-            ) : (
-              <FormField
-                control={form.control}
-                name='companyId'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Linked company</FormLabel>
+            <FormField
+              control={form.control}
+              name='companyId'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Linked company</FormLabel>
+                  {isEditing && field.value && linkedCompany ? (
+                    <CompanyRecordRow
+                      company={linkedCompany}
+                      linked
+                      note={
+                        field.value !== savedCompanyId ? (
+                          <span className='text-warning'>Links on save</span>
+                        ) : undefined
+                      }
+                      actions={
+                        <RowActionButton
+                          type='button'
+                          label='Unlink company'
+                          disabled={isPending}
+                          onClick={() => field.onChange('')}
+                          className='text-muted-foreground hover:text-destructive'
+                          icon={<X />}
+                        />
+                      }
+                    />
+                  ) : isEditing && !field.value && savedCompany ? (
+                    // Staged: unlinks on Save. Portal access is kept, and
+                    // the list below flags who isn't at a linked company.
+                    <CompanyRecordRow
+                      company={savedCompany}
+                      className='opacity-60'
+                      note={
+                        <span className='text-destructive'>
+                          Unlinks on save · portal access is kept
+                        </span>
+                      }
+                      actions={
+                        <Button
+                          type='button'
+                          variant='ghost'
+                          size='xs'
+                          className='text-muted-foreground'
+                          disabled={isPending}
+                          onClick={() => field.onChange(savedCompanyId)}
+                          aria-label={`Undo unlinking ${savedCompany.name}`}
+                        >
+                          Undo
+                        </Button>
+                      }
+                    />
+                  ) : (
                     <FormControl>
                       <DisabledFieldTooltip
                         disabled={isPending}
@@ -259,18 +300,19 @@ export function ClientSheetForm({
                           }
                           onChange={next => field.onChange(next?.id ?? '')}
                           disabled={isPending}
+                          placeholder='Link company'
                         />
                       </DisabledFieldTooltip>
                     </FormControl>
-                    <p className='text-muted-foreground text-xs'>
-                      The client takes the company’s name and uses its primary
-                      contact.
-                    </p>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
+                  )}
+                  <p className='text-muted-foreground text-xs'>
+                    A company has one client. The client takes the company’s
+                    name and uses its primary contact.
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             {isEditing ? (
               <FormField
                 control={form.control}

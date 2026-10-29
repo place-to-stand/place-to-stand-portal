@@ -56,6 +56,9 @@ type EntityLinkPickerProps<E extends SheetCreatedEntity> = {
    * field. Use with `value={null}` to add records to a list one at a time.
    */
   trigger?: ReactElement
+  /** Controlled open state, e.g. so an empty state can open the picker. */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 const pluralize = (noun: string) =>
@@ -84,6 +87,8 @@ export function EntityLinkPicker<E extends SheetCreatedEntity>({
   'aria-label': ariaLabel,
   icon,
   trigger,
+  open,
+  onOpenChange,
 }: EntityLinkPickerProps<E>) {
   const { open: openSheet, openNew } = useSheetParams()
   // Only the picker that asked for the create sheet takes its record.
@@ -146,6 +151,8 @@ export function EntityLinkPicker<E extends SheetCreatedEntity>({
       disabled={disabled}
       ariaLabel={ariaLabel}
       trigger={trigger}
+      open={open}
+      onOpenChange={onOpenChange}
       // A button trigger sizes to itself, not the row.
       className={trigger ? 'w-auto' : undefined}
       createEntityLabel={entityLabel}

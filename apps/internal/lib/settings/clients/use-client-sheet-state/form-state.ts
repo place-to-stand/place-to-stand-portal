@@ -631,11 +631,11 @@ export function useClientSheetFormState({
           originationUserId: selectedOriginationUser?.id ?? null,
           closers: closerShares,
           notes: values.notes?.trim() ? values.notes.trim() : null,
-          companyId: values.companyId || undefined,
+          // On edit an empty company unlinks it (null); a new client needs one.
+          companyId: values.companyId || (isEditing ? null : undefined),
         } satisfies Parameters<typeof saveClient>[0]
 
-        // A new client needs its company; an existing one is linked or
-        // unlinked from the company's sheet.
+        // A new client needs its company; an existing one can be unlinked.
         if (!isEditing && !payload.companyId) {
           form.setError('companyId', {
             message: 'Pick or create the company this client is',

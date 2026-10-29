@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { X } from 'lucide-react'
 
 import { EmptyState } from '@pts/ui/empty-state'
@@ -47,8 +48,9 @@ export function CompanyLeadsSection({
 }
 
 /**
- * A company and its client are one record linked: this slot holds the
- * linked client (or links one). Changes are staged until Save.
+ * A company has at most one client: this slot holds it, or links one.
+ * Linking and unlinking are staged until Save. Unlinking keeps the client's
+ * portal access list; the client sheet flags anyone not at its company.
  */
 export function CompanyLinkedClientSection({
   companyId,
@@ -77,6 +79,7 @@ export function CompanyLinkedClientSection({
   // Client records are admin-only; others just see the name.
   const { isAdmin, role } = useViewerAccess()
   const canManageClients = Boolean(role && roleCan(role, 'clients.manage'))
+  const [pickerOpen, setPickerOpen] = useState(false)
   const shown = staged ?? (client && !unlinking ? client : null)
   const locked = disabled || !canManageClients
   const lockedReason = canManageClients
@@ -94,13 +97,14 @@ export function CompanyLinkedClientSection({
             disabledReason={lockedReason}
           />
         ) : (
-          // An unlinked client, or a new one created on top with this
-          // company picked.
+          // An unlinked client, or a new one created with this company.
           <ClientLinkPicker
             value={null}
             onChange={picked => (picked ? onLink(picked) : undefined)}
             createParams={{ clientCompanyId: companyId }}
             trigger={<SectionAddButton label='Link client' />}
+            open={pickerOpen}
+            onOpenChange={setPickerOpen}
           />
         )
       }
@@ -125,7 +129,11 @@ export function CompanyLinkedClientSection({
         <ClientRecordRow
           client={client}
           className='opacity-60'
-          note={<span className='text-destructive'>Unlinks on save</span>}
+          note={
+            <span className='text-destructive'>
+              Unlinks on save · portal access is kept
+            </span>
+          }
           actions={
             <Button
               type='button'
@@ -134,6 +142,7 @@ export function CompanyLinkedClientSection({
               className='text-muted-foreground'
               disabled={disabled}
               onClick={onUndoUnlink}
+              aria-label={`Undo unlinking ${client.name}`}
             >
               Undo
             </Button>
@@ -146,20 +155,26 @@ export function CompanyLinkedClientSection({
           openable={isAdmin}
           actions={
             locked ? null : (
-              <Button
+              <RowActionButton
                 type='button'
-                variant='ghost'
-                size='xs'
-                className='text-muted-foreground hover:text-destructive'
+                label='Unlink client'
                 onClick={onUnlink}
-              >
-                Unlink
-              </Button>
+                className='text-muted-foreground hover:text-destructive'
+                icon={<X />}
+              />
             )
           }
         />
       ) : (
-        <EmptyState message='Not a client yet. Link one here, or convert a lead.' />
+        <EmptyState
+          message={
+            locked
+              ? 'No client linked.'
+              : 'No client linked. Link an existing client or create one.'
+          }
+          label={locked ? undefined : 'Link client'}
+          onClick={locked ? undefined : () => setPickerOpen(true)}
+        />
       )}
     </SheetSection>
   )

@@ -27,6 +27,7 @@ type CompanyLinkPickerProps = {
   onChange: (value: CompanyLink | null) => void
   disabled?: boolean
   id?: string
+  placeholder?: string
 }
 
 const toOption = (company: CompanyLink): EntityLinkOption => ({
@@ -40,6 +41,7 @@ export function CompanyLinkPicker({
   onChange,
   disabled,
   id,
+  placeholder,
 }: CompanyLinkPickerProps) {
   const { data = [] } = useCompanyOptions()
 
@@ -64,6 +66,7 @@ export function CompanyLinkPicker({
       }
       options={data.map(toOption)}
       disabled={disabled}
+      placeholder={placeholder}
       toOption={toOption}
       createPrefillParam='companyName'
     />

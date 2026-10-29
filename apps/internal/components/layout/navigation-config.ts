@@ -85,6 +85,23 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    title: 'Directory',
+    items: [
+      {
+        href: '/companies',
+        capability: 'companies.manage',
+        label: 'Companies',
+        icon: Briefcase,
+      },
+      {
+        href: '/contacts',
+        capability: 'contacts.manage',
+        label: 'Contacts',
+        icon: Contact,
+      },
+    ],
+  },
+  {
     title: 'Work',
     items: [
       {
@@ -104,23 +121,6 @@ export const NAV_GROUPS: NavGroup[] = [
         capability: 'billing.manage',
         label: 'Time logs',
         icon: Clock,
-      },
-    ],
-  },
-  {
-    title: 'Directory',
-    items: [
-      {
-        href: '/companies',
-        capability: 'companies.manage',
-        label: 'Companies',
-        icon: Briefcase,
-      },
-      {
-        href: '/contacts',
-        capability: 'contacts.manage',
-        label: 'Contacts',
-        icon: Contact,
       },
     ],
   },

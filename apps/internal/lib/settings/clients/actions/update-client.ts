@@ -65,8 +65,8 @@ type UpdateClientPayload = {
   closers: CloserShare[]
   notes: string | null
   memberIds?: string[]
-  /** Omitted keeps the client's company. */
-  companyId?: string
+  /** Omitted keeps the client's company; null unlinks it. */
+  companyId?: string | null
   /** Deprecated and ignored: a company has one client. */
   label?: string | null
 }
@@ -94,6 +94,7 @@ type ExistingClientRecord = {
   originationUserId: string | null
   /** The newest commission term's closers — the saved split the sheet edited. */
   closers: ClientCloser[]
+  companyId: string | null
 }
 
 export async function updateClient(
@@ -161,6 +162,7 @@ export async function updateClient(
         notes: clients.notes,
         originationContactId: clients.originationContactId,
         originationUserId: clients.originationUserId,
+        companyId: clients.companyId,
       })
       .from(clients)
       .where(eq(clients.id, id))
@@ -268,10 +270,11 @@ export async function updateClient(
           originationContactId,
           originationUserId,
           notes,
-          ...(companyId ? { companyId } : {}),
+          // Unlinking keeps the client's portal access list; the client
+          // sheet flags anyone who isn't at its company.
+          ...(companyId !== undefined ? { companyId } : {}),
         })
         .where(eq(clients.id, id))
-
     })
   } catch (error) {
     if (error instanceof ClosedMonthError) {
@@ -285,7 +288,8 @@ export async function updateClient(
   }
 
   if (website) {
-    const websiteCompanyId = companyId ?? (await getClientCompanyId(id))
+    const websiteCompanyId =
+      companyId === undefined ? await getClientCompanyId(id) : companyId
     if (websiteCompanyId) {
       await fillCompanyWebsiteIfBlank(user, websiteCompanyId, website)
     }
@@ -312,6 +316,7 @@ export async function updateClient(
       originationContactId,
       originationUserId,
       closers,
+      companyId: companyId === undefined ? existingClient.companyId : companyId,
     },
     existingMemberIds: existingMemberIds ?? [],
     nextMemberIds: memberIds ?? [],
@@ -336,6 +341,7 @@ type RecordUpdateActivityArgs = {
     originationContactId: string | null
     originationUserId: string | null
     closers: CloserShare[]
+    companyId: string | null
   }
   existingMemberIds: string[]
   nextMemberIds: string[]
@@ -407,6 +413,12 @@ async function calculateDiff({
     changedFields.push('slug')
     previousDetails.slug = previousSlug
     nextDetails.slug = nextSlug
+  }
+
+  if (existingClient.companyId !== updatedValues.companyId) {
+    changedFields.push('company')
+    previousDetails.companyId = existingClient.companyId
+    nextDetails.companyId = updatedValues.companyId
   }
 
   const previousNotes = existingClient.notes ?? null

@@ -41,11 +41,19 @@ type ContactLinkPickerProps = {
   excludeIds?: readonly string[]
   /** A button in place of the field; see `EntityLinkPicker`. */
   trigger?: ReactElement
+  /** Controlled open state; see `EntityLinkPicker`. */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 /** "Email · Company", the second line under a contact's name. */
-function describe(contact: { email: string | null; companyName?: string | null }) {
-  return [contact.email, contact.companyName].filter(Boolean).join(' · ') || null
+function describe(contact: {
+  email: string | null
+  companyName?: string | null
+}) {
+  return (
+    [contact.email, contact.companyName].filter(Boolean).join(' · ') || null
+  )
 }
 
 /** Link a record to a contact: search, create (stacked sheet), clear, open. */
@@ -56,6 +64,8 @@ export function ContactLinkPicker({
   id,
   excludeIds,
   trigger,
+  open,
+  onOpenChange,
 }: ContactLinkPickerProps) {
   const { data = [] } = useContactOptions()
 
@@ -102,6 +112,8 @@ export function ContactLinkPicker({
       })}
       createPrefillParam='contactName'
       trigger={trigger}
+      open={open}
+      onOpenChange={onOpenChange}
     />
   )
 }

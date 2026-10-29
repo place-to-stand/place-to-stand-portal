@@ -67,10 +67,11 @@ export const clientSchema = z
       .transform(value => (value ? value : null)),
     memberIds: z.array(z.string().uuid()).optional(),
     /**
-     * The company this client is. Omitted keeps the current one; a new
-     * client without one gets a company found or created by its name.
+     * The company this client is. On edit, omitted keeps the current one and
+     * null unlinks it; a new client without one gets a company found or
+     * created by its name.
      */
-    companyId: z.string().uuid().optional(),
+    companyId: z.string().uuid().nullable().optional(),
     originationContactId: z
       .string()
       .uuid()
