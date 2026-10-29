@@ -10,9 +10,9 @@ import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warnin
 import {
   saveContact,
   softDeleteContact,
-  promoteContactToUser,
   getContactSheetData,
 } from '@/app/(dashboard)/contacts/actions'
+import { useCreatePortalUser } from '@/lib/settings/contacts/use-create-portal-user'
 import type { ContactsTableContact } from '@/lib/settings/contacts/use-contacts-table-state'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
 
@@ -87,7 +87,9 @@ export function useContactSheetState({
   initialCompanyId,
   contact,
 }: UseContactSheetStateOptions) {
-  const [isPending, startTransition] = useTransition()
+  const [isTransitionPending, startTransition] = useTransition()
+  const { createPortalUser, isPending: isCreatingUser } = useCreatePortalUser()
+  const isPending = isTransitionPending || isCreatingUser
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isPromoteDialogOpen, setIsPromoteDialogOpen] = useState(false)
@@ -313,26 +315,15 @@ export function useContactSheetState({
     }
 
     setIsPromoteDialogOpen(false)
-    startTransition(async () => {
-      const result = await promoteContactToUser(contactId)
-
-      if (result.error) {
-        setFeedback(result.error)
-        toast({
-          title: 'Unable to create portal user',
-          description: result.error,
-          variant: 'destructive',
-        })
-        return
-      }
-
-      toast({
-        title: 'Portal user created',
-        description: `A sign-in link to the client portal has been emailed to ${contact?.name || contact?.email || 'the contact'}.`,
-      })
-      onComplete()
-    })
-  }, [contact, isPending, toast, onComplete])
+    createPortalUser(
+      {
+        id: contactId,
+        name: contact?.name ?? null,
+        email: contact?.email ?? null,
+      },
+      { onSuccess: onComplete, onError: setFeedback }
+    )
+  }, [contact, isPending, createPortalUser, onComplete])
 
   const handleConfirmDelete = useCallback(() => {
     const contactId = contact?.id

@@ -1,12 +1,11 @@
 'use client'
 
-import { useCallback, useState, useTransition } from 'react'
+import { useCallback, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { PaginationControls } from '@/components/ui/pagination-controls'
-import { useToast } from '@/components/ui/use-toast'
 
 import {
   type ContactsTableContact,
@@ -15,7 +14,7 @@ import {
 import type { ContactSheetInput } from '@/lib/settings/contacts/use-contact-sheet-state'
 import { openPortalPreview } from '@/lib/settings/contacts/portal-preview'
 
-import { promoteContactToUser } from '../actions'
+import { useCreatePortalUser } from '@/lib/settings/contacts/use-create-portal-user'
 import { ContactsTableSection } from './contacts-table-section'
 import { ContactsSheet } from './contacts-sheet'
 import { PromoteToUserDialog } from './contact-sheet/promote-to-user-dialog'
@@ -61,10 +60,10 @@ export function ContactsManagementTable({
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
-  const { toast } = useToast()
   const [promoteTarget, setPromoteTarget] =
     useState<ContactsTableContact | null>(null)
-  const [isPromotePending, startPromoteTransition] = useTransition()
+  const { createPortalUser, isPending: isPromotePending } =
+    useCreatePortalUser()
 
   const {
     sheetOpen,
@@ -116,25 +115,8 @@ export function ContactsManagementTable({
     const contact = promoteTarget
     setPromoteTarget(null)
 
-    startPromoteTransition(async () => {
-      const result = await promoteContactToUser(contact.id)
-
-      if (result.error) {
-        toast({
-          title: 'Unable to create portal user',
-          description: result.error,
-          variant: 'destructive',
-        })
-        return
-      }
-
-      toast({
-        title: 'Portal user created',
-        description: `A sign-in link to the client portal has been emailed to ${contact.name || contact.email}.`,
-      })
-      router.refresh()
-    })
-  }, [promoteTarget, toast, router])
+    createPortalUser(contact, { onSuccess: () => router.refresh() })
+  }, [promoteTarget, createPortalUser, router])
 
   const handlePageChange = useCallback(
     (page: number) => {

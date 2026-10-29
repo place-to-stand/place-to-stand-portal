@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Star, UserCheck, X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
@@ -11,6 +12,8 @@ import { ContactRecordRow } from '@/components/sheets/entity-record-rows'
 import { SheetRecordList } from '@/components/sheets/sheet-record-row'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
+import { useCreatePortalUser } from '@/lib/settings/contacts/use-create-portal-user'
+import { PromoteToUserDialog } from '@/app/(dashboard)/contacts/_components/contact-sheet/promote-to-user-dialog'
 
 type ClientContactOption = {
   id: string
@@ -78,11 +81,34 @@ export function ClientPortalAccessList({
   onRevoke,
 }: ClientPortalAccessListProps) {
   const { open } = useSheetParams()
+  // Portal users created here, so their rows switch over without a reload.
+  const [createdUserIds, setCreatedUserIds] = useState<Set<string>>(
+    () => new Set()
+  )
+  const [createTarget, setCreateTarget] = useState<ClientContactOption | null>(
+    null
+  )
+  const { createPortalUser, isPending: isCreatingUser } = useCreatePortalUser()
+  const people = companyPeople.map(contact =>
+    createdUserIds.has(contact.id)
+      ? { ...contact, hasPortalAccess: true }
+      : contact
+  )
   const selectedIds = new Set(selectedContacts.map(contact => contact.id))
   const companyIds = new Set(companyPeople.map(contact => contact.id))
   const outsiders = selectedContacts.filter(
     contact => !companyIds.has(contact.id)
   )
+
+  const confirmCreate = () => {
+    const target = createTarget
+    setCreateTarget(null)
+    if (!target) return
+    createPortalUser(target, {
+      onSuccess: () =>
+        setCreatedUserIds(previous => new Set(previous).add(target.id)),
+    })
+  }
 
   if (companyPeople.length === 0 && outsiders.length === 0) {
     return companyId ? (
@@ -97,98 +123,111 @@ export function ClientPortalAccessList({
   }
 
   return (
-    <SheetRecordList>
-      {companyPeople.map(contact => {
-        const label = contact.name ?? contact.email ?? 'this contact'
-        const hasAccess = selectedIds.has(contact.id)
-        return (
-          <ContactRecordRow
-            key={contact.id}
-            contact={contact}
-            titleAddon={contact.hasPortalAccess ? <PortalLoginMark /> : null}
-            note={
-              contact.signInDisabled ? (
+    <>
+      <SheetRecordList>
+        {people.map(contact => {
+          const label = contact.name ?? contact.email ?? 'this contact'
+          const hasAccess = selectedIds.has(contact.id)
+          return (
+            <ContactRecordRow
+              key={contact.id}
+              contact={contact}
+              titleAddon={contact.hasPortalAccess ? <PortalLoginMark /> : null}
+              note={
+                contact.signInDisabled ? (
+                  <span className='text-warning'>
+                    Sign-in off (Users page): no access until it&apos;s back on
+                  </span>
+                ) : contact.isPrimary ? (
+                  <PrimaryNote />
+                ) : contact.hasPortalAccess ? undefined : (
+                  'No portal user'
+                )
+              }
+              actions={
+                // Access needs a portal user; create it here (same dialog and
+                // action as the contact sheet). The switch still saves with Save.
+                !contact.hasPortalAccess && !hasAccess ? (
+                  <Button
+                    type='button'
+                    variant='outline'
+                    size='xs'
+                    disabled={isPending || isCreatingUser}
+                    onClick={() => setCreateTarget(contact)}
+                  >
+                    {isCreatingUser ? 'Creating…' : 'Create user'}
+                  </Button>
+                ) : (
+                  <DisabledFieldTooltip
+                    disabled={isPending}
+                    reason={isPending ? pendingReason : null}
+                    className='w-auto'
+                  >
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className='inline-flex px-1.5'>
+                          <Switch
+                            checked={hasAccess}
+                            disabled={isPending}
+                            aria-label={`Portal access for ${label}`}
+                            onCheckedChange={checked =>
+                              checked ? onGrant(contact) : onRevoke(contact)
+                            }
+                          />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {hasAccess ? 'Has portal access' : 'No portal access'}
+                      </TooltipContent>
+                    </Tooltip>
+                  </DisabledFieldTooltip>
+                )
+              }
+            />
+          )
+        })}
+        {outsiders.map(contact => {
+          const label = contact.name ?? contact.email ?? 'this contact'
+          return (
+            <ContactRecordRow
+              key={contact.id}
+              contact={contact}
+              titleAddon={contact.hasPortalAccess ? <PortalLoginMark /> : null}
+              note={
                 <span className='text-warning'>
-                  Sign-in off (Users page): no access until it&apos;s back on
+                  {companyId ? 'Not at this company' : 'No linked company'}
                 </span>
-              ) : contact.isPrimary ? (
-                <PrimaryNote />
-              ) : contact.hasPortalAccess ? undefined : (
-                'No portal user'
-              )
-            }
-            actions={
-              // Access needs a login; the contact sheet creates one.
-              !contact.hasPortalAccess && !hasAccess ? (
-                <Button
-                  type='button'
-                  variant='outline'
-                  size='xs'
-                  disabled={isPending}
-                  onClick={() => open('contact', contact.id)}
-                >
-                  Create user
-                </Button>
-              ) : (
+              }
+              actions={
                 <DisabledFieldTooltip
                   disabled={isPending}
                   reason={isPending ? pendingReason : null}
                   className='w-auto'
                 >
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className='inline-flex px-1.5'>
-                        <Switch
-                          checked={hasAccess}
-                          disabled={isPending}
-                          aria-label={`Portal access for ${label}`}
-                          onCheckedChange={checked =>
-                            checked ? onGrant(contact) : onRevoke(contact)
-                          }
-                        />
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      {hasAccess ? 'Has portal access' : 'No portal access'}
-                    </TooltipContent>
-                  </Tooltip>
+                  <RowActionButton
+                    type='button'
+                    label={`Remove ${label} from Portal access`}
+                    icon={<X />}
+                    className='text-muted-foreground hover:text-destructive'
+                    disabled={isPending}
+                    onClick={() => onRevoke(contact)}
+                  />
                 </DisabledFieldTooltip>
-              )
-            }
-          />
-        )
-      })}
-      {outsiders.map(contact => {
-        const label = contact.name ?? contact.email ?? 'this contact'
-        return (
-          <ContactRecordRow
-            key={contact.id}
-            contact={contact}
-            titleAddon={contact.hasPortalAccess ? <PortalLoginMark /> : null}
-            note={
-              <span className='text-warning'>
-                {companyId ? 'Not at this company' : 'No linked company'}
-              </span>
-            }
-            actions={
-              <DisabledFieldTooltip
-                disabled={isPending}
-                reason={isPending ? pendingReason : null}
-                className='w-auto'
-              >
-                <RowActionButton
-                  type='button'
-                  label={`Remove ${label} from Portal access`}
-                  icon={<X />}
-                  className='text-muted-foreground hover:text-destructive'
-                  disabled={isPending}
-                  onClick={() => onRevoke(contact)}
-                />
-              </DisabledFieldTooltip>
-            }
-          />
-        )
-      })}
-    </SheetRecordList>
+              }
+            />
+          )
+        })}
+      </SheetRecordList>
+      <PromoteToUserDialog
+        open={Boolean(createTarget)}
+        onOpenChange={next => {
+          if (!next) setCreateTarget(null)
+        }}
+        contactName={createTarget?.name || createTarget?.email || ''}
+        contactEmail={createTarget?.email || ''}
+        isPending={isCreatingUser}
+        onConfirm={confirmCreate}
+      />
+    </>
   )
 }
