@@ -211,6 +211,7 @@ export function LeadSheetFormFields({
               <FormControl>
                 <SearchableCombobox
                   items={assigneeItems}
+                  clearLabel='assignee'
                   value={field.value ?? ''}
                   onChange={value =>
                     field.onChange(value.length ? value : null)

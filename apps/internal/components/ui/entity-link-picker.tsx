@@ -131,6 +131,7 @@ export function EntityLinkPicker<E extends SheetCreatedEntity>({
       disabled={disabled}
       ariaLabel={ariaLabel}
       createEntityLabel={entityLabel}
+      clearLabel={entityLabel}
       onCreate={
         allowCreate
           ? typed => {

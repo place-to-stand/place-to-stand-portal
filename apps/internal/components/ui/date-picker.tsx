@@ -32,6 +32,8 @@ export type DatePickerProps = TriggerProps & {
   placeholder?: string
   /** Shows a clear (×) button while a date is set. Default true. */
   clearable?: boolean
+  /** What the × clears, for its tooltip: "due date" → "Clear due date". */
+  clearLabel?: string
   /** Inclusive `YYYY-MM-DD` bounds; days outside are disabled. */
   min?: string
   max?: string
@@ -54,6 +56,7 @@ export const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
       onChange,
       placeholder = 'Pick a date',
       clearable = true,
+      clearLabel = 'date',
       min,
       max,
       disabled,
@@ -155,7 +158,7 @@ export const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
           </PopoverContent>
         </Popover>
         {showClear ? (
-          <FieldClearButton label='date' onClear={() => onChange('')} />
+          <FieldClearButton label={clearLabel} onClear={() => onChange('')} />
         ) : null}
       </div>
     )

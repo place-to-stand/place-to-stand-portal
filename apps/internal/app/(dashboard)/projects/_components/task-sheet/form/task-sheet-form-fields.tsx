@@ -181,6 +181,7 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
                       onChange={field.onChange}
                       onBlur={field.onBlur}
                       placeholder='No due date'
+                      clearLabel='due date'
                       disabled={disabled}
                     />
                   </DisabledFieldTooltip>
@@ -265,6 +266,7 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
                   <DisabledFieldTooltip disabled={disabled} reason={reason}>
                     <SearchableCombobox
                       items={assigneeItems}
+                      clearLabel='assignee'
                       value={selectedValue}
                       onChange={next => {
                         if (next === unassignedValue) {

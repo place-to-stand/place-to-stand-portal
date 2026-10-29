@@ -394,6 +394,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                       reason={fieldState.date.reason}
                     >
                       <DatePicker
+                        clearLabel='start date'
                         {...field}
                         disabled={fieldState.date.disabled}
                       />
@@ -415,6 +416,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                       reason={fieldState.date.reason}
                     >
                       <DatePicker
+                        clearLabel='end date'
                         {...field}
                         disabled={fieldState.date.disabled}
                       />
@@ -500,6 +502,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                           onChange={field.onChange}
                           onBlur={field.onBlur}
                           items={ownerOptions}
+                          clearLabel='owner'
                           placeholder='Unassigned'
                           searchPlaceholder='Search teammates…'
                           emptyMessage='No teammates found.'

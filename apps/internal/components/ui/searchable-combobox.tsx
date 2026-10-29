@@ -75,6 +75,11 @@ type SearchableComboboxProps = {
    */
   onClear?: () => void
   /**
+   * What the clear button empties, for its tooltip: "assignee" → "Clear
+   * assignee". Defaults to `ariaLabel`. Set one of them with `onClear`.
+   */
+  clearLabel?: string
+  /**
    * A button beside the field, outside it (e.g. "open this record"). The
    * field shrinks to make room; the clear button stays inside the field.
    */
@@ -115,6 +120,7 @@ export const SearchableCombobox = React.forwardRef<
       onCreate,
       createEntityLabel = 'record',
       onClear,
+      clearLabel,
       trailingAction,
     },
     forwardedRef
@@ -409,7 +415,7 @@ export const SearchableCombobox = React.forwardRef<
           </Popover>
           {showClear ? (
             <FieldClearButton
-              label={ariaLabel?.toLowerCase()}
+              label={(clearLabel ?? ariaLabel)?.toLowerCase()}
               onClear={() => {
                 onClear?.()
                 onBlur?.()
