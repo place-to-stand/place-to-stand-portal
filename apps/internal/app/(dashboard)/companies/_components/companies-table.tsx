@@ -47,9 +47,8 @@ export function CompaniesTable({
       <Table density='compact' layout='fixed' stack className='md:min-w-[50rem]'>
         <TableHeader>
           <TableRow className='bg-muted/40'>
-            <TableHead className='w-[30%]'>Company</TableHead>
-            <TableHead className='w-[20%]'>Owner</TableHead>
-            <TableHead className='w-[22%]'>Champion</TableHead>
+            <TableHead className='w-[40%]'>Company</TableHead>
+            <TableHead className='w-[32%]'>Champion</TableHead>
             <TableHead className='w-[10%] text-right'>People</TableHead>
             <TableHead className='w-[10%] text-right'>Open leads</TableHead>
           </TableRow>
@@ -80,9 +79,6 @@ export function CompaniesTable({
                     ) : null}
                   </div>
                 </div>
-              </TableCell>
-              <TableCell className='text-muted-foreground truncate text-sm'>
-                {company.ownerName ?? 'No owner'}
               </TableCell>
               <TableCell className='truncate text-sm'>
                 {company.championName ? (

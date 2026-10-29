@@ -27,6 +27,11 @@ export const saveLeadSchema = z.object({
   contactEmail: z.string().trim().max(160).optional().nullable(),
   contactPhone: z.string().trim().max(40).optional().nullable(),
   companyName: z.string().trim().max(160).optional().nullable(),
+  /**
+   * The linked company (the lead sheet's picker). When present it wins over
+   * `companyName`; null clears the company. Omitted (CLI, MCP) = link by name.
+   */
+  companyId: z.string().uuid().nullable().optional(),
   companyWebsite: z.string().trim().max(255).optional().nullable(),
   /** TipTap HTML, as the sheet's editor produces it. */
   notes: z.string().optional().nullable(),
@@ -44,6 +49,8 @@ export type NormalizedLead = {
   contactEmail: string | null
   contactPhone: string | null
   companyName: string | null
+  /** `undefined` = resolve the company from `companyName`. */
+  companyId?: string | null
   companyWebsite: string | null
   notes: string | null
 }
@@ -125,6 +132,7 @@ export function normalizeLeadPayload(payload: SaveLeadInput): NormalizedLead {
     contactEmail: normalizeEmail(payload.contactEmail),
     contactPhone: normalizeOptionalString(payload.contactPhone, 40),
     companyName: normalizeOptionalString(payload.companyName, 160),
+    companyId: payload.companyId,
     companyWebsite: normalizeOptionalString(payload.companyWebsite, 255),
     notes: (payload.notes ?? '').trim() || null,
   }

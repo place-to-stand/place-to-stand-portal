@@ -97,7 +97,6 @@ export function ContactsSheet(props: ContactsSheetProps) {
             promoteDisabledReason={promoteDisabledReason}
             onRequestPromote={handleRequestPromote}
             portalUserId={portalUserId}
-            companyId={contact?.companyId ?? null}
           />
         </SheetContent>
       </Sheet>

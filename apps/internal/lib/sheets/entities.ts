@@ -104,7 +104,8 @@ export const SHEET_ENTITIES: Record<SheetEntityKey, SheetEntityConfig> = {
     claimsPathname: () => false,
   },
   company: {
-    auxParams: [],
+    // `companyName=` prefills the create sheet's name (create-from-picker).
+    auxParams: ['companyName'],
     // The company sheet loads its own data, so the global host serves it on
     // every route, the Companies page included.
     claimsPathname: () => false,

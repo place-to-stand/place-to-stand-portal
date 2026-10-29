@@ -16,7 +16,10 @@ import { isTerminalLeadStatus } from '@/lib/leads/constants'
 import { serializeLeadNotes } from '@/lib/leads/notes'
 import { resolveNextLeadRank } from '@/lib/leads/rank'
 import { notifyLeadAssigned } from '@/lib/notifications/in-app/events'
-import { findOrCreateCompanyByName } from '@/lib/queries/companies'
+import {
+  findOrCreateCompanyByName,
+  getLinkableCompany,
+} from '@/lib/queries/companies'
 import type { ActivitySourceValue } from '@/lib/types'
 
 import {
@@ -88,6 +91,40 @@ export async function saveLeadForActor(
   }
 }
 
+/**
+ * Which company a save links the lead to. The sheet's picker sends
+ * `companyId` (null clears it). The CLI and MCP send a name instead: an
+ * unchanged name keeps its link, a new one finds or creates the company, and
+ * a blank one clears it.
+ */
+async function resolveLeadCompany(
+  actor: AppUser,
+  normalized: NormalizedLead,
+  existing?: { companyId: string | null; companyName: string | null }
+): Promise<
+  { company: { id: string; name: string } | null } | { error: string }
+> {
+  if (normalized.companyId !== undefined) {
+    if (normalized.companyId === null) return { company: null }
+    const company = await getLinkableCompany(normalized.companyId)
+    return company
+      ? { company }
+      : { error: 'That company no longer exists. Pick another.' }
+  }
+
+  const nameUnchanged =
+    (existing?.companyName ?? '').trim().toLowerCase() ===
+    (normalized.companyName ?? '').trim().toLowerCase()
+  if (existing?.companyId && nameUnchanged) {
+    return { company: { id: existing.companyId, name: existing.companyName ?? '' } }
+  }
+  return {
+    company: await findOrCreateCompanyByName(actor, normalized.companyName, {
+      website: normalized.companyWebsite,
+    }),
+  }
+}
+
 async function createLead(
   actor: AppUser,
   normalized: NormalizedLead,
@@ -95,9 +132,9 @@ async function createLead(
 ): Promise<SaveLeadResult> {
   const timestamp = new Date().toISOString()
   const rank = await resolveNextLeadRank(normalized.status)
-  const company = await findOrCreateCompanyByName(actor, normalized.companyName, {
-    website: normalized.companyWebsite,
-  })
+  const resolved = await resolveLeadCompany(actor, normalized)
+  if ('error' in resolved) return { success: false, error: resolved.error }
+  const { company } = resolved
 
   const [inserted] = await db
     .insert(leads)
@@ -192,17 +229,9 @@ async function updateLead(
     return { success: false, error: 'Lead not found.', notFound: true }
   }
 
-  // The company follows the name: an unchanged name keeps its link, a new
-  // one finds or creates the company, and a blank one clears it.
-  const companyNameUnchanged =
-    (existing.companyName ?? '').trim().toLowerCase() ===
-    (normalized.companyName ?? '').trim().toLowerCase()
-  const company =
-    companyNameUnchanged && existing.companyId
-      ? { id: existing.companyId, name: existing.companyName ?? '' }
-      : await findOrCreateCompanyByName(actor, normalized.companyName, {
-          website: normalized.companyWebsite,
-        })
+  const resolved = await resolveLeadCompany(actor, normalized, existing)
+  if ('error' in resolved) return { success: false, error: resolved.error }
+  const { company } = resolved
   // Always store the company's own spelling, so a case-only edit can't
   // drift from the linked record.
   if (company) {

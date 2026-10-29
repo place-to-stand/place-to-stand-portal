@@ -13,6 +13,7 @@ import { companies, contacts } from '@/lib/db/schema'
 import {
   assignChampion,
   findOrCreateCompanyByName,
+  getLinkableCompany,
   isChampionConflict,
 } from '@/lib/queries/companies'
 import {
@@ -38,14 +39,23 @@ type ExistingContact = {
 }
 
 /**
- * The company a save points at: `undefined` keeps the current one, a blank
- * name clears it, anything else finds or creates the company by name.
+ * The company a save points at. A `companyId` from the picker wins (null
+ * clears it; the current link is kept even if that company is archived).
+ * Otherwise by name: `undefined` keeps the current one, a blank name clears
+ * it, anything else finds or creates the company by name.
  */
 async function resolveCompanyId(
   user: AppUser,
   companyName: string | null | undefined,
-  current: string | null
+  current: string | null,
+  companyId?: string | null
 ): Promise<string | null> {
+  if (companyId !== undefined) {
+    if (companyId === null || companyId === current) return companyId
+    const company = await getLinkableCompany(companyId)
+    if (!company) throw new Error('That company no longer exists.')
+    return company.id
+  }
   if (companyName === undefined) return current
   if (companyName === null) return null
 
@@ -156,7 +166,8 @@ export async function saveContactMutation(
           companyId = await resolveCompanyId(
             user,
             parsed.data.companyName,
-            existingContact.companyId
+            existingContact.companyId,
+            parsed.data.companyId
           )
         } catch (error) {
           console.error('Failed to resolve contact company', error)
@@ -276,7 +287,12 @@ export async function saveContactMutation(
       let companyId: string | null
 
       try {
-        companyId = await resolveCompanyId(user, parsed.data.companyName, null)
+        companyId = await resolveCompanyId(
+          user,
+          parsed.data.companyName,
+          null,
+          parsed.data.companyId
+        )
       } catch (error) {
         console.error('Failed to resolve contact company', error)
         return buildMutationResult({ error: 'Unable to save the company.' })

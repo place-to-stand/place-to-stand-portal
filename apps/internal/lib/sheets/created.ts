@@ -11,6 +11,7 @@
 export type SheetCreatedRecords = {
   contact: { id: string; name: string; email: string; phone: string | null }
   client: { id: string; name: string; slug: string }
+  company: { id: string; name: string }
 }
 
 export type SheetCreatedEntity = keyof SheetCreatedRecords
@@ -22,6 +23,7 @@ type Listener<E extends SheetCreatedEntity> = (
 const listeners: { [E in SheetCreatedEntity]: Set<Listener<E>> } = {
   contact: new Set(),
   client: new Set(),
+  company: new Set(),
 }
 
 export function emitSheetCreated<E extends SheetCreatedEntity>(

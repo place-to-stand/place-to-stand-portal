@@ -84,7 +84,6 @@ export function LeadSheet(props: LeadSheetProps) {
                     control={form.control}
                     assignees={assignees}
                     selectedSourceType={selectedSourceType}
-                    companyId={lead?.companyId ?? null}
                   />
                 </div>
 

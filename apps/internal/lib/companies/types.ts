@@ -5,9 +5,6 @@ export type CompanyListItem = {
   id: string
   name: string
   website: string | null
-  ownerId: string | null
-  ownerName: string | null
-  ownerAvatarUrl: string | null
   clientId: string | null
   clientName: string | null
   contactCount: number
@@ -41,8 +38,8 @@ export type CompanyDetail = {
   name: string
   website: string | null
   linkedinUrl: string | null
+  /** Rich text (TipTap HTML); older rows may be plain text. */
   notes: string | null
-  ownerId: string | null
   clientId: string | null
   clientName: string | null
   clientSlug: string | null
@@ -57,12 +54,6 @@ export type CompanyDetail = {
 export type CompanyOption = {
   id: string
   name: string
-}
-
-export type CompanyOwnerOption = {
-  id: string
-  name: string
-  avatarUrl: string | null
 }
 
 export type CompanyActionResult = {

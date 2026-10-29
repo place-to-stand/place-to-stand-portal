@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/form'
 import { Checkbox } from '@pts/ui/checkbox'
 import { Input } from '@pts/ui/input'
-import { CompanyNameInput } from '@/components/companies/company-name-input'
+import { CompanyLinkPicker } from '@/components/companies/company-link-picker'
 import { PhoneInput } from '@/components/ui/phone-input'
 import { Separator } from '@pts/ui/separator'
 
@@ -58,7 +58,7 @@ type ContactFormValues = {
   phone?: string
   jobTitle?: string
   linkedinUrl?: string
-  companyName?: string
+  company: { id: string; name: string } | null
   isChampion?: boolean
 }
 
@@ -92,8 +92,6 @@ type ContactSheetFormProps = {
   onRequestPromote: () => void
   /** The portal user this contact was promoted to, if any. */
   portalUserId: string | null
-  /** The saved company link, for the "open company" button. */
-  companyId?: string | null
 }
 
 export function ContactSheetForm({
@@ -123,7 +121,6 @@ export function ContactSheetForm({
   promoteDisabledReason,
   onRequestPromote,
   portalUserId,
-  companyId = null,
 }: ContactSheetFormProps) {
   // Client links drive client-portal membership, and portal accounts grant
   // client access, so both stay admin-only. SALES staff see the links only.
@@ -261,7 +258,7 @@ export function ContactSheetForm({
             <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
               <FormField
                 control={form.control}
-                name='companyName'
+                name='company'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel optional>Company</FormLabel>
@@ -270,13 +267,10 @@ export function ContactSheetForm({
                         disabled={isPending}
                         reason={fieldDisabledReason}
                       >
-                        <CompanyNameInput
-                          name={field.name}
-                          value={field.value ?? ''}
-                          onChange={field.onChange}
-                          onBlur={field.onBlur}
+                        <CompanyLinkPicker
+                          value={field.value ?? null}
+                          onChange={next => field.onChange(next)}
                           disabled={isPending}
-                          linkedCompanyId={companyId}
                         />
                       </DisabledFieldTooltip>
                     </FormControl>
@@ -352,7 +346,7 @@ export function ContactSheetForm({
               control={form.control}
               name='isChampion'
               render={({ field }) => {
-                const hasCompany = Boolean(form.watch('companyName')?.trim())
+                const hasCompany = Boolean(form.watch('company'))
                 return (
                   <FormItem className='flex flex-row items-center gap-2 space-y-0'>
                     <FormControl>

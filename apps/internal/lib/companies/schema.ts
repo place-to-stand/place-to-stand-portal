@@ -35,8 +35,8 @@ export const saveCompanySchema = z.object({
   name: companyNameSchema,
   website: optionalUrl(255),
   linkedinUrl: optionalUrl(255),
-  notes: optionalText(5000),
-  ownerId: z.string().uuid().nullable().optional(),
+  /** Rich text (TipTap HTML), as the sheet's editor produces it. */
+  notes: optionalText(20000),
 })
 
 export type SaveCompanyInput = z.input<typeof saveCompanySchema>

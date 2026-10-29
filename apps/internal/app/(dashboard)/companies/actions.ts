@@ -8,9 +8,7 @@ import type {
   CompanyActionResult,
   CompanyDetail,
   CompanyOption,
-  CompanyOwnerOption,
 } from '@/lib/companies/types'
-import { fetchCrmUsers } from '@/lib/data/users'
 import { NotFoundError } from '@/lib/errors/http'
 import {
   getCompanyDetail,
@@ -31,7 +29,6 @@ function revalidateCompanyRoutes() {
 
 export type CompanySheetData = {
   company: CompanyDetail | null
-  owners: CompanyOwnerOption[]
 }
 
 /** Everything the company sheet needs; `null` id = create mode. */
@@ -39,20 +36,12 @@ export async function loadCompanySheet(
   companyId: string | null
 ): Promise<CompanySheetData | null> {
   const user = await requireCrmUser()
-  const crmUsers = await fetchCrmUsers()
-  const owners = crmUsers
-    .filter(person => !person.disabled_at)
-    .map(person => ({
-      id: person.id,
-      name: person.full_name?.trim() || person.email,
-      avatarUrl: person.avatar_url,
-    }))
 
-  if (!companyId) return { company: null, owners }
+  if (!companyId) return { company: null }
   if (!UUID_PATTERN.test(companyId)) return null
 
   try {
-    return { company: await getCompanyDetail(user, companyId), owners }
+    return { company: await getCompanyDetail(user, companyId) }
   } catch (error) {
     if (error instanceof NotFoundError) return null
     throw error

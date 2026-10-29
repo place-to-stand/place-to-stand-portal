@@ -23,7 +23,12 @@ export const contactSchema = z.object({
       value === undefined ? undefined : value?.trim() ? value.trim() : null
     ),
   linkedinUrl: linkedinUrlSchema.optional(),
-  /** Company by name: matched case-insensitively, created when new. */
+  /**
+   * The linked company (the sheet's picker). When present it wins over
+   * `companyName`; null clears it.
+   */
+  companyId: z.string().uuid().nullable().optional(),
+  /** Company by name (CLI, MCP): matched case-insensitively, created when new. */
   companyName: z
     .string()
     .max(160)

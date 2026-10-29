@@ -439,11 +439,6 @@ export const contactsRelations = relations(contacts, ({ one, many }) => ({
 }))
 
 export const companiesRelations = relations(companies, ({ one, many }) => ({
-  owner: one(users, {
-    fields: [companies.ownerId],
-    references: [users.id],
-    relationName: 'companies_ownerId_users_id',
-  }),
   createdByUser: one(users, {
     fields: [companies.createdBy],
     references: [users.id],

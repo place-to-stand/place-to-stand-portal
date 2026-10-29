@@ -36,7 +36,8 @@ const contactFormSchema = z.object({
   phone: z.string().max(40).optional(),
   jobTitle: z.string().max(160).optional(),
   linkedinUrl: z.string().max(255).optional(),
-  companyName: z.string().max(160).optional(),
+  /** The linked company, chosen with the company picker. */
+  company: z.object({ id: z.string().uuid(), name: z.string() }).nullable(),
   isChampion: z.boolean().optional(),
 })
 
@@ -129,7 +130,7 @@ export function useContactSheetState({
       phone: '',
       jobTitle: '',
       linkedinUrl: '',
-      companyName: '',
+      company: null,
       isChampion: false,
     },
   })
@@ -154,7 +155,9 @@ export function useContactSheetState({
       phone: contact?.phone ?? '',
       jobTitle: contact?.jobTitle ?? '',
       linkedinUrl: contact?.linkedinUrl ?? '',
-      companyName: contact?.companyName ?? '',
+      company: contact?.companyId
+        ? { id: contact.companyId, name: contact.companyName ?? '' }
+        : null,
       isChampion: contact?.isChampion ?? false,
     })
 
@@ -274,8 +277,9 @@ export function useContactSheetState({
           phone: data.phone || null,
           jobTitle: data.jobTitle?.trim() || null,
           linkedinUrl: data.linkedinUrl?.trim() || null,
-          companyName: data.companyName?.trim() || null,
-          isChampion: Boolean(data.companyName?.trim() && data.isChampion),
+          companyId: data.company?.id ?? null,
+          companyName: data.company?.name ?? null,
+          isChampion: Boolean(data.company && data.isChampion),
         })
 
         if (result.error) {

@@ -71,10 +71,6 @@ export async function listCompanies(
       id: companies.id,
       name: companies.name,
       website: companies.website,
-      ownerId: companies.ownerId,
-      ownerName: users.fullName,
-      ownerEmail: users.email,
-      ownerAvatarUrl: users.avatarUrl,
       clientId: companies.clientId,
       clientName: clients.name,
       updatedAt: companies.updatedAt,
@@ -99,7 +95,6 @@ export async function listCompanies(
       )`,
     })
     .from(companies)
-    .leftJoin(users, eq(users.id, companies.ownerId))
     .leftJoin(
       clients,
       and(eq(clients.id, companies.clientId), isNull(clients.deletedAt))
@@ -122,9 +117,6 @@ export async function listCompanies(
     id: row.id,
     name: row.name,
     website: row.website,
-    ownerId: row.ownerId,
-    ownerName: row.ownerId ? (row.ownerName ?? row.ownerEmail ?? null) : null,
-    ownerAvatarUrl: row.ownerAvatarUrl ?? null,
     clientId: row.clientName ? row.clientId : null,
     clientName: row.clientName ?? null,
     contactCount: Number(row.contactCount ?? 0),
@@ -165,7 +157,6 @@ export async function getCompanyDetail(
       website: companies.website,
       linkedinUrl: companies.linkedinUrl,
       notes: companies.notes,
-      ownerId: companies.ownerId,
       clientId: companies.clientId,
       clientName: clients.name,
       clientSlug: clients.slug,
@@ -241,37 +232,6 @@ export async function listCompanyOptions(
     .orderBy(asc(sql`lower(${companies.name})`))
 }
 
-async function assertValidOwner(
-  ownerId: string | null | undefined,
-  companyId?: string
-) {
-  if (!ownerId) return
-  // Keeping the current owner is always fine, even one since disabled.
-  if (companyId) {
-    const [current] = await db
-      .select({ ownerId: companies.ownerId })
-      .from(companies)
-      .where(eq(companies.id, companyId))
-      .limit(1)
-    if (current?.ownerId === ownerId) return
-  }
-  const [owner] = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(
-      and(
-        eq(users.id, ownerId),
-        isNull(users.deletedAt),
-        isNull(users.disabledAt),
-        sql`${users.role} in ('ADMIN', 'SALES')`
-      )
-    )
-    .limit(1)
-  if (!owner) {
-    throw new Error('The owner must be an active admin or sales user.')
-  }
-}
-
 export async function saveCompany(
   actor: AppUser,
   input: SaveCompanyInput
@@ -288,12 +248,6 @@ export async function saveCompany(
 
   const values = parsed.data
 
-  try {
-    await assertValidOwner(values.ownerId, values.id ?? undefined)
-  } catch (error) {
-    return { ok: false, error: (error as Error).message }
-  }
-
   const timestamp = new Date().toISOString()
 
   if (!values.id) {
@@ -305,7 +259,6 @@ export async function saveCompany(
           website: values.website,
           linkedinUrl: values.linkedinUrl,
           notes: values.notes,
-          ownerId: values.ownerId ?? null,
           createdBy: actor.id,
           createdAt: timestamp,
           updatedAt: timestamp,
@@ -345,8 +298,6 @@ export async function saveCompany(
     website: values.website,
     linkedinUrl: values.linkedinUrl,
     notes: values.notes,
-    // Omitted owner keeps the current one; null clears it.
-    ownerId: values.ownerId === undefined ? existing.ownerId : values.ownerId,
   }
 
   const changedFields: string[] = []
@@ -357,7 +308,6 @@ export async function saveCompany(
     website: 'website',
     linkedinUrl: 'LinkedIn',
     notes: 'notes',
-    ownerId: 'owner',
   }
   for (const key of Object.keys(next) as (keyof typeof next)[]) {
     if ((existing[key] ?? null) !== (next[key] ?? null)) {
@@ -586,6 +536,19 @@ export async function setCompanyChampion(
  * none. Lead and contact saves call this so a typed company name always
  * lands on one shared record. Returns null for a blank name.
  */
+/** A live company by id, for linking a record to it. */
+export async function getLinkableCompany(
+  companyId: string,
+  executor: DbExecutor = db
+): Promise<{ id: string; name: string } | null> {
+  const [row] = await executor
+    .select({ id: companies.id, name: companies.name })
+    .from(companies)
+    .where(and(eq(companies.id, companyId), isNull(companies.deletedAt)))
+    .limit(1)
+  return row ?? null
+}
+
 export async function findOrCreateCompanyByName(
   actor: AppUser,
   rawName: string | null | undefined,

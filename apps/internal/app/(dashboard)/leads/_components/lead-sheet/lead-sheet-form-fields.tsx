@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 import { useWatch, type Control } from 'react-hook-form'
 
 import { Badge } from '@pts/ui/badge'
-import { CompanyNameInput } from '@/components/companies/company-name-input'
+import { CompanyLinkPicker } from '@/components/companies/company-link-picker'
 import {
   FormControl,
   FormField,
@@ -42,15 +42,12 @@ type LeadSheetFormFieldsProps = {
   control: Control<LeadFormValues>
   assignees: LeadAssigneeOption[]
   selectedSourceType: LeadSourceTypeValue | null | undefined
-  /** The saved lead's company record, for the "open company" button. */
-  companyId?: string | null
 }
 
 export function LeadSheetFormFields({
   control,
   assignees,
   selectedSourceType,
-  companyId = null,
 }: LeadSheetFormFieldsProps) {
   // Disabled admins are not offered, but a lead they already hold keeps
   // them as a disabled entry so the picker still names the assignee.
@@ -147,18 +144,14 @@ export function LeadSheetFormFields({
       <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
         <FormField
           control={control}
-          name='companyName'
+          name='company'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Company name</FormLabel>
+              <FormLabel>Company</FormLabel>
               <FormControl>
-                <CompanyNameInput
-                  name={field.name}
-                  value={field.value ?? ''}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  placeholder='Acme Corporation'
-                  linkedCompanyId={companyId}
+                <CompanyLinkPicker
+                  value={field.value ?? null}
+                  onChange={next => field.onChange(next)}
                 />
               </FormControl>
               <FormMessage />

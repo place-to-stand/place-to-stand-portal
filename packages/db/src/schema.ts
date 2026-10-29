@@ -285,9 +285,8 @@ export const companies = pgTable(
     name: text().notNull(),
     website: text(),
     linkedinUrl: text('linkedin_url'),
+    /** Rich text (TipTap HTML). */
     notes: text(),
-    /** The one rep who owns this account, so others don't step on toes. */
-    ownerId: uuid('owner_id'),
     /** Set once the company signs and becomes a client. */
     clientId: uuid('client_id'),
     createdBy: uuid('created_by'),
@@ -306,14 +305,6 @@ export const companies = pgTable(
       .using('btree', sql`lower(btrim(name))`)
       .where(sql`(deleted_at IS NULL)`),
     index('idx_companies_name_trgm').using('gin', table.name.op('gin_trgm_ops')),
-    index('idx_companies_owner')
-      .using('btree', table.ownerId.asc().nullsLast().op('uuid_ops'))
-      .where(sql`(deleted_at IS NULL)`),
-    foreignKey({
-      columns: [table.ownerId],
-      foreignColumns: [users.id],
-      name: 'companies_owner_id_fkey',
-    }),
     foreignKey({
       columns: [table.clientId],
       foreignColumns: [clients.id],

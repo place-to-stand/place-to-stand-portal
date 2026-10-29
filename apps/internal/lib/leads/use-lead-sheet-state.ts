@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
+import { useCallback, useRef, useEffect, useMemo, useState, useTransition } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, useWatch } from 'react-hook-form'
 
@@ -56,7 +56,10 @@ export function useLeadSheetState({
       contactName: lead?.contactName ?? initialValues?.contactName ?? '',
       contactEmail: lead?.contactEmail ?? initialValues?.contactEmail ?? '',
       contactPhone: lead?.contactPhone ?? '',
-      companyName: lead?.companyName ?? initialValues?.companyName ?? '',
+      company:
+        lead?.companyId
+          ? { id: lead.companyId, name: lead.companyName ?? '' }
+          : null,
       companyWebsite: lead?.companyWebsite ?? '',
       sourceType: lead?.sourceType ?? null,
       sourceDetail: lead?.sourceDetail ?? '',
@@ -72,9 +75,22 @@ export function useLeadSheetState({
     defaultValues,
   })
 
+  // Reset only when a different record (or a newer save of it) arrives. A
+  // router refresh hands over a fresh but identical `lead` object, e.g. after
+  // a sheet stacked on top saves, and must not wipe unsaved edits such as a
+  // company just picked from that sheet.
+  const resetKey = lead ? `${lead.id}:${lead.updatedAt}` : `new:${initialStatus ?? ''}`
+  const lastResetKey = useRef<string | null>(null)
   useEffect(() => {
+    // Closing forgets the key, so reopening always starts from the record.
+    if (!open) {
+      lastResetKey.current = null
+      return
+    }
+    if (lastResetKey.current === resetKey) return
+    lastResetKey.current = resetKey
     form.reset(defaultValues)
-  }, [defaultValues, form])
+  }, [defaultValues, form, open, resetKey])
 
   const selectedSourceType = useWatch({
     control: form.control,
@@ -96,9 +112,12 @@ export function useLeadSheetState({
   const handleFormSubmit = useCallback(
     (values: LeadFormValues) => {
       startSaveTransition(async () => {
+        const { company, ...fields } = values
         const result = await saveLead({
           id: lead?.id,
-          ...values,
+          ...fields,
+          companyId: company?.id ?? null,
+          companyName: company?.name ?? null,
         })
 
         if (!result.success) {
@@ -122,7 +141,7 @@ export function useLeadSheetState({
           contactName: values.contactName ?? '',
           contactEmail: values.contactEmail ?? '',
           contactPhone: values.contactPhone ?? '',
-          companyName: values.companyName ?? '',
+          company: values.company ?? null,
           companyWebsite: values.companyWebsite ?? '',
           sourceType: values.sourceType ?? null,
           sourceDetail: values.sourceDetail ?? '',

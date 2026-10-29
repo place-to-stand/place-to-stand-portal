@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
-import { useForm, useWatch } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
@@ -11,14 +11,6 @@ import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { Input } from '@pts/ui/input'
 import { Separator } from '@pts/ui/separator'
 import { Skeleton } from '@pts/ui/skeleton'
-import { Textarea } from '@pts/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@pts/ui/select'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { SheetSection } from '@/components/sheets/sheet-section'
@@ -30,9 +22,10 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { useToast } from '@/components/ui/use-toast'
-import { COMPANY_OPTIONS_QUERY_KEY } from '@/components/companies/company-name-input'
+import { COMPANY_OPTIONS_QUERY_KEY } from '@/components/companies/company-link-picker'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
@@ -47,14 +40,12 @@ import {
 import { CompanyContactsSection, CompanyLeadsSection } from './company-sheet-sections'
 
 const COMPANY_FORM_ID = 'company-form'
-const NO_OWNER = '__none__'
 
 const companyFormSchema = z.object({
   name: z.string().trim().min(1, 'Company name is required').max(160),
   website: z.string().trim().max(255),
   linkedinUrl: z.string().trim().max(255),
-  ownerId: z.string(),
-  notes: z.string().max(5000),
+  notes: z.string().max(20000),
 })
 
 type CompanyFormValues = z.infer<typeof companyFormSchema>
@@ -67,9 +58,19 @@ type CompanySheetProps = {
   companyId: string | null
   open: boolean
   onClose: () => void
+  /** Prefills the name on the create sheet (create-from-picker). */
+  initialName?: string
+  /** Fires with the new record after a create, for the picker underneath. */
+  onCreated?: (record: { id: string; name: string }) => void
 }
 
-export function CompanySheet({ companyId, open, onClose }: CompanySheetProps) {
+export function CompanySheet({
+  companyId,
+  open,
+  onClose,
+  initialName,
+  onCreated,
+}: CompanySheetProps) {
   const router = useRouter()
   const queryClient = useQueryClient()
   const { toast } = useToast()
@@ -93,7 +94,6 @@ export function CompanySheet({ companyId, open, onClose }: CompanySheetProps) {
       name: '',
       website: '',
       linkedinUrl: '',
-      ownerId: NO_OWNER,
       notes: '',
     },
   })
@@ -106,13 +106,12 @@ export function CompanySheet({ companyId, open, onClose }: CompanySheetProps) {
     if (seededFor.current === key) return
     seededFor.current = key
     form.reset({
-      name: company?.name ?? '',
+      name: company?.name ?? initialName ?? '',
       website: company?.website ?? '',
       linkedinUrl: company?.linkedinUrl ?? '',
-      ownerId: company?.ownerId ?? NO_OWNER,
       notes: company?.notes ?? '',
     })
-  }, [company, data, form])
+  }, [company, data, form, initialName])
 
   const isDirty = form.formState.isDirty
   const { requestConfirmation, dialog: unsavedChangesDialog } =
@@ -136,7 +135,6 @@ export function CompanySheet({ companyId, open, onClose }: CompanySheetProps) {
           website: values.website,
           linkedinUrl: values.linkedinUrl,
           notes: values.notes,
-          ownerId: values.ownerId === NO_OWNER ? null : values.ownerId,
         })
 
         if (!result.ok) {
@@ -144,6 +142,9 @@ export function CompanySheet({ companyId, open, onClose }: CompanySheetProps) {
           return
         }
 
+        if (!isEditing && result.id) {
+          onCreated?.({ id: result.id, name: values.name.trim() })
+        }
         toast({
           title: isEditing ? 'Company updated' : 'Company created',
           description: values.name,
@@ -154,7 +155,7 @@ export function CompanySheet({ companyId, open, onClose }: CompanySheetProps) {
         onClose()
       })
     },
-    [companyId, form, isEditing, onClose, refresh, toast]
+    [companyId, form, isEditing, onClose, onCreated, refresh, toast]
   )
 
   const handleSave = useCallback(
@@ -213,15 +214,6 @@ export function CompanySheet({ companyId, open, onClose }: CompanySheetProps) {
     },
     [isPending, onClose, requestConfirmation]
   )
-
-  const owners = data?.owners ?? []
-  const ownerId = useWatch({ control: form.control, name: 'ownerId' })
-  // Keep a disabled or removed owner selectable so the value still renders.
-  const currentOwnerId = company?.ownerId ?? null
-  const ownerOptions =
-    !currentOwnerId || owners.some(owner => owner.id === currentOwnerId)
-      ? owners
-      : [...owners, { id: currentOwnerId, name: 'Former user', avatarUrl: null }]
 
   const fieldsDisabled = isPending || isArchived
 
@@ -312,49 +304,18 @@ export function CompanySheet({ companyId, open, onClose }: CompanySheetProps) {
                     </div>
                     <FormField
                       control={form.control}
-                      name='ownerId'
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel optional>Owner</FormLabel>
-                          <Select
-                            value={field.value}
-                            onValueChange={field.onChange}
-                            disabled={fieldsDisabled}
-                          >
-                            <FormControl>
-                              <SelectTrigger aria-label='Owner'>
-                                <SelectValue placeholder='No owner' />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value={NO_OWNER}>No owner</SelectItem>
-                              {ownerOptions.map(owner => (
-                                <SelectItem key={owner.id} value={owner.id}>
-                                  {owner.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          {ownerId === NO_OWNER ? null : (
-                            <p className='text-muted-foreground text-xs'>
-                              The one person who works this account.
-                            </p>
-                          )}
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
                       name='notes'
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel optional>Notes</FormLabel>
                           <FormControl>
-                            <Textarea
-                              {...field}
-                              rows={4}
+                            <RichTextEditor
+                              id='company-notes'
+                              value={field.value ?? ''}
+                              onChange={field.onChange}
                               disabled={fieldsDisabled}
+                              contentMinHeightClassName='[&_.ProseMirror]:min-h-[140px]'
+                              undoRedo={false}
                             />
                           </FormControl>
                           <FormMessage />

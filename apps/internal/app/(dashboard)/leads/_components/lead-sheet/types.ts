@@ -15,7 +15,8 @@ export const leadFormSchema = z.object({
     .optional()
     .nullable(),
   contactPhone: z.string().trim().max(40).optional().nullable(),
-  companyName: z.string().trim().max(160).optional().nullable(),
+  /** The linked company, chosen with the company picker. */
+  company: z.object({ id: z.string().uuid(), name: z.string() }).nullable(),
   companyWebsite: z
     .union([z.string().trim().url('Enter a valid URL'), z.literal('')])
     .transform(val => (val === '' ? null : val))
@@ -43,5 +44,5 @@ export type LeadSheetProps = {
   /** Called with the new lead's ID after successful creation (not editing) */
   onCreated?: (leadId: string) => void
   /** Pre-fill form fields when creating a new lead (ignored when editing) */
-  initialValues?: Partial<Pick<LeadFormValues, 'contactName' | 'contactEmail' | 'companyName' | 'notes'>>
+  initialValues?: Partial<Pick<LeadFormValues, 'contactName' | 'contactEmail' | 'notes'>>
 }
