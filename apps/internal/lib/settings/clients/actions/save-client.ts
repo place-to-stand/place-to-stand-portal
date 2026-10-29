@@ -1,3 +1,7 @@
+import { and, eq, isNull, ne } from 'drizzle-orm'
+
+import { db } from '@/lib/db'
+import { clients } from '@/lib/db/schema'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import {
   clientSchema,
@@ -41,20 +45,35 @@ export async function saveClientMutation(
     originationUserId,
     closers,
     companyId,
-    label,
   } = parsed.data
   const normalizedMemberIds = memberIds
     ? Array.from(new Set(memberIds)).filter(Boolean)
     : undefined
 
-  // A client is named after its company (plus its label, if any).
+  // A client is named after its company, and a company has one client.
   let trimmedName = name.trim()
   if (companyId) {
     const company = await getLinkableCompany(companyId)
     if (!company) {
       return buildMutationResult({ error: 'That company no longer exists.' })
     }
-    trimmedName = clientDisplayName(company.name, label)
+    const [taken] = await db
+      .select({ id: clients.id, name: clients.name })
+      .from(clients)
+      .where(
+        and(
+          eq(clients.companyId, companyId),
+          isNull(clients.deletedAt),
+          id ? ne(clients.id, id) : undefined
+        )
+      )
+      .limit(1)
+    if (taken) {
+      return buildMutationResult({
+        error: `${company.name} already has a client. A company has one client.`,
+      })
+    }
+    trimmedName = clientDisplayName(company.name)
   }
 
   if (!trimmedName) {
@@ -89,7 +108,6 @@ export async function saveClientMutation(
           notes: cleanedNotes,
           memberIds: normalizedMemberIds,
           companyId: companyId ?? null,
-          label,
         })
       }
 
@@ -108,7 +126,6 @@ export async function saveClientMutation(
         notes: cleanedNotes,
         memberIds: normalizedMemberIds,
         companyId,
-        label,
       })
     }
   )

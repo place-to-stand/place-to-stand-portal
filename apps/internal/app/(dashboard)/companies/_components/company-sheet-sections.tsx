@@ -69,12 +69,14 @@ export function CompanyClientsSection({
   const canManageClients = Boolean(role && roleCan(role, 'clients.manage'))
   const linkedIds = new Set(clients.map(client => client.id))
   const pending = added.filter(client => !linkedIds.has(client.id))
+  // A company has one client: the slot takes one, then the add goes away.
+  const hasClient = clients.length + pending.length > 0
 
   return (
     <SheetSection
-      title='Clients'
+      title='Client'
       action={
-        canManageClients && !disabled ? (
+        hasClient ? null : canManageClients && !disabled ? (
           // Link an existing client, or create one on top with this company
           // picked.
           <ClientLinkPicker
@@ -96,7 +98,7 @@ export function CompanyClientsSection({
       }
     >
       {clients.length === 0 && pending.length === 0 ? (
-        <EmptyState message='Not a client yet. Add a client, or convert a lead, to link one here.' />
+        <EmptyState message='Not a client yet. Add one here, or convert a lead.' />
       ) : (
         <SheetRecordList>
           {clients.map(client => (

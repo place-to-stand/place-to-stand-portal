@@ -234,6 +234,10 @@ export const clients = pgTable(
     index('idx_clients_company')
       .using('btree', table.companyId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL AND company_id IS NOT NULL)`),
+    // A company has one (live) client.
+    uniqueIndex('clients_company_id_live_key')
+      .on(table.companyId)
+      .where(sql`(deleted_at IS NULL AND company_id IS NOT NULL)`),
     index('idx_clients_created_by')
       .using('btree', table.createdBy.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),

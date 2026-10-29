@@ -17,17 +17,15 @@ export const clientSchema = z
   .object({
     id: z.string().uuid().optional(),
     /**
-     * Ignored when a company is given: the name is the company's name plus
-     * the label. Used as the company name when a new client has no company.
+     * Ignored when a company is given: the name is the company's name. Used
+     * as the company name when a new client has no company.
      */
     name: z.string().default(''),
-    /** Tells apart two billing setups for one company ("Retainer"). */
-    label: z
-      .string()
-      .trim()
-      .max(60)
-      .nullish()
-      .transform(value => (value ? value : null)),
+    /**
+     * Deprecated and ignored: a company has one client, so clients no longer
+     * need a label to tell them apart. Still accepted for old callers.
+     */
+    label: z.unknown().optional(),
     slug: z
       .string()
       .regex(

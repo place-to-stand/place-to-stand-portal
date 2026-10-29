@@ -67,6 +67,7 @@ type UpdateClientPayload = {
   memberIds?: string[]
   /** Omitted keeps the client's company. */
   companyId?: string
+  /** Deprecated and ignored: a company has one client. */
   label?: string | null
 }
 
@@ -116,7 +117,6 @@ export async function updateClient(
     notes,
     memberIds,
     companyId,
-    label,
   } = payload
 
   if (companyId && !(await getLinkableCompany(companyId))) {
@@ -269,7 +269,6 @@ export async function updateClient(
           originationUserId,
           notes,
           ...(companyId ? { companyId } : {}),
-          ...(label !== undefined ? { label } : {}),
         })
         .where(eq(clients.id, id))
 

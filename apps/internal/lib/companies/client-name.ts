@@ -1,5 +1,8 @@
-/** A client's name: its company's name, plus its label when it has one. */
-export function clientDisplayName(companyName: string, label: string | null | undefined) {
-  const trimmed = label?.trim()
-  return trimmed ? `${companyName} · ${trimmed}` : companyName
+/**
+ * A client's name is its company's name (a company has at most one client).
+ * Clients once had a label ("Retainer") that told several apart; it is no
+ * longer used.
+ */
+export function clientDisplayName(companyName: string) {
+  return companyName.trim()
 }

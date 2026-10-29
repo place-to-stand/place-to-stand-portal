@@ -1,3 +1,5 @@
+import { and, eq, isNull } from 'drizzle-orm'
+
 import { logActivity } from '@/lib/activity/logger'
 import { clientCreatedEvent } from '@/lib/activity/events'
 import { assertAdmin } from '@/lib/auth/permissions'
@@ -42,6 +44,7 @@ type CreateClientPayload = {
   memberIds?: string[]
   /** The client's company; null finds or creates one named after the client. */
   companyId?: string | null
+  /** Deprecated and ignored: a company has one client. */
   label?: string | null
 }
 
@@ -65,7 +68,6 @@ export async function createClient(
     notes,
     memberIds,
     companyId: requestedCompanyId,
-    label = null,
   } = payload
 
   const partnerRoleError = await assertClientPartnerUserRoles({
@@ -96,6 +98,21 @@ export async function createClient(
     await fillCompanyWebsiteIfBlank(user, companyId, website)
   }
 
+  // A company has one client.
+  if (companyId) {
+    const [taken] = await db
+      .select({ id: clients.id })
+      .from(clients)
+      .where(and(eq(clients.companyId, companyId), isNull(clients.deletedAt)))
+      .limit(1)
+    if (taken) {
+      return buildMutationResult({
+        error:
+          'That company already has a client. A company has one client: link to it instead.',
+      })
+    }
+  }
+
   const baseSlug = providedSlug
     ? toClientSlug(providedSlug)
     : toClientSlug(name)
@@ -119,7 +136,6 @@ export async function createClient(
             originationUserId,
             notes,
             companyId,
-            label,
             createdBy: user.id,
           })
           .returning({ id: clients.id })

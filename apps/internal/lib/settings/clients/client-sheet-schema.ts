@@ -5,10 +5,8 @@ import {
 } from './billing-types'
 
 export const clientSheetFormSchema = z.object({
-  /** Display only: the client is named after its company and label. */
+  /** Display only: a client is named after its company. */
   name: z.string().optional(),
-  /** Tells apart two billing setups for one company ("Retainer"). */
-  label: z.string().max(60).optional(),
   slug: z
     .string()
     .regex(/^[a-z0-9-]+$/, 'Lowercase letters, numbers, and dashes only')

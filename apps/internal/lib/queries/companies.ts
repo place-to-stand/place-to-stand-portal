@@ -208,9 +208,14 @@ export async function getCompanyDetail(
       .orderBy(asc(clients.name)),
   ])
 
-  const primary = contactRows.find(contact => contact.id === row.primaryContactId)
+  const primary = contactRows.find(
+    contact => contact.id === row.primaryContactId
+  )
   const people = contactRows
-    .map(contact => ({ ...contact, isPrimary: contact.id === row.primaryContactId }))
+    .map(contact => ({
+      ...contact,
+      isPrimary: contact.id === row.primaryContactId,
+    }))
     // Primary contact first.
     .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary))
 
@@ -235,7 +240,11 @@ export async function listCompanyOptions(
   assertCrmAccess(user)
 
   return db
-    .select({ id: companies.id, name: companies.name, website: companies.website })
+    .select({
+      id: companies.id,
+      name: companies.name,
+      website: companies.website,
+    })
     .from(companies)
     .where(isNull(companies.deletedAt))
     .orderBy(asc(sql`lower(${companies.name})`))
@@ -336,6 +345,16 @@ export async function saveCompany(
     existing.id,
     values.addClientIds ?? []
   )
+  // A company has one client.
+  if (
+    clientMoves.length > 1 ||
+    (clientMoves.length === 1 && (await companyHasClient(existing.id)))
+  ) {
+    return {
+      ok: false,
+      error: 'A company has one client, and this one already has it.',
+    }
+  }
 
   if (!changedFields.length && !people.moves.length && !clientMoves.length) {
     return { ok: true, id: existing.id }
@@ -388,7 +407,7 @@ export async function saveCompany(
         .where(eq(companies.id, existing.id))
 
       // Leads keep a display copy of the company name, and a client is
-      // named after its company (plus its label); follow a rename.
+      // named after its company; follow a rename.
       if (renamed) {
         await tx
           .update(leads)
@@ -397,19 +416,19 @@ export async function saveCompany(
         await tx
           .update(clients)
           .set({
-            name: sql`case when nullif(btrim(${clients.label}), '') is null then ${next.name} else ${next.name} || ' · ' || btrim(${clients.label}) end`,
+            name: clientDisplayName(next.name),
             updatedAt: timestamp,
           })
           .where(eq(clients.companyId, existing.id))
       }
 
-      // A client is named after its company (plus its label).
+      // A client is named after its company.
       for (const move of clientMoves) {
         await tx
           .update(clients)
           .set({
             companyId: existing.id,
-            name: clientDisplayName(next.name, move.label),
+            name: clientDisplayName(next.name),
             updatedAt: timestamp,
           })
           .where(eq(clients.id, move.clientId))
@@ -492,7 +511,7 @@ export async function saveCompany(
   }
 
   for (const move of clientMoves) {
-    const nextName = clientDisplayName(next.name, move.label)
+    const nextName = clientDisplayName(next.name)
     const nameChanged = nextName !== move.name
     await logActivity({
       actorId: actor.id,
@@ -528,7 +547,6 @@ async function resolveClientMoves(companyId: string, clientIds: string[]) {
     .select({
       clientId: clients.id,
       name: clients.name,
-      label: clients.label,
       fromCompanyId: clients.companyId,
     })
     .from(clients)
@@ -604,7 +622,8 @@ async function resolvePeopleChanges(
       fromCompanyId: row.companyId,
     }
     if (removeSet.has(row.id)) {
-      if (row.companyId === companyId) moves.push({ ...base, toCompanyId: null })
+      if (row.companyId === companyId)
+        moves.push({ ...base, toCompanyId: null })
     } else if (row.companyId !== companyId) {
       moves.push({ ...base, toCompanyId: companyId })
     }
@@ -671,7 +690,6 @@ export async function setCompanyArchived(
   return { ok: true, id: existing.id }
 }
 
-
 /**
  * Makes one contact the company's primary contact (or clears it with
  * `null`). Clients use their company's primary contact. The contact must be
@@ -709,7 +727,8 @@ export async function setCompanyPrimaryContact(
   ) {
     return {
       ok: false,
-      error: 'This company is a client, so only an admin can change its primary contact.',
+      error:
+        'This company is a client, so only an admin can change its primary contact.',
     }
   }
 
@@ -718,7 +737,11 @@ export async function setCompanyPrimaryContact(
 
   if (contactId) {
     const [contact] = await db
-      .select({ id: contacts.id, name: contacts.name, companyId: contacts.companyId })
+      .select({
+        id: contacts.id,
+        name: contacts.name,
+        companyId: contacts.companyId,
+      })
       .from(contacts)
       .where(and(eq(contacts.id, contactId), isNull(contacts.deletedAt)))
       .limit(1)
@@ -745,7 +768,10 @@ export async function setCompanyPrimaryContact(
     actorRole: actor.role,
     targetType: 'COMPANY',
     targetId: company.id,
-    ...companyPrimaryContactSetEvent({ companyName: company.name, contactName }),
+    ...companyPrimaryContactSetEvent({
+      companyName: company.name,
+      contactName,
+    }),
   })
 
   return { ok: true, id: company.id }

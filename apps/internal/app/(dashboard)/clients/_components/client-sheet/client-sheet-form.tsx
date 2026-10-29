@@ -248,45 +248,7 @@ export function ClientSheetForm({
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name='label'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel optional>Label</FormLabel>
-                  <FormControl>
-                    <DisabledFieldTooltip
-                      disabled={isPending}
-                      reason={fieldDisabledReason}
-                    >
-                      <Input
-                        {...field}
-                        value={field.value ?? ''}
-                        ref={node => {
-                          firstFieldRef.current = node
-                          if (typeof field.ref === 'function') {
-                            field.ref(node)
-                          } else if (field.ref) {
-                            ;(
-                              field.ref as React.MutableRefObject<HTMLInputElement | null>
-                            ).current = node
-                          }
-                        }}
-                        placeholder='e.g. Retainer'
-                        maxLength={60}
-                        disabled={isPending}
-                      />
-                    </DisabledFieldTooltip>
-                  </FormControl>
-                  <p className='text-muted-foreground text-xs'>
-                    Only needed when one company has more than one billing
-                    setup.
-                  </p>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            {isEditing ? (
+                        {isEditing ? (
               <FormField
                 control={form.control}
                 name='slug'
