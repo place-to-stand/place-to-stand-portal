@@ -10,8 +10,6 @@
 
 import { BOARD_VIEW_SEGMENTS } from '@/lib/projects/board/board-constants'
 
-import { NEW_SHEET_VALUE } from './entities'
-
 export const clientSheetHref = (id: string) => `/clients?client=${id}`
 
 export const contactSheetHref = (id: string) => `/contacts?contact=${id}`
@@ -62,7 +60,6 @@ export const leadHref = (
 /** Resolves server-side, so the link keeps working after archive/restore. */
 export const submissionHref = (id: string) => `/submissions?submission=${id}`
 
-export const newLeadHref = () => `/leads?lead=${NEW_SHEET_VALUE}`
 /**
  * Rebuilds a page's query string for a server-side `redirect()`. Redirects
  * must carry the whole query across — the sheet stack and any filters live

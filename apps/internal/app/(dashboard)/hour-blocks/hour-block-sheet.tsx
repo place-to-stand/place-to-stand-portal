@@ -14,8 +14,10 @@ import {
 import { Input } from '@pts/ui/input'
 import { Textarea } from '@pts/ui/textarea'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { FormFeedback } from '@/components/sheets/form-feedback'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
+import { SheetSection } from '@/components/sheets/sheet-section'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import {
   useHourBlockSheetState,
@@ -121,54 +123,85 @@ export function HourBlockSheet({
                 )}
                 className='flex flex-col gap-5 px-6 pt-6 pb-8'
               >
-                <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-                  <FormField
-                    control={form.control}
-                    name='clientId'
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Client</FormLabel>
-                        <FormControl>
-                          <DisabledFieldTooltip
-                            disabled={clientField.disabled}
-                            reason={clientField.reason}
-                          >
-                            <SearchableCombobox
-                              ref={firstFieldRef}
-                              name={field.name}
-                              value={field.value ?? ''}
-                              onChange={field.onChange}
-                              onBlur={field.onBlur}
-                              items={clientOptions}
-                              searchPlaceholder='Search clients...'
-                              emptyMessage='No clients found.'
+                <SheetSection title='Details'>
+                  <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+                    <FormField
+                      control={form.control}
+                      name='clientId'
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Client</FormLabel>
+                          <FormControl>
+                            <DisabledFieldTooltip
                               disabled={clientField.disabled}
-                            />
-                          </DisabledFieldTooltip>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                              reason={clientField.reason}
+                            >
+                              <SearchableCombobox
+                                ref={firstFieldRef}
+                                name={field.name}
+                                value={field.value ?? ''}
+                                onChange={field.onChange}
+                                onBlur={field.onBlur}
+                                items={clientOptions}
+                                searchPlaceholder='Search clients...'
+                                emptyMessage='No clients found.'
+                                disabled={clientField.disabled}
+                              />
+                            </DisabledFieldTooltip>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name='hoursPurchased'
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Hours purchased</FormLabel>
+                          <FormControl>
+                            <DisabledFieldTooltip
+                              disabled={hoursField.disabled}
+                              reason={hoursField.reason}
+                            >
+                              <Input
+                                {...field}
+                                value={field.value ?? ''}
+                                type='number'
+                                step='1'
+                                min='1'
+                                inputMode='numeric'
+                                disabled={hoursField.disabled}
+                              />
+                            </DisabledFieldTooltip>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                   <FormField
                     control={form.control}
-                    name='hoursPurchased'
+                    name='notes'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Hours purchased</FormLabel>
+                        <FormLabel>
+                          Notes{' '}
+                          <span className='text-muted-foreground text-xs'>
+                            (optional)
+                          </span>
+                        </FormLabel>
                         <FormControl>
                           <DisabledFieldTooltip
-                            disabled={hoursField.disabled}
-                            reason={hoursField.reason}
+                            disabled={notesField.disabled}
+                            reason={notesField.reason}
                           >
-                            <Input
+                            <Textarea
                               {...field}
                               value={field.value ?? ''}
-                              type='number'
-                              step='1'
-                              min='1'
-                              inputMode='numeric'
-                              disabled={hoursField.disabled}
+                              placeholder='e.g. Comped 2 hours for leaving a review'
+                              rows={3}
+                              disabled={notesField.disabled}
                             />
                           </DisabledFieldTooltip>
                         </FormControl>
@@ -176,44 +209,11 @@ export function HourBlockSheet({
                       </FormItem>
                     )}
                   />
-                </div>
-                <FormField
-                  control={form.control}
-                  name='notes'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Notes{' '}
-                        <span className='text-muted-foreground text-xs'>
-                          (optional)
-                        </span>
-                      </FormLabel>
-                      <FormControl>
-                        <DisabledFieldTooltip
-                          disabled={notesField.disabled}
-                          reason={notesField.reason}
-                        >
-                          <Textarea
-                            {...field}
-                            value={field.value ?? ''}
-                            placeholder='e.g. Comped 2 hours for leaving a review'
-                            rows={3}
-                            disabled={notesField.disabled}
-                          />
-                        </DisabledFieldTooltip>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                </SheetSection>
                 {hourBlock ? (
                   <HourBlockInvoiceSection hourBlock={hourBlock} />
                 ) : null}
-                {feedback ? (
-                  <p className='border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm'>
-                    {feedback}
-                  </p>
-                ) : null}
+                <FormFeedback>{feedback}</FormFeedback>
               </form>
             </div>
             <SheetFormFooter

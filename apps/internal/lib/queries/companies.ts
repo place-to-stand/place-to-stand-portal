@@ -325,6 +325,22 @@ export async function saveCompany(
     return { ok: true, id: existing.id }
   }
 
+  const renamed = next.name !== existing.name
+  // A client's name is its company's name, and client records are admin-only.
+  if (renamed && !roleCan(actor.role, 'clients.manage')) {
+    const [client] = await db
+      .select({ id: clients.id })
+      .from(clients)
+      .where(and(eq(clients.companyId, existing.id), isNull(clients.deletedAt)))
+      .limit(1)
+    if (client) {
+      return {
+        ok: false,
+        error: 'This company is a client, so only an admin can rename it.',
+      }
+    }
+  }
+
   try {
     await db.transaction(async tx => {
       await tx
@@ -332,12 +348,20 @@ export async function saveCompany(
         .set({ ...next, updatedAt: timestamp })
         .where(eq(companies.id, existing.id))
 
-      // Leads keep a display copy of the company name; follow a rename.
-      if (next.name !== existing.name) {
+      // Leads keep a display copy of the company name, and a client is
+      // named after its company (plus its label); follow a rename.
+      if (renamed) {
         await tx
           .update(leads)
           .set({ companyName: next.name, updatedAt: timestamp })
           .where(eq(leads.companyId, existing.id))
+        await tx
+          .update(clients)
+          .set({
+            name: sql`case when nullif(btrim(${clients.label}), '') is null then ${next.name} else ${next.name} || ' · ' || btrim(${clients.label}) end`,
+            updatedAt: timestamp,
+          })
+          .where(eq(clients.companyId, existing.id))
       }
     })
   } catch (error) {

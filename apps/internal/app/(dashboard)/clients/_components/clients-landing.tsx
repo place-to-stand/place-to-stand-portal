@@ -3,15 +3,12 @@
 import Link from 'next/link'
 import { useMemo } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { Archive, Building2, Clock, Pencil } from 'lucide-react'
+import { Building2, Clock } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Badge } from '@pts/ui/badge'
-import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { EmptyState } from '@pts/ui/empty-state'
-import { RowActionButton } from '@pts/ui/row-action-button'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import {
   Table,
@@ -21,8 +18,15 @@ import {
   TableHeader,
   TableRow,
 } from '@pts/ui/table'
+import {
+  RecordRowAction,
+  RecordRowActions,
+} from '@/components/table/record-row-action'
+import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
+import { EmptyValue } from '@/components/table/empty-value'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { PaginationControls } from '@/components/ui/pagination-controls'
+import { PersonAvatar } from '@/components/ui/user-avatar'
 import { useListParams } from '@/hooks/use-list-params'
 import type { ClientWithMetrics } from '@/lib/data/clients'
 import { getBillingTypeOption } from '@/lib/settings/clients/billing-types'
@@ -92,6 +96,7 @@ function toTableClient(client: ClientWithMetrics): ClientsTableClient {
     origination_user_id: client.originationUserId,
     billing_type: client.billingType,
     company_id: client.companyId ?? null,
+    label: client.label ?? null,
     created_by: null,
     created_at: client.createdAt,
     updated_at: client.updatedAt,
@@ -113,26 +118,16 @@ function OriginatorAvatar({ client }: { client: ClientWithMetrics }) {
       : null
 
   if (!name) {
-    return <span className='text-muted-foreground/40 text-sm'>—</span>
+    return <EmptyValue />
   }
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span aria-label={`Originated by ${name}`}>
-          <Avatar size='sm'>
-            {client.originationUserId ? (
-              <AvatarImage
-                src={`/api/storage/user-avatar/${client.originationUserId}?v=${encodeURIComponent(client.originationUserUpdatedAt ?? '')}`}
-                alt={name}
-              />
-            ) : null}
-            <AvatarFallback>{getInitials(name)}</AvatarFallback>
-          </Avatar>
-        </span>
-      </TooltipTrigger>
-      <TooltipContent>{name}</TooltipContent>
-    </Tooltip>
+    <PersonAvatar
+      userId={client.originationUserId}
+      name={name}
+      version={client.originationUserUpdatedAt}
+      ariaLabel={`Originated by ${name}`}
+    />
   )
 }
 
@@ -150,7 +145,7 @@ export function ClientsLanding({
   const searchParams = useSearchParams()
   const { update, getParam } = useListParams({
     basePath: '/clients',
-    resetKeys: ['cursor', 'dir', 'page'],
+    resetKeys: ['page'],
   })
 
   const handlePageChange = (page: number) => {
@@ -169,6 +164,9 @@ export function ClientsLanding({
   // Guard-validated active search (R4): an empty list under a live `?q=`
   // shows the filtered message, not the default empty state.
   const hasActiveFilter = Boolean(getParam('q')?.trim())
+  const emptyMessage = hasActiveFilter
+    ? 'No clients match the current filters.'
+    : 'No clients yet.'
 
   const tableClients = useMemo(() => clients.map(toTableClient), [clients])
 
@@ -193,18 +191,7 @@ export function ClientsLanding({
   const sheet = (
     <>
       {clientNotFound ? (
-        <div
-          role='status'
-          className='border-destructive/30 bg-destructive/5 flex items-center justify-between gap-3 rounded-md border px-4 py-3 text-sm'
-        >
-          <span>
-            The linked client could not be found. It may have been permanently
-            deleted.
-          </span>
-          <Button variant='ghost' size='sm' onClick={clear}>
-            Dismiss
-          </Button>
-        </div>
+        <DeepLinkNotFoundNotice entity='client' onDismiss={clear} />
       ) : null}
       <ConfirmDialog
         open={Boolean(deleteTarget)}
@@ -229,21 +216,6 @@ export function ClientsLanding({
     </>
   )
 
-  if (clients.length === 0) {
-    return (
-      <>
-        {sheet}
-        <EmptyState
-          message={
-            hasActiveFilter
-              ? 'No clients match the current filters.'
-              : 'No clients yet.'
-          }
-        />
-      </>
-    )
-  }
-
   const getClientHref = (client: ClientWithMetrics) => {
     return client.slug ? `/clients/${client.slug}` : `/clients/${client.id}`
   }
@@ -251,7 +223,7 @@ export function ClientsLanding({
   return (
     <>
       {sheet}
-      <div className='rounded-lg border'>
+      <div className='overflow-hidden rounded-lg border'>
         <Table
           density='compact'
           layout='fixed'
@@ -294,6 +266,7 @@ export function ClientsLanding({
                 sort={sort}
                 defaultSort='name:asc'
                 onSortChange={next => update({ sort: next })}
+                align='center'
                 className='w-[8%]'
               >
                 Contacts
@@ -346,7 +319,9 @@ export function ClientsLanding({
                     className='flex min-w-0 items-center gap-2 py-1'
                   >
                     <Building2 className='h-4 w-4 shrink-0 text-blue-500' />
-                    <span className='truncate font-medium'>{client.name}</span>
+                    <span className='truncate font-medium' title={client.name}>
+                      {client.name}
+                    </span>
                   </Link>
                 </TableCell>
                 <TableCell>
@@ -373,7 +348,7 @@ export function ClientsLanding({
                     totalProjectCount={client.projectCount}
                   />
                 </TableCell>
-                <TableCell>
+                <TableCell label='Contacts' className='text-sm md:text-center'>
                   <LinkedContactsCell contacts={client.contacts} />
                 </TableCell>
                 <TableCell>
@@ -405,7 +380,7 @@ export function ClientsLanding({
                       </span>
                     </div>
                   ) : (
-                    <span className='text-muted-foreground/40 text-sm'>—</span>
+                    <EmptyValue />
                   )}
                 </TableCell>
                 <TableCell label='Origination'>
@@ -446,37 +421,36 @@ export function ClientsLanding({
                         </TooltipContent>
                       </Tooltip>
                     ) : (
-                      <span className='text-muted-foreground/40 text-sm'>
-                        —
-                      </span>
+                      <EmptyValue />
                     )}
                   </div>
                 </TableCell>
                 <TableCell className='text-right max-md:ml-auto'>
-                  <div className='flex justify-end gap-2'>
-                    <RowActionButton
-                      label='Edit client'
-                      icon={<Pencil />}
-                      variant='outline'
+                  <RecordRowActions>
+                    <RecordRowAction
+                      kind='edit'
+                      entity='client'
                       onClick={() => openEdit(tableClients[index])}
                       disabled={isPending}
                     />
-                    <DisabledFieldTooltip
+                    <RecordRowAction
+                      kind='archive'
+                      entity='client'
+                      onClick={() => handleRequestDelete(tableClients[index])}
                       disabled={isPending}
-                      reason={isPending ? pendingReason : null}
-                    >
-                      <RowActionButton
-                        label='Archive client'
-                        icon={<Archive />}
-                        variant='destructive'
-                        onClick={() => handleRequestDelete(tableClients[index])}
-                        disabled={isPending}
-                      />
-                    </DisabledFieldTooltip>
-                  </div>
+                      disabledReason={isPending ? pendingReason : null}
+                    />
+                  </RecordRowActions>
                 </TableCell>
               </TableRow>
             ))}
+            {clients.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className='p-4'>
+                  <EmptyState message={emptyMessage} />
+                </TableCell>
+              </TableRow>
+            ) : null}
           </TableBody>
         </Table>
       </div>

@@ -7,15 +7,11 @@ import { PAGE_SIZE_LIMITS } from '@/lib/pagination/page-size'
 import {
   clampLimit,
   createSearchPattern,
-  resolveDirection,
-  type CursorDirection,
 } from '@/lib/pagination/cursor'
 import type {
   ClientBillingFilter,
   ClientSortField,
 } from '@/lib/settings/clients/filters'
-
-import type { ClientsSettingsListItem } from './types'
 
 export function normalizeStatus(status?: string | null) {
   return status === 'archived' ? 'archived' : 'active'
@@ -51,16 +47,8 @@ export function buildSearchCondition(search: string | null | undefined): SQL | n
   return sql`(${clients.name} ILIKE ${pattern} OR ${clients.slug} ILIKE ${pattern})`
 }
 
-/**
- * Per-sort descriptor (PRD 004 §03, R5): order expression + cursor value
- * encoding + comparison predicates per field, mirroring
- * `USER_SORT_DESCRIPTORS`. Both fields are non-nullable so no null
- * partition applies.
- */
+/** Per-sort order expressions for the archive list (PRD 004 §03, R5). */
 export type ClientSortDescriptor = {
-  encode: (row: ClientsSettingsListItem) => string
-  compare: (op: 'gt' | 'lt', value: string) => SQL
-  equals: (value: string) => SQL
   orderAsc: SQL
   orderDesc: SQL
 }
@@ -70,22 +58,10 @@ export const CLIENT_SORT_DESCRIPTORS: Record<
   ClientSortDescriptor
 > = {
   name: {
-    encode: row => row.name ?? '',
-    compare: (op, value) =>
-      op === 'gt'
-        ? sql`${clients.name} > ${value}`
-        : sql`${clients.name} < ${value}`,
-    equals: value => sql`${clients.name} = ${value}`,
     orderAsc: sql`${clients.name} ASC`,
     orderDesc: sql`${clients.name} DESC`,
   },
   created: {
-    encode: row => String(row.createdAt),
-    compare: (op, value) =>
-      op === 'gt'
-        ? sql`${clients.createdAt} > ${value}::timestamptz`
-        : sql`${clients.createdAt} < ${value}::timestamptz`,
-    equals: value => sql`${clients.createdAt} = ${value}::timestamptz`,
     orderAsc: sql`${clients.createdAt} ASC`,
     orderDesc: sql`${clients.createdAt} DESC`,
   },
@@ -94,8 +70,4 @@ export const CLIENT_SORT_DESCRIPTORS: Record<
 
 export function resolvePaginationLimit(limit: number | null | undefined) {
   return clampLimit(limit, PAGE_SIZE_LIMITS)
-}
-
-export function resolveClientDirection(direction: CursorDirection | null | undefined) {
-  return resolveDirection(direction)
 }

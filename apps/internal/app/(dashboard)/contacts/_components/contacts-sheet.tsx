@@ -39,12 +39,7 @@ export function ContactsSheet(props: ContactsSheetProps) {
     isDeleteDialogOpen,
     isPromoteDialogOpen,
     setIsPromoteDialogOpen,
-    isClientPickerOpen,
-    setIsClientPickerOpen,
-    selectedClients,
-    availableClients,
-    addClientButtonDisabled,
-    addClientButtonDisabledReason,
+    linkedClients,
     portalUserId,
     promoteDisabled,
     promoteDisabledReason,
@@ -56,9 +51,6 @@ export function ContactsSheet(props: ContactsSheetProps) {
     handleConfirmDelete,
     handleRequestPromote,
     handleConfirmPromote,
-    handleAddClient,
-    handleCreateClient,
-    handleRemoveClient,
   } = useContactSheetState(props)
 
   return (
@@ -84,15 +76,7 @@ export function ContactsSheet(props: ContactsSheetProps) {
             onRequestDelete={handleRequestDelete}
             isSheetOpen={open}
             historyKey={contact?.id ?? 'contact:new'}
-            selectedClients={selectedClients}
-            availableClients={availableClients}
-            addClientButtonDisabled={addClientButtonDisabled}
-            addClientButtonDisabledReason={addClientButtonDisabledReason}
-            isClientPickerOpen={isClientPickerOpen}
-            onClientPickerOpenChange={setIsClientPickerOpen}
-            onAddClient={handleAddClient}
-            onCreateClient={handleCreateClient}
-            onRemoveClient={handleRemoveClient}
+            linkedClients={linkedClients}
             promoteDisabled={promoteDisabled}
             promoteDisabledReason={promoteDisabledReason}
             onRequestPromote={handleRequestPromote}
@@ -115,7 +99,7 @@ export function ContactsSheet(props: ContactsSheetProps) {
         onOpenChange={setIsPromoteDialogOpen}
         contactName={contactDisplayName}
         contactEmail={contact?.email ?? ''}
-        linkedClientCount={selectedClients.length}
+        linkedClientCount={linkedClients.length}
         isPending={isPending}
         onConfirm={handleConfirmPromote}
       />

@@ -1,4 +1,5 @@
 'use server';
+// permission: public — signing out
 
 import { redirect } from "next/navigation";
 

@@ -99,7 +99,6 @@ export default async function ContactsArchivePage({
           totalPages={totalPages}
           pageSize={pageSize}
           mode='archive'
-          allClients={allClients}
           basePath='/contacts/archive'
           deepLinkedContact={deepLinkedContact}
           contactNotFound={deepLink.notFound}

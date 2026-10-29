@@ -1,9 +1,6 @@
 'use client'
 
-import { Archive, Eye, RefreshCw, Trash2 } from 'lucide-react'
-
 import { TableCell, TableRow } from '@pts/ui/table'
-import { RowActionButton } from '@pts/ui/row-action-button'
 import { Badge } from '@pts/ui/badge'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Switch } from '@pts/ui/switch'
@@ -23,6 +20,11 @@ import {
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
 
+import {
+  RecordRowAction,
+  RecordRowActions,
+} from '@/components/table/record-row-action'
+import { EmptyValue } from '@/components/table/empty-value'
 import { UserAssignmentsCell } from './user-assignments-cell'
 import { UserAvatar } from '@/components/ui/user-avatar'
 
@@ -37,7 +39,6 @@ const SIGN_IN_TITLE_STYLE = {
 type UsersTableRowProps = {
   row: UserRowState
   assignment: UserAssignmentSummary | undefined
-  selfDeleteReason: string
   mode: 'active' | 'archive'
   clientPortalUrl: string
 }
@@ -45,15 +46,10 @@ type UsersTableRowProps = {
 export function UsersTableRow({
   row,
   assignment,
-  selfDeleteReason,
   mode,
   clientPortalUrl,
 }: UsersTableRowProps) {
   const { user } = row
-  const deleteTitle =
-    row.deleteDisabled && row.deleteDisabledReason === selfDeleteReason
-      ? 'Cannot archive your own account'
-      : 'Archive user'
   const showSoftDelete = mode === 'active'
   const showRestore = mode === 'archive'
   const showDestroy = mode === 'archive'
@@ -78,10 +74,15 @@ export function UsersTableRow({
             hasPhoto={Boolean(user.avatar_url)}
             alt=''
           />
-          <span className='truncate font-medium'>{displayName}</span>
+          <span className='truncate font-medium' title={displayName}>
+            {displayName}
+          </span>
         </div>
       </TableCell>
-      <TableCell className='text-muted-foreground truncate text-sm'>
+      <TableCell
+        className='text-muted-foreground truncate text-sm'
+        title={user.email}
+      >
         {user.email}
       </TableCell>
       <TableCell>
@@ -116,7 +117,7 @@ export function UsersTableRow({
             </div>
           </DisabledFieldTooltip>
         ) : (
-          <span className='text-muted-foreground text-xs'>—</span>
+          <EmptyValue />
         )}
       </TableCell>
       <TableCell label='Clients'>
@@ -138,72 +139,47 @@ export function UsersTableRow({
         {formatCalendarDate(user.created_at)}
       </TableCell>
       <TableCell className='text-right max-md:ml-auto'>
-        <div className='flex justify-end gap-2'>
+        <RecordRowActions>
           {showPreview ? (
-            <DisabledFieldTooltip
+            <RecordRowAction
+              kind='preview'
               disabled={!previewContactId}
-              reason='No linked contact. Create a portal account from their contact to link one.'
-              className='w-auto'
-            >
-              <RowActionButton
-                variant='outline'
-                label='Preview in client portal'
-                icon={<Eye />}
-                disabled={!previewContactId}
-                onClick={event => {
-                  event.stopPropagation()
-                  if (previewContactId) {
-                    openPortalPreview(clientPortalUrl, previewContactId)
-                  }
-                }}
-              />
-            </DisabledFieldTooltip>
+              disabledReason='No linked contact. Create a portal account from their contact to link one.'
+              onClick={() => {
+                if (previewContactId) {
+                  openPortalPreview(clientPortalUrl, previewContactId)
+                }
+              }}
+            />
           ) : null}
           {showRestore ? (
-            <DisabledFieldTooltip
+            <RecordRowAction
+              kind='restore'
+              entity='user'
+              onClick={row.onRestore}
               disabled={row.restoreDisabled}
-              reason={row.restoreDisabledReason}
-            >
-              <RowActionButton
-                variant='outline'
-                onClick={row.onRestore}
-                label='Restore user'
-                icon={<RefreshCw />}
-                disabled={row.restoreDisabled}
-              />
-            </DisabledFieldTooltip>
+              disabledReason={row.restoreDisabledReason}
+            />
           ) : null}
           {showSoftDelete ? (
-            <DisabledFieldTooltip
+            <RecordRowAction
+              kind='archive'
+              entity='user'
+              onClick={row.onRequestDelete}
               disabled={row.deleteDisabled}
-              reason={row.deleteDisabledReason}
-              className='w-auto'
-            >
-              <RowActionButton
-                variant='destructive'
-                onClick={row.onRequestDelete}
-                label={deleteTitle}
-                icon={<Archive />}
-                disabled={row.deleteDisabled}
-              />
-            </DisabledFieldTooltip>
+              disabledReason={row.deleteDisabledReason}
+            />
           ) : null}
           {showDestroy ? (
-            <DisabledFieldTooltip
+            <RecordRowAction
+              kind='destroy'
+              entity='user'
+              onClick={row.onRequestDestroy}
               disabled={row.destroyDisabled}
-              reason={row.destroyDisabledReason}
-              className='w-auto'
-            >
-              <RowActionButton
-                variant='destructive'
-                onClick={row.onRequestDestroy}
-                label='Permanently delete user'
-                icon={<Trash2 />}
-                disabled={row.destroyDisabled}
-              />
-            </DisabledFieldTooltip>
+              disabledReason={row.destroyDisabledReason}
+            />
           ) : null}
-        </div>
+        </RecordRowActions>
       </TableCell>
     </TableRow>
   )

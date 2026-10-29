@@ -1,8 +1,9 @@
-import { Loader2, RefreshCw, Trash2 } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
-import { RowActionButton } from '@pts/ui/row-action-button'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import {
+  RecordRowAction,
+  RecordRowActions,
+} from '@/components/table/record-row-action'
 import {
   Table,
   TableBody,
@@ -138,58 +139,24 @@ export function ReviewArchivedSection({
                       updatedAtOverride={updatedOverride}
                     />
                     <TableCell className='text-right max-md:ml-auto'>
-                      <div className='flex justify-end gap-2'>
-                        <DisabledFieldTooltip
+                      <RecordRowActions>
+                        <RecordRowAction
+                          kind='restore'
+                          entity='task'
+                          onClick={() => onRestoreTask(task.id)}
                           disabled={Boolean(disabledReason)}
-                          reason={disabledReason}
-                        >
-                          <RowActionButton
-                            type='button'
-                            label='Restore task'
-                            variant='secondary'
-                            onClick={event => {
-                              event.preventDefault()
-                              event.stopPropagation()
-                              onRestoreTask(task.id)
-                            }}
-                            disabled={
-                              Boolean(disabledReason) || isRestoreAction
-                            }
-                            icon={
-                              isRestoreAction ? (
-                                <Loader2 className='animate-spin' />
-                              ) : (
-                                <RefreshCw />
-                              )
-                            }
-                          />
-                        </DisabledFieldTooltip>
-                        <DisabledFieldTooltip
+                          disabledReason={disabledReason}
+                          pending={isRestoreAction}
+                        />
+                        <RecordRowAction
+                          kind='destroy'
+                          entity='task'
+                          onClick={() => onRequestDestroy(task)}
                           disabled={Boolean(disabledReason)}
-                          reason={disabledReason}
-                        >
-                          <RowActionButton
-                            type='button'
-                            label='Delete task permanently'
-                            variant='destructive'
-                            onClick={event => {
-                              event.preventDefault()
-                              event.stopPropagation()
-                              onRequestDestroy(task)
-                            }}
-                            disabled={
-                              Boolean(disabledReason) || isDestroyAction
-                            }
-                            icon={
-                              isDestroyAction ? (
-                                <Loader2 className='animate-spin' />
-                              ) : (
-                                <Trash2 />
-                              )
-                            }
-                          />
-                        </DisabledFieldTooltip>
-                      </div>
+                          disabledReason={disabledReason}
+                          pending={isDestroyAction}
+                        />
+                      </RecordRowActions>
                     </TableCell>
                   </TableRow>
                 )

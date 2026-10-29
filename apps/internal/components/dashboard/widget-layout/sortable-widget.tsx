@@ -3,7 +3,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { EyeOff, GripVertical } from 'lucide-react'
+import { Eye, EyeOff, GripVertical } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 
@@ -15,8 +15,11 @@ type SortableWidgetProps = {
   label: string
   columnIndex: number
   isEditing: boolean
+  /** In the hidden tray: the full widget, dimmed, with a Show button. */
+  hidden?: boolean
   onHide: (id: DashboardWidgetId) => void
-  children: ReactNode
+  onShow: (id: DashboardWidgetId) => void
+  children?: ReactNode
 }
 
 /**
@@ -31,7 +34,9 @@ export function SortableWidget({
   label,
   columnIndex,
   isEditing,
+  hidden = false,
   onHide,
+  onShow,
   children,
 }: SortableWidgetProps) {
   const {
@@ -59,11 +64,41 @@ export function SortableWidget({
       className={cn(
         'relative',
         isEditing &&
+          !hidden &&
           'ring-offset-background ring-destructive/70 rounded-xl ring-2 ring-offset-2',
+        hidden &&
+          'outline-border rounded-xl outline-2 outline-offset-2 outline-dashed',
         isDragging && 'z-10 opacity-80 shadow-lg'
       )}
     >
-      {children}
+      {isEditing ? (
+        // Edit controls sit in their own bar above the card, so they never
+        // cover the widget's header.
+        <div className='mb-1.5 flex items-center justify-between gap-2 px-1'>
+          <span className='text-muted-foreground flex min-w-0 items-center gap-1.5 text-xs font-medium'>
+            <GripVertical className='size-3.5 shrink-0' aria-hidden />
+            <span className='truncate'>{label}</span>
+          </span>
+          <Button
+            type='button'
+            variant='ghost'
+            size='xs'
+            className='relative z-30'
+            onClick={() => (hidden ? onShow(id) : onHide(id))}
+            aria-label={hidden ? `Show ${label}` : `Hide ${label}`}
+          >
+            {hidden ? <Eye aria-hidden /> : <EyeOff aria-hidden />}
+            {hidden ? 'Show' : 'Hide'}
+          </Button>
+        </div>
+      ) : null}
+      {hidden ? (
+        // Full widget so you can see what it shows before adding it, dimmed
+        // so it still reads as hidden.
+        <div className='opacity-50 grayscale'>{children}</div>
+      ) : (
+        children
+      )}
       {isEditing ? (
         <div
           aria-label={`Move ${label}`}
@@ -88,20 +123,6 @@ export function SortableWidget({
             </span>
           </div>
         </div>
-      ) : null}
-      {isEditing ? (
-        // Above the drag layer so the press hides instead of dragging.
-        <Button
-          type='button'
-          variant='secondary'
-          size='xs'
-          className='absolute top-2 right-2 z-30 shadow-sm'
-          onClick={() => onHide(id)}
-          aria-label={`Hide ${label}`}
-        >
-          <EyeOff aria-hidden />
-          Hide
-        </Button>
       ) : null}
     </div>
   )

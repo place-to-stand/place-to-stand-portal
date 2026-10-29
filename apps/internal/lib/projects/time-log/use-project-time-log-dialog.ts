@@ -20,6 +20,7 @@ import type {
   TimeLogEntry,
   TimeLogFormErrors,
 } from './types'
+import { requestTimeLogArchiveChange } from './time-log-archive-request'
 import { TIME_LOGS_QUERY_KEY } from './types'
 
 export type UseProjectTimeLogDialogOptions = ProjectTimeLogDialogParams & {
@@ -364,34 +365,7 @@ export function useProjectTimeLogDialog(
         throw new Error('Missing time log identifier for delete.')
       }
 
-      const response = await fetch(
-        `/api/projects/${projectId}/time-logs/${timeLogEntry.id}`,
-        { method: 'DELETE' }
-      )
-
-      let payload: unknown = null
-      try {
-        payload = await response.json()
-      } catch {
-        payload = null
-      }
-
-      if (!response.ok) {
-        const message =
-          typeof payload === 'object' && payload && 'error' in payload
-            ? String((payload as { error?: unknown }).error ?? '').trim()
-            : ''
-
-        throw new Error(message || 'Unable to delete time log.')
-      }
-
-      // PRD 002 section 05: closed-month warning riding the API response.
-      const warning =
-        typeof payload === 'object' && payload && 'warning' in payload
-          ? String((payload as { warning?: unknown }).warning ?? '').trim()
-          : ''
-
-      return { warning: warning || null }
+      return requestTimeLogArchiveChange(projectId, timeLogEntry.id, 'archive')
     },
     onSuccess: async data => {
       await queryClient.invalidateQueries({ queryKey: baseQueryKey })

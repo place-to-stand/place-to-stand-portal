@@ -11,7 +11,6 @@ import type { DbUser } from '@/lib/types'
 import { readPageSize } from '@/lib/pagination/page-size.server'
 
 import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
-import { UserPlus } from 'lucide-react'
 import { UsersFilters } from './_components/users-filters'
 import { UsersManagementTable } from './_components/users-management-table'
 import { USERS_TABS } from './_lib/tabs'
@@ -83,10 +82,12 @@ export default async function UsersPage({
       breadcrumbs={crumbsForNav('/settings/users')}
       tabs={USERS_TABS}
       activeTab='users'
-      count={{ label: 'users', total: unfilteredTotalCount, filteredTotal: totalCount }}
-      primaryAction={
-        <SheetCreateButton entity='user' label='Add user' icon={UserPlus} />
-      }
+      count={{
+        label: 'users',
+        total: unfilteredTotalCount,
+        filteredTotal: totalCount,
+      }}
+      primaryAction={<SheetCreateButton entity='user' label='Add user' />}
     >
       <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
         <UsersFilters

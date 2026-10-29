@@ -2,12 +2,11 @@
 
 import { useCallback, useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus } from 'lucide-react'
 
 import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
-import { Button } from '@pts/ui/button'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
+import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
 import {
   useSheetParams,
   useSheetParamSelection,
@@ -125,38 +124,19 @@ export function LeadsWorkspace({
       activeTab='board'
       count={{ label: 'leads', total: totalLeads }}
       primaryAction={
-        <DisabledFieldTooltip
-          disabled={!canManage}
-          reason='Admin access is required to create leads.'
-        >
-          <Button
-            type='button'
-            size='sm'
-            disabled={!canManage}
-            onClick={() => handleCreateLead()}
-            className='gap-2'
-          >
-            <Plus className='h-4 w-4' />
-            Add lead
-          </Button>
-        </DisabledFieldTooltip>
+        <SheetCreateButton
+          entity='lead'
+          label='Add lead'
+          disabledReason={
+            canManage ? null : 'Admin access is required to create leads.'
+          }
+        />
       }
       // Kanban board: pin to the viewport (columns scroll internally).
       contentClassName='flex h-full min-h-0 flex-col gap-4 sm:gap-6'
     >
       {leadNotFound && !isCreating ? (
-        <div
-          role='status'
-          className='border-destructive/30 bg-destructive/5 flex items-center justify-between gap-3 rounded-md border px-4 py-3 text-sm'
-        >
-          <span>
-            The linked lead could not be found. It may have been permanently
-            deleted.
-          </span>
-          <Button variant='ghost' size='sm' onClick={clear}>
-            Dismiss
-          </Button>
-        </div>
+        <DeepLinkNotFoundNotice entity='lead' onDismiss={clear} />
       ) : null}
       {canManage ? (
         <LeadSheet
@@ -175,7 +155,7 @@ export function LeadsWorkspace({
         <ConvertLeadDialog
           lead={convertingLead}
           open={!!convertingLead}
-          onOpenChange={(open) => {
+          onOpenChange={open => {
             if (!open) setConvertingLead(null)
           }}
           onSuccess={() => {

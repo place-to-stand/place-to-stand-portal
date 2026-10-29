@@ -2,6 +2,7 @@
 
 import { Fragment, type ReactNode } from 'react'
 
+import { NotificationsBell } from '@/components/notifications/notifications-bell'
 import { cn } from '@/lib/utils'
 import type { Crumb } from '@/lib/navigation/breadcrumbs'
 import {
@@ -103,9 +104,10 @@ export function PageShell({
             })}
           </BreadcrumbList>
         </Breadcrumb>
-        {headerRight ? (
-          <div className='flex min-w-0 shrink-0 items-center'>{headerRight}</div>
-        ) : null}
+        <div className='flex min-w-0 shrink-0 items-center gap-1.5'>
+          {headerRight}
+          <NotificationsBell />
+        </div>
       </header>
       <main className='flex min-h-0 flex-1 flex-col overflow-y-auto p-3 sm:p-4'>
         {hasToolbar ? (

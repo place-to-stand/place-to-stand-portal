@@ -1,13 +1,12 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useCallback } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 
-import type { PageInfo } from '@/lib/pagination/cursor'
 import type { ClientRow } from '@/lib/settings/clients/client-sheet-utils'
 import { isClientBilling } from '@/lib/settings/clients/filters'
 import {
@@ -20,8 +19,9 @@ import { ClientSheet } from './clients-sheet'
 
 type ClientsManagementTableProps = {
   clients: ClientsTableClient[]
-  pageInfo: PageInfo
-  /** Rows-per-page the list was served with (drives the footer selector). */
+  totalCount: number
+  currentPage: number
+  totalPages: number
   pageSize: number
   mode: 'active' | 'archive'
   /** Route the sort/filter params live on (PRD 004 §03). */
@@ -42,7 +42,9 @@ const EMPTY_MESSAGES = {
 
 export function ClientsManagementTable({
   clients,
-  pageInfo,
+  totalCount,
+  currentPage,
+  totalPages,
   pageSize,
   mode,
   basePath,
@@ -85,44 +87,24 @@ export function ClientsManagementTable({
     ? 'No clients match the current filters.'
     : EMPTY_MESSAGES[mode]
 
-  const handlePaginate = (direction: 'forward' | 'backward') => {
-    const cursor =
-      direction === 'forward' ? pageInfo.endCursor : pageInfo.startCursor
-
-    if (!cursor) {
-      return
-    }
-
-    const params = new URLSearchParams(searchParams.toString())
-    params.set('cursor', cursor)
-    params.set('dir', direction)
-    const query = params.toString()
-    router.push(query ? `${pathname}?${query}` : pathname)
-  }
-
-  const paginationState = useMemo(
-    () => ({
-      hasNextPage: pageInfo.hasNextPage,
-      hasPreviousPage: pageInfo.hasPreviousPage,
-    }),
-    [pageInfo.hasNextPage, pageInfo.hasPreviousPage]
+  const handlePageChange = useCallback(
+    (page: number) => {
+      const params = new URLSearchParams(searchParams.toString())
+      if (page <= 1) {
+        params.delete('page')
+      } else {
+        params.set('page', String(page))
+      }
+      const query = params.toString()
+      router.push(query ? `${pathname}?${query}` : pathname)
+    },
+    [pathname, router, searchParams]
   )
 
   return (
     <div className='space-y-4'>
       {clientNotFound ? (
-        <div
-          role='status'
-          className='border-destructive/30 bg-destructive/5 flex items-center justify-between gap-3 rounded-md border px-4 py-3 text-sm'
-        >
-          <span>
-            The linked client could not be found. It may have been permanently
-            deleted.
-          </span>
-          <Button variant='ghost' size='sm' onClick={clearSelection}>
-            Dismiss
-          </Button>
-        </div>
+        <DeepLinkNotFoundNotice entity='client' onDismiss={clearSelection} />
       ) : null}
       <ConfirmDialog
         open={Boolean(deleteTarget)}
@@ -168,13 +150,12 @@ export function ClientsManagementTable({
         emptyMessage={emptyMessage}
       />
       <PaginationControls
-        hasNextPage={paginationState.hasNextPage}
-        hasPreviousPage={paginationState.hasPreviousPage}
-        onNext={() => handlePaginate('forward')}
-        onPrevious={() => handlePaginate('backward')}
-        disableAll={isPending}
+        mode='paged'
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={totalCount}
         pageSize={pageSize}
-        itemCount={clients.length}
+        onPageChange={handlePageChange}
       />
       <ClientSheet
         open={sheetOpen}

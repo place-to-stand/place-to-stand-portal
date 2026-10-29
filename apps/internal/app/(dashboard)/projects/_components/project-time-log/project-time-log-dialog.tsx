@@ -22,7 +22,18 @@ export type ProjectTimeLogDialogProps = ProjectTimeLogDialogParams & {
   timeLogEntry: TimeLogEntry | null
   initialLinkedTaskIds?: string[]
   onMutationSuccess?: () => void
+  /** The project's hour totals, shown above the form (board only). */
+  hoursSummary?: TimeLogHoursSummary
 }
+
+export type TimeLogHoursSummary = {
+  projectLabel: string
+  projectHours: number
+  /** Hours left on the client's prepaid blocks; null when not prepaid. */
+  clientRemaining: number | null
+}
+
+const HOURS = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 })
 
 export function ProjectTimeLogDialog(props: ProjectTimeLogDialogProps) {
   const {
@@ -32,6 +43,7 @@ export function ProjectTimeLogDialog(props: ProjectTimeLogDialogProps) {
     timeLogEntry,
     initialLinkedTaskIds,
     onMutationSuccess,
+    hoursSummary,
     ...rest
   } = props
 
@@ -47,8 +59,8 @@ export function ProjectTimeLogDialog(props: ProjectTimeLogDialogProps) {
 
   const dialogTitle = state.isEditMode ? 'Edit time log' : 'Add time log'
   const dialogDescription = state.isEditMode
-    ? `Updates apply immediately to the burndown overview for ${state.projectLabel}.`
-    : `Entries logged here are reflected immediately in the burndown overview for ${state.projectLabel}.`
+    ? `Changes update ${state.projectLabel}’s hour totals right away.`
+    : `Hours logged here count toward ${state.projectLabel} right away.`
   const submitLabel = state.isEditMode ? 'Save changes' : 'Log time'
 
   return (
@@ -59,6 +71,34 @@ export function ProjectTimeLogDialog(props: ProjectTimeLogDialogProps) {
             <DialogTitle>{dialogTitle}</DialogTitle>
             <DialogDescription>{dialogDescription}</DialogDescription>
           </DialogHeader>
+          {hoursSummary ? (
+            <dl className='bg-muted/40 grid grid-cols-2 gap-3 rounded-lg border px-4 py-3'>
+              <div>
+                <dt className='text-muted-foreground text-xs'>
+                  {hoursSummary.projectLabel}
+                </dt>
+                <dd className='text-sm font-semibold tabular-nums'>
+                  {HOURS.format(hoursSummary.projectHours)} hrs
+                </dd>
+              </div>
+              {hoursSummary.clientRemaining !== null ? (
+                <div>
+                  <dt className='text-muted-foreground text-xs'>
+                    Client hours remaining
+                  </dt>
+                  <dd
+                    className={
+                      hoursSummary.clientRemaining < 0
+                        ? 'text-destructive text-sm font-semibold tabular-nums'
+                        : 'text-sm font-semibold tabular-nums'
+                    }
+                  >
+                    {HOURS.format(hoursSummary.clientRemaining)} hrs
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
+          ) : null}
           <ProjectTimeLogForm
             isMutating={state.isMutating}
             disableSubmit={state.disableSubmit}

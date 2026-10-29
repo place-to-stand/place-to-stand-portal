@@ -20,7 +20,7 @@ export function isClientBilling(
 }
 
 // PRD 004 §03: per-view sort allowlist (D6/R5). Each field here has a
-// matching descriptor (order expr + cursor encode/compare) in the query.
+// matching order descriptor in the query.
 const CLIENT_SORT_FIELDS = ['name', 'created'] as const
 export type ClientSortField = (typeof CLIENT_SORT_FIELDS)[number]
 
@@ -67,9 +67,7 @@ export function isClientLandingSortValue(value: string): boolean {
 type RawSearchParams = Record<string, string | string[] | undefined>
 
 export type ClientsSearchParams = {
-  cursor: string | null
-  direction: 'forward' | 'backward'
-  limit: number | undefined
+  page: number
   billing: ClientBillingFilter | undefined
   search: string | undefined
   sort: ParsedSort<ClientSortField>
@@ -87,16 +85,16 @@ function firstParam(value: string | string[] | undefined): string | undefined {
 
 /**
  * Shared searchParams parsing for the clients pages (landing + archive),
- * mirroring `parseUsersSearchParams`. Invalid sort values fall back to the
+ * offset paged via `?page=`. Invalid sort values fall back to the
  * view default via the allowlist.
  */
 export function parseClientsSearchParams(
   params: RawSearchParams
 ): ClientsSearchParams {
-  const cursor = firstParam(params.cursor) ?? null
-  const direction =
-    firstParam(params.dir) === 'backward' ? 'backward' : ('forward' as const)
-  const limitParam = Number.parseInt(firstParam(params.limit) ?? '', 10)
+  const page = Math.max(
+    1,
+    Number.parseInt(firstParam(params.page) ?? '1', 10) || 1
+  )
   const billingParam = firstParam(params.billing)
   const searchParam = firstParam(params.q)?.trim()
   const sort = parseSortParam(
@@ -106,9 +104,7 @@ export function parseClientsSearchParams(
   )
 
   return {
-    cursor,
-    direction,
-    limit: Number.isFinite(limitParam) ? limitParam : undefined,
+    page,
     billing: isClientBilling(billingParam) ? billingParam : undefined,
     search: searchParam || undefined,
     sort,

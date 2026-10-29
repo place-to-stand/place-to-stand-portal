@@ -42,7 +42,7 @@ export function NextStepsWidget({
       id='next-steps'
       title='Next steps'
       className={className}
-      meta={`${items.length} of ${data.nextStepsTotal} open`}
+      meta={`${data.nextStepsTotal} open`}
       action={
         <Button asChild size='xs' variant='outline'>
           <Link href='/my/tasks/board' aria-label='View all my tasks'>
@@ -61,7 +61,7 @@ export function NextStepsWidget({
         </ul>
       ) : (
         <div className='p-4'>
-          <EmptyState message='Nothing on your plate. Add a task from a lead to plan the next step.' />
+          <EmptyState message='No open tasks. Add one from a lead to plan your next step.' />
         </div>
       )}
     </WidgetCard>
@@ -152,14 +152,14 @@ export function QuietLeadsWidget({
   return (
     <WidgetCard
       id='quiet-leads'
-      title='Leads gone quiet'
-      meta='Your leads, longest silence first'
+      title='Aging leads'
+      meta='Your open leads, longest since contact first'
       className={className}
     >
       <LeadList
         leads={data.quietLeads}
         emptyMessage='No open leads assigned to you.'
-        daysLabel='since last touch'
+        daysLabel='since contact'
       />
     </WidgetCard>
   )

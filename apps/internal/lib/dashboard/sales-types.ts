@@ -11,7 +11,7 @@ export type SalesTaskItem = {
   leadName: string | null
 }
 
-/** A lead on the "gone quiet" list. */
+/** A lead on the Aging leads list. */
 export type SalesLeadItem = {
   id: string
   contactName: string

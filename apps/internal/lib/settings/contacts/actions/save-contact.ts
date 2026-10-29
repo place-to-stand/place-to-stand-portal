@@ -14,6 +14,7 @@ import {
   findOrCreateCompanyByName,
   getLinkableCompany,
 } from '@/lib/queries/companies'
+import { syncCompanyClientLinks } from '@/lib/queries/companies/people-links'
 import {
   contactSchema,
   type ContactInput,
@@ -230,6 +231,16 @@ export async function saveContactMutation(
           return buildMutationResult({ error: 'Unable to update contact.' })
         }
 
+        // A client's people are its company's people: joining a company
+        // links them to its clients, leaving one unlinks them.
+        if (existingContact.companyId !== next.companyId) {
+          await syncCompanyClientLinks(
+            user,
+            [existingContact.companyId, next.companyId],
+            { leftContactIds: [id] }
+          )
+        }
+
         if (changedFields.length > 0) {
           const event = contactUpdatedEvent({
             email,
@@ -300,6 +311,8 @@ export async function saveContactMutation(
         }
         return buildMutationResult({ error: 'Unable to create contact.' })
       }
+
+      await syncCompanyClientLinks(user, [companyId])
 
       const event = contactCreatedEvent({ email, name })
 

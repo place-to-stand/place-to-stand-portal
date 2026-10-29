@@ -217,4 +217,13 @@
        links match without each one repeating underline-offset-4. */
     text-underline-offset: 4px;
   }
+  /* Tailwind v4 resets buttons to the default cursor. Everything clickable
+     gets the pointer once, here, instead of per component. */
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  [role='option']:not([aria-disabled='true']),
+  [role='tab'],
+  summary {
+    cursor: pointer;
+  }
 }

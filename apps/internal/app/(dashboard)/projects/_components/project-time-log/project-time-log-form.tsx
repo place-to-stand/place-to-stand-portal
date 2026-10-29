@@ -1,6 +1,7 @@
 import { Archive, Loader2, PlusCircle, Pencil } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { DatePicker } from '@/components/ui/date-picker'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Input } from '@pts/ui/input'
 import { type SearchableComboboxItem } from '@/components/ui/searchable-combobox'
@@ -120,16 +121,15 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
         <label htmlFor='time-log-date' className='text-sm font-medium'>
           Date
         </label>
-        <Input
+        <DatePicker
           id='time-log-date'
-          type='date'
           value={loggedOnInput}
           max={getToday()}
-          onChange={event => onLoggedOnChange(event.currentTarget.value)}
+          onChange={onLoggedOnChange}
+          clearable={false}
           disabled={isMutating}
           aria-invalid={Boolean(formErrors.loggedOn)}
           aria-describedby={fieldErrorIds.loggedOn}
-          required
         />
         {formErrors.loggedOn ? (
           <p

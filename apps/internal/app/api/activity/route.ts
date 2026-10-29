@@ -1,3 +1,4 @@
+// permission: activity.read_crm — canReadActivity narrows it per role
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 

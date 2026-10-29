@@ -15,6 +15,7 @@ import type {
   HourBlockWithClient,
 } from '@/lib/settings/hour-blocks/hour-block-form'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
+import { HOUR_BLOCK_MISSING_CLIENT_REASON } from './hour-block-ui-state'
 
 type UseHourBlocksTableStateArgs = {
   clients: ClientRow[]
@@ -75,7 +76,7 @@ export function useHourBlocksTableState({
 
   const createDisabled = sortedClients.length === 0
   const createDisabledReason = createDisabled
-    ? 'Create a client before logging hour blocks.'
+    ? HOUR_BLOCK_MISSING_CLIENT_REASON
     : null
 
   const openEdit = (block: HourBlockWithClient) => {

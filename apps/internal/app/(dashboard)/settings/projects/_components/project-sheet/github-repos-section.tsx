@@ -13,6 +13,7 @@ import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
+import { SheetSection } from '@/components/sheets/sheet-section'
 import { toast } from '@/components/ui/use-toast'
 import type { GitHubRepoLink } from '@/lib/types/github'
 import { siGithub } from 'simple-icons/icons'
@@ -272,8 +273,7 @@ export function GitHubReposSection({
 
   if (!isGitHubConnected) {
     return (
-      <div className='space-y-1'>
-        <h3 className='text-sm font-medium'>GitHub repositories</h3>
+      <SheetSection title='GitHub repositories'>
         <EmptyState
           message='Connect your GitHub account in Settings to link repositories.'
           action={
@@ -282,19 +282,18 @@ export function GitHubReposSection({
             </Button>
           }
         />
-      </div>
+      </SheetSection>
     )
   }
 
   if (loading && !isCreateMode) {
     return (
-      <div className='space-y-1'>
-        <h3 className='text-sm font-medium'>GitHub repositories</h3>
+      <SheetSection title='GitHub repositories'>
         <div className='text-muted-foreground flex items-center gap-2 text-sm'>
           <Loader2 className='h-4 w-4 animate-spin' />
           Loading linked repos...
         </div>
-      </div>
+      </SheetSection>
     )
   }
 
@@ -325,9 +324,9 @@ export function GitHubReposSection({
       : undefined
 
   return (
-    <div className='space-y-1'>
-      <div className='flex items-center justify-between gap-3'>
-        <h3 className='text-sm font-medium'>GitHub repositories</h3>
+    <SheetSection
+      title='GitHub repositories'
+      action={
         <RowActionButton
           type='button'
           label='Link repository'
@@ -335,8 +334,8 @@ export function GitHubReposSection({
           onClick={() => handleDialogOpenChange(true)}
           disabled={disabled}
         />
-      </div>
-
+      }
+    >
       {hasNoRepos ? (
         <EmptyState
           message={
@@ -514,6 +513,6 @@ export function GitHubReposSection({
         onConfirm={handleUnlink}
         onCancel={() => setDeleteConfirm(null)}
       />
-    </div>
+    </SheetSection>
   )
 }

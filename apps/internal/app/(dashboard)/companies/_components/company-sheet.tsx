@@ -11,6 +11,7 @@ import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { Input } from '@pts/ui/input'
 import { Separator } from '@pts/ui/separator'
 import { Skeleton } from '@pts/ui/skeleton'
+import { FormFeedback } from '@/components/sheets/form-feedback'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { SheetSection } from '@/components/sheets/sheet-section'
@@ -26,7 +27,7 @@ import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { useToast } from '@/components/ui/use-toast'
 import { COMPANY_OPTIONS_QUERY_KEY } from '@/components/companies/company-link-picker'
-import { PENDING_REASON } from '@/lib/forms/form-controls'
+import { PENDING_REASON, getSubmitLabel } from '@/lib/forms/form-controls'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 
@@ -180,7 +181,16 @@ export function CompanySheet({
         onClose()
       })
     },
-    [company?.primaryContactId, companyId, form, isEditing, onClose, onCreated, refresh, toast]
+    [
+      company?.primaryContactId,
+      companyId,
+      form,
+      isEditing,
+      onClose,
+      onCreated,
+      refresh,
+      toast,
+    ]
   )
 
   const handleSave = useCallback(
@@ -252,7 +262,7 @@ export function CompanySheet({
         >
           <SheetFormHeader
             entity='company'
-            title={isEditing ? (isArchived ? 'Archived company' : 'Edit company') : 'Add company'}
+            title={isEditing ? 'Edit company' : 'Add company'}
           />
           {isError || (isEditing && data === null) ? (
             <p className='text-muted-foreground p-6 text-sm'>
@@ -371,17 +381,23 @@ export function CompanySheet({
                                       : 'Set this company on a contact first'
                                   }
                                   value={
-                                    people.find(person => person.id === field.value) ??
-                                    null
+                                    people.find(
+                                      person => person.id === field.value
+                                    ) ?? null
                                   }
-                                  onChange={next => field.onChange(next?.id ?? null)}
+                                  onChange={next =>
+                                    field.onChange(next?.id ?? null)
+                                  }
                                   options={people}
                                   disabled={
                                     fieldsDisabled ||
                                     people.length === 0 ||
                                     primaryLocked
                                   }
-                                  toOption={record => ({ id: record.id, label: record.name })}
+                                  toOption={record => ({
+                                    id: record.id,
+                                    label: record.name,
+                                  })}
                                   createPrefillParam='contactName'
                                   allowCreate={false}
                                 />
@@ -415,18 +431,16 @@ export function CompanySheet({
                     </>
                   ) : null}
 
-                  {feedback ? (
-                    <p className='border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm'>
-                      {feedback}
-                    </p>
-                  ) : null}
+                  <FormFeedback>{feedback}</FormFeedback>
                 </form>
               </div>
               <SheetFormFooter
                 formId={COMPANY_FORM_ID}
-                saveLabel={
-                  isPending ? 'Saving...' : isEditing ? 'Save changes' : 'Create company'
-                }
+                saveLabel={getSubmitLabel({
+                  isSaving: isPending,
+                  isEditing,
+                  createLabel: 'Create company',
+                })}
                 submitDisabled={submitDisabled}
                 submitDisabledReason={
                   isPending
@@ -443,7 +457,10 @@ export function CompanySheet({
                 deleteDisabled={isPending || !isEditing}
                 deleteDisabledReason={isPending ? PENDING_REASON : null}
                 onRequestDelete={() => setArchiveOpen(true)}
-                deleteAriaLabel={isArchived ? 'Restore company' : 'Archive company'}
+                deleteAriaLabel={
+                  isArchived ? 'Restore company' : 'Archive company'
+                }
+                deleteKind={isArchived ? 'restore' : 'archive'}
               />
             </Form>
           )}

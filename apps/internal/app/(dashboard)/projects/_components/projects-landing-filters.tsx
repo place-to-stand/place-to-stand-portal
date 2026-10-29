@@ -97,7 +97,7 @@ export function ProjectsLandingFilters({
         mode='multi'
         values={statuses}
         onChange={handleStatusChange}
-        placeholder='Status'
+        placeholder='All statuses'
         options={STATUS_OPTIONS}
       />
     </FilterBar>

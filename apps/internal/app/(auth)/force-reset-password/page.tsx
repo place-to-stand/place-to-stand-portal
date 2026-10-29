@@ -1,3 +1,4 @@
+// permission: public — part of sign-in
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 

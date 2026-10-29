@@ -34,8 +34,10 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@pts/ui/input'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { FormFeedback } from '@/components/sheets/form-feedback'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
+import { SheetSection } from '@/components/sheets/sheet-section'
 import {
   SearchableCombobox,
   type SearchableComboboxGroup,
@@ -469,10 +471,10 @@ export function InvoiceSheet({
                       <Separator />
 
                       {/* ───── Line Items ───── */}
-                      <div className='space-y-3'>
-                        <div className='flex items-center justify-between'>
-                          <h3 className='text-sm font-medium'>Line items</h3>
-                          {!isReadOnly ? (
+                      <SheetSection
+                        title='Line items'
+                        action={
+                          !isReadOnly ? (
                             <Button
                               type='button'
                               variant='ghost'
@@ -484,9 +486,9 @@ export function InvoiceSheet({
                               <Plus className='h-3 w-3' />
                               Add item
                             </Button>
-                          ) : null}
-                        </div>
-
+                          ) : null
+                        }
+                      >
                         <FormMessage>
                           {form.formState.errors.lineItems?.message}
                         </FormMessage>
@@ -521,7 +523,7 @@ export function InvoiceSheet({
                             ))}
                           </SortableContext>
                         </DndContext>
-                      </div>
+                      </SheetSection>
 
                       <Separator />
 
@@ -564,11 +566,7 @@ export function InvoiceSheet({
                       </div>
 
                       {/* ───── Feedback ───── */}
-                      {feedback ? (
-                        <p className='border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm'>
-                          {feedback}
-                        </p>
-                      ) : null}
+                      <FormFeedback>{feedback}</FormFeedback>
                     </div>
                   </div>
 

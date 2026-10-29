@@ -78,7 +78,7 @@ export function ProjectStatusCell({
           'group focus-visible:border-ring focus-visible:ring-ring/50 inline-flex cursor-pointer items-center gap-1.5 rounded-md outline-none focus-visible:ring-[3px]',
           variant === 'table' && 'hover:bg-accent/60 -mx-0.5 p-0.5',
           variant === 'standalone' &&
-            'bg-background/20 hover:border-border h-9 border border-transparent px-2 transition-colors',
+            'bg-background/20 hover:border-border h-8 border border-transparent px-2 transition-colors',
           className
         )}
         disabled={isPending}

@@ -10,7 +10,7 @@ import { countCompanies, listCompanies } from '@/lib/queries/companies'
 import { CompaniesPageBody } from '../_components/companies-page-body'
 
 export const metadata: Metadata = {
-  title: 'Archived companies',
+  title: 'Company archive',
 }
 
 export default async function CompaniesArchivePage({

@@ -1,12 +1,14 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import type React from 'react'
 import { ExternalLink, User2, UserPlus } from 'lucide-react'
 import type { UseFormReturn } from 'react-hook-form'
 
 import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { FormFeedback } from '@/components/sheets/form-feedback'
+import { getSubmitLabel } from '@/lib/forms/form-controls'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import { LinkedRecordCard } from '@/components/sheets/linked-record-card'
@@ -27,14 +29,10 @@ import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 
 import {
-  ContactClientLinkButton,
   ContactClientList,
   type ContactClientOption,
 } from './contact-client-picker'
 import { ContactPortalAccountCard } from './contact-portal-account-card'
-
-const FEEDBACK_CLASSES =
-  'border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm'
 
 const CONTACT_FORM_ID = 'contact-form'
 
@@ -42,7 +40,9 @@ const CONTACT_FORM_ID = 'contact-form'
 function toLinkedinHref(value: string | undefined | null): string | null {
   const trimmed = value?.trim()
   if (!trimmed) return null
-  const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
+  const withScheme = /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`
   try {
     const url = new URL(withScheme)
     return url.hostname.includes('.') ? url.toString() : null
@@ -74,16 +74,8 @@ type ContactSheetFormProps = {
   onRequestDelete: () => void
   isSheetOpen: boolean
   historyKey: string
-  // Client picker props
-  selectedClients: ContactClientOption[]
-  availableClients: ContactClientOption[]
-  addClientButtonDisabled: boolean
-  addClientButtonDisabledReason: string | null
-  isClientPickerOpen: boolean
-  onClientPickerOpenChange: (open: boolean) => void
-  onAddClient: (client: ContactClientOption) => void
-  onCreateClient: (query: string) => void
-  onRemoveClient: (client: ContactClientOption) => void
+  /** The contact's clients — derived from its company, shown read-only. */
+  linkedClients: ContactClientOption[]
   // Promote to client props
   promoteDisabled: boolean
   promoteDisabledReason: string | null
@@ -106,22 +98,13 @@ export function ContactSheetForm({
   onRequestDelete,
   isSheetOpen,
   historyKey,
-  selectedClients,
-  availableClients,
-  addClientButtonDisabled,
-  addClientButtonDisabledReason,
-  isClientPickerOpen,
-  onClientPickerOpenChange,
-  onAddClient,
-  onCreateClient,
-  onRemoveClient,
+  linkedClients,
   promoteDisabled,
   promoteDisabledReason,
   onRequestPromote,
   portalUserId,
 }: ContactSheetFormProps) {
-  // Client links drive client-portal membership, and portal accounts grant
-  // client access, so both stay admin-only. SALES staff see the links only.
+  // Portal accounts grant client access, so they stay admin-only.
   const { isAdmin } = useViewerAccess()
   const handleSave = useCallback(
     () => form.handleSubmit(onSubmit)(),
@@ -136,13 +119,11 @@ export function ContactSheetForm({
     historyKey,
   })
 
-  const saveLabel = useMemo(() => {
-    if (isPending) {
-      return 'Saving...'
-    }
-
-    return isEditing ? 'Save changes' : 'Create contact'
-  }, [isEditing, isPending])
+  const saveLabel = getSubmitLabel({
+    isSaving: isPending,
+    isEditing,
+    createLabel: 'Create contact',
+  })
 
   const firstFieldRef = useRef<HTMLInputElement>(null)
 
@@ -330,7 +311,8 @@ export function ContactSheetForm({
                       disabled={!toLinkedinHref(field.value)}
                       onClick={() => {
                         const href = toLinkedinHref(field.value)
-                        if (href) window.open(href, '_blank', 'noopener,noreferrer')
+                        if (href)
+                          window.open(href, '_blank', 'noopener,noreferrer')
                       }}
                     >
                       <ExternalLink className='h-4 w-4' />
@@ -346,31 +328,9 @@ export function ContactSheetForm({
 
           <SheetSection
             title='Clients'
-            action={
-              isAdmin ? (
-              <ContactClientLinkButton
-                availableClients={availableClients}
-                disabled={addClientButtonDisabled}
-                disabledReason={addClientButtonDisabledReason}
-                isPickerOpen={isClientPickerOpen}
-                isPending={isPending}
-                onPickerOpenChange={onClientPickerOpenChange}
-                onAddClient={onAddClient}
-                onCreateClient={onCreateClient}
-              />
-              ) : undefined
-            }
+            description='Follows their company. Change the company to change their clients.'
           >
-            <ContactClientList
-              selectedClients={selectedClients}
-              isPending={isPending}
-              pendingReason={pendingReason}
-              onRequestRemoval={onRemoveClient}
-              onRequestLink={() => onClientPickerOpenChange(true)}
-              linkDisabled={addClientButtonDisabled}
-              linkDisabledReason={addClientButtonDisabledReason}
-              readOnly={!isAdmin}
-            />
+            <ContactClientList clients={linkedClients} />
           </SheetSection>
 
           {isEditing && isAdmin ? (
@@ -416,7 +376,7 @@ export function ContactSheetForm({
               </SheetSection>
             </>
           ) : null}
-          {feedback ? <p className={FEEDBACK_CLASSES}>{feedback}</p> : null}
+          <FormFeedback>{feedback}</FormFeedback>
         </form>
       </div>
       <SheetFormFooter

@@ -3,10 +3,6 @@ import type { ProjectStatusValue } from '@/lib/constants'
 import type { ProjectTypeValue } from '@/lib/types'
 import type { ProjectOwnerSummary } from '@/lib/settings/projects/project-sheet-form'
 export type { ProjectOwnerSummary } from '@/lib/settings/projects/project-sheet-form'
-import {
-  type CursorDirection,
-  type PageInfo,
-} from '@/lib/pagination/cursor'
 import type { ParsedSort } from '@/lib/pagination/sort'
 import type { ProjectSortField } from './sort'
 
@@ -42,8 +38,8 @@ export type ProjectsSettingsListItem = typeof projects.$inferSelect & {
 export type ListProjectsForSettingsInput = {
   status?: 'active' | 'archived'
   search?: string | null
-  cursor?: string | null
-  direction?: CursorDirection | null
+  /** Rows to skip (offset paging: `(page - 1) * limit`). */
+  offset?: number | null
   limit?: number | null
   sort?: ParsedSort<ProjectSortField>
 }
@@ -54,7 +50,6 @@ export type ProjectsSettingsResult = {
   totalCount: number
   /** Rows on the tab regardless of filters/search (the `M`). */
   unfilteredTotalCount: number
-  pageInfo: PageInfo
   clients: ProjectClientSummary[]
 }
 

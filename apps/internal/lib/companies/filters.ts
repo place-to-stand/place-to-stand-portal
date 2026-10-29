@@ -13,7 +13,7 @@ export const COMPANY_TYPE_LABELS: Record<CompanyTypeFilter, string> = {
 export const COMPANY_LEADS_VALUES = ['open', 'none'] as const
 export type CompanyLeadsFilter = (typeof COMPANY_LEADS_VALUES)[number]
 export const COMPANY_LEADS_LABELS: Record<CompanyLeadsFilter, string> = {
-  open: 'Has open leads',
+  open: 'With open leads',
   none: 'No open leads',
 }
 

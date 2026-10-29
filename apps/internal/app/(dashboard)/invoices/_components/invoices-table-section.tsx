@@ -3,23 +3,18 @@
 import { useState, useCallback } from 'react'
 import Link from 'next/link'
 import { formatCalendarDate } from '@pts/ui/dates'
-import {
-  Archive,
-  Building2,
-  Check,
-  Copy,
-  ExternalLink,
-  Mail,
-  RefreshCw,
-  Trash2,
-} from 'lucide-react'
+import { Building2, Check, Copy, ExternalLink, Mail } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { BADGE_TINTS } from '@pts/ui/badge-tints'
 import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import {
+  RecordRowAction,
+  RecordRowActions,
+} from '@/components/table/record-row-action'
+import { EmptyValue } from '@/components/table/empty-value'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
 import { isInvoiceSortValue } from '@/lib/invoices/filters'
@@ -315,7 +310,7 @@ export function InvoicesTableSection({
                         <span className='truncate'>{client.name}</span>
                       )
                     ) : (
-                      <span>Unassigned</span>
+                      <EmptyValue />
                     )}
                   </div>
                   {client?.deleted_at ? (
@@ -344,50 +339,35 @@ export function InvoicesTableSection({
                   <ShareLinkCell invoice={invoice} onRefresh={onRefresh} />
                 </TableCell>
                 <TableCell className='text-right max-md:ml-auto'>
-                  <div className='flex justify-end gap-2'>
+                  <RecordRowActions>
                     {showArchive ? (
-                      <DisabledFieldTooltip
+                      <RecordRowAction
+                        kind='archive'
+                        entity='invoice'
+                        onClick={() => onRequestDelete(invoice)}
                         disabled={archiveDisabled}
-                        reason={archiveDisabledReason}
-                      >
-                        <RowActionButton
-                          label='Archive invoice'
-                          icon={<Archive />}
-                          variant='destructive'
-                          onClick={() => onRequestDelete(invoice)}
-                          disabled={archiveDisabled}
-                        />
-                      </DisabledFieldTooltip>
+                        disabledReason={archiveDisabledReason}
+                      />
                     ) : null}
                     {showRestore ? (
-                      <DisabledFieldTooltip
+                      <RecordRowAction
+                        kind='restore'
+                        entity='invoice'
+                        onClick={() => onRestore(invoice)}
                         disabled={restoreDisabled}
-                        reason={restoreDisabledReason}
-                      >
-                        <RowActionButton
-                          label='Restore invoice'
-                          icon={<RefreshCw />}
-                          variant='outline'
-                          onClick={() => onRestore(invoice)}
-                          disabled={restoreDisabled}
-                        />
-                      </DisabledFieldTooltip>
+                        disabledReason={restoreDisabledReason}
+                      />
                     ) : null}
                     {showDestroy ? (
-                      <DisabledFieldTooltip
+                      <RecordRowAction
+                        kind='destroy'
+                        entity='invoice'
+                        onClick={() => onRequestDestroy(invoice)}
                         disabled={destroyDisabled}
-                        reason={destroyDisabledReason}
-                      >
-                        <RowActionButton
-                          label='Permanently delete invoice'
-                          icon={<Trash2 />}
-                          variant='destructive'
-                          onClick={() => onRequestDestroy(invoice)}
-                          disabled={destroyDisabled}
-                        />
-                      </DisabledFieldTooltip>
+                        disabledReason={destroyDisabledReason}
+                      />
                     ) : null}
-                  </div>
+                  </RecordRowActions>
                 </TableCell>
               </TableRow>
             )

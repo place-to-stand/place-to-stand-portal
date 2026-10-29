@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import { useWatch, type Control } from 'react-hook-form'
 
-import { Badge } from '@pts/ui/badge'
+import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 import { CompanyLinkPicker } from '@/components/companies/company-link-picker'
 import { ContactLinkPicker } from '@/components/contacts/contact-link-picker'
 import {
@@ -23,14 +23,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@pts/ui/select'
-import { cn } from '@/lib/utils'
 import { isSelectableUser } from '@/lib/users/selectable'
 import {
   LEAD_SOURCE_LABELS,
   LEAD_SOURCE_TYPES,
-  LEAD_STATUS_LABELS,
   LEAD_STATUS_ORDER,
-  getLeadStatusToken,
   type LeadSourceTypeValue,
   type LeadStatusValue,
 } from '@/lib/leads/constants'
@@ -54,11 +51,6 @@ export function LeadSheetFormFields({
   const currentAssigneeId = useWatch({ control, name: 'assigneeId' }) ?? null
   const assigneeItems = useMemo(
     () => [
-      {
-        value: '',
-        label: 'Unassigned',
-        description: 'Leave unassigned for now.',
-      },
       ...assignees
         .filter(
           assignee =>
@@ -74,16 +66,6 @@ export function LeadSheetFormFields({
         })),
     ],
     [assignees, currentAssigneeId]
-  )
-
-  const leadStatuses = useMemo(
-    () =>
-      LEAD_STATUS_ORDER.map(status => ({
-        value: status,
-        label: LEAD_STATUS_LABELS[status],
-        token: getLeadStatusToken(status),
-      })),
-    []
   )
 
   return (
@@ -102,7 +84,9 @@ export function LeadSheetFormFields({
             </FormControl>
             {field.value && (field.value.email || field.value.phone) ? (
               <p className='text-muted-foreground text-xs'>
-                {[field.value.email, field.value.phone].filter(Boolean).join(' · ')}
+                {[field.value.email, field.value.phone]
+                  .filter(Boolean)
+                  .join(' · ')}
               </p>
             ) : null}
             <FormMessage />
@@ -210,8 +194,8 @@ export function LeadSheetFormFields({
           control={control}
           name='status'
           render={({ field }) => {
-            const selectedStatus = leadStatuses.find(
-              status => status.value === field.value
+            const selectedStatus = LEAD_STATUS_ORDER.find(
+              status => status === field.value
             )
 
             return (
@@ -227,31 +211,15 @@ export function LeadSheetFormFields({
                     <SelectTrigger>
                       <SelectValue placeholder='Select status'>
                         {selectedStatus ? (
-                          <Badge
-                            variant='outline'
-                            className={cn(
-                              'text-xs font-semibold tracking-wide uppercase',
-                              selectedStatus.token
-                            )}
-                          >
-                            {selectedStatus.label}
-                          </Badge>
+                          <LeadStatusBadge status={selectedStatus} />
                         ) : null}
                       </SelectValue>
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {leadStatuses.map(status => (
-                      <SelectItem key={status.value} value={status.value}>
-                        <Badge
-                          variant='outline'
-                          className={cn(
-                            'text-xs font-semibold tracking-wide uppercase',
-                            status.token
-                          )}
-                        >
-                          {status.label}
-                        </Badge>
+                    {LEAD_STATUS_ORDER.map(status => (
+                      <SelectItem key={status} value={status}>
+                        <LeadStatusBadge status={status} />
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -274,8 +242,9 @@ export function LeadSheetFormFields({
                   onChange={value =>
                     field.onChange(value.length ? value : null)
                   }
-                  placeholder='Assign teammate'
-                  searchPlaceholder='Search teammates'
+                  placeholder='Unassigned'
+                  searchPlaceholder='Search teammates…'
+                  onClear={() => field.onChange(null)}
                 />
               </FormControl>
               <FormMessage />

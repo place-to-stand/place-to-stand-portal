@@ -11,6 +11,7 @@ import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 
 import { TaskSheet } from '../task-sheet'
 import { ProjectTimeLogDialog } from './project-time-log/project-time-log-dialog'
+import type { TimeLogHoursSummary } from './project-time-log/project-time-log-dialog'
 
 type SheetState = {
   open: boolean
@@ -39,6 +40,8 @@ export type ProjectsBoardDialogsProps = {
   sheetState: SheetState
   timeLogState: TimeLogState
   projects: ProjectWithRelations[]
+  /** Hour totals for the Log time dialog (client projects only). */
+  timeLogHoursSummary?: TimeLogHoursSummary
 }
 
 export function ProjectsBoardDialogs({
@@ -46,6 +49,7 @@ export function ProjectsBoardDialogs({
   sheetState,
   timeLogState,
   projects,
+  timeLogHoursSummary,
 }: ProjectsBoardDialogsProps) {
   if (!activeProject) {
     return null
@@ -102,6 +106,7 @@ export function ProjectsBoardDialogs({
         })}
         mode={timeLogMode}
         timeLogEntry={editingEntry}
+        hoursSummary={timeLogHoursSummary}
       />
     </>
   )

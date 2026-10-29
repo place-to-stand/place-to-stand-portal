@@ -1,5 +1,7 @@
 'use client'
 
+
+
 import { useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 
@@ -22,7 +24,6 @@ import type { ProjectWithRelations } from '@/lib/types'
 import { updateProjectStatus } from '@/lib/settings/projects/actions/update-project-status'
 import type { ProjectStatusValue } from '@/lib/constants'
 import { ProjectsBoardEmpty } from './_components/projects-board-empty'
-import { ProjectBurndownWidget } from './_components/project-burndown-widget'
 import { ProjectsBoardTabsSection } from './_components/projects-board/projects-board-tabs-section'
 import { ProjectsBoardDialogs } from './_components/projects-board-dialogs'
 import {
@@ -118,16 +119,20 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
     [router, toast]
   )
 
-  const projectActions = activeProjectForSheet && isAdmin
-    ? {
-        canEdit: !projectMutationPending,
-        canArchive: !projectMutationPending,
-        editDisabledReason: projectMutationPending ? pendingReason : null,
-        archiveDisabledReason: projectMutationPending ? pendingReason : null,
-        onEdit: handleEditProject,
-        onArchive: handleArchiveProject,
-      }
-    : null
+  const projectActions =
+    activeProjectForSheet && isAdmin
+      ? {
+          canEdit: !projectMutationPending,
+          canArchive: !projectMutationPending,
+          editDisabledReason: projectMutationPending ? pendingReason : null,
+          archiveDisabledReason: projectMutationPending ? pendingReason : null,
+          onEdit: handleEditProject,
+          onArchive: handleArchiveProject,
+          onLogTime: viewModel.burndown.visible
+            ? viewModel.burndown.onAddTimeLog
+            : undefined,
+        }
+      : null
 
   // D2/D14: the combobox header is retired; the breadcrumb carries the
   // active project label and ⌘[/⌘] cycling moves to the shared hook.
@@ -163,22 +168,6 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
   return (
     <PageShell
       breadcrumbs={boardBreadcrumbs}
-      headerRight={
-        viewModel.burndown.visible && isAdmin ? (
-          <ProjectBurndownWidget
-            totalClientRemainingHours={
-              viewModel.burndown.totalClientRemainingHours
-            }
-            totalProjectLoggedHours={viewModel.burndown.totalProjectLoggedHours}
-            projectMonthToDateLoggedHours={
-              viewModel.burndown.projectMonthToDateLoggedHours
-            }
-            onAddTimeLog={viewModel.burndown.onAddTimeLog}
-            showClientRemainingCard={viewModel.burndown.showClientRemainingCard}
-            showProjectMonthToDate={viewModel.burndown.showProjectMonthToDate}
-          />
-        ) : undefined
-      }
       // Only the kanban board pins to the viewport (columns scroll
       // internally). Document-flow tabs (review, overview, …) need
       // min-h-fit to defeat the shell wrapper's min-h-0 clamp so the box

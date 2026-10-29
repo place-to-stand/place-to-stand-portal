@@ -99,7 +99,6 @@ export default async function ContactsPage({
           totalPages={totalPages}
           pageSize={pageSize}
           mode='active'
-          allClients={allClients}
           basePath='/contacts'
           deepLinkedContact={deepLinkedContact}
           contactNotFound={deepLink.notFound}

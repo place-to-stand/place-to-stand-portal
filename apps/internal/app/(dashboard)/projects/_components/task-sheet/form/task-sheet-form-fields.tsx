@@ -23,6 +23,8 @@ import {
 import { Badge } from '@pts/ui/badge'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { DatePicker } from '@/components/ui/date-picker'
+import { FormFeedback } from '@/components/sheets/form-feedback'
 import type { UseFormReturn } from 'react-hook-form'
 
 import type { TaskSheetFormValues } from '@/lib/projects/task-sheet/task-sheet-schema'
@@ -31,9 +33,6 @@ import type { AttachmentItem } from '@/lib/projects/task-sheet/use-task-sheet-st
 import { cn } from '@/lib/utils'
 
 import { TaskAttachmentsField } from '../task-attachments-field'
-
-const FEEDBACK_CLASSES =
-  'border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm'
 
 export type TaskSheetFormFieldsProps = {
   form: UseFormReturn<TaskSheetFormValues>
@@ -177,10 +176,11 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
                 <FormLabel>Due date</FormLabel>
                 <FormControl>
                   <DisabledFieldTooltip disabled={disabled} reason={reason}>
-                    <Input
-                      type='date'
-                      value={field.value ?? ''}
+                    <DatePicker
+                      value={field.value}
                       onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      placeholder='No due date'
                       disabled={disabled}
                     />
                   </DisabledFieldTooltip>
@@ -275,10 +275,11 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
                       }}
                       onBlur={field.onBlur}
                       name={field.name}
-                      placeholder='Select assignee'
-                      searchPlaceholder='Search collaborators...'
-                      emptyMessage='No eligible collaborators found.'
+                      placeholder='Unassigned'
+                      searchPlaceholder='Search teammates…'
+                      emptyMessage='No teammates on this project.'
                       disabled={disabled}
+                      onClear={() => field.onChange(null)}
                     />
                   </DisabledFieldTooltip>
                 </FormControl>
@@ -331,7 +332,7 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
         acceptedMimeTypes={acceptedAttachmentTypes}
         maxFileSize={maxAttachmentSize}
       />
-      {feedback ? <p className={FEEDBACK_CLASSES}>{feedback}</p> : null}
+      <FormFeedback>{feedback}</FormFeedback>
     </>
   )
 }

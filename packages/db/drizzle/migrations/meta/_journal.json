@@ -694,6 +694,20 @@
       "when": 1793293650416,
       "tag": "0098_drop_lead_email_unique",
       "breakpoints": true
+    },
+    {
+      "idx": 99,
+      "version": "7",
+      "when": 1793296085077,
+      "tag": "0099_client_label",
+      "breakpoints": true
+    },
+    {
+      "idx": 100,
+      "version": "7",
+      "when": 1793296804678,
+      "tag": "0100_company_people_client_links",
+      "breakpoints": true
     }
   ]
 }

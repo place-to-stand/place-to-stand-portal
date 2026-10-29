@@ -12,6 +12,7 @@ import {
 import { useToast } from '@/components/ui/use-toast'
 import type { Role } from '@/lib/auth/capabilities'
 import {
+  DASHBOARD_LAYOUT_COLUMN_COUNT,
   cloneLayout,
   defaultLayoutForRole,
   hideWidget,
@@ -113,11 +114,12 @@ export function useDashboardLayoutEditor({
       return
     }
 
-    // Move across columns as soon as the pointer crosses, so the target
-    // column's sortable list can animate the gap open.
+    // Move across lists (columns or the hidden tray) as soon as the pointer
+    // crosses, so the target list can animate the gap open.
     const next = cloneLayout(current)
-    const source = next.columns[fromColumn]!
-    const target = next.columns[toColumn]!
+    const lists = layoutLists(next)
+    const source = lists[fromColumn]!
+    const target = lists[toColumn]!
     source.splice(source.indexOf(activeId), 1)
     const overWidgetIndex = target.indexOf(String(over.id) as DashboardWidgetId)
     const insertAt = overWidgetIndex === -1 ? target.length : overWidgetIndex
@@ -140,12 +142,14 @@ export function useDashboardLayoutEditor({
         const column = findColumnIndex(current, activeId)
         const overColumn = resolveColumnIndex(current, String(over.id))
         if (column !== null && column === overColumn) {
-          const items = current.columns[column]!
+          const items = layoutLists(current)[column]!
           const from = items.indexOf(activeId)
           const to = items.indexOf(String(over.id) as DashboardWidgetId)
           if (from !== -1 && to !== -1 && from !== to) {
             next = cloneLayout(current)
-            next.columns[column] = arrayMove(items, from, to)
+            const moved = arrayMove(items, from, to)
+            if (column === HIDDEN_LIST_INDEX) next.hidden = moved
+            else next.columns[column] = moved
           }
         }
       }
@@ -157,7 +161,9 @@ export function useDashboardLayoutEditor({
 
       layoutRef.current = next
       setLayout(next)
-      persist(next, origin)
+      // A widget dragged out of the hidden tray needs its server data.
+      const shown = origin.hidden.some(id => !next.hidden.includes(id))
+      persist(next, origin, { refresh: shown })
     },
     [persist]
   )
@@ -208,8 +214,16 @@ export function useDashboardLayoutEditor({
   }
 }
 
+/** The hidden tray is the list after the columns. */
+export const HIDDEN_LIST_INDEX = DASHBOARD_LAYOUT_COLUMN_COUNT
+
+/** Columns, then the hidden tray, as mutable lists of the given layout. */
+function layoutLists(layout: DashboardLayout): DashboardWidgetId[][] {
+  return [...layout.columns, layout.hidden]
+}
+
 function findColumnIndex(layout: DashboardLayout, id: DashboardWidgetId) {
-  const index = layout.columns.findIndex(column => column.includes(id))
+  const index = layoutLists(layout).findIndex(list => list.includes(id))
   return index === -1 ? null : index
 }
 

@@ -47,6 +47,7 @@ export function resolveClientDeepLink(
         origination_user_id: client.originationUserId,
         billing_type: client.billingType,
         company_id: client.companyId ?? null,
+        label: client.label ?? null,
         created_by: client.createdBy,
         created_at: client.createdAt,
         updated_at: client.updatedAt,

@@ -6,13 +6,6 @@ import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { clients, projects } from '@/lib/db/schema'
-import { type PageInfo } from '@/lib/pagination/cursor'
-import {
-  decodeSortCursor,
-  encodeSortCursor,
-  type SortCursorPayload,
-  type SortDirection,
-} from '@/lib/pagination/sort'
 import { fetchLatestClosersByClient } from '@/lib/queries/clients/commission-terms'
 import type { ClientCloser } from '@/lib/settings/clients/closers'
 import { DEFAULT_CLIENTS_SORT } from '@/lib/settings/clients/filters'
@@ -31,9 +24,7 @@ import {
   buildStatusCondition,
   CLIENT_SORT_DESCRIPTORS,
   normalizeStatus,
-  resolveClientDirection,
   resolvePaginationLimit,
-  type ClientSortDescriptor,
   type StatusFilter,
 } from './pagination'
 import type {
@@ -71,6 +62,7 @@ async function queryClientRows(
   whereClause: SQL | undefined,
   ordering: SQL[],
   limit: number,
+  offset: number,
 ) {
   return db
     .select({
@@ -92,7 +84,8 @@ async function queryClientRows(
     .where(whereClause)
     .groupBy(...clientGroupByColumns)
     .orderBy(...ordering)
-    .limit(limit + 1) as Promise<ClientMetricsResult[]>
+    .limit(limit)
+    .offset(offset) as Promise<ClientMetricsResult[]>
 }
 
 function mapClientMetrics(
@@ -110,6 +103,7 @@ function mapClientMetrics(
     originationContactId: row.originationContactId,
     originationUserId: row.originationUserId,
     companyId: row.companyId,
+    label: row.label,
     createdBy: row.createdBy,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -129,49 +123,6 @@ async function resolveCount(conditions: SQL[]) {
     .where(conditions.length ? and(...conditions) : undefined)
 
   return Number(result[0]?.count ?? 0)
-}
-
-function buildPageInfo(
-  direction: 'forward' | 'backward',
-  cursorPayload: SortCursorPayload | null,
-  items: ClientsSettingsListItem[],
-  hasExtraRecord: boolean,
-  sortField: string,
-  sortDirection: SortDirection,
-  descriptor: ClientSortDescriptor,
-): PageInfo {
-  const firstItem = items[0] ?? null
-  const lastItem = items[items.length - 1] ?? null
-
-  const hasPreviousPage =
-    direction === 'forward'
-      ? Boolean(cursorPayload)
-      : hasExtraRecord
-  const hasNextPage =
-    direction === 'forward'
-      ? hasExtraRecord
-      : Boolean(cursorPayload)
-
-  return {
-    hasPreviousPage,
-    hasNextPage,
-    startCursor: firstItem
-      ? encodeSortCursor({
-          sortField,
-          sortDirection,
-          value: descriptor.encode(firstItem),
-          id: firstItem.id,
-        })
-      : null,
-    endCursor: lastItem
-      ? encodeSortCursor({
-          sortField,
-          sortDirection,
-          value: descriptor.encode(lastItem),
-          id: lastItem.id,
-        })
-      : null,
-  }
 }
 
 /**
@@ -213,8 +164,8 @@ export async function listClientsForSettings(
   const normalizedStatus = normalizeStatus(input.status)
   const searchQuery = input.search?.trim() ?? ''
 
-  const direction = resolveClientDirection(input.direction)
   const limit = resolvePaginationLimit(input.limit)
+  const offset = Math.max(0, Math.floor(input.offset ?? 0))
   const sort = input.sort ?? DEFAULT_CLIENTS_SORT
   const descriptor = CLIENT_SORT_DESCRIPTORS[sort.field]
 
@@ -225,49 +176,23 @@ export async function listClientsForSettings(
     input.billing,
   )
 
-  // Field-tagged cursor: payloads minted under a different sort are
-  // rejected and we serve page one (R5 backstop for stale deep links).
-  const cursorPayload = decodeSortCursor(input.cursor, sort.field, sort.direction)
+  // Offset paging (page numbers + total, like every other list). The id
+  // tiebreaker keeps page boundaries stable when sort values collide.
+  const ordering =
+    sort.direction === 'asc'
+      ? [descriptor.orderAsc, asc(clients.id)]
+      : [descriptor.orderDesc, sql`${clients.id} DESC`]
 
-  // Effective ordering combines the sort direction with the pagination
-  // direction (backward pages scan the reversed order, then re-reverse).
-  const effectiveAsc = (sort.direction === 'asc') === (direction === 'forward')
-  const cursorCondition = cursorPayload
-    ? sql`(${descriptor.compare(effectiveAsc ? 'gt' : 'lt', cursorPayload.value ?? '')} OR (${descriptor.equals(cursorPayload.value ?? '')} AND ${effectiveAsc ? sql`${clients.id} > ${cursorPayload.id}` : sql`${clients.id} < ${cursorPayload.id}`}))`
-    : null
-
-  const whereClause =
-    cursorCondition ? and(...baseConditions, cursorCondition) : and(...baseConditions)
-
-  const ordering = effectiveAsc
-    ? [descriptor.orderAsc, asc(clients.id)]
-    : [descriptor.orderDesc, sql`${clients.id} DESC`]
-
-  const rows = await queryClientRows(whereClause, ordering, limit)
-
-  const hasExtraRecord = rows.length > limit
-  const slicedRows = hasExtraRecord ? rows.slice(0, limit) : rows
-  const normalizedRows =
-    direction === 'backward' ? [...slicedRows].reverse() : slicedRows
-
-  const closersByClient = await fetchLatestClosersByClient(
-    normalizedRows.map(row => row.id)
-  )
-  const mappedItems = mapClientMetrics(normalizedRows, closersByClient)
-
-  const [totalCount, unfilteredTotalCount] = await Promise.all([
+  const [rows, totalCount, unfilteredTotalCount] = await Promise.all([
+    queryClientRows(and(...baseConditions), ordering, limit, offset),
     resolveCount(baseConditions),
     resolveCount([statusCondition]),
   ])
-  const pageInfo = buildPageInfo(
-    direction,
-    cursorPayload,
-    mappedItems,
-    hasExtraRecord,
-    sort.field,
-    sort.direction,
-    descriptor,
+
+  const closersByClient = await fetchLatestClosersByClient(
+    rows.map(row => row.id)
   )
+  const mappedItems = mapClientMetrics(rows, closersByClient)
 
   const clientIds = mappedItems.map(item => item.id)
 
@@ -282,6 +207,5 @@ export async function listClientsForSettings(
     clientUsers,
     totalCount,
     unfilteredTotalCount,
-    pageInfo,
   }
 }

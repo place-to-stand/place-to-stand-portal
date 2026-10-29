@@ -50,9 +50,7 @@ import { ClientClosersEditor } from './client-closers-editor'
 import { ClientEffectiveCallout } from './client-effective-callout'
 import { ClientOriginationPicker } from './client-origination-picker'
 import { getSubmitLabel } from '@/lib/forms/form-controls'
-
-const FEEDBACK_CLASSES =
-  'border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm'
+import { FormFeedback } from '@/components/sheets/form-feedback'
 
 const CLIENT_FORM_ID = 'client-form'
 
@@ -223,10 +221,38 @@ export function ClientSheetForm({
           <SheetSection title='Details'>
             <FormField
               control={form.control}
-              name='name'
+              name='companyId'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>Company</FormLabel>
+                  <FormControl>
+                    <DisabledFieldTooltip
+                      disabled={isPending}
+                      reason={fieldDisabledReason}
+                    >
+                      <CompanyLinkPicker
+                        value={
+                          field.value ? { id: field.value, name: '' } : null
+                        }
+                        onChange={next => field.onChange(next?.id ?? '')}
+                        disabled={isPending}
+                      />
+                    </DisabledFieldTooltip>
+                  </FormControl>
+                  <p className='text-muted-foreground text-xs'>
+                    The client takes the company’s name and people, and uses its
+                    primary contact.
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='label'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel optional>Label</FormLabel>
                   <FormControl>
                     <DisabledFieldTooltip
                       disabled={isPending}
@@ -234,7 +260,7 @@ export function ClientSheetForm({
                     >
                       <Input
                         {...field}
-                        data-autofocus
+                        value={field.value ?? ''}
                         ref={node => {
                           firstFieldRef.current = node
                           if (typeof field.ref === 'function') {
@@ -245,37 +271,15 @@ export function ClientSheetForm({
                             ).current = node
                           }
                         }}
-                        placeholder='Acme Corp'
-                        disabled={isPending}
-                      />
-                    </DisabledFieldTooltip>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name='companyId'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel optional={!isEditing}>Company</FormLabel>
-                  <FormControl>
-                    <DisabledFieldTooltip
-                      disabled={isPending}
-                      reason={fieldDisabledReason}
-                    >
-                      <CompanyLinkPicker
-                        value={field.value ? { id: field.value, name: '' } : null}
-                        onChange={next => field.onChange(next?.id ?? '')}
+                        placeholder='e.g. Retainer'
+                        maxLength={60}
                         disabled={isPending}
                       />
                     </DisabledFieldTooltip>
                   </FormControl>
                   <p className='text-muted-foreground text-xs'>
-                    {isEditing
-                      ? 'Every client is a company. Its primary contact is this client’s primary contact.'
-                      : 'Leave empty to create a company with the client’s name.'}
+                    Only needed when one company has more than one billing
+                    setup.
                   </p>
                   <FormMessage />
                 </FormItem>
@@ -561,7 +565,7 @@ export function ClientSheetForm({
             />
           </SheetSection>
 
-          {feedback ? <p className={FEEDBACK_CLASSES}>{feedback}</p> : null}
+          <FormFeedback>{feedback}</FormFeedback>
         </form>
       </div>
       <SheetFormFooter

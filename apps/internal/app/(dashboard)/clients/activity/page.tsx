@@ -26,7 +26,7 @@ export default async function ClientsActivityPage() {
         <ActivitySection
           targetType='CLIENT'
           emptyState='No recent client activity.'
-          description='Review client creation, edits, archives, and restorations in one place.'
+          description='Audit client creation, edits, archives, and deletions in one place.'
         />
       </section>
     </PageShell>

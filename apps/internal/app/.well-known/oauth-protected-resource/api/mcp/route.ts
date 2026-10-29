@@ -1,3 +1,4 @@
+// permission: public — OAuth discovery metadata
 import {
   metadataCorsOptionsRequestHandler,
   protectedResourceHandler,

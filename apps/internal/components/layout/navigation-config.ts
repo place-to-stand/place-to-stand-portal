@@ -2,6 +2,7 @@ import type { LucideIcon } from 'lucide-react'
 
 import type { Capability } from '@/lib/auth/capabilities'
 import {
+  Clock,
   Clock3,
   FolderKanban,
   Building2,
@@ -97,6 +98,12 @@ export const NAV_GROUPS: NavGroup[] = [
         capability: 'clients.manage',
         label: 'Clients',
         icon: Building2,
+      },
+      {
+        href: '/time-logs',
+        capability: 'billing.manage',
+        label: 'Time logs',
+        icon: Clock,
       },
     ],
   },

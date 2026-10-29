@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { CheckIcon, ChevronsUpDownIcon } from 'lucide-react'
+import { CheckIcon, ChevronsUpDownIcon, XIcon } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { cn } from '@/lib/utils'
@@ -65,12 +65,20 @@ type SearchableComboboxProps = {
    */
   onCreate?: (query: string) => void
   createEntityLabel?: string
+  /**
+   * Shows a clear (×) button inside the field while a value is selected.
+   * Fires instead of opening the list.
+   */
+  onClear?: () => void
+  /** Extra icon buttons shown inside the field, left of the clear button. */
+  inlineActions?: React.ReactNode
 }
 
-const baseTriggerClasses =
+/** The field-style trigger every picker shares (combobox, date pickers). */
+export const fieldTriggerClasses =
   'border-input data-[placeholder=true]:text-muted-foreground [&_svg]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex w-full items-center justify-between gap-2 rounded-md border bg-background px-3 py-2 text-left text-sm font-normal shadow-xs transition-[color,box-shadow] outline-hidden focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50'
 
-const itemWrapperClasses = 'flex flex-col text-sm leading-tight'
+const itemWrapperClasses = 'flex min-w-0 flex-1 flex-col text-sm leading-tight'
 
 export const SearchableCombobox = React.forwardRef<
   HTMLButtonElement,
@@ -99,6 +107,8 @@ export const SearchableCombobox = React.forwardRef<
       trigger,
       onCreate,
       createEntityLabel = 'record',
+      onClear,
+      inlineActions,
     },
     forwardedRef
   ) => {
@@ -111,7 +121,14 @@ export const SearchableCombobox = React.forwardRef<
     // filtering hides the widest options.
     const [lockedWidth, setLockedWidth] = React.useState<number>()
     const contentRef = React.useCallback((node: HTMLDivElement | null) => {
-      setLockedWidth(node ? node.offsetWidth : undefined)
+      if (!node) {
+        setLockedWidth(undefined)
+        return
+      }
+      // The list fills in after mount; measure once it has.
+      requestAnimationFrame(() =>
+        setLockedWidth(Math.ceil(parseFloat(getComputedStyle(node).width)))
+      )
     }, [])
 
     const mergedRef = React.useMemo(() => {
@@ -189,6 +206,55 @@ export const SearchableCombobox = React.forwardRef<
       }
     }
 
+    const renderItem = (item: SearchableComboboxItem, key: string) => {
+      const searchValue = [item.label, ...(item.keywords ?? [])]
+        .join(' ')
+        .trim()
+      return (
+        <CommandItem
+          key={key}
+          value={searchValue.length > 0 ? searchValue : item.value}
+          onSelect={() => handleSelect(item.value)}
+          disabled={item.disabled}
+          className='pr-3'
+          title={item.label}
+        >
+          <CheckIcon
+            className={cn(
+              'mr-2 size-4 shrink-0',
+              selectedItem?.value === item.value ? 'opacity-100' : 'opacity-0'
+            )}
+          />
+          {item.userId ? (
+            <Avatar size='xs' className='mr-2 shrink-0'>
+              {item.avatarUrl && (
+                <AvatarImage src={`/api/storage/user-avatar/${item.userId}`} />
+              )}
+              <AvatarFallback>
+                {item.label.slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+          ) : item.icon ? (
+            <Avatar size='xs' className='mr-2 shrink-0'>
+              <AvatarFallback className='bg-muted'>
+                <item.icon className='text-muted-foreground h-3 w-3' />
+              </AvatarFallback>
+            </Avatar>
+          ) : null}
+          <div className={cn(itemWrapperClasses, itemClassName)}>
+            <span className='truncate font-medium whitespace-nowrap'>
+              {item.label}
+            </span>
+            {item.description ? (
+              <span className='text-muted-foreground truncate text-xs whitespace-nowrap'>
+                {item.description}
+              </span>
+            ) : null}
+          </div>
+        </CommandItem>
+      )
+    }
+
     const resolvedPlaceholder = placeholder ?? searchPlaceholder
 
     const stopScrollPropagation = React.useCallback(
@@ -202,7 +268,9 @@ export const SearchableCombobox = React.forwardRef<
       const maxHeight = 'min(320px, var(--available-height))'
       return {
         maxHeight,
-        overflowY: 'auto',
+        // The list scrolls itself; a second scrollbar here would eat into
+        // the width measured for the options.
+        overflowY: 'hidden',
         overscrollBehavior: 'contain',
         // Min-width (not width): the popover never shrinks below the
         // trigger but grows to fit no-wrap options (My Tasks person list).
@@ -214,8 +282,11 @@ export const SearchableCombobox = React.forwardRef<
     const selectedTextClasses = 'font-medium'
     const placeholderTextClasses = 'text-muted-foreground'
 
+    const showClear = Boolean(onClear && selectedItem && !disabled)
+    const hasInline = Boolean(inlineActions) || showClear
+
     return (
-      <div className={cn('w-full min-w-0', className)}>
+      <div className={cn('relative w-full min-w-0', className)}>
         <input type='hidden' name={name} value={value ?? ''} />
         <Popover open={open} onOpenChange={handleOpenChange} modal>
           <PopoverTrigger asChild>
@@ -234,7 +305,12 @@ export const SearchableCombobox = React.forwardRef<
                 disabled={disabled}
                 data-placeholder={selectedItem ? undefined : true}
                 id={id}
-                className={cn(baseTriggerClasses, triggerClassName)}
+                className={cn(
+                  fieldTriggerClasses,
+                  // Room for the inline buttons, which sit over the field.
+                  hasInline && (inlineActions && showClear ? 'pr-20' : 'pr-14'),
+                  triggerClassName
+                )}
               >
                 <div className='flex min-w-0 flex-1 items-center gap-2'>
                   {selectedItem?.userId ? (
@@ -256,6 +332,7 @@ export const SearchableCombobox = React.forwardRef<
                     </Avatar>
                   ) : null}
                   <span
+                    title={selectedItem?.label}
                     className={cn(
                       'min-w-0 truncate',
                       selectedItem
@@ -272,7 +349,9 @@ export const SearchableCombobox = React.forwardRef<
           </PopoverTrigger>
           <PopoverContent
             ref={contentRef}
-            className='w-full max-w-full overflow-hidden p-0'
+            // Never narrower than the trigger; grows to fit an option on one line,
+            // up to a cap, past which options truncate with a tooltip.
+            className='w-max max-w-[min(28rem,90vw)] overflow-hidden p-0'
             sideOffset={8}
             style={contentStyle}
           >
@@ -285,128 +364,21 @@ export const SearchableCombobox = React.forwardRef<
               />
               {onCreate ? null : <CommandEmpty>{emptyMessage}</CommandEmpty>}
               <CommandList
-                className='max-h-[min(60vh,260px)] overflow-y-auto overscroll-contain'
+                className='max-h-[min(60vh,260px)] [scrollbar-gutter:stable] overflow-y-auto overscroll-contain'
                 onWheel={stopScrollPropagation}
                 onTouchMove={stopScrollPropagation}
               >
                 {resolvedGroups.length > 0 ? (
                   resolvedGroups.map(group => (
                     <CommandGroup key={group.label} heading={group.label}>
-                      {group.items.map(item => {
-                        const searchValue = [
-                          item.label,
-                          ...(item.keywords ?? []),
-                        ]
-                          .join(' ')
-                          .trim()
-
-                        return (
-                          <CommandItem
-                            key={`${group.label}-${item.value}`}
-                            value={
-                              searchValue.length > 0 ? searchValue : item.value
-                            }
-                            onSelect={() => handleSelect(item.value)}
-                            disabled={item.disabled}
-                            className='pr-3'
-                          >
-                            <CheckIcon
-                              className={cn(
-                                'mr-2 size-4',
-                                selectedItem?.value === item.value
-                                  ? 'opacity-100'
-                                  : 'opacity-0'
-                              )}
-                            />
-                            {item.userId ? (
-                              <Avatar size='xs' className='mr-2'>
-                                {item.avatarUrl && (
-                                  <AvatarImage
-                                    src={`/api/storage/user-avatar/${item.userId}`}
-                                  />
-                                )}
-                                <AvatarFallback>
-                                  {item.label.slice(0, 2).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                            ) : item.icon ? (
-                              <Avatar size='xs' className='mr-2'>
-                                <AvatarFallback className='bg-muted'>
-                                  <item.icon className='text-muted-foreground h-3 w-3' />
-                                </AvatarFallback>
-                              </Avatar>
-                            ) : null}
-                            <div
-                              className={cn(itemWrapperClasses, itemClassName)}
-                            >
-                              <span className='font-medium'>{item.label}</span>
-                              {item.description ? (
-                                <span className='text-muted-foreground text-xs'>
-                                  {item.description}
-                                </span>
-                              ) : null}
-                            </div>
-                          </CommandItem>
-                        )
-                      })}
+                      {group.items.map(item =>
+                        renderItem(item, `${group.label}-${item.value}`)
+                      )}
                     </CommandGroup>
                   ))
                 ) : (
                   <CommandGroup>
-                    {flattenedItems.map(item => {
-                      const searchValue = [item.label, ...(item.keywords ?? [])]
-                        .join(' ')
-                        .trim()
-
-                      return (
-                        <CommandItem
-                          key={item.value}
-                          value={
-                            searchValue.length > 0 ? searchValue : item.value
-                          }
-                          onSelect={() => handleSelect(item.value)}
-                          disabled={item.disabled}
-                          className='pr-3'
-                        >
-                          <CheckIcon
-                            className={cn(
-                              'mr-2 size-4',
-                              selectedItem?.value === item.value
-                                ? 'opacity-100'
-                                : 'opacity-0'
-                            )}
-                          />
-                          {item.userId ? (
-                            <Avatar size='xs' className='mr-2'>
-                              {item.avatarUrl && (
-                                <AvatarImage
-                                  src={`/api/storage/user-avatar/${item.userId}`}
-                                />
-                              )}
-                              <AvatarFallback>
-                                {item.label.slice(0, 2).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                          ) : item.icon ? (
-                            <Avatar size='xs' className='mr-2'>
-                              <AvatarFallback className='bg-muted'>
-                                <item.icon className='text-muted-foreground h-3 w-3' />
-                              </AvatarFallback>
-                            </Avatar>
-                          ) : null}
-                          <div
-                            className={cn(itemWrapperClasses, itemClassName)}
-                          >
-                            <span className='font-medium'>{item.label}</span>
-                            {item.description ? (
-                              <span className='text-muted-foreground text-xs'>
-                                {item.description}
-                              </span>
-                            ) : null}
-                          </div>
-                        </CommandItem>
-                      )
-                    })}
+                    {flattenedItems.map(item => renderItem(item, item.value))}
                   </CommandGroup>
                 )}
                 {onCreate ? (
@@ -424,6 +396,26 @@ export const SearchableCombobox = React.forwardRef<
             </Command>
           </PopoverContent>
         </Popover>
+        {hasInline ? (
+          // Over the trigger, left of its chevron, so the field never grows
+          // past its column.
+          <div className='absolute top-1/2 right-8 flex -translate-y-1/2 items-center gap-0.5'>
+            {inlineActions}
+            {showClear ? (
+              <button
+                type='button'
+                aria-label='Clear'
+                onClick={() => {
+                  onClear?.()
+                  onBlur?.()
+                }}
+                className='text-muted-foreground hover:text-foreground hover:bg-muted focus-visible:ring-ring/50 rounded p-1 outline-none focus-visible:ring-2'
+              >
+                <XIcon className='size-3.5' aria-hidden />
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     )
   }

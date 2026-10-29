@@ -159,6 +159,7 @@ export function useClientSheetFormState({
       website: client?.website ?? '',
       notes: client?.notes ?? '',
       companyId: client?.company_id ?? '',
+      label: client?.label ?? '',
     },
   })
 
@@ -278,6 +279,7 @@ export function useClientSheetFormState({
       website: client?.website ?? '',
       notes: client?.notes ?? '',
       companyId: client?.company_id ?? '',
+      label: client?.label ?? '',
     }
 
     form.reset(defaults)
@@ -621,7 +623,7 @@ export function useClientSheetFormState({
 
         const payload = {
           id: client?.id ?? undefined,
-          name: values.name.trim(),
+          name: values.name?.trim() ?? '',
           slug: isEditing
             ? values.slug?.trim()
               ? values.slug.trim()
@@ -637,6 +639,7 @@ export function useClientSheetFormState({
           closers: closerShares,
           notes: values.notes?.trim() ? values.notes.trim() : null,
           companyId: values.companyId || undefined,
+          label: values.label?.trim() || null,
         } satisfies Parameters<typeof saveClient>[0]
 
         if (isEditing && !payload.companyId) {
@@ -725,6 +728,7 @@ export function useClientSheetFormState({
             website: payload.website ?? '',
             notes: payload.notes ?? '',
             companyId: payload.companyId ?? '',
+            label: payload.label ?? '',
           })
 
           onOpenChange(false)

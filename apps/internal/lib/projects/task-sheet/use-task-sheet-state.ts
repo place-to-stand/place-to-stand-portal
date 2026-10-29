@@ -320,11 +320,12 @@ export const useTaskSheetState = ({
   const watchedAssigneeId = form.watch('assigneeId') ?? null
   const assigneeItems = useMemo(
     () =>
+      // No "Unassigned" row: the picker's clear button unassigns.
       buildAssigneeItems({
         admins,
         members: selectedProject?.members ?? [],
         currentAssigneeId: watchedAssigneeId,
-      }),
+      }).filter(item => item.value !== UNASSIGNED_ASSIGNEE_VALUE),
     [admins, selectedProject, watchedAssigneeId]
   )
   const projectName = selectedProject?.name ?? null

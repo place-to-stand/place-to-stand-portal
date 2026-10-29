@@ -19,12 +19,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@pts/ui/select'
-import { Input } from '@pts/ui/input'
+import { DatePicker } from '@/components/ui/date-picker'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import {
   isContentEmpty,
   sanitizeEditorHtml,
 } from '@/components/ui/rich-text-editor/utils'
+import { toCalendarDate } from '@/lib/dates/calendar-date'
 import type { LeadUpdateRecord } from '@/lib/leads/types'
 import {
   LEAD_UPDATE_LABELS,
@@ -44,12 +45,6 @@ type LeadUpdateDialogProps = {
   onSaved: () => void
 }
 
-/** `YYYY-MM-DD` in local time — what a `<input type="date">` expects. */
-function toDateInputValue(date: Date): string {
-  const offset = date.getTimezoneOffset() * 60_000
-  return new Date(date.getTime() - offset).toISOString().slice(0, 10)
-}
-
 /**
  * Today gets the ACTUAL current time — anchoring today at local noon would be
  * a future timestamp for anyone logging in the morning, and the server's
@@ -60,7 +55,7 @@ function toDateInputValue(date: Date): string {
 function toOccurredAt(occurredOn: string): string {
   const now = new Date()
   return (
-    occurredOn === toDateInputValue(now)
+    occurredOn === toCalendarDate(now)
       ? now
       : new Date(`${occurredOn}T12:00:00`)
   ).toISOString()
@@ -77,7 +72,7 @@ export function LeadUpdateDialog({
   const [type, setType] = useState<LeadUpdateTypeValue>('PHONE_CALL')
   const [body, setBody] = useState('')
   const [occurredOn, setOccurredOn] = useState(() =>
-    toDateInputValue(new Date())
+    toCalendarDate(new Date())
   )
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -100,7 +95,7 @@ export function LeadUpdateDialog({
       setType(update?.type ?? 'PHONE_CALL')
       setBody(update?.body ?? '')
       setOccurredOn(
-        toDateInputValue(update ? new Date(update.occurredAt) : new Date())
+        toCalendarDate(update ? new Date(update.occurredAt) : new Date())
       )
       setError(null)
       setIsDirty(false)
@@ -199,13 +194,13 @@ export function LeadUpdateDialog({
               <Label htmlFor='lead-update-date' className='text-xs'>
                 Date
               </Label>
-              <Input
+              <DatePicker
                 id='lead-update-date'
-                type='date'
-                max={toDateInputValue(new Date())}
+                max={toCalendarDate(new Date())}
                 value={occurredOn}
-                onChange={event => {
-                  setOccurredOn(event.target.value)
+                clearable={false}
+                onChange={value => {
+                  setOccurredOn(value)
                   setIsDirty(true)
                 }}
               />

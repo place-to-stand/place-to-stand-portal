@@ -26,7 +26,7 @@ export default async function ContactsActivityPage() {
         <ActivitySection
           targetType='CONTACT'
           emptyState='No recent contact activity.'
-          description='Review contact creation, edits, archives, and restorations in one place.'
+          description='Audit contact creation, edits, archives, and deletions in one place.'
         />
       </section>
     </PageShell>

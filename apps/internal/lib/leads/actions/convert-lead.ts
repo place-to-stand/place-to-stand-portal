@@ -15,6 +15,7 @@ import { leadConversionSchema, type LeadConversionFormValues } from '../conversi
 import type { LeadConversionResult } from '../conversion-types'
 import { syncPortalMembershipsForLinkChanges } from '@/lib/queries/contacts/settings/contact-client-portal-memberships'
 import { getLinkableCompany } from '@/lib/queries/companies'
+import { syncCompanyClientLinks } from '@/lib/queries/companies/people-links'
 
 export async function convertLeadToClient(
   input: LeadConversionFormValues
@@ -59,9 +60,10 @@ export async function convertLeadToClient(
   }
 
   // The lead's company, when it's still live (an archived one isn't reused).
-  const leadCompanyId = lead.companyId
-    ? ((await getLinkableCompany(lead.companyId))?.id ?? null)
+  const leadCompany = lead.companyId
+    ? await getLinkableCompany(lead.companyId)
     : null
+  const leadCompanyId = leadCompany?.id ?? null
 
   let finalClientId: string
   let finalClientSlug: string | undefined
@@ -82,7 +84,10 @@ export async function convertLeadToClient(
     finalClientSlug = existingClient.slug ?? undefined
   } else {
     // 2b. Create a new client (reuse existing action)
-    const resolvedName = clientName || lead.companyName || lead.contactName
+    // The company owns the name: a lead with a company makes a client
+    // named after it; otherwise the typed name names the new company too.
+    const resolvedName =
+      leadCompany?.name || clientName || lead.companyName || lead.contactName
     const resolvedNotes = copyNotesToClient
       ? extractLeadNotes(lead.notes as Record<string, unknown>)
       : null
@@ -202,6 +207,22 @@ export async function convertLeadToClient(
         ])
       }
 
+      // The contact works at the client's company when it's on record
+      // nowhere else, so it gets every one of that company's clients.
+      await db
+        .update(contacts)
+        .set({
+          companyId: sql`(select company_id from clients where id = ${finalClientId})`,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(and(eq(contacts.id, contactId), isNull(contacts.companyId)))
+      const [clientCompany] = await db
+        .select({ companyId: clients.companyId })
+        .from(clients)
+        .where(eq(clients.id, finalClientId))
+        .limit(1)
+      await syncCompanyClientLinks(user, [clientCompany?.companyId])
+
       // The client's company takes this contact as its primary when it has
       // none yet, and the contact works there (or nowhere on record).
       await db
@@ -262,7 +283,8 @@ export async function convertLeadToClient(
     .where(eq(leads.id, leadId))
 
   // 6. Log activity
-  const resolvedName = clientName || lead.companyName || lead.contactName
+  const resolvedName =
+    leadCompany?.name || clientName || lead.companyName || lead.contactName
   const event = leadConvertedEvent({
     leadId,
     leadName: lead.contactName,

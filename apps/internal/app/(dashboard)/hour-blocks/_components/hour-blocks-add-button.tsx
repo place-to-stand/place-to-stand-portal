@@ -1,6 +1,7 @@
 'use client'
 
 import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
+import { HOUR_BLOCK_MISSING_CLIENT_REASON } from '@/lib/settings/hour-blocks/hour-block-ui-state'
 import type { ClientRow } from '@/lib/settings/hour-blocks/hour-block-form'
 
 type HourBlocksAddButtonProps = {
@@ -19,7 +20,7 @@ export function HourBlocksAddButton({
       label='Add hour block'
       className={className}
       disabledReason={
-        clients.length === 0 ? 'Add a client before creating an hour block.' : null
+        clients.length === 0 ? HOUR_BLOCK_MISSING_CLIENT_REASON : null
       }
     />
   )

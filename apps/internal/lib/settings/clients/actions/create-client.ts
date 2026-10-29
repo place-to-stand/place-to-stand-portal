@@ -23,6 +23,7 @@ import {
   findOrCreateCompanyByName,
   getLinkableCompany,
 } from '@/lib/queries/companies'
+import { syncCompanyClientLinks } from '@/lib/queries/companies/people-links'
 
 type CreateClientPayload = {
   name: string
@@ -37,6 +38,7 @@ type CreateClientPayload = {
   memberIds?: string[]
   /** The client's company; null finds or creates one named after the client. */
   companyId?: string | null
+  label?: string | null
 }
 
 const INSERT_RETRY_LIMIT = 3
@@ -59,6 +61,7 @@ export async function createClient(
     notes,
     memberIds,
     companyId: requestedCompanyId,
+    label = null,
   } = payload
 
   const partnerRoleError = await assertClientPartnerUserRoles({
@@ -110,6 +113,7 @@ export async function createClient(
             originationUserId,
             notes,
             companyId,
+            label,
             createdBy: user.id,
           })
           .returning({ id: clients.id })
@@ -152,6 +156,9 @@ export async function createClient(
           return buildMutationResult(syncResult)
         }
       }
+
+      // A client's people are its company's people.
+      await syncCompanyClientLinks(user, [companyId])
 
       const event = clientCreatedEvent({
         name,

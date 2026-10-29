@@ -1,3 +1,4 @@
+// permission: public — redirects to sign-in or home
 import { redirect } from 'next/navigation'
 
 import { getCurrentUser } from '@/lib/auth/session'

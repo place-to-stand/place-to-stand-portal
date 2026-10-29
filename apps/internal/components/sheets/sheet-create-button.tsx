@@ -1,6 +1,7 @@
 'use client'
 
-import { Plus, type LucideIcon } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { Plus } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
@@ -14,7 +15,11 @@ type SheetCreateButtonProps = {
   /** Disables the button and explains why in a tooltip. */
   disabledReason?: string | null
   className?: string
-  icon?: LucideIcon
+  /**
+   * A rendered icon (an element, not a component, so server pages can pass
+   * it); defaults to a plus.
+   */
+  icon?: ReactNode
 }
 
 /**
@@ -27,7 +32,7 @@ export function SheetCreateButton({
   label,
   disabledReason = null,
   className,
-  icon: Icon = Plus,
+  icon = <Plus className='h-4 w-4' />,
 }: SheetCreateButtonProps) {
   const { openCreate } = useSheetParamSelection(entity)
   const disabled = Boolean(disabledReason)
@@ -42,7 +47,7 @@ export function SheetCreateButton({
           disabled={disabled}
           className='gap-2'
         >
-          <Icon className='h-4 w-4' />
+          {icon}
           {label}
         </Button>
       </DisabledFieldTooltip>

@@ -15,23 +15,27 @@ import { destroyProject as destroyProjectAction } from '@/lib/settings/projects/
 export async function saveProject(
   input: ProjectInput
 ): Promise<ProjectActionResult> {
+  // permission: projects.create
   return saveProjectAction(input)
 }
 
 export async function softDeleteProject(
   input: DeleteProjectInput
 ): Promise<ProjectActionResult> {
+  // permission: projects.manage
   return softDeleteProjectAction(input)
 }
 
 export async function restoreProject(
   input: RestoreProjectInput
 ): Promise<ProjectActionResult> {
+  // permission: projects.manage
   return restoreProjectAction(input)
 }
 
 export async function destroyProject(
   input: DestroyProjectInput
 ): Promise<ProjectActionResult> {
+  // permission: projects.manage
   return destroyProjectAction(input)
 }

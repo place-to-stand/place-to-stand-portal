@@ -44,9 +44,17 @@ export function RecordRowButton({
     >
       {leading}
       <span className='min-w-0 flex-1'>
-        <span className='block truncate text-sm font-medium'>{title}</span>
+        <span
+          className='block truncate text-sm font-medium'
+          title={typeof title === 'string' ? title : undefined}
+        >
+          {title}
+        </span>
         {subtitle ? (
-          <span className='text-muted-foreground block truncate text-xs'>
+          <span
+            className='text-muted-foreground block truncate text-xs'
+            title={typeof subtitle === 'string' ? subtitle : undefined}
+          >
             {subtitle}
           </span>
         ) : null}

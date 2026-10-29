@@ -30,7 +30,7 @@ export function ClientsFilters({
 }: ClientsFiltersProps) {
   const { update, hasActiveFilters, reset } = useListParams({
     basePath,
-    resetKeys: ['cursor', 'dir', 'page'],
+    resetKeys: ['page'],
     filters: {
       billing: { isValid: value => isClientBilling(value) },
       q: {},

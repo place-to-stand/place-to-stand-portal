@@ -1,3 +1,4 @@
+// permission: public — shown before sign-in completes
 import type { Metadata } from "next";
 import Link from "next/link";
 

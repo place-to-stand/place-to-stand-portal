@@ -8,7 +8,6 @@ export {
   getContactSheetData,
   getContactSheetInputById,
   getContactDeepLinkRowById,
-  syncContactClients,
 } from './settings/contact-clients'
 export type {
   ClientOption,

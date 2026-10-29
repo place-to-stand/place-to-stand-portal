@@ -1,11 +1,13 @@
-import { Archive, Loader2, Pencil, RotateCcw } from 'lucide-react'
+import { Loader2, RotateCcw } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { EmptyState } from '@pts/ui/empty-state'
-import { RowActionButton } from '@pts/ui/row-action-button'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import {
+  RecordRowAction,
+  RecordRowActions,
+} from '@/components/table/record-row-action'
 import {
   Table,
   TableBody,
@@ -201,36 +203,21 @@ function ProjectTimeLogHistoryRow(props: ProjectTimeLogHistoryRowProps) {
         )}
       </TableCell>
       <TableCell className='text-right max-md:ml-auto'>
-        <div className='flex justify-end gap-2'>
-          <RowActionButton
-            type='button'
-            label='Edit time entry'
-            icon={<Pencil />}
-            variant='outline'
+        <RecordRowActions>
+          <RecordRowAction
+            kind='edit'
+            entity='time entry'
             onClick={() => onEditRequest(log)}
           />
-          <DisabledFieldTooltip disabled={deleteDisabled} reason={deleteReason}>
-            <RowActionButton
-              type='button'
-              label='Delete time entry'
-              variant='destructive'
-              className={cn(
-                isDeleting && pendingDeleteId === log.id
-                  ? 'pointer-events-none'
-                  : undefined
-              )}
-              onClick={() => onDeleteRequest(log)}
-              disabled={deleteDisabled}
-              icon={
-                isDeleting && pendingDeleteId === log.id ? (
-                  <Loader2 className='animate-spin' />
-                ) : (
-                  <Archive />
-                )
-              }
-            />
-          </DisabledFieldTooltip>
-        </div>
+          <RecordRowAction
+            kind='archive'
+            entity='time entry'
+            onClick={() => onDeleteRequest(log)}
+            disabled={deleteDisabled}
+            disabledReason={deleteReason}
+            pending={isDeleting && pendingDeleteId === log.id}
+          />
+        </RecordRowActions>
       </TableCell>
     </TableRow>
   )

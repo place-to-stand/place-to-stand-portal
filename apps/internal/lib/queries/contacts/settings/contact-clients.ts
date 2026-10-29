@@ -1,20 +1,15 @@
 import 'server-only'
 
-import { asc, eq, and, sql, inArray } from 'drizzle-orm'
+import { asc, eq, and, sql } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
-import { assertAdmin, assertCrmAccess } from '@/lib/auth/permissions'
+import { assertCrmAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { clients, contactClients, contacts } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 
 import { contactProfileFields, type ContactProfile } from '../selectors'
 
-import {
-  logContactClientLinkChanges,
-  type ContactClientLinkChange,
-} from './contact-client-link-activity'
-import { syncPortalMembershipsForLinkChanges } from './contact-client-portal-memberships'
 
 export type ClientOption = {
   id: string
@@ -37,13 +32,10 @@ export type ContactDeepLinkRow = ContactSheetInputRow & {
 }
 
 export type ContactSheetData = {
-  allClients: ClientOption[]
   linkedClients: ClientOption[]
 }
 
-/**
- * Fetches all active clients for use in the contact sheet client picker.
- */
+/** Fetches all active clients (contacts client filter, MCP directory). */
 export async function listAllActiveClients(
   user: AppUser
 ): Promise<ClientOption[]> {
@@ -99,21 +91,18 @@ export async function listContactClients(
 }
 
 /**
- * Fetches all data needed for the contact sheet client picker.
- * If contactId is provided, also fetches the contact's linked clients.
+ * Fetches the contact sheet's read-only client list. A contact's clients
+ * follow its company, so the sheet only displays them.
  */
 export async function getContactSheetData(
   user: AppUser,
-  contactId?: string
+  contactId: string
 ): Promise<ContactSheetData> {
   assertCrmAccess(user)
 
-  const [allClients, linkedClients] = await Promise.all([
-    listAllActiveClients(user),
-    contactId ? listContactClients(user, contactId) : Promise.resolve([]),
-  ])
+  const linkedClients = await listContactClients(user, contactId)
 
-  return { allClients, linkedClients }
+  return { linkedClients }
 }
 
 /**
@@ -172,73 +161,4 @@ export async function getContactDeepLinkRowById(
     .limit(1)
 
   return rows[0] ?? null
-}
-
-/**
- * Syncs the client links for a contact.
- * Adds new links and removes unlinked ones. `user` is the acting admin the
- * server action resolved — it is the actor on the link activity rows.
- */
-export async function syncContactClients(
-  user: AppUser,
-  contactId: string,
-  clientIds: string[]
-): Promise<{ ok: boolean; error?: string }> {
-  assertAdmin(user)
-
-  let changes: ContactClientLinkChange[] = []
-
-  try {
-    // Get current links
-    const currentLinks = await db
-      .select({ clientId: contactClients.clientId })
-      .from(contactClients)
-      .where(eq(contactClients.contactId, contactId))
-
-    const currentIds = new Set(currentLinks.map(l => l.clientId))
-    const newIds = new Set(clientIds)
-
-    // Find links to add and remove
-    const toAdd = clientIds.filter(id => !currentIds.has(id))
-    const toRemove = [...currentIds].filter(id => !newIds.has(id))
-    changes = [
-      ...toAdd.map(clientId => ({ contactId, clientId, action: 'linked' as const })),
-      ...toRemove.map(clientId => ({
-        contactId,
-        clientId,
-        action: 'unlinked' as const,
-      })),
-    ]
-
-    // Perform the updates
-    if (toAdd.length > 0) {
-      await db.insert(contactClients).values(
-        toAdd.map(clientId => ({
-          contactId,
-          clientId,
-        }))
-      )
-    }
-
-    if (toRemove.length > 0) {
-      await db
-        .delete(contactClients)
-        .where(
-          and(
-            eq(contactClients.contactId, contactId),
-            inArray(contactClients.clientId, toRemove)
-          )
-        )
-    }
-
-    // A promoted contact's portal access follows its links.
-    await syncPortalMembershipsForLinkChanges(changes)
-  } catch {
-    return { ok: false, error: 'Failed to update client links.' }
-  }
-
-  // The links are committed; a logging failure must not report the sync as failed.
-  await logContactClientLinkChanges(user, changes)
-
-  return { ok: true }
 }

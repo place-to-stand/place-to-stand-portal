@@ -27,6 +27,8 @@ export type DbClient = {
   billing_type: ClientBillingTypeValue
   /** The client's company. Optional: only the client sheet's loaders set it. */
   company_id?: string | null
+  /** Optional label after the company name ("Retainer"). */
+  label?: string | null
   created_by: string | null
   created_at: string
   updated_at: string

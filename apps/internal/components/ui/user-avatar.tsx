@@ -1,6 +1,7 @@
 import type { ComponentProps } from 'react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { getInitials } from '@/lib/users/initials'
 
 type UserAvatarProps = {
@@ -38,5 +39,34 @@ export function UserAvatar({
       {src ? <AvatarImage src={src} alt={alt ?? name ?? ''} /> : null}
       <AvatarFallback>{getInitials(name)}</AvatarFallback>
     </Avatar>
+  )
+}
+
+type PersonAvatarProps = Omit<UserAvatarProps, 'alt' | 'name'> & {
+  name: string
+  /** Screen-reader name, e.g. "Originated by Ada"; defaults to the name. */
+  ariaLabel?: string
+}
+
+/**
+ * A person shown as just their avatar, named by a hover tooltip: the
+ * compact people cell in list tables (Clients' Origination, Time logs'
+ * Person).
+ */
+export function PersonAvatar({
+  name,
+  ariaLabel,
+  size = 'sm',
+  ...avatarProps
+}: PersonAvatarProps) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span aria-label={ariaLabel ?? name} className='inline-flex'>
+          <UserAvatar {...avatarProps} size={size} name={name} alt='' />
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>{name}</TooltipContent>
+    </Tooltip>
   )
 }

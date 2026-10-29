@@ -23,7 +23,6 @@ type UsersTableSectionProps = {
   assignments: UsersSettingsAssignments
   mode: 'active' | 'archive'
   emptyMessage: string
-  selfDeleteReason: string
   /** Route the sort/filter params live on (PRD 004 §03). */
   basePath: string
   clientPortalUrl: string
@@ -34,7 +33,6 @@ export function UsersTableSection({
   assignments,
   mode,
   emptyMessage,
-  selfDeleteReason,
   basePath,
   clientPortalUrl,
 }: UsersTableSectionProps) {
@@ -92,7 +90,6 @@ export function UsersTableSection({
               row={row}
               assignment={assignments[row.user.id]}
               mode={mode}
-              selfDeleteReason={selfDeleteReason}
               clientPortalUrl={clientPortalUrl}
             />
           ))}

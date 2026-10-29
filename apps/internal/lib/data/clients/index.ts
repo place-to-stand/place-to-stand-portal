@@ -35,6 +35,7 @@ export type ClientWithMetrics = {
   name: string
   /** The company this client is. */
   companyId: string | null
+  label: string | null
   companyName: string | null
   slug: string | null
   notes: string | null
@@ -68,6 +69,7 @@ export type ClientDetail = {
   name: string
   /** The company this client is. */
   companyId: string | null
+  label: string | null
   companyName: string | null
   slug: string | null
   notes: string | null
@@ -136,6 +138,7 @@ export const fetchClientsWithMetrics = cache(
         originationUserAvatarUrl: originationUsers.avatarUrl,
         originationUserUpdatedAt: originationUsers.updatedAt,
         companyId: clients.companyId,
+        label: clients.label,
         companyName: companies.name,
         createdAt: clients.createdAt,
         updatedAt: clients.updatedAt,
@@ -221,6 +224,7 @@ export const fetchClientsWithMetrics = cache(
         originationUserAvatarUrl: row.originationUserAvatarUrl ?? null,
         originationUserUpdatedAt: row.originationUserUpdatedAt ?? null,
         companyId: row.companyId,
+        label: row.label,
         companyName: row.companyName ?? null,
         closers: closersByClient.get(row.id) ?? [],
         createdAt: row.createdAt,
@@ -311,6 +315,7 @@ export const fetchClientById = cache(
         originationUserId: clients.originationUserId,
         billingType: clients.billingType,
         companyId: clients.companyId,
+        label: clients.label,
         companyName: companies.name,
         createdAt: clients.createdAt,
         updatedAt: clients.updatedAt,

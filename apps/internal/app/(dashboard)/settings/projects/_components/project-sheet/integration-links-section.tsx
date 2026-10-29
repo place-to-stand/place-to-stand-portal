@@ -21,6 +21,7 @@ import {
 import { toast } from '@/components/ui/use-toast'
 import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
+import { SheetSection } from '@/components/sheets/sheet-section'
 import {
   INTEGRATION_PROVIDERS,
   formatIntegrationLinkLabel,
@@ -207,8 +208,7 @@ export function IntegrationLinksSection({
 
   if (statusQuery.isSuccess && !isConnected) {
     return (
-      <div className='space-y-1'>
-        <h3 className='text-sm font-medium'>{heading}</h3>
+      <SheetSection title={heading}>
         <EmptyState
           message={`Connect your ${config.label} account in Settings to link ${config.projectNoun}s.`}
           action={
@@ -217,19 +217,18 @@ export function IntegrationLinksSection({
             </Button>
           }
         />
-      </div>
+      </SheetSection>
     )
   }
 
   if (statusQuery.isPending || (!isCreateMode && linksQuery.isPending)) {
     return (
-      <div className='space-y-1'>
-        <h3 className='text-sm font-medium'>{heading}</h3>
+      <SheetSection title={heading}>
         <div className='text-muted-foreground flex items-center gap-2 text-sm'>
           <Loader2 className='h-4 w-4 animate-spin' />
           Loading linked {config.projectNoun}s...
         </div>
-      </div>
+      </SheetSection>
     )
   }
 
@@ -239,9 +238,9 @@ export function IntegrationLinksSection({
     removedLinks.length === 0
 
   return (
-    <div className='space-y-1'>
-      <div className='flex items-center justify-between gap-3'>
-        <h3 className='text-sm font-medium'>{heading}</h3>
+    <SheetSection
+      title={heading}
+      action={
         <RowActionButton
           type='button'
           label={`Link ${config.label} ${config.projectNoun}`}
@@ -249,8 +248,8 @@ export function IntegrationLinksSection({
           onClick={() => handleDialogOpenChange(true)}
           disabled={disabled}
         />
-      </div>
-
+      }
+    >
       {isEmpty ? (
         <EmptyState
           message={
@@ -420,6 +419,6 @@ export function IntegrationLinksSection({
         onConfirm={handleUnlink}
         onCancel={() => setUnlinkConfirm(null)}
       />
-    </div>
+    </SheetSection>
   )
 }

@@ -1,22 +1,10 @@
-import {
-  Archive,
-  Building2,
-  FolderKanban,
-  RefreshCw,
-  Trash2,
-  User,
-  Users,
-} from 'lucide-react'
+import { Building2, FolderKanban, User, Users } from 'lucide-react'
 
-import { Badge } from '@pts/ui/badge'
-import { RowActionButton } from '@pts/ui/row-action-button'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import { TableCell, TableRow } from '@pts/ui/table'
 import {
-  getProjectStatusLabel,
-  getProjectStatusToken,
-  getStatusBadgeToken,
-} from '@/lib/constants'
+  RecordRowAction,
+  RecordRowActions,
+} from '@/components/table/record-row-action'
+import { TableCell, TableRow } from '@pts/ui/table'
 import { formatProjectDateRange } from '@/lib/settings/projects/project-formatters'
 import { cn } from '@/lib/utils'
 
@@ -86,13 +74,6 @@ export function ProjectsTableRow({
 
   const isArchived = Boolean(project.deleted_at)
 
-  const statusLabel = isArchived
-    ? 'Archived'
-    : getProjectStatusLabel(project.status)
-  const statusTone = isArchived
-    ? getStatusBadgeToken('archived')
-    : getProjectStatusToken(project.status)
-
   return (
     <TableRow
       {...getClickableRowProps(() => onEdit(project))}
@@ -100,11 +81,13 @@ export function ProjectsTableRow({
     >
       <TableCell>
         <div className='flex min-w-0 items-center gap-2'>
-          <FolderKanban className='text-muted-foreground h-4 w-4 shrink-0' />
-          <span className='truncate font-medium'>{project.name}</span>
+          <FolderKanban className='h-4 w-4 shrink-0 text-emerald-500' />
+          <span className='truncate font-medium' title={project.name}>
+            {project.name}
+          </span>
         </div>
       </TableCell>
-      <TableCell>
+      <TableCell label='Owner'>
         <div className='flex min-w-0 items-center gap-2 text-sm'>
           <ownerDisplay.Icon className='text-muted-foreground h-4 w-4 shrink-0' />
           <span className='truncate'>{ownerDisplay.label}</span>
@@ -122,59 +105,39 @@ export function ProjectsTableRow({
           </p>
         ) : null}
       </TableCell>
-      <TableCell>
-        <Badge variant='outline' className={statusTone}>
-          {statusLabel}
-        </Badge>
-      </TableCell>
-      <TableCell className='text-muted-foreground text-sm'>
+      <TableCell label='Timeline' className='text-muted-foreground text-sm'>
         {formatProjectDateRange(project.starts_on, project.ends_on)}
       </TableCell>
       <TableCell className='text-right max-md:ml-auto'>
-        <div className='flex justify-end gap-2'>
+        <RecordRowActions>
           {showRestore ? (
-            <DisabledFieldTooltip
+            <RecordRowAction
+              kind='restore'
+              entity='project'
+              onClick={() => onRestore(project)}
               disabled={restoreDisabled}
-              reason={restoreDisabledReason}
-            >
-              <RowActionButton
-                variant='outline'
-                onClick={() => onRestore(project)}
-                label='Restore project'
-                icon={<RefreshCw />}
-                disabled={restoreDisabled}
-              />
-            </DisabledFieldTooltip>
+              disabledReason={restoreDisabledReason}
+            />
           ) : null}
           {showArchive ? (
-            <DisabledFieldTooltip
+            <RecordRowAction
+              kind='archive'
+              entity='project'
+              onClick={() => onRequestDelete(project)}
               disabled={deleteDisabled}
-              reason={deleteDisabledReason}
-            >
-              <RowActionButton
-                variant='destructive'
-                onClick={() => onRequestDelete(project)}
-                label='Archive project'
-                icon={<Archive />}
-                disabled={deleteDisabled}
-              />
-            </DisabledFieldTooltip>
+              disabledReason={deleteDisabledReason}
+            />
           ) : null}
           {showDestroy ? (
-            <DisabledFieldTooltip
+            <RecordRowAction
+              kind='destroy'
+              entity='project'
+              onClick={() => onRequestDestroy(project)}
               disabled={destroyDisabled}
-              reason={destroyDisabledReason}
-            >
-              <RowActionButton
-                variant='destructive'
-                onClick={() => onRequestDestroy(project)}
-                label='Permanently delete project'
-                icon={<Trash2 />}
-                disabled={destroyDisabled}
-              />
-            </DisabledFieldTooltip>
+              disabledReason={destroyDisabledReason}
+            />
           ) : null}
-        </div>
+        </RecordRowActions>
       </TableCell>
     </TableRow>
   )

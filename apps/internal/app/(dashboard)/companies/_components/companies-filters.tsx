@@ -61,13 +61,13 @@ export function CompaniesFilters({
       <FilterSelect
         value={type}
         onChange={value => update({ type: value })}
-        placeholder='Clients and prospects'
+        placeholder='All companies'
         options={TYPE_OPTIONS}
       />
       <FilterSelect
         value={leads}
         onChange={value => update({ leads: value })}
-        placeholder='Any leads'
+        placeholder='Open leads: any'
         options={LEADS_OPTIONS}
       />
     </FilterBar>

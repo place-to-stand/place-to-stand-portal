@@ -5,6 +5,7 @@ import { eq, inArray } from 'drizzle-orm'
 import {
   timeLogCreatedEvent,
   timeLogDeletedEvent,
+  timeLogRestoredEvent,
   timeLogUpdatedEvent,
 } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
@@ -248,6 +249,74 @@ export async function softDeleteTimeLog(
   const hours = Number(timeLog.hours)
   const project = await getTimeLogProjectContext(projectId)
   const event = timeLogDeletedEvent({
+    hours,
+    loggedOn: timeLog.loggedOn,
+    projectName: project.name,
+  })
+
+  await logActivity({
+    actorId: user.id,
+    actorRole: user.role,
+    source: options.source,
+    verb: event.verb,
+    summary: event.summary,
+    targetType: 'TIME_LOG',
+    targetId: timeLogId,
+    targetProjectId: projectId,
+    targetClientId: project.clientId,
+    metadata: event.metadata,
+  })
+
+  return { loggedOn: timeLog.loggedOn }
+}
+
+/** Undoes softDeleteTimeLog: the log counts toward burndown again. */
+export async function restoreTimeLog(
+  user: AppUser,
+  projectId: string,
+  timeLogId: string,
+  options: TimeLogMutationOptions = {},
+): Promise<{ loggedOn: string }> {
+  const rows = await db
+    .select({
+      id: timeLogs.id,
+      projectId: timeLogs.projectId,
+      userId: timeLogs.userId,
+      hours: timeLogs.hours,
+      loggedOn: timeLogs.loggedOn,
+      deletedAt: timeLogs.deletedAt,
+    })
+    .from(timeLogs)
+    .where(eq(timeLogs.id, timeLogId))
+    .limit(1)
+
+  if (!rows.length) {
+    throw new NotFoundError('Time log not found')
+  }
+
+  const [timeLog] = rows
+
+  if (timeLog.projectId !== projectId) {
+    throw new NotFoundError('Time log not found for project')
+  }
+
+  await ensureProjectAccess(user, projectId)
+
+  if (!timeLog.deletedAt) {
+    return { loggedOn: timeLog.loggedOn }
+  }
+
+  // updatedAt must move too (PRD 002 F1): the monthly close drift detector
+  // finds post-close changes via record timestamps > closed_at.
+  const nowIso = new Date().toISOString()
+  await db
+    .update(timeLogs)
+    .set({ deletedAt: null, updatedAt: nowIso })
+    .where(eq(timeLogs.id, timeLogId))
+
+  const hours = Number(timeLog.hours)
+  const project = await getTimeLogProjectContext(projectId)
+  const event = timeLogRestoredEvent({
     hours,
     loggedOn: timeLog.loggedOn,
     projectName: project.name,

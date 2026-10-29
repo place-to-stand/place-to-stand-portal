@@ -3,7 +3,7 @@
 import { useCallback, useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { Button } from '@pts/ui/button'
+import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 import { useToast } from '@/components/ui/use-toast'
@@ -13,7 +13,6 @@ import {
   useContactsTableState,
 } from '@/lib/settings/contacts/use-contacts-table-state'
 import type { ContactSheetInput } from '@/lib/settings/contacts/use-contact-sheet-state'
-import type { ClientOption } from '@/lib/queries/contacts'
 import { openPortalPreview } from '@/lib/settings/contacts/portal-preview'
 
 import { promoteContactToUser } from '../actions'
@@ -28,7 +27,6 @@ type ContactsManagementTableProps = {
   totalPages: number
   pageSize: number
   mode: 'active' | 'archive'
-  allClients?: ClientOption[]
   /** Route the sort/filter params live on (PRD 004 §03). */
   basePath: string
   /**
@@ -54,7 +52,6 @@ export function ContactsManagementTable({
   totalPages,
   pageSize,
   mode,
-  allClients = [],
   basePath,
   deepLinkedContact = null,
   contactNotFound = false,
@@ -156,18 +153,7 @@ export function ContactsManagementTable({
   return (
     <div className='space-y-4'>
       {contactNotFound ? (
-        <div
-          role='status'
-          className='border-destructive/30 bg-destructive/5 flex items-center justify-between gap-3 rounded-md border px-4 py-3 text-sm'
-        >
-          <span>
-            The linked contact could not be found. It may have been permanently
-            deleted.
-          </span>
-          <Button variant='ghost' size='sm' onClick={clearSelection}>
-            Dismiss
-          </Button>
-        </div>
+        <DeepLinkNotFoundNotice entity='contact' onDismiss={clearSelection} />
       ) : null}
       <ConfirmDialog
         open={Boolean(deleteTarget)}
@@ -238,7 +224,6 @@ export function ContactsManagementTable({
         onOpenChange={handleSheetOpenChange}
         onComplete={handleSheetComplete}
         contact={selectedContact}
-        allClients={allClients}
       />
     </div>
   )

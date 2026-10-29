@@ -14,6 +14,9 @@ export type DashboardTimeLogEntry = {
   loggedOn: string
   hours: number
   note: string | null
+  userId: string
+  userName: string | null
+  userAvatarUrl: string | null
   projectId: string
   projectName: string
   projectSlug: string | null

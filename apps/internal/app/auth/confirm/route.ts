@@ -1,3 +1,4 @@
+// permission: public — sign-in callback
 import { canUseInternalPortal } from '@/lib/auth/roles'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'

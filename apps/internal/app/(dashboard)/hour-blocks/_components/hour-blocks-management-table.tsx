@@ -3,7 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
 
-import { Button } from '@pts/ui/button'
+import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 
@@ -80,7 +80,7 @@ export function HourBlocksManagementTable({
   const hasActiveFilter = Boolean(searchParams.get('q')?.trim())
 
   const emptyMessage = hasActiveFilter
-    ? 'No hour blocks match the current search.'
+    ? 'No hour blocks match the current filters.'
     : EMPTY_MESSAGES[mode]
 
   const handlePageChange = useCallback(
@@ -100,18 +100,10 @@ export function HourBlocksManagementTable({
   return (
     <div className='space-y-4'>
       {hourBlockNotFound ? (
-        <div
-          role='status'
-          className='border-destructive/30 bg-destructive/5 flex items-center justify-between gap-3 rounded-md border px-4 py-3 text-sm'
-        >
-          <span>
-            The linked hour block could not be found. It may have been
-            permanently deleted.
-          </span>
-          <Button variant='ghost' size='sm' onClick={clearSelection}>
-            Dismiss
-          </Button>
-        </div>
+        <DeepLinkNotFoundNotice
+          entity='hour block'
+          onDismiss={clearSelection}
+        />
       ) : null}
       <HourBlockArchiveDialog
         open={deleteDialog.open}

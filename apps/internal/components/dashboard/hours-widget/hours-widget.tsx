@@ -12,10 +12,7 @@ import {
   type DashboardTimeLogPage,
   type HoursSnapshot,
 } from '@/lib/dashboard/types'
-import type {
-  ProjectTimeLogDialogParams,
-  TimeLogEntry,
-} from '@/lib/projects/time-log/types'
+import { useTimeLogEditContext } from '@/lib/projects/time-log/use-time-log-edit-context'
 
 import {
   compareMonthCursor,
@@ -59,11 +56,8 @@ export function HoursWidget({ initialSnapshot, className }: HoursWidgetProps) {
   const [logError, setLogError] = useState<string | null>(null)
   // Edit context is fetched per row on demand; see the route's comment for why
   // it isn't folded into the list payload.
-  const [openingEntryId, setOpeningEntryId] = useState<string | null>(null)
-  const [editContext, setEditContext] = useState<{
-    entry: TimeLogEntry
-    params: ProjectTimeLogDialogParams
-  } | null>(null)
+  const editor = useTimeLogEditContext()
+  const { openingEntryId, editContext } = editor
 
   const monthLabel = useMemo(
     () => formatMonthLabel(snapshot.year, snapshot.month),
@@ -263,32 +257,13 @@ export function HoursWidget({ initialSnapshot, className }: HoursWidgetProps) {
     }
   }, [logs.items.length, snapshot.month, snapshot.year])
 
-  const handleOpenEntry = useCallback(async (entryId: string) => {
-    setOpeningEntryId(entryId)
-    setLogError(null)
-
-    try {
-      const response = await fetch(`/api/dashboard/time-logs/${entryId}`, {
-        cache: 'no-store',
-      })
-      const payload = (await response.json()) as {
-        ok: boolean
-        data?: { entry: TimeLogEntry; params: ProjectTimeLogDialogParams }
-        error?: string
-      }
-
-      if (!response.ok || !payload.ok || !payload.data) {
-        throw new Error(payload.error ?? 'Request failed')
-      }
-
-      setEditContext(payload.data)
-    } catch (requestError) {
-      console.error('Failed to open time log', requestError)
-      setLogError('Unable to open that log. Please try again.')
-    } finally {
-      setOpeningEntryId(null)
-    }
-  }, [])
+  const handleOpenEntry = useCallback(
+    async (entryId: string) => {
+      setLogError(null)
+      await editor.open(entryId)
+    },
+    [editor]
+  )
 
   return (
     <section
@@ -372,7 +347,7 @@ export function HoursWidget({ initialSnapshot, className }: HoursWidgetProps) {
           onLoadMore={handleLoadMoreLogs}
           onOpenEntry={handleOpenEntry}
           openingEntryId={openingEntryId}
-          error={logError}
+          error={logError ?? editor.error}
         />
       </div>
       {editContext ? (
@@ -381,13 +356,13 @@ export function HoursWidget({ initialSnapshot, className }: HoursWidgetProps) {
           open
           onOpenChange={next => {
             if (!next) {
-              setEditContext(null)
+              editor.close()
             }
           }}
           mode='edit'
           timeLogEntry={editContext.entry}
           onMutationSuccess={() => {
-            setEditContext(null)
+            editor.close()
             void refreshCurrentMonth()
           }}
         />

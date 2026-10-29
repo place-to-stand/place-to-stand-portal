@@ -32,7 +32,7 @@ export function CompaniesPageBody({
       tabs={COMPANIES_TABS}
       activeTab={mode === 'active' ? 'companies' : 'archive'}
       count={{
-        label: 'companies',
+        label: mode === 'active' ? 'companies' : 'archived companies',
         total: totalCount,
         filteredTotal: companies.length,
       }}
@@ -49,9 +49,10 @@ export function CompaniesPageBody({
           companies={companies}
           sort={params.sortParam}
           basePath={basePath}
+          mode={mode}
           emptyMessage={
             filtered
-              ? 'No companies match these filters.'
+              ? 'No companies match the current filters.'
               : mode === 'active'
                 ? 'No companies yet.'
                 : 'No archived companies.'

@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { Button } from '@pts/ui/button'
+import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 import { useToast } from '@/components/ui/use-toast'
@@ -311,18 +311,7 @@ export function InvoicesManagementTable({
   return (
     <div className='space-y-4'>
       {invoiceNotFound ? (
-        <div
-          role='status'
-          className='border-destructive/30 bg-destructive/5 flex items-center justify-between gap-3 rounded-md border px-4 py-3 text-sm'
-        >
-          <span>
-            The linked invoice could not be found. It may have been permanently
-            deleted.
-          </span>
-          <Button variant='ghost' size='sm' onClick={clear}>
-            Dismiss
-          </Button>
-        </div>
+        <DeepLinkNotFoundNotice entity='invoice' onDismiss={clear} />
       ) : null}
       <InvoiceArchiveDialog
         open={Boolean(deleteTarget)}

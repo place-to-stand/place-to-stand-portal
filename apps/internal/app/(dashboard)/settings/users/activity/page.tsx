@@ -5,7 +5,6 @@ import { requireRole } from '@/lib/auth/session'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 
 import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
-import { UserPlus } from 'lucide-react'
 import { ActivitySection } from '@/components/activity/activity-section'
 import { USERS_TABS } from '../_lib/tabs'
 
@@ -21,13 +20,13 @@ export default async function UsersActivityPage() {
       breadcrumbs={[...crumbsForNav('/settings/users'), { label: 'Activity' }]}
       tabs={USERS_TABS}
       activeTab='activity'
-      primaryAction={<SheetCreateButton entity='user' label='Add user' icon={UserPlus} />}
+      primaryAction={<SheetCreateButton entity='user' label='Add user' />}
     >
       <section className='bg-background rounded-xl border p-4 shadow-sm'>
         <ActivitySection
           targetType='USER'
-          emptyState='No recent user management activity.'
-          description='Keep tabs on invitations, role updates, and archive decisions.'
+          emptyState='No recent user activity.'
+          description='Audit user creation, edits, archives, and deletions in one place.'
         />
       </section>
     </PageShell>

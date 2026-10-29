@@ -26,7 +26,7 @@ export default async function CompaniesActivityPage() {
         <ActivitySection
           targetType='COMPANY'
           emptyState='No recent company activity.'
-          description='New companies, edits, primary contacts, archives and restores.'
+          description='Audit company creation, edits, archives, and deletions in one place.'
         />
       </section>
     </PageShell>

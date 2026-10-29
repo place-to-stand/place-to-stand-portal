@@ -107,6 +107,7 @@ const EXACT: Record<string, VerbPresentation> = {
   PLAN_REVISION_CREATED: { icon: Sparkles, tone: 'update' },
   TIME_LOG_UPDATED: { icon: Clock, tone: 'update' },
   TIME_LOG_DELETED: { icon: Clock, tone: 'delete' },
+  TIME_LOG_RESTORED: { icon: Clock, tone: 'status' },
   TASK_CREATED_FROM_EMAIL: { icon: Mail, tone: 'create' },
   OAUTH_CONNECTED: { icon: Lock, tone: 'integration' },
   OAUTH_DISCONNECTED: { icon: Lock, tone: 'archive' },

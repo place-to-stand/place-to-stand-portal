@@ -7,7 +7,7 @@ import { clientUpdatedEvent } from '@/lib/activity/events'
 import type { UserRole } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clientMembers, clients } from '@/lib/db/schema'
+import { clientMembers, clients, contacts } from '@/lib/db/schema'
 import type { ClientBillingTypeValue } from '@/lib/types'
 import { isMonthClosed } from '@/lib/data/reports/close'
 import {
@@ -40,6 +40,7 @@ import {
   type ClientMutationResult,
 } from './types'
 import { getLinkableCompany } from '@/lib/queries/companies'
+import { syncCompanyClientLinks } from '@/lib/queries/companies/people-links'
 
 type UpdateClientPayload = {
   id: string
@@ -59,6 +60,7 @@ type UpdateClientPayload = {
   memberIds?: string[]
   /** Omitted keeps the client's company. */
   companyId?: string
+  label?: string | null
 }
 
 class ClosedMonthError extends Error {
@@ -82,6 +84,7 @@ type ExistingClientRecord = {
   notes: string | null
   originationContactId: string | null
   originationUserId: string | null
+  companyId: string | null
   /** The newest commission term's closers — the saved split the sheet edited. */
   closers: ClientCloser[]
 }
@@ -107,6 +110,7 @@ export async function updateClient(
     notes,
     memberIds,
     companyId,
+    label,
   } = payload
 
   if (companyId && !(await getLinkableCompany(companyId))) {
@@ -151,6 +155,7 @@ export async function updateClient(
         notes: clients.notes,
         originationContactId: clients.originationContactId,
         originationUserId: clients.originationUserId,
+        companyId: clients.companyId,
       })
       .from(clients)
       .where(eq(clients.id, id))
@@ -260,6 +265,7 @@ export async function updateClient(
           originationUserId,
           notes,
           ...(companyId ? { companyId } : {}),
+          ...(label !== undefined ? { label } : {}),
         })
         .where(eq(clients.id, id))
     })
@@ -280,6 +286,20 @@ export async function updateClient(
     if (syncResult.error) {
       return buildMutationResult(syncResult)
     }
+  }
+
+  // A client's people are its company's people: moving the client to
+  // another company swaps the old company's people for the new one's.
+  if (companyId && companyId !== existingClient.companyId) {
+    const oldPeople = existingClient.companyId
+      ? await db
+          .select({ id: contacts.id })
+          .from(contacts)
+          .where(eq(contacts.companyId, existingClient.companyId))
+      : []
+    await syncCompanyClientLinks(user, [existingClient.companyId, companyId], {
+      leftContactIds: oldPeople.map(person => person.id),
+    })
   }
 
   await recordUpdateActivity({

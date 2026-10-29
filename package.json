@@ -9,8 +9,9 @@
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
-    "lint": "turbo lint && node scripts/design-tokens.mjs --check",
+    "lint": "turbo lint && node scripts/design-tokens.mjs --check && node scripts/permissions-manifest.mjs --check",
     "design-tokens": "node scripts/design-tokens.mjs",
+    "permissions-manifest": "node scripts/permissions-manifest.mjs",
     "type-check": "turbo type-check",
     "cli:link": "npm run build -w @pts/cli && cd packages/cli && npm link"
   },

@@ -1,19 +1,13 @@
 'use client'
 
-import {
-  Archive,
-  Contact,
-  Eye,
-  Mail,
-  Phone,
-  RefreshCw,
-  Trash2,
-  UserPlus,
-} from 'lucide-react'
+import { Contact, Mail, Phone } from 'lucide-react'
 
 import { EmptyState } from '@pts/ui/empty-state'
-import { RowActionButton } from '@pts/ui/row-action-button'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import {
+  RecordRowAction,
+  RecordRowActions,
+} from '@/components/table/record-row-action'
+import { EmptyValue } from '@/components/table/empty-value'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
 import { isContactSortValue } from '@/lib/settings/contacts/filters'
@@ -36,15 +30,6 @@ import {
   CLICKABLE_ROW_CLASS,
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
-
-/**
- * The one row action that creates something (a portal user) gets a pale
- * success tint so it scans apart from the neutral preview button and the
- * destructive archive button beside it — a warm tint read as another
- * destructive action.
- */
-const PROMOTE_BUTTON_CLASS =
-  'border-success/40 bg-success/10 text-success hover:border-success/60 hover:bg-success/20 hover:text-success'
 
 export type ContactsTableSectionProps = {
   contacts: ContactsTableContact[]
@@ -107,16 +92,17 @@ export function ContactsTableSection({
               sort={sort}
               defaultSort='name:asc'
               onSortChange={next => update({ sort: next })}
-              className='w-[28%]'
+              className='w-[22%]'
             >
               Name
             </SortableTableHead>
+            <TableHead className='w-[18%]'>Company</TableHead>
             <SortableTableHead
               field='email'
               sort={sort}
               defaultSort='name:asc'
               onSortChange={next => update({ sort: next })}
-              className='w-[30%]'
+              className='w-[22%]'
             >
               Email
             </SortableTableHead>
@@ -125,7 +111,7 @@ export function ContactsTableSection({
               sort={sort}
               defaultSort='name:asc'
               onSortChange={next => update({ sort: next })}
-              className='w-[18%]'
+              className='w-40'
             >
               Phone
             </SortableTableHead>
@@ -134,7 +120,8 @@ export function ContactsTableSection({
               sort={sort}
               defaultSort='name:asc'
               onSortChange={next => update({ sort: next })}
-              className='w-[12%]'
+              className='w-24'
+              align='center'
             >
               Clients
             </SortableTableHead>
@@ -193,34 +180,38 @@ export function ContactsTableSection({
                 <TableCell>
                   <div className='flex min-w-0 items-center gap-2'>
                     <Contact className='h-4 w-4 shrink-0 text-cyan-500' />
-                    <div className='min-w-0'>
-                      <span className='block truncate font-medium'>
-                        {contact.name}
-                      </span>
-                      {contact.jobTitle || contact.companyName ? (
-                        <span className='text-muted-foreground block truncate text-xs'>
-                          {[contact.jobTitle, contact.companyName]
-                            .filter(Boolean)
-                            .join(' at ')}
-                        </span>
-                      ) : null}
-                    </div>
+                    <span className='truncate font-medium' title={contact.name}>
+                      {contact.name}
+                    </span>
                   </div>
                 </TableCell>
+                <TableCell
+                  label='Company'
+                  className='truncate text-sm'
+                  title={contact.companyName ?? undefined}
+                >
+                  {contact.companyName ?? <EmptyValue />}
+                </TableCell>
                 <TableCell className='text-muted-foreground text-sm'>
-                  <a
-                    href={`mailto:${contact.email}`}
-                    className='hover:text-foreground inline-flex max-w-full items-center gap-1.5 transition'
-                  >
-                    <Mail className='h-3 w-3 shrink-0' />
-                    <span className='truncate'>{contact.email}</span>
-                  </a>
+                  {contact.email ? (
+                    <a
+                      href={`mailto:${contact.email}`}
+                      title={contact.email}
+                      className='hover:text-foreground inline-flex max-w-full items-center gap-1.5 transition'
+                    >
+                      <Mail className='h-3 w-3 shrink-0' />
+                      <span className='truncate'>{contact.email}</span>
+                    </a>
+                  ) : (
+                    <EmptyValue />
+                  )}
                 </TableCell>
                 <TableCell
                   className={cn(
-                    'text-muted-foreground text-sm',
+                    'text-muted-foreground truncate text-sm whitespace-nowrap',
                     !contact.phone && 'max-md:hidden'
                   )}
+                  title={contact.phone ?? undefined}
                 >
                   {contact.phone ? (
                     <a
@@ -231,94 +222,68 @@ export function ContactsTableSection({
                       {contact.phone}
                     </a>
                   ) : (
-                    <span className='text-muted-foreground/50'>—</span>
+                    <EmptyValue />
                   )}
                 </TableCell>
-                <TableCell label='Clients' className='text-sm'>
+                <TableCell label='Clients' className='text-sm md:text-center'>
                   <LinkedClientsCell clients={contact.metrics.clients} />
                 </TableCell>
                 <TableCell className='text-right max-md:ml-auto'>
-                  <div className='flex justify-end gap-2'>
+                  <RecordRowActions>
                     {/* Promote renders first: it's conditional, so keeping
                         Preview adjacent to Archive holds the eye icon to one
                         column across rows. */}
                     {showPromote ? (
-                      <DisabledFieldTooltip
+                      <RecordRowAction
+                        kind='promote'
+                        onClick={() => onRequestPromote(contact)}
                         disabled={promoteDisabled}
-                        reason={promoteDisabledReason}
-                      >
-                        <RowActionButton
-                          label='Create portal account'
-                          icon={<UserPlus />}
-                          variant='outline'
-                          onClick={() => onRequestPromote(contact)}
-                          disabled={promoteDisabled}
-                          className={PROMOTE_BUTTON_CLASS}
-                        />
-                      </DisabledFieldTooltip>
+                        disabledReason={promoteDisabledReason}
+                      />
                     ) : null}
                     {showPreview ? (
-                      <RowActionButton
-                        label='Preview in client portal'
-                        icon={<Eye />}
-                        variant='outline'
-                        onClick={e => {
-                          e.stopPropagation()
-                          onRequestPreview(contact)
-                        }}
+                      <RecordRowAction
+                        kind='preview'
+                        onClick={() => onRequestPreview(contact)}
                         disabled={isPending}
+                        disabledReason={isPending ? pendingReason : null}
                       />
                     ) : null}
                     {showRestore ? (
-                      <DisabledFieldTooltip
+                      <RecordRowAction
+                        kind='restore'
+                        entity='contact'
+                        onClick={() => onRestore(contact)}
                         disabled={restoreDisabled}
-                        reason={restoreDisabledReason}
-                      >
-                        <RowActionButton
-                          label='Restore contact'
-                          icon={<RefreshCw />}
-                          variant='outline'
-                          onClick={() => onRestore(contact)}
-                          disabled={restoreDisabled}
-                        />
-                      </DisabledFieldTooltip>
+                        disabledReason={restoreDisabledReason}
+                      />
                     ) : null}
                     {showSoftDelete ? (
-                      <DisabledFieldTooltip
+                      <RecordRowAction
+                        kind='archive'
+                        entity='contact'
+                        onClick={() => onRequestDelete(contact)}
                         disabled={deleteDisabled}
-                        reason={deleteDisabledReason}
-                      >
-                        <RowActionButton
-                          label='Archive contact'
-                          icon={<Archive />}
-                          variant='destructive'
-                          onClick={() => onRequestDelete(contact)}
-                          disabled={deleteDisabled}
-                        />
-                      </DisabledFieldTooltip>
+                        disabledReason={deleteDisabledReason}
+                      />
                     ) : null}
                     {showDestroy ? (
-                      <DisabledFieldTooltip
+                      <RecordRowAction
+                        kind='destroy'
+                        entity='contact'
+                        onClick={() => onRequestDestroy(contact)}
                         disabled={destroyDisabled}
-                        reason={destroyDisabledReason}
-                      >
-                        <RowActionButton
-                          label='Permanently delete contact'
-                          icon={<Trash2 />}
-                          variant='destructive'
-                          onClick={() => onRequestDestroy(contact)}
-                          disabled={destroyDisabled}
-                        />
-                      </DisabledFieldTooltip>
+                        disabledReason={destroyDisabledReason}
+                      />
                     ) : null}
-                  </div>
+                  </RecordRowActions>
                 </TableCell>
               </TableRow>
             )
           })}
           {contacts.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className='p-4'>
+              <TableCell colSpan={6} className='p-4'>
                 <EmptyState message={emptyMessage} />
               </TableCell>
             </TableRow>

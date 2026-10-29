@@ -1,13 +1,6 @@
 'use client'
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useTransition,
-} from 'react'
+import { useCallback, useEffect, useState, useTransition } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -19,13 +12,10 @@ import {
   softDeleteContact,
   promoteContactToUser,
   getContactSheetData,
-  syncContactClients,
 } from '@/app/(dashboard)/contacts/actions'
 import type { ContactsTableContact } from '@/lib/settings/contacts/use-contacts-table-state'
 import type { ContactClientOption } from '@/app/(dashboard)/contacts/_components/contact-sheet/contact-client-picker'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
-import { subscribeSheetCreated } from '@/lib/sheets/created'
-import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 
 /** The record handed to `onCreated` (and to a host picker underneath). */
 export type CreatedContact = ContactSheetInput
@@ -69,8 +59,6 @@ export type UseContactSheetStateOptions = {
   /** Name prefill for the create sheet (create-from-picker). */
   initialName?: string
   contact?: ContactsTableContact | ContactSheetInput | null
-  /** All available clients for the client picker (fetched when not provided) */
-  allClients?: ContactClientOption[]
 }
 
 function hasMetrics(
@@ -86,42 +74,17 @@ export function useContactSheetState({
   onCreated,
   initialName,
   contact,
-  allClients: allClientsProp,
 }: UseContactSheetStateOptions) {
   const [isPending, startTransition] = useTransition()
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isPromoteDialogOpen, setIsPromoteDialogOpen] = useState(false)
-  const [isClientPickerOpen, setIsClientPickerOpen] = useState(false)
-
-  // Client data state - can come from props or be fetched
-  const [fetchedAllClients, setFetchedAllClients] = useState<
-    ContactClientOption[]
-  >([])
-  const [selectedClients, setSelectedClients] = useState<ContactClientOption[]>(
-    []
-  )
-  const [initialClients, setInitialClients] = useState<ContactClientOption[]>(
-    []
-  )
-  const [isLoadingClients, setIsLoadingClients] = useState(false)
-  // Clients created from inside the picker this session — the fetched list
-  // predates them, so they're merged in to stay re-selectable after removal.
-  const [createdClients, setCreatedClients] = useState<ContactClientOption[]>(
-    []
-  )
-  const { openNew } = useSheetParams()
+  // The contact's clients, shown read-only: they follow its company
+  // (`syncCompanyClientLinks` on save), so the sheet never edits them.
+  const [linkedClients, setLinkedClients] = useState<ContactClientOption[]>([])
 
   const { toast } = useToast()
   const isEditing = Boolean(contact?.id)
-
-  // Use provided allClients or fetched ones
-  const baseClients = allClientsProp ?? fetchedAllClients
-  const allClients = useMemo(() => {
-    if (createdClients.length === 0) return baseClients
-    const known = new Set(baseClients.map(c => c.id))
-    return [...baseClients, ...createdClients.filter(c => !known.has(c.id))]
-  }, [baseClients, createdClients])
 
   const form = useForm<ContactFormData>({
     resolver: zodResolver(contactFormSchema),
@@ -135,10 +98,7 @@ export function useContactSheetState({
     },
   })
 
-  // Track the contact ID to detect changes
-  const prevContactIdRef = useRef<string | null | undefined>(null)
-
-  // Initialize form and fetch client data when sheet opens
+  // Initialize the form and load the contact's clients when the sheet opens
   useEffect(() => {
     if (!open) {
       return
@@ -160,85 +120,46 @@ export function useContactSheetState({
         : null,
     })
 
-    // If we have metrics (from ContactsTableContact), use them directly
+    // Table rows carry their clients; other hosts fetch them.
     if (hasMetrics(contact)) {
-      const clients = contact.metrics.clients.map(c => ({
-        id: c.id,
-        name: c.name,
-        slug: c.slug,
-      }))
-      setSelectedClients(clients)
-      setInitialClients(clients)
-
-      // If we already have allClients from props, we're done
-      if (allClientsProp && allClientsProp.length > 0) {
-        return
-      }
-    } else {
-      // No metrics - reset to empty
-      setSelectedClients([])
-      setInitialClients([])
+      setLinkedClients(
+        contact.metrics.clients.map(c => ({
+          id: c.id,
+          name: c.name,
+          slug: c.slug,
+        }))
+      )
+      return
     }
 
-    // Fetch client data if not provided via props or if contact changed
-    const shouldFetch =
-      !allClientsProp ||
-      allClientsProp.length === 0 ||
-      (isEditing &&
-        !hasMetrics(contact) &&
-        prevContactIdRef.current !== contactId)
-
-    if (shouldFetch) {
-      setIsLoadingClients(true)
-      getContactSheetData(contactId || undefined)
-        .then(data => {
-          setFetchedAllClients(data.allClients)
-          if (contactId && data.linkedClients.length > 0) {
-            setSelectedClients(data.linkedClients)
-            setInitialClients(data.linkedClients)
-          }
-        })
-        .catch(err => {
-          console.error('Failed to fetch contact sheet data:', err)
-        })
-        .finally(() => {
-          setIsLoadingClients(false)
-        })
+    setLinkedClients([])
+    if (!contactId) {
+      return
     }
 
-    prevContactIdRef.current = contactId
-  }, [open, contact, form, allClientsProp, isEditing, initialName])
+    let cancelled = false
+    getContactSheetData(contactId)
+      .then(data => {
+        if (!cancelled) setLinkedClients(data.linkedClients)
+      })
+      .catch(err => {
+        console.error('Failed to fetch contact sheet data:', err)
+      })
 
-  // Check if client links have changed
-  const clientsHaveChanged = useMemo(() => {
-    const initialIds = new Set(initialClients.map(c => c.id))
-    const selectedIds = new Set(selectedClients.map(c => c.id))
-
-    if (initialIds.size !== selectedIds.size) return true
-    for (const id of initialIds) {
-      if (!selectedIds.has(id)) return true
+    return () => {
+      cancelled = true
     }
-    return false
-  }, [initialClients, selectedClients])
-
-  // Compute available clients (all clients minus selected ones)
-  const availableClients = useMemo(() => {
-    const selectedIds = new Set(selectedClients.map(c => c.id))
-    return allClients.filter(c => !selectedIds.has(c.id))
-  }, [allClients, selectedClients])
+  }, [open, contact, form, initialName])
 
   const contactDisplayName = contact?.name || contact?.email || 'this contact'
-  const sheetTitle = isEditing ? 'Edit Contact' : 'Add Contact'
+  const sheetTitle = isEditing ? 'Edit contact' : 'Add contact'
   const sheetDescription = isEditing
     ? `Update the details for ${contactDisplayName}.`
     : 'Add a new contact to your organization.'
 
-  // hasChanges is true if form is dirty OR client links have changed from initial state
-  const hasChanges = form.formState.isDirty || clientsHaveChanged
-
   // Unsaved changes warning
   const { requestConfirmation, dialog: unsavedChangesDialog } =
-    useUnsavedChangesWarning({ isDirty: hasChanges })
+    useUnsavedChangesWarning({ isDirty: form.formState.isDirty })
 
   const submitDisabled = isPending
   const submitDisabledReason = isPending ? PENDING_REASON : null
@@ -292,25 +213,6 @@ export function useContactSheetState({
           return
         }
 
-        const contactId = contact?.id || result.id
-
-        // Sync client links if editing and clients changed
-        if (contactId && clientsHaveChanged) {
-          const clientIds = selectedClients.map(c => c.id)
-          const syncResult = await syncContactClients(contactId, clientIds)
-
-          if (!syncResult.ok) {
-            setFeedback(syncResult.error ?? 'Unable to update client links.')
-            toast({
-              title: 'Unable to update client links',
-              description:
-                'The contact was saved, but its client links were not.',
-              variant: 'destructive',
-            })
-            // Still complete since the contact was saved
-          }
-        }
-
         toast({
           title: isEditing ? 'Contact updated' : 'Contact created',
           description: isEditing
@@ -333,15 +235,7 @@ export function useContactSheetState({
         onComplete()
       })
     },
-    [
-      contact?.id,
-      isEditing,
-      clientsHaveChanged,
-      selectedClients,
-      toast,
-      onComplete,
-      onCreated,
-    ]
+    [contact?.id, isEditing, toast, onComplete, onCreated]
   )
 
   const handleRequestDelete = useCallback(() => {
@@ -441,45 +335,6 @@ export function useContactSheetState({
     })
   }, [contact, isPending, toast, onComplete])
 
-  // Client picker handlers - these only update local state; links are synced on save
-  const handleAddClient = useCallback((client: ContactClientOption) => {
-    setSelectedClients(prev => [...prev, client])
-    setIsClientPickerOpen(false)
-  }, [])
-
-  // Create-from-picker: stack the client create sheet on top of this one
-  // (`?contact=…&client=new`); the wrapper announces the saved record below.
-  const handleCreateClient = useCallback(
-    (query: string) => {
-      setIsClientPickerOpen(false)
-      openNew('client', query ? { clientName: query } : undefined)
-    },
-    [openNew]
-  )
-
-  useEffect(() => {
-    if (!open) return
-    return subscribeSheetCreated('client', record => {
-      setCreatedClients(prev =>
-        prev.some(c => c.id === record.id) ? prev : [...prev, record]
-      )
-      handleAddClient(record)
-    })
-  }, [open, handleAddClient])
-
-  const handleRemoveClient = useCallback((client: ContactClientOption) => {
-    setSelectedClients(prev => prev.filter(c => c.id !== client.id))
-  }, [])
-
-  // Never disabled for an empty list: the picker's create row is the escape
-  // hatch when every client is linked (or none exist yet).
-  const addClientButtonDisabled = isPending || isLoadingClients
-  const addClientButtonDisabledReason = isPending
-    ? PENDING_REASON
-    : isLoadingClients
-      ? 'Loading clients...'
-      : null
-
   return {
     form,
     feedback,
@@ -496,12 +351,7 @@ export function useContactSheetState({
     isDeleteDialogOpen,
     isPromoteDialogOpen,
     setIsPromoteDialogOpen,
-    isClientPickerOpen,
-    setIsClientPickerOpen,
-    selectedClients,
-    availableClients,
-    addClientButtonDisabled,
-    addClientButtonDisabledReason,
+    linkedClients,
     portalUserId,
     promoteDisabled,
     promoteDisabledReason,
@@ -513,8 +363,5 @@ export function useContactSheetState({
     handleConfirmDelete,
     handleRequestPromote,
     handleConfirmPromote,
-    handleAddClient,
-    handleCreateClient,
-    handleRemoveClient,
   }
 }

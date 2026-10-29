@@ -4,11 +4,10 @@ import { useState, useCallback, useMemo, useTransition } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Pencil, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { EmptyState } from '@pts/ui/empty-state'
-import { RowActionButton } from '@pts/ui/row-action-button'
 import { Checkbox } from '@pts/ui/checkbox'
 import {
   Dialog,
@@ -33,6 +32,7 @@ import {
   SortableTableHead,
   type SortValue,
 } from '@/components/table-toolbar/sortable-table-head'
+import { RecordRowAction } from '@/components/table/record-row-action'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import type { ProductCatalogItemRow } from '@/lib/queries/product-catalog'
 
@@ -99,9 +99,9 @@ function ProductRow({
         />
       </TableCell>
       <TableCell className='max-md:ml-auto'>
-        <RowActionButton
-          label='Edit product'
-          icon={<Pencil />}
+        <RecordRowAction
+          kind='edit'
+          entity='product'
           onClick={() => onEdit(item)}
         />
       </TableCell>

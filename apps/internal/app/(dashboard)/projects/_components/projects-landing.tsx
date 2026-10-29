@@ -4,25 +4,19 @@ import Link from 'next/link'
 import { useCallback, useMemo, useState, useTransition } from 'react'
 import type { ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import {
-  Archive,
-  Building2,
-  Clock,
-  FolderKanban,
-  Pencil,
-  UserRound,
-  Users,
-} from 'lucide-react'
+import { Building2, Clock, FolderKanban, UserRound, Users } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { siGithub } from 'simple-icons/icons'
+import {
+  RecordRowAction,
+  RecordRowActions,
+} from '@/components/table/record-row-action'
 import { IntegrationProviderIcon } from '@/components/integrations/provider-icon'
 import { formatIntegrationLinkLabel } from '@/lib/types/integrations'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { EmptyState } from '@pts/ui/empty-state'
-import { RowActionButton } from '@pts/ui/row-action-button'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Progress } from '@pts/ui/progress'
 import {
   Table,
@@ -33,6 +27,7 @@ import {
   TableRow,
 } from '@pts/ui/table'
 import { useToast } from '@/components/ui/use-toast'
+import { EmptyValue } from '@/components/table/empty-value'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
 import { ProjectStatusCell } from '@/components/projects/project-status-cell'
@@ -419,7 +414,9 @@ export function ProjectsLanding({
             )}
             <Link href={href} className='flex min-w-0 items-center gap-2 py-1'>
               <FolderKanban className='h-4 w-4 shrink-0 text-emerald-500' />
-              <span className='truncate font-medium'>{project.name}</span>
+              <span className='truncate font-medium' title={project.name}>
+                {project.name}
+              </span>
             </Link>
           </div>
         </TableCell>
@@ -473,33 +470,27 @@ export function ProjectsLanding({
                 </Tooltip>
               ))
             ) : (
-              <span className='text-muted-foreground/40'>—</span>
+              <EmptyValue />
             )}
           </div>
         </TableCell>
         <TableCell className='text-right max-md:ml-auto'>
           {readOnly ? null : (
-            <div className='flex justify-end gap-2'>
-              <RowActionButton
-                label='Edit project'
-                icon={<Pencil />}
-                variant='outline'
+            <RecordRowActions>
+              <RecordRowAction
+                kind='edit'
+                entity='project'
                 onClick={() => openProjectSheet(project.id)}
                 disabled={isArchivePending}
               />
-              <DisabledFieldTooltip
+              <RecordRowAction
+                kind='archive'
+                entity='project'
+                onClick={() => handleRequestDelete(project)}
                 disabled={isArchivePending}
-                reason={isArchivePending ? PENDING_REASON : null}
-              >
-                <RowActionButton
-                  label='Archive project'
-                  icon={<Archive />}
-                  variant='destructive'
-                  onClick={() => handleRequestDelete(project)}
-                  disabled={isArchivePending}
-                />
-              </DisabledFieldTooltip>
-            </div>
+                disabledReason={isArchivePending ? PENDING_REASON : null}
+              />
+            </RecordRowActions>
           )}
         </TableCell>
       </TableRow>
@@ -515,8 +506,9 @@ export function ProjectsLanding({
     actions: 'w-24',
   }
 
-  const renderProjectTable = (items: LandingProject[]) => (
-    <div className='rounded-lg border'>
+  /** One header for every section table; `rows` is the table body. */
+  const renderProjectTable = (rows: ReactNode) => (
+    <div className='overflow-hidden rounded-lg border'>
       <Table
         density='compact'
         layout='fixed'
@@ -545,7 +537,7 @@ export function ProjectsLanding({
             </TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>{items.map(project => renderProjectRow(project))}</TableBody>
+        <TableBody>{rows}</TableBody>
       </Table>
     </div>
   )
@@ -626,56 +618,23 @@ export function ProjectsLanding({
   }
 
   const clientSectionContent =
-    clientSections.length > 0 ? (
-      <div className='rounded-lg border'>
-        <Table
-          density='compact'
-          layout='fixed'
-          stack
-          className='md:min-w-[50rem]'
-        >
-          <TableHeader>
-            <TableRow className='bg-muted/40'>
-              <SortableTableHead
-                field='name'
-                sort={sort}
-                defaultSort='name:asc'
-                onSortChange={next => update({ sort: next })}
-                className={tableColumnWidths.project}
-              >
-                Project
-              </SortableTableHead>
-              <TableHead className={tableColumnWidths.status}>Status</TableHead>
-              <TableHead className={tableColumnWidths.progress}>
-                Progress
-              </TableHead>
-              <TableHead className={tableColumnWidths.owner}>Owner</TableHead>
-              <TableHead className={tableColumnWidths.links}>Links</TableHead>
-              <TableHead className={`${tableColumnWidths.actions} text-right`}>
-                Actions
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {clientSections.flatMap(({ client, projects: clientProjects }) => [
-              renderClientSeparatorRow(client),
-              ...clientProjects.map((project, index) =>
-                renderProjectRow(project, {
-                  indent: true,
-                  isLast: index === clientProjects.length - 1,
-                })
-              ),
-            ])}
-          </TableBody>
-        </Table>
-      </div>
-    ) : (
-      renderSectionEmptyState(
-        unfilteredCounts.clientCount > 0
-          ? 'No client projects match the current filters.'
-          : 'No client projects yet.'
-      )
-    )
+    clientSections.length > 0
+      ? renderProjectTable(
+          clientSections.flatMap(({ client, projects: clientProjects }) => [
+            renderClientSeparatorRow(client),
+            ...clientProjects.map((project, index) =>
+              renderProjectRow(project, {
+                indent: true,
+                isLast: index === clientProjects.length - 1,
+              })
+            ),
+          ])
+        )
+      : renderSectionEmptyState(
+          unfilteredCounts.clientCount > 0
+            ? 'No client projects match the current filters.'
+            : 'No client projects yet.'
+        )
 
   const getInternalEmptyMessage = () => {
     if (unfilteredCounts.internalCount > 0) {
@@ -699,7 +658,9 @@ export function ProjectsLanding({
       count: internalProjects.length,
       content:
         internalProjects.length > 0
-          ? renderProjectTable(internalProjects)
+          ? renderProjectTable(
+              internalProjects.map(project => renderProjectRow(project))
+            )
           : renderSectionEmptyState(getInternalEmptyMessage()),
     },
     {
@@ -709,7 +670,9 @@ export function ProjectsLanding({
       count: personalProjects.length,
       content:
         personalProjects.length > 0
-          ? renderProjectTable(personalProjects)
+          ? renderProjectTable(
+              personalProjects.map(project => renderProjectRow(project))
+            )
           : renderSectionEmptyState(getPersonalEmptyMessage()),
     },
   ]

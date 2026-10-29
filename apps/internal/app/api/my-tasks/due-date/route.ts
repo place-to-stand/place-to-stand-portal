@@ -1,3 +1,4 @@
+// permission: projects.view_member — changeTaskDueDate checks project access
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 

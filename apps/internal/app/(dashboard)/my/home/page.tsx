@@ -26,9 +26,10 @@ export default async function HomePage() {
   const user = await requireCrmUser()
   const layout = await fetchDashboardLayout(user)
 
-  // Load only what the visible widgets need. Showing a hidden widget
-  // refreshes the page, which loads its data then.
-  const visible = new Set(layout.columns.flat())
+  // Load what every widget in the layout needs, hidden ones included: the
+  // edit tray shows hidden widgets with live content so you can see them
+  // before adding them.
+  const visible = new Set([...layout.columns.flat(), ...layout.hidden])
   const now = new Date()
 
   const [tasksResult, hoursSnapshot, sales] = await Promise.all([

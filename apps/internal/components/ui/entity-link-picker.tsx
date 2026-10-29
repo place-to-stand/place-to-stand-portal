@@ -1,9 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useRef, type ComponentType } from 'react'
-import { ExternalLink, X } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import {
   SearchableCombobox,
@@ -108,77 +107,53 @@ export function EntityLinkPicker<E extends SheetCreatedEntity>({
   const plural = pluralize(entityLabel)
 
   return (
-    <div className='flex items-center gap-1'>
-      <SearchableCombobox
-        id={id}
-        className='flex-1'
-        items={items}
-        value={value?.id ?? ''}
-        onChange={nextId => {
-          const next = items.find(item => item.value === nextId)
-          onChange(
-            next
-              ? {
-                  id: next.value,
-                  label: next.label,
-                  description: next.description,
-                }
-              : null
-          )
-        }}
-        placeholder={placeholder ?? `Select a ${entityLabel}`}
-        searchPlaceholder={`Search ${plural}…`}
-        emptyMessage={`No ${plural} found.`}
-        disabled={disabled}
-        ariaLabel={ariaLabel}
-        createEntityLabel={entityLabel}
-        onCreate={
-          allowCreate
-            ? typed => {
-                awaitingCreate.current = true
-                openNew(
-                  entity,
-                  typed.trim()
-                    ? { [createPrefillParam]: typed.trim() }
-                    : undefined
-                )
-              }
-            : undefined
-        }
-      />
-      {value ? (
-        <>
+    <SearchableCombobox
+      id={id}
+      items={items}
+      value={value?.id ?? ''}
+      onChange={nextId => {
+        const next = items.find(item => item.value === nextId)
+        onChange(
+          next
+            ? { id: next.value, label: next.label, description: next.description }
+            : null
+        )
+      }}
+      placeholder={placeholder ?? `Select a ${entityLabel}`}
+      searchPlaceholder={`Search ${plural}…`}
+      emptyMessage={`No ${plural} found.`}
+      disabled={disabled}
+      ariaLabel={ariaLabel}
+      createEntityLabel={entityLabel}
+      onCreate={
+        allowCreate
+          ? typed => {
+              awaitingCreate.current = true
+              openNew(
+                entity,
+                typed.trim() ? { [createPrefillParam]: typed.trim() } : undefined
+              )
+            }
+          : undefined
+      }
+      onClear={() => onChange(null)}
+      inlineActions={
+        value ? (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
+              <button
                 type='button'
-                variant='ghost'
-                size='icon-sm'
                 aria-label={`Open ${value.label}`}
                 onClick={() => openSheet(entity, value.id)}
+                className='text-muted-foreground hover:text-foreground hover:bg-muted focus-visible:ring-ring/50 rounded p-1 outline-none focus-visible:ring-2'
               >
-                <ExternalLink aria-hidden />
-              </Button>
+                <ExternalLink className='size-3.5' aria-hidden />
+              </button>
             </TooltipTrigger>
             <TooltipContent>Open {entityLabel}</TooltipContent>
           </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type='button'
-                variant='ghost'
-                size='icon-sm'
-                aria-label={`Clear ${entityLabel}`}
-                disabled={disabled}
-                onClick={() => onChange(null)}
-              >
-                <X aria-hidden />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Clear</TooltipContent>
-          </Tooltip>
-        </>
-      ) : null}
-    </div>
+        ) : null
+      }
+    />
   )
 }

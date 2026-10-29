@@ -2,6 +2,7 @@
 
 import { Building2 } from 'lucide-react'
 
+import { EmptyValue } from '@/components/table/empty-value'
 import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
 import type { UserAssignmentSummary } from '@/lib/queries/users/assignments'
 import type { UserRoleValue } from '@/lib/types'
@@ -22,7 +23,7 @@ export function UserAssignmentsCell({
   role,
 }: UserAssignmentsCellProps) {
   if (role !== 'CLIENT') {
-    return <span className='text-muted-foreground/50'>—</span>
+    return <EmptyValue />
   }
 
   const clients = assignment?.clientList ?? []

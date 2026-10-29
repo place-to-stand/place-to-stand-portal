@@ -16,7 +16,18 @@ import {
 export const clientSchema = z
   .object({
     id: z.string().uuid().optional(),
-    name: z.string().min(1, 'Name is required'),
+    /**
+     * Ignored when a company is given: the name is the company's name plus
+     * the label. Used as the company name when a new client has no company.
+     */
+    name: z.string().default(''),
+    /** Tells apart two billing setups for one company ("Retainer"). */
+    label: z
+      .string()
+      .trim()
+      .max(60)
+      .nullish()
+      .transform(value => (value ? value : null)),
     slug: z
       .string()
       .regex(

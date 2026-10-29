@@ -158,8 +158,10 @@ function TableCell({
       data-slot='table-cell'
       className={cn(
         'align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 *:[[role=checkbox]]:translate-y-0.5',
-        density === 'compact' ? 'px-2 py-1.5' : 'p-2',
-        stack && 'max-md:min-w-0 max-md:p-0 max-md:first:basis-full',
+        // One row height for every list (a td's height is its minimum):
+        // rows with only text match rows with action buttons.
+        density === 'compact' ? 'h-10 px-2 py-1.5' : 'h-11 p-2',
+        stack && 'max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:first:basis-full',
         showLabel && 'max-md:flex max-md:items-center max-md:gap-1.5',
         className
       )}

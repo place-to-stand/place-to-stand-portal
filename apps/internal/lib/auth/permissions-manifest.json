@@ -1,0 +1,1885 @@
+[
+  {
+    "type": "action",
+    "name": "completePasswordReset",
+    "file": "apps/internal/app/(auth)/_actions/update-password.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/account-not-set-up",
+    "file": "apps/internal/app/(auth)/account-not-set-up/page.tsx",
+    "kind": "public",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/force-reset-password",
+    "file": "apps/internal/app/(auth)/force-reset-password/page.tsx",
+    "kind": "public",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "requestPasswordReset",
+    "file": "apps/internal/app/(auth)/forgot-password/actions.ts",
+    "kind": "public",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/forgot-password",
+    "file": "apps/internal/app/(auth)/forgot-password/page.tsx",
+    "kind": "public",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "decideAuthorization",
+    "file": "apps/internal/app/(auth)/oauth/consent/actions.ts",
+    "kind": "public",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/oauth/consent",
+    "file": "apps/internal/app/(auth)/oauth/consent/page.tsx",
+    "kind": "public",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/reset-password",
+    "file": "apps/internal/app/(auth)/reset-password/page.tsx",
+    "kind": "public",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "signInWithPassword",
+    "file": "apps/internal/app/(auth)/sign-in/actions.ts",
+    "kind": "public",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "sendMagicLink",
+    "file": "apps/internal/app/(auth)/sign-in/actions.ts",
+    "kind": "public",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/sign-in",
+    "file": "apps/internal/app/(auth)/sign-in/page.tsx",
+    "kind": "public",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "signOut",
+    "file": "apps/internal/app/(dashboard)/_actions/sign-out.ts",
+    "kind": "public",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "updateProfile",
+    "file": "apps/internal/app/(dashboard)/_actions/update-profile.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "action",
+    "name": "updateClientNotes",
+    "file": "apps/internal/app/(dashboard)/clients/[clientSlug]/actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "draftUpdateForClient",
+    "file": "apps/internal/app/(dashboard)/clients/[clientSlug]/actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/clients/[clientSlug]",
+    "file": "apps/internal/app/(dashboard)/clients/[clientSlug]/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "saveClient",
+    "file": "apps/internal/app/(dashboard)/clients/actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "softDeleteClient",
+    "file": "apps/internal/app/(dashboard)/clients/actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "restoreClient",
+    "file": "apps/internal/app/(dashboard)/clients/actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "destroyClient",
+    "file": "apps/internal/app/(dashboard)/clients/actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "getClientSheetContactData",
+    "file": "apps/internal/app/(dashboard)/clients/actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "syncClientContacts",
+    "file": "apps/internal/app/(dashboard)/clients/actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/clients/activity",
+    "file": "apps/internal/app/(dashboard)/clients/activity/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/clients/archive",
+    "file": "apps/internal/app/(dashboard)/clients/archive/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/clients",
+    "file": "apps/internal/app/(dashboard)/clients/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "loadCompanySheet",
+    "file": "apps/internal/app/(dashboard)/companies/actions.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "action",
+    "name": "fetchCompanyOptions",
+    "file": "apps/internal/app/(dashboard)/companies/actions.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "action",
+    "name": "saveCompany",
+    "file": "apps/internal/app/(dashboard)/companies/actions.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "action",
+    "name": "archiveCompany",
+    "file": "apps/internal/app/(dashboard)/companies/actions.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "action",
+    "name": "restoreCompany",
+    "file": "apps/internal/app/(dashboard)/companies/actions.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "action",
+    "name": "makeCompanyPrimaryContact",
+    "file": "apps/internal/app/(dashboard)/companies/actions.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "page",
+    "name": "/companies/activity",
+    "file": "apps/internal/app/(dashboard)/companies/activity/page.tsx",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "page",
+    "name": "/companies/archive",
+    "file": "apps/internal/app/(dashboard)/companies/archive/page.tsx",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "page",
+    "name": "/companies",
+    "file": "apps/internal/app/(dashboard)/companies/page.tsx",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "action",
+    "name": "saveContact",
+    "file": "apps/internal/app/(dashboard)/contacts/actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "softDeleteContact",
+    "file": "apps/internal/app/(dashboard)/contacts/actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "restoreContact",
+    "file": "apps/internal/app/(dashboard)/contacts/actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "destroyContact",
+    "file": "apps/internal/app/(dashboard)/contacts/actions.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "action",
+    "name": "getContactSheetData",
+    "file": "apps/internal/app/(dashboard)/contacts/actions.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "action",
+    "name": "getContactPortalAccount",
+    "file": "apps/internal/app/(dashboard)/contacts/actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "promoteContactToUser",
+    "file": "apps/internal/app/(dashboard)/contacts/actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "fetchContactOptions",
+    "file": "apps/internal/app/(dashboard)/contacts/actions.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "page",
+    "name": "/contacts/activity",
+    "file": "apps/internal/app/(dashboard)/contacts/activity/page.tsx",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "page",
+    "name": "/contacts/archive",
+    "file": "apps/internal/app/(dashboard)/contacts/archive/page.tsx",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "page",
+    "name": "/contacts",
+    "file": "apps/internal/app/(dashboard)/contacts/page.tsx",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "page",
+    "name": "/design",
+    "file": "apps/internal/app/(dashboard)/design/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "softDeleteHourBlock",
+    "file": "apps/internal/app/(dashboard)/hour-blocks/actions/archive-hour-block.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "destroyHourBlock",
+    "file": "apps/internal/app/(dashboard)/hour-blocks/actions/destroy-hour-block.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "restoreHourBlock",
+    "file": "apps/internal/app/(dashboard)/hour-blocks/actions/restore-hour-block.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "saveHourBlock",
+    "file": "apps/internal/app/(dashboard)/hour-blocks/actions/save-hour-block.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/hour-blocks/activity",
+    "file": "apps/internal/app/(dashboard)/hour-blocks/activity/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/hour-blocks/archive",
+    "file": "apps/internal/app/(dashboard)/hour-blocks/archive/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/hour-blocks",
+    "file": "apps/internal/app/(dashboard)/hour-blocks/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "archiveInvoice",
+    "file": "apps/internal/app/(dashboard)/invoices/actions/archive-invoice.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "destroyInvoice",
+    "file": "apps/internal/app/(dashboard)/invoices/actions/destroy-invoice.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "getInvoiceEmailDraft",
+    "file": "apps/internal/app/(dashboard)/invoices/actions/email-invoice.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "emailInvoice",
+    "file": "apps/internal/app/(dashboard)/invoices/actions/email-invoice.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "getInvoiceDetails",
+    "file": "apps/internal/app/(dashboard)/invoices/actions/get-invoice-details.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "restoreInvoice",
+    "file": "apps/internal/app/(dashboard)/invoices/actions/restore-invoice.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "saveInvoice",
+    "file": "apps/internal/app/(dashboard)/invoices/actions/save-invoice.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "sendInvoiceAction",
+    "file": "apps/internal/app/(dashboard)/invoices/actions/send-invoice.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "unsendInvoice",
+    "file": "apps/internal/app/(dashboard)/invoices/actions/unsend-invoice.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "voidInvoice",
+    "file": "apps/internal/app/(dashboard)/invoices/actions/void-invoice.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/invoices/activity",
+    "file": "apps/internal/app/(dashboard)/invoices/activity/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/invoices/archive",
+    "file": "apps/internal/app/(dashboard)/invoices/archive/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/invoices",
+    "file": "apps/internal/app/(dashboard)/invoices/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "saveProductCatalogItem",
+    "file": "apps/internal/app/(dashboard)/invoices/settings/actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "saveTaxRate",
+    "file": "apps/internal/app/(dashboard)/invoices/settings/actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "toggleTaxRateActiveAction",
+    "file": "apps/internal/app/(dashboard)/invoices/settings/actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/invoices/settings",
+    "file": "apps/internal/app/(dashboard)/invoices/settings/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "archiveLead",
+    "file": "apps/internal/app/(dashboard)/leads/_actions/archive-lead.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "action",
+    "name": "destroyLead",
+    "file": "apps/internal/app/(dashboard)/leads/_actions/destroy-lead.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "fetchClientOptions",
+    "file": "apps/internal/app/(dashboard)/leads/_actions/fetch-client-options.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "moveLead",
+    "file": "apps/internal/app/(dashboard)/leads/_actions/move-lead.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "action",
+    "name": "restoreLead",
+    "file": "apps/internal/app/(dashboard)/leads/_actions/restore-lead.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "action",
+    "name": "saveLead",
+    "file": "apps/internal/app/(dashboard)/leads/_actions/save-lead.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "action",
+    "name": "createLeadUpdate",
+    "file": "apps/internal/app/(dashboard)/leads/_actions/updates/create-lead-update.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "action",
+    "name": "deleteLeadUpdate",
+    "file": "apps/internal/app/(dashboard)/leads/_actions/updates/delete-lead-update.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "action",
+    "name": "updateLeadUpdate",
+    "file": "apps/internal/app/(dashboard)/leads/_actions/updates/update-lead-update.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "page",
+    "name": "/leads/activity",
+    "file": "apps/internal/app/(dashboard)/leads/activity/page.tsx",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "page",
+    "name": "/leads/archive",
+    "file": "apps/internal/app/(dashboard)/leads/archive/page.tsx",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "page",
+    "name": "/leads",
+    "file": "apps/internal/app/(dashboard)/leads/page.tsx",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "action",
+    "name": "saveDashboardLayout",
+    "file": "apps/internal/app/(dashboard)/my/home/_actions/save-dashboard-layout.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "action",
+    "name": "resetDashboardLayout",
+    "file": "apps/internal/app/(dashboard)/my/home/_actions/save-dashboard-layout.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "page",
+    "name": "/my/home",
+    "file": "apps/internal/app/(dashboard)/my/home/page.tsx",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "page",
+    "name": "/my/tasks/[view]",
+    "file": "apps/internal/app/(dashboard)/my/tasks/[view]/page.tsx",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "page",
+    "name": "/my/tasks",
+    "file": "apps/internal/app/(dashboard)/my/tasks/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/projects/[clientSlug]/[projectSlug]/activity",
+    "file": "apps/internal/app/(dashboard)/projects/[clientSlug]/[projectSlug]/activity/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/projects/[clientSlug]/[projectSlug]/archive",
+    "file": "apps/internal/app/(dashboard)/projects/[clientSlug]/[projectSlug]/archive/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/projects/[clientSlug]/[projectSlug]/overview",
+    "file": "apps/internal/app/(dashboard)/projects/[clientSlug]/[projectSlug]/overview/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/projects/[clientSlug]/[projectSlug]/review",
+    "file": "apps/internal/app/(dashboard)/projects/[clientSlug]/[projectSlug]/review/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/projects/[clientSlug]/[projectSlug]/scope",
+    "file": "apps/internal/app/(dashboard)/projects/[clientSlug]/[projectSlug]/scope/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/projects/[clientSlug]/[projectSlug]/tasks",
+    "file": "apps/internal/app/(dashboard)/projects/[clientSlug]/[projectSlug]/tasks/page.tsx",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "page",
+    "name": "/projects/[clientSlug]/[projectSlug]/time-logs",
+    "file": "apps/internal/app/(dashboard)/projects/[clientSlug]/[projectSlug]/time-logs/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "acceptDoneTasks",
+    "file": "apps/internal/app/(dashboard)/projects/actions/accept-done-tasks.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "acceptTask",
+    "file": "apps/internal/app/(dashboard)/projects/actions/accept-task.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "changeTaskDueDate",
+    "file": "apps/internal/app/(dashboard)/projects/actions/change-task-due-date.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "action",
+    "name": "changeTaskStatus",
+    "file": "apps/internal/app/(dashboard)/projects/actions/change-task-status.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "action",
+    "name": "destroyTask",
+    "file": "apps/internal/app/(dashboard)/projects/actions/destroy-task.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "fetchTaskDeployments",
+    "file": "apps/internal/app/(dashboard)/projects/actions/fetch-deployments.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "fetchWorkerStatus",
+    "file": "apps/internal/app/(dashboard)/projects/actions/fetch-worker-status.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "getOrCreatePlanningSession",
+    "file": "apps/internal/app/(dashboard)/projects/actions/planning.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "addPlanThread",
+    "file": "apps/internal/app/(dashboard)/projects/actions/planning.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "fetchPlanRevisions",
+    "file": "apps/internal/app/(dashboard)/projects/actions/planning.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "removeTask",
+    "file": "apps/internal/app/(dashboard)/projects/actions/remove-task.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "action",
+    "name": "restoreTask",
+    "file": "apps/internal/app/(dashboard)/projects/actions/restore-task.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "saveTask",
+    "file": "apps/internal/app/(dashboard)/projects/actions/save-task.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "action",
+    "name": "revalidateProjectTaskViews",
+    "file": "apps/internal/app/(dashboard)/projects/actions/shared.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "action",
+    "name": "cancelDeployment",
+    "file": "apps/internal/app/(dashboard)/projects/actions/trigger-worker.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "deployPlan",
+    "file": "apps/internal/app/(dashboard)/projects/actions/trigger-worker.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "unacceptTask",
+    "file": "apps/internal/app/(dashboard)/projects/actions/unaccept-task.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/projects/activity",
+    "file": "apps/internal/app/(dashboard)/projects/activity/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/projects/archive",
+    "file": "apps/internal/app/(dashboard)/projects/archive/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/projects",
+    "file": "apps/internal/app/(dashboard)/projects/page.tsx",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "action",
+    "name": "addProfitShareAction",
+    "file": "apps/internal/app/(dashboard)/reports/monthly-close/actions/add-profit-share.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "closeMonthAction",
+    "file": "apps/internal/app/(dashboard)/reports/monthly-close/actions/close-month.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "recloseMonthAction",
+    "file": "apps/internal/app/(dashboard)/reports/monthly-close/actions/reclose-month.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "reopenMonthAction",
+    "file": "apps/internal/app/(dashboard)/reports/monthly-close/actions/reopen-month.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/reports/monthly-close",
+    "file": "apps/internal/app/(dashboard)/reports/monthly-close/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/reports",
+    "file": "apps/internal/app/(dashboard)/reports/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/settings/integrations",
+    "file": "apps/internal/app/(dashboard)/settings/integrations/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/settings",
+    "file": "apps/internal/app/(dashboard)/settings/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/settings/permissions",
+    "file": "apps/internal/app/(dashboard)/settings/permissions/page.tsx",
+    "kind": "public",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "saveProject",
+    "file": "apps/internal/app/(dashboard)/settings/projects/actions.ts",
+    "kind": "capability",
+    "capability": "projects.create"
+  },
+  {
+    "type": "action",
+    "name": "softDeleteProject",
+    "file": "apps/internal/app/(dashboard)/settings/projects/actions.ts",
+    "kind": "capability",
+    "capability": "projects.manage"
+  },
+  {
+    "type": "action",
+    "name": "restoreProject",
+    "file": "apps/internal/app/(dashboard)/settings/projects/actions.ts",
+    "kind": "capability",
+    "capability": "projects.manage"
+  },
+  {
+    "type": "action",
+    "name": "destroyProject",
+    "file": "apps/internal/app/(dashboard)/settings/projects/actions.ts",
+    "kind": "capability",
+    "capability": "projects.manage"
+  },
+  {
+    "type": "page",
+    "name": "/settings/projects",
+    "file": "apps/internal/app/(dashboard)/settings/projects/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/settings/templates/emails",
+    "file": "apps/internal/app/(dashboard)/settings/templates/emails/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/settings/templates/notifications",
+    "file": "apps/internal/app/(dashboard)/settings/templates/notifications/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/settings/templates",
+    "file": "apps/internal/app/(dashboard)/settings/templates/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/settings/templates/pdfs",
+    "file": "apps/internal/app/(dashboard)/settings/templates/pdfs/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "createUser",
+    "file": "apps/internal/app/(dashboard)/settings/users/actions/create-user.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "destroyUser",
+    "file": "apps/internal/app/(dashboard)/settings/users/actions/destroy-user.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "restoreUser",
+    "file": "apps/internal/app/(dashboard)/settings/users/actions/restore-user.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "setUserDisabled",
+    "file": "apps/internal/app/(dashboard)/settings/users/actions/set-user-disabled.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "softDeleteUser",
+    "file": "apps/internal/app/(dashboard)/settings/users/actions/soft-delete-user.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "updateUser",
+    "file": "apps/internal/app/(dashboard)/settings/users/actions/update-user.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/settings/users/activity",
+    "file": "apps/internal/app/(dashboard)/settings/users/activity/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/settings/users/archive",
+    "file": "apps/internal/app/(dashboard)/settings/users/archive/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/settings/users",
+    "file": "apps/internal/app/(dashboard)/settings/users/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "acknowledgeSubmission",
+    "file": "apps/internal/app/(dashboard)/submissions/actions/acknowledge-submission.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "archiveSubmission",
+    "file": "apps/internal/app/(dashboard)/submissions/actions/archive-submission.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "destroySubmission",
+    "file": "apps/internal/app/(dashboard)/submissions/actions/destroy-submission.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "restoreSubmission",
+    "file": "apps/internal/app/(dashboard)/submissions/actions/restore-submission.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "unacknowledgeSubmission",
+    "file": "apps/internal/app/(dashboard)/submissions/actions/unacknowledge-submission.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/submissions/activity",
+    "file": "apps/internal/app/(dashboard)/submissions/activity/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/submissions/archive",
+    "file": "apps/internal/app/(dashboard)/submissions/archive/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/submissions",
+    "file": "apps/internal/app/(dashboard)/submissions/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/time-logs/activity",
+    "file": "apps/internal/app/(dashboard)/time-logs/activity/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/time-logs/archive",
+    "file": "apps/internal/app/(dashboard)/time-logs/archive/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/time-logs",
+    "file": "apps/internal/app/(dashboard)/time-logs/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "saveClientUpdateDraft",
+    "file": "apps/internal/app/(dashboard)/updates/[updateId]/actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "sendClientUpdateAction",
+    "file": "apps/internal/app/(dashboard)/updates/[updateId]/actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "sendClientUpdateTestAction",
+    "file": "apps/internal/app/(dashboard)/updates/[updateId]/actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/updates/[updateId]",
+    "file": "apps/internal/app/(dashboard)/updates/[updateId]/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/preview/invoices/[invoiceId]",
+    "file": "apps/internal/app/(public)/preview/invoices/[invoiceId]/page.tsx",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/share/invoices/[token]",
+    "file": "apps/internal/app/(public)/share/invoices/[token]/page.tsx",
+    "kind": "public",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /.well-known/oauth-protected-resource/api/mcp",
+    "file": "apps/internal/app/.well-known/oauth-protected-resource/api/mcp/route.ts",
+    "kind": "public",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/activity",
+    "file": "apps/internal/app/api/activity/route.ts",
+    "kind": "capability",
+    "capability": "activity.read_crm"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/auth/callback/github",
+    "file": "apps/internal/app/api/auth/callback/github/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/auth/callback/google",
+    "file": "apps/internal/app/api/auth/callback/google/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/auth/github",
+    "file": "apps/internal/app/api/auth/github/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/auth/google",
+    "file": "apps/internal/app/api/auth/google/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/cli/v1/clients",
+    "file": "apps/internal/app/api/cli/v1/clients/route.ts",
+    "kind": "capability",
+    "capability": "integrations.cli"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/cli/v1/contacts",
+    "file": "apps/internal/app/api/cli/v1/contacts/route.ts",
+    "kind": "capability",
+    "capability": "integrations.cli"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/cli/v1/invoices",
+    "file": "apps/internal/app/api/cli/v1/invoices/route.ts",
+    "kind": "capability",
+    "capability": "integrations.cli"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/cli/v1/leads/[leadId]",
+    "file": "apps/internal/app/api/cli/v1/leads/[leadId]/route.ts",
+    "kind": "capability",
+    "capability": "integrations.cli"
+  },
+  {
+    "type": "route",
+    "name": "PATCH /api/cli/v1/leads/[leadId]",
+    "file": "apps/internal/app/api/cli/v1/leads/[leadId]/route.ts",
+    "kind": "capability",
+    "capability": "integrations.cli"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/cli/v1/leads/[leadId]/updates",
+    "file": "apps/internal/app/api/cli/v1/leads/[leadId]/updates/route.ts",
+    "kind": "capability",
+    "capability": "integrations.cli"
+  },
+  {
+    "type": "route",
+    "name": "POST /api/cli/v1/leads/[leadId]/updates",
+    "file": "apps/internal/app/api/cli/v1/leads/[leadId]/updates/route.ts",
+    "kind": "capability",
+    "capability": "integrations.cli"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/cli/v1/leads",
+    "file": "apps/internal/app/api/cli/v1/leads/route.ts",
+    "kind": "capability",
+    "capability": "integrations.cli"
+  },
+  {
+    "type": "route",
+    "name": "POST /api/cli/v1/leads",
+    "file": "apps/internal/app/api/cli/v1/leads/route.ts",
+    "kind": "capability",
+    "capability": "integrations.cli"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/cli/v1/meta",
+    "file": "apps/internal/app/api/cli/v1/meta/route.ts",
+    "kind": "public",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/cli/v1/projects/[identifier]",
+    "file": "apps/internal/app/api/cli/v1/projects/[identifier]/route.ts",
+    "kind": "capability",
+    "capability": "integrations.cli"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/cli/v1/projects",
+    "file": "apps/internal/app/api/cli/v1/projects/route.ts",
+    "kind": "capability",
+    "capability": "integrations.cli"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/cli/v1/schema/[table]",
+    "file": "apps/internal/app/api/cli/v1/schema/[table]/route.ts",
+    "kind": "capability",
+    "capability": "integrations.cli"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/cli/v1/schema",
+    "file": "apps/internal/app/api/cli/v1/schema/route.ts",
+    "kind": "capability",
+    "capability": "integrations.cli"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/cli/v1/tasks/[taskId]/comments",
+    "file": "apps/internal/app/api/cli/v1/tasks/[taskId]/comments/route.ts",
+    "kind": "capability",
+    "capability": "integrations.cli"
+  },
+  {
+    "type": "route",
+    "name": "POST /api/cli/v1/tasks/[taskId]/comments",
+    "file": "apps/internal/app/api/cli/v1/tasks/[taskId]/comments/route.ts",
+    "kind": "capability",
+    "capability": "integrations.cli"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/cli/v1/tasks/[taskId]",
+    "file": "apps/internal/app/api/cli/v1/tasks/[taskId]/route.ts",
+    "kind": "capability",
+    "capability": "integrations.cli"
+  },
+  {
+    "type": "route",
+    "name": "PATCH /api/cli/v1/tasks/[taskId]",
+    "file": "apps/internal/app/api/cli/v1/tasks/[taskId]/route.ts",
+    "kind": "capability",
+    "capability": "integrations.cli"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/cli/v1/tasks",
+    "file": "apps/internal/app/api/cli/v1/tasks/route.ts",
+    "kind": "capability",
+    "capability": "integrations.cli"
+  },
+  {
+    "type": "route",
+    "name": "POST /api/cli/v1/tasks",
+    "file": "apps/internal/app/api/cli/v1/tasks/route.ts",
+    "kind": "capability",
+    "capability": "integrations.cli"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/cli/v1/time-logs",
+    "file": "apps/internal/app/api/cli/v1/time-logs/route.ts",
+    "kind": "capability",
+    "capability": "integrations.cli"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/cli/v1/updates/[updateId]",
+    "file": "apps/internal/app/api/cli/v1/updates/[updateId]/route.ts",
+    "kind": "capability",
+    "capability": "integrations.cli"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/cli/v1/updates",
+    "file": "apps/internal/app/api/cli/v1/updates/route.ts",
+    "kind": "capability",
+    "capability": "integrations.cli"
+  },
+  {
+    "type": "route",
+    "name": "POST /api/cli/v1/updates",
+    "file": "apps/internal/app/api/cli/v1/updates/route.ts",
+    "kind": "capability",
+    "capability": "integrations.cli"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/cli/v1/users",
+    "file": "apps/internal/app/api/cli/v1/users/route.ts",
+    "kind": "capability",
+    "capability": "integrations.cli"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/cli/v1/whoami",
+    "file": "apps/internal/app/api/cli/v1/whoami/route.ts",
+    "kind": "capability",
+    "capability": "integrations.cli"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/clients",
+    "file": "apps/internal/app/api/clients/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/command-palette/search",
+    "file": "apps/internal/app/api/command-palette/search/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "POST /api/contacts",
+    "file": "apps/internal/app/api/contacts/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/contacts/search",
+    "file": "apps/internal/app/api/contacts/search/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/cron/abandon-stale-submissions",
+    "file": "apps/internal/app/api/cron/abandon-stale-submissions/route.ts",
+    "kind": "token",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/cron/prune-activity-logs",
+    "file": "apps/internal/app/api/cron/prune-activity-logs/route.ts",
+    "kind": "token",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/cron/retry-submission-emails",
+    "file": "apps/internal/app/api/cron/retry-submission-emails/route.ts",
+    "kind": "token",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "POST /api/dashboard/hours",
+    "file": "apps/internal/app/api/dashboard/hours/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/dashboard/my-tasks",
+    "file": "apps/internal/app/api/dashboard/my-tasks/route.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "route",
+    "name": "POST /api/dashboard/recent-activity/summary",
+    "file": "apps/internal/app/api/dashboard/recent-activity/summary/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/dashboard/time-logs/[timeLogId]",
+    "file": "apps/internal/app/api/dashboard/time-logs/[timeLogId]/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "POST /api/dev/make-me-admin",
+    "file": "apps/internal/app/api/dev/make-me-admin/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "POST /api/dev/seed",
+    "file": "apps/internal/app/api/dev/seed/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/github/repos/[owner]/[repo]/branches",
+    "file": "apps/internal/app/api/github/repos/[owner]/[repo]/branches/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "POST /api/integrations/[provider]/connect",
+    "file": "apps/internal/app/api/integrations/[provider]/connect/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "POST /api/integrations/[provider]/disconnect",
+    "file": "apps/internal/app/api/integrations/[provider]/disconnect/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/integrations/[provider]/projects",
+    "file": "apps/internal/app/api/integrations/[provider]/projects/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/integrations/[provider]/status",
+    "file": "apps/internal/app/api/integrations/[provider]/status/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "POST /api/integrations/audit-responses",
+    "file": "apps/internal/app/api/integrations/audit-responses/route.ts",
+    "kind": "token",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "POST /api/integrations/connected-apps/revoke",
+    "file": "apps/internal/app/api/integrations/connected-apps/revoke/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/integrations/connected-apps",
+    "file": "apps/internal/app/api/integrations/connected-apps/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "POST /api/integrations/contact-submissions",
+    "file": "apps/internal/app/api/integrations/contact-submissions/route.ts",
+    "kind": "token",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "POST /api/integrations/github/disconnect",
+    "file": "apps/internal/app/api/integrations/github/disconnect/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/integrations/github/repos",
+    "file": "apps/internal/app/api/integrations/github/repos/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/integrations/github/status",
+    "file": "apps/internal/app/api/integrations/github/status/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "POST /api/integrations/google/disconnect",
+    "file": "apps/internal/app/api/integrations/google/disconnect/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/integrations/google/status",
+    "file": "apps/internal/app/api/integrations/google/status/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/integrations/services/status",
+    "file": "apps/internal/app/api/integrations/services/status/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "POST /api/integrations/stripe",
+    "file": "apps/internal/app/api/integrations/stripe/route.ts",
+    "kind": "public",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "POST /api/invoices/[id]/checkout",
+    "file": "apps/internal/app/api/invoices/[id]/checkout/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/leads/[leadId]/conversion",
+    "file": "apps/internal/app/api/leads/[leadId]/conversion/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/leads/[leadId]/tasks",
+    "file": "apps/internal/app/api/leads/[leadId]/tasks/route.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/leads/[leadId]/updates",
+    "file": "apps/internal/app/api/leads/[leadId]/updates/route.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "route",
+    "name": "POST /api/my-tasks/done-window",
+    "file": "apps/internal/app/api/my-tasks/done-window/route.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "route",
+    "name": "POST /api/my-tasks/due-date",
+    "file": "apps/internal/app/api/my-tasks/due-date/route.ts",
+    "kind": "capability",
+    "capability": "projects.view_member"
+  },
+  {
+    "type": "route",
+    "name": "POST /api/my-tasks/reorder",
+    "file": "apps/internal/app/api/my-tasks/reorder/route.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/my-tasks",
+    "file": "apps/internal/app/api/my-tasks/route.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/notifications",
+    "file": "apps/internal/app/api/notifications/route.ts",
+    "kind": "capability",
+    "capability": "widget.notifications"
+  },
+  {
+    "type": "route",
+    "name": "POST /api/notifications",
+    "file": "apps/internal/app/api/notifications/route.ts",
+    "kind": "capability",
+    "capability": "widget.notifications"
+  },
+  {
+    "type": "route",
+    "name": "POST /api/planning/generate",
+    "file": "apps/internal/app/api/planning/generate/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/project-members",
+    "file": "apps/internal/app/api/project-members/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "DELETE /api/projects/[projectId]/github-repos/[linkId]",
+    "file": "apps/internal/app/api/projects/[projectId]/github-repos/[linkId]/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/projects/[projectId]/github-repos/[linkId]",
+    "file": "apps/internal/app/api/projects/[projectId]/github-repos/[linkId]/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/projects/[projectId]/github-repos",
+    "file": "apps/internal/app/api/projects/[projectId]/github-repos/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "POST /api/projects/[projectId]/github-repos",
+    "file": "apps/internal/app/api/projects/[projectId]/github-repos/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "DELETE /api/projects/[projectId]/integration-links/[linkId]",
+    "file": "apps/internal/app/api/projects/[projectId]/integration-links/[linkId]/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/projects/[projectId]/integration-links",
+    "file": "apps/internal/app/api/projects/[projectId]/integration-links/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "POST /api/projects/[projectId]/integration-links",
+    "file": "apps/internal/app/api/projects/[projectId]/integration-links/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/projects/[projectId]/overview",
+    "file": "apps/internal/app/api/projects/[projectId]/overview/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/projects/[projectId]/tasks",
+    "file": "apps/internal/app/api/projects/[projectId]/tasks/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/projects/[projectId]/time-log-context",
+    "file": "apps/internal/app/api/projects/[projectId]/time-log-context/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "DELETE /api/projects/[projectId]/time-logs/[timeLogId]",
+    "file": "apps/internal/app/api/projects/[projectId]/time-logs/[timeLogId]/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "POST /api/projects/[projectId]/time-logs/[timeLogId]",
+    "file": "apps/internal/app/api/projects/[projectId]/time-logs/[timeLogId]/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "PATCH /api/projects/[projectId]/time-logs/[timeLogId]",
+    "file": "apps/internal/app/api/projects/[projectId]/time-logs/[timeLogId]/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/projects/[projectId]/time-logs",
+    "file": "apps/internal/app/api/projects/[projectId]/time-logs/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "POST /api/projects/[projectId]/time-logs",
+    "file": "apps/internal/app/api/projects/[projectId]/time-logs/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "POST /api/public/invoices/[token]/checkout",
+    "file": "apps/internal/app/api/public/invoices/[token]/checkout/route.ts",
+    "kind": "public",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/public/invoices/[token]/pdf",
+    "file": "apps/internal/app/api/public/invoices/[token]/pdf/route.ts",
+    "kind": "public",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/sheets/init",
+    "file": "apps/internal/app/api/sheets/init/route.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/storage/task-attachment/[attachmentId]",
+    "file": "apps/internal/app/api/storage/task-attachment/[attachmentId]/route.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/storage/user-avatar/[userId]",
+    "file": "apps/internal/app/api/storage/user-avatar/[userId]/route.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "route",
+    "name": "PATCH /api/task-comments/[commentId]",
+    "file": "apps/internal/app/api/task-comments/[commentId]/route.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "route",
+    "name": "DELETE /api/task-comments/[commentId]",
+    "file": "apps/internal/app/api/task-comments/[commentId]/route.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/tasks/[taskId]/comments",
+    "file": "apps/internal/app/api/tasks/[taskId]/comments/route.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "route",
+    "name": "POST /api/tasks/[taskId]/comments",
+    "file": "apps/internal/app/api/tasks/[taskId]/comments/route.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/tasks/[taskId]/summary",
+    "file": "apps/internal/app/api/tasks/[taskId]/summary/route.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/tasks/[taskId]/time-logs",
+    "file": "apps/internal/app/api/tasks/[taskId]/time-logs/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/templates/pdf/[id]",
+    "file": "apps/internal/app/api/templates/pdf/[id]/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "POST /api/uploads/task-attachment",
+    "file": "apps/internal/app/api/uploads/task-attachment/route.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "route",
+    "name": "DELETE /api/uploads/task-attachment",
+    "file": "apps/internal/app/api/uploads/task-attachment/route.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "route",
+    "name": "POST /api/uploads/user-avatar",
+    "file": "apps/internal/app/api/uploads/user-avatar/route.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "route",
+    "name": "DELETE /api/uploads/user-avatar",
+    "file": "apps/internal/app/api/uploads/user-avatar/route.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/v1/projects/[projectId]/calendar-tasks",
+    "file": "apps/internal/app/api/v1/projects/[projectId]/calendar-tasks/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/v1/tasks/[taskId]/attachments",
+    "file": "apps/internal/app/api/v1/tasks/[taskId]/attachments/route.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "route",
+    "name": "PATCH /api/v1/tasks/[taskId]/reorder",
+    "file": "apps/internal/app/api/v1/tasks/[taskId]/reorder/route.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "route",
+    "name": "GET /auth/callback",
+    "file": "apps/internal/app/auth/callback/route.ts",
+    "kind": "public",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /auth/confirm",
+    "file": "apps/internal/app/auth/confirm/route.ts",
+    "kind": "public",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/",
+    "file": "apps/internal/app/page.tsx",
+    "kind": "public",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/unauthorized",
+    "file": "apps/internal/app/unauthorized/page.tsx",
+    "kind": "public",
+    "capability": null
+  }
+]

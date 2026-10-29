@@ -59,7 +59,11 @@ export function ProjectSheet(props: Props) {
 
   const currentOwnerId = form.watch('ownerId')
   const ownerOptions = useMemo(
-    () => buildOwnerOptions(props.adminUsers ?? [], currentOwnerId || null),
+    () =>
+      // No "Unassigned" row in the sheet: the picker's clear button unassigns.
+      buildOwnerOptions(props.adminUsers ?? [], currentOwnerId || null).filter(
+        option => option.value !== ''
+      ),
     [currentOwnerId, props.adminUsers]
   )
 

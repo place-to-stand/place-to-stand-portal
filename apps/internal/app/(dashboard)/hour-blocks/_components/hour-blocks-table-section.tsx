@@ -1,12 +1,15 @@
 'use client'
 
 import Link from 'next/link'
-import { Archive, Building2, Info, RefreshCw, Trash2 } from 'lucide-react'
+import { Building2, Info } from 'lucide-react'
 
-import { RowActionButton } from '@pts/ui/row-action-button'
 import { EmptyState } from '@pts/ui/empty-state'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import {
+  RecordRowAction,
+  RecordRowActions,
+} from '@/components/table/record-row-action'
+import { EmptyValue } from '@/components/table/empty-value'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
 import { formatCalendarDate } from '@pts/ui/dates'
@@ -49,7 +52,8 @@ export type HourBlocksTableSectionProps = {
 
 const toHours = (value: number) => `${value.toLocaleString()}h`
 
-const formatTimestamp = (value: string) => formatCalendarDate(value) ?? '—'
+const formatTimestamp = (value: string) =>
+  formatCalendarDate(value) ?? <EmptyValue />
 
 export function HourBlocksTableSection({
   hourBlocks,
@@ -95,16 +99,12 @@ export function HourBlocksTableSection({
             >
               Created on
             </SortableTableHead>
-            <TableHead className='w-32 text-right'>Actions</TableHead>
+            <TableHead className='w-24 text-right'>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {hourBlocks.map(block => {
             const client = block.client
-            const invoiceNumber =
-              block.invoice_number && block.invoice_number.length > 0
-                ? block.invoice_number
-                : '—'
             const isArchived = Boolean(block.deleted_at)
             const isDeleting = isPending && pendingDeleteId === block.id
             const isRestoring = isPending && pendingRestoreId === block.id
@@ -151,9 +151,13 @@ export function HourBlocksTableSection({
                 <TableCell>
                   <div className='flex min-w-0 items-center gap-2 text-sm'>
                     <Building2 className='text-muted-foreground h-4 w-4 shrink-0' />
-                    <span className='truncate'>
-                      {client ? client.name : 'Unassigned'}
-                    </span>
+                    {client ? (
+                      <span className='truncate' title={client.name}>
+                        {client.name}
+                      </span>
+                    ) : (
+                      <EmptyValue />
+                    )}
                   </div>
                   {client?.deleted_at ? (
                     <p className='text-destructive text-xs'>Client archived</p>
@@ -167,10 +171,12 @@ export function HourBlocksTableSection({
                     >
                       {block.invoice_number}
                     </Link>
-                  ) : (
+                  ) : block.invoice_number ? (
                     <span className='text-muted-foreground'>
-                      {invoiceNumber}
+                      {block.invoice_number}
                     </span>
+                  ) : (
+                    <EmptyValue />
                   )}
                 </TableCell>
                 <TableCell label='Hours' className='text-sm'>
@@ -200,50 +206,35 @@ export function HourBlocksTableSection({
                   {formatTimestamp(block.created_at)}
                 </TableCell>
                 <TableCell className='text-right max-md:ml-auto'>
-                  <div className='flex justify-end gap-2'>
+                  <RecordRowActions>
                     {showRestore ? (
-                      <DisabledFieldTooltip
+                      <RecordRowAction
+                        kind='restore'
+                        entity='hour block'
+                        onClick={() => onRestore(block)}
                         disabled={restoreDisabled}
-                        reason={restoreDisabledReason}
-                      >
-                        <RowActionButton
-                          label='Restore hour block'
-                          icon={<RefreshCw />}
-                          variant='outline'
-                          onClick={() => onRestore(block)}
-                          disabled={restoreDisabled}
-                        />
-                      </DisabledFieldTooltip>
+                        disabledReason={restoreDisabledReason}
+                      />
                     ) : null}
                     {showArchive ? (
-                      <DisabledFieldTooltip
+                      <RecordRowAction
+                        kind='archive'
+                        entity='hour block'
+                        onClick={() => onRequestDelete(block)}
                         disabled={archiveDisabled}
-                        reason={archiveDisabledReason}
-                      >
-                        <RowActionButton
-                          label='Archive hour block'
-                          icon={<Archive />}
-                          variant='destructive'
-                          onClick={() => onRequestDelete(block)}
-                          disabled={archiveDisabled}
-                        />
-                      </DisabledFieldTooltip>
+                        disabledReason={archiveDisabledReason}
+                      />
                     ) : null}
                     {showDestroy ? (
-                      <DisabledFieldTooltip
+                      <RecordRowAction
+                        kind='destroy'
+                        entity='hour block'
+                        onClick={() => onRequestDestroy(block)}
                         disabled={destroyDisabled}
-                        reason={destroyDisabledReason}
-                      >
-                        <RowActionButton
-                          label='Permanently delete hour block'
-                          icon={<Trash2 />}
-                          variant='destructive'
-                          onClick={() => onRequestDestroy(block)}
-                          disabled={destroyDisabled}
-                        />
-                      </DisabledFieldTooltip>
+                        disabledReason={destroyDisabledReason}
+                      />
                     ) : null}
-                  </div>
+                  </RecordRowActions>
                 </TableCell>
               </TableRow>
             )

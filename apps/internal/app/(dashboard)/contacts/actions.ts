@@ -23,7 +23,6 @@ import type {
 } from '@/lib/settings/contacts/actions'
 import {
   getContactSheetData as getSheetData,
-  syncContactClients as syncClients,
   type ContactSheetData,
 } from '@/lib/queries/contacts'
 import {
@@ -88,13 +87,13 @@ async function runContactMutation<TInput>(
   return result
 }
 
-/**
- * Fetches all data needed for the contact sheet client picker.
- */
+/** The contact sheet's read-only client list. */
 export async function getContactSheetData(
-  contactId?: string
+  contactId: string
 ): Promise<ContactSheetData> {
   const user = await requireCrmUser()
+  // Server actions take arbitrary input; guard before the uuid cast.
+  if (!UUID_PATTERN.test(contactId)) return { linkedClients: [] }
   return getSheetData(user, contactId)
 }
 
@@ -123,25 +122,6 @@ export async function promoteContactToUser(
       revalidatePath(path)
     }
     revalidatePath('/settings/users')
-  }
-
-  return result
-}
-
-/**
- * Syncs the client links for a contact (adds new, removes unlinked).
- */
-export async function syncContactClients(
-  contactId: string,
-  clientIds: string[]
-): Promise<{ ok: boolean; error?: string }> {
-  const user = await requireUser()
-  const result = await syncClients(user, contactId, clientIds)
-
-  if (result.ok) {
-    for (const path of CONTACT_ROUTES_TO_REVALIDATE) {
-      revalidatePath(path)
-    }
   }
 
   return result

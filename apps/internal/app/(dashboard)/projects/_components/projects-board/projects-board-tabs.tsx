@@ -25,6 +25,8 @@ export type ProjectActionControls = {
   archiveDisabledReason: string | null
   onEdit: () => void
   onArchive: () => void
+  /** Opens the Log time dialog; absent when time can't be logged here. */
+  onLogTime?: () => void
 } | null
 
 export type ProjectsBoardTabsProps = {

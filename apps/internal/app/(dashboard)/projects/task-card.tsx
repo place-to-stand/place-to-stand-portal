@@ -108,48 +108,59 @@ function CardContent({
               className={cn(
                 'text-muted-foreground text-xs',
                 context.layout === 'stacked'
-                  ? 'flex flex-col items-start gap-2'
-                  : 'flex flex-wrap items-center gap-3'
+                  ? 'flex min-w-0 flex-col items-start gap-2'
+                  : 'flex min-w-0 flex-wrap items-center gap-3'
               )}
             >
               {context.clientLabel ? (
                 context.clientHref ? (
-                  <div className='flex items-center gap-1'>
+                  <div className='flex max-w-full min-w-0 items-center gap-1'>
                     <Link
                       href={context.clientHref}
-                      className='hover:text-foreground inline-flex items-center gap-1 underline-offset-4 transition hover:underline'
+                      title={context.clientLabel}
+                      className='hover:text-foreground inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
                       onClick={event => event.stopPropagation()}
                     >
                       {renderProjectTypeIcon(
                         context?.projectType,
-                        'h-3.5 w-3.5'
+                        'h-3.5 w-3.5 shrink-0'
                       )}
-                      {context.clientLabel}
+                      <span className='truncate'>{context.clientLabel}</span>
                     </Link>
                   </div>
                 ) : (
-                  <span className='inline-flex items-center gap-1'>
-                    {renderProjectTypeIcon(context?.projectType, 'h-3.5 w-3.5')}
-                    {context.clientLabel}
+                  <span
+                    className='inline-flex max-w-full min-w-0 items-center gap-1'
+                    title={context.clientLabel}
+                  >
+                    {renderProjectTypeIcon(
+                      context?.projectType,
+                      'h-3.5 w-3.5 shrink-0'
+                    )}
+                    <span className='truncate'>{context.clientLabel}</span>
                   </span>
                 )
               ) : null}
               {context.projectLabel ? (
                 context.projectHref ? (
-                  <div className='flex items-center gap-1'>
+                  <div className='flex max-w-full min-w-0 items-center gap-1'>
                     <Link
                       href={context.projectHref}
-                      className='hover:text-foreground inline-flex items-center gap-1 underline-offset-4 transition hover:underline'
+                      title={context.projectLabel}
+                      className='hover:text-foreground inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
                       onClick={event => event.stopPropagation()}
                     >
-                      <FolderKanban className='h-3.5 w-3.5' aria-hidden />
-                      {context.projectLabel}
+                      <FolderKanban className='h-3.5 w-3.5 shrink-0' aria-hidden />
+                      <span className='truncate'>{context.projectLabel}</span>
                     </Link>
                   </div>
                 ) : (
-                  <span className='inline-flex items-center gap-1'>
-                    <FolderKanban className='h-3.5 w-3.5' aria-hidden />
-                    {context.projectLabel}
+                  <span
+                    className='inline-flex max-w-full min-w-0 items-center gap-1'
+                    title={context.projectLabel}
+                  >
+                    <FolderKanban className='h-3.5 w-3.5 shrink-0' aria-hidden />
+                    <span className='truncate'>{context.projectLabel}</span>
                   </span>
                 )
               ) : null}

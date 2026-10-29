@@ -1,11 +1,13 @@
 'use client'
 
-import { Archive, Building2, RefreshCw, Trash2 } from 'lucide-react'
+import { Building2 } from 'lucide-react'
 
-import { Badge } from '@pts/ui/badge'
 import { EmptyState } from '@pts/ui/empty-state'
-import { RowActionButton } from '@pts/ui/row-action-button'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { EmptyValue } from '@/components/table/empty-value'
+import {
+  RecordRowAction,
+  RecordRowActions,
+} from '@/components/table/record-row-action'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
 import { isClientSortValue } from '@/lib/settings/clients/filters'
@@ -19,7 +21,6 @@ import {
 } from '@pts/ui/table'
 
 import { cn } from '@/lib/utils'
-import { getStatusBadgeToken } from '@/lib/constants'
 import type { ClientsTableClient } from '@/lib/settings/clients/use-clients-table-state'
 import {
   CLIENT_BILLING_TYPE_SELECT_OPTIONS,
@@ -75,14 +76,19 @@ export function ClientsTableSection({
 }: ClientsTableSectionProps) {
   const { update, getParam } = useListParams({
     basePath,
-    resetKeys: ['cursor', 'dir'],
+    resetKeys: ['page'],
   })
   const rawSort = getParam('sort')
   const sort = rawSort && isClientSortValue(rawSort) ? rawSort : undefined
 
   return (
     <div className='overflow-hidden rounded-lg border'>
-      <Table density='compact' layout='fixed' className='min-w-[38rem]'>
+      <Table
+        density='compact'
+        layout='fixed'
+        stack
+        className='md:min-w-[32rem]'
+      >
         <TableHeader>
           <TableRow className='bg-muted/40'>
             <SortableTableHead
@@ -90,22 +96,20 @@ export function ClientsTableSection({
               sort={sort}
               defaultSort='name:asc'
               onSortChange={next => update({ sort: next })}
-              className='w-[34%]'
+              className='w-[45%]'
             >
               Name
             </SortableTableHead>
-            <TableHead className='w-[20%]'>Billing type</TableHead>
-            <TableHead className='w-[18%]'>Active projects</TableHead>
-            <TableHead className='w-[14%]'>Status</TableHead>
-            <TableHead className='w-32 text-right'>Actions</TableHead>
+            <TableHead className='w-[25%]'>Billing type</TableHead>
+            <TableHead className='w-[20%] text-center'>
+              Active projects
+            </TableHead>
+            <TableHead className='w-24 text-right'>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {clients.map(client => {
             const activeProjects = client.metrics?.active_projects ?? 0
-
-            const statusLabel = client.deleted_at ? 'Archived' : 'Active'
-            const statusTone = client.deleted_at ? 'archived' : 'active'
 
             const isDeleting = isPending && pendingDeleteId === client.id
             const isRestoring = isPending && pendingRestoreId === client.id
@@ -150,73 +154,61 @@ export function ClientsTableSection({
               >
                 <TableCell>
                   <div className='flex min-w-0 items-center gap-2'>
-                    <Building2 className='text-muted-foreground h-4 w-4 shrink-0' />
-                    <span className='truncate font-medium'>{client.name}</span>
+                    <Building2 className='h-4 w-4 shrink-0 text-blue-500' />
+                    <span className='truncate font-medium' title={client.name}>
+                      {client.name}
+                    </span>
                   </div>
                 </TableCell>
-                <TableCell className='text-muted-foreground text-sm'>
-                  {BILLING_TYPE_LABELS[client.billing_type] ?? '—'}
+                <TableCell
+                  label='Billing'
+                  className='text-muted-foreground text-sm'
+                >
+                  {BILLING_TYPE_LABELS[client.billing_type] ?? <EmptyValue />}
                 </TableCell>
-                <TableCell className='text-sm'>{activeProjects}</TableCell>
-                <TableCell>
-                  <Badge
-                    className={cn('text-xs', getStatusBadgeToken(statusTone))}
-                  >
-                    {statusLabel}
-                  </Badge>
+                <TableCell
+                  label='Active projects'
+                  className='text-sm md:text-center'
+                >
+                  {activeProjects}
                 </TableCell>
-                <TableCell className='text-right'>
-                  <div className='flex justify-end gap-2'>
+                <TableCell className='text-right max-md:ml-auto'>
+                  <RecordRowActions>
                     {showRestore ? (
-                      <DisabledFieldTooltip
+                      <RecordRowAction
+                        kind='restore'
+                        entity='client'
+                        onClick={() => onRestore(client)}
                         disabled={restoreDisabled}
-                        reason={restoreDisabledReason}
-                      >
-                        <RowActionButton
-                          label='Restore client'
-                          icon={<RefreshCw />}
-                          variant='outline'
-                          onClick={() => onRestore(client)}
-                          disabled={restoreDisabled}
-                        />
-                      </DisabledFieldTooltip>
+                        disabledReason={restoreDisabledReason}
+                      />
                     ) : null}
                     {showSoftDelete ? (
-                      <DisabledFieldTooltip
+                      <RecordRowAction
+                        kind='archive'
+                        entity='client'
+                        onClick={() => onRequestDelete(client)}
                         disabled={deleteDisabled}
-                        reason={deleteDisabledReason}
-                      >
-                        <RowActionButton
-                          label='Archive client'
-                          icon={<Archive />}
-                          variant='destructive'
-                          onClick={() => onRequestDelete(client)}
-                          disabled={deleteDisabled}
-                        />
-                      </DisabledFieldTooltip>
+                        disabledReason={deleteDisabledReason}
+                      />
                     ) : null}
                     {showDestroy ? (
-                      <DisabledFieldTooltip
+                      <RecordRowAction
+                        kind='destroy'
+                        entity='client'
+                        onClick={() => onRequestDestroy(client)}
                         disabled={destroyDisabled}
-                        reason={destroyDisabledReason}
-                      >
-                        <RowActionButton
-                          label='Permanently delete client'
-                          icon={<Trash2 />}
-                          variant='destructive'
-                          onClick={() => onRequestDestroy(client)}
-                          disabled={destroyDisabled}
-                        />
-                      </DisabledFieldTooltip>
+                        disabledReason={destroyDisabledReason}
+                      />
                     ) : null}
-                  </div>
+                  </RecordRowActions>
                 </TableCell>
               </TableRow>
             )
           })}
           {clients.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className='p-4'>
+              <TableCell colSpan={4} className='p-4'>
                 <EmptyState message={emptyMessage} />
               </TableCell>
             </TableRow>

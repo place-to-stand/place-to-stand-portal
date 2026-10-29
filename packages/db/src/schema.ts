@@ -216,6 +216,11 @@ export const clients = pgTable(
      * companies added in migration 0096 (companies is defined later).
      */
     companyId: uuid('company_id'),
+    /**
+     * Optional short label telling apart two billing setups for one company
+     * ("Retainer"). The client's name is its company's name plus this.
+     */
+    label: text(),
     createdBy: uuid('created_by'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)

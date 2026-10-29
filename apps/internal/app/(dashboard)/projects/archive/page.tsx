@@ -27,17 +27,20 @@ export default async function ProjectsArchivePage({
 }: PageProps<'/projects/archive'>) {
   const admin = await requireRole('ADMIN')
   const params = await searchParams
-  const preferredPageSize = await readPageSize()
-  const { searchQuery, cursor, direction, limit, sort } =
-    parseProjectsSearchParams(params)
+  const pageSize = await readPageSize()
+  const {
+    searchQuery,
+    page: currentPage,
+    sort,
+  } = parseProjectsSearchParams(params)
+  const offset = (currentPage - 1) * pageSize
 
   const [archiveResult, adminUsersResult] = await Promise.all([
     listProjectsForSettings(admin, {
       status: 'archived',
       search: searchQuery ?? '',
-      cursor,
-      direction,
-      limit: limit ?? preferredPageSize,
+      offset,
+      limit: pageSize,
       sort,
     }),
     fetchAdminUsers(),
@@ -60,6 +63,11 @@ export default async function ProjectsArchivePage({
   const hydratedProjects: ProjectWithClient[] =
     archiveResult.items.map(mapProjectToTableRow)
 
+  const totalPages = Math.max(
+    1,
+    Math.ceil(archiveResult.totalCount / pageSize)
+  )
+
   return (
     <PageShell
       breadcrumbs={[...crumbsForNav('/projects'), { label: 'Archive' }]}
@@ -79,8 +87,10 @@ export default async function ProjectsArchivePage({
         adminUsers={adminUsers}
         contractorUsers={[]}
         membersByProject={{}}
-        pageInfo={archiveResult.pageInfo}
-        pageSize={limit ?? preferredPageSize}
+        totalCount={archiveResult.totalCount}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        pageSize={pageSize}
         filters={
           <ProjectsArchiveFilters search={searchQuery ?? undefined} />
         }

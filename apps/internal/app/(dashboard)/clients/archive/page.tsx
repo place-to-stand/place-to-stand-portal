@@ -23,9 +23,14 @@ export default async function ClientsArchivePage({
 }: PageProps<'/clients/archive'>) {
   const admin = await requireRole('ADMIN')
   const params = await searchParams
-  const preferredPageSize = await readPageSize()
-  const { cursor, direction, limit, billing, search, sort } =
-    parseClientsSearchParams(params)
+  const pageSize = await readPageSize()
+  const {
+    page: currentPage,
+    billing,
+    search,
+    sort,
+  } = parseClientsSearchParams(params)
+  const offset = (currentPage - 1) * pageSize
 
   // Share links: `?client=<id>` opens the edit sheet even when the row sits
   // on another page (redirects to the active tab when it isn't archived).
@@ -36,16 +41,17 @@ export default async function ClientsArchivePage({
     'archive'
   )
 
-  const { items, totalCount, unfilteredTotalCount, pageInfo } =
+  const { items, totalCount, unfilteredTotalCount } =
     await listClientsForSettings(admin, {
       status: 'archived',
       billing,
       search,
-      cursor,
-      direction,
-      limit: limit ?? preferredPageSize,
+      offset,
+      limit: pageSize,
       sort,
     })
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
 
   const clientsForTable = items.map(mapClientToTableRow)
 
@@ -69,8 +75,10 @@ export default async function ClientsArchivePage({
         />
         <ClientsManagementTable
           clients={clientsForTable}
-          pageInfo={pageInfo}
-          pageSize={limit ?? preferredPageSize}
+          totalCount={totalCount}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          pageSize={pageSize}
           mode='archive'
           basePath='/clients/archive'
           deepLinkedClient={deepLink.record}

@@ -1,11 +1,10 @@
 'use client'
 
-import { useMemo, type ReactNode } from 'react'
+import { useCallback, useMemo, type ReactNode } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { PaginationControls } from '@/components/ui/pagination-controls'
 import { useToast } from '@/components/ui/use-toast'
-import type { PageInfo } from '@/lib/pagination/cursor'
 import type {
   ClientRow,
   ProjectWithClient,
@@ -27,8 +26,9 @@ type ProjectsManagementSectionProps = {
   adminUsers: AdminUserForOwner[]
   contractorUsers: ContractorUserSummary[]
   membersByProject: Record<string, ContractorUserSummary[]>
-  pageInfo: PageInfo
-  /** Rows-per-page the list was served with (drives the footer selector). */
+  totalCount: number
+  currentPage: number
+  totalPages: number
   pageSize: number
   /** Toolbar row (FilterBar) rendered inside the card, above the table. */
   filters?: ReactNode
@@ -45,7 +45,9 @@ export function ProjectsManagementSection({
   adminUsers,
   contractorUsers,
   membersByProject,
-  pageInfo,
+  totalCount,
+  currentPage,
+  totalPages,
   pageSize,
   filters,
 }: ProjectsManagementSectionProps) {
@@ -84,23 +86,19 @@ export function ProjectsManagementSection({
 
   const pendingReason = PENDING_REASON
 
-  const handlePaginate = (direction: 'forward' | 'backward') => {
-    const cursorValue =
-      direction === 'forward' ? pageInfo.endCursor : pageInfo.startCursor
-
-    if (!cursorValue) {
-      return
-    }
-
-    const params = new URLSearchParams(searchParams.toString())
-    params.set('cursor', cursorValue)
-    params.set('dir', direction)
-    const query = params.toString()
-    router.push(query ? `${pathname}?${query}` : pathname)
-  }
-
-  const hasNextPage = pageInfo.hasNextPage
-  const hasPreviousPage = pageInfo.hasPreviousPage
+  const handlePageChange = useCallback(
+    (page: number) => {
+      const params = new URLSearchParams(searchParams.toString())
+      if (page <= 1) {
+        params.delete('page')
+      } else {
+        params.set('page', String(page))
+      }
+      const query = params.toString()
+      router.push(query ? `${pathname}?${query}` : pathname)
+    },
+    [pathname, router, searchParams]
+  )
 
   // Active `?q=` flips the empty state to the filtered message (R4).
   const hasActiveFilter = Boolean(searchParams.get('q')?.trim())
@@ -139,13 +137,12 @@ export function ProjectsManagementSection({
           emptyMessage={emptyMessage}
         />
         <PaginationControls
-          hasNextPage={hasNextPage}
-          hasPreviousPage={hasPreviousPage}
-          onNext={() => handlePaginate('forward')}
-          onPrevious={() => handlePaginate('backward')}
-          disableAll={isPending}
+          mode='paged'
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalCount}
           pageSize={pageSize}
-          itemCount={projects.length}
+          onPageChange={handlePageChange}
         />
       </section>
       <ProjectSheet

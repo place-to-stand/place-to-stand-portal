@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { Button } from '@pts/ui/button'
+import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 
@@ -63,19 +63,13 @@ export function UsersManagementTable({
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
-  const {
-    rows,
-    sheet,
-    deleteDialog,
-    destroyDialog,
-    disableDialog,
-    selfDeleteReason,
-  } = useUsersTableState({
-    users,
-    currentUserId,
-    assignments,
-    deepLinkedUser,
-  })
+  const { rows, sheet, deleteDialog, destroyDialog, disableDialog } =
+    useUsersTableState({
+      users,
+      currentUserId,
+      assignments,
+      deepLinkedUser,
+    })
   // Dismissing the not-found notice just drops the stale `?user=`.
   const dismissDeepLink = () => sheet.onOpenChange(false)
 
@@ -114,18 +108,7 @@ export function UsersManagementTable({
   return (
     <div className='space-y-4'>
       {userNotFound ? (
-        <div
-          role='status'
-          className='border-destructive/30 bg-destructive/5 flex items-center justify-between gap-3 rounded-md border px-4 py-3 text-sm'
-        >
-          <span>
-            The linked user could not be found. They may have been permanently
-            deleted.
-          </span>
-          <Button variant='ghost' size='sm' onClick={dismissDeepLink}>
-            Dismiss
-          </Button>
-        </div>
+        <DeepLinkNotFoundNotice entity='user' onDismiss={dismissDeepLink} />
       ) : null}
       <ConfirmDialog
         open={deleteDialog.open}
@@ -163,7 +146,6 @@ export function UsersManagementTable({
         assignments={assignments}
         mode={mode}
         emptyMessage={emptyMessage}
-        selfDeleteReason={selfDeleteReason}
         clientPortalUrl={clientPortalUrl}
       />
       <PaginationControls

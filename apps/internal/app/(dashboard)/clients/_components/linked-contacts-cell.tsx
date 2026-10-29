@@ -19,7 +19,7 @@ export function LinkedContactsCell({ contacts }: LinkedContactsCellProps) {
   const count = contacts.length
 
   return (
-    <div className='flex items-center gap-2 text-sm'>
+    <span className='inline-flex items-center gap-2 text-sm'>
       <Contact className='text-muted-foreground h-4 w-4 shrink-0' />
       <LinkedRecordsHoverCell
         count={count}
@@ -42,6 +42,6 @@ export function LinkedContactsCell({ contacts }: LinkedContactsCellProps) {
           ) : null,
         }))}
       />
-    </div>
+    </span>
   )
 }

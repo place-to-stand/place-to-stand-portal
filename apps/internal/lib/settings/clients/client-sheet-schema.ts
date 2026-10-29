@@ -5,7 +5,10 @@ import {
 } from './billing-types'
 
 export const clientSheetFormSchema = z.object({
-  name: z.string().min(1, 'Client name is required'),
+  /** Display only: the client is named after its company and label. */
+  name: z.string().optional(),
+  /** Tells apart two billing setups for one company ("Retainer"). */
+  label: z.string().max(60).optional(),
   slug: z
     .string()
     .regex(/^[a-z0-9-]+$/, 'Lowercase letters, numbers, and dashes only')
@@ -25,8 +28,8 @@ export const clientSheetFormSchema = z.object({
     .or(z.literal(''))
     .optional(),
   notes: z.string().optional(),
-  /** The company this client is ('' = found or created from the name on create). */
-  companyId: z.string(),
+  /** The company this client is. */
+  companyId: z.string().min(1, 'Pick or create the company this client is'),
 })
 
 export type ClientSheetFormValues = z.infer<typeof clientSheetFormSchema>

@@ -18,10 +18,9 @@ export type DeleteButtonState = {
   reason: string | null
 }
 
-
-
-const MISSING_CLIENT_REASON =
-  'Create a client before logging hour blocks.'
+/** Why hour-block creation is off: shared by the add button and the sheet. */
+export const HOUR_BLOCK_MISSING_CLIENT_REASON =
+  'Add a client before creating an hour block.'
 
 export const deriveClientFieldState = (
   isPending: boolean,
@@ -32,7 +31,7 @@ export const deriveClientFieldState = (
     ? isPending
       ? PENDING_REASON
       : clientOptions.length === 0
-        ? MISSING_CLIENT_REASON
+        ? HOUR_BLOCK_MISSING_CLIENT_REASON
         : null
     : null
 
@@ -58,7 +57,7 @@ export const deriveSubmitButtonState = (
       ? PENDING_REASON
       : hasClients
         ? null
-        : MISSING_CLIENT_REASON
+        : HOUR_BLOCK_MISSING_CLIENT_REASON
   }
 
   const label = getSubmitLabel({

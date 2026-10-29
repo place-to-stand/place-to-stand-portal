@@ -1,3 +1,4 @@
+// permission: public — unguessable share token
 import { NextResponse } from 'next/server'
 import { and, eq, isNull } from 'drizzle-orm'
 

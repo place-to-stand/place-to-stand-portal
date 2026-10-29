@@ -6,6 +6,7 @@ import {
   eq,
   gte,
   inArray,
+  isNotNull,
   isNull,
   lte,
   ne,
@@ -22,6 +23,7 @@ import {
   tasks,
   timeLogTasks,
   timeLogs,
+  users,
 } from '@/lib/db/schema'
 import {
   HOURS_WIDGET_LOG_PAGE_SIZE,
@@ -112,18 +114,52 @@ export async function fetchMyMonthTimeLogs(
 ): Promise<DashboardTimeLogPage> {
   const { year, month } = normalizeMonth(cursor.year, cursor.month)
   const { startDate, endDate } = buildMonthDateRange(year, month)
-  const limit = Math.max(1, options.limit ?? HOURS_WIDGET_LOG_PAGE_SIZE)
-  const offset = Math.max(0, options.offset ?? 0)
+  const page = await fetchTimeLogPage({
+    userId: user.id,
+    from: startDate,
+    to: endDate,
+    limit: options.limit ?? HOURS_WIDGET_LOG_PAGE_SIZE,
+    offset: options.offset,
+  })
+  return { items: page.items, totalCount: page.totalCount }
+}
 
-  const windowFilter = and(
-    eq(timeLogs.userId, user.id),
-    gte(timeLogs.loggedOn, startDate),
-    lte(timeLogs.loggedOn, endDate),
-    isNull(timeLogs.deletedAt),
+export type TimeLogPageFilters = {
+  userId?: string
+  clientId?: string
+  projectId?: string
+  /** Inclusive `logged_on` bounds, `YYYY-MM-DD`. */
+  from?: string
+  to?: string
+  limit: number
+  offset?: number
+  /** Archived (soft-deleted) logs instead of live ones. */
+  archived?: boolean
+}
+
+/**
+ * Time logs on live projects, newest first, offset-paged, with the total
+ * rows and hours across every page. Shared by the home Hours widget (my
+ * logs this month) and the Time logs page (everyone's, filtered). Callers
+ * check access: anyone else's logs are admin-only.
+ */
+export async function fetchTimeLogPage(
+  filters: TimeLogPageFilters
+): Promise<DashboardTimeLogPage & { totalHours: number }> {
+  const limit = Math.max(1, filters.limit)
+  const offset = Math.max(0, filters.offset ?? 0)
+
+  const where = and(
+    filters.userId ? eq(timeLogs.userId, filters.userId) : undefined,
+    filters.clientId ? eq(projects.clientId, filters.clientId) : undefined,
+    filters.projectId ? eq(timeLogs.projectId, filters.projectId) : undefined,
+    filters.from ? gte(timeLogs.loggedOn, filters.from) : undefined,
+    filters.to ? lte(timeLogs.loggedOn, filters.to) : undefined,
+    filters.archived ? isNotNull(timeLogs.deletedAt) : isNull(timeLogs.deletedAt),
     isNull(projects.deletedAt)
   )
 
-  const [rows, [countRow]] = await Promise.all([
+  const [rows, [totals]] = await Promise.all([
     db
       .select({
         id: timeLogs.id,
@@ -131,6 +167,9 @@ export async function fetchMyMonthTimeLogs(
         hours: timeLogs.hours,
         note: timeLogs.note,
         createdAt: timeLogs.createdAt,
+        userId: timeLogs.userId,
+        userName: sql<string | null>`coalesce(${users.fullName}, ${users.email})`,
+        userAvatarUrl: users.avatarUrl,
         projectId: projects.id,
         projectName: projects.name,
         projectSlug: projects.slug,
@@ -141,23 +180,29 @@ export async function fetchMyMonthTimeLogs(
       .from(timeLogs)
       .innerJoin(projects, eq(timeLogs.projectId, projects.id))
       .leftJoin(clients, eq(projects.clientId, clients.id))
-      .where(windowFilter)
+      .leftJoin(users, eq(users.id, timeLogs.userId))
+      .where(where)
       // createdAt breaks ties within a day; id makes the order total, so paging
       // can't show or skip a row because two logs share a timestamp.
       .orderBy(desc(timeLogs.loggedOn), desc(timeLogs.createdAt), desc(timeLogs.id))
       .limit(limit)
       .offset(offset),
+    // numeric hours arrive as strings: sum in SQL, not JS floats.
     db
-      .select({ count: sql<number>`count(*)` })
+      .select({
+        count: sql<number>`count(*)`,
+        hours: sql<string>`coalesce(sum(${timeLogs.hours}), 0)`,
+      })
       .from(timeLogs)
       .innerJoin(projects, eq(timeLogs.projectId, projects.id))
-      .where(windowFilter),
+      .where(where),
   ])
 
-  const totalCount = Number(countRow?.count ?? 0)
+  const totalCount = Number(totals?.count ?? 0)
+  const totalHours = parseHours(totals?.hours ?? '0')
 
   if (!rows.length) {
-    return { items: [], totalCount }
+    return { items: [], totalCount, totalHours }
   }
 
   const taskTitlesByLog = await fetchLinkedTaskTitles(rows.map(row => row.id))
@@ -167,6 +212,9 @@ export async function fetchMyMonthTimeLogs(
     loggedOn: row.loggedOn,
     hours: parseHours(row.hours),
     note: row.note ?? null,
+    userId: row.userId,
+    userName: row.userName ?? null,
+    userAvatarUrl: row.userAvatarUrl ?? null,
     projectId: row.projectId,
     projectName: row.projectName ?? 'Untitled project',
     projectSlug: row.projectSlug ?? null,
@@ -176,7 +224,27 @@ export async function fetchMyMonthTimeLogs(
     taskTitles: taskTitlesByLog.get(row.id) ?? [],
   }))
 
-  return { items, totalCount }
+  return { items, totalCount, totalHours }
+}
+
+/**
+ * Every live (or archived) log on a live project, no other filter: the
+ * `of N` in the Time logs page's `Showing X of N`.
+ */
+export async function countTimeLogs({
+  archived = false,
+}: { archived?: boolean } = {}): Promise<number> {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(timeLogs)
+    .innerJoin(projects, eq(timeLogs.projectId, projects.id))
+    .where(
+      and(
+        archived ? isNotNull(timeLogs.deletedAt) : isNull(timeLogs.deletedAt),
+        isNull(projects.deletedAt)
+      )
+    )
+  return Number(row?.count ?? 0)
 }
 
 async function fetchLinkedTaskTitles(

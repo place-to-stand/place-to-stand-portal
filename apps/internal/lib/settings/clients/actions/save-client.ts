@@ -11,6 +11,8 @@ import {
 } from './types'
 import { createClient } from './create-client'
 import { updateClient } from './update-client'
+import { getLinkableCompany } from '@/lib/queries/companies'
+import { clientDisplayName } from '@/lib/companies/client-name'
 
 export async function saveClientMutation(
   context: ClientMutationContext,
@@ -39,15 +41,24 @@ export async function saveClientMutation(
     originationUserId,
     closers,
     companyId,
+    label,
   } = parsed.data
   const normalizedMemberIds = memberIds
     ? Array.from(new Set(memberIds)).filter(Boolean)
     : undefined
 
-  const trimmedName = name.trim()
+  // A client is named after its company (plus its label, if any).
+  let trimmedName = name.trim()
+  if (companyId) {
+    const company = await getLinkableCompany(companyId)
+    if (!company) {
+      return buildMutationResult({ error: 'That company no longer exists.' })
+    }
+    trimmedName = clientDisplayName(company.name, label)
+  }
 
   if (!trimmedName) {
-    return buildMutationResult({ error: 'Name is required.' })
+    return buildMutationResult({ error: 'Pick the company this client is.' })
   }
 
   const cleanedNotes = notes?.trim() ? notes.trim() : null
@@ -78,6 +89,7 @@ export async function saveClientMutation(
           notes: cleanedNotes,
           memberIds: normalizedMemberIds,
           companyId: companyId ?? null,
+          label,
         })
       }
 
@@ -96,6 +108,7 @@ export async function saveClientMutation(
         notes: cleanedNotes,
         memberIds: normalizedMemberIds,
         companyId,
+        label,
       })
     }
   )

@@ -71,7 +71,7 @@ export const CAPABILITIES = {
   'widget.notifications': {
     area: 'Dashboard',
     label: 'Notifications widget',
-    description: 'Your notification stream with read/unread and clear.',
+    description: 'Assignments, comments and due dates, with read and clear.',
     roles: STAFF,
     surfaces: ['app'],
   },
@@ -100,8 +100,8 @@ export const CAPABILITIES = {
   },
   'widget.quiet_leads': {
     area: 'Dashboard',
-    label: 'Leads gone quiet widget',
-    description: 'Your open leads, longest without a touch first.',
+    label: 'Aging leads widget',
+    description: 'Your open leads, longest since contact first.',
     roles: STAFF,
     surfaces: ['app'],
   },
@@ -130,9 +130,9 @@ export const CAPABILITIES = {
   },
   'projects.view_member': {
     area: 'Projects & tasks',
-    label: 'Work the task board of member projects',
+    label: 'Work on member projects',
     description:
-      'Create, edit and move tasks; comment and attach files on projects you are added to, plus your own personal boards.',
+      'Create, edit and move tasks, comment and attach files, on projects you’re a member of and your personal boards.',
     roles: STAFF,
     surfaces: ['app'],
     scope: { SALES: 'Only projects they are a member of' },
@@ -148,15 +148,15 @@ export const CAPABILITIES = {
   },
   'projects.manage': {
     area: 'Projects & tasks',
-    label: 'Edit projects, any project type, manage members',
+    label: 'Manage projects',
     description:
-      'Client and internal projects, owners, members and integrations.',
+      'Edit any project and create any type; owners, members and integrations.',
     roles: ADMIN_ONLY,
     surfaces: ['app'],
   },
   'projects.view_financials': {
     area: 'Projects & tasks',
-    label: 'See hours, billing and client notes on projects',
+    label: 'See project hours and billing',
     description:
       'Logged hours, billing terms, client notes, portal members, GitHub and integration links. Hidden from members.',
     roles: ADMIN_ONLY,
@@ -164,15 +164,15 @@ export const CAPABILITIES = {
   },
   'projects.admin_tabs': {
     area: 'Projects & tasks',
-    label: 'Time logs, review, overview and planning tabs',
-    description: 'The project tabs beyond the task board.',
+    label: 'Project admin tabs',
+    description: 'Time logs, review, overview and planning.',
     roles: ADMIN_ONLY,
     surfaces: ['app', 'mcp', 'cli'],
   },
   'tasks.move_off_client_project': {
     area: 'Projects & tasks',
     label: 'Move a task off a client project',
-    description: 'Members can move tasks only between projects they work.',
+    description: 'Members can only move tasks between projects they work on.',
     roles: ADMIN_ONLY,
     surfaces: ['app'],
   },
@@ -187,7 +187,7 @@ export const CAPABILITIES = {
   // Sales
   'leads.manage': {
     area: 'Sales',
-    label: 'Leads: view, create, edit, move stages',
+    label: 'Manage leads',
     description: 'The leads board, lead sheet and lead activity.',
     roles: STAFF,
     surfaces: ['app', 'mcp', 'cli'],
@@ -218,35 +218,35 @@ export const CAPABILITIES = {
   // Directory
   'companies.manage': {
     area: 'Directory',
-    label: 'Companies: view, create, edit, archive',
+    label: 'Manage companies',
     description: 'Company records, their people and leads.',
     roles: STAFF,
     surfaces: ['app'],
   },
   'contacts.manage': {
     area: 'Directory',
-    label: 'Contacts: view, create, edit, archive',
+    label: 'Manage contacts',
     description: 'People at companies, leads and clients.',
     roles: STAFF,
     surfaces: ['app', 'mcp', 'cli'],
   },
   'clients.manage': {
     area: 'Directory',
-    label: 'Clients: view, create, edit',
+    label: 'Manage clients',
     description: 'Client records, billing terms and portal members.',
     roles: ADMIN_ONLY,
     surfaces: ['app', 'mcp', 'cli'],
   },
   'activity.read_crm': {
     area: 'Directory',
-    label: 'Read lead, contact and company activity',
-    description: 'History on the CRM records.',
+    label: 'See CRM activity',
+    description: 'History of leads, contacts and companies.',
     roles: STAFF,
     surfaces: ['app', 'mcp'],
   },
   'activity.read_all': {
     area: 'Directory',
-    label: 'Read all activity',
+    label: 'See all activity',
     description: 'Project, client and billing history.',
     roles: ADMIN_ONLY,
     surfaces: ['app', 'mcp', 'cli'],
@@ -255,8 +255,8 @@ export const CAPABILITIES = {
   // Billing & reports
   'billing.manage': {
     area: 'Billing & reports',
-    label: 'Invoices, hour blocks and time logs',
-    description: 'Everything that touches money or billable hours.',
+    label: 'Manage billing',
+    description: 'Invoices, hour blocks and time logs.',
     roles: ADMIN_ONLY,
     surfaces: ['app', 'mcp', 'cli'],
   },
@@ -279,7 +279,7 @@ export const CAPABILITIES = {
   'settings.templates': {
     area: 'Settings',
     label: 'Email and notification templates',
-    description: 'Previews of everything the portal sends.',
+    description: 'Preview everything the portal sends.',
     roles: ADMIN_ONLY,
     surfaces: ['app'],
   },

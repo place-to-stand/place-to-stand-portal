@@ -5,6 +5,8 @@ import type React from 'react'
 import { useWatch, type UseFormReturn } from 'react-hook-form'
 
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { DatePicker } from '@/components/ui/date-picker'
+import { FormFeedback } from '@/components/sheets/form-feedback'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import {
   Form,
@@ -391,10 +393,8 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                       disabled={fieldState.date.disabled}
                       reason={fieldState.date.reason}
                     >
-                      <Input
+                      <DatePicker
                         {...field}
-                        value={field.value ?? ''}
-                        type='date'
                         disabled={fieldState.date.disabled}
                       />
                     </DisabledFieldTooltip>
@@ -414,10 +414,8 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                       disabled={fieldState.date.disabled}
                       reason={fieldState.date.reason}
                     >
-                      <Input
+                      <DatePicker
                         {...field}
-                        value={field.value ?? ''}
-                        type='date'
                         disabled={fieldState.date.disabled}
                       />
                     </DisabledFieldTooltip>
@@ -502,9 +500,11 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                           onChange={field.onChange}
                           onBlur={field.onBlur}
                           items={ownerOptions}
-                          searchPlaceholder='Search team members...'
-                          emptyMessage='No team members found.'
+                          placeholder='Unassigned'
+                          searchPlaceholder='Search teammates…'
+                          emptyMessage='No teammates found.'
                           disabled={fieldState.owner.disabled}
+                          onClear={() => field.onChange('')}
                         />
                       </DisabledFieldTooltip>
                     </FormControl>
@@ -552,11 +552,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
             </>
           ) : null}
 
-          {feedback ? (
-            <p className='border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm'>
-              {feedback}
-            </p>
-          ) : null}
+          <FormFeedback>{feedback}</FormFeedback>
         </form>
       </div>
       <SheetFormFooter
@@ -572,7 +568,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
         deleteDisabled={deleteButton.disabled}
         deleteDisabledReason={deleteButton.reason}
         onRequestDelete={onRequestDelete}
-        deleteAriaLabel='Click to archive this project'
+        deleteAriaLabel='Archive project'
       />
     </Form>
   )

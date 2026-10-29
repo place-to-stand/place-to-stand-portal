@@ -13,8 +13,8 @@ export const timeLogCreatedEvent = (args: {
 }): ActivityEvent => {
   const formattedHours = formatHours(args.hours)
   const summary = args.projectName
-    ? `Logged ${formattedHours} hours to ${args.projectName}`
-    : `Logged ${formattedHours} hours`
+    ? `Logged ${formattedHours} ${args.hours === 1 ? 'hour' : 'hours'} to ${args.projectName}`
+    : `Logged ${formattedHours} ${args.hours === 1 ? 'hour' : 'hours'}`
 
   return {
     verb: ActivityVerbs.TIME_LOG_CREATED,
@@ -61,11 +61,31 @@ export const timeLogDeletedEvent = (args: {
 }): ActivityEvent => {
   const formattedHours = formatHours(args.hours)
   const summary = args.projectName
-    ? `Deleted a ${formattedHours} hour time log from ${args.projectName}`
-    : `Deleted a ${formattedHours} hour time log`
+    ? `Archived a ${formattedHours} hour time log from ${args.projectName}`
+    : `Archived a ${formattedHours} hour time log`
 
   return {
     verb: ActivityVerbs.TIME_LOG_DELETED,
+    summary,
+    metadata: toMetadata({
+      hours: args.hours,
+      loggedOn: args.loggedOn,
+    }),
+  }
+}
+
+export const timeLogRestoredEvent = (args: {
+  hours: number
+  loggedOn: string
+  projectName?: string | null
+}): ActivityEvent => {
+  const formattedHours = formatHours(args.hours)
+  const summary = args.projectName
+    ? `Restored a ${formattedHours} hour time log to ${args.projectName}`
+    : `Restored a ${formattedHours} hour time log`
+
+  return {
+    verb: ActivityVerbs.TIME_LOG_RESTORED,
     summary,
     metadata: toMetadata({
       hours: args.hours,

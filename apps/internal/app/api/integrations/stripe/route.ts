@@ -1,3 +1,4 @@
+// permission: public — verified by Stripe signature
 import { NextResponse } from 'next/server'
 import { eq, sql } from 'drizzle-orm'
 
