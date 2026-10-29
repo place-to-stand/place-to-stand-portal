@@ -122,11 +122,16 @@ JOIN "companies" co ON co."id" = mi."company_id";
 --> statement-breakpoint
 
 -- 3. Who can see which client in the client portal: one source, derived.
--- Access needs a portal login, so a membership without one never counts.
+-- Access needs a portal login, so a membership without one never counts,
+-- and a login switched off on the Users page (disabled_at) or archived
+-- counts as no access everywhere, without touching the switches, so
+-- re-enabling restores exactly what they had.
 CREATE OR REPLACE VIEW "client_portal_access" AS
 SELECT cl."id" AS "client_id", m."contact_id", c."user_id"
 FROM "memberships" m
 JOIN "clients" cl ON cl."company_id" = m."company_id" AND cl."deleted_at" IS NULL
 JOIN "contacts" c ON c."id" = m."contact_id" AND c."deleted_at" IS NULL
   AND c."user_id" IS NOT NULL
+JOIN "users" u ON u."id" = c."user_id" AND u."deleted_at" IS NULL
+  AND u."disabled_at" IS NULL
 WHERE m."ended_at" IS NULL AND m."portal_access";

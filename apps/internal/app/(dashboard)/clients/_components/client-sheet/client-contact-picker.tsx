@@ -19,6 +19,8 @@ type ClientContactOption = {
   phone: string | null
   /** Has a portal login (`contacts.user_id`). */
   hasPortalAccess: boolean
+  /** Login switched off on the Users page: no access until it's back on. */
+  signInDisabled?: boolean
   companyId?: string | null
   /** The company's primary contact (read-only here). */
   isPrimary?: boolean
@@ -105,7 +107,11 @@ export function ClientPortalAccessList({
             contact={contact}
             titleAddon={contact.hasPortalAccess ? <PortalLoginMark /> : null}
             note={
-              contact.isPrimary ? (
+              contact.signInDisabled ? (
+                <span className='text-warning'>
+                  Sign-in off (Users page): no access until it&apos;s back on
+                </span>
+              ) : contact.isPrimary ? (
                 <PrimaryNote />
               ) : contact.hasPortalAccess ? undefined : (
                 'No portal login'

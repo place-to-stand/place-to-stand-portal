@@ -21,6 +21,8 @@ export type ClientContactOption = {
   email: string | null
   phone: string | null
   hasPortalAccess: boolean
+  /** Login switched off on the Users page: no access until it's back on. */
+  signInDisabled?: boolean
   /** Their company's primary contact (set on the company). */
   isPrimary?: boolean
 }

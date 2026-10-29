@@ -59,6 +59,12 @@ LEFT JOIN "contacts" c ON c."user_id" = cm."user_id"
 WHERE cm."deleted_at" IS NULL
   -- An archived contact losing access is intended (archiving revokes it).
   AND (c."id" IS NULL OR c."deleted_at" IS NULL)
+  -- Nor for a login switched off or archived on the Users page.
+  AND NOT EXISTS (
+    SELECT 1 FROM "users" u
+    WHERE u."id" = cm."user_id"
+      AND (u."disabled_at" IS NOT NULL OR u."deleted_at" IS NOT NULL)
+  )
   AND NOT EXISTS (
     SELECT 1 FROM "client_portal_access" a
     WHERE a."user_id" = cm."user_id" AND a."client_id" = cm."client_id"

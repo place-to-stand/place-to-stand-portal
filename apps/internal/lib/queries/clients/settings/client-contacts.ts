@@ -26,6 +26,12 @@ import {
   setPortalAccess,
 } from '@/lib/queries/memberships'
 
+const signInDisabledSql = sql<boolean>`exists (
+  select 1 from users u
+  where u.id = "contacts"."user_id"
+    and (u.disabled_at is not null or u.deleted_at is not null)
+)`
+
 type ContactOption = {
   id: string
   companyId?: string | null
@@ -33,6 +39,8 @@ type ContactOption = {
   email: string | null
   phone: string | null
   hasPortalAccess: boolean
+  /** Their login is switched off (or archived) on the Users page: no access anywhere. */
+  signInDisabled?: boolean
   /** Their company's primary contact. */
   isPrimary?: boolean
 }
@@ -73,6 +81,7 @@ async function listAllActiveContacts(
       email: contacts.email,
       phone: contacts.phone,
       userId: contacts.userId,
+      signInDisabled: signInDisabledSql,
       atClientCompany,
       mainCompanyId: mainCompanyIdSql(contacts.id),
       isPrimary: companyId
@@ -89,6 +98,7 @@ async function listAllActiveContacts(
     email: row.email,
     phone: row.phone,
     hasPortalAccess: Boolean(row.userId),
+    signInDisabled: row.signInDisabled,
     companyId: row.atClientCompany ? (companyId ?? null) : row.mainCompanyId,
     isPrimary: Boolean(row.isPrimary),
   }))
@@ -108,6 +118,7 @@ async function listClientContacts(
       email: contacts.email,
       phone: contacts.phone,
       userId: contacts.userId,
+      signInDisabled: signInDisabledSql,
       companyId: memberships.companyId,
       isPrimary: memberships.isPrimary,
     })
@@ -132,6 +143,7 @@ async function listClientContacts(
     email: row.email,
     phone: row.phone,
     hasPortalAccess: Boolean(row.userId),
+    signInDisabled: row.signInDisabled,
     companyId: row.companyId,
     isPrimary: row.isPrimary,
   }))
