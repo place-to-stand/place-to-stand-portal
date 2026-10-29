@@ -21,27 +21,26 @@ import type { ActivitySourceValue } from '@/lib/types'
 
 import type { AttachmentPayload } from './shared-schemas'
 
+/**
+ * A task has one assignee. Callers may still pass a list (the CLI and MCP
+ * accept one for compatibility); only the first is kept.
+ */
 export async function syncAssignees(taskId: string, assigneeIds: string[]) {
   const deletionTimestamp = new Date().toISOString()
+  const assignee = assigneeIds[0]
 
   await db
     .update(taskAssignees)
     .set({ deletedAt: deletionTimestamp })
     .where(eq(taskAssignees.taskId, taskId))
 
-  if (!assigneeIds.length) {
+  if (!assignee) {
     return
   }
 
   await db
     .insert(taskAssignees)
-    .values(
-      assigneeIds.map(userId => ({
-        taskId,
-        userId,
-        deletedAt: null,
-      }))
-    )
+    .values({ taskId, userId: assignee, deletedAt: null })
     .onConflictDoUpdate({
       target: [taskAssignees.taskId, taskAssignees.userId],
       set: { deletedAt: null },

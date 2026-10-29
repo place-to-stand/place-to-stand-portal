@@ -27,7 +27,7 @@ type CreateOptions = {
   description?: string
   status?: string
   due?: string
-  assignee?: string[]
+  assignee?: string
 }
 
 type EditOptions = {
@@ -36,7 +36,7 @@ type EditOptions = {
   description?: string
   status?: string
   due?: string
-  assignee?: string[]
+  assignee?: string
   clearDescription?: boolean
   clearDue?: boolean
 }
@@ -126,7 +126,7 @@ export function registerTaskCommands(program: Command): void {
     .option('--description <text>', 'Task description; "-" reads stdin')
     .option('--status <status>', 'Defaults to ON_DECK')
     .option('--due <date>', 'Due date as YYYY-MM-DD')
-    .option('--assignee <user...>', 'Assign by email or user id')
+    .option('--assignee <user>', 'Assign by email or user id (one assignee)')
     .action(async (options: CreateOptions) => {
       if (!options.project && !options.lead) {
         throw new Error('Provide --project, or --lead for a sales task.')
@@ -139,7 +139,7 @@ export function registerTaskCommands(program: Command): void {
         description: textOrStdin(options.description),
         status: options.status,
         dueOn: options.due,
-        assigneeIds: options.assignee,
+        assigneeIds: options.assignee ? [options.assignee] : undefined,
       })
 
       const task = await withUrl(data)
@@ -191,7 +191,7 @@ export function registerTaskCommands(program: Command): void {
     .option('--description <text>', 'Task description; "-" reads stdin')
     .option('--status <status>')
     .option('--due <date>', 'Due date as YYYY-MM-DD')
-    .option('--assignee <user...>', 'Replace assignees, by email or user id')
+    .option('--assignee <user>', 'Set the assignee, by email or user id')
     .option('--clear-description', 'Remove the description')
     .option('--clear-due', 'Remove the due date')
     .action(async (taskId: string, options: EditOptions) => {
@@ -203,7 +203,8 @@ export function registerTaskCommands(program: Command): void {
       if (options.title !== undefined) payload.title = options.title
       if (options.project !== undefined) payload.project = options.project
       if (options.status !== undefined) payload.status = options.status
-      if (options.assignee !== undefined) payload.assigneeIds = options.assignee
+      if (options.assignee !== undefined)
+        payload.assigneeIds = [options.assignee]
 
       if (options.clearDescription) {
         payload.description = null

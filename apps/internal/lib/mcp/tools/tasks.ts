@@ -133,7 +133,7 @@ export function registerTaskTools(server: McpServer) {
     name: 'update_task',
     title: 'Update task',
     description:
-      'Change a task: title, description, status, due date, assignees, project or lead. Omitted fields keep their value; null clears one. assigneeIds replaces the whole list. No tool archives or deletes a task: set status DONE, or archive it in the portal.',
+      'Change a task: title, description, status, due date, assignee, project or lead. Omitted fields keep their value; null clears one. A task has one assignee: assigneeIds takes a one-item list ([] unassigns) and only its first entry is kept. No tool archives or deletes a task: set status DONE, or archive it in the portal.',
     effect: 'idempotent-write',
     input: { taskId, ...cliUpdateTaskFields },
     run: async ({ taskId, ...changes }, { user }) => {
