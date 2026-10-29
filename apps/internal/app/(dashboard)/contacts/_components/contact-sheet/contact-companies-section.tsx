@@ -143,7 +143,8 @@ export function ContactCompaniesSection({
                       icon={<X />}
                       className='text-muted-foreground hover:text-destructive'
                       disabled={
-                        disabled || (entry.portalAccess && !canManageAccess)
+                        disabled ||
+                        (Boolean(entry.clientId) && !canManageAccess)
                       }
                       onClick={() =>
                         onChange(

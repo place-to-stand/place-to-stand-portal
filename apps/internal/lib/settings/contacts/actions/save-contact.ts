@@ -209,6 +209,18 @@ export async function saveContactMutation(
           shorthandTitle: parsed.data.jobTitle,
         })
 
+        // Leaving a client's company drops being its primary contact (its
+        // invoice recipient) and portal access, so it's admin-only, as on
+        // the company sheet. Joining one grants nothing by itself.
+        if (
+          !canManageAccess &&
+          (await clientIdsByCompany(plan.leave)).size > 0
+        ) {
+          return buildMutationResult({
+            error:
+              'That company is a client, so only an admin can remove someone from it.',
+          })
+        }
         // Portal access is admin-only: switching it, or leaving a company
         // whose client they can see.
         if (!canManageAccess) {

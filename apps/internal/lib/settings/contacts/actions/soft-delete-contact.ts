@@ -1,11 +1,11 @@
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 
 import { logActivity } from '@/lib/activity/logger'
 import { contactArchivedEvent } from '@/lib/activity/events/contacts'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
-import { contacts } from '@/lib/db/schema'
+import { contacts, memberships } from '@/lib/db/schema'
 import {
   deleteContactSchema,
   type DeleteContactInput,
@@ -45,8 +45,7 @@ export async function softDeleteContactMutation(
       }
 
       let existingContact:
-        | { id: string; email: string | null; name: string | null }
-        | undefined
+        { id: string; email: string | null; name: string | null } | undefined
 
       try {
         const rows = await db
@@ -70,15 +69,30 @@ export async function softDeleteContactMutation(
       }
 
       try {
-        await db
-          .update(contacts)
-          .set({ deletedAt: new Date().toISOString() })
-          .where(eq(contacts.id, parsed.data.id))
+        // Archiving ends their portal access for good: restoring the contact
+        // later does not bring it back (only an admin switches access on).
+        await db.transaction(async tx => {
+          await tx
+            .update(contacts)
+            .set({ deletedAt: new Date().toISOString() })
+            .where(eq(contacts.id, parsed.data.id))
+          await tx
+            .update(memberships)
+            .set({ portalAccess: false, updatedAt: new Date().toISOString() })
+            .where(
+              and(
+                eq(memberships.contactId, parsed.data.id),
+                eq(memberships.portalAccess, true)
+              )
+            )
+        })
       } catch (error) {
         console.error('Failed to archive contact', error)
         return buildMutationResult({
           error:
-            error instanceof Error ? error.message : 'Unable to archive contact.',
+            error instanceof Error
+              ? error.message
+              : 'Unable to archive contact.',
         })
       }
 

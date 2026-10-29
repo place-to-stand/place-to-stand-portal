@@ -5,7 +5,7 @@ import { contactDeletedEvent } from '@/lib/activity/events/contacts'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
-import { contacts } from '@/lib/db/schema'
+import { contacts, leads } from '@/lib/db/schema'
 import {
   destroyContactSchema,
   type DestroyContactInput,
@@ -45,7 +45,12 @@ export async function destroyContactMutation(
       }
 
       let existingContact:
-        | { id: string; email: string | null; name: string | null; deletedAt: string | null }
+        | {
+            id: string
+            email: string | null
+            name: string | null
+            deletedAt: string | null
+          }
         | undefined
 
       try {
@@ -75,6 +80,19 @@ export async function destroyContactMutation(
       if (!existingContact.deletedAt) {
         return buildMutationResult({
           error: 'Contact must be archived before permanent deletion.',
+        })
+      }
+
+      // A lead reads its person from the contact, so one with leads stays.
+      const [lead] = await db
+        .select({ id: leads.id })
+        .from(leads)
+        .where(eq(leads.contactId, parsed.data.id))
+        .limit(1)
+      if (lead) {
+        return buildMutationResult({
+          error:
+            'This contact has leads, so it can’t be permanently deleted. Delete their leads first, or keep the contact archived.',
         })
       }
 

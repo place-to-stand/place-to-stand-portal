@@ -45,7 +45,7 @@ export const mainCompanyIdSql = (contactId: AnyPgColumn | SQL) =>
   sql<string | null>`(
     select m.company_id from memberships m
     where m.contact_id = ${ref(contactId)} and m.ended_at is null
-    order by m.started_at, m.created_at limit 1
+    order by m.started_at, m.created_at, m.company_id limit 1
   )`
 
 /** The contact's main company name. */
@@ -54,7 +54,7 @@ export const mainCompanyNameSql = (contactId: AnyPgColumn | SQL) =>
     select co.name from memberships m
     join companies co on co.id = m.company_id
     where m.contact_id = ${ref(contactId)} and m.ended_at is null
-    order by m.started_at, m.created_at limit 1
+    order by m.started_at, m.created_at, m.company_id limit 1
   )`
 
 /** The contact's title at their main company. */
@@ -62,7 +62,7 @@ export const mainTitleSql = (contactId: AnyPgColumn | SQL) =>
   sql<string | null>`(
     select m.title from memberships m
     where m.contact_id = ${ref(contactId)} and m.ended_at is null
-    order by m.started_at, m.created_at limit 1
+    order by m.started_at, m.created_at, m.company_id limit 1
   )`
 
 /** The company's primary contact id. */
@@ -134,7 +134,11 @@ export async function listContactMemberships(
     .where(
       and(isCurrentMembership, inArray(memberships.contactId, [...contactIds]))
     )
-    .orderBy(asc(memberships.startedAt), asc(memberships.createdAt))
+    .orderBy(
+      asc(memberships.startedAt),
+      asc(memberships.createdAt),
+      asc(memberships.companyId)
+    )
 
   for (const row of rows) {
     const list = byContact.get(row.contactId) ?? []

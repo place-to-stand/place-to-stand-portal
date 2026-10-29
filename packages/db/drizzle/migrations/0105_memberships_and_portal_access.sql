@@ -39,8 +39,9 @@ CREATE INDEX IF NOT EXISTS "idx_memberships_company_current"
 
 -- 1. Everyone at a company today. They are its primary contact if the
 -- company says so, and keep portal access if they had it to that company's
--- live client, either directly (contact_clients) or through their portal
--- login (client_members).
+-- client, either directly (contact_clients) or through their portal login
+-- (client_members). Archived clients count too, so restoring one later
+-- brings its people's access back as it used to.
 INSERT INTO "memberships" ("contact_id", "company_id", "title", "is_primary", "portal_access", "started_at", "created_at", "updated_at")
 SELECT
   c."id",
@@ -52,7 +53,6 @@ SELECT
     JOIN "clients" cl ON cl."id" = cc."client_id"
     WHERE cc."contact_id" = c."id"
       AND cl."company_id" = c."company_id"
-      AND cl."deleted_at" IS NULL
   ) OR EXISTS (
     SELECT 1 FROM "client_members" cm
     JOIN "clients" cl ON cl."id" = cm."client_id"
@@ -60,7 +60,6 @@ SELECT
       AND cm."user_id" = c."user_id"
       AND cm."deleted_at" IS NULL
       AND cl."company_id" = c."company_id"
-      AND cl."deleted_at" IS NULL
   ),
   c."created_at",
   c."created_at",
@@ -84,7 +83,7 @@ WITH "ties" AS (
   SELECT cc."contact_id", cl."company_id", true AS "access"
   FROM "contact_clients" cc
   JOIN "clients" cl ON cl."id" = cc."client_id"
-  WHERE cl."company_id" IS NOT NULL AND cl."deleted_at" IS NULL
+  WHERE cl."company_id" IS NOT NULL
   UNION ALL
   SELECT c."id", cl."company_id", true
   FROM "client_members" cm
@@ -92,7 +91,6 @@ WITH "ties" AS (
   JOIN "clients" cl ON cl."id" = cm."client_id"
   WHERE cm."deleted_at" IS NULL
     AND cl."company_id" IS NOT NULL
-    AND cl."deleted_at" IS NULL
   UNION ALL
   SELECT co."primary_contact_id", co."id", false
   FROM "companies" co

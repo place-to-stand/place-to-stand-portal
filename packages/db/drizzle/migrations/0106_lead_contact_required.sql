@@ -1,8 +1,38 @@
 -- A lead is a person (and optionally their company): its name, email and
--- phone are read from its contact, so every lead needs one. 0096 gave every
+-- phone are read from its contact, its company's name from its company, so
+-- every lead needs a contact and a typed company name needs a record. 0096 gave every
 -- lead a contact; this stops (and lists them) if any lead still has none
 -- rather than guessing. A contact with leads can no longer be hard-deleted
 -- out from under them (archive it instead).
+-- Leads that still only have a typed company name (0090 skipped archived
+-- leads and long names) get a company record, so the name survives 0107
+-- dropping the copy: an existing company with that name (live first), else
+-- a new one, archived so it doesn't crowd the pickers.
+INSERT INTO "companies" ("name", "created_at", "updated_at", "deleted_at")
+SELECT DISTINCT ON (lower(btrim(l."company_name")))
+  btrim(l."company_name"),
+  l."created_at",
+  timezone('utc'::text, now()),
+  timezone('utc'::text, now())
+FROM "leads" l
+WHERE l."company_id" IS NULL
+  AND btrim(coalesce(l."company_name", '')) <> ''
+  AND NOT EXISTS (
+    SELECT 1 FROM "companies" co
+    WHERE lower(btrim(co."name")) = lower(btrim(l."company_name"))
+  )
+ORDER BY lower(btrim(l."company_name")), l."created_at";
+--> statement-breakpoint
+UPDATE "leads" l
+SET "company_id" = (
+  SELECT co."id" FROM "companies" co
+  WHERE lower(btrim(co."name")) = lower(btrim(l."company_name"))
+  ORDER BY co."deleted_at" NULLS FIRST, co."created_at"
+  LIMIT 1
+)
+WHERE l."company_id" IS NULL
+  AND btrim(coalesce(l."company_name", '')) <> '';
+--> statement-breakpoint
 DO $$
 DECLARE
   missing text;
