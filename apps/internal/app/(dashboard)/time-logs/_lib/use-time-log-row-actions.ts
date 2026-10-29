@@ -32,8 +32,13 @@ export function useTimeLogRowActions() {
     useState<DashboardTimeLogEntry | null>(null)
 
   const mutation = useMutation({
-    mutationFn: ({ entry, change }: { entry: DashboardTimeLogEntry; change: Change }) =>
-      requestTimeLogArchiveChange(entry.projectId, entry.id, change),
+    mutationFn: ({
+      entry,
+      change,
+    }: {
+      entry: DashboardTimeLogEntry
+      change: Change
+    }) => requestTimeLogArchiveChange(entry.projectId, entry.id, change),
     onSuccess: (data, { change }) => {
       toast(SUCCESS_TOAST[change])
       if (data.warning) {

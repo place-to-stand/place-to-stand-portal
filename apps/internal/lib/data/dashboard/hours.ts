@@ -2,6 +2,7 @@ import 'server-only'
 
 import {
   and,
+  asc,
   desc,
   eq,
   gte,
@@ -11,10 +12,13 @@ import {
   lte,
   ne,
   sql,
+  type AnyColumn,
   type SQL,
 } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
+import type { ParsedSort } from '@/lib/pagination/sort'
+import type { TimeLogSortField } from '@/lib/time-logs/filters'
 import { db } from '@/lib/db'
 import {
   clients,
@@ -83,7 +87,10 @@ export async function fetchHoursSnapshot(
   ] = await Promise.all([
     sumHoursWithProjectFilter({ filters: myFilters, projectType: 'CLIENT' }),
     sumHoursWithProjectFilter({ filters: baseFilters, projectType: 'CLIENT' }),
-    sumHoursWithProjectFilter({ filters: myFilters, projectType: 'NON_CLIENT' }),
+    sumHoursWithProjectFilter({
+      filters: myFilters,
+      projectType: 'NON_CLIENT',
+    }),
     sumPrepaidHours({ filters: prepaidFilters }),
     fetchMyMonthTimeLogs(user, clampedCursor, { offset: 0 }),
   ])
@@ -135,6 +142,8 @@ export type TimeLogPageFilters = {
   offset?: number
   /** Archived (soft-deleted) logs instead of live ones. */
   archived?: boolean
+  /** Defaults to newest first. */
+  sort?: ParsedSort<TimeLogSortField>
 }
 
 /**
@@ -155,7 +164,9 @@ export async function fetchTimeLogPage(
     filters.projectId ? eq(timeLogs.projectId, filters.projectId) : undefined,
     filters.from ? gte(timeLogs.loggedOn, filters.from) : undefined,
     filters.to ? lte(timeLogs.loggedOn, filters.to) : undefined,
-    filters.archived ? isNotNull(timeLogs.deletedAt) : isNull(timeLogs.deletedAt),
+    filters.archived
+      ? isNotNull(timeLogs.deletedAt)
+      : isNull(timeLogs.deletedAt),
     isNull(projects.deletedAt)
   )
 
@@ -168,7 +179,9 @@ export async function fetchTimeLogPage(
         note: timeLogs.note,
         createdAt: timeLogs.createdAt,
         userId: timeLogs.userId,
-        userName: sql<string | null>`coalesce(${users.fullName}, ${users.email})`,
+        userName: sql<
+          string | null
+        >`coalesce(${users.fullName}, ${users.email})`,
         userAvatarUrl: users.avatarUrl,
         projectId: projects.id,
         projectName: projects.name,
@@ -184,7 +197,14 @@ export async function fetchTimeLogPage(
       .where(where)
       // createdAt breaks ties within a day; id makes the order total, so paging
       // can't show or skip a row because two logs share a timestamp.
-      .orderBy(desc(timeLogs.loggedOn), desc(timeLogs.createdAt), desc(timeLogs.id))
+      // The chosen column first; date (newest), createdAt and id break ties
+      // so paging can't show or skip a row.
+      .orderBy(
+        ...timeLogSortOrder(filters.sort),
+        desc(timeLogs.loggedOn),
+        desc(timeLogs.createdAt),
+        desc(timeLogs.id)
+      )
       .limit(limit)
       .offset(offset),
     // numeric hours arrive as strings: sum in SQL, not JS floats.
@@ -284,9 +304,7 @@ async function fetchLinkedTaskTitles(
 
 function parseHours(value: string | null): number {
   const parsed = Number(value ?? '0')
-  return Number.isFinite(parsed)
-    ? Number(parsed.toFixed(HOURS_PRECISION))
-    : 0
+  return Number.isFinite(parsed) ? Number(parsed.toFixed(HOURS_PRECISION)) : 0
 }
 
 async function sumHoursWithProjectFilter({
@@ -314,7 +332,9 @@ async function sumHoursWithProjectFilter({
     })
     .from(timeLogs)
     .innerJoin(projects, eq(timeLogs.projectId, projects.id))
-    .where(and(...conditions, projectTypeCondition, isNull(projects.deletedAt)))) as Array<{
+    .where(
+      and(...conditions, projectTypeCondition, isNull(projects.deletedAt))
+    )) as Array<{
     totalHours: string | null
   }>
 
@@ -340,11 +360,15 @@ async function sumPrepaidHours({
   // Join with clients to exclude soft-deleted clients
   const [row] = (await db
     .select({
-      totalHours: sql<string | null>`COALESCE(SUM(${hourBlocks.hoursPurchased}), '0')`,
+      totalHours: sql<
+        string | null
+      >`COALESCE(SUM(${hourBlocks.hoursPurchased}), '0')`,
     })
     .from(hourBlocks)
     .innerJoin(clients, eq(hourBlocks.clientId, clients.id))
-    .where(and(...conditions, isNull(clients.deletedAt)))) as Array<{ totalHours: string | null }>
+    .where(and(...conditions, isNull(clients.deletedAt)))) as Array<{
+    totalHours: string | null
+  }>
 
   const parsed = Number(row?.totalHours ?? '0')
   const rounded = Number.isFinite(parsed)
@@ -460,4 +484,23 @@ function compareMonthCursor(a: MonthCursor, b: MonthCursor) {
     return 1
   }
   return 0
+}
+
+function timeLogSortOrder(sort: ParsedSort<TimeLogSortField> | undefined) {
+  if (!sort || (sort.field === 'date' && sort.direction === 'desc')) return []
+  const dir = (expression: SQL | AnyColumn) =>
+    sort.direction === 'asc' ? asc(expression) : desc(expression)
+  switch (sort.field) {
+    case 'date':
+      return [dir(timeLogs.loggedOn)]
+    case 'hours':
+      return [dir(timeLogs.hours)]
+    case 'person':
+      return [dir(sql`lower(coalesce(${users.fullName}, ${users.email}))`)]
+    case 'client':
+      // Logs without a client (internal/personal projects) sort last.
+      return [sql`${clients.name} is null`, dir(sql`lower(${clients.name})`)]
+    case 'project':
+      return [dir(sql`lower(${projects.name})`)]
+  }
 }

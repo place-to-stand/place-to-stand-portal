@@ -7,6 +7,21 @@ import {
   parseCalendarDate,
   resolveDateRangePreset,
 } from '@/lib/dates/calendar-date'
+import { parseSortParam, type ParsedSort } from '@/lib/pagination/sort'
+
+export const TIME_LOG_SORT_FIELDS = [
+  'date',
+  'hours',
+  'person',
+  'client',
+  'project',
+] as const
+export type TimeLogSortField = (typeof TIME_LOG_SORT_FIELDS)[number]
+/** Newest first. */
+export const DEFAULT_TIME_LOG_SORT = {
+  field: 'date',
+  direction: 'desc',
+} as const satisfies ParsedSort<TimeLogSortField>
 
 type RawParams = Record<string, string | string[] | undefined>
 
@@ -22,6 +37,9 @@ export type TimeLogsListParams = {
   projectId?: string
   personId?: string
   page: number
+  sort: ParsedSort<TimeLogSortField>
+  /** The raw `?sort=` when valid and not the default, for the headers. */
+  sortParam?: string
   /** True when the dates are the default (this month), not chosen. */
   isDefaultRange: boolean
 }
@@ -31,7 +49,9 @@ export function currentMonthRange(now = new Date()) {
   return resolveDateRangePreset('this-month', now)
 }
 
-export function parseTimeLogsSearchParams(params: RawParams): TimeLogsListParams {
+export function parseTimeLogsSearchParams(
+  params: RawParams
+): TimeLogsListParams {
   const defaults = currentMonthRange()
   // A real calendar date (2026-02-31 is not), or the default.
   const valid = (value: string | undefined) =>
@@ -49,6 +69,12 @@ export function parseTimeLogsSearchParams(params: RawParams): TimeLogsListParams
     projectId: uuid('projectId'),
     personId: uuid('personId'),
     page: Math.max(1, Number.parseInt(first(params.page) ?? '1', 10) || 1),
+    ...parseSort(first(params.sort)),
     isDefaultRange: !from && !to,
   }
+}
+
+function parseSort(raw: string | undefined) {
+  const sort = parseSortParam(raw, TIME_LOG_SORT_FIELDS, DEFAULT_TIME_LOG_SORT)
+  return { sort, sortParam: sort === DEFAULT_TIME_LOG_SORT ? undefined : raw }
 }

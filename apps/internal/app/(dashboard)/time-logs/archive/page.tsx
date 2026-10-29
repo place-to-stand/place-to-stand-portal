@@ -28,8 +28,7 @@ export default async function TimeLogsArchivePage({
     projects,
     logTimeProjects,
     people,
-  } =
-    await loadTimeLogsList(await searchParams, { archived: true })
+  } = await loadTimeLogsList(await searchParams, { archived: true })
 
   return (
     <PageShell
@@ -57,6 +56,7 @@ export default async function TimeLogsArchivePage({
           totalCount={page.totalCount}
           currentPage={params.page}
           pageSize={pageSize}
+          sort={params.sortParam}
           mode='archive'
         />
       </section>

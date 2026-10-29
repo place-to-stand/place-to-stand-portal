@@ -23,6 +23,8 @@ import {
   RecordRowActions,
 } from '@/components/table/record-row-action'
 import { PaginationControls } from '@/components/ui/pagination-controls'
+import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
+import { useListParams } from '@/hooks/use-list-params'
 import { PersonAvatar } from '@/components/ui/user-avatar'
 import type { DashboardTimeLogEntry } from '@/lib/dashboard/types'
 import { useTimeLogEditContext } from '@/lib/projects/time-log/use-time-log-edit-context'
@@ -42,6 +44,8 @@ type TimeLogsTableProps = {
   pageSize: number
   /** `archive` lists archived logs: no edit, Restore instead of Archive. */
   mode?: 'active' | 'archive'
+  /** Validated `?sort=`, or undefined for the default (newest first). */
+  sort: string | undefined
 }
 
 /**
@@ -54,8 +58,31 @@ export function TimeLogsTable({
   currentPage,
   pageSize,
   mode = 'active',
+  sort,
 }: TimeLogsTableProps) {
   const router = useRouter()
+  const { update } = useListParams({
+    basePath: mode === 'archive' ? '/time-logs/archive' : '/time-logs',
+    resetKeys: ['page'],
+  })
+  // The same sortable headers as Companies and the other lists.
+  const sortHead = (
+    field: string,
+    label: string,
+    className: string,
+    align?: 'center'
+  ) => (
+    <SortableTableHead
+      field={field}
+      sort={sort}
+      defaultSort='date:desc'
+      onSortChange={next => update({ sort: next })}
+      className={className}
+      align={align}
+    >
+      {label}
+    </SortableTableHead>
+  )
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const editor = useTimeLogEditContext()
@@ -105,12 +132,12 @@ export function TimeLogsTable({
         >
           <TableHeader>
             <TableRow className='bg-muted/40'>
-              <TableHead className='w-[10%]'>Date</TableHead>
-              <TableHead className='w-16'>Person</TableHead>
-              <TableHead className='w-[14%]'>Client</TableHead>
-              <TableHead className='w-[18%]'>Project</TableHead>
+              {sortHead('date', 'Date', 'w-[10%]')}
+              {sortHead('person', 'Person', 'w-20')}
+              {sortHead('client', 'Client', 'w-[14%]')}
+              {sortHead('project', 'Project', 'w-[18%]')}
               <TableHead className='w-[18%]'>Tasks</TableHead>
-              <TableHead className='w-[7%] text-right'>Hours</TableHead>
+              {sortHead('hours', 'Hours', 'w-[8%]', 'center')}
               <TableHead className='w-[21%]'>Note</TableHead>
               <TableHead className='w-32 text-right'>Actions</TableHead>
             </TableRow>
@@ -165,7 +192,10 @@ export function TimeLogsTable({
                   >
                     {tasks || <EmptyValue />}
                   </TableCell>
-                  <TableCell className='text-right text-sm font-medium tabular-nums'>
+                  <TableCell
+                    label='Hours'
+                    className='text-sm font-medium tabular-nums md:text-center'
+                  >
                     {HOURS.format(item.hours)}
                   </TableCell>
                   <TableCell

@@ -15,7 +15,9 @@ export const metadata: Metadata = {
 }
 
 /** Everyone's time logs across every project, filterable. Admin only. */
-export default async function TimeLogsPage({ searchParams }: PageProps<'/time-logs'>) {
+export default async function TimeLogsPage({
+  searchParams,
+}: PageProps<'/time-logs'>) {
   await requireRole('ADMIN')
   const {
     params,
@@ -26,8 +28,7 @@ export default async function TimeLogsPage({ searchParams }: PageProps<'/time-lo
     projects,
     logTimeProjects,
     people,
-  } =
-    await loadTimeLogsList(await searchParams, { archived: false })
+  } = await loadTimeLogsList(await searchParams, { archived: false })
 
   return (
     <PageShell
@@ -55,6 +56,7 @@ export default async function TimeLogsPage({ searchParams }: PageProps<'/time-lo
           totalCount={page.totalCount}
           currentPage={params.page}
           pageSize={pageSize}
+          sort={params.sortParam}
         />
       </section>
     </PageShell>

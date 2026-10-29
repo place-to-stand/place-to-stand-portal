@@ -23,21 +23,22 @@ export async function loadTimeLogsList(
 
   const [page, unfilteredTotal, clientDirectory, projects, admins] =
     await Promise.all([
-    fetchTimeLogPage({
-      from: params.from,
-      to: params.to,
-      clientId: params.clientId,
-      projectId: params.projectId,
-      userId: params.personId,
-      limit: pageSize,
-      offset: (params.page - 1) * pageSize,
-      archived,
-    }),
-    countTimeLogs({ archived }),
-    fetchClientDirectory(),
-    fetchProjectsLite(),
-    fetchAdminUsers(),
-  ])
+      fetchTimeLogPage({
+        from: params.from,
+        to: params.to,
+        clientId: params.clientId,
+        projectId: params.projectId,
+        userId: params.personId,
+        limit: pageSize,
+        offset: (params.page - 1) * pageSize,
+        archived,
+        sort: params.sort,
+      }),
+      countTimeLogs({ archived }),
+      fetchClientDirectory(),
+      fetchProjectsLite(),
+      fetchAdminUsers(),
+    ])
 
   const clients = clientDirectory
     .filter(client => !client.deletedAt)
