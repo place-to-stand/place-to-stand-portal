@@ -98,7 +98,6 @@ function mapClientMetrics(
     slug: row.slug,
     notes: row.notes,
     billingType: row.billingType,
-    website: row.website,
     state: row.state,
     originationContactId: row.originationContactId,
     originationUserId: row.originationUserId,

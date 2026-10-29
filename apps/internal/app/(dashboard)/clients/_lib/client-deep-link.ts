@@ -41,7 +41,6 @@ export function resolveClientDeepLink(
         name: client.name,
         slug: client.slug,
         notes: client.notes,
-        website: client.website,
         state: client.state ?? null,
         origination_contact_id: client.originationContactId,
         origination_user_id: client.originationUserId,

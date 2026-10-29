@@ -22,11 +22,6 @@ export const clientSheetFormSchema = z.object({
   // either changes on an existing client (the cache columns flip at once).
   commissionEffective: z.enum(['current_month', 'next_month']),
   state: z.string().max(2).optional(),
-  website: z
-    .string()
-    .url('Please enter a valid URL')
-    .or(z.literal(''))
-    .optional(),
   notes: z.string().optional(),
   /** The company this client is. */
   companyId: z.string().min(1, 'Pick or create the company this client is'),

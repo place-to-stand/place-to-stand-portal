@@ -79,8 +79,8 @@ export function useContactSheetState({
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isPromoteDialogOpen, setIsPromoteDialogOpen] = useState(false)
-  // The contact's clients, shown read-only: they follow its company
-  // (`syncCompanyClientLinks` on save), so the sheet never edits them.
+  // The contact's clients, shown read-only: each client manages its own
+  // people list on the client sheet.
   const [linkedClients, setLinkedClients] = useState<ContactClientOption[]>([])
 
   const { toast } = useToast()

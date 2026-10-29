@@ -706,7 +706,7 @@
       "idx": 100,
       "version": "7",
       "when": 1793296804678,
-      "tag": "0100_company_people_client_links",
+      "tag": "0100_contacts_company_from_clients",
       "breakpoints": true
     },
     {
@@ -714,6 +714,13 @@
       "version": "7",
       "when": 1793299048815,
       "tag": "0101_company_website_from_leads",
+      "breakpoints": true
+    },
+    {
+      "idx": 102,
+      "version": "7",
+      "when": 1793299859917,
+      "tag": "0102_company_website_from_clients",
       "breakpoints": true
     }
   ]

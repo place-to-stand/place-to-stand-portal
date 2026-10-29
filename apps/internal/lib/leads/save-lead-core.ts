@@ -23,10 +23,6 @@ import {
   findOrCreateCompanyByName,
   getLinkableCompany,
 } from '@/lib/queries/companies'
-import {
-  companyMoveError,
-  syncCompanyClientLinks,
-} from '@/lib/queries/companies/people-links'
 import type { ActivitySourceValue } from '@/lib/types'
 
 import {
@@ -162,21 +158,18 @@ async function resolveLeadContact(
   }
   const timestamp = new Date().toISOString()
 
-  // A contact with no company joins the lead's, which links them to its
-  // clients. For a portal user that grants client access, which is
-  // admin-only: otherwise they're left without a company.
+  // A contact with no company joins the lead's. Company membership grants
+  // no client access (that's each client's own people list).
   const linkCompany = async (contact: {
     id: string
     companyId: string | null
     userId: string | null
   }) => {
     if (!companyId || contact.companyId) return
-    if (await companyMoveError(actor, contact, null, companyId)) return
     await db
       .update(contacts)
       .set({ companyId, updatedAt: timestamp })
       .where(eq(contacts.id, contact.id))
-    await syncCompanyClientLinks(actor, [companyId])
   }
 
   if (normalized.contactId) {
@@ -289,9 +282,6 @@ async function resolveLeadContact(
     .values({ ...details, companyId, createdBy: actor.id })
     .returning(fields)
   if (!created) return { error: 'Unable to save the contact.' }
-  // A new contact has no portal account, so joining a client's company only
-  // links them to its clients.
-  await syncCompanyClientLinks(actor, [companyId])
 
   await logActivity({
     actorId: actor.id,

@@ -5,12 +5,7 @@ import { asc, eq, and, inArray, isNull, sql } from 'drizzle-orm'
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import {
-  clients,
-  contacts,
-  contactClients,
-  users,
-} from '@/lib/db/schema'
+import { clients, contacts, contactClients, users } from '@/lib/db/schema'
 import {
   logContactClientLinkChanges,
   type ContactClientLinkChange,
@@ -21,7 +16,6 @@ import {
   setClientPrimaryContact,
 } from '@/lib/queries/clients/primary-contact'
 import { ForbiddenError } from '@/lib/errors/http'
-import { syncCompanyClientLinksTx } from '@/lib/queries/companies/people-links'
 
 type ContactOption = {
   id: string
@@ -51,7 +45,11 @@ export type ClientSheetContactData = {
 /**
  * Fetches all active contacts for use in the client sheet contact picker.
  */
-async function listAllActiveContacts(user: AppUser): Promise<ContactOption[]> {
+async function listAllActiveContacts(
+  user: AppUser,
+  /** The client's company: its people are listed first. */
+  companyId?: string | null
+): Promise<ContactOption[]> {
   assertAdmin(user)
 
   const rows = await db
@@ -64,7 +62,13 @@ async function listAllActiveContacts(user: AppUser): Promise<ContactOption[]> {
     })
     .from(contacts)
     .where(isNull(contacts.deletedAt))
-    .orderBy(asc(contacts.name), asc(contacts.email))
+    .orderBy(
+      ...(companyId
+        ? [sql`${contacts.companyId} is not distinct from ${companyId} desc`]
+        : []),
+      asc(contacts.name),
+      asc(contacts.email)
+    )
 
   return rows.map(row => ({
     id: row.id,
@@ -148,8 +152,15 @@ export async function getClientSheetContactData(
 ): Promise<ClientSheetContactData> {
   assertAdmin(user)
 
+  const [client] = clientId
+    ? await db
+        .select({ companyId: clients.companyId })
+        .from(clients)
+        .where(eq(clients.id, clientId))
+        .limit(1)
+    : []
   const [allContacts, linkedContacts, allAdminUsers] = await Promise.all([
-    listAllActiveContacts(user),
+    listAllActiveContacts(user, client?.companyId),
     clientId ? listClientContacts(user, clientId) : Promise.resolve([]),
     listAllAdminUsers(user),
   ])
@@ -158,13 +169,11 @@ export async function getClientSheetContactData(
 }
 
 /**
- * Saves the client sheet's contact list. A client's people are its
- * company's people, so this only adds: someone added joins the company
- * (refused when they work elsewhere) and so gets every one of its clients.
- * Unlinking here only drops an old hand-made link to someone at another
- * company; people leave a company from the company or the contact.
- * Everything below commits together, portal access included; the primary
- * star is set last, once the links it depends on exist.
+ * Saves the client sheet's people list: who belongs to this client and so
+ * gets its portal (for contacts with a portal account). It's the client's
+ * own list, picked from anyone: being at the company grants nothing by
+ * itself, since not every company wants everyone to have access. Links and
+ * portal access commit together; the primary star is set after.
  */
 export async function syncClientContacts(
   user: AppUser,
@@ -175,57 +184,27 @@ export async function syncClientContacts(
 ): Promise<{ ok: boolean; error?: string }> {
   assertAdmin(user)
 
-  const [client] = await db
-    .select({ companyId: clients.companyId })
-    .from(clients)
-    .where(eq(clients.id, clientId))
-    .limit(1)
-  if (!client) return { ok: false, error: 'Client not found.' }
-  const companyId = client.companyId
-
   const currentLinks = await db
-    .select({
-      contactId: contactClients.contactId,
-      contactCompanyId: contacts.companyId,
-    })
+    .select({ contactId: contactClients.contactId })
     .from(contactClients)
-    .innerJoin(contacts, eq(contacts.id, contactClients.contactId))
     .where(eq(contactClients.clientId, clientId))
   const currentIds = new Set(currentLinks.map(link => link.contactId))
   const wanted = new Set(contactIds)
   const toAdd = contactIds.filter(id => !currentIds.has(id))
-  // Company people stay linked whatever the sheet sent (it may not list
-  // them yet, e.g. on create); only other-company links can be dropped.
-  const toRemove = currentLinks
-    .filter(
-      link =>
-        !wanted.has(link.contactId) &&
-        (!companyId || link.contactCompanyId !== companyId)
-    )
-    .map(link => link.contactId)
+  const toRemove = [...currentIds].filter(id => !wanted.has(id))
+  const changes: ContactClientLinkChange[] = [
+    ...toAdd.map(contactId => ({
+      contactId,
+      clientId,
+      action: 'linked' as const,
+    })),
+    ...toRemove.map(contactId => ({
+      contactId,
+      clientId,
+      action: 'unlinked' as const,
+    })),
+  ]
 
-  // Validate before writing anything.
-  if (companyId && toAdd.length > 0) {
-    const elsewhere = await db
-      .select({ name: contacts.name })
-      .from(contacts)
-      .where(
-        and(
-          inArray(contacts.id, toAdd),
-          sql`${contacts.companyId} is not null and ${contacts.companyId} <> ${companyId}`
-        )
-      )
-    if (elsewhere.length > 0) {
-      return {
-        ok: false,
-        error: `${elsewhere.map(c => c.name).join(', ')} ${
-          elsewhere.length === 1 ? 'works' : 'work'
-        } at another company. Change their company first.`,
-      }
-    }
-  }
-
-  let changes: ContactClientLinkChange[] = []
   try {
     await db.transaction(async tx => {
       if (toAdd.length > 0) {
@@ -246,31 +225,8 @@ export async function syncClientContacts(
             )
           )
       }
-      changes = [
-        ...toAdd.map(contactId => ({
-          contactId,
-          clientId,
-          action: 'linked' as const,
-        })),
-        ...toRemove.map(contactId => ({
-          contactId,
-          clientId,
-          action: 'unlinked' as const,
-        })),
-      ]
+      // A promoted contact's portal access follows its links.
       await syncPortalMembershipsForLinkChanges(changes, tx)
-
-      if (companyId && toAdd.length > 0) {
-        // Joining the company links them to its other clients too.
-        await tx
-          .update(contacts)
-          .set({ companyId, updatedAt: new Date().toISOString() })
-          .where(and(inArray(contacts.id, toAdd), isNull(contacts.companyId)))
-        changes = [
-          ...changes,
-          ...(await syncCompanyClientLinksTx(tx, [companyId])),
-        ]
-      }
     })
   } catch (error) {
     console.error('Failed to update client contacts', error)

@@ -1,6 +1,17 @@
 import 'server-only'
 
-import { and, count, desc, eq, inArray, isNull, lte, ne, sql } from 'drizzle-orm'
+import {
+  and,
+  count,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  lte,
+  ne,
+  sql,
+} from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
@@ -11,7 +22,6 @@ import { todayCalendarDate } from '@/lib/updates/window'
 
 import type {
   NotificationFeed,
-  NotificationFilter,
   NotificationItem,
   NotificationType,
 } from './types'
@@ -102,16 +112,11 @@ async function syncDueTaskNotifications(user: AppUser) {
 const live = (userId: string) =>
   and(eq(notifications.userId, userId), isNull(notifications.clearedAt))
 
+/** Unread first, then read ("Earlier"), each newest first. */
 export async function fetchNotificationFeed(
-  user: AppUser,
-  filter: NotificationFilter
+  user: AppUser
 ): Promise<NotificationFeed> {
   await syncDueTaskNotifications(user)
-
-  const where =
-    filter === 'unread'
-      ? and(live(user.id), isNull(notifications.readAt))
-      : live(user.id)
 
   const [rows, [unread]] = await Promise.all([
     db
@@ -127,8 +132,11 @@ export async function fetchNotificationFeed(
       })
       .from(notifications)
       .leftJoin(users, eq(users.id, notifications.actorId))
-      .where(where)
-      .orderBy(desc(notifications.createdAt))
+      .where(live(user.id))
+      .orderBy(
+        desc(sql`${notifications.readAt} is null`),
+        desc(notifications.createdAt)
+      )
       .limit(FEED_LIMIT),
     db
       .select({ value: count() })
@@ -171,4 +179,12 @@ export async function clearNotifications(userId: string, ids?: string[]) {
       readAt: sql`coalesce(${notifications.readAt}, timezone('utc'::text, now()))`,
     })
     .where(and(live(userId), ids ? inArray(notifications.id, ids) : undefined))
+}
+
+/** Clears every read notification of the user's; unread ones stay. */
+export async function clearReadNotifications(userId: string) {
+  await db
+    .update(notifications)
+    .set({ clearedAt: sql`timezone('utc'::text, now())` })
+    .where(and(live(userId), isNotNull(notifications.readAt)))
 }

@@ -7,7 +7,7 @@ import { clientUpdatedEvent } from '@/lib/activity/events'
 import type { UserRole } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clientMembers, clients, contacts } from '@/lib/db/schema'
+import { clientMembers, clients } from '@/lib/db/schema'
 import type { ClientBillingTypeValue } from '@/lib/types'
 import { isMonthClosed } from '@/lib/data/reports/close'
 import {
@@ -39,12 +39,11 @@ import {
   type ClientMutationContext,
   type ClientMutationResult,
 } from './types'
-import { getLinkableCompany } from '@/lib/queries/companies'
-import { syncCompanyClientLinksTx } from '@/lib/queries/companies/people-links'
 import {
-  logContactClientLinkChanges,
-  type ContactClientLinkChange,
-} from '@/lib/queries/contacts/settings/contact-client-link-activity'
+  fillCompanyWebsiteIfBlank,
+  getClientCompanyId,
+  getLinkableCompany,
+} from '@/lib/queries/companies'
 
 type UpdateClientPayload = {
   id: string
@@ -56,7 +55,11 @@ type UpdateClientPayload = {
   /** Month boundary the Monthly Close switches closer/origination at. */
   commissionEffective: 'current_month' | 'next_month'
   state: string | null
-  website: string | null
+  /**
+   * Deprecated: the company owns the website. Fills the client's company
+   * website when it has none; the client's legacy copy is left as is.
+   */
+  website?: string | null
   originationContactId: string | null
   originationUserId: string | null
   closers: CloserShare[]
@@ -88,7 +91,6 @@ type ExistingClientRecord = {
   notes: string | null
   originationContactId: string | null
   originationUserId: string | null
-  companyId: string | null
   /** The newest commission term's closers — the saved split the sheet edited. */
   closers: ClientCloser[]
 }
@@ -159,7 +161,6 @@ export async function updateClient(
         notes: clients.notes,
         originationContactId: clients.originationContactId,
         originationUserId: clients.originationUserId,
-        companyId: clients.companyId,
       })
       .from(clients)
       .where(eq(clients.id, id))
@@ -223,8 +224,6 @@ export async function updateClient(
       : nextMonthStartUtc()
     : null
 
-  const previousCompanyId = existingClient.companyId
-  let linkChanges: ContactClientLinkChange[] = []
   try {
     await db.transaction(async tx => {
       if (billingTypeChanged && billingEffectiveFrom) {
@@ -266,7 +265,6 @@ export async function updateClient(
           slug: slugToUpdate,
           billingType,
           state,
-          website,
           originationContactId,
           originationUserId,
           notes,
@@ -275,21 +273,6 @@ export async function updateClient(
         })
         .where(eq(clients.id, id))
 
-      // A client's people are its company's people: moving the client to
-      // another company swaps the old company's people for the new one's,
-      // portal access included, in this same transaction.
-      if (companyId && companyId !== previousCompanyId) {
-        const previous = previousCompanyId
-        const oldPeople = previous
-          ? await tx
-              .select({ id: contacts.id })
-              .from(contacts)
-              .where(eq(contacts.companyId, previous))
-          : []
-        linkChanges = await syncCompanyClientLinksTx(tx, [previous, companyId], {
-          leftContactIds: oldPeople.map(person => person.id),
-        })
-      }
     })
   } catch (error) {
     if (error instanceof ClosedMonthError) {
@@ -302,6 +285,13 @@ export async function updateClient(
     })
   }
 
+  if (website) {
+    const websiteCompanyId = companyId ?? (await getClientCompanyId(id))
+    if (websiteCompanyId) {
+      await fillCompanyWebsiteIfBlank(user, websiteCompanyId, website)
+    }
+  }
+
   if (memberIds) {
     const syncResult = await syncClientMembers(id, memberIds)
 
@@ -309,8 +299,6 @@ export async function updateClient(
       return buildMutationResult(syncResult)
     }
   }
-
-  await logContactClientLinkChanges(user, linkChanges)
 
   await recordUpdateActivity({
     userContext: { id: user.id, role: user.role },

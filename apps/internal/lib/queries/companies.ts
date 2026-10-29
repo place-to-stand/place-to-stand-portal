@@ -19,7 +19,6 @@ import {
   companyUpdatedEvent,
 } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
-import { syncCompanyClientLinks } from '@/lib/queries/companies/people-links'
 import { roleCan } from '@/lib/auth/capabilities'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
@@ -512,9 +511,6 @@ export async function setCompanyPrimaryContact(
         .update(contacts)
         .set({ companyId, updatedAt: timestamp })
         .where(eq(contacts.id, contactId))
-      // Now at the company, they get its clients (only admins reach here
-      // for a company with clients, checked above).
-      await syncCompanyClientLinks(actor, [companyId])
     }
   }
 
@@ -642,6 +638,18 @@ export async function fillCompanyWebsiteIfBlank(
       details: { before: { website: null }, after: { website } },
     }),
   })
+}
+
+/** The company a client is, or null. */
+export async function getClientCompanyId(
+  clientId: string
+): Promise<string | null> {
+  const [row] = await db
+    .select({ companyId: clients.companyId })
+    .from(clients)
+    .where(eq(clients.id, clientId))
+    .limit(1)
+  return row?.companyId ?? null
 }
 
 /** Live company by id, or null. */

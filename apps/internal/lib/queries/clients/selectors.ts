@@ -1,8 +1,12 @@
 import { clients } from "@/lib/db/schema"
 
 // `closer_user_id` is deprecated (closer splits live on the commission term)
-// and is never selected.
-export type SelectClient = Omit<typeof clients.$inferSelect, 'closerUserId'>
+// and is never selected. `website` is the company's now (the client's copy
+// is legacy; see `clientWebsiteSql`).
+export type SelectClient = Omit<
+  typeof clients.$inferSelect,
+  'closerUserId' | 'website'
+>
 
 export const clientFields = {
   id: clients.id,
@@ -10,7 +14,6 @@ export const clientFields = {
   slug: clients.slug,
   notes: clients.notes,
   billingType: clients.billingType,
-  website: clients.website,
   state: clients.state,
   originationContactId: clients.originationContactId,
   originationUserId: clients.originationUserId,
@@ -28,7 +31,6 @@ export const clientGroupByColumns = [
   clients.slug,
   clients.notes,
   clients.billingType,
-  clients.website,
   clients.state,
   clients.originationContactId,
   clients.originationUserId,

@@ -328,7 +328,7 @@ export function ContactSheetForm({
 
           <SheetSection
             title='Clients'
-            description='Follows their company. Change the company to change their clients.'
+            description='Each client has its own people list. Add or remove them on the client.'
           >
             <ContactClientList clients={linkedClients} />
           </SheetSection>

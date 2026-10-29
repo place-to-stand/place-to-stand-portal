@@ -2,23 +2,22 @@
 
 /**
  * The notification stream shared by the home widget and the header bell:
- * one query (polled), optimistic read/unread/clear, and the list markup.
+ * one query (polled), optimistic read/unread/clear, and the list markup —
+ * unread first, then an "Earlier" section of read items.
  */
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CheckCheck, Circle, X } from 'lucide-react'
+import { Circle, X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { formatRelativeTime } from '@pts/ui/dates'
-import { Tabs, TabsList, TabsTrigger } from '@pts/ui/tabs'
 import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import type {
   NotificationFeed,
-  NotificationFilter,
   NotificationItem,
 } from '@/lib/notifications/in-app/types'
 import { cn } from '@/lib/utils'
@@ -27,12 +26,13 @@ const QUERY_KEY = ['notifications'] as const
 // Background refresh while the home page is open.
 const POLL_MS = 60_000
 
-type FeedAction = { action: 'read' | 'unread' | 'clear'; ids?: string[] }
+type FeedAction = {
+  action: 'read' | 'unread' | 'clear' | 'clear-read'
+  ids?: string[]
+}
 
-async function fetchFeed(
-  filter: NotificationFilter
-): Promise<NotificationFeed> {
-  const response = await fetch(`/api/notifications?filter=${filter}`)
+async function fetchFeed(): Promise<NotificationFeed> {
+  const response = await fetch('/api/notifications')
   const payload = await response.json()
   if (!response.ok || !payload.ok) {
     throw new Error(payload.error ?? 'Unable to load notifications.')
@@ -55,25 +55,25 @@ async function postAction(body: FeedAction) {
 /** Applies an action to the cached feed so the UI updates before the server answers. */
 function applyLocally(
   feed: NotificationFeed,
-  { action, ids }: FeedAction,
-  filter: NotificationFilter
+  { action, ids }: FeedAction
 ): NotificationFeed {
+  if (action === 'clear-read') {
+    return { ...feed, items: feed.items.filter(item => !item.readAt) }
+  }
+
   const hits = (item: NotificationItem) => !ids || ids.includes(item.id)
   const now = new Date().toISOString()
-  let items = feed.items
-
-  if (action === 'clear') {
-    items = items.filter(item => !hits(item))
-  } else {
-    items = items.map(item =>
-      hits(item)
-        ? { ...item, readAt: action === 'read' ? (item.readAt ?? now) : null }
-        : item
-    )
-    if (filter === 'unread' && action === 'read') {
-      items = items.filter(item => !item.readAt)
-    }
-  }
+  const items =
+    action === 'clear'
+      ? feed.items.filter(item => !hits(item))
+      : feed.items.map(item =>
+          hits(item)
+            ? {
+                ...item,
+                readAt: action === 'read' ? (item.readAt ?? now) : null,
+              }
+            : item
+        )
 
   const changedUnread = feed.items.filter(
     item => hits(item) && !item.readAt
@@ -90,12 +90,11 @@ function applyLocally(
 export function useNotificationFeed() {
   const router = useRouter()
   const queryClient = useQueryClient()
-  const [filter, setFilter] = useState<NotificationFilter>('all')
-  const key = [...QUERY_KEY, filter]
+  const [confirmingClearRead, setConfirmingClearRead] = useState(false)
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: key,
-    queryFn: () => fetchFeed(filter),
+    queryKey: QUERY_KEY,
+    queryFn: fetchFeed,
     refetchInterval: POLL_MS,
   })
 
@@ -103,14 +102,16 @@ export function useNotificationFeed() {
     mutationFn: postAction,
     onMutate: async action => {
       await queryClient.cancelQueries({ queryKey: QUERY_KEY })
-      const previous = queryClient.getQueryData<NotificationFeed>(key)
+      const previous = queryClient.getQueryData<NotificationFeed>(QUERY_KEY)
       if (previous) {
-        queryClient.setQueryData(key, applyLocally(previous, action, filter))
+        queryClient.setQueryData(QUERY_KEY, applyLocally(previous, action))
       }
       return { previous }
     },
     onError: (_error, _action, context) => {
-      if (context?.previous) queryClient.setQueryData(key, context.previous)
+      if (context?.previous) {
+        queryClient.setQueryData(QUERY_KEY, context.previous)
+      }
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
   })
@@ -124,70 +125,108 @@ export function useNotificationFeed() {
   }
 
   return {
-    filter,
-    setFilter,
     items,
     unread,
     isLoading,
     isError,
     mutation,
     openItem,
+    /** "Clear read" asks first; the bell keeps its popover open meanwhile. */
+    confirmingClearRead,
+    setConfirmingClearRead,
   }
 }
 
 export type NotificationFeedState = ReturnType<typeof useNotificationFeed>
 
-/** All/Unread tabs, mark all read, clear all. */
+/** Header action: "Mark all read", only while something is unread. */
 export function NotificationControls({
   feed,
 }: {
   feed: NotificationFeedState
 }) {
-  const { filter, setFilter, items, unread, mutation } = feed
+  if (!feed.unread) return null
   return (
-    <div className='flex items-center gap-1'>
-      <Tabs
-        value={filter}
-        onValueChange={value => setFilter(value as NotificationFilter)}
-      >
-        <TabsList className='h-7' aria-label='Show'>
-          <TabsTrigger value='all' className='px-2 py-0.5 text-xs'>
-            All
-          </TabsTrigger>
-          <TabsTrigger value='unread' className='px-2 py-0.5 text-xs'>
-            Unread
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            type='button'
-            variant='ghost'
-            size='icon-sm'
-            aria-label='Mark all as read'
-            disabled={!unread}
-            onClick={() => mutation.mutate({ action: 'read' })}
-          >
-            <CheckCheck aria-hidden />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Mark all as read</TooltipContent>
-      </Tooltip>
-      <Button
-        type='button'
-        variant='ghost'
-        size='xs'
-        disabled={!items.length}
-        onClick={() => mutation.mutate({ action: 'clear' })}
-      >
-        Clear all
-      </Button>
-    </div>
+    <Button
+      type='button'
+      variant='ghost'
+      size='xs'
+      onClick={() => feed.mutation.mutate({ action: 'read' })}
+    >
+      Mark all read
+    </Button>
   )
 }
 
-/** Loading, error, empty and the list itself. */
+function NotificationRow({
+  item,
+  feed,
+}: {
+  item: NotificationItem
+  feed: NotificationFeedState
+}) {
+  const { mutation, openItem } = feed
+  const read = Boolean(item.readAt)
+  return (
+    <li className='group relative flex items-start'>
+      <button
+        type='button'
+        data-notification-open
+        onClick={() => openItem(item)}
+        className='hover:bg-muted/50 focus-visible:bg-muted/50 flex min-w-0 flex-1 items-start gap-3 px-4 py-2.5 text-left outline-none'
+      >
+        <Circle
+          aria-label={read ? 'Read' : 'Unread'}
+          className={cn(
+            'mt-1.5 size-2 shrink-0',
+            read ? 'text-transparent' : 'fill-primary text-primary'
+          )}
+        />
+        <span className='min-w-0 flex-1'>
+          <span
+            className={cn(
+              'block truncate text-sm',
+              read ? 'text-muted-foreground' : 'font-semibold'
+            )}
+          >
+            {item.title}
+          </span>
+          {item.body ? (
+            <span className='text-muted-foreground line-clamp-2 block text-xs'>
+              {item.body}
+            </span>
+          ) : null}
+          <span className='text-muted-foreground block text-[11px]'>
+            {formatRelativeTime(item.createdAt)}
+          </span>
+        </span>
+      </button>
+      <div className='flex shrink-0 items-center gap-0.5 py-2 pr-2 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100'>
+        <Button
+          type='button'
+          variant='ghost'
+          size='xs'
+          onClick={() =>
+            mutation.mutate({
+              action: read ? 'unread' : 'read',
+              ids: [item.id],
+            })
+          }
+        >
+          {read ? 'Mark unread' : 'Mark read'}
+        </Button>
+        <RowActionButton
+          type='button'
+          label='Clear notification'
+          icon={<X aria-hidden />}
+          onClick={() => mutation.mutate({ action: 'clear', ids: [item.id] })}
+        />
+      </div>
+    </li>
+  )
+}
+
+/** Loading, error, empty, then unread items and the "Earlier" (read) section. */
 export function NotificationList({
   feed,
   className,
@@ -195,93 +234,82 @@ export function NotificationList({
   feed: NotificationFeedState
   className?: string
 }) {
-  const { filter, items, isLoading, isError, mutation, openItem } = feed
+  const {
+    items,
+    isLoading,
+    isError,
+    mutation,
+    confirmingClearRead,
+    setConfirmingClearRead,
+  } = feed
+
+  if (isLoading) {
+    return <p className='text-muted-foreground px-4 py-6 text-sm'>Loading…</p>
+  }
+  if (isError) {
+    return (
+      <p className='text-destructive px-4 py-6 text-sm'>
+        Couldn’t load notifications. They’ll retry shortly.
+      </p>
+    )
+  }
+  if (items.length === 0) {
+    return (
+      <div className='p-4'>
+        <EmptyState message='You’re all caught up.' />
+      </div>
+    )
+  }
+
+  const unreadItems = items.filter(item => !item.readAt)
+  const readItems = items.filter(item => item.readAt)
+
   return (
-    <>
-      {isLoading ? (
-        <p className='text-muted-foreground px-4 py-6 text-sm'>Loading…</p>
-      ) : isError ? (
-        <p className='text-destructive px-4 py-6 text-sm'>
-          Couldn’t load notifications. They’ll retry shortly.
-        </p>
-      ) : items.length === 0 ? (
-        <div className='p-4'>
-          <EmptyState
-            message={
-              filter === 'unread'
-                ? 'All caught up.'
-                : 'No notifications. Assignments, comments on your tasks and due dates show up here.'
-            }
-          />
-        </div>
-      ) : (
-        <ul
-          className={cn('max-h-96 divide-y overflow-y-auto', className)}
-          aria-live='polite'
-        >
-          {items.map(item => (
-            <li key={item.id} className='group relative flex items-start'>
-              <button
-                type='button'
-                data-notification-open
-                onClick={() => openItem(item)}
-                className='hover:bg-muted/50 focus-visible:bg-muted/50 flex min-w-0 flex-1 items-start gap-3 px-4 py-2.5 text-left outline-none'
-              >
-                <Circle
-                  aria-label={item.readAt ? 'Read' : 'Unread'}
-                  className={cn(
-                    'mt-1.5 size-2 shrink-0',
-                    item.readAt
-                      ? 'text-transparent'
-                      : 'fill-primary text-primary'
-                  )}
-                />
-                <span className='min-w-0 flex-1'>
-                  <span
-                    className={cn(
-                      'block truncate text-sm',
-                      !item.readAt && 'font-semibold'
-                    )}
-                  >
-                    {item.title}
-                  </span>
-                  {item.body ? (
-                    <span className='text-muted-foreground line-clamp-2 block text-xs'>
-                      {item.body}
-                    </span>
-                  ) : null}
-                  <span className='text-muted-foreground block text-[11px]'>
-                    {formatRelativeTime(item.createdAt)}
-                  </span>
-                </span>
-              </button>
-              <div className='flex shrink-0 items-center gap-0.5 py-2 pr-2 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100'>
-                <Button
-                  type='button'
-                  variant='ghost'
-                  size='xs'
-                  onClick={() =>
-                    mutation.mutate({
-                      action: item.readAt ? 'unread' : 'read',
-                      ids: [item.id],
-                    })
-                  }
-                >
-                  {item.readAt ? 'Mark unread' : 'Mark read'}
-                </Button>
-                <RowActionButton
-                  type='button'
-                  label='Clear notification'
-                  icon={<X aria-hidden />}
-                  onClick={() =>
-                    mutation.mutate({ action: 'clear', ids: [item.id] })
-                  }
-                />
-              </div>
-            </li>
+    <div
+      className={cn('max-h-96 overflow-y-auto', className)}
+      aria-live='polite'
+    >
+      {unreadItems.length ? (
+        <ul className='divide-y'>
+          {unreadItems.map(item => (
+            <NotificationRow key={item.id} item={item} feed={feed} />
           ))}
         </ul>
-      )}
-    </>
+      ) : null}
+      {readItems.length ? (
+        <section aria-label='Earlier' className='border-t first:border-t-0'>
+          <h3 className='bg-muted/40 text-muted-foreground px-4 py-1.5 text-[11px] font-semibold tracking-wide uppercase'>
+            Earlier
+          </h3>
+          <ul className='divide-y'>
+            {readItems.map(item => (
+              <NotificationRow key={item.id} item={item} feed={feed} />
+            ))}
+          </ul>
+          <div className='flex justify-end border-t px-2 py-1.5'>
+            <Button
+              type='button'
+              variant='ghost'
+              size='xs'
+              onClick={() => setConfirmingClearRead(true)}
+            >
+              Clear read
+            </Button>
+          </div>
+        </section>
+      ) : null}
+      <ConfirmDialog
+        open={confirmingClearRead}
+        title='Clear read notifications?'
+        description='Everything under Earlier is removed from your list. Unread notifications stay.'
+        confirmLabel='Clear read'
+        confirmVariant='destructive'
+        onConfirm={() => {
+          setConfirmingClearRead(false)
+          mutation.mutate({ action: 'clear-read' })
+        }}
+        onCancel={() => setConfirmingClearRead(false)}
+      />
+    </div>
   )
 }

@@ -206,14 +206,8 @@ export function ClientContactList({
                 aria-pressed={isPrimary}
               />
               <DisabledFieldTooltip
-                disabled={isPending || Boolean(contact.atCompany)}
-                reason={
-                  isPending
-                    ? pendingReason
-                    : contact.atCompany
-                      ? 'Works at this company. Change their company on the contact to remove them.'
-                      : null
-                }
+                disabled={isPending}
+                reason={isPending ? pendingReason : null}
                 className='w-auto'
               >
                 <Button
@@ -221,7 +215,7 @@ export function ClientContactList({
                   variant='ghost'
                   size='icon-sm'
                   className='text-muted-foreground hover:text-destructive'
-                  disabled={isPending || Boolean(contact.atCompany)}
+                  disabled={isPending}
                   onClick={() => onRequestRemoval(contact)}
                   aria-label={`Unlink ${label}`}
                 >

@@ -24,7 +24,14 @@ export function NotificationsBell() {
   const label = count ? `Notifications, ${count} unread` : 'Notifications'
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={next => {
+        // The "Clear read" confirm sits outside the popover; keep it open.
+        if (!next && feed.confirmingClearRead) return
+        setOpen(next)
+      }}
+    >
       <PopoverTrigger asChild>
         <Button
           type='button'

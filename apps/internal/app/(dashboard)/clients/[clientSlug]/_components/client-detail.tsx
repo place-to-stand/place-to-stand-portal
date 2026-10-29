@@ -33,6 +33,7 @@ import type {
 } from '@/lib/data/clients'
 import type { ContactWithClientLink } from '@/lib/types/client-contacts'
 import { getBillingTypeLabel } from '@/lib/settings/clients/billing-types'
+import { displayWebsiteHost, toWebsiteHref } from '@/lib/companies/website'
 import {
   ARCHIVE_CLIENT_CONFIRM_LABEL,
   ARCHIVE_CLIENT_DIALOG_TITLE,
@@ -200,16 +201,17 @@ function ClientDetailsWidget({
           </div>
         ) : null}
         {client.website ? (
+          // The company's website (the company owns it); read-only here.
           <div className='flex items-center gap-3 px-4 py-2.5'>
             <Globe className='text-muted-foreground h-4 w-4' />
             <span className='text-muted-foreground text-sm'>Website</span>
             <a
-              href={client.website}
+              href={toWebsiteHref(client.website)}
               target='_blank'
               rel='noopener noreferrer'
               className='ml-auto text-sm font-medium underline-offset-4 hover:underline'
             >
-              {new URL(client.website).hostname}
+              {displayWebsiteHost(client.website)}
             </a>
           </div>
         ) : null}

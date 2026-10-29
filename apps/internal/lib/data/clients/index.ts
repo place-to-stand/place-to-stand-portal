@@ -12,6 +12,7 @@ import {
   getClientHoursTotals,
 } from '@pts/db/hours'
 import { NotFoundError } from '@/lib/errors/http'
+import { clientWebsiteSql } from '@/lib/queries/clients/website'
 import { createSearchPattern } from '@/lib/pagination/cursor'
 import { fetchLatestClosersByClient } from '@/lib/queries/clients/commission-terms'
 import type { ClientCloser } from '@/lib/settings/clients/closers'
@@ -39,6 +40,7 @@ export type ClientWithMetrics = {
   companyName: string | null
   slug: string | null
   notes: string | null
+  /** The company's website, falling back to the client's legacy copy. */
   website: string | null
   billingType: 'prepaid' | 'net_30'
   state: string | null
@@ -73,6 +75,7 @@ export type ClientDetail = {
   companyName: string | null
   slug: string | null
   notes: string | null
+  /** The company's website, falling back to the client's legacy copy. */
   website: string | null
   state: string | null
   originationContactId: string | null
@@ -127,7 +130,7 @@ export const fetchClientsWithMetrics = cache(
         name: clients.name,
         slug: clients.slug,
         notes: clients.notes,
-        website: clients.website,
+        website: clientWebsiteSql,
         billingType: clients.billingType,
         state: clients.state,
         originationContactId: clients.originationContactId,
@@ -309,7 +312,7 @@ export const fetchClientById = cache(
         name: clients.name,
         slug: clients.slug,
         notes: clients.notes,
-        website: clients.website,
+        website: clientWebsiteSql,
         state: clients.state,
         originationContactId: clients.originationContactId,
         originationUserId: clients.originationUserId,

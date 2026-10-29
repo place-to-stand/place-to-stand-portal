@@ -2,13 +2,10 @@
 
 import { useMemo } from 'react'
 import { useWatch, type Control } from 'react-hook-form'
-import { ExternalLink } from 'lucide-react'
 
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
-import {
-  CompanyLinkPicker,
-  useCompanyOptions,
-} from '@/components/companies/company-link-picker'
+import { CompanyLinkPicker } from '@/components/companies/company-link-picker'
+import { CompanyWebsiteLink } from '@/components/companies/company-website-link'
 import { ContactLinkPicker } from '@/components/contacts/contact-link-picker'
 import {
   FormControl,
@@ -28,7 +25,6 @@ import {
   SelectValue,
 } from '@pts/ui/select'
 import { isSelectableUser } from '@/lib/users/selectable'
-import { displayWebsiteHost, toWebsiteHref } from '@/lib/companies/website'
 import {
   LEAD_SOURCE_LABELS,
   LEAD_SOURCE_TYPES,
@@ -258,25 +254,5 @@ export function LeadSheetFormFields({
         )}
       />
     </div>
-  )
-}
-
-/** The linked company's website, read-only: the company owns it. */
-function CompanyWebsiteLink({ companyId }: { companyId: string | null }) {
-  const { data = [] } = useCompanyOptions()
-  const website = companyId
-    ? (data.find(company => company.id === companyId)?.website ?? null)
-    : null
-  if (!website) return null
-  return (
-    <a
-      href={toWebsiteHref(website)}
-      target='_blank'
-      rel='noopener noreferrer'
-      className='text-primary inline-flex w-fit items-center gap-1 text-xs hover:underline'
-    >
-      {displayWebsiteHost(website)}
-      <ExternalLink className='size-3' />
-    </a>
   )
 }

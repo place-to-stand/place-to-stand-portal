@@ -114,9 +114,12 @@ const sheetSizeClasses: Record<SheetSize, string> = {
   lg: 'sm:max-w-lg',
   xl: 'sm:max-w-xl',
   '2xl': 'sm:max-w-2xl',
-  // Two columns from lg: a 720px form beside a SHEET_SPLIT_SIDE_CLASS column
-  // (512px). Below lg the side column stacks and the sheet stays 2xl.
-  split: 'sm:max-w-2xl lg:max-w-[1232px]',
+  // Two columns from lg: the form takes everything beside a fixed
+  // SHEET_SPLIT_SIDE_CLASS column (512px). 1360px wide (an 848px form),
+  // never closer than 4rem to the screen edge. Below lg the side column
+  // stacks and the sheet stays 2xl.
+  split:
+    'sm:max-w-2xl lg:w-[min(1360px,calc(100vw-4rem))] lg:max-w-[min(1360px,calc(100vw-4rem))]',
   wide: 'sm:max-w-4xl lg:max-w-5xl',
   xwide: 'sm:max-w-4xl lg:max-w-6xl',
   full: 'w-screen max-w-none',

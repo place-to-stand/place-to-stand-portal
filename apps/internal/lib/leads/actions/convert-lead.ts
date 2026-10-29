@@ -15,7 +15,6 @@ import { leadConversionSchema, type LeadConversionFormValues } from '../conversi
 import type { LeadConversionResult } from '../conversion-types'
 import { syncPortalMembershipsForLinkChanges } from '@/lib/queries/contacts/settings/contact-client-portal-memberships'
 import { getLinkableCompany } from '@/lib/queries/companies'
-import { syncCompanyClientLinks } from '@/lib/queries/companies/people-links'
 
 export async function convertLeadToClient(
   input: LeadConversionFormValues
@@ -140,8 +139,6 @@ export async function convertLeadToClient(
       .update(clients)
       .set({ companyId: leadCompanyId, updatedAt: new Date().toISOString() })
       .where(and(eq(clients.id, finalClientId), isNull(clients.companyId)))
-    // It now has the company's people.
-    await syncCompanyClientLinks(user, [leadCompanyId])
   }
 
   // 3. Link the lead's contact to the client (creating it from the lead's
@@ -195,28 +192,6 @@ export async function convertLeadToClient(
         })
       }
 
-      // Someone on record at another company isn't this client's person:
-      // the same rule as the client sheet. Leave them unlinked and say so.
-      const [placement] = await db
-        .select({
-          contactCompanyId: contacts.companyId,
-          clientCompanyId: clients.companyId,
-        })
-        .from(contacts)
-        .innerJoin(clients, eq(clients.id, finalClientId))
-        .where(eq(contacts.id, contactId))
-        .limit(1)
-      if (
-        placement?.contactCompanyId &&
-        placement.clientCompanyId &&
-        placement.contactCompanyId !== placement.clientCompanyId
-      ) {
-        warnings.push(
-          `${lead.contactName} works at another company, so they weren't added to this client. Change their company to add them.`
-        )
-        throw new SkipContactLink()
-      }
-
       // Link contact to client (ignore if already linked)
       const [existingLink] = await db
         .select({ id: contactClients.id })
@@ -240,8 +215,9 @@ export async function convertLeadToClient(
         ])
       }
 
-      // The contact works at the client's company when it's on record
-      // nowhere else, so it gets every one of that company's clients.
+      // Winning the lead is the one deliberate step that puts its contact
+      // on the client. They also join the client's company when they're on
+      // record nowhere else (that grants no access by itself).
       await db
         .update(contacts)
         .set({
@@ -249,13 +225,6 @@ export async function convertLeadToClient(
           updatedAt: new Date().toISOString(),
         })
         .where(and(eq(contacts.id, contactId), isNull(contacts.companyId)))
-      const [clientCompany] = await db
-        .select({ companyId: clients.companyId })
-        .from(clients)
-        .where(eq(clients.id, finalClientId))
-        .limit(1)
-      await syncCompanyClientLinks(user, [clientCompany?.companyId])
-
       // The client's company takes this contact as its primary when it has
       // none yet, and the contact works there (or nowhere on record).
       await db
@@ -273,10 +242,8 @@ export async function convertLeadToClient(
           )
         )
     } catch (err) {
-      if (!(err instanceof SkipContactLink)) {
-        console.error('[convert-lead] Failed to create contact:', err)
-        warnings.push('Contact record could not be created. You can add it manually from the client page.')
-      }
+      console.error('[convert-lead] Failed to create contact:', err)
+      warnings.push('Contact record could not be created. You can add it manually from the client page.')
     }
   }
 
@@ -349,6 +316,3 @@ export async function convertLeadToClient(
     warnings: warnings.length > 0 ? warnings : undefined,
   }
 }
-
-/** Stops the contact step early once its warning is recorded. */
-class SkipContactLink extends Error {}

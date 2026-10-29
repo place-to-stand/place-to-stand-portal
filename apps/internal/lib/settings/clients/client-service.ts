@@ -54,12 +54,15 @@ export const clientSchema = z
       .max(2)
       .nullish()
       .transform(value => (value ? value : null)),
+    // Deprecated: the company owns the website. A website sent here only
+    // fills the client's company website when it has none.
     website: z
       .string()
       .url('Please enter a valid URL')
       .or(z.literal(''))
       .nullish()
-      .transform(value => (value ? value : null)),
+      .transform(value => (value ? value : null))
+      .optional(),
     notes: z
       .string()
       .nullish()

@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@pts/ui/input'
 import { CompanyLinkPicker } from '@/components/companies/company-link-picker'
+import { CompanyWebsiteLink } from '@/components/companies/company-website-link'
 import {
   Select,
   SelectContent,
@@ -239,6 +240,7 @@ export function ClientSheetForm({
                       />
                     </DisabledFieldTooltip>
                   </FormControl>
+                  <CompanyWebsiteLink companyId={field.value || null} />
                   <p className='text-muted-foreground text-xs'>
                     The client takes the company’s name and people, and uses its
                     primary contact.
@@ -285,43 +287,13 @@ export function ClientSheetForm({
                 </FormItem>
               )}
             />
-            <div
-              className={cn(
-                'grid items-start gap-4',
-                isEditing && 'sm:grid-cols-2'
-              )}
-            >
-              {isEditing ? (
-                <FormField
-                  control={form.control}
-                  name='slug'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Slug</FormLabel>
-                      <FormControl>
-                        <DisabledFieldTooltip
-                          disabled={isPending}
-                          reason={fieldDisabledReason}
-                        >
-                          <Input
-                            {...field}
-                            value={field.value ?? ''}
-                            placeholder='acme'
-                            disabled={isPending}
-                          />
-                        </DisabledFieldTooltip>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              ) : null}
+            {isEditing ? (
               <FormField
                 control={form.control}
-                name='website'
+                name='slug'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel optional>Website</FormLabel>
+                    <FormLabel>Slug</FormLabel>
                     <FormControl>
                       <DisabledFieldTooltip
                         disabled={isPending}
@@ -330,7 +302,7 @@ export function ClientSheetForm({
                         <Input
                           {...field}
                           value={field.value ?? ''}
-                          placeholder='https://example.com'
+                          placeholder='acme'
                           disabled={isPending}
                         />
                       </DisabledFieldTooltip>
@@ -339,7 +311,7 @@ export function ClientSheetForm({
                   </FormItem>
                 )}
               />
-            </div>
+            ) : null}
           </SheetSection>
 
           <Separator />

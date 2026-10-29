@@ -69,7 +69,6 @@ const resolveClientInit: SheetInitResolver<'client'> = async (_user, id) => {
     name: row.name,
     slug: row.slug,
     notes: row.notes,
-    website: row.website,
     state: row.state ?? null,
     origination_contact_id: row.originationContactId,
     origination_user_id: row.originationUserId,

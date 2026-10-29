@@ -15,7 +15,6 @@ export type ClientRow = {
   name: string
   slug: string | null
   notes: string | null
-  website: string | null
   state: string | null
   originationContactId: string | null
   originationUserId: string | null
@@ -58,7 +57,6 @@ export async function loadClientRows(clientIds: string[]): Promise<ClientRow[]> 
       name: clientsTable.name,
       slug: clientsTable.slug,
       notes: clientsTable.notes,
-      website: clientsTable.website,
       state: clientsTable.state,
       originationContactId: clientsTable.originationContactId,
       originationUserId: clientsTable.originationUserId,
@@ -109,7 +107,6 @@ export function mapClientRows(rows: ClientRow[]): DbClient[] {
     name: row.name,
     slug: row.slug,
     notes: row.notes,
-    website: row.website,
     state: row.state,
     origination_contact_id: row.originationContactId,
     origination_user_id: row.originationUserId,

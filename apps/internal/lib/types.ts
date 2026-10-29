@@ -20,7 +20,6 @@ export type DbClient = {
   name: string
   slug: string | null
   notes: string | null
-  website: string | null
   state: string | null
   origination_contact_id: string | null
   origination_user_id: string | null

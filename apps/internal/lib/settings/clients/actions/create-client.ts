@@ -20,21 +20,21 @@ import {
   type ClientMutationResult,
 } from './types'
 import {
+  fillCompanyWebsiteIfBlank,
   findOrCreateCompanyByName,
   getLinkableCompany,
 } from '@/lib/queries/companies'
-import { syncCompanyClientLinksTx } from '@/lib/queries/companies/people-links'
-import {
-  logContactClientLinkChanges,
-  type ContactClientLinkChange,
-} from '@/lib/queries/contacts/settings/contact-client-link-activity'
 
 type CreateClientPayload = {
   name: string
   providedSlug: string | null
   billingType: ClientBillingTypeValue
   state: string | null
-  website: string | null
+  /**
+   * Deprecated: the company owns the website. Fills the client's company
+   * website when it has none; never stored on the client.
+   */
+  website?: string | null
   originationContactId: string | null
   originationUserId: string | null
   closers: CloserShare[]
@@ -92,14 +92,15 @@ export async function createClient(
     })
     companyId = company?.id ?? null
   }
+  if (companyId) {
+    await fillCompanyWebsiteIfBlank(user, companyId, website)
+  }
 
   const baseSlug = providedSlug
     ? toClientSlug(providedSlug)
     : toClientSlug(name)
   let slugCandidate = await generateUniqueClientSlug(baseSlug)
   let attempt = 0
-
-  let linkChanges: ContactClientLinkChange[] = []
 
   while (attempt < INSERT_RETRY_LIMIT) {
     try {
@@ -114,7 +115,6 @@ export async function createClient(
             slug: slugCandidate,
             billingType,
             state,
-            website,
             originationContactId,
             originationUserId,
             notes,
@@ -129,10 +129,6 @@ export async function createClient(
         if (!insertedId) {
           return null
         }
-
-        // A client's people are its company's people, linked (with portal
-        // access) in the same transaction as the client itself.
-        linkChanges = await syncCompanyClientLinksTx(tx, [companyId])
 
         await insertInitialBillingTerm(tx, {
           clientId: insertedId,
@@ -167,7 +163,6 @@ export async function createClient(
         }
       }
 
-      await logContactClientLinkChanges(user, linkChanges)
 
       const event = clientCreatedEvent({
         name,

@@ -15,14 +15,6 @@ import {
   getLinkableCompany,
 } from '@/lib/queries/companies'
 import {
-  companyMoveError,
-  syncCompanyClientLinksTx,
-} from '@/lib/queries/companies/people-links'
-import {
-  logContactClientLinkChanges,
-  type ContactClientLinkChange,
-} from '@/lib/queries/contacts/settings/contact-client-link-activity'
-import {
   contactSchema,
   type ContactInput,
 } from '@/lib/settings/contacts/contact-service'
@@ -41,7 +33,6 @@ type ExistingContact = {
   jobTitle: string | null
   linkedinUrl: string | null
   companyId: string | null
-  userId: string | null
 }
 
 /**
@@ -131,7 +122,6 @@ export async function saveContactMutation(
               jobTitle: contacts.jobTitle,
               linkedinUrl: contacts.linkedinUrl,
               companyId: contacts.companyId,
-              userId: contacts.userId,
             })
             .from(contacts)
             .where(eq(contacts.id, id))
@@ -159,15 +149,6 @@ export async function saveContactMutation(
           console.error('Failed to resolve contact company', error)
           return buildMutationResult({ error: 'Unable to save the company.' })
         }
-
-        // Only a contact with a portal account gains or loses access.
-        const moveError = await companyMoveError(
-          user,
-          existingContact,
-          existingContact.companyId,
-          companyId
-        )
-        if (moveError) return buildMutationResult({ error: moveError })
 
         const next = {
           email,
@@ -204,7 +185,6 @@ export async function saveContactMutation(
           }
         }
 
-        let linkChanges: ContactClientLinkChange[] = []
         try {
           await db.transaction(async tx => {
             await tx
@@ -234,17 +214,6 @@ export async function saveContactMutation(
                 contactPhone: next.phone,
               })
               .where(eq(leads.contactId, id))
-
-            // A client's people are its company's people: joining a company
-            // links them to its clients, leaving one unlinks them, with
-            // portal access following in the same transaction.
-            if (existingContact.companyId !== next.companyId) {
-              linkChanges = await syncCompanyClientLinksTx(
-                tx,
-                [existingContact.companyId, next.companyId],
-                { leftContactIds: [id] }
-              )
-            }
           })
         } catch (error) {
           console.error('Failed to update contact', error)
@@ -260,8 +229,6 @@ export async function saveContactMutation(
           }
           return buildMutationResult({ error: 'Unable to update contact.' })
         }
-
-        await logContactClientLinkChanges(user, linkChanges)
 
         if (changedFields.length > 0) {
           const event = contactUpdatedEvent({
@@ -301,9 +268,6 @@ export async function saveContactMutation(
         return buildMutationResult({ error: 'Unable to save the company.' })
       }
 
-      // A new contact has no portal account, so joining a client's company
-      // grants no access: no admin check needed here.
-      let createdLinks: ContactClientLinkChange[] = []
       try {
         newContactId = await db.transaction(async tx => {
           const result = await tx
@@ -319,11 +283,7 @@ export async function saveContactMutation(
             })
             .returning({ id: contacts.id })
 
-          const insertedId = result[0]?.id ?? ''
-          if (insertedId) {
-            createdLinks = await syncCompanyClientLinksTx(tx, [companyId])
-          }
-          return insertedId
+          return result[0]?.id ?? ''
         })
       } catch (error) {
         console.error('Failed to create contact', error)
@@ -340,8 +300,6 @@ export async function saveContactMutation(
         }
         return buildMutationResult({ error: 'Unable to create contact.' })
       }
-
-      await logContactClientLinkChanges(user, createdLinks)
 
       const event = contactCreatedEvent({ email, name })
 

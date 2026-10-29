@@ -21,15 +21,7 @@ import type { ContactClientLinkChange } from './contact-client-link-activity'
 export async function syncPortalMembershipsForLinkChanges(
   changes: ContactClientLinkChange[],
   /** Run inside the caller's transaction so links and access commit together. */
-  executor: Pick<typeof db, 'select' | 'insert' | 'update'> = db,
-  options: {
-    /**
-     * Whether a link brings back a membership an admin revoked. True for a
-     * person linking by hand; false for links derived from someone's
-     * company, so a revoked portal user stays revoked.
-     */
-    restoreRevoked?: boolean
-  } = {}
+  executor: Pick<typeof db, 'select' | 'insert' | 'update'> = db
 ): Promise<void> {
   if (changes.length === 0) return
 
@@ -60,19 +52,13 @@ export async function syncPortalMembershipsForLinkChanges(
   const toRevoke = memberships('unlinked')
 
   if (toGrant.length > 0) {
-    const insert = executor
+    await executor
       .insert(clientMembers)
       .values(toGrant.map(membership => ({ ...membership, deletedAt: null })))
-    if (options.restoreRevoked === false) {
-      await insert.onConflictDoNothing({
-        target: [clientMembers.clientId, clientMembers.userId],
-      })
-    } else {
-      await insert.onConflictDoUpdate({
+      .onConflictDoUpdate({
         target: [clientMembers.clientId, clientMembers.userId],
         set: { deletedAt: null },
       })
-    }
   }
 
   if (toRevoke.length > 0) {

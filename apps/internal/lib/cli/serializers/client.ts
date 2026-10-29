@@ -8,6 +8,7 @@ export type CliClient = {
   slug: string | null
   billingType: ClientWithMetrics['billingType']
   state: string | null
+  /** The company's website, falling back to the client's legacy copy. */
   website: string | null
   projectCount: number
   activeProjectCount: number
