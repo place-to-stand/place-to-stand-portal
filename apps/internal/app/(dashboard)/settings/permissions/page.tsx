@@ -54,7 +54,7 @@ export default async function PermissionsPage() {
 
   return (
     <PageShell breadcrumbs={crumbsForNav('/settings/permissions')}>
-      <div className='mx-auto w-full max-w-5xl space-y-6'>
+      <div className='w-full space-y-6'>
         <section className='grid gap-3 sm:grid-cols-3'>
           {roleTotals.map(({ role, count }) => (
             <div
