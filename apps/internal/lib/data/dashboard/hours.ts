@@ -187,6 +187,7 @@ export async function fetchTimeLogPage(
         projectName: projects.name,
         projectSlug: projects.slug,
         projectType: projects.type,
+        clientId: clients.id,
         clientName: clients.name,
         clientSlug: clients.slug,
       })
@@ -239,6 +240,7 @@ export async function fetchTimeLogPage(
     projectName: row.projectName ?? 'Untitled project',
     projectSlug: row.projectSlug ?? null,
     projectType: row.projectType,
+    clientId: row.clientId ?? null,
     clientName: row.clientName ?? null,
     clientSlug: row.clientSlug ?? null,
     tasks: tasksByLog.get(row.id) ?? [],

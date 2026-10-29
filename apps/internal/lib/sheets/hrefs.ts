@@ -9,6 +9,7 @@
  */
 
 import { BOARD_VIEW_SEGMENTS } from '@/lib/projects/board/board-constants'
+import { PROJECT_SPECIAL_SEGMENTS } from '@/lib/projects/board/board-utils'
 
 export const clientSheetHref = (id: string) => `/clients?client=${id}`
 
@@ -84,3 +85,23 @@ export type MyTasksView = 'board' | 'calendar'
 
 export const myTaskHref = (taskId: string, view: MyTasksView = 'board') =>
   `/my/tasks/${view}?task=${taskId}`
+
+/**
+ * A project's board (tasks tab) from its slug, type and client slug: the
+ * link time-log lists use. Null when the project can't be addressed.
+ */
+export const projectTasksHref = (project: {
+  projectSlug: string | null
+  projectType: string
+  clientSlug: string | null
+}) => {
+  if (!project.projectSlug) return null
+  if (project.projectType === 'INTERNAL') {
+    return `/projects/${PROJECT_SPECIAL_SEGMENTS.INTERNAL}/${project.projectSlug}/tasks`
+  }
+  if (project.projectType === 'PERSONAL') {
+    return `/projects/${PROJECT_SPECIAL_SEGMENTS.PERSONAL}/${project.projectSlug}/tasks`
+  }
+  if (!project.clientSlug) return null
+  return `/projects/${project.clientSlug}/${project.projectSlug}/tasks`
+}

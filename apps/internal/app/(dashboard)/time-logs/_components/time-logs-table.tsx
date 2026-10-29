@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect } from 'react'
-import { ListTodo } from 'lucide-react'
+import Link from 'next/link'
+import { Building2, Clock, FolderKanban, ListTodo } from 'lucide-react'
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { formatCalendarDate } from '@pts/ui/dates'
@@ -26,6 +27,7 @@ import { SortableTableHead } from '@/components/table-toolbar/sortable-table-hea
 import { useListParams } from '@/hooks/use-list-params'
 import { PersonAvatar } from '@/components/ui/user-avatar'
 import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
+import { clientSheetHref, projectTasksHref } from '@/lib/sheets/hrefs'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import type { DashboardTimeLogEntry } from '@/lib/dashboard/types'
 import { useTimeLogEditContext } from '@/lib/projects/time-log/use-time-log-edit-context'
@@ -135,11 +137,11 @@ export function TimeLogsTable({
           <TableHeader>
             <TableRow className='bg-muted/40'>
               {sortHead('date', 'Date', 'w-[10%]')}
-              {sortHead('person', 'Person', 'w-20')}
+              {sortHead('person', 'User', 'w-20', 'center')}
               {sortHead('client', 'Client', 'w-[24%]')}
               {sortHead('project', 'Project', 'w-[30%]')}
               <TableHead className='w-[10%] text-center'>Tasks</TableHead>
-              {sortHead('hours', 'Hours', 'w-[10%]', 'center')}
+              {sortHead('hours', 'Hours', 'w-[10%]')}
               <TableHead className='w-32 text-right'>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -160,32 +162,63 @@ export function TimeLogsTable({
                   <TableCell className='text-sm tabular-nums'>
                     {formatCalendarDate(item.loggedOn)}
                   </TableCell>
-                  <TableCell label='Person'>
-                    <PersonAvatar
-                      userId={item.userId}
-                      name={item.userName ?? 'Unknown'}
-                      hasPhoto={Boolean(item.userAvatarUrl)}
-                    />
+                  <TableCell label='User'>
+                    <div className='flex items-center justify-center'>
+                      <PersonAvatar
+                        userId={item.userId}
+                        name={item.userName ?? 'Unknown'}
+                        hasPhoto={Boolean(item.userAvatarUrl)}
+                      />
+                    </div>
                   </TableCell>
-                  <TableCell
-                    className='truncate text-sm'
-                    title={item.clientName ?? undefined}
-                  >
-                    {item.clientName ?? <EmptyValue />}
+                  <TableCell label='Client' className='text-sm'>
+                    {item.clientName ? (
+                      <div className='flex min-w-0 items-center gap-2'>
+                        <Building2 className='text-muted-foreground h-4 w-4 shrink-0' />
+                        {item.clientId ? (
+                          // The row ignores clicks on links.
+                          <Link
+                            href={clientSheetHref(item.clientId)}
+                            title={item.clientName}
+                            className='hover:text-foreground truncate underline-offset-4 transition hover:underline'
+                          >
+                            {item.clientName}
+                          </Link>
+                        ) : (
+                          <span className='truncate' title={item.clientName}>
+                            {item.clientName}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <EmptyValue />
+                    )}
                   </TableCell>
-                  <TableCell
-                    className='truncate text-sm'
-                    title={item.projectName}
-                  >
-                    {item.projectName}
+                  <TableCell label='Project' className='text-sm'>
+                    <div className='flex min-w-0 items-center gap-2'>
+                      <FolderKanban className='text-muted-foreground h-4 w-4 shrink-0' />
+                      {projectTasksHref(item) ? (
+                        <Link
+                          href={projectTasksHref(item)!}
+                          title={item.projectName}
+                          className='hover:text-foreground truncate underline-offset-4 transition hover:underline'
+                        >
+                          {item.projectName}
+                        </Link>
+                      ) : (
+                        <span className='truncate' title={item.projectName}>
+                          {item.projectName}
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell
                     label='Tasks'
                     className='text-sm tabular-nums md:text-center'
                   >
                     <LinkedRecordsHoverCell
+                      withIcon
                       count={item.tasks.length}
-                      zeroLabel='—'
                       icon={ListTodo}
                       ariaLabel={`${item.tasks.length} ${item.tasks.length === 1 ? 'task' : 'tasks'}`}
                       items={item.tasks.map(task => ({
@@ -197,9 +230,12 @@ export function TimeLogsTable({
                   </TableCell>
                   <TableCell
                     label='Hours'
-                    className='text-sm font-medium tabular-nums md:text-center'
+                    className='text-sm font-medium tabular-nums'
                   >
-                    {HOURS.format(item.hours)}
+                    <span className='inline-flex items-center gap-2'>
+                      <Clock className='text-muted-foreground h-4 w-4 shrink-0' />
+                      {HOURS.format(item.hours)}
+                    </span>
                   </TableCell>
                   <TableCell className='text-right max-md:ml-auto'>
                     <RecordRowActions>

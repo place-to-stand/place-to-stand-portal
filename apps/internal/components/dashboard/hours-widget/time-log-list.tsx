@@ -5,8 +5,8 @@ import { Building2, FolderKanban, Loader2, User, Users } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { formatCalendarDate } from '@pts/ui/dates'
-import { PROJECT_SPECIAL_SEGMENTS } from '@/lib/projects/board/board-utils'
 import type { DashboardTimeLogEntry } from '@/lib/dashboard/types'
+import { projectTasksHref } from '@/lib/sheets/hrefs'
 
 import { formatHours } from './month-cursor'
 
@@ -213,25 +213,9 @@ function TimeLogRow({
 }
 
 function getProjectHref(entry: DashboardTimeLogEntry) {
-  if (!entry.projectSlug) {
-    return null
-  }
-
   // The tasks tab is a project's default view -- same target the My Tasks
   // widget uses, so both widgets land in the same place.
-  if (entry.projectType === 'INTERNAL') {
-    return `/projects/${PROJECT_SPECIAL_SEGMENTS.INTERNAL}/${entry.projectSlug}/tasks`
-  }
-
-  if (entry.projectType === 'PERSONAL') {
-    return `/projects/${PROJECT_SPECIAL_SEGMENTS.PERSONAL}/${entry.projectSlug}/tasks`
-  }
-
-  if (!entry.clientSlug) {
-    return null
-  }
-
-  return `/projects/${entry.clientSlug}/${entry.projectSlug}/tasks`
+  return projectTasksHref(entry)
 }
 
 function getClientHref(entry: DashboardTimeLogEntry) {
