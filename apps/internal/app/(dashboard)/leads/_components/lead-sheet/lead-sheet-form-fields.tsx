@@ -5,7 +5,6 @@ import { useWatch, type Control } from 'react-hook-form'
 
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 import { CompanyLinkPicker } from '@/components/companies/company-link-picker'
-import { CompanyWebsiteLink } from '@/components/companies/company-website-link'
 import { ContactLinkPicker } from '@/components/contacts/contact-link-picker'
 import {
   FormControl,
@@ -83,13 +82,6 @@ export function LeadSheetFormFields({
                 onChange={next => field.onChange(next)}
               />
             </FormControl>
-            {field.value && (field.value.email || field.value.phone) ? (
-              <p className='text-muted-foreground text-xs'>
-                {[field.value.email, field.value.phone]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </p>
-            ) : null}
             <FormMessage />
           </FormItem>
         )}
@@ -106,7 +98,6 @@ export function LeadSheetFormFields({
                 onChange={next => field.onChange(next)}
               />
             </FormControl>
-            <CompanyWebsiteLink companyId={field.value?.id ?? null} />
             <FormMessage />
           </FormItem>
         )}

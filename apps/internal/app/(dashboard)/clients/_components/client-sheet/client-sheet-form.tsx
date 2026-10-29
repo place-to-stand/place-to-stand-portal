@@ -19,7 +19,6 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@pts/ui/input'
 import { CompanyLinkPicker } from '@/components/companies/company-link-picker'
-import { CompanyWebsiteLink } from '@/components/companies/company-website-link'
 import {
   Select,
   SelectContent,
@@ -240,10 +239,9 @@ export function ClientSheetForm({
                       />
                     </DisabledFieldTooltip>
                   </FormControl>
-                  <CompanyWebsiteLink companyId={field.value || null} />
                   <p className='text-muted-foreground text-xs'>
-                    The client takes the company’s name and people, and uses its
-                    primary contact.
+                    The client takes the company’s name and uses its primary
+                    contact.
                   </p>
                   <FormMessage />
                 </FormItem>

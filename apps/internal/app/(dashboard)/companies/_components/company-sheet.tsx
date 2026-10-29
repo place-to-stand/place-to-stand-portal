@@ -9,6 +9,7 @@ import { z } from 'zod'
 
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { Input } from '@pts/ui/input'
+import { UrlInput } from '@/components/ui/url-input'
 import { Separator } from '@pts/ui/separator'
 import { Skeleton } from '@pts/ui/skeleton'
 import { FormFeedback } from '@/components/sheets/form-feedback'
@@ -300,42 +301,42 @@ export function CompanySheet({
                         </FormItem>
                       )}
                     />
-                    <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
-                      <FormField
-                        control={form.control}
-                        name='website'
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel optional>Website</FormLabel>
-                            <FormControl>
-                              <Input
-                                {...field}
-                                placeholder='acme.com'
-                                disabled={fieldsDisabled}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name='linkedinUrl'
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel optional>LinkedIn</FormLabel>
-                            <FormControl>
-                              <Input
-                                {...field}
-                                placeholder='linkedin.com/company/acme'
-                                disabled={fieldsDisabled}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                    <FormField
+                      control={form.control}
+                      name='website'
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel optional>Website</FormLabel>
+                          <FormControl>
+                            <UrlInput
+                              {...field}
+                              openLabel='Open website'
+                              placeholder='acme.com'
+                              disabled={fieldsDisabled}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name='linkedinUrl'
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel optional>LinkedIn</FormLabel>
+                          <FormControl>
+                            <UrlInput
+                              {...field}
+                              openLabel='Open LinkedIn'
+                              placeholder='linkedin.com/company/acme'
+                              disabled={fieldsDisabled}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     <FormField
                       control={form.control}
                       name='notes'

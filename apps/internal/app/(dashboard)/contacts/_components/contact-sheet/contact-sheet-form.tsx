@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 import type React from 'react'
-import { ExternalLink, User2, UserPlus } from 'lucide-react'
+import { User2, UserPlus } from 'lucide-react'
 import type { UseFormReturn } from 'react-hook-form'
 
 import { Button } from '@pts/ui/button'
@@ -21,6 +21,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@pts/ui/input'
+import { UrlInput } from '@/components/ui/url-input'
 import { CompanyLinkPicker } from '@/components/companies/company-link-picker'
 import { PhoneInput } from '@/components/ui/phone-input'
 import { Separator } from '@pts/ui/separator'
@@ -35,21 +36,6 @@ import {
 import { ContactPortalAccountCard } from './contact-portal-account-card'
 
 const CONTACT_FORM_ID = 'contact-form'
-
-/** A safe https link from what was typed, or null. */
-function toLinkedinHref(value: string | undefined | null): string | null {
-  const trimmed = value?.trim()
-  if (!trimmed) return null
-  const withScheme = /^https?:\/\//i.test(trimmed)
-    ? trimmed
-    : `https://${trimmed}`
-  try {
-    const url = new URL(withScheme)
-    return url.hostname.includes('.') ? url.toString() : null
-  } catch {
-    return null
-  }
-}
 
 type ContactFormValues = {
   email: string
@@ -287,37 +273,20 @@ export function ContactSheetForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel optional>LinkedIn</FormLabel>
-                  <div className='flex items-center gap-2'>
-                    <FormControl>
-                      <DisabledFieldTooltip
-                        disabled={isPending}
-                        reason={fieldDisabledReason}
-                      >
-                        <Input
-                          {...field}
-                          value={field.value ?? ''}
-                          placeholder='linkedin.com/in/jane-doe'
-                          disabled={isPending}
-                        />
-                      </DisabledFieldTooltip>
-                    </FormControl>
-                    <Button
-                      type='button'
-                      variant='outline'
-                      size='icon'
-                      className='shrink-0'
-                      aria-label='Open LinkedIn profile'
-                      title='Open LinkedIn profile'
-                      disabled={!toLinkedinHref(field.value)}
-                      onClick={() => {
-                        const href = toLinkedinHref(field.value)
-                        if (href)
-                          window.open(href, '_blank', 'noopener,noreferrer')
-                      }}
+                  <FormControl>
+                    <DisabledFieldTooltip
+                      disabled={isPending}
+                      reason={fieldDisabledReason}
                     >
-                      <ExternalLink className='h-4 w-4' />
-                    </Button>
-                  </div>
+                      <UrlInput
+                        {...field}
+                        value={field.value ?? ''}
+                        openLabel='Open LinkedIn'
+                        placeholder='linkedin.com/in/jane-doe'
+                        disabled={isPending}
+                      />
+                    </DisabledFieldTooltip>
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
