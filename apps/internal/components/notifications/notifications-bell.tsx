@@ -55,7 +55,7 @@ export function NotificationsBell() {
       </PopoverTrigger>
       <PopoverContent
         align='end'
-        className='w-[min(26rem,calc(100vw-1.5rem))] overflow-hidden p-0'
+        className='w-[min(32rem,calc(100vw-1.5rem))] overflow-hidden p-0'
       >
         <div className='flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5'>
           <div className='flex items-center gap-3'>
