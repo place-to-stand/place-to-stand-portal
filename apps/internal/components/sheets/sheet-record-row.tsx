@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
  */
 export function SheetRecordRow({
   icon: Icon,
+  leading,
   title,
   description,
   actions,
@@ -19,6 +20,8 @@ export function SheetRecordRow({
   className,
 }: {
   icon?: LucideIcon
+  /** In place of the icon, e.g. a person's avatar. */
+  leading?: ReactNode
   title: ReactNode
   /** One muted line under the title: an email, a status, "Pending save". */
   description?: ReactNode
@@ -32,7 +35,9 @@ export function SheetRecordRow({
 }) {
   const body = (
     <>
-      {Icon ? (
+      {leading ? (
+        <span className='shrink-0'>{leading}</span>
+      ) : Icon ? (
         <Icon className='text-muted-foreground size-4 shrink-0' aria-hidden />
       ) : null}
       <span className='flex min-w-0 flex-1 flex-col text-left text-sm leading-tight'>

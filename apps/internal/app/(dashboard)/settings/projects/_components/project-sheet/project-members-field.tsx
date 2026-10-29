@@ -5,14 +5,14 @@ import { useQuery } from '@tanstack/react-query'
 import { useWatch, type UseFormReturn } from 'react-hook-form'
 import { Plus, X } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { EmptyState } from '@pts/ui/empty-state'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { Skeleton } from '@pts/ui/skeleton'
 import {
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-} from '@/components/ui/form'
+  SheetRecordList,
+  SheetRecordRow,
+} from '@/components/sheets/sheet-record-row'
+import { SheetSection } from '@/components/sheets/sheet-section'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import type { ProjectSheetFormValues } from '@/lib/settings/projects/use-project-sheet-state'
 
@@ -86,87 +86,89 @@ export function ProjectMembersField({
   const setMembers = (next: string[]) =>
     form.setValue('memberIds', next, { shouldDirty: true })
 
+  const addButton = (
+    <RowActionButton
+      type='button'
+      label='Add member'
+      icon={<Plus />}
+      disabled={disabled}
+    />
+  )
+
+  // Same section shape as GitHub, Vercel and Supabase below: title row with
+  // an add button, one boxed row per member, an empty state.
   return (
-    <FormField
-      control={form.control}
-      name='memberIds'
-      render={() => (
-        <FormItem>
-          <FormLabel>Members</FormLabel>
-          <FormDescription>
-            Admins see every project. Sales users see only the projects they are
-            members of.
-          </FormDescription>
-          {isLoading ? (
-            <Skeleton className='h-9 w-full' />
-          ) : isError ? (
-            <p className='text-destructive text-sm'>
-              Members could not be loaded. Saving won&rsquo;t change them.
-            </p>
-          ) : (
-            <div className='flex flex-wrap items-center gap-2'>
-              {members.map(member => (
-                <span
-                  key={member.id}
-                  className='bg-muted/60 flex items-center gap-1.5 rounded-full border py-0.5 pr-1 pl-0.5 text-sm'
-                >
+    <SheetSection
+      title='Members'
+      description='Admins see every project. Sales users see only the projects they are members of.'
+      action={
+        options.length > 0 && !disabled ? (
+          <SearchableCombobox
+            items={options}
+            value=''
+            onChange={value => {
+              if (!value) return
+              setMembers([...(memberIds ?? []), value])
+            }}
+            searchPlaceholder='Search sales users...'
+            emptyMessage='No sales users found.'
+            ariaLabel='Add member'
+            trigger={addButton}
+          />
+        ) : (
+          addButton
+        )
+      }
+    >
+      {isLoading ? (
+        <Skeleton className='h-11 w-full' />
+      ) : isError ? (
+        <p className='text-destructive text-sm'>
+          Members could not be loaded. Saving won&rsquo;t change them.
+        </p>
+      ) : members.length === 0 ? (
+        <EmptyState
+          message={
+            options.length > 0 ? 'No members yet.' : 'No sales users yet.'
+          }
+        />
+      ) : (
+        <SheetRecordList>
+          {members.map(member => {
+            const name = member.fullName ?? member.email
+            return (
+              <SheetRecordRow
+                key={member.id}
+                leading={
                   <UserAvatar
+                    size='xs'
                     userId={member.id}
-                    name={member.fullName ?? member.email}
+                    name={name}
                     hasPhoto={Boolean(member.avatarUrl)}
                     alt=''
                   />
-                  {member.fullName ?? member.email}
-                  <Button
+                }
+                title={name}
+                description={member.fullName ? member.email : null}
+                actions={
+                  <RowActionButton
                     type='button'
-                    variant='ghost'
-                    size='icon'
-                    className='h-5 w-5 rounded-full'
-                    aria-label={`Remove ${member.fullName ?? member.email}`}
+                    label={`Remove ${name}`}
+                    icon={<X />}
+                    className='text-muted-foreground hover:text-destructive'
                     disabled={disabled}
                     onClick={() =>
                       setMembers(
                         (memberIds ?? []).filter(id => id !== member.id)
                       )
                     }
-                  >
-                    <X className='h-3 w-3' />
-                  </Button>
-                </span>
-              ))}
-              {options.length > 0 ? (
-                <SearchableCombobox
-                  items={options}
-                  value=''
-                  onChange={value => {
-                    if (!value) return
-                    setMembers([...(memberIds ?? []), value])
-                  }}
-                  searchPlaceholder='Search sales users...'
-                  emptyMessage='No sales users found.'
-                  disabled={disabled}
-                  ariaLabel='Add member'
-                  trigger={
-                    <Button
-                      type='button'
-                      variant='outline'
-                      size='sm'
-                      disabled={disabled}
-                    >
-                      <Plus className='h-3.5 w-3.5' />
-                      Add member
-                    </Button>
-                  }
-                />
-              ) : members.length === 0 ? (
-                <p className='text-muted-foreground text-sm'>
-                  No sales users yet.
-                </p>
-              ) : null}
-            </div>
-          )}
-        </FormItem>
+                  />
+                }
+              />
+            )
+          })}
+        </SheetRecordList>
       )}
-    />
+    </SheetSection>
   )
 }
