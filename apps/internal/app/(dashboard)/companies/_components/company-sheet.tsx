@@ -459,7 +459,7 @@ export function CompanySheet({
       <Sheet open={open} onOpenChange={handleOpenChange}>
         <SheetContent
           hideCloseButton
-          size='lg'
+          size='xl'
           className='flex w-full flex-col gap-0 overflow-hidden p-0'
         >
           <SheetFormHeader
