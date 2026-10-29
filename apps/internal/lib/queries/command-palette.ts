@@ -29,7 +29,7 @@ type PaletteProjectResult = {
 type PaletteContactResult = {
   id: string
   name: string
-  email: string
+  email: string | null
 }
 
 export type PaletteSearchResult = {

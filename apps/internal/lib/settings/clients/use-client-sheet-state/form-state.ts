@@ -234,7 +234,7 @@ export function useClientSheetFormState({
         .map(c => ({
           kind: 'contact' as const,
           id: c.id,
-          name: c.name?.trim() || c.email,
+          name: c.name?.trim() || c.email || 'Unnamed contact',
           email: c.email,
         })),
     [allContacts, closerKeys]
@@ -586,7 +586,7 @@ export function useClientSheetFormState({
           handleAddCloser({
             kind: 'contact',
             id: option.id,
-            name: option.name?.trim() || option.email,
+            name: option.name?.trim() || option.email || 'Unnamed contact',
             email: option.email,
           })
           break

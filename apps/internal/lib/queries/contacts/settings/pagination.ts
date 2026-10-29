@@ -113,7 +113,7 @@ export const CONTACT_SORT_DESCRIPTORS: Record<
     orderDesc: sql`${contacts.name} DESC`,
   },
   email: {
-    encode: row => row.email,
+    encode: row => row.email ?? '',
     compare: (op, value) =>
       op === 'gt'
         ? sql`${contacts.email} > ${value}`

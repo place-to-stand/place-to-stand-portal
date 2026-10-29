@@ -18,7 +18,7 @@ export type CompanyListItem = {
 export type CompanyContactSummary = {
   id: string
   name: string
-  email: string
+  email: string | null
   jobTitle: string | null
   linkedinUrl: string | null
   isChampion: boolean

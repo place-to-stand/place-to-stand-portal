@@ -60,9 +60,17 @@ export async function promoteContactToUserMutation(
     })
   }
 
+  // Portal access signs in by email, so the contact needs one first.
+  const email = contact.email
+  if (!email) {
+    return buildMutationResult({
+      error: 'Add an email to this contact before giving portal access.',
+    })
+  }
+
   // 2. Find or create portal user
   const portalResult = await findOrCreatePortalUser(user, {
-    email: contact.email,
+    email,
     fullName: contact.name,
   })
 
@@ -114,9 +122,9 @@ export async function promoteContactToUserMutation(
 
   if (portalResult.created) {
     const userEvent = userCreatedEvent({
-      fullName: contact.name || contact.email,
+      fullName: contact.name || email,
       role: 'CLIENT',
-      email: contact.email,
+      email,
       clientIds,
     })
 
@@ -133,7 +141,7 @@ export async function promoteContactToUserMutation(
   }
 
   const contactEvent = contactInvitedToPortalEvent({
-    email: contact.email,
+    email,
     name: contact.name,
     clientIds,
   })

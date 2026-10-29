@@ -4,7 +4,12 @@ import { linkedinUrlSchema } from '@/lib/companies/schema'
 
 export const contactSchema = z.object({
   id: z.string().uuid().optional(),
-  email: z.string().email('Valid email is required'),
+  /** Optional: a contact can be just a name. Blank is stored as null. */
+  email: z
+    .union([z.string().trim().email('Enter a valid email'), z.literal('')])
+    .optional()
+    .nullable()
+    .transform(value => (value ? value : null)),
   name: z.string().min(1, 'Name is required').max(160),
   phone: z
     .string()

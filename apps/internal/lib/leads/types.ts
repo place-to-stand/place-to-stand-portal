@@ -59,7 +59,7 @@ export type LeadRecord = {
  */
 export type LeadConversionSummary = {
   client: { id: string; name: string; slug: string | null; archived: boolean }
-  contact: { id: string; name: string; email: string } | null
+  contact: { id: string; name: string; email: string | null } | null
   projects: Array<{
     id: string
     name: string

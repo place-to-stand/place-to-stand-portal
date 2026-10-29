@@ -659,6 +659,13 @@
       "when": 1793288627683,
       "tag": "0093_drop_company_owner",
       "breakpoints": true
+    },
+    {
+      "idx": 94,
+      "version": "7",
+      "when": 1793289172875,
+      "tag": "0094_contact_email_optional",
+      "breakpoints": true
     }
   ]
 }

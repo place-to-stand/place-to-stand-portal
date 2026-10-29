@@ -45,7 +45,7 @@ export async function softDeleteContactMutation(
       }
 
       let existingContact:
-        | { id: string; email: string; name: string | null }
+        | { id: string; email: string | null; name: string | null }
         | undefined
 
       try {

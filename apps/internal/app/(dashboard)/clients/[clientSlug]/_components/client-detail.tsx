@@ -59,7 +59,7 @@ type HydratedClientDetail = ClientDetailType & { resolvedId: string }
 type OriginationContactInfo = {
   id: string
   name: string | null
-  email: string
+  email: string | null
 } | null
 
 type PartnerUserInfo = {

@@ -1,4 +1,5 @@
 import { PageShell } from '@/components/layout/page-shell'
+import type { CompaniesListParams } from '@/lib/companies/filters'
 import type { CompanyListItem } from '@/lib/companies/types'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 
@@ -11,13 +12,14 @@ export function CompaniesPageBody({
   mode,
   companies,
   totalCount,
-  search,
+  params,
 }: {
   mode: 'active' | 'archive'
   companies: CompanyListItem[]
   totalCount: number
-  search: string
+  params: CompaniesListParams
 }) {
+  const filtered = Boolean(params.search || params.type || params.leads)
   const basePath = mode === 'active' ? '/companies' : '/companies/archive'
 
   return (
@@ -37,12 +39,19 @@ export function CompaniesPageBody({
       primaryAction={<CompaniesAddButton />}
     >
       <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
-        <CompaniesFilters search={search} basePath={basePath} />
+        <CompaniesFilters
+          search={params.search}
+          type={params.type}
+          leads={params.leads}
+          basePath={basePath}
+        />
         <CompaniesTable
           companies={companies}
+          sort={params.sortParam}
+          basePath={basePath}
           emptyMessage={
-            search
-              ? 'No companies match that search.'
+            filtered
+              ? 'No companies match these filters.'
               : mode === 'active'
                 ? 'No companies yet.'
                 : 'No archived companies.'

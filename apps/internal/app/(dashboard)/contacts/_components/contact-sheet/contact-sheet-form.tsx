@@ -209,7 +209,7 @@ export function ContactSheetForm({
                 name='email'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel optional>Email</FormLabel>
                     <FormControl>
                       <DisabledFieldTooltip
                         disabled={isPending}

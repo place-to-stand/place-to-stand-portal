@@ -32,7 +32,7 @@ export async function logContactClientLinkChanges(
   const contactIds = [...new Set(changes.map(change => change.contactId))]
   const clientIds = [...new Set(changes.map(change => change.clientId))]
 
-  let contactRows: { id: string; name: string | null; email: string }[]
+  let contactRows: { id: string; name: string | null; email: string | null }[]
   let clientRows: { id: string; name: string }[]
 
   try {

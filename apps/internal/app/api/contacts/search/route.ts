@@ -73,6 +73,8 @@ export async function GET(request: Request) {
 
     // Add contacts first (highest priority)
     for (const c of contactResults) {
+      // Recipient search: a contact without an email can't be addressed.
+      if (!c.email) continue
       const emailLower = c.email.toLowerCase()
       if (!seen.has(emailLower)) {
         seen.add(emailLower)

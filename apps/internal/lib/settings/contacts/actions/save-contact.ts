@@ -29,7 +29,7 @@ import {
 
 type ExistingContact = {
   id: string
-  email: string
+  email: string | null
   name: string
   phone: string | null
   jobTitle: string | null

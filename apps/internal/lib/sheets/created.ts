@@ -9,7 +9,7 @@
  * the server twice.
  */
 export type SheetCreatedRecords = {
-  contact: { id: string; name: string; email: string; phone: string | null }
+  contact: { id: string; name: string; email: string | null; phone: string | null }
   client: { id: string; name: string; slug: string }
   company: { id: string; name: string }
 }

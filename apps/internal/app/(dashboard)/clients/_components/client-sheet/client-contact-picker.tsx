@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils'
 type ClientContactOption = {
   id: string
   name: string | null
-  email: string
+  email: string | null
   phone: string | null
   hasPortalAccess: boolean
 }

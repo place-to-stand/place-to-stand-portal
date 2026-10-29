@@ -3,7 +3,7 @@ import { ActivityVerbs, type ActivityEvent } from '@/lib/activity/types'
 import { toMetadata } from './shared'
 
 export const contactCreatedEvent = (args: {
-  email: string
+  email: string | null
   name: string | null
 }): ActivityEvent => ({
   verb: ActivityVerbs.CONTACT_CREATED,
@@ -17,7 +17,7 @@ export const contactCreatedEvent = (args: {
 })
 
 export const contactUpdatedEvent = (args: {
-  email: string
+  email: string | null
   name: string | null
   changedFields: string[]
   details?: Record<string, unknown>
@@ -33,7 +33,7 @@ export const contactUpdatedEvent = (args: {
 })
 
 export const contactArchivedEvent = (args: {
-  email: string
+  email: string | null
   name: string | null
 }): ActivityEvent => ({
   verb: ActivityVerbs.CONTACT_ARCHIVED,
@@ -41,7 +41,7 @@ export const contactArchivedEvent = (args: {
 })
 
 export const contactRestoredEvent = (args: {
-  email: string
+  email: string | null
   name: string | null
 }): ActivityEvent => ({
   verb: ActivityVerbs.CONTACT_RESTORED,
@@ -49,7 +49,7 @@ export const contactRestoredEvent = (args: {
 })
 
 export const contactDeletedEvent = (args: {
-  email: string
+  email: string | null
   name: string | null
 }): ActivityEvent => ({
   verb: ActivityVerbs.CONTACT_DELETED,
@@ -57,7 +57,7 @@ export const contactDeletedEvent = (args: {
 })
 
 export const contactInvitedToPortalEvent = (args: {
-  email: string
+  email: string | null
   name: string | null
   /** Clients the new portal user was granted access to. */
   clientIds?: string[]
@@ -71,7 +71,7 @@ export const contactInvitedToPortalEvent = (args: {
 })
 
 type ContactClientLinkArgs = {
-  contact: { name: string | null; email: string }
+  contact: { name: string | null; email: string | null }
   client: { name: string }
 }
 

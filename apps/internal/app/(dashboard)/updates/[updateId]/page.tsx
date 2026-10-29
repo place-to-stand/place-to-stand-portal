@@ -87,12 +87,19 @@ export default async function UpdatePage({
       <UpdateComposer
         update={update}
         clientName={client.name}
-        contacts={contacts.map(contact => ({
-          id: contact.id,
-          name: contact.name,
-          email: contact.email,
-          isPrimary: contact.isPrimary,
-        }))}
+        contacts={contacts.flatMap(contact =>
+          // Only contacts with an email can receive the update.
+          contact.email
+            ? [
+                {
+                  id: contact.id,
+                  name: contact.name,
+                  email: contact.email,
+                  isPrimary: contact.isPrimary,
+                },
+              ]
+            : []
+        )}
         hours={hours}
         portalHref={portalHomeHref()}
         greetingName={greetingNameFromContacts(contacts)}

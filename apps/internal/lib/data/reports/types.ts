@@ -58,7 +58,7 @@ export type OriginationGroupRow = {
   originatorKind: OriginatorKind
   originatorId: string
   originatorName: string
-  originatorEmail: string
+  originatorEmail: string | null
   /** Only populated for `originatorKind === 'user'`. */
   originatorAvatarUrl: string | null
   originatorUpdatedAt: string | null
@@ -172,7 +172,8 @@ export type PartnerPayoutRow = {
   kind: PartnerPayoutPayeeKind
   id: string
   name: string
-  email: string
+  /** Contacts may have no email. */
+  email: string | null
   /** Only populated for `kind === 'user'`. */
   avatarUrl: string | null
   avatarUpdatedAt: string | null

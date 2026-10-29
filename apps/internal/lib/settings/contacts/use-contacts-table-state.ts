@@ -17,7 +17,7 @@ import type { ContactSheetInput } from './use-contact-sheet-state'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
 export type ContactsTableContact = ContactProfile & {
   id: string
-  email: string
+  email: string | null
   name: string
   phone: string | null
   userId: string | null

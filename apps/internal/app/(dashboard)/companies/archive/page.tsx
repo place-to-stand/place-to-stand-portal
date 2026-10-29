@@ -1,6 +1,10 @@
 import type { Metadata } from 'next'
 
 import { requireCrmUser } from '@/lib/auth/session'
+import {
+  applyCompanyListParams,
+  parseCompaniesSearchParams,
+} from '@/lib/companies/filters'
 import { countCompanies, listCompanies } from '@/lib/queries/companies'
 
 import { CompaniesPageBody } from '../_components/companies-page-body'
@@ -14,20 +18,19 @@ export default async function CompaniesArchivePage({
 }: PageProps<'/companies/archive'>) {
   const user = await requireCrmUser()
   const params = await searchParams
-  const rawSearch = Array.isArray(params.q) ? params.q[0] : params.q
-  const search = (rawSearch ?? '').slice(0, 160)
+  const listParams = parseCompaniesSearchParams(params)
 
   const [companies, counts] = await Promise.all([
-    listCompanies(user, { status: 'archived', search }),
+    listCompanies(user, { status: 'archived', search: listParams.search }),
     countCompanies(user),
   ])
 
   return (
     <CompaniesPageBody
       mode='archive'
-      companies={companies}
+      companies={applyCompanyListParams(companies, listParams)}
       totalCount={counts.archived}
-      search={search}
+      params={listParams}
     />
   )
 }

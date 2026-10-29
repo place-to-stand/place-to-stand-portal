@@ -7,7 +7,7 @@ import { contacts, contactClients } from '@/lib/db/schema'
 
 export type ClientContactRow = {
   id: string
-  email: string
+  email: string | null
   name: string
   phone: string | null
   createdBy: string | null

@@ -45,7 +45,7 @@ export async function restoreContactMutation(
       }
 
       let existingContact:
-        { id: string; email: string; name: string | null } | undefined
+        { id: string; email: string | null; name: string | null } | undefined
 
       try {
         const rows = await db

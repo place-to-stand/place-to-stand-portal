@@ -114,7 +114,7 @@ export const fetchMonthlyCloseReport = cache(
         originatorKind: 'user' | 'contact'
         originatorId: string
         originatorName: string
-        originatorEmail: string
+        originatorEmail: string | null
         originatorAvatarUrl: string | null
         originatorUpdatedAt: string | null
         clients: OriginationClientDetail[]
@@ -262,7 +262,7 @@ export const fetchMonthlyCloseReport = cache(
         kind: 'user' | 'contact'
         id: string
         name: string
-        email: string
+        email: string | null
         avatarUrl: string | null
         avatarUpdatedAt: string | null
         payrollAmount: number
@@ -275,7 +275,7 @@ export const fetchMonthlyCloseReport = cache(
       kind: 'user' | 'contact'
       id: string
       name: string
-      email: string
+      email: string | null
       avatarUrl: string | null
       avatarUpdatedAt: string | null
     }) => {

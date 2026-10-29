@@ -16,7 +16,9 @@ export function recipientsFromContacts(
   /** The sender — already gets the message in Sent, so not cc'd to themselves. */
   senderId: string
 ): ClientUpdateRecipients {
-  const to = uniqueEmails(contacts.map(contact => contact.email))
+  const to = uniqueEmails(
+    contacts.flatMap(contact => (contact.email ? [contact.email] : []))
+  )
   const cc = uniqueEmails(
     staff.filter(member => member.id !== senderId).map(member => member.email)
   ).filter(email => !to.includes(email))

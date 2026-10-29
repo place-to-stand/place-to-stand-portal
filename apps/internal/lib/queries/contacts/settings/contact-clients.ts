@@ -24,7 +24,7 @@ export type ClientOption = {
 
 export type ContactSheetInputRow = ContactProfile & {
   id: string
-  email: string
+  email: string | null
   name: string
   phone: string | null
   /** Portal user this contact was promoted to — drives the Portal access card. */

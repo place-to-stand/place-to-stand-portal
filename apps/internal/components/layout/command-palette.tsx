@@ -261,7 +261,9 @@ function CommandPalette() {
                   // Contacts have no detail route — land on the contacts list
                   // pre-filtered to the record. Email is unique where names
                   // are not, so it isolates the selected contact.
-                  navigate(`/contacts?q=${encodeURIComponent(contact.email)}`)
+                  navigate(
+                    `/contacts?q=${encodeURIComponent(contact.email ?? contact.name)}`
+                  )
                 }
               >
                 <Contact className='size-4' />

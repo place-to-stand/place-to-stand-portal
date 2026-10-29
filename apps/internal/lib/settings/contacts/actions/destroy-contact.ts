@@ -45,7 +45,7 @@ export async function destroyContactMutation(
       }
 
       let existingContact:
-        | { id: string; email: string; name: string | null; deletedAt: string | null }
+        | { id: string; email: string | null; name: string | null; deletedAt: string | null }
         | undefined
 
       try {

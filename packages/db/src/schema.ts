@@ -322,7 +322,8 @@ export const contacts = pgTable(
   'contacts',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
-    email: text().notNull(),
+    /** Optional: a contact can be just a name (e.g. from a lead with no email). */
+    email: text(),
     name: text().notNull(),
     phone: text(),
     /** Job title at their company, e.g. "Head of Marketing". */

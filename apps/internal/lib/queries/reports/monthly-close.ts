@@ -66,7 +66,7 @@ export type OriginationQueryRow = {
   originatorKind: OriginatorKind
   originatorId: string
   originatorName: string
-  originatorEmail: string
+  originatorEmail: string | null
   /** Populated only for user originators so we can render their avatar. */
   originatorAvatarUrl: string | null
   originatorUpdatedAt: string | null

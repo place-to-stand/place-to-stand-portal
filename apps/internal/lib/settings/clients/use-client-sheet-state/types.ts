@@ -16,7 +16,7 @@ type UnsavedChangesDialog = ReturnType<
 export type ClientContactOption = {
   id: string
   name: string | null
-  email: string
+  email: string | null
   phone: string | null
   hasPortalAccess: boolean
   /** Set on linked contacts only: the client's primary contact. */
@@ -27,7 +27,7 @@ export type ClientContactOption = {
 export type OriginationContactOption = {
   id: string
   name: string | null
-  email: string
+  email: string | null
 }
 
 /** An admin user available as an internal origination partner or closer. */

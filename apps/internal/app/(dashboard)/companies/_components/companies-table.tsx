@@ -2,6 +2,7 @@
 
 import { Building2, Star } from 'lucide-react'
 
+import { formatRelativeTime } from '@pts/ui/dates'
 import { EmptyState } from '@pts/ui/empty-state'
 import {
   Table,
@@ -11,6 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from '@pts/ui/table'
+import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
+import { useListParams } from '@/hooks/use-list-params'
 import type { CompanyListItem } from '@/lib/companies/types'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
@@ -32,11 +35,29 @@ function displayHost(website: string | null) {
 export function CompaniesTable({
   companies,
   emptyMessage,
+  sort,
+  basePath,
 }: {
   companies: CompanyListItem[]
   emptyMessage: string
+  /** Validated `?sort=`, or undefined for the default (name A–Z). */
+  sort: string | undefined
+  basePath: string
 }) {
   const { open } = useSheetParams()
+  const { update } = useListParams({ basePath, resetKeys: [] })
+  const sortHead = (field: string, label: string, className: string, align?: 'center') => (
+    <SortableTableHead
+      field={field}
+      sort={sort}
+      defaultSort='name:asc'
+      onSortChange={next => update({ sort: next })}
+      className={className}
+      align={align}
+    >
+      {label}
+    </SortableTableHead>
+  )
 
   if (companies.length === 0) {
     return <EmptyState message={emptyMessage} />
@@ -47,10 +68,11 @@ export function CompaniesTable({
       <Table density='compact' layout='fixed' stack className='md:min-w-[50rem]'>
         <TableHeader>
           <TableRow className='bg-muted/40'>
-            <TableHead className='w-[40%]'>Company</TableHead>
-            <TableHead className='w-[32%]'>Champion</TableHead>
-            <TableHead className='w-[10%] text-right'>People</TableHead>
-            <TableHead className='w-[10%] text-right'>Open leads</TableHead>
+            {sortHead('name', 'Company', 'w-[36%]')}
+            <TableHead className='w-[24%]'>Champion</TableHead>
+            {sortHead('people', 'People', 'w-[11%]', 'center')}
+            {sortHead('leads', 'Open leads', 'w-[13%]', 'center')}
+            {sortHead('updated', 'Updated', 'w-[16%]')}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -90,11 +112,14 @@ export function CompaniesTable({
                   <span className='text-muted-foreground'>None yet</span>
                 )}
               </TableCell>
-              <TableCell className='text-right text-sm tabular-nums'>
+              <TableCell className='text-center text-sm tabular-nums'>
                 {company.contactCount}
               </TableCell>
-              <TableCell className='text-right text-sm tabular-nums'>
+              <TableCell className='text-center text-sm tabular-nums'>
                 {company.openLeadCount}
+              </TableCell>
+              <TableCell className='text-muted-foreground text-sm'>
+                {formatRelativeTime(company.updatedAt)}
               </TableCell>
             </TableRow>
           ))}

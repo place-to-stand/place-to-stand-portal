@@ -115,10 +115,14 @@ export async function buildInvoiceEmailDraft(
   assertAdmin(user)
 
   const invoice = await loadEmailableInvoice(invoiceId)
-  const [contacts, staff] = await Promise.all([
+  const [clientContacts, staff] = await Promise.all([
     fetchContactsForClient(invoice.clientId),
     fetchActiveStaff(),
   ])
+  // Only contacts with an email can be sent the invoice.
+  const contacts = clientContacts.filter(
+    (contact): contact is typeof contact & { email: string } => !!contact.email
+  )
 
   const addressed = defaultRecipients(contacts)
   const greeting = firstName(addressed[0]?.name) ?? 'there'
@@ -145,7 +149,9 @@ export async function buildInvoiceEmailDraft(
       isPrimary: contact.isPrimary,
     })),
     staff,
-    to: addressed.map(contact => contact.email.toLowerCase()),
+    to: addressed.flatMap(contact =>
+      contact.email ? [contact.email.toLowerCase()] : []
+    ),
     // Resend leaves no copy in anyone's Sent folder, so the sender is copied.
     cc: [user.email.toLowerCase()],
     subject: isResend

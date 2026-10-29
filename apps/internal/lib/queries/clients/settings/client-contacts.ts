@@ -15,7 +15,7 @@ import { syncPortalMembershipsForLinkChanges } from '@/lib/queries/contacts/sett
 type ContactOption = {
   id: string
   name: string | null
-  email: string
+  email: string | null
   phone: string | null
   hasPortalAccess: boolean
   /** Set on linked contacts only: the client's primary contact. */

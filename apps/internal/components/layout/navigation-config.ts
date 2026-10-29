@@ -69,12 +69,6 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Handshake,
       },
       {
-        href: '/companies',
-        capability: 'companies.manage',
-        label: 'Companies',
-        icon: Briefcase,
-      },
-      {
         href: '/invoices',
         capability: 'billing.manage',
         label: 'Invoices',
@@ -103,6 +97,17 @@ export const NAV_GROUPS: NavGroup[] = [
         capability: 'clients.manage',
         label: 'Clients',
         icon: Building2,
+      },
+    ],
+  },
+  {
+    title: 'Directory',
+    items: [
+      {
+        href: '/companies',
+        capability: 'companies.manage',
+        label: 'Companies',
+        icon: Briefcase,
       },
       {
         href: '/contacts',

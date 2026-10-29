@@ -38,7 +38,7 @@ export type PortalClientOption = {
 export type PortalContactOption = {
   id: string
   name: string
-  email: string
+  email: string | null
   /** True when the contact has a portal user account (userId IS NOT NULL). */
   isPromoted: boolean
 }

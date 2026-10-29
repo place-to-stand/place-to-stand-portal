@@ -31,7 +31,10 @@ import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 export type CreatedContact = ContactSheetInput
 
 const contactFormSchema = z.object({
-  email: z.string().email({ message: 'Valid email is required' }),
+  email: z.union([
+    z.string().trim().email({ message: 'Enter a valid email' }),
+    z.literal(''),
+  ]),
   name: z.string().min(1, 'Name is required').max(160),
   phone: z.string().max(40).optional(),
   jobTitle: z.string().max(160).optional(),
@@ -46,7 +49,7 @@ export type ContactFormData = z.infer<typeof contactFormSchema>
 /** Minimal contact data needed for the sheet form */
 export type ContactSheetInput = {
   id: string
-  email: string
+  email: string | null
   name: string
   phone: string | null
   userId: string | null
@@ -324,7 +327,7 @@ export function useContactSheetState({
         if (!isEditing && result.id && onCreated) {
           onCreated({
             id: result.id,
-            email: data.email,
+            email: data.email || null,
             name: data.name,
             phone: data.phone || null,
             // Just created, so never promoted yet.
@@ -364,14 +367,19 @@ export function useContactSheetState({
   const portalUserId = contact?.userId ?? null
   const hasPortalAccess = Boolean(portalUserId)
 
-  const promoteDisabled = isPending || !isEditing || hasPortalAccess
+  // Portal access signs in by email, so a contact without one can't get it.
+  const hasEmail = Boolean(contact?.email)
+  const promoteDisabled =
+    isPending || !isEditing || hasPortalAccess || !hasEmail
   const promoteDisabledReason = isPending
     ? PENDING_REASON
     : !isEditing
       ? 'Save the contact first.'
       : hasPortalAccess
         ? 'This contact already has portal access.'
-        : null
+        : !hasEmail
+          ? 'Add an email and save before giving portal access.'
+          : null
 
   const handleRequestPromote = useCallback(() => {
     if (promoteDisabled) return

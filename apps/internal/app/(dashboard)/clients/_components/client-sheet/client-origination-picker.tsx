@@ -55,7 +55,7 @@ function userDisplay(user: PartnerUserOption): OriginatorDisplay {
 function contactDisplay(contact: OriginationContactOption): OriginatorDisplay {
   return {
     kind: 'contact',
-    name: contact.name?.trim() || contact.email,
+    name: contact.name?.trim() || contact.email || 'Unnamed contact',
     email: contact.email,
   }
 }

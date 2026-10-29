@@ -8,7 +8,7 @@ import { contactClients, contacts } from '@/lib/db/schema'
 export type ClientContactSummary = {
   id: string
   name: string | null
-  email: string
+  email: string | null
   /** The client's primary contact — addressed by default on invoice emails. */
   isPrimary: boolean
 }
