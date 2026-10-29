@@ -225,6 +225,7 @@ export async function upsertFormSubmission(
         subject: sql`COALESCE(excluded.subject, ${formSubmissions.subject})`,
         message: sql`COALESCE(excluded.message, ${formSubmissions.message})`,
         marketingConsent: sql`COALESCE(excluded.marketing_consent, ${formSubmissions.marketingConsent})`,
+        heardFrom: sql`COALESCE(excluded.heard_from, ${formSubmissions.heardFrom})`,
 
         feedbackHelpful: sql`COALESCE(excluded.feedback_helpful, ${formSubmissions.feedbackHelpful})`,
         feedbackComment: sql`COALESCE(excluded.feedback_comment, ${formSubmissions.feedbackComment})`,
@@ -526,6 +527,7 @@ export async function destroyFormSubmission(id: string) {
         subject: null,
         message: null,
         marketingConsent: null,
+        heardFrom: null,
         responses: null,
         result: null,
         phaseId: null,

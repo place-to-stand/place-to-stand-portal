@@ -2111,6 +2111,10 @@ export const formSubmissions = pgTable(
     // "anything else we should know" note on the audit capture step.
     message: text('message'),
     marketingConsent: boolean('marketing_consent'),
+    // Optional "How did you hear about us?" answer from either form. The
+    // visitor's own word on the source: it catches AI chatbots and word of
+    // mouth, which arrive with no referrer and look like direct traffic.
+    heardFrom: text('heard_from'),
 
     // Results-page feedback (audit only). Two optional questions shown under
     // the scored result; either may be answered alone, so both are nullable.

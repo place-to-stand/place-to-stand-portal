@@ -36,6 +36,9 @@ export const contactPayloadSchema = z.object({
     subject: shortText.nullable().optional(),
     message: z.string().trim().max(10000),
     marketingConsent: z.boolean(),
+    // "How did you hear about us?" Optional so a marketing deploy that
+    // predates the field still lands.
+    heardFrom: shortText.nullable().optional(),
   }),
 
   analytics: analyticsSchema,
@@ -89,6 +92,7 @@ export function toContactSubmissionRow(
     subject: contact.subject ?? null,
     message: contact.message,
     marketingConsent: contact.marketingConsent,
+    heardFrom: contact.heardFrom || null,
 
     posthogDistinctId: analytics.posthogDistinctId,
     posthogSessionId: analytics.posthogSessionId,
