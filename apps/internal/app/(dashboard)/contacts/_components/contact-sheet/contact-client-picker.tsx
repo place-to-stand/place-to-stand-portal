@@ -1,14 +1,9 @@
 'use client'
 
-import { Building2 } from 'lucide-react'
-
 import { EmptyState } from '@pts/ui/empty-state'
-import {
-  SheetRecordList,
-  SheetRecordRow,
-} from '@/components/sheets/sheet-record-row'
+import { ClientRecordRow } from '@/components/sheets/entity-record-rows'
+import { SheetRecordList } from '@/components/sheets/sheet-record-row'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
-import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 
 export type ContactClientOption = {
   id: string
@@ -25,7 +20,6 @@ export type ContactClientListProps = {
  * set on each client's Portal access. Admins can open the client.
  */
 export function ContactClientList({ clients }: ContactClientListProps) {
-  const { open } = useSheetParams()
   const { isAdmin } = useViewerAccess()
 
   if (clients.length === 0) {
@@ -35,12 +29,7 @@ export function ContactClientList({ clients }: ContactClientListProps) {
   return (
     <SheetRecordList>
       {clients.map(client => (
-        <SheetRecordRow
-          key={client.id}
-          icon={Building2}
-          title={client.name}
-          onOpen={isAdmin ? () => open('client', client.id) : undefined}
-        />
+        <ClientRecordRow key={client.id} client={client} openable={isAdmin} />
       ))}
     </SheetRecordList>
   )

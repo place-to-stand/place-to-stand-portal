@@ -1,7 +1,6 @@
 'use client'
 
-import type { ReactNode } from 'react'
-import { ExternalLink, Star, User, X } from 'lucide-react'
+import { ExternalLink, Star, X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { EmptyState } from '@pts/ui/empty-state'
@@ -11,12 +10,9 @@ import {
   type ContactLink,
 } from '@/components/contacts/contact-link-picker'
 import { SheetSection } from '@/components/sheets/sheet-section'
-import {
-  SheetRecordList,
-  SheetRecordRow,
-} from '@/components/sheets/sheet-record-row'
+import { ContactRecordRow } from '@/components/sheets/entity-record-rows'
+import { SheetRecordList } from '@/components/sheets/sheet-record-row'
 import type { CompanyContactSummary } from '@/lib/companies/types'
-import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { cn } from '@/lib/utils'
 
 import { SectionAddButton } from './section-add-button'
@@ -65,7 +61,6 @@ export function CompanyPeopleSection({
   onRemove,
   onUndoRemove,
 }: CompanyPeopleSectionProps) {
-  const { open } = useSheetParams()
   const removed = new Set(removedIds)
   const listedIds = [...contacts.map(c => c.id), ...added.map(c => c.id)]
   const isEmpty = contacts.length === 0 && added.length === 0
@@ -125,98 +120,74 @@ export function CompanyPeopleSection({
         <SheetRecordList>
           {contacts.map(contact =>
             removed.has(contact.id) ? (
-              <PersonRow
+              <ContactRecordRow
                 key={contact.id}
+                contact={contact}
                 className='opacity-60'
-                onOpen={() => open('contact', contact.id)}
-                title={<span className='line-through'>{contact.name}</span>}
-                subtitle={
-                  <span className='text-destructive'>Pending removal</span>
-                }
-              >
-                <Button
-                  type='button'
-                  variant='ghost'
-                  size='xs'
-                  className='text-muted-foreground'
-                  disabled={disabled}
-                  onClick={() => onUndoRemove(contact.id)}
-                  aria-label={`Undo removing ${contact.name}`}
-                >
-                  Undo
-                </Button>
-              </PersonRow>
-            ) : (
-              <PersonRow
-                key={contact.id}
-                onOpen={() => open('contact', contact.id)}
-                title={contact.name}
-                subtitle={contact.jobTitle ?? contact.email}
-              >
-                {contact.linkedinUrl ? (
-                  <RowActionButton
+                note={<span className='text-destructive'>Pending removal</span>}
+                actions={
+                  <Button
                     type='button'
-                    label={`${contact.name} on LinkedIn`}
-                    icon={<ExternalLink />}
-                    onClick={() =>
-                      window.open(
-                        contact.linkedinUrl ?? '',
-                        '_blank',
-                        'noopener,noreferrer'
-                      )
-                    }
-                  />
-                ) : null}
-                {star(contact)}
-                {removeButton(contact)}
-              </PersonRow>
+                    variant='ghost'
+                    size='xs'
+                    className='text-muted-foreground'
+                    disabled={disabled}
+                    onClick={() => onUndoRemove(contact.id)}
+                    aria-label={`Undo removing ${contact.name}`}
+                  >
+                    Undo
+                  </Button>
+                }
+              />
+            ) : (
+              <ContactRecordRow
+                key={contact.id}
+                contact={contact}
+                actions={
+                  <>
+                    {contact.linkedinUrl ? (
+                      <RowActionButton
+                        type='button'
+                        label={`${contact.name} on LinkedIn`}
+                        icon={<ExternalLink />}
+                        onClick={() =>
+                          window.open(
+                            contact.linkedinUrl ?? '',
+                            '_blank',
+                            'noopener,noreferrer'
+                          )
+                        }
+                      />
+                    ) : null}
+                    {star(contact)}
+                    {removeButton(contact)}
+                  </>
+                }
+              />
             )
           )}
           {added.map(contact => {
             const from = movesFrom(contact.id)
             return (
-              <PersonRow
+              <ContactRecordRow
                 key={`added-${contact.id}`}
-                onOpen={() => open('contact', contact.id)}
-                title={contact.name}
-                subtitle={
+                contact={contact}
+                note={
                   <span className='text-warning'>
                     {from ? `Moves from ${from}` : 'Pending save'}
                   </span>
                 }
-              >
-                {star(contact)}
-                {removeButton(contact)}
-              </PersonRow>
+                actions={
+                  <>
+                    {star(contact)}
+                    {removeButton(contact)}
+                  </>
+                }
+              />
             )
           })}
         </SheetRecordList>
       )}
     </SheetSection>
-  )
-}
-
-function PersonRow({
-  title,
-  subtitle,
-  onOpen,
-  className,
-  children,
-}: {
-  title: ReactNode
-  subtitle: ReactNode
-  onOpen: () => void
-  className?: string
-  children: ReactNode
-}) {
-  return (
-    <SheetRecordRow
-      icon={User}
-      title={title}
-      description={subtitle}
-      onOpen={onOpen}
-      actions={children}
-      className={className}
-    />
   )
 }

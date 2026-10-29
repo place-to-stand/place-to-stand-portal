@@ -1,14 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Star, User, UserCheck, X } from 'lucide-react'
+import { Plus, Star, UserCheck, X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { EmptyState } from '@pts/ui/empty-state'
-import {
-  SheetRecordList,
-  SheetRecordRow,
-} from '@/components/sheets/sheet-record-row'
+import { ContactRecordRow } from '@/components/sheets/entity-record-rows'
+import { SheetRecordList } from '@/components/sheets/sheet-record-row'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
   Command,
@@ -196,22 +194,10 @@ export function ClientContactList({
         const label = contact.name ?? contact.email
         const isPrimary = contact.id === primaryContactId
         return (
-          <SheetRecordRow
+          <ContactRecordRow
             key={contact.id}
-            icon={User}
-            title={
-              <span className='flex items-center gap-1.5'>
-                {contact.name ?? contact.email}
-                {contact.hasPortalAccess ? <PortalAccessMark /> : null}
-              </span>
-            }
-            description={
-              contact.name || contact.phone
-                ? [contact.name ? contact.email : null, contact.phone]
-                    .filter(Boolean)
-                    .join(' · ')
-                : null
-            }
+            contact={contact}
+            titleAddon={contact.hasPortalAccess ? <PortalAccessMark /> : null}
             actions={
               <>
                 <RowActionButton

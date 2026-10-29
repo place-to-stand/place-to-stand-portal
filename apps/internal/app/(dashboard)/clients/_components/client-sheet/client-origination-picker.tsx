@@ -5,6 +5,7 @@ import { LinkIcon, User2, X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
+import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { CommandCreateRows } from '@/components/ui/command-create-rows'
 import {
@@ -90,37 +91,33 @@ export function ClientOriginationPicker({
   if (selected) {
     const locked = isPending || disabled
     return (
-      <div className='bg-muted/40 flex items-center gap-3 rounded-md border px-3 py-2'>
-        {selected.kind === 'user' ? (
-          <User2 className='text-muted-foreground h-4 w-4 shrink-0' />
-        ) : (
-          <LinkIcon className='text-muted-foreground h-4 w-4 shrink-0' />
-        )}
-        <div className='flex min-w-0 flex-1 flex-col text-sm leading-tight'>
-          <span className='truncate font-medium'>{selected.name}</span>
-          {selected.email && selected.email !== selected.name ? (
-            <span className='text-muted-foreground truncate text-xs'>
-              {selected.email}
-            </span>
-          ) : null}
-        </div>
-        <DisabledFieldTooltip
-          disabled={locked}
-          reason={isPending ? pendingReason : disabledReason}
-        >
-          <Button
-            type='button'
-            variant='ghost'
-            size='icon-sm'
-            className='text-muted-foreground hover:text-destructive shrink-0'
-            onClick={onClear}
+      <SheetRecordRow
+        icon={selected.kind === 'user' ? User2 : LinkIcon}
+        title={selected.name}
+        description={
+          selected.email && selected.email !== selected.name
+            ? selected.email
+            : null
+        }
+        actions={
+          <DisabledFieldTooltip
             disabled={locked}
-            aria-label={`Remove originator ${selected.name}`}
+            reason={isPending ? pendingReason : disabledReason}
           >
-            <X className='h-4 w-4' />
-          </Button>
-        </DisabledFieldTooltip>
-      </div>
+            <Button
+              type='button'
+              variant='ghost'
+              size='icon-sm'
+              className='text-muted-foreground hover:text-destructive shrink-0'
+              onClick={onClear}
+              disabled={locked}
+              aria-label={`Remove originator ${selected.name}`}
+            >
+              <X className='h-4 w-4' />
+            </Button>
+          </DisabledFieldTooltip>
+        }
+      />
     )
   }
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { Building2, Handshake, X } from 'lucide-react'
+import { X } from 'lucide-react'
 
 import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
@@ -8,16 +8,15 @@ import {
   ClientLinkPicker,
   type ClientLink,
 } from '@/components/clients/client-link-picker'
-import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import {
-  SheetRecordList,
-  SheetRecordRow,
-} from '@/components/sheets/sheet-record-row'
+  ClientRecordRow,
+  LeadRecordRow,
+} from '@/components/sheets/entity-record-rows'
+import { SheetRecordList } from '@/components/sheets/sheet-record-row'
 import { roleCan } from '@/lib/auth/capabilities'
 import type { CompanyLeadSummary } from '@/lib/companies/types'
-import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 
 import { SectionAddButton } from './section-add-button'
 
@@ -26,8 +25,6 @@ export function CompanyLeadsSection({
 }: {
   leads: CompanyLeadSummary[]
 }) {
-  const { open } = useSheetParams()
-
   return (
     <SheetSection
       title='Leads'
@@ -40,18 +37,7 @@ export function CompanyLeadsSection({
       ) : (
         <SheetRecordList>
           {leads.map(lead => (
-            <SheetRecordRow
-              key={lead.id}
-              icon={Handshake}
-              onOpen={() => open('lead', lead.id)}
-              title={lead.contactName}
-              description={lead.assigneeName}
-              actions={
-                <span className='pr-1.5'>
-                  <LeadStatusBadge status={lead.status} />
-                </span>
-              }
-            />
+            <LeadRecordRow key={lead.id} lead={lead} />
           ))}
         </SheetRecordList>
       )}
@@ -78,7 +64,6 @@ export function CompanyClientsSection({
   onAdd: (client: ClientLink) => void
   onRemoveAdded: (clientId: string) => void
 }) {
-  const { open } = useSheetParams()
   // Client records are admin-only; others just see the name.
   const { isAdmin, role } = useViewerAccess()
   const canManageClients = Boolean(role && roleCan(role, 'clients.manage'))
@@ -115,23 +100,20 @@ export function CompanyClientsSection({
       ) : (
         <SheetRecordList>
           {clients.map(client => (
-            <SheetRecordRow
+            <ClientRecordRow
               key={client.id}
-              icon={Building2}
-              title={client.name}
+              client={client}
               // Client records are admin-only; others just see the name.
-              onOpen={isAdmin ? () => open('client', client.id) : undefined}
+              openable={isAdmin}
             />
           ))}
           {pending.map(client => {
             const from = movesFrom(client.id)
             return (
-              <SheetRecordRow
+              <ClientRecordRow
                 key={`added-${client.id}`}
-                icon={Building2}
-                onOpen={() => open('client', client.id)}
-                title={client.name}
-                description={
+                client={client}
+                note={
                   <span className='text-warning'>
                     {from ? `Moves from ${from}` : 'Pending save'}
                   </span>

@@ -6,6 +6,7 @@ import { Handshake, LinkIcon, Plus, User2, X } from 'lucide-react'
 import { Button } from '@pts/ui/button'
 import { Input } from '@pts/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
+import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { CommandCreateRows } from '@/components/ui/command-create-rows'
 import {
@@ -76,52 +77,54 @@ export function ClientClosersEditor({
           {closers.map(closer => {
             const key = closerKey(closer)
             return (
-              <li
-                key={key}
-                className='bg-muted/40 flex items-center gap-3 rounded-md border px-3 py-2'
-              >
-                {closer.kind === 'user' ? (
-                  <Handshake className='text-muted-foreground h-4 w-4 shrink-0' />
-                ) : (
-                  <LinkIcon className='text-muted-foreground h-4 w-4 shrink-0' />
-                )}
-                <div className='flex min-w-0 flex-1 flex-col text-sm leading-tight'>
-                  <span className='truncate font-medium'>{closer.name}</span>
-                  {closer.email && closer.email !== closer.name ? (
-                    <span className='text-muted-foreground truncate text-xs'>
-                      {closer.email}
+              <li key={key}>
+                <SheetRecordRow
+                  icon={closer.kind === 'user' ? Handshake : LinkIcon}
+                  title={closer.name}
+                  description={
+                    closer.email && closer.email !== closer.name
+                      ? closer.email
+                      : null
+                  }
+                  actions={
+                    <span className='flex items-center gap-1'>
+                      {isSplit ? (
+                        <div className='relative w-20 shrink-0'>
+                          <Input
+                            value={closer.shareText}
+                            onChange={event =>
+                              onShareChange(key, event.target.value)
+                            }
+                            inputMode='decimal'
+                            aria-label={`${closer.name} share`}
+                            aria-invalid={hasError || undefined}
+                            disabled={locked}
+                            className='h-8 pr-6 text-right tabular-nums'
+                          />
+                          <span className='text-muted-foreground pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-sm'>
+                            %
+                          </span>
+                        </div>
+                      ) : null}
+                      <DisabledFieldTooltip
+                        disabled={locked}
+                        reason={lockedReason}
+                      >
+                        <Button
+                          type='button'
+                          variant='ghost'
+                          size='icon-sm'
+                          className='text-muted-foreground hover:text-destructive shrink-0'
+                          onClick={() => onRemove(key)}
+                          disabled={locked}
+                          aria-label={`Remove closer ${closer.name}`}
+                        >
+                          <X className='h-4 w-4' />
+                        </Button>
+                      </DisabledFieldTooltip>
                     </span>
-                  ) : null}
-                </div>
-                {isSplit ? (
-                  <div className='relative w-20 shrink-0'>
-                    <Input
-                      value={closer.shareText}
-                      onChange={event => onShareChange(key, event.target.value)}
-                      inputMode='decimal'
-                      aria-label={`${closer.name} share`}
-                      aria-invalid={hasError || undefined}
-                      disabled={locked}
-                      className='h-8 pr-6 text-right tabular-nums'
-                    />
-                    <span className='text-muted-foreground pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-sm'>
-                      %
-                    </span>
-                  </div>
-                ) : null}
-                <DisabledFieldTooltip disabled={locked} reason={lockedReason}>
-                  <Button
-                    type='button'
-                    variant='ghost'
-                    size='icon-sm'
-                    className='text-muted-foreground hover:text-destructive shrink-0'
-                    onClick={() => onRemove(key)}
-                    disabled={locked}
-                    aria-label={`Remove closer ${closer.name}`}
-                  >
-                    <X className='h-4 w-4' />
-                  </Button>
-                </DisabledFieldTooltip>
+                  }
+                />
               </li>
             )
           })}
