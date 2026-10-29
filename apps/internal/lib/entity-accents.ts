@@ -25,6 +25,8 @@ type EntityAccent = {
   card: string
   /** Static card (drag previews, non-interactive): tinted border only. */
   cardStatic: string
+  /** The entity's icon tinted with its accent (list cells). */
+  icon: string
 }
 
 export const ENTITY_ACCENTS: Record<AccentEntity, EntityAccent> = {
@@ -32,61 +34,73 @@ export const ENTITY_ACCENTS: Record<AccentEntity, EntityAccent> = {
     sheetHeader: 'border-b-2 border-b-violet-500/60',
     card: 'border-violet-500/35 hover:border-violet-500/60 hover:bg-violet-500/5 hover:shadow-md',
     cardStatic: 'border-violet-500/35',
+    icon: 'text-violet-500',
   },
   lead: {
     sheetHeader: 'border-b-2 border-b-amber-500/60',
     card: 'border-amber-500/35 hover:border-amber-500/60 hover:bg-amber-500/5 hover:shadow-md',
     cardStatic: 'border-amber-500/35',
+    icon: 'text-amber-500',
   },
   project: {
     sheetHeader: 'border-b-2 border-b-emerald-500/60',
     card: 'border-emerald-500/35 hover:border-emerald-500/60 hover:bg-emerald-500/5 hover:shadow-md',
     cardStatic: 'border-emerald-500/35',
+    icon: 'text-emerald-500',
   },
   client: {
     sheetHeader: 'border-b-2 border-b-blue-500/60',
     card: 'border-blue-500/35 hover:border-blue-500/60 hover:bg-blue-500/5 hover:shadow-md',
     cardStatic: 'border-blue-500/35',
+    icon: 'text-blue-500',
   },
   contact: {
     sheetHeader: 'border-b-2 border-b-cyan-500/60',
     card: 'border-cyan-500/35 hover:border-cyan-500/60 hover:bg-cyan-500/5 hover:shadow-md',
     cardStatic: 'border-cyan-500/35',
+    icon: 'text-cyan-500',
   },
   company: {
     sheetHeader: 'border-b-2 border-b-indigo-500/60',
     card: 'border-indigo-500/35 hover:border-indigo-500/60 hover:bg-indigo-500/5 hover:shadow-md',
     cardStatic: 'border-indigo-500/35',
+    icon: 'text-indigo-500',
   },
   suggestion: {
     sheetHeader: 'border-b-2 border-b-fuchsia-500/60',
     card: 'border-fuchsia-500/35 hover:border-fuchsia-500/60 hover:bg-fuchsia-500/5 hover:shadow-md',
     cardStatic: 'border-fuchsia-500/35',
+    icon: 'text-fuchsia-500',
   },
   invoice: {
     sheetHeader: 'border-b-2 border-b-orange-500/60',
     card: 'border-orange-500/35 hover:border-orange-500/60 hover:bg-orange-500/5 hover:shadow-md',
     cardStatic: 'border-orange-500/35',
+    icon: 'text-orange-500',
   },
   hourBlock: {
     sheetHeader: 'border-b-2 border-b-teal-500/60',
     card: 'border-teal-500/35 hover:border-teal-500/60 hover:bg-teal-500/5 hover:shadow-md',
     cardStatic: 'border-teal-500/35',
+    icon: 'text-teal-500',
   },
   user: {
     sheetHeader: 'border-b-2 border-b-rose-500/60',
     card: 'border-rose-500/35 hover:border-rose-500/60 hover:bg-rose-500/5 hover:shadow-md',
     cardStatic: 'border-rose-500/35',
+    icon: 'text-rose-500',
   },
   submission: {
     sheetHeader: 'border-b-2 border-b-pink-500/60',
     card: 'border-pink-500/35 hover:border-pink-500/60 hover:bg-pink-500/5 hover:shadow-md',
     cardStatic: 'border-pink-500/35',
+    icon: 'text-pink-500',
   },
   // Read-only catalog entries (Settings → Templates), so deliberately neutral.
   template: {
     sheetHeader: 'border-b-2 border-b-slate-500/60',
     card: 'border-slate-500/35 hover:border-slate-500/60 hover:bg-slate-500/5 hover:shadow-md',
     cardStatic: 'border-slate-500/35',
+    icon: 'text-slate-500',
   },
 }

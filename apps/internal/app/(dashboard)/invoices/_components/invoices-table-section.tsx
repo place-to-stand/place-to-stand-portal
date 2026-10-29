@@ -3,7 +3,14 @@
 import { useState, useCallback } from 'react'
 import Link from 'next/link'
 import { formatCalendarDate } from '@pts/ui/dates'
-import { Building2, Check, Copy, ExternalLink, Mail } from 'lucide-react'
+import {
+  Building2,
+  Check,
+  Copy,
+  ExternalLink,
+  Mail,
+  Receipt,
+} from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
@@ -27,6 +34,7 @@ import {
   TableRow,
 } from '@pts/ui/table'
 import { useToast } from '@/components/ui/use-toast'
+import { ENTITY_ACCENTS } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 import type { InvoiceWithClient } from '@/lib/invoices/invoice-form'
 import { invoiceShareHref } from '@/lib/invoices/links'
@@ -38,7 +46,7 @@ import {
 
 import { InvoiceEmailDialog } from './invoice-email-dialog'
 import { InvoiceHourBlocksCell } from './invoice-hour-blocks-cell'
-import { InvoiceStatusBadge, InvoiceStatusIcon } from './invoice-status-badge'
+import { InvoiceStatusBadge } from './invoice-status-badge'
 
 type InvoicesTableMode = 'active' | 'archive'
 
@@ -283,7 +291,13 @@ export function InvoicesTableSection({
               >
                 <TableCell className='text-sm font-medium'>
                   <div className='flex items-center gap-2'>
-                    <InvoiceStatusIcon status={invoice.status} />
+                    <Receipt
+                      aria-hidden
+                      className={cn(
+                        'h-4 w-4 shrink-0',
+                        ENTITY_ACCENTS.invoice.icon
+                      )}
+                    />
                     {invoice.invoice_number ? (
                       invoice.invoice_number
                     ) : (
