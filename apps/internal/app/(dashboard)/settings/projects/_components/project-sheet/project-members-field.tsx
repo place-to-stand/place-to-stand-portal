@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useWatch, type UseFormReturn } from 'react-hook-form'
 import { Plus, X } from 'lucide-react'
@@ -86,6 +86,10 @@ export function ProjectMembersField({
   const setMembers = (next: string[]) =>
     form.setValue('memberIds', next, { shouldDirty: true })
 
+  // The + and the empty state open the same picker.
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const canAdd = options.length > 0 && !disabled
+
   const addButton = (
     <RowActionButton
       type='button'
@@ -102,8 +106,10 @@ export function ProjectMembersField({
       title='Members'
       description='Admins see every project. Sales users see only the projects they are members of.'
       action={
-        options.length > 0 && !disabled ? (
+        canAdd ? (
           <SearchableCombobox
+            open={pickerOpen}
+            onOpenChange={setPickerOpen}
             items={options}
             value=''
             onChange={value => {
@@ -131,6 +137,8 @@ export function ProjectMembersField({
           message={
             options.length > 0 ? 'No members yet.' : 'No sales users yet.'
           }
+          label={canAdd ? 'Add member' : undefined}
+          onClick={canAdd ? () => setPickerOpen(true) : undefined}
         />
       ) : (
         <SheetRecordList>

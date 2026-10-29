@@ -7,6 +7,7 @@ import { Button } from '@pts/ui/button'
 import { EmptyState } from '@pts/ui/empty-state'
 import { ContactRecordRow } from '@/components/sheets/entity-record-rows'
 import { SheetRecordList } from '@/components/sheets/sheet-record-row'
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
   Command,
@@ -45,8 +46,10 @@ function PortalAccessMark() {
 
 export type ClientContactLinkButtonProps = {
   availableContacts: ClientContactOption[]
-  /** The client's company: its people are listed first. */
+  /** The client's company: only its people can be added. */
   companyId: string | null
+  /** Someone at the company already has access (for the empty message). */
+  hasCompanyPeopleWithAccess: boolean
   disabled: boolean
   disabledReason: string | null
   isPickerOpen: boolean
@@ -62,6 +65,7 @@ export type ClientContactLinkButtonProps = {
 export function ClientContactLinkButton({
   availableContacts,
   companyId,
+  hasCompanyPeopleWithAccess,
   disabled,
   disabledReason,
   isPickerOpen,
@@ -70,6 +74,7 @@ export function ClientContactLinkButton({
   onAddContact,
 }: ClientContactLinkButtonProps) {
   const [query, setQuery] = useState('')
+  const { open } = useSheetParams()
 
   return (
     <Popover open={isPickerOpen} onOpenChange={onPickerOpenChange} modal>
@@ -93,10 +98,25 @@ export function ClientContactLinkButton({
             onValueChange={setQuery}
           />
           <CommandList>
-            <CommandEmpty>
-              {companyId
-                ? 'No one else at this company. Add people on the company.'
-                : 'Link a company first.'}
+            <CommandEmpty
+              action={
+                companyId
+                  ? {
+                      label: 'Add people to the company',
+                      icon: <Plus className='text-muted-foreground size-4' />,
+                      onSelect: () => {
+                        onPickerOpenChange(false)
+                        open('company', companyId)
+                      },
+                    }
+                  : undefined
+              }
+            >
+              {!companyId
+                ? 'Link a company first.'
+                : hasCompanyPeopleWithAccess
+                  ? 'Everyone at this company has access.'
+                  : 'No people at this company yet.'}
             </CommandEmpty>
             <CommandGroup>
               {availableContacts

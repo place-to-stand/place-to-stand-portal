@@ -103,15 +103,40 @@ function CommandList({
   )
 }
 
+/**
+ * The empty result in every picker: one short muted line, left-aligned at
+ * the options' padding, and optionally one action (e.g. "Add someone to
+ * the company") so the picker offers the next step instead of a dead end.
+ */
 function CommandEmpty({
+  className,
+  children,
+  action,
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.Empty>) {
+}: React.ComponentProps<typeof CommandPrimitive.Empty> & {
+  action?: { label: string; icon?: React.ReactNode; onSelect: () => void }
+}) {
   return (
     <CommandPrimitive.Empty
       data-slot='command-empty'
-      className='py-6 text-center text-sm'
+      className={cn(
+        'text-muted-foreground px-3 py-2.5 text-left text-sm',
+        className
+      )}
       {...props}
-    />
+    >
+      {children}
+      {action ? (
+        <button
+          type='button'
+          onClick={action.onSelect}
+          className='text-foreground hover:bg-accent focus-visible:ring-ring/50 -mx-2 mt-1.5 flex w-[calc(100%+1rem)] items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none focus-visible:ring-2'
+        >
+          {action.icon}
+          {action.label}
+        </button>
+      ) : null}
+    </CommandPrimitive.Empty>
   )
 }
 

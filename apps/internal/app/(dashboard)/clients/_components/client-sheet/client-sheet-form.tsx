@@ -477,6 +477,10 @@ export function ClientSheetForm({
               <ClientContactLinkButton
                 availableContacts={availableContacts}
                 companyId={selectedCompanyId}
+                hasCompanyPeopleWithAccess={selectedContacts.some(
+                  contact =>
+                    selectedCompanyId && contact.companyId === selectedCompanyId
+                )}
                 disabled={contactsAddButtonDisabled}
                 disabledReason={contactsAddButtonDisabledReason}
                 isPickerOpen={isContactPickerOpen}

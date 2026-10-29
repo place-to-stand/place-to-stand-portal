@@ -40,7 +40,7 @@ export function CommandCreateRows({
         <button
           type='button'
           onClick={() => onCreate(trimmed)}
-          className='hover:bg-accent hover:text-accent-foreground flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm'
+          className='text-foreground hover:bg-accent hover:text-accent-foreground flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm'
         >
           <Plus className='text-muted-foreground size-4 shrink-0' />
           <span className='truncate'>

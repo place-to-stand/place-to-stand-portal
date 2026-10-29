@@ -63,6 +63,9 @@ type SearchableComboboxProps = {
    * disabled state; the popover behaves identically either way.
    */
   trigger?: React.ReactElement
+  /** Controlled open state (e.g. an empty state that opens the picker). */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
   /**
    * Adds the "Create new …" rows (`CommandCreateRows`); fires with the typed
    * search text. Pair with `createEntityLabel` ("company").
@@ -121,11 +124,21 @@ export const SearchableCombobox = React.forwardRef<
       createEntityLabel = 'record',
       onClear,
       clearLabel,
+      open: openProp,
+      onOpenChange,
       trailingAction,
     },
     forwardedRef
   ) => {
-    const [open, setOpen] = React.useState(false)
+    const [openState, setOpenState] = React.useState(false)
+    const open = openProp ?? openState
+    const setOpen = React.useCallback(
+      (next: boolean) => {
+        setOpenState(next)
+        onOpenChange?.(next)
+      },
+      [onOpenChange]
+    )
     const [query, setQuery] = React.useState('')
     const triggerRef = React.useRef<HTMLButtonElement | null>(null)
     const [contentWidth, setContentWidth] = React.useState<number>()
@@ -304,7 +317,15 @@ export const SearchableCombobox = React.forwardRef<
     const showClear = Boolean(onClear && selectedItem && !disabled)
 
     return (
-      <div className={cn('flex w-full min-w-0 items-center gap-1', className)}>
+      <div
+        className={cn(
+          // A custom trigger (an "Add …" button) keeps its own width.
+          trigger
+            ? 'inline-flex min-w-0 items-center gap-1'
+            : 'flex w-full min-w-0 items-center gap-1',
+          className
+        )}
+      >
         <div className='relative min-w-0 flex-1'>
           <input type='hidden' name={name} value={value ?? ''} />
           <Popover open={open} onOpenChange={handleOpenChange} modal>
