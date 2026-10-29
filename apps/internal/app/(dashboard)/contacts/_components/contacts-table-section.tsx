@@ -195,7 +195,8 @@ export function ContactsTableSection({
                   title={contact.companyName ?? undefined}
                 >
                   {contact.companyId && contact.companyName ? (
-                    <span className='flex min-w-0 items-center gap-1.5'>
+                    <span className='flex min-w-0 items-center gap-2'>
+                      <Briefcase className='text-muted-foreground h-4 w-4 shrink-0' />
                       {/* The row ignores clicks on links, so this opens the
                           company, not the contact. */}
                       <Link
