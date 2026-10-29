@@ -53,7 +53,7 @@ export function ContactCompaniesSection({
       title='Companies'
       action={
         disabled ? (
-          <SectionAddButton label='Link company' disabled />
+          <SectionAddButton label='Add company' disabled />
         ) : (
           <CompanyLinkPicker
             value={null}
@@ -73,7 +73,7 @@ export function ContactCompaniesSection({
               ])
             }}
             excludeIds={companies.map(entry => entry.companyId)}
-            trigger={<SectionAddButton label='Link company' />}
+            trigger={<SectionAddButton label='Add company' />}
             open={pickerOpen}
             onOpenChange={setPickerOpen}
           />
@@ -82,8 +82,8 @@ export function ContactCompaniesSection({
     >
       {companies.length === 0 ? (
         <EmptyState
-          message='Not at any company yet. Link one or create it.'
-          label={disabled ? undefined : 'Link company'}
+          message='Not at any company yet. Add one or create it.'
+          label={disabled ? undefined : 'Add company'}
           onClick={disabled ? undefined : () => setPickerOpen(true)}
         />
       ) : (
