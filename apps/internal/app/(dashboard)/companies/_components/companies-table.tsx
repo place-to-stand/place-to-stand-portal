@@ -212,7 +212,7 @@ export function CompaniesTable({
                     count={company.contactCount}
                     zeroLabel='—'
                     icon={Contact}
-                    ariaLabel={`${company.contactCount} people`}
+                    ariaLabel={`${company.contactCount} ${company.contactCount === 1 ? 'person' : 'people'}`}
                     items={company.people.map(person => ({
                       id: person.id,
                       label: person.name,
@@ -229,7 +229,7 @@ export function CompaniesTable({
                     count={company.openLeadCount}
                     zeroLabel='—'
                     icon={Handshake}
-                    ariaLabel={`${company.openLeadCount} open leads`}
+                    ariaLabel={`${company.openLeadCount} open ${company.openLeadCount === 1 ? 'lead' : 'leads'}`}
                     contentClassName='min-w-72'
                     items={company.openLeads.map(lead => ({
                       id: lead.id,

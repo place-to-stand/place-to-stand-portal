@@ -15,8 +15,10 @@ export type LinkedRecordItem = {
   id: string
   label: string
   sublabel?: string | null
-  /** Omit to render the row as plain text instead of a link. */
+  /** Omit (with `onSelect`) to render the row as plain text. */
   href?: string
+  /** For rows that open in place, e.g. a sheet over the current page. */
+  onSelect?: () => void
   /** Rendered after the label, e.g. a status Badge. */
   trailing?: ReactNode
 }
@@ -135,6 +137,21 @@ function LinkedRecordRow({
       {item.trailing}
     </>
   )
+
+  if (item.onSelect) {
+    return (
+      <button
+        type='button'
+        onClick={item.onSelect}
+        className={cn(
+          ROW_CLASS,
+          'hover:bg-accent w-full cursor-pointer text-left transition-colors'
+        )}
+      >
+        {content}
+      </button>
+    )
+  }
 
   if (!item.href) {
     return <div className={ROW_CLASS}>{content}</div>

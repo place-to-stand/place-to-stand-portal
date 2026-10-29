@@ -193,13 +193,15 @@ export function EntityLinkPicker<E extends SheetCreatedEntity>({
               <TooltipContent>Open {entityLabel}</TooltipContent>
             </Tooltip>
           ) : null}
-          {showCreateButton && allowCreate && !trigger ? (
+          {/* Only while empty: a set value shows Open, and the list's
+            Create row still replaces it. */}
+          {showCreateButton && allowCreate && !trigger && !value ? (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   type='button'
                   variant='outline'
-                  className='text-muted-foreground shrink-0'
+                  className='shrink-0'
                   aria-label={`Create ${entityLabel}`}
                   disabled={!canCreate}
                   onClick={() => startCreate('')}

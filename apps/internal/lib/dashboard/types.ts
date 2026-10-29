@@ -23,6 +23,8 @@ export type DashboardTimeLogEntry = {
   projectType: string
   clientName: string | null
   clientSlug: string | null
+  /** Linked live tasks, for the Tasks hover card. */
+  tasks: { id: string; title: string }[]
   taskTitles: string[]
 }
 

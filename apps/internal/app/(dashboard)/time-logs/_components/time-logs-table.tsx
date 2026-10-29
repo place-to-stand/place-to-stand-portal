@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { ListTodo } from 'lucide-react'
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { formatCalendarDate } from '@pts/ui/dates'
@@ -24,6 +25,8 @@ import { PaginationControls } from '@/components/ui/pagination-controls'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
 import { PersonAvatar } from '@/components/ui/user-avatar'
+import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import type { DashboardTimeLogEntry } from '@/lib/dashboard/types'
 import { useTimeLogEditContext } from '@/lib/projects/time-log/use-time-log-edit-context'
 import {
@@ -59,6 +62,7 @@ export function TimeLogsTable({
   sort,
 }: TimeLogsTableProps) {
   const router = useRouter()
+  const { open: openSheet } = useSheetParams()
   const { update } = useListParams({
     basePath: mode === 'archive' ? '/time-logs/archive' : '/time-logs',
     resetKeys: ['page'],
@@ -132,17 +136,15 @@ export function TimeLogsTable({
             <TableRow className='bg-muted/40'>
               {sortHead('date', 'Date', 'w-[10%]')}
               {sortHead('person', 'Person', 'w-20')}
-              {sortHead('client', 'Client', 'w-[14%]')}
-              {sortHead('project', 'Project', 'w-[18%]')}
-              <TableHead className='w-[18%]'>Tasks</TableHead>
-              {sortHead('hours', 'Hours', 'w-[8%]', 'center')}
-              <TableHead className='w-[21%]'>Note</TableHead>
+              {sortHead('client', 'Client', 'w-[24%]')}
+              {sortHead('project', 'Project', 'w-[30%]')}
+              <TableHead className='w-[10%] text-center'>Tasks</TableHead>
+              {sortHead('hours', 'Hours', 'w-[10%]', 'center')}
               <TableHead className='w-32 text-right'>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {items.map(item => {
-              const tasks = item.taskTitles.join(', ')
               return (
                 <TableRow
                   key={item.id}
@@ -178,22 +180,26 @@ export function TimeLogsTable({
                     {item.projectName}
                   </TableCell>
                   <TableCell
-                    className='text-muted-foreground truncate text-sm'
-                    title={tasks || undefined}
+                    label='Tasks'
+                    className='text-sm tabular-nums md:text-center'
                   >
-                    {tasks || <EmptyValue />}
+                    <LinkedRecordsHoverCell
+                      count={item.tasks.length}
+                      zeroLabel='—'
+                      icon={ListTodo}
+                      ariaLabel={`${item.tasks.length} ${item.tasks.length === 1 ? 'task' : 'tasks'}`}
+                      items={item.tasks.map(task => ({
+                        id: task.id,
+                        label: task.title,
+                        onSelect: () => openSheet('task', task.id),
+                      }))}
+                    />
                   </TableCell>
                   <TableCell
                     label='Hours'
                     className='text-sm font-medium tabular-nums md:text-center'
                   >
                     {HOURS.format(item.hours)}
-                  </TableCell>
-                  <TableCell
-                    className='text-muted-foreground truncate text-sm'
-                    title={item.note ?? undefined}
-                  >
-                    {item.note || <EmptyValue />}
                   </TableCell>
                   <TableCell className='text-right max-md:ml-auto'>
                     <RecordRowActions>

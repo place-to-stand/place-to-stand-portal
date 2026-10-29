@@ -225,7 +225,7 @@ export async function fetchTimeLogPage(
     return { items: [], totalCount, totalHours }
   }
 
-  const taskTitlesByLog = await fetchLinkedTaskTitles(rows.map(row => row.id))
+  const tasksByLog = await fetchLinkedTasks(rows.map(row => row.id))
 
   const items: DashboardTimeLogEntry[] = rows.map(row => ({
     id: row.id,
@@ -241,7 +241,8 @@ export async function fetchTimeLogPage(
     projectType: row.projectType,
     clientName: row.clientName ?? null,
     clientSlug: row.clientSlug ?? null,
-    taskTitles: taskTitlesByLog.get(row.id) ?? [],
+    tasks: tasksByLog.get(row.id) ?? [],
+    taskTitles: (tasksByLog.get(row.id) ?? []).map(task => task.title),
   }))
 
   return { items, totalCount, totalHours }
@@ -267,9 +268,9 @@ export async function countTimeLogs({
   return Number(row?.count ?? 0)
 }
 
-async function fetchLinkedTaskTitles(
+async function fetchLinkedTasks(
   timeLogIds: string[]
-): Promise<Map<string, string[]>> {
+): Promise<Map<string, { id: string; title: string }[]>> {
   if (!timeLogIds.length) {
     return new Map()
   }
@@ -277,6 +278,7 @@ async function fetchLinkedTaskTitles(
   const rows = await db
     .select({
       timeLogId: timeLogTasks.timeLogId,
+      id: tasks.id,
       title: tasks.title,
     })
     .from(timeLogTasks)
@@ -289,13 +291,13 @@ async function fetchLinkedTaskTitles(
       )
     )
 
-  const byLog = new Map<string, string[]>()
+  const byLog = new Map<string, { id: string; title: string }[]>()
   rows.forEach(row => {
     if (!row.title) {
       return
     }
     const existing = byLog.get(row.timeLogId) ?? []
-    existing.push(row.title)
+    existing.push({ id: row.id, title: row.title })
     byLog.set(row.timeLogId, existing)
   })
 
