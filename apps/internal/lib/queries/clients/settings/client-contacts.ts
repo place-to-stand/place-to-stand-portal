@@ -269,7 +269,7 @@ export async function syncClientContacts(
       ok: false,
       error: `${withoutLogin.map(m => m.name).join(', ')} ${
         withoutLogin.length === 1 ? 'has' : 'have'
-      } no portal login yet. Create one from their contact first.`,
+      } no portal user yet. Create one from their contact first.`,
     }
   }
   const toRevoke = members.filter(

@@ -36,7 +36,7 @@ export function UserLinkedContactSection({
         description={
           contact
             ? 'Portal access follows the clients linked to this contact.'
-            : 'Create a portal account from their contact to link one.'
+            : 'Create a portal user from their contact to link one.'
         }
       >
         {contact ? (

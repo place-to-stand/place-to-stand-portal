@@ -229,7 +229,7 @@ export async function saveContactMutation(
         ) {
           return buildMutationResult({
             error:
-              'They have no portal login yet. Create one (Portal account, below) before switching portal access on.',
+              'They have no portal user yet. Create one (Portal user, below) before switching portal access on.',
           })
         }
         // Portal access is admin-only: switching it, or leaving a company
@@ -370,7 +370,7 @@ export async function saveContactMutation(
       if (plan.access.some(change => change.portalAccess)) {
         return buildMutationResult({
           error:
-            'A new contact has no portal login yet. Save them, create a login, then switch portal access on.',
+            'A new contact has no portal user yet. Save them, create a portal user, then switch portal access on.',
         })
       }
 

@@ -144,7 +144,7 @@ export function UsersTableRow({
             <RecordRowAction
               kind='preview'
               disabled={!previewContactId}
-              disabledReason='No linked contact. Create a portal account from their contact to link one.'
+              disabledReason='No linked contact. Create a portal user from their contact to link one.'
               onClick={() => {
                 if (previewContactId) {
                   openPortalPreview(clientPortalUrl, previewContactId)

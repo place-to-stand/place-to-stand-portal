@@ -199,7 +199,7 @@ export async function convertLeadToClient(
             // Access needs a portal login; the contact sheet creates one.
             if (!granted) {
               warnings.push(
-                `${lead.contactName} has no portal login yet, so they weren’t given portal access. Create one from their contact, then switch it on.`
+                `${lead.contactName} has no portal user yet, so they weren’t given portal access. Create one from their contact, then switch it on in Edit client > Portal access.`
               )
             }
           }

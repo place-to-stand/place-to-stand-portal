@@ -1,7 +1,5 @@
 'use client'
 
-import { useWatch } from 'react-hook-form'
-
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
@@ -51,7 +49,6 @@ export function ContactsSheet(props: ContactsSheetProps) {
     handleRequestPromote,
     handleConfirmPromote,
   } = useContactSheetState(props)
-  const companies = useWatch({ control: form.control, name: 'companies' })
 
   return (
     <>
@@ -98,11 +95,6 @@ export function ContactsSheet(props: ContactsSheetProps) {
         onOpenChange={setIsPromoteDialogOpen}
         contactName={contactDisplayName}
         contactEmail={contact?.email ?? ''}
-        linkedClientCount={
-          (companies ?? []).filter(
-            entry => entry.portalAccess && entry.clientId
-          ).length
-        }
         isPending={isPending}
         onConfirm={handleConfirmPromote}
       />

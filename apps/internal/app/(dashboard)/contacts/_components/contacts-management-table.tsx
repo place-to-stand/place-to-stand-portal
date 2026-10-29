@@ -121,7 +121,7 @@ export function ContactsManagementTable({
 
       if (result.error) {
         toast({
-          title: 'Unable to create portal account',
+          title: 'Unable to create portal user',
           description: result.error,
           variant: 'destructive',
         })
@@ -129,8 +129,8 @@ export function ContactsManagementTable({
       }
 
       toast({
-        title: 'Portal account created',
-        description: `A portal invite has been sent to ${contact.name || contact.email}.`,
+        title: 'Portal user created',
+        description: `A sign-in link to the client portal has been emailed to ${contact.name || contact.email}.`,
       })
       router.refresh()
     })
@@ -161,7 +161,7 @@ export function ContactsManagementTable({
         description={
           deleteTarget
             ? `Archiving ${deleteTarget.name || deleteTarget.email} hides it from active views but preserves the record.`
-            : 'Archiving this contact hides it from active views but preserves the record.'
+            : 'Archiving this contact hides it from active views but keeps its history.'
         }
         confirmLabel='Archive'
         confirmVariant='destructive'
@@ -215,7 +215,6 @@ export function ContactsManagementTable({
         }}
         contactName={promoteTarget?.name || promoteTarget?.email || ''}
         contactEmail={promoteTarget?.email || ''}
-        linkedClientCount={promoteTarget?.metrics.totalClients ?? 0}
         isPending={isPromotePending}
         onConfirm={handleConfirmPromote}
       />

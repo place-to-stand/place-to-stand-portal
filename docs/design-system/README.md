@@ -37,6 +37,7 @@ Place To Stand is a small software agency. This system describes its two Next.js
 
 - **Sentence case everywhere.** Buttons, titles, tabs and toasts: "Create lead", "Save changes", "Project archived". Title Case is only for the brand name.
 - **A contact is a "contact".** In UI copy the record is always a contact ("Contacts", "Add contact", "No contacts here yet"), never "person" or "people". "Person" stays for staff users (time logs, My Tasks).
+- **Name the entity.** Copy names the record type it acts on, using the entity names: user, contact, company, client, lead, project, task, invoice, hour block, time log. Never a vague stand-in (account, login, person/people, record, item, entry, member) when an entity is meant: "Create user" and "No portal user", not "Create login" or "No portal account". The established staff term "person" (time logs, My Tasks) stays.
 - **Create vs Add vs Link.** "Create <thing>" makes a new record (page buttons, create sheets, a picker's pinned Create row). "Add <thing>" puts an existing record on a list (Add person, Add member). "Link" joins a company and its client, the same record seen from two sides.
 - **The name.** The wordmark reads **Place To Stand**, with a capital T, as `BrandLogo` renders it. The favicon abbreviation is **PTS**. Some older page metadata still says "Place to Stand Portal". Use the wordmark casing in new copy.
 - **Verbs first on actions.** "Archive client", "Mark as sent", "Copy link". A destructive action names what it destroys, so it never needs color to carry the meaning.

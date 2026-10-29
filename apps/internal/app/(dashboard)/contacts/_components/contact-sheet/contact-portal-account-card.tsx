@@ -84,7 +84,7 @@ export function ContactPortalAccountCard({
     return (
       <LinkedRecordCard
         icon={User2}
-        title='Portal account'
+        title='Portal user'
         description={<Skeleton className='h-3 w-40' />}
         action={openUser}
       />
@@ -95,8 +95,8 @@ export function ContactPortalAccountCard({
     return (
       <LinkedRecordCard
         icon={User2}
-        title='Portal account'
-        description='Unable to load account details.'
+        title='Portal user'
+        description='Unable to load portal user details.'
         action={openUser}
       />
     )

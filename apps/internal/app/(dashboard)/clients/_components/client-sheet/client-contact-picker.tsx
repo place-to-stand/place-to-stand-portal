@@ -30,11 +30,11 @@ function PortalLoginMark() {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span aria-label='Has a portal login'>
+        <span aria-label='Has a portal user'>
           <UserCheck className='text-success h-3 w-3' />
         </span>
       </TooltipTrigger>
-      <TooltipContent>Has a portal login</TooltipContent>
+      <TooltipContent>Has a portal user</TooltipContent>
     </Tooltip>
   )
 }
@@ -114,7 +114,7 @@ export function ClientPortalAccessList({
               ) : contact.isPrimary ? (
                 <PrimaryNote />
               ) : contact.hasPortalAccess ? undefined : (
-                'No portal login'
+                'No portal user'
               )
             }
             actions={
@@ -127,7 +127,7 @@ export function ClientPortalAccessList({
                   disabled={isPending}
                   onClick={() => open('contact', contact.id)}
                 >
-                  Create login
+                  Create user
                 </Button>
               ) : (
                 <DisabledFieldTooltip

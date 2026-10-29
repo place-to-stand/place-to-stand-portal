@@ -248,7 +248,7 @@ export function ContactSheetForm({
 
           {isEditing && isAdmin ? (
             <SheetSection
-              title='Portal account'
+              title='Portal user'
               description='Lets them sign in to the client portal. Which clients they can see is set on each client (Edit client > Portal access).'
             >
               {portalUserId ? (
@@ -259,7 +259,7 @@ export function ContactSheetForm({
               ) : (
                 <LinkedRecordCard
                   icon={User2}
-                  title='No portal account'
+                  title='No portal user'
                   action={
                     <DisabledFieldTooltip
                       disabled={promoteDisabled}
@@ -274,7 +274,7 @@ export function ContactSheetForm({
                         onClick={onRequestPromote}
                       >
                         <UserPlus />
-                        Create account
+                        Create user
                       </Button>
                     </DisabledFieldTooltip>
                   }

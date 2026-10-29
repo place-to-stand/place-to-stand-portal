@@ -35,7 +35,11 @@ export const contactSchema = z.object({
           .nullable()
           .optional()
           .transform(value =>
-            value === undefined ? undefined : value?.trim() ? value.trim() : null
+            value === undefined
+              ? undefined
+              : value?.trim()
+                ? value.trim()
+                : null
           ),
         /** Sees the company's client in the client portal (admin only). */
         portalAccess: z.boolean().optional(),

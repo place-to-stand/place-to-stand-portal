@@ -112,68 +112,52 @@ export const useUserSheetState = ({
     ]
   )
 
-  const handleRequestDelete = useCallback(
-    () => {
-      const handler = createDeleteRequestHandler({
-        user,
-        currentUserId,
-        isPending,
-        setFeedback,
-        setIsDeleteDialogOpen,
-        onClose: onOpenChange,
-        onComplete,
-        transition: startSave,
-      })
-
-      handler()
-    },
-    [
+  const handleRequestDelete = useCallback(() => {
+    const handler = createDeleteRequestHandler({
+      user,
       currentUserId,
       isPending,
-      onComplete,
-      onOpenChange,
       setFeedback,
-      startSave,
+      setIsDeleteDialogOpen,
+      onClose: onOpenChange,
+      onComplete,
+      transition: startSave,
+    })
+
+    handler()
+  }, [
+    currentUserId,
+    isPending,
+    onComplete,
+    onOpenChange,
+    setFeedback,
+    startSave,
+    user,
+  ])
+
+  const handleCancelDelete = useCallback(() => {
+    const handler = createDeleteCancelHandler({
+      isPending,
+      setIsDeleteDialogOpen,
+    })
+
+    handler()
+  }, [isPending])
+
+  const handleConfirmDelete = useCallback(() => {
+    const handler = createDeleteConfirmHandler({
       user,
-    ]
-  )
-
-  const handleCancelDelete = useCallback(
-    () => {
-      const handler = createDeleteCancelHandler({
-        isPending,
-        setIsDeleteDialogOpen,
-      })
-
-      handler()
-    },
-    [isPending]
-  )
-
-  const handleConfirmDelete = useCallback(
-    () => {
-      const handler = createDeleteConfirmHandler({
-        user,
-        currentUserId,
-        isPending,
-        setFeedback,
-        setIsDeleteDialogOpen,
-        onClose: onOpenChange,
-        onComplete,
-        transition: startSave,
-      })
-
-      handler()
-    },
-    [
       currentUserId,
       isPending,
+      setFeedback,
+      setIsDeleteDialogOpen,
+      onClose: onOpenChange,
       onComplete,
-      onOpenChange,
-      startSave,
-      user,
-    ]
-  )
+      transition: startSave,
+    })
+
+    handler()
+  }, [currentUserId, isPending, onComplete, onOpenChange, startSave, user])
 
   const emailDisabled = isPending || isEditing
   const emailDisabledReason = getEmailDisabledReason(isPending, isEditing)

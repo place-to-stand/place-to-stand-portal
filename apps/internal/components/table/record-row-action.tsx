@@ -67,7 +67,7 @@ const KINDS = {
    * destructive archive button beside it.
    */
   promote: {
-    label: () => 'Create portal account',
+    label: () => 'Create portal user',
     icon: <UserPlus />,
     variant: 'outline',
     className:

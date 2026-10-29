@@ -319,7 +319,7 @@ export function useContactSheetState({
       if (result.error) {
         setFeedback(result.error)
         toast({
-          title: 'Unable to create portal account',
+          title: 'Unable to create portal user',
           description: result.error,
           variant: 'destructive',
         })
@@ -327,8 +327,8 @@ export function useContactSheetState({
       }
 
       toast({
-        title: 'Portal account created',
-        description: `A portal invite has been sent to ${contact?.name || contact?.email || 'the contact'}.`,
+        title: 'Portal user created',
+        description: `A sign-in link to the client portal has been emailed to ${contact?.name || contact?.email || 'the contact'}.`,
       })
       onComplete()
     })

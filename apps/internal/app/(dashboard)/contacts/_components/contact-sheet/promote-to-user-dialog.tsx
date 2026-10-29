@@ -15,7 +15,6 @@ type PromoteToUserDialogProps = {
   onOpenChange: (open: boolean) => void
   contactName: string
   contactEmail: string
-  linkedClientCount?: number
   isPending: boolean
   onConfirm: () => void
 }
@@ -25,7 +24,6 @@ export function PromoteToUserDialog({
   onOpenChange,
   contactName,
   contactEmail,
-  linkedClientCount = 0,
   isPending,
   onConfirm,
 }: PromoteToUserDialogProps) {
@@ -33,27 +31,15 @@ export function PromoteToUserDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='sm:max-w-md'>
         <DialogHeader>
-          <DialogTitle>Create portal account</DialogTitle>
+          <DialogTitle>Create portal user</DialogTitle>
           <DialogDescription>
-            This will create a portal account for {contactName} (
-            <span className='font-bold'>{contactEmail}</span>)
-            {linkedClientCount > 0 ? (
-              <>
-                {' '}
-                and grant them access to {linkedClientCount} linked client
-                {linkedClientCount === 1 ? '' : 's'}.<br />
-                <br />
-                They&apos;ll receive an email with a temporary password.
-              </>
-            ) : (
-              <>
-                .<br />
-                <br />
-                They&apos;ll receive an email with a temporary password. No
-                clients are currently linked — they won&apos;t see any projects
-                until you link them to a client.
-              </>
-            )}
+            This creates a client portal user for {contactName} (
+            <span className='font-bold'>{contactEmail}</span>) and emails them a
+            one-time sign-in link (no password needed).
+            <br />
+            <br />
+            Which clients they can see is set on each client, in Edit client
+            &gt; Portal access.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className='mt-4'>
