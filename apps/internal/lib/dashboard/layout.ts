@@ -19,7 +19,6 @@ import { roleCan, type Capability, type Role } from '@/lib/auth/capabilities'
 export const DASHBOARD_WIDGET_IDS = [
   'notifications',
   'my-tasks',
-  'next-steps',
   'pipeline',
   'quiet-leads',
   'hours',
@@ -31,7 +30,6 @@ export type DashboardWidgetId = (typeof DASHBOARD_WIDGET_IDS)[number]
 export const WIDGET_CAPABILITIES: Record<DashboardWidgetId, Capability> = {
   notifications: 'widget.notifications',
   'my-tasks': 'widget.my_tasks',
-  'next-steps': 'widget.next_steps',
   pipeline: 'widget.pipeline',
   'quiet-leads': 'widget.quiet_leads',
   hours: 'widget.hours',
@@ -61,14 +59,14 @@ const DEFAULT_PLACEMENT: Record<
       ['notifications', 'my-tasks'],
       ['hours', 'recent-activity'],
     ],
-    hidden: ['next-steps', 'pipeline', 'quiet-leads'],
+    hidden: ['pipeline', 'quiet-leads'],
   },
   staff: {
     columns: [
-      ['notifications', 'next-steps'],
+      ['notifications', 'my-tasks'],
       ['pipeline', 'quiet-leads'],
     ],
-    hidden: ['my-tasks'],
+    hidden: [],
   },
 }
 
@@ -86,7 +84,9 @@ export function defaultLayoutForRole(role: Role): DashboardLayout {
 
   return {
     version: 1,
-    columns: placement.columns.map(column => column.filter(id => allowed.has(id))),
+    columns: placement.columns.map(column =>
+      column.filter(id => allowed.has(id))
+    ),
     hidden: [
       ...placement.hidden.filter(id => allowed.has(id)),
       // Anything allowed but not in this home's placement starts hidden.
@@ -96,6 +96,14 @@ export function defaultLayoutForRole(role: Role): DashboardLayout {
 }
 
 const widgetIdSchema = z.enum(DASHBOARD_WIDGET_IDS)
+
+/**
+ * Widgets merged into another: a saved layout keeps its spot under the new
+ * id (and the duplicate, if both were saved, is dropped as usual).
+ */
+const RENAMED_WIDGETS: Record<string, DashboardWidgetId> = {
+  'next-steps': 'my-tasks',
+}
 
 /**
  * Lenient on purpose: unknown ids are filtered rather than rejected so a
@@ -129,7 +137,9 @@ export function normalizeDashboardLayout(
   const allowed = widgetsForRole(role)
   const seen = new Set<DashboardWidgetId>()
   const take = (candidate: unknown): DashboardWidgetId | null => {
-    const id = widgetIdSchema.safeParse(candidate)
+    const id = widgetIdSchema.safeParse(
+      RENAMED_WIDGETS[String(candidate)] ?? candidate
+    )
     if (!id.success || seen.has(id.data) || !allowed.has(id.data)) return null
     seen.add(id.data)
     return id.data
@@ -140,9 +150,7 @@ export function normalizeDashboardLayout(
     const raw = parsed.data.columns[i] ?? []
     columns.push(raw.map(take).filter(id => id !== null))
   }
-  const hidden = (parsed.data.hidden ?? [])
-    .map(take)
-    .filter(id => id !== null)
+  const hidden = (parsed.data.hidden ?? []).map(take).filter(id => id !== null)
 
   defaults.columns.forEach((defaultColumn, columnIndex) => {
     for (const id of defaultColumn) {

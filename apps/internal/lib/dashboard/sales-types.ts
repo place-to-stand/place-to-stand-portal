@@ -1,16 +1,5 @@
 import type { LeadStatusValue } from '@/lib/leads/constants'
 
-/** An open task on the sales home's Next steps list. */
-export type SalesTaskItem = {
-  id: string
-  title: string
-  status: 'ON_DECK' | 'IN_PROGRESS' | 'BLOCKED' | 'DONE'
-  dueOn: string | null
-  projectName: string
-  leadId: string | null
-  leadName: string | null
-}
-
 /** A lead on the Aging leads list. */
 export type SalesLeadItem = {
   id: string
@@ -34,8 +23,6 @@ export type SalesPipelineStage = {
 export type SalesHomeData = {
   /** Today in the company time zone (YYYY-MM-DD). */
   today: string
-  nextSteps: SalesTaskItem[]
-  nextStepsTotal: number
   quietLeads: SalesLeadItem[]
   pipeline: SalesPipelineStage[]
 }

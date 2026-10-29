@@ -6,11 +6,7 @@ import { HoursWidget } from '../hours-widget'
 import { MyTasksWidget } from '../my-tasks-widget'
 import { NotificationsWidget } from '../notifications-widget'
 import { RecentActivityOverviewWidget } from '../recent-activity-overview-widget'
-import {
-  NextStepsWidget,
-  PipelineWidget,
-  QuietLeadsWidget,
-} from '../sales-widgets'
+import { PipelineWidget, QuietLeadsWidget } from '../sales-widgets'
 import type { DashboardWidgetData } from './types'
 
 export const DASHBOARD_WIDGET_LABELS: Record<DashboardWidgetId, string> = {
@@ -18,7 +14,6 @@ export const DASHBOARD_WIDGET_LABELS: Record<DashboardWidgetId, string> = {
   'my-tasks': 'My tasks',
   hours: 'Monthly hours snapshot',
   'recent-activity': 'Recent activity',
-  'next-steps': 'Next steps',
   'quiet-leads': 'Aging leads',
   pipeline: 'Leads pipeline',
 }
@@ -50,10 +45,6 @@ export function WidgetRenderer({ id, data, className }: WidgetRendererProps) {
       ) : null
     case 'recent-activity':
       return <RecentActivityOverviewWidget className={className} />
-    case 'next-steps':
-      return data.sales ? (
-        <NextStepsWidget data={data.sales} className={className} />
-      ) : null
     case 'quiet-leads':
       return data.sales ? (
         <QuietLeadsWidget data={data.sales} className={className} />

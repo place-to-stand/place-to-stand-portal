@@ -81,14 +81,6 @@ export const CAPABILITIES = {
   'widget.my_tasks': {
     area: 'Dashboard',
     label: 'My tasks widget',
-    description: 'Open tasks assigned to you.',
-    roles: STAFF,
-    surfaces: ['app'],
-    scope: { SALES: { detail: 'Only projects they are a member of.' } },
-  },
-  'widget.next_steps': {
-    area: 'Dashboard',
-    label: 'Next steps widget',
     description: 'Your open tasks, late and due-soon first.',
     roles: STAFF,
     surfaces: ['app'],
@@ -201,7 +193,9 @@ export const CAPABILITIES = {
     description: 'Lead tasks live in the Sales project.',
     roles: STAFF,
     surfaces: ['app', 'mcp', 'cli'],
-    scope: { SALES: { detail: 'Only if they are a member of the Sales project.' } },
+    scope: {
+      SALES: { detail: 'Only if they are a member of the Sales project.' },
+    },
   },
   'leads.convert': {
     area: 'Sales',

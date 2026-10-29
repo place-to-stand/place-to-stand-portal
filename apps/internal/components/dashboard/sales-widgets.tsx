@@ -4,20 +4,11 @@ import Link from 'next/link'
 
 import { Button } from '@pts/ui/button'
 import { EmptyState } from '@pts/ui/empty-state'
-import type {
-  SalesHomeData,
-  SalesLeadItem,
-  SalesTaskItem,
-} from '@/lib/dashboard/sales-types'
+import type { SalesHomeData, SalesLeadItem } from '@/lib/dashboard/sales-types'
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 import { RecordRowButton } from '@/components/ui/record-row-button'
 import { LEAD_STATUS_LABELS } from '@/lib/leads/constants'
-import {
-  TASK_DUE_TONE_CLASSES,
-  getTaskDueMeta,
-} from '@/lib/projects/task-due-date'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
-import { cn } from '@/lib/utils'
 
 import { WidgetCard } from './widget-card'
 
@@ -25,77 +16,6 @@ function describeDays(days: number) {
   if (days === 0) return 'Today'
   if (days === 1) return '1 day'
   return `${days} days`
-}
-
-export function NextStepsWidget({
-  data,
-  className,
-}: {
-  data: SalesHomeData
-  className?: string
-}) {
-  const { open } = useSheetParams()
-  const items = data.nextSteps
-
-  return (
-    <WidgetCard
-      id='next-steps'
-      title='Next steps'
-      className={className}
-      meta={`${data.nextStepsTotal} open`}
-      action={
-        <Button asChild size='xs' variant='outline'>
-          <Link href='/my/tasks/board' aria-label='View all my tasks'>
-            See all
-          </Link>
-        </Button>
-      }
-    >
-      {items.length ? (
-        <ul className='divide-y'>
-          {items.map(task => (
-            <li key={task.id}>
-              <TaskRow task={task} onOpen={() => open('task', task.id)} />
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <div className='p-4'>
-          <EmptyState message='No open tasks. Add one from a lead to plan your next step.' />
-        </div>
-      )}
-    </WidgetCard>
-  )
-}
-
-function TaskRow({
-  task,
-  onOpen,
-}: {
-  task: SalesTaskItem
-  onOpen: () => void
-}) {
-  const due = task.dueOn
-    ? getTaskDueMeta(task.dueOn, { status: task.status })
-    : null
-
-  return (
-    <RecordRowButton
-      onClick={onOpen}
-      title={task.title}
-      subtitle={`${task.leadName ? `${task.leadName} · ` : ''}${task.projectName}`}
-      trailing={
-        <span
-          className={cn(
-            'shrink-0 text-xs',
-            due ? TASK_DUE_TONE_CLASSES[due.tone] : 'text-muted-foreground'
-          )}
-        >
-          {due ? due.label : 'No date'}
-        </span>
-      }
-    />
-  )
 }
 
 function LeadList({

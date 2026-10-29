@@ -14,11 +14,7 @@ export const metadata: Metadata = {
   title: 'Home',
 }
 
-const SALES_WIDGETS: readonly DashboardWidgetId[] = [
-  'next-steps',
-  'pipeline',
-  'quiet-leads',
-]
+const SALES_WIDGETS: readonly DashboardWidgetId[] = ['pipeline', 'quiet-leads']
 
 export default async function HomePage() {
   // Every staff role lands here, so this page must not use requireUser,
@@ -40,6 +36,7 @@ export default async function HomePage() {
             projectIds,
             limit: MY_TASKS_WIDGET_PAGE_SIZE,
             includeCompletedStatuses: false,
+            order: 'due',
           })
         )
       : null,

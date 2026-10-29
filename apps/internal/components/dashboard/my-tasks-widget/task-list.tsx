@@ -4,6 +4,7 @@ import {
   CalendarDays,
   ChevronRight,
   FolderKanban,
+  Handshake,
   Loader2,
   User,
   Users,
@@ -12,7 +13,7 @@ import {
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { MY_TASKS_WIDGET_PAGE_SIZE } from '@/lib/dashboard/types'
-import { myTaskHref } from '@/lib/sheets/hrefs'
+import { leadHref, myTaskHref } from '@/lib/sheets/hrefs'
 import type { AssignedTaskSummary } from '@/lib/data/tasks'
 import type { ProjectTypeValue } from '@/lib/types'
 import {
@@ -142,6 +143,19 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
               than three floating chips.
             */}
             <div className='text-muted-foreground flex min-w-0 items-center gap-1.5 text-xs'>
+              {task.lead ? (
+                <>
+                  <Link
+                    href={leadHref(task.lead.id)}
+                    onClick={e => e.stopPropagation()}
+                    className='hover:text-foreground pointer-events-auto relative z-20 inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
+                  >
+                    <Handshake className='size-3 shrink-0' aria-hidden />
+                    <span className='truncate-link'>{task.lead.name}</span>
+                  </Link>
+                  <MetaSeparator />
+                </>
+              ) : null}
               {clientLinkMeta.href ? (
                 <Link
                   href={clientLinkMeta.href}

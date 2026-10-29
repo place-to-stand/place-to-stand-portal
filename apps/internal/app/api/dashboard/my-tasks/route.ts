@@ -40,6 +40,7 @@ export async function GET(request: Request) {
       offset: parsed.data.offset,
       limit: parsed.data.limit ?? MY_TASKS_WIDGET_PAGE_SIZE,
       includeCompletedStatuses: false,
+      order: 'due',
     })
 
     return NextResponse.json({

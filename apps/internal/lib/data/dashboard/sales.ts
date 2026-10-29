@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, asc, count, eq, inArray, isNull, ne, sql } from 'drizzle-orm'
+import { and, asc, count, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertCrmAccess } from '@/lib/auth/permissions'
@@ -10,12 +10,8 @@ import type {
   SalesPipelineStage,
 } from '@/lib/dashboard/sales-types'
 import { db } from '@/lib/db'
-import { leads, projects, taskAssignees, tasks } from '@/lib/db/schema'
-import {
-  LEAD_STATUS_LABELS,
-  type LeadStatusValue,
-} from '@/lib/leads/constants'
-import { listWorkableProjectIds } from '@/lib/projects/access'
+import { leads } from '@/lib/db/schema'
+import { LEAD_STATUS_LABELS, type LeadStatusValue } from '@/lib/leads/constants'
 import { todayCalendarDate } from '@/lib/updates/window'
 
 /** Stages the pipeline widget counts: everything still in play. */
@@ -33,7 +29,6 @@ const WORKING_STAGES: LeadStatusValue[] = [
   'PROPOSAL_SENT',
 ]
 
-const NEXT_STEPS_LIMIT = 15
 const LEAD_LIST_LIMIT = 10
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -63,61 +58,6 @@ function toLeadItem(
   }
 }
 
-/**
- * Open tasks assigned to this user on projects they can work, overdue and
- * soonest-due first, undated last.
- */
-export async function fetchSalesNextSteps(user: AppUser) {
-  const workable = await listWorkableProjectIds(user)
-  if (workable !== null && workable.length === 0) {
-    return { items: [], total: 0 }
-  }
-
-  const where = and(
-    eq(taskAssignees.userId, user.id),
-    isNull(taskAssignees.deletedAt),
-    isNull(tasks.deletedAt),
-    isNull(tasks.acceptedAt),
-    ne(tasks.status, 'DONE'),
-    isNull(projects.deletedAt),
-    workable === null ? undefined : inArray(tasks.projectId, workable)
-  )
-
-  const [rows, [totalRow]] = await Promise.all([
-    db
-      .select({
-        id: tasks.id,
-        title: tasks.title,
-        status: tasks.status,
-        dueOn: tasks.dueOn,
-        projectName: projects.name,
-        leadId: tasks.leadId,
-        leadName: leads.contactName,
-      })
-      .from(tasks)
-      .innerJoin(taskAssignees, eq(taskAssignees.taskId, tasks.id))
-      .innerJoin(projects, eq(projects.id, tasks.projectId))
-      .leftJoin(leads, and(eq(leads.id, tasks.leadId), isNull(leads.deletedAt)))
-      .where(where)
-      .orderBy(
-        sql`${tasks.dueOn} asc nulls last`,
-        asc(tasks.createdAt)
-      )
-      .limit(NEXT_STEPS_LIMIT),
-    db
-      .select({ value: count() })
-      .from(tasks)
-      .innerJoin(taskAssignees, eq(taskAssignees.taskId, tasks.id))
-      .innerJoin(projects, eq(projects.id, tasks.projectId))
-      .where(where),
-  ])
-
-  return {
-    items: rows.map(row => ({ ...row, leadName: row.leadName ?? null })),
-    total: Number(totalRow?.value ?? 0),
-  }
-}
-
 export async function fetchSalesHomeData(
   user: AppUser
 ): Promise<SalesHomeData> {
@@ -132,8 +72,7 @@ export async function fetchSalesHomeData(
     lastTouchedAt: lastTouchedSql,
   }
 
-  const [nextSteps, quietRows, pipelineRows] = await Promise.all([
-    fetchSalesNextSteps(user),
+  const [quietRows, pipelineRows] = await Promise.all([
     db
       .select(leadFields)
       .from(leads)
@@ -153,7 +92,9 @@ export async function fetchSalesHomeData(
         mine: sql<number>`count(*) filter (where ${leads.assigneeId} = ${user.id})`,
       })
       .from(leads)
-      .where(and(isNull(leads.deletedAt), inArray(leads.status, PIPELINE_STAGES)))
+      .where(
+        and(isNull(leads.deletedAt), inArray(leads.status, PIPELINE_STAGES))
+      )
       .groupBy(leads.status),
   ])
 
@@ -169,8 +110,6 @@ export async function fetchSalesHomeData(
 
   return {
     today: todayCalendarDate(),
-    nextSteps: nextSteps.items,
-    nextStepsTotal: nextSteps.total,
     quietLeads: quietRows.map(row =>
       toLeadItem({ ...row, status: row.status as LeadStatusValue }, now)
     ),

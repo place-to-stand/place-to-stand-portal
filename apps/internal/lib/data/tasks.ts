@@ -21,6 +21,7 @@ import type { ProjectTypeValue } from '@/lib/types'
 import { db } from '@/lib/db'
 import {
   clients as clientsTable,
+  leads as leadsTable,
   projects as projectsTable,
   taskAssigneeMetadata as taskAssigneeMetadataTable,
   taskAssignees as taskAssigneesTable,
@@ -47,6 +48,8 @@ export type AssignedTaskSummary = {
     name: string
     slug: string | null
   } | null
+  /** The lead a sales task belongs to (the home widget's list loads it). */
+  lead?: { id: string; name: string } | null
 }
 
 export type AssignedTaskSummaryResult = {
@@ -150,6 +153,12 @@ type FetchAssignedTasksSummaryOptions = {
    * rolling window instead of an ever-growing archive.
    */
   doneSince?: string | null
+  /**
+   * 'status' (default): Blocked, In progress, On deck, then drag order and
+   * due date (the board). 'due': overdue and soonest-due first, undated
+   * last (the home widget's flat list).
+   */
+  order?: 'status' | 'due'
 }
 
 async function loadAssignedTaskSummaries({
@@ -161,6 +170,7 @@ async function loadAssignedTaskSummaries({
   offset = 0,
   includeCompletedStatuses = true,
   doneSince = null,
+  order = 'status',
 }: FetchAssignedTasksSummaryOptions): Promise<AssignedTaskSummaryResult> {
   const normalizedLimit =
     typeof limit === 'number' && Number.isFinite(limit)
@@ -202,15 +212,23 @@ async function loadAssignedTaskSummaries({
   // progress, then On deck. The board groups by status into columns, so only
   // the keys after it -- the column's drag order, then due date -- shape what
   // it shows. Keep this in step with `sortAssignedTasks`.
-  const orderExpressions = [
-    STATUS_PRIORITY_SQL,
-    sql`CASE WHEN ${taskAssigneeMetadataTable.sortOrder} IS NULL THEN 1 ELSE 0 END`,
-    asc(taskAssigneeMetadataTable.sortOrder),
-    sql`CASE WHEN ${tasksTable.dueOn} IS NULL THEN 1 ELSE 0 END`,
-    asc(tasksTable.dueOn),
-    desc(sql`COALESCE(${tasksTable.updatedAt}, ${tasksTable.createdAt})`),
-    asc(tasksTable.title),
-  ]
+  const orderExpressions =
+    order === 'due'
+      ? [
+          sql`${tasksTable.dueOn} asc nulls last`,
+          STATUS_PRIORITY_SQL,
+          asc(tasksTable.createdAt),
+          asc(tasksTable.title),
+        ]
+      : [
+          STATUS_PRIORITY_SQL,
+          sql`CASE WHEN ${taskAssigneeMetadataTable.sortOrder} IS NULL THEN 1 ELSE 0 END`,
+          asc(taskAssigneeMetadataTable.sortOrder),
+          sql`CASE WHEN ${tasksTable.dueOn} IS NULL THEN 1 ELSE 0 END`,
+          asc(tasksTable.dueOn),
+          desc(sql`COALESCE(${tasksTable.updatedAt}, ${tasksTable.createdAt})`),
+          asc(tasksTable.title),
+        ]
 
   const baseQuery = db
     .select({
@@ -234,11 +252,19 @@ async function loadAssignedTaskSummaries({
         name: clientsTable.name,
         slug: clientsTable.slug,
       },
+      lead: {
+        id: leadsTable.id,
+        name: leadsTable.contactName,
+      },
     })
     .from(tasksTable)
     .leftJoin(taskAssigneesTable, assigneeJoinCondition(userId))
     .innerJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
     .leftJoin(clientsTable, eq(projectsTable.clientId, clientsTable.id))
+    .leftJoin(
+      leadsTable,
+      and(eq(leadsTable.id, tasksTable.leadId), isNull(leadsTable.deletedAt))
+    )
     .leftJoin(
       taskAssigneeMetadataTable,
       and(
@@ -320,6 +346,7 @@ async function loadAssignedTaskSummaries({
             slug: row.client.slug ?? null,
           }
         : null,
+      lead: row.lead?.id ? { id: row.lead.id, name: row.lead.name } : null,
     }
   })
 
