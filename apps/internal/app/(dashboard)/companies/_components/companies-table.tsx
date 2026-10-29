@@ -126,7 +126,7 @@ export function CompaniesTable({
             <TableHead className='w-[19%]'>Website</TableHead>
             <TableHead className='w-[8%] text-center'>Client</TableHead>
             <TableHead className='w-[20%]'>Primary contact</TableHead>
-            {sortHead('people', 'People', 'w-[9%]', 'center')}
+            {sortHead('people', 'Contacts', 'w-[9%]', 'center')}
             {sortHead('leads', 'Open leads', 'w-[11%]', 'center')}
             <TableHead className='w-16 text-right'>Actions</TableHead>
           </TableRow>
@@ -205,14 +205,14 @@ export function CompaniesTable({
                   )}
                 </TableCell>
                 <TableCell
-                  label='People'
+                  label='Contacts'
                   className='text-sm tabular-nums md:text-center'
                 >
                   <LinkedRecordsHoverCell
                     count={company.contactCount}
                     zeroLabel='—'
                     icon={Contact}
-                    ariaLabel={`${company.contactCount} ${company.contactCount === 1 ? 'person' : 'people'}`}
+                    ariaLabel={`${company.contactCount} ${company.contactCount === 1 ? 'contact' : 'contacts'}`}
                     items={company.people.map(person => ({
                       id: person.id,
                       label: person.name,

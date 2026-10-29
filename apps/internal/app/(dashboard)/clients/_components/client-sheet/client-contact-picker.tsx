@@ -84,19 +84,19 @@ export function ClientPortalAccessList({
   if (companyPeople.length === 0 && outsiders.length === 0) {
     return companyId ? (
       <EmptyState
-        message='No people at this company yet. Add them on the company.'
+        message='No contacts at this company yet. Add them on the company.'
         label='Open company'
         onClick={() => open('company', companyId)}
       />
     ) : (
-      <EmptyState message='Link a company first: its people are listed here.' />
+      <EmptyState message='Link a company first: its contacts are listed here.' />
     )
   }
 
   return (
     <SheetRecordList>
       {companyPeople.map(contact => {
-        const label = contact.name ?? contact.email ?? 'this person'
+        const label = contact.name ?? contact.email ?? 'this contact'
         const hasAccess = selectedIds.has(contact.id)
         return (
           <ContactRecordRow
@@ -133,7 +133,7 @@ export function ClientPortalAccessList({
         )
       })}
       {outsiders.map(contact => {
-        const label = contact.name ?? contact.email ?? 'this person'
+        const label = contact.name ?? contact.email ?? 'this contact'
         return (
           <ContactRecordRow
             key={contact.id}

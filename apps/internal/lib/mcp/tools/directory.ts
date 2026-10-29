@@ -109,7 +109,7 @@ export function registerDirectoryTools(server: McpServer) {
     name: 'get_client',
     title: 'Get client',
     description:
-      'One client with its hours balance, its Portal access people (who can see it in the client portal) and projects.',
+      'One client with its hours balance, its Portal access contacts (who can see it in the client portal) and projects.',
     effect: 'read',
     input: { client: clientRef },
     run: async ({ client: reference }, { user }) => {
@@ -135,7 +135,7 @@ export function registerDirectoryTools(server: McpServer) {
     name: 'list_contacts',
     title: 'List contacts',
     description:
-      'List contacts (people at clients and prospects), optionally only those linked to one client.',
+      'List contacts (at clients and prospects), optionally only those linked to one client.',
     effect: 'read',
     input: {
       search: searchText.optional(),

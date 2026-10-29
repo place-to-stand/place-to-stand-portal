@@ -106,16 +106,16 @@ export function CompanyPeopleSection({
 
   return (
     <SheetSection
-      title='People'
+      title='Contacts'
       action={
         !canAdd ? (
-          <SectionAddButton label='Add person' disabledReason={lockedReason} />
+          <SectionAddButton label='Add contact' disabledReason={lockedReason} />
         ) : (
           <ContactLinkPicker
             value={null}
             onChange={contact => (contact ? onAdd(contact) : undefined)}
             excludeIds={listedIds.filter(id => !removed.has(id))}
-            trigger={<SectionAddButton label='Add person' />}
+            trigger={<SectionAddButton label='Add contact' />}
             open={pickerOpen}
             onOpenChange={setPickerOpen}
           />
@@ -124,8 +124,8 @@ export function CompanyPeopleSection({
     >
       {isEmpty ? (
         <EmptyState
-          message='No one here yet. Add the people you know at this company.'
-          label={canAdd ? 'Add person' : undefined}
+          message='No contacts here yet. Add the ones you know at this company.'
+          label={canAdd ? 'Add contact' : undefined}
           onClick={canAdd ? () => setPickerOpen(true) : undefined}
         />
       ) : (

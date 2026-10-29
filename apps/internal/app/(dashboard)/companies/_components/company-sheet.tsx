@@ -559,7 +559,7 @@ export function CompanySheet({
                         disabled={fieldsDisabled || peopleLocked}
                         lockedReason={
                           peopleLocked
-                            ? 'This company is a client, so an admin changes its people and primary contact.'
+                            ? 'This company is a client, so an admin changes its contacts and primary contact.'
                             : null
                         }
                         onSetPrimary={handleSetPrimary}

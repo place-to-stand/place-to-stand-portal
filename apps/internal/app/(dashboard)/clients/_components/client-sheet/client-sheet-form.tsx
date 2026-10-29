@@ -538,7 +538,7 @@ export function ClientSheetForm({
 
           <SheetSection
             title='Portal access'
-            description='Which of the company’s people can see this client in the client portal. People and the primary contact are managed on the company.'
+            description='Which of the company’s contacts can see this client in the client portal. Contacts and the primary contact are managed on the company.'
           >
             <ClientPortalAccessList
               companyId={selectedCompanyId}

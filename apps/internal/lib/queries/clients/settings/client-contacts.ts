@@ -202,7 +202,7 @@ export async function syncClientContacts(
       ? {
           ok: false,
           error:
-            'Link this client to a company before giving people portal access.',
+            'Link this client to a company before giving its contacts portal access.',
         }
       : { ok: true }
   }

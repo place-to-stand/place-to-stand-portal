@@ -216,14 +216,14 @@ export const CAPABILITIES = {
   'companies.manage': {
     area: 'Directory',
     label: 'Manage companies',
-    description: 'Company records, their people and leads.',
+    description: 'Company records, their contacts and leads.',
     roles: STAFF,
     surfaces: ['app'],
   },
   'contacts.manage': {
     area: 'Directory',
     label: 'Manage contacts',
-    description: 'People at companies, leads and clients.',
+    description: 'Contacts at companies, leads and clients.',
     roles: STAFF,
     surfaces: ['app', 'mcp', 'cli'],
   },

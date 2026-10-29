@@ -421,13 +421,13 @@ export async function saveCompany(
       return {
         ok: false,
         error:
-          'This company is a client, so only an admin can change its people.',
+          'This company is a client, so only an admin can change its contacts.',
       }
     }
   }
 
   if (people.moves.length) {
-    changedFields.push('people')
+    changedFields.push('contacts')
   }
   if (clientMoves.length || unlinkIds.length) {
     changedFields.push('linked client')
