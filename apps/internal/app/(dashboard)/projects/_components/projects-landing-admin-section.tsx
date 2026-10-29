@@ -38,8 +38,8 @@ export type ProjectsLandingAdminSectionProps = {
   unfilteredCounts: LandingUnfilteredCounts
   clientHoursMap?: Record<string, ClientHoursData>
   /**
-   * Project members (non-admins): read-only list, no tabs, and a "New
-   * personal board" button instead of "Add project".
+   * Project members (non-admins): read-only list and no tabs. "Add project"
+   * opens the same sheet, which offers only what their role can create.
    */
   memberView?: boolean
 }
@@ -88,7 +88,7 @@ export function ProjectsLandingAdminSection({
           : { label: 'projects', total: filteredProjectCount }
       }
       primaryAction={
-        // Members get the same sheet, limited to a personal board.
+        // Everyone gets the same sheet; it offers only what the role can use.
         <DisabledFieldTooltip
           disabled={!memberView && createDisabled}
           reason={memberView ? null : createDisabledReason}
@@ -101,7 +101,7 @@ export function ProjectsLandingAdminSection({
             className='gap-2'
           >
             <Plus className='h-4 w-4' />
-            {memberView ? 'New personal board' : 'Add project'}
+            Add project
           </Button>
         </DisabledFieldTooltip>
       }

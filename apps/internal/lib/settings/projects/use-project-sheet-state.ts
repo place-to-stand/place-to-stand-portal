@@ -24,7 +24,9 @@ import {
   startSettingsInteraction,
 } from '@/lib/posthog/settings'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
+import { creatableProjectTypes } from '@/lib/auth/capabilities'
 import {
+  PROJECT_TYPE_ENUM_VALUES,
   buildProjectFormDefaults,
   createProjectSavePayload,
   projectSheetFormSchema,
@@ -114,9 +116,13 @@ export function useProjectSheetState({
   project,
   clients,
 }: UseProjectSheetStateArgs): UseProjectSheetStateReturn {
-  // Non-admins can only create personal boards (`saveProject` enforces it).
-  const { isAdmin } = useViewerAccess()
-  const newProjectType = isAdmin ? 'CLIENT' : 'PERSONAL'
+  // New projects start on the first type the viewer may create
+  // (`saveProject` enforces the same list).
+  const { role } = useViewerAccess()
+  const newProjectType = useMemo(
+    () => creatableProjectTypes(role, PROJECT_TYPE_ENUM_VALUES)[0] ?? 'CLIENT',
+    [role]
+  )
   const isEditing = Boolean(project)
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)

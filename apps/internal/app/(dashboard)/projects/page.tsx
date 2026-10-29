@@ -90,7 +90,8 @@ export default async function ProjectsPage({
 /**
  * Project members (SALES) get a read-only list of the projects they were
  * added to plus their own personal boards, with no hours, billing or
- * project editing, and a button to start a personal board.
+ * project editing. "Add project" opens the normal sheet, limited to the
+ * project types their role can create.
  */
 async function renderMemberLanding(
   user: AppUser,

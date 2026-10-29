@@ -169,9 +169,10 @@ const resolveUserInit: SheetInitResolver<'user'> = async (user, id) => {
 }
 
 const resolveProjectInit: SheetInitResolver<'project'> = async (user, id) => {
-  // Non-admins may only start a personal board: no client or team lists.
-  if (user.role !== 'ADMIN') {
-    if (id !== NEW_SHEET_VALUE || !roleCan(user.role, 'projects.create_personal_board')) {
+  // Without `projects.manage` the sheet can only create (no edits) and gets
+  // no client or team lists.
+  if (!roleCan(user.role, 'projects.manage')) {
+    if (id !== NEW_SHEET_VALUE || !roleCan(user.role, 'projects.create')) {
       throw new ForbiddenError('Only admins can edit projects.')
     }
     return { project: null, clients: [], adminUsers: [] }

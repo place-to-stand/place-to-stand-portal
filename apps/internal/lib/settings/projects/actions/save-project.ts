@@ -2,7 +2,7 @@
 
 import { eq } from 'drizzle-orm'
 
-import { roleCan } from '@/lib/auth/capabilities'
+import { creatableProjectTypes, roleCan } from '@/lib/auth/capabilities'
 import { requireStaffUser } from '@/lib/auth/session'
 import { logActivity } from '@/lib/activity/logger'
 import { projectCreatedEvent, projectUpdatedEvent } from '@/lib/activity/events'
@@ -58,15 +58,12 @@ export async function saveProject(
     memberIds,
   } = parsed.data
 
-  // Without `projects.manage`, the sheet only creates the user's own
-  // personal board: no edits, no client, no other owner, no members.
+  // Without `projects.manage` the sheet can only create a project of a type
+  // the role may create, owned by the user: no edits, client or members.
   if (!canManage) {
-    if (
-      id ||
-      projectType !== 'PERSONAL' ||
-      !roleCan(user.role, 'projects.create_personal_board')
-    ) {
-      return { error: 'You can only create personal boards.' }
+    const allowed = creatableProjectTypes(user.role, [projectType])
+    if (id || allowed.length === 0) {
+      return { error: 'You can’t create that kind of project.' }
     }
   }
   const ownerIdToSave = canManage ? ownerId : user.id

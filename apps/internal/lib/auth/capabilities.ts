@@ -137,17 +137,20 @@ export const CAPABILITIES = {
     surfaces: ['app'],
     scope: { SALES: 'Only projects they are a member of' },
   },
-  'projects.create_personal_board': {
+  'projects.create': {
     area: 'Projects & tasks',
-    label: 'Create a personal board',
-    description: 'A private task board only you (and admins) can see.',
+    label: 'Create projects',
+    description:
+      'The project sheet only offers the project types and fields the role can use.',
     roles: STAFF,
     surfaces: ['app'],
+    scope: { SALES: 'Personal projects only' },
   },
   'projects.manage': {
     area: 'Projects & tasks',
-    label: 'Create and edit projects, manage members',
-    description: 'Includes adding and removing project members.',
+    label: 'Edit projects, any project type, manage members',
+    description:
+      'Client and internal projects, owners, members and integrations.',
     roles: ADMIN_ONLY,
     surfaces: ['app'],
   },
@@ -340,6 +343,22 @@ export function roleCan(
 /** Every role that holds a capability, e.g. for "available to admin and sales". */
 export function rolesWith(capability: Capability): readonly Role[] {
   return CAPABILITIES[capability].roles
+}
+
+/**
+ * Project types a role may create from the project sheet. Full project
+ * managers get every type; everyone else who can create projects gets
+ * personal ones only.
+ */
+export function creatableProjectTypes<T extends string>(
+  role: Role | null | undefined,
+  allTypes: readonly T[]
+): T[] {
+  if (roleCan(role, 'projects.manage')) return [...allTypes]
+  if (roleCan(role, 'projects.create')) {
+    return allTypes.filter(type => type === 'PERSONAL')
+  }
+  return []
 }
 
 export function capabilityScope(

@@ -41,6 +41,7 @@ import type {
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import type { ProjectSheetFieldState } from './project-sheet-field-state'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
+import { creatableProjectTypes } from '@/lib/auth/capabilities'
 
 import { GitHubReposSection, type PendingRepo } from './github-repos-section'
 import { ProjectMembersField } from './project-members-field'
@@ -76,7 +77,11 @@ export type ProjectSheetFormProps = {
 export function ProjectSheetForm(props: ProjectSheetFormProps) {
   // Non-admins get a personal-board sheet: no client, owner, members or
   // integrations (`saveProject` enforces the same rule).
-  const { isAdmin } = useViewerAccess()
+  const { isAdmin, role } = useViewerAccess()
+  const creatableTypes = creatableProjectTypes(
+    role,
+    PROJECT_TYPE_OPTIONS.map(option => option.value)
+  )
   const {
     form,
     fieldState,
@@ -331,8 +336,8 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                       </DisabledFieldTooltip>
                     </FormControl>
                     <SelectContent>
-                      {PROJECT_TYPE_OPTIONS.filter(
-                        option => isAdmin || option.value === 'PERSONAL'
+                      {PROJECT_TYPE_OPTIONS.filter(option =>
+                        creatableTypes.includes(option.value)
                       ).map(option => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
