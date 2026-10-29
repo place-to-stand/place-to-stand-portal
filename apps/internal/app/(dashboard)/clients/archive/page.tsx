@@ -65,9 +65,11 @@ export default async function ClientsArchivePage({
         total: unfilteredTotalCount,
         filteredTotal: totalCount,
       }}
-      primaryAction={<SheetCreateButton entity='client' label='Add client' />}
+      primaryAction={
+        <SheetCreateButton entity='client' label='Create client' />
+      }
     >
-      <section className='bg-background rounded-xl border p-4 shadow-sm space-y-4'>
+      <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
         <ClientsFilters
           basePath='/clients/archive'
           search={search}

@@ -71,7 +71,9 @@ export default async function ClientsPage({
         total: counts.unfilteredTotalCount,
         filteredTotal: counts.totalCount,
       }}
-      primaryAction={<SheetCreateButton entity='client' label='Add client' />}
+      primaryAction={
+        <SheetCreateButton entity='client' label='Create client' />
+      }
     >
       <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
         <ClientsFilters basePath='/clients' search={search} billing={billing} />

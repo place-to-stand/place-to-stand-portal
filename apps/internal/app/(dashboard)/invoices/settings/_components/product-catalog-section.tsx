@@ -302,7 +302,7 @@ export function ProductCatalogSection({
         <h2 className='text-lg font-semibold'>Product catalog</h2>
         <Button size='sm' onClick={openAddDialog}>
           <Plus />
-          Add product
+          Create product
         </Button>
       </div>
 
@@ -359,12 +359,12 @@ export function ProductCatalogSection({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingItem ? 'Edit product' : 'Add product'}
+              {editingItem ? 'Edit product' : 'Create product'}
             </DialogTitle>
             <DialogDescription>
               {editingItem
                 ? 'Update product catalog item details.'
-                : 'Add a new item to the product catalog.'}
+                : 'Create a new item to the product catalog.'}
             </DialogDescription>
           </DialogHeader>
 

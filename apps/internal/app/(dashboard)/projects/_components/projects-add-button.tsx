@@ -13,7 +13,7 @@ type ProjectsAddButtonProps = {
   className?: string
 }
 
-/** "Add project" needs a client to attach to, so it waits for the first one. */
+/** "Create project" needs a client to attach to, so it waits for the first one. */
 export function ProjectsAddButton({
   clients,
   allowWithoutClients = false,
@@ -22,7 +22,7 @@ export function ProjectsAddButton({
   return (
     <SheetCreateButton
       entity='project'
-      label='Add project'
+      label='Create project'
       className={className}
       disabledReason={
         !allowWithoutClients && clients.length === 0

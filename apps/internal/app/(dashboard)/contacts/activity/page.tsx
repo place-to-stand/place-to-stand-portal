@@ -20,7 +20,9 @@ export default async function ContactsActivityPage() {
       breadcrumbs={[...crumbsForNav('/contacts'), { label: 'Activity' }]}
       tabs={CONTACTS_TABS}
       activeTab='activity'
-      primaryAction={<SheetCreateButton entity='contact' label='Add contact' />}
+      primaryAction={
+        <SheetCreateButton entity='contact' label='Create contact' />
+      }
     >
       <section className='bg-background rounded-xl border p-4 shadow-sm'>
         <ActivitySection

@@ -171,7 +171,7 @@ export function ClientsLanding({
 
   // `/clients` is the canonical host page for `?client=` — the landing rows
   // link into the client workspace, so the sheet opens via the Edit action
-  // (or a share link / the Add client button), never plain row click.
+  // (or a share link / the Create client button), never plain row click.
   const {
     sheetOpen,
     selectedClient,
@@ -347,7 +347,10 @@ export function ClientsLanding({
                     totalProjectCount={client.projectCount}
                   />
                 </TableCell>
-                <TableCell label='Portal access' className='text-sm md:text-center'>
+                <TableCell
+                  label='Portal access'
+                  className='text-sm md:text-center'
+                >
                   <LinkedContactsCell contacts={client.contacts} />
                 </TableCell>
                 <TableCell>

@@ -3,7 +3,10 @@ import type { Metadata } from 'next'
 import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { requireCrmUser } from '@/lib/auth/session'
-import { listContactsForSettings, listAllActiveClients } from '@/lib/queries/contacts'
+import {
+  listContactsForSettings,
+  listAllActiveClients,
+} from '@/lib/queries/contacts'
 import { parseContactsSearchParams } from '@/lib/settings/contacts/filters'
 import { serverEnv } from '@/lib/env.server'
 import { readPageSize } from '@/lib/pagination/page-size.server'
@@ -18,7 +21,6 @@ import { mapContactToTableRow } from '../_lib/map-contact-to-table-row'
 export const metadata: Metadata = {
   title: 'Contact archive',
 }
-
 
 export default async function ContactsArchivePage({
   searchParams,
@@ -83,9 +85,11 @@ export default async function ContactsArchivePage({
         total: unfilteredTotalCount,
         filteredTotal: totalCount,
       }}
-      primaryAction={<SheetCreateButton entity='contact' label='Add contact' />}
+      primaryAction={
+        <SheetCreateButton entity='contact' label='Create contact' />
+      }
     >
-      <section className='bg-background rounded-xl border p-4 shadow-sm space-y-4'>
+      <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
         <ContactsFilters
           basePath='/contacts/archive'
           search={search}

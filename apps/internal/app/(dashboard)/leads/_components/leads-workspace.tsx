@@ -126,7 +126,7 @@ export function LeadsWorkspace({
       primaryAction={
         <SheetCreateButton
           entity='lead'
-          label='Add lead'
+          label='Create lead'
           disabledReason={
             canManage ? null : 'Admin access is required to create leads.'
           }

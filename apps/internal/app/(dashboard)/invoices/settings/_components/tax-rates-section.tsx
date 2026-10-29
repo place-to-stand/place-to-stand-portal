@@ -217,7 +217,7 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
         <h2 className='text-lg font-semibold'>Tax rates</h2>
         <Button size='sm' onClick={openAddDialog}>
           <Plus />
-          Add tax rate
+          Create tax rate
         </Button>
       </div>
 
@@ -285,12 +285,12 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingRate ? 'Edit tax rate' : 'Add tax rate'}
+              {editingRate ? 'Edit tax rate' : 'Create tax rate'}
             </DialogTitle>
             <DialogDescription>
               {editingRate
                 ? 'Update tax rate details.'
-                : 'Add a new tax rate for invoicing.'}
+                : 'Create a new tax rate for invoicing.'}
             </DialogDescription>
           </DialogHeader>
 

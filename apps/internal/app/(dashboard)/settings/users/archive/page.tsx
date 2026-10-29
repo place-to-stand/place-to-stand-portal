@@ -88,7 +88,7 @@ export default async function UsersArchivePage({
         total: unfilteredTotalCount,
         filteredTotal: totalCount,
       }}
-      primaryAction={<SheetCreateButton entity='user' label='Add user' />}
+      primaryAction={<SheetCreateButton entity='user' label='Create user' />}
     >
       <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
         <UsersFilters

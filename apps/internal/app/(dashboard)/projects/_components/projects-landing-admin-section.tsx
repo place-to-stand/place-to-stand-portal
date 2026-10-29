@@ -35,7 +35,7 @@ export type ProjectsLandingAdminSectionProps = {
   unfilteredCounts: LandingUnfilteredCounts
   clientHoursMap?: Record<string, ClientHoursData>
   /**
-   * Project members (non-admins): read-only list and no tabs. "Add project"
+   * Project members (non-admins): read-only list and no tabs. "Create project"
    * opens the same sheet, which offers only what their role can create.
    */
   memberView?: boolean

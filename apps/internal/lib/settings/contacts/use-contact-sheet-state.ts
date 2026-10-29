@@ -157,7 +157,7 @@ export function useContactSheetState({
   }, [open, contact, form, initialName, initialCompanyId])
 
   const contactDisplayName = contact?.name || contact?.email || 'this contact'
-  const sheetTitle = isEditing ? 'Edit contact' : 'Add contact'
+  const sheetTitle = isEditing ? 'Edit contact' : 'Create contact'
   const sheetDescription = isEditing
     ? `Update the details for ${contactDisplayName}.`
     : 'Add a new contact to your organization.'

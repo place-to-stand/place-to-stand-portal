@@ -57,7 +57,7 @@ export function ProjectTimeLogDialog(props: ProjectTimeLogDialogProps) {
     onMutationSuccess,
   })
 
-  const dialogTitle = state.isEditMode ? 'Edit time log' : 'Add time log'
+  const dialogTitle = state.isEditMode ? 'Edit time log' : 'Create time log'
   const dialogDescription = state.isEditMode
     ? `Changes update ${state.projectLabel}’s hour totals right away.`
     : `Hours logged here count toward ${state.projectLabel} right away.`

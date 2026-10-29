@@ -10,7 +10,7 @@ import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
 
 type SheetCreateButtonProps = {
   entity: SheetEntityKey
-  /** "Add company". */
+  /** "Create company". */
   label: string
   /** Disables the button and explains why in a tooltip. */
   disabledReason?: string | null

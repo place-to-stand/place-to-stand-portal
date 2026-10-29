@@ -61,7 +61,7 @@ export type UseClientSheetStateArgs = {
   onArchived?: () => void
   /** Name prefill for the create sheet (create-from-picker). */
   initialName?: string
-  /** Company prefill for the create sheet ("Add client" on a company). */
+  /** Company prefill for the create sheet ("Create client" on a company). */
   initialCompanyId?: string
   /** Fires once with the new client after a successful create (not on edit). */
   onCreated?: (client: { id: string; name: string; slug: string }) => void

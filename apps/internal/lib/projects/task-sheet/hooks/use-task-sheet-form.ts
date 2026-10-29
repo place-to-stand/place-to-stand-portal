@@ -66,7 +66,7 @@ export const useTaskSheetForm = ({
     defaultValues,
   })
 
-  const sheetTitle = useMemo(() => (task ? 'Edit task' : 'Add task'), [task])
+  const sheetTitle = useMemo(() => (task ? 'Edit task' : 'Create task'), [task])
 
   const editorKey = useMemo(() => (task ? task.id : 'new-task'), [task])
 

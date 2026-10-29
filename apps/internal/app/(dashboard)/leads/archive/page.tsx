@@ -72,7 +72,7 @@ export default async function LeadsArchivePage({
         total: archivedLeads.length,
         filteredTotal,
       }}
-      primaryAction={<SheetCreateButton entity='lead' label='Add lead' />}
+      primaryAction={<SheetCreateButton entity='lead' label='Create lead' />}
     >
       <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
         <LeadsArchiveSection

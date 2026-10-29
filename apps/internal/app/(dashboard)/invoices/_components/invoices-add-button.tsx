@@ -9,7 +9,7 @@ type InvoicesAddButtonProps = {
   className?: string
 }
 
-/** "Add invoice" needs a client to attach to, so it waits for the first one. */
+/** "Create invoice" needs a client to attach to, so it waits for the first one. */
 export function InvoicesAddButton({
   clients,
   className,
@@ -17,7 +17,7 @@ export function InvoicesAddButton({
   return (
     <SheetCreateButton
       entity='invoice'
-      label='Add invoice'
+      label='Create invoice'
       className={className}
       disabledReason={
         clients.length === 0 ? INVOICE_MISSING_CLIENT_REASON : null

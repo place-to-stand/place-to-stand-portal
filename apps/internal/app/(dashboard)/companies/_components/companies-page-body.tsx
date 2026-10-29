@@ -36,7 +36,9 @@ export function CompaniesPageBody({
         total: totalCount,
         filteredTotal: companies.length,
       }}
-      primaryAction={<SheetCreateButton entity='company' label='Add company' />}
+      primaryAction={
+        <SheetCreateButton entity='company' label='Create company' />
+      }
     >
       <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
         <CompaniesFilters

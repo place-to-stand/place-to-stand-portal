@@ -112,7 +112,7 @@ export function HourBlockSheet({
         >
           <SheetFormHeader
             entity='hourBlock'
-            title={isEditing ? 'Edit hour block' : 'Add hour block'}
+            title={isEditing ? 'Edit hour block' : 'Create hour block'}
           />
           <Form {...form}>
             <div className='flex-1 overflow-y-auto'>

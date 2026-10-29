@@ -437,7 +437,7 @@ export function CompanySheet({
         >
           <SheetFormHeader
             entity='company'
-            title={isEditing ? 'Edit company' : 'Add company'}
+            title={isEditing ? 'Edit company' : 'Create company'}
           />
           {isError || (isEditing && data === null) ? (
             <p className='text-muted-foreground p-6 text-sm'>

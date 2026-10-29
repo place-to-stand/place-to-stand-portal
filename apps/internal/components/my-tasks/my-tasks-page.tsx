@@ -499,7 +499,7 @@ export function MyTasksPage({
       count={{ label: 'tasks', total: totalTaskCount }}
       primaryAction={
         <div className='flex flex-wrap items-center justify-end gap-2 sm:flex-nowrap'>
-          {/* Below md the pickers move into a slide-out so Add task keeps
+          {/* Below md the pickers move into a slide-out so Create task keeps
               the row; from md up they sit inline as before. */}
           <FilterSheetButton className='md:hidden' activeCount={scopeCount}>
             {scopePickers}
@@ -511,7 +511,7 @@ export function MyTasksPage({
             onClick={() => handleStartCreateTask('ON_DECK')}
           >
             <Plus className='h-4 w-4' />
-            Add task
+            Create task
           </Button>
         </div>
       }

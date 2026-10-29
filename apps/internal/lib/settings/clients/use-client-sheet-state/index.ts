@@ -73,7 +73,7 @@ export const useClientSheetState = ({
     deleteDisabled: deletionState.deleteDisabled,
     deleteDisabledReason: deletionState.deleteDisabledReason,
     clientDisplayName,
-    sheetTitle: isEditing ? 'Edit client' : 'Add client',
+    sheetTitle: isEditing ? 'Edit client' : 'Create client',
     sheetDescription: isEditing
       ? 'Adjust display details or delete the organization.'
       : 'Register a client so projects and reporting stay organized.',

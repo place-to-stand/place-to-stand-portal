@@ -361,7 +361,7 @@ export function InvoiceSheet({
     ? `Invoice ${invoice?.invoice_number ?? 'details'}`
     : isEditing
       ? 'Edit invoice'
-      : 'Add invoice'
+      : 'Create invoice'
 
   const combinedPending = isPending || actionPending
 

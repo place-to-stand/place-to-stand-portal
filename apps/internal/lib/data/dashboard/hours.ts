@@ -322,7 +322,7 @@ async function sumHoursWithProjectFilter({
     return 0
   }
 
-  // Add project type filter by joining with projects table
+  // Filter by project type by joining with projects table
   const projectTypeCondition =
     projectType === 'CLIENT'
       ? eq(projects.type, 'CLIENT')

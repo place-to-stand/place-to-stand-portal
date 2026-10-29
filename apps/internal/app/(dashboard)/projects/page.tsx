@@ -39,17 +39,22 @@ export default async function ProjectsPage({
 
   // One wave: nothing below depends on anything else here, and the old
   // second Promise.all added a full serial round-trip level per request.
-  const [projects, unfilteredCounts, clientHoursSummaries, clientDirectory, admins] =
-    await Promise.all([
-      fetchProjectsForLanding({
-        statuses,
-        search: search ?? undefined,
-      }),
-      fetchLandingProjectCounts(user.id),
-      fetchClientHoursSummaries(user),
-      fetchClientDirectory(),
-      fetchAdminUsers(),
-    ])
+  const [
+    projects,
+    unfilteredCounts,
+    clientHoursSummaries,
+    clientDirectory,
+    admins,
+  ] = await Promise.all([
+    fetchProjectsForLanding({
+      statuses,
+      search: search ?? undefined,
+    }),
+    fetchLandingProjectCounts(user.id),
+    fetchClientHoursSummaries(user),
+    fetchClientDirectory(),
+    fetchAdminUsers(),
+  ])
   const landingClients = buildLandingClients(projects)
   const filteredProjectCount = countVisibleProjects(projects, user.id)
   const clientHoursMap = buildClientHoursMap(clientHoursSummaries)
@@ -68,29 +73,28 @@ export default async function ProjectsPage({
     disabled_at: admin.disabled_at ?? null,
   }))
 
-
   return (
     <ProjectsLandingAdminSection
-        projects={projects}
-        landingClients={landingClients}
-        clients={clientRows}
-        admins={adminUsers}
-        currentUserId={user.id}
-        totalProjectCount={unfilteredCounts.total}
-        filteredProjectCount={filteredProjectCount}
-        statuses={statuses}
-        search={search ?? undefined}
-        filtersActive={filtersActive}
-        unfilteredCounts={unfilteredCounts}
-        clientHoursMap={clientHoursMap}
-      />
+      projects={projects}
+      landingClients={landingClients}
+      clients={clientRows}
+      admins={adminUsers}
+      currentUserId={user.id}
+      totalProjectCount={unfilteredCounts.total}
+      filteredProjectCount={filteredProjectCount}
+      statuses={statuses}
+      search={search ?? undefined}
+      filtersActive={filtersActive}
+      unfilteredCounts={unfilteredCounts}
+      clientHoursMap={clientHoursMap}
+    />
   )
 }
 
 /**
  * Project members (SALES) get a read-only list of the projects they were
  * added to plus their own personal boards, with no hours, billing or
- * project editing. "Add project" opens the normal sheet, limited to the
+ * project editing. "Create project" opens the normal sheet, limited to the
  * project types their role can create.
  */
 async function renderMemberLanding(

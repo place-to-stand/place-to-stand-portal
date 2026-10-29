@@ -35,7 +35,8 @@ Place To Stand is a small software agency. This system describes its two Next.js
 
 ## Content fundamentals
 
-- **Sentence case everywhere.** Buttons, titles, tabs and toasts: "Add lead", "Save changes", "Project archived". Title Case is only for the brand name.
+- **Sentence case everywhere.** Buttons, titles, tabs and toasts: "Create lead", "Save changes", "Project archived". Title Case is only for the brand name.
+- **Create vs Add vs Link.** "Create <thing>" makes a new record (page buttons, create sheets, a picker's pinned Create row). "Add <thing>" puts an existing record on a list (Add person, Add member). "Link" joins a company and its client, the same record seen from two sides.
 - **The name.** The wordmark reads **Place To Stand**, with a capital T, as `BrandLogo` renders it. The favicon abbreviation is **PTS**. Some older page metadata still says "Place to Stand Portal". Use the wordmark casing in new copy.
 - **Verbs first on actions.** "Archive client", "Mark as sent", "Copy link". A destructive action names what it destroys, so it never needs color to carry the meaning.
 - **Toasts are short and past tense on success** ("Time entry removed", "Closed month"). On failure they read **"Unable to <verb> <noun>"** ("Unable to save invoice"), with the reason in the description.
@@ -136,7 +137,7 @@ Signed-out screens (`AuthShell`) are always dark, whatever the user's theme, bec
 
 1. **Every primitive is `@base-ui/react`.** Radix is gone. `asChild` still works through a `useRender`-based `Slot` (`packages/ui/src/slot.tsx`). State attributes are Base UI's: `data-active` on tabs, `data-checked` / `data-unchecked` on switch and checkbox, `data-highlighted` / `data-open` / `data-closed` on popups. Don't write `data-[state=…]`.
 2. **Base UI menu and select items need explicit `hover:` classes.** `data-highlighted` doesn't fire on plain mouse hover. Every item pairs `data-highlighted:bg-accent` with `hover:bg-accent hover:text-accent-foreground`.
-3. **Button has `gap-2` built into every size.** Never add `mr-*` or `ml-*` to an icon inside a Button. Put the icon first as a child and let the gap space it ("Add lead").
+3. **Button has `gap-2` built into every size.** Never add `mr-*` or `ml-*` to an icon inside a Button. Put the icon first as a child and let the gap space it ("Create lead").
 4. **Dropdown, select and popover popups align left by default.** The wrappers default to `align='start'`. Never pass `align='start'` at a call site. Pass an explicit `align` only when you mean to deviate.
 5. **Sortable tables use `layout='fixed'`.** Give every header a width class and `truncate` long-text cells, so sorting and paging can't make columns jump.
 6. **Sheet and dialog Save is always enabled.** Never gate Save on `isDirty` or has-changes. (An inline editor outside a sheet, like the client notes card, may disable Save until something changed.) Disable it only while a save is in flight or when a real validation precondition fails.

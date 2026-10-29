@@ -71,7 +71,7 @@ export const SHEET_ENTITIES: Record<SheetEntityKey, SheetEntityConfig> = {
   },
   client: {
     // `clientName=` prefills the create sheet's name (create-from-picker);
-    // `clientCompanyId=` its company ("Add client" on a company sheet).
+    // `clientCompanyId=` its company ("Create client" on a company sheet).
     auxParams: ['clientName', 'clientCompanyId'],
     claimsPathname: exactPaths('/clients', '/clients/archive'),
   },

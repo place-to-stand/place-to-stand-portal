@@ -85,7 +85,7 @@ export function LeadColumn({
           {(enableCreateButton ?? canManage) && onCreateLead ? (
             <RowActionButton
               type='button'
-              label={`Add lead to ${label}`}
+              label={`Create lead to ${label}`}
               icon={<Plus />}
               onClick={() => onCreateLead(columnId)}
             />

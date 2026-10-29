@@ -10,7 +10,10 @@ import {
   type ProjectWithClient,
 } from '@/lib/settings/projects/use-project-sheet-state'
 import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
-import { buildOwnerOptions, type AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
+import {
+  buildOwnerOptions,
+  type AdminUserForOwner,
+} from '@/lib/settings/projects/project-sheet-ui-state'
 
 import { ProjectSheetForm } from './_components/project-sheet/project-sheet-form'
 import { ProjectSheetDialogs } from './_components/project-sheet/project-sheet-dialogs'
@@ -77,7 +80,7 @@ export function ProjectSheet(props: Props) {
         >
           <SheetFormHeader
             entity='project'
-            title={isEditing ? 'Edit project' : 'Add project'}
+            title={isEditing ? 'Edit project' : 'Create project'}
           />
           <ProjectSheetForm
             form={form}

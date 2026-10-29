@@ -9,7 +9,7 @@ type HourBlocksAddButtonProps = {
   className?: string
 }
 
-/** "Add hour block" needs a client to attach to, so it waits for the first one. */
+/** "Create hour block" needs a client to attach to, so it waits for the first one. */
 export function HourBlocksAddButton({
   clients,
   className,
@@ -17,7 +17,7 @@ export function HourBlocksAddButton({
   return (
     <SheetCreateButton
       entity='hour-block'
-      label='Add hour block'
+      label='Create hour block'
       className={className}
       disabledReason={
         clients.length === 0 ? HOUR_BLOCK_MISSING_CLIENT_REASON : null

@@ -85,7 +85,7 @@ export function UserSheet(props: UserSheetProps) {
         >
           <SheetFormHeader
             entity='user'
-            title={isEditing ? 'Edit user' : 'Add user'}
+            title={isEditing ? 'Edit user' : 'Create user'}
           />
           <Form {...form}>
             <div className='flex-1 overflow-y-auto'>

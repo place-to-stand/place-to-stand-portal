@@ -13,7 +13,7 @@ type LayoutEditControlsProps = {
 }
 
 /**
- * The home page's toolbar action (where My Tasks has Add task): Edit
+ * The home page's toolbar action (where My Tasks has Create task): Edit
  * widgets to enter edit mode; while
  * editing, Reset and Done. Widgets are hidden and shown from the bar above
  * each card or by dragging them to and from the Hidden widgets tray. Saves are optimistic (revert + toast on failure), so
@@ -27,7 +27,7 @@ export function LayoutEditControls({
   onStopEditing,
   onReset,
 }: LayoutEditControlsProps) {
-  // Same size and place as My Tasks' "Add task".
+  // Same size and place as My Tasks' "Create task".
   if (!isEditing) {
     return (
       <Button type='button' size='sm' onClick={onStartEditing}>

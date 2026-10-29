@@ -124,7 +124,7 @@ export function KanbanColumn({
               onClick={() => onCreateTask(columnId as BoardColumnId)}
             >
               <Plus />
-              <span className='sr-only'>Add task to {label}</span>
+              <span className='sr-only'>Create task to {label}</span>
             </Button>
           ) : null}
         </div>

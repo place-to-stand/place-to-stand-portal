@@ -22,7 +22,7 @@ export default async function LeadsActivityPage() {
       breadcrumbs={[...crumbsForNav('/leads'), { label: 'Activity' }]}
       tabs={LEADS_TABS}
       activeTab='activity'
-      primaryAction={<SheetCreateButton entity='lead' label='Add lead' />}
+      primaryAction={<SheetCreateButton entity='lead' label='Create lead' />}
     >
       <section className='bg-background rounded-xl border p-4 shadow-sm'>
         <ActivitySection
