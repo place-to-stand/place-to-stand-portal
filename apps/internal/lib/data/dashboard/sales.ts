@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, asc, count, eq, inArray, isNull, ne, notInArray, sql } from 'drizzle-orm'
+import { and, asc, count, eq, inArray, isNull, ne, sql } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertCrmAccess } from '@/lib/auth/permissions'
@@ -132,7 +132,7 @@ export async function fetchSalesHomeData(
     lastTouchedAt: lastTouchedSql,
   }
 
-  const [nextSteps, quietRows, awaitingRows, pipelineRows] = await Promise.all([
+  const [nextSteps, quietRows, pipelineRows] = await Promise.all([
     fetchSalesNextSteps(user),
     db
       .select(leadFields)
@@ -141,22 +141,7 @@ export async function fetchSalesHomeData(
         and(
           isNull(leads.deletedAt),
           eq(leads.assigneeId, user.id),
-          inArray(leads.status, WORKING_STAGES),
-          // Waiting leads have their own list.
-          sql`coalesce(${leads.awaitingReply}, false) = false`
-        )
-      )
-      .orderBy(asc(lastTouchedSql))
-      .limit(LEAD_LIST_LIMIT),
-    db
-      .select(leadFields)
-      .from(leads)
-      .where(
-        and(
-          isNull(leads.deletedAt),
-          eq(leads.assigneeId, user.id),
-          eq(leads.awaitingReply, true),
-          notInArray(leads.status, ['CLOSED_WON', 'CLOSED_LOST', 'UNQUALIFIED'])
+          inArray(leads.status, WORKING_STAGES)
         )
       )
       .orderBy(asc(lastTouchedSql))
@@ -187,9 +172,6 @@ export async function fetchSalesHomeData(
     nextSteps: nextSteps.items,
     nextStepsTotal: nextSteps.total,
     quietLeads: quietRows.map(row =>
-      toLeadItem({ ...row, status: row.status as LeadStatusValue }, now)
-    ),
-    awaitingReply: awaitingRows.map(row =>
       toLeadItem({ ...row, status: row.status as LeadStatusValue }, now)
     ),
     pipeline,

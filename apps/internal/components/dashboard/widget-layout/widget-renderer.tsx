@@ -6,7 +6,6 @@ import { HoursWidget } from '../hours-widget'
 import { MyTasksWidget } from '../my-tasks-widget'
 import { RecentActivityOverviewWidget } from '../recent-activity-overview-widget'
 import {
-  AwaitingReplyWidget,
   NextStepsWidget,
   PipelineWidget,
   QuietLeadsWidget,
@@ -19,7 +18,6 @@ export const DASHBOARD_WIDGET_LABELS: Record<DashboardWidgetId, string> = {
   'recent-activity': 'Recent activity',
   'next-steps': 'Next steps',
   'quiet-leads': 'Leads gone quiet',
-  'awaiting-reply': 'Waiting on a reply',
   pipeline: 'Pipeline',
 }
 
@@ -55,10 +53,6 @@ export function WidgetRenderer({ id, data, className }: WidgetRendererProps) {
     case 'quiet-leads':
       return data.sales ? (
         <QuietLeadsWidget data={data.sales} className={className} />
-      ) : null
-    case 'awaiting-reply':
-      return data.sales ? (
-        <AwaitingReplyWidget data={data.sales} className={className} />
       ) : null
     case 'pipeline':
       return data.sales ? (

@@ -7,15 +7,15 @@ import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { projectMembers, projects, tasks, users } from '@/lib/db/schema'
 import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
-import { SALES_PROJECT_SLUG } from '@/lib/leads/sales-project'
 
 /**
  * Who may see and work a project's tasks.
  *
  * - ADMIN: every project.
- * - SALES: projects they were added to (`project_members`), their own
- *   PERSONAL boards, and the internal Sales project every lead task lives in
- *   (lead tasks are their job, so nobody has to remember to add them). Nothing else, and only the task board: time logs,
+ * - Everyone else on staff (SALES): only projects they were added to
+ *   (`project_members`) and their own PERSONAL boards. No project is special:
+ *   lead tasks live in the internal Sales project, so a sales user needs to be
+ *   a member of it like any other. Only the task board: time logs,
  *   review, overview, billing, GitHub and planning stay admin-only and keep
  *   using `ensureProjectAccess` / `ensureTaskAccess`, which still assert ADMIN.
  *
@@ -53,11 +53,7 @@ export const listWorkableProjectIds = cache(
           isNull(projects.deletedAt),
           or(
             eq(projectMembers.userId, user.id),
-            and(eq(projects.type, 'PERSONAL'), eq(projects.createdBy, user.id)),
-            and(
-              eq(projects.type, 'INTERNAL'),
-              eq(projects.slug, SALES_PROJECT_SLUG)
-            )
+            and(eq(projects.type, 'PERSONAL'), eq(projects.createdBy, user.id))
           )
         )
       )
@@ -152,7 +148,6 @@ export async function findAssigneesWithoutAccess(
   const [project] = await db
     .select({
       type: projects.type,
-      slug: projects.slug,
       createdBy: projects.createdBy,
     })
     .from(projects)
@@ -193,13 +188,7 @@ export async function findAssigneesWithoutAccess(
 
     const ownsPersonalBoard =
       project?.type === 'PERSONAL' && project.createdBy === row.id
-    const isSalesProject =
-      project?.type === 'INTERNAL' && project.slug === SALES_PROJECT_SLUG
-    if (
-      active &&
-      row.role === 'SALES' &&
-      (row.memberId || ownsPersonalBoard || isSalesProject)
-    ) {
+    if (active && row.role === 'SALES' && (row.memberId || ownsPersonalBoard)) {
       continue
     }
 

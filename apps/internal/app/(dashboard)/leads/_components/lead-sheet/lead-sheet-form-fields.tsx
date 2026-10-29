@@ -4,7 +4,6 @@ import { useMemo } from 'react'
 import { useWatch, type Control } from 'react-hook-form'
 
 import { Badge } from '@pts/ui/badge'
-import { Checkbox } from '@pts/ui/checkbox'
 import { CompanyNameInput } from '@/components/companies/company-name-input'
 import {
   FormControl,
@@ -323,23 +322,6 @@ export function LeadSheetFormFields({
           )}
         />
       </div>
-      <FormField
-        control={control}
-        name='awaitingReply'
-        render={({ field }) => (
-          <FormItem className='flex flex-row items-center gap-2 space-y-0'>
-            <FormControl>
-              <Checkbox
-                checked={Boolean(field.value)}
-                onCheckedChange={checked => field.onChange(checked === true)}
-              />
-            </FormControl>
-            <FormLabel className='font-normal'>
-              Waiting on their reply
-            </FormLabel>
-          </FormItem>
-        )}
-      />
       <FormField
         control={control}
         name='notes'

@@ -19,7 +19,6 @@ export const DASHBOARD_WIDGET_IDS = [
   'recent-activity',
   'next-steps',
   'quiet-leads',
-  'awaiting-reply',
   'pipeline',
 ] as const
 
@@ -46,10 +45,7 @@ export const DEFAULT_DASHBOARD_LAYOUTS: Record<DashboardKind, DashboardLayout> =
   },
   sales: {
     version: 1,
-    columns: [
-      ['next-steps', 'awaiting-reply'],
-      ['pipeline', 'quiet-leads'],
-    ],
+    columns: [['next-steps'], ['pipeline', 'quiet-leads']],
   },
 }
 

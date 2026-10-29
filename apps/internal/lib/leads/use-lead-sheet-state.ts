@@ -63,7 +63,6 @@ export function useLeadSheetState({
       status: lead?.status ?? initialStatus ?? 'NEW_OPPORTUNITIES',
       assigneeId: lead?.assigneeId ?? null,
       notes: lead?.notesHtml ?? initialValues?.notes ?? '',
-      awaitingReply: lead?.awaitingReply ?? false,
     }),
     [lead, initialStatus, initialValues]
   )
@@ -130,7 +129,6 @@ export function useLeadSheetState({
           status: values.status,
           assigneeId: values.assigneeId ?? null,
           notes: values.notes ?? '',
-          awaitingReply: values.awaitingReply ?? false,
         })
 
         setArchiveDialogOpen(false)

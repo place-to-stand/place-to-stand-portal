@@ -8,7 +8,6 @@ import { taskDueDigestEmail } from '@pts/email'
 import { db } from '@/lib/db'
 import { leads, projects, taskAssignees, tasks, users } from '@/lib/db/schema'
 import { sendEmail } from '@/lib/email/send'
-import { SALES_PROJECT_SLUG } from '@/lib/leads/sales-project'
 import { serverEnv } from '@/lib/env.server'
 import { todayCalendarDate } from '@/lib/updates/window'
 
@@ -69,7 +68,6 @@ async function loadDueRows(today: string): Promise<DigestRow[]> {
             and pm.deleted_at is null
         )
         or (${projects.type} = 'PERSONAL' and ${projects.createdBy} = ${users.id})
-        or (${projects.type} = 'INTERNAL' and ${projects.slug} = ${SALES_PROJECT_SLUG})
       )`,
     })
     .from(tasks)

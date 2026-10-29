@@ -11,7 +11,7 @@ export type SalesTaskItem = {
   leadName: string | null
 }
 
-/** A lead on the "gone quiet" and "waiting on a reply" lists. */
+/** A lead on the "gone quiet" list. */
 export type SalesLeadItem = {
   id: string
   contactName: string
@@ -37,6 +37,5 @@ export type SalesHomeData = {
   nextSteps: SalesTaskItem[]
   nextStepsTotal: number
   quietLeads: SalesLeadItem[]
-  awaitingReply: SalesLeadItem[]
   pipeline: SalesPipelineStage[]
 }

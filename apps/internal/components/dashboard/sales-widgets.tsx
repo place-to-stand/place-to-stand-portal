@@ -246,29 +246,6 @@ export function QuietLeadsWidget({
   )
 }
 
-export function AwaitingReplyWidget({
-  data,
-  className,
-}: {
-  data: SalesHomeData
-  className?: string
-}) {
-  return (
-    <WidgetCard
-      id='awaiting-reply'
-      title='Waiting on a reply'
-      meta={`${data.awaitingReply.length} waiting`}
-      className={className}
-    >
-      <LeadList
-        leads={data.awaitingReply}
-        emptyMessage='Nobody owes you a reply. Tick "Waiting on their reply" on a lead to track it here.'
-        daysLabel='waiting'
-      />
-    </WidgetCard>
-  )
-}
-
 export function PipelineWidget({
   data,
   className,

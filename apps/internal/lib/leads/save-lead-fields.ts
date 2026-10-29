@@ -30,8 +30,6 @@ export const saveLeadSchema = z.object({
   companyWebsite: z.string().trim().max(255).optional().nullable(),
   /** TipTap HTML, as the sheet's editor produces it. */
   notes: z.string().optional().nullable(),
-  /** We sent the last message and are waiting on them. Omitted = unchanged. */
-  awaitingReply: z.boolean().optional(),
 })
 
 export type SaveLeadInput = z.infer<typeof saveLeadSchema>
@@ -48,8 +46,6 @@ export type NormalizedLead = {
   companyName: string | null
   companyWebsite: string | null
   notes: string | null
-  /** `undefined` keeps the stored value. */
-  awaitingReply?: boolean
 }
 
 export type ExistingLead = {
@@ -63,7 +59,6 @@ export type ExistingLead = {
   companyName: string | null
   companyWebsite: string | null
   notes: unknown
-  awaitingReply?: boolean | null
 }
 
 export type LeadFieldDiff = {
@@ -114,14 +109,6 @@ export function diffLeadFields(
     extractLeadNotes(existing.notes) || null,
     next.notes
   )
-  if (next.awaitingReply !== undefined) {
-    compare(
-      'waiting on reply',
-      'awaitingReply',
-      existing.awaitingReply ?? false,
-      next.awaitingReply
-    )
-  }
 
   return { changedFields, before, after }
 }
@@ -140,7 +127,6 @@ export function normalizeLeadPayload(payload: SaveLeadInput): NormalizedLead {
     companyName: normalizeOptionalString(payload.companyName, 160),
     companyWebsite: normalizeOptionalString(payload.companyWebsite, 255),
     notes: (payload.notes ?? '').trim() || null,
-    awaitingReply: payload.awaitingReply,
   }
 }
 

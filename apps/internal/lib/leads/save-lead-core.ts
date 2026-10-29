@@ -112,7 +112,6 @@ async function createLead(
       companyId: company?.id ?? null,
       companyWebsite: normalized.companyWebsite,
       notes: serializeLeadNotes(normalized.notes),
-      awaitingReply: normalized.awaitingReply ?? false,
       rank,
       currentStageEnteredAt: timestamp,
       createdAt: timestamp,
@@ -170,7 +169,6 @@ async function updateLead(
       companyWebsite: leads.companyWebsite,
       companyId: leads.companyId,
       notes: leads.notes,
-      awaitingReply: leads.awaitingReply,
       rank: leads.rank,
     })
     .from(leads)
@@ -218,10 +216,6 @@ async function updateLead(
     notes: serializeLeadNotes(normalized.notes),
     rank,
     updatedAt: timestamp,
-  }
-
-  if (normalized.awaitingReply !== undefined) {
-    setPayload.awaitingReply = normalized.awaitingReply
   }
 
   if (statusChanged) {
