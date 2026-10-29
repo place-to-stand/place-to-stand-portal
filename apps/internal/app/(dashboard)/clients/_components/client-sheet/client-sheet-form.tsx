@@ -49,10 +49,7 @@ import { US_STATES } from '@/lib/settings/clients/us-states'
 import { cn } from '@/lib/utils'
 import type { ClientSheetFormValues } from '@/lib/settings/clients/client-sheet-schema'
 
-import {
-  ClientContactLinkButton,
-  ClientContactList,
-} from './client-contact-picker'
+import { ClientPortalAccessList } from './client-contact-picker'
 import { ClientClosersEditor } from './client-closers-editor'
 import { ClientEffectiveCallout } from './client-effective-callout'
 import { ClientOriginationPicker } from './client-origination-picker'
@@ -83,8 +80,6 @@ type ClientSheetFormProps = {
   availableContacts: ClientContactOption[]
   contactsAddButtonDisabled: boolean
   contactsAddButtonDisabledReason: string | null
-  isContactPickerOpen: boolean
-  onContactPickerOpenChange: (open: boolean) => void
   onAddContact: (contact: ClientContactOption) => void
   onCreateOriginationContact: (query: string) => void
   onCreateCloserContact: (query: string) => void
@@ -137,8 +132,6 @@ export function ClientSheetForm({
   availableContacts,
   contactsAddButtonDisabled,
   contactsAddButtonDisabledReason,
-  isContactPickerOpen,
-  onContactPickerOpenChange,
   onAddContact,
   onCreateOriginationContact,
   onCreateCloserContact,
@@ -181,6 +174,18 @@ export function ClientSheetForm({
   const linkedCompany = selectedCompanyId
     ? (companyOptions.find(option => option.id === selectedCompanyId) ?? null)
     : null
+  // Portal access lists everyone at the company, by name.
+  const companyPeople = useMemo(
+    () =>
+      selectedCompanyId
+        ? [...selectedContacts, ...availableContacts]
+            .filter(contact => contact.companyId === selectedCompanyId)
+            .sort((a, b) =>
+              (a.name ?? a.email ?? '').localeCompare(b.name ?? b.email ?? '')
+            )
+        : [],
+    [availableContacts, selectedCompanyId, selectedContacts]
+  )
   // The company saved on the client, so an unlink can be shown and undone.
   const savedCompanyId = form.formState.defaultValues?.companyId ?? ''
   const savedCompany = savedCompanyId
@@ -533,33 +538,17 @@ export function ClientSheetForm({
 
           <SheetSection
             title='Portal access'
-            description='Who from the company can see this client in the client portal. The primary contact is set on the company.'
-            action={
-              <ClientContactLinkButton
-                availableContacts={availableContacts}
-                companyId={selectedCompanyId}
-                hasCompanyPeopleWithAccess={selectedContacts.some(
-                  contact =>
-                    selectedCompanyId && contact.companyId === selectedCompanyId
-                )}
-                disabled={contactsAddButtonDisabled}
-                disabledReason={contactsAddButtonDisabledReason}
-                isPickerOpen={isContactPickerOpen}
-                isPending={isPending}
-                onPickerOpenChange={onContactPickerOpenChange}
-                onAddContact={onAddContact}
-              />
-            }
+            description='Which of the company’s people can see this client in the client portal. People and the primary contact are managed on the company.'
           >
-            <ClientContactList
-              selectedContacts={selectedContacts}
-              isPending={isPending}
-              pendingReason={pendingReason}
-              onRequestRemoval={onRemoveContact}
-              onRequestLink={() => onContactPickerOpenChange(true)}
-              linkDisabled={contactsAddButtonDisabled}
-              linkDisabledReason={contactsAddButtonDisabledReason}
+            <ClientPortalAccessList
               companyId={selectedCompanyId}
+              companyPeople={companyPeople}
+              selectedContacts={selectedContacts}
+              // Locked while saving or while the access list loads.
+              isPending={contactsAddButtonDisabled}
+              pendingReason={contactsAddButtonDisabledReason ?? pendingReason}
+              onGrant={onAddContact}
+              onRevoke={onRemoveContact}
             />
           </SheetSection>
 

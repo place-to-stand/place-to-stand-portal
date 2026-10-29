@@ -1,242 +1,164 @@
 'use client'
 
-import { useState } from 'react'
-import { Plus, Star, UserCheck, X } from 'lucide-react'
+import { Star, UserCheck, X } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
 import { EmptyState } from '@pts/ui/empty-state'
+import { RowActionButton } from '@pts/ui/row-action-button'
+import { Switch } from '@pts/ui/switch'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { ContactRecordRow } from '@/components/sheets/entity-record-rows'
 import { SheetRecordList } from '@/components/sheets/sheet-record-row'
-import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
-import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
-import { RowActionButton } from '@pts/ui/row-action-button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 
 type ClientContactOption = {
   id: string
   name: string | null
   email: string | null
   phone: string | null
+  /** Has a portal login (`contacts.user_id`). */
   hasPortalAccess: boolean
   companyId?: string | null
   /** The company's primary contact (read-only here). */
   isPrimary?: boolean
 }
 
-function PortalAccessMark() {
+function PortalLoginMark() {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span aria-label='Has portal access'>
+        <span aria-label='Has a portal login'>
           <UserCheck className='text-success h-3 w-3' />
         </span>
       </TooltipTrigger>
-      <TooltipContent>Has portal access</TooltipContent>
+      <TooltipContent>Has a portal login</TooltipContent>
     </Tooltip>
   )
 }
 
-export type ClientContactLinkButtonProps = {
-  availableContacts: ClientContactOption[]
-  /** The client's company: only its people can be added. */
-  companyId: string | null
-  /** Someone at the company already has access (for the empty message). */
-  hasCompanyPeopleWithAccess: boolean
-  disabled: boolean
-  disabledReason: string | null
-  isPickerOpen: boolean
-  isPending: boolean
-  onPickerOpenChange: (open: boolean) => void
-  onAddContact: (contact: ClientContactOption) => void
-}
-
-/**
- * The "Add person" picker on the Portal access section: only people at the
- * client's company (the server enforces it). Add others to the company first.
- */
-export function ClientContactLinkButton({
-  availableContacts,
-  companyId,
-  hasCompanyPeopleWithAccess,
-  disabled,
-  disabledReason,
-  isPickerOpen,
-  isPending,
-  onPickerOpenChange,
-  onAddContact,
-}: ClientContactLinkButtonProps) {
-  const [query, setQuery] = useState('')
-  const { open } = useSheetParams()
-
+function PrimaryNote() {
   return (
-    <Popover open={isPickerOpen} onOpenChange={onPickerOpenChange} modal>
-      <DisabledFieldTooltip
-        disabled={disabled}
-        reason={disabledReason}
-        className='w-auto'
-      >
-        <PopoverTrigger asChild>
-          <Button type='button' variant='outline' size='xs' disabled={disabled}>
-            <Plus />
-            Add person
-          </Button>
-        </PopoverTrigger>
-      </DisabledFieldTooltip>
-      <PopoverContent className='w-72 p-0' align='end'>
-        <Command>
-          <CommandInput
-            placeholder='Search company people…'
-            value={query}
-            onValueChange={setQuery}
-          />
-          <CommandList>
-            <CommandEmpty
-              action={
-                companyId
-                  ? {
-                      label: 'Add people to the company',
-                      icon: <Plus className='text-muted-foreground size-4' />,
-                      onSelect: () => {
-                        onPickerOpenChange(false)
-                        open('company', companyId)
-                      },
-                    }
-                  : undefined
-              }
-            >
-              {!companyId
-                ? 'Link a company first.'
-                : hasCompanyPeopleWithAccess
-                  ? 'Everyone at this company has access.'
-                  : 'No people at this company yet.'}
-            </CommandEmpty>
-            <CommandGroup>
-              {availableContacts
-                .filter(c => companyId && c.companyId === companyId)
-                .map(contact => (
-                  <CommandItem
-                    key={contact.id}
-                    value={`${contact.name ?? ''} ${contact.email}`}
-                    onSelect={() => {
-                      if (isPending) {
-                        return
-                      }
-                      onAddContact(contact)
-                    }}
-                  >
-                    <div className='flex flex-col'>
-                      <span className='flex items-center gap-1.5 font-medium'>
-                        {contact.name ?? contact.email}
-                        {contact.hasPortalAccess ? <PortalAccessMark /> : null}
-                      </span>
-                      {contact.name ? (
-                        <span className='text-muted-foreground text-xs'>
-                          {contact.email}
-                        </span>
-                      ) : null}
-                    </div>
-                  </CommandItem>
-                ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+    <span className='text-muted-foreground inline-flex items-center gap-1'>
+      <Star className='text-warning size-3 fill-current' />
+      Primary contact
+    </span>
   )
 }
 
-export type ClientContactListProps = {
+export type ClientPortalAccessListProps = {
+  /** The client's company; its people are the list. */
+  companyId: string | null
+  /** Everyone at the company (with or without access). */
+  companyPeople: ClientContactOption[]
+  /** Who has access now (staged until Save). */
   selectedContacts: ClientContactOption[]
   isPending: boolean
   pendingReason: string
-  onRequestRemoval: (contact: ClientContactOption) => void
-  /** Empty state: opens the same picker as the header's "Add person". */
-  onRequestLink: () => void
-  linkDisabled: boolean
-  linkDisabledReason: string | null
-  /** The client's company: anyone else is flagged, with remove only. */
-  companyId: string | null
+  onGrant: (contact: ClientContactOption) => void
+  onRevoke: (contact: ClientContactOption) => void
 }
 
 /**
- * The Portal access people, one row each, with remove on the right. The
- * company's primary contact is marked here but set on the company sheet.
+ * Portal access: every person at the client's company, each with a switch.
+ * People are added on the company; access is the client's own choice, since
+ * not every company wants everyone in. Changes save with the sheet.
+ * Access rows for anyone not at the company (older rows, or the client was
+ * unlinked) are listed after, flagged, with remove only.
  */
-export function ClientContactList({
+export function ClientPortalAccessList({
+  companyId,
+  companyPeople,
   selectedContacts,
   isPending,
   pendingReason,
-  onRequestRemoval,
-  onRequestLink,
-  linkDisabled,
-  linkDisabledReason,
-  companyId,
-}: ClientContactListProps) {
-  if (selectedContacts.length === 0) {
-    return (
-      <DisabledFieldTooltip disabled={linkDisabled} reason={linkDisabledReason}>
-        <EmptyState
-          message='No one has portal access yet.'
-          label='Add person'
-          onClick={onRequestLink}
-          disabled={linkDisabled}
-        />
-      </DisabledFieldTooltip>
+  onGrant,
+  onRevoke,
+}: ClientPortalAccessListProps) {
+  const { open } = useSheetParams()
+  const selectedIds = new Set(selectedContacts.map(contact => contact.id))
+  const companyIds = new Set(companyPeople.map(contact => contact.id))
+  const outsiders = selectedContacts.filter(
+    contact => !companyIds.has(contact.id)
+  )
+
+  if (companyPeople.length === 0 && outsiders.length === 0) {
+    return companyId ? (
+      <EmptyState
+        message='No people at this company yet. Add them on the company.'
+        label='Open company'
+        onClick={() => open('company', companyId)}
+      />
+    ) : (
+      <EmptyState message='Link a company first: its people are listed here.' />
     )
   }
 
   return (
     <SheetRecordList>
-      {selectedContacts.map(contact => {
-        const label = contact.name ?? contact.email
-        // Access rows can point outside the company (older rows, or the
-        // client was unlinked): show them so they can be removed.
-        const outsider =
-          contact.companyId !== undefined &&
-          (!companyId || contact.companyId !== companyId)
+      {companyPeople.map(contact => {
+        const label = contact.name ?? contact.email ?? 'this person'
+        const hasAccess = selectedIds.has(contact.id)
         return (
           <ContactRecordRow
             key={contact.id}
             contact={contact}
-            titleAddon={contact.hasPortalAccess ? <PortalAccessMark /> : null}
+            titleAddon={contact.hasPortalAccess ? <PortalLoginMark /> : null}
+            note={contact.isPrimary ? <PrimaryNote /> : undefined}
+            actions={
+              <DisabledFieldTooltip
+                disabled={isPending}
+                reason={isPending ? pendingReason : null}
+                className='w-auto'
+              >
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className='inline-flex px-1.5'>
+                      <Switch
+                        checked={hasAccess}
+                        disabled={isPending}
+                        aria-label={`Portal access for ${label}`}
+                        onCheckedChange={checked =>
+                          checked ? onGrant(contact) : onRevoke(contact)
+                        }
+                      />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {hasAccess ? 'Has portal access' : 'No portal access'}
+                  </TooltipContent>
+                </Tooltip>
+              </DisabledFieldTooltip>
+            }
+          />
+        )
+      })}
+      {outsiders.map(contact => {
+        const label = contact.name ?? contact.email ?? 'this person'
+        return (
+          <ContactRecordRow
+            key={contact.id}
+            contact={contact}
+            titleAddon={contact.hasPortalAccess ? <PortalLoginMark /> : null}
             note={
-              outsider ? (
-                <span className='text-warning'>
-                  {companyId ? 'Not at this company' : 'No linked company'}
-                </span>
-              ) : contact.isPrimary ? (
-                <span className='text-muted-foreground inline-flex items-center gap-1'>
-                  <Star className='text-warning size-3 fill-current' />
-                  Primary contact
-                </span>
-              ) : undefined
+              <span className='text-warning'>
+                {companyId ? 'Not at this company' : 'No linked company'}
+              </span>
             }
             actions={
-              <>
-                <DisabledFieldTooltip
+              <DisabledFieldTooltip
+                disabled={isPending}
+                reason={isPending ? pendingReason : null}
+                className='w-auto'
+              >
+                <RowActionButton
+                  type='button'
+                  label={`Remove ${label} from Portal access`}
+                  icon={<X />}
+                  className='text-muted-foreground hover:text-destructive'
                   disabled={isPending}
-                  reason={isPending ? pendingReason : null}
-                  className='w-auto'
-                >
-                  <RowActionButton
-                    type='button'
-                    label={`Remove ${label} from Portal access`}
-                    icon={<X />}
-                    className='text-muted-foreground hover:text-destructive'
-                    disabled={isPending}
-                    onClick={() => onRequestRemoval(contact)}
-                  />
-                </DisabledFieldTooltip>
-              </>
+                  onClick={() => onRevoke(contact)}
+                />
+              </DisabledFieldTooltip>
             }
           />
         )

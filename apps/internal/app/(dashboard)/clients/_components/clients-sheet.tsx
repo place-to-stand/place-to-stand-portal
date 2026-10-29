@@ -50,10 +50,8 @@ export function ClientSheet(props: ClientSheetProps) {
     // Contacts
     selectedContacts,
     availableContacts,
-    isContactPickerOpen,
     contactsAddButtonDisabled,
     contactsAddButtonDisabledReason,
-    handleContactPickerOpenChange,
     handleAddContact,
     handleCreateOriginationContact,
     handleCreateCloserContact,
@@ -114,8 +112,6 @@ export function ClientSheet(props: ClientSheetProps) {
             availableContacts={availableContacts}
             contactsAddButtonDisabled={contactsAddButtonDisabled}
             contactsAddButtonDisabledReason={contactsAddButtonDisabledReason}
-            isContactPickerOpen={isContactPickerOpen}
-            onContactPickerOpenChange={handleContactPickerOpenChange}
             onAddContact={handleAddContact}
             onCreateOriginationContact={handleCreateOriginationContact}
             onCreateCloserContact={handleCreateCloserContact}

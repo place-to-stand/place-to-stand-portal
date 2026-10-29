@@ -21,7 +21,7 @@ export type ClientContactOption = {
   email: string | null
   phone: string | null
   hasPortalAccess: boolean
-  /** Set on linked contacts only: the client's primary contact. */
+  /** Their company's primary contact (set on the company). */
   isPrimary?: boolean
 }
 

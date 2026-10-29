@@ -20,7 +20,7 @@ type ContactOption = {
   email: string | null
   phone: string | null
   hasPortalAccess: boolean
-  /** Set on linked contacts only: the client's primary contact. */
+  /** Their company's primary contact. */
   isPrimary?: boolean
 }
 
@@ -55,6 +55,10 @@ async function listAllActiveContacts(
       phone: contacts.phone,
       userId: contacts.userId,
       companyId: contacts.companyId,
+      isPrimary: sql<boolean>`exists (
+        select 1 from companies co
+        where co.primary_contact_id = ${contacts.id} and co.deleted_at is null
+      )`,
     })
     .from(contacts)
     .where(isNull(contacts.deletedAt))
@@ -73,6 +77,7 @@ async function listAllActiveContacts(
     phone: row.phone,
     hasPortalAccess: Boolean(row.userId),
     companyId: row.companyId,
+    isPrimary: Boolean(row.isPrimary),
   }))
 }
 
