@@ -20,7 +20,7 @@ import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 type ClientSheetProps = UseClientSheetStateArgs
 
 export function ClientSheet(props: ClientSheetProps) {
-  // "Add client" on a company sheet (`clientCompanyId=`) preselects that
+  // "Link client → Create client" on a company sheet (`clientCompanyId=`) preselects that
   // company on whichever instance renders the create sheet.
   const { getAux } = useSheetParams()
   const companyParam = props.client ? null : getAux('clientCompanyId')

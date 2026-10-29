@@ -392,7 +392,7 @@ export function CompanySheet({
     [form]
   )
 
-  // "Add client → Create new client" saves the client already linked here:
+  // "Link client → Create client" saves the client already linked here:
   // refresh the list, and drop the stage the picker made for it.
   useEffect(
     () =>
