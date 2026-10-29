@@ -7,7 +7,8 @@ import { Button } from '@pts/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
 
 import {
-  NotificationControls,
+  NotificationActions,
+  NotificationFilterToggle,
   NotificationList,
   useNotificationFeed,
 } from './notification-feed'
@@ -56,14 +57,19 @@ export function NotificationsBell() {
         align='end'
         className='w-[min(26rem,calc(100vw-1.5rem))] overflow-hidden p-0'
       >
-        <div className='space-y-2 border-b px-4 py-2.5'>
-          <h2 className='text-sm font-semibold'>Notifications</h2>
-          <NotificationControls
-            feed={feed}
-            onConfirmOpenChange={next => {
-              confirmOpenRef.current = next
-            }}
-          />
+        <div className='flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5'>
+          <div className='flex items-center gap-3'>
+            <h2 className='text-sm font-semibold'>Notifications</h2>
+            <NotificationFilterToggle feed={feed} />
+          </div>
+          <div className='ml-auto'>
+            <NotificationActions
+              feed={feed}
+              onConfirmOpenChange={next => {
+                confirmOpenRef.current = next
+              }}
+            />
+          </div>
         </div>
         <div
           onClickCapture={event => {

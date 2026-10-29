@@ -138,12 +138,35 @@ export function useNotificationFeed() {
 export type NotificationFeedState = ReturnType<typeof useNotificationFeed>
 
 /** All/Unread tabs, mark all read, clear all. */
+/** The All/Unread toggle, beside the "Notifications" title. */
+export function NotificationFilterToggle({
+  feed,
+}: {
+  feed: NotificationFeedState
+}) {
+  const { filter, setFilter } = feed
+  return (
+    <Tabs
+      value={filter}
+      onValueChange={value => setFilter(value as NotificationFilter)}
+    >
+      <TabsList className='h-7' aria-label='Show'>
+        <TabsTrigger value='all' className='px-2 py-0.5 text-xs'>
+          All
+        </TabsTrigger>
+        <TabsTrigger value='unread' className='px-2 py-0.5 text-xs'>
+          Unread
+        </TabsTrigger>
+      </TabsList>
+    </Tabs>
+  )
+}
+
 /**
- * The feed's toolbar row: the All/Unread toggle on the left, and on the
- * right two matching text buttons, Mark all read and Clear all (confirmed).
- * The same row in the bell popover and the home widget.
+ * Mark all read and Clear all (confirmed), as matching text buttons at the
+ * right end of the title row, in the bell and the home widget.
  */
-export function NotificationControls({
+export function NotificationActions({
   feed,
   onConfirmOpenChange,
 }: {
@@ -151,47 +174,32 @@ export function NotificationControls({
   /** Lets the bell keep its popover open while the confirm is up. */
   onConfirmOpenChange?: (open: boolean) => void
 }) {
-  const { filter, setFilter, items, unread, mutation } = feed
+  const { items, unread, mutation } = feed
   const [confirmOpen, setConfirmOpen] = useState(false)
   const setConfirm = (next: boolean) => {
     setConfirmOpen(next)
     onConfirmOpenChange?.(next)
   }
   return (
-    <div className='flex flex-wrap items-center justify-between gap-2'>
-      <Tabs
-        value={filter}
-        onValueChange={value => setFilter(value as NotificationFilter)}
+    <div className='flex items-center gap-1'>
+      <Button
+        type='button'
+        variant='ghost'
+        size='xs'
+        disabled={!unread}
+        onClick={() => mutation.mutate({ action: 'read' })}
       >
-        <TabsList className='h-7' aria-label='Show'>
-          <TabsTrigger value='all' className='px-2 py-0.5 text-xs'>
-            All
-          </TabsTrigger>
-          <TabsTrigger value='unread' className='px-2 py-0.5 text-xs'>
-            Unread
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
-      <div className='ml-auto flex items-center gap-1'>
-        <Button
-          type='button'
-          variant='ghost'
-          size='xs'
-          disabled={!unread}
-          onClick={() => mutation.mutate({ action: 'read' })}
-        >
-          Mark all read
-        </Button>
-        <Button
-          type='button'
-          variant='ghost'
-          size='xs'
-          disabled={!items.length}
-          onClick={() => setConfirm(true)}
-        >
-          Clear all
-        </Button>
-      </div>
+        Mark all read
+      </Button>
+      <Button
+        type='button'
+        variant='ghost'
+        size='xs'
+        disabled={!items.length}
+        onClick={() => setConfirm(true)}
+      >
+        Clear all
+      </Button>
       <ConfirmDialog
         open={confirmOpen}
         title='Clear all notifications?'
