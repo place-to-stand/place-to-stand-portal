@@ -1,6 +1,15 @@
 import 'server-only'
 
-import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  sql,
+} from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
@@ -110,6 +119,8 @@ async function listClientContacts(
         eq(clients.id, clientId),
         isNull(memberships.endedAt),
         eq(memberships.portalAccess, true),
+        // Access needs a login (same rule as client_portal_access).
+        isNotNull(contacts.userId),
         isNull(contacts.deletedAt)
       )
     )

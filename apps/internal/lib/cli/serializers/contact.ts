@@ -10,7 +10,7 @@ export type CliContactCompany = {
   title: string | null
   /** The company's primary contact. */
   isPrimary: boolean
-  /** Can see the company's client in the client portal. */
+  /** Can see the company's client in the client portal (switch on and a portal login). */
   portalAccess: boolean
   /** The company's client, if it is one. */
   clientId: string | null
@@ -37,7 +37,7 @@ export function serializeContactCompanies(
     companyName: membership.companyName,
     title: membership.title,
     isPrimary: membership.isPrimary,
-    portalAccess: membership.portalAccess,
+    portalAccess: membership.hasPortalAccess,
     clientId: membership.clientId,
   }))
 }

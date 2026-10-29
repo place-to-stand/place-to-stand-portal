@@ -82,10 +82,7 @@ export default async function ClientDetailPage({
         })
         .from(users)
         .where(
-          and(
-            eq(users.id, client.originationUserId),
-            isNull(users.deletedAt)
-          )
+          and(eq(users.id, client.originationUserId), isNull(users.deletedAt))
         )
         .limit(1)
         .then(rows => rows[0] ?? null)
@@ -119,7 +116,8 @@ export default async function ClientDetailPage({
       <ClientDetail
         client={client}
         projects={projects}
-        contacts={clientContacts}
+        // Only people who can actually sign in and see this client.
+        contacts={clientContacts.filter(contact => contact.hasPortalAccess)}
         updates={recentUpdates.map(update => ({
           id: update.id,
           subject: update.subject,

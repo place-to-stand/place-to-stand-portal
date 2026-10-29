@@ -116,7 +116,10 @@ export type ContactMembership = {
   companyName: string
   title: string | null
   isPrimary: boolean
+  /** The switch as stored (what the contact sheet edits). */
   portalAccess: boolean
+  /** Real access: a row in client_portal_access (switch on, a login, live client). */
+  hasPortalAccess: boolean
   /** The company's live client, if it has one. */
   clientId: string | null
   clientName: string | null
@@ -150,6 +153,11 @@ export async function listContactMemberships(
       clientName: clients.name,
       startedAt: memberships.startedAt,
       archived: sql<boolean>`not ${activeCompanySql('companies')}`,
+      hasPortalAccess: sql<boolean>`exists (
+        select 1 from client_portal_access a
+        where a.contact_id = "memberships"."contact_id"
+          and a.client_id = "clients"."id"
+      )`,
     })
     .from(memberships)
     .innerJoin(companies, eq(companies.id, memberships.companyId))
@@ -182,6 +190,7 @@ export async function listContactMemberships(
       clientName: row.clientName ?? null,
       startedAt: row.startedAt,
       archived: row.archived,
+      hasPortalAccess: row.hasPortalAccess,
     })
     byContact.set(row.contactId, list)
   }

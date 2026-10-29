@@ -16,7 +16,7 @@ export type ClientContactRow = {
   updatedAt: string
   deletedAt: string | null
   isPrimary: boolean
-  /** Can see the client in the portal (switch on and a portal login). */
+  /** Can see the client in the portal (a row in client_portal_access). */
   hasPortalAccess: boolean
 }
 
@@ -41,7 +41,11 @@ export async function fetchContactsForClient(
       updatedAt: contacts.updatedAt,
       deletedAt: contacts.deletedAt,
       isPrimary: memberships.isPrimary,
-      hasPortalAccess: sql<boolean>`(${memberships.portalAccess} and ${contacts.userId} is not null)`,
+      // Read from the one source of portal access.
+      hasPortalAccess: sql<boolean>`exists (
+        select 1 from client_portal_access a
+        where a.client_id = "clients"."id" and a.contact_id = "contacts"."id"
+      )`,
     })
     .from(clients)
     .innerJoin(memberships, eq(memberships.companyId, clients.companyId))
