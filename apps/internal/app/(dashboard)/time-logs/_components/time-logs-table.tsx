@@ -3,8 +3,6 @@
 import { useEffect } from 'react'
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { Loader2 } from 'lucide-react'
-
 import { formatCalendarDate } from '@pts/ui/dates'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { EmptyState } from '@pts/ui/empty-state'
@@ -158,14 +156,7 @@ export function TimeLogsTable({
                       })}
                 >
                   <TableCell className='text-sm tabular-nums'>
-                    {editor.openingEntryId === item.id ? (
-                      <Loader2
-                        className='size-4 animate-spin'
-                        aria-label='Opening'
-                      />
-                    ) : (
-                      formatCalendarDate(item.loggedOn)
-                    )}
+                    {formatCalendarDate(item.loggedOn)}
                   </TableCell>
                   <TableCell label='Person'>
                     <PersonAvatar
