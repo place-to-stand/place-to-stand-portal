@@ -2,9 +2,8 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Building2, Star } from 'lucide-react'
+import { Briefcase, Building2, Star } from 'lucide-react'
 
-import { Badge } from '@pts/ui/badge'
 import { formatRelativeTime } from '@pts/ui/dates'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { EmptyState } from '@pts/ui/empty-state'
@@ -21,6 +20,8 @@ import {
   RecordRowActions,
 } from '@/components/table/record-row-action'
 import { EmptyValue } from '@/components/table/empty-value'
+import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
+import { clientSheetHref } from '@/lib/sheets/hrefs'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
 import { useToast } from '@/components/ui/use-toast'
@@ -116,7 +117,7 @@ export function CompaniesTable({
           <TableRow className='bg-muted/40'>
             {sortHead('name', 'Company', 'w-[26%]')}
             <TableHead className='w-[16%]'>Website</TableHead>
-            <TableHead className='w-[11%]'>Type</TableHead>
+            <TableHead className='w-[11%]'>Client</TableHead>
             <TableHead className='w-[17%]'>Primary contact</TableHead>
             {sortHead('people', 'People', 'w-[8%]', 'center')}
             {sortHead('leads', 'Open leads', 'w-[10%]', 'center')}
@@ -138,7 +139,7 @@ export function CompaniesTable({
               >
                 <TableCell>
                   <div className='flex min-w-0 items-center gap-2'>
-                    <Building2 className='h-4 w-4 shrink-0 text-indigo-500' />
+                    <Briefcase className='h-4 w-4 shrink-0 text-indigo-500' />
                     <span className='truncate font-medium' title={company.name}>
                       {company.name}
                     </span>
@@ -151,17 +152,24 @@ export function CompaniesTable({
                 >
                   {host ?? <EmptyValue />}
                 </TableCell>
-                <TableCell label='Type' className='text-sm'>
-                  {company.clientName ? (
-                    <Badge
-                      variant='outline'
-                      title={`Client: ${company.clientName}`}
-                    >
-                      Client
-                    </Badge>
-                  ) : (
-                    <span className='text-muted-foreground'>Prospect</span>
-                  )}
+                <TableCell label='Client' className='text-sm'>
+                  {company.clientId && company.clientName ? (
+                    <LinkedRecordsHoverCell
+                      count={1}
+                      icon={Building2}
+                      trigger={<Building2 className='h-4 w-4' />}
+                      ariaLabel={`Client: ${company.clientName}`}
+                      // The Clients list's client colour.
+                      triggerClassName='text-blue-500 hover:text-blue-400'
+                      items={[
+                        {
+                          id: company.clientId,
+                          label: company.clientName,
+                          href: clientSheetHref(company.clientId),
+                        },
+                      ]}
+                    />
+                  ) : null}
                 </TableCell>
                 <TableCell
                   label='Primary contact'

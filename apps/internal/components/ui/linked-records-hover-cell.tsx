@@ -29,6 +29,11 @@ type LinkedRecordsHoverCellProps = {
   zeroLabel?: string
   /** Replaces the `count + label` trigger text, e.g. `(4 total)`. */
   triggerLabel?: string
+  /**
+   * Replaces the text trigger with custom content, e.g. a lone icon for a
+   * single linked record (pair with `ariaLabel`).
+   */
+  trigger?: ReactNode
   items: LinkedRecordItem[]
   icon: LucideIcon
   /** Screen-reader name for the bare-number trigger, e.g. "3 clients". */
@@ -45,6 +50,8 @@ type LinkedRecordsHoverCellProps = {
 
 const TRIGGER_CLASS =
   'cursor-pointer border-b border-dotted border-current transition hover:border-solid outline-none focus-visible:rounded-sm focus-visible:ring-ring/50 focus-visible:ring-[3px]'
+const ICON_TRIGGER_CLASS =
+  'text-muted-foreground hover:text-foreground inline-flex cursor-pointer items-center rounded-sm transition outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]'
 const ROW_CLASS = 'flex items-center gap-2 px-3 py-2 text-sm'
 
 /**
@@ -58,6 +65,7 @@ export function LinkedRecordsHoverCell({
   label,
   zeroLabel,
   triggerLabel,
+  trigger,
   items,
   icon: Icon,
   ariaLabel,
@@ -81,9 +89,13 @@ export function LinkedRecordsHoverCell({
         <button
           type='button'
           aria-label={ariaLabel}
-          className={cn(TRIGGER_CLASS, triggerClassName ?? 'text-foreground')}
+          className={
+            trigger
+              ? cn(ICON_TRIGGER_CLASS, triggerClassName)
+              : cn(TRIGGER_CLASS, triggerClassName ?? 'text-foreground')
+          }
         >
-          {triggerLabel ?? `${count}${label ?? ''}`}
+          {trigger ?? triggerLabel ?? `${count}${label ?? ''}`}
         </button>
       </HoverCardTrigger>
       <HoverCardContent
