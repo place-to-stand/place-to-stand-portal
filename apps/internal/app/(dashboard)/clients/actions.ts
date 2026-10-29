@@ -98,21 +98,15 @@ export async function getClientSheetContactData(
 }
 
 /**
- * Syncs the contact links for a client (adds new, removes unlinked) and which
- * of them is primary.
+ * Syncs who has portal access to a client (adds new, removes unlinked). The
+ * primary contact is the company's, set on the company sheet.
  */
 export async function syncClientContacts(
   clientId: string,
-  contactIds: string[],
-  primaryContactId: string | null
+  contactIds: string[]
 ): Promise<{ ok: boolean; error?: string }> {
   const user = await requireUser()
-  const result = await syncContacts(
-    user,
-    clientId,
-    contactIds,
-    primaryContactId
-  )
+  const result = await syncContacts(user, clientId, contactIds)
 
   if (result.ok) {
     revalidateClientPaths()

@@ -105,16 +105,16 @@ export const NAV_GROUPS: NavGroup[] = [
     title: 'Work',
     items: [
       {
-        href: '/projects',
-        capability: 'projects.view_member',
-        label: 'Projects',
-        icon: FolderKanban,
-      },
-      {
         href: '/clients',
         capability: 'clients.manage',
         label: 'Clients',
         icon: Building2,
+      },
+      {
+        href: '/projects',
+        capability: 'projects.view_member',
+        label: 'Projects',
+        icon: FolderKanban,
       },
       {
         href: '/time-logs',

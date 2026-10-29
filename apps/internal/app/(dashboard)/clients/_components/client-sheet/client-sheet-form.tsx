@@ -89,8 +89,6 @@ type ClientSheetFormProps = {
   onCreateOriginationContact: (query: string) => void
   onCreateCloserContact: (query: string) => void
   onRemoveContact: (contact: ClientContactOption) => void
-  primaryContactId: string | null
-  onTogglePrimaryContact: (contact: ClientContactOption) => void
   // Origination
   selectedOriginationUser: PartnerUserOption | null
   selectedOriginationContact: OriginationContactOption | null
@@ -145,8 +143,6 @@ export function ClientSheetForm({
   onCreateOriginationContact,
   onCreateCloserContact,
   onRemoveContact,
-  primaryContactId,
-  onTogglePrimaryContact,
   selectedOriginationUser,
   selectedOriginationContact,
   availableOriginationUsers,
@@ -537,7 +533,7 @@ export function ClientSheetForm({
 
           <SheetSection
             title='Portal access'
-            description='Who from the company can see this client in the client portal. Star the primary contact.'
+            description='Who from the company can see this client in the client portal. The primary contact is set on the company.'
             action={
               <ClientContactLinkButton
                 availableContacts={availableContacts}
@@ -560,8 +556,6 @@ export function ClientSheetForm({
               isPending={isPending}
               pendingReason={pendingReason}
               onRequestRemoval={onRemoveContact}
-              primaryContactId={primaryContactId}
-              onTogglePrimary={onTogglePrimaryContact}
               onRequestLink={() => onContactPickerOpenChange(true)}
               linkDisabled={contactsAddButtonDisabled}
               linkDisabledReason={contactsAddButtonDisabledReason}

@@ -97,8 +97,6 @@ export const useClientSheetState = ({
     handleCreateOriginationContact: formState.handleCreateOriginationContact,
     handleCreateCloserContact: formState.handleCreateCloserContact,
     handleRemoveContact: formState.handleRemoveContact,
-    primaryContactId: formState.primaryContactId,
-    handleTogglePrimaryContact: formState.handleTogglePrimaryContact,
     // Origination
     selectedOriginationUser: formState.selectedOriginationUser,
     selectedOriginationContact: formState.selectedOriginationContact,

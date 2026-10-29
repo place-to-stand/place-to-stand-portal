@@ -20,7 +20,6 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
-import { cn } from '@/lib/utils'
 
 type ClientContactOption = {
   id: string
@@ -29,6 +28,8 @@ type ClientContactOption = {
   phone: string | null
   hasPortalAccess: boolean
   companyId?: string | null
+  /** The company's primary contact (read-only here). */
+  isPrimary?: boolean
 }
 
 function PortalAccessMark() {
@@ -158,8 +159,6 @@ export type ClientContactListProps = {
   isPending: boolean
   pendingReason: string
   onRequestRemoval: (contact: ClientContactOption) => void
-  primaryContactId: string | null
-  onTogglePrimary: (contact: ClientContactOption) => void
   /** Empty state: opens the same picker as the header's "Add person". */
   onRequestLink: () => void
   linkDisabled: boolean
@@ -169,16 +168,14 @@ export type ClientContactListProps = {
 }
 
 /**
- * The Portal access people, one row each, with the primary star and the unlink
- * control on the right.
+ * The Portal access people, one row each, with remove on the right. The
+ * company's primary contact is marked here but set on the company sheet.
  */
 export function ClientContactList({
   selectedContacts,
   isPending,
   pendingReason,
   onRequestRemoval,
-  primaryContactId,
-  onTogglePrimary,
   onRequestLink,
   linkDisabled,
   linkDisabledReason,
@@ -201,9 +198,8 @@ export function ClientContactList({
     <SheetRecordList>
       {selectedContacts.map(contact => {
         const label = contact.name ?? contact.email
-        const isPrimary = contact.id === primaryContactId
         // Access rows can point outside the company (older rows, or the
-        // client was unlinked): show them so they can be removed, no star.
+        // client was unlinked): show them so they can be removed.
         const outsider =
           contact.companyId !== undefined &&
           (!companyId || contact.companyId !== companyId)
@@ -217,28 +213,15 @@ export function ClientContactList({
                 <span className='text-warning'>
                   {companyId ? 'Not at this company' : 'No linked company'}
                 </span>
+              ) : contact.isPrimary ? (
+                <span className='text-muted-foreground inline-flex items-center gap-1'>
+                  <Star className='text-warning size-3 fill-current' />
+                  Primary contact
+                </span>
               ) : undefined
             }
             actions={
               <>
-                {outsider ? null : (
-                  <RowActionButton
-                    type='button'
-                    label={
-                      isPrimary
-                        ? 'Unset primary contact'
-                        : 'Make primary contact'
-                    }
-                    icon={<Star className={cn(isPrimary && 'fill-current')} />}
-                    className={cn(
-                      'text-muted-foreground',
-                      isPrimary && 'text-warning hover:text-warning'
-                    )}
-                    onClick={() => onTogglePrimary(contact)}
-                    disabled={isPending}
-                    aria-pressed={isPrimary}
-                  />
-                )}
                 <DisabledFieldTooltip
                   disabled={isPending}
                   reason={isPending ? pendingReason : null}

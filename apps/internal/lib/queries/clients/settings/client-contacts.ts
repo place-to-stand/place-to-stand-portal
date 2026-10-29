@@ -11,11 +11,7 @@ import {
   type ContactClientLinkChange,
 } from '@/lib/queries/contacts/settings/contact-client-link-activity'
 import { syncPortalMembershipsForLinkChanges } from '@/lib/queries/contacts/settings/contact-client-portal-memberships'
-import {
-  isClientPrimaryContactSql,
-  setClientPrimaryContact,
-} from '@/lib/queries/clients/primary-contact'
-import { ForbiddenError } from '@/lib/errors/http'
+import { isClientPrimaryContactSql } from '@/lib/queries/clients/primary-contact'
 
 type ContactOption = {
   id: string
@@ -171,16 +167,15 @@ export async function getClientSheetContactData(
 /**
  * Saves the client sheet's people list: who belongs to this client and so
  * gets its portal (for contacts with a portal account). It's the client's
- * own list, picked from anyone: being at the company grants nothing by
- * itself, since not every company wants everyone to have access. Links and
- * portal access commit together; the primary star is set after.
+ * own list, picked from the company's people: being at the company grants
+ * nothing by itself, since not every company wants everyone to have access.
+ * Links and portal access commit together. The primary contact is the
+ * company's, set on the company sheet.
  */
 export async function syncClientContacts(
   user: AppUser,
   clientId: string,
-  contactIds: string[],
-  /** Must be one of `contactIds`; anything else clears the primary. */
-  primaryContactId: string | null
+  contactIds: string[]
 ): Promise<{ ok: boolean; error?: string }> {
   assertAdmin(user)
 
@@ -262,26 +257,6 @@ export async function syncClientContacts(
   } catch (error) {
     console.error('Failed to update client contacts', error)
     return { ok: false, error: 'Failed to update contact links.' }
-  }
-
-  // The primary contact lives on the client's company; set it now that the
-  // links exist. Clearing considers the links before and after.
-  const primaryId =
-    primaryContactId && wanted.has(primaryContactId) ? primaryContactId : null
-  try {
-    await setClientPrimaryContact(clientId, primaryId, [
-      ...new Set([...currentIds, ...contactIds]),
-    ])
-  } catch (error) {
-    await logContactClientLinkChanges(user, changes)
-    if (error instanceof ForbiddenError) {
-      return { ok: false, error: error.message }
-    }
-    console.error('Failed to set the client primary contact', error)
-    return {
-      ok: false,
-      error: 'Contacts saved, but the primary contact could not be set.',
-    }
   }
 
   // The links are committed; a logging failure must not report the sync as failed.

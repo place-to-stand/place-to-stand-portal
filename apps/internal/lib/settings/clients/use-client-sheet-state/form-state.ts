@@ -45,10 +45,6 @@ import type {
 /** Which picker opened the contact create sheet — gets the new record. */
 type ContactCreateTarget = 'contacts' | 'origination' | 'closer'
 
-function primaryIdOf(linked: ClientContactOption[]): string | null {
-  return linked.find(contact => contact.isPrimary)?.id ?? null
-}
-
 const EMPTY_CLOSERS: ClientCloser[] = []
 
 function toCloserDrafts(closers: readonly ClientCloser[]): CloserDraft[] {
@@ -113,10 +109,6 @@ export function useClientSheetFormState({
   const [initialContacts, setInitialContacts] = useState<ClientContactOption[]>(
     []
   )
-  const [primaryContactId, setPrimaryContactId] = useState<string | null>(null)
-  const [initialPrimaryContactId, setInitialPrimaryContactId] = useState<
-    string | null
-  >(null)
   const [isLoadingContacts, setIsLoadingContacts] = useState(false)
   // Contacts created from inside the picker this session — the fetched list
   // predates them, so they're merged in to stay re-selectable after removal.
@@ -187,13 +179,8 @@ export function useClientSheetFormState({
     for (const id of initialIds) {
       if (!selectedIds.has(id)) return true
     }
-    return primaryContactId !== initialPrimaryContactId
-  }, [
-    initialContacts,
-    selectedContacts,
-    primaryContactId,
-    initialPrimaryContactId,
-  ])
+    return false
+  }, [initialContacts, selectedContacts])
 
   // Origination user picker: any selectable admin except the one already
   // selected. Disabled admins stay in `allAdminUsers` so an existing
@@ -343,11 +330,8 @@ export function useClientSheetFormState({
     // Intentional: Sync contact state with props when sheet opens
     /* eslint-disable react-hooks/set-state-in-effect */
     const linkedFromProps = clientContactsProp ?? []
-    const primaryFromProps = primaryIdOf(linkedFromProps)
     setSelectedContacts(linkedFromProps)
     setInitialContacts(linkedFromProps)
-    setPrimaryContactId(primaryFromProps)
-    setInitialPrimaryContactId(primaryFromProps)
     /* eslint-enable react-hooks/set-state-in-effect */
 
     // Fetch contact data if not provided via props
@@ -405,11 +389,8 @@ export function useClientSheetFormState({
           setFetchedAllContacts(data.allContacts)
           setFetchedAllAdminUsers(data.allAdminUsers)
           if (clientId && data.linkedContacts.length > 0) {
-            const primaryId = primaryIdOf(data.linkedContacts)
             setSelectedContacts(data.linkedContacts)
             setInitialContacts(data.linkedContacts)
-            setPrimaryContactId(primaryId)
-            setInitialPrimaryContactId(primaryId)
           }
           hydrateSelectionsFromData(data.allContacts, data.allAdminUsers)
         })
@@ -457,15 +438,7 @@ export function useClientSheetFormState({
 
   const handleRemoveContact = useCallback((contact: ClientContactOption) => {
     setSelectedContacts(prev => prev.filter(c => c.id !== contact.id))
-    setPrimaryContactId(prev => (prev === contact.id ? null : prev))
   }, [])
-
-  const handleTogglePrimaryContact = useCallback(
-    (contact: ClientContactOption) => {
-      setPrimaryContactId(prev => (prev === contact.id ? null : contact.id))
-    },
-    []
-  )
 
   // Create-from-picker: stack the contact create sheet on top of this one
   // (`?client=…&contact=new`); the subscription below hands the saved record
@@ -673,8 +646,7 @@ export function useClientSheetFormState({
             const contactIds = selectedContacts.map(c => c.id)
             const syncResult = await syncClientContacts(
               clientIdForContacts,
-              contactIds,
-              primaryContactId
+              contactIds
             )
 
             if (!syncResult.ok) {
@@ -710,7 +682,6 @@ export function useClientSheetFormState({
           })
 
           setInitialContacts(selectedContacts)
-          setInitialPrimaryContactId(primaryContactId)
           setInitialOriginationUserId(payload.originationUserId)
           setInitialOriginationContactId(payload.originationContactId)
           setInitialClosers(payload.closers)
@@ -745,7 +716,6 @@ export function useClientSheetFormState({
       onComplete,
       onCreated,
       onOpenChange,
-      primaryContactId,
       closerShares,
       selectedContacts,
       selectedOriginationContact,
@@ -777,8 +747,6 @@ export function useClientSheetFormState({
     handleRemoveContact,
     handleCreateOriginationContact,
     handleCreateCloserContact,
-    primaryContactId,
-    handleTogglePrimaryContact,
     // Origination
     selectedOriginationUser,
     selectedOriginationContact,

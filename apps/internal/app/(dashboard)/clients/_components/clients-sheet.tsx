@@ -58,8 +58,6 @@ export function ClientSheet(props: ClientSheetProps) {
     handleCreateOriginationContact,
     handleCreateCloserContact,
     handleRemoveContact,
-    primaryContactId,
-    handleTogglePrimaryContact,
     // Origination
     selectedOriginationUser,
     selectedOriginationContact,
@@ -122,8 +120,6 @@ export function ClientSheet(props: ClientSheetProps) {
             onCreateOriginationContact={handleCreateOriginationContact}
             onCreateCloserContact={handleCreateCloserContact}
             onRemoveContact={handleRemoveContact}
-            primaryContactId={primaryContactId}
-            onTogglePrimaryContact={handleTogglePrimaryContact}
             selectedOriginationUser={selectedOriginationUser}
             selectedOriginationContact={selectedOriginationContact}
             availableOriginationUsers={availableOriginationUsers}

@@ -97,10 +97,6 @@ export type BaseFormState = {
   handleCreateOriginationContact: (query: string) => void
   handleCreateCloserContact: (query: string) => void
   handleRemoveContact: (contact: ClientContactOption) => void
-  /** Linked contact addressed by default on invoice emails; at most one. */
-  primaryContactId: string | null
-  /** Make this contact primary, or clear it if it already is. */
-  handleTogglePrimaryContact: (contact: ClientContactOption) => void
   // Origination
   selectedOriginationUser: PartnerUserOption | null
   selectedOriginationContact: OriginationContactOption | null
@@ -192,10 +188,6 @@ export type UseClientSheetStateReturn = {
   handleCreateOriginationContact: (query: string) => void
   handleCreateCloserContact: (query: string) => void
   handleRemoveContact: (contact: ClientContactOption) => void
-  /** Linked contact addressed by default on invoice emails; at most one. */
-  primaryContactId: string | null
-  /** Make this contact primary, or clear it if it already is. */
-  handleTogglePrimaryContact: (contact: ClientContactOption) => void
   // Origination
   selectedOriginationUser: PartnerUserOption | null
   selectedOriginationContact: OriginationContactOption | null
