@@ -8,13 +8,11 @@ import {
   Calendar,
   CreditCard,
   FolderKanban,
-  Globe,
   Handshake,
   LinkIcon,
   MapPin,
   Pencil,
   UserPlus,
-  Briefcase,
 } from 'lucide-react'
 import { formatCalendarDate } from '@pts/ui/dates'
 
@@ -33,7 +31,6 @@ import type {
 } from '@/lib/data/clients'
 import type { ContactWithClientLink } from '@/lib/types/client-contacts'
 import { getBillingTypeLabel } from '@/lib/settings/clients/billing-types'
-import { displayWebsiteHost, toWebsiteHref } from '@/lib/companies/website'
 import {
   ARCHIVE_CLIENT_CONFIRM_LABEL,
   ARCHIVE_CLIENT_DIALOG_TITLE,
@@ -48,6 +45,7 @@ import { prefetchSheetInit } from '@/lib/sheets/wrappers/use-sheet-init'
 import { cn } from '@/lib/utils'
 
 import { ClientSheet } from '../../_components/clients-sheet'
+import { ClientCompanySection } from './client-company-section'
 import { ClientContactsSection } from './client-contacts-section'
 import { ClientNotesSection } from './client-notes-section'
 import {
@@ -108,8 +106,21 @@ export function ClientDetail({
 
       {/* Two-column layout */}
       <div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
-        {/* Left column: Details, Notes */}
+        {/* Left column: Company, Details, Notes */}
         <div className='space-y-4'>
+          <ClientCompanySection
+            clientId={client.id}
+            company={
+              client.companyId
+                ? {
+                    id: client.companyId,
+                    name: client.companyName ?? 'Company',
+                    website: client.website ?? null,
+                  }
+                : null
+            }
+          />
+
           {/* Client Details Widget */}
           <ClientDetailsWidget
             client={client}
@@ -193,28 +204,6 @@ function ClientDetailsWidget({
           label='Created'
           value={formatCalendarDate(client.createdAt) ?? '—'}
         />
-        {client.companyId ? (
-          <div className='flex items-center gap-3 px-4 py-2.5'>
-            <Briefcase className='text-muted-foreground h-4 w-4' />
-            <span className='text-muted-foreground text-sm'>Company</span>
-            <CompanyLink id={client.companyId} name={client.companyName ?? 'Company'} />
-          </div>
-        ) : null}
-        {client.website ? (
-          // The company's website (the company owns it); read-only here.
-          <div className='flex items-center gap-3 px-4 py-2.5'>
-            <Globe className='text-muted-foreground h-4 w-4' />
-            <span className='text-muted-foreground text-sm'>Website</span>
-            <a
-              href={toWebsiteHref(client.website)}
-              target='_blank'
-              rel='noopener noreferrer'
-              className='ml-auto text-sm font-medium underline-offset-4 hover:underline'
-            >
-              {displayWebsiteHost(client.website)}
-            </a>
-          </div>
-        ) : null}
         {originationLabel ? (
           <div className='flex items-center gap-3 px-4 py-2.5'>
             <UserPlus className='text-muted-foreground h-4 w-4' />
@@ -282,19 +271,6 @@ function ClientDetailsWidget({
  * contacts get the initials fallback. Falls back to plain text when the id
  * is missing.
  */
-function CompanyLink({ id, name }: { id: string; name: string }) {
-  const { open } = useSheetParams()
-  return (
-    <button
-      type='button'
-      className='ml-auto cursor-pointer text-sm font-medium underline-offset-4 hover:underline'
-      onClick={() => open('company', id)}
-    >
-      {name}
-    </button>
-  )
-}
-
 function SheetLink({
   entity,
   id,
