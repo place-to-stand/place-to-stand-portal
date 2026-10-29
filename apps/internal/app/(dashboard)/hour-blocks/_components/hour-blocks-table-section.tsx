@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Building2, Info } from 'lucide-react'
+import { Building2, Info, Receipt } from 'lucide-react'
 
 import { EmptyState } from '@pts/ui/empty-state'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
@@ -164,17 +164,22 @@ export function HourBlocksTableSection({
                   ) : null}
                 </TableCell>
                 <TableCell label='Invoice' className='text-sm'>
-                  {block.invoice_id && block.invoice_number ? (
-                    <Link
-                      href={invoiceHref(block.invoice_id)}
-                      className='text-muted-foreground hover:text-foreground hover:underline'
-                    >
-                      {block.invoice_number}
-                    </Link>
-                  ) : block.invoice_number ? (
-                    <span className='text-muted-foreground'>
-                      {block.invoice_number}
-                    </span>
+                  {block.invoice_number ? (
+                    <div className='flex min-w-0 items-center gap-2'>
+                      <Receipt className='text-muted-foreground h-4 w-4 shrink-0' />
+                      {block.invoice_id ? (
+                        <Link
+                          href={invoiceHref(block.invoice_id)}
+                          className='text-muted-foreground hover:text-foreground truncate hover:underline'
+                        >
+                          {block.invoice_number}
+                        </Link>
+                      ) : (
+                        <span className='text-muted-foreground truncate'>
+                          {block.invoice_number}
+                        </span>
+                      )}
+                    </div>
                   ) : (
                     <EmptyValue />
                   )}

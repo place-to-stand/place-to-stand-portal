@@ -17,6 +17,7 @@ export function mapContactToTableRow(
     linkedinUrl: item.linkedinUrl,
     companyId: item.companyId,
     companyName: item.companyName,
+    companies: item.companies,
     metrics: {
       totalClients: item.metrics.totalClients,
       clients: item.metrics.clients,

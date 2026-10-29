@@ -111,8 +111,8 @@ export async function listCompanies(
         select json_agg(
           json_build_object(
             'id', ct.id, 'name', ct.name, 'email', ct.email,
-            'jobTitle', m.title
-          ) order by lower(ct.name)
+            'jobTitle', m.title, 'isPrimary', m.is_primary
+          ) order by m.is_primary desc, lower(ct.name)
         )
         from memberships m
         join contacts ct on ct.id = m.contact_id and ct.deleted_at is null

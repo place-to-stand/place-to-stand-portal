@@ -122,12 +122,11 @@ export function CompaniesTable({
       >
         <TableHeader>
           <TableRow className='bg-muted/40'>
-            {sortHead('name', 'Company', 'w-[30%]')}
-            <TableHead className='w-[19%]'>Website</TableHead>
-            <TableHead className='w-[8%] text-center'>Client</TableHead>
-            <TableHead className='w-[20%]'>Primary contact</TableHead>
-            {sortHead('people', 'Contacts', 'w-[9%]', 'center')}
-            {sortHead('leads', 'Open leads', 'w-[11%]', 'center')}
+            {sortHead('name', 'Company', 'w-[36%]')}
+            <TableHead className='w-[24%]'>Website</TableHead>
+            <TableHead className='w-[12%] text-center'>Linked client</TableHead>
+            {sortHead('people', 'Contacts', 'w-[12%]', 'center')}
+            {sortHead('leads', 'Open leads', 'w-[12%]', 'center')}
             <TableHead className='w-16 text-right'>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -171,7 +170,10 @@ export function CompaniesTable({
                     <EmptyValue />
                   )}
                 </TableCell>
-                <TableCell label='Client' className='text-sm md:text-center'>
+                <TableCell
+                  label='Linked client'
+                  className='text-sm md:text-center'
+                >
                   {company.clientId && company.clientName ? (
                     <LinkedRecordsHoverCell
                       count={1}
@@ -189,55 +191,52 @@ export function CompaniesTable({
                   ) : null}
                 </TableCell>
                 <TableCell
-                  label='Primary contact'
-                  className='truncate text-sm'
-                  title={company.primaryContactName ?? undefined}
-                >
-                  {company.primaryContactName ? (
-                    <span className='inline-flex min-w-0 items-center gap-1.5'>
-                      <Star className='text-warning h-3.5 w-3.5 shrink-0 fill-current' />
-                      <span className='truncate'>
-                        {company.primaryContactName}
-                      </span>
-                    </span>
-                  ) : (
-                    <EmptyValue />
-                  )}
-                </TableCell>
-                <TableCell
                   label='Contacts'
                   className='text-sm tabular-nums md:text-center'
                 >
-                  <LinkedRecordsHoverCell
-                    count={company.contactCount}
-                    zeroLabel='—'
-                    icon={Contact}
-                    ariaLabel={`${company.contactCount} ${company.contactCount === 1 ? 'contact' : 'contacts'}`}
-                    items={company.people.map(person => ({
-                      id: person.id,
-                      label: person.name,
-                      sublabel: person.jobTitle ?? person.email,
-                      href: contactSheetHref(person.id),
-                    }))}
-                  />
+                  <span className='inline-flex items-center gap-2'>
+                    <Contact className='text-muted-foreground h-4 w-4 shrink-0' />
+                    <LinkedRecordsHoverCell
+                      count={company.contactCount}
+                      zeroLabel='—'
+                      icon={Contact}
+                      ariaLabel={`${company.contactCount} ${company.contactCount === 1 ? 'contact' : 'contacts'}`}
+                      items={company.people.map(person => ({
+                        id: person.id,
+                        label: person.name,
+                        sublabel: person.jobTitle ?? person.email,
+                        href: contactSheetHref(person.id),
+                        // The primary contact, starred as on the company sheet.
+                        trailing: person.isPrimary ? (
+                          <Star
+                            className='text-warning size-3.5 shrink-0 fill-current'
+                            aria-label='Primary contact'
+                          />
+                        ) : null,
+                      }))}
+                    />
+                  </span>
                 </TableCell>
                 <TableCell
                   label='Open leads'
                   className='text-sm tabular-nums md:text-center'
                 >
-                  <LinkedRecordsHoverCell
-                    count={company.openLeadCount}
-                    zeroLabel='—'
-                    icon={Handshake}
-                    ariaLabel={`${company.openLeadCount} open ${company.openLeadCount === 1 ? 'lead' : 'leads'}`}
-                    contentClassName='min-w-72'
-                    items={company.openLeads.map(lead => ({
-                      id: lead.id,
-                      label: lead.contactName,
-                      href: leadHref(lead.id),
-                      trailing: <LeadStatusBadge status={lead.status} />,
-                    }))}
-                  />
+                  <span className='inline-flex items-center gap-2'>
+                    <Handshake className='text-muted-foreground h-4 w-4 shrink-0' />
+                    <LinkedRecordsHoverCell
+                      count={company.openLeadCount}
+                      zeroLabel='—'
+                      icon={Handshake}
+                      ariaLabel={`${company.openLeadCount} open ${company.openLeadCount === 1 ? 'lead' : 'leads'}`}
+                      contentClassName='min-w-72'
+                      items={company.openLeads.map(lead => ({
+                        id: lead.id,
+                        label: lead.contactName,
+                        href: leadHref(lead.id),
+                        trailing: <LeadStatusBadge status={lead.status} />,
+                      }))}
+                    />
+                  </span>
                 </TableCell>
                 <TableCell className='text-right max-md:ml-auto'>
                   <RecordRowActions>

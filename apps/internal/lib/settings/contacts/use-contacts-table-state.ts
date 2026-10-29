@@ -11,6 +11,7 @@ import {
   softDeleteContact,
 } from '@/app/(dashboard)/contacts/actions'
 import type { LinkedClient } from '@/lib/queries/contacts'
+import type { ContactCompanyItem } from '@/lib/queries/contacts/settings/types'
 import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
 
 import type { ContactSheetInput } from './use-contact-sheet-state'
@@ -24,6 +25,8 @@ export type ContactsTableContact = ContactProfile & {
   createdAt: string
   updatedAt: string
   deletedAt: string | null
+  /** Every company they belong to, main company first. */
+  companies: ContactCompanyItem[]
   metrics: {
     totalClients: number
     clients: LinkedClient[]
@@ -75,9 +78,8 @@ export function useContactsTableState({
   const [deleteTarget, setDeleteTarget] = useState<ContactsTableContact | null>(
     null
   )
-  const [destroyTarget, setDestroyTarget] = useState<ContactsTableContact | null>(
-    null
-  )
+  const [destroyTarget, setDestroyTarget] =
+    useState<ContactsTableContact | null>(null)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [pendingRestoreId, setPendingRestoreId] = useState<string | null>(null)
   const [pendingDestroyId, setPendingDestroyId] = useState<string | null>(null)

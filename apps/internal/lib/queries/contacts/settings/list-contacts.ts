@@ -14,6 +14,10 @@ import {
   type SortDirection,
 } from '@/lib/pagination/sort'
 import { DEFAULT_CONTACTS_SORT } from '@/lib/settings/contacts/filters'
+import {
+  listContactMemberships,
+  type ContactMembership,
+} from '@/lib/queries/memberships'
 
 import {
   contactFields,
@@ -133,7 +137,8 @@ async function fetchClientDetails(
 
 function mapContactMetrics(
   rows: ContactMetricsResult[],
-  clientsMap: Map<string, LinkedClient[]>
+  clientsMap: Map<string, LinkedClient[]>,
+  membershipsMap: Map<string, ContactMembership[]>
 ): ContactsSettingsListItem[] {
   return rows.map(row => ({
     id: row.id,
@@ -149,6 +154,11 @@ function mapContactMetrics(
     linkedinUrl: row.linkedinUrl,
     companyId: row.companyId,
     companyName: row.companyName,
+    companies: (membershipsMap.get(row.id) ?? []).map(membership => ({
+      id: membership.companyId,
+      name: membership.companyName,
+      isClient: Boolean(membership.clientId),
+    })),
     metrics: {
       totalClients: Number(row.totalClients ?? 0),
       clients: clientsMap.get(row.id) ?? [],
@@ -273,13 +283,19 @@ export async function listContactsForSettings(
 
   // Fetch client details for all contacts in parallel with the counts
   const contactIds = normalizedRows.map(row => row.id)
-  const [clientsMap, totalCount, unfilteredTotalCount] = await Promise.all([
-    fetchClientDetails(contactIds),
-    resolveCount(baseConditions),
-    resolveCount([statusCondition]),
-  ])
+  const [clientsMap, membershipsMap, totalCount, unfilteredTotalCount] =
+    await Promise.all([
+      fetchClientDetails(contactIds),
+      listContactMemberships(contactIds),
+      resolveCount(baseConditions),
+      resolveCount([statusCondition]),
+    ])
 
-  const mappedItems = mapContactMetrics(normalizedRows, clientsMap)
+  const mappedItems = mapContactMetrics(
+    normalizedRows,
+    clientsMap,
+    membershipsMap
+  )
 
   const pageInfo: PageInfo = useOffset
     ? {

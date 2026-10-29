@@ -15,6 +15,7 @@ export function LinkedClientsCell({ clients }: LinkedClientsCellProps) {
       <Building2 className='text-muted-foreground h-4 w-4 shrink-0' />
       <LinkedRecordsHoverCell
         count={clients.length}
+        zeroLabel='—'
         icon={Building2}
         contentClassName='w-56'
         items={clients.map(client => ({

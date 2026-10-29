@@ -14,6 +14,8 @@ export type CompanyListItem = {
     name: string
     email: string | null
     jobTitle: string | null
+    /** The company's primary contact (listed first). */
+    isPrimary: boolean
   }[]
   /** Leads not yet won, lost or unqualified. */
   openLeads: { id: string; contactName: string; status: LeadStatusValue }[]

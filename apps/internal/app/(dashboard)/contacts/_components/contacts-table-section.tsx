@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Contact, Mail, Phone } from 'lucide-react'
+import { Briefcase, Building2, Contact, Mail, Phone } from 'lucide-react'
 
 import { EmptyState } from '@pts/ui/empty-state'
 import {
@@ -22,6 +22,8 @@ import {
 } from '@pts/ui/table'
 
 import type { ContactsTableContact } from '@/lib/settings/contacts/use-contacts-table-state'
+
+import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
 
 import { LinkedClientsCell } from './linked-clients-cell'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
@@ -98,7 +100,7 @@ export function ContactsTableSection({
             >
               Name
             </SortableTableHead>
-            <TableHead className='w-[18%]'>Company</TableHead>
+            <TableHead className='w-[18%]'>Companies</TableHead>
             <SortableTableHead
               field='email'
               sort={sort}
@@ -122,10 +124,10 @@ export function ContactsTableSection({
               sort={sort}
               defaultSort='name:asc'
               onSortChange={next => update({ sort: next })}
-              className='w-24'
+              className='w-28'
               align='center'
             >
-              Clients
+              Portal access
             </SortableTableHead>
             <TableHead className='w-32 text-right'>Actions</TableHead>
           </TableRow>
@@ -188,21 +190,43 @@ export function ContactsTableSection({
                   </div>
                 </TableCell>
                 <TableCell
-                  label='Company'
-                  className='truncate text-sm'
+                  label='Companies'
+                  className='text-sm'
                   title={contact.companyName ?? undefined}
                 >
                   {contact.companyId && contact.companyName ? (
-                    // The row ignores clicks on links, so this opens the
-                    // company, not the contact.
-                    <Link
-                      href={companySheetHref(contact.companyId)}
-                      className='hover:text-foreground underline-offset-4 transition hover:underline'
-                    >
-                      {contact.companyName}
-                    </Link>
+                    <span className='flex min-w-0 items-center gap-1.5'>
+                      {/* The row ignores clicks on links, so this opens the
+                          company, not the contact. */}
+                      <Link
+                        href={companySheetHref(contact.companyId)}
+                        className='hover:text-foreground min-w-0 truncate underline-offset-4 transition hover:underline'
+                      >
+                        {contact.companyName}
+                      </Link>
+                      {contact.companies.length > 1 ? (
+                        <LinkedRecordsHoverCell
+                          count={contact.companies.length}
+                          triggerLabel={`+${contact.companies.length - 1}`}
+                          triggerClassName='text-muted-foreground shrink-0'
+                          icon={Briefcase}
+                          ariaLabel={`${contact.companies.length} companies`}
+                          items={contact.companies.map(company => ({
+                            id: company.id,
+                            label: company.name,
+                            href: companySheetHref(company.id),
+                            trailing: company.isClient ? (
+                              <Building2
+                                className='text-muted-foreground size-3.5 shrink-0'
+                                aria-label='Client'
+                              />
+                            ) : null,
+                          }))}
+                        />
+                      ) : null}
+                    </span>
                   ) : (
-                    (contact.companyName ?? <EmptyValue />)
+                    <EmptyValue />
                   )}
                 </TableCell>
                 <TableCell className='text-muted-foreground text-sm'>
@@ -238,7 +262,10 @@ export function ContactsTableSection({
                     <EmptyValue />
                   )}
                 </TableCell>
-                <TableCell label='Clients' className='text-sm md:text-center'>
+                <TableCell
+                  label='Portal access'
+                  className='text-sm md:text-center'
+                >
                   <LinkedClientsCell clients={contact.metrics.clients} />
                 </TableCell>
                 <TableCell className='text-right max-md:ml-auto'>

@@ -15,8 +15,17 @@ type ContactListMetrics = {
   clients: LinkedClient[]
 }
 
+/** A company the contact belongs to (main company first). */
+export type ContactCompanyItem = {
+  id: string
+  name: string
+  /** The company has a live client. */
+  isClient: boolean
+}
+
 export type ContactsSettingsListItem = SelectContact &
   ContactProfile & {
+    companies: ContactCompanyItem[]
     metrics: ContactListMetrics
   }
 
