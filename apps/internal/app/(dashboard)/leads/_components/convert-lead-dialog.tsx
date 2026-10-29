@@ -76,7 +76,7 @@ export function ConvertLeadDialog({
       clientSlug: '',
       billingType: 'net_30',
       copyNotesToClient: true,
-      createContact: true,
+      givePortalAccess: false,
       createProject: false,
       projectName: '',
       existingClientId: undefined,
@@ -330,7 +330,7 @@ export function ConvertLeadDialog({
             {
               <FormField
                 control={form.control}
-                name='createContact'
+                name='givePortalAccess'
                 render={({ field }) => (
                   <FormItem className='flex flex-row items-start space-y-0 space-x-3 rounded-md border p-4'>
                     <FormControl>
@@ -342,8 +342,8 @@ export function ConvertLeadDialog({
                     <div className='space-y-1 leading-none'>
                       <FormLabel>Give portal access</FormLabel>
                       <FormDescription>
-                        {lead.contactName} joins the client’s company (keeping
-                        any others) and can see it in the client portal.
+                        {lead.contactName} joins the client’s company either
+                        way. Tick to also let them see it in the client portal.
                       </FormDescription>
                     </div>
                   </FormItem>

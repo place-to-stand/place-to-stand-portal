@@ -46,7 +46,7 @@ export async function convertLeadToClient(
     clientSlug,
     billingType,
     copyNotesToClient,
-    createContact,
+    givePortalAccess,
     createProject,
     projectName,
     existingClientId,
@@ -163,7 +163,10 @@ export async function convertLeadToClient(
   // the client: they join the client's company (keeping any others), get
   // portal access, and become its primary contact when it has none.
   const warnings: string[] = []
-  if (createContact) {
+  // The lead's person joins the client's company (keeping any others) and
+  // becomes its primary contact if it has none. Portal access only when
+  // asked for.
+  {
     try {
       const [client] = await db
         .select({ companyId: clients.companyId })
@@ -172,17 +175,23 @@ export async function convertLeadToClient(
         .limit(1)
       const clientCompanyId = client?.companyId ?? null
       if (lead.contactDeletedAt) {
-        warnings.push(
-          `${lead.contactName} is archived, so they weren’t given portal access. Restore them first.`
-        )
+        if (givePortalAccess) {
+          warnings.push(
+            `${lead.contactName} is archived, so they weren’t given portal access. Restore them first.`
+          )
+        }
       } else if (!clientCompanyId) {
-        warnings.push(
-          `This client has no company, so ${lead.contactName} wasn’t given portal access. Link a company first.`
-        )
+        if (givePortalAccess) {
+          warnings.push(
+            `This client has no company, so ${lead.contactName} wasn’t given portal access. Link a company first.`
+          )
+        }
       } else {
         await db.transaction(async tx => {
           await joinCompany(tx, lead.contactId, clientCompanyId)
-          await setPortalAccess(tx, lead.contactId, clientCompanyId, true)
+          if (givePortalAccess) {
+            await setPortalAccess(tx, lead.contactId, clientCompanyId, true)
+          }
           const [primary] = await tx
             .select({ id: memberships.id })
             .from(memberships)
@@ -200,9 +209,14 @@ export async function convertLeadToClient(
         })
       }
     } catch (err) {
-      console.error('[convert-lead] Failed to give the contact access:', err)
+      console.error(
+        '[convert-lead] Failed to add the contact to the client:',
+        err
+      )
       warnings.push(
-        'The contact could not be given portal access. You can switch it on from the client.'
+        givePortalAccess
+          ? 'The contact could not be added to the client’s company or given portal access. You can do it from the client.'
+          : 'The contact could not be added to the client’s company. You can add them from the company.'
       )
     }
   }

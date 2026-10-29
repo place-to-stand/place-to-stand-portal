@@ -134,6 +134,10 @@ export function InvoiceSheet({
   const router = useRouter()
   const { toast } = useToast()
   const [voidDialogOpen, setVoidDialogOpen] = useState(false)
+  // "Mark as sent" and "Revert to draft" confirm first, like Void.
+  const [statusConfirm, setStatusConfirm] = useState<'send' | 'unsend' | null>(
+    null
+  )
   const [emailDialogOpen, setEmailDialogOpen] = useState(false)
   const [actionPending, setActionPending] = useState(false)
   // Status actions (send/revert/void) refresh the row and reset the form,
@@ -603,8 +607,12 @@ export function InvoiceSheet({
                     onEmailInvoice={() =>
                       runGuarded(() => setEmailDialogOpen(true))
                     }
-                    onSendInvoice={() => runGuarded(handleSendInvoice)}
-                    onUnsendInvoice={() => runGuarded(handleUnsendInvoice)}
+                    onSendInvoice={() =>
+                      runGuarded(() => setStatusConfirm('send'))
+                    }
+                    onUnsendInvoice={() =>
+                      runGuarded(() => setStatusConfirm('unsend'))
+                    }
                     onVoidInvoice={() => runGuarded(handleRequestVoid)}
                   />
                 ) : (
@@ -638,6 +646,28 @@ export function InvoiceSheet({
           onSent={handleEmailSent}
         />
       ) : null}
+      <ConfirmDialog
+        open={statusConfirm !== null}
+        title={
+          statusConfirm === 'unsend' ? 'Revert to draft?' : 'Mark as sent?'
+        }
+        description={
+          statusConfirm === 'unsend'
+            ? 'The invoice goes back to draft and its share link stops working until it is sent again.'
+            : 'The invoice is marked sent without emailing it, and its share link goes live. Use this when you delivered it another way.'
+        }
+        confirmLabel={
+          statusConfirm === 'unsend' ? 'Revert to draft' : 'Mark as sent'
+        }
+        confirmDisabled={combinedPending}
+        onCancel={() => setStatusConfirm(null)}
+        onConfirm={() => {
+          const action = statusConfirm
+          setStatusConfirm(null)
+          if (action === 'send') void handleSendInvoice()
+          if (action === 'unsend') void handleUnsendInvoice()
+        }}
+      />
       <InvoiceVoidDialog
         open={voidDialogOpen}
         confirmDisabled={combinedPending}

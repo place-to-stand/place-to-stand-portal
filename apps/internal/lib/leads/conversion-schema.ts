@@ -7,7 +7,8 @@ export const leadConversionSchema = z
     clientSlug: z.string().max(100).optional(),
     billingType: z.enum(['prepaid', 'net_30']),
     copyNotesToClient: z.boolean(),
-    createContact: z.boolean().default(true),
+    /** The lead's person can see the client in the portal (off by default). */
+    givePortalAccess: z.boolean().default(false),
     createProject: z.boolean().default(false),
     projectName: z.string().max(200).optional(),
     existingClientId: z.string().uuid().optional(),
