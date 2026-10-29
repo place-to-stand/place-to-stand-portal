@@ -48,6 +48,11 @@ type LinkedRecordsHoverCellProps = {
   /** Width overrides for the card; defaults to `w-auto min-w-56`. */
   contentClassName?: string
   align?: 'start' | 'center' | 'end'
+  /**
+   * Shows the row icon before the count, as list columns do (Projects on
+   * Clients, Contacts on Companies). A zero then shows only a dash.
+   */
+  withIcon?: boolean
 }
 
 const TRIGGER_CLASS =
@@ -76,16 +81,17 @@ export function LinkedRecordsHoverCell({
   triggerClassName,
   contentClassName,
   align = 'start',
+  withIcon = false,
 }: LinkedRecordsHoverCellProps) {
   if (count === 0) {
     return (
       <span className='text-muted-foreground/50'>
-        {zeroLabel ?? `0${label ?? ''}`}
+        {withIcon ? '—' : (zeroLabel ?? `0${label ?? ''}`)}
       </span>
     )
   }
 
-  return (
+  const card = (
     <HoverCard open={open} onOpenChange={onOpenChange}>
       <HoverCardTrigger asChild>
         <button
@@ -113,6 +119,15 @@ export function LinkedRecordsHoverCell({
         </ul>
       </HoverCardContent>
     </HoverCard>
+  )
+
+  return withIcon ? (
+    <span className='inline-flex items-center gap-2'>
+      <Icon className='text-muted-foreground h-4 w-4 shrink-0' aria-hidden />
+      {card}
+    </span>
+  ) : (
+    card
   )
 }
 

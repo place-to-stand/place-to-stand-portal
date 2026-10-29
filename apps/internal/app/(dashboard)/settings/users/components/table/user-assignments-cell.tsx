@@ -29,9 +29,9 @@ export function UserAssignmentsCell({
   const clients = assignment?.clientList ?? []
 
   return (
-    <span className='flex items-center gap-1' title='Clients'>
-      <Building2 className='text-muted-foreground h-4 w-4 shrink-0' />
+    <span title='Clients'>
       <LinkedRecordsHoverCell
+        withIcon
         count={clients.length}
         icon={Building2}
         ariaLabel={`${clients.length} ${clients.length === 1 ? 'client' : 'clients'}`}

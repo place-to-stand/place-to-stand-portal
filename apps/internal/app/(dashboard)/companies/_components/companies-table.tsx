@@ -199,49 +199,43 @@ export function CompaniesTable({
                   label='Contacts'
                   className='text-sm tabular-nums md:text-center'
                 >
-                  <span className='inline-flex items-center gap-2'>
-                    <Contact className='text-muted-foreground h-4 w-4 shrink-0' />
-                    <LinkedRecordsHoverCell
-                      count={company.contactCount}
-                      zeroLabel='—'
-                      icon={Contact}
-                      ariaLabel={`${company.contactCount} ${company.contactCount === 1 ? 'contact' : 'contacts'}`}
-                      items={company.people.map(person => ({
-                        id: person.id,
-                        label: person.name,
-                        sublabel: person.jobTitle ?? person.email,
-                        href: contactSheetHref(person.id),
-                        // The primary contact, starred as on the company sheet.
-                        trailing: person.isPrimary ? (
-                          <Star
-                            className='text-warning size-3.5 shrink-0 fill-current'
-                            aria-label='Primary contact'
-                          />
-                        ) : null,
-                      }))}
-                    />
-                  </span>
+                  <LinkedRecordsHoverCell
+                    count={company.contactCount}
+                    withIcon
+                    icon={Contact}
+                    ariaLabel={`${company.contactCount} ${company.contactCount === 1 ? 'contact' : 'contacts'}`}
+                    items={company.people.map(person => ({
+                      id: person.id,
+                      label: person.name,
+                      sublabel: person.jobTitle ?? person.email,
+                      href: contactSheetHref(person.id),
+                      // The primary contact, starred as on the company sheet.
+                      trailing: person.isPrimary ? (
+                        <Star
+                          className='text-warning size-3.5 shrink-0 fill-current'
+                          aria-label='Primary contact'
+                        />
+                      ) : null,
+                    }))}
+                  />
                 </TableCell>
                 <TableCell
                   label='Open leads'
                   className='text-sm tabular-nums md:text-center'
                 >
-                  <span className='inline-flex items-center gap-2'>
-                    <Handshake className='text-muted-foreground h-4 w-4 shrink-0' />
-                    <LinkedRecordsHoverCell
-                      count={company.openLeadCount}
-                      zeroLabel='—'
-                      icon={Handshake}
-                      ariaLabel={`${company.openLeadCount} open ${company.openLeadCount === 1 ? 'lead' : 'leads'}`}
-                      contentClassName='min-w-72'
-                      items={company.openLeads.map(lead => ({
-                        id: lead.id,
-                        label: lead.contactName,
-                        href: leadHref(lead.id),
-                        trailing: <LeadStatusBadge status={lead.status} />,
-                      }))}
-                    />
-                  </span>
+                  <LinkedRecordsHoverCell
+                    count={company.openLeadCount}
+                    withIcon
+                    icon={Handshake}
+                    ariaLabel={`${company.openLeadCount} open ${company.openLeadCount === 1 ? 'lead' : 'leads'}`}
+                    contentClassName='min-w-72'
+                    items={company.openLeads.map(lead => ({
+                      id: lead.id,
+                      label: lead.contactName,
+                      href: leadHref(lead.id),
+                      trailing: <LeadStatusBadge status={lead.status} />,
+                    }))}
+                  />
                 </TableCell>
                 <TableCell className='text-right max-md:ml-auto'>
                   <RecordRowActions>

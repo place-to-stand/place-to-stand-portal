@@ -19,9 +19,9 @@ export function LinkedContactsCell({ contacts }: LinkedContactsCellProps) {
   const count = contacts.length
 
   return (
-    <span className='inline-flex items-center gap-2 text-sm'>
-      <Contact className='text-muted-foreground h-4 w-4 shrink-0' />
+    <span className='text-sm'>
       <LinkedRecordsHoverCell
+        withIcon
         count={count}
         icon={Contact}
         ariaLabel={`${count} with portal access`}

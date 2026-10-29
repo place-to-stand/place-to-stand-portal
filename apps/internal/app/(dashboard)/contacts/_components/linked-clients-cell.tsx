@@ -11,11 +11,10 @@ type LinkedClientsCellProps = {
 
 export function LinkedClientsCell({ clients }: LinkedClientsCellProps) {
   return (
-    <span className='inline-flex items-center gap-2 text-sm'>
-      <Building2 className='text-muted-foreground h-4 w-4 shrink-0' />
+    <span className='text-sm'>
       <LinkedRecordsHoverCell
+        withIcon
         count={clients.length}
-        zeroLabel='—'
         icon={Building2}
         contentClassName='w-56'
         items={clients.map(client => ({
