@@ -99,17 +99,31 @@ export function ClientRecordRow({
 
 export function CompanyRecordRow({
   company,
+  titleAddon,
   linked = false,
   note,
   actions,
   openable = true,
   className,
-}: RowExtras & { company: { id: string; name: string } }) {
+}: RowExtras & {
+  company: { id: string; name: string }
+  /** Shown after the name, e.g. the Client badge. */
+  titleAddon?: ReactNode
+}) {
   const { open } = useSheetParams()
   return (
     <SheetRecordRow
       icon={Briefcase}
-      title={company.name}
+      title={
+        titleAddon ? (
+          <span className='flex items-center gap-1.5'>
+            {company.name}
+            {titleAddon}
+          </span>
+        ) : (
+          company.name
+        )
+      }
       description={note}
       onOpen={openable ? () => open('company', company.id) : undefined}
       openLabel={`Open ${company.name}`}

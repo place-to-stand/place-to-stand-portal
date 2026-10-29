@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import { Star, X } from 'lucide-react'
 
+import { Badge } from '@pts/ui/badge'
 import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { CompanyLinkPicker } from '@/components/companies/company-link-picker'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { CompanyRecordRow } from '@/components/sheets/entity-record-rows'
@@ -94,6 +96,20 @@ export function ContactCompaniesSection({
                 key={entry.companyId}
                 company={{ id: entry.companyId, name: entry.companyName }}
                 className={entry.archived ? 'opacity-60' : undefined}
+                titleAddon={
+                  entry.clientId && !entry.archived ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant='secondary' className='text-xs'>
+                          Client
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Client: {entry.clientName ?? name}
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : null
+                }
                 note={
                   entry.archived ? (
                     'Archived'
@@ -102,8 +118,6 @@ export function ContactCompaniesSection({
                       <Star className='text-warning size-3 fill-current' />
                       Primary contact
                     </span>
-                  ) : entry.clientName ? (
-                    `Client: ${entry.clientName}`
                   ) : undefined
                 }
                 actions={
