@@ -20,6 +20,8 @@ import type { ContactCompanyEntry } from '@/lib/settings/contacts/use-contact-sh
 type ContactCompaniesSectionProps = {
   companies: ContactCompanyEntry[]
   disabled: boolean
+  /** Access needs a portal login; without one the switches stay off. */
+  hasPortalLogin: boolean
   onChange: (companies: ContactCompanyEntry[]) => void
 }
 
@@ -32,6 +34,7 @@ type ContactCompaniesSectionProps = {
 export function ContactCompaniesSection({
   companies,
   disabled,
+  hasPortalLogin,
   onChange,
 }: ContactCompaniesSectionProps) {
   const { role } = useViewerAccess()
@@ -87,7 +90,10 @@ export function ContactCompaniesSection({
         <SheetRecordList>
           {companies.map(entry => {
             const name = entry.companyName || 'this company'
-            const accessLocked = disabled || !canManageAccess
+            const accessLocked =
+              disabled ||
+              !canManageAccess ||
+              (!hasPortalLogin && !entry.portalAccess)
             return (
               <CompanyRecordRow
                 key={entry.companyId}
@@ -127,9 +133,11 @@ export function ContactCompaniesSection({
                           </span>
                         </TooltipTrigger>
                         <TooltipContent>
-                          {canManageAccess
-                            ? `Portal access to ${entry.clientName ?? name}`
-                            : 'Only an admin can change portal access.'}
+                          {!canManageAccess
+                            ? 'Only an admin can change portal access.'
+                            : !hasPortalLogin && !entry.portalAccess
+                              ? 'Create a portal login (Portal account, below) first.'
+                              : `Portal access to ${entry.clientName ?? name}`}
                         </TooltipContent>
                       </Tooltip>
                     ) : null}

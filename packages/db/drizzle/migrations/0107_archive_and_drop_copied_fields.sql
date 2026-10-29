@@ -1,9 +1,10 @@
 -- Retire what memberships (0105) and lead-reads-through-contact (0106)
 -- replace. Nothing is thrown away: every dropped table and column is copied
 -- into the "archive_sales_tools" schema first, plus a list of any portal
--- grant that did not carry over (expected empty: 0105 gives everyone with
--- access a membership at the client's company; a portal login with no
--- contact is the one case it can't). Restore from there if anything is missed.
+-- link or grant that did not carry over (expected empty: 0105 makes every
+-- client link a company membership and keeps every real portal login's
+-- access; a portal login with no contact is the one case it can't).
+-- Restore from there if anything is missed.
 CREATE SCHEMA IF NOT EXISTS "archive_sales_tools";
 --> statement-breakpoint
 CREATE TABLE "archive_sales_tools"."contact_clients" AS
@@ -28,9 +29,12 @@ SELECT "id" AS "lead_id", "contact_name", "contact_email", "contact_phone",
 FROM "leads";
 --> statement-breakpoint
 
--- Portal grants with no matching current, portal-enabled membership after
--- 0105 (live clients only; grants on archived clients are in the full copies
--- above). The pre-release check lists these.
+-- What did not carry over after 0105 (live clients only; archived ones are
+-- in the full copies above). Expected empty; the guard below stops if not.
+--  - contact_clients: a contact linked to a client must now be a member of
+--    the client's company (the link itself is not access).
+--  - client_members: a real portal grant (a login on a client) must still
+--    show in client_portal_access.
 CREATE TABLE "archive_sales_tools"."unmapped_portal_access" AS
 SELECT 'contact_clients'::text AS "source", cc."contact_id", c."user_id",
        cc."client_id", cl."company_id" AS "client_company_id",
@@ -39,9 +43,12 @@ FROM "contact_clients" cc
 JOIN "contacts" c ON c."id" = cc."contact_id"
 JOIN "clients" cl ON cl."id" = cc."client_id" AND cl."deleted_at" IS NULL
 WHERE c."deleted_at" IS NULL
+  AND cl."company_id" IS NOT NULL
   AND NOT EXISTS (
-    SELECT 1 FROM "client_portal_access" a
-    WHERE a."contact_id" = cc."contact_id" AND a."client_id" = cc."client_id"
+    SELECT 1 FROM "memberships" m
+    WHERE m."contact_id" = cc."contact_id"
+      AND m."company_id" = cl."company_id"
+      AND m."ended_at" IS NULL
   )
 UNION ALL
 SELECT 'client_members', c."id", cm."user_id", cm."client_id",
@@ -72,7 +79,7 @@ BEGIN
   FROM "archive_sales_tools"."unmapped_portal_access" u;
 
   IF unmapped IS NOT NULL THEN
-    RAISE EXCEPTION E'These portal grants have no matching membership. Fix them before 0107:\n%', unmapped;
+    RAISE EXCEPTION E'These client links or portal logins did not carry over to memberships. Fix them before 0107:\n%', unmapped;
   END IF;
 END $$;--> statement-breakpoint
 DROP TABLE "contact_clients";

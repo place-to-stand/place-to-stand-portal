@@ -211,6 +211,7 @@ export async function syncClientContacts(
     .select({
       contactId: memberships.contactId,
       name: contacts.name,
+      userId: contacts.userId,
       portalAccess: memberships.portalAccess,
     })
     .from(memberships)
@@ -238,6 +239,16 @@ export async function syncClientContacts(
   const toGrant = members.filter(
     m => wanted.has(m.contactId) && !m.portalAccess
   )
+  // Access needs a portal login; give one from the contact first.
+  const withoutLogin = toGrant.filter(m => !m.userId)
+  if (withoutLogin.length) {
+    return {
+      ok: false,
+      error: `${withoutLogin.map(m => m.name).join(', ')} ${
+        withoutLogin.length === 1 ? 'has' : 'have'
+      } no portal login yet. Create one from their contact first.`,
+    }
+  }
   const toRevoke = members.filter(
     m => !wanted.has(m.contactId) && m.portalAccess
   )

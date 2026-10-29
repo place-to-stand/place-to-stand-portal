@@ -214,6 +214,7 @@ export function ContactSheetForm({
               <ContactCompaniesSection
                 companies={field.value}
                 disabled={isPending}
+                hasPortalLogin={Boolean(portalUserId)}
                 onChange={next => field.onChange(next)}
               />
             )}

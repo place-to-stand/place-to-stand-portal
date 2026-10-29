@@ -323,8 +323,10 @@ export async function setCompanyPrimary(
 }
 
 /**
- * Switches a member's portal access to the company's client. Returns false
- * when the contact isn't a current member (access is only for members).
+ * Switches a member's portal access to the company's client. Access needs a
+ * portal login, so switching it on for a contact without one (or who isn't
+ * a current member) does nothing and returns false. Give them a login first
+ * (the contact sheet's Create account).
  */
 export async function setPortalAccess(
   executor: Executor,
@@ -332,6 +334,9 @@ export async function setPortalAccess(
   companyId: string,
   portalAccess: boolean
 ): Promise<boolean> {
+  if (portalAccess && !(await hasPortalLogin(executor, contactId))) {
+    return false
+  }
   const updated = await executor
     .update(memberships)
     .set({ portalAccess, updatedAt: now })
@@ -344,4 +349,17 @@ export async function setPortalAccess(
     )
     .returning({ id: memberships.id })
   return updated.length > 0
+}
+
+/** The contact has a portal login (`contacts.user_id`). */
+export async function hasPortalLogin(
+  executor: Executor,
+  contactId: string
+): Promise<boolean> {
+  const [row] = await executor
+    .select({ userId: contacts.userId })
+    .from(contacts)
+    .where(eq(contacts.id, contactId))
+    .limit(1)
+  return Boolean(row?.userId)
 }

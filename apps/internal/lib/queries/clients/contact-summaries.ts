@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { clients, contacts, memberships } from '@/lib/db/schema'
@@ -42,6 +42,8 @@ export async function fetchContactSummariesByClient(
         inArray(clients.id, clientIds),
         isNull(memberships.endedAt),
         eq(memberships.portalAccess, true),
+        // Access needs a portal login.
+        isNotNull(contacts.userId),
         isNull(contacts.deletedAt)
       )
     )

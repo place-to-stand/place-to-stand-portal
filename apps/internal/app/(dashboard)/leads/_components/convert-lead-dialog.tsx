@@ -343,7 +343,8 @@ export function ConvertLeadDialog({
                       <FormLabel>Give portal access</FormLabel>
                       <FormDescription>
                         {lead.contactName} joins the client’s company either
-                        way. Tick to also let them see it in the client portal.
+                        way. Tick to also let them see it in the client portal
+                        (they need a portal login).
                       </FormDescription>
                     </div>
                   </FormItem>

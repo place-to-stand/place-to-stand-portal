@@ -38,10 +38,11 @@ CREATE INDEX IF NOT EXISTS "idx_memberships_company_current"
 --> statement-breakpoint
 
 -- 1. Everyone at a company today. They are its primary contact if the
--- company says so, and keep portal access if they had it to that company's
--- client, either directly (contact_clients) or through their portal login
--- (client_members). Archived clients count too, so restoring one later
--- brings its people's access back as it used to.
+-- company says so. Portal access carries over only where it was real: a
+-- portal login (client_members) for that company's client. contact_clients
+-- was a CRM link (who belongs to a client), not access, so it only makes
+-- the membership (step 2), never switches access on. Archived clients count
+-- too, so restoring one later brings its people's access back.
 INSERT INTO "memberships" ("contact_id", "company_id", "title", "is_primary", "portal_access", "started_at", "created_at", "updated_at")
 SELECT
   c."id",
@@ -49,11 +50,6 @@ SELECT
   nullif(btrim(coalesce(c."job_title", '')), ''),
   coalesce(co."primary_contact_id" = c."id", false),
   EXISTS (
-    SELECT 1 FROM "contact_clients" cc
-    JOIN "clients" cl ON cl."id" = cc."client_id"
-    WHERE cc."contact_id" = c."id"
-      AND cl."company_id" = c."company_id"
-  ) OR EXISTS (
     SELECT 1 FROM "client_members" cm
     JOIN "clients" cl ON cl."id" = cm."client_id"
     WHERE c."user_id" IS NOT NULL
@@ -74,13 +70,13 @@ WHERE NOT EXISTS (
 --> statement-breakpoint
 
 -- 2. Every other tie to a company becomes a membership there too, so no
--- access is lost: portal access to a company's client (directly or through
--- a portal login) for someone not at that company, or being named a
--- company's primary contact without working there. These start now, so the
--- person's own company (step 1) stays their main one. The pre-release check
--- lists the ones added here for review.
+-- link is lost: a contact linked to a company's client (contact_clients,
+-- no access), a portal login for that client (client_members, access), or
+-- being named a company's primary contact without working there. These
+-- start now, so the person's own company (step 1) stays their main one.
+-- The pre-release check lists the ones added here for review.
 WITH "ties" AS (
-  SELECT cc."contact_id", cl."company_id", true AS "access"
+  SELECT cc."contact_id", cl."company_id", false AS "access"
   FROM "contact_clients" cc
   JOIN "clients" cl ON cl."id" = cc."client_id"
   WHERE cl."company_id" IS NOT NULL
@@ -124,9 +120,11 @@ JOIN "companies" co ON co."id" = mi."company_id";
 --> statement-breakpoint
 
 -- 3. Who can see which client in the client portal: one source, derived.
+-- Access needs a portal login, so a membership without one never counts.
 CREATE OR REPLACE VIEW "client_portal_access" AS
 SELECT cl."id" AS "client_id", m."contact_id", c."user_id"
 FROM "memberships" m
 JOIN "clients" cl ON cl."company_id" = m."company_id" AND cl."deleted_at" IS NULL
 JOIN "contacts" c ON c."id" = m."contact_id" AND c."deleted_at" IS NULL
+  AND c."user_id" IS NOT NULL
 WHERE m."ended_at" IS NULL AND m."portal_access";

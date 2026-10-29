@@ -190,7 +190,18 @@ export async function convertLeadToClient(
         await db.transaction(async tx => {
           await joinCompany(tx, lead.contactId, clientCompanyId)
           if (givePortalAccess) {
-            await setPortalAccess(tx, lead.contactId, clientCompanyId, true)
+            const granted = await setPortalAccess(
+              tx,
+              lead.contactId,
+              clientCompanyId,
+              true
+            )
+            // Access needs a portal login; the contact sheet creates one.
+            if (!granted) {
+              warnings.push(
+                `${lead.contactName} has no portal login yet, so they weren’t given portal access. Create one from their contact, then switch it on.`
+              )
+            }
           }
           const [primary] = await tx
             .select({ id: memberships.id })

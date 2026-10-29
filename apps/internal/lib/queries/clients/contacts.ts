@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, asc, desc, eq, isNull, or } from 'drizzle-orm'
+import { and, asc, desc, eq, isNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { clients, contacts, memberships } from '@/lib/db/schema'
@@ -19,10 +19,10 @@ export type ClientContactRow = {
 }
 
 /**
- * A client's people: the members of its company with portal access, plus
- * the company's primary contact even without access (clients use it),
- * primary first then by email. Shared by the client detail page, invoice
- * emails and the update composer so all agree on who a client's people are.
+ * A client's people: everyone at its company (the old client links became
+ * company memberships), primary first then by email. Shared by the client
+ * detail page, invoice emails and the update composer so all agree on who
+ * a client's people are. Portal access is separate.
  */
 export async function fetchContactsForClient(
   clientId: string
@@ -47,7 +47,6 @@ export async function fetchContactsForClient(
       and(
         eq(clients.id, clientId),
         isNull(memberships.endedAt),
-        or(eq(memberships.portalAccess, true), eq(memberships.isPrimary, true)),
         isNull(contacts.deletedAt)
       )
     )

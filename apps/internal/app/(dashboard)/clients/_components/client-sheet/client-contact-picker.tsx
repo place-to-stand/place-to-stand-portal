@@ -2,6 +2,7 @@
 
 import { Star, UserCheck, X } from 'lucide-react'
 
+import { Button } from '@pts/ui/button'
 import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { Switch } from '@pts/ui/switch'
@@ -103,31 +104,50 @@ export function ClientPortalAccessList({
             key={contact.id}
             contact={contact}
             titleAddon={contact.hasPortalAccess ? <PortalLoginMark /> : null}
-            note={contact.isPrimary ? <PrimaryNote /> : undefined}
+            note={
+              contact.isPrimary ? (
+                <PrimaryNote />
+              ) : contact.hasPortalAccess ? undefined : (
+                'No portal login'
+              )
+            }
             actions={
-              <DisabledFieldTooltip
-                disabled={isPending}
-                reason={isPending ? pendingReason : null}
-                className='w-auto'
-              >
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className='inline-flex px-1.5'>
-                      <Switch
-                        checked={hasAccess}
-                        disabled={isPending}
-                        aria-label={`Portal access for ${label}`}
-                        onCheckedChange={checked =>
-                          checked ? onGrant(contact) : onRevoke(contact)
-                        }
-                      />
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {hasAccess ? 'Has portal access' : 'No portal access'}
-                  </TooltipContent>
-                </Tooltip>
-              </DisabledFieldTooltip>
+              // Access needs a login; the contact sheet creates one.
+              !contact.hasPortalAccess && !hasAccess ? (
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='xs'
+                  disabled={isPending}
+                  onClick={() => open('contact', contact.id)}
+                >
+                  Create login
+                </Button>
+              ) : (
+                <DisabledFieldTooltip
+                  disabled={isPending}
+                  reason={isPending ? pendingReason : null}
+                  className='w-auto'
+                >
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className='inline-flex px-1.5'>
+                        <Switch
+                          checked={hasAccess}
+                          disabled={isPending}
+                          aria-label={`Portal access for ${label}`}
+                          onCheckedChange={checked =>
+                            checked ? onGrant(contact) : onRevoke(contact)
+                          }
+                        />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {hasAccess ? 'Has portal access' : 'No portal access'}
+                    </TooltipContent>
+                  </Tooltip>
+                </DisabledFieldTooltip>
+              )
             }
           />
         )

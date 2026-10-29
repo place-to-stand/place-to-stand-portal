@@ -22,6 +22,7 @@ import {
 import {
   joinCompany,
   leaveCompany,
+  hasPortalLogin,
   setMembershipTitle,
   setPortalAccess,
 } from '@/lib/queries/memberships'
@@ -221,6 +222,16 @@ export async function saveContactMutation(
               'That company is a client, so only an admin can remove someone from it.',
           })
         }
+        // Access needs a portal login (Create account on the contact).
+        if (
+          plan.access.some(change => change.portalAccess) &&
+          !(await hasPortalLogin(db, id))
+        ) {
+          return buildMutationResult({
+            error:
+              'They have no portal login yet. Create one (Portal account, below) before switching portal access on.',
+          })
+        }
         // Portal access is admin-only: switching it, or leaving a company
         // whose client they can see.
         if (!canManageAccess) {
@@ -355,9 +366,11 @@ export async function saveContactMutation(
         shorthandCompanyId,
         shorthandTitle: parsed.data.jobTitle,
       })
-      if (!canManageAccess && plan.access.some(change => change.portalAccess)) {
+      // A new contact has no portal login, so no access yet.
+      if (plan.access.some(change => change.portalAccess)) {
         return buildMutationResult({
-          error: 'Only an admin can give portal access.',
+          error:
+            'A new contact has no portal login yet. Save them, create a login, then switch portal access on.',
         })
       }
 
