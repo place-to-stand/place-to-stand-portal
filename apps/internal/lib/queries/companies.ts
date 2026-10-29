@@ -19,6 +19,7 @@ import {
   companyUpdatedEvent,
 } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
+import { syncCompanyClientLinks } from '@/lib/queries/companies/people-links'
 import { roleCan } from '@/lib/auth/capabilities'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
@@ -230,7 +231,7 @@ export async function listCompanyOptions(
   assertCrmAccess(user)
 
   return db
-    .select({ id: companies.id, name: companies.name })
+    .select({ id: companies.id, name: companies.name, website: companies.website })
     .from(companies)
     .where(isNull(companies.deletedAt))
     .orderBy(asc(sql`lower(${companies.name})`))
@@ -511,6 +512,9 @@ export async function setCompanyPrimaryContact(
         .update(contacts)
         .set({ companyId, updatedAt: timestamp })
         .where(eq(contacts.id, contactId))
+      // Now at the company, they get its clients (only admins reach here
+      // for a company with clients, checked above).
+      await syncCompanyClientLinks(actor, [companyId])
     }
   }
 
@@ -602,6 +606,42 @@ export async function findOrCreateCompanyByName(
 
   const raced = await findExisting()
   return raced ? { ...raced, created: false } : null
+}
+
+/**
+ * Gives a company a website when it has none. A lead save (or a submission
+ * promotion) that still carries a website writes it here, since the company
+ * owns it; an existing company website is never overwritten.
+ */
+export async function fillCompanyWebsiteIfBlank(
+  actor: AppUser,
+  companyId: string,
+  rawWebsite: string | null | undefined
+): Promise<void> {
+  const website = normalizeWebAddress(rawWebsite)
+  if (!website) return
+  const [updated] = await db
+    .update(companies)
+    .set({ website, updatedAt: new Date().toISOString() })
+    .where(
+      and(
+        eq(companies.id, companyId),
+        sql`nullif(btrim(${companies.website}), '') is null`
+      )
+    )
+    .returning({ id: companies.id, name: companies.name })
+  if (!updated) return
+  await logActivity({
+    actorId: actor.id,
+    actorRole: actor.role,
+    targetType: 'COMPANY',
+    targetId: updated.id,
+    ...companyUpdatedEvent({
+      name: updated.name,
+      changedFields: ['website'],
+      details: { before: { website: null }, after: { website } },
+    }),
+  })
 }
 
 /** Live company by id, or null. */

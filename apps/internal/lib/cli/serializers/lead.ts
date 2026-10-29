@@ -20,6 +20,7 @@ export type CliLead = {
   email: string | null
   phone: string | null
   company: string | null
+  /** The company's website, falling back to the lead's legacy copy. */
   website: string | null
   /** The linked company record, when the company name matched one. */
   companyId: string | null

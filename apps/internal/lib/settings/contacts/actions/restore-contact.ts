@@ -2,7 +2,13 @@ import { eq } from 'drizzle-orm'
 
 import { logActivity } from '@/lib/activity/logger'
 import { contactRestoredEvent } from '@/lib/activity/events/contacts'
+import { roleCan } from '@/lib/auth/capabilities'
 import { assertCrmAccess } from '@/lib/auth/permissions'
+import { syncCompanyClientLinksTx } from '@/lib/queries/companies/people-links'
+import {
+  logContactClientLinkChanges,
+  type ContactClientLinkChange,
+} from '@/lib/queries/contacts/settings/contact-client-link-activity'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
 import { contacts } from '@/lib/db/schema'
@@ -45,7 +51,14 @@ export async function restoreContactMutation(
       }
 
       let existingContact:
-        { id: string; email: string | null; name: string | null } | undefined
+        | {
+            id: string
+            email: string | null
+            name: string | null
+            companyId: string | null
+            userId: string | null
+          }
+        | undefined
 
       try {
         const rows = await db
@@ -53,6 +66,8 @@ export async function restoreContactMutation(
             id: contacts.id,
             email: contacts.email,
             name: contacts.name,
+            companyId: contacts.companyId,
+            userId: contacts.userId,
           })
           .from(contacts)
           .where(eq(contacts.id, parsed.data.id))
@@ -68,13 +83,26 @@ export async function restoreContactMutation(
         return buildMutationResult({ error: 'Contact not found.' })
       }
 
+      // Back at their company, they get any of its clients added while they
+      // were archived. For a portal user that grants access, which only an
+      // admin may do; otherwise an admin's next save of them catches up.
+      const restored = existingContact
+      const syncLinks =
+        Boolean(restored.companyId) &&
+        (!restored.userId || roleCan(user.role, 'clients.manage'))
+      let linkChanges: ContactClientLinkChange[] = []
       try {
-        await db
-          .update(contacts)
-          .set({
-            deletedAt: null,
-          })
-          .where(eq(contacts.id, parsed.data.id))
+        await db.transaction(async tx => {
+          await tx
+            .update(contacts)
+            .set({ deletedAt: null })
+            .where(eq(contacts.id, parsed.data.id))
+          if (syncLinks) {
+            linkChanges = await syncCompanyClientLinksTx(tx, [
+              restored.companyId,
+            ])
+          }
+        })
       } catch (error) {
         console.error('Failed to restore contact', error)
         return buildMutationResult({
@@ -84,6 +112,8 @@ export async function restoreContactMutation(
               : 'Unable to restore contact.',
         })
       }
+
+      await logContactClientLinkChanges(user, linkChanges)
 
       const event = contactRestoredEvent({
         email: existingContact.email,

@@ -38,6 +38,11 @@ export const saveLeadSchema = z.object({
    * `companyName`; null clears the company. Omitted (CLI, MCP) = link by name.
    */
   companyId: z.string().uuid().nullable().optional(),
+  /**
+   * Deprecated: the company owns its website. Still accepted (CLI, MCP) and
+   * written to the linked company when it has none, plus the lead's copy.
+   * Omitted (the lead sheet) = leave the lead's copy alone.
+   */
   companyWebsite: z.string().trim().max(255).optional().nullable(),
   /** TipTap HTML, as the sheet's editor produces it. */
   notes: z.string().optional().nullable(),
@@ -59,7 +64,8 @@ export type NormalizedLead = {
   companyName: string | null
   /** `undefined` = resolve the company from `companyName`. */
   companyId?: string | null
-  companyWebsite: string | null
+  /** `undefined` = not sent; keep the lead's copy. */
+  companyWebsite?: string | null
   notes: string | null
 }
 
@@ -117,7 +123,9 @@ export function diffLeadFields(
   compare('email', 'contactEmail', existing.contactEmail, next.contactEmail)
   compare('phone', 'contactPhone', existing.contactPhone, next.contactPhone)
   compare('company', 'companyName', existing.companyName, next.companyName)
-  compare('website', 'companyWebsite', existing.companyWebsite, next.companyWebsite)
+  if (next.companyWebsite !== undefined) {
+    compare('website', 'companyWebsite', existing.companyWebsite, next.companyWebsite)
+  }
   compare(
     'notes',
     'notes',
@@ -142,7 +150,10 @@ export function normalizeLeadPayload(payload: SaveLeadInput): NormalizedLead {
     companyName: normalizeOptionalString(payload.companyName, 160),
     companyId: payload.companyId,
     contactId: payload.contactId,
-    companyWebsite: normalizeOptionalString(payload.companyWebsite, 255),
+    companyWebsite:
+      payload.companyWebsite === undefined
+        ? undefined
+        : normalizeOptionalString(payload.companyWebsite, 255),
     notes: (payload.notes ?? '').trim() || null,
   }
 }

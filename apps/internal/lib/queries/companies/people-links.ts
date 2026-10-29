@@ -2,6 +2,7 @@ import 'server-only'
 
 import { and, eq, inArray, isNull } from 'drizzle-orm'
 
+import { roleCan } from '@/lib/auth/capabilities'
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { clients, contactClients, contacts } from '@/lib/db/schema'
@@ -24,34 +25,50 @@ import { syncPortalMembershipsForLinkChanges } from '@/lib/queries/contacts/sett
  * Nothing else is unlinked, so older hand-made links to another company's
  * client survive and nobody loses portal access unannounced. Portal access
  * follows every change.
+ *
+ * Moving people in or out of a company that has clients changes portal
+ * access, which is admin-only: callers check `clients.manage` first.
  */
-export async function syncCompanyClientLinks(
-  actor: AppUser,
+type Executor = Pick<typeof db, 'select' | 'insert' | 'update' | 'delete'>
+
+/**
+ * Same as `syncCompanyClientLinks`, inside the caller's transaction, so the
+ * change that moved someone (a contact's company, a client's company), the
+ * derived links and portal access commit together or not at all. Returns
+ * the link changes; log them with `logContactClientLinkChanges` after commit.
+ */
+export async function syncCompanyClientLinksTx(
+  tx: Executor,
   companyIds: ReadonlyArray<string | null | undefined>,
   options: { leftContactIds?: readonly string[] } = {}
-): Promise<void> {
+): Promise<ContactClientLinkChange[]> {
   const ids = [...new Set(companyIds.filter((id): id is string => Boolean(id)))]
-  if (ids.length === 0) return
+  if (ids.length === 0) return []
 
+  // Archived clients count for removals: someone who left keeps no link to
+  // an archived client that a later restore would bring back to life.
   const [people, companyClients] = await Promise.all([
-    db
+    tx
       .select({ id: contacts.id, companyId: contacts.companyId })
       .from(contacts)
       .where(and(inArray(contacts.companyId, ids), isNull(contacts.deletedAt))),
-    db
-      .select({ id: clients.id, companyId: clients.companyId })
+    tx
+      .select({
+        id: clients.id,
+        companyId: clients.companyId,
+        deletedAt: clients.deletedAt,
+      })
       .from(clients)
-      .where(and(inArray(clients.companyId, ids), isNull(clients.deletedAt))),
+      .where(inArray(clients.companyId, ids)),
   ])
-  if (companyClients.length === 0) return
+  if (companyClients.length === 0) return []
 
   const clientIds = companyClients.map(client => client.id)
-  const existing = await db
+  const existing = await tx
     .select({
       contactId: contactClients.contactId,
       clientId: contactClients.clientId,
       contactCompanyId: contacts.companyId,
-      contactDeletedAt: contacts.deletedAt,
     })
     .from(contactClients)
     .innerJoin(contacts, eq(contacts.id, contactClients.contactId))
@@ -63,6 +80,7 @@ export async function syncCompanyClientLinks(
 
   const changes: ContactClientLinkChange[] = []
   for (const client of companyClients) {
+    if (client.deletedAt) continue
     for (const person of people) {
       if (person.companyId === client.companyId && !have.has(key(person.id, client.id))) {
         changes.push({ contactId: person.id, clientId: client.id, action: 'linked' })
@@ -81,7 +99,7 @@ export async function syncCompanyClientLinks(
   const toRemove = changes.filter(change => change.action === 'unlinked')
 
   if (toAdd.length > 0) {
-    await db
+    await tx
       .insert(contactClients)
       .values(toAdd.map(({ contactId, clientId }) => ({ contactId, clientId })))
       .onConflictDoNothing({
@@ -89,7 +107,7 @@ export async function syncCompanyClientLinks(
       })
   }
   for (const change of toRemove) {
-    await db
+    await tx
       .delete(contactClients)
       .where(
         and(
@@ -99,6 +117,48 @@ export async function syncCompanyClientLinks(
       )
   }
 
-  await syncPortalMembershipsForLinkChanges(changes)
+  // Derived links never bring back access an admin revoked.
+  await syncPortalMembershipsForLinkChanges(changes, tx, {
+    restoreRevoked: false,
+  })
+  return changes
+}
+
+/** `syncCompanyClientLinksTx` in its own transaction, then logged. */
+export async function syncCompanyClientLinks(
+  actor: AppUser,
+  companyIds: ReadonlyArray<string | null | undefined>,
+  options: { leftContactIds?: readonly string[] } = {}
+): Promise<void> {
+  const changes = await db.transaction(tx =>
+    syncCompanyClientLinksTx(tx, companyIds, options)
+  )
   await logContactClientLinkChanges(actor, changes)
+}
+
+/**
+ * Moving a portal user (a contact with `user_id`) in or out of a company
+ * that has clients changes which clients they can see in the portal, which
+ * is admin-only (`clients.manage`). Returns why the move is refused, or null
+ * when it's allowed. A contact with no portal account can always move.
+ */
+export async function companyMoveError(
+  actor: AppUser,
+  contact: { userId: string | null },
+  from: string | null,
+  to: string | null
+): Promise<string | null> {
+  if (!contact.userId || from === to || roleCan(actor.role, 'clients.manage')) {
+    return null
+  }
+  const ids = [from, to].filter((id): id is string => Boolean(id))
+  if (ids.length === 0) return null
+  const [client] = await db
+    .select({ id: clients.id })
+    .from(clients)
+    .where(inArray(clients.companyId, ids))
+    .limit(1)
+  return client
+    ? 'That company is a client, so only an admin can move people in or out of it.'
+    : null
 }

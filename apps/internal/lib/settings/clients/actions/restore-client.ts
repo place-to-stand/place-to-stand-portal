@@ -6,6 +6,11 @@ import { assertAdmin } from '@/lib/auth/permissions'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
 import { clients } from '@/lib/db/schema'
+import { syncCompanyClientLinksTx } from '@/lib/queries/companies/people-links'
+import {
+  logContactClientLinkChanges,
+  type ContactClientLinkChange,
+} from '@/lib/queries/contacts/settings/contact-client-link-activity'
 import {
   restoreClientSchema,
   type RestoreClientInput,
@@ -49,6 +54,7 @@ export async function restoreClientMutation(
             id: string
             name: string
             deletedAt: string | null
+            companyId: string | null
           }
         | undefined
 
@@ -58,6 +64,7 @@ export async function restoreClientMutation(
             id: clients.id,
             name: clients.name,
             deletedAt: clients.deletedAt,
+            companyId: clients.companyId,
           })
           .from(clients)
           .where(eq(clients.id, parsed.data.id))
@@ -77,18 +84,29 @@ export async function restoreClientMutation(
         return buildMutationResult({ error: 'Client is already active.' })
       }
 
+      // Restored, it takes its company's current people (and their portal
+      // access), including anyone who joined while it was archived.
+      const companyId = existingClient.companyId
+      let linkChanges: ContactClientLinkChange[] = []
       try {
-        await db
-          .update(clients)
-          .set({ deletedAt: null })
-          .where(eq(clients.id, parsed.data.id))
+        await db.transaction(async tx => {
+          await tx
+            .update(clients)
+            .set({ deletedAt: null })
+            .where(eq(clients.id, parsed.data.id))
+          linkChanges = await syncCompanyClientLinksTx(tx, [companyId])
+        })
       } catch (error) {
         console.error('Failed to restore client', error)
         return buildMutationResult({
           error:
-            error instanceof Error ? error.message : 'Unable to restore client.',
+            error instanceof Error
+              ? error.message
+              : 'Unable to restore client.',
         })
       }
+
+      await logContactClientLinkChanges(user, linkChanges)
 
       const event = clientRestoredEvent({ name: existingClient.name })
 

@@ -105,7 +105,8 @@ const SheetOverlay = ({
   )
 }
 
-type SheetSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'wide' | 'xwide' | 'full'
+type SheetSize =
+  'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'split' | 'wide' | 'xwide' | 'full'
 
 const sheetSizeClasses: Record<SheetSize, string> = {
   sm: 'sm:max-w-sm',
@@ -113,6 +114,9 @@ const sheetSizeClasses: Record<SheetSize, string> = {
   lg: 'sm:max-w-lg',
   xl: 'sm:max-w-xl',
   '2xl': 'sm:max-w-2xl',
+  // Two columns from lg: a 720px form beside a SHEET_SPLIT_SIDE_CLASS column
+  // (512px). Below lg the side column stacks and the sheet stays 2xl.
+  split: 'sm:max-w-2xl lg:max-w-[1232px]',
   wide: 'sm:max-w-4xl lg:max-w-5xl',
   xwide: 'sm:max-w-4xl lg:max-w-6xl',
   full: 'w-screen max-w-none',
@@ -277,3 +281,6 @@ export {
   SheetTitle,
   SheetDescription,
 }
+
+/** Width of the side column in a `size='split'` sheet (lead tasks/updates). */
+export const SHEET_SPLIT_SIDE_CLASS = 'lg:w-[512px]'

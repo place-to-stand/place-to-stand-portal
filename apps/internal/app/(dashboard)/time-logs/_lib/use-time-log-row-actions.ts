@@ -51,7 +51,7 @@ export function useTimeLogRowActions() {
       toast({
         title:
           change === 'archive'
-            ? 'Unable to delete time log'
+            ? 'Unable to archive time log'
             : 'Unable to restore time log',
         description: 'Please try again. If the issue persists contact support.',
         variant: 'destructive',

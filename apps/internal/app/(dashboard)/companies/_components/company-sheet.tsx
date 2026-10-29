@@ -43,7 +43,6 @@ import {
   CompanyContactsSection,
   CompanyLeadsSection,
 } from './company-sheet-sections'
-import { EntityLinkPicker } from '@/components/ui/entity-link-picker'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 
 const COMPANY_FORM_ID = 'company-form'
@@ -53,7 +52,7 @@ const companyFormSchema = z.object({
   website: z.string().trim().max(255),
   linkedinUrl: z.string().trim().max(255),
   notes: z.string().max(20000),
-  /** One of the company's people; saved after the company itself. */
+  /** Set with the star on the People list; saved after the company itself. */
   primaryContactId: z.string().nullable(),
 })
 
@@ -227,7 +226,7 @@ export function CompanySheet({
     })
   }, [company?.name, companyId, isArchived, onClose, refresh, toast])
 
-  // The star in the people list and the picker edit the same field, saved
+  // The star on the People list is the one control for this field; it saves
   // with the form.
   const primaryContactId = useWatch({
     control: form.control,
@@ -357,62 +356,6 @@ export function CompanySheet({
                         </FormItem>
                       )}
                     />
-                    {company ? (
-                      <FormField
-                        control={form.control}
-                        name='primaryContactId'
-                        render={({ field }) => {
-                          const people = company.contacts.map(person => ({
-                            id: person.id,
-                            label: person.name,
-                            description: person.jobTitle ?? person.email,
-                          }))
-                          return (
-                            <FormItem>
-                              <FormLabel optional>Primary contact</FormLabel>
-                              <FormControl>
-                                <EntityLinkPicker
-                                  entity='contact'
-                                  entityLabel='contact'
-                                  aria-label='Primary contact'
-                                  placeholder={
-                                    people.length
-                                      ? 'Select one of their people'
-                                      : 'Set this company on a contact first'
-                                  }
-                                  value={
-                                    people.find(
-                                      person => person.id === field.value
-                                    ) ?? null
-                                  }
-                                  onChange={next =>
-                                    field.onChange(next?.id ?? null)
-                                  }
-                                  options={people}
-                                  disabled={
-                                    fieldsDisabled ||
-                                    people.length === 0 ||
-                                    primaryLocked
-                                  }
-                                  toOption={record => ({
-                                    id: record.id,
-                                    label: record.name,
-                                  })}
-                                  createPrefillParam='contactName'
-                                  allowCreate={false}
-                                />
-                              </FormControl>
-                              <p className='text-muted-foreground text-xs'>
-                                {primaryLocked
-                                  ? 'This company is a client; an admin sets its primary contact.'
-                                  : 'Clients use their company’s primary contact, e.g. for invoice emails.'}
-                              </p>
-                              <FormMessage />
-                            </FormItem>
-                          )
-                        }}
-                      />
-                    ) : null}
                   </SheetSection>
 
                   {company ? (
@@ -424,6 +367,7 @@ export function CompanySheet({
                         contacts={company.contacts}
                         primaryContactId={primaryContactId}
                         disabled={fieldsDisabled || primaryLocked}
+                        primaryLocked={primaryLocked}
                         onSetPrimary={handleSetPrimary}
                       />
                       <Separator />

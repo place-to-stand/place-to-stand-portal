@@ -25,6 +25,7 @@ import { SortableTableHead } from '@/components/table-toolbar/sortable-table-hea
 import { useListParams } from '@/hooks/use-list-params'
 import { useToast } from '@/components/ui/use-toast'
 import type { CompanyListItem } from '@/lib/companies/types'
+import { displayWebsiteHost } from '@/lib/companies/website'
 import { archiveCompany, restoreCompany } from '../actions'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
@@ -33,15 +34,6 @@ import {
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
 import { cn } from '@/lib/utils'
-
-function displayHost(website: string | null) {
-  if (!website) return null
-  try {
-    return new URL(website).hostname.replace(/^www\./, '')
-  } catch {
-    return website
-  }
-}
 
 export function CompaniesTable({
   companies,
@@ -134,7 +126,7 @@ export function CompaniesTable({
         </TableHeader>
         <TableBody>
           {companies.map(company => {
-            const host = displayHost(company.website)
+            const host = displayWebsiteHost(company.website)
             return (
               <TableRow
                 key={company.id}
@@ -178,7 +170,7 @@ export function CompaniesTable({
                 >
                   {company.primaryContactName ? (
                     <span className='inline-flex min-w-0 items-center gap-1.5'>
-                      <Star className='h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-500' />
+                      <Star className='text-warning h-3.5 w-3.5 shrink-0 fill-current' />
                       <span className='truncate'>
                         {company.primaryContactName}
                       </span>

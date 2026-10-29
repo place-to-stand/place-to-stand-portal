@@ -8,6 +8,7 @@ import { db } from '@/lib/db'
 import { leads } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 import type { LeadStatusValue } from '@/lib/leads/constants'
+import { leadCompanyWebsiteSql } from '@/lib/leads/company-website-sql'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
 
 const leadFields = {
@@ -20,7 +21,7 @@ const leadFields = {
   contactEmail: leads.contactEmail,
   contactPhone: leads.contactPhone,
   companyName: leads.companyName,
-  companyWebsite: leads.companyWebsite,
+  companyWebsite: leadCompanyWebsiteSql,
   companyId: leads.companyId,
   contactId: leads.contactId,
   notes: leads.notes,

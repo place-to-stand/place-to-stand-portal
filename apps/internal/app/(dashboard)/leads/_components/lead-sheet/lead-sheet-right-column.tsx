@@ -1,5 +1,7 @@
 'use client'
 
+import { SHEET_SPLIT_SIDE_CLASS } from '@/components/ui/sheet'
+import { cn } from '@/lib/utils'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import type { LeadRecord } from '@/lib/leads/types'
 
@@ -27,7 +29,12 @@ export function LeadSheetRightColumn({
   const { isAdmin } = useViewerAccess()
 
   return (
-    <div className='bg-muted/20 flex-shrink-0 max-lg:border-t lg:w-[480px] lg:overflow-y-auto'>
+    <div
+      className={cn(
+        'bg-muted/20 flex-shrink-0 max-lg:border-t lg:overflow-y-auto',
+        SHEET_SPLIT_SIDE_CLASS
+      )}
+    >
       <div className='space-y-10 p-6'>
         {/* Conversion — renders nothing until the lead is closed won */}
         {isAdmin ? (

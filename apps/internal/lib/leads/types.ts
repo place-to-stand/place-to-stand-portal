@@ -28,6 +28,7 @@ export type LeadRecord = {
   contactEmail: string | null
   contactPhone: string | null
   companyName: string | null
+  /** The company's website, falling back to the lead's legacy copy. */
   companyWebsite: string | null
   /** The linked company record; `companyName` is its display copy. */
   companyId: string | null

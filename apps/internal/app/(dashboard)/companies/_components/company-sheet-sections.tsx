@@ -2,7 +2,6 @@
 
 import { ExternalLink, Star } from 'lucide-react'
 
-import { Badge } from '@pts/ui/badge'
 import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
@@ -20,12 +19,15 @@ export function CompanyContactsSection({
   contacts,
   primaryContactId,
   disabled,
+  primaryLocked,
   onSetPrimary,
 }: {
   contacts: CompanyContactSummary[]
   /** The form's current choice, so the star follows unsaved edits. */
   primaryContactId: string | null
   disabled: boolean
+  /** A client's primary contact is admin-only; explains the disabled stars. */
+  primaryLocked: boolean
   onSetPrimary: (contactId: string | null) => void
 }) {
   const { open } = useSheetParams()
@@ -33,7 +35,11 @@ export function CompanyContactsSection({
   return (
     <SheetSection
       title='People'
-      description='Everyone we know here. Star the primary contact; clients use them too.'
+      description={
+        primaryLocked
+          ? 'Everyone we know here. This company is a client, so an admin stars its primary contact.'
+          : 'Everyone we know here. Star the primary contact; clients use them too, e.g. for invoice emails.'
+      }
       action={
         <span className='text-muted-foreground text-xs'>{contacts.length}</span>
       }
@@ -47,19 +53,7 @@ export function CompanyContactsSection({
               <RecordRowButton
                 variant='inset'
                 onClick={() => open('contact', contact.id)}
-                title={
-                  <>
-                    {contact.name}
-                    {(contact.id === primaryContactId) ? (
-                      <Badge
-                        variant='outline'
-                        className='ml-2 align-middle text-xs'
-                      >
-                        Primary
-                      </Badge>
-                    ) : null}
-                  </>
-                }
+                title={contact.name}
                 subtitle={contact.jobTitle ?? contact.email}
               />
               {contact.linkedinUrl ? (
@@ -79,19 +73,26 @@ export function CompanyContactsSection({
               <RowActionButton
                 type='button'
                 disabled={disabled}
-                aria-pressed={(contact.id === primaryContactId)}
+                aria-pressed={contact.id === primaryContactId}
                 label={
-                  (contact.id === primaryContactId)
+                  contact.id === primaryContactId
                     ? `Remove ${contact.name} as primary contact`
                     : `Make ${contact.name} the primary contact`
                 }
                 onClick={() =>
-                  onSetPrimary((contact.id === primaryContactId) ? null : contact.id)
+                  onSetPrimary(
+                    contact.id === primaryContactId ? null : contact.id
+                  )
                 }
+                className={cn(
+                  'text-muted-foreground',
+                  contact.id === primaryContactId &&
+                    'text-warning hover:text-warning'
+                )}
                 icon={
                   <Star
                     className={cn(
-                      (contact.id === primaryContactId) && 'fill-amber-400 text-amber-500'
+                      contact.id === primaryContactId && 'fill-current'
                     )}
                   />
                 }

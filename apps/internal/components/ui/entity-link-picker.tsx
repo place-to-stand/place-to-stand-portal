@@ -1,5 +1,7 @@
 'use client'
 
+import { Button } from '@pts/ui/button'
+
 import { useEffect, useMemo, useRef, type ComponentType } from 'react'
 import { ExternalLink } from 'lucide-react'
 
@@ -115,7 +117,11 @@ export function EntityLinkPicker<E extends SheetCreatedEntity>({
         const next = items.find(item => item.value === nextId)
         onChange(
           next
-            ? { id: next.value, label: next.label, description: next.description }
+            ? {
+                id: next.value,
+                label: next.label,
+                description: next.description,
+              }
             : null
         )
       }}
@@ -131,24 +137,28 @@ export function EntityLinkPicker<E extends SheetCreatedEntity>({
               awaitingCreate.current = true
               openNew(
                 entity,
-                typed.trim() ? { [createPrefillParam]: typed.trim() } : undefined
+                typed.trim()
+                  ? { [createPrefillParam]: typed.trim() }
+                  : undefined
               )
             }
           : undefined
       }
       onClear={() => onChange(null)}
-      inlineActions={
+      trailingAction={
         value ? (
           <Tooltip>
             <TooltipTrigger asChild>
-              <button
+              <Button
                 type='button'
+                variant='outline'
+                size='icon'
+                className='text-muted-foreground shrink-0'
                 aria-label={`Open ${value.label}`}
                 onClick={() => openSheet(entity, value.id)}
-                className='text-muted-foreground hover:text-foreground hover:bg-muted focus-visible:ring-ring/50 rounded p-1 outline-none focus-visible:ring-2'
               >
                 <ExternalLink className='size-3.5' aria-hidden />
-              </button>
+              </Button>
             </TooltipTrigger>
             <TooltipContent>Open {entityLabel}</TooltipContent>
           </Tooltip>

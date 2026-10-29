@@ -19,12 +19,22 @@ import type { ContactClientLinkChange } from './contact-client-link-activity'
  * `contact_clients`, so a missed sync is invisible in preview.
  */
 export async function syncPortalMembershipsForLinkChanges(
-  changes: ContactClientLinkChange[]
+  changes: ContactClientLinkChange[],
+  /** Run inside the caller's transaction so links and access commit together. */
+  executor: Pick<typeof db, 'select' | 'insert' | 'update'> = db,
+  options: {
+    /**
+     * Whether a link brings back a membership an admin revoked. True for a
+     * person linking by hand; false for links derived from someone's
+     * company, so a revoked portal user stays revoked.
+     */
+    restoreRevoked?: boolean
+  } = {}
 ): Promise<void> {
   if (changes.length === 0) return
 
   const contactIds = [...new Set(changes.map(change => change.contactId))]
-  const portalContacts = await db
+  const portalContacts = await executor
     .select({ id: contacts.id, userId: contacts.userId })
     .from(contacts)
     .where(
@@ -50,17 +60,23 @@ export async function syncPortalMembershipsForLinkChanges(
   const toRevoke = memberships('unlinked')
 
   if (toGrant.length > 0) {
-    await db
+    const insert = executor
       .insert(clientMembers)
       .values(toGrant.map(membership => ({ ...membership, deletedAt: null })))
-      .onConflictDoUpdate({
+    if (options.restoreRevoked === false) {
+      await insert.onConflictDoNothing({
+        target: [clientMembers.clientId, clientMembers.userId],
+      })
+    } else {
+      await insert.onConflictDoUpdate({
         target: [clientMembers.clientId, clientMembers.userId],
         set: { deletedAt: null },
       })
+    }
   }
 
   if (toRevoke.length > 0) {
-    await db
+    await executor
       .update(clientMembers)
       .set({ deletedAt: new Date().toISOString() })
       .where(

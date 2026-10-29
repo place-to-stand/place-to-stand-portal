@@ -1,12 +1,18 @@
-/** Time logs page filters (`?from=&to=&client=&project=&person=&page=`). Client-safe. */
-import { resolveDateRangePreset } from '@/lib/dates/calendar-date'
+/**
+ * Time logs page filters (`?from=&to=&clientId=&projectId=&personId=&page=`).
+ * Not `client`/`project`: those params open the client and project sheets.
+ * Client-safe.
+ */
+import {
+  parseCalendarDate,
+  resolveDateRangePreset,
+} from '@/lib/dates/calendar-date'
 
 type RawParams = Record<string, string | string[] | undefined>
 
 const first = (value: string | string[] | undefined) =>
   Array.isArray(value) ? value[0] : value
 
-const DATE = /^\d{4}-\d{2}-\d{2}$/
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export type TimeLogsListParams = {
@@ -27,19 +33,22 @@ export function currentMonthRange(now = new Date()) {
 
 export function parseTimeLogsSearchParams(params: RawParams): TimeLogsListParams {
   const defaults = currentMonthRange()
-  const from = first(params.from)
-  const to = first(params.to)
+  // A real calendar date (2026-02-31 is not), or the default.
+  const valid = (value: string | undefined) =>
+    value && parseCalendarDate(value) ? value : undefined
+  const from = valid(first(params.from))
+  const to = valid(first(params.to))
   const uuid = (key: string) => {
     const value = first(params[key])
     return value && UUID.test(value) ? value : undefined
   }
   return {
-    from: from && DATE.test(from) ? from : defaults.from,
-    to: to && DATE.test(to) ? to : defaults.to,
-    clientId: uuid('client'),
-    projectId: uuid('project'),
-    personId: uuid('person'),
+    from: from ?? defaults.from,
+    to: to ?? defaults.to,
+    clientId: uuid('clientId'),
+    projectId: uuid('projectId'),
+    personId: uuid('personId'),
     page: Math.max(1, Number.parseInt(first(params.page) ?? '1', 10) || 1),
-    isDefaultRange: !(from && DATE.test(from)) && !(to && DATE.test(to)),
+    isDefaultRange: !from && !to,
   }
 }

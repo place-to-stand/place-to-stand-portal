@@ -88,6 +88,14 @@ export async function convertLeadToClient(
     // named after it; otherwise the typed name names the new company too.
     const resolvedName =
       leadCompany?.name || clientName || lead.companyName || lead.contactName
+    const [leadCompanyRow] = leadCompanyId
+      ? await db
+          .select({ website: companies.website })
+          .from(companies)
+          .where(eq(companies.id, leadCompanyId))
+          .limit(1)
+      : []
+    const leadCompanyWebsite = leadCompanyRow?.website?.trim() || null
     const resolvedNotes = copyNotesToClient
       ? extractLeadNotes(lead.notes as Record<string, unknown>)
       : null
@@ -99,7 +107,8 @@ export async function convertLeadToClient(
         providedSlug: clientSlug || null,
         billingType,
         state: null,
-        website: lead.companyWebsite || null,
+        // The company owns the website; older leads may only have their copy.
+        website: leadCompanyWebsite || lead.companyWebsite || null,
         originationContactId: null,
         originationUserId: null,
         closers: [],
@@ -131,6 +140,8 @@ export async function convertLeadToClient(
       .update(clients)
       .set({ companyId: leadCompanyId, updatedAt: new Date().toISOString() })
       .where(and(eq(clients.id, finalClientId), isNull(clients.companyId)))
+    // It now has the company's people.
+    await syncCompanyClientLinks(user, [leadCompanyId])
   }
 
   // 3. Link the lead's contact to the client (creating it from the lead's
@@ -182,6 +193,28 @@ export async function convertLeadToClient(
             name: lead.contactName,
           }),
         })
+      }
+
+      // Someone on record at another company isn't this client's person:
+      // the same rule as the client sheet. Leave them unlinked and say so.
+      const [placement] = await db
+        .select({
+          contactCompanyId: contacts.companyId,
+          clientCompanyId: clients.companyId,
+        })
+        .from(contacts)
+        .innerJoin(clients, eq(clients.id, finalClientId))
+        .where(eq(contacts.id, contactId))
+        .limit(1)
+      if (
+        placement?.contactCompanyId &&
+        placement.clientCompanyId &&
+        placement.contactCompanyId !== placement.clientCompanyId
+      ) {
+        warnings.push(
+          `${lead.contactName} works at another company, so they weren't added to this client. Change their company to add them.`
+        )
+        throw new SkipContactLink()
       }
 
       // Link contact to client (ignore if already linked)
@@ -240,8 +273,10 @@ export async function convertLeadToClient(
           )
         )
     } catch (err) {
-      console.error('[convert-lead] Failed to create contact:', err)
-      warnings.push('Contact record could not be created. You can add it manually from the client page.')
+      if (!(err instanceof SkipContactLink)) {
+        console.error('[convert-lead] Failed to create contact:', err)
+        warnings.push('Contact record could not be created. You can add it manually from the client page.')
+      }
     }
   }
 
@@ -314,3 +349,6 @@ export async function convertLeadToClient(
     warnings: warnings.length > 0 ? warnings : undefined,
   }
 }
+
+/** Stops the contact step early once its warning is recorded. */
+class SkipContactLink extends Error {}

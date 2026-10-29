@@ -2,7 +2,6 @@
 
 import { EmptyState } from '@pts/ui/empty-state'
 import { PageShell } from '@/components/layout/page-shell'
-import type { TabsNavTab } from '@/components/layout/tabs-nav'
 import type { Role } from '@/lib/auth/capabilities'
 import type { DashboardLayout } from '@/lib/dashboard/layout'
 
@@ -15,10 +14,6 @@ type HomeDashboardProps = DashboardWidgetData & {
   initialLayout: DashboardLayout
   role: Role
 }
-
-const HOME_TABS = [
-  { label: 'Home', value: 'home', href: '/my/home' },
-] satisfies readonly TabsNavTab[]
 
 export function HomeDashboard({
   tasks,
@@ -33,10 +28,6 @@ export function HomeDashboard({
   return (
     <PageShell
       breadcrumbs={[{ label: 'Home' }]}
-      // One tab, like any page without others, so the toolbar row lines up
-      // with My Tasks and the lists.
-      tabs={HOME_TABS}
-      activeTab='home'
       primaryAction={
         <LayoutEditControls
           isEditing={editor.isEditing}

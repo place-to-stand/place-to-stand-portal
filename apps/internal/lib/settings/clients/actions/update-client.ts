@@ -40,7 +40,11 @@ import {
   type ClientMutationResult,
 } from './types'
 import { getLinkableCompany } from '@/lib/queries/companies'
-import { syncCompanyClientLinks } from '@/lib/queries/companies/people-links'
+import { syncCompanyClientLinksTx } from '@/lib/queries/companies/people-links'
+import {
+  logContactClientLinkChanges,
+  type ContactClientLinkChange,
+} from '@/lib/queries/contacts/settings/contact-client-link-activity'
 
 type UpdateClientPayload = {
   id: string
@@ -219,6 +223,8 @@ export async function updateClient(
       : nextMonthStartUtc()
     : null
 
+  const previousCompanyId = existingClient.companyId
+  let linkChanges: ContactClientLinkChange[] = []
   try {
     await db.transaction(async tx => {
       if (billingTypeChanged && billingEffectiveFrom) {
@@ -268,6 +274,22 @@ export async function updateClient(
           ...(label !== undefined ? { label } : {}),
         })
         .where(eq(clients.id, id))
+
+      // A client's people are its company's people: moving the client to
+      // another company swaps the old company's people for the new one's,
+      // portal access included, in this same transaction.
+      if (companyId && companyId !== previousCompanyId) {
+        const previous = previousCompanyId
+        const oldPeople = previous
+          ? await tx
+              .select({ id: contacts.id })
+              .from(contacts)
+              .where(eq(contacts.companyId, previous))
+          : []
+        linkChanges = await syncCompanyClientLinksTx(tx, [previous, companyId], {
+          leftContactIds: oldPeople.map(person => person.id),
+        })
+      }
     })
   } catch (error) {
     if (error instanceof ClosedMonthError) {
@@ -288,19 +310,7 @@ export async function updateClient(
     }
   }
 
-  // A client's people are its company's people: moving the client to
-  // another company swaps the old company's people for the new one's.
-  if (companyId && companyId !== existingClient.companyId) {
-    const oldPeople = existingClient.companyId
-      ? await db
-          .select({ id: contacts.id })
-          .from(contacts)
-          .where(eq(contacts.companyId, existingClient.companyId))
-      : []
-    await syncCompanyClientLinks(user, [existingClient.companyId, companyId], {
-      leftContactIds: oldPeople.map(person => person.id),
-    })
-  }
+  await logContactClientLinkChanges(user, linkChanges)
 
   await recordUpdateActivity({
     userContext: { id: user.id, role: user.role },

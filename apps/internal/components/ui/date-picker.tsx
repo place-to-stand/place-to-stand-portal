@@ -1,12 +1,16 @@
 'use client'
 
 import * as React from 'react'
-import { CalendarIcon, XIcon } from 'lucide-react'
+import { CalendarIcon } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { Calendar } from '@pts/ui/calendar'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
+import {
+  FIELD_CLEAR_LABEL_SPACE,
+  FieldClearButton,
+} from '@/components/ui/field-clear-button'
 import { fieldTriggerClasses } from '@/components/ui/searchable-combobox'
 import {
   parseCalendarDate,
@@ -70,6 +74,12 @@ export const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
       ...(maxDate ? [{ after: maxDate }] : []),
     ]
     const showClear = clearable && Boolean(selected) && !disabled
+    const today = toCalendarDate(new Date())
+    const todayAllowed = (!min || today >= min) && (!max || today <= max)
+    const pick = (next: string) => {
+      onChange(next)
+      setOpen(false)
+    }
 
     return (
       <div className={cn('relative w-full min-w-0', className)}>
@@ -91,16 +101,13 @@ export const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
               data-placeholder={selected ? undefined : true}
               onBlur={onBlur}
               {...triggerProps}
-              className={cn(
-                fieldTriggerClasses,
-                showClear && 'pr-14',
-                triggerClassName
-              )}
+              className={cn(fieldTriggerClasses, triggerClassName)}
             >
               <span
                 className={cn(
-                  'min-w-0 truncate',
-                  selected ? 'font-medium' : 'text-muted-foreground'
+                  'min-w-0 flex-1 truncate text-left',
+                  selected ? 'font-medium' : 'text-muted-foreground',
+                  showClear && FIELD_CLEAR_LABEL_SPACE
                 )}
               >
                 {label ?? placeholder}
@@ -119,22 +126,36 @@ export const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
               defaultMonth={selected ?? maxDate ?? minDate}
               weekStartsOn={WEEK_STARTS_ON}
               disabled={disabledDays}
-              onSelect={date => {
-                onChange(date ? toCalendarDate(date) : '')
-                setOpen(false)
-              }}
+              onSelect={date => pick(date ? toCalendarDate(date) : '')}
             />
+            {/* Today, and Clear for optional dates (required ones can't be
+                emptied). */}
+            <div className='flex items-center justify-between gap-2 border-t p-2'>
+              <Button
+                type='button'
+                variant='ghost'
+                size='xs'
+                disabled={!todayAllowed}
+                onClick={() => pick(today)}
+              >
+                Today
+              </Button>
+              {clearable ? (
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='xs'
+                  disabled={!selected}
+                  onClick={() => pick('')}
+                >
+                  Clear
+                </Button>
+              ) : null}
+            </div>
           </PopoverContent>
         </Popover>
         {showClear ? (
-          <button
-            type='button'
-            aria-label='Clear date'
-            onClick={() => onChange('')}
-            className='text-muted-foreground hover:text-foreground hover:bg-muted focus-visible:ring-ring/50 absolute top-1/2 right-8 -translate-y-1/2 rounded p-1 outline-none focus-visible:ring-2'
-          >
-            <XIcon className='size-3.5' aria-hidden />
-          </button>
+          <FieldClearButton label='date' onClear={() => onChange('')} />
         ) : null}
       </div>
     )

@@ -19,9 +19,14 @@ import { serializeLeadNotes } from '@/lib/leads/notes'
 import { resolveNextLeadRank } from '@/lib/leads/rank'
 import { notifyLeadAssigned } from '@/lib/notifications/in-app/events'
 import {
+  fillCompanyWebsiteIfBlank,
   findOrCreateCompanyByName,
   getLinkableCompany,
 } from '@/lib/queries/companies'
+import {
+  companyMoveError,
+  syncCompanyClientLinks,
+} from '@/lib/queries/companies/people-links'
 import type { ActivitySourceValue } from '@/lib/types'
 
 import {
@@ -153,16 +158,25 @@ async function resolveLeadContact(
     email: contacts.email,
     phone: contacts.phone,
     companyId: contacts.companyId,
+    userId: contacts.userId,
   }
   const timestamp = new Date().toISOString()
 
-  const linkCompany = async (contact: { id: string; companyId: string | null }) => {
-    if (companyId && !contact.companyId) {
-      await db
-        .update(contacts)
-        .set({ companyId, updatedAt: timestamp })
-        .where(eq(contacts.id, contact.id))
-    }
+  // A contact with no company joins the lead's, which links them to its
+  // clients. For a portal user that grants client access, which is
+  // admin-only: otherwise they're left without a company.
+  const linkCompany = async (contact: {
+    id: string
+    companyId: string | null
+    userId: string | null
+  }) => {
+    if (!companyId || contact.companyId) return
+    if (await companyMoveError(actor, contact, null, companyId)) return
+    await db
+      .update(contacts)
+      .set({ companyId, updatedAt: timestamp })
+      .where(eq(contacts.id, contact.id))
+    await syncCompanyClientLinks(actor, [companyId])
   }
 
   if (normalized.contactId) {
@@ -275,6 +289,9 @@ async function resolveLeadContact(
     .values({ ...details, companyId, createdBy: actor.id })
     .returning(fields)
   if (!created) return { error: 'Unable to save the contact.' }
+  // A new contact has no portal account, so joining a client's company only
+  // links them to its clients.
+  await syncCompanyClientLinks(actor, [companyId])
 
   await logActivity({
     actorId: actor.id,
@@ -304,6 +321,9 @@ async function createLead(
   const resolved = await resolveLeadCompany(actor, normalized)
   if ('error' in resolved) return { success: false, error: resolved.error }
   const { company } = resolved
+  if (company) {
+    await fillCompanyWebsiteIfBlank(actor, company.id, normalized.companyWebsite)
+  }
   const contactResult = await resolveLeadContact(actor, normalized, company?.id ?? null)
   if ('error' in contactResult) return { success: false, error: contactResult.error }
   const { contact } = contactResult
@@ -321,7 +341,7 @@ async function createLead(
       contactPhone: contact.phone,
       companyName: company?.name ?? normalized.companyName,
       companyId: company?.id ?? null,
-      companyWebsite: normalized.companyWebsite,
+      companyWebsite: normalized.companyWebsite ?? null,
       notes: serializeLeadNotes(normalized.notes),
       rank,
       currentStageEnteredAt: timestamp,
@@ -407,6 +427,9 @@ async function updateLead(
   const resolved = await resolveLeadCompany(actor, normalized, existing)
   if ('error' in resolved) return { success: false, error: resolved.error }
   const { company } = resolved
+  if (company) {
+    await fillCompanyWebsiteIfBlank(actor, company.id, normalized.companyWebsite)
+  }
   // Always store the company's own spelling, so a case-only edit can't
   // drift from the linked record.
   if (company) {
@@ -445,10 +468,17 @@ async function updateLead(
     contactPhone: normalized.contactPhone,
     companyName: normalized.companyName,
     companyId: company?.id ?? null,
-    companyWebsite: normalized.companyWebsite,
     notes: serializeLeadNotes(normalized.notes),
     rank,
     updatedAt: timestamp,
+  }
+
+  // The lead's website copy (dropped later) follows an explicit value; a
+  // save without one keeps it, unless the lead moved to another company.
+  if (normalized.companyWebsite !== undefined) {
+    setPayload.companyWebsite = normalized.companyWebsite
+  } else if ((company?.id ?? null) !== existing.companyId) {
+    setPayload.companyWebsite = null
   }
 
   if (statusChanged) {

@@ -119,7 +119,8 @@ export function PageShell({
                 className='flex-1 sm:flex-none'
               />
             ) : (
-              <div />
+              // Holds the tabs' height so content starts at the same spot.
+              <div className='min-h-10' />
             )}
             <div className='flex items-center justify-end gap-3 sm:gap-6'>
               {count ? (

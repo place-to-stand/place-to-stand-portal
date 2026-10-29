@@ -21,6 +21,11 @@ export type ClientContactOption = {
   hasPortalAccess: boolean
   /** Set on linked contacts only: the client's primary contact. */
   isPrimary?: boolean
+  /**
+   * Works at the client's company. They're the company's people, so they
+   * can't be unlinked here (change their company on the contact).
+   */
+  atCompany?: boolean
 }
 
 /** A contact available as an external origination source (IC referrer). */

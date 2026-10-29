@@ -46,15 +46,9 @@ export function LeadSheet(props: LeadSheetProps) {
       <Sheet open={open} onOpenChange={handleSheetOpenChange}>
         <SheetContent
           hideCloseButton
-          size='2xl'
-          className={cn(
-            'flex h-full w-full flex-col gap-0 overflow-hidden p-0',
-            // Edit mode appends the fixed-width tasks and updates sidebar
-            // (480px) while the form column stays at the same 672px as add
-            // mode. Below lg the sidebar stacks under the form, so the sheet
-            // keeps its add width.
-            isEditing && 'lg:max-w-[1152px]'
-          )}
+          // Edit mode adds the tasks and updates column beside the form.
+          size={isEditing ? 'split' : '2xl'}
+          className='flex h-full w-full flex-col gap-0 overflow-hidden p-0'
         >
           {/* Header */}
           <SheetFormHeader

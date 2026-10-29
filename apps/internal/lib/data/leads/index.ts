@@ -9,6 +9,7 @@ import { db } from '@/lib/db'
 import { leads, users } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 import { extractLeadNotes } from '@/lib/leads/notes'
+import { leadCompanyWebsiteSql } from '@/lib/leads/company-website-sql'
 import { LEAD_BOARD_COLUMNS, type LeadStatusValue } from '@/lib/leads/constants'
 import type {
   LeadAssigneeOption,
@@ -241,7 +242,7 @@ async function selectLeadRows({
     contactEmail: leads.contactEmail,
     contactPhone: leads.contactPhone,
     companyName: leads.companyName,
-    companyWebsite: leads.companyWebsite,
+    companyWebsite: leadCompanyWebsiteSql,
     companyId: leads.companyId,
     contactId: leads.contactId,
     notes: leads.notes,

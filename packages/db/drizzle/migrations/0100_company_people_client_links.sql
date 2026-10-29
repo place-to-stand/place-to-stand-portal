@@ -33,6 +33,7 @@ SELECT DISTINCT cl."id", ct."user_id"
 FROM "contacts" ct
 JOIN "clients" cl
   ON cl."company_id" = ct."company_id" AND cl."deleted_at" IS NULL
+JOIN "companies" co ON co."id" = ct."company_id" AND co."deleted_at" IS NULL
 WHERE ct."deleted_at" IS NULL
   AND ct."user_id" IS NOT NULL
   AND NOT EXISTS (
@@ -44,11 +45,21 @@ WHERE ct."deleted_at" IS NULL
     WHERE cm."client_id" = cl."id" AND cm."user_id" = ct."user_id"
   );--> statement-breakpoint
 
--- 3. Link every live contact at a company to every live client of it.
+-- 3. Link every live contact at a live company to every live client of it,
+--    except where an admin revoked that person's portal access to that
+--    client: the link would show access ("preview as contact") they don't
+--    have.
 INSERT INTO "contact_clients" ("contact_id", "client_id")
 SELECT ct."id", cl."id"
 FROM "contacts" ct
 JOIN "clients" cl
   ON cl."company_id" = ct."company_id" AND cl."deleted_at" IS NULL
+JOIN "companies" co ON co."id" = ct."company_id" AND co."deleted_at" IS NULL
 WHERE ct."deleted_at" IS NULL
+  AND NOT EXISTS (
+    SELECT 1 FROM "client_members" cm
+    WHERE cm."client_id" = cl."id"
+      AND cm."user_id" = ct."user_id"
+      AND cm."deleted_at" IS NOT NULL
+  )
 ON CONFLICT ("contact_id", "client_id") DO NOTHING;

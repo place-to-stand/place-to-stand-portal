@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { CheckIcon, ChevronsUpDownIcon, XIcon } from 'lucide-react'
+import { CheckIcon, ChevronsUpDownIcon } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { cn } from '@/lib/utils'
@@ -16,6 +16,10 @@ import {
   CommandList,
 } from '@/components/ui/command'
 import { CommandCreateRows } from '@/components/ui/command-create-rows'
+import {
+  FIELD_CLEAR_LABEL_SPACE,
+  FieldClearButton,
+} from '@/components/ui/field-clear-button'
 
 export type SearchableComboboxItem = {
   value: string
@@ -70,8 +74,11 @@ type SearchableComboboxProps = {
    * Fires instead of opening the list.
    */
   onClear?: () => void
-  /** Extra icon buttons shown inside the field, left of the clear button. */
-  inlineActions?: React.ReactNode
+  /**
+   * A button beside the field, outside it (e.g. "open this record"). The
+   * field shrinks to make room; the clear button stays inside the field.
+   */
+  trailingAction?: React.ReactNode
 }
 
 /** The field-style trigger every picker shares (combobox, date pickers). */
@@ -108,7 +115,7 @@ export const SearchableCombobox = React.forwardRef<
       onCreate,
       createEntityLabel = 'record',
       onClear,
-      inlineActions,
+      trailingAction,
     },
     forwardedRef
   ) => {
@@ -283,139 +290,134 @@ export const SearchableCombobox = React.forwardRef<
     const placeholderTextClasses = 'text-muted-foreground'
 
     const showClear = Boolean(onClear && selectedItem && !disabled)
-    const hasInline = Boolean(inlineActions) || showClear
 
     return (
-      <div className={cn('relative w-full min-w-0', className)}>
-        <input type='hidden' name={name} value={value ?? ''} />
-        <Popover open={open} onOpenChange={handleOpenChange} modal>
-          <PopoverTrigger asChild>
-            {trigger ?? (
-              <Button
-                ref={mergedRef}
-                type='button'
-                variant='outline'
-                role='combobox'
-                aria-expanded={open}
-                aria-haspopup='listbox'
-                aria-label={ariaLabel}
-                aria-labelledby={ariaLabelledBy}
-                aria-describedby={ariaDescribedBy}
-                aria-invalid={ariaInvalid ? true : undefined}
-                disabled={disabled}
-                data-placeholder={selectedItem ? undefined : true}
-                id={id}
-                className={cn(
-                  fieldTriggerClasses,
-                  // Room for the inline buttons, which sit over the field.
-                  hasInline && (inlineActions && showClear ? 'pr-20' : 'pr-14'),
-                  triggerClassName
-                )}
-              >
-                <div className='flex min-w-0 flex-1 items-center gap-2'>
-                  {selectedItem?.userId ? (
-                    <Avatar size='xs'>
-                      {selectedItem.avatarUrl && (
-                        <AvatarImage
-                          src={`/api/storage/user-avatar/${selectedItem.userId}`}
-                        />
-                      )}
-                      <AvatarFallback>
-                        {selectedItem.label.slice(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  ) : selectedItem?.icon ? (
-                    <Avatar size='xs'>
-                      <AvatarFallback className='bg-muted'>
-                        <selectedItem.icon className='text-muted-foreground h-3 w-3' />
-                      </AvatarFallback>
-                    </Avatar>
-                  ) : null}
-                  <span
-                    title={selectedItem?.label}
+      <div className={cn('flex w-full min-w-0 items-center gap-1', className)}>
+        <div className='relative min-w-0 flex-1'>
+          <input type='hidden' name={name} value={value ?? ''} />
+          <Popover open={open} onOpenChange={handleOpenChange} modal>
+            <PopoverTrigger asChild>
+              {trigger ?? (
+                <Button
+                  ref={mergedRef}
+                  type='button'
+                  variant='outline'
+                  role='combobox'
+                  aria-expanded={open}
+                  aria-haspopup='listbox'
+                  aria-label={ariaLabel}
+                  aria-labelledby={ariaLabelledBy}
+                  aria-describedby={ariaDescribedBy}
+                  aria-invalid={ariaInvalid ? true : undefined}
+                  disabled={disabled}
+                  data-placeholder={selectedItem ? undefined : true}
+                  id={id}
+                  className={cn(
+                    fieldTriggerClasses,
+                    // Room for the inline buttons, which sit over the field.
+                    triggerClassName
+                  )}
+                >
+                  <div
                     className={cn(
-                      'min-w-0 truncate',
-                      selectedItem
-                        ? selectedTextClasses
-                        : placeholderTextClasses
+                      'flex min-w-0 flex-1 items-center gap-2',
+                      showClear && FIELD_CLEAR_LABEL_SPACE
                     )}
                   >
-                    {selectedItem?.label ?? resolvedPlaceholder}
-                  </span>
-                </div>
-                <ChevronsUpDownIcon className='size-4 shrink-0 opacity-50' />
-              </Button>
-            )}
-          </PopoverTrigger>
-          <PopoverContent
-            ref={contentRef}
-            // Never narrower than the trigger; grows to fit an option on one line,
-            // up to a cap, past which options truncate with a tooltip.
-            className='w-max max-w-[min(28rem,90vw)] overflow-hidden p-0'
-            sideOffset={8}
-            style={contentStyle}
-          >
-            <Command className='max-h-80'>
-              <CommandInput
-                placeholder={searchPlaceholder ?? resolvedPlaceholder}
-                className='h-9'
-                value={query}
-                onValueChange={setQuery}
-              />
-              {onCreate ? null : <CommandEmpty>{emptyMessage}</CommandEmpty>}
-              <CommandList
-                className='max-h-[min(60vh,260px)] [scrollbar-gutter:stable] overflow-y-auto overscroll-contain'
-                onWheel={stopScrollPropagation}
-                onTouchMove={stopScrollPropagation}
-              >
-                {resolvedGroups.length > 0 ? (
-                  resolvedGroups.map(group => (
-                    <CommandGroup key={group.label} heading={group.label}>
-                      {group.items.map(item =>
-                        renderItem(item, `${group.label}-${item.value}`)
+                    {selectedItem?.userId ? (
+                      <Avatar size='xs'>
+                        {selectedItem.avatarUrl && (
+                          <AvatarImage
+                            src={`/api/storage/user-avatar/${selectedItem.userId}`}
+                          />
+                        )}
+                        <AvatarFallback>
+                          {selectedItem.label.slice(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    ) : selectedItem?.icon ? (
+                      <Avatar size='xs'>
+                        <AvatarFallback className='bg-muted'>
+                          <selectedItem.icon className='text-muted-foreground h-3 w-3' />
+                        </AvatarFallback>
+                      </Avatar>
+                    ) : null}
+                    <span
+                      title={selectedItem?.label}
+                      className={cn(
+                        'min-w-0 truncate',
+                        selectedItem
+                          ? selectedTextClasses
+                          : placeholderTextClasses
                       )}
+                    >
+                      {selectedItem?.label ?? resolvedPlaceholder}
+                    </span>
+                  </div>
+                  <ChevronsUpDownIcon className='size-4 shrink-0 opacity-50' />
+                </Button>
+              )}
+            </PopoverTrigger>
+            <PopoverContent
+              ref={contentRef}
+              // Never narrower than the trigger; grows to fit an option on one line,
+              // up to a cap, past which options truncate with a tooltip.
+              className='w-max max-w-[min(28rem,90vw)] overflow-hidden p-0'
+              sideOffset={8}
+              style={contentStyle}
+            >
+              <Command className='max-h-80'>
+                <CommandInput
+                  placeholder={searchPlaceholder ?? resolvedPlaceholder}
+                  className='h-9'
+                  value={query}
+                  onValueChange={setQuery}
+                />
+                {onCreate ? null : <CommandEmpty>{emptyMessage}</CommandEmpty>}
+                <CommandList
+                  className='max-h-[min(60vh,260px)] [scrollbar-gutter:stable] overflow-y-auto overscroll-contain'
+                  onWheel={stopScrollPropagation}
+                  onTouchMove={stopScrollPropagation}
+                >
+                  {resolvedGroups.length > 0 ? (
+                    resolvedGroups.map(group => (
+                      <CommandGroup key={group.label} heading={group.label}>
+                        {group.items.map(item =>
+                          renderItem(item, `${group.label}-${item.value}`)
+                        )}
+                      </CommandGroup>
+                    ))
+                  ) : (
+                    <CommandGroup>
+                      {flattenedItems.map(item => renderItem(item, item.value))}
                     </CommandGroup>
-                  ))
-                ) : (
-                  <CommandGroup>
-                    {flattenedItems.map(item => renderItem(item, item.value))}
-                  </CommandGroup>
-                )}
-                {onCreate ? (
-                  <CommandCreateRows
-                    query={query}
-                    entityLabel={createEntityLabel}
-                    onCreate={typed => {
-                      setOpen(false)
-                      setQuery('')
-                      onCreate(typed)
-                    }}
-                  />
-                ) : null}
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
-        {hasInline ? (
-          // Over the trigger, left of its chevron, so the field never grows
-          // past its column.
-          <div className='absolute top-1/2 right-8 flex -translate-y-1/2 items-center gap-0.5'>
-            {inlineActions}
-            {showClear ? (
-              <button
-                type='button'
-                aria-label='Clear'
-                onClick={() => {
-                  onClear?.()
-                  onBlur?.()
-                }}
-                className='text-muted-foreground hover:text-foreground hover:bg-muted focus-visible:ring-ring/50 rounded p-1 outline-none focus-visible:ring-2'
-              >
-                <XIcon className='size-3.5' aria-hidden />
-              </button>
-            ) : null}
-          </div>
-        ) : null}
+                  )}
+                  {onCreate ? (
+                    <CommandCreateRows
+                      query={query}
+                      entityLabel={createEntityLabel}
+                      onCreate={typed => {
+                        setOpen(false)
+                        setQuery('')
+                        onCreate(typed)
+                      }}
+                    />
+                  ) : null}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+          {showClear ? (
+            <FieldClearButton
+              label={ariaLabel?.toLowerCase()}
+              onClear={() => {
+                onClear?.()
+                onBlur?.()
+              }}
+            />
+          ) : null}
+        </div>
+        {trailingAction}
       </div>
     )
   }

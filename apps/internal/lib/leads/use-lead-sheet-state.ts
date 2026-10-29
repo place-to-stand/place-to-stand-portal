@@ -65,7 +65,6 @@ export function useLeadSheetState({
         lead?.companyId
           ? { id: lead.companyId, name: lead.companyName ?? '' }
           : null,
-      companyWebsite: lead?.companyWebsite ?? '',
       sourceType: lead?.sourceType ?? null,
       sourceDetail: lead?.sourceDetail ?? '',
       status: lead?.status ?? initialStatus ?? 'NEW_OPPORTUNITIES',
@@ -150,7 +149,6 @@ export function useLeadSheetState({
           ...values,
           contact: values.contact ?? null,
           company: values.company ?? null,
-          companyWebsite: values.companyWebsite ?? '',
           sourceType: values.sourceType ?? null,
           sourceDetail: values.sourceDetail ?? '',
           status: values.status,

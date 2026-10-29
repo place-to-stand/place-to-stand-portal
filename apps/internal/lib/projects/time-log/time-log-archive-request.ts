@@ -36,7 +36,7 @@ export async function requestTimeLogArchiveChange(
     throw new Error(
       message ||
         (change === 'archive'
-          ? 'Unable to delete time log.'
+          ? 'Unable to archive time log.'
           : 'Unable to restore time log.')
     )
   }

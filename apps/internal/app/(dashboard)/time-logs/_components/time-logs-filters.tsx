@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect } from 'react'
+
 import { FilterBar } from '@/components/table-toolbar/filter-bar'
 import { DateRangePicker } from '@/components/ui/date-range-picker'
 import {
@@ -42,8 +44,18 @@ export function TimeLogsFilters({
   const { update, hasActiveFilters, reset } = useListParams({
     basePath,
     resetKeys: ['page'],
-    filters: { from: {}, to: {}, client: {}, project: {}, person: {} },
+    filters: { from: {}, to: {}, clientId: {}, projectId: {}, personId: {} },
   })
+
+  // The server picks "this month" in its own timezone. Near a month's
+  // turn that can differ from the viewer's; when it does, pin the viewer's
+  // month in the URL so the list and the picker agree.
+  const serverFrom = params.isDefaultRange ? params.from : null
+  useEffect(() => {
+    if (!serverFrom) return
+    const local = currentMonthRange()
+    if (local.from !== serverFrom) update({ from: local.from, to: local.to })
+  }, [serverFrom, update])
 
   const activeCount =
     (params.isDefaultRange ? 0 : 1) +
@@ -83,9 +95,9 @@ export function TimeLogsFilters({
         items={clients}
         value={params.clientId ?? ''}
         onChange={value =>
-          update({ client: value || undefined, project: undefined })
+          update({ clientId: value || undefined, projectId: undefined })
         }
-        onClear={() => update({ client: undefined, project: undefined })}
+        onClear={() => update({ clientId: undefined, projectId: undefined })}
         placeholder='All clients'
         searchPlaceholder='Search clients…'
         emptyMessage='No clients found.'
@@ -95,8 +107,8 @@ export function TimeLogsFilters({
         ariaLabel='Project'
         items={projects}
         value={params.projectId ?? ''}
-        onChange={value => update({ project: value || undefined })}
-        onClear={() => update({ project: undefined })}
+        onChange={value => update({ projectId: value || undefined })}
+        onClear={() => update({ projectId: undefined })}
         placeholder='All projects'
         searchPlaceholder='Search projects…'
         emptyMessage='No projects found.'
@@ -106,8 +118,8 @@ export function TimeLogsFilters({
         ariaLabel='Person'
         items={people}
         value={params.personId ?? ''}
-        onChange={value => update({ person: value || undefined })}
-        onClear={() => update({ person: undefined })}
+        onChange={value => update({ personId: value || undefined })}
+        onClear={() => update({ personId: undefined })}
         placeholder='Everyone'
         searchPlaceholder='Search people…'
         emptyMessage='No one found.'

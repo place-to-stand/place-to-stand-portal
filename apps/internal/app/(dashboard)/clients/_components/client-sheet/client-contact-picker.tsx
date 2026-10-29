@@ -25,6 +25,7 @@ type ClientContactOption = {
   email: string | null
   phone: string | null
   hasPortalAccess: boolean
+  atCompany?: boolean
 }
 
 function PortalAccessMark() {
@@ -205,8 +206,14 @@ export function ClientContactList({
                 aria-pressed={isPrimary}
               />
               <DisabledFieldTooltip
-                disabled={isPending}
-                reason={isPending ? pendingReason : null}
+                disabled={isPending || Boolean(contact.atCompany)}
+                reason={
+                  isPending
+                    ? pendingReason
+                    : contact.atCompany
+                      ? 'Works at this company. Change their company on the contact to remove them.'
+                      : null
+                }
                 className='w-auto'
               >
                 <Button
@@ -214,8 +221,8 @@ export function ClientContactList({
                   variant='ghost'
                   size='icon-sm'
                   className='text-muted-foreground hover:text-destructive'
+                  disabled={isPending || Boolean(contact.atCompany)}
                   onClick={() => onRequestRemoval(contact)}
-                  disabled={isPending}
                   aria-label={`Unlink ${label}`}
                 >
                   <X className='h-4 w-4' />

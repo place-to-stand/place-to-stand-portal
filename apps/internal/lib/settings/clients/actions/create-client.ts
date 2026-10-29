@@ -23,7 +23,11 @@ import {
   findOrCreateCompanyByName,
   getLinkableCompany,
 } from '@/lib/queries/companies'
-import { syncCompanyClientLinks } from '@/lib/queries/companies/people-links'
+import { syncCompanyClientLinksTx } from '@/lib/queries/companies/people-links'
+import {
+  logContactClientLinkChanges,
+  type ContactClientLinkChange,
+} from '@/lib/queries/contacts/settings/contact-client-link-activity'
 
 type CreateClientPayload = {
   name: string
@@ -95,6 +99,8 @@ export async function createClient(
   let slugCandidate = await generateUniqueClientSlug(baseSlug)
   let attempt = 0
 
+  let linkChanges: ContactClientLinkChange[] = []
+
   while (attempt < INSERT_RETRY_LIMIT) {
     try {
       // Client + initial billing + commission terms are atomic: a client
@@ -123,6 +129,10 @@ export async function createClient(
         if (!insertedId) {
           return null
         }
+
+        // A client's people are its company's people, linked (with portal
+        // access) in the same transaction as the client itself.
+        linkChanges = await syncCompanyClientLinksTx(tx, [companyId])
 
         await insertInitialBillingTerm(tx, {
           clientId: insertedId,
@@ -157,8 +167,7 @@ export async function createClient(
         }
       }
 
-      // A client's people are its company's people.
-      await syncCompanyClientLinks(user, [companyId])
+      await logContactClientLinkChanges(user, linkChanges)
 
       const event = clientCreatedEvent({
         name,

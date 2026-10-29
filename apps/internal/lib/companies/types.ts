@@ -57,6 +57,7 @@ export type CompanyDetail = {
 export type CompanyOption = {
   id: string
   name: string
+  website: string | null
 }
 
 export type CompanyActionResult = {

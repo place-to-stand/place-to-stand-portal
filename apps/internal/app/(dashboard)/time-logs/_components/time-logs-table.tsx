@@ -1,11 +1,14 @@
 'use client'
 
+import { useEffect } from 'react'
+
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 
 import { formatCalendarDate } from '@pts/ui/dates'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { EmptyState } from '@pts/ui/empty-state'
+import { EmptyValue } from '@/components/table/empty-value'
 import {
   Table,
   TableBody,
@@ -66,14 +69,24 @@ export function TimeLogsTable({
     router.push(`${pathname}?${next.toString()}`)
   }
 
+  // A page past the end (after archiving its last row, or a stale link)
+  // goes back to the last page that has rows.
+  const lastPage = Math.max(1, Math.ceil(totalCount / pageSize))
+  const pastEnd = items.length === 0 && totalCount > 0 && currentPage > lastPage
+  useEffect(() => {
+    if (pastEnd) goToPage(lastPage)
+  })
+
   if (items.length === 0) {
-    return <EmptyState
+    return (
+      <EmptyState
         message={
           isArchive
             ? 'No archived time logs in this range.'
             : 'No time logged in this range.'
         }
       />
+    )
   }
 
   return (
@@ -84,7 +97,12 @@ export function TimeLogsTable({
         </p>
       ) : null}
       <div className='overflow-hidden rounded-lg border'>
-        <Table density='compact' layout='fixed' stack className='md:min-w-[64rem]'>
+        <Table
+          density='compact'
+          layout='fixed'
+          stack
+          className='md:min-w-[64rem]'
+        >
           <TableHeader>
             <TableRow className='bg-muted/40'>
               <TableHead className='w-[10%]'>Date</TableHead>
@@ -106,13 +124,18 @@ export function TimeLogsTable({
                   {...(isArchive
                     ? {}
                     : {
-                        ...getClickableRowProps(() => void editor.open(item.id)),
+                        ...getClickableRowProps(
+                          () => void editor.open(item.id)
+                        ),
                         className: CLICKABLE_ROW_CLASS,
                       })}
                 >
                   <TableCell className='text-sm tabular-nums'>
                     {editor.openingEntryId === item.id ? (
-                      <Loader2 className='size-4 animate-spin' aria-label='Opening' />
+                      <Loader2
+                        className='size-4 animate-spin'
+                        aria-label='Opening'
+                      />
                     ) : (
                       formatCalendarDate(item.loggedOn)
                     )}
@@ -124,20 +147,32 @@ export function TimeLogsTable({
                       hasPhoto={Boolean(item.userAvatarUrl)}
                     />
                   </TableCell>
-                  <TableCell className='truncate text-sm' title={item.clientName ?? undefined}>
-                    {item.clientName ?? <span className='text-muted-foreground'>—</span>}
+                  <TableCell
+                    className='truncate text-sm'
+                    title={item.clientName ?? undefined}
+                  >
+                    {item.clientName ?? <EmptyValue />}
                   </TableCell>
-                  <TableCell className='truncate text-sm' title={item.projectName}>
+                  <TableCell
+                    className='truncate text-sm'
+                    title={item.projectName}
+                  >
                     {item.projectName}
                   </TableCell>
-                  <TableCell className='text-muted-foreground truncate text-sm' title={tasks || undefined}>
-                    {tasks || '—'}
+                  <TableCell
+                    className='text-muted-foreground truncate text-sm'
+                    title={tasks || undefined}
+                  >
+                    {tasks || <EmptyValue />}
                   </TableCell>
                   <TableCell className='text-right text-sm font-medium tabular-nums'>
                     {HOURS.format(item.hours)}
                   </TableCell>
-                  <TableCell className='text-muted-foreground truncate text-sm' title={item.note ?? undefined}>
-                    {item.note || '—'}
+                  <TableCell
+                    className='text-muted-foreground truncate text-sm'
+                    title={item.note ?? undefined}
+                  >
+                    {item.note || <EmptyValue />}
                   </TableCell>
                   <TableCell className='text-right max-md:ml-auto'>
                     <RecordRowActions>
