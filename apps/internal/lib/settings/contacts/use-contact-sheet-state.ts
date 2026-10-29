@@ -58,6 +58,8 @@ export type UseContactSheetStateOptions = {
   onCreated?: (contact: CreatedContact) => void
   /** Name prefill for the create sheet (create-from-picker). */
   initialName?: string
+  /** Company prefill for the create sheet (only the id; the picker names it). */
+  initialCompanyId?: string
   contact?: ContactsTableContact | ContactSheetInput | null
 }
 
@@ -73,6 +75,7 @@ export function useContactSheetState({
   onComplete,
   onCreated,
   initialName,
+  initialCompanyId,
   contact,
 }: UseContactSheetStateOptions) {
   const [isPending, startTransition] = useTransition()
@@ -117,7 +120,9 @@ export function useContactSheetState({
       linkedinUrl: contact?.linkedinUrl ?? '',
       company: contact?.companyId
         ? { id: contact.companyId, name: contact.companyName ?? '' }
-        : null,
+        : !contact && initialCompanyId
+          ? { id: initialCompanyId, name: '' }
+          : null,
     })
 
     // Table rows carry their clients; other hosts fetch them.
@@ -149,7 +154,7 @@ export function useContactSheetState({
     return () => {
       cancelled = true
     }
-  }, [open, contact, form, initialName])
+  }, [open, contact, form, initialName, initialCompanyId])
 
   const contactDisplayName = contact?.name || contact?.email || 'this contact'
   const sheetTitle = isEditing ? 'Edit contact' : 'Add contact'

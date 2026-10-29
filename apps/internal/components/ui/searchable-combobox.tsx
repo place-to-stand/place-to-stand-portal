@@ -67,7 +67,7 @@ type SearchableComboboxProps = {
   open?: boolean
   onOpenChange?: (open: boolean) => void
   /**
-   * Adds the "Create new …" rows (`CommandCreateRows`); fires with the typed
+   * Adds the pinned "Create …" row (`CommandCreateRows`); fires with the typed
    * search text. Pair with `createEntityLabel` ("company").
    */
   onCreate?: (query: string) => void
@@ -245,7 +245,6 @@ export const SearchableCombobox = React.forwardRef<
           onSelect={() => handleSelect(item.value)}
           disabled={item.disabled}
           className='pr-3'
-          title={item.label}
         >
           {/* The check column only exists while something is selected: an
               "Add …" picker (no value) shouldn't indent every option. */}
@@ -429,6 +428,7 @@ export const SearchableCombobox = React.forwardRef<
                     <CommandCreateRows
                       query={query}
                       entityLabel={createEntityLabel}
+                      emptyMessage={emptyMessage}
                       onCreate={typed => {
                         setOpen(false)
                         setQuery('')

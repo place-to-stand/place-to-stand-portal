@@ -49,6 +49,8 @@ export function LeadSheetFormFields({
   // Disabled admins are not offered, but a lead they already hold keeps
   // them as a disabled entry so the picker still names the assignee.
   const currentAssigneeId = useWatch({ control, name: 'assigneeId' }) ?? null
+  // A contact created from here starts at the lead's company.
+  const leadCompanyId = useWatch({ control, name: 'company' })?.id ?? null
   const assigneeItems = useMemo(
     () => [
       ...assignees
@@ -80,6 +82,8 @@ export function LeadSheetFormFields({
               <ContactLinkPicker
                 value={field.value ?? null}
                 onChange={next => field.onChange(next)}
+                showCreateButton
+                createCompanyId={leadCompanyId}
               />
             </FormControl>
             <FormMessage />
@@ -96,6 +100,7 @@ export function LeadSheetFormFields({
               <CompanyLinkPicker
                 value={field.value ?? null}
                 onChange={next => field.onChange(next)}
+                showCreateButton
               />
             </FormControl>
             <FormMessage />

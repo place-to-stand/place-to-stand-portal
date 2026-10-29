@@ -9,7 +9,7 @@ import {
   type ComponentType,
   type ReactElement,
 } from 'react'
-import { ExternalLink } from 'lucide-react'
+import { ExternalLink, Plus } from 'lucide-react'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import {
@@ -31,7 +31,7 @@ export type EntityLinkOption = {
 }
 
 type EntityLinkPickerProps<E extends SheetCreatedEntity> = {
-  /** Sheet entity used for "Create new…" and "Open". */
+  /** Sheet entity used for "Create" and "Open". */
   entity: E
   /** Singular noun for copy: "company" → "Search companies…". */
   entityLabel: string
@@ -46,7 +46,7 @@ type EntityLinkPickerProps<E extends SheetCreatedEntity> = {
   createPrefillParam: string
   /** More aux params for the create sheet (e.g. `clientCompanyId`). */
   createParams?: Record<string, string>
-  /** Hide "Create new…" (roles that can't create the entity). */
+  /** Hide "Create" (roles that can't create the entity). */
   allowCreate?: boolean
   id?: string
   'aria-label'?: string
@@ -56,6 +56,11 @@ type EntityLinkPickerProps<E extends SheetCreatedEntity> = {
    * field. Use with `value={null}` to add records to a list one at a time.
    */
   trigger?: ReactElement
+  /**
+   * A "Create" button beside the field: a shortcut to the create sheet that
+   * the list's "Create …" row also opens.
+   */
+  showCreateButton?: boolean
   /** Controlled open state, e.g. so an empty state can open the picker. */
   open?: boolean
   onOpenChange?: (open: boolean) => void
@@ -66,7 +71,7 @@ const pluralize = (noun: string) =>
 
 /**
  * The portal's one pattern for linking a record to another, built on
- * `SearchableCombobox`: search existing records, "Create new …" (opens that
+ * `SearchableCombobox`: search existing records, "Create …" (opens that
  * entity's create sheet on top of the current one and selects the new record
  * when it saves), clear with one click, and open the linked record. The link
  * itself is saved with the host form, never on selection.
@@ -87,6 +92,7 @@ export function EntityLinkPicker<E extends SheetCreatedEntity>({
   'aria-label': ariaLabel,
   icon,
   trigger,
+  showCreateButton = false,
   open,
   onOpenChange,
 }: EntityLinkPickerProps<E>) {
@@ -128,6 +134,15 @@ export function EntityLinkPicker<E extends SheetCreatedEntity>({
 
   const plural = pluralize(entityLabel)
 
+  const startCreate = (typed: string) => {
+    awaitingCreate.current = true
+    openNew(entity, {
+      ...createParams,
+      ...(typed.trim() ? { [createPrefillParam]: typed.trim() } : {}),
+    })
+  }
+  const canCreate = allowCreate && !disabled
+
   return (
     <SearchableCombobox
       id={id}
@@ -157,36 +172,46 @@ export function EntityLinkPicker<E extends SheetCreatedEntity>({
       className={trigger ? 'w-auto' : undefined}
       createEntityLabel={entityLabel}
       clearLabel={entityLabel}
-      onCreate={
-        allowCreate
-          ? typed => {
-              awaitingCreate.current = true
-              openNew(entity, {
-                ...createParams,
-                ...(typed.trim() ? { [createPrefillParam]: typed.trim() } : {}),
-              })
-            }
-          : undefined
-      }
+      onCreate={allowCreate ? startCreate : undefined}
       onClear={() => onChange(null)}
       trailingAction={
-        value ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type='button'
-                variant='outline'
-                size='icon'
-                className='text-muted-foreground shrink-0'
-                aria-label={`Open ${value.label}`}
-                onClick={() => openSheet(entity, value.id)}
-              >
-                <ExternalLink className='size-3.5' aria-hidden />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Open {entityLabel}</TooltipContent>
-          </Tooltip>
-        ) : null
+        <>
+          {value ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='icon'
+                  className='text-muted-foreground shrink-0'
+                  aria-label={`Open ${value.label}`}
+                  onClick={() => openSheet(entity, value.id)}
+                >
+                  <ExternalLink className='size-3.5' aria-hidden />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Open {entityLabel}</TooltipContent>
+            </Tooltip>
+          ) : null}
+          {showCreateButton && allowCreate && !trigger ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type='button'
+                  variant='outline'
+                  className='text-muted-foreground shrink-0'
+                  aria-label={`Create ${entityLabel}`}
+                  disabled={!canCreate}
+                  onClick={() => startCreate('')}
+                >
+                  <Plus className='size-3.5' aria-hidden />
+                  Create
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Create {entityLabel}</TooltipContent>
+            </Tooltip>
+          ) : null}
+        </>
       }
     />
   )

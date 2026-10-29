@@ -28,6 +28,8 @@ type CompanyLinkPickerProps = {
   disabled?: boolean
   id?: string
   placeholder?: string
+  /** A "Create" button beside the field; see `EntityLinkPicker`. */
+  showCreateButton?: boolean
 }
 
 const toOption = (company: CompanyLink): EntityLinkOption => ({
@@ -42,6 +44,7 @@ export function CompanyLinkPicker({
   disabled,
   id,
   placeholder,
+  showCreateButton,
 }: CompanyLinkPickerProps) {
   const { data = [] } = useCompanyOptions()
 
@@ -69,6 +72,7 @@ export function CompanyLinkPicker({
       placeholder={placeholder}
       toOption={toOption}
       createPrefillParam='companyName'
+      showCreateButton={showCreateButton}
     />
   )
 }

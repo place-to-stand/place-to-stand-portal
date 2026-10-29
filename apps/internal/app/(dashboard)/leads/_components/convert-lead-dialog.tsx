@@ -192,7 +192,7 @@ export function ConvertLeadDialog({
           <TabsList className='w-full'>
             <TabsTrigger value='create' className='flex-1'>
               <UserPlus className='h-3.5 w-3.5' />
-              New client
+              Create client
             </TabsTrigger>
             <TabsTrigger value='link' className='flex-1'>
               <Link2 className='h-3.5 w-3.5' />

@@ -32,7 +32,7 @@ type ClientLinkPickerProps = {
   id?: string
   /** Clients not to offer (e.g. ones already on the list). */
   excludeIds?: readonly string[]
-  /** Aux params for "Create new client" (e.g. the company to preselect). */
+  /** Aux params for "Create client" (e.g. the company to preselect). */
   createParams?: Record<string, string>
   /** A button in place of the field; see `EntityLinkPicker`. */
   trigger?: ReactElement

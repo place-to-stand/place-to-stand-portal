@@ -41,6 +41,10 @@ type ContactLinkPickerProps = {
   excludeIds?: readonly string[]
   /** A button in place of the field; see `EntityLinkPicker`. */
   trigger?: ReactElement
+  /** A "Create" button beside the field; see `EntityLinkPicker`. */
+  showCreateButton?: boolean
+  /** Company to prefill on a contact created from here. */
+  createCompanyId?: string | null
   /** Controlled open state; see `EntityLinkPicker`. */
   open?: boolean
   onOpenChange?: (open: boolean) => void
@@ -64,6 +68,8 @@ export function ContactLinkPicker({
   id,
   excludeIds,
   trigger,
+  showCreateButton,
+  createCompanyId,
   open,
   onOpenChange,
 }: ContactLinkPickerProps) {
@@ -111,6 +117,10 @@ export function ContactLinkPicker({
         description: record.email,
       })}
       createPrefillParam='contactName'
+      createParams={
+        createCompanyId ? { contactCompanyId: createCompanyId } : undefined
+      }
+      showCreateButton={showCreateButton}
       trigger={trigger}
       open={open}
       onOpenChange={onOpenChange}
