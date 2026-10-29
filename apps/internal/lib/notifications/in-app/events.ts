@@ -4,7 +4,8 @@ import { and, eq, inArray, isNull } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { taskAssignees, users } from '@/lib/db/schema'
+import { taskAssignees, tasks, users } from '@/lib/db/schema'
+import { findAssigneesWithoutAccess } from '@/lib/projects/access'
 import { leadHref, myTaskHref } from '@/lib/sheets/hrefs'
 
 import { createNotifications } from './queries'
@@ -75,7 +76,20 @@ export function notifyTaskComment(
       .where(
         and(eq(taskAssignees.taskId, task.id), isNull(taskAssignees.deletedAt))
       )
-    const recipients = await staffRecipients(assigned.map(row => row.userId))
+    const staff = await staffRecipients(assigned.map(row => row.userId))
+    // An assignee who has since lost the project (removed as a member)
+    // can't open the task, so they aren't told about the comment.
+    const [row] = await db
+      .select({ projectId: tasks.projectId })
+      .from(tasks)
+      .where(eq(tasks.id, task.id))
+      .limit(1)
+    if (!row) return
+    const recipients: string[] = []
+    for (const userId of staff) {
+      const blocked = await findAssigneesWithoutAccess(row.projectId, [userId])
+      if (!blocked.length) recipients.push(userId)
+    }
     await createNotifications(
       recipients.map(userId => ({
         userId,

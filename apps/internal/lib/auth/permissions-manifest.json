@@ -217,13 +217,6 @@
     "capability": "leads.manage"
   },
   {
-    "type": "action",
-    "name": "makeCompanyPrimaryContact",
-    "file": "apps/internal/app/(dashboard)/companies/actions.ts",
-    "kind": "capability",
-    "capability": "leads.manage"
-  },
-  {
     "type": "page",
     "name": "/companies/activity",
     "file": "apps/internal/app/(dashboard)/companies/activity/page.tsx",

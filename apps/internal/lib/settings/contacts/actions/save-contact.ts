@@ -168,6 +168,7 @@ export async function saveContactMutation(
             name: contacts.name,
             phone: contacts.phone,
             linkedinUrl: contacts.linkedinUrl,
+            userId: contacts.userId,
           })
           .from(contacts)
           .where(eq(contacts.id, id))
@@ -212,7 +213,7 @@ export async function saveContactMutation(
 
         // Leaving a client's company drops being its primary contact (its
         // invoice recipient) and portal access, so it's admin-only, as on
-        // the company sheet. Joining one grants nothing by itself.
+        // the company sheet.
         if (
           !canManageAccess &&
           (await clientIdsByCompany(plan.leave)).size > 0
@@ -220,6 +221,23 @@ export async function saveContactMutation(
           return buildMutationResult({
             error:
               'That company is a client, so only an admin can remove someone from it.',
+          })
+        }
+        // Joining a client's company makes them one of the people it bills,
+        // so it's admin-only too, matching the company sheet.
+        const joinError = await clientJoinError(canManageAccess, plan.join)
+        if (joinError) return buildMutationResult({ error: joinError })
+        // A portal user's email is their sign-in, and a client contact's is
+        // where invoices go, so only an admin can change it.
+        if (
+          !canManageAccess &&
+          existing.email !== email &&
+          (existing.userId || current.some(m => m.clientId))
+        ) {
+          return buildMutationResult({
+            error: existing.userId
+              ? 'This contact is a portal user, so only an admin can change their email.'
+              : 'This contact is at a client, so only an admin can change their email.',
           })
         }
         // Access needs a portal login (Create account on the contact).
@@ -366,6 +384,8 @@ export async function saveContactMutation(
         shorthandCompanyId,
         shorthandTitle: parsed.data.jobTitle,
       })
+      const createJoinError = await clientJoinError(canManageAccess, plan.join)
+      if (createJoinError) return buildMutationResult({ error: createJoinError })
       // A new contact has no portal login, so no access yet.
       if (plan.access.some(change => change.portalAccess)) {
         return buildMutationResult({
@@ -489,6 +509,18 @@ function planMembershipChanges(
     }
   }
   return { join, leave, titles, access }
+}
+
+/** Refusal for a non-admin adding someone to a company that is a client. */
+async function clientJoinError(
+  canManageAccess: boolean,
+  joins: { companyId: string }[]
+): Promise<string | null> {
+  if (canManageAccess || !joins.length) return null
+  const clientIds = await clientIdsByCompany(joins.map(join => join.companyId))
+  return clientIds.size > 0
+    ? 'This company is a client, so only an admin can change its contacts.'
+    : null
 }
 
 async function clientIdsByCompany(companyIds: string[]) {

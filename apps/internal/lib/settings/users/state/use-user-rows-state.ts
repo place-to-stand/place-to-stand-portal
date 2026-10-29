@@ -19,7 +19,7 @@ type UseUserRowsStateArgs = {
   selfDeleteReason: string
 }
 
-const SELF_DISABLE_REASON = 'You cannot disable your own account.'
+const SELF_DISABLE_REASON = 'You cannot disable your own user.'
 
 export const useUserRowsState = ({
   users,

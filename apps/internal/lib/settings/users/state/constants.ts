@@ -6,7 +6,7 @@ const formatCount = (count: number, noun: string) =>
   `${count} ${noun}${count === 1 ? '' : 's'}`
 
 export { PENDING_REASON } from '@/lib/forms/form-controls'
-export const SELF_DELETE_REASON = 'You cannot archive your own account.'
+export const SELF_DELETE_REASON = 'You cannot archive your own user.'
 
 export const buildDeleteDialogDescription = (
   target: UserRow | null,

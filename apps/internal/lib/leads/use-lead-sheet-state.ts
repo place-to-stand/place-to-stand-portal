@@ -12,6 +12,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, useWatch } from 'react-hook-form'
 
 import { useToast } from '@/components/ui/use-toast'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
+import { roleCan } from '@/lib/auth/capabilities'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
@@ -38,8 +40,14 @@ export function useLeadSheetState({
   const [isArchiving, startArchiveTransition] = useTransition()
   const hasInitialAction = Boolean(lead && initialAction)
   const [isArchiveDialogOpen, setArchiveDialogOpen] = useState(false)
+  // Converting creates a client, so it's admin-only (`leads.convert`).
+  const { role } = useViewerAccess()
+  const canConvert =
+    roleCan(role, 'leads.convert') &&
+    lead?.status === 'CLOSED_WON' &&
+    !lead?.convertedToClientId
   const [isConvertDialogOpen, setConvertDialogOpen] = useState(
-    () => hasInitialAction && initialAction === 'convert'
+    () => hasInitialAction && initialAction === 'convert' && canConvert
   )
   const { toast } = useToast()
 
@@ -55,8 +63,6 @@ export function useLeadSheetState({
     },
     [lead, setAux]
   )
-
-  const canConvert = lead?.status === 'CLOSED_WON' && !lead?.convertedToClientId
 
   const defaultValues = useMemo<LeadFormValues>(
     () => ({

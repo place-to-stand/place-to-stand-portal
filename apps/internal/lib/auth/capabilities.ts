@@ -201,7 +201,7 @@ export const CAPABILITIES = {
     area: 'Sales',
     label: 'Convert a lead to a client',
     description: 'Creates the client and links the company.',
-    roles: STAFF,
+    roles: ADMIN_ONLY,
     surfaces: ['app'],
   },
   'submissions.manage': {

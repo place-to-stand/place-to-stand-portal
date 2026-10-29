@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 
 import { logActivity } from '@/lib/activity/logger'
 import { contactInvitedToPortalEvent } from '@/lib/activity/events/contacts'
@@ -68,28 +68,56 @@ export async function promoteContactToUserMutation(
     })
   }
 
-  // 2. Find or create portal user
-  const portalResult = await findOrCreatePortalUser(user, {
-    email,
-    fullName: contact.name,
-  })
+  // 2–3. Find or create the portal user and link it, holding the contact
+  // row so a second click (or a second admin) waits, then sees the link and
+  // stops, instead of creating or inviting the same person twice.
+  type Outcome =
+    | { error: string }
+    | { userId: string; created: boolean | undefined }
+  let outcome: Outcome
+  try {
+    outcome = await db.transaction(async (tx): Promise<Outcome> => {
+      const [locked] = await tx
+        .select({ userId: contacts.userId })
+        .from(contacts)
+        .where(eq(contacts.id, contact.id))
+        .for('update')
+      if (locked?.userId) {
+        return { error: 'This contact already has portal access.' }
+      }
 
-  if (portalResult.error || !portalResult.userId) {
-    return buildMutationResult({
-      error: portalResult.error ?? 'Failed to create portal user.',
+      const portalResult = await findOrCreatePortalUser(user, {
+        email,
+        fullName: contact.name,
+      })
+      if (portalResult.error || !portalResult.userId) {
+        return { error: portalResult.error ?? 'Failed to create portal user.' }
+      }
+
+      const linked = await tx
+        .update(contacts)
+        .set({
+          userId: portalResult.userId,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(and(eq(contacts.id, contact.id), isNull(contacts.userId)))
+        .returning({ id: contacts.id })
+      if (!linked.length) {
+        return { error: 'This contact already has portal access.' }
+      }
+      return { userId: portalResult.userId, created: portalResult.created }
     })
+  } catch (error) {
+    console.error('Failed to create portal user for contact', error)
+    return buildMutationResult({ error: 'Failed to create portal user.' })
   }
 
-  const userId = portalResult.userId
+  if ('error' in outcome) {
+    return buildMutationResult({ error: outcome.error })
+  }
 
-  // 3. Link contact to user
-  await db
-    .update(contacts)
-    .set({
-      userId,
-      updatedAt: new Date().toISOString(),
-    })
-    .where(eq(contacts.id, contact.id))
+  const { userId } = outcome
+  const portalResult = { created: outcome.created }
 
   // 4. Portal access follows the contact's memberships
   // (client_portal_access), so the new login sees those clients at once.

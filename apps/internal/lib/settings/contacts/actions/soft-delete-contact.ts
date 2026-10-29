@@ -1,11 +1,16 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 
 import { logActivity } from '@/lib/activity/logger'
 import { contactArchivedEvent } from '@/lib/activity/events/contacts'
+import { roleCan } from '@/lib/auth/capabilities'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
-import { contacts, memberships } from '@/lib/db/schema'
+import { clients, contacts, memberships } from '@/lib/db/schema'
+import {
+  logContactClientLinkChanges,
+  type ContactClientLinkChange,
+} from '@/lib/queries/contacts/settings/contact-client-link-activity'
 import {
   deleteContactSchema,
   type DeleteContactInput,
@@ -45,7 +50,18 @@ export async function softDeleteContactMutation(
       }
 
       let existingContact:
-        { id: string; email: string | null; name: string | null } | undefined
+        | {
+            id: string
+            email: string | null
+            name: string | null
+            userId: string | null
+          }
+        | undefined
+      let accessRows: {
+        companyId: string
+        clientId: string | null
+        endedAt: string | null
+      }[] = []
 
       try {
         const rows = await db
@@ -53,12 +69,35 @@ export async function softDeleteContactMutation(
             id: contacts.id,
             email: contacts.email,
             name: contacts.name,
+            userId: contacts.userId,
           })
           .from(contacts)
           .where(eq(contacts.id, parsed.data.id))
           .limit(1)
 
         existingContact = rows[0]
+        // Memberships with portal access on (ended or not: archiving switches
+        // them all off), and the live client each one opens.
+        accessRows = await db
+          .select({
+            companyId: memberships.companyId,
+            clientId: clients.id,
+            endedAt: memberships.endedAt,
+          })
+          .from(memberships)
+          .leftJoin(
+            clients,
+            and(
+              eq(clients.companyId, memberships.companyId),
+              isNull(clients.deletedAt)
+            )
+          )
+          .where(
+            and(
+              eq(memberships.contactId, parsed.data.id),
+              eq(memberships.portalAccess, true)
+            )
+          )
       } catch (error) {
         console.error('Failed to load contact for archive', error)
         return buildMutationResult({ error: 'Unable to archive contact.' })
@@ -66,6 +105,17 @@ export async function softDeleteContactMutation(
 
       if (!existingContact) {
         return buildMutationResult({ error: 'Contact not found.' })
+      }
+
+      // Archiving a portal user ends their portal access, which only an
+      // admin may switch off.
+      if (
+        !roleCan(user.role, 'clients.manage') &&
+        (existingContact.userId || accessRows.length > 0)
+      ) {
+        return buildMutationResult({
+          error: 'This contact is a portal user. Ask an admin to archive them.',
+        })
       }
 
       try {
@@ -95,6 +145,19 @@ export async function softDeleteContactMutation(
               : 'Unable to archive contact.',
         })
       }
+
+      // Access trail on each client they lose, as on the client sheet.
+      const accessChanges: ContactClientLinkChange[] = []
+      for (const row of accessRows) {
+        // Only a current membership was granting access.
+        if (!row.clientId || row.endedAt) continue
+        accessChanges.push({
+          contactId: existingContact.id,
+          clientId: row.clientId,
+          action: 'unlinked',
+        })
+      }
+      await logContactClientLinkChanges(user, accessChanges)
 
       const event = contactArchivedEvent({
         email: existingContact.email,

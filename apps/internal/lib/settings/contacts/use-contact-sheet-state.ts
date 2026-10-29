@@ -96,6 +96,7 @@ export function useContactSheetState({
   // An edit's Companies list arrives after the sheet opens. Until it has,
   // a save leaves their companies alone rather than sending an empty list.
   const [companiesLoaded, setCompaniesLoaded] = useState(false)
+  const [companiesLoadFailed, setCompaniesLoadFailed] = useState(false)
 
   const { toast } = useToast()
   const isEditing = Boolean(contact?.id)
@@ -146,6 +147,7 @@ export function useContactSheetState({
     })
 
     setCompaniesLoaded(!contactId)
+    setCompaniesLoadFailed(false)
     if (!contactId) {
       return
     }
@@ -171,6 +173,7 @@ export function useContactSheetState({
       })
       .catch(err => {
         console.error('Failed to fetch contact sheet data:', err)
+        if (!cancelled) setCompaniesLoadFailed(true)
       })
 
     return () => {
@@ -227,8 +230,9 @@ export function useContactSheetState({
             ? data.companies.map(entry => ({
                 companyId: entry.companyId,
                 title: entry.title.trim() || null,
-                // Only a company with a client has portal access to give.
-                portalAccess: entry.clientId ? entry.portalAccess : undefined,
+                // Portal access is set only in Edit client > Portal access,
+                // so this sheet never sends it (undefined = leave it alone).
+                portalAccess: undefined,
               }))
             : undefined,
         })
@@ -361,6 +365,7 @@ export function useContactSheetState({
     feedback,
     isPending,
     isEditing,
+    companiesLoadFailed,
     pendingReason: PENDING_REASON,
     sheetTitle,
     sheetDescription,

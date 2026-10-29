@@ -22,6 +22,11 @@ export type FindOrCreatePortalUserResult = UserServiceResult & {
   created?: boolean
 }
 
+const STAFF_EMAIL_ERROR = {
+  error:
+    'That email belongs to a staff account, so it can’t be a portal user. Use a different email for the contact.',
+}
+
 /**
  * Finds an existing portal user by email or creates a new one.
  *
@@ -35,14 +40,22 @@ export async function findOrCreatePortalUser(
 ): Promise<FindOrCreatePortalUserResult> {
   assertAdmin(actor)
 
-  // 1. Check our users table for an active user
+  // 1. Check our users table for an active user. Emails match whatever
+  // their case; only a client account may become a contact's portal login,
+  // never a staff one (that would hand a client the staff user's sign-in).
   const [existingUser] = await db
-    .select({ id: users.id })
+    .select({ id: users.id, role: users.role })
     .from(users)
-    .where(and(eq(users.email, input.email), isNull(users.deletedAt)))
+    .where(
+      and(
+        sql`lower(${users.email}) = lower(${input.email})`,
+        isNull(users.deletedAt)
+      )
+    )
     .limit(1)
 
   if (existingUser) {
+    if (existingUser.role !== 'CLIENT') return STAFF_EMAIL_ERROR
     return { userId: existingUser.id, created: false }
   }
 
@@ -64,7 +77,7 @@ export async function findOrCreatePortalUser(
 
   // 4. Look up the existing auth user via raw SQL on auth.users
   const [authRow] = await db.execute<{ id: string }>(
-    sql`SELECT id FROM auth.users WHERE email = ${input.email} LIMIT 1`
+    sql`SELECT id FROM auth.users WHERE lower(email) = lower(${input.email}) LIMIT 1`
   )
 
   const authUserId = authRow?.id
@@ -74,10 +87,13 @@ export async function findOrCreatePortalUser(
 
   // 5. Check if there's a soft-deleted users row we can restore
   const [deletedUser] = await db
-    .select({ id: users.id })
+    .select({ id: users.id, role: users.role })
     .from(users)
     .where(eq(users.id, authUserId))
     .limit(1)
+
+  // A (former) staff account is never reused as a portal login.
+  if (deletedUser && deletedUser.role !== 'CLIENT') return STAFF_EMAIL_ERROR
 
   let created = false
 

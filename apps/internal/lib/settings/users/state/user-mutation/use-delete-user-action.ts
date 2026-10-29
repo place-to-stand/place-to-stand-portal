@@ -45,7 +45,7 @@ export function useDeleteUserAction({
     toast({
       title: 'Unable to archive user',
       description:
-        "You can't archive your own account. Switch to another administrator before removing your access.",
+        "You can't archive your own user. Switch to another administrator before removing your access.",
       variant: 'destructive',
     })
   }, [toast])

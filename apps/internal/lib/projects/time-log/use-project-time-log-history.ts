@@ -117,7 +117,7 @@ export function useProjectTimeLogHistory(
     onSuccess: async data => {
       await queryClient.invalidateQueries({ queryKey: baseQueryKey })
       toast({
-        title: 'Time entry removed',
+        title: 'Time log archived',
         description: 'The log no longer counts toward the burndown total.',
       })
       if (data?.warning) {

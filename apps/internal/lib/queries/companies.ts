@@ -52,6 +52,11 @@ import {
 } from '@/lib/companies/schema'
 import { db } from '@/lib/db'
 import {
+  logContactClientLinkChanges,
+  type ContactClientLinkChange,
+} from '@/lib/queries/contacts/settings/contact-client-link-activity'
+import { revokeCompanyPortalAccess } from '@/lib/settings/clients/revoke-company-portal-access'
+import {
   clients,
   companies,
   contacts,
@@ -74,6 +79,31 @@ function isUniqueViolation(error: unknown): boolean {
 }
 
 const DUPLICATE_NAME_ERROR = 'A company with this name already exists.'
+
+/** The index a unique violation hit (postgres-js names it constraint_name). */
+function violatedConstraint(error: unknown): string | null {
+  const read = (value: unknown) =>
+    (value as { constraint_name?: string })?.constraint_name ??
+    (value as { constraint?: string })?.constraint ??
+    null
+  return read(error) ?? read((error as { cause?: unknown })?.cause)
+}
+
+/** A save's unique violation, in words that match the index it hit. */
+function saveConflictMessage(error: unknown): string {
+  switch (violatedConstraint(error)) {
+    case 'clients_company_id_live_key':
+      return 'A company has one client, and this one already has it. Reload and try again.'
+    case 'memberships_one_primary_per_company':
+      return 'The primary contact just changed. Reload and try again.'
+    case 'memberships_one_current_per_contact_company':
+      return 'A contact on this company just changed. Reload and try again.'
+    case 'idx_companies_name_unique':
+      return DUPLICATE_NAME_ERROR
+    default:
+      return 'Unable to save the company. Reload and try again.'
+  }
+}
 
 /** Escape LIKE wildcards so a search for "50%" means the literal text. */
 function escapeLike(value: string) {
@@ -319,7 +349,7 @@ export async function saveCompany(
       return { ok: true, id: inserted!.id }
     } catch (error) {
       if (isUniqueViolation(error)) {
-        return { ok: false, error: DUPLICATE_NAME_ERROR }
+        return { ok: false, error: saveConflictMessage(error) }
       }
       console.error('Failed to create company', error)
       return { ok: false, error: 'Unable to save the company.' }
@@ -396,8 +426,39 @@ export async function saveCompany(
     }
   }
 
+  // The primary contact (star on the People list) saves in the same
+  // transaction as the people it may depend on. `undefined` = unchanged.
+  const [current] = await db
+    .select({ primaryContactId: primaryContactIdSql(companies.id) })
+    .from(companies)
+    .where(eq(companies.id, existing.id))
+    .limit(1)
+  const primaryChange =
+    values.primaryContactId !== undefined &&
+    values.primaryContactId !== (current?.primaryContactId ?? null)
+      ? { contactId: values.primaryContactId }
+      : null
+  let primaryContactName: string | null = null
+  if (primaryChange?.contactId) {
+    const [contact] = await db
+      .select({ name: contacts.name })
+      .from(contacts)
+      .where(
+        and(
+          eq(contacts.id, primaryChange.contactId),
+          isNull(contacts.deletedAt)
+        )
+      )
+      .limit(1)
+    if (!contact) {
+      return { ok: false, error: 'That contact is not at this company.' }
+    }
+    primaryContactName = contact.name
+  }
+
   if (
     !changedFields.length &&
+    !primaryChange &&
     !people.moves.length &&
     !(values.contactTitles ?? []).length &&
     !clientMoves.length &&
@@ -426,6 +487,13 @@ export async function saveCompany(
           'This company is a client, so only an admin can change its contacts.',
       }
     }
+    if (primaryChange && (await companyHasClient(existing.id))) {
+      return {
+        ok: false,
+        error:
+          'This company is a client, so only an admin can change its primary contact.',
+      }
+    }
   }
 
   if (people.moves.length) {
@@ -438,6 +506,8 @@ export async function saveCompany(
     changedFields.push('linked client')
   }
 
+  // Portal access ended by unlinking or moving a client, logged after commit.
+  const accessChanges: ContactClientLinkChange[] = []
   try {
     await db.transaction(async tx => {
       await tx
@@ -445,7 +515,8 @@ export async function saveCompany(
         .set({ ...next, updatedAt: timestamp })
         .where(eq(companies.id, existing.id))
 
-      // A client is named after its company; follow a rename.
+      // A client is named after its company; follow a rename. Archived
+      // clients keep the name they were archived under.
       if (renamed) {
         await tx
           .update(clients)
@@ -453,15 +524,22 @@ export async function saveCompany(
             name: clientDisplayName(next.name),
             updatedAt: timestamp,
           })
-          .where(eq(clients.companyId, existing.id))
+          .where(
+            and(eq(clients.companyId, existing.id), isNull(clients.deletedAt))
+          )
       }
 
-      // Unlink first so the one-client index allows the new link.
+      // Unlink first so the one-client index allows the new link. Access is
+      // a flag on this company's memberships: switch it off so the next
+      // client linked here doesn't silently inherit it.
       for (const client of unlinkIds) {
         await tx
           .update(clients)
           .set({ companyId: null, updatedAt: timestamp })
           .where(eq(clients.id, client.id))
+        accessChanges.push(
+          ...(await revokeCompanyPortalAccess(tx, existing.id, client.id))
+        )
       }
 
       // A client is named after its company.
@@ -474,6 +552,16 @@ export async function saveCompany(
             updatedAt: timestamp,
           })
           .where(eq(clients.id, move.clientId))
+        // A client moving here leaves its old company's people behind.
+        if (move.fromCompanyId) {
+          accessChanges.push(
+            ...(await revokeCompanyPortalAccess(
+              tx,
+              move.fromCompanyId,
+              move.clientId
+            ))
+          )
+        }
       }
 
       // Joining keeps the person's other companies. Leaving ends their
@@ -489,10 +577,24 @@ export async function saveCompany(
       for (const entry of values.contactTitles ?? []) {
         await setMembershipTitle(tx, entry.contactId, existing.id, entry.title)
       }
+
+      // After the people moves, so someone joining here can be made primary.
+      // A refusal rolls the whole save back.
+      if (primaryChange) {
+        const ok = await setCompanyPrimary(
+          tx,
+          existing.id,
+          primaryChange.contactId
+        )
+        if (!ok) tx.rollback()
+      }
     })
   } catch (error) {
+    if (error instanceof TransactionRollbackError) {
+      return { ok: false, error: 'That contact is not at this company.' }
+    }
     if (isUniqueViolation(error)) {
-      return { ok: false, error: DUPLICATE_NAME_ERROR }
+      return { ok: false, error: saveConflictMessage(error) }
     }
     console.error('Failed to update company', error)
     return { ok: false, error: 'Unable to save the company.' }
@@ -525,6 +627,21 @@ export async function saveCompany(
       },
     }),
   })
+
+  await logContactClientLinkChanges(actor, accessChanges)
+
+  if (primaryChange) {
+    await logActivity({
+      actorId: actor.id,
+      actorRole: actor.role,
+      targetType: 'COMPANY',
+      targetId: existing.id,
+      ...companyPrimaryContactSetEvent({
+        companyName: next.name,
+        contactName: primaryContactName,
+      }),
+    })
+  }
 
   // Each person's own trail shows the company they joined or left.
   for (const move of people.moves) {
@@ -703,6 +820,20 @@ export async function setCompanyArchived(
   }
   if (Boolean(existing.deletedAt) === archived) {
     return { ok: true, id: existing.id }
+  }
+
+  // Client records are admin-only, and a client is its company (same rule
+  // as rename and people).
+  if (
+    !roleCan(actor.role, 'clients.manage') &&
+    (await companyHasClient(existing.id))
+  ) {
+    return {
+      ok: false,
+      error: archived
+        ? 'This company is a client, so only an admin can archive it.'
+        : 'This company is a client, so only an admin can restore it.',
+    }
   }
 
   const timestamp = new Date().toISOString()

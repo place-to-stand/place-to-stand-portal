@@ -25,6 +25,7 @@ import {
   primaryContactIdSql,
   setPortalAccess,
 } from '@/lib/queries/memberships'
+import { UUID_PATTERN } from '@/lib/sheets/entities'
 
 const signInDisabledSql = sql<boolean>`exists (
   select 1 from users u
@@ -213,6 +214,14 @@ export async function syncClientContacts(
   contactIds: string[]
 ): Promise<{ ok: boolean; error?: string }> {
   assertAdmin(user)
+
+  // Ids reach a uuid column cast; a malformed one would surface as a 500.
+  if (
+    !UUID_PATTERN.test(clientId) ||
+    !contactIds.every(id => UUID_PATTERN.test(id))
+  ) {
+    return { ok: false, error: 'Invalid client or contact.' }
+  }
 
   const [client] = await db
     .select({ companyId: clients.companyId })

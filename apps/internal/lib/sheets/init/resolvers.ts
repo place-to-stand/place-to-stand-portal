@@ -12,7 +12,10 @@ import {
 import { getActiveTaskProjectId } from '@/lib/data/tasks'
 import { fetchFormSubmissionById } from '@/lib/data/form-submissions'
 import { fetchLeadAssignees, fetchLeadById } from '@/lib/data/leads'
-import { getOrCreateSalesProject } from '@/lib/leads/sales-project'
+import {
+  findSalesProjectId,
+  getOrCreateSalesProject,
+} from '@/lib/leads/sales-project'
 import { fetchAdminUsers, fetchCrmUsers } from '@/lib/data/users'
 import { NotFoundError } from '@/lib/errors/http'
 import { ForbiddenError } from '@/lib/errors/http'
@@ -253,7 +256,11 @@ const resolveTaskInit: SheetInitResolver<'task'> = async (user, id) => {
   const [admins, liteProjects, salesProjectId] = await Promise.all([
     fetchCrmUsers(),
     fetchProjectsLite(),
-    getOrCreateSalesProject(user.id),
+    // Opening a sheet never creates projects for non-admins: SALES only
+    // read it (null until an admin's sheet or the CLI creates it).
+    user.role === 'ADMIN'
+      ? getOrCreateSalesProject(user.id)
+      : findSalesProjectId(),
   ])
   // Non-admins only see (redacted) projects they can work.
   const allProjects = await scopeProjectsForViewer(user, liteProjects)

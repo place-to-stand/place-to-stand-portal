@@ -7,6 +7,11 @@ import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
 import { clients } from '@/lib/db/schema'
 import {
+  logContactClientLinkChanges,
+  type ContactClientLinkChange,
+} from '@/lib/queries/contacts/settings/contact-client-link-activity'
+import { revokeCompanyPortalAccess } from '@/lib/settings/clients/revoke-company-portal-access'
+import {
   deleteClientSchema,
   type DeleteClientInput,
 } from '@/lib/settings/clients/client-service'
@@ -48,6 +53,7 @@ export async function softDeleteClientMutation(
         | {
             id: string
             name: string
+            companyId: string | null
           }
         | undefined
 
@@ -56,6 +62,7 @@ export async function softDeleteClientMutation(
           .select({
             id: clients.id,
             name: clients.name,
+            companyId: clients.companyId,
           })
           .from(clients)
           .where(eq(clients.id, parsed.data.id))
@@ -71,11 +78,24 @@ export async function softDeleteClientMutation(
         return buildMutationResult({ error: 'Client not found.' })
       }
 
+      const archived = existingClient
+      let accessChanges: ContactClientLinkChange[] = []
       try {
-        await db
-          .update(clients)
-          .set({ deletedAt: new Date().toISOString() })
-          .where(eq(clients.id, parsed.data.id))
+        await db.transaction(async tx => {
+          await tx
+            .update(clients)
+            .set({ deletedAt: new Date().toISOString() })
+            .where(eq(clients.id, parsed.data.id))
+          // An archived client grants nobody access; switch it off so a
+          // restore (or another client at the company) doesn't bring it back.
+          if (archived.companyId) {
+            accessChanges = await revokeCompanyPortalAccess(
+              tx,
+              archived.companyId,
+              archived.id
+            )
+          }
+        })
       } catch (error) {
         console.error('Failed to archive client', error)
         return buildMutationResult({
@@ -85,6 +105,8 @@ export async function softDeleteClientMutation(
               : 'Unable to archive client.',
         })
       }
+
+      await logContactClientLinkChanges(user, accessChanges)
 
       const event = clientArchivedEvent({ name: existingClient.name })
 

@@ -69,6 +69,10 @@ export async function convertLeadToClient(
     return { error: 'Lead not found.' }
   }
 
+  if (lead.deletedAt) {
+    return { error: 'This lead is archived. Restore it before converting.' }
+  }
+
   if (lead.convertedToClientId) {
     return { error: 'Lead already converted.' }
   }
@@ -264,15 +268,33 @@ export async function convertLeadToClient(
     }
   }
 
-  // 5. Update the lead with conversion info
-  await db
+  // 5. Update the lead with conversion info, only if nobody converted or
+  // archived it while this ran (two people converting at once).
+  const [claimed] = await db
     .update(leads)
     .set({
       convertedAt: new Date().toISOString(),
       convertedToClientId: finalClientId,
       updatedAt: new Date().toISOString(),
     })
-    .where(eq(leads.id, leadId))
+    .where(
+      and(
+        eq(leads.id, leadId),
+        isNull(leads.convertedToClientId),
+        isNull(leads.deletedAt)
+      )
+    )
+    .returning({ id: leads.id })
+
+  if (!claimed) {
+    revalidatePath('/leads')
+    revalidatePath('/clients')
+    return {
+      error: existingClientId
+        ? 'This lead was converted or archived while you were converting it.'
+        : 'This lead was converted or archived while you were converting it. Check Clients for a duplicate client to archive.',
+    }
+  }
 
   // 6. Log activity
   const resolvedName =

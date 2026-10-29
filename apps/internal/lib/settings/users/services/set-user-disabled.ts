@@ -22,7 +22,7 @@ export async function setPortalUserDisabled(
   assertAdmin(actor)
 
   if (actor.id === input.id) {
-    return { error: 'You cannot disable your own account.' }
+    return { error: 'You cannot disable your own user.' }
   }
 
   const adminClient = getSupabaseServiceClient()

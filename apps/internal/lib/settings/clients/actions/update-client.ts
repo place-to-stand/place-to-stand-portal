@@ -9,6 +9,11 @@ import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { clients } from '@/lib/db/schema'
 import type { ClientBillingTypeValue } from '@/lib/types'
+import {
+  logContactClientLinkChanges,
+  type ContactClientLinkChange,
+} from '@/lib/queries/contacts/settings/contact-client-link-activity'
+import { revokeCompanyPortalAccess } from '@/lib/settings/clients/revoke-company-portal-access'
 import { isMonthClosed } from '@/lib/data/reports/close'
 import {
   currentMonthStartUtc,
@@ -205,6 +210,15 @@ export async function updateClient(
       : nextMonthStartUtc()
     : null
 
+  // Leaving its company (unlink or move) ends portal access through it.
+  const leftCompanyId =
+    companyId !== undefined &&
+    existingClient.companyId &&
+    existingClient.companyId !== companyId
+      ? existingClient.companyId
+      : null
+  let accessChanges: ContactClientLinkChange[] = []
+
   try {
     await db.transaction(async tx => {
       if (billingTypeChanged && billingEffectiveFrom) {
@@ -249,11 +263,15 @@ export async function updateClient(
           originationContactId,
           originationUserId,
           notes,
-          // Unlinking keeps the client's portal access list; the client
-          // sheet flags anyone who isn't at its company.
           ...(companyId !== undefined ? { companyId } : {}),
         })
         .where(eq(clients.id, id))
+
+      // Portal access is a flag on the old company's memberships: switch it
+      // off so linking a client there later doesn't silently grant it.
+      if (leftCompanyId) {
+        accessChanges = await revokeCompanyPortalAccess(tx, leftCompanyId, id)
+      }
     })
   } catch (error) {
     if (error instanceof ClosedMonthError) {
@@ -265,6 +283,8 @@ export async function updateClient(
         error instanceof Error ? error.message : 'Unable to update client.',
     })
   }
+
+  await logContactClientLinkChanges(user, accessChanges)
 
   if (website) {
     const websiteCompanyId =

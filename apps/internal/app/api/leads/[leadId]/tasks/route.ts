@@ -7,6 +7,7 @@ import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 import { normalizeRawTask } from '@/lib/data/projects/normalize-task'
 import { listLeadTasksWithRelations } from '@/lib/queries/tasks/relations'
+import { UUID_PATTERN } from '@/lib/sheets/entities'
 
 /**
  * GET /api/leads/[leadId]/tasks
@@ -22,6 +23,10 @@ export async function GET(
 ) {
   const user = await requireCrmUser()
   const { leadId } = await params
+
+  if (!UUID_PATTERN.test(leadId)) {
+    return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
+  }
 
   try {
     const rawTasks = await listLeadTasksWithRelations(user, leadId)

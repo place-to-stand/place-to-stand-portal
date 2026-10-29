@@ -321,6 +321,10 @@ export async function setCompanyPrimary(
   companyId: string,
   contactId: string | null
 ): Promise<boolean> {
+  // Clearing the old primary and setting the new one commit together.
+  if (executor === db) {
+    return db.transaction(tx => setCompanyPrimary(tx, companyId, contactId))
+  }
   // Check the new primary is a member before touching the current one, so a
   // refused change leaves the company's primary as it was.
   if (contactId) {

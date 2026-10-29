@@ -67,6 +67,12 @@ export const saveCompanySchema = z.object({
     )
     .max(500)
     .optional(),
+  /**
+   * The primary contact (edit only), set in the same transaction as the
+   * rest of the save; `null` clears it, omitted leaves it as it is. Must be
+   * a member after this save's people changes.
+   */
+  primaryContactId: z.string().uuid().nullable().optional(),
   /** The linked client to unlink (admin only); it keeps its own records. */
   unlinkClientIds: z.array(z.string().uuid()).max(1).optional(),
 })
