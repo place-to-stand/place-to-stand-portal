@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   Briefcase,
@@ -12,6 +13,7 @@ import {
 } from 'lucide-react'
 
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { EmptyState } from '@pts/ui/empty-state'
 import {
   Table,
@@ -175,20 +177,23 @@ export function CompaniesTable({
                   className='text-sm md:text-center'
                 >
                   {company.clientId && company.clientName ? (
-                    <LinkedRecordsHoverCell
-                      count={1}
-                      icon={Building2}
-                      trigger={<Building2 className='h-4 w-4' />}
-                      ariaLabel={`Client: ${company.clientName}`}
-                      items={[
-                        {
-                          id: company.clientId,
-                          label: company.clientName,
-                          href: clientSheetHref(company.clientId),
-                        },
-                      ]}
-                    />
-                  ) : null}
+                    // One client at most, so a link with its name in a
+                    // tooltip (the row ignores clicks on links).
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link
+                          href={clientSheetHref(company.clientId)}
+                          aria-label={`Open client ${company.clientName}`}
+                          className='text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 inline-flex rounded-sm transition outline-none focus-visible:ring-[3px]'
+                        >
+                          <Building2 className='h-4 w-4' />
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent>{company.clientName}</TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <EmptyValue />
+                  )}
                 </TableCell>
                 <TableCell
                   label='Contacts'
