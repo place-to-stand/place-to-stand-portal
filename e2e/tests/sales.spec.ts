@@ -94,3 +94,25 @@ test('sales sees no portal switches on a client company’s people', async ({
   ).toHaveCount(0)
   await expect(sheet.getByText('Portal', { exact: true })).toHaveCount(0)
 })
+
+// The rest of the Sales write rules (lead saves leaving people with a sign-in
+// unedited, archiving/restoring them, moving them between companies) are
+// server-side refusals the Sales UI never offers, so they aren't reachable
+// from here.
+test('sales can’t rename the staff company', async ({ page }) => {
+  // A refused save writes nothing, but a regression would rename it.
+  test.skip(!process.env.E2E_WRITES, 'set E2E_WRITES=1 on a throwaway database')
+  const staffName = process.env.E2E_STAFF_COMPANY ?? 'Place To Stand'
+  await page.goto(`/companies?q=${encodeURIComponent(staffName)}`)
+  await expectHealthy(page)
+  const row = page.locator('tbody tr').filter({ hasText: staffName }).first()
+  test.skip((await row.count()) === 0, 'no staff company to open')
+  await row.click()
+  const sheet = page.getByRole('dialog')
+  await expect(sheet).toBeVisible()
+  await sheet.getByLabel('Name').fill(`${staffName} (renamed)`)
+  await sheet.getByRole('button', { name: 'Save changes' }).click()
+  await expect(
+    page.getByText(`Only an admin can change ${staffName}.`)
+  ).toBeVisible()
+})
