@@ -59,7 +59,7 @@ test('stopping being Admin starts next month, and warns about this month', async
 }) => {
   // Another admin: you can't change your own sign-in.
   const adminEmail = process.env.E2E_ADMIN_EMAIL ?? 'jason@local.test'
-  await page.goto('/people?signIn=ADMIN')
+  await page.goto('/people?role=ADMIN')
   await expectHealthy(page)
   const rows = page.locator('tbody tr').filter({ hasNotText: adminEmail })
   test.skip((await rows.count()) === 0, 'needs a second person with an Admin sign-in')

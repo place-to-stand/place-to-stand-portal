@@ -7,8 +7,8 @@ import { useListParams } from '@/hooks/use-list-params'
 import type { ClientOption } from '@/lib/queries/contacts'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
 import {
-  SIGN_IN_FILTER_LABELS,
-  SIGN_IN_FILTER_VALUES,
+  ROLE_FILTER_LABELS,
+  ROLE_FILTER_VALUES,
   isSignInFilter,
   type SignInFilter,
 } from '@/lib/settings/contacts/filters'
@@ -21,7 +21,7 @@ type ContactsFiltersProps = {
   companies: ClientOption[]
   /** Base path to push filter changes to — '/people' or '/people/archive'. */
   basePath: string
-  /** Who can sign in (`?signIn=`); admins only. */
+  /** The Role filter (`?role=`); admins only. */
   signIn?: SignInFilter
   showSignInFilter?: boolean
 }
@@ -42,6 +42,8 @@ export function ContactsFilters({
     filters: {
       q: {},
       companyId: { isValid: value => UUID_PATTERN.test(value) },
+      role: { isValid: isSignInFilter },
+      // Old links; cleared by Reset.
       signIn: { isValid: isSignInFilter },
     },
   })
@@ -70,12 +72,12 @@ export function ContactsFilters({
       />
       {showSignInFilter ? (
         <FilterSelect
-          value={signIn}
-          onChange={value => update({ signIn: value })}
-          placeholder='Any sign-in'
-          options={SIGN_IN_FILTER_VALUES.map(value => ({
+          value={signIn === 'any' ? undefined : signIn}
+          onChange={value => update({ role: value, signIn: undefined })}
+          placeholder='All roles'
+          options={ROLE_FILTER_VALUES.map(value => ({
             value,
-            label: SIGN_IN_FILTER_LABELS[value],
+            label: ROLE_FILTER_LABELS[value],
           }))}
         />
       ) : null}

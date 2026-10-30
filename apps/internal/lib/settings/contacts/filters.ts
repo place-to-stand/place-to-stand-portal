@@ -25,7 +25,10 @@ export function isContactSortValue(value: string): boolean {
   )
 }
 
-/** People list sign-in filter (`?signIn=`), admins only. */
+/**
+ * People list Role filter (`?role=`), admins only: the user's role, or
+ * people with no user. (`any` = has a user; kept for old links only.)
+ */
 export const SIGN_IN_FILTER_VALUES = [
   'any',
   'ADMIN',
@@ -34,12 +37,16 @@ export const SIGN_IN_FILTER_VALUES = [
   'none',
 ] as const
 export type SignInFilter = (typeof SIGN_IN_FILTER_VALUES)[number]
-export const SIGN_IN_FILTER_LABELS: Record<SignInFilter, string> = {
-  any: 'With sign-in',
-  ADMIN: 'Admin sign-in',
-  SALES: 'Sales sign-in',
-  CLIENT: 'Client sign-in',
-  none: 'No sign-in',
+/** What the Role filter offers. */
+export const ROLE_FILTER_VALUES = ['ADMIN', 'SALES', 'CLIENT', 'none'] as const
+export const ROLE_FILTER_LABELS: Record<
+  (typeof ROLE_FILTER_VALUES)[number],
+  string
+> = {
+  ADMIN: 'Admin',
+  SALES: 'Sales',
+  CLIENT: 'Client',
+  none: 'No user',
 }
 export const isSignInFilter = (value: string): value is SignInFilter =>
   (SIGN_IN_FILTER_VALUES as readonly string[]).includes(value)
@@ -81,7 +88,9 @@ export function parseContactsSearchParams(
   const pageParam = Number.parseInt(firstParam(params.page) ?? '1', 10)
   const searchParam = firstParam(params.q)?.trim()
   const clientIdParam = firstParam(params.companyId)?.trim()
-  const signInParam = firstParam(params.signIn)?.trim() ?? ''
+  // `?role=`; old links used `?signIn=` with the same values.
+  const signInParam =
+    (firstParam(params.role) ?? firstParam(params.signIn))?.trim() ?? ''
   const sort = parseSortParam(
     firstParam(params.sort),
     CONTACT_SORT_FIELDS,
