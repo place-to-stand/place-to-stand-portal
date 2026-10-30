@@ -17,7 +17,7 @@ export default async function ContactsActivityPage() {
 
   return (
     <PageShell
-      breadcrumbs={[...crumbsForNav('/contacts'), { label: 'Activity' }]}
+      breadcrumbs={[...crumbsForNav('/people'), { label: 'Activity' }]}
       tabs={CONTACTS_TABS}
       activeTab='activity'
       primaryAction={

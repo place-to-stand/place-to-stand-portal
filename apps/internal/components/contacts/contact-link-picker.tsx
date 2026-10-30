@@ -4,7 +4,7 @@ import type { ReactElement } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Contact } from 'lucide-react'
 
-import { fetchContactOptions } from '@/app/(dashboard)/contacts/actions'
+import { fetchContactOptions } from '@/app/(dashboard)/people/actions'
 import {
   EntityLinkPicker,
   type EntityLinkOption,

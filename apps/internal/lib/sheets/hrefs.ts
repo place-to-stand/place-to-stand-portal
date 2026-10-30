@@ -13,7 +13,7 @@ import { PROJECT_SPECIAL_SEGMENTS } from '@/lib/projects/board/board-utils'
 
 export const clientSheetHref = (id: string) => `/clients?client=${id}`
 
-export const contactSheetHref = (id: string) => `/contacts?contact=${id}`
+export const contactSheetHref = (id: string) => `/people?contact=${id}`
 
 export const companySheetHref = (id: string) => `/companies?company=${id}`
 

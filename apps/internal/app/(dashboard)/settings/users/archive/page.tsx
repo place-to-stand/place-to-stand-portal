@@ -80,7 +80,7 @@ export default async function UsersArchivePage({
 
   return (
     <PageShell
-      breadcrumbs={[...crumbsForNav('/contacts'), { label: 'Archive' }]}
+      breadcrumbs={[...crumbsForNav('/people'), { label: 'Archive' }]}
       tabs={USERS_TABS}
       activeTab='archive'
       count={{

@@ -19,7 +19,7 @@ type ContactsFiltersProps = {
   clientId?: string
   /** Active clients for the linked-client filter options. */
   clients: ClientOption[]
-  /** Base path to push filter changes to — '/contacts' or '/contacts/archive'. */
+  /** Base path to push filter changes to — '/people' or '/people/archive'. */
   basePath: string
   /** Who can sign in (`?signIn=`); admins only. */
   signIn?: SignInFilter

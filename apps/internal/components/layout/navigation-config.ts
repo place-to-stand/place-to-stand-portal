@@ -92,7 +92,7 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Briefcase,
       },
       {
-        href: '/contacts',
+        href: '/people',
         capability: 'contacts.manage',
         label: 'Contacts',
         icon: Contact,

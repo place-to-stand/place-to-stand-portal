@@ -36,9 +36,9 @@ import {
 } from '@/lib/queries/users/portal-account'
 
 const CONTACT_ROUTES_TO_REVALIDATE = [
-  '/contacts',
-  '/contacts/archive',
-  '/contacts/activity',
+  '/people',
+  '/people/archive',
+  '/people/activity',
   // Companies list their people (and contact saves can join or leave one).
   '/companies',
 ]

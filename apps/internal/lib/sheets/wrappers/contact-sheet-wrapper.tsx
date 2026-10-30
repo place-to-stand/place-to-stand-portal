@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 
-import { ContactsSheet } from '@/app/(dashboard)/contacts/_components/contacts-sheet'
+import { ContactsSheet } from '@/app/(dashboard)/people/_components/contacts-sheet'
 
 import { emitSheetCreated } from '../created'
 import { NEW_SHEET_VALUE } from '../entities'

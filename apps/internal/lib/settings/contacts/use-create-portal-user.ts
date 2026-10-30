@@ -3,7 +3,7 @@
 import { useCallback, useTransition } from 'react'
 
 import { useToast } from '@/components/ui/use-toast'
-import { promoteContactToUser } from '@/app/(dashboard)/contacts/actions'
+import { promoteContactToUser } from '@/app/(dashboard)/people/actions'
 
 type PortalUserTarget = {
   id: string

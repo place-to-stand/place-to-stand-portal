@@ -3,7 +3,6 @@ import type { Metadata } from 'next'
 import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { requireCrmUser } from '@/lib/auth/session'
-import { isAdminRole } from '@/lib/auth/roles'
 import {
   listContactsForSettings,
   listAllActiveClients,
@@ -12,54 +11,51 @@ import { parseContactsSearchParams } from '@/lib/settings/contacts/filters'
 import { serverEnv } from '@/lib/env.server'
 import { readPageSize } from '@/lib/pagination/page-size.server'
 
-import { CONTACTS_TABS } from './_lib/tabs'
+import { CONTACTS_TABS } from '../_lib/tabs'
 import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
-import { ContactsFilters } from './_components/contacts-filters'
-import { ContactsManagementTable } from './_components/contacts-management-table'
-import { resolveContactDeepLink } from './_lib/contact-deep-link'
-import { mapContactToTableRow } from './_lib/map-contact-to-table-row'
+import { ContactsFilters } from '../_components/contacts-filters'
+import { ContactsManagementTable } from '../_components/contacts-management-table'
+import { resolveContactDeepLink } from '../_lib/contact-deep-link'
+import { mapContactToTableRow } from '../_lib/map-contact-to-table-row'
 
 export const metadata: Metadata = {
-  title: 'Contacts',
+  title: 'Contact archive',
 }
 
-export default async function ContactsPage({
+export default async function ContactsArchivePage({
   searchParams,
-}: PageProps<'/contacts'>) {
-  const user = await requireCrmUser()
+}: PageProps<'/people/archive'>) {
+  const admin = await requireCrmUser()
   const params = await searchParams
   const pageSize = await readPageSize()
   const {
     page: currentPage,
     search,
     clientId,
-    signIn,
     sort,
   } = parseContactsSearchParams(params)
-  const isAdmin = isAdminRole(user.role)
   const offset = (currentPage - 1) * pageSize
 
   // Share links: `?contact=<id>` opens the edit sheet even when the row sits
-  // on another page (redirects to the archive tab when it's archived).
+  // on another page (redirects to the active tab when it isn't archived).
   const contactParam = params.contact
   const deepLink = await resolveContactDeepLink(
-    user,
+    admin,
     Array.isArray(contactParam) ? contactParam[0] : contactParam,
-    'active'
+    'archive'
   )
 
   const [{ items, totalCount, unfilteredTotalCount }, allClients] =
     await Promise.all([
-      listContactsForSettings(user, {
-        status: 'active',
+      listContactsForSettings(admin, {
+        status: 'archived',
         search,
         clientId,
-        signIn,
         offset,
         limit: pageSize,
         sort,
       }),
-      listAllActiveClients(user),
+      listAllActiveClients(admin),
     ])
 
   const contactsForTable = items.map(mapContactToTableRow)
@@ -81,11 +77,11 @@ export default async function ContactsPage({
 
   return (
     <PageShell
-      breadcrumbs={crumbsForNav('/contacts')}
+      breadcrumbs={[...crumbsForNav('/people'), { label: 'Archive' }]}
       tabs={CONTACTS_TABS}
-      activeTab='contacts'
+      activeTab='archive'
       count={{
-        label: 'contacts',
+        label: 'archived contacts',
         total: unfilteredTotalCount,
         filteredTotal: totalCount,
       }}
@@ -95,12 +91,10 @@ export default async function ContactsPage({
     >
       <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
         <ContactsFilters
-          basePath='/contacts'
+          basePath='/people/archive'
           search={search}
           clientId={clientId}
           clients={allClients}
-          signIn={isAdmin ? signIn : undefined}
-          showSignInFilter={isAdmin}
         />
         <ContactsManagementTable
           contacts={contactsForTable}
@@ -108,8 +102,8 @@ export default async function ContactsPage({
           currentPage={currentPage}
           totalPages={totalPages}
           pageSize={pageSize}
-          mode='active'
-          basePath='/contacts'
+          mode='archive'
+          basePath='/people/archive'
           deepLinkedContact={deepLinkedContact}
           contactNotFound={deepLink.notFound}
           clientPortalUrl={serverEnv.CLIENT_PORTAL_URL ?? ''}

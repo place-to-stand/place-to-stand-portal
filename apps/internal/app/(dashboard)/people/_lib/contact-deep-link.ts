@@ -10,7 +10,7 @@ import {
 } from '@/lib/sheets/resolve-deep-link'
 
 const contactArchiveSheetHref = (id: string) =>
-  `/contacts/archive?contact=${id}`
+  `/people/archive?contact=${id}`
 
 type ContactDeepLinkRecord = ContactSheetInput & { deletedAt: string | null }
 

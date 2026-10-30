@@ -17,7 +17,7 @@ export default async function UsersActivityPage() {
 
   return (
     <PageShell
-      breadcrumbs={[...crumbsForNav('/contacts'), { label: 'Activity' }]}
+      breadcrumbs={[...crumbsForNav('/people'), { label: 'Activity' }]}
       tabs={USERS_TABS}
       activeTab='activity'
       primaryAction={<SheetCreateButton entity='user' label='Create user' />}

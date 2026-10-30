@@ -11,7 +11,7 @@ import {
   saveContact,
   softDeleteContact,
   getContactSheetData,
-} from '@/app/(dashboard)/contacts/actions'
+} from '@/app/(dashboard)/people/actions'
 import { useCreatePortalUser } from '@/lib/settings/contacts/use-create-portal-user'
 import type { ContactsTableContact } from '@/lib/settings/contacts/use-contacts-table-state'
 import { PENDING_REASON } from '@/lib/forms/form-controls'

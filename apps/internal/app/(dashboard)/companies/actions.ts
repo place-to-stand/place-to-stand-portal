@@ -27,7 +27,7 @@ const COMPANY_ROUTES = [
   '/companies',
   '/companies/archive',
   '/companies/activity',
-  '/contacts',
+  '/people',
   '/leads',
   '/clients',
   '/clients/archive',

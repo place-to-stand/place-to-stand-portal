@@ -80,7 +80,7 @@ export const SHEET_ENTITIES: Record<SheetEntityKey, SheetEntityConfig> = {
     // `contactName=` prefills the create sheet's name (create-from-picker);
     // `contactCompanyId=` its company (e.g. the lead's).
     auxParams: ['contactName', 'contactCompanyId'],
-    claimsPathname: exactPaths('/contacts', '/contacts/archive'),
+    claimsPathname: exactPaths('/people', '/people/archive'),
   },
   invoice: {
     auxParams: [],

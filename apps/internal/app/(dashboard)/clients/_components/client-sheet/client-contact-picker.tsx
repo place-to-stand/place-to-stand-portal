@@ -13,7 +13,7 @@ import { SheetRecordList } from '@/components/sheets/sheet-record-row'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { useCreatePortalUser } from '@/lib/settings/contacts/use-create-portal-user'
-import { PromoteToUserDialog } from '@/app/(dashboard)/contacts/_components/contact-sheet/promote-to-user-dialog'
+import { PromoteToUserDialog } from '@/app/(dashboard)/people/_components/contact-sheet/promote-to-user-dialog'
 
 type ClientContactOption = {
   id: string

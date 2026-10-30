@@ -33,5 +33,5 @@ export default async function UsersSettingsPage({
     if (person) next.set('contact', person.id)
   }
 
-  redirect(`/contacts?${next.toString()}`)
+  redirect(`/people?${next.toString()}`)
 }

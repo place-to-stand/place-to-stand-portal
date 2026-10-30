@@ -262,7 +262,7 @@ function CommandPalette() {
                   // pre-filtered to the record. Email is unique where names
                   // are not, so it isolates the selected contact.
                   navigate(
-                    `/contacts?q=${encodeURIComponent(contact.email ?? contact.name)}`
+                    `/people?q=${encodeURIComponent(contact.email ?? contact.name)}`
                   )
                 }
               >

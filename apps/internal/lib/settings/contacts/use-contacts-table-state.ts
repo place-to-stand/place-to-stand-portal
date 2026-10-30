@@ -9,7 +9,7 @@ import {
   destroyContact,
   restoreContact,
   softDeleteContact,
-} from '@/app/(dashboard)/contacts/actions'
+} from '@/app/(dashboard)/people/actions'
 import type { LinkedClient } from '@/lib/queries/contacts'
 import type { ContactCompanyItem } from '@/lib/queries/contacts/settings/types'
 import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'

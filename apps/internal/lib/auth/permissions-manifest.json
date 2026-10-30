@@ -238,83 +238,6 @@
     "capability": "leads.manage"
   },
   {
-    "type": "action",
-    "name": "saveContact",
-    "file": "apps/internal/app/(dashboard)/contacts/actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "softDeleteContact",
-    "file": "apps/internal/app/(dashboard)/contacts/actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "restoreContact",
-    "file": "apps/internal/app/(dashboard)/contacts/actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "destroyContact",
-    "file": "apps/internal/app/(dashboard)/contacts/actions.ts",
-    "kind": "capability",
-    "capability": "leads.manage"
-  },
-  {
-    "type": "action",
-    "name": "getContactSheetData",
-    "file": "apps/internal/app/(dashboard)/contacts/actions.ts",
-    "kind": "capability",
-    "capability": "leads.manage"
-  },
-  {
-    "type": "action",
-    "name": "getContactPortalAccount",
-    "file": "apps/internal/app/(dashboard)/contacts/actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "promoteContactToUser",
-    "file": "apps/internal/app/(dashboard)/contacts/actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "fetchContactOptions",
-    "file": "apps/internal/app/(dashboard)/contacts/actions.ts",
-    "kind": "capability",
-    "capability": "leads.manage"
-  },
-  {
-    "type": "page",
-    "name": "/contacts/activity",
-    "file": "apps/internal/app/(dashboard)/contacts/activity/page.tsx",
-    "kind": "capability",
-    "capability": "leads.manage"
-  },
-  {
-    "type": "page",
-    "name": "/contacts/archive",
-    "file": "apps/internal/app/(dashboard)/contacts/archive/page.tsx",
-    "kind": "capability",
-    "capability": "leads.manage"
-  },
-  {
-    "type": "page",
-    "name": "/contacts",
-    "file": "apps/internal/app/(dashboard)/contacts/page.tsx",
-    "kind": "capability",
-    "capability": "leads.manage"
-  },
-  {
     "type": "page",
     "name": "/design",
     "file": "apps/internal/app/(dashboard)/design/page.tsx",
@@ -614,6 +537,83 @@
     "file": "apps/internal/app/(dashboard)/my/tasks/page.tsx",
     "kind": "admin",
     "capability": null
+  },
+  {
+    "type": "action",
+    "name": "saveContact",
+    "file": "apps/internal/app/(dashboard)/people/actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "softDeleteContact",
+    "file": "apps/internal/app/(dashboard)/people/actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "restoreContact",
+    "file": "apps/internal/app/(dashboard)/people/actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "destroyContact",
+    "file": "apps/internal/app/(dashboard)/people/actions.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "action",
+    "name": "getContactSheetData",
+    "file": "apps/internal/app/(dashboard)/people/actions.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "action",
+    "name": "getContactPortalAccount",
+    "file": "apps/internal/app/(dashboard)/people/actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "promoteContactToUser",
+    "file": "apps/internal/app/(dashboard)/people/actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "fetchContactOptions",
+    "file": "apps/internal/app/(dashboard)/people/actions.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "page",
+    "name": "/people/activity",
+    "file": "apps/internal/app/(dashboard)/people/activity/page.tsx",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "page",
+    "name": "/people/archive",
+    "file": "apps/internal/app/(dashboard)/people/archive/page.tsx",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "page",
+    "name": "/people",
+    "file": "apps/internal/app/(dashboard)/people/page.tsx",
+    "kind": "capability",
+    "capability": "leads.manage"
   },
   {
     "type": "page",
